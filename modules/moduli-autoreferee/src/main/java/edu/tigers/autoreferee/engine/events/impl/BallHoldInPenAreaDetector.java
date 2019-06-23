@@ -1,11 +1,10 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.autoreferee.engine.events.impl;
 
 import java.util.EnumMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -14,10 +13,12 @@ import edu.tigers.autoreferee.IAutoRefFrame;
 import edu.tigers.autoreferee.engine.FollowUpAction;
 import edu.tigers.autoreferee.engine.NGeometry;
 import edu.tigers.autoreferee.engine.events.EGameEvent;
+import edu.tigers.autoreferee.engine.events.EGameEventDetectorType;
 import edu.tigers.autoreferee.engine.events.GameEvent;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.IPenaltyArea;
+import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.line.v2.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -44,7 +45,7 @@ public class BallHoldInPenAreaDetector extends APreparingGameEventDetector
 	 */
 	public BallHoldInPenAreaDetector()
 	{
-		super(EGameState.RUNNING);
+		super(EGameEventDetectorType.BALL_HOLD_IN_PENAREA, EGameState.RUNNING);
 	}
 	
 	
@@ -66,7 +67,7 @@ public class BallHoldInPenAreaDetector extends APreparingGameEventDetector
 	
 	
 	@Override
-	protected Optional<IGameEvent> doUpdate(final IAutoRefFrame frame, final List<IGameEvent> violations)
+	protected Optional<IGameEvent> doUpdate(final IAutoRefFrame frame)
 	{
 		if (ballOutSidePenAreas)
 		{
@@ -103,7 +104,7 @@ public class BallHoldInPenAreaDetector extends APreparingGameEventDetector
 	{
 		IVector2 newBallPos = penAreas.get(teamColor).nearestPointOutside(frame.getWorldFrame().getBall().getPos());
 		newBallPos = LineMath.stepAlongLine(newBallPos, frame.getWorldFrame().getBall().getPos(),
-				-(Geometry.getBotToBallDistanceStop() + Geometry.getBotToPenaltyAreaMarginStandard()));
+				-(RuleConstraints.getStopRadius() + RuleConstraints.getBotToPenaltyAreaMarginStandard()));
 		return NGeometry.getField().nearestPointInside(newBallPos, -Geometry.getBotRadius());
 	}
 }

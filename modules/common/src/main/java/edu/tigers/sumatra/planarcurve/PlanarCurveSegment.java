@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.planarcurve;
 
 import org.apache.commons.math3.util.Pair;
 
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -58,7 +58,7 @@ public class PlanarCurveSegment
 	 */
 	public static PlanarCurveSegment fromPoint(final IVector2 pos, final double tStart, final double tEnd)
 	{
-		return new PlanarCurveSegment(EPlanarCurveSegmentType.POINT, pos, AVector2.ZERO_VECTOR, AVector2.ZERO_VECTOR,
+		return new PlanarCurveSegment(EPlanarCurveSegmentType.POINT, pos, Vector2f.ZERO_VECTOR, Vector2f.ZERO_VECTOR,
 				tStart,
 				tEnd);
 	}
@@ -76,7 +76,7 @@ public class PlanarCurveSegment
 	public static PlanarCurveSegment fromFirstOrder(final IVector2 pos, final IVector2 vel, final double tStart,
 			final double tEnd)
 	{
-		return new PlanarCurveSegment(EPlanarCurveSegmentType.FIRST_ORDER, pos, vel, AVector2.ZERO_VECTOR, tStart,
+		return new PlanarCurveSegment(EPlanarCurveSegmentType.FIRST_ORDER, pos, vel, Vector2f.ZERO_VECTOR, tStart,
 				tEnd);
 	}
 	

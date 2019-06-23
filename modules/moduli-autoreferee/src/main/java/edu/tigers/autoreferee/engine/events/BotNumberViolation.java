@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Apr 14, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.events;
 
@@ -18,8 +13,8 @@ import edu.tigers.sumatra.ids.ETeamColor;
 public class BotNumberViolation extends GameEvent
 {
 	
-	private final int	allowedNumber;
-	private final int	actualNumber;
+	private final int allowedNumber;
+	private final int actualNumber;
 	
 	
 	/**
@@ -32,27 +27,9 @@ public class BotNumberViolation extends GameEvent
 	public BotNumberViolation(final long timestamp, final ETeamColor responsibleTeam, final FollowUpAction followUp,
 			final int allowedNumber, final int actualNumber)
 	{
-		super(EGameEvent.BOT_COUNT, timestamp, responsibleTeam, followUp);
+		super(EGameEvent.NUMBER_OF_PLAYERS, timestamp, responsibleTeam, followUp);
 		this.allowedNumber = allowedNumber;
 		this.actualNumber = actualNumber;
-	}
-	
-	
-	/**
-	 * @return the allowedNumber
-	 */
-	public int getAllowedNumber()
-	{
-		return allowedNumber;
-	}
-	
-	
-	/**
-	 * @return the actualNumber
-	 */
-	public int getActualNumber()
-	{
-		return actualNumber;
 	}
 	
 	
@@ -60,14 +37,12 @@ public class BotNumberViolation extends GameEvent
 	protected String generateLogString()
 	{
 		String superResult = super.generateLogString();
-		StringBuilder builder = new StringBuilder(superResult);
 		
-		builder.append(" | Allowed/Actual: ");
-		builder.append(getAllowedNumber());
-		builder.append("/");
-		builder.append(getActualNumber());
-		
-		return builder.toString();
+		return superResult
+				+ " | Allowed/Actual: "
+				+ allowedNumber
+				+ "/"
+				+ actualNumber;
 	}
 	
 }

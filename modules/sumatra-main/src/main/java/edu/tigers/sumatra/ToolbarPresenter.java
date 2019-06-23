@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra;
@@ -18,18 +18,17 @@ import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.moduli.exceptions.StartModuleException;
 import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.ai.AAgent;
-import edu.tigers.sumatra.ai.Agent;
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
-import edu.tigers.sumatra.ai.data.EAIControlState;
-import edu.tigers.sumatra.ai.data.frames.VisualizationFrame;
+import edu.tigers.sumatra.ai.VisualizationFrame;
+import edu.tigers.sumatra.ai.athena.EAIControlState;
 import edu.tigers.sumatra.clock.FpsCounter;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.model.ModuliStateAdapter;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.persistence.IRecordObserver;
 import edu.tigers.sumatra.persistence.RecordManager;
 import edu.tigers.sumatra.referee.IRefereeObserver;
-import edu.tigers.sumatra.referee.TeamConfig;
 import edu.tigers.sumatra.telegram.TelegramNotificationController;
 import edu.tigers.sumatra.util.GlobalShortcuts;
 import edu.tigers.sumatra.util.GlobalShortcuts.EShortcut;
@@ -37,9 +36,6 @@ import edu.tigers.sumatra.view.FpsPanel.EFpsType;
 import edu.tigers.sumatra.view.toolbar.EStartStopButtonState;
 import edu.tigers.sumatra.view.toolbar.IToolbarObserver;
 import edu.tigers.sumatra.view.toolbar.ToolBar;
-import edu.tigers.sumatra.vision.AVisionFilter;
-import edu.tigers.sumatra.vision.IVisionFilterObserver;
-import edu.tigers.sumatra.vision.data.FilteredVisionFrame;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.ExtendedCamDetectionFrame;
@@ -53,7 +49,7 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
  */
 public class ToolbarPresenter implements IModuliStateObserver, IToolbarObserver,
 		IRecordObserver, IVisualizationFrameObserver, IWorldFrameObserver,
-		IRefereeObserver, IVisionFilterObserver
+		IRefereeObserver
 {
 	private static final Logger log = Logger.getLogger(ToolbarPresenter.class.getName());
 	
@@ -105,42 +101,22 @@ public class ToolbarPresenter implements IModuliStateObserver, IToolbarObserver,
 		toolbar.getFpsPanel().clearFps();
 		toolbar.setActive(false);
 		
-		try
+		if (SumatraModel.getInstance().isModuleLoaded(RecordManager.class))
 		{
-			RecordManager rm = (RecordManager) SumatraModel.getInstance().getModule(
-					RecordManager.MODULE_ID);
-			rm.removeObserver(this);
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("RecordManager not found", err);
-		}
-		try
-		{
-			AAgent agent = (AAgent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
-			agent.removeVisObserver(this);
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("Agent not found for adding IAIObserver", err);
+			SumatraModel.getInstance().getModule(RecordManager.class)
+					.removeObserver(this);
 		}
 		
-		try
+		if (SumatraModel.getInstance().isModuleLoaded(AAgent.class))
 		{
-			AWorldPredictor worldPredictor = (AWorldPredictor) SumatraModel.getInstance().getModule(
-					AWorldPredictor.MODULE_ID);
-			worldPredictor.removeObserver(this);
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("Worldpredictor not found for adding IWorldPredictorObserver", err);
+			SumatraModel.getInstance().getModule(AAgent.class)
+					.removeVisObserver(this);
 		}
 		
-		try
+		if (SumatraModel.getInstance().isModuleLoaded(AWorldPredictor.class))
 		{
-			AVisionFilter visionFilter = (AVisionFilter) SumatraModel.getInstance().getModule(
-					AVisionFilter.MODULE_ID);
-			visionFilter.removeObserver(this);
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("visionFilter not found", err);
+			SumatraModel.getInstance().getModule(AWorldPredictor.class)
+					.removeObserver(this);
 		}
 		
 		if (preState == ModulesState.ACTIVE)
@@ -155,44 +131,24 @@ public class ToolbarPresenter implements IModuliStateObserver, IToolbarObserver,
 	private void startup()
 	{
 		toolbar.setActive(true);
-		try
+		
+		if (SumatraModel.getInstance().isModuleLoaded(RecordManager.class))
 		{
-			Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
+			SumatraModel.getInstance().getModule(RecordManager.class)
+					.addObserver(this);
+		}
+		
+		if (SumatraModel.getInstance().isModuleLoaded(AAgent.class))
+		{
+			AAgent agent = SumatraModel.getInstance().getModule(AAgent.class);
 			agent.addVisObserver(this);
 			GlobalShortcuts.register(EShortcut.MATCH_MODE, () -> agent.changeMode(EAIControlState.MATCH_MODE));
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("Agent yellow not found for adding IAIObserver", err);
 		}
 		
-		try
+		if (SumatraModel.getInstance().isModuleLoaded(AWorldPredictor.class))
 		{
-			AWorldPredictor worldPredictor = (AWorldPredictor) SumatraModel.getInstance().getModule(
-					AWorldPredictor.MODULE_ID);
-			worldPredictor.addObserver(this);
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("Worldpredictor not found for adding IWorldPredictorObserver", err);
-		}
-		
-		try
-		{
-			RecordManager rm = (RecordManager) SumatraModel.getInstance().getModule(
-					RecordManager.MODULE_ID);
-			rm.addObserver(this);
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("RecordManager not found", err);
-		}
-		
-		try
-		{
-			AVisionFilter visionFilter = (AVisionFilter) SumatraModel.getInstance().getModule(
-					AVisionFilter.MODULE_ID);
-			visionFilter.addObserver(this);
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("visionFilter not found", err);
+			SumatraModel.getInstance().getModule(AWorldPredictor.class)
+					.addObserver(this);
 		}
 		
 		toolbar.setStartStopButtonState(true, EStartStopButtonState.STOP);
@@ -295,9 +251,9 @@ public class ToolbarPresenter implements IModuliStateObserver, IToolbarObserver,
 	{
 		try
 		{
-			RecordManager rm = (RecordManager) SumatraModel.getInstance().getModule(
-					RecordManager.MODULE_ID);
-			rm.startStopRecording(!rm.isRecording());
+			RecordManager rm = SumatraModel.getInstance().getModule(
+					RecordManager.class);
+			rm.toggleRecording();
 		} catch (ModuleNotFoundException err)
 		{
 			log.error("Can not toggle record", err);
@@ -308,7 +264,7 @@ public class ToolbarPresenter implements IModuliStateObserver, IToolbarObserver,
 	@Override
 	public void onSwitchSides()
 	{
-		TeamConfig.setLeftTeam(TeamConfig.getLeftTeam().opposite());
+		Geometry.setNegativeHalfTeam(Geometry.getNegativeHalfTeam().opposite());
 	}
 	
 	
@@ -345,14 +301,7 @@ public class ToolbarPresenter implements IModuliStateObserver, IToolbarObserver,
 	@Override
 	public void onNewCamDetectionFrame(final ExtendedCamDetectionFrame frame)
 	{
-		// nothing to do
-	}
-	
-	
-	@Override
-	public void onNewFilteredVisionFrame(final FilteredVisionFrame filteredVisionFrame)
-	{
-		if (fpsCounterCam.newFrame(System.nanoTime()))
+		if (fpsCounterCam.newFrame(frame.gettCapture()))
 		{
 			toolbar.getFpsPanel().setFps(EFpsType.CAM, fpsCounterCam.getAvgFps());
 		}
@@ -390,14 +339,14 @@ public class ToolbarPresenter implements IModuliStateObserver, IToolbarObserver,
 	{
 		switch (frame.getAiTeam())
 		{
-			case BLUE_PRIMARY:
-				if (fpsCounterAiB.newFrame(frame.getWorldFrame().getTimestamp()))
+			case BLUE:
+				if (fpsCounterAiB.newFrame(frame.getTimestamp()))
 				{
 					toolbar.getFpsPanel().setFps(EFpsType.AI_B, fpsCounterAiB.getAvgFps());
 				}
 				break;
-			case YELLOW_PRIMARY:
-				if (fpsCounterAiY.newFrame(frame.getWorldFrame().getTimestamp()))
+			case YELLOW:
+				if (fpsCounterAiY.newFrame(frame.getTimestamp()))
 				{
 					toolbar.getFpsPanel().setFps(EFpsType.AI_Y, fpsCounterAiY.getAvgFps());
 				}
@@ -413,16 +362,14 @@ public class ToolbarPresenter implements IModuliStateObserver, IToolbarObserver,
 	{
 		switch (team)
 		{
-			case BLUE_PRIMARY:
+			case BLUE:
 				fpsCounterAiB.reset();
 				toolbar.getFpsPanel().setFps(EFpsType.AI_B, 0);
 				break;
-			case YELLOW_PRIMARY:
+			case YELLOW:
 				fpsCounterAiY.reset();
 				toolbar.getFpsPanel().setFps(EFpsType.AI_Y, 0);
 				break;
-			case BLUE_SECONDARY:
-			case YELLOW_SECONDARY:
 			default:
 				// not supported
 				break;

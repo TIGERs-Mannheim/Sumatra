@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.redirect;
 
@@ -12,6 +12,7 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 
@@ -24,12 +25,12 @@ import edu.tigers.sumatra.math.vector.Vector2;
 public class RedirectRectanglePlay extends ARedirectPlay
 {
 	@Configurable(comment = "Desired redirect angle in degree", defValue = "45.0")
-	private static double	angleDeg	= 45;
+	private static double angleDeg = 45;
+	
+	@Configurable(comment = "dist to center (radius) [mm]", defValue = "3000.0")
+	private static double distance = 3000;
 	
 	
-	/**
-	 * 
-	 */
 	public RedirectRectanglePlay()
 	{
 		super(EPlay.REDIRECT_ANGLE);
@@ -41,11 +42,11 @@ public class RedirectRectanglePlay extends ARedirectPlay
 	{
 		if (getRoles().size() == 4)
 		{
-			double y = getDistance();
+			double y = distance;
 			double angle = AngleMath.deg2rad(angleDeg);
-			double x = y / Math.tan(angle);
+			double x = y / SumatraMath.tan(angle);
 			
-			List<IVector2> dests = new ArrayList<IVector2>(4);
+			List<IVector2> dests = new ArrayList<>(4);
 			if (angleDeg > 45)
 			{
 				dests.add(Vector2.fromXY(-x, -y));
@@ -61,14 +62,14 @@ public class RedirectRectanglePlay extends ARedirectPlay
 			}
 			return dests;
 		}
-		return new ArrayList<IVector2>();
+		return new ArrayList<>();
 	}
 	
 	
 	@Override
 	protected void getReceiveModes(final Map<ARole, EReceiveMode> modes)
 	{
-		
+		// empty
 	}
 	
 	
@@ -85,7 +86,8 @@ public class RedirectRectanglePlay extends ARedirectPlay
 				return 1;
 			case 3:
 				return 0;
+			default:
+				return 0;
 		}
-		return 0;
 	}
 }

@@ -11,7 +11,10 @@ import java.util.List;
 
 import org.apache.commons.lang.Validate;
 
-import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.vector.IVector;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.planarcurve.PlanarCurve;
 import edu.tigers.sumatra.planarcurve.PlanarCurveSegment;
 import edu.tigers.sumatra.wp.ball.trajectory.ABallTrajectory;
@@ -23,14 +26,14 @@ import edu.tigers.sumatra.wp.data.BallTrajectoryState;
  */
 public abstract class ATwoPhaseBallTrajectory extends ABallTrajectory
 {
-	protected final double		tSwitch;
-	protected final IVector3	posSwitch;
-	protected final IVector3	velSwitch;
-	protected final double		accSlide;
-	protected final double		accRoll;
+	private final double tSwitch;
+	private final IVector2 posSwitch;
+	private final IVector2 velSwitch;
+	private final double accSlide;
+	private final double accRoll;
 	
 	
-	protected ATwoPhaseBallTrajectory(final IVector3 kickPos, final IVector3 kickVel, final double tSwitch,
+	protected ATwoPhaseBallTrajectory(final IVector kickPos, final IVector kickVel, final double tSwitch,
 			final double accSlide, final double accRoll, final double tKickToNow)
 	{
 		super(kickPos, kickVel, tKickToNow);
@@ -39,10 +42,11 @@ public abstract class ATwoPhaseBallTrajectory extends ABallTrajectory
 		this.accSlide = accSlide;
 		this.accRoll = accRoll;
 		
-		IVector3 acc = kickVel.normalizeNew().multiply(accSlide);
-		posSwitch = kickPos.addNew(kickVel.multiplyNew(tSwitch))
-				.add(acc.multiplyNew(0.5 * tSwitch * tSwitch));
-		velSwitch = kickVel.addNew(acc.multiplyNew(tSwitch));
+		Vector2 intAcc = kickVel.getXYVector().scaleToNew(accSlide * tSwitch);
+		velSwitch = kickVel.getXYVector().addNew(intAcc);
+		posSwitch = kickVel.getXYVector().multiplyNew(tSwitch)
+				.add(kickPos)
+				.add(intAcc.multiply(0.5 * tSwitch));
 	}
 	
 	
@@ -57,9 +61,13 @@ public abstract class ATwoPhaseBallTrajectory extends ABallTrajectory
 		
 		if (time < tSwitch)
 		{
-			IVector3 accNow = kickVel.normalizeNew().multiply(accSlide);
-			IVector3 posNow = kickPos.addNew(kickVel.multiplyNew(time)).add(accNow.multiplyNew(0.5 * time * time));
-			IVector3 velNow = kickVel.addNew(accNow.multiplyNew(time));
+			IVector2 accNow = kickVel.getXYVector().scaleToNew(accSlide);
+			Vector2 intAcc = accNow.multiplyNew(time);
+			IVector velNow = kickVel.getXYVector().addNew(intAcc);
+			IVector posNow = kickVel.getXYVector()
+					.multiplyNew(time)
+					.add(intAcc.multiplyNew(0.5 * time))
+					.add(kickPos);
 			
 			return aBallState().withPos(posNow).withVel(velNow).withAcc(accNow)
 					.withVSwitchToRoll(velSwitch.getLength2()).withChipped(false).build();
@@ -71,9 +79,12 @@ public abstract class ATwoPhaseBallTrajectory extends ABallTrajectory
 			t2 = getTimeAtRest() - tSwitch;
 		}
 		
-		IVector3 acc = kickVel.normalizeNew().multiply(accRoll);
-		IVector3 posNow = posSwitch.addNew(velSwitch.multiplyNew(t2)).add(acc.multiplyNew(0.5 * t2 * t2));
-		IVector3 velNow = velSwitch.addNew(acc.multiplyNew(t2));
+		IVector2 acc = kickVel.getXYVector().scaleToNew(accRoll);
+		Vector2 intAcc = acc.multiplyNew(t2);
+		IVector velNow = velSwitch.addNew(intAcc);
+		IVector posNow = velSwitch.multiplyNew(t2)
+				.add(intAcc.multiplyNew(0.5 * t2))
+				.add(posSwitch);
 		
 		return aBallState().withPos(posNow).withVel(velNow).withAcc(acc)
 				.withVSwitchToRoll(velSwitch.getLength2()).withChipped(false).build();
@@ -132,7 +143,7 @@ public abstract class ATwoPhaseBallTrajectory extends ABallTrajectory
 			// queried distance is in sliding phase
 			double v = kickVel.getLength2();
 			double a = accSlide;
-			return (Math.sqrt((v * v) + (2.0 * a * distance)) - v) / a;
+			return (SumatraMath.sqrt((v * v) + (2.0 * a * distance)) - v) / a;
 		}
 		
 		double v = velSwitch.getLength2();
@@ -148,12 +159,12 @@ public abstract class ATwoPhaseBallTrajectory extends ABallTrajectory
 		
 		// distance is in rolling phase
 		double p = distance - distToSwitch;
-		double timeToDist = ((Math.sqrt((v * v) + (2.0 * a * p) + 1e-6) - v) / a) + 1e-6;
+		double timeToDist = ((SumatraMath.sqrt((v * v) + (2.0 * a * p) + 1e-6) - v) / a) + 1e-6;
 		if (timeToDist < 1e-3)
 		{
 			timeToDist = 0.0; // numerical issues...
 		}
-		Validate.isTrue(timeToDist >= 0, String.valueOf(timeToDist));
+		assert timeToDist >= 0 : timeToDist;
 		
 		return tSwitch + timeToDist;
 	}

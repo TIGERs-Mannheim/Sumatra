@@ -16,11 +16,6 @@ import edu.tigers.moduli.AModule;
  */
 public abstract class ATelegramNotificationController extends AModule
 {
-	
-	public static final String	MODULE_TYPE	= "ATelegramNotificationController";
-	public static final String	MODULE_ID	= "telegram_notification_controller";
-	
-	
 	public ATelegramNotificationController()
 	{
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.rectangle;
@@ -21,6 +21,7 @@ import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -70,10 +71,10 @@ abstract class ARectangle implements IRectangle
 		double halfWidth = xExtent() / 2.0;
 		double halfHeight = yExtent() / 2.0;
 		List<IVector2> corners = new ArrayList<>(4);
-		corners.add(center().addNew(Vector2.fromXY(-halfWidth, -halfHeight)));
-		corners.add(center().addNew(Vector2.fromXY(-halfWidth, +halfHeight)));
-		corners.add(center().addNew(Vector2.fromXY(+halfWidth, +halfHeight)));
-		corners.add(center().addNew(Vector2.fromXY(+halfWidth, -halfHeight)));
+		corners.add(Vector2.fromXY(-halfWidth, -halfHeight).add(center()));
+		corners.add(Vector2.fromXY(-halfWidth, +halfHeight).add(center()));
+		corners.add(Vector2.fromXY(+halfWidth, +halfHeight).add(center()));
+		corners.add(Vector2.fromXY(+halfWidth, -halfHeight).add(center()));
 		return corners;
 	}
 	
@@ -103,26 +104,26 @@ abstract class ARectangle implements IRectangle
 			
 			// left
 			distance = Math.abs(point.x() - minX());
-			nearestPoint = Vector2.fromXY(minX(), point.y());
+			nearestPoint = Vector2f.fromXY(minX(), point.y());
 			
 			// right
 			if (distance > Math.abs(maxX() - point.x()))
 			{
 				distance = maxX() - point.x();
-				nearestPoint = Vector2.fromXY(maxX(), point.y());
+				nearestPoint = Vector2f.fromXY(maxX(), point.y());
 			}
 			
 			// top
 			if (distance > Math.abs(point.y() - minY()))
 			{
 				distance = point.y() - minY();
-				nearestPoint = Vector2.fromXY(point.x(), minY());
+				nearestPoint = Vector2f.fromXY(point.x(), minY());
 			}
 			
 			// bottom
 			if (distance > Math.abs(maxY() - point.y()))
 			{
-				nearestPoint = Vector2.fromXY(point.x(), maxY());
+				nearestPoint = Vector2f.fromXY(point.x(), maxY());
 			}
 			
 			return nearestPoint;
@@ -136,32 +137,31 @@ abstract class ARectangle implements IRectangle
 	@Override
 	public IVector2 nearestPointInside(final IVector2 point)
 	{
-		final Vector2 inside = Vector2.zero();
-		// setx
+		double x;
 		if (point.x() < minX())
 		{
-			inside.setX(minX());
+			x = minX();
 		} else if (point.x() > maxX())
 		{
-			inside.setX(maxX());
+			x = maxX();
 		} else
 		{
-			inside.setX(point.x());
+			x = point.x();
 		}
 		
-		// sety
+		double y;
 		if (point.y() > maxY())
 		{
-			inside.setY(maxY());
+			y = maxY();
 		} else if (point.y() < minY())
 		{
-			inside.setY(minY());
+			y = minY();
 		} else
 		{
-			inside.setY(point.y());
+			y = point.y();
 		}
 		
-		return inside;
+		return Vector2f.fromXY(x, y);
 	}
 	
 	
@@ -189,7 +189,7 @@ abstract class ARectangle implements IRectangle
 	{
 		double x = (center().x() + (rnd.nextDouble() * xExtent())) - (xExtent() / 2);
 		double y = (center().y() + (rnd.nextDouble() * yExtent())) - (yExtent() / 2);
-		return Vector2.fromXY(x, y);
+		return Vector2f.fromXY(x, y);
 	}
 	
 	
@@ -230,11 +230,11 @@ abstract class ARectangle implements IRectangle
 	
 	
 	@Override
-	public synchronized JSONObject toJSON()
+	public JSONObject toJSON()
 	{
 		Map<String, Object> jsonMapping = new LinkedHashMap<>();
 		jsonMapping.put("center", center().toJSONArray());
-		jsonMapping.put("extent", Vector2.fromXY(xExtent(), yExtent()).toJSONArray());
+		jsonMapping.put("extent", Vector2f.fromXY(xExtent(), yExtent()).toJSONArray());
 		return new JSONObject(jsonMapping);
 	}
 }

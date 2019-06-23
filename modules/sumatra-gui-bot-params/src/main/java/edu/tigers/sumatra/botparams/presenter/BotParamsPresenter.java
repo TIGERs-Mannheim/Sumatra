@@ -77,7 +77,7 @@ public class BotParamsPresenter extends ASumatraViewPresenter
 	{
 		try
 		{
-			paramsManager = (BotParamsManager) SumatraModel.getInstance().getModule(BotParamsManager.MODULE_ID);
+			paramsManager = SumatraModel.getInstance().getModule(BotParamsManager.class);
 			editor.setDatabase(paramsManager.getDatabase());
 			editor.addObserver(this);
 			paramsManager.getDatabase().addObserver(this);

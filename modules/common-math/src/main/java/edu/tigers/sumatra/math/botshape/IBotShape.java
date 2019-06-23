@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.math.botshape;
 
 import edu.tigers.sumatra.math.circle.ICircular;
-import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 
 
@@ -44,7 +44,7 @@ public interface IBotShape extends ICircular
 	 * 
 	 * @return
 	 */
-	ILine getKickerLine();
+	ILineSegment getKickerLine();
 	
 	
 	/**
@@ -75,4 +75,8 @@ public interface IBotShape extends ICircular
 	 * @return
 	 */
 	boolean isPointInKickerZone(IVector2 point, double zoneLength, double zoneWidth);
+	
+	
+	@Override
+	IBotShape withMargin(final double margin);
 }

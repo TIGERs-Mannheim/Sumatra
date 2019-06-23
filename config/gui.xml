@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<edu.tigers.sumatra.visualizer.VisualizerAiPresenter base="edu.tigers.sumatra.visualizer.VisualizerAiPresenter">
-    <moveToPenAreaAllowed>true</moveToPenAreaAllowed>
-</edu.tigers.sumatra.visualizer.VisualizerAiPresenter>

@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.vision.data;
 
 import edu.tigers.sumatra.geometry.BallParameters;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.math.vector.AVector3;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.Vector3f;
 
 
 /**
@@ -16,10 +16,10 @@ import edu.tigers.sumatra.math.vector.Vector3;
  */
 public class StraightBallTrajectory extends ABallTrajectory
 {
-	private final long				timeSwitch;
-	private final IVector3			posSwitch;
-	private final IVector3			velSwitch;
-	private final BallParameters	ballParams;
+	private final long timeSwitch;
+	private final IVector3 posSwitch;
+	private final IVector3 velSwitch;
+	private final BallParameters ballParams;
 	
 	
 	/**
@@ -108,10 +108,11 @@ public class StraightBallTrajectory extends ABallTrajectory
 		{
 			return FilteredVisionBall.Builder.create()
 					.withPos(kickPos)
-					.withVel(AVector3.ZERO_VECTOR)
-					.withAcc(AVector3.ZERO_VECTOR)
+					.withVel(Vector3f.ZERO_VECTOR)
+					.withAcc(Vector3f.ZERO_VECTOR)
 					.withIsChipped(false)
 					.withvSwitch(vSwitch)
+					.withSpin(1.0)
 					.build();
 		}
 		
@@ -128,6 +129,7 @@ public class StraightBallTrajectory extends ABallTrajectory
 					.withAcc(accNow)
 					.withIsChipped(false)
 					.withvSwitch(vSwitch)
+					.withSpin(1.0)
 					.build();
 		}
 		
@@ -143,6 +145,7 @@ public class StraightBallTrajectory extends ABallTrajectory
 				.withAcc(acc)
 				.withIsChipped(false)
 				.withvSwitch(vSwitch)
+				.withSpin(1.0)
 				.build();
 	}
 	

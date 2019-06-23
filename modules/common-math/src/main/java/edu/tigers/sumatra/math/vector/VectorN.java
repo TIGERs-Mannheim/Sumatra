@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.vector;
@@ -209,13 +209,6 @@ public class VectorN extends AVectorN
 	public double y()
 	{
 		return data[1];
-	}
-	
-	
-	@Override
-	public double z()
-	{
-		return data[2];
 	}
 	
 	

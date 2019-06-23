@@ -19,7 +19,6 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector3;
-import edu.tigers.sumatra.referee.TeamConfig;
 
 
 /**
@@ -55,7 +54,7 @@ public class NGeometryTest
 	@Test
 	public void testGetTeamOfClosestGoalLine()
 	{
-		ETeamColor leftTeam = TeamConfig.getLeftTeam();
+		ETeamColor leftTeam = Geometry.getNegativeHalfTeam();
 		
 		assertEquals(leftTeam, NGeometry.getTeamOfClosestGoalLine(Vector2.fromXY(-5, 0)));
 		assertEquals(leftTeam.opposite(), NGeometry.getTeamOfClosestGoalLine(Vector2.fromXY(5, 0)));

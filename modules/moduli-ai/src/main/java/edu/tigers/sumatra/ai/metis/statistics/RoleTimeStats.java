@@ -10,11 +10,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import edu.tigers.sumatra.ai.data.IPlayStrategy;
-import edu.tigers.sumatra.ai.data.MatchStats;
-import edu.tigers.sumatra.ai.data.MatchStats.EMatchStatistics;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
+import edu.tigers.sumatra.ai.BaseAiFrame;
+import edu.tigers.sumatra.ai.athena.IPlayStrategy;
+import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.ai.metis.statistics.MatchStats.EMatchStatistics;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ids.BotID;

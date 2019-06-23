@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.autoreferee.engine.events.impl;
@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.github.g3force.configurable.Configurable;
 
+import edu.tigers.autoreferee.AutoRefUtil;
 import edu.tigers.autoreferee.IAutoRefFrame;
 import edu.tigers.autoreferee.engine.AutoRefMath;
 import edu.tigers.autoreferee.engine.FollowUpAction;
@@ -22,6 +23,7 @@ import edu.tigers.autoreferee.engine.NGeometry;
 import edu.tigers.autoreferee.engine.events.CardPenalty;
 import edu.tigers.autoreferee.engine.events.DistanceViolation;
 import edu.tigers.autoreferee.engine.events.EGameEvent;
+import edu.tigers.autoreferee.engine.events.EGameEventDetectorType;
 import edu.tigers.autoreferee.engine.events.GameEvent;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
 import edu.tigers.autoreferee.generic.BotPosition;
@@ -30,6 +32,7 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.IPenaltyArea;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.referee.data.EGameState;
 
@@ -42,16 +45,16 @@ import edu.tigers.sumatra.referee.data.EGameState;
  */
 public class BotInDefenseAreaDetector extends APreparingGameEventDetector
 {
-	private static final int			priority					= 1;
+	private static final int PRIORITY = 1;
 	
-	@Configurable(comment = "[ms] The cooldown time before registering a ball touch with the same bot again in ms")
-	private static int					COOLDOWN_TIME_MS		= 3_000;
+	@Configurable(comment = "[ms] The cooldown time before registering a ball touch with the same bot again in ms", defValue = "3000")
+	private static int cooldownTimeMs = 3_000;
 	
-	@Configurable(comment = "[mm] Distance from the defense line that is considered a partial violation")
-	private static double				partialTouchMargin	= 20;
+	@Configurable(comment = "[mm] Distance from the defense line that is considered a partial violation", defValue = "20.0")
+	private static double partialTouchMargin = 20;
 	
-	private long							entryTime				= 0;
-	private Map<BotID, BotPosition>	lastViolators			= new HashMap<>();
+	private long entryTime = 0;
+	private Map<BotID, BotPosition> lastViolators = new HashMap<>();
 	
 	static
 	{
@@ -64,14 +67,14 @@ public class BotInDefenseAreaDetector extends APreparingGameEventDetector
 	 */
 	public BotInDefenseAreaDetector()
 	{
-		super(EGameState.RUNNING);
+		super(EGameEventDetectorType.BOT_IN_DEFENSE_AREA, EGameState.RUNNING);
 	}
 	
 	
 	@Override
 	public int getPriority()
 	{
-		return priority;
+		return PRIORITY;
 	}
 	
 	
@@ -83,10 +86,31 @@ public class BotInDefenseAreaDetector extends APreparingGameEventDetector
 	
 	
 	@Override
-	public Optional<IGameEvent> doUpdate(final IAutoRefFrame frame, final List<IGameEvent> violations)
+	public Optional<IGameEvent> doUpdate(final IAutoRefFrame frame)
 	{
-		BotPosition curKicker = frame.getBotLastTouchedBall();
+		if (frame.getBotsTouchingBall().size() > 1
+				&& frame.getBotsTouchingBall().stream().anyMatch(b -> b.getBotID().getTeamColor() == ETeamColor.YELLOW)
+				&& frame.getBotsTouchingBall().stream().anyMatch(b -> b.getBotID().getTeamColor() == ETeamColor.BLUE))
+		{
+			// two teams fighting for the ball, most likely being pushed by each other
+			return Optional.empty();
+		}
 		
+		for (BotPosition curKicker : frame.getBotsTouchingBall())
+		{
+			final Optional<IGameEvent> gameEvent = checkBotPosition(frame, curKicker);
+			if (gameEvent.isPresent())
+			{
+				return gameEvent;
+			}
+		}
+		
+		return Optional.empty();
+	}
+	
+	
+	private Optional<IGameEvent> checkBotPosition(final IAutoRefFrame frame, final BotPosition curKicker)
+	{
 		if (curKicker.getTimestamp() < entryTime)
 		{
 			/*
@@ -98,9 +122,14 @@ public class BotInDefenseAreaDetector extends APreparingGameEventDetector
 		{
 			return Optional.empty();
 		}
+		if ((frame.getTimestamp() - entryTime) / 1e9 < 0.5)
+		{
+			// wait some time before starting the detection
+			// this is mainly for penalty kicks where the game state switches to running in the moment of ball movement
+			return Optional.empty();
+		}
 		
-		BotID curKickerId = curKicker.getBotID();
-		BotPosition lastViolationOfCurKicker = lastViolators.get(curKickerId);
+		BotPosition lastViolationOfCurKicker = lastViolators.get(curKicker.getBotID());
 		
 		if (lastViolationOfCurKicker != null)
 		{
@@ -114,7 +143,7 @@ public class BotInDefenseAreaDetector extends APreparingGameEventDetector
 			{
 				// Wait a certain amount of time before reporting the offense again for the same bot
 				long timeDiff = curKicker.getTimestamp() - lastViolationOfCurKicker.getTimestamp();
-				if (timeDiff < TimeUnit.MILLISECONDS.toNanos(COOLDOWN_TIME_MS))
+				if (timeDiff < TimeUnit.MILLISECONDS.toNanos(cooldownTimeMs))
 				{
 					return Optional.empty();
 				}
@@ -124,12 +153,19 @@ public class BotInDefenseAreaDetector extends APreparingGameEventDetector
 		Set<BotID> keepers = new HashSet<>();
 		keepers.add(frame.getRefereeMsg().getKeeperBotID(ETeamColor.BLUE));
 		keepers.add(frame.getRefereeMsg().getKeeperBotID(ETeamColor.YELLOW));
-		if (keepers.contains(curKickerId))
+		if (keepers.contains(curKicker.getBotID()))
 		{
 			return Optional.empty();
 		}
 		
+		return checkPenaltyAreas(frame, curKicker);
+	}
+	
+	
+	private Optional<IGameEvent> checkPenaltyAreas(final IAutoRefFrame frame, final BotPosition curKicker)
+	{
 		ETeamColor curKickerColor = curKicker.getBotID().getTeamColor();
+		BotID curKickerId = curKicker.getBotID();
 		
 		IPenaltyArea opponentPenArea = NGeometry.getPenaltyArea(curKickerColor.opposite());
 		IPenaltyArea ownPenArea = NGeometry.getPenaltyArea(curKickerColor);
@@ -150,6 +186,9 @@ public class BotInDefenseAreaDetector extends APreparingGameEventDetector
 					curKickerId, followUp, distance);
 			
 			return Optional.of(violation);
+		} else if (defenderIsPushed(frame, curKickerId, curKicker.getPos()))
+		{
+			return Optional.empty();
 		} else if (ownPenArea.isPointInShape(curKicker.getPos(), -Geometry.getBotRadius()))
 		{
 			/*
@@ -185,7 +224,27 @@ public class BotInDefenseAreaDetector extends APreparingGameEventDetector
 			return Optional.of(violation);
 		}
 		return Optional.empty();
+	}
+	
+	
+	private boolean defenderIsPushed(final IAutoRefFrame frame, final BotID defender, final IVector2 botPos)
+	{
+		ETeamColor attackerColor = defender.getTeamColor().opposite();
 		
+		IPenaltyArea defenderPenaltyArea = NGeometry.getPenaltyArea(defender.getTeamColor());
+		return frame.getWorldFrame().getBots().values().stream()
+				// bots from attacking team
+				.filter(AutoRefUtil.ColorFilter.get(attackerColor))
+				// that touch the defender
+				.filter(b -> botPos.distanceTo(b.getPos()) <= Geometry.getBotRadius() * 2)
+				// push in direction of penalty area
+				.map(b -> Lines.halfLineFromPoints(b.getPos(), botPos))
+				// find intersection that show that attacker pushs towards penArea
+				.map(defenderPenaltyArea::lineIntersections)
+				.flatMap(List::stream)
+				.findAny()
+				// if any intersection is present, some attacker pushes the defender
+				.isPresent();
 	}
 	
 	
@@ -200,5 +259,4 @@ public class BotInDefenseAreaDetector extends APreparingGameEventDetector
 	{
 		lastViolators.clear();
 	}
-	
 }

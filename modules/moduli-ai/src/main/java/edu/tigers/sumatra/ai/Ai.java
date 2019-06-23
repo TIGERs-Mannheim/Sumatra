@@ -7,15 +7,12 @@ package edu.tigers.sumatra.ai;
 import org.apache.log4j.Logger;
 
 import edu.tigers.sumatra.ai.ares.Ares;
+import edu.tigers.sumatra.ai.ares.AresData;
 import edu.tigers.sumatra.ai.athena.Athena;
-import edu.tigers.sumatra.ai.data.AresData;
-import edu.tigers.sumatra.ai.data.EAIControlState;
-import edu.tigers.sumatra.ai.data.MultiTeamMessage;
-import edu.tigers.sumatra.ai.data.frames.AIInfoFrame;
-import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
-import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
+import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
+import edu.tigers.sumatra.ai.athena.EAIControlState;
 import edu.tigers.sumatra.ai.metis.Metis;
+import edu.tigers.sumatra.ai.metis.MetisAiFrame;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.referee.data.RefereeMsg;
 import edu.tigers.sumatra.skillsystem.ASkillSystem;
@@ -77,10 +74,9 @@ public class Ai
 	 * Do not call this on the two module agents! Create your own agent, please :)
 	 *
 	 * @param wfw
-	 * @param multiTeamMsg
 	 * @return
 	 */
-	public AIInfoFrame processWorldFrame(final WorldFrameWrapper wfw, MultiTeamMessage multiTeamMsg)
+	public AIInfoFrame processWorldFrame(final WorldFrameWrapper wfw)
 	{
 		RefereeMsg refereeMsg = wfw.getRefereeMsg();
 		boolean newRefereeMsg = false;
@@ -90,7 +86,7 @@ public class Ai
 			newRefereeMsg = true;
 		}
 		
-		BaseAiFrame baseAiFrame = new BaseAiFrame(wfw, newRefereeMsg, previousAIFrame, aiTeam, multiTeamMsg);
+		BaseAiFrame baseAiFrame = new BaseAiFrame(wfw, newRefereeMsg, previousAIFrame, aiTeam);
 		
 		if (previousAIFrame == null)
 		{

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.vector;
@@ -14,21 +14,21 @@ abstract class AVectorN extends AVector implements IVectorN
 {
 	
 	@Override
-	public synchronized Vector2 getXYVector()
+	public Vector2 getXYVector()
 	{
 		return Vector2.fromXY(x(), y());
 	}
 	
 	
 	@Override
-	public synchronized Vector3 getXYZVector()
+	public Vector3 getXYZVector()
 	{
-		return Vector3.fromXYZ(x(), y(), z());
+		return Vector3.fromXYZ(x(), y(), get(2));
 	}
 	
 	
 	@Override
-	public synchronized VectorN addNew(final IVector vector)
+	public VectorN addNew(final IVectorN vector)
 	{
 		VectorN vec = VectorN.zero(getNumDimensions());
 		for (int i = 0; i < vector.getNumDimensions(); i++)
@@ -40,7 +40,7 @@ abstract class AVectorN extends AVector implements IVectorN
 	
 	
 	@Override
-	public synchronized VectorN subtractNew(final IVector vector)
+	public VectorN subtractNew(final IVectorN vector)
 	{
 		VectorN vec = VectorN.zero(getNumDimensions());
 		for (int i = 0; i < vector.getNumDimensions(); i++)
@@ -52,7 +52,7 @@ abstract class AVectorN extends AVector implements IVectorN
 	
 	
 	@Override
-	public synchronized VectorN multiplyNew(final IVector vector)
+	public VectorN multiplyNew(final IVectorN vector)
 	{
 		VectorN vec = VectorN.zero(getNumDimensions());
 		for (int i = 0; i < vector.getNumDimensions(); i++)
@@ -64,7 +64,7 @@ abstract class AVectorN extends AVector implements IVectorN
 	
 	
 	@Override
-	public synchronized VectorN multiplyNew(final double f)
+	public VectorN multiplyNew(final double f)
 	{
 		VectorN vec = VectorN.zero(getNumDimensions());
 		for (int i = 0; i < getNumDimensions(); i++)
@@ -76,7 +76,7 @@ abstract class AVectorN extends AVector implements IVectorN
 	
 	
 	@Override
-	public synchronized VectorN normalizeNew()
+	public VectorN normalizeNew()
 	{
 		if (isZeroVector())
 		{
@@ -88,14 +88,14 @@ abstract class AVectorN extends AVector implements IVectorN
 	
 	
 	@Override
-	public synchronized VectorN absNew()
+	public VectorN absNew()
 	{
 		return applyNew(Math::abs);
 	}
 	
 	
 	@Override
-	public synchronized VectorN applyNew(final Function<Double, Double> function)
+	public VectorN applyNew(final Function<Double, Double> function)
 	{
 		double[] data = new double[getNumDimensions()];
 		for (int i = 0; i < getNumDimensions(); i++)

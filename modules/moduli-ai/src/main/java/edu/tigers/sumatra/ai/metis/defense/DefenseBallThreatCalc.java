@@ -10,11 +10,10 @@ import java.util.Optional;
 
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.ai.data.EAiShapesLayer;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
-import edu.tigers.sumatra.ai.math.DefenseMath;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
@@ -74,7 +73,7 @@ public class DefenseBallThreatCalc extends ACalculator
 			} else
 			{
 				IVector2 source = Geometry.getField().nearestPointInside(
-						getBall().getTrajectory().getPosByTime(ballLookahead), getBall().getPos());
+						getBall().getTrajectory().getPosByTime(ballLookahead).getXYVector(), getBall().getPos());
 				
 				ballThreat = new DefenseBallThreat(source,
 						DefenseMath.getBisectionGoal(source),
@@ -83,7 +82,7 @@ public class DefenseBallThreatCalc extends ACalculator
 			}
 		} else
 		{
-			IVector2 source = getBall().getTrajectory().getPosByTime(ballLookahead);
+			IVector2 source = getBall().getTrajectory().getPosByTime(ballLookahead).getXYVector();
 			
 			ballThreat = new DefenseBallThreat(source,
 					DefenseMath.getBisectionGoal(source),

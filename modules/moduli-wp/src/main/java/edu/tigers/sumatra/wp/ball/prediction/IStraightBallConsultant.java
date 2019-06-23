@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.ball.prediction;
@@ -21,6 +21,16 @@ public interface IStraightBallConsultant
 	 * @return initial velocity [m/s]
 	 */
 	double getInitVelForTime(final double endVel, final double time);
+	
+	
+	/**
+	 * Get the velocity after <code>travelTime</code> for a kick with <code>kickSpeed</code>
+	 * 
+	 * @param kickSpeed [m/s]
+	 * @param travelTime [s]
+	 * @return velocity [m/s]
+	 */
+	double getVelForKickByTime(double kickSpeed, double travelTime);
 	
 	
 	/**

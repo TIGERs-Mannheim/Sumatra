@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands.botskills.sim;
 
@@ -8,7 +8,7 @@ import edu.tigers.sumatra.botmanager.commands.botskills.data.BotSkillOutput;
 import edu.tigers.sumatra.botmanager.commands.botskills.data.EDriveMode;
 import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
 import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
-import edu.tigers.sumatra.math.vector.AVector3;
+import edu.tigers.sumatra.math.vector.Vector3f;
 
 
 /**
@@ -21,7 +21,7 @@ public class BotSkillMotorsOffSim implements IBotSkillSim
 	{
 		return BotSkillOutput.Builder.create()
 				.driveLimits(input.getSkill().getMoveConstraints())
-				.targetVelLocal(AVector3.ZERO_VECTOR)
+				.targetVelLocal(Vector3f.ZERO_VECTOR)
 				.modeXY(EDriveMode.OFF)
 				.modeW(EDriveMode.OFF)
 				.kickDevice(EKickerDevice.STRAIGHT)

@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.support;
 
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
 
 
@@ -21,6 +22,9 @@ public class SupportPosition
 	
 	private boolean isCovered = false;
 	private boolean isShootPosition = false;
+	
+	// The bot that will move to this position
+	private BotID assignedBot = null;
 	
 	
 	/**
@@ -72,12 +76,6 @@ public class SupportPosition
 	}
 	
 	
-	public double getCumulativeScore()
-	{
-		return shootScore + passScore;
-	}
-	
-	
 	public long getBirth()
 	{
 		return birth;
@@ -105,6 +103,18 @@ public class SupportPosition
 	public void setCovered(final boolean covered)
 	{
 		isCovered = covered;
+	}
+	
+	
+	public BotID getAssignedBot()
+	{
+		return this.assignedBot;
+	}
+	
+	
+	public void assignBot(BotID id)
+	{
+		this.assignedBot = id;
 	}
 	
 	

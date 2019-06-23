@@ -1,16 +1,18 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.general;
 
-import edu.tigers.sumatra.ai.data.BotDistance;
-import edu.tigers.sumatra.ai.data.EAiShapesLayer;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
+import java.awt.Color;
+
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
-import edu.tigers.sumatra.ai.metis.offense.data.SkirmishInformation;
-import edu.tigers.sumatra.ai.metis.offense.data.SkirmishInformation.ESkirmishStrategy;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
+import edu.tigers.sumatra.ai.metis.offense.strategy.SkirmishInformation;
+import edu.tigers.sumatra.ai.metis.offense.strategy.SkirmishInformation.ESkirmishStrategy;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -21,8 +23,6 @@ import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.statemachine.IEvent;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
-
-import java.awt.*;
 
 
 /**
@@ -44,7 +44,7 @@ public class SkirmishDetectorCalc extends ACalculator
 		DrawableAnnotation strategy = new DrawableAnnotation(
 				baseAiFrame.getWorldFrame().getBall().getPos().addNew(Vector2.fromXY(300, 0)),
 				information.getStrategy().name(), Color.BLACK);
-		newTacticalField.getDrawableShapes().get(EAiShapesLayer.SKIRMISH_DETECTOR).add(strategy);
+		newTacticalField.getDrawableShapes().get(EAiShapesLayer.AI_SKIRMISH_DETECTOR).add(strategy);
 		
 		ITrackedBot enemyBot = newTacticalField.getEnemyClosestToBall().getBot();
 		if (enemyBot == null)
@@ -123,7 +123,7 @@ public class SkirmishDetectorCalc extends ACalculator
 			IVector2 ballPos = baseAiFrame.getWorldFrame().getBall().getPos();
 			DrawableAnnotation dt = new DrawableAnnotation(ballPos.addNew(Vector2.fromXY(200, 0)),
 					currentState.getState().toString(), Color.BLACK);
-			newTacticalField.getDrawableShapes().get(EAiShapesLayer.SKIRMISH_DETECTOR).add(dt);
+			newTacticalField.getDrawableShapes().get(EAiShapesLayer.AI_SKIRMISH_DETECTOR).add(dt);
 		}
 	}
 	
@@ -190,7 +190,7 @@ public class SkirmishDetectorCalc extends ACalculator
 			double size = minBotDistance + score * 2.0;
 			IVector2 ballPos = baseAiFrame.getWorldFrame().getBall().getPos();
 			DrawableCircle dc = new DrawableCircle(Circle.createCircle(ballPos, size), Color.RED);
-			newTacticalField.getDrawableShapes().get(EAiShapesLayer.SKIRMISH_DETECTOR).add(dc);
+			newTacticalField.getDrawableShapes().get(EAiShapesLayer.AI_SKIRMISH_DETECTOR).add(dc);
 			BotDistance enemyBot = newTacticalField.getEnemyClosestToBall();
 			BotDistance tigerBot = newTacticalField.getTigerClosestToBall();
 			return (enemyBot.getDist() < size) && (tigerBot.getDist() < size);
@@ -335,7 +335,7 @@ public class SkirmishDetectorCalc extends ACalculator
 			score += (bot.getVel().getLength() - 0.4) * (oldTime - baseAiFrame.getWorldFrame().getTimestamp()) * 1e-7;
 			score = Math.min(100, Math.max(0, score));
 			DrawableAnnotation dt = new DrawableAnnotation(bot.getPos(), "score: " + score, Color.black);
-			newTacticalField.getDrawableShapes().get(EAiShapesLayer.SKIRMISH_DETECTOR).add(dt);
+			newTacticalField.getDrawableShapes().get(EAiShapesLayer.AI_SKIRMISH_DETECTOR).add(dt);
 			
 			if (score > 90)
 			{
@@ -344,7 +344,7 @@ public class SkirmishDetectorCalc extends ACalculator
 				information.setSupportiveCircleCatchPos(movePos);
 				DrawableCircle dc = new DrawableCircle(Circle.createCircle(movePos, 50), new Color(255, 46, 19, 125));
 				dc.setFill(true);
-				newTacticalField.getDrawableShapes().get(EAiShapesLayer.SKIRMISH_DETECTOR).add(dc);
+				newTacticalField.getDrawableShapes().get(EAiShapesLayer.AI_SKIRMISH_DETECTOR).add(dc);
 			} else
 			{
 				strategy = ESkirmishStrategy.BLOCKING;

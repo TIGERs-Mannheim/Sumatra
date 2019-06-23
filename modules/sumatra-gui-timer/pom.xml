@@ -10,7 +10,7 @@
     <parent>
         <groupId>edu.tigers.sumatra</groupId>
         <artifactId>sumatra-parent</artifactId>
-        <version>5.1-SNAPSHOT</version>
+        <version>6.0</version>
         <relativePath>../sumatra-parent/pom.xml</relativePath>
     </parent>
 
@@ -18,17 +18,37 @@
         <dependency>
             <groupId>net.sf.jchart2d</groupId>
             <artifactId>jchart2d</artifactId>
-            <version>3.3.2</version>
         </dependency>
 
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
             <artifactId>common-gui</artifactId>
         </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>common</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
             <artifactId>moduli-timer</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.moduli</groupId>
+            <artifactId>moduli</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>sumatra-model</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.miglayout</groupId>
+            <artifactId>miglayout-swing</artifactId>
         </dependency>
     </dependencies>
 </project>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.drawable.animated;
 
@@ -12,8 +12,8 @@ import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.drawable.IDrawableTool;
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -34,7 +34,7 @@ public class AAnimatedShape implements IDrawableShape
 	@SuppressWarnings("unused")
 	protected AAnimatedShape()
 	{
-		center = AVector2.ZERO_VECTOR;
+		center = Vector2f.ZERO_VECTOR;
 		lineColor = new ColorAnimatorFixed(Color.BLACK);
 	}
 	

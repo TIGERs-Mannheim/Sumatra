@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem;
@@ -11,24 +11,23 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
 import com.github.g3force.configurable.ConfigRegistration;
 
-import edu.tigers.moduli.exceptions.InitModuleException;
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
-import edu.tigers.moduli.exceptions.StartModuleException;
 import edu.tigers.sumatra.botmanager.ABotManager;
 import edu.tigers.sumatra.botmanager.IBotManagerObserver;
 import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.botmanager.bots.DummyBot;
+import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.skillsystem.skills.ISkill;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
+import edu.tigers.sumatra.skillsystem.skills.redirect.RedirectConsultantFactory;
 import edu.tigers.sumatra.thread.NamedThreadFactory;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
@@ -46,70 +45,79 @@ public class GenericSkillSystem extends ASkillSystem
 	private static final Logger log = Logger
 			.getLogger(GenericSkillSystem.class.getName());
 	
+	private static final String SKILLS_CATEGORY = "skills";
+	
 	static
 	{
 		for (ESkill ec : ESkill.values())
 		{
-			ConfigRegistration.registerClass("skills", ec.getInstanceableClass().getImpl());
+			ConfigRegistration.registerClass(SKILLS_CATEGORY, ec.getInstanceableClass().getImpl());
 		}
 	}
 	
 	private final Map<BotID, SkillExecutor> executors = new ConcurrentHashMap<>(
 			12);
-	private final Object sync = new Object();
 	private ExecutorService service = null;
+	private AWorldPredictor wp;
+	
+	
+	private GenericSkillSystem()
+	{
+		// hidden
+	}
 	
 	
 	/**
 	 * Create a dedicated skill system with dummy bots for simulation
+	 * 
+	 * @return a new instance
 	 */
-	public GenericSkillSystem()
+	public static GenericSkillSystem forSimulation()
 	{
+		GenericSkillSystem gss = new GenericSkillSystem();
 		for (int i = 0; i < AObjectID.BOT_ID_MAX; i++)
 		{
-			addSkillExecutor(new DummyBot(BotID.createBotId(i, ETeamColor.YELLOW)));
-			addSkillExecutor(new DummyBot(BotID.createBotId(i, ETeamColor.BLUE)));
+			gss.addSkillExecutor(new DummyBot(BotID.createBotId(i, ETeamColor.YELLOW)));
+			gss.addSkillExecutor(new DummyBot(BotID.createBotId(i, ETeamColor.BLUE)));
 		}
-	}
-	
-	
-	/**
-	 * @param subnodeConfiguration
-	 */
-	public GenericSkillSystem(final SubnodeConfiguration subnodeConfiguration)
-	{
+		return gss;
 	}
 	
 	
 	@Override
-	public void initModule() throws InitModuleException
+	public void initModule()
 	{
 		// empty
 	}
 	
 	
 	@Override
-	public void startModule() throws StartModuleException
+	public void startModule()
 	{
 		service = Executors.newCachedThreadPool(new NamedThreadFactory("SkillExecutor"));
 		
+		String env = SumatraModel.getInstance().getEnvironment();
+		RedirectConsultantFactory.init();
+		ConfigRegistration.applySpezi(SKILLS_CATEGORY, "");
+		ConfigRegistration.applySpezi(SKILLS_CATEGORY, env);
+		
 		try
 		{
-			ABotManager botManager = (ABotManager) SumatraModel.getInstance().getModule(ABotManager.MODULE_ID);
+			ABotManager botManager = SumatraModel.getInstance().getModule(ABotManager.class);
 			botManager.addObserver(this);
-			for (Map.Entry<BotID, ABot> entry : botManager.getAllBots().entrySet())
+			for (Map.Entry<BotID, ABot> entry : botManager.getBots().entrySet())
 			{
 				ABot bot = entry.getValue();
 				addSkillExecutor(bot);
 			}
 		} catch (final ModuleNotFoundException err)
 		{
-			log.error("Unable to find module '" + ABotManager.MODULE_ID + "'!", err);
+			log.error("Unable to find module '" + ABotManager.class + "'!", err);
 		}
 		
 		try
 		{
-			AWorldPredictor wp = (AWorldPredictor) SumatraModel.getInstance().getModule(AWorldPredictor.MODULE_ID);
+			wp = SumatraModel.getInstance().getModule(AWorldPredictor.class);
 			wp.addConsumer(this);
 		} catch (ModuleNotFoundException err)
 		{
@@ -125,24 +133,21 @@ public class GenericSkillSystem extends ASkillSystem
 		
 		try
 		{
-			ABotManager botManager = (ABotManager) SumatraModel.getInstance().getModule(ABotManager.MODULE_ID);
+			ABotManager botManager = SumatraModel.getInstance().getModule(ABotManager.class);
 			botManager.removeObserver(this);
-			for (BotID botId : botManager.getAllBots().keySet())
+			for (BotID botId : botManager.getBots().keySet())
 			{
 				removeSkillExecutor(botId);
 			}
 		} catch (final ModuleNotFoundException err)
 		{
-			log.error("Unable to find module '" + ABotManager.MODULE_ID + "'!", err);
+			log.error("Unable to find module '" + ABotManager.class + "'!", err);
 		}
 		
-		try
+		if (wp != null)
 		{
-			AWorldPredictor wp = (AWorldPredictor) SumatraModel.getInstance().getModule(AWorldPredictor.MODULE_ID);
 			wp.removeConsumer(this);
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("Could not find worldpredictor", err);
+			wp = null;
 		}
 		service.shutdown();
 	}
@@ -256,14 +261,11 @@ public class GenericSkillSystem extends ASkillSystem
 	{
 		SkillExecutor se = new SkillExecutor(bot);
 		se.addPostHook(this);
-		synchronized (sync)
+		SkillExecutor oldSe = executors.put(bot.getBotId(), se);
+		if (oldSe != null)
 		{
-			SkillExecutor oldSe = executors.put(bot.getBotId(), se);
-			if (oldSe != null)
-			{
-				log.warn("Added new skill excutor, but there was one already registered for bot " + bot, new Exception());
-				oldSe.stop();
-			}
+			log.warn("Added new skill excutor, but there was one already registered for bot " + bot, new Exception());
+			oldSe.stop();
 		}
 		
 		if (service != null)
@@ -277,15 +279,11 @@ public class GenericSkillSystem extends ASkillSystem
 	 * @param botId
 	 * @return
 	 */
-	private SkillExecutor removeSkillExecutor(final BotID botId)
+	private void removeSkillExecutor(final BotID botId)
 	{
-		synchronized (sync)
-		{
-			SkillExecutor se = executors.remove(botId);
-			se.removePostHook(this);
-			se.stop();
-			return se;
-		}
+		SkillExecutor se = executors.remove(botId);
+		se.removePostHook(this);
+		se.stop();
 	}
 	
 	
@@ -300,11 +298,11 @@ public class GenericSkillSystem extends ASkillSystem
 	
 	
 	@Override
-	public void process(final WorldFrameWrapper wfw)
+	public void process(final WorldFrameWrapper wfw, final ShapeMap shapeMap)
 	{
 		for (SkillExecutor se : executors.values())
 		{
-			se.update(wfw, wfw.getSimpleWorldFrame().getTimestamp());
+			se.update(wfw, wfw.getSimpleWorldFrame().getTimestamp(), shapeMap);
 		}
 	}
 	
@@ -320,9 +318,10 @@ public class GenericSkillSystem extends ASkillSystem
 	
 	
 	@Override
-	public void onCommandSent(final ABot bot, final long timestamp)
+	public void onSkillUpdated(final ABot bot, final long timestamp, final ShapeMap shapeMap)
 	{
 		notifyCommandSent(bot, timestamp);
+		wp.notifyNewShapeMap(timestamp, shapeMap, "Skill " + bot.getBotId());
 	}
 	
 	

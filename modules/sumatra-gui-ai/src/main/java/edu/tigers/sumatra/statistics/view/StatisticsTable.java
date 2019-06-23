@@ -1,135 +1,92 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.statistics.view;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
-import javax.swing.JTable;
-import javax.swing.table.DefaultTableModel;
-
 import edu.tigers.sumatra.ai.metis.statistics.StatisticData;
 import edu.tigers.sumatra.ids.BotID;
 
+import javax.swing.JLabel;
+import javax.swing.JTable;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 
 /**
- * @author Phillipp Mevenkamp <phillippmevenkamp@gmail.com>
+ * @author Marius Messerschmidt <marius.messerschmidt@dlr.de>
  */
 public class StatisticsTable extends JTable
 {
-	/** The serial Version UID for this kind of table */
+	/**
+	 * The serial Version UID for this kind of table
+	 */
 	private static final long serialVersionUID = 1L;
-	
-	private DefaultTableModel tableModel;
-	
-	/** This Map will contain the Entries for the specific table rows */
-	private Map<String, StatisticData> rowEntries;
-	
-	private Map<BotID, Integer> columnOfBot = new HashMap<>();
-	
-	
-	/**
-	 * This is the default constructor, that constructs a 1 x 2 Table, it will be filled with information
-	 * when the KI is running
-	 */
-	public StatisticsTable()
+	DefaultTableModel model = null;
+
+	private int getBotColumn(BotID i)
 	{
-		super(0, 2);
-		tableModel = (DefaultTableModel) getModel();
-		
-		tableModel.addRow(new String[] { "Statistic", "General" });
-	}
-	
-	
-	/**
-	 * This will update the table entries.
-	 * If there is no data it will keep the last calculated data for information purposes
-	 * 
-	 * @param updatedEntries A list with updated entries
-	 * @param availableBots A list with the available Bots
-	 */
-	public void updateTableEntries(final Map<String, StatisticData> updatedEntries,
-			final Set<BotID> availableBots)
-	{
-		rowEntries = updatedEntries;
-		
-		createBotHeaders(availableBots);
-		
-		// This would mean that there is no update or that the statistics is halted
-		if (updatedEntries.size() == 0)
+		String search = String.valueOf(i.getNumber());
+		for(int x = 0; x < getColumnCount(); x++)
 		{
-			return;
+			if( search.equals(getColumnName(x)))
+				return x;
 		}
-		
-		updateTable();
+		return -1;
 	}
-	
-	
-	private void createBotHeaders(final Set<BotID> availableBots)
+
+	public void setData(Map<String, StatisticData> data, Set<BotID> bots)
 	{
-		final int countGenericColums = 2;
-		tableModel.setColumnCount(columnOfBot.size() + countGenericColums);
-		
-		for (BotID tempBotID : availableBots)
+		if (model == null || bots.size() != model.getColumnCount() - 2)
 		{
-			if (!columnOfBot.containsKey(tempBotID))
+			List<String> header = new ArrayList<>();
+
+			for (BotID i : bots)
+				header.add(String.valueOf(i.getNumber()));
+
+			Collections.sort(header);
+			header.add(0, "General");
+			header.add(0, "Statistic");
+
+
+			model = new DefaultTableModel(header.toArray(), header.size());
+			setModel(model);
+			getColumnModel().getColumn(0).setMinWidth(200);
+
+			DefaultTableCellRenderer cr = new DefaultTableCellRenderer();
+			cr.setHorizontalAlignment(JLabel.CENTER);
+			for(int x = 1; x < model.getColumnCount(); x++)
 			{
-				columnOfBot.put(tempBotID, countGenericColums + columnOfBot.size());
-				
-				tableModel.setColumnCount(columnOfBot.size() + countGenericColums);
+				getColumnModel().getColumn(x).setCellRenderer(cr);
 			}
-			
-			Integer valueToDisplay = getBotHeaderEntry(tempBotID);
-			
-			tableModel.setValueAt(valueToDisplay, 0, columnOfBot.get(tempBotID));
 		}
-	}
-	
-	
-	private int getBotHeaderEntry(final BotID botToGetHeader)
-	{
-		return botToGetHeader.getNumber();
-	}
-	
-	
-	private void updateTable()
-	{
-		if (rowEntries == null)
+
+		if(model.getRowCount() != data.size())
+			model.setRowCount(data.size());
+
+        Object[] keys = data.keySet().toArray();
+		for(int x = 0; x < keys.length; x++)
 		{
-			return;
-		}
-		
-		tableModel.setRowCount(rowEntries.size() + 1);
-		
-		
-		// This two rows are going to fill the table with the header and then with the values
-		int row = 1;
-		
-		for (Map.Entry<String, StatisticData> rowEntry : rowEntries.entrySet())
-		{
-			tableModel.setValueAt(rowEntry, row, 0);
-			
-			String generalStatistic = rowEntry.getValue().getTextualRepresenationOfGeneralStatistic();
-			
-			final int placeGeneralColumn = 1;
-			tableModel.setValueAt(generalStatistic, row, placeGeneralColumn);
-			
-			Map<BotID, String> specificStatistics = rowEntry.getValue().getTextualRepresentationOfBotStatistics();
-			
-			for (Map.Entry<BotID, String> statisticEntry : specificStatistics.entrySet())
+			model.setValueAt(keys[x],x, 0);
+			StatisticData d = data.get(String.valueOf(keys[x]));
+			model.setValueAt(d.getTextualRepresenationOfGeneralStatistic(), x, 1);
+			for(BotID i : bots)
 			{
-				Integer columnToSet = columnOfBot.get(statisticEntry.getKey());
-				
-				if (columnToSet != null)
-				{
-					tableModel.setValueAt(statisticEntry.getValue(), row, columnToSet);
-				}
+				int col = getBotColumn(i);
+				if (col < 0)
+					continue;
+				String val = d.getTextualRepresentationOfBotStatistics().get(i);
+				if (val == null)
+					val = "0";
+
+				model.setValueAt(val, x, col);
 			}
-			
-			row++;
 		}
 	}
+
 }

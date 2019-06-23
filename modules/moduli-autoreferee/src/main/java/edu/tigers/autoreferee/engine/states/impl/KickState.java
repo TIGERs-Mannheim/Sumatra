@@ -33,7 +33,7 @@ import edu.tigers.sumatra.referee.data.GameState;
  */
 public class KickState extends AbstractAutoRefState
 {
-	@Configurable(comment = "If active, the autoref will automatically set the follow up action according to the decisions of the refbox")
+	@Configurable(comment = "If active, the autoref will automatically set the follow up action according to the decisions of the refbox", defValue = "false")
 	private static boolean	followUpOverride	= false;
 	
 	private boolean			firstUpdate			= true;

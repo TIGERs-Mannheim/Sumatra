@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.tube;
@@ -30,4 +30,10 @@ public interface ITube extends I2DShape
 	 * @return center of second outer circle
 	 */
 	IVector2 endCenter();
+	
+	
+	/**
+	 * @return the center of the tube
+	 */
+	IVector2 center();
 }

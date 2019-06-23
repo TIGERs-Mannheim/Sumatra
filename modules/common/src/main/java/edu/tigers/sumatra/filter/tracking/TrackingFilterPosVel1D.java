@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 23.11.2016
- * Author(s): rYan
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.filter.tracking;
 
@@ -14,6 +9,7 @@ import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
 import edu.tigers.sumatra.filter.kf.KalmanFilter;
+import edu.tigers.sumatra.math.SumatraMath;
 
 
 /**
@@ -202,13 +198,13 @@ public class TrackingFilterPosVel1D extends KalmanFilter
 	
 	public double getPositionUncertainty()
 	{
-		return Math.sqrt(errorCovariance.getEntry(0, 0));
+		return SumatraMath.sqrt(errorCovariance.getEntry(0, 0));
 	}
 	
 	
 	public double getVelocityUncertainty()
 	{
-		return Math.sqrt(errorCovariance.getEntry(1, 1));
+		return SumatraMath.sqrt(errorCovariance.getEntry(1, 1));
 	}
 	
 	
@@ -232,7 +228,7 @@ public class TrackingFilterPosVel1D extends KalmanFilter
 		transitionMatrix.setEntry(1, 1, 1);
 		
 		// optimal process noise error if we assume white noise on acceleration with zero mean
-		double sigma = Math.sqrt((3.0 * modelError) / dt) / dt;
+		double sigma = SumatraMath.sqrt((3.0 * modelError) / dt) / dt;
 		double dt3 = (1.0 / 3.0) * dt * dt * dt * sigma * sigma;
 		double dt2 = (1.0 / 2.0) * dt * dt * sigma * sigma;
 		processNoiseCovariance.setEntry(0, 0, dt3);

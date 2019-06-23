@@ -1,23 +1,32 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
 
-import java.awt.*;
+import static edu.tigers.sumatra.math.SumatraMath.relative;
+import static java.lang.Math.abs;
+
+import java.awt.Color;
 
 import com.github.g3force.configurable.Configurable;
 
 import edu.tigers.sumatra.drawable.DrawableBot;
+import edu.tigers.sumatra.drawable.DrawablePoint;
+import edu.tigers.sumatra.filter.iir.ExponentialMovingAverageFilter;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.skillsystem.ESkill;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.skillsystem.skills.util.AroundBallCalc;
 import edu.tigers.sumatra.skillsystem.skills.util.AroundObstacleCalc;
+import edu.tigers.sumatra.skillsystem.skills.util.BallStabilizer;
+import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
 import edu.tigers.sumatra.statemachine.IState;
+import edu.tigers.sumatra.time.TimestampTimer;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 
 
@@ -26,22 +35,24 @@ import edu.tigers.sumatra.wp.data.DynamicPosition;
  */
 public class PushAroundObstacleSkill extends AMoveSkill
 {
-	@Configurable(comment = "Push dist")
-	private static double			pushDist	= 10;
+	@Configurable(comment = "Push dist", defValue = "10.0")
+	private static double pushDist = 10;
+	@Configurable(comment = "Max velocity when pushing", defValue = "1.5")
+	private static double pushVel = 1.5;
+	@Configurable(comment = "Max acceleration when pushing", defValue = "1.5")
+	private static double pushAcc = 1.5;
+	@Configurable(comment = "dribbler speed for Pullback", defValue = "4000")
+	private static int dribblerSpeed = 4000;
 	
-	private final DynamicPosition	obstacle;
-	private final DynamicPosition	target;
 	
-	@Configurable(comment = "Max velocity when pushing", defValue = "1.0")
-	private static double			pushVel	= 1.0;
-	@Configurable(comment = "Max acceleration when pushing", defValue = "1.0")
-	private static double			pushAcc	= 1;
-	
+	private final DynamicPosition obstacle;
+	private final DynamicPosition target;
+	private final BallStabilizer ballStabilizer = new BallStabilizer();
+	private final ExponentialMovingAverageFilter targetOrientationFilter = new ExponentialMovingAverageFilter(0.95);
 	
 	private enum EEvent implements IEvent
 	{
-		PUSH,
-		WAIT
+		PUSH
 	}
 	
 	
@@ -56,49 +67,102 @@ public class PushAroundObstacleSkill extends AMoveSkill
 		this.target = target;
 		
 		IState pushState = new PushState();
-		IState waitState = new WaitState();
 		setInitialState(pushState);
 		addTransition(EEvent.PUSH, pushState);
-		addTransition(EEvent.WAIT, waitState);
 	}
 	
 	
-	private class PushState implements IState
+	@Override
+	protected void beforeStateUpdate()
 	{
+		super.beforeStateUpdate();
+		ballStabilizer.update(getBall(), getTBot());
+	}
+	
+	private class PushState extends AState
+	{
+		private double targetOrientation;
+		private IVector2 desiredDestination;
+		private TimestampTimer releaseBallTimer = new TimestampTimer(0.2);
+		private int currentDribbleSpeed;
+		
+		
+		@Override
+		public void doEntryActions()
+		{
+			desiredDestination = null;
+			currentDribbleSpeed = 0;
+			
+			targetOrientation = getBallPos().subtractNew(getPos()).getAngle();
+			targetOrientationFilter.setState(targetOrientation);
+			
+			obstacle.setUseKickerPos(false);
+			getMoveCon().getMoveConstraints().setVelMax(pushVel);
+		}
+		
+		
 		@Override
 		public void doUpdate()
 		{
-			if (target.distanceTo(getBall().getPos()) < 10)
-			{
-				return;
-			}
-			
 			obstacle.update(getWorldFrame());
 			target.update(getWorldFrame());
-			obstacle.setUseKickerPos(false);
-			getMoveCon().getMoveConstraints().setVelMax(pushVel);
-			getMoveCon().getMoveConstraints().setAccMax(pushAcc);
+			ballStabilizer.setBotBrakeAcc(pushAcc);
 			
-			double targetOrientation = getTargetOrientation();
-			IVector2 desiredDestination = getIdealDestination(0);
-			
-			AroundObstacleCalc aroundObstacleCalc = new AroundObstacleCalc(obstacle, getBall().getPos(), getTBot());
-			IVector2 dest = desiredDestination;
-			if (aroundObstacleCalc.isAroundObstacleNeeded(desiredDestination))
+			if (getVel().getLength2() <= getMoveCon().getMoveConstraints().getVelMax())
 			{
-				dest = aroundObstacleCalc.getAroundObstacleDest().orElse(dest);
-				targetOrientation = aroundObstacleCalc.adaptTargetOrientation(targetOrientation);
+				getMoveCon().getMoveConstraints().setAccMax(pushAcc);
 			}
-			dest = aroundBall(dest);
-			dest = aroundObstacleCalc.avoidObstacle(dest);
+			
+			desiredDestination = getIdealDestination();
+			targetOrientation = calcTargetOrientation();
+			
+			AroundObstacleCalc aroundObstacleCalc = new AroundObstacleCalc(obstacle, getBallPos(), getTBot());
+			IVector2 dest = desiredDestination;
+			
+			if (target.distanceTo(getBallPos()) > 50)
+			{
+				if (aroundObstacleCalc.isAroundObstacleNeeded(dest))
+				{
+					dest = aroundObstacleCalc.getAroundObstacleDest().orElse(dest);
+					targetOrientation = aroundObstacleCalc.adaptTargetOrientation(targetOrientation);
+				}
+				dest = aroundBall(dest);
+				dest = aroundObstacleCalc.avoidObstacle(dest);
+			} else
+			{
+				dest = LineMath.stepAlongLine(target, desiredDestination,
+						Geometry.getBallRadius() + getTBot().getCenter2DribblerDist());
+			}
 			
 			setTargetPose(dest, targetOrientation);
 			
-			getShapes().get(ESkillShapesLayer.PATH)
+			updateDribbler();
+			
+			getShapes().get(ESkillShapesLayer.PUSH_AROUND_OBSTACLE_SKILL)
+					.add(new DrawablePoint(getBallPos(), Color.green));
+			getShapes().get(ESkillShapesLayer.PUSH_AROUND_OBSTACLE_SKILL)
 					.add(new DrawableBot(desiredDestination, targetOrientation, Color.green, 90,
 							getTBot().getCenter2DribblerDist()));
-			getShapes().get(ESkillShapesLayer.PATH)
+			getShapes().get(ESkillShapesLayer.PUSH_AROUND_OBSTACLE_SKILL)
 					.add(new DrawableBot(dest, targetOrientation, Color.red, 98, getTBot().getCenter2DribblerDist()));
+		}
+		
+		
+		private void updateDribbler()
+		{
+			if (target.distanceTo(getBallPos()) < 50)
+			{
+				releaseBallTimer.update(getWorldFrame().getTimestamp());
+				if (releaseBallTimer.isTimeUp(getWorldFrame().getTimestamp()))
+				{
+					currentDribbleSpeed = 0;
+				}
+			} else
+			{
+				currentDribbleSpeed = dribblerSpeed;
+				releaseBallTimer.reset();
+			}
+			getMatchCtrl().getSkill().getKickerDribbler().setDribblerSpeed(currentDribbleSpeed);
 		}
 		
 		
@@ -106,10 +170,10 @@ public class PushAroundObstacleSkill extends AMoveSkill
 		{
 			return AroundBallCalc
 					.aroundBall()
-					.withBallPos(getBall().getPos())
+					.withBallPos(getBallPos())
 					.withTBot(getTBot())
 					.withDestination(dest)
-					.withMaxMargin(100)
+					.withMaxMargin(50)
 					.withMinMargin(-getPushDist())
 					.build()
 					.getAroundBallDest();
@@ -119,55 +183,65 @@ public class PushAroundObstacleSkill extends AMoveSkill
 		private double getPushDist()
 		{
 			double dist2Target = getBallPos().distanceTo(target);
-			return Math.min(dist2Target, pushDist);
+			if (getBallPos().distanceTo(getPos()) > Geometry.getBotRadius() + 50)
+			{
+				return Math.min(dist2Target, pushDist);
+			}
+			double requiredRotation = getRequiredRotation();
+			double relRotation = 1 - relative(requiredRotation, 0, 0.7);
+			double push = (relRotation * relRotation) * 800 + pushDist;
+			return Math.min(dist2Target, push);
+		}
+		
+		
+		private double getRequiredRotation()
+		{
+			IVector2 ballToIdealDest = getBallPos().subtractNew(target);
+			IVector2 ballToBot = getPos().subtractNew(getBallPos());
+			return ballToIdealDest.angleToAbs(ballToBot).orElse(0.0);
 		}
 		
 		
 		private IVector2 getBallPos()
 		{
-			return getBall().getPos();
+			return ballStabilizer.getBallPos();
 		}
 		
 		
-		private IVector2 getIdealDestination(double margin)
+		private IVector2 getIdealDestination()
 		{
-			
-			return LineMath.stepAlongLine(getBallPos(), target, -getDistance(margin - getPushDist()));
-		}
-		
-		
-		private double getDistance(double margin)
-		{
-			return getTBot().getCenter2DribblerDist() + Geometry.getBallRadius() + margin;
-		}
-		
-		
-		private double getTargetOrientation()
-		{
-			return getBallPos().subtractNew(getTBot().getPos()).getAngle(0);
-		}
-	}
-	
-	private class WaitState implements IState
-	{
-		long tStart;
-		
-		
-		@Override
-		public void doEntryActions()
-		{
-			tStart = getWorldFrame().getTimestamp();
-		}
-		
-		
-		@Override
-		public void doUpdate()
-		{
-			double tWaited = (getWorldFrame().getTimestamp() - tStart) / 1e9;
-			if (tWaited > 0.1)
+			double dist2Target = getBallPos().distanceTo(target);
+			if (dist2Target < 50 && desiredDestination != null)
 			{
-				triggerEvent(EEvent.PUSH);
+				return desiredDestination;
 			}
+			double dist = Math.min(dist2Target, pushDist);
+			return LineMath.stepAlongLine(getBallPos(), target,
+					-(getTBot().getCenter2DribblerDist() + Geometry.getBallRadius() - dist));
+		}
+		
+		
+		private double calcTargetOrientation()
+		{
+			IVector2 botAngleDirection = target.subtractNew(getBallPos());
+			if (botAngleDirection.getLength2() < 50)
+			{
+				botAngleDirection = getBallPos().subtractNew(desiredDestination);
+			}
+			targetOrientationFilter.update(botAngleDirection.getAngle());
+			double finalTargetOrientation = targetOrientationFilter.getState();
+			
+			if (getBall().getVel().getLength2() < 0.3)
+			{
+				double currentDirection = getBallPos().subtractNew(getPos()).getAngle(0);
+				double diff = AngleMath.difference(finalTargetOrientation, currentDirection);
+				double relDiff = relative(abs(diff), 0.2, 0.8);
+				
+				double alteredDiff = relDiff * diff;
+				
+				return finalTargetOrientation - alteredDiff;
+			}
+			return finalTargetOrientation;
 		}
 	}
 }

@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 31.10.2016
- * Author(s): Sebastian Stein <sebastian-stein@gmx.de>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.telegram;
 
@@ -34,7 +29,7 @@ public class NotificationWorker extends Thread
 			.getLogger(NotificationWorker.class.getName());
 	
 	@Configurable(comment = "The server bridge hostname", defValue = "172.16.1.1")
-	private static String serverHostname = "tigers-mannheim.de";
+	private static String serverHostname = "172.16.1.1";
 	
 	@Configurable(comment = "The server bridge port", defValue = "4434")
 	private static int serverPort = 4434;
@@ -52,7 +47,7 @@ public class NotificationWorker extends Thread
 	
 	static
 	{
-		ConfigRegistration.registerClass("telegram", NotificationWorker.class);
+		ConfigRegistration.registerClass("user", NotificationWorker.class);
 	}
 	
 	

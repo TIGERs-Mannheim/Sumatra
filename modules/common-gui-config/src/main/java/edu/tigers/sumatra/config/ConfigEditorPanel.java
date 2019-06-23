@@ -8,19 +8,18 @@
  */
 package edu.tigers.sumatra.config;
 
-import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import edu.tigers.sumatra.views.ISumatraView;
+import net.miginfocom.swing.MigLayout;
+import org.apache.commons.configuration.HierarchicalConfiguration;
 
 import javax.swing.JMenu;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
-
-import org.apache.commons.configuration.HierarchicalConfiguration;
-
-import edu.tigers.sumatra.views.ISumatraView;
-import net.miginfocom.swing.MigLayout;
+import java.awt.Component;
+import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 
 /**
@@ -41,6 +40,11 @@ public class ConfigEditorPanel extends JPanel implements ISumatraView
 		setLayout(new MigLayout("fill, wrap 1, inset 0"));
 		
 		tabpane = new JTabbedPane(SwingConstants.TOP, JTabbedPane.WRAP_TAB_LAYOUT);
+		tabpane.addChangeListener(e-> {
+			Component c = tabpane.getComponentAt(tabpane.getSelectedIndex());
+			EditorView ev = (EditorView) c;
+			ev.initialReload();
+		});
 		add(tabpane, "grow");
 	}
 	

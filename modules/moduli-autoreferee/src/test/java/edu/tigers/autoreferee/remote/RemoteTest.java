@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.autoreferee.remote;
 
 import java.io.IOException;
@@ -9,15 +13,6 @@ import edu.tigers.autoreferee.engine.RefboxRemoteCommand;
 import edu.tigers.autoreferee.remote.impl.ThreadedTCPRefboxRemote;
 import edu.tigers.sumatra.Referee.SSL_Referee.Command;
 
-
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 10, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
- */
 
 /**
  * @author "Lukas Magel"
@@ -37,9 +32,9 @@ public class RemoteTest
 		remote.start();
 		for (int i = 0; i < 10; i++)
 		{
-			remote.sendCommand(new RefboxRemoteCommand(Command.DIRECT_FREE_BLUE));
+			remote.sendCommand(new RefboxRemoteCommand(Command.DIRECT_FREE_BLUE, null));
 			Thread.sleep(1000);
-			remote.sendCommand(new RefboxRemoteCommand(Command.STOP));
+			remote.sendCommand(new RefboxRemoteCommand(Command.STOP, null));
 			Thread.sleep(1000);
 		}
 		remote.stop();

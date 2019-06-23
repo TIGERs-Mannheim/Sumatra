@@ -1,16 +1,17 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
-import edu.tigers.sumatra.ai.data.EAiShapesLayer;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
-import edu.tigers.sumatra.ai.metis.offense.action.AOffensiveActionMove;
+import java.awt.Color;
+
+import edu.tigers.sumatra.ai.BaseAiFrame;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveActionMove;
-import edu.tigers.sumatra.ai.metis.offense.data.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.KickTarget;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableTriangle;
@@ -20,23 +21,19 @@ import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.wp.data.DynamicPosition;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
-
-import java.awt.Color;
 
 
 /**
- * @author: MarkG
+ * Pass to some free spot on the field, no robot as pass Target
  */
 public class KickInsBlaueActionMove extends AOffensiveActionMove
 {
-	
 	private double viability = 0.0;
+	private KickTarget kickTarget;
 	
 	
-	/**
-	 * Kick ins Blaue
-	 */
 	public KickInsBlaueActionMove()
 	{
 		super(EOffensiveActionMove.KICK_INS_BLAUE);
@@ -45,9 +42,9 @@ public class KickInsBlaueActionMove extends AOffensiveActionMove
 	
 	@Override
 	public EActionViability isActionViable(final BotID id, final TacticalField newTacticalField,
-			final BaseAiFrame baseAiFrame, final OffensiveAction action)
+			final BaseAiFrame baseAiFrame)
 	{
-		boolean kickInsBlaue = calcKickInsBlaueParams(newTacticalField, baseAiFrame, action);
+		boolean kickInsBlaue = calcKickInsBlaueParams(newTacticalField, baseAiFrame);
 		if (baseAiFrame.getGamestate().isStandardSituationForUs())
 		{
 			return EActionViability.FALSE;
@@ -61,10 +58,11 @@ public class KickInsBlaueActionMove extends AOffensiveActionMove
 	
 	
 	@Override
-	public void activateAction(final BotID id, final TacticalField newTacticalField, final BaseAiFrame baseAiFrame,
-			final OffensiveAction action)
+	public OffensiveAction activateAction(final BotID id, final TacticalField newTacticalField,
+			final BaseAiFrame baseAiFrame)
 	{
-		action.setType(OffensiveAction.EOffensiveAction.KICK_INS_BLAUE);
+		assert kickTarget != null;
+		return createOffensiveAction(EOffensiveAction.KICK_INS_BLAUE, kickTarget);
 	}
 	
 	
@@ -76,7 +74,7 @@ public class KickInsBlaueActionMove extends AOffensiveActionMove
 	
 	
 	private boolean calcKickInsBlaueParams(final TacticalField newTacticalField,
-			final BaseAiFrame baseAiFrame, final OffensiveAction action)
+			final BaseAiFrame baseAiFrame)
 	{
 		IVector2 baseTarget = Geometry.getPenaltyMarkTheir().addNew(Vector2.fromXY(-1000, 0));
 		IVector2 ballPos = baseAiFrame.getWorldFrame().getBall().getPos();
@@ -98,21 +96,7 @@ public class KickInsBlaueActionMove extends AOffensiveActionMove
 		dt2.setFill(true);
 		newTacticalField.getDrawableShapes().get(EAiShapesLayer.OFFENSIVE_KICK_INS_BLAUE).add(dt2);
 		
-		boolean freeShootingPos = true;
-		
-		for (BotID id : baseAiFrame.getWorldFrame().getFoeBots().keySet())
-		{
-			ITrackedBot bot = baseAiFrame.getWorldFrame().getFoeBot(id);
-			IVector2 botPos = bot.getPos();
-			if (dt2.getTriangle().isPointInShape(botPos))
-			{
-				freeShootingPos = false;
-			}
-			if (!freeShootingPos)
-			{
-				break;
-			}
-		}
+		boolean freeShootingPos = isFreeShootingPos(baseAiFrame, dt2);
 		
 		boolean isFree = true;
 		double radius = 500;
@@ -163,8 +147,30 @@ public class KickInsBlaueActionMove extends AOffensiveActionMove
 				Color.black);
 		newTacticalField.getDrawableShapes().get(EAiShapesLayer.OFFENSIVE_KICK_INS_BLAUE).add(dtext2);
 		
-		action.setKickInsBlauePossible(isFree && freeShootingPos);
-		action.setKickInsBlaueTarget(helperPos);
+		kickTarget = new KickTarget(new DynamicPosition(helperPos, 0.4),
+				2.3,
+				KickTarget.ChipPolicy.ALLOW_CHIP);
 		return isFree && freeShootingPos;
+	}
+	
+	
+	private boolean isFreeShootingPos(final BaseAiFrame baseAiFrame, final DrawableTriangle dt2)
+	{
+		boolean freeShootingPos = true;
+		
+		for (BotID id : baseAiFrame.getWorldFrame().getFoeBots().keySet())
+		{
+			ITrackedBot bot = baseAiFrame.getWorldFrame().getFoeBot(id);
+			IVector2 botPos = bot.getPos();
+			if (dt2.getTriangle().isPointInShape(botPos))
+			{
+				freeShootingPos = false;
+			}
+			if (!freeShootingPos)
+			{
+				break;
+			}
+		}
+		return freeShootingPos;
 	}
 }

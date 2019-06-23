@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.log.appender;
 
@@ -63,6 +63,13 @@ public class GameLogFileAppender implements IGameLogObserver, Runnable
 			log.error("", e);
 			Thread.currentThread().interrupt();
 		}
+	}
+	
+	
+	@Override
+	public void onClear()
+	{
+		// can not clear
 	}
 	
 	

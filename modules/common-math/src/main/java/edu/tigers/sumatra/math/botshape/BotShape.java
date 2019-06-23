@@ -1,13 +1,16 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.math.botshape;
 
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.ICircle;
-import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.LineMath;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 
@@ -113,6 +116,20 @@ public class BotShape implements IBotShape
 	
 	
 	/**
+	 * Calculates the position of the dribbler/kicker depending on bot position and orientation (angle)
+	 *
+	 * @param pose
+	 * @param center2Dribbler
+	 * @return kick position of a bot that is located at botPos
+	 */
+	public static IVector2 getKickerCenterPos(final Pose pose,
+			final double center2Dribbler)
+	{
+		return pose.getPos().addNew(Vector2.fromAngle(pose.getOrientation()).scaleTo(center2Dribbler));
+	}
+	
+	
+	/**
 	 * Calculates the position of the robot's center based on the given kicer position, orientation and
 	 * distance from center to dribbler
 	 * 
@@ -129,14 +146,14 @@ public class BotShape implements IBotShape
 	
 	
 	@Override
-	public ILine getKickerLine()
+	public ILineSegment getKickerLine()
 	{
-		double orient2CornerAngle = Math.acos(center2Dribbler / radius);
+		double orient2CornerAngle = SumatraMath.acos(center2Dribbler / radius);
 		
 		IVector2 p1 = position.addNew(Vector2.fromAngle(orientation + orient2CornerAngle).scaleTo(radius));
 		IVector2 p2 = position.addNew(Vector2.fromAngle(orientation - orient2CornerAngle).scaleTo(radius));
 		
-		return Line.fromPoints(p1, p2);
+		return Lines.segmentFromPoints(p1, p2);
 	}
 	
 	
@@ -173,10 +190,25 @@ public class BotShape implements IBotShape
 	
 	
 	@Override
+	public IVector2 nearestPointOutside(final IVector2 point)
+	{
+		if (!isPointInShape(point))
+		{
+			return point;
+		}
+		if (isPointInKickerZone(point, 0))
+		{
+			return Lines.segmentFromPoints(center(), point).intersectSegment(getKickerLine()).orElse(point);
+		}
+		return LineMath.stepAlongLine(center(), point, radius);
+	}
+	
+	
+	@Override
 	public double getKickerWidth()
 	{
-		double orient2CornerAngle = Math.acos(center2Dribbler / radius);
-		return Math.sin(orient2CornerAngle) * radius * 2.0;
+		double orient2CornerAngle = SumatraMath.acos(center2Dribbler / radius);
+		return SumatraMath.sin(orient2CornerAngle) * radius * 2.0;
 	}
 	
 	

@@ -1,20 +1,20 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.general;
 
-import org.apache.log4j.LogManager;
+import java.util.Collections;
+
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.ai.data.OffensiveStrategy;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
-import edu.tigers.sumatra.ai.math.OffensiveMath;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.ai.metis.offense.OffensiveMath;
+import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
-import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.data.GameState;
 
@@ -26,15 +26,13 @@ import edu.tigers.sumatra.referee.data.GameState;
  */
 public class PlayNumberCalc extends ACalculator
 {
-	@SuppressWarnings("unused")
-	private final Logger log = LogManager.getLogger(PlayNumberCalc.class);
+	private static final Logger log = Logger.getLogger(PlayNumberCalc.class.getName());
 	
 	
-	@SuppressWarnings("squid:MethodCyclomaticComplexity")
 	@Override
 	public void doCalc(final TacticalField tacticalField, final BaseAiFrame aiFrame)
 	{
-		GameState gameState = tacticalField.getGameState();
+		GameState gameState = getNewTacticalField().getGameState();
 		
 		if (gameState.getState() == EGameState.HALT)
 		{
@@ -44,264 +42,240 @@ public class PlayNumberCalc extends ACalculator
 		
 		if (gameState.isPenaltyOrPreparePenalty() || gameState.isPenaltyShootout())
 		{
-			handlePenaltyState(tacticalField, aiFrame, gameState);
+			penalty();
 		} else if (gameState.isBallPlacementForUs())
 		{
-			handleBallPlacementState(tacticalField, aiFrame);
+			ballPlacement();
 		} else if (gameState.isDirectFreeForUs() || gameState.isDirectFreeForThem())
 		{
-			handleDirectFreeState(tacticalField, aiFrame, gameState);
+			directFreeKick();
 		} else if (gameState.isKickoffOrPrepareKickoff())
 		{
-			handleKickoffState(tacticalField, aiFrame, gameState);
+			kickoff();
+		} else if (gameState.isPausedGame())
+		{
+			pausedGame();
+		} else if (gameState.getState() == EGameState.POST_GAME)
+		{
+			postGame();
 		} else
 		{
-			
-			switch (gameState.getState())
+			normalMode();
+		}
+		
+		sanityCheck();
+	}
+	
+	
+	private void sanityCheck()
+	{
+		if (SumatraModel.getInstance().isTestMode())
+		{
+			int assignedBots = assignedBots();
+			if (assignedBots != availableBots())
 			{
-				case BREAK:
-				case TIMEOUT:
-					breakGame(tacticalField, aiFrame);
-					break;
-				case POST_GAME:
-					postGame(tacticalField, aiFrame);
-					break;
-				default:
-					keeper(tacticalField, aiFrame);
-					normalMode(tacticalField, aiFrame);
-					break;
+				log.warn(String.format("Assigned number of bots does not match number of available (%d): %s",
+						availableBots(), getNewTacticalField().getPlayNumbers()));
 			}
 		}
 	}
 	
 	
-	private void handleBallPlacementState(final TacticalField tacticalField, final BaseAiFrame aiFrame)
+	private void ballPlacement()
 	{
-		keeper(tacticalField, aiFrame);
-		ballPlacementMode(tacticalField, aiFrame);
+		keeper();
+		
+		int ballPlacementBots = getNewTacticalField().getDesiredBotMap()
+				.getOrDefault(EPlay.BALL_PLACEMENT, Collections.emptySet()).size();
+		
+		getNewTacticalField().putPlayNumbers(EPlay.BALL_PLACEMENT, Math.min(unassignedBots(), ballPlacementBots));
+		getNewTacticalField().putPlayNumbers(EPlay.DEFENSIVE, unassignedBots());
 	}
 	
 	
-	private void handleDirectFreeState(final TacticalField tacticalField, final BaseAiFrame aiFrame,
-			final GameState gameState)
+	private void interchange()
 	{
-		if (gameState.isGameStateForUs())
+		getNewTacticalField().putPlayNumbers(EPlay.INTERCHANGE,
+				getNewTacticalField().getBotInterchange().getNumInterchangeBots());
+	}
+	
+	
+	private void directFreeKick()
+	{
+		if (getNewTacticalField().getGameState().isGameStateForUs())
 		{
-			directKickForUs(tacticalField, aiFrame);
+			directFreeKickForUs();
 		} else
 		{
-			keeper(tacticalField, aiFrame);
-			normalMode(tacticalField, aiFrame);
+			directFreeKickForThem();
 		}
 	}
 	
 	
-	private void handleKickoffState(final TacticalField tacticalField, final BaseAiFrame aiFrame,
-			final GameState gameState)
+	private void directFreeKickForUs()
 	{
-		if (gameState.isGameStateForUs())
+		if (!OffensiveMath.isKeeperInsane(getBall(), getAiFrame().getGamestate()))
 		{
-			kickoff(tacticalField, aiFrame);
+			keeper();
+		}
+		defense();
+		attack();
+		support();
+	}
+	
+	
+	private void directFreeKickForThem()
+	{
+		keeper();
+		defense();
+		attack();
+		support();
+	}
+	
+	
+	private void kickoff()
+	{
+		if (getNewTacticalField().getGameState().isGameStateForUs())
+		{
+			kickoffForUs();
 		} else
 		{
-			kickoffDefense(tacticalField, aiFrame);
+			kickoffForThem();
 		}
 	}
 	
 	
-	private void handlePenaltyState(final TacticalField tacticalField, final BaseAiFrame aiFrame,
-			final GameState gameState)
+	private void kickoffForUs()
 	{
-		if (gameState.isGameStateForUs())
-		{
-			if (!gameState.isPenaltyShootout())
-			{
-				keeper(tacticalField, aiFrame);
-			}
-			
-			penaltyWeMode(tacticalField, aiFrame);
-		} else
-		{
-			keeper(tacticalField, aiFrame);
-			penaltyTheyMode(tacticalField);
-		}
-	}
-	
-	
-	private void directKickForUs(final TacticalField tacticalField, final BaseAiFrame aiFrame)
-	{
-		if (OffensiveMath.isKeeperInsane(aiFrame, tacticalField))
-		{
-			normalMode(tacticalField, aiFrame);
-		} else
-		{
-			keeper(tacticalField, aiFrame);
-			normalMode(tacticalField, aiFrame);
-		}
-	}
-	
-	
-	private void breakGame(final TacticalField tacticalField, final BaseAiFrame baseAiFrame)
-	{
-		int numRoles = baseAiFrame.getWorldFrame().getTigerBotsAvailable().size();
-		tacticalField.getPlayNumbers().put(EPlay.MAINTENANCE, numRoles);
-	}
-	
-	
-	private void postGame(final TacticalField tacticalField, final BaseAiFrame aiFrame)
-	{
-		int numRoles = aiFrame.getWorldFrame().getTigerBotsAvailable().size();
-		tacticalField.getPlayNumbers().put(EPlay.CHEERING, numRoles);
-	}
-	
-	
-	private void penaltyWeMode(final TacticalField tacticalField, final BaseAiFrame aiFrame)
-	{
-		int botsAvailable = aiFrame.getWorldFrame().getTigerBotsAvailable().size();
-		
-		if (aiFrame.getGamestate().isPenaltyShootout())
-		{
-			int numAttackers = 1;
-			tacticalField.getPlayNumbers().put(EPlay.ATTACKER_SHOOTOUT, Math.min(numAttackers, botsAvailable));
-			tacticalField.getPlayNumbers().put(EPlay.EXCHANGE_POSITIONING, Math.max(0, botsAvailable - numAttackers));
-			return;
-		}
-		
-		int numRoles = Math.max(1, botsAvailable);
-		normalDefense(tacticalField, aiFrame);
-		tacticalField.getPlayNumbers().put(EPlay.PENALTY_WE, numRoles);
-	}
-	
-	
-	private void penaltyTheyMode(final TacticalField tacticalField)
-	{
-		int botsAvailable = getAiFrame().getWorldFrame().getTigerBotsVisible().size() - getNumKeeper();
-		
-		if (tacticalField.getGameState().isPenaltyShootout())
-		{
-			tacticalField.getPlayNumbers().put(EPlay.EXCHANGE_POSITIONING, botsAvailable);
-			return;
-		}
-		
-		tacticalField.getPlayNumbers().put(EPlay.PENALTY_THEM, Math.max(0, botsAvailable));
-	}
-	
-	
-	private void kickoff(final TacticalField tacticalField, final BaseAiFrame aiFrame)
-	{
-		int available = aiFrame.getWorldFrame().getTigerBotsVisible().size();
-		
-		keeper(tacticalField, aiFrame);
+		keeper();
 		
 		int numKickoffBots = 3;
-		tacticalField.getPlayNumbers().put(EPlay.KICKOFF,
-				Math.max(0, Math.min(available - getNumKeeper(), numKickoffBots)));
-		tacticalField.getPlayNumbers().put(EPlay.DEFENSIVE,
-				Math.max(0, available - numKickoffBots - getNumKeeper()));
+		getNewTacticalField().putPlayNumbers(EPlay.KICKOFF, Math.min(unassignedBots(), numKickoffBots));
+		getNewTacticalField().putPlayNumbers(EPlay.DEFENSIVE, unassignedBots());
 	}
 	
 	
-	private void kickoffDefense(final TacticalField tacticalField, final BaseAiFrame aiFrame)
+	private void kickoffForThem()
 	{
-		int available = aiFrame.getWorldFrame().getTigerBotsVisible().size();
-		
-		keeper(tacticalField, aiFrame);
-		tacticalField.getPlayNumbers().put(EPlay.DEFENSIVE, Math.max(0, available - getNumKeeper()));
-		
+		keeper();
+		getNewTacticalField().putPlayNumbers(EPlay.DEFENSIVE, unassignedBots());
 	}
 	
 	
-	private void keeper(final TacticalField tacticalField, final BaseAiFrame baseAiFrame)
+	private void penalty()
 	{
-		// if keeper is present request it, else request no, because it is against the law to enter penArea with any other
-		// id
-		final int desired = getNumKeeper();
-		
-		if (baseAiFrame.getGamestate().isPenaltyShootout())
+		if (getNewTacticalField().getGameState().isGameStateForUs())
 		{
-			tacticalField.getPlayNumbers().put(EPlay.KEEPER_SHOOTOUT, desired);
+			penaltyForUs();
 		} else
 		{
-			tacticalField.getPlayNumbers().put(EPlay.KEEPER, desired);
+			penaltyForThem();
 		}
 	}
 	
 	
-	private int getNumKeeper()
+	private void penaltyForUs()
 	{
-		final BaseAiFrame aiFrame = getAiFrame();
-		final int desired;
-		
-		if (aiFrame.getWorldFrame().getTigerBotsAvailable().containsKey(aiFrame.getKeeperId()))
+		if (!getNewTacticalField().getGameState().isPenaltyShootout()
+				&& availableBots() > 1)
 		{
-			desired = 1;
+			keeper();
+		}
+		
+		
+		if (getAiFrame().getGamestate().isPenaltyShootout())
+		{
+			int botsAvailable = availableBots();
+			int numAttackers = 1;
+			getNewTacticalField().putPlayNumbers(EPlay.ATTACKER_SHOOTOUT, Math.min(numAttackers, botsAvailable));
+			getNewTacticalField().putPlayNumbers(EPlay.EXCHANGE_POSITIONING, unassignedBots());
 		} else
 		{
-			desired = 0;
+			defense();
+			getNewTacticalField().putPlayNumbers(EPlay.PENALTY_WE, unassignedBots());
 		}
-		
-		return desired;
 	}
 	
 	
-	private void normalDefense(final TacticalField tacticalField, BaseAiFrame aiFrame)
+	private void penaltyForThem()
 	{
-		int available = aiFrame.getWorldFrame().getTigerBotsVisible().size() - getNumKeeper();
-		int numDesRoles = getNumDefenders(tacticalField);
-		tacticalField.getPlayNumbers().put(EPlay.DEFENSIVE, Math.min(available, numDesRoles));
-	}
-	
-	
-	private void ballPlacementMode(final TacticalField tacticalField, final BaseAiFrame aiFrame)
-	{
-		int available = aiFrame.getWorldFrame().getTigerBotsVisible().size() - getNumKeeper();
+		keeper();
 		
-		int desired = 2;
-		if (tacticalField.getThrowInInfo().isFinished())
+		if (getNewTacticalField().getGameState().isPenaltyShootout())
 		{
-			desired = 0;
-		}
-		desired = Math.min(desired, available);
-		
-		tacticalField.getPlayNumbers().put(EPlay.AUTOMATED_THROW_IN, desired);
-		tacticalField.getPlayNumbers().put(EPlay.DEFENSIVE, available - desired);
-		tacticalField.getPlayNumbers().put(EPlay.SUPPORT, 0);
-	}
-	
-	
-	private void normalMode(final TacticalField tacticalField, final BaseAiFrame aiFrame)
-	{
-		normalDefense(tacticalField, aiFrame);
-		
-		OffensiveStrategy offensiveStrategy = tacticalField.getOffensiveStrategy();
-		int nKeeper = getWFrame().getTigerBotsAvailable().containsKey(aiFrame.getKeeperId()) ? 1 : 0;
-		int available = Math.max(0, aiFrame.getWorldFrame().getTigerBotsVisible().size() - nKeeper);
-		int desiredBotsOffense = offensiveStrategy.getDesiredBots().size();
-		
-		if (isNoOffenseSpecialCase(tacticalField, aiFrame.getWorldFrame().getBall().getPos()))
+			getNewTacticalField().putPlayNumbers(EPlay.EXCHANGE_POSITIONING, unassignedBots());
+		} else
 		{
-			desiredBotsOffense = 0;
-			offensiveStrategy.getDesiredBots().clear();
+			getNewTacticalField().putPlayNumbers(EPlay.PENALTY_THEM, Math.max(0, unassignedBots()));
 		}
-		
-		desiredBotsOffense = Math.min(available, desiredBotsOffense);
-		available -= desiredBotsOffense;
-		
-		tacticalField.getPlayNumbers().put(EPlay.OFFENSIVE, desiredBotsOffense);
-		tacticalField.getPlayNumbers().put(EPlay.SUPPORT,
-				Math.max(0, available));
 	}
 	
 	
-	private boolean isNoOffenseSpecialCase(TacticalField tacticalField, final IVector2 ballPos)
+	private void pausedGame()
 	{
-		return tacticalField.getGameState().isStandardSituationForThem()
-				&& Geometry.getPenaltyAreaOur().isPointInShape(ballPos, 1300);
+		getNewTacticalField().putPlayNumbers(EPlay.MAINTENANCE, availableBots());
 	}
 	
 	
-	private int getNumDefenders(final TacticalField tacticalField)
+	private void postGame()
 	{
-		return tacticalField.getNumDefender();
+		getNewTacticalField().putPlayNumbers(EPlay.CHEERING, availableBots());
+	}
+	
+	
+	private void normalMode()
+	{
+		keeper();
+		interchange();
+		defense();
+		attack();
+		support();
+	}
+	
+	
+	private void keeper()
+	{
+		if (getWFrame().getTigerBotsAvailable().keySet().contains(getAiFrame().getKeeperId()))
+		{
+			getNewTacticalField().putPlayNumbers(EPlay.KEEPER, 1);
+		}
+	}
+	
+	
+	private void defense()
+	{
+		getNewTacticalField().putPlayNumbers(EPlay.DEFENSIVE, getNewTacticalField().getNumDefender());
+	}
+	
+	
+	private void attack()
+	{
+		OffensiveStrategy offensiveStrategy = getNewTacticalField().getOffensiveStrategy();
+		int attackers = Math.min(unassignedBots(), offensiveStrategy.getDesiredBots().size());
+		getNewTacticalField().putPlayNumbers(EPlay.OFFENSIVE, attackers);
+	}
+	
+	
+	private void support()
+	{
+		getNewTacticalField().putPlayNumbers(EPlay.SUPPORT, unassignedBots());
+	}
+	
+	
+	private int availableBots()
+	{
+		return getWFrame().getTigerBotsAvailable().size();
+	}
+	
+	
+	private int assignedBots()
+	{
+		return getNewTacticalField().getPlayNumbers().values().stream().mapToInt(i -> i).sum();
+	}
+	
+	
+	private int unassignedBots()
+	{
+		return Math.max(0, availableBots() - assignedBots());
 	}
 }

@@ -1,14 +1,10 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.support;
 
-import static edu.tigers.sumatra.skillsystem.skills.AKickSkill.EKickMode;
 import static java.lang.Math.round;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.commons.lang.Validate;
 
@@ -18,6 +14,7 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.VectorMath;
+import edu.tigers.sumatra.wp.data.DynamicPosition;
 
 
 /**
@@ -30,13 +27,14 @@ public class PassTarget implements IPassTarget
 {
 	private final IVector2 kickerPos;
 	private final BotID botID;
-	private double score = 0;
 	private long timeReached = 0;
-	private double shootScore = 0;
-	private double receiveScore = 0;
-	private EKickMode kickMode;
+	
+	private double score = 0;
+	private double goalKickScore = 0;
+	private double passScore = 0;
+	
 	private long birth = 0;
-	private transient List<Double> intermediateScores = new ArrayList<>();
+	private double passRange = 0;
 	
 	
 	@SuppressWarnings("unused")
@@ -59,7 +57,6 @@ public class PassTarget implements IPassTarget
 		Validate.notNull(botID);
 		this.kickerPos = kickerPos;
 		this.botID = botID;
-		kickMode = botID.isBot() ? EKickMode.PASS : EKickMode.MAX;
 	}
 	
 	
@@ -72,7 +69,6 @@ public class PassTarget implements IPassTarget
 	{
 		this.kickerPos = passTarget.getKickerPos();
 		this.botID = passTarget.getBotId();
-		kickMode = passTarget.getKickMode();
 		birth = passTarget.getBirth();
 	}
 	
@@ -91,6 +87,13 @@ public class PassTarget implements IPassTarget
 			}
 		}
 		return scoreCmp;
+	}
+	
+	
+	@Override
+	public DynamicPosition getDynamicTarget()
+	{
+		return new DynamicPosition(getKickerPos(), getPassRange());
 	}
 	
 	
@@ -130,23 +133,16 @@ public class PassTarget implements IPassTarget
 	
 	
 	@Override
-	public double getShootScore()
+	public double getGoalKickScore()
 	{
-		return shootScore;
+		return goalKickScore;
 	}
 	
 	
 	@Override
-	public double getReceiveScore()
+	public double getPassScore()
 	{
-		return receiveScore;
-	}
-	
-	
-	@Override
-	public EKickMode getKickMode()
-	{
-		return kickMode;
+		return passScore;
 	}
 	
 	
@@ -179,25 +175,21 @@ public class PassTarget implements IPassTarget
 	}
 	
 	
-	public void setShootScore(final double shootScore)
+	public void setGoalKickScore(final double goalKickScore)
 	{
-		this.shootScore = shootScore;
+		this.goalKickScore = goalKickScore;
 	}
 	
 	
-	public void setReceiveScore(final double receiveScore)
+	public void setPassScore(final double passScore)
 	{
-		this.receiveScore = receiveScore;
+		this.passScore = passScore;
 	}
 	
 	
-	/**
-	 * @param kickMode how to kick to this pass target
-	 * @return the pass target for chaining
-	 */
-	public void setKickMode(EKickMode kickMode)
+	public void setPassRange(final double passRange)
 	{
-		this.kickMode = kickMode;
+		this.passRange = passRange;
 	}
 	
 	
@@ -218,23 +210,24 @@ public class PassTarget implements IPassTarget
 	}
 	
 	
-	public void setIntermediateScores(List<Double> scores)
-	{
-		this.intermediateScores = scores;
-	}
-	
-	
-	@Override
-	public List<Double> getIntermediateScores()
-	{
-		return intermediateScores;
-	}
-	
-	
 	@Override
 	public double getTimeUntilReachedInS(long currentTimestamp)
 	{
 		return (timeReached - currentTimestamp) * 1e-9;
+	}
+	
+	
+	@Override
+	public double getAge(long currentTimestamp)
+	{
+		return (currentTimestamp - birth) * 1e-9;
+	}
+	
+	
+	@Override
+	public double getPassRange()
+	{
+		return passRange;
 	}
 	
 	
@@ -244,7 +237,6 @@ public class PassTarget implements IPassTarget
 		return "PassTarget{" +
 				"kickerPos=" + kickerPos +
 				", botID=" + botID +
-				", kickMode=" + kickMode +
 				'}';
 	}
 }

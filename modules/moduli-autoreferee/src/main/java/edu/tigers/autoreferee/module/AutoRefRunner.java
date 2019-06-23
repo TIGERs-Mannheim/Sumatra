@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.module;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
@@ -33,6 +34,7 @@ import edu.tigers.autoreferee.remote.impl.ThreadedTCPRefboxRemote;
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.moduli.exceptions.StartModuleException;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.referee.AReferee;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
@@ -54,12 +56,12 @@ public class AutoRefRunner implements Runnable, IWorldFrameObserver
 	private final BlockingDeque<RefStateChange> requestStateChanges = new LinkedBlockingDeque<>();
 	private final AutoRefFramePreprocessor preprocessor = new AutoRefFramePreprocessor();
 	private AutoRefState refState = AutoRefState.STOPPED;
-	private IAutoRefFrame latestAutoRefFrame;
-	private boolean isRunning = false;
+	private boolean running = false;
 	private IAutoRefEngine engine;
 	private GameLogFileAppender gameLogAppender;
 	private final ERemoteControlType remoteControlType;
 	private final boolean log2File;
+	private AWorldPredictor wp;
 	
 	
 	/**
@@ -96,6 +98,10 @@ public class AutoRefRunner implements Runnable, IWorldFrameObserver
 	
 	private void setState(final AutoRefState state)
 	{
+		if (refState != state && state != AutoRefState.RUNNING)
+		{
+			wp.notifyClearShapeMap("AUTO_REF");
+		}
 		refState = state;
 		try
 		{
@@ -113,6 +119,7 @@ public class AutoRefRunner implements Runnable, IWorldFrameObserver
 	 */
 	public void start(final AutoRefMode mode) throws StartModuleException
 	{
+		wp = SumatraModel.getInstance().getModule(AWorldPredictor.class);
 		IRefboxRemote remote = null;
 		IAutoRefEngine refEngine = null;
 		
@@ -142,7 +149,10 @@ public class AutoRefRunner implements Runnable, IWorldFrameObserver
 					remote = new LocalRefboxRemote();
 				} else
 				{
-					ThreadedTCPRefboxRemote tcpRefboxRemote = new ThreadedTCPRefboxRemote(AutoRefConfig.getRefboxHostname(),
+					AReferee referee = SumatraModel.getInstance().getModule(AReferee.class);
+					String hostname = referee.getActiveSource().getRefBoxAddress().map(InetAddress::getHostAddress)
+							.orElse(AutoRefConfig.getRefboxHostname());
+					ThreadedTCPRefboxRemote tcpRefboxRemote = new ThreadedTCPRefboxRemote(hostname,
 							AutoRefConfig.getRefboxPort());
 					tcpRefboxRemote.start();
 					remote = tcpRefboxRemote;
@@ -177,7 +187,7 @@ public class AutoRefRunner implements Runnable, IWorldFrameObserver
 		
 		engine = refEngine;
 		
-		isRunning = true;
+		running = true;
 		executorService.execute(this);
 		
 		setState(AutoRefState.STARTED);
@@ -199,8 +209,9 @@ public class AutoRefRunner implements Runnable, IWorldFrameObserver
 	 */
 	public void stop()
 	{
-		if (isRunning)
+		if (running)
 		{
+			running = false;
 			requestStateChanges.add(RefStateChange.STOP);
 			try
 			{
@@ -211,7 +222,6 @@ public class AutoRefRunner implements Runnable, IWorldFrameObserver
 				log.error("Interrupted while awaiting termination", e);
 				Thread.currentThread().interrupt();
 			}
-			latestAutoRefFrame = null;
 		}
 	}
 	
@@ -221,7 +231,7 @@ public class AutoRefRunner implements Runnable, IWorldFrameObserver
 	 */
 	public void pause()
 	{
-		if (isRunning)
+		if (running)
 		{
 			requestStateChanges.add(RefStateChange.PAUSE);
 		}
@@ -233,7 +243,7 @@ public class AutoRefRunner implements Runnable, IWorldFrameObserver
 	 */
 	public void resume()
 	{
-		if (isRunning)
+		if (running)
 		{
 			requestStateChanges.add(RefStateChange.RESUME);
 		}
@@ -248,15 +258,15 @@ public class AutoRefRunner implements Runnable, IWorldFrameObserver
 		try
 		{
 			doLoop();
-		} catch (InterruptedException iex)
+		} catch (InterruptedException e)
 		{
-			log.warn("Unexpected interruption during AutoRef execution");
 			Thread.currentThread().interrupt();
 		} catch (Exception e)
 		{
-			log.error("Unexpected exception during AutoRef execution", e);
+			log.error("Unhandled exception during AutoRef execution", e);
 		} finally
 		{
+			running = false;
 			setState(AutoRefState.STOPPED);
 			
 			deregisterFromPredictor();
@@ -269,16 +279,15 @@ public class AutoRefRunner implements Runnable, IWorldFrameObserver
 	}
 	
 	
-	private void doLoop() throws InterruptedException, ModuleNotFoundException
+	private void doLoop() throws InterruptedException
 	{
-		while (!Thread.currentThread().isInterrupted())
+		while (running)
 		{
 			WorldFrameWrapper frame = consumableFrames.poll(10, TimeUnit.MILLISECONDS);
 			if (frame != null)
 			{
 				consumeWorldFrame(frame);
 			}
-			
 			
 			RefStateChange change = requestStateChanges.poll();
 			if (change != null)
@@ -350,7 +359,6 @@ public class AutoRefRunner implements Runnable, IWorldFrameObserver
 	
 	private void pushFrameToObserver(final IAutoRefFrame frame)
 	{
-		latestAutoRefFrame = frame;
 		for (IAutoRefStateObserver o : observer)
 		{
 			try
@@ -361,25 +369,21 @@ public class AutoRefRunner implements Runnable, IWorldFrameObserver
 				log.error("Error in autoref state observer (" + o + ")", t);
 			}
 		}
+		wp.notifyNewShapeMap(frame.getTimestamp(), frame.getShapes(), "AUTO_REF");
 	}
 	
 	
-	private void registerWithWorldPredictor() throws ModuleNotFoundException
+	private void registerWithWorldPredictor()
 	{
-		AWorldPredictor predictor = (AWorldPredictor) SumatraModel.getInstance().getModule(AWorldPredictor.MODULE_ID);
-		predictor.addObserver(this);
+		wp.addObserver(this);
 	}
 	
 	
 	private void deregisterFromPredictor()
 	{
-		try
+		if (wp != null)
 		{
-			AWorldPredictor predictor = (AWorldPredictor) SumatraModel.getInstance().getModule(AWorldPredictor.MODULE_ID);
-			predictor.removeObserver(this);
-		} catch (ModuleNotFoundException err)
-		{
-			log.warn("Could not find a module", err);
+			wp.removeObserver(this);
 		}
 	}
 	
@@ -387,10 +391,6 @@ public class AutoRefRunner implements Runnable, IWorldFrameObserver
 	@Override
 	public void onNewWorldFrame(final WorldFrameWrapper wFrameWrapper)
 	{
-		if (latestAutoRefFrame != null)
-		{
-			wFrameWrapper.getShapeMap().merge(latestAutoRefFrame.getShapes());
-		}
 		consumableFrames.pollLast();
 		consumableFrames.offerFirst(wFrameWrapper);
 	}

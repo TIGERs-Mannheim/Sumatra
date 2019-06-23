@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<edu.tigers.sumatra.botmanager.basestation.TigersBaseStation base="edu.tigers.sumatra.botmanager.basestation.TigersBaseStation">
+<edu.tigers.sumatra.botmanager.basestation.TigersBaseStation
+        base="edu.tigers.sumatra.botmanager.basestation.TigersBaseStation">
     <host:ROBOCUP>10.1.11.111</host:ROBOCUP>
     <host:ANDRE>192.168.1.210</host:ANDRE>
+    <host:LAB>192.168.1.210</host:LAB>
+    <host:NICOLAI>192.168.178.210</host:NICOLAI>
 </edu.tigers.sumatra.botmanager.basestation.TigersBaseStation>

@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.ares;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -13,17 +14,13 @@ import java.util.stream.Collectors;
 
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.ai.data.AresData;
+import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
 import edu.tigers.sumatra.ai.data.BotAiInformation;
-import edu.tigers.sumatra.ai.data.MultiTeamRobotPlan;
-import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.botmanager.commands.MultimediaControl;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.pose.Pose;
-import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.pathfinder.PathFinderPrioMap;
 import edu.tigers.sumatra.skillsystem.ASkillSystem;
 import edu.tigers.sumatra.skillsystem.skills.ISkill;
@@ -124,10 +121,6 @@ public class Ares
 	{
 		PathFinderPrioMap map = PathFinderPrioMap.byBotId(frame.getTeamColor());
 		int prio = 100;
-		for (ARole role : frame.getPlayStrategy().getActiveRoles(EPlay.KEEPER))
-		{
-			map.setPriority(role.getBotID(), prio--);
-		}
 		Set<BotID> activeDefenders = frame.getPlayStrategy().getActiveRoles(EPlay.DEFENSIVE).stream()
 				.map(ARole::getBotID).collect(Collectors.toSet());
 		for (BotID botId : frame.getTacticalField().getCrucialDefender())
@@ -138,7 +131,8 @@ public class Ares
 				activeDefenders.remove(botId);
 			}
 		}
-		for (BotID botId : frame.getTacticalField().getDesiredBotMap().get(EPlay.DEFENSIVE))
+		for (BotID botId : frame.getTacticalField().getDesiredBotMap().getOrDefault(EPlay.DEFENSIVE,
+				Collections.emptySet()))
 		{
 			if (activeDefenders.contains(botId))
 			{
@@ -159,6 +153,11 @@ public class Ares
 			}
 		}
 		prio = updatePrio(map, prio, activeOffenders);
+		
+		for (ARole role : frame.getPlayStrategy().getActiveRoles(EPlay.KEEPER))
+		{
+			map.setPriority(role.getBotID(), prio--);
+		}
 		
 		for (ARole role : frame.getPlayStrategy().getActiveRoles(EPlay.SUPPORT).stream()
 				.sorted((r1, r2) -> BotID.getComparator().compare(r1.getBotID(), r2.getBotID()))
@@ -208,29 +207,10 @@ public class Ares
 				skill.setMultimediaControl(led);
 			}
 			skill.getMoveCon().setPrioMap(map);
-			frame.getTacticalField().getDrawableShapes().merge(skill.exportShapeMap());
 			
 			updateBotAiInfo(frame, skill, aiInfos);
-			
-			updateMultiTeamPlan(frame, skill);
 		}
 		aresData.setBotAiInformation(aiInfos);
-	}
-	
-	
-	private void updateMultiTeamPlan(final AthenaAiFrame frame, final ISkill skill)
-	{
-		IVector2 dest = skill.getMoveCon().getDestination();
-		Double targetAngle = skill.getMoveCon().getTargetAngle();
-		if (dest != null && targetAngle != null)
-		{
-			MultiTeamRobotPlan robotPlan = frame.getTacticalField().getMultiTeamPlan().getRobotPlans()
-					.get(skill.getBotId());
-			if (robotPlan != null)
-			{
-				robotPlan.setTargetPose(Pose.from(dest, targetAngle));
-			}
-		}
 	}
 	
 	
@@ -247,11 +227,13 @@ public class Ares
 		
 		aiInfo.setSkill(skill.getType());
 		aiInfo.setSkillState(skill.getCurrentState());
+		aiInfo.setMaxProcTime(skill.getAverageTimeMeasure().getMaxTime());
+		aiInfo.setAvgProcTime(skill.getAverageTimeMeasure().getAverageTime());
 		aiInfos.put(botId, aiInfo);
 		
 		if (bot != null)
 		{
-			double curVel = bot.getVel().getLength2();
+			double curVel = bot.getFilteredState().orElse(bot.getBotState()).getVel2().getLength2();
 			double maxVel = maxVels.compute(botId,
 					(o, curMax) -> (curMax == null || curMax < curVel) ? curVel : curMax);
 			aiInfo.setVelocityMax(maxVel);

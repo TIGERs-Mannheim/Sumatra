@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra;
@@ -20,18 +20,18 @@ import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.Referee.SSL_Referee.Command;
 import edu.tigers.sumatra.ai.AAgent;
-import edu.tigers.sumatra.ai.Agent;
-import edu.tigers.sumatra.ai.data.EAIControlState;
+import edu.tigers.sumatra.ai.athena.EAIControlState;
 import edu.tigers.sumatra.botmanager.ABotManager;
 import edu.tigers.sumatra.lookandfeel.ILookAndFeelStateObserver;
 import edu.tigers.sumatra.lookandfeel.LookAndFeelStateAdapter;
 import edu.tigers.sumatra.model.ModuliStateAdapter;
 import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.persistence.ABerkeleyPersistence;
-import edu.tigers.sumatra.persistence.ARecordManager;
+import edu.tigers.sumatra.persistence.BerkeleyDb;
 import edu.tigers.sumatra.persistence.IRecordObserver;
+import edu.tigers.sumatra.persistence.RecordManager;
 import edu.tigers.sumatra.referee.AReferee;
 import edu.tigers.sumatra.referee.data.RefBoxRemoteControlFactory;
+import edu.tigers.sumatra.replay.AiReplayPresenter;
 import edu.tigers.sumatra.skillsystem.ASkillSystem;
 import edu.tigers.sumatra.util.GlobalShortcuts;
 import edu.tigers.sumatra.util.GlobalShortcuts.EShortcut;
@@ -60,9 +60,7 @@ public class MainPresenter extends AMainPresenter implements IModuliStateObserve
 	
 	private final MainFrame mainFrame;
 	
-	private ASkillSystem skillSystem = null;
-	private AAgent agent = null;
-	private RecordManagerObserver recordManagerObserver;
+	private final RecordManagerObserver recordManagerObserver = new RecordManagerObserver();
 	
 	
 	/**
@@ -88,7 +86,7 @@ public class MainPresenter extends AMainPresenter implements IModuliStateObserve
 		
 		GlobalShortcuts.register(EShortcut.MATCH_LAYOUT, () -> onLoadLayout("match.ly"));
 		GlobalShortcuts.register(EShortcut.TIMEOUT_LAYOUT, () -> onLoadLayout("timeout.ly"));
-		GlobalShortcuts.register(EShortcut.DEFAULT_LAYOUT, () -> onLoadLayout("default.ly"));
+		GlobalShortcuts.register(EShortcut.DEFAULT_LAYOUT, () -> onLoadLayout(LAYOUT_DEFAULT));
 		
 		ModuliStateAdapter.getInstance().addObserver(this);
 		
@@ -219,8 +217,6 @@ public class MainPresenter extends AMainPresenter implements IModuliStateObserve
 	
 	private void start()
 	{
-		loadSkillsystem();
-		loadAgents();
 		loadRefereeShortcuts();
 		loadRefboxShortcuts();
 		loadBotManagerShortcuts();
@@ -229,35 +225,11 @@ public class MainPresenter extends AMainPresenter implements IModuliStateObserve
 	}
 	
 	
-	private void loadAgents()
-	{
-		try
-		{
-			agent = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("Could not get agent module", err);
-		}
-	}
-	
-	
-	private void loadSkillsystem()
-	{
-		try
-		{
-			skillSystem = (ASkillSystem) SumatraModel.getInstance().getModule(ASkillSystem.MODULE_ID);
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("Could not get skillsystem module", err);
-		}
-	}
-	
-	
 	private void loadRefereeShortcuts()
 	{
 		try
 		{
-			final AReferee refBox = (AReferee) SumatraModel.getInstance().getModule(AReferee.MODULE_ID);
+			final AReferee refBox = SumatraModel.getInstance().getModule(AReferee.class);
 			
 			GlobalShortcuts.register(EShortcut.REFEREE_HALT,
 					() -> refBox.handleControlRequest(RefBoxRemoteControlFactory.fromCommand(Command.HALT)));
@@ -276,7 +248,7 @@ public class MainPresenter extends AMainPresenter implements IModuliStateObserve
 	{
 		try
 		{
-			final AReferee refBox = (AReferee) SumatraModel.getInstance().getModule(AReferee.MODULE_ID);
+			final AReferee refBox = SumatraModel.getInstance().getModule(AReferee.class);
 			
 			GlobalShortcuts.register(EShortcut.REFBOX_HALT,
 					() -> refBox.handleControlRequest(RefBoxRemoteControlFactory.fromCommand(Command.HALT)));
@@ -310,9 +282,9 @@ public class MainPresenter extends AMainPresenter implements IModuliStateObserve
 	
 	private void loadBotManagerShortcuts()
 	{
-		try
+		if (SumatraModel.getInstance().isModuleLoaded(ABotManager.class))
 		{
-			final ABotManager botManager = (ABotManager) SumatraModel.getInstance().getModule(ABotManager.MODULE_ID);
+			final ABotManager botManager = SumatraModel.getInstance().getModule(ABotManager.class);
 			GlobalShortcuts.register(EShortcut.CHARGE_ALL_BOTS, () -> {
 				if (botManager != null)
 				{
@@ -326,37 +298,26 @@ public class MainPresenter extends AMainPresenter implements IModuliStateObserve
 					botManager.dischargeAll();
 				}
 			});
-		} catch (final ModuleNotFoundException err)
-		{
-			log.error("botmanager Module not found", err);
 		}
 	}
 	
 	
 	private void initRecordManagerBinding()
 	{
-		try
+		if (SumatraModel.getInstance().isModuleLoaded(RecordManager.class))
 		{
-			ARecordManager recordManager = (ARecordManager) SumatraModel.getInstance().getModule(ARecordManager.MODULE_ID);
-			recordManagerObserver = new RecordManagerObserver();
-			recordManager.addObserver(recordManagerObserver);
-		} catch (ModuleNotFoundException e)
-		{
-			log.debug("There is no record manager. Wont't add observer", e);
+			SumatraModel.getInstance().getModule(RecordManager.class)
+					.addObserver(recordManagerObserver);
 		}
 	}
 	
 	
 	private void deinitRecordManagerBinding()
 	{
-		try
+		if (SumatraModel.getInstance().isModuleLoaded(RecordManager.class))
 		{
-			ARecordManager recordManager = (ARecordManager) SumatraModel.getInstance().getModule(ARecordManager.MODULE_ID);
-			recordManager.removeObserver(recordManagerObserver);
-			recordManagerObserver = null;
-		} catch (ModuleNotFoundException e)
-		{
-			log.debug("There is no record manager. Wont't add observer", e);
+			SumatraModel.getInstance().getModule(RecordManager.class)
+					.removeObserver(recordManagerObserver);
 		}
 	}
 	
@@ -423,13 +384,15 @@ public class MainPresenter extends AMainPresenter implements IModuliStateObserve
 	@Override
 	public void onEmergencyStop()
 	{
-		if (agent != null)
+		if (SumatraModel.getInstance().isModuleLoaded(AAgent.class))
 		{
-			agent.changeMode(EAIControlState.EMERGENCY_MODE);
+			SumatraModel.getInstance().getModule(AAgent.class)
+					.changeMode(EAIControlState.EMERGENCY_MODE);
 		}
-		if (skillSystem != null)
+		if (SumatraModel.getInstance().isModuleLoaded(ASkillSystem.class))
 		{
-			skillSystem.emergencyStop();
+			SumatraModel.getInstance().getModule(ASkillSystem.class)
+					.emergencyStop();
 		}
 	}
 	
@@ -443,9 +406,9 @@ public class MainPresenter extends AMainPresenter implements IModuliStateObserve
 		
 		
 		@Override
-		public void onViewReplay(final ABerkeleyPersistence persistence, final long startTime)
+		public void onViewReplay(final BerkeleyDb persistence, final long startTime)
 		{
-			new ReplayPresenter().start(persistence, startTime);
+			new AiReplayPresenter().start(persistence, startTime);
 		}
 	}
 }

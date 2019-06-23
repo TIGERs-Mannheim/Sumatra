@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math;
@@ -13,17 +13,17 @@ package edu.tigers.sumatra.math;
 public final class AngleMath
 {
 	/** */
-	public static final double		PI							= Math.PI;
+	public static final double PI = Math.PI;
 	/** */
-	public static final double		PI_TWO			= Math.PI * 2.0;
+	public static final double PI_TWO = Math.PI * 2.0;
 	/** */
-	public static final double		PI_HALF					= Math.PI / 2.0;
+	public static final double PI_HALF = Math.PI / 2.0;
 	/** */
-	public static final double		PI_QUART					= Math.PI / 4.0;
+	public static final double PI_QUART = Math.PI / 4.0;
 	
-	private static final double	DEG_RAD_FACTOR			= 180;
-	private static final double	DEG_TO_RAD		= PI / DEG_RAD_FACTOR;
-	private static final double	RAD_TO_DEG		= DEG_RAD_FACTOR / PI;
+	private static final double DEG_RAD_FACTOR = 180;
+	private static final double DEG_TO_RAD = PI / DEG_RAD_FACTOR;
+	private static final double RAD_TO_DEG = DEG_RAD_FACTOR / PI;
 	
 	
 	private AngleMath()
@@ -65,7 +65,7 @@ public final class AngleMath
 	 */
 	public static double cos(final double number)
 	{
-		return Math.cos(number);
+		return SumatraMath.cos(number);
 	}
 	
 	
@@ -75,7 +75,7 @@ public final class AngleMath
 	 */
 	public static double sin(final double number)
 	{
-		return Math.sin(number);
+		return SumatraMath.sin(number);
 	}
 	
 	
@@ -85,7 +85,7 @@ public final class AngleMath
 	 */
 	public static double tan(final double number)
 	{
-		return Math.tan(number);
+		return SumatraMath.tan(number);
 	}
 	
 	
@@ -108,4 +108,13 @@ public final class AngleMath
 		return RAD_TO_DEG * rad;
 	}
 	
+	
+	/**
+	 * @param angle input angle
+	 * @return a mirrored angle
+	 */
+	public static double mirror(final double angle)
+	{
+		return normalizeAngle(angle + PI);
+	}
 }

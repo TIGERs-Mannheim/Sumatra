@@ -1,46 +1,28 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.keeper;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.Collections;
 
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
-import edu.tigers.sumatra.ids.BotID;
 
 
 /**
- * @author Sebastian Stein <sebastian-stein@gmx.de>
+ * Set desired keeper id, if keeper id is present
  */
 public class DesiredKeeperCalc extends ACalculator
 {
-	
 	@Override
 	public void doCalc(final TacticalField tacticalField, final BaseAiFrame aiFrame)
 	{
-		Map<EPlay, Integer> playNumbers = tacticalField.getPlayNumbers();
-		
-		Set<BotID> keeperList = new HashSet<>();
-		keeperList.add(aiFrame.getKeeperId());
-		
-		EPlay play;
-		if (playNumbers.getOrDefault(EPlay.KEEPER, 0) > 0)
+		if (tacticalField.getPlayNumbers().getOrDefault(EPlay.KEEPER, 0) > 0)
 		{
-			play = EPlay.KEEPER;
-		} else if (playNumbers.getOrDefault(EPlay.KEEPER_SHOOTOUT, 0) > 0)
-		{
-			play = EPlay.KEEPER_SHOOTOUT;
-		} else
-		{
-			return;
+			tacticalField.addDesiredBots(EPlay.KEEPER, Collections.singleton(getAiFrame().getKeeperId()));
 		}
-		
-		tacticalField.addDesiredBots(play, keeperList);
 	}
 }

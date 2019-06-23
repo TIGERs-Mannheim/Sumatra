@@ -4,8 +4,8 @@
 
 package edu.tigers.sumatra.ai.metis.defense.data;
 
-import edu.tigers.sumatra.ai.math.DefenseMath;
 import edu.tigers.sumatra.ai.metis.defense.DefenseConstants;
+import edu.tigers.sumatra.ai.metis.defense.DefenseMath;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.line.v2.Lines;

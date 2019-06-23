@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Apr 15, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.wp.data;
 
@@ -59,7 +54,8 @@ public class ExtendedCamDetectionFrame extends CamDetectionFrame
 			final List<CamBall> balls, final List<CamRobot> yellowBots, final List<CamRobot> blueBots,
 			final CamBall ball)
 	{
-		super(frame.gettCapture(), frame.gettSent(), frame.getCameraId(), frameId, balls, yellowBots,
+		super(frame.gettCapture(), frame.gettSent(), frame.getCameraId(), frame.getCamFrameNumber(), frameId, balls,
+				yellowBots,
 				blueBots);
 		this.ball = ball;
 	}

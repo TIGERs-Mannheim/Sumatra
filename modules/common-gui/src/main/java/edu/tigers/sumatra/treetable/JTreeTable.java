@@ -1,25 +1,24 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 23.11.2011
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.treetable;
 
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
 import java.util.EventObject;
 
+import javax.swing.AbstractAction;
 import javax.swing.AbstractCellEditor;
 import javax.swing.DefaultCellEditor;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.JTree;
+import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import javax.swing.LookAndFeel;
 import javax.swing.UIManager;
@@ -34,6 +33,7 @@ import javax.swing.tree.TreePath;
 
 import org.apache.commons.configuration.HierarchicalConfiguration.Node;
 import org.apache.commons.configuration.tree.ConfigurationNode;
+import org.apache.log4j.Logger;
 
 import edu.tigers.sumatra.lookandfeel.ILookAndFeelStateObserver;
 import edu.tigers.sumatra.lookandfeel.LookAndFeelStateAdapter;
@@ -64,6 +64,7 @@ import edu.tigers.sumatra.lookandfeel.LookAndFeelStateAdapter;
  */
 public class JTreeTable extends JTable
 {
+	private static final Logger log = Logger.getLogger(JTreeTable.class.getName());
 	/**  */
 	private static final long serialVersionUID = -3052468144632521282L;
 	
@@ -80,11 +81,65 @@ public class JTreeTable extends JTable
 		super();
 		setTreeTableModel(treeTableModel);
 		this.treeTableModel = treeTableModel;
-		
 		// setCellEditor(anEditor) // # Potentally check for validity...?
+
+        this.getTableHeader().setReorderingAllowed(false);
+
+		// Add Keyboard Actions
+		// Expand
+		this.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("RIGHT"), "expand");
+		this.getActionMap().put("expand", new AbstractAction() {
+			@Override
+			public void actionPerformed(final ActionEvent actionEvent) {
+				int r = JTreeTable.this.getSelectedRow();
+				JTreeTable.this.expandRow(r);
+			}
+		});
+
+		// Collapse
+		this.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("LEFT"), "collapse");
+		this.getActionMap().put("collapse", new AbstractAction() {
+			@Override
+			public void actionPerformed(final ActionEvent actionEvent) {
+				int r = JTreeTable.this.getSelectedRow();
+				JTreeTable.this.collapseRow(r);
+			}
+		});
+
+        // Edit
+        this.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("TAB"), "edit");
+        this.getActionMap().put("edit", new AbstractAction() {
+            @Override
+            public void actionPerformed(final ActionEvent actionEvent) {
+                int r = JTreeTable.this.getSelectedRow();
+				JTreeTable.this.editCellAt(r, 1);
+            }
+        });
+
 	}
-	
-	
+
+	/**
+	 * Expand the given row
+	 *
+	 * @param row
+	 */
+	public void expandRow(int row)
+	{
+		this.tree.expandRow(row);
+		this.tree.setSelectionRow(row);
+	}
+
+	/**
+	 * Collapse the given row
+	 *
+	 * @param row
+	 */
+	public void collapseRow(int row)
+	{
+		this.tree.collapseRow(row);
+		this.tree.setSelectionRow(row);
+	}
+
 	/**
 	 * Sets the {@link ITreeTableModel} to be shown by this JTreeTable
 	 * 
@@ -270,6 +325,7 @@ public class JTreeTable extends JTable
 			return Class.forName(clazz);
 		} catch (ClassNotFoundException err)
 		{
+			log.error("Could not associate class: " + clazz, err);
 			return String.class;
 		}
 	}

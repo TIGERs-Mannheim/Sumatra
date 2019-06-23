@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills.util;
@@ -11,11 +11,11 @@ import static java.lang.Math.signum;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * A charging value can be charged from a default value up to a limit with a constant charge rate.
  */
 public class ChargingValue
 {
-	private double defaultValue;
+	private final double defaultValue;
 	private final double chargeRate;
 	private double limit;
 	
@@ -28,7 +28,7 @@ public class ChargingValue
 		defaultValue = builder.defaultValue;
 		chargeRate = builder.chargeRate;
 		limit = builder.limit;
-		reset();
+		value = builder.initValue;
 	}
 	
 	
@@ -56,12 +56,6 @@ public class ChargingValue
 	public void setValue(final double value)
 	{
 		this.value = value;
-	}
-	
-	
-	public void setDefaultValue(final double defaultValue)
-	{
-		this.defaultValue = defaultValue;
 	}
 	
 	
@@ -101,6 +95,12 @@ public class ChargingValue
 	}
 	
 	
+	public void updateStall(long timestamp)
+	{
+		tLastIncrease = timestamp;
+	}
+	
+	
 	private boolean isInLimit(double newValue)
 	{
 		return (signum(chargeRate) < 0 && newValue >= limit)
@@ -125,6 +125,7 @@ public class ChargingValue
 		private double defaultValue = 0;
 		private double chargeRate = 1;
 		private double limit = POSITIVE_INFINITY;
+		private Double initValue;
 		
 		
 		private Builder()
@@ -174,12 +175,30 @@ public class ChargingValue
 		
 		
 		/**
+		 * Sets the {@code initValue} and returns a reference to this Builder so that the methods can be chained
+		 * together.
+		 *
+		 * @param initValue the {@code initValue} to set
+		 * @return a reference to this Builder
+		 */
+		public Builder withInitValue(final double initValue)
+		{
+			this.initValue = initValue;
+			return this;
+		}
+		
+		
+		/**
 		 * Returns a {@code ChargingValue} built from the parameters previously set.
 		 *
 		 * @return a {@code ChargingValue} built with parameters of this {@code ChargingValue.Builder}
 		 */
 		public ChargingValue build()
 		{
+			if (initValue == null)
+			{
+				initValue = defaultValue;
+			}
 			return new ChargingValue(this);
 		}
 	}

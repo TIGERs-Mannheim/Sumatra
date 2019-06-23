@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.vector;
@@ -9,7 +9,6 @@ import org.apache.commons.math3.linear.RealVector;
 
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
 
 
@@ -27,9 +26,9 @@ import edu.tigers.sumatra.math.SumatraMath;
 public class Vector2 extends AVector2
 {
 	/** */
-	private double	x;
+	private double x;
 	/** */
-	private double	y;
+	private double y;
 	
 	
 	/**
@@ -37,8 +36,8 @@ public class Vector2 extends AVector2
 	 */
 	protected Vector2()
 	{
-		setX(0);
-		setY(0);
+		x = 0;
+		y = 0;
 	}
 	
 	
@@ -50,8 +49,8 @@ public class Vector2 extends AVector2
 	 */
 	protected Vector2(final double x, final double y)
 	{
-		setX(x);
-		setY(y);
+		this.x = x;
+		this.y = y;
 	}
 	
 	
@@ -62,7 +61,8 @@ public class Vector2 extends AVector2
 	 */
 	protected Vector2(final IVector original)
 	{
-		set(original);
+		x = original.x();
+		y = original.y();
 	}
 	
 	
@@ -112,7 +112,22 @@ public class Vector2 extends AVector2
 	 */
 	public static Vector2 fromAngle(final double angle)
 	{
-		return X_AXIS.turnToNew(angle);
+		final double yn = SumatraMath.sin(angle);
+		final double xn = SumatraMath.cos(angle);
+		return Vector2.fromXY(xn, yn);
+	}
+	
+	
+	/**
+	 * @param angle an angle
+	 * @param length the length
+	 * @return new vector with given angle and given length
+	 */
+	public static Vector2 fromAngleLength(final double angle, final double length)
+	{
+		final double yn = SumatraMath.sin(angle) * length;
+		final double xn = SumatraMath.cos(angle) * length;
+		return Vector2.fromXY(xn, yn);
 	}
 	
 	
@@ -294,8 +309,8 @@ public class Vector2 extends AVector2
 	 */
 	public Vector2 turn(final double angle)
 	{
-		final double cosA = AngleMath.cos(angle);
-		final double sinA = AngleMath.sin(angle);
+		final double cosA = SumatraMath.cos(angle);
+		final double sinA = SumatraMath.sin(angle);
 		
 		final double x2 = (x() * cosA) - (y() * sinA);
 		final double y2 = (y() * cosA) + (x() * sinA);
@@ -318,8 +333,8 @@ public class Vector2 extends AVector2
 	public Vector2 turnTo(final double angle)
 	{
 		final double len = getLength2();
-		setY(AngleMath.sin(angle) * len);
-		setX(AngleMath.cos(angle) * len);
+		setY(SumatraMath.sin(angle) * len);
+		setX(SumatraMath.cos(angle) * len);
 		return this;
 	}
 	

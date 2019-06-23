@@ -1,14 +1,8 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Apr 17, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.events;
 
-import edu.tigers.autoreferee.engine.RefboxRemoteCommand;
 import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest.CardInfo.CardType;
 import edu.tigers.sumatra.ids.ETeamColor;
 
@@ -48,16 +42,5 @@ public class CardPenalty
 	public ETeamColor getCardTeam()
 	{
 		return cardTeam;
-	}
-	
-	
-	/**
-	 * Create a {@link RefboxRemoteCommand} instance that can be sent to the refbox
-	 * 
-	 * @return ref command representing this card penalty
-	 */
-	public RefboxRemoteCommand toRefCommand()
-	{
-		return new RefboxRemoteCommand(type, cardTeam);
 	}
 }

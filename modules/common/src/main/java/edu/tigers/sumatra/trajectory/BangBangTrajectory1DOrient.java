@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 19.07.2015
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.trajectory;
 
@@ -42,25 +37,8 @@ public class BangBangTrajectory1DOrient extends BangBangTrajectory1D
 		this.maxAcc = maxAcc;
 		this.maxVel = maxVel;
 		
-		double sDiffShort = AngleMath.normalizeAngle(finalPos - initialPos);
-		double sDiffLong;
-		if (sDiffShort < 0)
-		{
-			sDiffLong = sDiffShort + (2 * AngleMath.PI);
-		} else
-		{
-			sDiffLong = sDiffShort - (2 * AngleMath.PI);
-		}
-		
-		generateTrajectory(initialPos, initialVel, initialPos + sDiffLong, maxVel, maxAcc);
-		double tLong = getTotalTime();
+		double sDiffShort = AngleMath.difference(finalPos, initialPos);
 		generateTrajectory(initialPos, initialVel, initialPos + sDiffShort, maxVel, maxAcc);
-		double tShort = getTotalTime();
-		
-		if (tLong < tShort)
-		{
-			generateTrajectory(initialPos, initialVel, initialPos + sDiffLong, maxVel, maxAcc);
-		}
 	}
 	
 	
@@ -68,5 +46,13 @@ public class BangBangTrajectory1DOrient extends BangBangTrajectory1D
 	public Double getPositionMM(final double t)
 	{
 		return AngleMath.normalizeAngle(getValuesAtTime(t).pos);
+	}
+	
+	
+	@Override
+	public BangBangTrajectory1DOrient mirrored()
+	{
+		return new BangBangTrajectory1DOrient(AngleMath.mirror(initialPos), AngleMath.mirror(finalPos), -initialVel,
+				maxVel, maxAcc);
 	}
 }

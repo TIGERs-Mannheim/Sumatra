@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.basestation;
 
@@ -25,7 +25,7 @@ public interface IBaseStationObserver
 	 * @param id
 	 * @param command
 	 */
-	default void onIncommingBotCommand(final BotID id, final ACommand command)
+	default void onIncomingBotCommand(final BotID id, final ACommand command)
 	{
 	}
 	

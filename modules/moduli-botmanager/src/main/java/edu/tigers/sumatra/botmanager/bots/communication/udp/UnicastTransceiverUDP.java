@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 01.03.2011
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.bots.communication.udp;
 
@@ -14,8 +9,8 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.log4j.Logger;
 
@@ -30,73 +25,30 @@ import edu.tigers.sumatra.botmanager.commands.ACommand;
  */
 public class UnicastTransceiverUDP implements ITransceiverUDP, IReceiverUDPObserver
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	// Logger
-	private static final Logger						log			= Logger.getLogger(UnicastTransceiverUDP.class.getName());
+	private static final Logger log = Logger.getLogger(UnicastTransceiverUDP.class.getName());
 	
-	private int												dstPort		= 0;
-	private int												localPort	= 0;
-	private InetAddress									destination	= null;
-	private DatagramSocket								socket		= null;
+	private int dstPort = 0;
+	private int localPort = 0;
+	private InetAddress destination = null;
+	private DatagramSocket socket = null;
 	
-	private final ITransmitterUDP						transmitter	= new TransmitterUDP();
-	private final ReceiverUDP							receiver		= new ReceiverUDP();
+	private final ITransmitterUDP transmitter = new TransmitterUDP();
+	private final ReceiverUDP receiver = new ReceiverUDP();
 	
-	private final List<ITransceiverUDPObserver>	observers	= new ArrayList<>();
+	private final List<ITransceiverUDPObserver> observers = new CopyOnWriteArrayList<>();
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 * @param legacy
-	 */
-	public UnicastTransceiverUDP(final boolean legacy)
-	{
-		transmitter.setLegacy(legacy);
-		receiver.setLegacy(legacy);
-	}
-	
-	
-	/**
-	 * @param host
-	 * @param port
-	 * @param open
-	 */
-	public UnicastTransceiverUDP(final String host, final int port, final boolean open)
-	{
-		if (open)
-		{
-			open(host, port);
-		} else
-		{
-			setDestination(host, port);
-		}
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	@Override
 	public void addObserver(final ITransceiverUDPObserver o)
 	{
-		synchronized (observers)
-		{
-			observers.add(o);
-		}
+		observers.add(o);
 	}
 	
 	
 	@Override
 	public void removeObserver(final ITransceiverUDPObserver o)
 	{
-		synchronized (observers)
-		{
-			observers.remove(o);
-		}
+		observers.remove(o);
 	}
 	
 	
@@ -248,9 +200,6 @@ public class UnicastTransceiverUDP implements ITransceiverUDP, IReceiverUDPObser
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	@Override
 	public Statistics getReceiverStats()
 	{
@@ -313,9 +262,4 @@ public class UnicastTransceiverUDP implements ITransceiverUDP, IReceiverUDPObser
 			open();
 		}
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- Threads --------------------------------------------------------
-	// --------------------------------------------------------------------------
 }

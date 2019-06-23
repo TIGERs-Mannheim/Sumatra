@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.botmanager.basestation;
@@ -23,16 +23,14 @@ import com.github.g3force.configurable.Configurable;
 
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.bot.EBotType;
-import edu.tigers.sumatra.botmanager.bots.TigerBotV3;
+import edu.tigers.sumatra.botmanager.bots.TigerBot;
 import edu.tigers.sumatra.botmanager.bots.communication.ENetworkState;
 import edu.tigers.sumatra.botmanager.bots.communication.udp.ITransceiverUDPObserver;
 import edu.tigers.sumatra.botmanager.bots.communication.udp.UnicastTransceiverUDP;
 import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationACommand;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationAuth;
-import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationConfigV2;
-import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationConfigV2.BSModuleConfig;
-import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationConfigV2.EWifiSpeed;
+import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationConfigV3;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationEthStats;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationPing;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStats;
@@ -59,75 +57,56 @@ import edu.tigers.sumatra.thread.Watchdog;
  */
 public class TigersBaseStation extends ABaseStation implements ITransceiverUDPObserver, IWatchdogObserver
 {
-	
-	private static final Logger					log				= Logger.getLogger(TigersBaseStation.class.getName());
-	private final UnicastTransceiverUDP			transceiver		= new UnicastTransceiverUDP(false);
+	private static final Logger log = Logger.getLogger(TigersBaseStation.class.getName());
+	private final UnicastTransceiverUDP transceiver = new UnicastTransceiverUDP();
 	
 	@Configurable(defValue = "10200")
-	private int											localPort		= 10200;
-	@Configurable(defValue = "192.168.20.210", spezis = { "ROBOCUP", "LAB", "ANDRE" })
-	private String										host				= "192.168.20.210";
+	private int localPort = 10200;
+	@Configurable(defValue = "192.168.20.210", spezis = { "ROBOCUP", "LAB", "ANDRE", "TISCH", "NICOLAI" })
+	private String host = "192.168.20.210";
 	@Configurable(defValue = "10201")
-	private int											dstPort			= 10201;
+	private int dstPort = 10201;
 	
-	@Configurable(spezis = { "ROBOCUP", "LAB", "ANDRE" }, defValue = "121")
-	private int											channel			= 0;
+	@Configurable(spezis = { "ROBOCUP", "LAB", "ANDRE", "TISCH", "NICOLAI" }, defValue = "121")
+	private int channel = 0;
 	@Configurable(comment = "Fix the runtime regardless of the number of bot that are connected.", defValue = "true")
-	private boolean									fixedRuntime	= true;
+	private boolean fixedRuntime = true;
 	@Configurable(comment = "Max communication slots to open for communication to bots", defValue = "8")
-	private int											maxBots			= 8;
-	@Configurable(comment = "timeout when bot is considered to be offline.", defValue = "1000")
-	private int											timeout			= 1000;
-	@Configurable(comment = "wifi speed (must be consistent with bots wifi speed!)", defValue = "WIFI_SPEED_2M")
-	private EWifiSpeed								speed				= EWifiSpeed.WIFI_SPEED_2M;
+	private int maxBots = 8;
 	
-	@Configurable(defValue = "10010")
-	private int											rstPort			= 10010;
-	@Configurable(defValue = "50")
-	private int											rstRate			= 50;
-	@Configurable(defValue = "false")
-	private boolean									rstEnabled		= false;
+	private int visionPort = -1;
+	private String visionAddress = "";
 	
-	private int											visionPort		= -1;
-	private String										visionAddress	= "";
+	private ScheduledExecutorService pingService = null;
+	private PingThread pingThread = null;
+	private Connector connectTimer = null;
 	
-	private ScheduledExecutorService				pingService		= null;
-	private PingThread								pingThread		= null;
-	private Connector									connectTimer	= null;
+	private static final int BASE_STATION_TIMEOUT = 1000;
+	private final Watchdog watchdog = new Watchdog(BASE_STATION_TIMEOUT);
+	private ENetworkState netState = ENetworkState.OFFLINE;
 	
-	private final Watchdog							watchdog			= new Watchdog(timeout);
-	private ENetworkState							netState			= ENetworkState.OFFLINE;
+	private Set<BotID> lastBots = new HashSet<>();
 	
-	private Set<BotID>								lastBots			= new HashSet<>();
+	private static final int STAT_ENTRIES = 10;
+	private final Queue<BaseStationWifiStats> wifiStats = new LinkedList<>();
+	private final Queue<BaseStationEthStats> ethStats = new LinkedList<>();
 	
-	private final int									key;
-	
-	private static final int						STAT_ENTRIES	= 10;
-	private final Queue<BaseStationWifiStats>	wifiStats		= new LinkedList<>();
-	private final Queue<BaseStationEthStats>	ethStats			= new LinkedList<>();
-	
-	private int											updateRate		= 0;
-	
-	private BotParamsManager						botParamsManager;
+	private BotParamsManager botParamsManager;
 	
 	
-	private static final String					CONFIG_CAT		= "botmgr";
+	private static final String CONFIG_CAT = "botmgr";
 	static
 	{
 		ConfigRegistration.registerClass(CONFIG_CAT, TigersBaseStation.class);
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * Default constructor.
 	 */
 	public TigersBaseStation()
 	{
 		super(EBotType.TIGER_V3);
-		key = 0;
 	}
 	
 	
@@ -137,7 +116,7 @@ public class TigersBaseStation extends ABaseStation implements ITransceiverUDPOb
 		final NetworkInterface nif = NetworkUtility.chooseNetworkInterface(host, 3);
 		if (nif == null)
 		{
-			log.error("No proper nif for base station in network '" + host + "' found!");
+			log.warn("No proper nif for base station in network '" + host + "' found!");
 		} else
 		{
 			log.info("Chose nif for base station: " + nif.getDisplayName() + ".");
@@ -145,7 +124,7 @@ public class TigersBaseStation extends ABaseStation implements ITransceiverUDPOb
 		
 		try
 		{
-			SSLVisionCam cam = (SSLVisionCam) SumatraModel.getInstance().getModule(ACam.MODULE_ID);
+			SSLVisionCam cam = (SSLVisionCam) SumatraModel.getInstance().getModule(ACam.class);
 			visionAddress = cam.getAddress();
 			visionPort = cam.getPort();
 		} catch (ModuleNotFoundException err)
@@ -155,7 +134,7 @@ public class TigersBaseStation extends ABaseStation implements ITransceiverUDPOb
 		
 		try
 		{
-			botParamsManager = (BotParamsManager) SumatraModel.getInstance().getModule(BotParamsManager.MODULE_ID);
+			botParamsManager = SumatraModel.getInstance().getModule(BotParamsManager.class);
 		} catch (ModuleNotFoundException err)
 		{
 			log.error("Could not find BotParamsManager module", err);
@@ -197,13 +176,7 @@ public class TigersBaseStation extends ABaseStation implements ITransceiverUDPOb
 	@Override
 	public void onIncommingCommand(final ACommand cmd)
 	{
-		if (watchdog.isActive())
-		{
-			watchdog.reset();
-		} else
-		{
-			changeNetworkState(ENetworkState.ONLINE);
-		}
+		handleDataReceivedEvent();
 		
 		switch (cmd.getType())
 		{
@@ -255,7 +228,6 @@ public class TigersBaseStation extends ABaseStation implements ITransceiverUDPOb
 			// this gives a nice report over the last second every 100ms :)
 			stats = new BaseStationWifiStats(stats, wifiStats.remove());
 		}
-		updateRate = stats.getUpdateRate();
 		
 		Set<BotID> curBots = new HashSet<>();
 		for (BotStats botStats : stats.getBotStats())
@@ -277,8 +249,7 @@ public class TigersBaseStation extends ABaseStation implements ITransceiverUDPOb
 		{
 			if (!lastBots.contains(botId))
 			{
-				TigerBotV3 botV3 = new TigerBotV3(botId, this, botParamsManager);
-				botV3.setUpdateRate(updateRate - 10.0);
+				TigerBot botV3 = new TigerBot(botId, this, botParamsManager);
 				notifyBotOnline(botV3);
 			}
 		}
@@ -329,7 +300,7 @@ public class TigersBaseStation extends ABaseStation implements ITransceiverUDPOb
 	@Override
 	public void onOutgoingCommand(final ACommand cmd)
 	{
-		// Not interested in any outgoind commands
+		// Not interested in any outgoing commands
 	}
 	
 	
@@ -338,10 +309,9 @@ public class TigersBaseStation extends ABaseStation implements ITransceiverUDPOb
 	{
 		ConfigRegistration.applySpezis(this, CONFIG_CAT, "");
 		ConfigRegistration.applySpezis(this, CONFIG_CAT, SumatraModel.getInstance().getEnvironment());
-		if (netState == ENetworkState.OFFLINE)
-		{
-			changeNetworkState(ENetworkState.CONNECTING);
-		}
+		
+		handleConnectEvent();
+		
 		// user config is needed for vision port.
 		ConfigRegistration.registerConfigurableCallback("user", this);
 	}
@@ -350,7 +320,8 @@ public class TigersBaseStation extends ABaseStation implements ITransceiverUDPOb
 	@Override
 	public void onDisconnect()
 	{
-		changeNetworkState(ENetworkState.OFFLINE);
+		handleDisconnectEvent();
+		
 		ConfigRegistration.unregisterConfigurableCallback("user", this);
 	}
 	
@@ -397,67 +368,21 @@ public class TigersBaseStation extends ABaseStation implements ITransceiverUDPOb
 	}
 	
 	
-	private void sendConfig()
+	private void doOnlineActions()
 	{
-		BaseStationConfigV2 config = new BaseStationConfigV2();
+		watchdog.start(this);
+		
+		BaseStationConfigV3 config = new BaseStationConfigV3();
 		config.setVisionIp(visionAddress);
 		config.setVisionPort(visionPort);
-		config.setRstPort(rstPort);
-		config.setRstRate(rstRate);
-		config.setRstEnabled(rstEnabled);
-		BSModuleConfig modConf = config.getModuleConfig(0);
-		modConf.setChannel(channel);
-		modConf.setFixedRuntime(fixedRuntime);
-		modConf.setMaxBots(maxBots);
-		modConf.setSpeed(speed);
-		modConf.setTimeout(timeout);
+		config.setChannel(channel);
+		config.setFixedRuntime(fixedRuntime);
+		config.setMaxBots(maxBots);
 		enqueueCommand(config);
 	}
 	
 	
-	@SuppressWarnings("squid:MethodCyclomaticComplexity")
-	private void changeNetworkState(final ENetworkState newState)
-	{
-		if (netState == newState)
-		{
-			return;
-		}
-		
-		if ((netState == ENetworkState.OFFLINE) && (newState == ENetworkState.CONNECTING))
-		{
-			offline2connecting(newState);
-			return;
-		}
-		
-		if ((netState == ENetworkState.CONNECTING) && (newState == ENetworkState.OFFLINE))
-		{
-			connecting2offline(newState);
-			return;
-		}
-		
-		if ((netState != ENetworkState.ONLINE) && (newState == ENetworkState.ONLINE))
-		{
-			toOnline(newState);
-			return;
-		}
-		
-		if ((netState == ENetworkState.ONLINE) && (newState == ENetworkState.CONNECTING))
-		{
-			online2Connecting(newState);
-			return;
-		}
-		
-		if ((netState == ENetworkState.ONLINE) && (newState == ENetworkState.OFFLINE))
-		{
-			online2offline(newState);
-			return;
-		}
-		
-		log.error("Invalid state transition from " + netState + " to " + newState);
-	}
-	
-	
-	private void online2offline(final ENetworkState newState)
+	private void revokeOnlineActions()
 	{
 		for (BotID botId : lastBots)
 		{
@@ -465,121 +390,142 @@ public class TigersBaseStation extends ABaseStation implements ITransceiverUDPOb
 		}
 		lastBots.clear();
 		
-		// stop watchdog
 		watchdog.stop();
+	}
+	
+	
+	private void doConnectingActions()
+	{
+		init();
 		
+		// start transceiver
+		transceiver.addObserver(this);
+		transceiver.open();
+	}
+	
+	
+	private void revokeConnectingActions()
+	{
 		// terminate transceiver
 		transceiver.removeObserver(this);
 		transceiver.close();
-		
-		netState = newState;
-		notifyNetworkStateChanged(netState);
-		
-		log.info("Disconnected base station");
 	}
 	
 	
-	private void online2Connecting(final ENetworkState newState)
+	private void createConnectTimer()
 	{
-		for (BotID botId : lastBots)
+		if (connectTimer == null)
 		{
-			notifyBotOffline(botId);
+			connectTimer = new Connector();
+			GeneralPurposeTimer.getInstance().schedule(connectTimer, 0, 1000);
 		}
-		lastBots.clear();
-		
-		// stop watchdog
-		watchdog.stop();
-		
-		netState = newState;
-		notifyNetworkStateChanged(netState);
-		
-		connectTimer = new Connector();
-		GeneralPurposeTimer.getInstance().schedule(connectTimer, 0, 1000);
-		
-		log.debug("Base station timed out");
 	}
 	
 	
-	private void toOnline(final ENetworkState newState)
-	{
-		// start watchdog
-		watchdog.start(this);
-		
-		netState = newState;
-		notifyNetworkStateChanged(netState);
-		sendConfig();
-		
-		log.info("Connected base station");
-	}
-	
-	
-	private void connecting2offline(final ENetworkState newState)
+	private void cancelConnectTimer()
 	{
 		if (connectTimer != null)
 		{
 			connectTimer.cancel();
+			connectTimer = null;
 		}
-		
-		// stop transceiver
-		transceiver.removeObserver(this);
-		transceiver.close();
-		
-		netState = newState;
-		notifyNetworkStateChanged(netState);
-		
-		log.info("Disconnected base station");
 	}
 	
 	
-	private void offline2connecting(final ENetworkState newState)
+	private void handleConnectEvent()
 	{
-		init();
-		// start transceiver
-		transceiver.addObserver(this);
-		transceiver.open();
+		if (netState != ENetworkState.OFFLINE)
+		{
+			return;
+		}
 		
-		connectTimer = new Connector();
-		GeneralPurposeTimer.getInstance().schedule(connectTimer, 0, 1000);
+		doConnectingActions();
+		createConnectTimer();
 		
-		netState = newState;
+		netState = ENetworkState.CONNECTING;
 		notifyNetworkStateChanged(netState);
 		
 		log.debug("Base station connecting");
 	}
 	
 	
+	private void handleDisconnectEvent()
+	{
+		if (netState == ENetworkState.OFFLINE)
+		{
+			return;
+		}
+		
+		revokeOnlineActions();
+		revokeConnectingActions();
+		cancelConnectTimer();
+		
+		netState = ENetworkState.OFFLINE;
+		notifyNetworkStateChanged(netState);
+		
+		log.info("Disconnected base station");
+	}
+	
+	
+	private void handleTimeoutEvent()
+	{
+		if (netState != ENetworkState.ONLINE)
+		{
+			return;
+		}
+		
+		revokeOnlineActions();
+		createConnectTimer();
+		
+		netState = ENetworkState.CONNECTING;
+		notifyNetworkStateChanged(netState);
+		
+		log.debug("Base station timed out");
+	}
+	
+	
+	private void handleDataReceivedEvent()
+	{
+		if (watchdog.isActive())
+		{
+			watchdog.reset();
+		}
+		
+		if (netState != ENetworkState.CONNECTING)
+		{
+			return;
+		}
+		
+		cancelConnectTimer();
+		doOnlineActions();
+		
+		netState = ENetworkState.ONLINE;
+		notifyNetworkStateChanged(netState);
+		
+		log.info("Connected base station");
+	}
+	
+	
 	@Override
 	public void onWatchdogTimeout()
 	{
-		if (netState == ENetworkState.ONLINE)
-		{
-			changeNetworkState(ENetworkState.CONNECTING);
-		}
+		handleTimeoutEvent();
 	}
 	
 	
 	@Override
 	public String getName()
 	{
-		return "BaseStation " + key;
-	}
-	
-	
-	/**
-	 * @return the updateRate
-	 */
-	public final int getUpdateRate()
-	{
-		return updateRate;
+		return "BaseStation";
 	}
 	
 	
 	private class PingThread implements Runnable
 	{
-		private int								id					= 0;
-		private int								payloadLength	= 0;
+		private int id = 0;
+		private final int payloadLength;
 		
-		private final Map<Integer, Long>	activePings		= new HashMap<>();
+		private final Map<Integer, Long> activePings = new HashMap<>();
 		
 		
 		/**
@@ -633,10 +579,6 @@ public class TigersBaseStation extends ABaseStation implements ITransceiverUDPOb
 		public void run()
 		{
 			enqueueCommand(new BaseStationAuth());
-			if (netState == ENetworkState.ONLINE)
-			{
-				connectTimer.cancel();
-			}
 		}
 	}
 }

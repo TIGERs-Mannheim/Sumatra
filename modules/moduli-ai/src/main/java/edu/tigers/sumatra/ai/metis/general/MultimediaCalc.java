@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.metis.general;
 
@@ -9,12 +9,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.github.g3force.configurable.Configurable;
+
 import edu.tigers.sumatra.Referee.SSL_Referee.Command;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
-import edu.tigers.sumatra.ai.math.OffensiveMath;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
-import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
+import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.ai.metis.offense.OffensiveMath;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
@@ -32,7 +33,12 @@ import edu.tigers.sumatra.referee.data.GameState;
 public class MultimediaCalc extends ACalculator
 {
 	private static final long TOGGLE_TIME = 550_000_000L;
-	private long toogleTimer = 0;
+	
+	@Configurable(comment = "time in seconds", defValue = "3.0")
+	private static double cheeringStopTimer = 3.0;
+	
+	
+	private long toggleTimer = 0;
 	
 	private int timeoutLedStatus = 0;
 	private boolean toggler = false;
@@ -43,9 +49,9 @@ public class MultimediaCalc extends ACalculator
 	@Override
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
-		if (toogleTimer == 0)
+		if (toggleTimer == 0)
 		{
-			toogleTimer = baseAiFrame.getWorldFrame().getTimestamp();
+			toggleTimer = baseAiFrame.getWorldFrame().getTimestamp();
 		}
 		Map<BotID, MultimediaControl> multimediaControls = new HashMap<>();
 		
@@ -59,17 +65,18 @@ public class MultimediaCalc extends ACalculator
 			setLedsByPlay(baseAiFrame, multimediaControls);
 		}
 		
-		playSongWhenInsane(newTacticalField, baseAiFrame, multimediaControls);
+		playSongWhenInsane(baseAiFrame, multimediaControls);
 		
 		cheerWhenWeShootAGoal(multimediaControls);
 		newTacticalField.setMultimediaControl(multimediaControls);
 	}
 	
 	
-	private void playSongWhenInsane(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame,
+	private void playSongWhenInsane(
+			final BaseAiFrame baseAiFrame,
 			final Map<BotID, MultimediaControl> multimediaControls)
 	{
-		boolean insane = OffensiveMath.isKeeperInsane(baseAiFrame, newTacticalField);
+		boolean insane = OffensiveMath.isKeeperInsane(getBall(), getAiFrame().getGamestate());
 		for (BotID key : baseAiFrame.getWorldFrame().tigerBotsAvailable.keySet())
 		{
 			final MultimediaControl control = multimediaControls.getOrDefault(key,
@@ -184,14 +191,14 @@ public class MultimediaCalc extends ACalculator
 			control.setRightGreen(false);
 			control.setRightRed(false);
 		}
-		if (((baseAiFrame.getWorldFrame().getTimestamp() - toogleTimer) > TOGGLE_TIME) && (!toggler))
+		if (((baseAiFrame.getWorldFrame().getTimestamp() - toggleTimer) > TOGGLE_TIME) && (!toggler))
 		{
 			timeoutLedStatus++;
 			if (timeoutLedStatus == baseAiFrame.getPrevFrame().getPlayStrategy().getActiveRoles().size())
 			{
 				timeoutLedStatus = 0;
 			}
-			toogleTimer = baseAiFrame.getWorldFrame().getTimestamp();
+			toggleTimer = baseAiFrame.getWorldFrame().getTimestamp();
 		}
 	}
 	
@@ -212,8 +219,7 @@ public class MultimediaCalc extends ACalculator
 				}
 			}
 		}
-		if ((((getWFrame().getTimestamp() - cheeringTimer) * 1e-9) > OffensiveConstants
-				.getCheeringStopTimer())
+		if ((((getWFrame().getTimestamp() - cheeringTimer) * 1e-9) > cheeringStopTimer)
 				&& (cheeringTimer != 0))
 		{
 			for (BotID key : getWFrame().tigerBotsAvailable.keySet())

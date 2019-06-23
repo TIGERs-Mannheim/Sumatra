@@ -10,8 +10,8 @@ import java.util.List;
 import com.github.g3force.configurable.Configurable;
 import com.github.g3force.configurable.IConfigObserver;
 
-import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
-import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
+import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
+import edu.tigers.sumatra.ai.metis.MetisAiFrame;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
@@ -69,7 +69,7 @@ public class PositioningPlay extends APlay implements IConfigObserver
 	
 	
 	@Override
-	protected ARole onAddRole(final MetisAiFrame frame)
+	protected ARole onAddRole()
 	{
 		List<CommandList> commandQueue = TestPlayManager.getInstance().getCommandQueue();
 		

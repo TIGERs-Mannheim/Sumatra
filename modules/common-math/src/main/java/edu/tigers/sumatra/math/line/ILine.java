@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.line;
@@ -199,4 +199,10 @@ public interface ILine extends IEuclideanDistance
 	 * @return nearest point on this line segment
 	 */
 	Vector2 nearestPointOnLineSegment(final IVector2 point);
+	
+	
+	/**
+	 * @return the v2 implementation of this line
+	 */
+	edu.tigers.sumatra.math.line.v2.ILine v2();
 }

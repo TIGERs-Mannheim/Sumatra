@@ -1,30 +1,39 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
 
+import java.util.Collections;
+
 import com.github.g3force.configurable.Configurable;
 
+import edu.tigers.sumatra.botmanager.commands.botskills.data.KickerDribblerCommands;
+import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
+import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.pathfinder.obstacles.CircleObstacle;
 import edu.tigers.sumatra.skillsystem.ESkill;
 import edu.tigers.sumatra.skillsystem.skills.util.AroundBallCalc;
-import edu.tigers.sumatra.skillsystem.skills.util.SkillUtil;
+import edu.tigers.sumatra.skillsystem.skills.util.AroundObstacleCalc;
+import edu.tigers.sumatra.skillsystem.skills.util.PositionValidator;
 import edu.tigers.sumatra.statemachine.IState;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Protect the ball against a given opponent
  */
 public class ProtectBallSkill extends AMoveSkill
 {
 	@Configurable(comment = "Distance to keep to the ball during protection")
-	private static double dist2Ball = 10;
+	private static double finalDist2Ball = 10;
 	
-	private DynamicPosition protectionTarget;
+	private final PositionValidator positionValidator = new PositionValidator();
+	private final DynamicPosition protectionTarget;
 	
 	
 	/**
@@ -34,16 +43,27 @@ public class ProtectBallSkill extends AMoveSkill
 	{
 		super(ESkill.PROTECT_BALL);
 		this.protectionTarget = protectionTarget;
+		this.protectionTarget.setUseKickerPos(false);
+		this.protectionTarget.setLookahead(0.1);
 		IState protectBallState = new ProtectBallState();
 		setInitialState(protectBallState);
 	}
 	
 	
-	public void setProtectionTarget(final DynamicPosition protectionTarget)
+	@Override
+	protected void updateKickerDribbler(final KickerDribblerCommands kickerDribblerOutput)
 	{
-		this.protectionTarget = protectionTarget;
+		super.updateKickerDribbler(kickerDribblerOutput);
+		if (protectionTarget.distanceTo(getBall().getPos()) < Geometry.getBotRadius())
+		{
+			kickerDribblerOutput.setKick(1.5, EKickerDevice.STRAIGHT, EKickerMode.ARM);
+			getMoveCon().setDribblerSpeed(0);
+		} else
+		{
+			kickerDribblerOutput.setKick(0, EKickerDevice.STRAIGHT, EKickerMode.DISARM);
+			getMoveCon().setDribblerSpeed(getTBot().hasBallContact() ? 10000 : 0);
+		}
 	}
-	
 	
 	private class ProtectBallState extends MoveToState
 	{
@@ -54,45 +74,76 @@ public class ProtectBallSkill extends AMoveSkill
 		
 		
 		@Override
+		public void doEntryActions()
+		{
+			super.doEntryActions();
+			getMoveCon().setBallObstacle(false);
+			getMoveCon().setBotsObstacle(false);
+		}
+		
+		
+		@Override
 		public void doUpdate()
 		{
-			// copy for thread-safety
-			DynamicPosition curProtectTarget = protectionTarget;
-			curProtectTarget.update(getWorldFrame());
-			IVector2 dest = AroundBallCalc
-					.aroundBall()
-					.withBallPos(getBall().getPos())
-					.withTBot(getTBot())
-					.withDestination(getDestination(0, curProtectTarget))
-					.withMaxMargin(50)
-					.withMinMargin(dist2Ball)
-					.build()
-					.getAroundBallDest();
+			protectionTarget.update(getWorldFrame());
 			
+			final IVector2 finalDestination = getFinalDestination(protectionTarget);
+			IVector2 dest = finalDestination;
+			double dist2Ball;
+			
+			AroundObstacleCalc aroundObstacleCalc = new AroundObstacleCalc(protectionTarget, getBallPos(), getTBot());
+			if (aroundObstacleCalc.isAroundObstacleNeeded(finalDestination))
+			{
+				dest = aroundObstacleCalc.getAroundObstacleDest().orElse(dest);
+				dist2Ball = -50;
+			} else
+			{
+				dist2Ball = finalDist2Ball;
+			}
+			
+			dest = aroundBall(dest, dist2Ball);
 			double targetOrientation = getTargetOrientation(dest);
-			dest = SkillUtil.movePosInsideFieldWrtBall(dest, getBallPos());
-			dest = SkillUtil.movePosOutOfPenAreaWrtBall(dest, getBall(),
-					Geometry.getPenaltyAreaOur().withMargin(Geometry.getPenaltyAreaMargin()),
-					Geometry.getPenaltyAreaTheir().withMargin(getTBot().getCenter2DribblerDist()));
+			if (aroundObstacleCalc.isAroundObstacleNeeded(finalDestination))
+			{
+				targetOrientation = aroundObstacleCalc.adaptTargetOrientation(targetOrientation);
+			}
+			
+			positionValidator.update(getWorldFrame(), getMoveCon(), getTBot());
+			dest = positionValidator.movePosInsideField(dest);
+			dest = positionValidator.movePosOutOfPenAreaWrtBall(dest);
 			
 			getMoveCon().updateDestination(dest);
 			getMoveCon().updateTargetAngle(targetOrientation);
-			
-			getMoveCon().setBallObstacle(false);
+			getMoveCon().setCustomObstacles(Collections
+					.singletonList(new CircleObstacle(Circle.createCircle(protectionTarget, Geometry.getBotRadius() * 2))));
 			
 			super.doUpdate();
 		}
 		
 		
-		private IVector2 getDestination(double margin, DynamicPosition curProtectTarget)
+		private IVector2 aroundBall(final IVector2 destination, final double dist2Ball)
 		{
-			return LineMath.stepAlongLine(getBallPos(), curProtectTarget, getDistance(margin));
+			return AroundBallCalc
+					.aroundBall()
+					.withBallPos(getBall().getTrajectory().getPosByTime(0.05).getXYVector())
+					.withTBot(getTBot())
+					.withDestination(destination)
+					.withMaxMargin(50)
+					.withMinMargin(dist2Ball)
+					.build()
+					.getAroundBallDest();
 		}
 		
 		
-		private double getDistance(double margin)
+		private IVector2 getFinalDestination(DynamicPosition curProtectTarget)
 		{
-			return getTBot().getCenter2DribblerDist() + Geometry.getBallRadius() + dist2Ball + margin;
+			return LineMath.stepAlongLine(getBallPos(), curProtectTarget, getDistance());
+		}
+		
+		
+		private double getDistance()
+		{
+			return getTBot().getCenter2DribblerDist() + Geometry.getBallRadius() + finalDist2Ball;
 		}
 		
 		

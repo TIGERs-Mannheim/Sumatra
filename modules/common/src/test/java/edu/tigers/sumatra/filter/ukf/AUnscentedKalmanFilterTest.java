@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 25.07.2015
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.filter.ukf;
 
@@ -12,6 +7,8 @@ import java.util.Arrays;
 
 import org.junit.Assert;
 import org.junit.Test;
+
+import edu.tigers.sumatra.math.SumatraMath;
 
 
 /**
@@ -71,8 +68,8 @@ public class AUnscentedKalmanFilterTest
 			// rotate velocity according to angular velocity
 			double rot = vel[2] * deltaT;
 			
-			vel[0] = (vel[0] * Math.cos(rot)) - (vel[1] * Math.sin(rot));
-			vel[1] = (vel[1] * Math.cos(rot)) + (vel[0] * Math.sin(rot));
+			vel[0] = (vel[0] * SumatraMath.cos(rot)) - (vel[1] * SumatraMath.sin(rot));
+			vel[1] = (vel[1] * SumatraMath.cos(rot)) + (vel[0] * SumatraMath.sin(rot));
 			
 			pos[0] += vel[0] * deltaT;
 			pos[1] += vel[1] * deltaT;

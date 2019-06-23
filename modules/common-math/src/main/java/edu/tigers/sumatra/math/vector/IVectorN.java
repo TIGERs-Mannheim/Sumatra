@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.vector;
@@ -12,16 +12,34 @@ import java.util.function.Function;
  */
 public interface IVectorN extends IVector
 {
-	@Override
-	VectorN addNew(IVector vector);
+	/**
+	 * Adds 'this' and 'vector' and returns the result in a new object, while 'this' and 'vector' stay unaffected.
+	 *
+	 * @param vector
+	 * @return The result as a new object
+	 */
+	VectorN addNew(IVectorN vector);
 	
 	
-	@Override
-	VectorN subtractNew(IVector vector);
+	/**
+	 * Subtracts the given 'vector' from 'this' and returns the result in a new object, while 'this' and 'vector' stay
+	 * unaffected.
+	 *
+	 * @param vector
+	 * @return The result as a new object
+	 */
+	VectorN subtractNew(IVectorN vector);
 	
 	
-	@Override
-	VectorN multiplyNew(IVector vector);
+	/**
+	 * Multiplies each element of the given 'vector' with the corresponding element of 'this' and returns the result in a
+	 * new object, while 'this' and 'vector' stay
+	 * unaffected.
+	 *
+	 * @param vector
+	 * @return The result as a new object
+	 */
+	VectorN multiplyNew(IVectorN vector);
 	
 	
 	@Override

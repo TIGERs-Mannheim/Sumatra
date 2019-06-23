@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.vision.data;
@@ -19,12 +19,13 @@ import edu.tigers.sumatra.math.vector.IVector3;
  */
 public class FilteredVisionBall
 {
-	private final IVector3	pos;
-	private final IVector3	vel;
-	private final IVector3	acc;
-	private final boolean	chipped;
-	private final double		vSwitch;
-	private final long		lastVisibleTimestamp;
+	private final IVector3 pos;
+	private final IVector3 vel;
+	private final IVector3 acc;
+	private final boolean chipped;
+	private final double vSwitch;
+	private final long lastVisibleTimestamp;
+	private final double spin;
 	
 	
 	private FilteredVisionBall(final Builder builder)
@@ -41,6 +42,7 @@ public class FilteredVisionBall
 			vSwitch = builder.vSwitch;
 		}
 		lastVisibleTimestamp = builder.lastVisibleTimestamp;
+		spin = builder.spin;
 	}
 	
 	
@@ -95,6 +97,57 @@ public class FilteredVisionBall
 	}
 	
 	
+	public double getSpin()
+	{
+		return spin;
+	}
+	
+	
+	/**
+	 * Extrapolate ball by using trajectory.
+	 * 
+	 * @param timestampNow
+	 * @param timestampFuture
+	 * @return
+	 */
+	public FilteredVisionBall extrapolate(final long timestampNow, final long timestampFuture)
+	{
+		if (timestampFuture < timestampNow)
+		{
+			return this;
+		}
+		
+		return getTrajectory(timestampNow).getStateAtTimestamp(timestampFuture);
+	}
+	
+	
+	/**
+	 * Get ball trajectory.
+	 * 
+	 * @param timestampNow
+	 * @return
+	 */
+	public ABallTrajectory getTrajectory(final long timestampNow)
+	{
+		ABallTrajectory trajectory;
+		if (chipped)
+		{
+			trajectory = new ChipBallTrajectory(timestampNow, this);
+		} else
+		{
+			long switchTimestamp = timestampNow;
+			if (acc.getLength2() > 1e-6)
+			{
+				switchTimestamp = timestampNow + (long) (((vel.getLength2() - vSwitch) / acc.getLength2()) * 1e9);
+			}
+			
+			trajectory = new StraightBallTrajectory(timestampNow, pos, vel, switchTimestamp);
+		}
+		
+		return trajectory;
+	}
+	
+	
 	@Override
 	public String toString()
 	{
@@ -110,12 +163,13 @@ public class FilteredVisionBall
 	 */
 	public static final class Builder
 	{
-		private IVector3	pos;
-		private IVector3	vel;
-		private IVector3	acc;
-		private Boolean	chipped;
-		private double		vSwitch					= -1;
-		private long		lastVisibleTimestamp	= 0;
+		private IVector3 pos;
+		private IVector3 vel;
+		private IVector3 acc;
+		private Boolean chipped;
+		private double vSwitch = -1;
+		private long lastVisibleTimestamp = 0;
+		private double spin = 0;
 		
 		
 		private Builder()
@@ -129,6 +183,23 @@ public class FilteredVisionBall
 		public static Builder create()
 		{
 			return new Builder();
+		}
+		
+		
+		/**
+		 * @param base
+		 * @return new builder based on given base
+		 */
+		public static Builder create(final FilteredVisionBall base)
+		{
+			return new Builder()
+					.withPos(base.pos)
+					.withVel(base.vel)
+					.withAcc(base.acc)
+					.withIsChipped(base.chipped)
+					.withvSwitch(base.vSwitch)
+					.withSpin(base.spin)
+					.withLastVisibleTimestamp(base.lastVisibleTimestamp);
 		}
 		
 		
@@ -199,6 +270,17 @@ public class FilteredVisionBall
 		
 		
 		/**
+		 * @param spin forward/topspin of the ball, backspin is negative
+		 * @return this builder
+		 */
+		public Builder withSpin(final double spin)
+		{
+			this.spin = spin;
+			return this;
+		}
+		
+		
+		/**
 		 * @return new instance
 		 */
 		public FilteredVisionBall build()
@@ -208,6 +290,7 @@ public class FilteredVisionBall
 			Validate.notNull(acc);
 			Validate.notNull(chipped);
 			Validate.isTrue(Double.isFinite(vSwitch));
+			Validate.isTrue(Double.isFinite(spin));
 			return new FilteredVisionBall(this);
 		}
 	}

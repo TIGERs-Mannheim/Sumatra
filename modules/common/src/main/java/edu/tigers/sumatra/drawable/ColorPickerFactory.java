@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.drawable;
 
@@ -8,6 +8,8 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.commons.lang.Validate;
 
 
 /**
@@ -18,21 +20,74 @@ import java.util.List;
 public final class ColorPickerFactory
 {
 	
-	private static final List<Color>	colors	= new ArrayList<Color>();
+	private static final List<Color> colors = new ArrayList<>();
 	
 	static
 	{
-		colors.add(new Color(0xF7181D));
-		colors.add(new Color(0xF73E18));
-		colors.add(new Color(0xF86A19));
-		colors.add(new Color(0xF9951A));
-		colors.add(new Color(0xF9C11B));
-		colors.add(new Color(0xFAEC1B));
-		colors.add(new Color(0xDEFB1C));
-		colors.add(new Color(0xB4FB1D));
-		colors.add(new Color(0x8AFC1E));
-		colors.add(new Color(0x60FD1F));
-		colors.add(new Color(0x37FE20));
+		colors.add(new Color(0x00E52A));
+		colors.add(new Color(0x00E422));
+		colors.add(new Color(0x00E41A));
+		colors.add(new Color(0x00E413));
+		colors.add(new Color(0x00E40B));
+		colors.add(new Color(0x00E404));
+		colors.add(new Color(0x05E400));
+		colors.add(new Color(0x0DE401));
+		colors.add(new Color(0x14E401));
+		colors.add(new Color(0x1CE401));
+		colors.add(new Color(0x24E401));
+		colors.add(new Color(0x2CE401));
+		colors.add(new Color(0x33E401));
+		colors.add(new Color(0x3BE401));
+		colors.add(new Color(0x43E402));
+		colors.add(new Color(0x4BE402));
+		colors.add(new Color(0x52E302));
+		colors.add(new Color(0x5AE302));
+		colors.add(new Color(0x62E302));
+		colors.add(new Color(0x69E302));
+		colors.add(new Color(0x71E302));
+		colors.add(new Color(0x79E303));
+		colors.add(new Color(0x80E303));
+		colors.add(new Color(0x88E303));
+		colors.add(new Color(0x8FE303));
+		colors.add(new Color(0x97E303));
+		colors.add(new Color(0x9FE303));
+		colors.add(new Color(0xA6E303));
+		colors.add(new Color(0xAEE304));
+		colors.add(new Color(0xB5E304));
+		colors.add(new Color(0xBDE304));
+		colors.add(new Color(0xC4E304));
+		colors.add(new Color(0xCCE204));
+		colors.add(new Color(0xD3E204));
+		colors.add(new Color(0xDBE204));
+		colors.add(new Color(0xE2E205));
+		colors.add(new Color(0xE2DB05));
+		colors.add(new Color(0xE2D305));
+		colors.add(new Color(0xE2CC05));
+		colors.add(new Color(0xE2C405));
+		colors.add(new Color(0xE2BD05));
+		colors.add(new Color(0xE2B505));
+		colors.add(new Color(0xE2AE06));
+		colors.add(new Color(0xE2A706));
+		colors.add(new Color(0xE29F06));
+		colors.add(new Color(0xE29806));
+		colors.add(new Color(0xE29006));
+		colors.add(new Color(0xE28906));
+		colors.add(new Color(0xE18206));
+		colors.add(new Color(0xE17A07));
+		colors.add(new Color(0xE17307));
+		colors.add(new Color(0xE16B07));
+		colors.add(new Color(0xE16407));
+		colors.add(new Color(0xE15D07));
+		colors.add(new Color(0xE15607));
+		colors.add(new Color(0xE14E07));
+		colors.add(new Color(0xE14708));
+		colors.add(new Color(0xE14008));
+		colors.add(new Color(0xE13908));
+		colors.add(new Color(0xE13108));
+		colors.add(new Color(0xE12A08));
+		colors.add(new Color(0xE12308));
+		colors.add(new Color(0xE11C08));
+		colors.add(new Color(0xE11408));
 	}
 	
 	
@@ -86,24 +141,26 @@ public final class ColorPickerFactory
 			@Override
 			public Color getColor(final double relValue)
 			{
-				Color color;
-				switch (colorId)
-				{
-					case 1:
-						color = new Color((float) relValue, (float) g, (float) b, (float) alpha);
-						break;
-					case 2:
-						color = new Color((float) r, (float) relValue, (float) b, (float) alpha);
-						break;
-					case 3:
-						color = new Color((float) r, (float) g, (float) relValue, (float) alpha);
-						break;
-					default:
-						throw new IllegalArgumentException("Invalid colorId: " + colorId);
-				}
-				return color;
+				return colorIdToColor((float) relValue, colorId, (float) g, (float) b, (float) alpha, (float) r);
 			}
 		};
+	}
+	
+	
+	private static Color colorIdToColor(final float relValue, final int colorId, final float g, final float b,
+			final float alpha, final float r)
+	{
+		switch (colorId)
+		{
+			case 1:
+				return new Color(relValue, g, b, alpha);
+			case 2:
+				return new Color(r, relValue, b, alpha);
+			case 3:
+				return new Color(r, g, relValue, alpha);
+			default:
+				throw new IllegalArgumentException("Invalid colorId: " + colorId);
+		}
 	}
 	
 	
@@ -131,11 +188,12 @@ public final class ColorPickerFactory
 			@Override
 			public Color getColor(final double relValue)
 			{
+				Validate.isTrue(relValue >= 0);
+				Validate.isTrue(relValue <= 1);
 				int red = (int) ((color2.getRed() * relValue) + (color1.getRed() * (1 - relValue)));
 				int green = (int) ((color2.getGreen() * relValue) + (color1.getGreen() * (1 - relValue)));
 				int blue = (int) ((color2.getBlue() * relValue) + (color1.getBlue() * (1 - relValue)));
-				Color stepColor = new Color(red, green, blue);
-				return stepColor;
+				return new Color(red, green, blue);
 			}
 		};
 	}
@@ -171,7 +229,7 @@ public final class ColorPickerFactory
 	
 	
 	/**
-	 * Get color from a static color map
+	 * Get color from a static color map, scaled from red (zero) to green (one)
 	 * 
 	 * @return
 	 */
@@ -183,17 +241,7 @@ public final class ColorPickerFactory
 			@Override
 			public Color getColor(final double relValue)
 			{
-				
-				double step = 1.0 / colors.size();
-				for (int i = 0; i < colors.size(); i++)
-				{
-					double val = (i + 1) * step;
-					if (relValue <= val)
-					{
-						return colors.get(i);
-					}
-				}
-				return Color.black;
+				return gradientFromList(relValue);
 			}
 			
 			
@@ -203,6 +251,41 @@ public final class ColorPickerFactory
 				Color c = getColor(relValue);
 				g.setColor(c);
 				return c;
+			}
+		};
+	}
+	
+	
+	private static Color gradientFromList(final double relValue)
+	{
+		double step = 1.0 / colors.size();
+		for (int i = 0; i < colors.size(); i++)
+		{
+			double val = (i + 1) * step;
+			if (relValue <= val)
+			{
+				return colors.get(i);
+			}
+		}
+		return Color.black;
+	}
+	
+	
+	public static IColorPicker invert(IColorPicker colorPicker)
+	{
+		return new IColorPicker()
+		{
+			@Override
+			public Color applyColor(final Graphics2D g, final double relValue)
+			{
+				return colorPicker.applyColor(g, 1 - relValue);
+			}
+			
+			
+			@Override
+			public Color getColor(final double relValue)
+			{
+				return colorPicker.getColor(1 - relValue);
 			}
 		};
 	}

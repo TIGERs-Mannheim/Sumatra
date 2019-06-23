@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.drawable;
 
@@ -12,9 +12,10 @@ import java.awt.geom.Arc2D;
 import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.botshape.BotShape;
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -25,21 +26,21 @@ import edu.tigers.sumatra.math.vector.IVector2;
 @Persistent
 public class DrawableBotShape implements IDrawableShape
 {
-	private final IVector2	pos;
-	private final double		angle;
-	private Color				color			= Color.WHITE;
-	private Color				fontColor	= Color.black;
-	private String				id				= "";
+	private final IVector2 pos;
+	private final double angle;
+	private Color fillColor = null;
+	private Color borderColor = Color.WHITE;
+	private Color fontColor = Color.black;
+	private String id = "";
 	
-	private double				center2DribblerDist;
-	private double				radius;
-	private boolean			fill			= true;
+	private double center2DribblerDist;
+	private double radius;
 	
 	
 	@SuppressWarnings("unused")
 	private DrawableBotShape()
 	{
-		this(AVector2.ZERO_VECTOR, 0, 0, 0);
+		this(Vector2f.ZERO_VECTOR, 0, 0, 0);
 	}
 	
 	
@@ -70,9 +71,8 @@ public class DrawableBotShape implements IDrawableShape
 		int drawingY = (int) transBotPos.y() - robotRadius;
 		
 		
-		g.setColor(color);
 		double r = radius;
-		double alpha = Math.acos(center2DribblerDist / r);
+		double alpha = SumatraMath.acos(center2DribblerDist / r);
 		double startAngleRad = (angle - AngleMath.PI_HALF) + tool.getFieldTurn().getAngle() + alpha
 				+ (invert ? AngleMath.PI : 0);
 		double startAngle = AngleMath.rad2deg(startAngleRad);
@@ -81,11 +81,14 @@ public class DrawableBotShape implements IDrawableShape
 		Shape botShape = new Arc2D.Double(drawingX, drawingY, robotRadius * 2, robotRadius * 2, startAngle,
 				endAngle, Arc2D.CHORD);
 		
-		if (fill)
+		if (fillColor != null)
 		{
+			g.setColor(fillColor);
 			g.fill(botShape);
-		} else
+		}
+		if (borderColor != null)
 		{
+			g.setColor(borderColor);
 			g.draw(botShape);
 		}
 		
@@ -117,22 +120,10 @@ public class DrawableBotShape implements IDrawableShape
 	}
 	
 	
-	/**
-	 * @param center2DribblerDist the center2DribblerDist to set
-	 */
-	public final void setCenter2DribblerDist(final double center2DribblerDist)
-	{
-		this.center2DribblerDist = center2DribblerDist;
-	}
-	
-	
-	/**
-	 * @param color the color to set
-	 */
 	@Override
 	public final void setColor(final Color color)
 	{
-		this.color = color;
+		this.fillColor = color;
 	}
 	
 	
@@ -142,6 +133,18 @@ public class DrawableBotShape implements IDrawableShape
 	public final void setFontColor(final Color fontColor)
 	{
 		this.fontColor = fontColor;
+	}
+	
+	
+	public void setFillColor(final Color fillColor)
+	{
+		this.fillColor = fillColor;
+	}
+	
+	
+	public void setBorderColor(final Color borderColor)
+	{
+		this.borderColor = borderColor;
 	}
 	
 	
@@ -160,14 +163,5 @@ public class DrawableBotShape implements IDrawableShape
 	public final void setRadius(final double radius)
 	{
 		this.radius = radius;
-	}
-	
-	
-	/**
-	 * @param fill the fill to set
-	 */
-	public final void setFill(final boolean fill)
-	{
-		this.fill = fill;
 	}
 }

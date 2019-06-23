@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.autoreferee.engine.events.impl;
@@ -19,10 +19,13 @@ import edu.tigers.autoreferee.engine.FollowUpAction.EActionType;
 import edu.tigers.autoreferee.engine.NGeometry;
 import edu.tigers.autoreferee.engine.events.DistanceViolation;
 import edu.tigers.autoreferee.engine.events.EGameEvent;
+import edu.tigers.autoreferee.engine.events.EGameEventDetectorType;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.IPenaltyArea;
+import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.data.GameState;
@@ -37,13 +40,12 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class AttackerToDefenseAreaDistanceDetector extends APreparingGameEventDetector
 {
-	private static final int					priority								= 1;
+	private static final int PRIORITY = 1;
 	
-	/** The minimum allowed distance between the bots of the attacking team and the defense area */
-	private static final double				MIN_ATTACKER_DEFENSE_DISTANCE	= 200;
-	private static final Set<EGameState>	ALLOWED_PREVIOUS_STATES;
+	private static final double INACCURACY_TOLERANCE = 5;
+	private static final Set<EGameState> ALLOWED_PREVIOUS_STATES;
 	
-	private boolean								active								= false;
+	private boolean active = false;
 	
 	static
 	{
@@ -54,18 +56,18 @@ public class AttackerToDefenseAreaDistanceDetector extends APreparingGameEventDe
 	
 	
 	/**
-	 * 
+	 * Default constructor
 	 */
 	public AttackerToDefenseAreaDistanceDetector()
 	{
-		super(EGameState.RUNNING);
+		super(EGameEventDetectorType.ATTACKER_TO_DEFENSE_DISTANCE, EGameState.RUNNING);
 	}
 	
 	
 	@Override
 	public int getPriority()
 	{
-		return priority;
+		return PRIORITY;
 	}
 	
 	
@@ -79,7 +81,7 @@ public class AttackerToDefenseAreaDistanceDetector extends APreparingGameEventDe
 	
 	
 	@Override
-	public Optional<IGameEvent> doUpdate(final IAutoRefFrame frame, final List<IGameEvent> violations)
+	public Optional<IGameEvent> doUpdate(final IAutoRefFrame frame)
 	{
 		if (active)
 		{
@@ -111,14 +113,16 @@ public class AttackerToDefenseAreaDistanceDetector extends APreparingGameEventDe
 	 */
 	private static class Evaluator
 	{
-		private final double							requiredMargin	= MIN_ATTACKER_DEFENSE_DISTANCE + Geometry.getBotRadius();
+		private final double requiredMargin = RuleConstraints.getBotToPenaltyAreaMarginStandard()
+				+ Geometry.getBotRadius()
+				- INACCURACY_TOLERANCE;
 		
-		private final IAutoRefFrame				frame;
-		private final ETeamColor					attackerColor;
+		private final IAutoRefFrame frame;
+		private final ETeamColor attackerColor;
 		private final IPenaltyArea defenderPenArea;
 		
-		private final ITrackedBall					ball;
-		private final Collection<ITrackedBot>	bots;
+		private final ITrackedBall ball;
+		private final Collection<ITrackedBot> bots;
 		
 		
 		public Evaluator(final IAutoRefFrame frame, final ETeamColor attackerColor)
@@ -131,14 +135,34 @@ public class AttackerToDefenseAreaDistanceDetector extends APreparingGameEventDe
 		}
 		
 		
-		public Optional<IGameEvent> evaluate()
+		private Optional<IGameEvent> evaluate()
 		{
 			Optional<ITrackedBot> optOffender = bots.stream()
 					.filter(ColorFilter.get(attackerColor))
 					.filter(bot -> defenderPenArea.isPointInShape(bot.getPos(), requiredMargin))
+					.filter(this::notBeingPushed)
 					.findFirst();
 			
 			return optOffender.map(this::buildViolation);
+		}
+		
+		
+		private boolean notBeingPushed(ITrackedBot bot)
+		{
+			ETeamColor defenderColor = attackerColor.opposite();
+			return !bots.stream()
+					// bots from defending team
+					.filter(ColorFilter.get(defenderColor))
+					// that touch the attacker
+					.filter(b -> bot.getPos().distanceTo(b.getPos()) <= Geometry.getBotRadius() * 2)
+					// push in direction of penalty area
+					.map(b -> Lines.halfLineFromPoints(b.getPos(), bot.getPos()))
+					// find intersection that show that defenders pushs towards penArea
+					.map(defenderPenArea::lineIntersections)
+					.flatMap(List::stream)
+					.findAny()
+					// if any intersection is present, some defender pushes the attacker
+					.isPresent();
 		}
 		
 		

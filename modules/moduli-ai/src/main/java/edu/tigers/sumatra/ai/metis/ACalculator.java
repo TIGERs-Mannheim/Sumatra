@@ -1,21 +1,18 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.metis;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 
 
 /**
  * abstract superclass for every subordinal calculator of the Analyzer
- * 
- * @author Gunther, Oliver Steinbrecher <OST1988@aol.com>
  */
 public abstract class ACalculator implements ICalculator
 {
@@ -23,6 +20,7 @@ public abstract class ACalculator implements ICalculator
 	private boolean active = true;
 	private Exception lastException = null;
 	private BaseAiFrame curAiFrame = null;
+	private TacticalField newTacticalField = null;
 	private boolean executionStatusLastFrame = false;
 	
 	
@@ -35,6 +33,7 @@ public abstract class ACalculator implements ICalculator
 	public final void calculate(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
 		curAiFrame = baseAiFrame;
+		this.newTacticalField = newTacticalField;
 		executionStatusLastFrame = false;
 		if (!active || !isCalculationNecessary(newTacticalField, baseAiFrame))
 		{
@@ -90,5 +89,11 @@ public abstract class ACalculator implements ICalculator
 	public boolean getExecutionStatusLastFrame()
 	{
 		return executionStatusLastFrame;
+	}
+	
+	
+	public TacticalField getNewTacticalField()
+	{
+		return newTacticalField;
 	}
 }

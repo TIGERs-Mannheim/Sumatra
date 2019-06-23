@@ -6,8 +6,6 @@ package edu.tigers.sumatra.wp.ball.trajectory.flat;
 import edu.tigers.sumatra.geometry.BallParameters;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.IVector3;
-import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.wp.ball.trajectory.ABallTrajectory;
 
 
@@ -19,7 +17,7 @@ public class TwoPhaseFixedVelBallTrajectory extends ATwoPhaseBallTrajectory
 	private final TwoPhaseFixedVelParameters params;
 	
 	
-	protected TwoPhaseFixedVelBallTrajectory(final IVector3 kickPos, final IVector3 kickVel, final double tSwitch,
+	private TwoPhaseFixedVelBallTrajectory(final IVector2 kickPos, final IVector2 kickVel, final double tSwitch,
 			final TwoPhaseFixedVelParameters params)
 	{
 		super(kickPos, kickVel, tSwitch, params.getAccSlide(), params.getAccRoll(), 0);
@@ -36,7 +34,7 @@ public class TwoPhaseFixedVelBallTrajectory extends ATwoPhaseBallTrajectory
 	 * @param params
 	 * @return
 	 */
-	public static TwoPhaseFixedVelBallTrajectory fromKick(final IVector2 kickPos, final IVector3 kickVel,
+	public static TwoPhaseFixedVelBallTrajectory fromKick(final IVector2 kickPos, final IVector2 kickVel,
 			final TwoPhaseFixedVelParameters params)
 	{
 		double tSwitch = -(kickVel.getLength2() - params.getVSwitch()) / params.getAccSlide();
@@ -45,7 +43,7 @@ public class TwoPhaseFixedVelBallTrajectory extends ATwoPhaseBallTrajectory
 			tSwitch = 0;
 		}
 		
-		return new TwoPhaseFixedVelBallTrajectory(Vector3.from2d(kickPos, 0), kickVel, tSwitch, params);
+		return new TwoPhaseFixedVelBallTrajectory(kickPos, kickVel, tSwitch, params);
 	}
 	
 	
@@ -55,7 +53,7 @@ public class TwoPhaseFixedVelBallTrajectory extends ATwoPhaseBallTrajectory
 	 * @param params
 	 * @return
 	 */
-	public static TwoPhaseFixedVelBallTrajectory fromState(final IVector3 posNow, final IVector3 velNow,
+	public static TwoPhaseFixedVelBallTrajectory fromState(final IVector2 posNow, final IVector2 velNow,
 			final TwoPhaseFixedVelParameters params)
 	{
 		double tSwitch = 0;
@@ -73,7 +71,7 @@ public class TwoPhaseFixedVelBallTrajectory extends ATwoPhaseBallTrajectory
 	@Override
 	public ABallTrajectory mirrored()
 	{
-		IVector3 vel = Vector3.from2d(kickVel.getXYVector().multiplyNew(-1), kickVel.z());
+		IVector2 vel = kickVel.getXYVector().multiplyNew(-1);
 		IVector2 pos = kickPos.getXYVector().multiplyNew(-1);
 		
 		return TwoPhaseFixedVelBallTrajectory.fromKick(pos, vel, params);

@@ -1,15 +1,11 @@
 curDir = pwd;
 
 addpath(curDir);
-addpath([curDir, '/motor']);
-addpath([curDir, '/learning']);
+addpath([curDir, '/motor_model']);
+addpath([curDir, '/ball_model']);
 addpath([curDir, '/plotting']);
-addpath([curDir, '/wp']);
-addpath([curDir, '/wp/ball']);
-addpath([curDir, '/movement']);
-addpath([curDir, '/kicking']);
-addpath([curDir, '/RANSAC-Toolbox-master']);
+addpath([curDir, '/identification']);
+addpath([curDir, '/redirect']);
 
-
-% addpath([curDir, '/gpml']);
-% startup % GPML
+addpath([curDir, '/ext_lib']);
+addpath([curDir, '/ext_lib/jsonlab']);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills.util;
@@ -30,6 +30,7 @@ import edu.tigers.sumatra.math.botshape.IBotShape;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.trajectory.BangBangTrajectory2D;
+import edu.tigers.sumatra.vision.data.IKickEvent;
 import edu.tigers.sumatra.wp.ball.prediction.IBallTrajectory;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
@@ -46,6 +47,8 @@ public final class BallInterceptor
 	private final IBallTrajectory ballTrajectory;
 	private final ITrackedBot tBot;
 	private final MoveConstraints moveConstraints;
+	@Configurable(defValue = "0.2")
+	private static double tOffsetBase = 0.2;
 	
 	@Configurable(defValue = "0.5")
 	private static double closestTimeThreshold = 0.5;
@@ -55,15 +58,16 @@ public final class BallInterceptor
 	
 	@Configurable(defValue = "0.3")
 	private static double accOffset = 0.3;
-	
 	@Configurable(defValue = "0.2")
-	private static double tOffset = 0.2;
+	private static double tOffsetYoungKick = 1.0;
+	@Configurable(defValue = "2.0")
+	private static double maxAcc = 2;
 	
 	@Configurable(defValue = "2.0")
 	private static double minAcc = 2;
-	
-	@Configurable(defValue = "3.0")
-	private static double maxAcc = 2;
+	@Configurable(defValue = "0.5")
+	private static double minKickAge = 0.5;
+	private final double tOffset;
 	
 	
 	static
@@ -77,6 +81,16 @@ public final class BallInterceptor
 		ballTrajectory = builder.ballTrajectory;
 		tBot = builder.tBot;
 		moveConstraints = builder.moveConstraints;
+		
+		double kickAge = Optional.ofNullable(builder.kickEvent).map(t -> (tBot.getTimestamp() - t.getTimestamp()) / 1e9)
+				.orElse(minKickAge);
+		if (kickAge < minKickAge)
+		{
+			tOffset = tOffsetBase + tOffsetYoungKick;
+		} else
+		{
+			tOffset = tOffsetBase;
+		}
 	}
 	
 	
@@ -151,7 +165,7 @@ public final class BallInterceptor
 	private double getTimeForDestClosestToBallLine()
 	{
 		IVector2 closestDest = ballTrajectory.getTravelLine().nearestPointOnLineSegment(tBot.getBotKickerPos());
-		double dist2ClosestDest = ballTrajectory.getPosByTime(0).distanceTo(closestDest);
+		double dist2ClosestDest = ballTrajectory.getPosByTime(0).getXYVector().distanceTo(closestDest);
 		double dist2Kicker = Math.max(0, dist2ClosestDest - Geometry.getBallRadius());
 		return Math.max(0, ballTrajectory.getTimeByDist(dist2Kicker));
 	}
@@ -159,7 +173,7 @@ public final class BallInterceptor
 	
 	private boolean ballCanHitKicker(double tClosest)
 	{
-		IVector2 ballPos = ballTrajectory.getPosByTime(tClosest);
+		IVector2 ballPos = ballTrajectory.getPosByTime(tClosest).getXYVector();
 		BangBangTrajectory2D traj = getBotTrajectory(ballPos);
 		IBotShape botShape = BotShape.fromFullSpecification(traj.getPositionMM(tClosest), Geometry.getBotRadius(),
 				tBot.getCenter2DribblerDist(), tBot.getOrientation());
@@ -188,7 +202,8 @@ public final class BallInterceptor
 	
 	private double absSlackTime(final double tBall)
 	{
-		IVector2 ballPos = ballTrajectory.getPosByTime(tBall);
+		
+		IVector2 ballPos = ballTrajectory.getPosByTime(tBall).getXYVector();
 		BangBangTrajectory2D traj = getBotTrajectory(ballPos);
 		double slackTime = tBall - traj.getTotalTime();
 		return Math.abs(slackTime);
@@ -227,6 +242,7 @@ public final class BallInterceptor
 		private IBallTrajectory ballTrajectory;
 		private ITrackedBot tBot;
 		private MoveConstraints moveConstraints;
+		private IKickEvent kickEvent;
 		
 		
 		private Builder()
@@ -271,6 +287,20 @@ public final class BallInterceptor
 		public Builder withTrackedBot(final ITrackedBot tBot)
 		{
 			this.tBot = tBot;
+			return this;
+		}
+		
+		
+		/**
+		 * Sets the {@code kickEvent} and returns a reference to this Builder so that the methods can be chained
+		 * together.
+		 *
+		 * @param kickEvent the {@code kickEvent} to set
+		 * @return a reference to this Builder
+		 */
+		public Builder withKickEvent(final IKickEvent kickEvent)
+		{
+			this.kickEvent = kickEvent;
 			return this;
 		}
 		

@@ -9,9 +9,7 @@
 package edu.tigers.sumatra.botmanager.commands;
 
 import edu.tigers.sumatra.botmanager.commands.botskills.ABotSkill;
-import edu.tigers.sumatra.botmanager.commands.botskills.AMoveBotSkill;
 import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillMotorsOff;
-import edu.tigers.sumatra.botmanager.commands.botskills.EDataAcquisitionMode;
 
 
 /**
@@ -19,38 +17,16 @@ import edu.tigers.sumatra.botmanager.commands.botskills.EDataAcquisitionMode;
  */
 public class MatchCommand implements IMatchCommand
 {
-	private ABotSkill					skill					= new BotSkillMotorsOff();
-	private int							feedbackFreq		= 20;
-	private boolean					autoCharge			= false;
-	private MultimediaControl		multimediaControl	= new MultimediaControl();
-	private EDataAcquisitionMode	acqMode				= EDataAcquisitionMode.NONE;
+	private ABotSkill skill = new BotSkillMotorsOff();
+	private boolean autoCharge = false;
+	private boolean strictVelocityLimit = false;
+	private MultimediaControl multimediaControl = new MultimediaControl();
 	
 	
 	@Override
 	public void setSkill(final ABotSkill skill)
 	{
-		switch (skill.getType())
-		{
-			case GLOBAL_POSITION:
-			case GLOBAL_VELOCITY:
-			case GLOBAL_VEL_XY_POS_W:
-			case LOCAL_VELOCITY:
-			case WHEEL_VELOCITY:
-				AMoveBotSkill moveSkill = (AMoveBotSkill) skill;
-				moveSkill.setDataAcquisitionMode(acqMode);
-				break;
-			default:
-				break;
-		}
-		
 		this.skill = skill;
-	}
-	
-	
-	@Override
-	public void setFeedbackFreq(final int freq)
-	{
-		feedbackFreq = freq;
 	}
 	
 	
@@ -68,15 +44,6 @@ public class MatchCommand implements IMatchCommand
 	public final ABotSkill getSkill()
 	{
 		return skill;
-	}
-	
-	
-	/**
-	 * @return the feedbackFreq
-	 */
-	public final int getFeedbackFreq()
-	{
-		return feedbackFreq;
 	}
 	
 	
@@ -106,17 +73,14 @@ public class MatchCommand implements IMatchCommand
 	
 	
 	@Override
-	public void setDataAcquisitionMode(final EDataAcquisitionMode acqMode)
+	public void setStrictVelocityLimit(final boolean enable)
 	{
-		this.acqMode = acqMode;
+		strictVelocityLimit = enable;
 	}
 	
 	
-	/**
-	 * @return
-	 */
-	public EDataAcquisitionMode getDataAcquisitionMode()
+	public final boolean isStrictVelocityLimit()
 	{
-		return acqMode;
+		return strictVelocityLimit;
 	}
 }

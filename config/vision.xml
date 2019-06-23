@@ -10,28 +10,6 @@
         <invisibleLifetimeBall>1</invisibleLifetimeBall>
     </CamFilter>
     <kick>
-        <detectors>
-            <EarlyKickDetector>
-                <camClearTimeout>0.1</camClearTimeout>
-                <directionThreshold>20.0</directionThreshold>
-                <nearBotLimit>500.0</nearBotLimit>
-                <velocityThreshold>2000.0</velocityThreshold>
-                <velocityThresholdDirection>3000.0</velocityThresholdDirection>
-            </EarlyKickDetector>
-        </detectors>
-        <estimators>
-            <ChipKickEstimator>
-                <maxFailures>12</maxFailures>
-                <maxFittingError>200</maxFittingError>
-                <minRecords>8</minRecords>
-                <stopVelEstimationFactor>1.3</stopVelEstimationFactor>
-            </ChipKickEstimator>
-            <StraightKickEstimator>
-                <maxDirectionError>20.0</maxDirectionError>
-                <maxFittingError>100.0</maxFittingError>
-                <numInitialKickVelSamples>10</numInitialKickVelSamples>
-            </StraightKickEstimator>
-        </estimators>
         <validators>
             <DirectionValidator>
                 <maxAngleDiff>45.0</maxAngleDiff>
@@ -61,10 +39,6 @@
         </BallTracker>
         <RobotTracker>
             <measErrorXY>20.0</measErrorXY>
-            <predictionTime>0.025</predictionTime>
         </RobotTracker>
     </tracker>
-    <ViewportArchitect>
-        <maxViewportOverlap>400</maxViewportOverlap>
-    </ViewportArchitect>
 </edu.tigers.sumatra.vision>

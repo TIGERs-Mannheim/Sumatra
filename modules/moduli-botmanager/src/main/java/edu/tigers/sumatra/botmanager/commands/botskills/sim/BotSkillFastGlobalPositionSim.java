@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands.botskills.sim;
 
@@ -102,7 +102,7 @@ public class BotSkillFastGlobalPositionSim implements IBotSkillSim
 				.kickMode(skill.getMode())
 				.kickSpeed(skill.getKickSpeed())
 				.dribblerRPM(skill.getDribbleSpeed())
-				.addCommands(BotSkillSimulator.parseDataAcquisitionMode(input, skill.getDataAcquisitionMode()))
+				.strictVelocityLimit(input.isStrictVelocityLimit())
 				.build();
 	}
 	

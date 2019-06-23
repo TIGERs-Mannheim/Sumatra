@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.autoreferee.engine.states.impl;
@@ -47,10 +47,10 @@ public class PreparePenaltyState extends AbstractAutoRefState
 	private static final Color		AREA_COLOR				= new Color(0, 0, 255, 150);
 	
 	@Configurable(comment = "[ms] The minimum time to wait before sending the start signal")
-	private static long				MIN_WAIT_TIME_MS		= 5_000;
+	private static long minWaitTimeMs = 5_000;
 	
 	@Configurable(comment = "[ms] The time to wait after all bots have come to a stop and the ball has been placed correctly")
-	private static long				READY_WAIT_TIME_MS	= 1_500;
+	private static long readyWaitTimeMs = 1_500;
 	
 	private IVector2					penaltyMark;
 	private Rectangle					keeperArea;
@@ -60,7 +60,7 @@ public class PreparePenaltyState extends AbstractAutoRefState
 	
 	
 	@Override
-	protected void prepare(final IAutoRefFrame frame)
+	protected void prepare(final IAutoRefFrame frame, final IAutoRefStateContext ctx)
 	{
 		GameState gamestate = frame.getGameState();
 		shooterTeam = gamestate.getForTeam();
@@ -77,7 +77,7 @@ public class PreparePenaltyState extends AbstractAutoRefState
 		
 		shapes.add(new DrawableRectangle(keeperArea, AREA_COLOR));
 		
-		if (!timeElapsedSinceEntry(MIN_WAIT_TIME_MS))
+		if (stillInTime(minWaitTimeMs))
 		{
 			return;
 		}
@@ -97,8 +97,8 @@ public class PreparePenaltyState extends AbstractAutoRefState
 				readyTime = frame.getTimestamp();
 			}
 			long waitTimeMS = TimeUnit.NANOSECONDS.toMillis(frame.getTimestamp() - readyTime);
-			drawReadyCircle((int) ((waitTimeMS * 100) / READY_WAIT_TIME_MS), wFrame.getBall().getPos(), shapes);
-			ready = (frame.getTimestamp() - readyTime) > TimeUnit.MILLISECONDS.toNanos(READY_WAIT_TIME_MS);
+			drawReadyCircle((int) ((waitTimeMS * 100) / readyWaitTimeMs), wFrame.getBall().getPos(), shapes);
+			ready = (frame.getTimestamp() - readyTime) > TimeUnit.MILLISECONDS.toNanos(readyWaitTimeMs);
 		} else
 		{
 			readyTime = null;
@@ -106,7 +106,7 @@ public class PreparePenaltyState extends AbstractAutoRefState
 		
 		if (ready || ctx.doProceed())
 		{
-			RefboxRemoteCommand cmd = new RefboxRemoteCommand(Command.NORMAL_START);
+			RefboxRemoteCommand cmd = new RefboxRemoteCommand(Command.NORMAL_START, null);
 			sendCommandIfReady(ctx, cmd, ctx.doProceed());
 		}
 	}

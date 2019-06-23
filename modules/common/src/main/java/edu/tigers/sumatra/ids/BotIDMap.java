@@ -1,19 +1,15 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2012, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 24.01.2012
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ids;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import com.sleepycat.persist.model.Persistent;
 
@@ -27,41 +23,28 @@ import com.sleepycat.persist.model.Persistent;
 @Persistent
 public class BotIDMap<T> implements IBotIDMap<T>
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	private static final long		serialVersionUID	= -5736073179625081902L;
-																	
-	private final Map<BotID, T>	map;
-											
-											
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
+	private static final long serialVersionUID = -5736073179625081902L;
+	
+	private final SortedMap<BotID, T> map;
+	
+	
 	/**
+	 * Default
 	 */
 	public BotIDMap()
 	{
-		map = new HashMap<BotID, T>();
+		map = new TreeMap<>();
 	}
 	
 	
 	/**
-	 * @param initialCapacity
+	 * Creates BotIDMap from existing Java-Map, shallow copy
+	 * 
+	 * @param initialMap
 	 */
-	public BotIDMap(final int initialCapacity)
+	public BotIDMap(final Map<BotID, T> initialMap)
 	{
-		map = new HashMap<BotID, T>(initialCapacity);
-	}
-	
-	
-	/**
-	 * @param initialCapacity
-	 * @param loadFactor
-	 */
-	public BotIDMap(final int initialCapacity, final float loadFactor)
-	{
-		map = new HashMap<BotID, T>(initialCapacity, loadFactor);
+		map = new TreeMap<>(initialMap);
 	}
 	
 	
@@ -70,17 +53,10 @@ public class BotIDMap<T> implements IBotIDMap<T>
 	 */
 	public BotIDMap(final IBotIDMap<T> iMap)
 	{
-		map = new HashMap<BotID, T>(iMap.size());
-		for (final Entry<BotID, T> entry : iMap.entrySet())
-		{
-			map.put(entry.getKey(), entry.getValue());
-		}
+		map = new TreeMap<>(iMap.getContentMap());
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	@Override
 	public T get(final BotID id) throws NoObjectWithThisIDException
 	{
@@ -146,7 +122,7 @@ public class BotIDMap<T> implements IBotIDMap<T>
 	
 	
 	@Override
-	public boolean containsValue(final Object value)
+	public boolean containsValue(final T value)
 	{
 		return map.containsValue(value);
 	}
@@ -186,10 +162,6 @@ public class BotIDMap<T> implements IBotIDMap<T>
 		return map.entrySet().iterator();
 	}
 	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	@Override
 	public Map<BotID, T> getContentMap()

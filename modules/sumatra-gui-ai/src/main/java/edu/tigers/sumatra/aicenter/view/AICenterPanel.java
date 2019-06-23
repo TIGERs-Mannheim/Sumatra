@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.aicenter.view;
@@ -21,8 +21,8 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JTabbedPane;
 
+import edu.tigers.sumatra.ai.athena.EAIControlState;
 import edu.tigers.sumatra.ai.athena.IAIModeChanged;
-import edu.tigers.sumatra.ai.data.EAIControlState;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.views.ISumatraView;
 import net.miginfocom.swing.MigLayout;
@@ -35,18 +35,11 @@ import net.miginfocom.swing.MigLayout;
  */
 public class AICenterPanel extends JPanel implements ISumatraView
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
 	private static final long serialVersionUID = -2509991904665753934L;
-	
 	
 	private final JTabbedPane teamTabbedPane = new JTabbedPane();
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * Default
 	 */
@@ -74,10 +67,7 @@ public class AICenterPanel extends JPanel implements ISumatraView
 	 */
 	public void addObserverForAi(final IAIModeChanged observer, EAiTeam team)
 	{
-		synchronized (getTeamPanelForTeam(team).observers)
-		{
-			getTeamPanelForTeam(team).observers.add(observer);
-		}
+		getTeamPanelForTeam(team).observers.add(observer);
 	}
 	
 	
@@ -86,16 +76,9 @@ public class AICenterPanel extends JPanel implements ISumatraView
 	 */
 	public void removeObserver(final IAIModeChanged observer)
 	{
-		synchronized (getActiveTeamPanel().observers)
-		{
-			getActiveTeamPanel().observers.remove(observer);
-		}
+		getActiveTeamPanel().observers.remove(observer);
 	}
 	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 * @param team
@@ -212,9 +195,9 @@ public class AICenterPanel extends JPanel implements ISumatraView
 		private final Map<EAIControlState, JRadioButton> modeButtons = new EnumMap<>(EAIControlState.class);
 		private final ButtonGroup modeGroup = new ButtonGroup();
 		
-		private RoleControlPanel rolePanel = new RoleControlPanel();
-		private MetisCalculatorsPanel metisCalculatorsPanel = new MetisCalculatorsPanel();
-		private AthenaControlPanel athenaPanel = new AthenaControlPanel();
+		private final RoleControlPanel rolePanel = new RoleControlPanel();
+		private final MetisCalculatorsPanel metisCalculatorsPanel = new MetisCalculatorsPanel();
+		private final AthenaControlPanel athenaPanel;
 		
 		private final JTabbedPane tabbedPane = new JTabbedPane();
 		
@@ -226,6 +209,7 @@ public class AICenterPanel extends JPanel implements ISumatraView
 			super(new MigLayout("wrap 1"));
 			
 			currentTeam = team;
+			athenaPanel = new AthenaControlPanel(currentTeam);
 			
 			for (EAIControlState state : EAIControlState.values())
 			{

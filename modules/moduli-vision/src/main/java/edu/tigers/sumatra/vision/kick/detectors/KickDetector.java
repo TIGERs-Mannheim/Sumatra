@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.vision.kick.detectors;
 
@@ -21,9 +21,9 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.vision.data.FilteredVisionBot;
 import edu.tigers.sumatra.vision.data.FrameRecord;
 import edu.tigers.sumatra.vision.data.KickEvent;
@@ -44,21 +44,21 @@ import edu.tigers.sumatra.vision.tracker.BallTracker.MergedBall;
 public class KickDetector implements IKickDetector
 {
 	@SuppressWarnings("unused")
-	private static final Logger		log							= Logger
+	private static final Logger log = Logger
 			.getLogger(KickDetector.class.getName());
 	
-	private LinkedList<FrameRecord>	frameHistory				= new LinkedList<>();
+	private LinkedList<FrameRecord> frameHistory = new LinkedList<>();
 	
-	private static int					frameHistorySize			= 5;
+	private static int frameHistorySize = 5;
 	
-	private long							lastKickTimestamp;
+	private long lastKickTimestamp;
 	
-	private List<IKickValidator>		kickValidators				= new ArrayList<>();
-	private String							lastKVText					= "";
-	private IVector2						lastKnownBallPosition	= AVector2.ZERO_VECTOR;
+	private List<IKickValidator> kickValidators = new ArrayList<>();
+	private String lastKVText = "";
+	private IVector2 lastKnownBallPosition = Vector2f.ZERO_VECTOR;
 	
 	@Configurable(defValue = "0.1", comment = "Minimum time between two kicks [s]")
-	private static double				minDeltaTime				= 0.1;
+	private static double minDeltaTime = 0.1;
 	
 	static
 	{
@@ -196,9 +196,9 @@ public class KickDetector implements IKickDetector
 		List<IDrawableShape> shapes = new ArrayList<>();
 		
 		DrawableAnnotation kvText = new DrawableAnnotation(lastKnownBallPosition, lastKVText);
-		kvText.setOffset(Vector2.fromXY(0, 30));
-		kvText.setCenterHorizontally(true);
-		kvText.setFontHeight(20);
+		kvText.withOffset(Vector2.fromXY(0, 30));
+		kvText.withCenterHorizontally(true);
+		kvText.withFontHeight(20);
 		kvText.setColor(Color.MAGENTA);
 		shapes.add(kvText);
 		

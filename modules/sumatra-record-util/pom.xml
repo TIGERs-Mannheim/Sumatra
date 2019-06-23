@@ -10,27 +10,84 @@
     <parent>
         <groupId>edu.tigers.sumatra</groupId>
         <artifactId>sumatra-parent</artifactId>
-        <version>5.1-SNAPSHOT</version>
+        <version>6.0</version>
         <relativePath>../sumatra-parent/pom.xml</relativePath>
     </parent>
 
     <dependencies>
-        <dependency>
-            <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>sumatra-main</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>com.vladium.utils</groupId>
             <artifactId>objectprofiler</artifactId>
-            <version>1.0</version>
         </dependency>
-
         <dependency>
-            <groupId>com.carrotsearch</groupId>
-            <artifactId>junit-benchmarks</artifactId>
-            <version>0.7.0</version>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>sumatra-skillsystem</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-wp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-ai</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-record</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>sumatra-model</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-ai-controller</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>sumatra-pathfinder</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>common-math</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-geometry</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-referee</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-autoreferee</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-vision</artifactId>
         </dependency>
     </dependencies>
 </project>

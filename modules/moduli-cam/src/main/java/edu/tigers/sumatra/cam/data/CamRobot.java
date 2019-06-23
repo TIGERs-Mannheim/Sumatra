@@ -8,12 +8,9 @@ import java.util.List;
 
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -21,29 +18,27 @@ import edu.tigers.sumatra.math.vector.Vector2;
  * SSL_DetectionRobot from
  * protobuf-protocol, coming from
  * the SSL-Vision.
- * <p>
- * <i>(Being aware of EJ-SE Items 13, 14 and 55: members are public to reduce noise)</i>
- * </p>
  * 
  * @author Gero
  */
 @Persistent
 public class CamRobot extends ACamObject
 {
-	private final BotID		botId;
-	private final IVector2	pos;
-	private final double		orientation;
-	private final double		height;
+	private final BotID botId;
+	private final IVector2 pos;
+	private final double orientation;
+	private final double height;
 	
 	
 	/**
-	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+	 * Dummy constructor for persistence
 	 */
-	public CamRobot()
+	@SuppressWarnings("unused") // required by @Persistent
+	private CamRobot()
 	{
 		super();
 		botId = BotID.noBot();
-		pos = AVector2.ZERO_VECTOR;
+		pos = Vector2f.ZERO_VECTOR;
 		orientation = 0;
 		height = 0;
 	}
@@ -58,7 +53,6 @@ public class CamRobot extends ACamObject
 	 * @param confidence
 	 * @param pixel
 	 * @param tCapture
-	 * @param tSent
 	 * @param camId
 	 * @param frameId
 	 * @param pos
@@ -66,11 +60,10 @@ public class CamRobot extends ACamObject
 	 * @param height
 	 * @param botId
 	 */
-	@SuppressWarnings("squid:S00107")
+	@SuppressWarnings("squid:S00107") // number of parameters vs. performance
 	public CamRobot(final double confidence,
 			final IVector2 pixel,
 			final long tCapture,
-			final long tSent,
 			final int camId,
 			final long frameId,
 			final IVector2 pos,
@@ -78,7 +71,7 @@ public class CamRobot extends ACamObject
 			final double height,
 			final BotID botId)
 	{
-		super(confidence, pixel, tCapture, tSent, camId, frameId);
+		super(confidence, pixel, tCapture, camId, frameId);
 		this.pos = pos.copy();
 		this.orientation = orientation;
 		this.height = height;
@@ -87,38 +80,25 @@ public class CamRobot extends ACamObject
 	
 	
 	/**
-	 * @param list
-	 * @return
+	 * New CamRobot with adjusted tCapture timestamp.
+	 * 
+	 * @param orig
+	 * @param tCapture
 	 */
-	public static CamRobot fromNumberList(final List<? extends Number> list)
+	public CamRobot(final CamRobot orig, final long tCapture)
 	{
-		final long tCapture = list.get(0).longValue();
-		final int camId = list.get(1).intValue();
-		
-		final int id = list.size() <= 2 ? AObjectID.UNINITIALIZED_ID : list.get(2).intValue();
-		ETeamColor color = list.size() <= 3 ? ETeamColor.UNINITIALIZED : ETeamColor.fromNumberList(list.get(3));
-		BotID botId = BotID.createBotId(id, color);
-		
-		final double x = list.get(4).doubleValue();
-		final double y = list.get(5).doubleValue();
-		final double orientation = list.get(6).doubleValue();
-		final long frameId = list.size() <= 7 ? 0 : list.get(7).longValue();
-		final double pixelX = list.size() <= 8 ? 0 : list.get(8).doubleValue();
-		final double pixelY = list.size() <= 9 ? 0 : list.get(9).doubleValue();
-		final double height = list.size() <= 10 ? 0 : list.get(10).intValue();
-		final double confidence = list.size() <= 11 ? 0 : list.get(11).doubleValue();
-		
-		final long tSent = list.size() <= 12 ? 0 : list.get(12).longValue();
-		
-		return new CamRobot(confidence, Vector2.fromXY(pixelX, pixelY), tCapture, tSent, camId, frameId,
-				Vector2.fromXY(x, y), orientation, height,
-				botId);
+		super(orig.getConfidence(), orig.getPixel(), tCapture, orig.getCameraId(), orig.getFrameId());
+		pos = orig.pos.copy();
+		orientation = orig.orientation;
+		height = orig.height;
+		botId = orig.botId;
 	}
 	
 	
 	@Override
 	public String toString()
 	{
+		// noinspection StringBufferReplaceableByString
 		StringBuilder builder = new StringBuilder();
 		builder.append("SSLRobot [confidence=");
 		builder.append(getConfidence());
@@ -181,20 +161,24 @@ public class CamRobot extends ACamObject
 	@Override
 	public List<Number> getNumberList()
 	{
-		List<Number> numbers = new ArrayList<>();
-		numbers.add(gettCapture());
-		numbers.add(getCameraId());
+		List<Number> numbers = super.getNumberList();
+		numbers.add(getOrientation());
 		numbers.add(getRobotID());
 		numbers.addAll(botId.getTeamColor().getNumberList());
-		numbers.addAll(pos.getNumberList());
-		numbers.add(getOrientation());
-		numbers.add(getFrameId());
-		numbers.add(getPixel().x());
-		numbers.add(getPixel().y());
 		numbers.add(getHeight());
-		numbers.add(getConfidence());
-		numbers.add(gettSent());
 		return numbers;
+	}
+	
+	
+	@Override
+	public List<String> getHeaders()
+	{
+		List<String> headers = new ArrayList<>(super.getHeaders());
+		headers.add("orientation");
+		headers.add("robotId");
+		headers.add("robotColor");
+		headers.add("height");
+		return headers;
 	}
 	
 	

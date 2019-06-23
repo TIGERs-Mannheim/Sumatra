@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands.botskills.sim;
 
@@ -9,6 +9,7 @@ import edu.tigers.sumatra.botmanager.commands.botskills.data.BotSkillInput;
 import edu.tigers.sumatra.botmanager.commands.botskills.data.BotSkillOutput;
 import edu.tigers.sumatra.botmanager.commands.botskills.data.DriveLimits;
 import edu.tigers.sumatra.botmanager.commands.botskills.data.EDriveMode;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.Vector3;
 
 
@@ -36,8 +37,8 @@ public class BotSkillSineSim implements IBotSkillSim
 		
 		double tNow = (input.gettNow() - tStart) * 1e-9;
 		
-		double val = Math.sin(2.0 * Math.PI * tNow * freq);
-		double valC = Math.cos(2.0 * Math.PI * tNow * freq);
+		double val = SumatraMath.sin(2.0 * Math.PI * tNow * freq);
+		double valC = SumatraMath.cos(2.0 * Math.PI * tNow * freq);
 		
 		if (tNow < ((0.25 * 1.0) / freq))
 		{

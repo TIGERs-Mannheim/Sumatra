@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.defense;
@@ -11,11 +11,11 @@ import java.util.stream.Collectors;
 
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.ai.data.BotDistance;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
-import edu.tigers.sumatra.ai.math.DefenseMath;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.ITacticalField;
+import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseThreatAssignment;
@@ -23,7 +23,7 @@ import edu.tigers.sumatra.ai.metis.defense.data.EDefenseGroup;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BallID;
-import edu.tigers.sumatra.math.Hysterese;
+import edu.tigers.sumatra.math.Hysteresis;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.referee.data.GameState;
 
@@ -33,11 +33,11 @@ import edu.tigers.sumatra.referee.data.GameState;
  */
 public class DefenderAssignerCalc extends ACalculator
 {
-	@Configurable(comment = "Lower ball distance threshold", defValue = "4300.0")
-	private static double ballDistanceThresholdLower = 4300;
+	@Configurable(comment = "Lower ball distance threshold", defValue = "10000.0")
+	private static double ballDistanceThresholdLower = 10000.0;
 	
-	@Configurable(comment = "Upper ball distance threshold", defValue = "4800.0")
-	private static double ballDistanceThresholdUpper = 4800;
+	@Configurable(comment = "Upper ball distance threshold", defValue = "11000.0")
+	private static double ballDistanceThresholdUpper = 11000.0;
 	
 	@Configurable(comment = "check to use ManToManMarker instead of CenterBack", spezis = { "", "YELLOW",
 			"BLUE" }, defValueSpezis = { "false", "false", "false" })
@@ -46,17 +46,17 @@ public class DefenderAssignerCalc extends ACalculator
 	@Configurable(comment = "Force crucial defenders to stay at penalty area at all times", defValue = "false")
 	private static boolean forceCrucialDefendersToPenaltyArea = false;
 	
-	@Configurable(comment = "Boundary for reducing to one crucial defenders", defValue = "0.9")
-	private static double angleThresholdOneCrucialDefenderLower = 0.9;
+	@Configurable(comment = "Boundary for reducing to one crucial defenders", defValue = "1.2")
+	private static double angleThresholdOneCrucialDefenderLower = 1.2;
 	
-	@Configurable(comment = "Boundary for reducing to one crucial defenders", defValue = "1.0")
-	private static double angleThresholdOneCrucialDefenderUpper = 1.0;
+	@Configurable(comment = "Boundary for reducing to one crucial defenders", defValue = "1.35")
+	private static double angleThresholdOneCrucialDefenderUpper = 1.35;
 	
-	@Configurable(comment = "Boundary for reducing to zero crucial defenders", defValue = "1.2")
-	private static double angleThresholdZeroCrucialDefenderLower = 1.2;
+	@Configurable(comment = "Boundary for reducing to zero crucial defenders", defValue = "1.45")
+	private static double angleThresholdZeroCrucialDefenderLower = 1.45;
 	
-	@Configurable(comment = "Boundary for reducing to zero crucial defenders", defValue = "1.3")
-	private static double angleThresholdZeroCrucialDefenderUpper = 1.3;
+	@Configurable(comment = "Boundary for reducing to zero crucial defenders", defValue = "1.5")
+	private static double angleThresholdZeroCrucialDefenderUpper = 1.5;
 	
 	@Configurable(comment = "Degrade one crucial defender to a standard defender during indirect for them", defValue = "true")
 	private static boolean minusOneCrucialDuringIndirect = true;
@@ -64,16 +64,28 @@ public class DefenderAssignerCalc extends ACalculator
 	@Configurable(comment = "Number of bots for covering the ball (at max).", defValue = "2")
 	private static int numBotsForBallThreat = 2;
 	
-	private final Hysterese ballPosHysterese = new Hysterese(ballDistanceThresholdLower, ballDistanceThresholdUpper);
+	@Configurable(comment = "Reduce bot movement by assigning different roles during standard situations", defValue = "true")
+	private static boolean reduceMovementCost = true;
 	
-	private final Hysterese angleOneCrucialDefenderHysteresis = new Hysterese(angleThresholdOneCrucialDefenderLower,
+	@Configurable(comment = "Hysteresis around zero from which on movement will be reduced", defValue = "150.0")
+	private static double reducingBallPosLimit = 150.0;
+	
+	@Configurable(comment = "Min distance from ball to closest opponent to mark ball threat as crucial", defValue = "1000.0")
+	private static double minDistToOpponentsForCrucialBallThreat = 1000.0;
+	
+	private boolean reducedMovement = false;
+	
+	private final Hysteresis ballPosHysteresis = new Hysteresis(ballDistanceThresholdLower, ballDistanceThresholdUpper);
+	
+	private final Hysteresis angleOneCrucialDefenderHysteresis = new Hysteresis(angleThresholdOneCrucialDefenderLower,
 			angleThresholdOneCrucialDefenderUpper);
-	private final Hysterese angleZeroCrucialDefenderHysteresis = new Hysterese(angleThresholdZeroCrucialDefenderLower,
+	private final Hysteresis angleZeroCrucialDefenderHysteresis = new Hysteresis(angleThresholdZeroCrucialDefenderLower,
 			angleThresholdZeroCrucialDefenderUpper);
+	private final Hysteresis reducedMovementBallPosHysteresis = new Hysteresis(0 - reducingBallPosLimit,
+			reducingBallPosLimit);
 	
 	
 	@Override
-	@SuppressWarnings("squid:S1871") // identical branch code blocks (order matters here though!)
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame aiFrame)
 	{
 		final DefenseBallThreat ballThreat = newTacticalField.getDefenseBallThreat();
@@ -86,26 +98,15 @@ public class DefenderAssignerCalc extends ACalculator
 		
 		int numBotsForBall = getNumBotsForBall(newTacticalField.getGameState(), numDefenders, ballPos);
 		
-		final EDefenseGroup ballDefenseGroup;
-		if (usePenaltyAreaRole(aiFrame, BallID.instance(), ballPos))
-		{
-			ballDefenseGroup = EDefenseGroup.PENALTY_AREA;
-		} else if (newTacticalField.getGameState().isKickoffOrPrepareKickoffForThem())
-		{
-			ballDefenseGroup = EDefenseGroup.CENTER_BACK;
-		} else if (forceCrucialDefendersToPenaltyArea && !newTacticalField.getOpponentPassReceiver().isPresent())
-		{
-			ballDefenseGroup = EDefenseGroup.PENALTY_AREA;
-		} else
-		{
-			ballDefenseGroup = EDefenseGroup.CENTER_BACK;
-		}
+		final EDefenseGroup ballDefenseGroup = calculateBallDefenseGroup(newTacticalField, aiFrame, ballPos);
 		
+		boolean crucialBallThreat = newTacticalField.getEnemiesToBallDist().stream().findFirst()
+				.map(d -> d.getDist() < minDistToOpponentsForCrucialBallThreat).orElse(false);
 		DefenseThreatAssignment ballAssignment = new DefenseThreatAssignment(
 				getBall().getId(),
 				ballThreat,
 				numBotsForBall,
-				ballDefenseGroup, true);
+				ballDefenseGroup, crucialBallThreat);
 		defenseThreatAssignments.add(ballAssignment);
 		
 		numDefenders -= numBotsForBall;
@@ -134,7 +135,8 @@ public class DefenderAssignerCalc extends ACalculator
 			EDefenseGroup botDefenseGroup = useManToManMarker ? EDefenseGroup.MAN_TO_MAN_MARKER
 					: EDefenseGroup.CENTER_BACK;
 			
-			if (usePenaltyAreaRole(aiFrame, threat.getBotID(), threat.getPos()))
+			if (!useReducedMovement(aiFrame, newTacticalField)
+					&& usePenaltyAreaRole(aiFrame, threat.getBotID(), threat.getPos()))
 			{
 				botDefenseGroup = EDefenseGroup.PENALTY_AREA;
 			}
@@ -158,15 +160,55 @@ public class DefenderAssignerCalc extends ACalculator
 	}
 	
 	
+	@SuppressWarnings("squid:S1871") // identical branch code blocks (order matters here though!)
+	private EDefenseGroup calculateBallDefenseGroup(final TacticalField newTacticalField, final BaseAiFrame aiFrame,
+			final IVector2 ballPos)
+	{
+		final EDefenseGroup ballDefenseGroup;
+		if (useReducedMovement(aiFrame, newTacticalField))
+		{
+			ballDefenseGroup = EDefenseGroup.CENTER_BACK;
+		} else if (usePenaltyAreaRole(aiFrame, BallID.instance(), ballPos))
+		{
+			ballDefenseGroup = EDefenseGroup.PENALTY_AREA;
+		} else if (newTacticalField.getGameState().isKickoffOrPrepareKickoffForThem())
+		{
+			ballDefenseGroup = EDefenseGroup.CENTER_BACK;
+		} else if (forceCrucialDefendersToPenaltyArea && !newTacticalField.getOpponentPassReceiver().isPresent())
+		{
+			ballDefenseGroup = EDefenseGroup.PENALTY_AREA;
+		} else
+		{
+			ballDefenseGroup = EDefenseGroup.CENTER_BACK;
+		}
+		return ballDefenseGroup;
+	}
+	
+	
+	private boolean useReducedMovement(final BaseAiFrame aiFrame, final ITacticalField tacticalField)
+	{
+		reducedMovementBallPosHysteresis.update(aiFrame.getWorldFrame().getBall().getPos3().x());
+		if (reducedMovementBallPosHysteresis.isLower())
+		{
+			reducedMovement = false;
+		} else if (reducedMovementBallPosHysteresis.isUpper())
+		{
+			reducedMovement = true;
+		}
+		
+		return reduceMovementCost && tacticalField.getGameState().isStop() && reducedMovement;
+	}
+	
+	
 	private int getNumBotsForBall(final GameState gameState, final int numDefenders, final IVector2 ballPos)
 	{
 		int numBotsForBall = numBotsForBallThreat;
 		
-		ballPosHysterese.setLowerThreshold(ballDistanceThresholdLower);
-		ballPosHysterese.setUpperThreshold(ballDistanceThresholdUpper);
-		ballPosHysterese.update(ballPos.distanceTo(Geometry.getGoalOur().getCenter()));
+		ballPosHysteresis.setLowerThreshold(ballDistanceThresholdLower);
+		ballPosHysteresis.setUpperThreshold(ballDistanceThresholdUpper);
+		ballPosHysteresis.update(ballPos.distanceTo(Geometry.getGoalOur().getCenter()));
 		
-		if (ballPosHysterese.isUpper())
+		if (ballPosHysteresis.isUpper())
 		{
 			numBotsForBall = Math.min(1, numBotsForBall);
 		}

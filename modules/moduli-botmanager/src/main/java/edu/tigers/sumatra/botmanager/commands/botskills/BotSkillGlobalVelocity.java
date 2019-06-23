@@ -23,23 +23,19 @@ import edu.tigers.sumatra.math.vector.Vector3;
 public class BotSkillGlobalVelocity extends AMoveBotSkill
 {
 	@SerialData(type = ESerialDataType.INT16)
-	private final int[]					vel						= new int[3];
+	private final int[] vel = new int[3];
 	
 	@SerialData(type = ESerialDataType.UINT8)
-	private int								accMax					= 0;
+	private int accMax = 0;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int								accMaxW					= 0;
+	private int accMaxW = 0;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int								jerkMax					= 0;
+	private int jerkMax = 0;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int								jerkMaxW					= 0;
+	private int jerkMaxW = 0;
 	
 	@SerialData(type = ESerialDataType.EMBEDDED)
-	private KickerDribblerCommands	kickerDribbler			= new KickerDribblerCommands();
-	
-	@SerialData(type = ESerialDataType.UINT8)
-	private int								dataAcqusitionMode	= 0;
-	
+	private KickerDribblerCommands kickerDribbler = new KickerDribblerCommands();
 	
 	private BotSkillGlobalVelocity()
 	{
@@ -226,25 +222,5 @@ public class BotSkillGlobalVelocity extends AMoveBotSkill
 	public void setKickerDribbler(final KickerDribblerCommands kickerDribbler)
 	{
 		this.kickerDribbler = kickerDribbler;
-	}
-	
-	
-	/**
-	 * @return the dataAcqusitionMode
-	 */
-	@Override
-	public EDataAcquisitionMode getDataAcquisitionMode()
-	{
-		return EDataAcquisitionMode.getModeConstant(dataAcqusitionMode);
-	}
-	
-	
-	/**
-	 * @param dataAcqusitionMode the dataAcqusitionMode to set
-	 */
-	@Override
-	public void setDataAcquisitionMode(final EDataAcquisitionMode dataAcqusitionMode)
-	{
-		this.dataAcqusitionMode = dataAcqusitionMode.getId();
 	}
 }

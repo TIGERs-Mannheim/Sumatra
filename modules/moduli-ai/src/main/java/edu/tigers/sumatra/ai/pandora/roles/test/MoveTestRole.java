@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.test;
@@ -22,6 +22,7 @@ import edu.tigers.sumatra.botmanager.commands.EBotSkill;
 import edu.tigers.sumatra.botmanager.commands.botskills.EDataAcquisitionMode;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand.ConsoleCommandTarget;
+import edu.tigers.sumatra.data.collector.TimeSeriesDataCollector;
 import edu.tigers.sumatra.export.CSVExporter;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.line.Line;
@@ -32,11 +33,12 @@ import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.matlab.MatlabConnection;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
-import edu.tigers.sumatra.skillsystem.skills.MoveBangBangSkill;
-import edu.tigers.sumatra.skillsystem.skills.PositionSkill;
+import edu.tigers.sumatra.skillsystem.skills.test.MoveBangBangSkill;
+import edu.tigers.sumatra.skillsystem.skills.test.PositionSkill;
+import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
 import edu.tigers.sumatra.statemachine.IState;
-import edu.tigers.sumatra.wp.util.VisionWatcher;
+import edu.tigers.sumatra.wp.util.TimeSeriesDataCollectorFactory;
 import matlabcontrol.MatlabConnectionException;
 import matlabcontrol.MatlabInvocationException;
 import matlabcontrol.MatlabProxy;
@@ -52,7 +54,7 @@ public class MoveTestRole extends ARole
 	
 	private final List<MotionResult> results = new ArrayList<>();
 	private final String logFileName;
-	private VisionWatcher vw = null;
+	private TimeSeriesDataCollector dataCollector = null;
 	private BotWatcher bw = null;
 	private final EMoveMode mode;
 	
@@ -63,6 +65,7 @@ public class MoveTestRole extends ARole
 	
 	
 	/**
+	 * Possible move modes
 	 */
 	public enum EMoveMode
 	{
@@ -88,11 +91,11 @@ public class MoveTestRole extends ARole
 	 * @param angleTurnDeg
 	 * @param iterations
 	 * @param logFileName
+	 * @param rollOut
 	 */
 	public MoveTestRole(final EMoveMode mode, final IVector2 initPos, final double orientation, final double scale,
 			final double startAngle, final double stopAngle, final double angleStepDeg, final double angleTurnDeg,
-			final int iterations,
-			final String logFileName)
+			final int iterations, final String logFileName, final boolean rollOut)
 	{
 		super(ERole.MOVE_TEST);
 		this.mode = mode;
@@ -118,11 +121,11 @@ public class MoveTestRole extends ARole
 				IState waitState1 = new WaitState(0);
 				IState prepareState = new PrepareState(initPos, initOrient);
 				IState waitState2 = new WaitState(500);
-				IState moveState = new MoveToState(dest, finalOrient);
+				IState moveState = new MoveToState(dest, finalOrient, rollOut);
 				IState waitState3 = new WaitState(0);
 				IState prepare2State = new PrepareState(dest, finalOrient);
 				IState waitState4 = new WaitState(500);
-				IState moveBackState = new MoveToState(initPos, initOrient);
+				IState moveBackState = new MoveToState(initPos, initOrient, rollOut);
 				
 				addTransition(lastState, EEvent.DONE, waitState1);
 				addTransition(waitState1, EEvent.DONE, prepareState);
@@ -141,35 +144,18 @@ public class MoveTestRole extends ARole
 	}
 	
 	
-	private class InitState implements IState
+	private class InitState extends AState
 	{
-		
-		
 		@Override
 		public void doEntryActions()
 		{
 			triggerEvent(EEvent.DONE);
 		}
-		
-		
-		@Override
-		public void doExitActions()
-		{
-		}
-		
-		
-		@Override
-		public void doUpdate()
-		{
-		}
-		
-		
 	}
 	
 	
-	private class EvaluationState implements IState
+	private class EvaluationState extends AState
 	{
-		
 		@Override
 		public void doEntryActions()
 		{
@@ -190,23 +176,9 @@ public class MoveTestRole extends ARole
 			
 			identifyFrictionModel(exp.getAbsoluteFileName());
 		}
-		
-		
-		@Override
-		public void doUpdate()
-		{
-		}
-		
-		
-		@Override
-		public void doExitActions()
-		{
-		}
-		
-		
 	}
 	
-	private class WaitState implements IState
+	private class WaitState extends AState
 	{
 		private long tStart;
 		private final long waitNs;
@@ -233,17 +205,9 @@ public class MoveTestRole extends ARole
 				triggerEvent(EEvent.DONE);
 			}
 		}
-		
-		
-		@Override
-		public void doExitActions()
-		{
-		}
-		
-		
 	}
 	
-	private class PrepareState implements IState
+	private class PrepareState extends AState
 	{
 		protected IVector2 dest;
 		protected final double orientation;
@@ -302,25 +266,21 @@ public class MoveTestRole extends ARole
 		
 		protected void onDone()
 		{
+			// can be overwritten
 		}
-		
-		
-		@Override
-		public void doExitActions()
-		{
-		}
-		
-		
 	}
 	
 	private class MoveToState extends PrepareState
 	{
 		MotionResult result;
+		boolean rollOut;
 		
 		
-		private MoveToState(final IVector2 dest, final double orientation)
+		private MoveToState(final IVector2 dest, final double orientation, final boolean rollOut)
 		{
 			super(dest, orientation);
+			
+			this.rollOut = rollOut;
 		}
 		
 		
@@ -340,19 +300,22 @@ public class MoveTestRole extends ARole
 					break;
 				case TRAJ_VEL:
 				{
-					MoveBangBangSkill skill = new MoveBangBangSkill(dest, destOrientation, EBotSkill.LOCAL_VELOCITY);
+					MoveBangBangSkill skill = new MoveBangBangSkill(dest, destOrientation, EBotSkill.LOCAL_VELOCITY,
+							rollOut);
 					setNewSkill(skill);
 				}
 					break;
 				case TRAJ_GLOBAL_VEL:
 				{
-					MoveBangBangSkill skill = new MoveBangBangSkill(dest, destOrientation, EBotSkill.GLOBAL_VELOCITY);
+					MoveBangBangSkill skill = new MoveBangBangSkill(dest, destOrientation, EBotSkill.GLOBAL_VELOCITY,
+							rollOut);
 					setNewSkill(skill);
 				}
 					break;
 				case TRAJ_WHEEL_VEL:
 				{
-					MoveBangBangSkill skill = new MoveBangBangSkill(dest, destOrientation, EBotSkill.WHEEL_VELOCITY);
+					MoveBangBangSkill skill = new MoveBangBangSkill(dest, destOrientation, EBotSkill.WHEEL_VELOCITY,
+							rollOut);
 					setNewSkill(skill);
 				}
 					break;
@@ -441,8 +404,8 @@ public class MoveTestRole extends ARole
 		ABot aBot = null;
 		try
 		{
-			ABotManager botManager = (ABotManager) SumatraModel.getInstance().getModule(ABotManager.MODULE_ID);
-			aBot = botManager.getBotTable().get(getBotID());
+			ABotManager botManager = SumatraModel.getInstance().getModule(ABotManager.class);
+			aBot = botManager.getBots().get(getBotID());
 		} catch (ModuleNotFoundException e)
 		{
 			log.error("Could not find botManager module", e);
@@ -459,18 +422,17 @@ public class MoveTestRole extends ARole
 		ABot aBot = getBotMgrBot();
 		if (aBot != null)
 		{
-			aBot.getMatchCtrl().setDataAcquisitionMode(EDataAcquisitionMode.BOT_MODEL);
 			bw = new BotWatcher(aBot, EDataAcquisitionMode.BOT_MODEL);
 			bw.start();
 			
 			if (!logFileName.isEmpty())
 			{
-				aBot.execute(new TigerSystemConsoleCommand(ConsoleCommandTarget.MEDIA, "logfile " + logFileName));
+				aBot.execute(new TigerSystemConsoleCommand(ConsoleCommandTarget.MAIN, "logfile " + logFileName));
 				
-				vw = new VisionWatcher("moveTest/" + logFileName);
-				vw.setStopAutomatically(false);
-				vw.setTimeout(600);
-				vw.start();
+				dataCollector = TimeSeriesDataCollectorFactory.createFullCollector("moveTest/" + logFileName);
+				dataCollector.setStopAutomatically(false);
+				dataCollector.setTimeout(600);
+				dataCollector.start();
 			}
 		}
 	}
@@ -482,38 +444,37 @@ public class MoveTestRole extends ARole
 		super.onCompleted();
 		
 		ABot aBot = getBotMgrBot();
-		if (aBot != null)
+		if (aBot == null)
 		{
-			EDataAcquisitionMode acqMode = aBot.getMatchCtrl().getDataAcquisitionMode();
-			aBot.getMatchCtrl().setDataAcquisitionMode(EDataAcquisitionMode.NONE);
+			return;
+		}
+		
+		if (bw != null)
+		{
+			bw.stop();
 			
-			if (bw != null)
+			if (bw.isDataReceived())
 			{
-				bw.stop();
-				
-				if (bw.isDataReceived())
+				switch (bw.getAcqMode())
 				{
-					switch (acqMode)
-					{
-						case MOTOR_MODEL:
-						case BOT_MODEL:
-						case DELAYS:
-							identifyBotModel();
-							break;
-						case NONE:
-						default:
-							break;
-					}
+					case MOTOR_MODEL:
+					case BOT_MODEL:
+					case DELAYS:
+						identifyBotModel();
+						break;
+					case NONE:
+					default:
+						break;
 				}
 			}
-			
-			if (!logFileName.isEmpty())
+		}
+		
+		if (!logFileName.isEmpty())
+		{
+			aBot.execute(new TigerSystemConsoleCommand(ConsoleCommandTarget.MAIN, "stoplog"));
+			if (dataCollector != null)
 			{
-				aBot.execute(new TigerSystemConsoleCommand(ConsoleCommandTarget.MEDIA, "stoplog"));
-				if (vw != null)
-				{
-					vw.stopExport();
-				}
+				dataCollector.stopExport();
 			}
 		}
 	}

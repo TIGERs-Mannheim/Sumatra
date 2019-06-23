@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles;
 
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
+import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.model.SumatraModel;
@@ -366,7 +366,7 @@ public abstract class ARole
 	/**
 	 * @return the current ball
 	 */
-	protected final ITrackedBall getBall()
+	public final ITrackedBall getBall()
 	{
 		return getWFrame().getBall();
 	}

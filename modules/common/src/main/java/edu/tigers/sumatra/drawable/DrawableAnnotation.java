@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
@@ -10,9 +10,8 @@ import java.awt.Graphics2D;
 
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -28,20 +27,20 @@ import edu.tigers.sumatra.math.vector.Vector2;
 @Persistent
 public class DrawableAnnotation implements IDrawableShape
 {
-	private final IVector2	center;
-	private final String		text;
+	private final IVector2 center;
+	private final String text;
 	
-	private IVector2			offset					= Vector2.ZERO_VECTOR;
-	private boolean			centerHorizontally	= false;
-	private Color				color						= Color.BLACK;
-	private int					fontHeight				= 50;
-	private boolean			bold						= false;
+	private IVector2 offset = Vector2f.ZERO_VECTOR;
+	private boolean centerHorizontally = false;
+	private Color color = Color.BLACK;
+	private int fontHeight = 50;
+	private boolean bold = false;
 	
 	
 	@SuppressWarnings("unused")
 	private DrawableAnnotation()
 	{
-		center = AVector2.ZERO_VECTOR;
+		center = Vector2f.ZERO_VECTOR;
 		text = "";
 	}
 	
@@ -153,15 +152,6 @@ public class DrawableAnnotation implements IDrawableShape
 	
 	
 	/**
-	 * @return the color
-	 */
-	public final Color getColor()
-	{
-		return color;
-	}
-	
-	
-	/**
 	 * @param color the color to set
 	 */
 	@Override
@@ -172,19 +162,10 @@ public class DrawableAnnotation implements IDrawableShape
 	
 	
 	/**
-	 * @return the fontSize
-	 */
-	public final int getFontHeight()
-	{
-		return fontHeight;
-	}
-	
-	
-	/**
 	 * @param fontHeight the fontHeight to set in [mm]
 	 * @return
 	 */
-	public final DrawableAnnotation setFontHeight(final int fontHeight)
+	public final DrawableAnnotation withFontHeight(final int fontHeight)
 	{
 		this.fontHeight = fontHeight;
 		return this;
@@ -192,37 +173,10 @@ public class DrawableAnnotation implements IDrawableShape
 	
 	
 	/**
-	 * @return the center
-	 */
-	public final IVector2 getCenter()
-	{
-		return center;
-	}
-	
-	
-	/**
-	 * @return the text
-	 */
-	public final String getText()
-	{
-		return text;
-	}
-	
-	
-	/**
-	 * @return the offset
-	 */
-	public IVector2 getOffset()
-	{
-		return offset;
-	}
-	
-	
-	/**
 	 * @param offset the offset to set
 	 * @return
 	 */
-	public DrawableAnnotation setOffset(final IVector2 offset)
+	public DrawableAnnotation withOffset(final IVector2 offset)
 	{
 		this.offset = offset;
 		return this;
@@ -230,34 +184,19 @@ public class DrawableAnnotation implements IDrawableShape
 	
 	
 	/**
-	 * @return the centerHorizontally
-	 */
-	public boolean isCenterHorizontally()
-	{
-		return centerHorizontally;
-	}
-	
-	
-	/**
 	 * @param centerHorizontally the centerHorizontally to set
 	 * @return
 	 */
-	public DrawableAnnotation setCenterHorizontally(final boolean centerHorizontally)
+	public DrawableAnnotation withCenterHorizontally(final boolean centerHorizontally)
 	{
 		this.centerHorizontally = centerHorizontally;
 		return this;
 	}
 	
 	
-	public boolean isBold()
-	{
-		return bold;
-	}
-	
-	
-	public void setBold(final boolean bold)
+	public DrawableAnnotation withBold(final boolean bold)
 	{
 		this.bold = bold;
+		return this;
 	}
-	
 }

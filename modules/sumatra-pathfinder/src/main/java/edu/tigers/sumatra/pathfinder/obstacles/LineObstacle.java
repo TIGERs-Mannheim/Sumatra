@@ -4,7 +4,8 @@
 
 package edu.tigers.sumatra.pathfinder.obstacles;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics2D;
 
 import com.sleepycat.persist.model.Persistent;
 
@@ -14,7 +15,7 @@ import edu.tigers.sumatra.drawable.IDrawableTool;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -31,7 +32,7 @@ public class LineObstacle implements IObstacle
 	@SuppressWarnings("unused")
 	private LineObstacle()
 	{
-		lineSegment = Line.fromDirection(Vector2.ZERO_VECTOR, Vector2.X_AXIS);
+		lineSegment = Line.fromDirection(Vector2f.ZERO_VECTOR, Vector2f.X_AXIS);
 		radius = 0;
 	}
 	

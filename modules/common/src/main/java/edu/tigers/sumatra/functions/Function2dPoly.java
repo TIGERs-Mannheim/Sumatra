@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 24.03.2013
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.functions;
 
@@ -12,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.github.g3force.s2vconverter.String2ValueConverter;
 import com.sleepycat.persist.model.Persistent;
 
 
@@ -25,21 +19,9 @@ import com.sleepycat.persist.model.Persistent;
 @Persistent
 public class Function2dPoly implements IFunction1D
 {
-	static
-	{
-		String2ValueConverter.getDefault().addConverter(new FunctionConverter());
-	}
-	
-	/** */
 	private final double[] a;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	/**
-	 */
 	@SuppressWarnings("unused")
 	private Function2dPoly()
 	{
@@ -59,9 +41,6 @@ public class Function2dPoly implements IFunction1D
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	@Override
 	public double eval(final double... x)
 	{

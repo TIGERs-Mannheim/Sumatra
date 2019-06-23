@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.referee;
 
@@ -9,6 +9,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import edu.tigers.moduli.AModule;
 import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest;
 import edu.tigers.sumatra.Referee.SSL_Referee;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.referee.source.ARefereeMessageSource;
 import edu.tigers.sumatra.referee.source.ERefereeMessageSource;
 
@@ -18,11 +19,6 @@ import edu.tigers.sumatra.referee.source.ERefereeMessageSource;
  */
 public abstract class AReferee extends AModule
 {
-	/** */
-	public static final String MODULE_TYPE = "AReferee";
-	/** */
-	public static final String MODULE_ID = "referee";
-	
 	private final List<IRefereeObserver> observers = new CopyOnWriteArrayList<>();
 	
 	
@@ -39,10 +35,7 @@ public abstract class AReferee extends AModule
 	 */
 	public void addObserver(final IRefereeObserver observer)
 	{
-		synchronized (observers)
-		{
-			observers.add(observer);
-		}
+		observers.add(observer);
 	}
 	
 	
@@ -51,10 +44,7 @@ public abstract class AReferee extends AModule
 	 */
 	public void removeObserver(final IRefereeObserver observer)
 	{
-		synchronized (observers)
-		{
-			observers.remove(observer);
-		}
+		observers.remove(observer);
 	}
 	
 	
@@ -112,4 +102,12 @@ public abstract class AReferee extends AModule
 	 * @param type
 	 */
 	public abstract void setActiveSource(final ERefereeMessageSource type);
+	
+	
+	/**
+	 * Update a keeper id
+	 *
+	 * @param keeperId
+	 */
+	public abstract void updateKeeperId(BotID keeperId);
 }

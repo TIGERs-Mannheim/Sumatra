@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math;
@@ -38,17 +38,17 @@ public class AngleMathTest
 	public void testTrigonometry()
 	{
 		// sin
-		assertEquals(Math.sin(AngleMath.PI), 0, ACCURACY);
-		assertEquals(Math.sin(4.5f), -0.9775301, ACCURACY);
-		assertEquals(Math.sin(-34), -0.529, ACCURACY);
+		assertEquals(SumatraMath.sin(AngleMath.PI), 0, ACCURACY);
+		assertEquals(SumatraMath.sin(4.5f), -0.9775301, ACCURACY);
+		assertEquals(SumatraMath.sin(-34), -0.529, ACCURACY);
 		
 		// cos
-		assertEquals(Math.cos(5), 0.28366, ACCURACY);
-		assertEquals(Math.cos(-0.1f), 0.9950, ACCURACY);
+		assertEquals(SumatraMath.cos(5), 0.28366, ACCURACY);
+		assertEquals(SumatraMath.cos(-0.1f), 0.9950, ACCURACY);
 		
 		// tan
-		assertEquals(AngleMath.tan(3), -0.1425, ACCURACY);
-		assertEquals(AngleMath.tan(-2), 2.185, ACCURACY);
+		assertEquals(SumatraMath.tan(3), -0.1425, ACCURACY);
+		assertEquals(SumatraMath.tan(-2), 2.185, ACCURACY);
 	}
 	
 	

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem;
@@ -14,14 +14,13 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.bot.EBotType;
 import edu.tigers.sumatra.bot.IBot;
 import edu.tigers.sumatra.botmanager.bots.ABot;
-import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.drawable.ShapeMap;
+import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.skillsystem.skills.ISkill;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
-import edu.tigers.sumatra.timer.ATimer;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
@@ -37,7 +36,9 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 	private static final Logger log = Logger
 			.getLogger(SkillExecutor.class.getName());
 	private final ABot bot;
-	private final Object newSkillSync = new Object();
+	private final NewSkillSync newSkillSync = new NewSkillSync()
+	{
+	};
 	private final BlockingDeque<WorldFrameWrapper> freshWorldFrames = new LinkedBlockingDeque<>(
 			1);
 	private ISkill currentSkill;
@@ -46,8 +47,6 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 	private List<ISkillExecuterPostHook> postHooks = new CopyOnWriteArrayList<>();
 	private Future<?> future = null;
 	private boolean processAllWorldFrames = false;
-	private ATimer timer = null;
-	private final String timeable;
 	
 	private static final double BOT_MIN_UPDATE_RATE = 10;
 	
@@ -58,17 +57,17 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 	SkillExecutor(final ABot bot)
 	{
 		this.bot = bot;
-		timeable = "Skill " + bot.getBotId();
 		currentSkill = new IdleSkill();
-		currentSkill.update(null, bot);
+		currentSkill.update(null, bot, new ShapeMap());
 	}
 	
 	
 	/**
 	 * @param wf
 	 * @param timestamp
+	 * @param shapeMap
 	 */
-	public void update(final WorldFrameWrapper wf, final long timestamp)
+	public void update(final WorldFrameWrapper wf, final long timestamp, final ShapeMap shapeMap)
 	{
 		final ISkill nextSkill;
 		if ((wf != null) && !wf.getSimpleWorldFrame().getBots().containsKey(bot.getBotId()) &&
@@ -83,8 +82,8 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 				newSkill = null;
 			}
 		}
-		processNewSkill(nextSkill, wf);
-		executeSave(() -> currentSkill.update(wf, bot));
+		processNewSkill(nextSkill, wf, shapeMap);
+		executeSave(() -> currentSkill.update(wf, bot, shapeMap));
 		executeSave(() -> currentSkill.calcActions(timestamp));
 	}
 	
@@ -101,7 +100,7 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 	}
 	
 	
-	private void processNewSkill(final ISkill skill, final WorldFrameWrapper wf)
+	private void processNewSkill(final ISkill skill, final WorldFrameWrapper wf, final ShapeMap shapeMap)
 	{
 		if (skill == null)
 		{
@@ -112,7 +111,7 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 		{
 			executeSave(currentSkill::calcExitActions);
 		}
-		executeSave(() -> skill.update(wf, bot));
+		executeSave(() -> skill.update(wf, bot, shapeMap));
 		executeSave(skill::calcEntryActions);
 		currentSkill = skill;
 	}
@@ -169,16 +168,16 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 					timestamp = System.nanoTime();
 				} else
 				{
-					startTimer(wf.getSimpleWorldFrame().getId());
 					timestamp = wf.getSimpleWorldFrame().getTimestamp();
 					lastWf = wf;
 				}
-				update(lastWf, timestamp);
-				postHooks.forEach(h -> h.onCommandSent(bot, timestamp));
+				ShapeMap shapeMap = new ShapeMap();
+				update(lastWf, timestamp, shapeMap);
 				if (wf != null)
 				{
-					stopTimer(wf.getSimpleWorldFrame().getId());
+					shapeMap.setInverted(wf.getWorldFrame(EAiTeam.primary(bot.getColor())).isInverted());
 				}
+				postHooks.forEach(h -> h.onSkillUpdated(bot, timestamp, shapeMap));
 			} catch (InterruptedException err)
 			{
 				// ignore
@@ -192,36 +191,11 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 	}
 	
 	
-	private void startTimer(final long id)
-	{
-		if (timer != null)
-		{
-			timer.start(timeable, id);
-		}
-	}
-	
-	
-	private void stopTimer(final long id)
-	{
-		if (timer != null)
-		{
-			timer.stop(timeable, id);
-		}
-	}
-	
-	
 	/**
 	 * @param service
 	 */
 	public void start(final ExecutorService service)
 	{
-		try
-		{
-			timer = (ATimer) SumatraModel.getInstance().getModule(ATimer.MODULE_ID);
-		} catch (ModuleNotFoundException e)
-		{
-			log.info("No timer module found.", e);
-		}
 		future = service.submit(this);
 	}
 	
@@ -234,7 +208,6 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 		active = false;
 		future.cancel(true);
 		future = null;
-		timer = null;
 	}
 	
 	
@@ -277,6 +250,7 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 	/**
 	 * @param hook
 	 */
+	@SuppressWarnings("squid:S2250") // Collection methods with O(n) performance should be used carefully
 	void addPostHook(final ISkillExecuterPostHook hook)
 	{
 		postHooks.add(hook);
@@ -286,8 +260,13 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 	/**
 	 * @param hook
 	 */
+	@SuppressWarnings("squid:S2250") // Collection methods with O(n) performance should be used carefully
 	void removePostHook(final ISkillExecuterPostHook hook)
 	{
 		postHooks.remove(hook);
+	}
+	
+	private interface NewSkillSync
+	{
 	}
 }

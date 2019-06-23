@@ -1,16 +1,18 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense;
 
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
-import edu.tigers.sumatra.ai.math.DefenseMath;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.ai.metis.defense.DefenseMath;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
+import edu.tigers.sumatra.skillsystem.skills.util.PositionValidator;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 
@@ -20,9 +22,13 @@ import edu.tigers.sumatra.wp.data.WorldFrame;
  */
 public class SupportiveAttackerPosCalc extends ACalculator
 {
+	private final PositionValidator positionValidator = new PositionValidator();
+	
+	
 	@Override
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
+		positionValidator.update(getWFrame(), null, null);
 		newTacticalField.setSupportiveAttackerMovePos(calcMovePosition(newTacticalField, baseAiFrame.getWorldFrame()));
 	}
 	
@@ -30,20 +36,21 @@ public class SupportiveAttackerPosCalc extends ACalculator
 	private IVector2 calcMovePosition(TacticalField newTacticalField, WorldFrame worldFrame)
 	{
 		IVector2 ballPos = worldFrame.getBall().getPos();
-		IVector2 goal = DefenseMath.getBisectionGoal(ballPos);
-		IVector2 dir = goal.subtractNew(ballPos).normalizeNew();
-		if (!worldFrame.getFoeBots().isEmpty())
+		ITrackedBot bot = newTacticalField.getEnemyClosestToBall().getBot();
+		
+		final IVector2 dir;
+		if (bot == null)
 		{
-			ITrackedBot bot = newTacticalField.getEnemyClosestToBall().getBot();
-			
-			if ((bot != null) && (bot.getPos().x() > ballPos.x()))
-			{
-				dir = ballPos.subtractNew(bot.getPos()).normalizeNew();
-			}
-			return ballPos.addNew(dir.multiplyNew(Geometry.getBotToBallDistanceStop()
-					+ (Geometry.getBotRadius() * 2)));
+			dir = Vector2f.fromX(-1);
+		} else if (bot.getPos().x() > ballPos.x())
+		{
+			dir = ballPos.subtractNew(bot.getPos()).normalizeNew();
+		} else
+		{
+			IVector2 goal = DefenseMath.getBisectionGoal(ballPos);
+			dir = goal.subtractNew(ballPos).normalizeNew();
 		}
-		return ballPos.addNew(Vector2.fromXY(-1, 0).multiplyNew(Geometry.getBotToBallDistanceStop()
+		return ballPos.addNew(dir.multiplyNew(RuleConstraints.getStopRadius()
 				+ (Geometry.getBotRadius() * 2)));
 	}
 }

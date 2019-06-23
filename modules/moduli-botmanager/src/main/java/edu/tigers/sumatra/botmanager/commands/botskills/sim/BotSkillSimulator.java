@@ -52,6 +52,7 @@ public class BotSkillSimulator
 		botSkills.put(EBotSkill.BOT_SKILL_SINE, new BotSkillSineSim());
 		botSkills.put(EBotSkill.WHEEL_VELOCITY, new BotSkillWheelVelocitySim());
 		botSkills.put(EBotSkill.PENALTY_SHOOTER_SKILL, new BotSkillPenaltyShooterSim());
+		botSkills.put(EBotSkill.LOCAL_FORCE,new BotSkillLocalForceSim());
 	}
 	
 	

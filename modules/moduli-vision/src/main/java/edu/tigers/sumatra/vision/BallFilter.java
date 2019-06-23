@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.vision;
 
@@ -17,11 +17,11 @@ import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.math.vector.AVector3;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.Vector3f;
 import edu.tigers.sumatra.vision.BallFilterPreprocessor.BallFilterPreprocessorOutput;
 import edu.tigers.sumatra.vision.data.EBallState;
 import edu.tigers.sumatra.vision.data.FilteredVisionBall;
@@ -35,7 +35,7 @@ public class BallFilter
 {
 	private EBallState ballState = EBallState.ROLLING;
 	private IVector2 ballPosHint;
-	private IVector3 lastKnownPosition = AVector3.ZERO_VECTOR;
+	private IVector3 lastKnownPosition = Vector3f.ZERO_VECTOR;
 	private CircularFifoQueue<MergedBall> mergedBallHistory = new CircularFifoQueue<>(50);
 	
 	@Configurable(defValue = "true", comment = "Always use merged ball velocity instead of kick model velocity.")
@@ -74,8 +74,8 @@ public class BallFilter
 		{
 			FilteredVisionBall ball = FilteredVisionBall.Builder.create()
 					.withPos(Vector3.from2d(ballPosHint, 0))
-					.withVel(AVector3.ZERO_VECTOR)
-					.withAcc(AVector3.ZERO_VECTOR)
+					.withVel(Vector3f.ZERO_VECTOR)
+					.withAcc(Vector3f.ZERO_VECTOR)
 					.withIsChipped(false)
 					.withvSwitch(0)
 					.withLastVisibleTimestamp(timestamp)
@@ -91,8 +91,8 @@ public class BallFilter
 		{
 			FilteredVisionBall ball = FilteredVisionBall.Builder.create()
 					.withPos(lastFilteredBall.getPos())
-					.withVel(AVector3.ZERO_VECTOR)
-					.withAcc(AVector3.ZERO_VECTOR)
+					.withVel(Vector3f.ZERO_VECTOR)
+					.withAcc(Vector3f.ZERO_VECTOR)
 					.withIsChipped(false)
 					.withvSwitch(0)
 					.withLastVisibleTimestamp(lastFilteredBall.getLastVisibleTimestamp())
@@ -192,8 +192,8 @@ public class BallFilter
 		}
 		
 		DrawableAnnotation state = new DrawableAnnotation(lastKnownPosition.getXYVector(), ballState.toString());
-		state.setOffset(Vector2.fromXY(0, -100));
-		state.setCenterHorizontally(true);
+		state.withOffset(Vector2.fromXY(0, -100));
+		state.withCenterHorizontally(true);
 		state.setStrokeWidth(30);
 		shapes.add(state);
 		

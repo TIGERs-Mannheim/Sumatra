@@ -11,7 +11,7 @@ import java.util.Optional;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -89,7 +89,7 @@ public class PolygonBuilder
 			cy += (current.y() + next.y()) * ((current.x() * next.y()) - (next.x() * current.y()));
 		}
 		
-		return Vector2.fromXY(cx * constant, cy * constant);
+		return Vector2f.fromXY(cx * constant, cy * constant);
 	}
 	
 	

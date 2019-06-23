@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.vis;
@@ -14,7 +14,9 @@ import edu.tigers.sumatra.drawable.DrawableBorderText;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawablePoint;
 import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -34,7 +36,7 @@ public class RefereeVisCalc implements IWpCalc
 	
 	
 	@Override
-	public void process(final WorldFrameWrapper wfw)
+	public void process(final WorldFrameWrapper wfw, final ShapeMap shapeMap)
 	{
 		List<DrawableBorderText> txtShapes = new ArrayList<>();
 		RefereeMsg msg = wfw.getRefereeMsg();
@@ -59,19 +61,23 @@ public class RefereeVisCalc implements IWpCalc
 		String yellowCardBlueStr = getYellowCardString(msg.getTeamInfoBlue().getYellowCards(), msg.getTeamInfoBlue()
 				.getYellowCardsTimes());
 		
-		int[] off = getOffsets(msg);
+		int[] off = getOffsets();
 		
 		double ballSpeed = wfw.getSimpleWorldFrame().getBall().getVel().getLength2();
 		double ballHeight = wfw.getSimpleWorldFrame().getBall().getPos3().z();
 		String ballVelStr = "Ball vel: " + dfBallVel.format(ballSpeed) + "; height: " + dfBallVel.format(ballHeight);
 		
-		txtShapes.add(new DrawableBorderText(Vector2.fromXY(off[1], 35), ballVelStr, ballSpeed <= 8 ? Color.white
-				: Color.red));
+		txtShapes.add(new DrawableBorderText(Vector2.fromXY(off[1], 35), ballVelStr,
+				ballSpeed <= RuleConstraints.getMaxBallSpeed() ? Color.white
+						: Color.red));
 		
 		txtShapes.add(new DrawableBorderText(Vector2.fromXY(off[0], 11), msg.getStage().toString(), Color.white));
 		txtShapes.add(new DrawableBorderText(Vector2.fromXY(off[0], 23), msg.getCommand().toString(), Color.white));
 		txtShapes.add(new DrawableBorderText(Vector2.fromXY(off[0], 35), wfw.getGameState().getStateNameWithColor(),
 				Color.white));
+		txtShapes.add(new DrawableBorderText(Vector2.fromXY(off[0], 47), wfw.getRefereeMsg().getGameEvent().toString(),
+				Color.white));
+		
 		txtShapes.add(new DrawableBorderText(Vector2.fromXY(off[1], 11), timeStr, Color.white));
 		
 		txtShapes
@@ -93,21 +99,19 @@ public class RefereeVisCalc implements IWpCalc
 			txt.setFontSize(10);
 		}
 		
-		wfw.getShapeMap().get(EWpShapesLayer.REFEREE).addAll(txtShapes);
+		shapeMap.get(EWpShapesLayer.REFEREE).addAll(txtShapes);
 		
-		paintShapes(wfw.getShapeMap().get(EWpShapesLayer.REFEREE), wfw);
+		paintShapes(shapeMap.get(EWpShapesLayer.REFEREE), wfw);
 	}
 	
 	
-	private int[] getOffsets(final RefereeMsg msg)
+	private int[] getOffsets()
 	{
-		int teamNameMaxWidth = Math.max(getStringWidth(msg.getTeamInfoBlue().getName()),
-				getStringWidth(msg.getTeamInfoYellow().getName()));
 		int[] offsets = new int[7];
 		offsets[0] = 10;
 		offsets[1] = offsets[0] + 135;
 		offsets[2] = offsets[1] + 40;
-		offsets[3] = offsets[2] + 10 + teamNameMaxWidth;
+		offsets[3] = offsets[2] + 13;
 		offsets[4] = offsets[3] + 20;
 		offsets[5] = offsets[4] + 100;
 		offsets[6] = offsets[5] + 80;
@@ -130,7 +134,7 @@ public class RefereeVisCalc implements IWpCalc
 	
 	private void paintBallDistanceCircle(final List<IDrawableShape> shapes, final WorldFrameWrapper wfw)
 	{
-		double radius = Geometry.getBotToBallDistanceStop();
+		double radius = RuleConstraints.getStopRadius();
 		Color circleColor = Color.red;
 		if (wfw.getGameState().isBallPlacement())
 		{
@@ -141,13 +145,13 @@ public class RefereeVisCalc implements IWpCalc
 		DrawableCircle circle = new DrawableCircle(Circle.createCircle(ballPos, radius), circleColor);
 		shapes.add(circle);
 		
-		double dist = Geometry.getPenaltyAreaOur().getRadius() + Geometry.getPenaltyAreaOur().getFrontLineHalfLength()
-				+ radius + Geometry.getBotToPenaltyAreaMarginStandard() + 200;
+		double dist = Geometry.getPenaltyAreaOur().nearestPointInside(ballPos).distanceTo(ballPos) + radius
+				+ RuleConstraints.getBotToPenaltyAreaMarginStandard() + 200;
 		if (Geometry.getGoalOur().getCenter().distanceTo(ballPos) < dist ||
 				Geometry.getGoalTheir().getCenter().distanceTo(ballPos) < dist)
 		{
 			DrawableCircle outerCircle = new DrawableCircle(Circle.createCircle(ballPos,
-					radius + Geometry.getBotToPenaltyAreaMarginStandard()), Color.orange);
+					radius + RuleConstraints.getBotToPenaltyAreaMarginStandard()), Color.orange);
 			shapes.add(outerCircle);
 		}
 	}
@@ -160,7 +164,7 @@ public class RefereeVisCalc implements IWpCalc
 	private void paintAutomatedPlacementShapes(final List<IDrawableShape> shapes, final WorldFrameWrapper wfw)
 	{
 		RefereeMsg refMsg = wfw.getRefereeMsg();
-		IVector2 ballTargetPos = wfw.getGameState().getBallPlacementPosition();
+		IVector2 ballTargetPos = wfw.getGameState().getBallPlacementPositionNeutral();
 		
 		Color distToBallColor = new Color(255, 0, 0, 100);
 		Color targetCircleColor = new Color(20, 255, 255, 210);
@@ -187,12 +191,6 @@ public class RefereeVisCalc implements IWpCalc
 		DrawablePoint dtargetPoint = new DrawablePoint(ballTargetPos, Color.RED);
 		shapes.add(dtargetCircle);
 		shapes.add(dtargetPoint);
-	}
-	
-	
-	private int getStringWidth(final String str)
-	{
-		return 3;
 	}
 	
 	

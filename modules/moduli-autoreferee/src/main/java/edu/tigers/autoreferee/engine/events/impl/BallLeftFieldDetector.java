@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.events.impl;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
 import org.apache.log4j.Logger;
 
@@ -16,6 +17,7 @@ import edu.tigers.autoreferee.engine.FollowUpAction;
 import edu.tigers.autoreferee.engine.FollowUpAction.EActionType;
 import edu.tigers.autoreferee.engine.NGeometry;
 import edu.tigers.autoreferee.engine.events.EGameEvent;
+import edu.tigers.autoreferee.engine.events.EGameEventDetectorType;
 import edu.tigers.autoreferee.engine.events.GameEvent;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
 import edu.tigers.autoreferee.generic.BotPosition;
@@ -35,22 +37,25 @@ import edu.tigers.sumatra.referee.data.EGameState;
  */
 public class BallLeftFieldDetector extends AGameEventDetector
 {
-	private static final Logger	log								= Logger.getLogger(BallLeftFieldDetector.class);
+	private static final int PRIORITY = 1;
+	private static final Logger log = Logger.getLogger(BallLeftFieldDetector.class);
 	
-	private static final int		PRIORITY							= 1;
+	@Configurable(comment = "[mm] The goal line threshold", defValue = "10.0")
+	private static double goalLineThreshold = 10;
 	
-	@Configurable(comment = "[mm] The goal line threshold")
-	private static double			goalLineThreshold				= 10;
+	@Configurable(comment = "[mm] A goalline off is only considered icing if the bot was located more than this value behind the kickoff line", defValue = "200.0")
+	private static double icingKickoffLineThreshold = 200;
 	
-	@Configurable(comment = "[mm] A goalline off is only considered icing if the bot was located more than this value behind the kickoff line")
-	private static double			icingKickoffLineThreshold	= 200;
+	@Configurable(comment = "[mm] Ball from sideline distance", defValue = "200.0")
+	private static double sideLineDistance = 200;
 	
 	static
 	{
 		AGameEventDetector.registerClass(BallLeftFieldDetector.class);
 	}
 	
-	private boolean eventReported = false;
+	private TimedPosition lastBallLeftFieldPos = null;
+	private Random rnd = new Random();
 	
 	
 	/**
@@ -58,7 +63,7 @@ public class BallLeftFieldDetector extends AGameEventDetector
 	 */
 	public BallLeftFieldDetector()
 	{
-		super(EGameState.RUNNING);
+		super(EGameEventDetectorType.BALL_LEFT_FIELD_ICING, EGameState.RUNNING);
 	}
 	
 	
@@ -70,38 +75,58 @@ public class BallLeftFieldDetector extends AGameEventDetector
 	
 	
 	@Override
-	public Optional<IGameEvent> update(final IAutoRefFrame frame, final List<IGameEvent> violations)
+	public Optional<IGameEvent> update(final IAutoRefFrame frame)
 	{
-		if (frame.isBallInsideField())
+		if (rnd == null)
 		{
-			// The ball is inside the field or inside the goal
-			eventReported = false;
-		} else if (!eventReported)
+			// get a deterministic random generator in simulation
+			rnd = new Random(frame.getTimestamp());
+		}
+		
+		if (frame.getBallLeftFieldPos().isPresent()
+				&& !frame.getBallLeftFieldPos().get().similarTo(lastBallLeftFieldPos))
 		{
-			eventReported = true;
-			TimedPosition leftFieldPos = frame.getBallLeftFieldPos();
+			lastBallLeftFieldPos = frame.getBallLeftFieldPos().get();
 			
-			if (leftFieldPos.getPos().isZeroVector())
-			{
-				// Maybe the game was started while the ball was still outside the field
-				log.warn("Ball left the field but no valid exit position present");
-				return Optional.empty();
-			}
-			
-			BotPosition lastTouched = frame.getBotLastTouchedBall();
+			BotPosition lastTouched = botThatLastTouchedBall(frame);
 			long ts = frame.getTimestamp();
 			boolean exitGoallineInX = ((Geometry.getFieldLength() / 2)
-					- Math.abs(leftFieldPos.getPos().x())) < goalLineThreshold;
+					- Math.abs(lastBallLeftFieldPos.getPos().x())) < goalLineThreshold;
 			boolean exitGoallineInY = ((Geometry.getFieldWidth() / 2)
-					- Math.abs(leftFieldPos.getPos().y())) > goalLineThreshold;
+					- Math.abs(lastBallLeftFieldPos.getPos().y())) > goalLineThreshold;
+			boolean enteredGoalInY = Geometry.getGoalOur().getWidth() / 2
+					- Math.abs(lastBallLeftFieldPos.getPos().y()) > goalLineThreshold;
 			if (exitGoallineInX && exitGoallineInY)
 			{
 				// The ball exited the field over the goal line
-				return handleGoalLineOff(leftFieldPos.getPos(), lastTouched, ts);
+				if (enteredGoalInY)
+				{
+					// a potential goal
+					return Optional.empty();
+				}
+				return handleGoalLineOff(lastBallLeftFieldPos.getPos(), lastTouched, ts);
 			}
-			return handleSideLineOff(leftFieldPos.getPos(), lastTouched, ts);
+			return handleSideLineOff(lastBallLeftFieldPos.getPos(), lastTouched, ts);
 		}
 		return Optional.empty();
+	}
+	
+	
+	private BotPosition botThatLastTouchedBall(IAutoRefFrame frame)
+	{
+		final List<BotPosition> botLastTouchedBall = frame.getBotsLastTouchedBall();
+		if (botLastTouchedBall.isEmpty())
+		{
+			log.info("No last touched bot detected, choosing random one");
+			ETeamColor teamColor = rnd.nextInt(2) == 0 ? ETeamColor.YELLOW : ETeamColor.BLUE;
+			BotID id = BotID.createBotId(-1, teamColor);
+			return new BotPosition(frame.getTimestamp(), frame.getWorldFrame().getBall().getPos(), id);
+		} else if (botLastTouchedBall.size() == 1)
+		{
+			return botLastTouchedBall.get(0);
+		}
+		int randomId = rnd.nextInt(botLastTouchedBall.size());
+		return botLastTouchedBall.get(randomId);
 	}
 	
 	
@@ -109,7 +134,7 @@ public class BallLeftFieldDetector extends AGameEventDetector
 			final BotPosition lastTouched, final long ts)
 	{
 		int ySide = ballPos.y() > 0 ? 1 : -1;
-		IVector2 kickPos = ballPos.addNew(Vector2.fromXY(0, -100.0 * ySide));
+		IVector2 kickPos = ballPos.addNew(Vector2.fromXY(0, -sideLineDistance * ySide));
 		return Optional.of(buildThrowInResult(lastTouched.getBotID(), kickPos, ts));
 	}
 	
@@ -187,6 +212,7 @@ public class BallLeftFieldDetector extends AGameEventDetector
 	@Override
 	public void reset()
 	{
-		eventReported = false;
+		lastBallLeftFieldPos = null;
+		rnd = null;
 	}
 }

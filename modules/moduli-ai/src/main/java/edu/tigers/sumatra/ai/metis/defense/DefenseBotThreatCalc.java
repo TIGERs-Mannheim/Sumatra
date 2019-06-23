@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.defense;
@@ -14,17 +14,17 @@ import org.apache.commons.math3.distribution.BetaDistribution;
 
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.ai.data.EAiShapesLayer;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
-import edu.tigers.sumatra.ai.math.DefenseMath;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreat;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.drawable.ValuedField;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -42,9 +42,6 @@ public class DefenseBotThreatCalc extends ACalculator
 	
 	@Configurable(comment = "Assumed vPass of the opponent (m/s)", defValue = "6.0")
 	private static double vPassOpponent = 6.;
-	
-	@Configurable(comment = "Assumed vShot of the opponent (allowed are 10 m/s) (m/s)", defValue = "8.0")
-	private static double vShotOpponent = 8.;
 	
 	@Configurable(comment = "If the goal angle is greater than this, use shot times instead of the angle to compare (rad)", defValue = "0.5")
 	private static double maxAngleCompareAngle = 0.5;
@@ -150,15 +147,15 @@ public class DefenseBotThreatCalc extends ACalculator
 			}
 		}
 		
-		double maxValue = ratings.stream().sorted((a, b) -> (int) Math.signum(b - a)).findFirst()
+		double maxValue = ratings.stream().min((a, b) -> (int) Math.signum(b - a))
 				.orElseThrow(() -> new RuntimeException("Never!"));
 		ratings = ratings.stream().map(r -> SumatraMath.relative(r, 0, maxValue)).collect(Collectors.toList());
 		
 		double[] ratingsArray = ratings.stream().mapToDouble(Double::doubleValue).toArray();
 		
-		ValuedField field = new ValuedField(ratingsArray, numX, numY, 0, height, width);
+		ValuedField field = new ValuedField(ratingsArray, numX, numY, 0);
 		
-		newTacticalField.getDrawableShapes().get(EAiShapesLayer.BOT_THREADS_GRIT).add(field);
+		newTacticalField.getDrawableShapes().get(EAiShapesLayer.DEFENSE_BOT_THREADS_GRIT).add(field);
 	}
 	
 	
@@ -196,7 +193,7 @@ public class DefenseBotThreatCalc extends ACalculator
 					String.format("-> %d <-%nAngle: %.2f%nTime: %.2f", threatId, threat.getShootingAngle(),
 							threat.getTGoal()),
 					Vector2.fromY(200));
-			angle.setCenterHorizontally(true);
+			angle.withCenterHorizontally(true);
 			defenseShapes.add(angle);
 			
 			int col = 255 - Math.min(255, threatId * 40);
@@ -239,6 +236,6 @@ public class DefenseBotThreatCalc extends ACalculator
 	{
 		final IVector2 goalOurCenter = Geometry.getGoalOur().getCenter();
 		
-		return goalOurCenter.subtractNew(botPos).getLength2() / (vShotOpponent * 1000);
+		return goalOurCenter.subtractNew(botPos).getLength2() / (RuleConstraints.getMaxBallSpeed() * 1000);
 	}
 }

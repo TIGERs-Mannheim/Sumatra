@@ -32,9 +32,14 @@ import edu.tigers.sumatra.referee.source.refbox.time.SystemTimeProvider;
  */
 public class RefBoxEngine
 {
+	private static final int HALF_TIME_MIN = 5;
+	private static final int EXTRA_TIME_MIN = 5;
+	private static final int BREAK_TIME_MIN = 5;
+	private static final int SHOOTOUT_BREAK_TIME_MIN = 2;
+
 	private Stage stage = Stage.NORMAL_FIRST_HALF_PRE;
 	private Command command = Command.HALT;
-	private int stageTimeLeft = (int) TimeUnit.MINUTES.toMicros(10);
+	private int stageTimeLeft = (int) TimeUnit.MINUTES.toMicros(HALF_TIME_MIN);
 	private int commandCounter = 0;
 	private Map<ETeamColor, TeamData> teams = new EnumMap<>(ETeamColor.class);
 	private ITimeProvider timeProdivder = new SystemTimeProvider();
@@ -80,8 +85,8 @@ public class RefBoxEngine
 		
 		lastCommandCounter = commandCounter;
 		
-		// run clocks only when we are not in halt
-		if (command != Command.HALT)
+		// run clocks only when we are not in halt or stop (changed 2018)
+		if (command != Command.HALT && command != Command.STOP)
 		{
 			// subtract passed time from stage time and yellow cards
 			if ((command != Command.TIMEOUT_YELLOW) && (command != Command.TIMEOUT_BLUE))
@@ -265,21 +270,21 @@ public class RefBoxEngine
 		{
 			case EXTRA_FIRST_HALF_PRE:
 				stage = Stage.EXTRA_FIRST_HALF;
-				stageTimeLeft = (int) TimeUnit.MINUTES.toMicros(5);
+				stageTimeLeft = (int) TimeUnit.MINUTES.toMicros(EXTRA_TIME_MIN);
 				teams.values().forEach(t -> t.setTimeouts(2));
 				teams.values().forEach(t -> t.setTimeoutTime((int) TimeUnit.MINUTES.toMicros(5)));
 				break;
 			case EXTRA_SECOND_HALF_PRE:
 				stage = Stage.EXTRA_SECOND_HALF;
-				stageTimeLeft = (int) TimeUnit.MINUTES.toMicros(5);
+				stageTimeLeft = (int) TimeUnit.MINUTES.toMicros(EXTRA_TIME_MIN);
 				break;
 			case NORMAL_FIRST_HALF_PRE:
 				stage = Stage.NORMAL_FIRST_HALF;
-				stageTimeLeft = (int) TimeUnit.MINUTES.toMicros(10);
+				stageTimeLeft = (int) TimeUnit.MINUTES.toMicros(HALF_TIME_MIN);
 				break;
 			case NORMAL_SECOND_HALF_PRE:
 				stage = Stage.NORMAL_SECOND_HALF;
-				stageTimeLeft = (int) TimeUnit.MINUTES.toMicros(10);
+				stageTimeLeft = (int) TimeUnit.MINUTES.toMicros(HALF_TIME_MIN);
 				break;
 			default:
 				break;
@@ -343,11 +348,11 @@ public class RefBoxEngine
 					break;
 				case EXTRA_TIME_BREAK:
 				case NORMAL_HALF_TIME:
-					stageTimeLeft = (int) TimeUnit.MINUTES.toMicros(5);
+					stageTimeLeft = (int) TimeUnit.MINUTES.toMicros(BREAK_TIME_MIN);
 					break;
 				case EXTRA_HALF_TIME:
 				case PENALTY_SHOOTOUT_BREAK:
-					stageTimeLeft = (int) TimeUnit.MINUTES.toMicros(2);
+					stageTimeLeft = (int) TimeUnit.MINUTES.toMicros(SHOOTOUT_BREAK_TIME_MIN);
 					break;
 				case PENALTY_SHOOTOUT:
 				case POST_GAME:
@@ -359,5 +364,17 @@ public class RefBoxEngine
 		}
 		
 		return Outcome.OK;
+	}
+	
+	
+	/**
+	 * Update the keeper id of the given team
+	 * 
+	 * @param teamColor the team color
+	 * @param id the keeper id
+	 */
+	public void setKeeperId(ETeamColor teamColor, int id)
+	{
+		teams.get(teamColor).setGoalie(id);
 	}
 }

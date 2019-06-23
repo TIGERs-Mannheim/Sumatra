@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.keeper;
@@ -13,10 +13,10 @@ import java.util.Random;
 
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.ai.data.EAiShapesLayer;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableArc;
 import edu.tigers.sumatra.drawable.DrawableCircle;
@@ -26,12 +26,14 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotIDMapConst;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.Arc;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.IArc;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrame;
@@ -57,16 +59,14 @@ public class ChipKickTargetCalc extends ACalculator
 	@Configurable(comment = "hysteresis for choosing new chipKickTarget", defValue = "1.2")
 	private static double hysteresis = 1.2;
 	
-	private Map<IVector2, Double> targetPoints;
-	private List<IDrawableShape> shapes;
-	
 	
 	@Override
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
 		WorldFrame wFrame = baseAiFrame.getWorldFrame();
-		targetPoints = new HashMap<>();
+		Map<IVector2, Double> targetPoints = new HashMap<>();
 		Map<IVector2, ITrackedBot> fastestBotMap = new HashMap<>();
+		List<IDrawableShape> shapes = newTacticalField.getDrawableShapes().get(EAiShapesLayer.AI_KEEPER);
 		
 		double segAngle = (double) Math.abs(arcAngle) / nSegments;
 		
@@ -99,7 +99,7 @@ public class ChipKickTargetCalc extends ACalculator
 		// draw shapes if ball is in own penalty area:
 		if (Geometry.getPenaltyAreaOur().isPointInShape(getBall().getPos()))
 		{
-			drawShapes(newTacticalField, baseAiFrame);
+			drawShapes(shapes, baseAiFrame, targetPoints);
 		}
 		
 		IVector2 target = getChipKickTarget(lastTarget, targetPoints, shapes);
@@ -130,9 +130,9 @@ public class ChipKickTargetCalc extends ACalculator
 	}
 	
 	
-	private void drawShapes(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+	private void drawShapes(final List<IDrawableShape> shapes, final BaseAiFrame baseAiFrame,
+			final Map<IVector2, Double> targetPoints)
 	{
-		shapes = newTacticalField.getDrawableShapes().get(EAiShapesLayer.CHIP_KICK_TARGET);
 		double segAngle = (double) Math.abs(arcAngle) / nSegments;
 		WorldFrame wFrame = baseAiFrame.getWorldFrame();
 		
@@ -180,7 +180,7 @@ public class ChipKickTargetCalc extends ACalculator
 	 */
 	private IVector2 getChipKickTarget(IVector2 lastTarget, Map<IVector2, Double> targets, List<IDrawableShape> shapes)
 	{
-		IVector2 target = Vector2.zero();
+		IVector2 target = Vector2f.ZERO_VECTOR;
 		double slackTime = 0;
 		if (!targets.isEmpty())
 		{
@@ -219,8 +219,8 @@ public class ChipKickTargetCalc extends ACalculator
 	{
 		double newX;
 		double newY;
-		newY = Math.sin(angle) * radius + getBall().getPos().y();
-		newX = Math.cos(angle) * radius + getBall().getPos().x();
+		newY = SumatraMath.sin(angle) * radius + getBall().getPos().y();
+		newX = SumatraMath.cos(angle) * radius + getBall().getPos().x();
 		
 		return Vector2.fromXY(newX, newY);
 	}

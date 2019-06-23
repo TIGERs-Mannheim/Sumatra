@@ -3,66 +3,48 @@
   ~ Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
   -->
 
-<centralSoftware>
-    <moduliPath></moduliPath>
+<!-- this file is copied to the AutoReferee when synchronizing source code. It must not be removed or renamed! -->
 
+<centralSoftware>
     <globalConfiguration>
         <environment>ROBOCUP</environment>
     </globalConfiguration>
 
 
-    <module id="cam" type="ACam">
+    <module id="edu.tigers.sumatra.cam.ACam">
         <implementation>edu.tigers.sumatra.cam.SSLVisionCam</implementation>
-
-        <properties>
-        </properties>
     </module>
 
-    <module id="geometryUpdater" type="GeometryUpdater">
-        <implementation>edu.tigers.sumatra.geometry.GeometryUpdater</implementation>
-
-        <properties>
-        </properties>
-
-        <dependency>cam</dependency>
+    <module id="edu.tigers.sumatra.geometry.GeometryUpdater">
+        <dependency>edu.tigers.sumatra.cam.ACam</dependency>
     </module>
 
 
-    <module id="visionFilter" type="AVisionFilter">
+    <module id="edu.tigers.sumatra.vision.AVisionFilter">
         <implementation>edu.tigers.sumatra.vision.VisionFilterImpl</implementation>
 
-        <properties>
-        </properties>
-
-        <dependency>referee</dependency>
-        <dependency>cam</dependency>
+        <dependency>edu.tigers.sumatra.referee.AReferee</dependency>
+        <dependency>edu.tigers.sumatra.cam.ACam</dependency>
     </module>
 
 
-    <module id="worldpredictor" type="AWorldpredictor">
+    <module id="edu.tigers.sumatra.wp.AWorldPredictor">
         <implementation>edu.tigers.sumatra.wp.WorldInfoCollector</implementation>
 
-        <properties>
-        </properties>
-
-        <dependency>cam</dependency>
+        <dependency>edu.tigers.sumatra.cam.ACam</dependency>
     </module>
 
 
-    <module id="referee" type="AReferee">
-        <implementation>edu.tigers.sumatra.referee.Referee
-        </implementation>
-
-        <properties>
-        </properties>
+    <module id="edu.tigers.sumatra.referee.AReferee">
+        <implementation>edu.tigers.sumatra.referee.Referee</implementation>
     </module>
 
 
-    <module id="autoreferee" type="AReferee">
-        <implementation>
-            edu.tigers.autoreferee.module.AutoRefModule
-        </implementation>
+    <module id="edu.tigers.sumatra.persistence.RecordManager">
+        <implementation>edu.tigers.autoreferee.AutoRefRecordManager</implementation>
+    </module>
 
+    <module id="edu.tigers.autoreferee.module.AutoRefModule">
         <properties>
             <remoteControlType>REMOTE_SSL_REFBOX</remoteControlType>
             <log2file>true</log2file>

@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.vector;
 
 import java.text.DecimalFormat;
-import java.text.NumberFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -13,6 +13,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.commons.math3.linear.ArrayRealVector;
@@ -20,7 +21,6 @@ import org.apache.commons.math3.linear.RealVector;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
-import com.github.g3force.s2vconverter.String2ValueConverter;
 import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.math.SumatraMath;
@@ -32,12 +32,15 @@ import edu.tigers.sumatra.math.SumatraMath;
 @Persistent
 public abstract class AVector implements IVector
 {
-	protected static final double EQUAL_TOL = SumatraMath.getEqualTol();
+	private static final DecimalFormatSymbols decimalFormatSymbols = new DecimalFormatSymbols(Locale.ENGLISH);
 	
 	static
 	{
-		String2ValueConverter.getDefault().addConverter(new VectorConverter());
+		decimalFormatSymbols.setDecimalSeparator('.');
+		decimalFormatSymbols.setGroupingSeparator(',');
 	}
+	
+	private static final DecimalFormat df = new DecimalFormat("0.000", decimalFormatSymbols);
 	
 	
 	@Override
@@ -175,7 +178,7 @@ public abstract class AVector implements IVector
 	
 	
 	@Override
-	public synchronized double getLength()
+	public double getLength()
 	{
 		double sum = 0;
 		for (int d = 0; d < getNumDimensions(); d++)
@@ -187,14 +190,33 @@ public abstract class AVector implements IVector
 	
 	
 	@Override
-	public synchronized boolean isZeroVector()
+	public double getL1Norm()
 	{
-		return getLength() < EQUAL_TOL;
+		double sum = 0;
+		for (int d = 0; d < getNumDimensions(); d++)
+		{
+			sum += Math.abs(get(d));
+		}
+		return sum;
 	}
 	
 	
 	@Override
-	public synchronized boolean isFinite()
+	public boolean isZeroVector()
+	{
+		for (int d = 0; d < getNumDimensions(); d++)
+		{
+			if (Math.abs(get(d)) > SumatraMath.getEqualTol())
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	
+	@Override
+	public boolean isFinite()
 	{
 		for (int d = 0; d < getNumDimensions(); d++)
 		{
@@ -208,14 +230,14 @@ public abstract class AVector implements IVector
 	
 	
 	@Override
-	public synchronized double getLength2()
+	public double getLength2()
 	{
 		return SumatraMath.sqrt((x() * x()) + (y() * y()));
 	}
 	
 	
 	@Override
-	public synchronized double[] toArray()
+	public double[] toArray()
 	{
 		double[] arr = new double[getNumDimensions()];
 		for (int d = 0; d < getNumDimensions(); d++)
@@ -227,10 +249,8 @@ public abstract class AVector implements IVector
 	
 	
 	@Override
-	public synchronized String toString()
+	public String toString()
 	{
-		DecimalFormat df = (DecimalFormat) NumberFormat.getNumberInstance(Locale.ENGLISH);
-		df.applyPattern("0.000");
 		StringBuilder sb = new StringBuilder();
 		sb.append('[');
 		if (getNumDimensions() > 0)
@@ -255,7 +275,7 @@ public abstract class AVector implements IVector
 	
 	
 	@Override
-	public synchronized String getSaveableString()
+	public String getSaveableString()
 	{
 		StringBuilder sb = new StringBuilder();
 		sb.append(x());
@@ -269,7 +289,7 @@ public abstract class AVector implements IVector
 	
 	
 	@Override
-	public synchronized JSONObject toJSON()
+	public JSONObject toJSON()
 	{
 		Map<String, Object> jsonMapping = new LinkedHashMap<>();
 		for (int d = 0; d < getNumDimensions(); d++)
@@ -282,7 +302,7 @@ public abstract class AVector implements IVector
 	
 	@SuppressWarnings("unchecked")
 	@Override
-	public synchronized JSONArray toJSONArray()
+	public JSONArray toJSONArray()
 	{
 		JSONArray arr = new JSONArray();
 		for (int d = 0; d < getNumDimensions(); d++)
@@ -294,7 +314,7 @@ public abstract class AVector implements IVector
 	
 	
 	@Override
-	public synchronized List<Number> getNumberList()
+	public List<Number> getNumberList()
 	{
 		List<Number> numbers = new ArrayList<>(getNumDimensions());
 		for (int d = 0; d < getNumDimensions(); d++)
@@ -306,7 +326,7 @@ public abstract class AVector implements IVector
 	
 	
 	@Override
-	public synchronized boolean isCloseTo(final IVector vec, final double distance)
+	public boolean isCloseTo(final IVector vec, final double distance)
 	{
 		if (vec.getNumDimensions() == getNumDimensions())
 		{
@@ -324,9 +344,9 @@ public abstract class AVector implements IVector
 	
 	
 	@Override
-	public synchronized boolean isCloseTo(final IVector vec)
+	public boolean isCloseTo(final IVector vec)
 	{
-		return isCloseTo(vec, EQUAL_TOL);
+		return isCloseTo(vec, SumatraMath.getEqualTol());
 	}
 	
 	
@@ -336,7 +356,7 @@ public abstract class AVector implements IVector
 	 * @param values
 	 * @return
 	 */
-	public static IVector meanVector(final List<IVector> values)
+	public static IVectorN meanVector(final List<? extends IVector> values)
 	{
 		VectorN sum = VectorN.empty();
 		values.forEach(sum::add);
@@ -350,13 +370,13 @@ public abstract class AVector implements IVector
 	 * @param values
 	 * @return
 	 */
-	public static IVector varianceVector(final List<IVector> values)
+	public static IVector varianceVector(final List<? extends IVector> values)
 	{
-		IVector mu = meanVector(values);
-		List<IVector> val2 = new ArrayList<>(values.size());
-		for (IVector v : values)
+		IVectorN mu = meanVector(values);
+		List<IVectorN> val2 = new ArrayList<>(values.size());
+		for (IVectorN v : values.stream().map(VectorN::copy).collect(Collectors.toList()))
 		{
-			IVector diff = v.subtractNew(mu);
+			IVectorN diff = v.subtractNew(mu);
 			val2.add(diff.applyNew(a -> a * a));
 		}
 		return meanVector(val2);
@@ -369,7 +389,7 @@ public abstract class AVector implements IVector
 	 * @param values
 	 * @return
 	 */
-	public static IVector stdVector(final List<IVector> values)
+	public static IVector stdVector(final List<? extends IVector> values)
 	{
 		IVector var = varianceVector(values);
 		return var.applyNew(Math::sqrt);

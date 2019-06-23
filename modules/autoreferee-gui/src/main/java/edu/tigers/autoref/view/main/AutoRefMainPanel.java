@@ -1,23 +1,21 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Oct 24, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.view.main;
 
+import java.awt.BorderLayout;
 import java.util.Arrays;
 
 import javax.swing.BoxLayout;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 
-import net.miginfocom.swing.MigLayout;
-import edu.tigers.autoreferee.engine.events.IGameEventDetector.EGameEventDetectorType;
+import edu.tigers.autoreferee.engine.events.EGameEvent;
+import edu.tigers.autoreferee.engine.events.EGameEventDetectorType;
 import edu.tigers.sumatra.components.EnumCheckBoxPanel;
 import edu.tigers.sumatra.components.IEnumPanel;
 import edu.tigers.sumatra.views.ISumatraView;
+import net.miginfocom.swing.MigLayout;
 
 
 /**
@@ -25,13 +23,12 @@ import edu.tigers.sumatra.views.ISumatraView;
  */
 public class AutoRefMainPanel extends JPanel implements IAutoRefMainPanel, ISumatraView
 {
+	private static final long serialVersionUID = 1511856775227796442L;
 	
-	/**  */
-	private static final long									serialVersionUID	= 1511856775227796442L;
-	
-	private StartStopPanel										startStopPanel		= new StartStopPanel();
-	private ActiveEnginePanel									activeEnginePanel	= new ActiveEnginePanel();
-	private EnumCheckBoxPanel<EGameEventDetectorType>	gameEventPanel;
+	private StartStopPanel startStopPanel = new StartStopPanel();
+	private ActiveEnginePanel activeEnginePanel = new ActiveEnginePanel();
+	private EnumCheckBoxPanel<EGameEventDetectorType> gameEventDetectorPanel;
+	private EnumCheckBoxPanel<EGameEvent> gameEventPanel;
 	
 	
 	/**
@@ -39,7 +36,10 @@ public class AutoRefMainPanel extends JPanel implements IAutoRefMainPanel, ISuma
 	 */
 	public AutoRefMainPanel()
 	{
-		gameEventPanel = new EnumCheckBoxPanel<>(EGameEventDetectorType.class, "Game Events", BoxLayout.PAGE_AXIS);
+		gameEventDetectorPanel = new EnumCheckBoxPanel<>(EGameEventDetectorType.class, "Game Event Detectors",
+				BoxLayout.PAGE_AXIS);
+		gameEventPanel = new EnumCheckBoxPanel<>(EGameEvent.class, "Published Game Events",
+				BoxLayout.PAGE_AXIS);
 		
 		setupGUI();
 	}
@@ -47,10 +47,16 @@ public class AutoRefMainPanel extends JPanel implements IAutoRefMainPanel, ISuma
 	
 	private void setupGUI()
 	{
-		setLayout(new MigLayout("center", "[320][]", "[][]"));
-		add(startStopPanel, "grow x, top");
-		add(gameEventPanel, "span 1 2, wrap");
-		add(activeEnginePanel, "grow x, top");
+		setLayout(new BorderLayout());
+		JPanel panel = new JPanel();
+		final JScrollPane scrollPane = new JScrollPane(panel);
+		add(scrollPane, BorderLayout.CENTER);
+		
+		panel.setLayout(new MigLayout("", "[250][250]", "[][]"));
+		panel.add(startStopPanel, "grow, top");
+		panel.add(activeEnginePanel, "grow, top, wrap");
+		panel.add(gameEventPanel, "grow x, top");
+		panel.add(gameEventDetectorPanel, "grow x, top, wrap");
 	}
 	
 	
@@ -69,7 +75,14 @@ public class AutoRefMainPanel extends JPanel implements IAutoRefMainPanel, ISuma
 	
 	
 	@Override
-	public IEnumPanel<EGameEventDetectorType> getEventPanel()
+	public IEnumPanel<EGameEventDetectorType> getGameEventDetectorPanel()
+	{
+		return gameEventDetectorPanel;
+	}
+	
+	
+	@Override
+	public IEnumPanel<EGameEvent> getGameEventPanel()
 	{
 		return gameEventPanel;
 	}
@@ -77,7 +90,7 @@ public class AutoRefMainPanel extends JPanel implements IAutoRefMainPanel, ISuma
 	
 	public void setPanelsEnabled(final boolean enabled)
 	{
-		Arrays.asList(startStopPanel, activeEnginePanel, gameEventPanel).forEach(
+		Arrays.asList(startStopPanel, activeEnginePanel, gameEventDetectorPanel, gameEventPanel).forEach(
 				panel -> panel.setPanelEnabled(enabled));
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -12,6 +12,7 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.pathfinder.MovementCon;
 import edu.tigers.sumatra.skillsystem.ESkill;
 import edu.tigers.sumatra.statemachine.IState;
+import edu.tigers.sumatra.time.AverageTimeMeasure;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
 
@@ -29,8 +30,9 @@ public interface ISkill
 	/**
 	 * @param wfw
 	 * @param bot
+	 * @param shapeMap
 	 */
-	void update(WorldFrameWrapper wfw, ABot bot);
+	void update(WorldFrameWrapper wfw, ABot bot, final ShapeMap shapeMap);
 	
 	
 	/**
@@ -49,12 +51,6 @@ public interface ISkill
 	 * Called once upon start of this skill
 	 */
 	void calcEntryActions();
-	
-	
-	/**
-	 * @return
-	 */
-	ShapeMap exportShapeMap();
 	
 	
 	/**
@@ -79,6 +75,12 @@ public interface ISkill
 	 * @return
 	 */
 	boolean isInitialized();
+	
+	
+	/**
+	 * @return the average time measure with timing statistics
+	 */
+	AverageTimeMeasure getAverageTimeMeasure();
 	
 	
 	/**

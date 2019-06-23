@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.drawable.animated;
 
 import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.SumatraMath;
 
 
 /**
@@ -45,6 +46,6 @@ public class AnimationTimerSine extends AAnimationTimer
 	@Override
 	public float getTimerValue()
 	{
-		return (float) ((Math.sin(getRelativeTimerValue() * AngleMath.PI_TWO) * 0.5f) + 0.5f);
+		return (float) ((SumatraMath.sin(getRelativeTimerValue() * AngleMath.PI_TWO) * 0.5f) + 0.5f);
 	}
 }

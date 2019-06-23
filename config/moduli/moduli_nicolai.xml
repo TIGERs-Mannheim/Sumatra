@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!--
+  ~ Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+  -->
+
+<centralSoftware>
+    <globalConfiguration>
+        <environment>NICOLAI</environment>
+    </globalConfiguration>
+
+
+    <module id="edu.tigers.sumatra.cam.ACam">
+        <implementation>edu.tigers.sumatra.cam.SSLVisionCam</implementation>
+    </module>
+
+    <module id="edu.tigers.sumatra.geometry.GeometryUpdater">
+        <dependency>edu.tigers.sumatra.cam.ACam</dependency>
+    </module>
+
+    <module id="edu.tigers.sumatra.vision.AVisionFilter">
+        <implementation>edu.tigers.sumatra.vision.VisionFilterImpl</implementation>
+
+        <dependency>edu.tigers.sumatra.referee.AReferee</dependency>
+        <dependency>edu.tigers.sumatra.cam.ACam</dependency>
+        <dependency>edu.tigers.sumatra.timer.ATimer</dependency>
+        <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.wp.AWorldPredictor">
+        <implementation>edu.tigers.sumatra.wp.WorldInfoCollector</implementation>
+
+        <dependency>edu.tigers.sumatra.cam.ACam</dependency>
+        <dependency>edu.tigers.sumatra.timer.ATimer</dependency>
+        <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
+    </module>
+
+    <module id="edu.tigers.sumatra.referee.AReferee">
+        <implementation>edu.tigers.sumatra.referee.Referee</implementation>
+    </module>
+
+
+    <module id="edu.tigers.autoreferee.module.AutoRefModule"/>
+
+
+    <module id="edu.tigers.sumatra.botmanager.ABotManager">
+        <implementation>edu.tigers.sumatra.botmanager.BotManager</implementation>
+
+        <properties>
+            <basestation-impl>edu.tigers.sumatra.botmanager.basestation.TigersBaseStation
+            </basestation-impl>
+        </properties>
+
+        <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.skillsystem.ASkillSystem">
+        <implementation>edu.tigers.sumatra.skillsystem.GenericSkillSystem</implementation>
+
+        <dependency>edu.tigers.sumatra.botmanager.ABotManager</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.ai.AAgent">
+        <implementation>edu.tigers.sumatra.ai.Agent</implementation>
+
+        <dependency>edu.tigers.sumatra.skillsystem.ASkillSystem</dependency>
+        <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
+        <dependency>edu.tigers.sumatra.timer.ATimer</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.timer.ATimer">
+        <implementation>edu.tigers.sumatra.timer.SumatraTimer</implementation>
+    </module>
+
+    <module id="edu.tigers.sumatra.persistence.RecordManager">
+        <implementation>edu.tigers.sumatra.ai.AiRecordManager</implementation>
+    </module>
+
+    <module id="edu.tigers.sumatra.guinotifications.GuiNotificationsController"/>
+
+    <module id="edu.tigers.sumatra.botparams.BotParamsManager"/>
+</centralSoftware>

@@ -23,7 +23,10 @@ public enum EDataAcquisitionMode
 	BOT_MODEL(2),
 	
 	/**  */
-	DELAYS(3);
+	DELAYS(3),
+	
+	/**  */
+	BOT_MODEL_V2(4);
 	
 	private final int id;
 	

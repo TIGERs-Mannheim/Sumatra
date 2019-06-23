@@ -8,6 +8,7 @@ import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.trajectory.BangBangTrajectory1DOrient;
 import edu.tigers.sumatra.trajectory.BangBangTrajectory2D;
+import edu.tigers.sumatra.trajectory.BangBangTrajectory2DAsync;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
@@ -61,12 +62,23 @@ public class TrajectoryGenerator
 			final IVector2 curVel,
 			final IVector2 dest)
 	{
-		return new BangBangTrajectory2D(
+		if (moveConstraints.getPrimaryDirection().isZeroVector())
+		{
+			return new BangBangTrajectory2D(
+					curPos.multiplyNew(1e-3f),
+					dest.multiplyNew(1e-3f),
+					curVel,
+					moveConstraints.getVelMax(),
+					moveConstraints.getAccMax());
+		}
+		
+		return new BangBangTrajectory2DAsync(
 				curPos.multiplyNew(1e-3f),
 				dest.multiplyNew(1e-3f),
 				curVel,
 				moveConstraints.getVelMax(),
-				moveConstraints.getAccMax());
+				moveConstraints.getAccMax(),
+				moveConstraints.getPrimaryDirection());
 	}
 	
 	

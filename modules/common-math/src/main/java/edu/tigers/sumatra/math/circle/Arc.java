@@ -8,8 +8,8 @@ import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -20,14 +20,14 @@ public class Arc extends AArc
 {
 	private final double startAngle;
 	private final double rotation;
-	private final IVector2 center;
+	private final Vector2f center;
 	private final double radius;
 	
 	
 	@SuppressWarnings("unused")
 	protected Arc()
 	{
-		center = AVector2.ZERO_VECTOR;
+		center = Vector2f.ZERO_VECTOR;
 		radius = 1;
 		startAngle = 0;
 		rotation = 1;
@@ -42,7 +42,7 @@ public class Arc extends AArc
 	 */
 	protected Arc(final IVector2 center, final double radius, final double startAngle, final double rotation)
 	{
-		this.center = center;
+		this.center = Vector2f.copy(center);
 		this.radius = radius;
 		this.startAngle = AngleMath.normalizeAngle(startAngle);
 		this.rotation = rotation;
@@ -54,7 +54,7 @@ public class Arc extends AArc
 	 */
 	protected Arc(final IArc arc)
 	{
-		center = arc.center();
+		center = Vector2f.copy(arc.center());
 		radius = arc.radius();
 		startAngle = arc.getStartAngle();
 		rotation = arc.getRotation();

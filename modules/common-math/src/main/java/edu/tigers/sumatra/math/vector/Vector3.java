@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.vector;
@@ -46,7 +46,7 @@ public class Vector3 extends AVector3
 	}
 	
 	
-	private Vector3(final IVector original)
+	private Vector3(final IVector3 original)
 	{
 		set(original);
 	}
@@ -116,7 +116,7 @@ public class Vector3 extends AVector3
 	 * @param original hard copy of the original vector
 	 * @return new instance
 	 */
-	public static Vector3 copy(final IVector original)
+	public static Vector3 copy(final IVector3 original)
 	{
 		return new Vector3(original);
 	}
@@ -175,20 +175,20 @@ public class Vector3 extends AVector3
 	
 	
 	/**
-	 * @param xy value
+	 * @param xyz value
 	 */
-	public void set(final IVector xy)
+	public void set(final IVector3 xyz)
 	{
-		x = xy.x();
-		y = xy.y();
-		z = xy.z();
+		x = xyz.x();
+		y = xyz.y();
+		z = xyz.z();
 	}
 	
 	
 	/**
 	 * @param xy value
 	 */
-	public void setXY(final IVector xy)
+	public void setXY(final IVector2 xy)
 	{
 		x = xy.x();
 		y = xy.y();
@@ -224,7 +224,7 @@ public class Vector3 extends AVector3
 	 * @param vector other vector
 	 * @return Added vector.
 	 */
-	public Vector3 add(final IVector vector)
+	public Vector3 add(final IVector3 vector)
 	{
 		x += vector.x();
 		y += vector.y();
@@ -239,7 +239,7 @@ public class Vector3 extends AVector3
 	 * @param vector other vector
 	 * @return Subtracted vector.
 	 */
-	public Vector3 subtract(final IVector vector)
+	public Vector3 subtract(final IVector3 vector)
 	{
 		x -= vector.x();
 		y -= vector.y();

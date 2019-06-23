@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.bot;
@@ -91,12 +91,6 @@ public interface IBot
 	
 	
 	/**
-	 * @return the excludeFromAi
-	 */
-	boolean isHideFromAi();
-	
-	
-	/**
 	 * @return the hideFromRcm
 	 */
 	boolean isHideFromRcm();
@@ -124,25 +118,17 @@ public interface IBot
 	
 	
 	/**
-	 * Get internal position from sensory data
-	 *
+	 * Get internal state from sensory data
+	 * 
+	 * @param timestamp
 	 * @return
-	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 	 */
-	Optional<IVector3> getSensoryPos();
+	Optional<BotState> getSensoryState(long timestamp);
 	
 	
 	/**
-	 * Get internal velcoity from sensory data
-	 *
-	 * @return
-	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
-	 */
-	Optional<IVector3> getSensoryVel();
-	
-	
-	/**
-	 * @return
+	 * @return the current bot trajectory in the coordinate system of the AI (you may have to mirror it when accessing
+	 *         outside AI or for opponent bot)
 	 */
 	default Optional<TrajectoryWithTime<IVector3>> getCurrentTrajectory()
 	{
@@ -166,4 +152,23 @@ public interface IBot
 	 * @return
 	 */
 	ERobotMode getRobotMode();
+	
+	
+	/**
+	 * Is true iff the bot is completely okay. (Used for automatic interchange)
+	 * 
+	 * @return
+	 */
+	boolean isOK();
+	
+	
+	/**
+	 * Get version string.
+	 * 
+	 * @return
+	 */
+	default String getVersionString()
+	{
+		return "No versioning";
+	}
 }

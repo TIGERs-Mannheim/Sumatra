@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<edu.tigers.sumatra.ai.metis.defense.DefenseConstants base="edu.tigers.sumatra.ai.metis.defense.DefenseConstants">
-    <maxGoOutDistance>2800.0</maxGoOutDistance>
-    <minGoOutDistance>400.0</minGoOutDistance>
-</edu.tigers.sumatra.ai.metis.defense.DefenseConstants>

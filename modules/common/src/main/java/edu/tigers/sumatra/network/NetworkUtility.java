@@ -1,15 +1,8 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 12.04.2011
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.network;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InterfaceAddress;
@@ -61,7 +54,7 @@ public final class NetworkUtility
 			network = InetAddress.getByName(networkStr);
 		} catch (UnknownHostException err1)
 		{
-			log.error("Unknown host: " + networkStr);
+			log.error("Unable to parse network address: " + networkStr, err1);
 			return null;
 		}
 		
@@ -122,26 +115,5 @@ public final class NetworkUtility
 		}
 		
 		return true;
-	}
-	
-	
-	/**
-	 * Quietly close a stream or what ever. c may be null.
-	 * Only use this method if you ensured that any important errors were already reported!
-	 * 
-	 * @param c
-	 */
-	public static void closeQuietly(final Closeable c)
-	{
-		if (c != null)
-		{
-			try
-			{
-				c.close();
-			} catch (IOException err)
-			{
-				// ignore
-			}
-		}
 	}
 }

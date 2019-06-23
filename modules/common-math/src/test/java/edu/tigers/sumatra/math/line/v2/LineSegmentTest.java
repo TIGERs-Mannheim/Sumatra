@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.line.v2;
@@ -15,8 +15,10 @@ import java.util.Optional;
 
 import org.junit.Test;
 
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 
@@ -26,8 +28,8 @@ import nl.jqno.equalsverifier.Warning;
  */
 public class LineSegmentTest extends AbstractLineTest
 {
-	private final static LineConstructor lineConstructor = dV -> LineSegment.fromPoints(Vector2.ZERO_VECTOR,
-			Vector2.ZERO_VECTOR.addNew(dV));
+	private final static LineConstructor lineConstructor = dV -> LineSegment.fromPoints(Vector2f.ZERO_VECTOR,
+			Vector2f.ZERO_VECTOR.addNew(dV));
 	
 	
 	@Test
@@ -41,10 +43,8 @@ public class LineSegmentTest extends AbstractLineTest
 		ILineSegment segment = LineSegment.fromPoints(start, end);
 		
 		assertThat(segment.getStart(), is(start));
-		assertThat(segment.getStart() != start, is(true));
 		
 		assertThat(segment.getEnd(), is(end));
-		assertThat(segment.getEnd() != end, is(true));
 		
 		assertThat(segment.directionVector(), is(dV));
 		
@@ -60,8 +60,8 @@ public class LineSegmentTest extends AbstractLineTest
 		
 		assertThat(segment.getStart(), is(point));
 		assertThat(segment.getEnd(), is(point));
-		assertThat(segment.getDisplacement(), is(Vector2.ZERO_VECTOR));
-		assertThat(segment.directionVector(), is(Vector2.ZERO_VECTOR));
+		assertThat(segment.getDisplacement(), is(Vector2f.ZERO_VECTOR));
+		assertThat(segment.directionVector(), is(Vector2f.ZERO_VECTOR));
 	}
 	
 	
@@ -74,10 +74,8 @@ public class LineSegmentTest extends AbstractLineTest
 		ILineSegment segment = LineSegment.fromOffset(start, displacement);
 		
 		assertThat(segment.getStart(), is(start));
-		assertThat(segment.getStart() != start, is(true));
 		assertThat(segment.getEnd(), is(start.addNew(displacement)));
 		assertThat(segment.directionVector().isParallelTo(displacement), is(true));
-		assertThat(segment.getStart() != start, is(true));
 		assertThat(segment.getDisplacement(), is(displacement));
 		assertThat(segment.getDisplacement() != displacement, is(true));
 	}
@@ -87,14 +85,14 @@ public class LineSegmentTest extends AbstractLineTest
 	public void testFromZeroDisplacement()
 	{
 		IVector2 start = Vector2.fromXY(4, 5);
-		IVector2 displacement = Vector2.ZERO_VECTOR;
+		IVector2 displacement = Vector2f.ZERO_VECTOR;
 		
 		ILineSegment segment = LineSegment.fromOffset(start, displacement);
 		
 		assertThat(segment.getStart(), is(start));
 		assertThat(segment.getEnd(), is(start));
-		assertThat(segment.directionVector(), is(Vector2.ZERO_VECTOR));
-		assertThat(segment.getDisplacement(), is(Vector2.ZERO_VECTOR));
+		assertThat(segment.directionVector(), is(Vector2f.ZERO_VECTOR));
+		assertThat(segment.getDisplacement(), is(Vector2f.ZERO_VECTOR));
 	}
 	
 	
@@ -102,7 +100,7 @@ public class LineSegmentTest extends AbstractLineTest
 	public void testIsValid()
 	{
 		IVector2 start = Vector2.fromXY(10, -20);
-		IVector2 end = Vector2.ZERO_VECTOR;
+		IVector2 end = Vector2f.ZERO_VECTOR;
 		
 		ILineSegment properLine = LineSegment.fromPoints(start, end);
 		ILineSegment invalidLine = LineSegment.fromPoints(start, start);
@@ -111,7 +109,7 @@ public class LineSegmentTest extends AbstractLineTest
 		assertThat(invalidLine.isValid(), is(false));
 		
 		properLine = LineSegment.fromOffset(start, end.subtractNew(start));
-		invalidLine = LineSegment.fromOffset(start, Vector2.ZERO_VECTOR);
+		invalidLine = LineSegment.fromOffset(start, Vector2f.ZERO_VECTOR);
 		
 		assertThat(properLine.isValid(), is(true));
 		assertThat(invalidLine.isValid(), is(false));
@@ -121,14 +119,14 @@ public class LineSegmentTest extends AbstractLineTest
 	@Test
 	public void testDistanceTo()
 	{
-		IVector2 point = Vector2.ZERO_VECTOR;
+		IVector2 point = Vector2f.ZERO_VECTOR;
 		
 		for (int degAngle = 0; degAngle < 360; degAngle++)
 		{
 			double radAngle = Math.toRadians(degAngle);
 			
 			IVector2 start = Vector2.fromXY(0, 1);
-			IVector2 end = Vector2.X_AXIS.turnToNew(radAngle).add(Vector2.fromXY(0, 1));
+			IVector2 end = Vector2f.X_AXIS.turnToNew(radAngle).add(Vector2.fromXY(0, 1));
 			ILineSegment segment = LineSegment.fromPoints(start, end);
 			ILineSegment invalidSegment = LineSegment.fromPoints(start, start);
 			
@@ -141,9 +139,9 @@ public class LineSegmentTest extends AbstractLineTest
 			} else
 			{
 				double radAngleAtOrigin = radAngle - Math.PI;
-				double distanceLinePoint = Math.cos(radAngleAtOrigin);
+				double distanceLinePoint = SumatraMath.cos(radAngleAtOrigin);
 				
-				expectedClosestPoint = Vector2.Y_AXIS.turnNew(radAngleAtOrigin).scaleTo(distanceLinePoint);
+				expectedClosestPoint = Vector2f.Y_AXIS.turnNew(radAngleAtOrigin).scaleTo(distanceLinePoint);
 				expectedDistance = Math.abs(distanceLinePoint);
 			}
 			
@@ -161,7 +159,7 @@ public class LineSegmentTest extends AbstractLineTest
 	{
 		EqualsVerifier.forClass(LineSegment.class)
 				.suppress(Warning.NULL_FIELDS)
-				.withIgnoredFields("directionVector", "displacement", "isValid")
+				.withIgnoredFields("directionVector", "displacement")
 				.verify();
 	}
 	
@@ -244,10 +242,8 @@ public class LineSegmentTest extends AbstractLineTest
 		ILineSegment copy = original.copy();
 		
 		assertThat(original.getStart(), is(copy.getStart()));
-		assertThat(original.getStart() == copy.getStart(), is(false));
-		
 		assertThat(original.getEnd(), is(copy.getEnd()));
-		assertThat(original.getEnd() == copy.getEnd(), is(false));
+		assertThat(original, is(copy));
 	}
 	
 	
@@ -262,7 +258,7 @@ public class LineSegmentTest extends AbstractLineTest
 		assertThat(line.supportVector(), is(segment.getStart()));
 		assertThat(line.supportVector(), is(segment.getEnd()));
 		
-		assertThat(line.directionVector(), is(Vector2.ZERO_VECTOR));
+		assertThat(line.directionVector(), is(Vector2f.ZERO_VECTOR));
 	}
 	
 	
@@ -277,14 +273,14 @@ public class LineSegmentTest extends AbstractLineTest
 		assertThat(line.supportVector(), is(segment.getStart()));
 		assertThat(line.supportVector(), is(segment.getEnd()));
 		
-		assertThat(line.directionVector(), is(Vector2.ZERO_VECTOR));
+		assertThat(line.directionVector(), is(Vector2f.ZERO_VECTOR));
 	}
 	
 	
 	@Test
 	public void testIntersectLine()
 	{
-		ILine line = Line.fromPoints(Vector2.ZERO_VECTOR, Vector2.X_AXIS);
+		ILine line = Line.fromPoints(Vector2f.ZERO_VECTOR, Vector2f.X_AXIS);
 		
 		rotateSegment(0, 360, ((degAngle, radAngle, segment) -> {
 			
@@ -294,7 +290,7 @@ public class LineSegmentTest extends AbstractLineTest
 				assertThat(intersection, isNotPresent());
 			} else
 			{
-				double xVal = -1.0d / Math.tan(radAngle);
+				double xVal = -1.0d / SumatraMath.tan(radAngle);
 				IVector2 expected = Vector2.fromXY(xVal, 0);
 				assertThat(intersection, isPresentAnd(is(expected)));
 			}
@@ -305,8 +301,8 @@ public class LineSegmentTest extends AbstractLineTest
 	@Test
 	public void testIntersectLineWithInvalid()
 	{
-		ILine properLine = Line.fromDirection(Vector2.fromXY(1, 1), Vector2.X_AXIS);
-		ILine invalidLine = Line.fromDirection(Vector2.fromXY(1, 0), Vector2.ZERO_VECTOR);
+		ILine properLine = Line.fromDirection(Vector2.fromXY(1, 1), Vector2f.X_AXIS);
+		ILine invalidLine = Line.fromDirection(Vector2.fromXY(1, 0), Vector2f.ZERO_VECTOR);
 		
 		IVector2 start = Vector2.fromXY(1, -1);
 		IVector2 end = Vector2.fromXY(1, 2);
@@ -326,7 +322,7 @@ public class LineSegmentTest extends AbstractLineTest
 	@Test
 	public void testIntersectHalfLine()
 	{
-		IHalfLine halfLine = HalfLine.fromDirection(Vector2.ZERO_VECTOR, Vector2.X_AXIS);
+		IHalfLine halfLine = HalfLine.fromDirection(Vector2f.ZERO_VECTOR, Vector2f.X_AXIS);
 		
 		rotateSegment(0, 360, ((degAngle, radAngle, segment) -> {
 			
@@ -336,7 +332,7 @@ public class LineSegmentTest extends AbstractLineTest
 				assertThat(intersection, isNotPresent());
 			} else
 			{
-				double xVal = -1.0d / Math.tan(radAngle);
+				double xVal = -1.0d / SumatraMath.tan(radAngle);
 				IVector2 expected = Vector2.fromXY(xVal, 0);
 				assertThat(intersection, isPresentAnd(is(expected)));
 			}
@@ -347,8 +343,8 @@ public class LineSegmentTest extends AbstractLineTest
 	@Test
 	public void testIntersectHalfLineWithInvalid()
 	{
-		IHalfLine properLine = HalfLine.fromDirection(Vector2.fromXY(1, 1), Vector2.X_AXIS);
-		IHalfLine invalidLine = HalfLine.fromDirection(Vector2.fromXY(1, 0), Vector2.ZERO_VECTOR);
+		IHalfLine properLine = HalfLine.fromDirection(Vector2.fromXY(1, 1), Vector2f.X_AXIS);
+		IHalfLine invalidLine = HalfLine.fromDirection(Vector2.fromXY(1, 0), Vector2f.ZERO_VECTOR);
 		
 		IVector2 start = Vector2.fromXY(1, -1);
 		IVector2 end = Vector2.fromXY(1, 2);
@@ -368,7 +364,7 @@ public class LineSegmentTest extends AbstractLineTest
 	@Test
 	public void testIntersectLineSegment()
 	{
-		ILineSegment segment = LineSegment.fromPoints(Vector2.ZERO_VECTOR, Vector2.X_AXIS);
+		ILineSegment segment = LineSegment.fromPoints(Vector2f.ZERO_VECTOR, Vector2f.X_AXIS);
 		
 		rotateSegment(0, 360, ((degAngle, radAngle, rotatedSegment) -> {
 			
@@ -378,7 +374,7 @@ public class LineSegmentTest extends AbstractLineTest
 				assertThat(intersection, isNotPresent());
 			} else
 			{
-				double xVal = -1.0d / Math.tan(radAngle);
+				double xVal = -1.0d / SumatraMath.tan(radAngle);
 				IVector2 expected = Vector2.fromXY(xVal, 0);
 				assertThat(intersection, isPresentAnd(is(expected)));
 			}
@@ -389,10 +385,10 @@ public class LineSegmentTest extends AbstractLineTest
 	@Test
 	public void testIntersectSegmentWithInvalid()
 	{
-		ILineSegment validSegment = LineSegment.fromOffset(Vector2.ZERO_VECTOR, Vector2.X_AXIS);
+		ILineSegment validSegment = LineSegment.fromOffset(Vector2f.ZERO_VECTOR, Vector2f.X_AXIS);
 		
-		ILineSegment invalidSegmentA = LineSegment.fromOffset(Vector2.fromXY(10, 1), Vector2.ZERO_VECTOR);
-		ILineSegment invalidSegmentB = LineSegment.fromOffset(Vector2.fromXY(1, 12), Vector2.ZERO_VECTOR);
+		ILineSegment invalidSegmentA = LineSegment.fromOffset(Vector2.fromXY(10, 1), Vector2f.ZERO_VECTOR);
+		ILineSegment invalidSegmentB = LineSegment.fromOffset(Vector2.fromXY(1, 12), Vector2f.ZERO_VECTOR);
 		
 		Optional<IVector2> intersection = invalidSegmentA.intersectSegment(validSegment);
 		Optional<IVector2> inverseIntersection = validSegment.intersectSegment(invalidSegmentA);
@@ -427,7 +423,7 @@ public class LineSegmentTest extends AbstractLineTest
 	@Test
 	public void testIsPointOnLine()
 	{
-		ILineSegment segment = LineSegment.fromPoints(Vector2.ZERO_VECTOR, Vector2.fromXY(3, 0));
+		ILineSegment segment = LineSegment.fromPoints(Vector2f.ZERO_VECTOR, Vector2.fromXY(3, 0));
 		
 		IVector2 point = Vector2.fromXY(-10, 0);
 		assertThat(segment.isPointOnLine(point), is(false));
@@ -455,13 +451,13 @@ public class LineSegmentTest extends AbstractLineTest
 	@Test
 	public void testTsPointOnLineInvalidSegment()
 	{
-		IVector2 sV = Vector2.ZERO_VECTOR;
+		IVector2 sV = Vector2f.ZERO_VECTOR;
 		ILineSegment invalidSegment = LineSegment.fromPoints(sV, sV);
 		
 		IVector2 point = Vector2.fromXY(-ALine.LINE_MARGIN * 4, 0);
 		assertThat(invalidSegment.isPointOnLine(point), is(false));
 		
-		point = Vector2.ZERO_VECTOR;
+		point = Vector2f.ZERO_VECTOR;
 		assertThat(invalidSegment.isPointOnLine(point), is(true));
 		
 		point = Vector2.fromXY(ALine.LINE_MARGIN * 4, 0);
@@ -486,7 +482,7 @@ public class LineSegmentTest extends AbstractLineTest
 	@Test
 	public void testGetLength()
 	{
-		IVector2 start = Vector2.ZERO_VECTOR;
+		IVector2 start = Vector2f.ZERO_VECTOR;
 		IVector2 end = Vector2.fromXY(21, 42);
 		
 		ILineSegment segment = LineSegment.fromPoints(start, end);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.defense;
@@ -12,15 +12,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import edu.tigers.sumatra.ai.data.EAiShapesLayer;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
-import edu.tigers.sumatra.ai.math.DefenseMath;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseThreatAssignment;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.drawable.animated.AnimatedCircle;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.SumatraMath;
@@ -67,6 +67,7 @@ public class DesiredDefendersCalc extends ACalculator
 			remainingDefenders = aiFrame.getWorldFrame().getTigerBotsVisible().values().stream()
 					.filter(bot -> !aiFrame.getKeeperId().equals(bot.getBotId()))
 					.filter(bot -> !tacticalField.getCrucialOffender().contains(bot.getBotId()))
+					.filter(bot -> !tacticalField.getBotInterchange().getDesiredInterchangeBots().contains(bot.getBotId()))
 					.collect(Collectors.toList());
 		} else
 		{
@@ -109,6 +110,7 @@ public class DesiredDefendersCalc extends ACalculator
 		if (assignCrucialOnly)
 		{
 			tacticalField.setCrucialDefender(desiredDefenders);
+			drawCrucialDefenders(desiredDefenders, tacticalField);
 		} else
 		{
 			int numDefenders = tacticalField.getPlayNumbers().getOrDefault(EPlay.DEFENSIVE, 0);
@@ -188,5 +190,17 @@ public class DesiredDefendersCalc extends ACalculator
 			}
 		}
 		return 0;
+	}
+	
+	
+	private void drawCrucialDefenders(final Set<BotID> desiredDefenders, final TacticalField newTacticalField)
+	{
+		for (BotID id : desiredDefenders)
+		{
+			ITrackedBot bot = getWFrame().getBot(id);
+			newTacticalField.getDrawableShapes().get(EAiShapesLayer.DEFENSE_CRUCIAL_DEFENDERS).add(
+					AnimatedCircle.aFilledCircleWithShrinkingSize(bot.getPos(), 100, 150, 1.0f, new Color(125, 255, 50),
+							new Color(125, 255, 50, 100)));
+		}
 	}
 }

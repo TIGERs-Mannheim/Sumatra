@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view.toolbar;
 
@@ -7,8 +7,8 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -37,10 +37,10 @@ public class ToolBar
 {
 	private static final Logger log = Logger.getLogger(ToolBar.class.getName());
 	
-	private final List<IToolbarObserver> observers = new ArrayList<>();
+	private final List<IToolbarObserver> observers = new CopyOnWriteArrayList<>();
 	
 	// --- toolbar ---
-	private final JToolBar toolBar;
+	private final JToolBar jToolBar;
 	
 	private final JButton btnStartStop;
 	private final JButton btnEmergency;
@@ -65,6 +65,7 @@ public class ToolBar
 		btnStartStop.addActionListener(new StartStopModules());
 		btnStartStop.setBorder(BorderFactory.createEmptyBorder());
 		btnStartStop.setBackground(new Color(0, 0, 0, 1));
+		btnStartStop.setToolTipText("Start/Stop");
 		
 		btnEmergency = new JButton();
 		btnEmergency.setForeground(Color.red);
@@ -92,21 +93,24 @@ public class ToolBar
 		btnSwitchSides.setBackground(new Color(0, 0, 0, 1));
 		
 		JPanel heapPanel = new JPanel(new BorderLayout());
+		heapLabel.setToolTipText("Memory Usage (current/total/maximum)");
 		heapPanel.add(heapLabel, BorderLayout.NORTH);
 		heapPanel.add(heapBar, BorderLayout.SOUTH);
 		heapBar.setStringPainted(true);
 		heapBar.setMinimum(0);
+		heapBar.setToolTipText("Memory Usage");
 		
 		// --- configure toolbar ---
-		toolBar = new JToolBar();
-		toolBar.setFloatable(false);
-		toolBar.setRollover(true);
+		jToolBar = new JToolBar();
+		jToolBar.setFloatable(false);
+		jToolBar.setRollover(true);
 		
 		JPanel toolBarPanel = new JPanel();
 		toolBarPanel.setLayout(new MigLayout("inset 1"));
 		
 		JPanel matchModePanel = new JPanel(new BorderLayout());
 		telegramMode.addActionListener(new ChangeMatchModeListener());
+		telegramMode.setToolTipText("Enable/Disable broadcasting via Telegram");
 		matchModePanel.add(telegramMode);
 		
 		// --- add buttons ---
@@ -117,7 +121,7 @@ public class ToolBar
 		toolBarPanel.add(fpsPanel, "left");
 		toolBarPanel.add(heapPanel, "left");
 		toolBarPanel.add(matchModePanel, "right");
-		toolBar.add(toolBarPanel);
+		jToolBar.add(toolBarPanel);
 		
 		// initialize icons
 		for (EStartStopButtonState icon : EStartStopButtonState.values())
@@ -126,12 +130,9 @@ public class ToolBar
 		}
 		
 		GlobalShortcuts.register(EShortcut.EMERGENCY_MODE, () -> {
-			synchronized (observers)
+			for (final IToolbarObserver o : observers)
 			{
-				for (final IToolbarObserver o : observers)
-				{
-					o.onEmergencyStop();
-				}
+				o.onEmergencyStop();
 			}
 		});
 		GlobalShortcuts.register(EShortcut.START_STOP, this::startStopModules);
@@ -147,10 +148,7 @@ public class ToolBar
 	 */
 	public void addObserver(final IToolbarObserver o)
 	{
-		synchronized (observers)
-		{
-			observers.add(o);
-		}
+		observers.add(o);
 	}
 	
 	
@@ -159,10 +157,7 @@ public class ToolBar
 	 */
 	public void removeObserver(final IToolbarObserver o)
 	{
-		synchronized (observers)
-		{
-			observers.remove(o);
-		}
+		observers.remove(o);
 	}
 	
 	
@@ -175,7 +170,7 @@ public class ToolBar
 	 */
 	public JToolBar getToolbar()
 	{
-		return toolBar;
+		return jToolBar;
 	}
 	
 	
@@ -209,7 +204,7 @@ public class ToolBar
 				default:
 					break;
 			}
-			toolBar.repaint();
+			jToolBar.repaint();
 		});
 	}
 	
@@ -240,12 +235,9 @@ public class ToolBar
 	
 	private void startStopModules()
 	{
-		synchronized (observers)
+		for (final IToolbarObserver o : observers)
 		{
-			for (final IToolbarObserver o : observers)
-			{
-				o.onStartStopModules();
-			}
+			o.onStartStopModules();
 		}
 	}
 	
@@ -263,7 +255,7 @@ public class ToolBar
 			btnRecSave.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/record.png"));
 		}
 		
-		toolBar.repaint();
+		jToolBar.repaint();
 	}
 	
 	private class EmergencyStopListener implements ActionListener
@@ -271,12 +263,9 @@ public class ToolBar
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
-			synchronized (observers)
+			for (final IToolbarObserver o : observers)
 			{
-				for (final IToolbarObserver o : observers)
-				{
-					o.onEmergencyStop();
-				}
+				o.onEmergencyStop();
 			}
 		}
 	}

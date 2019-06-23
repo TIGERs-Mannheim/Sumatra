@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2012, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 24.01.2012
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ids;
 
@@ -14,6 +9,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import com.sleepycat.persist.model.Persistent;
 
@@ -27,27 +24,21 @@ import com.sleepycat.persist.model.Persistent;
 @Persistent
 public final class BotIDMapConst<T> implements IBotIDMap<T>
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	private static final long	serialVersionUID	= -6737987790216062346L;
-																
-	/** not final for Database */
-	private Map<BotID, T>		map;
-										
-										
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
+	private static final long serialVersionUID = -6737987790216062346L;
 	
+	private final SortedMap<BotID, T> map;
+	
+	
+	@SuppressWarnings("unused") // berkeley
 	private BotIDMapConst()
 	{
+		map = new TreeMap<>();
 	}
 	
 	
 	private BotIDMapConst(final Map<BotID, T> base)
 	{
-		this.map = base;
+		this.map = new TreeMap<>(base);
 	}
 	
 	
@@ -70,13 +61,10 @@ public final class BotIDMapConst<T> implements IBotIDMap<T>
 	 */
 	public static <T> BotIDMapConst<T> unmodifiableBotIDMap(final IBotIDMap<T> base)
 	{
-		return new BotIDMapConst<T>(base);
+		return new BotIDMapConst<>(base);
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	@Override
 	public T get(final BotID id) throws NoObjectWithThisIDException
 	{
@@ -106,14 +94,14 @@ public final class BotIDMapConst<T> implements IBotIDMap<T>
 	@Override
 	public T put(final BotID key, final T value)
 	{
-		throw new UnsupportedOperationException("Cannot put data in a unmodifiable map");
+		throw new UnsupportedOperationException("Cannot put data in an unmodifiable map");
 	}
 	
 	
 	@Override
 	public void putAll(final IBotIDMap<? extends T> put)
 	{
-		throw new UnsupportedOperationException("Cannot put data in a unmodifiable map");
+		throw new UnsupportedOperationException("Cannot put data in an unmodifiable map");
 	}
 	
 	
@@ -127,7 +115,7 @@ public final class BotIDMapConst<T> implements IBotIDMap<T>
 	@Override
 	public T remove(final BotID key)
 	{
-		throw new UnsupportedOperationException("Cannot put data in a unmodifiable map");
+		throw new UnsupportedOperationException("Cannot remove data from an unmodifiable map");
 	}
 	
 	
@@ -139,7 +127,7 @@ public final class BotIDMapConst<T> implements IBotIDMap<T>
 	
 	
 	@Override
-	public boolean containsValue(final Object value)
+	public boolean containsValue(final T value)
 	{
 		return map.containsValue(value);
 	}
@@ -162,7 +150,7 @@ public final class BotIDMapConst<T> implements IBotIDMap<T>
 	@Override
 	public void clear()
 	{
-		throw new UnsupportedOperationException("Cannot put data in a unmodifiable map");
+		throw new UnsupportedOperationException("Cannot clear data from an unmodifiable map");
 	}
 	
 	
@@ -176,7 +164,7 @@ public final class BotIDMapConst<T> implements IBotIDMap<T>
 	@Override
 	public Iterator<Entry<BotID, T>> iterator()
 	{
-		return new ConstBotIDMapIterator<T>(entrySet());
+		return new ConstBotIDMapIterator<>(entrySet());
 	}
 	
 	
@@ -213,9 +201,6 @@ public final class BotIDMapConst<T> implements IBotIDMap<T>
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	@Override
 	public Map<BotID, T> getContentMap()
 	{

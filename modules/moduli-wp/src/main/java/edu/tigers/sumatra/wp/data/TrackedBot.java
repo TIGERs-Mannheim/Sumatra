@@ -1,8 +1,13 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.data;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 
 import org.apache.commons.lang.Validate;
 
@@ -10,13 +15,15 @@ import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.bot.RobotInfo;
+import edu.tigers.sumatra.bot.State;
 import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.botshape.BotShape;
-import edu.tigers.sumatra.math.vector.AVector2;
+import edu.tigers.sumatra.math.botshape.IBotShape;
+import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector3;
 
 
 /**
@@ -24,17 +31,17 @@ import edu.tigers.sumatra.math.vector.IVector2;
  *
  * @author Gero
  */
-@Persistent(version = 1)
+@Persistent(version = 2)
 public final class TrackedBot implements ITrackedBot
 {
-	private final long		timestamp;
-	private final BotID		botId;
-	private final IVector2	pos;
-	private final IVector2	vel;
-	private final double		orientation;
-	private final double		angularVel;
-	private final boolean	visible;
-	private final RobotInfo	robotInfo;
+	private final long timestamp;
+	private final long tAssembly;
+	private final BotID botId;
+	private final State botState;
+	private final transient State filteredState;
+	private final transient State bufferedTrajState;
+	private final long lastBallContact;
+	private final RobotInfo robotInfo;
 	
 	
 	@SuppressWarnings("unused")
@@ -42,12 +49,12 @@ public final class TrackedBot implements ITrackedBot
 	{
 		timestamp = 0;
 		botId = BotID.noBot();
-		pos = AVector2.ZERO_VECTOR;
-		vel = AVector2.ZERO_VECTOR;
-		orientation = 0;
-		angularVel = 0;
-		visible = false;
+		botState = State.of(Pose.from(Vector3.zero()), Vector3.zero());
+		filteredState = State.of(Pose.from(Vector3.zero()), Vector3.zero());
+		bufferedTrajState = null;
+		lastBallContact = 0;
 		robotInfo = null;
+		tAssembly = 0;
 	}
 	
 	
@@ -55,12 +62,12 @@ public final class TrackedBot implements ITrackedBot
 	{
 		timestamp = builder.timestamp;
 		botId = builder.botId;
-		pos = builder.pos;
-		vel = builder.vel;
-		orientation = builder.orientation;
-		angularVel = builder.angularVel;
-		visible = builder.visible;
+		botState = builder.state;
+		filteredState = builder.filteredState;
+		bufferedTrajState = builder.bufferedTrajState;
+		lastBallContact = builder.lastBallContact;
 		robotInfo = builder.robotInfo;
+		tAssembly = System.nanoTime();
 	}
 	
 	
@@ -82,12 +89,10 @@ public final class TrackedBot implements ITrackedBot
 		Builder builder = new Builder();
 		builder.botId = copy.getBotId();
 		builder.timestamp = copy.getTimestamp();
-		builder.pos = copy.getPos();
-		builder.vel = copy.getVel();
-		builder.orientation = copy.getOrientation();
-		builder.angularVel = copy.getAngularVel();
-		builder.visible = copy.isVisible();
+		builder.state = copy.getBotState();
+		builder.filteredState = copy.getFilteredState().orElse(null);
 		builder.robotInfo = copy.getRobotInfo();
+		builder.lastBallContact = copy.getLastBallContact();
 		return builder;
 	}
 	
@@ -104,11 +109,8 @@ public final class TrackedBot implements ITrackedBot
 		return newBuilder()
 				.withBotId(botID)
 				.withTimestamp(timestamp)
-				.withPos(AVector2.ZERO_VECTOR)
-				.withOrientation(0)
-				.withVel(AVector2.ZERO_VECTOR)
-				.withAngularVel(0)
-				.withVisible(false)
+				.withState(State.zero())
+				.withLastBallContact(0)
 				.withBotInfo(RobotInfo.stub(botID, timestamp));
 	}
 	
@@ -130,9 +132,8 @@ public final class TrackedBot implements ITrackedBot
 	public ITrackedBot mirrored()
 	{
 		return newCopyBuilder(this)
-				.withPos(pos.multiplyNew(-1))
-				.withVel(vel.multiplyNew(-1))
-				.withOrientation(AngleMath.normalizeAngle(orientation + AngleMath.PI))
+				.withState(botState.mirrored())
+				.withFilteredState(filteredState == null ? null : filteredState.mirrored())
 				.withBotInfo(robotInfo.mirrored())
 				.build();
 	}
@@ -146,9 +147,18 @@ public final class TrackedBot implements ITrackedBot
 	
 	
 	@Override
+	public IBotShape getBotShape()
+	{
+		double botRadius = robotInfo.getBotParams().getDimensions().getDiameter() / 2;
+		return BotShape.fromFullSpecification(getPos(), botRadius, getCenter2DribblerDist(),
+				getOrientation());
+	}
+	
+	
+	@Override
 	public IVector2 getBotKickerPos()
 	{
-		return BotShape.getKickerCenterPos(getPos(), getOrientation(), getCenter2DribblerDist());
+		return BotShape.getKickerCenterPos(botState.getPose(), getCenter2DribblerDist());
 	}
 	
 	
@@ -203,21 +213,14 @@ public final class TrackedBot implements ITrackedBot
 	@Override
 	public IVector2 getPos()
 	{
-		return pos;
+		return botState.getPos();
 	}
 	
 	
 	@Override
 	public IVector2 getVel()
 	{
-		return vel;
-	}
-	
-	
-	@Override
-	public IVector2 getAcc()
-	{
-		return AVector2.ZERO_VECTOR;
+		return botState.getVel2();
 	}
 	
 	
@@ -245,35 +248,35 @@ public final class TrackedBot implements ITrackedBot
 	@Override
 	public double getOrientation()
 	{
-		return orientation;
+		return botState.getOrientation();
 	}
 	
 	
 	@Override
 	public double getAngularVel()
 	{
-		return angularVel;
-	}
-	
-	
-	@Override
-	public double getaAcc()
-	{
-		return 0;
+		return botState.getAngularVel();
 	}
 	
 	
 	@Override
 	public boolean hasBallContact()
 	{
-		return robotInfo.isBallContact();
+		return hadBallContact(0.2);
 	}
 	
 	
 	@Override
-	public boolean isVisible()
+	public boolean hadBallContact(double horizon)
 	{
-		return visible;
+		return (timestamp - lastBallContact) * 1e-9 < horizon;
+	}
+	
+	
+	@Override
+	public long getLastBallContact()
+	{
+		return lastBallContact;
 	}
 	
 	
@@ -292,39 +295,107 @@ public final class TrackedBot implements ITrackedBot
 	
 	
 	@Override
+	public State getBotState()
+	{
+		return botState;
+	}
+	
+	
+	@Override
+	public Optional<State> getFilteredState()
+	{
+		return Optional.ofNullable(filteredState);
+	}
+	
+	
+	@Override
+	public Optional<State> getBufferedTrajState()
+	{
+		return Optional.ofNullable(bufferedTrajState);
+	}
+	
+	
+	@Override
 	public String toString()
 	{
 		return "TrackedBot [id=" +
 				botId +
 				", pos=" +
-				pos +
+				getPos() +
 				", vel=" +
-				vel +
+				getVel() +
 				", orientation=" +
-				orientation +
+				getOrientation() +
 				", angularVel=" +
-				angularVel +
+				getAngularVel() +
 				"]";
 	}
 	
+	
+	@Override
+	public List<Number> getNumberList()
+	{
+		List<Number> numbers = new ArrayList<>();
+		numbers.add(getBotId().getNumber());
+		numbers.addAll(getBotId().getTeamColor().getNumberList());
+		numbers.add(timestamp);
+		numbers.addAll(Vector3.from2d(getPos(), getOrientation()).getNumberList());
+		numbers.addAll(Vector3.from2d(getVel(), getAngularVel()).getNumberList());
+		numbers.addAll(Vector3.zero().getNumberList());
+		numbers.add(filteredState == null ? 0 : 1);
+		numbers.add(robotInfo.getKickSpeed());
+		numbers.add(robotInfo.isChip() ? 1 : 0);
+		numbers.add(robotInfo.getDribbleRpm());
+		numbers.add(robotInfo.isBarrierInterrupted() ? 1 : 0);
+		numbers.add(tAssembly);
+		return numbers;
+	}
+	
+	
+	@Override
+	public List<String> getHeaders()
+	{
+		return Arrays.asList("id", "color", "timestamp", "pos_x", "pos_y", "pos_z", "vel_x", "vel_y", "vel_z", "acc_x",
+				"acc_y", "acc_z", "visible", "kickSpeed", "isChip", "dribbleRpm", "barrierInterrupted", "tAssembly");
+	}
 	
 	/**
 	 * {@code TrackedBot} builder static inner class.
 	 */
 	public static final class Builder
 	{
-		private BotID		botId;
-		private Long		timestamp;
-		private IVector2	pos;
-		private IVector2	vel;
-		private Double		orientation;
-		private Double		angularVel;
-		private Boolean	visible;
-		private RobotInfo	robotInfo;
+		private BotID botId;
+		private Long timestamp;
+		private State state;
+		private State filteredState;
+		private State bufferedTrajState;
+		private Long lastBallContact;
+		private RobotInfo robotInfo;
 		
 		
 		private Builder()
 		{
+		}
+		
+		
+		public BotID getBotId()
+		{
+			return botId;
+		}
+		
+		
+		public RobotInfo getRobotInfo()
+		{
+			return robotInfo;
+		}
+		
+		
+		private void initState()
+		{
+			if (state == null)
+			{
+				state = State.zero();
+			}
 		}
 		
 		
@@ -355,6 +426,47 @@ public final class TrackedBot implements ITrackedBot
 		
 		
 		/**
+		 * Sets the {@code state} and returns a reference to this Builder so that the methods can be chained together.
+		 *
+		 * @param botState the {@code state} to set
+		 * @return a reference to this Builder
+		 */
+		public Builder withState(final State botState)
+		{
+			this.state = botState;
+			return this;
+		}
+		
+		
+		/**
+		 * Sets the {@code filteredState} and returns a reference to this Builder so that the methods can be chained
+		 * together.
+		 *
+		 * @param filteredState the {@code filteredState} to set
+		 * @return a reference to this Builder
+		 */
+		public Builder withFilteredState(final State filteredState)
+		{
+			this.filteredState = filteredState;
+			return this;
+		}
+		
+		
+		/**
+		 * Sets the {@code bufferedTrajState} and returns a reference to this Builder so that the methods can be chained
+		 * together.
+		 *
+		 * @param bufferedTrajState the {@code bufferedTrajState} to set
+		 * @return a reference to this Builder
+		 */
+		public Builder withBufferedTrajState(final State bufferedTrajState)
+		{
+			this.bufferedTrajState = bufferedTrajState;
+			return this;
+		}
+		
+		
+		/**
 		 * Sets the {@code pos} and returns a reference to this Builder so that the methods can be chained together.
 		 *
 		 * @param pos the {@code pos} to set
@@ -362,7 +474,8 @@ public final class TrackedBot implements ITrackedBot
 		 */
 		public Builder withPos(final IVector2 pos)
 		{
-			this.pos = pos;
+			initState();
+			state = State.of(Pose.from(pos, state.getOrientation()), state.getVel3());
 			return this;
 		}
 		
@@ -375,7 +488,8 @@ public final class TrackedBot implements ITrackedBot
 		 */
 		public Builder withVel(final IVector2 vel)
 		{
-			this.vel = vel;
+			initState();
+			state = State.of(state.getPose(), Vector3.from2d(vel, state.getAngularVel()));
 			return this;
 		}
 		
@@ -389,7 +503,8 @@ public final class TrackedBot implements ITrackedBot
 		 */
 		public Builder withOrientation(final double orientation)
 		{
-			this.orientation = orientation;
+			initState();
+			state = State.of(Pose.from(state.getPos(), orientation), state.getVel3());
 			return this;
 		}
 		
@@ -403,20 +518,22 @@ public final class TrackedBot implements ITrackedBot
 		 */
 		public Builder withAngularVel(final double angularVel)
 		{
-			this.angularVel = angularVel;
+			initState();
+			state = State.of(state.getPose(), Vector3.from2d(state.getVel2(), angularVel));
 			return this;
 		}
 		
 		
 		/**
-		 * Sets the {@code visible} and returns a reference to this Builder so that the methods can be chained together.
+		 * Sets the {@code lastBallContact} and returns a reference to this Builder so that the methods can be chained
+		 * together.
 		 *
-		 * @param visible the {@code visible} to set
+		 * @param lastBallContact the {@code lastBallContact} to set
 		 * @return a reference to this Builder
 		 */
-		public Builder withVisible(final boolean visible)
+		public Builder withLastBallContact(final long lastBallContact)
 		{
-			this.visible = visible;
+			this.lastBallContact = lastBallContact;
 			return this;
 		}
 		
@@ -443,11 +560,8 @@ public final class TrackedBot implements ITrackedBot
 		{
 			Validate.notNull(botId);
 			Validate.notNull(timestamp);
-			Validate.notNull(pos);
-			Validate.notNull(vel);
-			Validate.notNull(orientation);
-			Validate.notNull(angularVel);
-			Validate.notNull(visible);
+			Validate.notNull(state);
+			Validate.notNull(lastBallContact);
 			Validate.notNull(robotInfo);
 			
 			return new TrackedBot(this);

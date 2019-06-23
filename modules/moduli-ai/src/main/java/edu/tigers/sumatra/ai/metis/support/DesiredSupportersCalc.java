@@ -1,23 +1,22 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.support;
 
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ids.BotID;
 
@@ -41,10 +40,10 @@ public class DesiredSupportersCalc extends ACalculator
 		List<BotID> desiredSupporters = new ArrayList<>(botsAvailable);
 		desiredSupporters.removeAll(assignedBots);
 		
-		Set<BotID> realSupporters = new HashSet<>();
-		
-		realSupporters.addAll(desiredSupporters.stream()
-				.limit(tacticalField.getPlayNumbers().getOrDefault(EPlay.SUPPORT, 0)).collect(toSet()));
+		Set<BotID> realSupporters = desiredSupporters.stream()
+				.limit(tacticalField.getPlayNumbers().getOrDefault(EPlay.SUPPORT, 0))
+				.distinct()
+				.collect(Collectors.toSet());
 		
 		tacticalField.addDesiredBots(EPlay.SUPPORT, realSupporters);
 	}

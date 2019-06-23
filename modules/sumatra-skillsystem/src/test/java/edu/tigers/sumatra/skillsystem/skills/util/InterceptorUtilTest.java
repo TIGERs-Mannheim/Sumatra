@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills.util;
@@ -34,7 +34,7 @@ public class InterceptorUtilTest
 	
 	
 	@Test
-	public void testFastestPointOnLine() throws Exception
+	public void testFastestPointOnLine()
 	{
 		IntStream.rangeClosed(0, 500)
 				.forEach(this::doTestFastestPointOnLine);

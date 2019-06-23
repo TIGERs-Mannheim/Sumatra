@@ -1,7 +1,9 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine;
+
+import static edu.tigers.sumatra.MessagesRobocupSslGameEvent.SSL_Referee_Game_Event.GameEventType.UNKNOWN;
 
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -21,8 +23,8 @@ import edu.tigers.autoreferee.engine.states.impl.PrepareKickoffState;
 import edu.tigers.autoreferee.engine.states.impl.PreparePenaltyState;
 import edu.tigers.autoreferee.engine.states.impl.RunningState;
 import edu.tigers.autoreferee.engine.states.impl.StopState;
-import edu.tigers.autoreferee.remote.ICommandResult;
 import edu.tigers.autoreferee.remote.IRefboxRemote;
+import edu.tigers.sumatra.MessagesRobocupSslGameEvent.SSL_Referee_Game_Event;
 import edu.tigers.sumatra.Referee.SSL_Referee.Stage;
 import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.data.GameState;
@@ -153,8 +155,11 @@ public class ActiveAutoRefEngine extends AbstractAutoRefEngine
 		if (!gameEvents.isEmpty())
 		{
 			IGameEvent gameEvent = gameEvents.remove(0);
-			boolean accepted = state.handleGameEvent(gameEvent, ctx);
-			
+			boolean accepted = false;
+			if (activeGameEvents.contains(gameEvent.getType()))
+			{
+				accepted = state.handleGameEvent(gameEvent, ctx);
+			}
 			gameLog.addEntry(gameEvent, accepted);
 			logGameEvents(gameEvents);
 		}
@@ -187,6 +192,10 @@ public class ActiveAutoRefEngine extends AbstractAutoRefEngine
 		if (newGameState.getState() == EGameState.RUNNING)
 		{
 			setFollowUp(null);
+			final SSL_Referee_Game_Event gameEvent = SSL_Referee_Game_Event.newBuilder()
+					.setGameEventType(UNKNOWN)
+					.build();
+			new RefStateContext().sendCommand(new RefboxRemoteCommand(gameEvent));
 		}
 	}
 	
@@ -264,10 +273,10 @@ public class ActiveAutoRefEngine extends AbstractAutoRefEngine
 		
 		
 		@Override
-		public ICommandResult sendCommand(final RefboxRemoteCommand cmd)
+		public void sendCommand(final RefboxRemoteCommand cmd)
 		{
 			gameLog.addEntry(cmd);
-			return remote.sendCommand(cmd);
+			remote.sendCommand(cmd);
 		}
 		
 		
@@ -298,5 +307,11 @@ public class ActiveAutoRefEngine extends AbstractAutoRefEngine
 			return gameLog;
 		}
 		
+		
+		@Override
+		public AutoRefGlobalState getAutoRefGlobalState()
+		{
+			return autoRefGlobalState;
+		}
 	}
 }

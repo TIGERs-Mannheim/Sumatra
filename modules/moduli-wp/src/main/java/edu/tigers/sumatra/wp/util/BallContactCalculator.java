@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.util;
@@ -7,40 +7,63 @@ package edu.tigers.sumatra.wp.util;
 import java.util.HashMap;
 import java.util.Map;
 
+import edu.tigers.sumatra.bot.EFeature;
+import edu.tigers.sumatra.bot.EFeatureState;
+import edu.tigers.sumatra.bot.RobotInfo;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.botshape.BotShape;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
+import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.wp.data.ITrackedBall;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Decide if a bot has contact to the ball atm
  */
 public class BallContactCalculator
 {
-	private static final double			BALL_POSS_TOLERANCE_HAS	= 60;
-	private static final double			BALL_POSS_TOLERANCE_GET	= 20;
+	private static final double BALL_POSS_TOLERANCE_HAS = 60;
+	private static final double BALL_POSS_TOLERANCE_GET = 20;
 	
-	private final Map<BotID, Boolean>	ballContactLastFrame		= new HashMap<>();
+	private final Map<BotID, Boolean> ballContactLastFrame = new HashMap<>();
+	private IVector2 ballPos;
+	
+	private final Map<BotID, Long> lastBallContactMap = new HashMap<>();
 	
 	
-	/**
-	 * @param botID
-	 * @param pos
-	 * @param orientation
-	 * @param center2Dribbler
-	 * @param trackedBall
-	 * @return true, if the ball is near to the robots kicker
-	 */
-	public boolean ballContact(final BotID botID, final IVector2 pos, final double orientation,
-			final double center2Dribbler,
-			final ITrackedBall trackedBall)
+	public long ballContact(final RobotInfo robotInfo, final Pose pose, final double center2Dribbler)
+	{
+		boolean ballContact = hasBallContact(robotInfo, pose, center2Dribbler);
+		ballContactLastFrame.put(robotInfo.getBotId(), ballContact);
+		if (ballContact)
+		{
+			lastBallContactMap.put(robotInfo.getBotId(), robotInfo.getTimestamp());
+		}
+		long timestamp = lastBallContactMap.getOrDefault(robotInfo.getBotId(), 0L);
+		if (timestamp <= robotInfo.getTimestamp())
+		{
+			return timestamp;
+		}
+		return 0;
+	}
+	
+	
+	private boolean hasBallContact(final RobotInfo robotInfo, final Pose pose, final double center2Dribbler)
+	{
+		if (robotInfo.getBotFeatures().get(EFeature.BARRIER) == EFeatureState.WORKING)
+		{
+			return robotInfo.isBarrierInterrupted();
+		}
+		return hasBallContactFromVision(robotInfo, pose, center2Dribbler);
+	}
+	
+	
+	private boolean hasBallContactFromVision(final RobotInfo robotInfo, final Pose pose, final double center2Dribbler)
 	{
 		double ballPossTolerance;
-		if (ballContactLastFrame.containsKey(botID) && ballContactLastFrame.get(botID))
+		if (ballContactLastFrame.getOrDefault(robotInfo.getBotId(), false))
 		{
 			ballPossTolerance = BALL_POSS_TOLERANCE_HAS;
 		} else
@@ -48,12 +71,16 @@ public class BallContactCalculator
 			ballPossTolerance = BALL_POSS_TOLERANCE_GET;
 		}
 		
-		final IVector2 optimalBallPossPos = BotShape.getKickerCenterPos(pos, orientation,
+		final IVector2 optimalBallPossPos = BotShape.getKickerCenterPos(pose.getPos(), pose.getOrientation(),
 				center2Dribbler + Geometry.getBallRadius());
 		ICircle circle = Circle.createCircle(optimalBallPossPos, ballPossTolerance);
 		
-		boolean ballContact = circle.isPointInShape(trackedBall.getPos());
-		ballContactLastFrame.put(botID, ballContact);
-		return ballContact;
+		return circle.isPointInShape(ballPos);
+	}
+	
+	
+	public void setBallPos(final IVector2 ballPos)
+	{
+		this.ballPos = ballPos;
 	}
 }

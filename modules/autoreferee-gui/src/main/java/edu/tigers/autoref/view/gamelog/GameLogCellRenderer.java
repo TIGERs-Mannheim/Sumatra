@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.view.gamelog;
 
@@ -38,14 +38,6 @@ public class GameLogCellRenderer extends DefaultTableCellRenderer
 	private static final DecimalFormat	msFormat				= new DecimalFormat("000");
 	private static final DecimalFormat	sFormat				= new DecimalFormat("00");
 	private static final DecimalFormat	minFormat			= new DecimalFormat("00");
-	
-	
-	public GameLogCellRenderer()
-	{
-		/**
-		 * Nothing to be done
-		 */
-	}
 	
 	
 	@Override

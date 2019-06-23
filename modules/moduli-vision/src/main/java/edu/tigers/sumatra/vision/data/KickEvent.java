@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.vision.data;
@@ -14,8 +14,8 @@ import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.vision.tracker.BallTracker.MergedBall;
 
 
@@ -27,17 +27,17 @@ import edu.tigers.sumatra.vision.tracker.BallTracker.MergedBall;
 @Persistent
 public class KickEvent implements IKickEvent
 {
-	private final BotID								kickingBot;
-	private final IVector2							position;
-	private final long								timestamp;
-	private final transient List<MergedBall>	recordsSinceKick	= new ArrayList<>();
-	private final boolean							isEarlyDetection;
+	private final FilteredVisionBot kickingBot;
+	private final IVector2 position;
+	private final long timestamp;
+	private final transient List<MergedBall> recordsSinceKick = new ArrayList<>();
+	private final boolean isEarlyDetection;
 	
 	
 	@SuppressWarnings("unused")
 	private KickEvent()
 	{
-		this(AVector2.ZERO_VECTOR, FilteredVisionBot.Builder.emptyBot(), 0, Collections.emptyList(), false);
+		this(Vector2f.ZERO_VECTOR, null, 0, Collections.emptyList(), false);
 	}
 	
 	
@@ -52,7 +52,7 @@ public class KickEvent implements IKickEvent
 			final List<MergedBall> recordsSinceKick, final boolean earlyDetection)
 	{
 		this.position = position;
-		this.kickingBot = kickingBot.getBotID();
+		this.kickingBot = kickingBot;
 		this.timestamp = timestamp;
 		this.recordsSinceKick.addAll(recordsSinceKick);
 		isEarlyDetection = earlyDetection;
@@ -75,6 +75,17 @@ public class KickEvent implements IKickEvent
 	@Override
 	public BotID getKickingBot()
 	{
+		return kickingBot.getBotID();
+	}
+	
+	
+	/**
+	 * Get kicking bot as filtered vision bot.
+	 * 
+	 * @return
+	 */
+	public FilteredVisionBot getKickingFilteredVisionBot()
+	{
 		return kickingBot;
 	}
 	
@@ -86,6 +97,13 @@ public class KickEvent implements IKickEvent
 	public long getTimestamp()
 	{
 		return timestamp;
+	}
+	
+	
+	@Override
+	public IKickEvent mirrored()
+	{
+		return new KickEvent(position.multiplyNew(-1), kickingBot, timestamp, recordsSinceKick, isEarlyDetection);
 	}
 	
 	
@@ -117,11 +135,7 @@ public class KickEvent implements IKickEvent
 				.collect(Collectors.toList());
 		
 		Optional<Line> line = Line.fromPointsList(points);
-		if (line.isPresent())
-		{
-			return Optional.of(line.get().directionVector());
-		}
+		return line.map(Line::directionVector);
 		
-		return Optional.empty();
 	}
 }

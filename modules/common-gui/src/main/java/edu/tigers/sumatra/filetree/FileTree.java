@@ -179,7 +179,9 @@ public class FileTree extends JPanel
 		String[] tmp = dir.list();
 		if (tmp == null)
 		{
-			log.error("Directory does not exist: " + dir.getAbsolutePath());
+			log.info("Directory does not exist and will be created: " + dir.getAbsolutePath());
+			// noinspection ResultOfMethodCallIgnored
+			dir.mkdirs();
 			return curDir;
 		}
 		

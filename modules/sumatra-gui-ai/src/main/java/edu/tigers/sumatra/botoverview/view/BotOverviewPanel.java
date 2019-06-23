@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botoverview.view;
 
 import java.awt.BorderLayout;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.JMenu;
 import javax.swing.JPanel;
@@ -14,15 +15,11 @@ import javax.swing.SwingUtilities;
 
 import org.jdesktop.swingx.JXTable;
 
+import edu.tigers.sumatra.ai.VisualizationFrame;
 import edu.tigers.sumatra.ai.data.BotAiInformation;
-import edu.tigers.sumatra.ai.data.frames.VisualizationFrame;
 import edu.tigers.sumatra.botoverview.BotOverviewTableModel;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.EAiType;
-import edu.tigers.sumatra.ids.IBotIDMap;
 import edu.tigers.sumatra.views.ISumatraView;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
-import edu.tigers.sumatra.wp.data.WorldFrame;
 
 
 /**
@@ -70,23 +67,20 @@ public class BotOverviewPanel extends JPanel implements ISumatraView
 	
 	private void doUpdate(final VisualizationFrame frame)
 	{
-		WorldFrame wf = frame.getWorldFrame();
-		IBotIDMap<ITrackedBot> bots = wf.getTigerBotsVisible();
-		
 		// remove vanished bots
 		for (BotID botId : model.getBots())
 		{
-			if ((botId.getTeamColor() == wf.getTeamColor()) && !bots.containsKey(botId))
+			if ((botId.getTeamColor() == frame.getTeamColor()) && !frame.getAiInfos().containsKey(botId))
 			{
 				model.removeBot(botId);
 			}
 		}
 		
 		// add ai info for all known bots
-		for (ITrackedBot bot : bots.values())
+		for (Map.Entry<BotID, BotAiInformation> entry : frame.getAiInfos().entrySet())
 		{
-			BotID botId = bot.getBotId();
-			BotAiInformation aiInfo = frame.getAiInfos().get(botId);
+			BotID botId = entry.getKey();
+			BotAiInformation aiInfo = entry.getValue();
 			if (aiInfo != null)
 			{
 				BotOverviewColumn column = new BotOverviewColumn(aiInfo);
@@ -95,9 +89,6 @@ public class BotOverviewPanel extends JPanel implements ISumatraView
 				{
 					updateColumnSize();
 				}
-			} else if (bot.getRobotInfo().getAiType() == EAiType.NONE)
-			{
-				model.removeBot(botId);
 			}
 		}
 	}

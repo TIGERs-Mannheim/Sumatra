@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder.traj;
@@ -26,7 +26,7 @@ import edu.tigers.sumatra.trajectory.TrajectoryWithTime;
 public abstract class ATrajPathFinder implements ITrajPathFinder
 {
 	@Configurable(defValue = "2.0")
-	private static double collisionLookahead = 2;
+	private static double collisionLookahead = 2.0;
 	
 	static
 	{
@@ -59,10 +59,10 @@ public abstract class ATrajPathFinder implements ITrajPathFinder
 	protected IVector2 getDirection(final TrajPathFinderInput input)
 	{
 		IVector2 toDest = input.getDest().subtractNew(input.getPos());
-		IVector2 dir = toDest.scaleToNew(Math.max(100, toDest.getLength()));
+		IVector2 dir = toDest;
 		if ((lastTraj != null) && !lastTraj.getAcceleration(input.getTimestamp()).isZeroVector())
 		{
-			dir = lastTraj.getAcceleration(input.getTimestamp()).scaleToNew(dir.getLength());
+			dir = lastTraj.getAcceleration(input.getTimestamp());
 		}
 		return dir;
 	}
@@ -104,7 +104,7 @@ public abstract class ATrajPathFinder implements ITrajPathFinder
 			final List<IObstacle> obstacles)
 	{
 		int i = 0;
-		double tUpper = curPath.getTotalTime();
+		double tUpper = Math.max(getCollisionLookahead(), curPath.getTotalTime());
 		
 		double t = tUpper;
 		while (t >= 0)
@@ -123,11 +123,11 @@ public abstract class ATrajPathFinder implements ITrajPathFinder
 	
 	
 	private TimeCollision getFirstCollisionTime(final TrajPathFinderInput input, final TrajPathV2 curPath,
-			final double tStart)
+			final double tStart, final double tEnd)
 	{
 		double t = tStart;
 		int i = 0;
-		double tUpper = getCollisionLookahead();
+		double tUpper = Math.min(tEnd, getCollisionLookahead());
 		while (t < tUpper)
 		{
 			Optional<IObstacle> collider = firstCollidingObstacle(curPath, input.getObstacles(), t);
@@ -167,33 +167,62 @@ public abstract class ATrajPathFinder implements ITrajPathFinder
 		pCollision.setTrajPath(curPath);
 		pCollision.setCollisionLookahead(getCollisionLookahead());
 		
+		double firstNonCollisionTime;
 		if ((cachedCollision != null) && (cachedCollision.getCollisionDurationFront() < tCachedOffset))
 		{
-			pCollision.setCollisionDurationFront(cachedCollision.getCollisionDurationFront());
+			firstNonCollisionTime = cachedCollision.getCollisionDurationFront();
 		} else
 		{
-			pCollision.setCollisionDurationFront(getFirstNonCollisionTime(curPath, input.getObstacles()));
+			firstNonCollisionTime = getFirstNonCollisionTime(curPath, input.getObstacles());
 		}
+		pCollision.setCollisionDurationFront(firstNonCollisionTime);
 		
 		double tEnd = curPath.getTotalTime();
 		double lastNonCollisionTime = getLastNonCollisionTime(curPath, input.getObstacles());
-		pCollision.setCollisionDurationBack(tEnd - lastNonCollisionTime);
+		pCollision.setCollisionDurationBack(Math.max(0, tEnd - lastNonCollisionTime));
 		
 		if ((cachedCollision != null) && (cachedCollision.getFirstCollisionTime() < tCachedOffset))
 		{
 			pCollision.setFirstCollisionTime(cachedCollision.getFirstCollisionTime());
 		} else
 		{
-			TimeCollision timeCollision = getFirstCollisionTime(input, curPath,
-					Math.max(tCachedOffset, pCollision.getCollisionDurationFront()));
+			TimeCollision timeCollision = getFirstCollisionTime(
+					input,
+					curPath,
+					Math.max(tCachedOffset, pCollision.getCollisionDurationFront()),
+					lastNonCollisionTime);
 			pCollision.setFirstCollisionTime(timeCollision.t);
 			pCollision.setCollider(timeCollision.obstacle);
 		}
-		if (pCollision.getFirstCollisionTime() >= lastNonCollisionTime)
-		{
-			pCollision.setFirstCollisionTime(Double.POSITIVE_INFINITY);
-		}
+		pCollision.setPenaltyScore(ratePathCollision(pCollision));
 		return pCollision;
+	}
+	
+	
+	private double ratePathCollision(PathCollision p)
+	{
+		double penalty = p.getTrajPath().getTotalTime();
+		
+		if (p.hasCollision())
+		{
+			penalty += 2;
+		}
+		
+		if (p.hasIntermediateCollision())
+		{
+			// more penalty, the sooner the collision will happen
+			penalty += Math.max(0, collisionLookahead - p.getFirstCollisionTime());
+		}
+		
+		if (!p.isAlwaysColliding())
+		{
+			// adding a penalty to front collision produces paths that first try to leave the obstacle
+			// this is useful for bot obstacles: instead of trying to drive through the obstacle, drive a bit backward and
+			// around
+			penalty += 3 * p.getCollisionDurationFront();
+		}
+		
+		return penalty;
 	}
 	
 	private static final class TimeCollision

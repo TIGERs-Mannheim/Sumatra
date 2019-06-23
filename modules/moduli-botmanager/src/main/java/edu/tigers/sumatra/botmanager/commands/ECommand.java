@@ -9,7 +9,7 @@ import com.github.g3force.instanceables.InstanceableClass;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationACommand;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationAuth;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationCameraViewport;
-import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationConfigV2;
+import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationConfigV3;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationEthStats;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationPing;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStats;
@@ -33,10 +33,13 @@ import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerConfigQueryFileList;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerConfigRead;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerConfigWrite;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqBotModel;
+import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqBotModelV2;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqDelays;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqMotorModel;
+import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqSetMode;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqVelocity;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerSystemPerformance;
+import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerSystemVersion;
 
 
 /**
@@ -62,6 +65,8 @@ public enum ECommand implements IInstanceableEnum
 	/** */
 	CMD_SYSTEM_PERFORMANCE(0x000F, new InstanceableClass(TigerSystemPerformance.class)),
 	/** */
+	CMD_SYSTEM_VERSION(0x0012, new InstanceableClass(TigerSystemVersion.class)),
+	/** */
 	CMD_SYSTEM_ACK(0x00F0, new InstanceableClass(TigerSystemAck.class)),
 	
 	// ### 04 - KICKER ###
@@ -80,9 +85,9 @@ public enum ECommand implements IInstanceableEnum
 	/** */
 	CMD_BASE_ETH_STATS(0x0807, new InstanceableClass(BaseStationEthStats.class)),
 	/** */
-	CMD_BASE_CONFIG_V2(0x0808, new InstanceableClass(BaseStationConfigV2.class)),
-	/** */
 	CMD_BASE_CAM_VIEWPORT(0x0809, new InstanceableClass(BaseStationCameraViewport.class)),
+	/** */
+	CMD_BASE_CONFIG_V3(0x080A, new InstanceableClass(BaseStationConfigV3.class)),
 	
 	// ### 09 - BOOTLOADER ###
 	/** */
@@ -122,11 +127,15 @@ public enum ECommand implements IInstanceableEnum
 	/**  */
 	CMD_DATA_ACQ_DELAYS(0x0D02, new InstanceableClass(TigerDataAcqDelays.class)),
 	/**  */
-	CMD_DATA_ACQ_VELOCITY(0x0D03, new InstanceableClass(TigerDataAcqVelocity.class)),;
+	CMD_DATA_ACQ_VELOCITY(0x0D03, new InstanceableClass(TigerDataAcqVelocity.class)),
+	/**  */
+	CMD_DATA_ACQ_SET_MODE(0x0D04, new InstanceableClass(TigerDataAcqSetMode.class)),
+	/**  */
+	CMD_DATA_ACQ_BOT_MODEL_V2(0x0D05, new InstanceableClass(TigerDataAcqBotModelV2.class));
 	
 	
-	private final InstanceableClass	clazz;
-	private final int						id;
+	private final InstanceableClass clazz;
+	private final int id;
 	
 	
 	/**

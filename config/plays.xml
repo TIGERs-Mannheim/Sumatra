@@ -1,5 +1,2 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<edu.tigers.sumatra.ai.pandora.plays.defense.PenAreaGroup
-        base="edu.tigers.sumatra.ai.pandora.plays.defense.PenAreaGroup">
-    <clusterDistanceOffset>5</clusterDistanceOffset>
-</edu.tigers.sumatra.ai.pandora.plays.defense.PenAreaGroup>
+<configuration/>

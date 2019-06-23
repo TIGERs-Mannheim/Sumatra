@@ -1,10 +1,12 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder;
 
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -15,6 +17,7 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.ITrackedObject;
@@ -30,31 +33,30 @@ import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
  */
 public class MovementCon
 {
-	@SuppressWarnings("unused")
-	private static final Logger	log										= Logger.getLogger(MovementCon.class.getName());
+	private static final Logger log = Logger.getLogger(MovementCon.class.getName());
 	
-	private MoveConstraints			moveConstraints						= new MoveConstraints();
-	private IVector2					destination								= null;
-	private Double						targetAngle								= null;
-	private DynamicPosition			lookAtTarget							= null;
-	private PathFinderPrioMap		prioMap									= null;
-	private Double						minDistToBall							= null;
+	private MoveConstraints moveConstraints = new MoveConstraints();
+	private IVector2 destination = null;
+	private Double targetAngle = null;
+	private DynamicPosition lookAtTarget = null;
+	private PathFinderPrioMap prioMap = null;
+	private Double minDistToBall = null;
 	
-	private boolean					penaltyAreaAllowedOur				= false;
-	private boolean					destinationOutsideFieldAllowed	= false;
-	private boolean					penaltyAreaAllowedTheir				= false;
-	private boolean					isBallObstacle							= true;
-	private boolean					isTheirBotsObstacle					= true;
-	private boolean					isOurBotsObstacle						= true;
-	private boolean					isGoalPostObstacle					= false;
+	private boolean penaltyAreaAllowedOur = false;
+	private boolean destinationOutsideFieldAllowed = false;
+	private boolean penaltyAreaAllowedTheir = false;
+	private boolean isBallObstacle = true;
+	private boolean isTheirBotsObstacle = true;
+	private boolean isOurBotsObstacle = true;
+	private boolean isGoalPostObstacle = false;
 	private double kickSpeed = 0;
 	private double dribblerSpeed = 0;
-	private boolean					emergencyBreak							= false;
-	private boolean					ignoreGameStateObstacles			= false;
-	private Set<BotID>				ignoredBots								= new HashSet<>();
+	private boolean ignoreGameStateObstacles = false;
+	private Set<BotID> ignoredBots = new HashSet<>();
+	private List<IObstacle> customObstacles = Collections.emptyList();
 	
 	
-	private boolean					isInit									= false;
+	private boolean isInit = false;
 	
 	
 	/**
@@ -105,8 +107,9 @@ public class MovementCon
 		}
 		if (SumatraModel.getInstance().isTestMode())
 		{
+			double marginOffset = 5;
 			if (!penaltyAreaAllowedOur && Geometry.getPenaltyAreaOur().isPointInShape(destination, Geometry
-					.getBotRadius()))
+					.getBotRadius() - marginOffset))
 			{
 				log.warn("Destination is inside PenaltyArea: " + destination, new Exception());
 			}
@@ -115,7 +118,7 @@ public class MovementCon
 				log.warn("lookAtTarget is equal to destination: " + lookAtTarget, new Exception());
 			}
 			if (!destinationOutsideFieldAllowed && !Geometry.getFieldWReferee().isPointInShape(destination,
-					Geometry.getBotRadius()))
+					Geometry.getBotRadius() - marginOffset))
 			{
 				log.warn("Destination is outside of field: " + destination, new Exception());
 			}
@@ -131,6 +134,7 @@ public class MovementCon
 	public void updateTargetAngle(final double angle)
 	{
 		targetAngle = angle;
+		lookAtTarget = null;
 	}
 	
 	
@@ -307,7 +311,7 @@ public class MovementCon
 	 */
 	public void setArmChip(final boolean armChip)
 	{
-		this.kickSpeed = armChip ? 8 : 0;
+		kickSpeed = armChip ? 8 : 0;
 	}
 	
 	
@@ -392,24 +396,6 @@ public class MovementCon
 	}
 	
 	
-	/**
-	 * @return the emergencyBreak
-	 */
-	public boolean isEmergencyBreak()
-	{
-		return emergencyBreak;
-	}
-	
-	
-	/**
-	 * @param emergencyBreak the emergencyBreak to set
-	 */
-	public void setEmergencyBreak(final boolean emergencyBreak)
-	{
-		this.emergencyBreak = emergencyBreak;
-	}
-	
-	
 	public boolean isFastPosMode()
 	{
 		return moveConstraints.isFastMove();
@@ -420,8 +406,19 @@ public class MovementCon
 	{
 		moveConstraints.setFastMove(fastPosMode);
 	}
-	
-	
+
+	public IVector2 getPrimaryDirection()
+	{
+		return moveConstraints.getPrimaryDirection();
+	}
+
+
+	public void setPrimaryDirection(final IVector2 primaryDirection)
+	{
+		moveConstraints.setPrimaryDirection(primaryDirection);
+	}
+
+
 	public boolean isIgnoreGameStateObstacles()
 	{
 		return ignoreGameStateObstacles;
@@ -455,5 +452,17 @@ public class MovementCon
 	public void setIgnoredBots(final Set<BotID> ignoredBots)
 	{
 		this.ignoredBots = ignoredBots;
+	}
+	
+	
+	public List<IObstacle> getCustomObstacles()
+	{
+		return Collections.unmodifiableList(customObstacles);
+	}
+	
+	
+	public void setCustomObstacles(final List<IObstacle> customObstacles)
+	{
+		this.customObstacles = customObstacles;
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.trajectory;
 
@@ -16,8 +16,8 @@ import edu.tigers.sumatra.math.vector.Vector3;
 @Persistent
 public class TrajectoryXyw implements ITrajectory<IVector3>
 {
-	private final ITrajectory<IVector2>	trajXy;
-	private final ITrajectory<Double>	trajW;
+	private final ITrajectory<IVector2> trajXy;
+	private final ITrajectory<Double> trajW;
 	
 	
 	@SuppressWarnings("unused")
@@ -71,5 +71,12 @@ public class TrajectoryXyw implements ITrajectory<IVector3>
 	public double getTotalTime()
 	{
 		return Math.max(trajXy.getTotalTime(), trajW.getTotalTime());
+	}
+	
+	
+	@Override
+	public TrajectoryXyw mirrored()
+	{
+		return new TrajectoryXyw(trajXy.mirrored(), trajW.mirrored());
 	}
 }

@@ -1,14 +1,12 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 13, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.events.impl;
 
+import static edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest.CardInfo.CardType.CARD_YELLOW;
+
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -27,10 +25,13 @@ import edu.tigers.autoreferee.AutoRefConfig;
 import edu.tigers.autoreferee.AutoRefUtil;
 import edu.tigers.autoreferee.AutoRefUtil.ToBotIDMapper;
 import edu.tigers.autoreferee.IAutoRefFrame;
+import edu.tigers.autoreferee.engine.events.CardPenalty;
 import edu.tigers.autoreferee.engine.events.EGameEvent;
+import edu.tigers.autoreferee.engine.events.EGameEventDetectorType;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
 import edu.tigers.autoreferee.engine.events.SpeedViolation;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.ids.IBotIDMap;
 import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
@@ -43,22 +44,27 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class BotStopSpeedDetector extends APreparingGameEventDetector
 {
-	private static final int		PRIORITY					= 1;
-	private static final Logger	log						= Logger.getLogger(BotStopSpeedDetector.class);
+	private static final int PRIORITY = 1;
+	private static final Logger log = Logger.getLogger(BotStopSpeedDetector.class);
 	
-	@Configurable(comment = "[ms] Wait time before reporting any events")
-	private static long				initialWaitTimeMs		= 2_500;
-	@Configurable(comment = "[ms] The number of milliseconds that a bot needs violate the stop speed limit to be reported")
-	private static long				violationThresholdMs	= 300;
+	@Configurable(comment = "[ms] Wait time before reporting any events", defValue = "2500")
+	private static long initialWaitTimeMs = 2_500;
+	@Configurable(comment = "[ms] The number of milliseconds that a bot needs violate the stop speed limit to be reported", defValue = "300")
+	private static long violationThresholdMs = 300;
 	
+	@Configurable(comment = "Number of infringements allowed, until a yellow card is issued", defValue = "3")
+	private static int numInfringementsPerYellowCard = 3;
+
 	static
 	{
 		AGameEventDetector.registerClass(BotStopSpeedDetector.class);
 	}
 	
-	private long					entryTime			= 0;
-	private Map<BotID, Long>	currentViolators	= new HashMap<>();
-	private Set<BotID>			lastViolators		= new HashSet<>();
+	private long entryTime = 0;
+	private Map<BotID, Long> currentViolators = new HashMap<>();
+	private Set<BotID> lastViolators = new HashSet<>();
+	private Map<ETeamColor, Integer> counter = new EnumMap<>(ETeamColor.class);
+	private Map<ETeamColor, Boolean> infringementRecordedThisStopPhase = new EnumMap<>(ETeamColor.class);
 	
 	
 	/**
@@ -66,7 +72,9 @@ public class BotStopSpeedDetector extends APreparingGameEventDetector
 	 */
 	public BotStopSpeedDetector()
 	{
-		super(EGameState.STOP);
+		super(EGameEventDetectorType.BOT_STOP_SPEED, EGameState.STOP);
+		counter.put(ETeamColor.YELLOW, 0);
+		counter.put(ETeamColor.BLUE, 0);
 	}
 	
 	
@@ -81,11 +89,13 @@ public class BotStopSpeedDetector extends APreparingGameEventDetector
 	protected void prepare(final IAutoRefFrame frame)
 	{
 		entryTime = frame.getTimestamp();
+		infringementRecordedThisStopPhase.put(ETeamColor.YELLOW, false);
+		infringementRecordedThisStopPhase.put(ETeamColor.BLUE, false);
 	}
 	
 	
 	@Override
-	public Optional<IGameEvent> doUpdate(final IAutoRefFrame frame, final List<IGameEvent> violations)
+	public Optional<IGameEvent> doUpdate(final IAutoRefFrame frame)
 	{
 		/*
 		 * We wait an initial time before reporting any events to give robots time to slow down after the STOP command
@@ -132,8 +142,21 @@ public class BotStopSpeedDetector extends APreparingGameEventDetector
 			}
 			lastViolators.add(violator);
 			
-			SpeedViolation violation = new SpeedViolation(EGameEvent.BOT_STOP_SPEED, frame.getTimestamp(), violator,
-					null, bot.getVel().getLength());
+			if (!infringementRecordedThisStopPhase.getOrDefault(violator.getTeamColor(), true))
+			{
+				counter.computeIfPresent(violator.getTeamColor(), (k, v) -> v + 1);
+				infringementRecordedThisStopPhase.put(violator.getTeamColor(), true);
+				log.info("New bot stop speed infringement counter: " + counter);
+			}
+
+			final List<CardPenalty> cardPenalties = counter.entrySet().stream()
+					.filter(e -> e.getValue() >= numInfringementsPerYellowCard)
+					.map(e -> new CardPenalty(CARD_YELLOW, e.getKey()))
+					.collect(Collectors.toList());
+			counter.entrySet().forEach(e -> e.setValue(e.getValue() % numInfringementsPerYellowCard));
+
+			SpeedViolation violation = new SpeedViolation(EGameEvent.ROBOT_STOP_SPEED, frame.getTimestamp(), violator,
+					null, bot.getVel().getLength(), cardPenalties);
 			return Optional.of(violation);
 		}
 		
@@ -144,7 +167,8 @@ public class BotStopSpeedDetector extends APreparingGameEventDetector
 	private Set<BotID> getViolators(final Collection<ITrackedBot> bots)
 	{
 		return bots.stream()
-				.filter(bot -> bot.getVel().getLength() > AutoRefConfig.getMaxBotStopSpeed())
+				.filter(bot -> bot.getFilteredState().orElse(bot.getBotState()).getVel2().getLength() > AutoRefConfig
+						.getMaxBotStopSpeed())
 				.map(ToBotIDMapper.get())
 				.collect(Collectors.toSet());
 	}

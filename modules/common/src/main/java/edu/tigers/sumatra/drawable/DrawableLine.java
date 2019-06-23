@@ -4,7 +4,8 @@
 
 package edu.tigers.sumatra.drawable;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics2D;
 
 import com.sleepycat.persist.model.Persistent;
 
@@ -12,7 +13,7 @@ import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -29,7 +30,7 @@ public class DrawableLine extends ADrawableWithStroke
 	@SuppressWarnings("unused")
 	private DrawableLine()
 	{
-		line = Line.fromPoints(Vector2.ZERO_VECTOR, Vector2.ZERO_VECTOR);
+		line = Line.fromPoints(Vector2f.ZERO_VECTOR, Vector2f.ZERO_VECTOR);
 	}
 	
 	

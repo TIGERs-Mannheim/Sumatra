@@ -10,6 +10,7 @@ import java.util.Optional;
 import org.apache.commons.lang.Validate;
 
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.SumatraMath;
 
 
 /**
@@ -34,7 +35,7 @@ public final class VectorMath
 	 */
 	static double getAngle(IVector2 vector)
 	{
-		return Math.atan2(vector.y(), vector.x());
+		return SumatraMath.atan2(vector.y(), vector.x());
 	}
 	
 	

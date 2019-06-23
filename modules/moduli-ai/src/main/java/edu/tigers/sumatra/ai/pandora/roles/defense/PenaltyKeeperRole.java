@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.roles.defense;
 
@@ -9,6 +9,7 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.PenaltyKeeperSkill;
+import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
 import edu.tigers.sumatra.statemachine.IState;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
@@ -41,12 +42,14 @@ public class PenaltyKeeperRole extends ARole
 	}
 	
 	
-	/**
-	 * Move to the goal center with Playfinder
-	 * 
-	 * @author Dirk
-	 */
-	private class MoveToGoalCenter implements IState {
+	private ITrackedBot getTrackedBot()
+	{
+		return getAiFrame().getTacticalField().getEnemyClosestToBall().getBot();
+	}
+	
+	
+	private class MoveToGoalCenter extends AState
+	{
 		private AMoveToSkill skill;
 		
 		
@@ -63,28 +66,17 @@ public class PenaltyKeeperRole extends ARole
 		@Override
 		public void doUpdate()
 		{
-			if (VectorMath.distancePP(getPos(), skill.getMoveCon().getDestination()) < 100)
+			if (VectorMath.distancePP(getPos(), skill.getMoveCon().getDestination()) < 100
+					&& getTrackedBot() != null)
 			{
 				triggerEvent(EEvent.KEEPER_ON_GOAL_CENTER);
 			}
 		}
-		
-		
-		@Override
-		public void doExitActions()
-		{
-		}
-
-
 	}
 	
 	
-	/**
-	 * Block the shooting line
-	 * 
-	 * @author Dirk
-	 */
-	private class BlockShootingLine implements IState {
+	private class BlockShootingLine extends AState
+	{
 		private PenaltyKeeperSkill skill;
 		
 		
@@ -100,25 +92,10 @@ public class PenaltyKeeperRole extends ARole
 		@Override
 		public void doUpdate()
 		{
-			skill.setShooterPos(new DynamicPosition(getTrackedBot().getPos()));
+			if (getTrackedBot() != null)
+			{
+				skill.setShooterPos(new DynamicPosition(getTrackedBot().getPos()));
+			}
 		}
-		
-		
-		private ITrackedBot getTrackedBot()
-		{
-			return getAiFrame().getTacticalField().getEnemyClosestToBall().getBot();
-		}
-		
-		
-		@Override
-		public void doExitActions()
-		{
-		}
-
-
 	}
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 }

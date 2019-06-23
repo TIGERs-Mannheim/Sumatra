@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.vector;
@@ -89,14 +89,12 @@ public class VectorNTest
 		vec1.multiply(factor);
 		assertEquals(vec1.x(), factor, ACCURACY);
 		assertEquals(vec1.y(), factor, ACCURACY);
-		assertEquals(vec1.z(), factor, ACCURACY);
 		
 		vec1 = VectorN.from(3, -5, 5);
 		factor = -2.1f;
 		vec1.multiply(factor);
 		assertEquals(vec1.x(), -6.3f, ACCURACY);
 		assertEquals(vec1.y(), 10.5, ACCURACY);
-		assertEquals(vec1.z(), -10.5, ACCURACY);
 		
 		factor = 0;
 		vec1.multiply(factor);
@@ -117,7 +115,6 @@ public class VectorNTest
 		result = vec1.multiplyNew(factor);
 		assertEquals(result.x(), factor, ACCURACY);
 		assertEquals(result.y(), factor, ACCURACY);
-		assertEquals(result.z(), factor, ACCURACY);
 		assertEquals(VectorN.from(1, 1, 1), vec1);
 		
 		vec1 = VectorN.from(3, -5, 2);
@@ -125,7 +122,6 @@ public class VectorNTest
 		result = vec1.multiplyNew(factor);
 		assertEquals(result.x(), -6.3f, ACCURACY);
 		assertEquals(result.y(), 10.5, ACCURACY);
-		assertEquals(result.z(), -4.2, ACCURACY);
 		
 		factor = 0;
 		result = vec1.multiplyNew(factor);
@@ -160,7 +156,6 @@ public class VectorNTest
 		vec1.subtract(vec2);
 		assertEquals(vec1.x(), 0.6, ACCURACY);
 		assertEquals(vec1.y(), 3.1, ACCURACY);
-		assertEquals(vec1.z(), 5, ACCURACY);
 	}
 	
 	
@@ -337,13 +332,13 @@ public class VectorNTest
 	@Test
 	public void testMeanVector()
 	{
-		List<IVector> list = new ArrayList<>();
+		List<IVectorN> list = new ArrayList<>();
 		list.add(VectorN.from(24, 234, -4));
 		list.add(VectorN.from(42, 133, 3));
 		list.add(VectorN.from(123, -321, 20));
 		double muX = StatisticsMath.mean(list.stream().map(IVector::x).collect(Collectors.toList()));
 		double muY = StatisticsMath.mean(list.stream().map(IVector::y).collect(Collectors.toList()));
-		double muZ = StatisticsMath.mean(list.stream().map(IVector::z).collect(Collectors.toList()));
+		double muZ = StatisticsMath.mean(list.stream().map(e -> e.get(2)).collect(Collectors.toList()));
 		IVector muVector = VectorN.meanVector(list);
 		IVector muRefVector = VectorN.from(muX, muY, muZ);
 		assertThat(muVector.isCloseTo(muRefVector, 1e-2)).withFailMessage("expected: %s, but: %s", muVector, muRefVector)
@@ -360,7 +355,7 @@ public class VectorNTest
 		list.add(VectorN.from(-21, 10, 21));
 		double varX = StatisticsMath.variance(list.stream().map(IVector::x).collect(Collectors.toList()));
 		double varY = StatisticsMath.variance(list.stream().map(IVector::y).collect(Collectors.toList()));
-		double varZ = StatisticsMath.variance(list.stream().map(IVector::z).collect(Collectors.toList()));
+		double varZ = StatisticsMath.variance(list.stream().map(e -> e.get(2)).collect(Collectors.toList()));
 		IVector varVector = VectorN.varianceVector(list);
 		IVector varRefVector = VectorN.from(varX, varY, varZ);
 		assertThat(varVector.isCloseTo(varRefVector, 1e-2))
@@ -377,7 +372,7 @@ public class VectorNTest
 		list.add(VectorN.from(-21, 10, 41));
 		double stdX = StatisticsMath.std(list.stream().map(IVector::x).collect(Collectors.toList()));
 		double stdY = StatisticsMath.std(list.stream().map(IVector::y).collect(Collectors.toList()));
-		double stdZ = StatisticsMath.std(list.stream().map(IVector::z).collect(Collectors.toList()));
+		double stdZ = StatisticsMath.std(list.stream().map(e -> e.get(2)).collect(Collectors.toList()));
 		IVector stdVector = VectorN.stdVector(list);
 		IVector stdRefVector = VectorN.from(stdX, stdY, stdZ);
 		assertThat(stdVector.isCloseTo(stdRefVector, 1e-2))
@@ -391,7 +386,6 @@ public class VectorNTest
 		IVectorN vector = VectorN.from(42, 1337, 2);
 		assertThat(vector.get(0)).isEqualTo(vector.x());
 		assertThat(vector.get(1)).isEqualTo(vector.y());
-		assertThat(vector.get(2)).isEqualTo(vector.z());
 		assertThatThrownBy(() -> vector.get(3)).isExactlyInstanceOf(IllegalArgumentException.class);
 	}
 	

@@ -10,7 +10,7 @@
     <parent>
         <groupId>edu.tigers.sumatra</groupId>
         <artifactId>sumatra-parent</artifactId>
-        <version>5.1-SNAPSHOT</version>
+        <version>6.0</version>
         <relativePath>../sumatra-parent/pom.xml</relativePath>
     </parent>
 
@@ -22,7 +22,7 @@
 
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>moduli-testplays</artifactId>
+            <artifactId>sumatra-testplays</artifactId>
         </dependency>
 
         <dependency>
@@ -33,6 +33,35 @@
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
             <artifactId>moduli-gui-notifications</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-botmanager</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>common-math</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.moduli</groupId>
+            <artifactId>moduli</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>sumatra-model</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>common</artifactId>
         </dependency>
     </dependencies>
 </project>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.defense;
@@ -14,6 +14,7 @@ import edu.tigers.sumatra.ai.metis.defense.DefenseConstants;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.line.v2.IHalfLine;
@@ -24,7 +25,7 @@ import edu.tigers.sumatra.math.tube.Tube;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.AMoveSkill;
-import edu.tigers.sumatra.skillsystem.skills.util.redirect.RedirectBallModel;
+import edu.tigers.sumatra.skillsystem.skills.redirect.RedirectConsultantFactory;
 
 
 /**
@@ -61,7 +62,7 @@ public class ADefenseRole extends ARole implements IDefenderRole
 		if (getAiFrame().getTacticalField().isOpponentWillDoIcing())
 		{
 			ITube forbiddenZone = Tube.fromLine(getBall().getTrajectory().getTravelLine(),
-					Geometry.getBotToBallDistanceStop());
+					RuleConstraints.getStopRadius());
 			if (forbiddenZone.isPointInShape(pos))
 			{
 				IVector2 possiblePos = forbiddenZone.nearestPointOutside(pos);
@@ -86,21 +87,28 @@ public class ADefenseRole extends ARole implements IDefenderRole
 		if (kickSpeed > 0)
 		{
 			skill.getMoveCon().setDribblerSpeed(dribblerSpeed);
+		} else
+		{
+			skill.getMoveCon().setDribblerSpeed(0);
 		}
 	}
 	
 	
 	private double calculateArmChipSpeedDuringDefense()
 	{
-		IVector2 resultingKick = RedirectBallModel.getDefaultInstance().kickerRedirect(getBall().getVel(),
-				Vector2.fromAngle(getBot().getOrientation()), 8);
-		IHalfLine ballTravel = Lines.halfLineFromDirection(getBot().getPos(), resultingKick);
+		double redirectTargetAngle = RedirectConsultantFactory.createDefault(
+				getBall().getVel(),
+				Vector2.fromAngleLength(
+						getBot().getOrientation(),
+						RuleConstraints.getMaxBallSpeed()))
+				.getTargetAngle();
+		IHalfLine ballTravel = Lines.halfLineFromDirection(getBot().getPos(), Vector2.fromAngle(redirectTargetAngle));
 		
 		Optional<IVector2> target;
 		target = ballTravel.intersectSegment(Lines.segmentFromLine(Geometry.getGoalTheir().getLine()));
 		if (target.isPresent())
 		{
-			return 8;
+			return RuleConstraints.getMaxBallSpeed();
 		}
 		target = ballTravel.intersectSegment(getGoalLineTheir());
 		if (target.isPresent())

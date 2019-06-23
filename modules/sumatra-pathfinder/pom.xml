@@ -9,7 +9,7 @@
   <parent>
     <groupId>edu.tigers.sumatra</groupId>
     <artifactId>sumatra-parent</artifactId>
-      <version>5.1-SNAPSHOT</version>
+      <version>6.0</version>
     <relativePath>../sumatra-parent/pom.xml</relativePath>
   </parent>
 
@@ -23,5 +23,48 @@
       <groupId>edu.tigers.sumatra</groupId>
       <artifactId>moduli-wp</artifactId>
     </dependency>
+
+      <dependency>
+          <groupId>edu.tigers.sumatra</groupId>
+          <artifactId>moduli-referee</artifactId>
+      </dependency>
+
+      <dependency>
+          <groupId>edu.tigers.sumatra</groupId>
+          <artifactId>common-math</artifactId>
+      </dependency>
+
+      <dependency>
+          <groupId>edu.tigers.sumatra</groupId>
+          <artifactId>moduli-geometry</artifactId>
+      </dependency>
+
+      <dependency>
+          <groupId>edu.tigers.sumatra</groupId>
+          <artifactId>sumatra-model</artifactId>
+      </dependency>
+
+      <dependency>
+          <groupId>edu.tigers.sumatra</groupId>
+          <artifactId>common-bot</artifactId>
+      </dependency>
+
+      <dependency>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+      </dependency>
+
+      <dependency>
+          <groupId>com.sleepycat</groupId>
+          <artifactId>je</artifactId>
+      </dependency>
+
+      <dependency>
+          <groupId>com.github.g3force</groupId>
+          <artifactId>configurable</artifactId>
+      </dependency>
+
   </dependencies>
+
+
 </project>

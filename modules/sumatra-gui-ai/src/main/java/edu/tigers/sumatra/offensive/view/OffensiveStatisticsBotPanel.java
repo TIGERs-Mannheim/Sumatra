@@ -1,20 +1,24 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.offensive.view;
 
-import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveActionMove;
-import edu.tigers.sumatra.ai.metis.offense.data.OffensiveAnalysedBotFrame;
-import edu.tigers.sumatra.ai.metis.offense.data.OffensiveBotFrame;
-import edu.tigers.sumatra.ids.BotID;
-import net.miginfocom.swing.MigLayout;
-
-import javax.swing.*;
-import java.awt.*;
+import java.awt.Color;
 import java.util.EnumMap;
 import java.util.Map;
+
+import javax.swing.BorderFactory;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+
+import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
+import edu.tigers.sumatra.ai.metis.offense.action.moves.EOffensiveActionMove;
+import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveAnalysedBotFrame;
+import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveBotFrame;
+import edu.tigers.sumatra.ids.BotID;
+import net.miginfocom.swing.MigLayout;
 
 
 /**

@@ -3,6 +3,10 @@
  */
 package edu.tigers.sumatra.botmanager.commands.tigerv2;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.bot.EFeature;
@@ -11,9 +15,11 @@ import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.ECommand;
 import edu.tigers.sumatra.botmanager.serial.SerialData;
 import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
+import edu.tigers.sumatra.data.collector.IExportable;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -22,70 +28,78 @@ import edu.tigers.sumatra.math.vector.Vector2;
  * @author AndreR
  */
 @Persistent
-public class TigerSystemMatchFeedback extends ACommand
+public class TigerSystemMatchFeedback extends ACommand implements IExportable
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
+	private static final int UNUSED_FIELD = 0x7FFF;
+	private static final double BAT_CELL_COUNT_THRESHOLD_VOLTAGE = 13.0;
+	private static final double BAT_3S_MIN_VOLTAGE = 10.5;
+	private static final double BAT_3S_MAX_VOLTAGE = 12.6;
+	private static final double BAT_4S_MIN_VOLTAGE = 13.6;
+	private static final double BAT_4S_MAX_VOLTAGE = 16.8;
 	/** [mm], [mrad] */
 	@SerialData(type = ESerialDataType.INT16)
-	private final int[]				curPosition								= new int[3];
-	
+	private final int[] curPosition = new int[3];
 	/** [mm/s], [mrad/s] */
 	@SerialData(type = ESerialDataType.INT16)
-	private final int[]				curVelocity								= new int[3];
-	
+	private final int[] curVelocity = new int[3];
 	/** [V] */
 	@SerialData(type = ESerialDataType.UINT8)
-	private int							kickerLevel;
-	
+	private int kickerLevel;
 	/** [rpm] */
 	@SerialData(type = ESerialDataType.INT16)
-	private int							dribblerSpeed;
-	
+	private int dribblerSpeed;
 	/** [mV] */
 	@SerialData(type = ESerialDataType.UINT16)
-	private int							batteryLevel;
-	
+	private int batteryLevel;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int							barrierKickCounter;
-	
+	private int barrierKickCounter;
 	@SerialData(type = ESerialDataType.UINT16)
-	private int							features									= 0x001F;
-	
+	private int features = 0x001F;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int							hardwareId;
-	
+	private int hardwareId;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int							dribblerTemp;
-	
-	private static final int		UNUSED_FIELD							= 0x7FFF;
-	
-	private static final double	BAT_CELL_COUNT_THRESHOLD_VOLTAGE	= 13.0;
-	private static final double	BAT_3S_MIN_VOLTAGE					= 10.5;
-	private static final double	BAT_3S_MAX_VOLTAGE					= 12.6;
-	private static final double	BAT_4S_MIN_VOLTAGE					= 13.6;
-	private static final double	BAT_4S_MAX_VOLTAGE					= 16.8;
+	private int dribblerTemp;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/** Constructor. */
+	/**
+	 * Constructor.
+	 */
 	public TigerSystemMatchFeedback()
 	{
 		super(ECommand.CMD_SYSTEM_MATCH_FEEDBACK);
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
+	@Override
+	public List<Number> getNumberList()
+	{
+		List<Number> nbrs = new ArrayList<>();
+		nbrs.addAll(getPosition().getNumberList());
+		nbrs.add(getOrientation());
+		nbrs.addAll(getVelocity().getNumberList());
+		nbrs.add(getAngularVelocity());
+		nbrs.add(isPositionValid() ? 1 : 0);
+		nbrs.add(isVelocityValid() ? 1 : 0);
+		nbrs.add(getKickerLevel());
+		nbrs.add(getDribblerSpeed());
+		nbrs.add(getBatteryPercentage());
+		nbrs.add(isBarrierInterrupted() ? 1 : 0);
+		nbrs.add(getKickCounter());
+		nbrs.add(getDribblerTemp());
+		nbrs.add(features);
+		return nbrs;
+	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
+	@Override
+	public List<String> getHeaders()
+	{
+		return Arrays.asList("pos_x", "pos_y", "pos_z", "vel_x", "vel_y", "vel_z", "pos_valid", "vel_valid",
+				"kickerLevel", "dribbleSpeed", "batteryPercentage", "barrierInterrupted", "kickCounter", "dribblerTemp",
+				"features");
+	}
+	
+	
 	/**
 	 * Get velocity.
 	 * 
@@ -113,9 +127,9 @@ public class TigerSystemMatchFeedback extends ACommand
 	 * 
 	 * @return Acceleration in [m/s^2]
 	 */
-	public Vector2 getAcceleration()
+	public IVector2 getAcceleration()
 	{
-		return Vector2.zero();
+		return Vector2f.ZERO_VECTOR;
 	}
 	
 	

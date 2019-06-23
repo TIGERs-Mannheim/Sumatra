@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.defense;
@@ -25,17 +25,17 @@ public final class DefenseConstants
 	@Configurable(comment = "Velocity which uses the maximum lookahead for the opposing teams bots[m/s]", defValue = "4.0")
 	private static double maxLookaheadBotThreatsVelocity = 4.0;
 	
-	@Configurable(comment = "Max distance from goal center to go out", defValue = "2000.0")
-	private static double maxGoOutDistance = 2000;
+	@Configurable(comment = "Max distance from goal center to go out", defValue = "2800.0")
+	private static double maxGoOutDistance = 2800;
 	
-	@Configurable(comment = "Min distance from penArea to go out", defValue = "300.0")
-	private static double minGoOutDistance = 300;
+	@Configurable(comment = "Min distance from penArea to go out", defValue = "400.0")
+	private static double minGoOutDistance = 400;
 	
-	@Configurable(comment = "Maximum bonus for currently assigned bot vs other bot", defValue = "0.2")
-	private static double maxSwitchSlackThreshold = 0.2;
+	@Configurable(comment = "Maximum bonus for currently assigned bot vs other bot", defValue = "1.0")
+	private static double maxSwitchSlackThreshold = 1.0;
 	
-	@Configurable(comment = "Minimum bonus for currently assigned bot vs other bot", defValue = "0.1")
-	private static double minSwitchSlackThreshold = 0.1;
+	@Configurable(comment = "Minimum bonus for currently assigned bot vs other bot", defValue = "0.5")
+	private static double minSwitchSlackThreshold = 0.5;
 	
 	@Configurable(comment = "Ball velocity issuing the maximum switch slack threshold bonus", defValue = "4")
 	private static double maxSwitchSlackThresholdVelocity = 4;
@@ -46,7 +46,7 @@ public final class DefenseConstants
 	
 	static
 	{
-		ConfigRegistration.registerClass("defense", DefenseConstants.class);
+		ConfigRegistration.registerClass("metis", DefenseConstants.class);
 	}
 	
 	

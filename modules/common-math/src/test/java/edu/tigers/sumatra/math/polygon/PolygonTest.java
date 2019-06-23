@@ -4,7 +4,7 @@
 
 package edu.tigers.sumatra.math.polygon;
 
-import java.awt.*;
+import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
 
@@ -13,9 +13,9 @@ import javax.imageio.ImageIO;
 import org.junit.Assert;
 import org.junit.Test;
 
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -87,15 +87,15 @@ public class PolygonTest
 		Polygon p = b.build();
 		
 		// nearest point is the most left point as the distance is always the same... -> first edge is taken
-		IVector2 res1 = p.nearestPointOutside(AVector2.ZERO_VECTOR);
+		IVector2 res1 = p.nearestPointOutside(Vector2f.ZERO_VECTOR);
 		Assert.assertTrue(res1.x() == 0);
 		Assert.assertTrue(res1.y() == -1);
 		
-		IVector2 res2 = p.nearestPointOutside(AVector2.X_AXIS, 1);
+		IVector2 res2 = p.nearestPointOutside(Vector2f.X_AXIS, 1);
 		Assert.assertTrue(res2.x() == 2);
 		Assert.assertTrue(res2.y() == 0);
 		
-		IVector2 res3 = p.nearestPointOutside(Vector2.fromXY(0.1, 0.1), Vector2.fromXY(0.1, 0.1).add(AVector2.Y_AXIS), 1);
+		IVector2 res3 = p.nearestPointOutside(Vector2.fromXY(0.1, 0.1), Vector2.fromXY(0.1, 0.1).add(Vector2f.Y_AXIS), 1);
 		Assert.assertTrue(res3.y() == 2);
 		Assert.assertEquals(0.1, res3.x(), 1e-4);
 		

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.test;
@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 import com.github.g3force.configurable.Configurable;
 
 import edu.tigers.sumatra.Referee;
-import edu.tigers.sumatra.ai.data.BotDistance;
+import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.filter.iir.ExponentialMovingAverageFilter2D;
@@ -22,7 +22,9 @@ import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
-import edu.tigers.sumatra.skillsystem.skills.RedirectSkill;
+import edu.tigers.sumatra.skillsystem.skills.RedirectBallSkill;
+import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
+import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
 import edu.tigers.sumatra.statemachine.IState;
 import edu.tigers.sumatra.wp.ball.trajectory.ABallTrajectory;
@@ -41,9 +43,6 @@ public class ChipInterceptRole extends ARole
 	
 	@Configurable(comment = "Initial distance to enemy bot", defValue = "3000.0")
 	private static double initDistance = 3000.0;
-	
-	@Configurable(comment = "The max kick speed", defValue = "8.0")
-	private static double maxKickSpeed = 8.0;
 	
 	@Configurable(comment = "Move to predicted area in prepare state", defValue = "true")
 	private static boolean moveToPredictedTouchdownArea = true;
@@ -121,7 +120,7 @@ public class ChipInterceptRole extends ARole
 		return bestGoal;
 	}
 	
-	private class WaitState implements IState
+	private class WaitState extends AState
 	{
 		AMoveToSkill skill;
 		ExponentialMovingAverageFilter2D filter;
@@ -180,14 +179,14 @@ public class ChipInterceptRole extends ARole
 		
 		private IVector2 getOppositePos(final IVector2 ballPos)
 		{
-			IVector2 oppositeDest = ballPos.addNew(filter.getState().scaleToNew(initDistance));
+			IVector2 oppositeDest = ballPos.addNew(filter.getState().getXYVector().scaleToNew(initDistance));
 			oppositeDest = Geometry.getField().nearestPointInside(oppositeDest, -2 * Geometry.getBotRadius());
 			
 			return oppositeDest;
 		}
 	}
 	
-	private class MoveToTouchdownState implements IState
+	private class MoveToTouchdownState extends AState
 	{
 		AMoveToSkill skill;
 		IVector2 formerDest;
@@ -283,17 +282,16 @@ public class ChipInterceptRole extends ARole
 		}
 	}
 	
-	private class KickState implements IState
+	private class KickState extends AState
 	{
-		RedirectSkill skill;
+		RedirectBallSkill skill;
 		
 		
 		@Override
 		public void doEntryActions()
 		{
-			skill = new RedirectSkill(new DynamicPosition(calcRedirectTarget(getPos())));
-			
-			skill.setFixedKickSpeed(maxKickSpeed);
+			skill = new RedirectBallSkill(getPos(), new DynamicPosition(calcRedirectTarget(getPos())),
+					KickParams.maxStraight());
 			
 			setNewSkill(skill);
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.offensive;
@@ -14,11 +14,11 @@ import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.ai.AAgent;
 import edu.tigers.sumatra.ai.Agent;
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
-import edu.tigers.sumatra.ai.data.frames.VisualizationFrame;
-import edu.tigers.sumatra.ai.metis.offense.data.OffensiveAnalysedBotFrame;
-import edu.tigers.sumatra.ai.metis.offense.data.OffensiveAnalysedFrame;
-import edu.tigers.sumatra.ai.metis.offense.data.OffensiveBotFrame;
-import edu.tigers.sumatra.ai.metis.offense.data.OffensiveStatisticsFrame;
+import edu.tigers.sumatra.ai.VisualizationFrame;
+import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveAnalysedBotFrame;
+import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveAnalysedFrame;
+import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveBotFrame;
+import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveStatisticsFrame;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.model.SumatraModel;
@@ -36,8 +36,8 @@ import edu.tigers.sumatra.views.ISumatraView;
 public class OffensiveStatisticsPresenter extends ASumatraViewPresenter implements IVisualizationFrameObserver
 {
 	@SuppressWarnings("unused")
-	private static final Logger				log	= Logger.getLogger(OffensiveStatisticsPresenter.class.getName());
-	private final OffensiveStatisticsPanel	offensiveStrategyPanel;
+	private static final Logger log = Logger.getLogger(OffensiveStatisticsPresenter.class.getName());
+	private final OffensiveStatisticsPanel offensiveStrategyPanel;
 	
 	
 	/**
@@ -70,7 +70,7 @@ public class OffensiveStatisticsPresenter extends ASumatraViewPresenter implemen
 	{
 		try
 		{
-			Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
+			Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.class);
 			agent.removeVisObserver(this);
 		} catch (ModuleNotFoundException err)
 		{
@@ -83,7 +83,7 @@ public class OffensiveStatisticsPresenter extends ASumatraViewPresenter implemen
 	{
 		try
 		{
-			Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
+			Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.class);
 			agent.addVisObserver(this);
 		} catch (ModuleNotFoundException err)
 		{
@@ -134,8 +134,7 @@ public class OffensiveStatisticsPresenter extends ASumatraViewPresenter implemen
 	
 	private void handleFrame(final OffensiveAnalysedFrame oFrame, final TeamOffensiveStatisticsPanel strategyPanel)
 	{
-		strategyPanel.setMaxMinDesiredAVG(oFrame.getAvgMinRoles(), oFrame.getAvgMaxRoles(),
-				oFrame.getAvgDesiredRoles());
+		strategyPanel.setMaxMinDesiredAVG(oFrame.getAvgDesiredRoles());
 		for (Map.Entry<BotID, OffensiveAnalysedBotFrame> bFrame : oFrame.getBotFrames().entrySet())
 		{
 			strategyPanel.setBotFrame(bFrame.getKey(), bFrame.getValue());
@@ -153,7 +152,7 @@ public class OffensiveStatisticsPresenter extends ASumatraViewPresenter implemen
 	{
 		if (rawFrame != null)
 		{
-			strategyPanel.setMaxMinDesired(rawFrame.getMinNumBots(), rawFrame.getMaxNumBots(),
+			strategyPanel.setMaxMinDesired(
 					rawFrame.getDesiredNumBots());
 			for (Map.Entry<BotID, OffensiveBotFrame> e : rawFrame.getBotFrames().entrySet())
 			{

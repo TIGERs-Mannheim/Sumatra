@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 30.01.2011
- * Author(s): osteinbrecher
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.roles.move;
 
@@ -14,7 +9,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.pathfinder.MovementCon;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
-import edu.tigers.sumatra.statemachine.IState;
+import edu.tigers.sumatra.statemachine.AState;
 
 
 /**
@@ -71,7 +66,7 @@ public class MoveRole extends ARole
 				|| VectorMath.distancePP(getPos(), getMoveCon().getDestination()) < 70;
 	}
 	
-	private class MoveState implements IState
+	private class MoveState extends AState
 	{
 		
 		// No code here; just a dummy state

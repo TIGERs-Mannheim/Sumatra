@@ -8,9 +8,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
-import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
+import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
 import edu.tigers.sumatra.ai.math.AiMath;
+import edu.tigers.sumatra.ai.metis.MetisAiFrame;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
@@ -53,19 +53,25 @@ public abstract class AMaintenancePlay extends APlay
 	
 	
 	@Override
-	protected ARole onAddRole(final MetisAiFrame frame)
+	protected ARole onAddRole()
 	{
 		MoveRole role = new MoveRole();
 		role.getMoveCon().setPenaltyAreaAllowedOur(true);
 		role.getMoveCon().setGoalPostObstacle(true);
 		return role;
 	}
-	
-	
-	protected void calculateBotActions(final AthenaAiFrame frame, IVector2 startingPos, IVector2 direction,
+
+	/**
+	 * Compute bot actions based on a line defined by start pos and direction vector
+	 * @param frame
+	 * @param startPos
+	 * @param direction
+	 * @param orientation
+	 */
+	protected void calculateBotActions(final AthenaAiFrame frame, IVector2 startPos, IVector2 direction,
 			double orientation)
 	{
-		IVector2 dest = startingPos.subtractNew(direction);
+		IVector2 dest = startPos.subtractNew(direction);
 		
 		IBotIDMap<ITrackedBot> otherBots = new BotIDMap<>();
 		otherBots.putAll(frame.getWorldFrame().getFoeBots());

@@ -1,16 +1,16 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics2D;
 
 import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.trajectory.ITrajectory;
 import edu.tigers.sumatra.trajectory.StubTrajectory;
 
@@ -21,8 +21,8 @@ import edu.tigers.sumatra.trajectory.StubTrajectory;
 @Persistent
 public class DrawableTrajectory2D implements IDrawableShape
 {
-	private final ITrajectory<? extends IVector>	trajXY;
-	private final float									colorBlue;
+	private final ITrajectory<? extends IVector> trajXY;
+	private final float colorBlue;
 	
 	
 	@SuppressWarnings("unused")
@@ -56,11 +56,9 @@ public class DrawableTrajectory2D implements IDrawableShape
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
-		double t = 0;
-		IVector2 pLast = trajXY.getPosition(t).getXYVector();
-		while (t < trajXY.getTotalTime())
+		int dotSize = tool.scaleXLength(20);
+		for (double t = 0; t < trajXY.getTotalTime(); t += 0.05)
 		{
-			t = Math.min(t, trajXY.getTotalTime());
 			IVector2 pos = trajXY.getPositionMM(t).getXYVector();
 			IVector2 posTrans = tool.transformToGuiCoordinates(pos, invert);
 			IVector2 vel = trajXY.getVelocity(t).getXYVector();
@@ -79,14 +77,8 @@ public class DrawableTrajectory2D implements IDrawableShape
 			
 			g.setColor(new Color((float) colorRed, (float) colorGreen, colorBlue));
 			
-			g.fillOval((int) posTrans.x() - 1, (int) posTrans.y() - 1, 2, 2);
-			
-			if (VectorMath.distancePP(pLast, trajXY.getPosition(t).getXYVector()) > 0.2)
-			{
-				pLast = trajXY.getPosition(t).getXYVector();
-			}
-			
-			t += 0.1;
+			g.fillOval((int) Math.round(posTrans.x() - dotSize / 2.0), (int) Math.round(posTrans.y() - dotSize / 2.0),
+					dotSize, dotSize);
 		}
 	}
 	

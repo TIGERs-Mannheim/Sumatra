@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.trajectory;
@@ -31,8 +31,19 @@ public class BangBangTrajectory2D implements ITrajectory<IVector2>, IPlanarCurve
 	
 	
 	@SuppressWarnings("unused")
-	private BangBangTrajectory2D()
+	protected BangBangTrajectory2D()
 	{
+	}
+	
+	
+	/**
+	 * @param x
+	 * @param y
+	 */
+	protected BangBangTrajectory2D(final BangBangTrajectory1D x, final BangBangTrajectory1D y)
+	{
+		this.x = x;
+		this.y = y;
 	}
 	
 	
@@ -46,51 +57,7 @@ public class BangBangTrajectory2D implements ITrajectory<IVector2>, IPlanarCurve
 	public BangBangTrajectory2D(final IVector2 initialPos, final IVector2 finalPos,
 			final IVector2 initialVel, final double maxVel, final double maxAcc)
 	{
-		generateTrajectory(initialPos, finalPos, initialVel, maxVel, maxAcc);
-	}
-	
-	
-	/**
-	 * @param x
-	 * @param y
-	 */
-	public BangBangTrajectory2D(final BangBangTrajectory1D x, final BangBangTrajectory1D y)
-	{
-		this.x = x;
-		this.y = y;
-	}
-	
-	
-	private void generateTrajectory(final IVector2 s0, final IVector2 s1, final IVector2 v0, final double vmax,
-			final double acc)
-	{
-		double inc = Math.PI / 8.0;
-		double alpha = Math.PI / 4.0;
-		
-		// binary search, some iterations (fixed)
-		while (inc > 1e-7)
-		{
-			double cA = Math.cos(alpha);
-			double sA = Math.sin(alpha);
-			
-			x = new BangBangTrajectory1D(s0.x(), s1.x(), v0.x(), vmax * cA, acc * cA);
-			y = new BangBangTrajectory1D(s0.y(), s1.y(), v0.y(), vmax * sA, acc * sA);
-			
-			double diff = Math.abs(x.getTotalTime() - y.getTotalTime());
-			if (diff < 0.0001)
-			{
-				break;
-			}
-			if (x.getTotalTime() > y.getTotalTime())
-			{
-				alpha = alpha - inc;
-			} else
-			{
-				alpha = alpha + inc;
-			}
-			
-			inc *= 0.5;
-		}
+		generateTrajectory(initialPos, finalPos, initialVel, maxVel, maxAcc, a -> a);
 	}
 	
 	
@@ -151,6 +118,21 @@ public class BangBangTrajectory2D implements ITrajectory<IVector2>, IPlanarCurve
 	
 	
 	@Override
+	public PlanarCurve getPlanarCurve()
+	{
+		return getPlanarCurve(t -> {
+			PosVelAcc stateX = x.getValuesAtTime(t);
+			PosVelAcc stateY = y.getValuesAtTime(t);
+			PosVelAcc2D result = new PosVelAcc2D();
+			result.pos = Vector2.fromXY(stateX.pos, stateY.pos);
+			result.vel = Vector2.fromXY(stateX.vel, stateY.vel);
+			result.acc = Vector2.fromXY(stateX.acc, stateY.acc);
+			return result;
+		});
+	}
+	
+	
+	@Override
 	public String toString()
 	{
 		return "x:\n" +
@@ -160,8 +142,67 @@ public class BangBangTrajectory2D implements ITrajectory<IVector2>, IPlanarCurve
 	}
 	
 	
-	@Override
-	public PlanarCurve getPlanarCurve()
+	@FunctionalInterface
+	protected interface AlphaProvider
+	{
+		double getAlpha(double alpha);
+	}
+	
+	
+	protected void generateTrajectory(final IVector2 s0, final IVector2 s1, final IVector2 v0, final double vmax,
+			final double acc, final AlphaProvider calc)
+	{
+		double inc = Math.PI / 8.0;
+		double alpha = Math.PI / 4.0;
+		
+		// binary search, some iterations (fixed)
+		while (inc > 1e-7)
+		{
+			generateTrajectory(s0, s1, v0, vmax, acc, calc.getAlpha(alpha));
+			
+			double diff = Math.abs(x.getTotalTime() - y.getTotalTime());
+			if (diff < 0.0001)
+			{
+				break;
+			}
+			if (x.getTotalTime() > y.getTotalTime())
+			{
+				alpha = alpha - inc;
+			} else
+			{
+				alpha = alpha + inc;
+			}
+			
+			inc *= 0.5;
+		}
+	}
+	
+	
+	private void generateTrajectory(final IVector2 s0, final IVector2 s1, final IVector2 v0, final double vmax,
+			final double acc, final double alpha)
+	{
+		double cA = SumatraMath.cos(alpha);
+		double sA = SumatraMath.sin(alpha);
+		
+		x = new BangBangTrajectory1D(s0.x(), s1.x(), v0.x(), vmax * cA, acc * cA);
+		y = new BangBangTrajectory1D(s0.y(), s1.y(), v0.y(), vmax * sA, acc * sA);
+	}
+	
+	protected static class PosVelAcc2D
+	{
+		protected Vector2 pos; // [m]
+		protected Vector2 vel; // [m/s]
+		protected Vector2 acc; // [m/s^2]
+	}
+	
+	@FunctionalInterface
+	protected interface StateProvider
+	{
+		PosVelAcc2D getState(double t);
+	}
+	
+	
+	protected PlanarCurve getPlanarCurve(final StateProvider stateProvider)
 	{
 		List<PlanarCurveSegment> segments = new ArrayList<>();
 		
@@ -171,15 +212,15 @@ public class BangBangTrajectory2D implements ITrajectory<IVector2>, IPlanarCurve
 		
 		tQuery.sort(Double::compare);
 		
-		PosVelAcc stateX = x.getValuesAtTime(0);
-		PosVelAcc stateY = y.getValuesAtTime(0);
+		PosVelAcc2D state = stateProvider.getState(0);
+		
 		double tLast = 0;
 		
 		for (Double t : tQuery)
 		{
-			IVector2 pos = Vector2.fromXY(stateX.pos, stateY.pos).multiply(1e3);
-			IVector2 vel = Vector2.fromXY(stateX.vel, stateY.vel).multiply(1e3);
-			IVector2 acc = Vector2.fromXY(stateX.acc, stateY.acc).multiply(1e3);
+			IVector2 pos = state.pos.multiply(1e3);
+			IVector2 vel = state.vel.multiply(1e3);
+			IVector2 acc = state.acc.multiply(1e3);
 			if (!SumatraMath.isZero(t - tLast))
 			{
 				if (SumatraMath.isZero(acc.getLength2()))
@@ -191,8 +232,7 @@ public class BangBangTrajectory2D implements ITrajectory<IVector2>, IPlanarCurve
 				}
 			}
 			
-			stateX = x.getValuesAtTime(t);
-			stateY = y.getValuesAtTime(t);
+			state = stateProvider.getState(t);
 			tLast = t;
 		}
 		
@@ -202,5 +242,12 @@ public class BangBangTrajectory2D implements ITrajectory<IVector2>, IPlanarCurve
 		}
 		
 		return new PlanarCurve(segments);
+	}
+	
+	
+	@Override
+	public BangBangTrajectory2D mirrored()
+	{
+		return new BangBangTrajectory2D(x.mirrored(), y.mirrored());
 	}
 }

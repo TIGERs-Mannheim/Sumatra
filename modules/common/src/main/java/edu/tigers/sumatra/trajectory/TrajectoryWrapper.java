@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.trajectory;
 
@@ -15,9 +15,9 @@ import com.sleepycat.persist.model.Persistent;
 @Persistent
 public class TrajectoryWrapper<R> implements ITrajectory<R>
 {
-	private final ITrajectory<R>	traj;
-	private final double				tStart;
-	private final double				tEnd;
+	private final ITrajectory<R> traj;
+	private final double tStart;
+	private final double tEnd;
 	
 	
 	@SuppressWarnings("unused")
@@ -82,4 +82,10 @@ public class TrajectoryWrapper<R> implements ITrajectory<R>
 		return tEnd - tStart;
 	}
 	
+	
+	@Override
+	public TrajectoryWrapper<R> mirrored()
+	{
+		return new TrajectoryWrapper<>(traj.mirrored(), tStart, tEnd);
+	}
 }

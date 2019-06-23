@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.defense.states;
@@ -10,9 +10,9 @@ import java.util.List;
 
 import org.apache.commons.lang.Validate;
 
-import edu.tigers.sumatra.ai.data.EAiShapesLayer;
-import edu.tigers.sumatra.ai.math.DefenseMath;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.DefenseConstants;
+import edu.tigers.sumatra.ai.metis.defense.DefenseMath;
 import edu.tigers.sumatra.ai.pandora.roles.defense.ADefenseRole;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
@@ -25,9 +25,9 @@ import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
-import edu.tigers.sumatra.skillsystem.skills.MoveToTrajSkill;
 import edu.tigers.sumatra.skillsystem.skills.util.InterceptorUtil;
-import edu.tigers.sumatra.statemachine.IState;
+import edu.tigers.sumatra.skillsystem.skills.util.penarea.PenAreaFactory;
+import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 
 
@@ -35,7 +35,7 @@ import edu.tigers.sumatra.wp.data.DynamicPosition;
  * @author Ulrike Leipscher <ulrike.leipscher@dlr.de>
  *         State used by Defender roles. Allows interception of given line defined by two dynamic positions.
  */
-public class InterceptState implements IState
+public class InterceptState extends AState
 {
 	private ADefenseRole parent;
 	private AMoveToSkill skill;
@@ -91,7 +91,7 @@ public class InterceptState implements IState
 	@Override
 	public void doEntryActions()
 	{
-		skill = new MoveToTrajSkill();
+		skill = AMoveToSkill.createMoveToSkill();
 		parent.setNewSkill(skill);
 	}
 	
@@ -145,10 +145,8 @@ public class InterceptState implements IState
 	
 	private IVector2 getClosestPosInAllowedArea(IVector2 pos, IVector2 toIntercept)
 	{
-		IVector2 newPos = Geometry.getPenaltyAreaTheir().withMargin(DefenseConstants.getMinGoOutDistance())
+		IVector2 newPos = PenAreaFactory.buildWithMargin(DefenseConstants.getMinGoOutDistance())
 				.nearestPointOutside(pos, toIntercept);
-		newPos = Geometry.getPenaltyAreaOur().withMargin(DefenseConstants.getMinGoOutDistance())
-				.nearestPointOutside(newPos, toIntercept);
 		return Geometry.getField().nearestPointInside(newPos, -2 * Geometry.getBotRadius());
 	}
 	
@@ -158,7 +156,8 @@ public class InterceptState implements IState
 		List<IDrawableShape> shapes = new ArrayList<>();
 		shapes.add(new DrawableLine(interceptLine));
 		shapes.add(new DrawableCircle(Circle.createCircle(newPos, Geometry.getBotRadius()), Color.GREEN));
-		parent.getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.INTERCEPT_STATE).addAll(shapes);
+		parent.getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.DEFENSE_INTERCEPT_STATE)
+				.addAll(shapes);
 	}
 	
 	
@@ -203,4 +202,9 @@ public class InterceptState implements IState
 		this.interceptLine = interceptLine;
 	}
 	
+	
+	public AMoveToSkill getSkill()
+	{
+		return skill;
+	}
 }

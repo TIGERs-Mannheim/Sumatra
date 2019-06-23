@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder.obstacles;
 
-import java.awt.*;
+import java.awt.Graphics2D;
 
 import com.sleepycat.persist.model.Persistent;
 
@@ -14,7 +14,7 @@ import edu.tigers.sumatra.drawable.IDrawableTool;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.rectangle.Rectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -33,7 +33,7 @@ public class FieldBorderObstacle extends ADrawable implements IObstacle
 	@SuppressWarnings("unused")
 	private FieldBorderObstacle()
 	{
-		field = Rectangle.fromCenter(Vector2.zero(), 0, 0);
+		field = Rectangle.fromCenter(Vector2f.ZERO_VECTOR, 0, 0);
 	}
 	
 	

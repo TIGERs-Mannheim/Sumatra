@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.data;
@@ -7,9 +7,9 @@ package edu.tigers.sumatra.wp.data;
 import java.util.EnumMap;
 import java.util.Map;
 
-import com.sleepycat.persist.model.Persistent;
+import com.sleepycat.persist.model.Entity;
+import com.sleepycat.persist.model.PrimaryKey;
 
-import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.referee.data.RefereeMsg;
@@ -20,12 +20,15 @@ import edu.tigers.sumatra.referee.data.RefereeMsg;
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@Persistent
+@Entity
 public class WorldFrameWrapper
 {
+	@PrimaryKey
+	private final long timestamp;
+	
+	private final long timestampMs = System.currentTimeMillis();
 	private final SimpleWorldFrame simpleWorldFrame;
 	private final RefereeMsg refereeMsg;
-	private final ShapeMap shapeMap = new ShapeMap();
 	private GameState gameState = GameState.HALT;
 	
 	private final transient Map<EAiTeam, WorldFrame> worldFrames = new EnumMap<>(EAiTeam.class);
@@ -34,24 +37,22 @@ public class WorldFrameWrapper
 	@SuppressWarnings("unused")
 	private WorldFrameWrapper()
 	{
+		timestamp = 0;
 		simpleWorldFrame = null;
 		refereeMsg = new RefereeMsg();
 	}
 	
 	
-	/**
-	 * @param swf
-	 * @param refereeMsg
-	 * @param gameState
-	 */
-	public WorldFrameWrapper(final SimpleWorldFrame swf, final RefereeMsg refereeMsg,
-			final GameState gameState)
+	public WorldFrameWrapper(final SimpleWorldFrame swf, final RefereeMsg refereeMsg, final GameState gameState)
 	{
 		assert refereeMsg != null;
 		assert swf != null;
+		timestamp = swf.getTimestamp();
 		simpleWorldFrame = swf;
 		this.refereeMsg = refereeMsg;
 		this.gameState = gameState;
+		worldFrames.computeIfAbsent(EAiTeam.YELLOW, t -> createWorldFrame(swf, t));
+		worldFrames.computeIfAbsent(EAiTeam.BLUE, t -> createWorldFrame(swf, t));
 	}
 	
 	
@@ -60,9 +61,9 @@ public class WorldFrameWrapper
 	 */
 	public WorldFrameWrapper(final WorldFrameWrapper wfw)
 	{
+		timestamp = wfw.getSimpleWorldFrame().getTimestamp();
 		simpleWorldFrame = wfw.simpleWorldFrame;
 		refereeMsg = wfw.refereeMsg;
-		shapeMap.merge(wfw.shapeMap);
 		worldFrames.putAll(wfw.worldFrames);
 		gameState = wfw.gameState;
 	}
@@ -78,7 +79,7 @@ public class WorldFrameWrapper
 	private WorldFrame createWorldFrame(final SimpleWorldFrame swf, final EAiTeam aiTeam)
 	{
 		final WorldFrame wf;
-		if (refereeMsg.getLeftTeam() == aiTeam.getTeamColor())
+		if (refereeMsg.getNegativeHalfTeam() == aiTeam.getTeamColor())
 		{
 			wf = new WorldFrame(swf, aiTeam, false);
 		} else
@@ -87,6 +88,21 @@ public class WorldFrameWrapper
 			wf = new WorldFrame(swf.mirrored(), aiTeam, true);
 		}
 		return wf;
+	}
+	
+	
+	public long getTimestamp()
+	{
+		return timestamp;
+	}
+	
+	
+	/**
+	 * @return the unix timestamp in [ms]
+	 */
+	public final long getUnixTimestamp()
+	{
+		return timestampMs;
 	}
 	
 	
@@ -103,7 +119,7 @@ public class WorldFrameWrapper
 	 * @param aiTeam
 	 * @return the worldFrames
 	 */
-	public synchronized WorldFrame getWorldFrame(final EAiTeam aiTeam)
+	public final WorldFrame getWorldFrame(final EAiTeam aiTeam)
 	{
 		return worldFrames.computeIfAbsent(aiTeam, t -> createWorldFrame(simpleWorldFrame, t));
 	}
@@ -124,14 +140,5 @@ public class WorldFrameWrapper
 	public final GameState getGameState()
 	{
 		return gameState;
-	}
-	
-	
-	/**
-	 * @return the shapeMap
-	 */
-	public final ShapeMap getShapeMap()
-	{
-		return shapeMap;
 	}
 }

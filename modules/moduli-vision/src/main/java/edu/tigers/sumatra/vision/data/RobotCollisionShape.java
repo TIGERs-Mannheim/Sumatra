@@ -11,6 +11,7 @@ import org.apache.commons.lang.Validate;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.BotMath;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.botshape.BotShape;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
@@ -97,7 +98,7 @@ public class RobotCollisionShape
 			}
 			
 			double outVelAbs = ballVelUsed.getLength2()
-					- (ballVelUsed.getLength2() * Math.cos(collisionAngleAbs) * maxFrontLoss);
+					- (ballVelUsed.getLength2() * SumatraMath.cos(collisionAngleAbs) * maxFrontLoss);
 			
 			Vector2 outVel = Vector2.fromAngle(orient).multiply(-1.0).turn(-collisionAngle).multiply(-1.0)
 					.scaleTo(outVelAbs);
@@ -120,7 +121,7 @@ public class RobotCollisionShape
 			}
 			
 			double outVelAbs = ballVelUsed.getLength2()
-					- (ballVelUsed.getLength2() * Math.cos(collisionAngleAbs) * maxCircleLoss);
+					- (ballVelUsed.getLength2() * SumatraMath.cos(collisionAngleAbs) * maxCircleLoss);
 			
 			Vector2 outVel = Vector2.fromPoints(intersectCircle, pos).turn(-collisionAngle).multiply(-1.0)
 					.scaleTo(outVelAbs);

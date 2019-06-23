@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math;
@@ -42,7 +42,7 @@ public class StatisticsMathTest
 	public void testStd()
 	{
 		Assertions.assertThat(StatisticsMath.std(Arrays.asList(12, 19, 42, 1337))).isCloseTo(
-				Math.sqrt(StatisticsMath.variance(Arrays.asList(12, 19, 42, 1337))),
+				SumatraMath.sqrt(StatisticsMath.variance(Arrays.asList(12, 19, 42, 1337))),
 				Assertions.withinPercentage(0.01));
 	}
 }

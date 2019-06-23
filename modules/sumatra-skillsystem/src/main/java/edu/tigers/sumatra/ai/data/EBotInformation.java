@@ -27,7 +27,12 @@ public enum EBotInformation
 	ROLE_STATE("Role State"),
 	SKILL("Skill"),
 	SKILL_STATE("Skill State"),
-	BOT_SKILL("Bot Skill");
+	BOT_SKILL("Bot Skill"),
+	AVG_PROC_TIME("Avg Proc Time [ms]"),
+	MAX_PROC_TIME("Max Proc Time [ms]"),
+	VERSION("SW Version"),
+	
+	;
 	
 	
 	private final String label;

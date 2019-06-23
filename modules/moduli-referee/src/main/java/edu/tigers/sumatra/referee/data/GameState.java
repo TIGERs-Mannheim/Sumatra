@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.referee.data;
@@ -8,10 +8,10 @@ import org.apache.commons.lang.Validate;
 
 import com.sleepycat.persist.model.Persistent;
 
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.referee.TeamConfig;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -37,14 +37,14 @@ public class GameState
 	public static final GameState HALT = Builder.empty().withState(EGameState.HALT).build();
 	
 	
-	// Required for persistance
+	@SuppressWarnings("unused") // Required for persistence
 	private GameState()
 	{
 		state = EGameState.HALT;
 		forTeam = ETeamColor.NEUTRAL;
 		ourTeam = ETeamColor.NEUTRAL;
 		penaltyShootout = false;
-		ballPlacementPosition = AVector2.ZERO_VECTOR;
+		ballPlacementPosition = Vector2f.ZERO_VECTOR;
 	}
 	
 	
@@ -85,7 +85,7 @@ public class GameState
 	/**
 	 * @return Ball placement coordinates in vision frame.
 	 */
-	public IVector2 getBallPlacementPosition()
+	public IVector2 getBallPlacementPositionNeutral()
 	{
 		return ballPlacementPosition;
 	}
@@ -96,7 +96,7 @@ public class GameState
 	 */
 	public IVector2 getBallPlacementPositionForUs()
 	{
-		if (ourTeam != TeamConfig.getLeftTeam())
+		if (ourTeam != Geometry.getNegativeHalfTeam())
 		{
 			return ballPlacementPosition.multiplyNew(-1.0d);
 		}
@@ -115,7 +115,7 @@ public class GameState
 		StringBuilder sb = new StringBuilder(state.toString());
 		if (forTeam.isNonNeutral())
 		{
-			sb.append("_" + forTeam);
+			sb.append("_").append(forTeam);
 		}
 		
 		return sb.toString();
@@ -165,12 +165,20 @@ public class GameState
 	 */
 	public boolean isIdleGame()
 	{
+		return isPausedGame() || state == EGameState.POST_GAME;
+	}
+	
+	
+	/**
+	 * @return true on any state within a game, where nothing happens (BREAK, HALT, TIMEOUT)
+	 */
+	public boolean isPausedGame()
+	{
 		switch (state)
 		{
 			case BREAK:
 			case HALT:
 			case TIMEOUT:
-			case POST_GAME:
 				return true;
 			default:
 				return false;
@@ -527,7 +535,7 @@ public class GameState
 		private ETeamColor forTeam;
 		private ETeamColor ourTeam;
 		private boolean penaltyShootout;
-		private IVector2 ballPlacementPosition = AVector2.ZERO_VECTOR;
+		private IVector2 ballPlacementPosition = Vector2f.ZERO_VECTOR;
 		
 		
 		private Builder()

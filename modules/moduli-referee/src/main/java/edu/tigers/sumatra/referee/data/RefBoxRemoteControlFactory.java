@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.referee.data;
 
@@ -229,4 +229,5 @@ public class RefBoxRemoteControlFactory
 	{
 		return fromCommand(Command.FORCE_START);
 	}
+
 }

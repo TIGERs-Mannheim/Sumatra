@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.integration;
@@ -20,20 +20,19 @@ import org.junit.BeforeClass;
 import com.github.g3force.configurable.ConfigRegistration;
 
 import edu.tigers.sumatra.Referee;
+import edu.tigers.sumatra.ai.AIInfoFrame;
+import edu.tigers.sumatra.ai.BaseAiFrame;
+import edu.tigers.sumatra.ai.ares.AresData;
 import edu.tigers.sumatra.ai.athena.Athena;
-import edu.tigers.sumatra.ai.data.AresData;
-import edu.tigers.sumatra.ai.data.MultiTeamMessage;
-import edu.tigers.sumatra.ai.data.PlayStrategy;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.AIInfoFrame;
-import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
-import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
+import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
+import edu.tigers.sumatra.ai.athena.PlayStrategy;
 import edu.tigers.sumatra.ai.metis.Metis;
+import edu.tigers.sumatra.ai.metis.MetisAiFrame;
+import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.bot.RobotInfo;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotIDMap;
 import edu.tigers.sumatra.ids.EAiTeam;
-import edu.tigers.sumatra.ids.EAiType;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.ids.IBotIDMap;
 import edu.tigers.sumatra.model.SumatraModel;
@@ -53,6 +52,8 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
  */
 public abstract class AAiIntegrationTest
 {
+	private static final String MODULI_CONFIG = "moduli_integration_test.xml";
+	
 	private Metis metis;
 	private Athena athena;
 	
@@ -82,11 +83,14 @@ public abstract class AAiIntegrationTest
 		logEventWatcher = new LogEventWatcher(Level.WARN, Level.ERROR);
 		Logger.getRootLogger().addAppender(logEventWatcher);
 		SumatraModel.getInstance().setTestMode(true);
+		SumatraModel.getInstance().setCurrentModuliConfig(MODULI_CONFIG);
+		SumatraModel.getInstance().loadModulesSafe(MODULI_CONFIG);
+		Geometry.refresh();
 	}
 	
 	
 	@AfterClass
-	public static void afterClass() throws Exception
+	public static void afterClass()
 	{
 		Logger.getRootLogger().removeAppender(logEventWatcher);
 		SumatraModel.getInstance().setTestMode(false);
@@ -143,16 +147,14 @@ public abstract class AAiIntegrationTest
 			prevFrame = new AIInfoFrame(
 					new AthenaAiFrame(
 							new MetisAiFrame(
-									new BaseAiFrame(wfw, newRefereeMsg, null, EAiTeam.primary(teamColor),
-											MultiTeamMessage.DEFAULT),
+									new BaseAiFrame(wfw, newRefereeMsg, null, EAiTeam.primary(teamColor)),
 									new TacticalField()),
 							new PlayStrategy(
 									new PlayStrategy.Builder())),
 					new AresData());
 		}
 		
-		baseAiFrame = new BaseAiFrame(wfw, newRefereeMsg, prevFrame, EAiTeam.primary(teamColor),
-				MultiTeamMessage.DEFAULT);
+		baseAiFrame = new BaseAiFrame(wfw, newRefereeMsg, prevFrame, EAiTeam.primary(teamColor));
 		newRefereeMsg = false;
 		metisCalled = false;
 		athenaCalled = false;
@@ -214,7 +216,7 @@ public abstract class AAiIntegrationTest
 		ITrackedBall wBall = wfw.getSimpleWorldFrame().getBall();
 		TrackedBall ball = TrackedBall.fromTrajectoryStateVisible(timestamp,
 				aBallStateCopyOf(wBall.getState()).build());
-		SimpleWorldFrame swf = new SimpleWorldFrame(bots, ball, null, frameId, timestamp);
+		SimpleWorldFrame swf = new SimpleWorldFrame(bots, ball, null, null, frameId, timestamp);
 		wfw = new WorldFrameWrapper(swf, refereeMsg, gameState);
 		
 		metisCalled = false;
@@ -238,11 +240,8 @@ public abstract class AAiIntegrationTest
 						.withVel(entry.getValue().getVel().getXYVector())
 						.withOrientation(entry.getValue().getPos().z())
 						.withAngularVel(entry.getValue().getVel().z())
-						.withVisible(true)
-						.withBotInfo(
-								RobotInfo.stubBuilder(entry.getKey(), timestamp)
-										.withAiType(EAiType.PRIMARY)
-										.build())
+						.withLastBallContact(0)
+						.withBotInfo(RobotInfo.stubBuilder(entry.getKey(), timestamp).build())
 						.build())
 				.forEach(so -> bots.put(so.getBotId(), so));
 		
@@ -250,7 +249,7 @@ public abstract class AAiIntegrationTest
 				.withPos(snapshot.getBall().getPos())
 				.withVel(snapshot.getBall().getVel().multiplyNew(1000))
 				.build());
-		swf = new SimpleWorldFrame(bots, ball, null, 0, timestamp);
+		swf = new SimpleWorldFrame(bots, ball, null, null, 0, timestamp);
 	}
 	
 	
@@ -288,11 +287,5 @@ public abstract class AAiIntegrationTest
 	protected void setGameState(final GameState gameState)
 	{
 		this.gameState = gameState;
-	}
-	
-	
-	protected void setTeamColor(final ETeamColor teamColor)
-	{
-		this.teamColor = teamColor;
 	}
 }

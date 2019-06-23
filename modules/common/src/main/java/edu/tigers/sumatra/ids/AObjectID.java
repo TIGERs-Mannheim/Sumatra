@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ids;
 
@@ -15,20 +15,21 @@ import com.sleepycat.persist.model.Persistent;
 public abstract class AObjectID implements Comparable<AObjectID>
 {
 	/** needs to be 255 thus the bot firmware can perform a deinitialization of the network interface */
-	public static final int		UNINITIALIZED_ID	= 255;
+	public static final int UNINITIALIZED_ID = 255;
 	
 	/** */
-	protected static final int	BALL_ID				= -1;
+	protected static final int BALL_ID = -1;
 	
 	/** */
-	public static final int		BOT_ID_MIN			= 0;
+	public static final int BOT_ID_MIN = 0;
 	/** */
-	public static final int		BOT_ID_MAX			= 11;
+	public static final int BOT_ID_MAX = 15;
+	public static final int BOT_ID_MIDDLE_BS = 11;
 	/** */
-	public static final int		BOT_ID_MAX_BS		= 23;
+	public static final int BOT_ID_MAX_BS = 23;
 	
 	
-	private int						number;
+	private int number;
 	
 	
 	/**
@@ -75,6 +76,12 @@ public abstract class AObjectID implements Comparable<AObjectID>
 	}
 	
 	
+	public String getSaveableString()
+	{
+		return String.valueOf(getNumber());
+	}
+	
+	
 	/**
 	 * @return the number
 	 */
@@ -84,9 +91,6 @@ public abstract class AObjectID implements Comparable<AObjectID>
 	}
 	
 	
-	/**
-	 * @return if {@link AObjectID} is not initialized.
-	 */
 	public boolean isUninitializedID()
 	{
 		return number == UNINITIALIZED_ID;
@@ -94,7 +98,7 @@ public abstract class AObjectID implements Comparable<AObjectID>
 	
 	
 	/**
-	 * @return true when this is a {@link AObjectID}{@link #BALL_ID}
+	 * @return true when this is a {@link #BALL_ID}
 	 */
 	public boolean isBall()
 	{
@@ -103,8 +107,7 @@ public abstract class AObjectID implements Comparable<AObjectID>
 	
 	
 	/**
-	 * @return true when this is a BotId ( checks valid range {@link AObjectID}{@link #BOT_ID_MIN} - {@link AObjectID}
-	 *         {@link #BOT_ID_MAX} )
+	 * @return true when this is a BotId ( checks valid range {@link #BOT_ID_MIN} - {@link #BOT_ID_MAX} )
 	 */
 	public boolean isBot()
 	{

@@ -1,13 +1,13 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.others;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
-import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
+import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
+import edu.tigers.sumatra.ai.metis.MetisAiFrame;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
@@ -15,7 +15,6 @@ import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.referee.data.GameState;
 
 
 /**
@@ -25,26 +24,17 @@ import edu.tigers.sumatra.referee.data.GameState;
  */
 public class InitPlay extends APlay
 {
-	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	/** sry, no use for a name... */
 	private static final int		DIV_1				= 20;
 	private static final int		DIV_2				= 25;
 	private static final int		DIV_3				= 24;
 	private static final int		DIV_4				= 14;
 	private static final int		DIV_5				= 9;
 	
-	private final List<IVector2>	destinations	= new ArrayList<IVector2>(7);
+	private final List<IVector2> destinations = new ArrayList<>(7);
 	
 	private boolean					update			= true;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 */
 	public InitPlay()
@@ -97,16 +87,10 @@ public class InitPlay extends APlay
 	
 	
 	@Override
-	protected ARole onAddRole(final MetisAiFrame frame)
+	protected ARole onAddRole()
 	{
 		update = true;
 		return new MoveRole();
-	}
-	
-	
-	@Override
-	protected void onGameStateChanged(final GameState gameState)
-	{
 	}
 	
 	
@@ -121,10 +105,10 @@ public class InitPlay extends APlay
 			for (ARole role : getRoles())
 			{
 				MoveRole moveRole = (MoveRole) role;
-				moveRole.getMoveCon().updateDestination(destinations.get(i));
-				moveRole.getMoveCon().updateTargetAngle(0);
 				moveRole.getMoveCon().setPenaltyAreaAllowedOur(true);
 				moveRole.getMoveCon().setPenaltyAreaAllowedTheir(true);
+				moveRole.getMoveCon().updateDestination(destinations.get(i));
+				moveRole.getMoveCon().updateTargetAngle(0);
 				i++;
 			}
 			update = false;

@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Aug 1, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.basestation;
 
@@ -73,7 +68,7 @@ public abstract class ABaseStation implements IBaseStation, IConfigObserver
 	{
 		for (IBaseStationObserver observer : observers)
 		{
-			observer.onIncommingBotCommand(id, cmd);
+			observer.onIncomingBotCommand(id, cmd);
 		}
 	}
 	

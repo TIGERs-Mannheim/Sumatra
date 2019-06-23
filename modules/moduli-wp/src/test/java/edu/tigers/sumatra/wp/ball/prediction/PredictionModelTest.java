@@ -18,10 +18,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import edu.tigers.sumatra.math.vector.AVector3;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.Vector3f;
 import edu.tigers.sumatra.wp.ball.dynamics.BallAction;
 import edu.tigers.sumatra.wp.ball.dynamics.BallDynamicsModelSimple;
 import edu.tigers.sumatra.wp.ball.dynamics.BallDynamicsModelTwoPhase;
@@ -45,27 +45,27 @@ import edu.tigers.sumatra.wp.data.MotionContext;
 public class PredictionModelTest
 {
 	
-	private static final double		DT							= 1e-3;
-	private static final double		INTERVAL					= 5.0;
+	private static final double DT = 1e-3;
+	private static final double INTERVAL = 5.0;
 	
-	private static final double		DISTANCE_TOLERANCE	= 10.0;
-	private static final double		VELOCITY_TOLERANCE	= 0.02;
-	private static final double		TIME_TOLERANCE			= 0.01;
-	private static IVector3				initialPos				= Vector3.fromXYZ(0, 0, 0);
-	private static IVector3				initialAcc				= Vector3.ZERO_VECTOR;
-	private IBallDynamicsModel			dynamicsModel;
-	private IBallTrajectory				predictionModel;
-	private IState							currentState;
-	private IAction						ballAction;
-	private MotionContext				context;
-	private IStraightBallConsultant	straightConsultant;
+	private static final double DISTANCE_TOLERANCE = 10.0;
+	private static final double VELOCITY_TOLERANCE = 0.02;
+	private static final double TIME_TOLERANCE = 0.01;
+	private static IVector3 initialPos = Vector3.fromXYZ(0, 0, 0);
+	private static IVector3 initialAcc = Vector3f.ZERO_VECTOR;
+	private IBallDynamicsModel dynamicsModel;
+	private IBallTrajectory predictionModel;
+	private IState currentState;
+	private IAction ballAction;
+	private MotionContext context;
+	private IStraightBallConsultant straightConsultant;
 	
 	// model under test
-	private ETestableModel				eTestableModel;
+	private ETestableModel eTestableModel;
 	
 	// parametrized fields:
-	private IVector3						initialVel				= Vector3.ZERO_VECTOR;
-	private IState							initialState			= null;
+	private IVector3 initialVel;
+	private IState initialState;
 	
 	
 	public PredictionModelTest(final IVector3 initialVel, final ETestableModel eModel)
@@ -91,13 +91,13 @@ public class PredictionModelTest
 	
 	
 	@Before
-	public void setUp()
+	public void setUp() throws Exception
 	{
 		dynamicsModel = eTestableModel.createDynamicsModel();
 		currentState = new BallState(initialState);
 		predictionModel = eTestableModel.createBallTrajectory(initialPos, initialVel);
 		context = new MotionContext();
-		ballAction = new BallAction(AVector3.ZERO_VECTOR);
+		ballAction = new BallAction(Vector3f.ZERO_VECTOR);
 		straightConsultant = eTestableModel.createBallConsultant();
 	}
 	
@@ -116,7 +116,7 @@ public class PredictionModelTest
 	
 	
 	@Test
-	public void testInitVelForTimeDist() throws Exception
+	public void testInitVelForTimeDist()
 	{
 		parametrizedInitVelForTimeDist(1e3, 1.0);
 		parametrizedInitVelForTimeDist(1e3, 0.5);
@@ -146,7 +146,7 @@ public class PredictionModelTest
 	
 	
 	@Test
-	public void testInitVelForTime() throws Exception
+	public void testInitVelForTime()
 	{
 		parametrizedTestInitVelForTime(2.5, 0.5);
 		parametrizedTestInitVelForTime(2.5, 1.0);
@@ -178,7 +178,7 @@ public class PredictionModelTest
 	
 	
 	@Test
-	public void testTimeByVel() throws Exception
+	public void testTimeByVel()
 	{
 		for (double t = 0.0; t <= INTERVAL; t += DT)
 		{
@@ -190,7 +190,7 @@ public class PredictionModelTest
 	
 	
 	@Test
-	public void testTimeByDist() throws Exception
+	public void testTimeByDist()
 	{
 		for (double t = 0.0; t <= INTERVAL; t += DT)
 		{
@@ -203,7 +203,7 @@ public class PredictionModelTest
 	
 	
 	@Test
-	public void testTimeByPos() throws Exception
+	public void testTimeByPos()
 	{
 		for (double t = 0.0; t <= INTERVAL; t += DT)
 		{
@@ -216,7 +216,7 @@ public class PredictionModelTest
 	
 	
 	@Test
-	public void testVelByPos() throws Exception
+	public void testVelByPos()
 	{
 		for (double t = 0.0; t <= INTERVAL; t += DT)
 		{
@@ -230,7 +230,7 @@ public class PredictionModelTest
 	
 	
 	@Test
-	public void testVelByTime() throws Exception
+	public void testVelByTime()
 	{
 		for (double t = 0.0; t <= INTERVAL; t += DT)
 		{
@@ -243,7 +243,7 @@ public class PredictionModelTest
 	
 	
 	@Test
-	public void testVelByDist() throws Exception
+	public void testVelByDist()
 	{
 		for (double t = 0.0; t <= INTERVAL; t += DT)
 		{
@@ -257,7 +257,7 @@ public class PredictionModelTest
 	
 	
 	@Test
-	public void testInitVelForDist() throws Exception
+	public void testInitVelForDist()
 	{
 		parametrizedInitVelForDist(10e3, 0.0);
 		parametrizedInitVelForDist(10e3, 1.0);
@@ -270,8 +270,8 @@ public class PredictionModelTest
 	private void parametrizedInitVelForDist(final double distance, final double endVel)
 	{
 		double predictedInitVel = straightConsultant.getInitVelForDist(distance, endVel);
-		IState predictedInitialState = new BallState(AVector3.ZERO_VECTOR,
-				initialVel.normalizeNew().multiplyNew(predictedInitVel), AVector3.ZERO_VECTOR);
+		IState predictedInitialState = new BallState(Vector3f.ZERO_VECTOR,
+				initialVel.normalizeNew().multiplyNew(predictedInitVel), Vector3f.ZERO_VECTOR);
 		IState updatedState = new BallState(predictedInitialState);
 		while (updatedState.getVel().getLength2() > (endVel + 1e-3))
 		{
@@ -288,7 +288,7 @@ public class PredictionModelTest
 	
 	
 	@Test
-	public void testTimeForKick() throws Exception
+	public void testTimeForKick()
 	{
 		parametrizedTimeForKick(0, 0);
 		parametrizedTimeForKick(1e3, 8.0);
@@ -300,7 +300,7 @@ public class PredictionModelTest
 	
 	
 	@Test(expected = IllegalArgumentException.class)
-	public void testTimeForKickIllegalArgument() throws Exception
+	public void testTimeForKickIllegalArgument()
 	{
 		parametrizedTimeForKick(1e3, 0.0);
 	}
@@ -339,12 +339,12 @@ public class PredictionModelTest
 				TwoPhaseDynamicVelConsultant.class,
 				TwoPhaseDynamicVelParameters.class);
 		
-		private Class<? extends IBallDynamicsModel>			dynamicsModelClass;
-		private Class<? extends IBallTrajectory>				ballTrajectoryClass;
-		private Class<? extends IStraightBallConsultant>	straightBallConsultantClass;
-		private Class<?>												trajParamsClass;
+		private Class<? extends IBallDynamicsModel> dynamicsModelClass;
+		private Class<? extends IBallTrajectory> ballTrajectoryClass;
+		private Class<? extends IStraightBallConsultant> straightBallConsultantClass;
+		private Class<?> trajParamsClass;
 		
-		private Object													params;
+		private Object params;
 		
 		
 		ETestableModel(Class<? extends IBallDynamicsModel> dynamicsModelClass,
@@ -381,18 +381,21 @@ public class PredictionModelTest
 		}
 		
 		
-		public IBallTrajectory createBallTrajectory(IVector3 initialPos, IVector3 initialVel)
+		public IBallTrajectory createBallTrajectory(IVector3 initialPos, IVector3 initialVel) throws Exception
 		{
-			IBallTrajectory trajectory = null;
+			IBallTrajectory trajectory;
 			try
 			{
 				Method fromKick = ballTrajectoryClass
 						.getMethod("fromKick", IVector2.class, IVector3.class, trajParamsClass);
 				trajectory = (IBallTrajectory) fromKick.invoke(null, initialPos.getXYVector(),
 						initialVel.multiplyNew(1e3), params);
-			} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e)
+			} catch (NoSuchMethodException e)
 			{
-				e.printStackTrace();
+				Method fromKick = ballTrajectoryClass
+						.getMethod("fromKick", IVector2.class, IVector2.class, trajParamsClass);
+				trajectory = (IBallTrajectory) fromKick.invoke(null, initialPos.getXYVector(),
+						initialVel.getXYVector().multiplyNew(1e3), params);
 			}
 			return trajectory;
 		}

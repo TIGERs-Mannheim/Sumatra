@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.bots.communication.udp;
 
@@ -8,9 +8,9 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.PortUnreachableException;
 import java.net.SocketException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
@@ -28,56 +28,22 @@ import edu.tigers.sumatra.network.IReceiver;
  */
 public class ReceiverUDP implements IReceiver
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	// Logger
-	private static final Logger					log									= Logger.getLogger(ReceiverUDP.class
-			.getName());
+	private static final Logger log = Logger.getLogger(ReceiverUDP.class.getName());
 	
 	/** [ms] */
-	private static final int						PORT_UNREACHABLE_RETRY_WAIT	= 1500;
-	private final Statistics						stats									= new Statistics();
-	private final List<IReceiverUDPObserver>	observers							= new ArrayList<>();
-	private DatagramSocket							socket								= null;
-	private Thread										receiverThread						= null;
-	private boolean									legacy								= false;
+	private static final int PORT_UNREACHABLE_RETRY_WAIT = 1500;
+	private final Statistics stats = new Statistics();
+	private final List<IReceiverUDPObserver> observers = new CopyOnWriteArrayList<>();
+	private DatagramSocket socket = null;
+	private Thread receiverThread = null;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 * Default constructor.
-	 */
-	public ReceiverUDP()
-	{
-		// Default parameters.
-	}
-	
-	
-	/**
-	 * @param newSocket
-	 * @throws IOException
-	 */
-	public ReceiverUDP(final DatagramSocket newSocket)
-	{
-		setSocket(newSocket);
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * @param observer
 	 */
 	public void addObserver(final IReceiverUDPObserver observer)
 	{
-		synchronized (observers)
-		{
-			observers.add(observer);
-		}
+		observers.add(observer);
 	}
 	
 	
@@ -86,10 +52,7 @@ public class ReceiverUDP implements IReceiver
 	 */
 	public void removeObserver(final IReceiverUDPObserver observer)
 	{
-		synchronized (observers)
-		{
-			observers.remove(observer);
-		}
+		observers.remove(observer);
 	}
 	
 	
@@ -156,33 +119,12 @@ public class ReceiverUDP implements IReceiver
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * @return
 	 */
 	public Statistics getStats()
 	{
 		return stats;
-	}
-	
-	
-	/**
-	 * @return the legacy
-	 */
-	public boolean isLegacy()
-	{
-		return legacy;
-	}
-	
-	
-	/**
-	 * @param legacy the legacy to set
-	 */
-	public void setLegacy(final boolean legacy)
-	{
-		this.legacy = legacy;
 	}
 	
 	
@@ -208,7 +150,7 @@ public class ReceiverUDP implements IReceiver
 	
 	
 	@Override
-	public void cleanup() throws IOException
+	public void cleanup()
 	{
 		stop();
 	}
@@ -220,10 +162,6 @@ public class ReceiverUDP implements IReceiver
 		return socket.isConnected();
 	}
 	
-	// --------------------------------------------------------------------------
-	// --- Threads --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	@SuppressWarnings("squid:S1166")
 	protected class Receiver implements Runnable
 	{
 		@Override
@@ -260,7 +198,7 @@ public class ReceiverUDP implements IReceiver
 					
 					final byte[] packetData = Arrays.copyOfRange(packet.getData(), 0, packet.getLength());
 					
-					final ACommand cmd = CommandFactory.getInstance().decode(packetData, legacy);
+					final ACommand cmd = CommandFactory.getInstance().decode(packetData);
 					if (cmd == null)
 					{
 						log.warn("Error decoding command.");
@@ -276,7 +214,7 @@ public class ReceiverUDP implements IReceiver
 				{
 					final long waits = TimeUnit.MILLISECONDS.toSeconds(PORT_UNREACHABLE_RETRY_WAIT);
 					log.info(socket.getLocalPort() + "->" + socket.getPort() + ": ICMP port unreachable, retry in " + waits
-							+ "s.");
+							+ "s.", e);
 					
 					try
 					{
@@ -289,7 +227,7 @@ public class ReceiverUDP implements IReceiver
 					
 				} catch (final SocketException e)
 				{
-					log.info("UDP transceiver terminating");
+					log.info("UDP transceiver terminating", e);
 					Thread.currentThread().interrupt();
 				} catch (final IOException err)
 				{

@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 24.11.2016
- * Author(s): AndreR <andre@ryll.cc>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.vision.tracker;
 
@@ -21,9 +16,8 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.filter.tracking.TrackingFilterPosVel2D;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.vision.data.CamBallInternal;
+import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.vision.data.FilteredVisionBall;
 import edu.tigers.sumatra.vision.data.RobotCollisionShape;
 import edu.tigers.sumatra.vision.data.RobotCollisionShape.CollisionResult;
@@ -44,9 +38,7 @@ public class BallTracker
 	private final TrackingFilterPosVel2D filter;
 	
 	
-	private long lastPredictTimestamp;
 	private long lastInFieldTimestamp;
-	private double lastDtDeviation = 0.0;
 	
 	private int health = 2;
 	private int age = 0;
@@ -65,8 +57,6 @@ public class BallTracker
 	private static double measError = 2.0;
 	@Configurable(defValue = "10000.0", comment = "Maximum assumed ball speed in [mm/s] to filter outliers")
 	private static double maxLinearVel = 10000.0;
-	@Configurable(defValue = "1000.0", comment = "Increase measurement error depending on frame time deviation from average.")
-	private static double measErrorDtDeviationPenalty = 1000.0;
 	@Configurable(defValue = "1.5", comment = "Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter")
 	private static double mergePower = 1.5;
 	@Configurable(defValue = "20", comment = "Reciprocal health is used as uncertainty, increased on update, decreased on prediction")
@@ -90,7 +80,6 @@ public class BallTracker
 		filter = new TrackingFilterPosVel2D(ball.getPos().getXYVector(), initialCovarianceXY, modelError, measError,
 				ball.gettCapture());
 		
-		lastPredictTimestamp = ball.gettCapture();
 		lastInFieldTimestamp = ball.gettCapture();
 		lastCamBall = ball;
 	}
@@ -114,7 +103,6 @@ public class BallTracker
 		filter = new TrackingFilterPosVel2D(initState, initialCovarianceXY, modelError, measError,
 				camBall.gettCapture());
 		
-		lastPredictTimestamp = camBall.gettCapture();
 		lastInFieldTimestamp = camBall.gettCapture();
 		lastCamBall = camBall;
 	}
@@ -124,33 +112,18 @@ public class BallTracker
 	 * Do a prediction step on to a specific time.
 	 * 
 	 * @param timestamp time in [ns]
-	 * @param avgFrameDt average frame delta time in [s]
 	 * @param bots
 	 * @param airborne
 	 */
-	public void predict(final long timestamp, final double avgFrameDt, final List<RobotCollisionShape> bots,
+	public void predict(final long timestamp, final List<RobotCollisionShape> bots,
 			final boolean airborne)
 	{
-		double dtInSec = (timestamp - lastPredictTimestamp) * 1e-9;
-		
-		if (Math.abs(lastDtDeviation) > 0.002)
-		{
-			lastDtDeviation = 0;
-		} else
-		{
-			lastDtDeviation = avgFrameDt - dtInSec;
-		}
-		
 		if (!airborne)
 		{
 			processCollisions(bots);
 		}
 		
-		filter.setMeasurementError(measError + (Math.abs(lastDtDeviation) * measErrorDtDeviationPenalty));
-		
 		filter.predict(timestamp);
-		
-		lastPredictTimestamp = timestamp;
 		
 		if (health > 1)
 		{
@@ -322,7 +295,6 @@ public class BallTracker
 		double totalVelUnc = 0;
 		
 		CamBall lastCamBall = null;
-		double dtDev = 0;
 		
 		// calculate sum of all uncertainties
 		for (BallTracker t : balls)
@@ -334,7 +306,6 @@ public class BallTracker
 			if (t.getUpdatedAndReset())
 			{
 				lastCamBall = t.getLastCamBall();
-				dtDev = t.getLastDtDeviation();
 			}
 		}
 		
@@ -342,9 +313,9 @@ public class BallTracker
 		Validate.isTrue(totalPosUnc > 0);
 		Validate.isTrue(totalVelUnc > 0);
 		
-		IVector2 pos = AVector2.ZERO_VECTOR;
-		IVector2 posCam = AVector2.ZERO_VECTOR;
-		IVector2 vel = AVector2.ZERO_VECTOR;
+		IVector2 pos = Vector2f.ZERO_VECTOR;
+		IVector2 posCam = Vector2f.ZERO_VECTOR;
+		IVector2 vel = Vector2f.ZERO_VECTOR;
 		
 		// take all trackers and calculate their pos/vel sum weighted by uncertainty.
 		// Trackers with high uncertainty have less influence on the merged result.
@@ -363,7 +334,7 @@ public class BallTracker
 		posCam = posCam.multiplyNew(1.0 / totalPosUnc);
 		vel = vel.multiplyNew(1.0 / totalVelUnc);
 		
-		return new MergedBall(pos, posCam, vel, timestamp, lastCamBall, dtDev);
+		return new MergedBall(pos, posCam, vel, timestamp, lastCamBall);
 	}
 	
 	/**
@@ -377,7 +348,7 @@ public class BallTracker
 		private final IVector2 camPos;
 		private final IVector2 filtVel;
 		private final long timestamp;
-		private final CamBallInternal latestCamBall;
+		private final CamBall latestCamBall;
 		
 		
 		/**
@@ -386,23 +357,15 @@ public class BallTracker
 		 * @param filtVel
 		 * @param timestamp
 		 * @param latestCamBall
-		 * @param dtDeviation
 		 */
 		public MergedBall(final IVector2 filtPos, final IVector2 camPos, final IVector2 filtVel, final long timestamp,
-				final CamBall latestCamBall,
-				final double dtDeviation)
+				final CamBall latestCamBall)
 		{
 			this.filtPos = filtPos;
 			this.camPos = camPos;
 			this.filtVel = filtVel;
 			this.timestamp = timestamp;
-			if (latestCamBall == null)
-			{
-				this.latestCamBall = null;
-			} else
-			{
-				this.latestCamBall = new CamBallInternal(latestCamBall, dtDeviation);
-			}
+			this.latestCamBall = latestCamBall;
 		}
 		
 		
@@ -448,7 +411,7 @@ public class BallTracker
 		 * 
 		 * @return the latestCamBall
 		 */
-		public Optional<CamBallInternal> getLatestCamBall()
+		public Optional<CamBall> getLatestCamBall()
 		{
 			return Optional.ofNullable(latestCamBall);
 		}
@@ -505,11 +468,5 @@ public class BallTracker
 		boolean ret = updated;
 		updated = false;
 		return ret;
-	}
-	
-	
-	public double getLastDtDeviation()
-	{
-		return lastDtDeviation;
 	}
 }

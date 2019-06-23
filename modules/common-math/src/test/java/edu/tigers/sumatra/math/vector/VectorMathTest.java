@@ -33,7 +33,7 @@ public class VectorMathTest
 			double normalizeAngle = AngleMath.normalizeAngle(angle);
 			IVector2 vector = Vector2.fromAngle(angle);
 			double resultAngle = VectorMath.getAngle(vector);
-			assertThat(normalizeAngle).isCloseTo(resultAngle, within(1e-6));
+			assertThat(normalizeAngle).isCloseTo(resultAngle, within(1e-4));
 			assertThat(resultAngle).isBetween(-AngleMath.PI, AngleMath.PI);
 		}
 	}
@@ -52,7 +52,7 @@ public class VectorMathTest
 				
 				double diff = AngleMath.difference(angle2, angle1);
 				double diff1 = VectorMath.angleDifference(vector1, vector2).orElse(0.0);
-				assertThat(diff).isCloseTo(diff1, within(1e-6));
+				assertThat(diff).isCloseTo(diff1, within(1e-4));
 				assertThat(diff).isBetween(-AngleMath.PI, AngleMath.PI);
 			}
 		}
@@ -73,7 +73,7 @@ public class VectorMathTest
 				c.add(vector);
 			}
 			final IVector2 expected = Collections.min(c, new VectorLengthComparator());
-			final IVector2 result = VectorMath.nearestTo(AVector2.ZERO_VECTOR, c);
+			final IVector2 result = VectorMath.nearestTo(Vector2f.ZERO_VECTOR, c);
 			assertTrue(result.isCloseTo(expected, 1e-6));
 		}
 	}
@@ -93,7 +93,7 @@ public class VectorMathTest
 				c.add(vector);
 			}
 			final IVector2 expected = Collections.max(c, new VectorLengthComparator());
-			final IVector2 result = VectorMath.farthestTo(AVector2.ZERO_VECTOR, c);
+			final IVector2 result = VectorMath.farthestTo(Vector2f.ZERO_VECTOR, c);
 			assertTrue(result.isCloseTo(expected, 1e-6));
 		}
 	}

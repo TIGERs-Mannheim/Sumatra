@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.bot.params;
 
@@ -28,4 +28,9 @@ public interface IBotParams
 	 */
 	IBotKickerSpecs getKickerSpecs();
 	
+	
+	/**
+	 * @return the average feedback delay between sending a command and getting a reaction from vision
+	 */
+	double getFeedbackDelay();
 }

@@ -9,15 +9,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
-import com.github.g3force.configurable.ConfigRegistration;
-
 import edu.tigers.moduli.AModule;
-import edu.tigers.moduli.exceptions.InitModuleException;
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
-import edu.tigers.moduli.exceptions.StartModuleException;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
@@ -39,43 +34,24 @@ public class WorldFrameSender extends AModule implements IWorldFrameObserver
 	@SuppressWarnings("unused")
 	private static final Logger log = Logger
 			.getLogger(WorldFrameSender.class.getName());
-	/** */
-	public static final String MODULE_TYPE = "WorldFrameSender";
-	/** */
-	public static final String MODULE_ID = "wfexporter";
 	
-	private static final int LOCAL_PORT = 42000;
-	private static final int PORT = 42001;
-	private static final String ADDRESS = "224.5.23.3";
+	private static final int PORT = 42000;
+	private static final String ADDRESS = "224.5.23.2";
 	private static final boolean ADD_NOISE = false;
 	
 	private static final double MIN_DT = 0.005;
-	private final double delay;
+	private double delay;
 	private MulticastUDPTransmitter transmitter;
 	private long tLast = 0;
 	private Random rnd = new Random(0);
 	
 	private List<SumatraWfExport.WorldFrame.Builder> buffer = new LinkedList<>();
 	
-	static
-	{
-		ConfigRegistration.registerClass("export", WorldFrameSender.class);
-	}
-	
-	
-	/**
-	 * @param config
-	 */
-	public WorldFrameSender(final SubnodeConfiguration config)
-	{
-		delay = config.getDouble("delay", 0);
-	}
-	
 	
 	@Override
-	public void initModule() throws InitModuleException
+	public void initModule()
 	{
-		transmitter = new MulticastUDPTransmitter(LOCAL_PORT, ADDRESS, PORT);
+		// empty
 	}
 	
 	
@@ -87,11 +63,13 @@ public class WorldFrameSender extends AModule implements IWorldFrameObserver
 	
 	
 	@Override
-	public void startModule() throws StartModuleException
+	public void startModule()
 	{
+		delay = getSubnodeConfiguration().getDouble("delay", 0);
+		transmitter = new MulticastUDPTransmitter(ADDRESS, PORT);
 		try
 		{
-			AWorldPredictor wp = (AWorldPredictor) SumatraModel.getInstance().getModule(AWorldPredictor.MODULE_ID);
+			AWorldPredictor wp = SumatraModel.getInstance().getModule(AWorldPredictor.class);
 			wp.addObserver(this);
 		} catch (ModuleNotFoundException e)
 		{
@@ -105,7 +83,7 @@ public class WorldFrameSender extends AModule implements IWorldFrameObserver
 	{
 		try
 		{
-			AWorldPredictor wp = (AWorldPredictor) SumatraModel.getInstance().getModule(AWorldPredictor.MODULE_ID);
+			AWorldPredictor wp = SumatraModel.getInstance().getModule(AWorldPredictor.class);
 			wp.removeObserver(this);
 		} catch (ModuleNotFoundException e)
 		{
@@ -126,34 +104,7 @@ public class WorldFrameSender extends AModule implements IWorldFrameObserver
 		tLast = tNow;
 		
 		SimpleWorldFrame swf = wFrameWrapper.getSimpleWorldFrame();
-		SumatraWfExport.WorldFrame.Builder wfBuilder = SumatraWfExport.WorldFrame.newBuilder();
-		wfBuilder.setFrameId(swf.getId()).setTimestamp(swf.getTimestamp());
-		
-		SumatraWfExport.Ball.Builder ball = SumatraWfExport.Ball.newBuilder();
-		ball.setPos(convertVector(swf.getBall().getPos3().multiplyNew(1e-3)))
-				.setVel(convertVector(swf.getBall().getVel3()));
-		wfBuilder.setBall(ball);
-		
-		double std = 0.1;
-		double aStd = 0.3;
-		for (ITrackedBot tBot : swf.getBots().values())
-		{
-			SumatraWfExport.Bot.Builder bot = SumatraWfExport.Bot.newBuilder();
-			bot.setId(tBot.getBotId().getNumber())
-					.setTeamColor(tBot.getBotId().getTeamColor() == ETeamColor.BLUE
-							? SumatraWfExport.TeamColor.BLUE : SumatraWfExport.TeamColor.YELLOW);
-			bot.setPos(convertVector(tBot.getPos().multiplyNew(1e-3), tBot.getOrientation()));
-			IVector2 vel = tBot.getVel();
-			double aVel = tBot.getAngularVel();
-			if (ADD_NOISE)
-			{
-				vel = vel.addNew(Vector2.fromXY(rnd.nextGaussian() * std, rnd.nextGaussian() * std));
-				aVel += (rnd.nextGaussian() * aStd);
-			}
-			
-			bot.setVel(convertVector(vel, aVel));
-			wfBuilder.addBots(bot);
-		}
+		SumatraWfExport.WorldFrame.Builder wfBuilder = getWfExportBuilder(swf);
 		
 		buffer.add(wfBuilder);
 		
@@ -169,6 +120,41 @@ public class WorldFrameSender extends AModule implements IWorldFrameObserver
 			transmitter.send(wf.build().toByteArray());
 		}
 		buffer.removeAll(toBeRem);
+	}
+	
+	
+	private SumatraWfExport.WorldFrame.Builder getWfExportBuilder(final SimpleWorldFrame swf)
+	{
+		SumatraWfExport.WorldFrame.Builder wfBuilder = SumatraWfExport.WorldFrame.newBuilder();
+		wfBuilder.setFrameId(swf.getId()).setTimestamp(swf.getTimestamp());
+		
+		SumatraWfExport.Ball.Builder ball = SumatraWfExport.Ball.newBuilder();
+		ball.setPos(convertVector(swf.getBall().getPos3().multiplyNew(1e-3)))
+				.setVel(convertVector(swf.getBall().getVel3()));
+		wfBuilder.setBall(ball);
+		
+		double std = 0.1;
+		double aStd = 0.3;
+		for (ITrackedBot tBot : swf.getBots().values())
+		{
+			SumatraWfExport.Bot.Builder bot = SumatraWfExport.Bot.newBuilder();
+			bot.setId(tBot.getBotId().getNumber())
+					.setTeamColor(tBot.getBotId().getTeamColor() == ETeamColor.BLUE
+							? SumatraWfExport.TeamColor.BLUE
+							: SumatraWfExport.TeamColor.YELLOW);
+			bot.setPos(convertVector(tBot.getPos().multiplyNew(1e-3), tBot.getOrientation()));
+			IVector2 vel = tBot.getVel();
+			double aVel = tBot.getAngularVel();
+			if (ADD_NOISE)
+			{
+				vel = vel.addNew(Vector2.fromXY(rnd.nextGaussian() * std, rnd.nextGaussian() * std));
+				aVel += (rnd.nextGaussian() * aStd);
+			}
+			
+			bot.setVel(convertVector(vel, aVel));
+			wfBuilder.addBots(bot);
+		}
+		return wfBuilder;
 	}
 	
 	

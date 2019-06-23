@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.botmanager.commands.botskills.data;
@@ -17,23 +17,23 @@ import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
  */
 public class KickerDribblerCommands
 {
-	private static final Logger	log					= Logger.getLogger(KickerDribblerCommands.class.getName());
+	private static final Logger log = Logger.getLogger(KickerDribblerCommands.class.getName());
 	
 	/** [0.04 m/s] */
 	@SerialData(type = ESerialDataType.UINT8)
-	private int							kickSpeed;
+	private int kickSpeed;
 	
 	@SerialData(type = ESerialDataType.UINT8)
-	private int							kickFlags;
+	private int kickFlags;
 	
 	/** [rpm/100] */
 	@SerialData(type = ESerialDataType.UINT8)
-	private int							dribblerSpeed;
+	private int dribblerSpeed;
 	
-	private double						origKickSpeed		= 0;
-	private EKickerDevice			device				= EKickerDevice.STRAIGHT;
-	private EKickerMode				mode					= EKickerMode.DISARM;
-	private double						origDribblerSpeed	= 0;
+	private double origKickSpeed = 0;
+	private EKickerDevice device = EKickerDevice.STRAIGHT;
+	private EKickerMode mode = EKickerMode.DISARM;
+	private double origDribblerSpeed = 0;
 	
 	
 	/**
@@ -63,6 +63,14 @@ public class KickerDribblerCommands
 	 */
 	public void setKick(final double kickSpeed, final EKickerDevice device, final EKickerMode mode)
 	{
+		this.device = device;
+		this.mode = mode;
+		setKickSpeed(kickSpeed);
+	}
+	
+	
+	public void setKickSpeed(final double kickSpeed)
+	{
 		if (kickSpeed < 0)
 		{
 			log.warn("Kickspeed is < 0: " + kickSpeed);
@@ -73,9 +81,21 @@ public class KickerDribblerCommands
 			origKickSpeed = 10;
 		} else
 		{
-			origKickSpeed = Math.min(8, Math.max(0, kickSpeed));
+			origKickSpeed = kickSpeed;
 		}
+		setKick(origKickSpeed, device.getValue(), mode.getId());
+	}
+	
+	
+	public void setDevice(final EKickerDevice device)
+	{
 		this.device = device;
+		setKick(origKickSpeed, device.getValue(), mode.getId());
+	}
+	
+	
+	public void setMode(final EKickerMode mode)
+	{
 		this.mode = mode;
 		setKick(origKickSpeed, device.getValue(), mode.getId());
 	}

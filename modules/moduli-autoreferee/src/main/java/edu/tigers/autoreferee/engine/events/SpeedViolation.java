@@ -1,14 +1,10 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 27, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.events;
 
 import java.text.DecimalFormat;
+import java.util.List;
 
 import edu.tigers.autoreferee.engine.FollowUpAction;
 import edu.tigers.sumatra.ids.BotID;
@@ -20,20 +16,13 @@ import edu.tigers.sumatra.ids.BotID;
 public class SpeedViolation extends GameEvent
 {
 	/** speed in m/s */
-	private final double	speed;
+	private final double speed;
 	
 	
-	/**
-	 * @param eventType
-	 * @param timestamp
-	 * @param botAtFault
-	 * @param followUp
-	 * @param speed in m/s
-	 */
 	public SpeedViolation(final EGameEvent eventType, final long timestamp, final BotID botAtFault,
-			final FollowUpAction followUp, final double speed)
+			final FollowUpAction followUp, final double speed, final List<CardPenalty> cardPenalties)
 	{
-		super(eventType, timestamp, botAtFault, followUp);
+		super(eventType, timestamp, botAtFault, followUp, cardPenalties);
 		this.speed = speed;
 	}
 	

@@ -29,7 +29,6 @@ public class BotSkillLocalVelocitySim implements IBotSkillSim
 				.kickMode(skill.getMode())
 				.kickSpeed(skill.getKickSpeed())
 				.dribblerRPM(skill.getDribbleSpeed())
-				.addCommands(BotSkillSimulator.parseDataAcquisitionMode(input, skill.getDataAcquisitionMode()))
 				.build();
 	}
 }

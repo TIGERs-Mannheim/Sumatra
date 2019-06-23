@@ -1,15 +1,9 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 14.04.2011
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.aicenter.view;
 
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
-import edu.tigers.sumatra.ids.BotID;
 
 
 /**
@@ -21,13 +15,19 @@ public interface IRoleControlPanelObserver
 {
 	/**
 	 * @param role
-	 * @param botId botId to be assigned or uninitialized botId, if auto assign
+	 * @param botId botId to be assigned
 	 */
-	void addRole(ARole role, BotID botId);
+	void addRole(ARole role, int botId);
 	
 	
 	/**
 	 * @param role
 	 */
 	void removeRole(ARole role);
+	
+	
+	/**
+	 * Clear all roles
+	 */
+	void clearRoles();
 }

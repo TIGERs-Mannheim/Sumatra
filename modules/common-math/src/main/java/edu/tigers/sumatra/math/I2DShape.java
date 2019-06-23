@@ -60,7 +60,7 @@ public interface I2DShape
 	
 	
 	/**
-	 * Returns the neares point outside a shape to a given point inside the shape.
+	 * Returns the nearest point outside a shape to a given point inside the shape.
 	 * If the given point is outside the shape, return the point.
 	 * 
 	 * @param point some point in- or outside
@@ -73,7 +73,7 @@ public interface I2DShape
 	
 	
 	/**
-	 * Returns the neares point inside a shape to a given point outside the shape.
+	 * Returns the nearest point inside a shape to a given point outside the shape.
 	 * If the given point is inside the shape, return the point.
 	 *
 	 * @param point some point in- or outside

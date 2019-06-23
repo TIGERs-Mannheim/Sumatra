@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref;
 
-import java.awt.*;
+import java.awt.EventQueue;
 
 import edu.tigers.autoref.gui.AutoRefMainPresenter;
 
@@ -11,14 +11,19 @@ import edu.tigers.autoref.gui.AutoRefMainPresenter;
 /**
  * @author "Lukas Magel"
  */
-public class AutoReferee
+public final class AutoReferee
 {
+	
+	private AutoReferee()
+	{
+	}
+	
 	
 	/**
 	 * @param args
 	 */
 	public static void main(final String[] args)
 	{
-		EventQueue.invokeLater(() -> new AutoRefMainPresenter());
+		EventQueue.invokeLater(AutoRefMainPresenter::new);
 	}
 }

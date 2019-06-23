@@ -1,15 +1,9 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 14.04.2011
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.aicenter;
 
 import edu.tigers.sumatra.ai.athena.IAIModeChanged;
-import edu.tigers.sumatra.aicenter.view.IPlayControlPanelObserver;
 import edu.tigers.sumatra.aicenter.view.IRoleControlPanelObserver;
 
 
@@ -18,6 +12,6 @@ import edu.tigers.sumatra.aicenter.view.IRoleControlPanelObserver;
  * 
  * @author Gero
  */
-public interface IAICenterObserver extends IPlayControlPanelObserver, IRoleControlPanelObserver, IAIModeChanged
+public interface IAICenterObserver extends IRoleControlPanelObserver, IAIModeChanged
 {
 }

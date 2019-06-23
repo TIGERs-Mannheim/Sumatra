@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math;
@@ -18,7 +18,7 @@ public class KernelMath
 {
 	
 	protected static Function<Double, Double> gauss = x -> Math.exp(-Math.pow(x, 2) / 2.0)
-			/ Math.sqrt(2 * Math.PI);
+			/ SumatraMath.sqrt(2 * Math.PI);
 	
 	/**
 	 * Enum to select kernel type
@@ -73,7 +73,7 @@ public class KernelMath
 		{
 			for (int j = 0; j < size; j++)
 			{
-				double d = Math.sqrt(Math.pow(dx * (center - i), 2) + Math.pow(dy * (center - j), 2));
+				double d = SumatraMath.sqrt(Math.pow(dx * (center - i), 2) + Math.pow(dy * (center - j), 2));
 				kernel.set(i, j, kernelFunction.getFunction().apply(d));
 			}
 		}

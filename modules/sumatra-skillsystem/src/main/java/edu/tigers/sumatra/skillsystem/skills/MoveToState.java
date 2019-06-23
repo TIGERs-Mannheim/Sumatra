@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -12,15 +12,18 @@ import java.util.Optional;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.botmanager.commands.botskills.AMoveBotSkill;
+import edu.tigers.sumatra.botmanager.commands.botskills.data.DriveLimits;
 import edu.tigers.sumatra.drawable.DrawableBot;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableTrajectoryPath;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.pathfinder.IPathFinderResult;
 import edu.tigers.sumatra.pathfinder.MovementCon;
 import edu.tigers.sumatra.pathfinder.TrajPathFinderInput;
@@ -30,8 +33,7 @@ import edu.tigers.sumatra.pathfinder.obstacles.ObstacleGenerator;
 import edu.tigers.sumatra.pathfinder.traj.TrajPathFinderV4;
 import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
-import edu.tigers.sumatra.skillsystem.skills.util.ChargingValue;
-import edu.tigers.sumatra.statemachine.IState;
+import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.trajectory.ITrajectory;
 import edu.tigers.sumatra.trajectory.TrajectoryWrapper;
 import edu.tigers.sumatra.trajectory.TrajectoryXyw;
@@ -42,15 +44,12 @@ import edu.tigers.sumatra.wp.data.WorldFrame;
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class MoveToState implements IState
+public class MoveToState extends AState
 {
 	private final AMoveSkill moveSkill;
 	private TrajPathFinderV4 finder = new TrajPathFinderV4();
 	private ObstacleGenerator obstacleGen = new ObstacleGenerator();
 	private IPathFinderResult pathResult = null;
-	
-	private ChargingValue maxVelDecreaser;
-	private ChargingValue maxVelIncreaser;
 	
 	private double targetAngle;
 	
@@ -64,16 +63,6 @@ public class MoveToState implements IState
 	@Override
 	public void doEntryActions()
 	{
-		maxVelDecreaser = ChargingValue.aChargingValue()
-				.withDefaultValue(getBot().getBotParams().getMovementLimits().getVelMax())
-				.withChargeRate(-1)
-				.withLimit(0.5)
-				.build();
-		maxVelIncreaser = ChargingValue.aChargingValue()
-				.withDefaultValue(getBot().getBotParams().getMovementLimits().getVelMax())
-				.withChargeRate(1)
-				.withLimit(getBot().getBotParams().getMovementLimits().getVelMax())
-				.build();
 		targetAngle = getTBot().getOrientation();
 	}
 	
@@ -92,6 +81,7 @@ public class MoveToState implements IState
 		
 		List<IObstacle> obstacles = obstacleGen.generateObstacles(getWorldFrame(), getBot().getBotId(),
 				getMoveCon().getPrioMap(), getGameState());
+		obstacles.addAll(getMoveCon().getCustomObstacles());
 		if (!getMoveCon().isIgnoreGameStateObstacles())
 		{
 			obstacles.addAll(
@@ -101,79 +91,74 @@ public class MoveToState implements IState
 		
 		targetAngle = getMoveCon().getTargetAngle();
 		
-		TrajPathFinderInput finderInput = new TrajPathFinderInput(getWorldFrame().getTimestamp());
+		TrajPathFinderInput finderInput = TrajPathFinderInput.fromBotOrTrajectory(getWorldFrame().getTimestamp(),
+				getTBot());
 		finderInput.setMoveConstraints(new MoveConstraints(getMoveCon().getMoveConstraints()));
 		finderInput.setObstacles(obstacles);
-		finderInput.setTrackedBot(getTBot());
 		finderInput.setDest(getMoveCon().getDestination());
 		finderInput.setTargetAngle(targetAngle);
 		
-		maxVelIncreaser.setLimit(getMoveCon().getMoveConstraints().getVelMax());
-		if ((pathResult != null) &&
-				isReduceVelocityRequired())
-		{
-			maxVelDecreaser.update(getWorldFrame().getTimestamp());
-			maxVelIncreaser.setValue(maxVelDecreaser.getValue());
-			finderInput.getMoveConstraints().setVelMax(maxVelDecreaser.getValue());
-		} else
-		{
-			maxVelIncreaser.update(getWorldFrame().getTimestamp());
-			maxVelDecreaser.setValue(maxVelIncreaser.getValue());
-			finderInput.getMoveConstraints().setVelMax(maxVelIncreaser.getValue());
-		}
+		limitSpeedOnStoppedGame(finderInput.getMoveConstraints());
 		
 		pathResult = finder.calcPath(finderInput);
+		
+		getShapes().get(ESkillShapesLayer.PATH_FINDER_DEBUG).addAll(finder.getDebugShapes());
 		
 		Optional<IObstacle> collider = pathResult.getCollider();
 		collider.ifPresent(obstacle -> obstacle.setColor(Color.RED.brighter()));
 		
-		if (collider.isPresent() &&
-				collider.get().isWorthBrakingFor() &&
-				pathResult.hasIntermediateCollision() &&
-				(getTBot().getVel().getLength2() > 0.5))
+		if (criticalCollisionAhead())
 		{
 			// brake fast to avoid collision
 			DrawableCircle dCircle = new DrawableCircle(Circle.createCircle(getTBot().getPos(), 100), Color.pink);
 			getShapes().get(ESkillShapesLayer.PATH).add(dCircle);
-			finderInput.getMoveConstraints()
-					.setAccMax(getMoveCon().getMoveConstraints().getAccMax() + 1);
-			finderInput.getMoveConstraints().setVelMax(0.5);
+			
+			MoveConstraints emergencyMoveConstraints = new MoveConstraints(finderInput.getMoveConstraints());
+			emergencyMoveConstraints.setAccMax(6);
+			emergencyMoveConstraints.setAccMaxW(DriveLimits.MAX_ACC_W);
+			emergencyMoveConstraints.setJerkMax(DriveLimits.MAX_JERK);
+			emergencyMoveConstraints.setJerkMaxW(DriveLimits.MAX_JERK_W);
+			
+			moveSkill.setLocalVelocity(Vector2.zero(), 0, emergencyMoveConstraints);
+			getBot().setCurrentTrajectory(null);
 		} else
 		{
-			finderInput.getMoveConstraints()
-					.setAccMax(getMoveCon().getMoveConstraints().getAccMax());
+			executePath(pathResult.getTrajectory(), finderInput.getMoveConstraints());
 		}
-		executePath(pathResult.getTrajectory(), finderInput.getMoveConstraints());
 		drawPath(pathResult);
 	}
 	
 	
-	private boolean isReduceVelocityRequired()
+	private boolean criticalCollisionAhead()
 	{
-		return isWorthBraking() &&
-				isColliding();
-	}
-	
-	
-	private boolean isColliding()
-	{
-		return pathResult.hasIntermediateCollision() || pathResult.hasFrontCollision()
-				|| pathResult.hasBackCollision();
-	}
-	
-	
-	private boolean isWorthBraking()
-	{
-		if (pathResult.hasIntermediateCollision())
+		final double tCollision;
+		if (pathResult.hasFrontCollision())
 		{
-			double velAtCollision = pathResult.getTrajectory().getVelocity(pathResult.getFirstCollisionTime())
-					.getLength2();
-			if (velAtCollision > 1.5)
-			{
-				return true;
-			}
+			tCollision = 0;
+		} else if (pathResult.hasIntermediateCollision())
+		{
+			tCollision = pathResult.getFirstCollisionTime();
+		} else if (pathResult.hasBackCollision())
+		{
+			tCollision = pathResult.getTrajectory().getTotalTime() - pathResult.getCollisionDurationBack();
+		} else
+		{
+			return false;
 		}
-		return pathResult.getCollider().map(IObstacle::isWorthBrakingFor).orElse(false);
+		
+		double reactionTime = 0.1;
+		double amountOfBrake = getTBot().getMoveConstraints().getAccMax() * Math.max(0, tCollision - reactionTime);
+		double currentVel = getTBot().getVel().getLength2();
+		return currentVel - amountOfBrake > 0.5;
+	}
+	
+	
+	private void limitSpeedOnStoppedGame(MoveConstraints moveConstraints)
+	{
+		if (getGameState().isVelocityLimited())
+		{
+			moveConstraints.setVelMax(Math.min(moveConstraints.getVelMax(), RuleConstraints.getStopSpeed()));
+		}
 	}
 	
 	
@@ -183,11 +168,6 @@ public class MoveToState implements IState
 				TrajectoryGenerator.generateRotationTrajectoryStub(getMoveCon().getTargetAngle()));
 		
 		IVector2 dest = trajectory.getNextDestination(0);
-		
-		getShapes().get(ESkillShapesLayer.PATH_DEBUG).add(new DrawableBot(dest, targetAngle, Color.red,
-				Geometry.getBotRadius() + 20,
-				Geometry.getBotRadius() + 20));
-		
 		setTargetPose(dest, targetAngle, moveConstraints, traj);
 	}
 	

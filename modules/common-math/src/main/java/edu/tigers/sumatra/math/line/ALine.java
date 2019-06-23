@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.line;
@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import com.sleepycat.persist.model.Persistent;
 
+import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 
@@ -67,6 +68,7 @@ abstract class ALine implements ILine
 	{
 		return LineMath.getAngle(this);
 	}
+	
 	
 	@Override
 	public ILine getOrthogonalLine()
@@ -156,5 +158,12 @@ abstract class ALine implements ILine
 	public double distanceTo(IVector2 point)
 	{
 		return LineMath.distancePL(point, this);
+	}
+	
+	
+	@Override
+	public edu.tigers.sumatra.math.line.v2.ILine v2()
+	{
+		return Lines.lineFromLegacyLine(this);
 	}
 }

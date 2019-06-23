@@ -1,20 +1,18 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp;
 
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.github.g3force.configurable.IConfigObserver;
 
 import edu.tigers.moduli.AModule;
 import edu.tigers.sumatra.cam.ICamFrameObserver;
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.EAiType;
-import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.drawable.ShapeMap;
+import edu.tigers.sumatra.wp.util.IRobotInfoProvider;
 
 
 /**
@@ -25,12 +23,6 @@ import edu.tigers.sumatra.math.vector.IVector2;
  */
 public abstract class AWorldPredictor extends AModule implements ICamFrameObserver, IConfigObserver
 {
-	/** */
-	public static final String MODULE_TYPE = "AWorldPredictor";
-	/** */
-	public static final String MODULE_ID = "worldpredictor";
-	
-	
 	protected final List<IWorldFrameObserver> observers = new CopyOnWriteArrayList<>();
 	protected final List<IWorldFrameObserver> consumers = new CopyOnWriteArrayList<>();
 	
@@ -43,6 +35,7 @@ public abstract class AWorldPredictor extends AModule implements ICamFrameObserv
 	 *
 	 * @param observer that wants to listen for new frames
 	 */
+	@SuppressWarnings("squid:S2250") // Collection methods with O(n) performance
 	public final void addObserver(final IWorldFrameObserver observer)
 	{
 		observers.add(observer);
@@ -52,6 +45,7 @@ public abstract class AWorldPredictor extends AModule implements ICamFrameObserv
 	/**
 	 * @param observer that is registered atm.
 	 */
+	@SuppressWarnings("squid:S2250") // Collection methods with O(n) performance
 	public final void removeObserver(final IWorldFrameObserver observer)
 	{
 		observers.remove(observer);
@@ -66,6 +60,7 @@ public abstract class AWorldPredictor extends AModule implements ICamFrameObserv
 	 *
 	 * @param consumer that uses the worldframe for fast further processing
 	 */
+	@SuppressWarnings("squid:S2250") // Collection methods with O(n) performance
 	public final void addConsumer(final IWorldFrameObserver consumer)
 	{
 		consumers.add(consumer);
@@ -75,6 +70,7 @@ public abstract class AWorldPredictor extends AModule implements ICamFrameObserv
 	/**
 	 * @param consumer that is registered atm.
 	 */
+	@SuppressWarnings("squid:S2250") // Collection methods with O(n) performance
 	public final void removeConsumer(final IWorldFrameObserver consumer)
 	{
 		consumers.remove(consumer);
@@ -82,24 +78,30 @@ public abstract class AWorldPredictor extends AModule implements ICamFrameObserv
 	
 	
 	/**
-	 * Reset the ball to given position
-	 * 
-	 * @param pos of the ball
-	 */
-	public abstract void setLatestBallPosHint(final IVector2 pos);
-	
-	
-	/**
-	 * Update the bot to AI assignment
+	 * Notify observers about a new shape map
 	 *
-	 * @param botID
-	 * @param aiTeam
+	 * @param timestamp
+	 * @param shapeMap the shape map
+	 * @param source an identifier for the source
 	 */
-	public abstract void updateBot2AiAssignment(BotID botID, EAiType aiTeam);
+	public final void notifyNewShapeMap(final long timestamp, ShapeMap shapeMap, String source)
+	{
+		ShapeMap unmodifiableShapeMap = ShapeMap.unmodifiableCopy(shapeMap);
+		for (IWorldFrameObserver o : observers)
+		{
+			o.onNewShapeMap(timestamp, unmodifiableShapeMap, source);
+		}
+	}
 	
 	
-	/**
-	 * @return the current assignment
-	 */
-	public abstract Map<BotID, EAiType> getBotToAiMap();
+	public final void notifyClearShapeMap(String source)
+	{
+		for (IWorldFrameObserver o : observers)
+		{
+			o.onClearShapeMap(source);
+		}
+	}
+	
+	
+	public abstract void setRobotInfoProvider(IRobotInfoProvider robotInfoProvider);
 }

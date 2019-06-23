@@ -1,11 +1,13 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+
+import edu.tigers.sumatra.model.SumatraModel;
 
 
 /**
@@ -20,14 +22,14 @@ public class ActionMoveConstants
 	@Configurable(comment = "Viability for GoToOtherHalf", defValue = "0.4")
 	private static double defaultGoToOtherHalfViability = 0.4;
 	
-	@Configurable(defValue = "1.0")
-	private static double viabilityMultiplierClearingKick = 1.0;
+	@Configurable(defValue = "0.25")
+	private static double viabilityMultiplierClearingKick = 0.25;
 	
 	@Configurable(defValue = "1.0")
 	private static double viabilityMultiplierDirectKick = 1.0;
 	
-	@Configurable(defValue = "0.6")
-	private static double viabilityMultiplierKickInsBlaue = 0.6;
+	@Configurable(defValue = "0.3")
+	private static double viabilityMultiplierKickInsBlaue = 0.3;
 	
 	@Configurable(defValue = "1.0")
 	private static double viabilityMultiplierLowChanceDirectKick = 1.0;
@@ -38,9 +40,12 @@ public class ActionMoveConstants
 	@Configurable(defValue = "1.0")
 	private static double viabilityMultiplierGoToOtherHalf = 1.0;
 	
+	@Configurable(defValue = "false", comment = "Disables this action move for testing")
+	private static boolean forbidGoalKicks = false;
+	
 	static
 	{
-		ConfigRegistration.registerClass("offensive", ActionMoveConstants.class);
+		ConfigRegistration.registerClass("metis", ActionMoveConstants.class);
 	}
 	
 	
@@ -89,5 +94,11 @@ public class ActionMoveConstants
 	public static double getViabilityMultiplierGoToOtherHalf()
 	{
 		return viabilityMultiplierGoToOtherHalf;
+	}
+	
+	
+	public static boolean allowGoalKick()
+	{
+		return SumatraModel.getInstance().isProductive() || !forbidGoalKicks;
 	}
 }

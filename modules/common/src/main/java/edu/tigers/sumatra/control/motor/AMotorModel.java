@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Sep 23, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.control.motor;
 
@@ -15,6 +10,7 @@ import org.apache.log4j.Logger;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.IVectorN;
 import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.Vector3f;
 import edu.tigers.sumatra.math.vector.VectorN;
 
 
@@ -28,7 +24,7 @@ public abstract class AMotorModel implements IMotorModel
 	
 	private Random						rnd			= new Random();
 	private IVectorN					motorNoise	= VectorN.zero(4);
-	private IVector3					xywNoise		= Vector3.ZERO_VECTOR;
+	private IVector3 xywNoise = Vector3f.ZERO_VECTOR;
 	
 	
 	protected abstract VectorN getWheelSpeedInternal(IVector3 targetVel);

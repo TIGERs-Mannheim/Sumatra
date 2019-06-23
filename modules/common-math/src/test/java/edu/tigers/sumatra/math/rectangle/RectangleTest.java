@@ -5,6 +5,9 @@
 package edu.tigers.sumatra.math.rectangle;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
+
+import java.util.List;
 
 import org.assertj.core.data.Percentage;
 import org.junit.Test;
@@ -225,16 +228,19 @@ public class RectangleTest
 	{
 		Rectangle rect = Rectangle.fromCenter(Vector2.zero(), 42, 42);
 		
-		assertThat(rect.getEdges().stream().map(ILine::supportVector))
+		// Starting at topLeft, going counter clockwise.
+		List<ILine> edges = rect.getEdges();
+		assertThat(edges.stream().map(ILine::supportVector))
 				.containsExactlyInAnyOrder(
 						Vector2.fromXY(21, 21),
 						Vector2.fromXY(21, -21),
 						Vector2.fromXY(-21, -21),
 						Vector2.fromXY(-21, 21));
 		
-		assertThat(rect.getEdges().stream().map(ILine::directionVector).map(IVector2::getAngle))
-				.containsExactlyInAnyOrder(
-						0.0, AngleMath.PI_HALF, AngleMath.PI, -AngleMath.PI_HALF);
+		assertThat(edges.get(0).directionVector().getAngle()).isCloseTo(AngleMath.PI_HALF, within(1e-4));
+		assertThat(edges.get(1).directionVector().getAngle()).isCloseTo(0.0, within(1e-4));
+		assertThat(edges.get(2).directionVector().getAngle()).isCloseTo(-AngleMath.PI_HALF, within(1e-4));
+		assertThat(edges.get(3).directionVector().getAngle()).isCloseTo(AngleMath.PI, within(1e-4));
 	}
 	
 	

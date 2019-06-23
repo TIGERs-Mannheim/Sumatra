@@ -1,8 +1,10 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.triangle;
+
+import static edu.tigers.sumatra.math.SumatraMath.sqrt;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,8 +17,10 @@ import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.LineMath;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -25,11 +29,12 @@ import edu.tigers.sumatra.math.vector.Vector2;
  * @author Malte
  */
 @Persistent
-public class Triangle extends ATriangle
+public final class Triangle extends ATriangle
 {
-	private final IVector2	a;
-	private final IVector2	b;
-	private final IVector2	c;
+	private final IVector2 a;
+	private final IVector2 b;
+	private final IVector2 c;
+	private final List<IVector2> corners;
 	
 	
 	@SuppressWarnings("unused")
@@ -38,6 +43,7 @@ public class Triangle extends ATriangle
 		a = null;
 		b = null;
 		c = null;
+		corners = null;
 	}
 	
 	
@@ -54,6 +60,10 @@ public class Triangle extends ATriangle
 		this.a = a;
 		this.b = b;
 		this.c = c;
+		corners = new ArrayList<>(3);
+		corners.add(a);
+		corners.add(b);
+		corners.add(c);
 	}
 	
 	
@@ -65,6 +75,7 @@ public class Triangle extends ATriangle
 		a = triangle.a;
 		b = triangle.b;
 		c = triangle.c;
+		corners = triangle.corners;
 	}
 	
 	
@@ -92,7 +103,7 @@ public class Triangle extends ATriangle
 	{
 		ILine ab = Line.fromPoints(a, b);
 		ILine ac = Line.fromPoints(a, c);
-		ILine nbnc = Line.fromDirection(x, Vector2.fromXY(x.y() - a.y(), a.x() - x.x()));
+		ILine nbnc = Line.fromDirection(x, Vector2f.fromXY(x.y() - a.y(), a.x() - x.x()));
 		
 		Optional<IVector2> nb = LineMath.intersectionPoint(ab, nbnc);
 		Optional<IVector2> nc = LineMath.intersectionPoint(ac, nbnc);
@@ -129,10 +140,6 @@ public class Triangle extends ATriangle
 	@Override
 	public List<IVector2> getCorners()
 	{
-		List<IVector2> corners = new ArrayList<>(3);
-		corners.add(a);
-		corners.add(b);
-		corners.add(c);
 		return corners;
 	}
 	
@@ -155,6 +162,52 @@ public class Triangle extends ATriangle
 				&& b.equals(triangle.getB())
 				&& c.equals(triangle.getC());
 		
+	}
+	
+	
+	@Override
+	public double area()
+	{
+		double lineA = a.distanceTo(b);
+		double lineB = b.distanceTo(c);
+		double lineC = c.distanceTo(a);
+		double s = (lineA + lineB + lineC) / 2.;
+		return sqrt(s * (s - lineA) * (s - lineB) * (s - lineC));
+	}
+	
+	
+	@Override
+	public boolean isNeighbour(ITriangle triangle)
+	{
+		int counter = 0;
+		for (IVector2 c1 : this.getCorners())
+		{
+			for (IVector2 c2 : triangle.getCorners())
+			{
+				if (c1.distanceTo(c2) <= 0)
+				{
+					counter++;
+				}
+			}
+		}
+		return counter == 2;
+	}
+	
+	
+	@Override
+	public List<IVector2> lineIntersections(final ILine line)
+	{
+		ILineSegment ab = Lines.segmentFromPoints(a, b);
+		ILineSegment bc = Lines.segmentFromPoints(b, c);
+		ILineSegment ac = Lines.segmentFromPoints(a, c);
+		ILineSegment[] lines = new ILineSegment[] { ab, ac, bc };
+		List<IVector2> intersections = new ArrayList<>();
+		for (ILineSegment segment : lines)
+		{
+			Optional<IVector2> intersection = segment.intersectLine(Lines.lineFromLegacyLine(line));
+			intersection.ifPresent(intersections::add);
+		}
+		return intersections;
 	}
 	
 	

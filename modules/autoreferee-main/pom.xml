@@ -10,29 +10,14 @@
     <parent>
         <groupId>edu.tigers.sumatra</groupId>
         <artifactId>sumatra-parent</artifactId>
-        <version>5.1-SNAPSHOT</version>
+        <version>6.0</version>
         <relativePath>../sumatra-parent/pom.xml</relativePath>
     </parent>
 
     <dependencies>
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>common-model</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>moduli-timer</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>moduli-referee</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>moduli-autoreferee</artifactId>
+            <artifactId>sumatra-model</artifactId>
         </dependency>
 
         <dependency>
@@ -56,20 +41,33 @@
         </dependency>
 
         <dependency>
-            <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>sumatra-gui-visualizer</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>idw-gpl</groupId>
             <artifactId>idw-gpl</artifactId>
-            <version>1.6.1</version>
         </dependency>
 
         <dependency>
-            <groupId>com.miglayout</groupId>
-            <artifactId>miglayout-swing</artifactId>
-            <version>5.0</version>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.tigers.moduli</groupId>
+            <artifactId>moduli</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>sumatra-gui-replay</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-record</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>sumatra-gui-visualizer</artifactId>
         </dependency>
     </dependencies>
 
@@ -79,10 +77,39 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>1.4.0</version>
                 <configuration>
-                    <mainClass>edu.tigers.autoref.AutoReferee</mainClass>
+                    <executable>java</executable>
+                    <workingDirectory>${project.basedir}/../..</workingDirectory>
+                    <arguments>
+                        <argument>-Dproductive=true</argument>
+                        <argument>-Xms128m</argument>
+                        <argument>-Xmx2G</argument>
+                        <argument>-server</argument>
+                        <argument>-Xnoclassgc</argument>
+                        <argument>-Xverify:none</argument>
+                        <argument>-Dsun.java2d.d3d=false</argument>
+                        <argument>-XX:+UseG1GC</argument>
+                        <argument>-Djava.net.preferIPv4Stack=true</argument>
+                        <argument>-XX:-OmitStackTraceInFastThrow</argument>
+                        <argument>-classpath</argument>
+                        <!-- automatically creates the classpath using all project dependencies,
+                             also adding the project build directory -->
+                        <classpath/>
+                        <argument>edu.tigers.autoref.AutoReferee</argument>
+                    </arguments>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>analyze</id>
+                        <goals>
+                            <goal>analyze-only</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

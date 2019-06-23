@@ -1,12 +1,11 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.autoreferee.engine.events.impl;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -25,6 +24,7 @@ import edu.tigers.autoreferee.engine.FollowUpAction;
 import edu.tigers.autoreferee.engine.FollowUpAction.EActionType;
 import edu.tigers.autoreferee.engine.NGeometry;
 import edu.tigers.autoreferee.engine.events.EGameEvent;
+import edu.tigers.autoreferee.engine.events.EGameEventDetectorType;
 import edu.tigers.autoreferee.engine.events.GameEvent;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -47,15 +47,15 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class AttackerTouchKeeperDetector extends AGameEventDetector
 {
-	private static final int		priority						= 1;
+	private static final int PRIORITY = 1;
 	
 	@Configurable(comment = "[mm] The minimal distance that is not considered a contact")
-	private static final double	TOUCH_DISTANCE				= 10;
+	private static double touchDistance = 10;
 	
 	@Configurable(comment = "[ms] The amount of time before a violation is reported again for the same bot")
-	private static long				VIOLATOR_COOLDOWN_TIME	= 1_500;
+	private static long violatorCooldownTime = 1_500;
 	
-	private Map<BotID, Long>		oldViolators				= new HashMap<>();
+	private Map<BotID, Long> oldViolators = new HashMap<>();
 	
 	
 	/**
@@ -63,19 +63,19 @@ public class AttackerTouchKeeperDetector extends AGameEventDetector
 	 */
 	public AttackerTouchKeeperDetector()
 	{
-		super(EGameState.RUNNING);
+		super(EGameEventDetectorType.ATTACKER_TOUCHED_KEEPER, EGameState.RUNNING);
 	}
 	
 	
 	@Override
 	public int getPriority()
 	{
-		return priority;
+		return PRIORITY;
 	}
 	
 	
 	@Override
-	public Optional<IGameEvent> update(final IAutoRefFrame frame, final List<IGameEvent> violations)
+	public Optional<IGameEvent> update(final IAutoRefFrame frame)
 	{
 		IBotIDMap<ITrackedBot> bots = frame.getWorldFrame().getBots();
 		long timestamp = frame.getTimestamp();
@@ -115,15 +115,8 @@ public class AttackerTouchKeeperDetector extends AGameEventDetector
 		/*
 		 * Remove all old violators which have reached the cooldown time
 		 */
-		Iterator<Map.Entry<BotID, Long>> iter = oldViolators.entrySet().iterator();
-		while (iter.hasNext())
-		{
-			Map.Entry<BotID, Long> entry = iter.next();
-			if (TimeUnit.NANOSECONDS.toMillis(timestamp - entry.getValue()) > VIOLATOR_COOLDOWN_TIME)
-			{
-				iter.remove();
-			}
-		}
+		oldViolators.entrySet()
+				.removeIf(entry -> TimeUnit.NANOSECONDS.toMillis(timestamp - entry.getValue()) > violatorCooldownTime);
 		
 		// get the first new violator
 		Optional<BotID> violatorID = Sets.difference(violators, oldViolators.keySet()).stream().findFirst();
@@ -154,7 +147,7 @@ public class AttackerTouchKeeperDetector extends AGameEventDetector
 		ETeamColor targetColor = target.getBotId().getTeamColor();
 		
 		IPenaltyArea penArea = NGeometry.getPenaltyArea(targetColor);
-		ICircle circle = Circle.createCircle(target.getPos(), TOUCH_DISTANCE + (Geometry.getBotRadius() * 2));
+		ICircle circle = Circle.createCircle(target.getPos(), touchDistance + (Geometry.getBotRadius() * 2));
 		
 		List<ITrackedBot> attackingBots = AutoRefUtil.filterByColor(bots, targetColor.opposite());
 		

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -13,7 +13,7 @@ import edu.tigers.sumatra.skillsystem.ESkill;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * A MoveTo implementation that uses the {@link MoveToState} with trajectory path planning
  */
 public class MoveToTrajSkill extends AMoveToSkill
 {
@@ -22,9 +22,9 @@ public class MoveToTrajSkill extends AMoveToSkill
 	
 	
 	/**
-	 * Default
+	 * Default constructor. Please use {@link AMoveToSkill#createMoveToSkill()} to instantiate your skill
 	 */
-	public MoveToTrajSkill()
+	MoveToTrajSkill()
 	{
 		super(ESkill.MOVE_TO_TRAJ);
 		setInitialState(new MoveToState(this));

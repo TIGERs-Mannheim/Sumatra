@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.general;
@@ -9,11 +9,11 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 
-import edu.tigers.sumatra.ai.data.EAiShapesLayer;
-import edu.tigers.sumatra.ai.data.ITacticalField;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.ITacticalField;
+import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
@@ -38,27 +38,31 @@ public class DoubleTouchEvaderCalc extends ACalculator
 	
 	
 	@Override
+	public boolean isCalculationNecessary(final TacticalField tacticalField, final BaseAiFrame aiFrame)
+	{
+		return aiFrame.getGamestate().getState() == EGameState.RUNNING;
+	}
+	
+	
+	@Override
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
-		if (baseAiFrame.getGamestate().getState() == EGameState.RUNNING)
+		GameState prevState = baseAiFrame.getPrevFrame().getGamestate();
+		if (prevState.isGameStateForUs() && VALID_PREVIOUS_STATES.contains(prevState.getState()))
 		{
-			GameState prevState = baseAiFrame.getPrevFrame().getGamestate();
-			if (prevState.isGameStateForUs() && VALID_PREVIOUS_STATES.contains(prevState.getState()))
+			passedValidPrevState = true;
+			kickerID = newTacticalField.getBotsLastTouchedBall().stream().findAny().orElse(BotID.noBot());
+			ballKickPos = baseAiFrame.getPrevFrame().getWorldFrame().getBall().getPos();
+		} else if (passedValidPrevState)
+		{
+			if (!newTacticalField.getBotsLastTouchedBall().contains(kickerID))
 			{
-				passedValidPrevState = true;
-				kickerID = newTacticalField.getBotLastTouchedBall();
-				ballKickPos = baseAiFrame.getPrevFrame().getWorldFrame().getBall().getPos();
-			} else if (passedValidPrevState)
+				newTacticalField.setBotNotAllowedToTouchBall(BotID.noBot());
+				reset();
+			} else if (getBall().getPos().distanceTo(ballKickPos) > 50)
 			{
-				if (!newTacticalField.getBotLastTouchedBall().equals(kickerID))
-				{
-					newTacticalField.setBotNotAllowedToTouchBall(BotID.noBot());
-					reset();
-				} else if (getBall().getPos().distanceTo(ballKickPos) > 50)
-				{
-					newTacticalField.setBotNotAllowedToTouchBall(kickerID);
-					drawShape(newTacticalField);
-				}
+				newTacticalField.setBotNotAllowedToTouchBall(kickerID);
+				drawShape(newTacticalField);
 			}
 		}
 	}
@@ -68,7 +72,7 @@ public class DoubleTouchEvaderCalc extends ACalculator
 	{
 		if (!kickerID.equals(BotID.noBot()))
 		{
-			tacticalField.getDrawableShapes().get(EAiShapesLayer.BALL_POSSESSION)
+			tacticalField.getDrawableShapes().get(EAiShapesLayer.AI_BALL_POSSESSION)
 					.add(new DrawableCircle(
 							Circle.createCircle(getWFrame().getBot(kickerID).getPos(), Geometry.getBotRadius() * 2),
 							Color.cyan));

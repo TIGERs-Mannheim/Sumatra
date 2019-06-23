@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -8,25 +8,24 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.log4j.Logger;
-
-import com.github.g3force.configurable.ConfigRegistration;
-
 import edu.tigers.sumatra.ai.data.BotAiInformation;
 import edu.tigers.sumatra.bot.EFeature;
 import edu.tigers.sumatra.bot.EFeatureState;
 import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.botmanager.commands.IMatchCommand;
 import edu.tigers.sumatra.botmanager.commands.MultimediaControl;
+import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.pathfinder.MovementCon;
 import edu.tigers.sumatra.skillsystem.ESkill;
+import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
 import edu.tigers.sumatra.statemachine.IState;
 import edu.tigers.sumatra.statemachine.IStateMachine;
 import edu.tigers.sumatra.statemachine.StateMachine;
+import edu.tigers.sumatra.time.AverageTimeMeasure;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
 
@@ -37,19 +36,15 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
  */
 public abstract class ASkill implements ISkill
 {
-	@SuppressWarnings("unused")
-	private static final Logger			log					= Logger.getLogger(ASkill.class.getName());
-	protected static final IState			IDLE_STATE			= new DefaultState();
-	private final ESkill						skillName;
-	private final MovementCon				moveCon				= new MovementCon();
-	private final IStateMachine<IState>	stateMachine		= new StateMachine<>(IDLE_STATE);
-	private long								lastUpdate			= 0;
-	private double								dt						= 1;
-	private double								minDt					= 0.008;
-	private boolean							initialized			= false;
-	private ABot								bot;
-	private ShapeMap							exportedShapeMap	= new ShapeMap();
-	private ShapeMap							shapeMap				= new ShapeMap();
+	protected static final IState IDLE_STATE = new DefaultState();
+	private final ESkill skillName;
+	private final MovementCon moveCon = new MovementCon();
+	private final IStateMachine<IState> stateMachine = new StateMachine<>(IDLE_STATE);
+	private double dt = 1;
+	private boolean initialized = false;
+	private ABot bot;
+	private ShapeMap shapeMap = new ShapeMap();
+	private AverageTimeMeasure averageTimeMeasure = new AverageTimeMeasure();
 	
 	
 	/**
@@ -59,6 +54,7 @@ public abstract class ASkill implements ISkill
 	{
 		skillName = skill;
 		stateMachine.setExtendedLogging(SumatraModel.getInstance().isTestMode());
+		averageTimeMeasure.setAveragingTime(0.5);
 	}
 	
 	
@@ -133,28 +129,24 @@ public abstract class ASkill implements ISkill
 	
 	
 	@Override
-	public void update(final WorldFrameWrapper wfw, final ABot bot)
+	public void update(final WorldFrameWrapper wfw, final ABot bot, final ShapeMap shapeMap)
 	{
 		this.bot = bot;
+		this.shapeMap = shapeMap;
 	}
 	
 	
 	@Override
 	public void calcActions(final long timestamp)
 	{
-		dt = Math.abs(timestamp - lastUpdate) * 1e-9f;
-		// skip update if we get too many frames
-		if ((dt >= minDt) || (dt < 0))
-		{
-			lastUpdate = timestamp;
-			doCalcActionsBeforeStateUpdate();
-			stateMachine.update();
-			doCalcActionsAfterStateUpdate();
-			exportedShapeMap = shapeMap;
-			shapeMap = new ShapeMap();
-			bot.sendMatchCommand();
-			initialized = true;
-		}
+		averageTimeMeasure.resetMeasure();
+		averageTimeMeasure.startMeasure();
+		doCalcActionsBeforeStateUpdate();
+		stateMachine.update();
+		doCalcActionsAfterStateUpdate();
+		bot.sendMatchCommand();
+		initialized = true;
+		averageTimeMeasure.stopMeasure();
 	}
 	
 	
@@ -170,8 +162,6 @@ public abstract class ASkill implements ISkill
 	@Override
 	public void calcEntryActions()
 	{
-		ConfigRegistration.applySpezis(this, "skills", bot.getType().name());
-		setMinDt();
 		onSkillStarted();
 	}
 	
@@ -206,7 +196,7 @@ public abstract class ASkill implements ISkill
 	/**
 	 * @return the bot
 	 */
-	final ABot getBot()
+	protected final ABot getBot()
 	{
 		return bot;
 	}
@@ -233,13 +223,6 @@ public abstract class ASkill implements ISkill
 	}
 	
 	
-	@Override
-	public final ShapeMap exportShapeMap()
-	{
-		return exportedShapeMap;
-	}
-	
-	
 	protected final ShapeMap getShapes()
 	{
 		return shapeMap;
@@ -255,22 +238,10 @@ public abstract class ASkill implements ISkill
 	}
 	
 	
-	/**
-	 * @param minDt the minDt to set
-	 */
-	final void setMinDt(final double minDt)
+	@Override
+	public AverageTimeMeasure getAverageTimeMeasure()
 	{
-		double min = 1f / getBot().getUpdateRate();
-		this.minDt = Math.max(minDt, min);
-	}
-	
-	
-	/**
-	 * Set the minimum possible minDt
-	 */
-	final void setMinDt()
-	{
-		setMinDt(0);
+		return averageTimeMeasure;
 	}
 	
 	
@@ -294,8 +265,9 @@ public abstract class ASkill implements ISkill
 			return aiInfo;
 		}
 		
-		aiInfo.setBallContact(bot.isBarrierInterrupted());
+		aiInfo.setBallContact(bot.isBarrierInterrupted() ? "BARRIER" : "NO");
 		aiInfo.setBattery(bot.getBatteryRelative());
+		aiInfo.setVersion(bot.getVersionString());
 		aiInfo.setKickerCharge(bot.getKickerLevel() / bot.getKickerLevelMax());
 		Set<EFeature> brokenFeatures = bot.getBotFeatures().entrySet().stream()
 				.filter(entry -> entry.getValue() == EFeatureState.KAPUT)
@@ -305,7 +277,8 @@ public abstract class ASkill implements ISkill
 		aiInfo.setVelocityLimit(getMatchCtrl().getSkill().getMoveConstraints().getVelMax());
 		aiInfo.setAccelerationLimit(getMatchCtrl().getSkill().getMoveConstraints().getAccMax());
 		aiInfo.setDribblerSpeed(getMatchCtrl().getSkill().getDribbleSpeed());
-		aiInfo.setKickerSpeed(getMatchCtrl().getSkill().getKickSpeed());
+		aiInfo.setKickerSpeed(
+				getMatchCtrl().getSkill().getMode() == EKickerMode.DISARM ? -1 : getMatchCtrl().getSkill().getKickSpeed());
 		aiInfo.setKickerDevice(getMatchCtrl().getSkill().getDevice());
 		aiInfo.setBotSkill(getMatchCtrl().getSkill().getType().name());
 		aiInfo.setSkill(getType());
@@ -319,7 +292,7 @@ public abstract class ASkill implements ISkill
 	 *
 	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 	 */
-	private static class DefaultState implements IState
+	private static class DefaultState extends AState
 	{
 	}
 	

@@ -1,15 +1,12 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.support;
 
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
-
-import java.util.List;
-
-import static edu.tigers.sumatra.skillsystem.skills.AKickSkill.EKickMode;
+import edu.tigers.sumatra.wp.data.DynamicPosition;
 
 
 /**
@@ -26,6 +23,12 @@ public interface IPassTarget extends Comparable<IPassTarget>
 	
 	
 	/**
+	 * @return the target as a {@link DynamicPosition}
+	 */
+	DynamicPosition getDynamicTarget();
+	
+	
+	/**
 	 * @return the position where the bot will position - might be an approximation
 	 */
 	IVector2 getBotPos();
@@ -38,33 +41,27 @@ public interface IPassTarget extends Comparable<IPassTarget>
 	
 	
 	/**
-	 * @return the score of this pass target
-	 */
-	double getScore();
-	
-	
-	/**
 	 * @return the timestamp when this pass target will be reached
 	 */
 	long getTimeReached();
 	
 	
 	/**
-	 * @return the score for a direct shoot on the goal
+	 * @return the score of this pass target in [0..1] where 1 is best
 	 */
-	double getShootScore();
+	double getScore();
 	
 	
 	/**
-	 * @return the score for how likely it is that a pass is received
+	 * @return the score for a goal kick in [0..1] where 1 is best
 	 */
-	double getReceiveScore();
+	double getGoalKickScore();
 	
 	
 	/**
-	 * @return the kick mode for this pass target
+	 * @return the score for how likely it is that a pass is received in [0..1] where 1 is best
 	 */
-	EKickMode getKickMode();
+	double getPassScore();
 	
 	
 	/**
@@ -81,14 +78,23 @@ public interface IPassTarget extends Comparable<IPassTarget>
 	
 	
 	/**
-	 * @return the intermediate scores
-	 */
-	List<Double> getIntermediateScores();
-	
-	
-	/**
+	 * Calculate the time from given timestamp until pass target is reached
+	 * 
 	 * @param currentTimestamp
 	 * @return time in s
 	 */
 	double getTimeUntilReachedInS(long currentTimestamp);
+	
+	
+	/**
+	 * @param currentTimestamp
+	 * @return the current age of this pass target
+	 */
+	double getAge(long currentTimestamp);
+	
+	
+	/**
+	 * @return the range [rad] in which the pass can be played
+	 */
+	double getPassRange();
 }

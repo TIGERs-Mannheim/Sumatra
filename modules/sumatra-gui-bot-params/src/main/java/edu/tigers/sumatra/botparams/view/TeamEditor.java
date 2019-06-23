@@ -28,6 +28,7 @@ import javax.swing.ScrollPaneConstants;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 
+import edu.tigers.sumatra.components.DescLabel;
 import org.apache.log4j.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -66,7 +67,11 @@ public class TeamEditor extends JPanel
 	public TeamEditor()
 	{
 		setLayout(new MigLayout("wrap 2", "[grow, fill]10[grow, fill]", ""));
-		
+
+		DescLabel desc = new DescLabel("Select different bot configurations for the teams and for curtain bots and" +
+				"services. You can hover over the drop-down to get a minimal description.");
+		add(desc, "wrap, span 2");
+
 		for (EBotParamLabel paramLabel : EBotParamLabel.values())
 		{
 			JLabel name = new JLabel(paramLabel.toString());
@@ -74,8 +79,10 @@ public class TeamEditor extends JPanel
 			
 			JComboBox<String> dropdown = new JComboBox<>();
 			dropdown.addActionListener(new SelectedLabelListener(paramLabel, dropdown));
+			dropdown.setToolTipText(paramLabel.getLabel());
 			add(dropdown);
 			selectedLabels.put(paramLabel, dropdown);
+
 		}
 		
 		JButton addBtn = new JButton("Add Team");

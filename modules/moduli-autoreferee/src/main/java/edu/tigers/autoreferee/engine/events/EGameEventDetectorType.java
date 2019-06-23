@@ -1,0 +1,28 @@
+/*
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ */
+
+package edu.tigers.autoreferee.engine.events;
+
+/**
+ * @author "Lukas Magel"
+ */
+public enum EGameEventDetectorType
+{
+	ATTACKER_TO_DEFENSE_DISTANCE,
+	ATTACKER_TOUCHED_KEEPER,
+	BALL_LEFT_FIELD_ICING,
+	BALL_SPEEDING,
+	BOT_COLLISION,
+	BOT_IN_DEFENSE_AREA,
+	BOT_NUMBER,
+	BOT_STOP_SPEED,
+	DOUBLE_TOUCH,
+	DRIBBLING,
+	DEFENDER_TO_KICK_POINT_DISTANCE,
+	GOAL,
+	KICK_TIMEOUT,
+	BALL_HOLD_IN_PENAREA,
+	NO_PROGRESS,
+	MULTIPLE_YELLOW_CARDS,
+}

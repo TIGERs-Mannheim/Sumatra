@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 9, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.remote;
 
@@ -21,7 +16,7 @@ public interface IRefboxRemote
 	 * @param command
 	 * @return
 	 */
-	ICommandResult sendCommand(RefboxRemoteCommand command);
+	void sendCommand(RefboxRemoteCommand command);
 	
 	
 	/**

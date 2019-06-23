@@ -18,7 +18,6 @@ import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.VectorMath;
-import edu.tigers.sumatra.referee.TeamConfig;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
@@ -40,7 +39,7 @@ public final class NGeometry
 	 */
 	public static Goal getGoal(final ETeamColor color)
 	{
-		if (color == TeamConfig.getLeftTeam())
+		if (color == Geometry.getNegativeHalfTeam())
 		{
 			return Geometry.getGoalOur();
 		}
@@ -72,7 +71,7 @@ public final class NGeometry
 	 */
 	public static IRectangle getFieldSide(final ETeamColor color)
 	{
-		if (color == TeamConfig.getLeftTeam())
+		if (color == Geometry.getNegativeHalfTeam())
 		{
 			return Geometry.getFieldHalfOur();
 		}
@@ -95,7 +94,7 @@ public final class NGeometry
 	 */
 	public static IPenaltyArea getPenaltyArea(final ETeamColor color)
 	{
-		if (color == TeamConfig.getLeftTeam())
+		if (color == Geometry.getNegativeHalfTeam())
 		{
 			return Geometry.getPenaltyAreaOur();
 		}
@@ -109,7 +108,7 @@ public final class NGeometry
 	 */
 	public static IVector2 getPenaltyMark(final ETeamColor color)
 	{
-		if (color == TeamConfig.getLeftTeam())
+		if (color == Geometry.getNegativeHalfTeam())
 		{
 			return Geometry.getPenaltyMarkOur();
 		}

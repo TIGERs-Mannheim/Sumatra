@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ml.model.motor;
 
@@ -46,21 +46,21 @@ import edu.tigers.sumatra.math.vector.VectorN;
  */
 public class MotorModelOptimizer implements MultivariateJacobianFunction, MultivariateFunction
 {
-	private static final double						EPS			= 2;
-	private static final double						NORM_FACTOR	= 1e-9;
-																				
-	private static final Logger						log			= Logger.getLogger(MotorModelOptimizer.class.getName());
-																				
-	private double[]										target;
-	private final IMotorSampler						sampler;
-	private final MatrixMotorModel					motorModel	= new MatrixMotorModel();
-																				
-	private final Function<IVector3, IVectorN>	getWheelSpeed;
-																
-																
+	private static final double EPS = 2;
+	private static final double NORM_FACTOR = 1e-9;
+	
+	private static final Logger log = Logger.getLogger(MotorModelOptimizer.class.getName());
+	
+	private double[] target;
+	private final IMotorSampler sampler;
+	private final MatrixMotorModel motorModel = new MatrixMotorModel();
+	
+	private final Function<IVector3, IVectorN> getWheelSpeed;
+	
+	
 	static
 	{
-	
+		
 	}
 	
 	
@@ -124,11 +124,11 @@ public class MotorModelOptimizer implements MultivariateJacobianFunction, Multiv
 				100,
 				50, false,
 				validator);
-				
+		
 		LeastSquaresOptimizer opti = new LevenbergMarquardtOptimizer()
 				.withInitialStepBoundFactor(100.0)
 				.withRankingThreshold(1e-12);
-				
+		
 		LeastSquaresOptimizer.Optimum optimum = opti.optimize(problem);
 		
 		log.info("Result:");
@@ -191,7 +191,7 @@ public class MotorModelOptimizer implements MultivariateJacobianFunction, Multiv
 		
 		CMAESOptimizer optimizer = new CMAESOptimizer(2000, 0, true, 10, 0, new MersenneTwister(), false,
 				new SimpleValueChecker(0.0000000001, -1));
-				
+		
 		PointValuePair result = optimizer.optimize(
 				new MaxEval(20000),
 				GoalType.MINIMIZE,
@@ -200,8 +200,8 @@ public class MotorModelOptimizer implements MultivariateJacobianFunction, Multiv
 				new CMAESOptimizer.PopulationSize(10),
 				new CMAESOptimizer.Sigma(new double[] { 2.0, 2.0, 2.0, 2.0 }),
 				SimpleBounds.unbounded(4));
-				
-				
+		
+		
 		RealVector p = new ArrayRealVector(result.getPoint());
 		log.info("Evals: " + optimizer.getEvaluations());
 		log.info("Optimum: " + p);
@@ -226,8 +226,8 @@ public class MotorModelOptimizer implements MultivariateJacobianFunction, Multiv
 				GoalType.MINIMIZE,
 				new ObjectiveFunction(this),
 				new InitialGuess(helper.getSecond().toArray()));
-				
-				
+		
+		
 		RealVector p = new ArrayRealVector(optimum.getPoint());
 		log.info("Evals: " + optimizer.getEvaluations());
 		log.info("Optimum: " + p);
@@ -262,8 +262,8 @@ public class MotorModelOptimizer implements MultivariateJacobianFunction, Multiv
 				new CMAESOptimizer.PopulationSize(10),
 				new CMAESOptimizer.Sigma(new double[] { 2.0, 2.0, 2.0, 2.0 }),
 				SimpleBounds.unbounded(4));
-				
-				
+		
+		
 		RealVector p = new ArrayRealVector(optimum.getPoint());
 		log.info("Evals: " + optimizer.getEvaluations());
 		log.info("Optimum: " + p);
@@ -279,11 +279,11 @@ public class MotorModelOptimizer implements MultivariateJacobianFunction, Multiv
 	
 	private static class MinimizeRotationResult
 	{
-		public RealVector	sample;
-		public RealVector	wheels;
-		public double		rotSummand	= 0;
-												
-												
+		RealVector sample;
+		RealVector wheels;
+		double rotSummand = 0;
+		
+		
 		public MinimizeRotationResult()
 		{
 		}
@@ -401,7 +401,7 @@ public class MotorModelOptimizer implements MultivariateJacobianFunction, Multiv
 			log.info("Error: " + errX + " " + errY + " slope: " + slopeX + " " + slopeY);
 		} while ((Math.abs(target.x() - result.sample.getEntry(0)) > maxXYError)
 				|| (Math.abs(target.y() - result.sample.getEntry(1)) > maxXYError));
-				
+		
 		log.info("Final sample: " + result.sample + " <= " + result.wheels);
 		
 		return (VectorN.fromReal(result.wheels)).toArray();
@@ -456,9 +456,9 @@ public class MotorModelOptimizer implements MultivariateJacobianFunction, Multiv
 		// construct double array
 		double[] xDouble = new double[] { x.getEntry(0), x.getEntry(1), x.getEntry(2),
 				x.getEntry(3) };
-				// double[] xDouble = new double[] { (double) x.getEntry(0), (double) x.getEntry(0), (double) x.getEntry(1),
-				// (double) x.getEntry(1) };
-				
+		// double[] xDouble = new double[] { (double) x.getEntry(0), (double) x.getEntry(0), (double) x.getEntry(1),
+		// (double) x.getEntry(1) };
+		
 		// call sample function
 		IVector3 sample = sampler.takeSample(xDouble);
 		

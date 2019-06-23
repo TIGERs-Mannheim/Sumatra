@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 17, 2016
- * Author(s): Lukas Magel
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.math.line.v2;
 
@@ -50,6 +45,14 @@ public interface ILineSegment extends ILineBase
 	 *         according to {@link #isValid()}.
 	 */
 	IVector2 getDisplacement();
+	
+	
+	/**
+	 * Returns the point located in the middle between start and end
+	 * 
+	 * @return the center position of this line
+	 */
+	IVector2 getCenter();
 	
 	
 	/**

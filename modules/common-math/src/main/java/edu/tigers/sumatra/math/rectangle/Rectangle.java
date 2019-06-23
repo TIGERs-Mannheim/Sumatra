@@ -1,10 +1,9 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.rectangle;
 
-import org.apache.commons.lang.Validate;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import com.sleepycat.persist.model.Persistent;
@@ -12,9 +11,8 @@ import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -26,7 +24,7 @@ import edu.tigers.sumatra.math.vector.Vector2;
 @Persistent
 public class Rectangle extends ARectangle
 {
-	private final IVector2 center;
+	private final Vector2f center;
 	private final double xExtent;
 	private final double yExtent;
 	
@@ -34,7 +32,7 @@ public class Rectangle extends ARectangle
 	@SuppressWarnings("unused")
 	protected Rectangle()
 	{
-		center = Vector2.zero();
+		center = Vector2f.ZERO_VECTOR;
 		xExtent = 0;
 		yExtent = 0;
 	}
@@ -42,9 +40,10 @@ public class Rectangle extends ARectangle
 	
 	private Rectangle(final IVector2 center, final double xExtent, final double yExtent)
 	{
-		Validate.isTrue(xExtent >= 0, "xExtent must be >= 0: " + xExtent);
-		Validate.isTrue(yExtent >= 0, "yExtent must be >= 0" + yExtent);
-		this.center = Vector2.copy(center);
+		assert center != null;
+		assert xExtent >= 0 : xExtent;
+		assert yExtent >= 0 : yExtent;
+		this.center = Vector2f.copy(center);
 		this.xExtent = xExtent;
 		this.yExtent = yExtent;
 	}
@@ -55,7 +54,7 @@ public class Rectangle extends ARectangle
 	 */
 	protected Rectangle(final IRectangle rec)
 	{
-		center = Vector2.copy(rec.center());
+		center = Vector2f.copy(rec.center());
 		xExtent = rec.xExtent();
 		yExtent = rec.yExtent();
 	}
@@ -74,7 +73,7 @@ public class Rectangle extends ARectangle
 		IVector2 dir;
 		if (p0.equals(p1))
 		{
-			dir = AVector2.X_AXIS;
+			dir = Vector2f.X_AXIS;
 		} else
 		{
 			dir = p0.subtractNew(p1);
@@ -109,7 +108,7 @@ public class Rectangle extends ARectangle
 	{
 		double xExtent = Math.abs(p1.x() - p2.x());
 		double yExtent = Math.abs(p1.y() - p2.y());
-		IVector2 center = Vector2.fromXY(
+		IVector2 center = Vector2f.fromXY(
 				Math.min(p1.x(), p2.x()) + xExtent / 2.0,
 				Math.min(p1.y(), p2.y()) + yExtent / 2.0);
 		return new Rectangle(center, xExtent, yExtent);

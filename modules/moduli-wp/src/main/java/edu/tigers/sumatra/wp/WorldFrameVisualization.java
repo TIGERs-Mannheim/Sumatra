@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp;
@@ -9,6 +9,7 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.referee.IRefereeObserver;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 import edu.tigers.sumatra.wp.vis.BallVisCalc;
@@ -61,14 +62,15 @@ public class WorldFrameVisualization implements IRefereeObserver
 	
 	/**
 	 * Add shapes to {@link WorldFrameWrapper}
-	 * 
+	 *
 	 * @param wfw world frame
+	 * @param shapeMap
 	 */
-	public void process(final WorldFrameWrapper wfw)
+	public void process(final WorldFrameWrapper wfw, final ShapeMap shapeMap)
 	{
 		for (IWpCalc calc : calcs)
 		{
-			calc.process(wfw);
+			calc.process(wfw, shapeMap);
 		}
 	}
 }

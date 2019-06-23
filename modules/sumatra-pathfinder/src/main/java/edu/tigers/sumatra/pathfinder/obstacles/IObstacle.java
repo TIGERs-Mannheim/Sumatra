@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.pathfinder.obstacles;
 
@@ -29,14 +29,5 @@ public interface IObstacle extends IDrawableShape
 	default boolean isPointCollidingWithObstacle(final IVector2 point, final double t, final double margin)
 	{
 		return isPointCollidingWithObstacle(point, t);
-	}
-	
-	
-	/**
-	 * @return true, if we want to brake for this obstacle
-	 */
-	default boolean isWorthBrakingFor()
-	{
-		return false;
 	}
 }

@@ -1,15 +1,9 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jul 30, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands;
 
 import edu.tigers.sumatra.botmanager.commands.botskills.ABotSkill;
-import edu.tigers.sumatra.botmanager.commands.botskills.EDataAcquisitionMode;
 
 
 /**
@@ -22,12 +16,6 @@ public interface IMatchCommand
 	 * @param skill
 	 */
 	void setSkill(ABotSkill skill);
-	
-	
-	/**
-	 * @param freq
-	 */
-	void setFeedbackFreq(final int freq);
 	
 	
 	/**
@@ -49,7 +37,7 @@ public interface IMatchCommand
 	
 	
 	/**
-	 * @param acqMode
+	 * @param enable
 	 */
-	void setDataAcquisitionMode(final EDataAcquisitionMode acqMode);
+	void setStrictVelocityLimit(final boolean enable);
 }

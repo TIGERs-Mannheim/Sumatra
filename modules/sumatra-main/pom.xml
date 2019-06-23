@@ -2,7 +2,7 @@
   ~ Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
   -->
 
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <artifactId>sumatra-main</artifactId>
@@ -10,7 +10,7 @@
     <parent>
         <groupId>edu.tigers.sumatra</groupId>
         <artifactId>sumatra-parent</artifactId>
-        <version>5.1-SNAPSHOT</version>
+        <version>6.0</version>
         <relativePath>../sumatra-parent/pom.xml</relativePath>
     </parent>
 
@@ -34,7 +34,7 @@
             <groupId>edu.tigers.sumatra</groupId>
             <artifactId>sumatra-gui-bot-params</artifactId>
         </dependency>
-        
+
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
             <artifactId>sumatra-gui-log</artifactId>
@@ -72,11 +72,6 @@
 
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>sumatra-gui-visualizer</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>edu.tigers.sumatra</groupId>
             <artifactId>sumatra-gui-wp</artifactId>
         </dependency>
 
@@ -97,17 +92,7 @@
 
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>sumatra-shared-radio</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>sumatra-movement-limit-observer</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>moduli-autoreferee</artifactId>
+            <artifactId>moduli-movement-limit-observer</artifactId>
         </dependency>
 
         <dependency>
@@ -117,27 +102,60 @@
 
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>sumatra-snapshot</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>moduli-bot-data-sampler</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>edu.tigers.sumatra</groupId>
             <artifactId>moduli-telegram-notifications</artifactId>
         </dependency>
 
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>moduli-gui-notifications</artifactId>
+            <artifactId>common-gui</artifactId>
         </dependency>
-
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>moduli-game-notifications</artifactId>
+            <artifactId>moduli-botmanager</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-ai</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.moduli</groupId>
+            <artifactId>moduli</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-record</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>sumatra-skillsystem</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-referee</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-wp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>sumatra-model</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-ai-controller</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-geometry</artifactId>
         </dependency>
     </dependencies>
 
@@ -147,10 +165,53 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>1.4.0</version>
                 <configuration>
-                    <mainClass>edu.tigers.sumatra.Sumatra</mainClass>
+                    <executable>java</executable>
+                    <workingDirectory>${project.basedir}/../..</workingDirectory>
+                    <arguments>
+                        <argument>-Xms512m</argument>
+                        <argument>-Xmx4G</argument>
+                        <argument>-server</argument>
+                        <argument>-Xnoclassgc</argument>
+                        <argument>-Xverify:none</argument>
+                        <argument>-Dsun.java2d.d3d=false</argument>
+                        <argument>-XX:+UseG1GC</argument>
+                        <argument>-Djava.net.preferIPv4Stack=true</argument>
+                        <argument>-XX:-OmitStackTraceInFastThrow</argument>
+                        <argument>-classpath</argument>
+                        <!-- automatically creates the classpath using all project dependencies,
+                             also adding the project build directory -->
+                        <classpath/>
+                        <argument>edu.tigers.sumatra.Sumatra</argument>
+                    </arguments>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>analyze</id>
+                        <goals>
+                            <goal>analyze-only</goal>
+                        </goals>
+                        <configuration>
+                            <!-- Some moduli modules are not referenced in code attentional,
+                            but should still be included. -->
+                            <ignoredUnusedDeclaredDependencies>
+                                <ignoredUnusedDeclaredDependencie>
+                                    edu.tigers.sumatra:moduli-movement-limit-observer:*
+                                </ignoredUnusedDeclaredDependencie>
+                                <ignoredUnusedDeclaredDependencie>
+                                    edu.tigers.sumatra:moduli-wp-export:*
+                                </ignoredUnusedDeclaredDependencie>
+                                <ignoredUnusedDeclaredDependencie>
+                                    edu.tigers.sumatra:moduli-parameter-optimizer:*
+                                </ignoredUnusedDeclaredDependencie>
+                            </ignoredUnusedDeclaredDependencies>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

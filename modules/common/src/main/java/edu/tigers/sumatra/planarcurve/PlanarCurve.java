@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.planarcurve;
 
@@ -652,7 +652,7 @@ public class PlanarCurve
 			return intersections;
 		}
 		
-		double aSqrt = Math.sqrt(a);
+		double aSqrt = SumatraMath.sqrt(a);
 		
 		double denom = (ax1 * vy2) - (ay1 * vx2);
 		if (SumatraMath.isZero(denom))

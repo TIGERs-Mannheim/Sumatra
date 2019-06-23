@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -11,7 +11,9 @@ import java.util.Optional;
 
 import com.github.g3force.configurable.Configurable;
 
+import edu.tigers.sumatra.botmanager.commands.botskills.data.KickerDribblerCommands;
 import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
+import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -33,223 +35,45 @@ import edu.tigers.sumatra.wp.data.DynamicPosition;
 /**
  * This skill uses a run up to archive longer chip distances
  */
-public class RunUpChipSkill extends KickChillSkill
+public class RunUpChipSkill extends AMoveSkill
 {
 	@Configurable(comment = "Dribbler speed", defValue = "15000")
-	private int dribberSpeed = 15000;
+	private static int dribberSpeed = 15000;
 	
-	protected boolean dribblerOn = false;
+	private final DynamicPosition target;
+	private final double kickSpeed;
 	
-	private enum RunUpEvents implements IEvent
-	{
-		/** */
-		PREPARE,
-		/** */
-		START_POS,
-		/** */
-		RUN_UP,
-		/** */
-		CHILL,
-	}
+	private boolean dribblerOn = false;
 	
 	
 	/**
 	 * Default
 	 * 
-	 * @param receiver
-	 * @param kickMode
+	 * @param target
+	 * @param kickSpeed
 	 */
-	public RunUpChipSkill(final DynamicPosition receiver, EKickMode kickMode)
+	public RunUpChipSkill(final DynamicPosition target, final double kickSpeed)
 	{
-		super(receiver, ESkill.RUN_UP_CHIP);
-		setKickMode(kickMode);
+		super(ESkill.RUN_UP_CHIP);
+		this.target = target;
+		this.kickSpeed = kickSpeed;
 		setInitialState(new PrepareState());
 		addTransition(RunUpEvents.PREPARE, new PrepareState());
 		addTransition(RunUpEvents.RUN_UP, new RunUpState());
 		addTransition(RunUpEvents.START_POS, new MoveToStartPos());
-		addTransition(RunUpEvents.CHILL, new KickState());
+		addTransition(RunUpEvents.KICK, new KickState());
 	}
 	
 	
 	@Override
-	protected void updateKickerParams(final KickerParams kickerParams)
+	protected void updateKickerDribbler(final KickerDribblerCommands kickerDribblerOutput)
 	{
-		super.updateKickerParams(kickerParams);
+		super.updateKickerDribbler(kickerDribblerOutput);
 		if (dribblerOn)
 		{
-			kickerParams.setDribbleSpeed(dribberSpeed);
+			kickerDribblerOutput.setDribblerSpeed(dribberSpeed);
 		}
-	}
-	
-	private class PrepareState extends MoveToState
-	{
-		
-		protected PrepareState()
-		{
-			super(RunUpChipSkill.this);
-		}
-		
-		
-		@Override
-		public void doEntryActions()
-		{
-			super.doEntryActions();
-			getMoveCon().setBallObstacle(true);
-			getMoveCon().setMinDistToBall(Geometry.getBotRadius() * 1.5);
-			setDevice(EKickerDevice.CHIP);
-			dribblerOn = false;
-		}
-		
-		
-		@Override
-		public void doUpdate()
-		{
-			IVector2 passDirection = receiver.getXYVector().subtract(getWorldFrame().getBall().getPos());
-			double safetyLength = Geometry.getBotRadius();
-			if (getMoveCon().getMinDistToBall().isPresent())
-			{
-				safetyLength = getMoveCon().getMinDistToBall().get() + Geometry.getBotRadius();
-			}
-			IVector2 destination = LineMath.stepAlongLine(receiver.getXYVector(), getWorldFrame().getBall().getPos(),
-					passDirection.getLength2() + safetyLength);
-			destination = validateAndCorrectPosition(destination);
-			getMoveCon().updateDestination(destination);
-			getMoveCon().updateLookAtTarget(getWorldFrame().getBall());
-			double distanceToDestination = destination.distanceTo(getTBot().getPos());
-			
-			double dAngle = Math.abs(getAngle() - getMoveCon().getTargetAngle());
-			if (distanceToDestination < 10 && dAngle < 0.01)
-			{
-				triggerEvent(RunUpEvents.START_POS);
-			}
-			drawShapes();
-			super.doUpdate();
-		}
-		
-	}
-	
-	private class MoveToStartPos extends MoveToState
-	{
-		
-		protected MoveToStartPos()
-		{
-			
-			super(RunUpChipSkill.this);
-		}
-		
-		
-		@Override
-		public void doEntryActions()
-		{
-			super.doEntryActions();
-			getMoveCon().setBallObstacle(false);
-			dribblerOn = false;
-		}
-		
-		
-		@Override
-		public void doUpdate()
-		{
-			double additionalLength = getRunUpLength();
-			double passLength = receiver.getXYVector().distanceTo(getBall().getPos());
-			if (additionalLength <= 0.001)
-			{
-				setKickMode(EKickMode.POINT);
-				triggerEvent(RunUpEvents.CHILL);
-				return;
-			}
-			IVector2 destination = LineMath.stepAlongLine(receiver.getXYVector(), getBall().getPos(),
-					passLength + additionalLength);
-			destination = validateAndCorrectPosition(destination);
-			getMoveCon().updateDestination(destination);
-			getMoveCon().updateTargetAngle(receiver.getXYVector().subtractNew(getBall().getPos()).getAngle());
-			
-			double distanceToDestination = destination.distanceTo(getTBot().getPos());
-			double dAngle = Math.abs(getAngle() - getMoveCon().getTargetAngle());
-			if (distanceToDestination < 10 && dAngle < 0.01 && getTBot().getVel().getLength2() < 0.1)
-			{
-				triggerEvent(RunUpEvents.RUN_UP);
-			}
-			
-			drawShapes();
-			super.doUpdate();
-		}
-		
-		
-		private double getRunUpLength()
-		{
-			double distance = getBall().getPos().distanceTo(receiver.getXYVector());
-			double maxVel = getBot().getBotParams().getKickerSpecs().getMaxAbsoluteChipVelocity();
-			double maxAcc = getMoveCon().getMoveConstraints().getAccMax();
-			int numTouchdowns;
-			switch (kickMode)
-			{
-				case PASS:
-				case STOP:
-					numTouchdowns = 2;
-					break;
-				default:
-					numTouchdowns = 0;
-			}
-			
-			double botVel = Math.min(getMoveCon().getMoveConstraints().getVelMax(),
-					getBall().getChipConsultant().botVelocityToChipFartherThanMaximumDistance(distance, numTouchdowns,
-							maxVel));
-			
-			if (botVel <= 0)
-			{
-				return 0;
-			}
-			return 0.5 * maxAcc * Math.pow(botVel / maxAcc, 2) * 1000 + Geometry.getBotRadius() + Geometry.getBallRadius();
-		}
-	}
-	
-	private class RunUpState extends MoveToState
-	{
-		
-		protected RunUpState()
-		{
-			super(RunUpChipSkill.this);
-		}
-		
-		
-		@Override
-		public void doEntryActions()
-		{
-			super.doEntryActions();
-			getMoveCon().setBotsObstacle(false);
-			getMoveCon().setBallObstacle(false);
-			getMoveCon().setArmChip(true);
-			getMoveCon().setFastPosMode(false);
-			getMoveCon().setGoalPostObstacle(false);
-			getMoveCon().setPenaltyAreaAllowedOur(true);
-			getMoveCon().setPenaltyAreaAllowedTheir(true);
-			setDevice(EKickerDevice.CHIP);
-			setKickSpeed(getBot().getBotParams().getKickerSpecs().getMaxAbsoluteChipVelocity());
-			dribblerOn = true;
-		}
-		
-		
-		@Override
-		public void doUpdate()
-		{
-			getMoveCon().updateDestination(receiver.getXYVector());
-			getMoveCon().updateLookAtTarget(LineMath.stepAlongLine(getPos(), getReceiver().getXYVector(),
-					getReceiver().getXYVector().subtractNew(getPos()).getLength2() + Geometry.getBotRadius()));
-			double maxAcc = getMoveCon().getMoveConstraints().getAccMax();
-			double maxVel = getMoveCon().getMoveConstraints().getVelMax();
-			double maxDistance = maxVel * maxVel / maxAcc;
-			
-			if (getBall().getPos().distanceTo(getTBot().getPos()) > maxDistance * 1000)
-			{
-				getMoveCon().setArmChip(false);
-				getMoveCon().setBotsObstacle(true);
-				triggerEvent(RunUpEvents.PREPARE);
-			}
-			drawShapes();
-			super.doUpdate();
-		}
-		
+		kickerDribblerOutput.setKick(kickSpeed, EKickerDevice.CHIP, EKickerMode.ARM);
 	}
 	
 	
@@ -300,7 +124,209 @@ public class RunUpChipSkill extends KickChillSkill
 	private void drawShapes()
 	{
 		List<IDrawableShape> shapes = getShapes().get(ESkillShapesLayer.KICK_SKILL);
-		DrawableCircle target = new DrawableCircle(Circle.createCircle(receiver.getXYVector(), 50), Color.RED);
-		shapes.add(target);
+		shapes.add(new DrawableCircle(Circle.createCircle(this.target.getXYVector(), 50), Color.RED));
+	}
+	
+	private enum RunUpEvents implements IEvent
+	{
+		PREPARE,
+		START_POS,
+		RUN_UP,
+		KICK,
+	}
+	
+	private class PrepareState extends MoveToState
+	{
+		
+		protected PrepareState()
+		{
+			super(RunUpChipSkill.this);
+		}
+		
+		
+		@Override
+		public void doEntryActions()
+		{
+			super.doEntryActions();
+			getMoveCon().setBallObstacle(true);
+			getMoveCon().setMinDistToBall(Geometry.getBotRadius() * 1.5);
+			dribblerOn = false;
+		}
+		
+		
+		@Override
+		public void doUpdate()
+		{
+			IVector2 passDirection = target.getXYVector().subtract(getWorldFrame().getBall().getPos());
+			double safetyLength = Geometry.getBotRadius();
+			if (getMoveCon().getMinDistToBall().isPresent())
+			{
+				safetyLength = getMoveCon().getMinDistToBall().get() + Geometry.getBotRadius();
+			}
+			IVector2 destination = LineMath.stepAlongLine(target.getXYVector(), getWorldFrame().getBall().getPos(),
+					passDirection.getLength2() + safetyLength);
+			destination = validateAndCorrectPosition(destination);
+			getMoveCon().updateDestination(destination);
+			getMoveCon().updateLookAtTarget(getWorldFrame().getBall());
+			double distanceToDestination = destination.distanceTo(getTBot().getPos());
+			
+			double dAngle = Math.abs(getAngle() - getMoveCon().getTargetAngle());
+			if (distanceToDestination < 10 && dAngle < 0.01)
+			{
+				triggerEvent(RunUpEvents.START_POS);
+			}
+			drawShapes();
+			super.doUpdate();
+		}
+		
+	}
+	
+	private class MoveToStartPos extends MoveToState
+	{
+		
+		protected MoveToStartPos()
+		{
+			
+			super(RunUpChipSkill.this);
+		}
+		
+		
+		@Override
+		public void doEntryActions()
+		{
+			super.doEntryActions();
+			getMoveCon().setBallObstacle(false);
+			dribblerOn = false;
+		}
+		
+		
+		@Override
+		public void doUpdate()
+		{
+			double additionalLength = getRunUpLength();
+			double passLength = target.getXYVector().distanceTo(getBall().getPos());
+			if (additionalLength <= 0.001)
+			{
+				triggerEvent(RunUpEvents.KICK);
+				return;
+			}
+			IVector2 destination = LineMath.stepAlongLine(target.getXYVector(), getBall().getPos(),
+					passLength + additionalLength);
+			destination = validateAndCorrectPosition(destination);
+			getMoveCon().updateDestination(destination);
+			getMoveCon().updateTargetAngle(target.getXYVector().subtractNew(getBall().getPos()).getAngle());
+			
+			double distanceToDestination = destination.distanceTo(getTBot().getPos());
+			double dAngle = Math.abs(getAngle() - getMoveCon().getTargetAngle());
+			if (distanceToDestination < 10 && dAngle < 0.01 && getTBot().getVel().getLength2() < 0.1)
+			{
+				triggerEvent(RunUpEvents.RUN_UP);
+			}
+			
+			drawShapes();
+			super.doUpdate();
+		}
+		
+		
+		private double getRunUpLength()
+		{
+			double distance = getBall().getPos().distanceTo(target.getXYVector());
+			double maxVel = getBot().getBotParams().getKickerSpecs().getMaxAbsoluteChipVelocity();
+			double maxAcc = getMoveCon().getMoveConstraints().getAccMax();
+			int numTouchdowns = 2;
+			
+			double botVel = Math.min(getMoveCon().getMoveConstraints().getVelMax(),
+					getBall().getChipConsultant().botVelocityToChipFartherThanMaximumDistance(distance, numTouchdowns,
+							maxVel));
+			
+			if (botVel <= 0)
+			{
+				return 0;
+			}
+			return 0.5 * maxAcc * Math.pow(botVel / maxAcc, 2) * 1000 + Geometry.getBotRadius() + Geometry.getBallRadius();
+		}
+	}
+	
+	private class RunUpState extends MoveToState
+	{
+		
+		protected RunUpState()
+		{
+			super(RunUpChipSkill.this);
+		}
+		
+		
+		@Override
+		public void doEntryActions()
+		{
+			super.doEntryActions();
+			getMoveCon().setBotsObstacle(false);
+			getMoveCon().setBallObstacle(false);
+			getMoveCon().setArmChip(true);
+			getMoveCon().setGoalPostObstacle(false);
+			getMoveCon().setPenaltyAreaAllowedOur(true);
+			getMoveCon().setPenaltyAreaAllowedTheir(true);
+			dribblerOn = true;
+		}
+		
+		
+		@Override
+		public void doUpdate()
+		{
+			getMoveCon().updateDestination(target.getXYVector());
+			getMoveCon().updateLookAtTarget(LineMath.stepAlongLine(getPos(), target.getXYVector(),
+					target.getXYVector().subtractNew(getPos()).getLength2() + Geometry.getBotRadius()));
+			double maxAcc = getMoveCon().getMoveConstraints().getAccMax();
+			double maxVel = getMoveCon().getMoveConstraints().getVelMax();
+			double maxDistance = maxVel * maxVel / maxAcc;
+			
+			if (getBall().getPos().distanceTo(getTBot().getPos()) > maxDistance * 1000)
+			{
+				getMoveCon().setArmChip(false);
+				getMoveCon().setBotsObstacle(true);
+				triggerEvent(RunUpEvents.PREPARE);
+			}
+			drawShapes();
+			super.doUpdate();
+		}
+		
+	}
+	
+	private class KickState extends MoveToState
+	{
+		private KickState()
+		{
+			super(RunUpChipSkill.this);
+		}
+		
+		
+		@Override
+		public void doEntryActions()
+		{
+			super.doEntryActions();
+			getMoveCon().setBallObstacle(false);
+			dribblerOn = true;
+		}
+		
+		
+		@Override
+		public void doUpdate()
+		{
+			getMoveCon().updateDestination(getDestination());
+			getMoveCon().updateTargetAngle(getTargetOrientation());
+			super.doUpdate();
+		}
+		
+		
+		protected double getTargetOrientation()
+		{
+			return target.subtractNew(getBall().getPos()).getAngle(0);
+		}
+		
+		
+		private IVector2 getDestination()
+		{
+			return LineMath.stepAlongLine(getBall().getPos(), target, -getTBot().getCenter2DribblerDist());
+		}
 	}
 }

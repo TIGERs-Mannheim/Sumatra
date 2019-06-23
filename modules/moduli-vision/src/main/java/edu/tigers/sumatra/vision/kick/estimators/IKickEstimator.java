@@ -6,8 +6,8 @@ package edu.tigers.sumatra.vision.kick.estimators;
 import java.util.List;
 import java.util.Optional;
 
+import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.drawable.IDrawableShape;
-import edu.tigers.sumatra.vision.data.CamBallInternal;
 import edu.tigers.sumatra.vision.data.FilteredVisionBot;
 
 
@@ -21,7 +21,7 @@ public interface IKickEstimator
 	 * 
 	 * @param record
 	 */
-	void addCamBall(final CamBallInternal record);
+	void addCamBall(final CamBall record);
 	
 	
 	/**

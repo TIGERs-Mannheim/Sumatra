@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Apr 21, 2013
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.aicenter.view;
 
@@ -22,7 +17,7 @@ import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
-import edu.tigers.sumatra.ai.data.frames.AIInfoFrame;
+import edu.tigers.sumatra.ai.AIInfoFrame;
 import edu.tigers.sumatra.ai.metis.ECalculator;
 
 
@@ -46,14 +41,15 @@ public class MetisCalculatorsPanel extends JPanel
 	public MetisCalculatorsPanel()
 	{
 		setLayout(new BorderLayout());
-		TableModel model = new TableModel(new String[] { "active", "calculator", "executed", "time [us]" },
+		TableModel model = new TableModel(new String[] { "active", "calculator", "time [us]", "executed" },
 				ECalculator.values().length);
 		table = new JTable(model);
 		table.setEnabled(false);
+		table.setAutoCreateRowSorter(true);
 		
 		DefaultTableCellRenderer textRenderer = new DefaultTableCellRenderer();
 		textRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-		table.getColumnModel().getColumn(3).setCellRenderer(textRenderer);
+		table.getColumnModel().getColumn(2).setCellRenderer(textRenderer);
 		
 		table.getModel().addTableModelListener(new MyTableModelListener());
 		
@@ -75,8 +71,8 @@ public class MetisCalculatorsPanel extends JPanel
 		{
 			table.getModel().setValueAt(eCalc.isInitiallyActive(), row, 0);
 			table.getModel().setValueAt(eCalc.name(), row, 1);
-			table.getModel().setValueAt(false, row, 2);
-			table.getModel().setValueAt(0, row, 3);
+			table.getModel().setValueAt(0, row, 2);
+			table.getModel().setValueAt(false, row, 3);
 			row++;
 		}
 	}
@@ -126,9 +122,9 @@ public class MetisCalculatorsPanel extends JPanel
 			{
 				continue;
 			}
-			table.getModel().setValueAt(execution, row, 2);
-			int lastValue = (int) table.getModel().getValueAt(row, 3);
-			table.getModel().setValueAt((lastValue + value) / 2, row, 3);
+			table.getModel().setValueAt(execution, row, 3);
+			int lastValue = (int) table.getModel().getValueAt(row, 2);
+			table.getModel().setValueAt((lastValue + value) / 2, row, 2);
 			row++;
 		}
 	}
@@ -149,9 +145,17 @@ public class MetisCalculatorsPanel extends JPanel
 		@Override
 		public Class<?> getColumnClass(final int columnIndex)
 		{
-			if (columnIndex == 0 || columnIndex == 2)
+			if (columnIndex == 0 || columnIndex == 3)
 			{
 				return Boolean.class;
+			}
+			if (columnIndex == 1)
+			{
+				return String.class;
+			}
+			if (columnIndex == 2)
+			{
+				return Integer.class;
 			}
 			return super.getColumnClass(columnIndex);
 		}

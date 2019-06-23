@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 3, 2013
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.statemachine;
 
@@ -41,10 +36,7 @@ public interface IState
 	
 	
 	/**
-	 * @return an optional identifier for this state, defaults to the class name
+	 * @return an optional identifier for this state
 	 */
-	default String getIdentifier()
-	{
-		return this.getClass().getSimpleName();
-	}
+	String getIdentifier();
 }

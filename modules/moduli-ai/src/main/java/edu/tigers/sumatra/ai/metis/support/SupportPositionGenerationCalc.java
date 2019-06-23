@@ -1,10 +1,9 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.support;
 
-import static edu.tigers.sumatra.ai.metis.support.PassTargetGenerationCalc.getSafetyDistanceToPenaltyArea;
 import static edu.tigers.sumatra.ai.metis.support.SupportPositionSelectionCalc.getNumberOfOffensivePositions;
 import static edu.tigers.sumatra.ai.metis.support.SupportPositionSelectionCalc.getNumberOfPassPositions;
 
@@ -18,17 +17,19 @@ import java.util.Set;
 
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.ai.data.EAiShapesLayer;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
+import edu.tigers.sumatra.ai.BaseAiFrame;
+import edu.tigers.sumatra.ai.common.PointChecker;
 import edu.tigers.sumatra.ai.metis.ACalculator;
-import edu.tigers.sumatra.ai.pandora.roles.support.PointChecker;
-import edu.tigers.sumatra.drawable.DrawableLine;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.ai.pandora.roles.support.behaviors.PassReceiver;
+import edu.tigers.sumatra.drawable.DrawableArc;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.circle.Arc;
+import edu.tigers.sumatra.math.circle.IArc;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
@@ -39,21 +40,32 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class SupportPositionGenerationCalc extends ACalculator
 {
-	
-	@Configurable(defValue = "6000.0")
-	private static double maxSupportPositionInFrontBall = 6000;
-	
-	@Configurable(defValue = "-1500.0")
-	private static double minSupportPositionBehindBall = -1500;
-	
 	@Configurable(defValue = "30")
 	private static int numberOfTriesToFindAllPositions = 30;
 	
 	@Configurable(defValue = "1500.0", comment = "Distance to our penalty area")
 	private static double minDistanceToOurPenaltyArea = 1500;
 	
-	@Configurable(defValue = "2200.0")
+	@Configurable(defValue = "2200.0", comment = "Minimum supporter Distance")
 	private static double minSupporterDistance = 2200;
+	
+	@Configurable(defValue = "1000.0", comment = "Radius of the inner (blocked) arc")
+	private static double ignoredArcRadius = 1000;
+	
+	@Configurable(defValue = "4000.0", comment = "Radius of the outer search arc")
+	private static double searchArcRadius = 4000;
+	
+	@Configurable(defValue = "0.5", comment = "fixed arc angle in own half [pi (rad)]")
+	private static double ownHalfAngle = 0.5;
+	
+	@Configurable(defValue = "1.5", comment = "how much should the angle grow in the other half [pi (rad)]")
+	private static double maxAngleGrowth = 1.5;
+	
+	@Configurable(defValue = "500.0", comment = "distance for full angle (from opponents base line)")
+	private static double maxAngleReachedOffset = 500;
+	
+	@Configurable(defValue = "1500.0", comment = "Safety distance to keep to penalty area")
+	private static double safetyDistanceToPenaltyArea = 1500.0;
 	
 	private PointChecker pointChecker = new PointChecker();
 	private List<IDrawableShape> shapes;
@@ -61,15 +73,16 @@ public class SupportPositionGenerationCalc extends ACalculator
 	private Set<BotID> desiredOffensiveBots = Collections.emptySet();
 	private Random rnd;
 	
+	
 	/**
 	 * default
 	 */
 	public SupportPositionGenerationCalc()
 	{
 		pointChecker.useRuleEnforcement();
+		pointChecker.useKickOffRuleEnforcement();
 		pointChecker.addFunction(point -> !Geometry.getPenaltyAreaOur().isPointInShape(point,
 				minDistanceToOurPenaltyArea));
-		pointChecker.addFunction(p -> p.distanceTo(getBall().getPos()) > getMinSupporterDistance());
 		pointChecker.addFunction(p -> p.distanceTo(getWFrame().getFoeBots().values().stream()
 				.map(ITrackedBot::getPos)
 				.min(Comparator.comparingDouble(p::distanceToSqr))
@@ -82,9 +95,16 @@ public class SupportPositionGenerationCalc extends ACalculator
 	
 	
 	@Override
+	public boolean isCalculationNecessary(TacticalField tacticalField, BaseAiFrame aiFrame)
+	{
+		return PassReceiver.isActive();
+	}
+	
+	
+	@Override
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
-		pointChecker.setOurPenAreaMargin(getSafetyDistanceToPenaltyArea());
+		pointChecker.setOurPenAreaMargin(safetyDistanceToPenaltyArea);
 		if (rnd == null)
 		{
 			rnd = new Random(getWFrame().getTimestamp());
@@ -95,18 +115,48 @@ public class SupportPositionGenerationCalc extends ACalculator
 	}
 	
 	
+	/**
+	 * Display the calculated arcs in the visualizer
+	 * 
+	 * @param mainArc Outer arc
+	 * @param blockedArc Inner arc
+	 */
+	private void renderDebugInfo(IArc mainArc, IArc blockedArc)
+	{
+		shapes.add(new DrawableArc(mainArc, Color.GREEN));
+		shapes.add(new DrawableArc(blockedArc, Color.RED));
+	}
+	
+	
+	/**
+	 * This method will generate random support positions
+	 *
+	 * @return a list of available Support Positions
+	 */
 	private List<SupportPosition> generateSupportPositions()
 	{
-		double areaCoveredBySupporter = maxSupportPositionInFrontBall + minSupportPositionBehindBall;
-		double xOffset = calcOffset();
+		double maxAngle = getMaxAngle();
+		double maxRadius = getArcRadius();
+		double minRadius = getIgnoredArcRadius();
+		IVector2 origin = getBall().getPos();
+		
+		IArc mainArc = Arc.createArc(origin, maxRadius, -maxAngle / 2, maxAngle);
+		IArc blockedArc = Arc.createArc(origin, minRadius, -maxAngle / 2, maxAngle);
+		renderDebugInfo(mainArc, blockedArc);
+		
 		long timestamp = getWFrame().getTimestamp();
 		List<SupportPosition> allPositions = new LinkedList<>();
-		addOldPositions(allPositions, xOffset, areaCoveredBySupporter);
+		addOldPositions(allPositions, mainArc, blockedArc);
 		int numberOfOldPositions = allPositions.size();
+		
 		for (int i = 0; i < numberOfTriesToFindAllPositions; i++)
 		{
-			double x = (rnd.nextDouble()) * areaCoveredBySupporter + xOffset;
-			double y = (rnd.nextDouble() - 0.5) * Geometry.getFieldWidth();
+			double angle = (rnd.nextDouble() - 0.5) * maxAngle;
+			double dist = rnd.nextDouble() * (maxRadius - minRadius) + minRadius;
+			
+			double x = origin.x() + SumatraMath.cos(angle) * dist;
+			double y = origin.y() + SumatraMath.sin(angle) * dist;
+			
 			IVector2 position = Vector2.fromXY(x, y);
 			if (pointChecker.allMatch(getAiFrame(), position)
 					&& allPositions.stream().allMatch(p -> p.getPos().distanceTo(position) > Geometry.getBotRadius()))
@@ -122,34 +172,66 @@ public class SupportPositionGenerationCalc extends ACalculator
 	}
 	
 	
-	private double calcOffset()
+	private boolean ballInOurHalf()
 	{
-		IVector2 ballPos = getBall().getPos();
-		double xOffset = ballPos.x() - minSupportPositionBehindBall;
-		xOffset = Math.max(xOffset, Geometry.getGoalOur().getCenter().x());
-		xOffset = Math.min(xOffset,
-				Geometry.getFieldLength() / 2. - minSupportPositionBehindBall - maxSupportPositionInFrontBall);
-		// Drawing
-		ILine backLine = Line.fromDirection(Vector2.fromXY(xOffset, -Geometry.getFieldWidth() / 2),
-				Vector2.Y_AXIS.scaleToNew(Geometry.getFieldWidth()));
-		ILine frontLine = Line.fromDirection(
-				Vector2.fromXY(xOffset + minSupportPositionBehindBall + maxSupportPositionInFrontBall,
-						-Geometry.getFieldWidth() / 2),
-				Vector2.Y_AXIS.scaleToNew(Geometry.getFieldWidth()));
-		shapes.add(new DrawableLine(backLine, Color.RED));
-		shapes.add(new DrawableLine(frontLine, Color.RED));
-		return xOffset;
+		return getBall().getPos().x() < 0;
 	}
 	
 	
-	private void addOldPositions(List<SupportPosition> positions, double xOffset, double areaCoveredBySupporter)
+	/**
+	 * If the ball is in our half, we will use a fixed angle. In the
+	 * other half we will use a linear scaling one.
+	 * 
+	 * @return Maximum angle of the search arc in rad
+	 */
+	private double getMaxAngle()
+	{
+		if (ballInOurHalf())
+		{
+			return ownHalfAngle * Math.PI;
+		} else
+		{
+			double factor = SumatraMath.min(
+					Math.abs(getBall().getPos().x()) / (Geometry.getFieldLength() / 2.0 - maxAngleReachedOffset),
+					1);
+			
+			return (ownHalfAngle + maxAngleGrowth * factor) * Math.PI;
+		}
+	}
+	
+	
+	/**
+	 * @return Radius of the Arc
+	 */
+	private double getArcRadius()
+	{
+		return searchArcRadius;
+	}
+	
+	
+	/**
+	 * @return Radius of the inner arc which will be avoided
+	 */
+	private double getIgnoredArcRadius()
+	{
+		return ignoredArcRadius;
+	}
+	
+	
+	/**
+	 * Add previously selected points which are still valid back to the new list
+	 * 
+	 * @param positions The new position list
+	 * @param mainArc The main search arc
+	 * @param invalidArc The inner arc where no position is allowed
+	 */
+	private void addOldPositions(List<SupportPosition> positions, IArc mainArc, IArc invalidArc)
 	{
 		List<SupportPosition> oldPositions = getAiFrame().getPrevFrame().getTacticalField().getSelectedSupportPositions();
 		
 		for (SupportPosition pos : oldPositions)
 		{
-			double relativeXZero = pos.getPos().x() - xOffset;
-			boolean inSupportArea = relativeXZero > 0 && relativeXZero < areaCoveredBySupporter;
+			boolean inSupportArea = mainArc.isPointInShape(pos.getPos()) && !invalidArc.isPointInShape(pos.getPos());
 			if (pointChecker.allMatch(getAiFrame(), pos.getPos()) && inSupportArea)
 			{
 				pos.setCovered(false);

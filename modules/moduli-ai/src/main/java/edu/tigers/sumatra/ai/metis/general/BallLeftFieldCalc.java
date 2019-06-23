@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.metis.general;
 
@@ -8,10 +8,13 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -24,24 +27,10 @@ import edu.tigers.sumatra.math.vector.IVector2;
  */
 public class BallLeftFieldCalc extends ACalculator
 {
+	private static final Logger log = Logger.getLogger(BallLeftFieldCalc.class.getName());
+	private static final int BUFFER_SIZE = 3;
+	private final List<IVector2> lastBallPoss = new ArrayList<>(BUFFER_SIZE);
 	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	private static final Logger	log				= Logger.getLogger(BallLeftFieldCalc.class.getName());
-	private static final int		BUFFER_SIZE		= 5;
-	private final List<IVector2>	lastBallPoss	= new ArrayList<IVector2>(BUFFER_SIZE);
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	@Override
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
@@ -67,12 +56,14 @@ public class BallLeftFieldCalc extends ACalculator
 				log.warn("Ball left field, but there was no intersection with field borders?!");
 			} else
 			{
-				newTacticalField.setBallLeftFieldPos(ballIntersectionPoints.get(0));
+				newTacticalField.setBallLeftFieldPos(ballPos.nearestTo(ballIntersectionPoints));
 			}
 		}
+		
+		if (newTacticalField.getBallLeftFieldPos() != null)
+		{
+			newTacticalField.getDrawableShapes().get(EAiShapesLayer.AI_BALL_LEFT_FIELD).add(
+					new DrawableCircle(Circle.createCircle(newTacticalField.getBallLeftFieldPos(), 100)));
+		}
 	}
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 }

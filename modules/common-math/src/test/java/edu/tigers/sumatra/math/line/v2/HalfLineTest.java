@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.line.v2;
@@ -15,6 +15,7 @@ import java.util.Optional;
 
 import org.junit.Test;
 
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
@@ -27,7 +28,7 @@ import nl.jqno.equalsverifier.Warning;
  */
 public class HalfLineTest extends AbstractLineTest
 {
-	private final static LineConstructor lineConstructor = dV -> HalfLine.fromDirection(Vector2.ZERO_VECTOR, dV);
+	private final static LineConstructor lineConstructor = dV -> HalfLine.fromDirection(Vector2f.ZERO_VECTOR, dV);
 	
 	
 	@Test
@@ -41,9 +42,9 @@ public class HalfLineTest extends AbstractLineTest
 		assertThat(halfLine.supportVector() != supportVector, is(true));
 		assertThat(halfLine.directionVector().isParallelTo(directionVector), is(true));
 		
-		IHalfLine zeroLine = HalfLine.fromDirection(Vector2.ZERO_VECTOR, Vector2.ZERO_VECTOR);
-		assertThat(zeroLine.supportVector(), is(Vector2.ZERO_VECTOR));
-		assertThat(zeroLine.directionVector(), is(Vector2.ZERO_VECTOR));
+		IHalfLine zeroLine = HalfLine.fromDirection(Vector2f.ZERO_VECTOR, Vector2f.ZERO_VECTOR);
+		assertThat(zeroLine.supportVector(), is(Vector2f.ZERO_VECTOR));
+		assertThat(zeroLine.directionVector(), is(Vector2f.ZERO_VECTOR));
 	}
 	
 	
@@ -56,7 +57,7 @@ public class HalfLineTest extends AbstractLineTest
 		IHalfLine validLine = HalfLine.fromDirection(sV, dV);
 		assertThat(validLine.isValid(), is(true));
 		
-		IHalfLine invalidLine = HalfLine.fromDirection(sV, Vector2.ZERO_VECTOR);
+		IHalfLine invalidLine = HalfLine.fromDirection(sV, Vector2f.ZERO_VECTOR);
 		assertThat(invalidLine.isValid(), is(false));
 	}
 	
@@ -87,7 +88,7 @@ public class HalfLineTest extends AbstractLineTest
 			
 			IVector2 lineDV = Vector2.fromAngle(radAngle);
 			IHalfLine halfLine = HalfLine.fromDirection(lineSV, lineDV);
-			IHalfLine invalidLine = HalfLine.fromDirection(lineSV, Vector2.ZERO_VECTOR);
+			IHalfLine invalidLine = HalfLine.fromDirection(lineSV, Vector2f.ZERO_VECTOR);
 			
 			IVector2 expectedClosestPoint;
 			double expectedDistance;
@@ -98,9 +99,9 @@ public class HalfLineTest extends AbstractLineTest
 			} else
 			{
 				double radAngleAtOrigin = radAngle - Math.PI / 2;
-				double distanceLinePoint = Math.cos(radAngleAtOrigin);
+				double distanceLinePoint = SumatraMath.cos(radAngleAtOrigin);
 				
-				expectedClosestPoint = Vector2.X_AXIS.turnNew(radAngleAtOrigin).scaleTo(distanceLinePoint);
+				expectedClosestPoint = Vector2f.X_AXIS.turnNew(radAngleAtOrigin).scaleTo(distanceLinePoint);
 				expectedDistance = Math.abs(distanceLinePoint);
 			}
 			
@@ -137,9 +138,9 @@ public class HalfLineTest extends AbstractLineTest
 		IVector2 dV = Vector2.fromAngle(1.5d);
 		
 		IHalfLine properLine = HalfLine.fromDirection(sV, dV);
-		IHalfLine invalidLineA = HalfLine.fromDirection(sV, Vector2.ZERO_VECTOR);
-		IHalfLine invalidLineACopy = HalfLine.fromDirection(sV, Vector2.ZERO_VECTOR);
-		IHalfLine invalidLineB = HalfLine.fromDirection(Vector2.ZERO_VECTOR, Vector2.ZERO_VECTOR);
+		IHalfLine invalidLineA = HalfLine.fromDirection(sV, Vector2f.ZERO_VECTOR);
+		IHalfLine invalidLineACopy = HalfLine.fromDirection(sV, Vector2f.ZERO_VECTOR);
+		IHalfLine invalidLineB = HalfLine.fromDirection(Vector2f.ZERO_VECTOR, Vector2f.ZERO_VECTOR);
 		
 		assertThat(properLine, not(invalidLineA));
 		assertThat(invalidLineA, not(invalidLineB));
@@ -161,14 +162,14 @@ public class HalfLineTest extends AbstractLineTest
 	@Test
 	public void testIsPointInFront()
 	{
-		IHalfLine halfLine = HalfLine.fromDirection(Vector2.ZERO_VECTOR, Vector2.X_AXIS);
-		IHalfLine invalidLine = HalfLine.fromDirection(Vector2.ZERO_VECTOR, Vector2.ZERO_VECTOR);
+		IHalfLine halfLine = HalfLine.fromDirection(Vector2f.ZERO_VECTOR, Vector2f.X_AXIS);
+		IHalfLine invalidLine = HalfLine.fromDirection(Vector2f.ZERO_VECTOR, Vector2f.ZERO_VECTOR);
 		
 		for (int degAngle = 0; degAngle <= 360; degAngle++)
 		{
 			double radAngle = Math.toRadians(degAngle);
 			
-			IVector2 point = Vector2.X_AXIS.turnToNew(radAngle);
+			IVector2 point = Vector2f.X_AXIS.turnToNew(radAngle);
 			assertThat(halfLine.isPointInFront(point), is(degAngle <= 90 || degAngle > 270));
 			assertThat(invalidLine.isPointInFront(point), is(false));
 		}
@@ -178,7 +179,7 @@ public class HalfLineTest extends AbstractLineTest
 	@Test
 	public void testToLine()
 	{
-		IHalfLine halfLine = HalfLine.fromDirection(Vector2.ZERO_VECTOR, Vector2.Y_AXIS);
+		IHalfLine halfLine = HalfLine.fromDirection(Vector2f.ZERO_VECTOR, Vector2f.Y_AXIS);
 		ILine line = halfLine.toLine();
 		
 		assertThat(halfLine.supportVector(), is(line.supportVector()));
@@ -192,23 +193,23 @@ public class HalfLineTest extends AbstractLineTest
 	public void testToLineForInvalidLine()
 	{
 		IVector2 sV = Vector2.fromXY(10, 15);
-		IVector2 dV = Vector2.ZERO_VECTOR;
+		IVector2 dV = Vector2f.ZERO_VECTOR;
 		
 		IHalfLine invalidHalfLine = HalfLine.fromDirection(sV, dV);
 		ILine line = invalidHalfLine.toLine();
 		
 		assertThat(line.supportVector(), is(sV));
-		assertThat(line.directionVector(), is(Vector2.ZERO_VECTOR));
+		assertThat(line.directionVector(), is(Vector2f.ZERO_VECTOR));
 	}
 	
 	
 	@Test
 	public void testIntersectHalfLine()
 	{
-		IHalfLine lineA = HalfLine.fromDirection(Vector2.ZERO_VECTOR, Vector2.X_AXIS);
+		IHalfLine lineA = HalfLine.fromDirection(Vector2f.ZERO_VECTOR, Vector2f.X_AXIS);
 		
 		IVector2 sV = Vector2.fromXY(0, 1);
-		IVector2 dV = Vector2.X_AXIS;
+		IVector2 dV = Vector2f.X_AXIS;
 		for (int degAngle = 0; degAngle < 360; degAngle++)
 		{
 			double radAngle = Math.toRadians(degAngle);
@@ -224,7 +225,7 @@ public class HalfLineTest extends AbstractLineTest
 				assertThat(intersection, isNotPresent());
 			} else
 			{
-				IVector2 expected = Vector2.fromXY(Math.tan(radAngle - Math.PI * 3 / 2), 0);
+				IVector2 expected = Vector2.fromXY(SumatraMath.tan(radAngle - Math.PI * 3 / 2), 0);
 				assertThat(intersection, isPresentAnd(is(expected)));
 			}
 		}
@@ -234,10 +235,10 @@ public class HalfLineTest extends AbstractLineTest
 	@Test
 	public void testIntersectHalfLineWithInvalid()
 	{
-		IHalfLine validLine = HalfLine.fromDirection(Vector2.ZERO_VECTOR, Vector2.X_AXIS);
+		IHalfLine validLine = HalfLine.fromDirection(Vector2f.ZERO_VECTOR, Vector2f.X_AXIS);
 		
-		IHalfLine invalidLineA = HalfLine.fromDirection(Vector2.fromXY(10, 25), Vector2.ZERO_VECTOR);
-		IHalfLine invalidLineB = HalfLine.fromDirection(Vector2.fromXY(20, 11), Vector2.ZERO_VECTOR);
+		IHalfLine invalidLineA = HalfLine.fromDirection(Vector2.fromXY(10, 25), Vector2f.ZERO_VECTOR);
+		IHalfLine invalidLineB = HalfLine.fromDirection(Vector2.fromXY(20, 11), Vector2f.ZERO_VECTOR);
 		Optional<IVector2> intersection = validLine.intersectHalfLine(invalidLineA);
 		assertThat(intersection, isNotPresent());
 		
@@ -252,7 +253,7 @@ public class HalfLineTest extends AbstractLineTest
 	@Test
 	public void testIsPointOnLine()
 	{
-		IHalfLine halfLine = HalfLine.fromDirection(Vector2.ZERO_VECTOR, Vector2.fromXY(3, 0));
+		IHalfLine halfLine = HalfLine.fromDirection(Vector2f.ZERO_VECTOR, Vector2.fromXY(3, 0));
 		
 		IVector2 point = Vector2.fromXY(-10, 0);
 		assertThat(halfLine.isPointOnLine(point), is(false));
@@ -282,9 +283,9 @@ public class HalfLineTest extends AbstractLineTest
 	@Test
 	public void testIsPointOnInvalidLine()
 	{
-		IHalfLine invalidLine = HalfLine.fromDirection(Vector2.ZERO_VECTOR, Vector2.ZERO_VECTOR);
+		IHalfLine invalidLine = HalfLine.fromDirection(Vector2f.ZERO_VECTOR, Vector2f.ZERO_VECTOR);
 		
-		assertThat(invalidLine.isPointOnLine(Vector2.ZERO_VECTOR), is(true));
+		assertThat(invalidLine.isPointOnLine(Vector2f.ZERO_VECTOR), is(true));
 		assertThat(invalidLine.isPointOnLine(Vector2.fromXY(1, 2)), is(false));
 		assertThat(invalidLine.isPointOnLine(Vector2.fromXY(2, 3)), is(false));
 	}
@@ -300,10 +301,10 @@ public class HalfLineTest extends AbstractLineTest
 	@Test
 	public void testDistanceTo()
 	{
-		IVector2 sV = Vector2.ZERO_VECTOR;
-		IVector2 dV = Vector2.Y_AXIS;
+		IVector2 sV = Vector2f.ZERO_VECTOR;
+		IVector2 dV = Vector2f.Y_AXIS;
 		IHalfLine line = HalfLine.fromDirection(sV, dV);
-		IHalfLine invalidLine = HalfLine.fromDirection(sV, Vector2.ZERO_VECTOR);
+		IHalfLine invalidLine = HalfLine.fromDirection(sV, Vector2f.ZERO_VECTOR);
 		
 		for (int i = -10; i <= 10; i += 1)
 		{
@@ -314,7 +315,7 @@ public class HalfLineTest extends AbstractLineTest
 			if (i < 0)
 			{
 				assertThat(line.distanceTo(identical), closeTo(Math.abs(i), ACCURACY));
-				assertThat(line.distanceTo(parallel), closeTo(Math.sqrt(1 + i * i), ACCURACY));
+				assertThat(line.distanceTo(parallel), closeTo(SumatraMath.sqrt(1 + i * i), ACCURACY));
 			} else
 			{
 				assertThat(line.distanceTo(identical), closeTo(0, ACCURACY));

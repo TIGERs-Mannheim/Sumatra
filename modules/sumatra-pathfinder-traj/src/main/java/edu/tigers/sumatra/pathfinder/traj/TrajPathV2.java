@@ -1,20 +1,15 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jan 25, 2016
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.pathfinder.traj;
 
 import java.text.DecimalFormat;
 
-import com.github.g3force.configurable.Configurable;
 import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.trajectory.ITrajectory;
+import edu.tigers.sumatra.trajectory.StubTrajectory;
 
 
 /**
@@ -23,15 +18,9 @@ import edu.tigers.sumatra.trajectory.ITrajectory;
 @Persistent
 public class TrajPathV2 implements ITrajectory<IVector2>
 {
-	private final ITrajectory<IVector2>	trajectory;
-	private final double						tEnd;
-	private final TrajPathV2				child;
-	
-	@Configurable
-	private static double					collisionStepSize	= 0.1;
-	
-	@Configurable
-	private static double					minPathLength		= 1;
+	private final ITrajectory<IVector2> trajectory;
+	private final double tEnd;
+	private final TrajPathV2 child;
 	
 	
 	/**
@@ -40,7 +29,7 @@ public class TrajPathV2 implements ITrajectory<IVector2>
 	@SuppressWarnings("unused")
 	private TrajPathV2()
 	{
-		trajectory = null;
+		trajectory = StubTrajectory.vector2Zero();
 		tEnd = 0;
 		child = null;
 	}
@@ -137,15 +126,7 @@ public class TrajPathV2 implements ITrajectory<IVector2>
 	 */
 	public boolean isLastPart(final double tOffset)
 	{
-		if (child == null)
-		{
-			return true;
-		}
-		if (tOffset > tEnd)
-		{
-			return child.isLastPart(tOffset - tEnd);
-		}
-		return false;
+		return child == null || tOffset > tEnd && child.isLastPart(tOffset - tEnd);
 	}
 	
 	
@@ -321,4 +302,10 @@ public class TrajPathV2 implements ITrajectory<IVector2>
 		return child.getNextDestination(t - tEnd);
 	}
 	
+	
+	@Override
+	public TrajPathV2 mirrored()
+	{
+		return new TrajPathV2(trajectory.mirrored(), tEnd, child == null ? null : child.mirrored());
+	}
 }

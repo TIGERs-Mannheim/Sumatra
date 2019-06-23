@@ -5,8 +5,8 @@ package edu.tigers.sumatra.wp.ball.trajectory.flat;
 
 import edu.tigers.sumatra.geometry.BallParameters;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.wp.ball.trajectory.ABallTrajectory;
 
@@ -19,7 +19,7 @@ public class TwoPhaseDynamicVelBallTrajectory extends ATwoPhaseBallTrajectory
 	private final TwoPhaseDynamicVelParameters params;
 	
 	
-	protected TwoPhaseDynamicVelBallTrajectory(final IVector3 kickPos, final IVector3 kickVel, final double tSwitch,
+	private TwoPhaseDynamicVelBallTrajectory(final IVector kickPos, final IVector kickVel, final double tSwitch,
 			final double tKickToNow,
 			final TwoPhaseDynamicVelParameters params)
 	{
@@ -37,7 +37,7 @@ public class TwoPhaseDynamicVelBallTrajectory extends ATwoPhaseBallTrajectory
 	 * @param params
 	 * @return
 	 */
-	public static TwoPhaseDynamicVelBallTrajectory fromKick(final IVector2 kickPos, final IVector3 kickVel,
+	public static TwoPhaseDynamicVelBallTrajectory fromKick(final IVector2 kickPos, final IVector2 kickVel,
 			final TwoPhaseDynamicVelParameters params)
 	{
 		double tSwitch = (kickVel.getLength2() * (params.getKSwitch() - 1)) / params.getAccSlide();
@@ -53,20 +53,20 @@ public class TwoPhaseDynamicVelBallTrajectory extends ATwoPhaseBallTrajectory
 	 * @param params
 	 * @return
 	 */
-	public static TwoPhaseDynamicVelBallTrajectory fromState(final IVector3 posNow, final IVector3 velNow,
+	public static TwoPhaseDynamicVelBallTrajectory fromState(final IVector2 posNow, final IVector2 velNow,
 			final double vSwitch, final TwoPhaseDynamicVelParameters params)
 	{
 		double tSwitch;
 		double tKickToNow;
-		IVector3 kickPos;
-		IVector3 kickVel;
+		IVector2 kickPos;
+		IVector2 kickVel;
 		
 		if (velNow.getLength2() > vSwitch)
 		{
 			// ball is still in sliding phase
 			double timeToSwitch = -(velNow.getLength2() - vSwitch) / params.getAccSlide();
-			IVector3 acc = velNow.normalizeNew().multiply(params.getAccSlide());
-			IVector3 velSwitch = velNow.addNew(acc.multiplyNew(timeToSwitch));
+			IVector2 acc = velNow.normalizeNew().multiply(params.getAccSlide());
+			IVector2 velSwitch = velNow.addNew(acc.multiplyNew(timeToSwitch));
 			
 			kickVel = velSwitch.multiplyNew(1.0 / params.getKSwitch());
 			double timeToKick = (kickVel.getLength2() - velNow.getLength2()) / params.getAccSlide();
@@ -76,10 +76,10 @@ public class TwoPhaseDynamicVelBallTrajectory extends ATwoPhaseBallTrajectory
 		{
 			// ball is in rolling phase
 			double timeToSwitch = (vSwitch - velNow.getLength2()) / params.getAccRoll();
-			IVector3 acc = velNow.normalizeNew().multiply(params.getAccRoll());
-			IVector3 posSwitch = posNow.addNew(velNow.multiplyNew(timeToSwitch))
+			IVector2 acc = velNow.normalizeNew().multiply(params.getAccRoll());
+			IVector2 posSwitch = posNow.addNew(velNow.multiplyNew(timeToSwitch))
 					.add(acc.multiplyNew(0.5 * timeToSwitch * timeToSwitch));
-			IVector3 velSwitch = velNow.addNew(acc.multiplyNew(timeToSwitch));
+			IVector2 velSwitch = velNow.addNew(acc.multiplyNew(timeToSwitch));
 			
 			acc = velNow.normalizeNew().multiply(params.getAccSlide());
 			kickVel = velSwitch.multiplyNew(1.0 / params.getKSwitch());
@@ -97,7 +97,7 @@ public class TwoPhaseDynamicVelBallTrajectory extends ATwoPhaseBallTrajectory
 	@Override
 	public ABallTrajectory mirrored()
 	{
-		IVector3 vel = Vector3.from2d(kickVel.getXYVector().multiplyNew(-1), kickVel.z());
+		IVector2 vel = kickVel.getXYVector().multiplyNew(-1);
 		IVector2 pos = kickPos.getXYVector().multiplyNew(-1);
 		
 		return TwoPhaseDynamicVelBallTrajectory.fromKick(pos, vel, params);
@@ -108,9 +108,9 @@ public class TwoPhaseDynamicVelBallTrajectory extends ATwoPhaseBallTrajectory
 	 */
 	public static class TwoPhaseDynamicVelParameters
 	{
-		private final double	accSlide;
-		private final double	accRoll;
-		private final double	kSwitch;
+		private final double accSlide;
+		private final double accRoll;
+		private final double kSwitch;
 		
 		
 		/**

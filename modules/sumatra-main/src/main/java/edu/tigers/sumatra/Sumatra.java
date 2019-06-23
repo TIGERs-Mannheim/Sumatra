@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra;
 
-import java.awt.*;
+import java.awt.EventQueue;
 
 import edu.tigers.sumatra.log.JULLoggingBridge;
 
@@ -62,14 +62,5 @@ public final class Sumatra
 	public static void main(final String[] args)
 	{
 		EventQueue.invokeLater(MainPresenter::new);
-	}
-	
-	
-	/**
-	 * the static part of this class should have been executed now
-	 */
-	public static void touch()
-	{
-		// not really meant to do anything
 	}
 }

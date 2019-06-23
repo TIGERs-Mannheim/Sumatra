@@ -1,11 +1,13 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.view.main;
 
 import java.util.Arrays;
 
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
 
 import edu.tigers.autoref.view.main.IStartStopPanel.IStartStopPanelObserver;
 import edu.tigers.autoreferee.engine.IAutoRefEngine.AutoRefMode;
@@ -21,13 +23,13 @@ public class StartStopPanel extends BasePanel<IStartStopPanelObserver> implement
 {
 	
 	/**  */
-	private static final long			serialVersionUID	= 1L;
+	private static final long serialVersionUID = 1L;
 	
-	private JButton						startButton			= null;
-	private JButton						stopButton			= null;
-	private JButton						pauseButton			= null;
-	private JButton						resumeButton		= null;
-	private JComboBox<AutoRefMode>	refModeBox			= null;
+	private JButton startButton = null;
+	private JButton stopButton = null;
+	private JButton pauseButton = null;
+	private JButton resumeButton = null;
+	private JComboBox<AutoRefMode> refModeBox = null;
 	
 	
 	/**
@@ -115,6 +117,13 @@ public class StartStopPanel extends BasePanel<IStartStopPanelObserver> implement
 	public AutoRefMode getModeSetting()
 	{
 		return (AutoRefMode) refModeBox.getSelectedItem();
+	}
+	
+	
+	@Override
+	public void setModeSetting(final AutoRefMode mode)
+	{
+		refModeBox.setSelectedItem(mode);
 	}
 	
 	

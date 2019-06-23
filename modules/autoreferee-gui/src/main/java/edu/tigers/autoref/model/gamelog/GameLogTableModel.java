@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.model.gamelog;
 
-import java.awt.*;
+import java.awt.EventQueue;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import javax.swing.*;
+import javax.swing.JTable;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
@@ -30,10 +30,10 @@ public class GameLogTableModel extends AbstractTableModel implements IGameLogObs
 {
 	
 	/**  */
-	private static final long				serialVersionUID	= -8160241136867692587L;
-	private static final List<String>	columns;
+	private static final long serialVersionUID = -8160241136867692587L;
+	private static final List<String> columns;
 	
-	private final IGameLog					gameLog;
+	private final IGameLog gameLog;
 	
 	
 	static
@@ -96,6 +96,13 @@ public class GameLogTableModel extends AbstractTableModel implements IGameLogObs
 	public void onNewEntry(final int id, final GameLogEntry entry)
 	{
 		EventQueue.invokeLater(() -> fireTableRowsInserted(id, id));
+	}
+	
+	
+	@Override
+	public void onClear()
+	{
+		EventQueue.invokeLater(this::fireTableDataChanged);
 	}
 	
 	

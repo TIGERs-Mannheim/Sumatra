@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.redirect;
 
@@ -25,7 +25,9 @@ public class PassingPlay extends ARedirectPlay
 {
 	@Configurable(comment = "Center of the circle", defValue = "0.0;0.0")
 	private static IVector2 center = Vector2.fromXY(0, 0);
-	
+
+	@Configurable(comment = "dist to center (radius) [mm]", defValue = "3000.0")
+	private static double distance = 3000;
 	
 	/**
 	 * 
@@ -42,10 +44,10 @@ public class PassingPlay extends ARedirectPlay
 		double angleStep = AngleMath.PI_TWO / getRoles().size();
 		double initialAngle = AngleMath.PI_QUART;
 		
-		List<IVector2> destinations = new ArrayList<IVector2>();
+		List<IVector2> destinations = new ArrayList<>();
 		for (int i = 0; i < getRoles().size(); i++)
 		{
-			destinations.add(center.addNew(Vector2.fromAngle(initialAngle + (angleStep * i)).scaleTo(getDistance())));
+			destinations.add(center.addNew(Vector2.fromAngle(initialAngle + (angleStep * i)).scaleTo(distance)));
 		}
 		return destinations;
 	}

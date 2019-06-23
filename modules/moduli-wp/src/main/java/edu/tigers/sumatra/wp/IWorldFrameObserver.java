@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.wp;
 
+import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.wp.data.ExtendedCamDetectionFrame;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
@@ -43,6 +44,28 @@ public interface IWorldFrameObserver
 	 * Vision lost. Clear your state.
 	 */
 	default void onClearCamDetectionFrame()
+	{
+	}
+	
+	
+	/**
+	 * Update the shape map with given identifier
+	 *
+	 * @param timestamp
+	 * @param shapeMap the new shape map
+	 * @param source the source identifier for this shape map that should be replaced
+	 */
+	default void onNewShapeMap(final long timestamp, ShapeMap shapeMap, String source)
+	{
+	}
+	
+	
+	/**
+	 * Remove shapes from given shape map source
+	 * 
+	 * @param source
+	 */
+	default void onClearShapeMap(String source)
 	{
 	}
 }

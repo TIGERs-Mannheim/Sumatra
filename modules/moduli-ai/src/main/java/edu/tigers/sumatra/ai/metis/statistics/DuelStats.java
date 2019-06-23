@@ -7,12 +7,11 @@ package edu.tigers.sumatra.ai.metis.statistics;
 import java.util.HashMap;
 import java.util.Map;
 
-import edu.tigers.sumatra.ai.data.MatchStats;
-import edu.tigers.sumatra.ai.data.MatchStats.EMatchStatistics;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.ballpossession.BallPossession;
-import edu.tigers.sumatra.ai.data.ballpossession.EBallPossession;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
+import edu.tigers.sumatra.ai.BaseAiFrame;
+import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.ai.metis.ballpossession.BallPossession;
+import edu.tigers.sumatra.ai.metis.ballpossession.EBallPossession;
+import edu.tigers.sumatra.ai.metis.statistics.MatchStats.EMatchStatistics;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.statistics.Percentage;
 

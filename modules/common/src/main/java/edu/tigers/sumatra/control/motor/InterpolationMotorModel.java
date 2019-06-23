@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.control.motor;
@@ -33,12 +33,11 @@ import edu.tigers.sumatra.math.vector.VectorN;
 public class InterpolationMotorModel extends AMotorModel
 {
 	@SuppressWarnings("unused")
-	private static final Logger	log				= Logger.getLogger(InterpolationMotorModel.class.getName());
+	private static final Logger log = Logger.getLogger(InterpolationMotorModel.class.getName());
 	
-	private static final String	FOLDER			= "data/interpolationModel/";
-	
-	private List<Angle>				supportAngles	= new ArrayList<>();
-	private final double[]			in_Z				= new double[] { 3, 3, 3, 3 };
+	private static final String FOLDER = "data/interpolationModel/";
+	private static final double[] IN_Z = new double[] { 3, 3, 3, 3 };
+	private List<Angle> supportAngles = new ArrayList<>();
 	
 	
 	/**
@@ -84,7 +83,6 @@ public class InterpolationMotorModel extends AMotorModel
 		return imm;
 	}
 	
-	
 	/**
 	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 	 * @param name
@@ -111,8 +109,8 @@ public class InterpolationMotorModel extends AMotorModel
 			for (Speed speed : angle.supSpeeds)
 			{
 				List<Number> nbrs = new ArrayList<>();
-				nbrs.add(angle.angle);
-				nbrs.add(speed.speed);
+				nbrs.add(angle.value);
+				nbrs.add(speed.value);
 				for (int i = 0; i < 4; i++)
 				{
 					nbrs.add(speed.motors[i]);
@@ -133,16 +131,16 @@ public class InterpolationMotorModel extends AMotorModel
 	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 	 * @param file
 	 */
+	@SuppressWarnings("squid:S2095") // close stream -> unclear how to close stream
 	public void readFromFile(final String file)
 	{
 		try
 		{
-			Files
-					.lines(Paths.get(FOLDER + file))
+			Files.lines(Paths.get(FOLDER + file))
 					.filter(line -> !line.startsWith("#"))
 					.map(line -> line.split("[, ]"))
-					.map(arr -> Arrays.asList(arr).stream()
-							.map(s -> Double.valueOf(s))
+					.map(arr -> Arrays.stream(arr)
+							.map(Double::valueOf)
 							.collect(Collectors.toList()))
 					.filter(l -> l.size() >= 6)
 					.forEach(
@@ -172,7 +170,7 @@ public class InterpolationMotorModel extends AMotorModel
 		Angle sa2 = supportAngles.get(0);
 		for (int s = 1; s < (supportAngles.size()); s++)
 		{
-			if (velAngle <= supportAngles.get(s).angle)
+			if (velAngle <= supportAngles.get(s).value)
 			{
 				sa1 = supportAngles.get(s - 1);
 				sa2 = supportAngles.get(s);
@@ -185,11 +183,11 @@ public class InterpolationMotorModel extends AMotorModel
 		
 		for (int j = 1; j < sa1.supSpeeds.size(); j++)
 		{
-			if ((speed <= sa1.supSpeeds.get(j).speed) || (j == (sa1.supSpeeds.size() - 1)))
+			if ((speed <= sa1.supSpeeds.get(j).value) || (j == (sa1.supSpeeds.size() - 1)))
 			{
 				Speed sup11 = sa1.supSpeeds.get(j - 1);
 				Speed sup12 = sa1.supSpeeds.get(j);
-				interpolateSpeed1 = interpolateLinear(speed, sup11.speed, sup12.speed, sup11.motors,
+				interpolateSpeed1 = interpolateLinear(speed, sup11.value, sup12.value, sup11.motors,
 						sup12.motors);
 				break;
 			}
@@ -202,11 +200,11 @@ public class InterpolationMotorModel extends AMotorModel
 		
 		for (int i = 1; i < sa2.supSpeeds.size(); i++)
 		{
-			if ((speed <= sa2.supSpeeds.get(i).speed) || (i == (sa2.supSpeeds.size() - 1)))
+			if ((speed <= sa2.supSpeeds.get(i).value) || (i == (sa2.supSpeeds.size() - 1)))
 			{
 				Speed sup21 = sa2.supSpeeds.get(i - 1);
 				Speed sup22 = sa2.supSpeeds.get(i);
-				interpolateSpeed2 = interpolateLinear(speed, sup21.speed, sup22.speed, sup21.motors,
+				interpolateSpeed2 = interpolateLinear(speed, sup21.value, sup22.value, sup21.motors,
 						sup22.motors);
 				break;
 			}
@@ -218,13 +216,13 @@ public class InterpolationMotorModel extends AMotorModel
 		}
 		
 		
-		double[] motors = interpolateAngle(velAngle, sa1.angle, sa2.angle, interpolateSpeed1,
+		double[] motors = interpolateAngle(velAngle, sa1.value, sa2.value, interpolateSpeed1,
 				interpolateSpeed2);
 		
 		for (int k = 0; k < 4; k++)
 		{
 			in[k] = motors[k]
-					+ (xyw.z() * in_Z[k]);
+					+ (xyw.z() * IN_Z[k]);
 		}
 		
 		return VectorN.from(in);
@@ -264,7 +262,7 @@ public class InterpolationMotorModel extends AMotorModel
 	{
 		for (Angle sa : supportAngles)
 		{
-			if (Math.abs(AngleMath.difference(sa.angle, angle)) < 0.01)
+			if (Math.abs(AngleMath.difference(sa.value, angle)) < 0.01)
 			{
 				return sa;
 			}
@@ -281,7 +279,7 @@ public class InterpolationMotorModel extends AMotorModel
 	{
 		for (Speed s : speeds)
 		{
-			if (SumatraMath.isEqual(speed, s.speed))
+			if (SumatraMath.isEqual(speed, s.value))
 			{
 				return Optional.of(s);
 			}
@@ -319,24 +317,24 @@ public class InterpolationMotorModel extends AMotorModel
 	
 	private static class Angle implements Comparable<Angle>
 	{
-		final double		angle;
-		final List<Speed>	supSpeeds	= new ArrayList<>();
+		final double value;
+		final List<Speed> supSpeeds = new ArrayList<>();
 		
 		
 		/**
 		 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
-		 * @param angle
+		 * @param value
 		 */
-		public Angle(final double angle)
+		public Angle(final double value)
 		{
-			this.angle = angle;
+			this.value = value;
 		}
 		
 		
 		@Override
 		public int compareTo(final Angle o)
 		{
-			return Double.compare(angle, o.angle);
+			return Double.compare(value, o.value);
 		}
 		
 		
@@ -346,7 +344,7 @@ public class InterpolationMotorModel extends AMotorModel
 			final int prime = 31;
 			int result = 1;
 			long temp;
-			temp = Double.doubleToLongBits(angle);
+			temp = Double.doubleToLongBits(value);
 			result = (prime * result) + (int) (temp ^ (temp >>> 32));
 			result = (prime * result) + supSpeeds.hashCode();
 			return result;
@@ -369,7 +367,7 @@ public class InterpolationMotorModel extends AMotorModel
 				return false;
 			}
 			Angle other = (Angle) obj;
-			if (Double.doubleToLongBits(angle) != Double.doubleToLongBits(other.angle))
+			if (Double.doubleToLongBits(value) != Double.doubleToLongBits(other.value))
 			{
 				return false;
 			}
@@ -382,7 +380,7 @@ public class InterpolationMotorModel extends AMotorModel
 		{
 			StringBuilder builder = new StringBuilder();
 			builder.append("Angle [angle=");
-			builder.append(angle);
+			builder.append(value);
 			builder.append(", supSpeeds=\n");
 			for (Speed s : supSpeeds)
 			{
@@ -397,20 +395,20 @@ public class InterpolationMotorModel extends AMotorModel
 	
 	private static class Speed implements Comparable<Speed>
 	{
-		final double	speed;
-		final double[]	motors;
-		final double[]	debug;
+		final double value;
+		final double[] motors;
+		final double[] debug;
 		
 		
 		/**
 		 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
-		 * @param speed
+		 * @param value
 		 * @param motors
 		 * @param debug
 		 */
-		public Speed(final double speed, final double[] motors, final double[] debug)
+		public Speed(final double value, final double[] motors, final double[] debug)
 		{
-			this.speed = speed;
+			this.value = value;
 			this.motors = Arrays.copyOf(motors, motors.length);
 			this.debug = debug;
 		}
@@ -419,7 +417,7 @@ public class InterpolationMotorModel extends AMotorModel
 		@Override
 		public int compareTo(final Speed o)
 		{
-			return Double.compare(speed, o.speed);
+			return Double.compare(value, o.value);
 		}
 		
 		
@@ -430,7 +428,7 @@ public class InterpolationMotorModel extends AMotorModel
 			int result = 1;
 			result = (prime * result) + Arrays.hashCode(motors);
 			long temp;
-			temp = Double.doubleToLongBits(speed);
+			temp = Double.doubleToLongBits(value);
 			result = (prime * result) + (int) (temp ^ (temp >>> 32));
 			return result;
 		}
@@ -456,7 +454,7 @@ public class InterpolationMotorModel extends AMotorModel
 			{
 				return false;
 			}
-			return Double.doubleToLongBits(speed) == Double.doubleToLongBits(other.speed);
+			return Double.doubleToLongBits(value) == Double.doubleToLongBits(other.value);
 		}
 		
 		
@@ -465,7 +463,7 @@ public class InterpolationMotorModel extends AMotorModel
 		{
 			StringBuilder builder = new StringBuilder();
 			builder.append("[speed=");
-			builder.append(speed);
+			builder.append(value);
 			builder.append(", motors=");
 			builder.append(Arrays.toString(motors));
 			builder.append(", debug=");

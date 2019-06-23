@@ -1,24 +1,18 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 22.07.2010
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.cam;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
 
-import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
 import com.github.g3force.configurable.ConfigRegistration;
 
-import edu.tigers.moduli.exceptions.InitModuleException;
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
-import edu.tigers.moduli.exceptions.StartModuleException;
+import edu.tigers.sumatra.MessagesRobocupSslGameEvent.SSL_Referee_Game_Event.GameEventType;
 import edu.tigers.sumatra.MessagesRobocupSslWrapper.SSL_WrapperPacket;
 import edu.tigers.sumatra.Referee.SSL_Referee;
 import edu.tigers.sumatra.cam.data.CamGeometry;
@@ -58,6 +52,7 @@ public class LogfileVisionCam extends ACam implements Runnable
 	private double speed = 1.0;
 	private int setPos = -1;
 	private List<SSL_Referee.Command> seekToRefCmdList;
+	private List<GameEventType> seekToGameEventList;
 	
 	private int currentFrame = 0;
 	
@@ -66,37 +61,22 @@ public class LogfileVisionCam extends ACam implements Runnable
 	private final List<ILogfileVisionCamObserver> observers = new CopyOnWriteArrayList<>();
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructor(s) -------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 * @param subnodeConfiguration
-	 */
-	public LogfileVisionCam(final SubnodeConfiguration subnodeConfiguration)
-	{
-		super(subnodeConfiguration);
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- init and start -------------------------------------------------------
-	// --------------------------------------------------------------------------
 	@Override
-	public void initModule() throws InitModuleException
+	public void initModule()
 	{
 		// nothing to do here
 	}
 	
 	
 	@Override
-	public void startModule() throws StartModuleException
+	public void startModule()
 	{
 		ConfigRegistration.applySpezis(this, "user",
 				SumatraModel.getInstance().getGlobalConfiguration().getString("environment"));
 		
 		try
 		{
-			AReferee ref = (AReferee) SumatraModel.getInstance().getModule(AReferee.MODULE_ID);
+			AReferee ref = SumatraModel.getInstance().getModule(AReferee.class);
 			ref.setActiveSource(ERefereeMessageSource.INTERNAL_FORWARDER);
 			refForwarder = (DirectRefereeMsgForwarder) ref.getActiveSource();
 		} catch (ModuleNotFoundException e)
@@ -160,15 +140,25 @@ public class LogfileVisionCam extends ACam implements Runnable
 	}
 	
 	
-	private void seekForwardToRefCommand(final SSLGameLogReader currentLog, final List<SSL_Referee.Command> cmdList)
+	public void seekForwardToGameEvent(final List<GameEventType> gameEventTypes)
 	{
-		int start = findFrameExclRefCommand(currentLog, currentFrame, cmdList);
+		if (gameEventTypes.isEmpty())
+		{
+			return;
+		}
+		seekToGameEventList = gameEventTypes;
+	}
+	
+	
+	private void seekForwardTo(final SSLGameLogReader currentLog, Function<SSL_Referee, Boolean> condition)
+	{
+		int start = findFrameWithCondition(currentLog, currentFrame, condition.andThen(b -> !b));
 		if (start < 0)
 		{
 			return;
 		}
 		
-		start = findFrameWithRefCommand(currentLog, start, cmdList);
+		start = findFrameWithCondition(currentLog, start, condition);
 		if (start < 0)
 		{
 			return;
@@ -178,8 +168,8 @@ public class LogfileVisionCam extends ACam implements Runnable
 	}
 	
 	
-	private int findFrameWithRefCommand(final SSLGameLogReader currentLog, final int startFrame,
-			final List<SSL_Referee.Command> commands)
+	private int findFrameWithCondition(final SSLGameLogReader currentLog, final int startFrame,
+			final Function<SSL_Referee, Boolean> condition)
 	{
 		for (int frame = startFrame; frame < currentLog.getPackets().size(); frame++)
 		{
@@ -187,27 +177,7 @@ public class LogfileVisionCam extends ACam implements Runnable
 			if (entry.getRefereePacket().isPresent())
 			{
 				SSL_Referee ref = entry.getRefereePacket().get();
-				if (commands.contains(ref.getCommand()))
-				{
-					return frame;
-				}
-			}
-		}
-		
-		return -1;
-	}
-	
-	
-	private int findFrameExclRefCommand(final SSLGameLogReader currentLog, final int startFrame,
-			final List<SSL_Referee.Command> commands)
-	{
-		for (int frame = startFrame; frame < currentLog.getPackets().size(); frame++)
-		{
-			SSLGameLogfileEntry entry = currentLog.getPackets().get(frame);
-			if (entry.getRefereePacket().isPresent())
-			{
-				SSL_Referee ref = entry.getRefereePacket().get();
-				if (!commands.contains(ref.getCommand()))
+				if (condition.apply(ref))
 				{
 					return frame;
 				}
@@ -328,8 +298,16 @@ public class LogfileVisionCam extends ACam implements Runnable
 		
 		if (seekToRefCmdList != null)
 		{
-			seekForwardToRefCommand(currentLog, seekToRefCmdList);
+			Function<SSL_Referee, Boolean> condition = ref -> seekToRefCmdList.contains(ref.getCommand());
+			seekForwardTo(currentLog, condition);
 			seekToRefCmdList = null;
+		}
+		if (seekToGameEventList != null)
+		{
+			Function<SSL_Referee, Boolean> condition = ref -> ref.hasGameEvent()
+					&& seekToGameEventList.contains(ref.getGameEvent().getGameEventType());
+			seekForwardTo(currentLog, condition);
+			seekToGameEventList = null;
 		}
 		
 		if (doSteps != 0)
@@ -413,9 +391,6 @@ public class LogfileVisionCam extends ACam implements Runnable
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- deinit and stop ------------------------------------------------------
-	// --------------------------------------------------------------------------
 	@Override
 	public void stopModule()
 	{
@@ -437,14 +412,5 @@ public class LogfileVisionCam extends ACam implements Runnable
 		 * @param index
 		 */
 		void onNewLogfileEntry(SSLGameLogfileEntry e, int index);
-	}
-	
-	
-	/**
-	 * @return the currentFrame
-	 */
-	public int getCurrentFrame()
-	{
-		return currentFrame;
 	}
 }

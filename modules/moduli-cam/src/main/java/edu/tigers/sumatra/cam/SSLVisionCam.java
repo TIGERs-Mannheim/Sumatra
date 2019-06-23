@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.cam;
 
@@ -9,7 +9,6 @@ import java.net.DatagramPacket;
 import java.net.NetworkInterface;
 import java.nio.ByteBuffer;
 
-import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
 import com.github.g3force.configurable.ConfigRegistration;
@@ -17,8 +16,6 @@ import com.github.g3force.configurable.Configurable;
 import com.github.g3force.configurable.IConfigClient;
 import com.github.g3force.configurable.IConfigObserver;
 
-import edu.tigers.moduli.exceptions.InitModuleException;
-import edu.tigers.moduli.exceptions.StartModuleException;
 import edu.tigers.sumatra.MessagesRobocupSslWrapper.SSL_WrapperPacket;
 import edu.tigers.sumatra.cam.data.CamGeometry;
 import edu.tigers.sumatra.model.SumatraModel;
@@ -36,31 +33,25 @@ import edu.tigers.sumatra.network.NetworkUtility;
  */
 public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, IConfigObserver
 {
+	private static final Logger log = Logger.getLogger(SSLVisionCam.class.getName());
 	
-	private static final Logger log = Logger
-			.getLogger(SSLVisionCam.class.getName());
-	
-	// Constants
 	private static final int BUFFER_SIZE = 10000;
 	private final byte[] bufferArr = new byte[BUFFER_SIZE];
 	
-	// Connection
 	private Thread cam;
 	private IReceiver receiver;
-	
-	
 	private boolean expectIOE = false;
 	
-	// Translation
 	private final SSLVisionCamGeometryTranslator geometryTranslator = new SSLVisionCamGeometryTranslator();
 	
 	
-	@Configurable(spezis = { "LAB", "GRSIM", "ROBOCUP", "TISCH", "ANDRE" }, defValueSpezis = { "10006", "40102", "10006",
-			"10006" })
-	private int port = 10010;
+	@Configurable(defValue = "10006")
+	private int port = 10006;
+	
 	@Configurable(defValue = "224.5.23.2")
 	private String address = "224.5.23.2";
-	@Configurable(spezis = { "LAB", "GRSIM", "ROBOCUP", "ANDRE" }, defValue = "")
+	
+	@Configurable(comment = "Enter a network address to limit network to a certain network interface")
 	private String network = "";
 	
 	private NetworkInterface nif;
@@ -73,29 +64,15 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, I
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructor(s) -------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 * @param subnodeConfiguration
-	 */
-	public SSLVisionCam(final SubnodeConfiguration subnodeConfiguration)
-	{
-		super(subnodeConfiguration);
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- init and start -------------------------------------------------------
-	// --------------------------------------------------------------------------
 	@Override
-	public void initModule() throws InitModuleException
+	public void initModule()
 	{
+		// nothing to init
 	}
 	
 	
 	@Override
-	public void startModule() throws StartModuleException
+	public void startModule()
 	{
 		ConfigRegistration.applySpezis(this, "user",
 				SumatraModel.getInstance().getGlobalConfiguration().getString("environment"));
@@ -127,9 +104,6 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, I
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- receive and translate ------------------------------------------------
-	// --------------------------------------------------------------------------
 	@Override
 	public void run()
 	{
@@ -182,7 +156,12 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, I
 					continue;
 				}
 				
-				notifyNewVisionPacket(sslPacket);
+				// start with sending out the detection. It is most time critical
+				if (sslPacket.hasDetection())
+				{
+					timeSync.update(sslPacket.getDetection().getTSent());
+					notifyNewCameraFrame(sslPacket.getDetection(), timeSync);
+				}
 				
 				if (sslPacket.hasGeometry())
 				{
@@ -191,12 +170,8 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, I
 					notifyNewCameraCalibration(geometry);
 				}
 				
+				notifyNewVisionPacket(sslPacket);
 				
-				if (sslPacket.hasDetection())
-				{
-					timeSync.update(sslPacket.getDetection().getTSent());
-					notifyNewCameraFrame(sslPacket.getDetection(), timeSync);
-				}
 			} catch (final IOException err)
 			{
 				if (!expectIOE)
@@ -264,13 +239,7 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, I
 		if (cam != null)
 		{
 			stopModule();
-			try
-			{
-				startModule();
-			} catch (StartModuleException e)
-			{
-				log.error("Could not restart cam...", e);
-			}
+			startModule();
 		}
 	}
 	

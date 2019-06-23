@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.vector;
@@ -18,9 +18,20 @@ import com.sleepycat.persist.model.Persistent;
  * @author Gero
  */
 @Persistent
-public class Vector3f extends AVector3
+public final class Vector3f extends AVector3
 {
-	private final double	x;
+	/** Vector3f(1,0,0) */
+	public static final Vector3f X_AXIS = fromXYZ(1, 0, 0);
+	/** Vector3f(0,1,0) */
+	public static final Vector3f Y_AXIS = fromXYZ(0, 1, 0);
+	/** Vector3f(0,0,1) */
+	public static final Vector3f Z_AXIS = fromXYZ(0, 0, 1);
+	/** Vector3f(0,0,0) */
+	public static final Vector3f ZERO_VECTOR = fromXYZ(0, 0, 0);
+	/** Vector3f(NaN,NaN,NaN) */
+	public static final Vector3f UNINITIALIZED = fromXYZ(Double.NaN, Double.NaN, Double.NaN);
+	
+	private final double x;
 	private final double	y;
 	private final double	z;
 	
@@ -68,7 +79,7 @@ public class Vector3f extends AVector3
 	 * @param original vector to copy
 	 * @return new instance
 	 */
-	public static Vector3f copy(final IVector original)
+	public static Vector3f copy(final IVector3 original)
 	{
 		if (original.getNumDimensions() == 2)
 		{
@@ -97,7 +108,7 @@ public class Vector3f extends AVector3
 	
 	
 	@Override
-	public Vector3 getXYZVector()
+	public IVector3 getXYZVector()
 	{
 		return Vector3.copy(this);
 	}

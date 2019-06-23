@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Apr 5, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.remote.impl;
 
@@ -22,15 +17,8 @@ import edu.tigers.sumatra.math.vector.IVector2;
  */
 public class RemoteControlProtobufBuilder
 {
-	private int	nextMsgId	= 0;
-	
-	
-	/**
-	 * 
-	 */
-	public RemoteControlProtobufBuilder()
-	{
-	}
+	private static final String AUTO_REF_IMPL_ID = "TIGERs AutoRef";
+	private int nextMsgId = 0;
 	
 	
 	/**
@@ -41,7 +29,11 @@ public class RemoteControlProtobufBuilder
 	{
 		SSL_RefereeRemoteControlRequest.Builder reqBuilder = SSL_RefereeRemoteControlRequest.newBuilder();
 		reqBuilder.setMessageId(nextMsgId++);
-		
+		reqBuilder.setImplementationId(AUTO_REF_IMPL_ID);
+		if (cmd.getGameEvent() != null)
+		{
+			reqBuilder.setGameEvent(cmd.getGameEvent());
+		}
 		switch (cmd.getType())
 		{
 			case CARD:
@@ -50,6 +42,10 @@ public class RemoteControlProtobufBuilder
 			case COMMAND:
 				handleRegularCommand(cmd, reqBuilder);
 				break;
+			case GAME_EVENT_ONLY:
+				break;
+			default:
+				throw new IllegalStateException("unexpected type: " + cmd.getType());
 		}
 		return reqBuilder.build();
 	}
@@ -64,7 +60,8 @@ public class RemoteControlProtobufBuilder
 	}
 	
 	
-	private void handleRegularCommand(final RefboxRemoteCommand cmd, final SSL_RefereeRemoteControlRequest.Builder builder)
+	private void handleRegularCommand(final RefboxRemoteCommand cmd,
+			final SSL_RefereeRemoteControlRequest.Builder builder)
 	{
 		builder.setCommand(cmd.getCommand());
 		cmd.getKickPos().ifPresent(point -> setPoint(builder, point));

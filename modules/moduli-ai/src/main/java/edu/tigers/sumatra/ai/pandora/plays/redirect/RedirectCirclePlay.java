@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.redirect;
 
@@ -33,13 +33,16 @@ public class RedirectCirclePlay extends ARedirectPlay
 	
 	@Configurable(comment = "Center of the circle", defValue = "0.0;0.0")
 	private static IVector2 center = Vector2.fromXY(0, 0);
+
+	@Configurable(comment = "dist to center (radius) [mm]", defValue = "3000.0")
+	private static double distance = 3000;
 	
 	@Configurable(defValue = "false")
 	private static boolean receive = false;
 	
-	private static Map<Integer, Integer> map4 = new HashMap<Integer, Integer>();
-	private static Map<Integer, Integer> map6 = new HashMap<Integer, Integer>();
-	private static Map<Integer, Integer> map8 = new HashMap<Integer, Integer>();
+	private static Map<Integer, Integer> map4 = new HashMap<>();
+	private static Map<Integer, Integer> map6 = new HashMap<>();
+	private static Map<Integer, Integer> map8 = new HashMap<>();
 	static
 	{
 		map4.put(0, 2);
@@ -88,10 +91,10 @@ public class RedirectCirclePlay extends ARedirectPlay
 		double initialAngle = AngleMath.PI + 0.3;
 		initialAngle += ((double) counter / maxCounter) * (AngleMath.PI_TWO);
 		
-		List<IVector2> destinations = new ArrayList<IVector2>();
+		List<IVector2> destinations = new ArrayList<>();
 		for (int i = 0; i < getRoles().size(); i++)
 		{
-			destinations.add(center.addNew(Vector2.fromAngle(initialAngle + (angleStep * i)).scaleTo(getDistance())));
+			destinations.add(center.addNew(Vector2.fromAngle(initialAngle + (angleStep * i)).scaleTo(distance)));
 		}
 		return destinations;
 	}

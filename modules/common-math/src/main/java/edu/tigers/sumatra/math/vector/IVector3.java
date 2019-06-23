@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.vector;
@@ -18,6 +18,12 @@ import java.util.function.Function;
  */
 public interface IVector3 extends IVector
 {
+	/**
+	 * @return The Z part of the vector
+	 */
+	double z();
+	
+	
 	@Override
 	default int getNumDimensions()
 	{
@@ -25,16 +31,34 @@ public interface IVector3 extends IVector
 	}
 	
 	
-	@Override
-	Vector3 addNew(IVector vector);
+	/**
+	 * Adds 'this' and 'vector' and returns the result in a new object, while 'this' and 'vector' stay unaffected.
+	 *
+	 * @param vector
+	 * @return The result as a new object
+	 */
+	Vector3 addNew(IVector3 vector);
 	
 	
-	@Override
-	Vector3 subtractNew(IVector vector);
+	/**
+	 * Subtracts the given 'vector' from 'this' and returns the result in a new object, while 'this' and 'vector' stay
+	 * unaffected.
+	 *
+	 * @param vector
+	 * @return The result as a new object
+	 */
+	Vector3 subtractNew(IVector3 vector);
 	
 	
-	@Override
-	Vector3 multiplyNew(IVector vector);
+	/**
+	 * Multiplies each element of the given 'vector' with the corresponding element of 'this' and returns the result in a
+	 * new object, while 'this' and 'vector' stay
+	 * unaffected.
+	 *
+	 * @param vector
+	 * @return The result as a new object
+	 */
+	Vector3 multiplyNew(IVector3 vector);
 	
 	
 	@Override
@@ -51,6 +75,24 @@ public interface IVector3 extends IVector
 	
 	@Override
 	Vector3 applyNew(Function<Double, Double> function);
+	
+	
+	/**
+	 * Dot product.
+	 * 
+	 * @param vector
+	 * @return
+	 */
+	double dotNew(IVector3 vector);
+	
+	
+	/**
+	 * Cross product.
+	 * 
+	 * @param vector
+	 * @return
+	 */
+	IVector3 crossNew(final IVector3 vector);
 	
 	
 	/**

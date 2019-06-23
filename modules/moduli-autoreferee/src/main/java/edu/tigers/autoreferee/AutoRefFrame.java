@@ -1,12 +1,11 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-
-import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.autoreferee.engine.calc.PossibleGoalCalc.PossibleGoal;
 import edu.tigers.autoreferee.generic.BotPosition;
@@ -20,54 +19,28 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
 
 /**
- * @author "Lukas Magel"
+ * Implementation of {@link IAutoRefFrame}
  */
-@Persistent
 public class AutoRefFrame implements IAutoRefFrame
 {
-	
-	private final ShapeMap shapes;
-	private WorldFrameWrapper worldFrameWrapper;
+	private final ShapeMap shapes = new ShapeMap();
+	private final WorldFrameWrapper worldFrameWrapper;
 	private AutoRefFrame previousFrame;
 	
-	private BotPosition lastBotCloseToBall;
-	private BotPosition botLastTouchedBall;
-	private BotPosition botTouchedBall;
+	private List<BotPosition> botsLastTouchedBall = Collections.emptyList();
+	private List<BotPosition> botsTouchingBall = Collections.emptyList();
 	
-	private boolean isBallInsideField;
-	private TimedPosition ballLeftFieldPos;
+	private boolean isBallInsideField = true;
+	private TimedPosition ballLeftFieldPos = new TimedPosition();
 	private IVector2 lastStopBallPos;
-	
 	private List<GameState> stateHistory;
-	
 	private PossibleGoal possibleGoal;
 	
 	
-	/**
-	 * 
-	 */
-	@SuppressWarnings("unused")
-	private AutoRefFrame()
+	public AutoRefFrame(final AutoRefFrame previousFrame, final WorldFrameWrapper worldFrameWrapper)
 	{
-		shapes = new ShapeMap();
-	}
-	
-	
-	/**
-	 * @param previous
-	 * @param worldFrameWrapper
-	 */
-	public AutoRefFrame(final AutoRefFrame previous,
-			final WorldFrameWrapper worldFrameWrapper)
-	{
-		botLastTouchedBall = new BotPosition();
-		botTouchedBall = null;
-		previousFrame = previous;
+		this.previousFrame = previousFrame;
 		this.worldFrameWrapper = worldFrameWrapper;
-		shapes = new ShapeMap();
-		
-		ballLeftFieldPos = new TimedPosition();
-		isBallInsideField = true;
 	}
 	
 	
@@ -86,66 +59,38 @@ public class AutoRefFrame implements IAutoRefFrame
 	
 	
 	@Override
-	public BotPosition getBotLastTouchedBall()
+	public List<BotPosition> getBotsLastTouchedBall()
 	{
-		return botLastTouchedBall;
+		return botsLastTouchedBall;
 	}
 	
 	
-	/**
-	 * @param botLastTouchedBall
-	 */
-	public void setBotLastTouchedBall(final BotPosition botLastTouchedBall)
+	public void setBotsLastTouchedBall(final List<BotPosition> botLastTouchedBall)
 	{
-		this.botLastTouchedBall = botLastTouchedBall;
-	}
-	
-	
-	/**
-	 * @return the botTouchedBall
-	 */
-	@Override
-	public Optional<BotPosition> getBotTouchedBall()
-	{
-		return Optional.ofNullable(botTouchedBall);
-	}
-	
-	
-	/**
-	 * @param botTouchedBall the botTouchedBall to set
-	 */
-	public void setBotTouchedBall(final BotPosition botTouchedBall)
-	{
-		this.botTouchedBall = botTouchedBall;
+		this.botsLastTouchedBall = botLastTouchedBall;
 	}
 	
 	
 	@Override
-	public BotPosition getLastBotCloseToBall()
+	public List<BotPosition> getBotsTouchingBall()
 	{
-		return lastBotCloseToBall;
+		return botsTouchingBall;
 	}
 	
 	
-	/**
-	 * @param lastBotCloseToBall the lastBotCloseToBall to set
-	 */
-	public void setLastBotCloseToBall(final BotPosition lastBotCloseToBall)
+	public void setBotsTouchingBall(final List<BotPosition> botsTouchingBall)
 	{
-		this.lastBotCloseToBall = lastBotCloseToBall;
+		this.botsTouchingBall = botsTouchingBall;
 	}
 	
 	
 	@Override
-	public TimedPosition getBallLeftFieldPos()
+	public Optional<TimedPosition> getBallLeftFieldPos()
 	{
-		return ballLeftFieldPos;
+		return Optional.ofNullable(ballLeftFieldPos);
 	}
 	
 	
-	/**
-	 * @param getBallLeftFieldPos
-	 */
 	public void setBallLeftFieldPos(final TimedPosition getBallLeftFieldPos)
 	{
 		ballLeftFieldPos = getBallLeftFieldPos;
@@ -159,9 +104,6 @@ public class AutoRefFrame implements IAutoRefFrame
 	}
 	
 	
-	/**
-	 * @param value
-	 */
 	public void setBallInsideField(final boolean value)
 	{
 		isBallInsideField = value;
@@ -175,9 +117,6 @@ public class AutoRefFrame implements IAutoRefFrame
 	}
 	
 	
-	/**
-	 * @param pos
-	 */
 	public void setLastStopBallPosition(final IVector2 pos)
 	{
 		lastStopBallPos = pos;
@@ -205,9 +144,6 @@ public class AutoRefFrame implements IAutoRefFrame
 	}
 	
 	
-	/**
-	 * @param stateHistory the stateHistory to set
-	 */
 	public void setStateHistory(final List<GameState> stateHistory)
 	{
 		this.stateHistory = stateHistory;
@@ -235,9 +171,6 @@ public class AutoRefFrame implements IAutoRefFrame
 	}
 	
 	
-	/**
-	 * @return the possibleGoal
-	 */
 	@Override
 	public Optional<PossibleGoal> getPossibleGoal()
 	{
@@ -245,9 +178,6 @@ public class AutoRefFrame implements IAutoRefFrame
 	}
 	
 	
-	/**
-	 * @param possibleGoal the possibleGoal to set
-	 */
 	public void setPossibleGoal(final PossibleGoal possibleGoal)
 	{
 		this.possibleGoal = possibleGoal;

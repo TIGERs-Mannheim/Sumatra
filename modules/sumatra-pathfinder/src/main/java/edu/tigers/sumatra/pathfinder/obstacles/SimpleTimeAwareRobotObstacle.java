@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder.obstacles;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics2D;
 
 import com.sleepycat.persist.model.Persistent;
 
@@ -61,7 +62,7 @@ public class SimpleTimeAwareRobotObstacle implements IObstacle
 	@Override
 	public boolean isPointCollidingWithObstacle(final IVector2 point, final double t, final double margin)
 	{
-		IVector2 pos = tBot.getPosByTime(t);
+		IVector2 pos = tBot.getPosByTime(Math.min(t, 0.5));
 		ICircle circle = Circle.createCircle(pos, radius + margin + extraMargin);
 		return circle.isPointInShape(point);
 	}
@@ -98,12 +99,5 @@ public class SimpleTimeAwareRobotObstacle implements IObstacle
 	public void setColor(final Color color)
 	{
 		this.color = color;
-	}
-	
-	
-	@Override
-	public boolean isWorthBrakingFor()
-	{
-		return true;
 	}
 }

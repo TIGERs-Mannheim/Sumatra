@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Oct 24, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.view.main;
 
@@ -19,6 +14,7 @@ import edu.tigers.sumatra.components.IBasePanel;
  */
 public interface IStartStopPanel extends IBasePanel<IStartStopPanelObserver>
 {
+	
 	/**
 	 * @author Lukas Magel
 	 */
@@ -60,4 +56,10 @@ public interface IStartStopPanel extends IBasePanel<IStartStopPanelObserver>
 	 * @return
 	 */
 	AutoRefMode getModeSetting();
+	
+	
+	/**
+	 * @param mode
+	 */
+	void setModeSetting(AutoRefMode mode);
 }

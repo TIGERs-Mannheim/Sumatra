@@ -32,10 +32,12 @@ public enum EFeature
 	/** */
 	CHARGE_CAPS("Charge Caps", 0x0080),
 	/** */
-	KICKER_V2017("Kicker v2017", 0x0100);
+	KICKER_V2017("Kicker v2017", 0x0100),
+	/** Battery level is good */
+	ENERGETIC("Energetic", 0x0200);
 	
-	private final String	name;
-	private final int		id;
+	private final String name;
+	private final int id;
 	
 	
 	EFeature(final String name, final int id)

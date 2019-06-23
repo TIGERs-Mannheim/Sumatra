@@ -26,17 +26,4 @@ public abstract class AMoveBotSkill extends ABotSkill
 	 * @param kickerDribbler the kickerDribbler to set
 	 */
 	public abstract void setKickerDribbler(final KickerDribblerCommands kickerDribbler);
-	
-	
-	/**
-	 * @return
-	 */
-	public abstract EDataAcquisitionMode getDataAcquisitionMode();
-	
-	
-	/**
-	 * @param acqMode
-	 */
-	public abstract void setDataAcquisitionMode(final EDataAcquisitionMode acqMode);
-	
 }

@@ -1,23 +1,25 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Aug 14, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.views;
 
-import org.apache.log4j.Logger;
+import edu.tigers.moduli.listenerVariables.ModulesState;
 
 
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-// No need to hide constructor
-@SuppressWarnings("squid:S1118")
 public abstract class ASumatraViewPresenter implements ISumatraViewPresenter
 {
-	@SuppressWarnings("unused")
-	private static final Logger log = Logger.getLogger(ASumatraViewPresenter.class.getName());
+	@Override
+	public void onModuliStateChanged(ModulesState state)
+	{
+		if (state == ModulesState.ACTIVE)
+		{
+			onStart();
+		} else if (state == ModulesState.RESOLVED)
+		{
+			onStop();
+		}
+	}
 }

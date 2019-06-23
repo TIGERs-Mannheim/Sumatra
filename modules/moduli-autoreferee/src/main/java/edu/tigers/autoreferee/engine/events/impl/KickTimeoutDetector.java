@@ -1,10 +1,9 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.events.impl;
 
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -12,6 +11,7 @@ import edu.tigers.autoreferee.IAutoRefFrame;
 import edu.tigers.autoreferee.engine.FollowUpAction;
 import edu.tigers.autoreferee.engine.FollowUpAction.EActionType;
 import edu.tigers.autoreferee.engine.events.EGameEvent;
+import edu.tigers.autoreferee.engine.events.EGameEventDetectorType;
 import edu.tigers.autoreferee.engine.events.GameEvent;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
 import edu.tigers.sumatra.Referee.SSL_Referee.Command;
@@ -40,7 +40,7 @@ public class KickTimeoutDetector extends APreparingGameEventDetector
 	 */
 	public KickTimeoutDetector()
 	{
-		super(EnumSet.of(
+		super(EGameEventDetectorType.KICK_TIMEOUT, EnumSet.of(
 				EGameState.DIRECT_FREE, EGameState.INDIRECT_FREE, EGameState.KICKOFF));
 	}
 	
@@ -61,7 +61,7 @@ public class KickTimeoutDetector extends APreparingGameEventDetector
 	
 	
 	@Override
-	protected Optional<IGameEvent> doUpdate(final IAutoRefFrame frame, final List<IGameEvent> violations)
+	protected Optional<IGameEvent> doUpdate(final IAutoRefFrame frame)
 	{
 		IVector2 ballPos = frame.getWorldFrame().getBall().getPos();
 		ETeamColor attackingColor = frame.getGameState().getForTeam();

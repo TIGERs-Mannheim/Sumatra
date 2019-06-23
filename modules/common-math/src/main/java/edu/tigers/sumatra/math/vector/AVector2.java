@@ -11,7 +11,6 @@ import java.util.function.Function;
 
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
 
 
@@ -26,21 +25,6 @@ import edu.tigers.sumatra.math.SumatraMath;
 @Persistent(version = 1)
 public abstract class AVector2 extends AVector implements IVector2
 {
-	/** Vector2f(1,0) */
-	public static final IVector2 X_AXIS = Vector2f.fromXY(1, 0);
-	/** Vector2f(0,1) */
-	public static final IVector2 Y_AXIS = Vector2f.fromXY(0, 1);
-	/** Vector2f(0,0) */
-	public static final IVector2 ZERO_VECTOR = Vector2f.fromXY(0, 0);
-	
-	
-	@Override
-	public double z()
-	{
-		throw new IllegalAccessError("Vector has no z-part!");
-	}
-	
-	
 	/**
 	 * The String must be a pair of comma or space separated double values.
 	 * Additional spaces are considered
@@ -72,14 +56,14 @@ public abstract class AVector2 extends AVector implements IVector2
 	
 	
 	@Override
-	public synchronized double getAngle()
+	public double getAngle()
 	{
 		return VectorMath.getAngle(this);
 	}
 	
 	
 	@Override
-	public synchronized double getAngle(final double defAngle)
+	public double getAngle(final double defAngle)
 	{
 		if (isZeroVector())
 		{
@@ -90,7 +74,7 @@ public abstract class AVector2 extends AVector implements IVector2
 	
 	
 	@Override
-	public synchronized Vector2 addNew(final IVector vector)
+	public Vector2 addNew(final IVector2 vector)
 	{
 		final Vector2 result = Vector2.copy(this);
 		return result.add(vector);
@@ -98,7 +82,7 @@ public abstract class AVector2 extends AVector implements IVector2
 	
 	
 	@Override
-	public synchronized Vector2 subtractNew(final IVector vector)
+	public Vector2 subtractNew(final IVector2 vector)
 	{
 		final Vector2 result = Vector2.copy(this);
 		return result.subtract(vector);
@@ -106,18 +90,14 @@ public abstract class AVector2 extends AVector implements IVector2
 	
 	
 	@Override
-	public synchronized Vector2 multiplyNew(final double factor)
+	public Vector2 multiplyNew(final double factor)
 	{
-		final Vector2 result = Vector2.zero();
-		result.setX(x() * factor);
-		result.setY(y() * factor);
-		
-		return result;
+		return Vector2.fromXY(x() * factor, y() * factor);
 	}
 	
 	
 	@Override
-	public synchronized Vector2 multiplyNew(final IVector vector)
+	public Vector2 multiplyNew(final IVector2 vector)
 	{
 		return Vector2.fromXY(
 				x() * vector.x(),
@@ -126,7 +106,7 @@ public abstract class AVector2 extends AVector implements IVector2
 	
 	
 	@Override
-	public synchronized Vector2 scaleToNew(final double newLength)
+	public Vector2 scaleToNew(final double newLength)
 	{
 		final double oldLength = getLength2();
 		if (!SumatraMath.isZero(oldLength))
@@ -140,16 +120,16 @@ public abstract class AVector2 extends AVector implements IVector2
 	
 	
 	@Override
-	public synchronized Vector2 turnNew(final double angle)
+	public Vector2 turnNew(final double angle)
 	{
 		return Vector2.fromXY(
-				(x() * AngleMath.cos(angle)) - (y() * AngleMath.sin(angle)),
-				(y() * AngleMath.cos(angle)) + (x() * AngleMath.sin(angle)));
+				(x() * SumatraMath.cos(angle)) - (y() * SumatraMath.sin(angle)),
+				(y() * SumatraMath.cos(angle)) + (x() * SumatraMath.sin(angle)));
 	}
 	
 	
 	@Override
-	public synchronized Vector2 applyNew(final Function<Double, Double> function)
+	public Vector2 applyNew(final Function<Double, Double> function)
 	{
 		return Vector2.fromXY(
 				function.apply(x()),
@@ -158,24 +138,24 @@ public abstract class AVector2 extends AVector implements IVector2
 	
 	
 	@Override
-	public synchronized double scalarProduct(final IVector2 v)
+	public double scalarProduct(final IVector2 v)
 	{
 		return (x() * v.x()) + (y() * v.y());
 	}
 	
 	
 	@Override
-	public synchronized Vector2 turnToNew(final double angle)
+	public Vector2 turnToNew(final double angle)
 	{
 		final double len = getLength2();
-		final double yn = AngleMath.sin(angle) * len;
-		final double xn = AngleMath.cos(angle) * len;
+		final double yn = SumatraMath.sin(angle) * len;
+		final double xn = SumatraMath.cos(angle) * len;
 		return Vector2.fromXY(xn, yn);
 	}
 	
 	
 	@Override
-	public synchronized Vector2 normalizeNew()
+	public Vector2 normalizeNew()
 	{
 		if (isZeroVector())
 		{
@@ -187,28 +167,28 @@ public abstract class AVector2 extends AVector implements IVector2
 	
 	
 	@Override
-	public synchronized Vector2 absNew()
+	public Vector2 absNew()
 	{
 		return applyNew(Math::abs);
 	}
 	
 	
 	@Override
-	public synchronized Vector2 getNormalVector()
+	public Vector2 getNormalVector()
 	{
 		return Vector2.fromXY(y(), -x());
 	}
 	
 	
 	@Override
-	public synchronized boolean isVertical()
+	public boolean isVertical()
 	{
 		return SumatraMath.isZero(x()) && !SumatraMath.isZero(y());
 	}
 	
 	
 	@Override
-	public synchronized boolean isHorizontal()
+	public boolean isHorizontal()
 	{
 		return SumatraMath.isZero(y()) && !SumatraMath.isZero(x());
 	}

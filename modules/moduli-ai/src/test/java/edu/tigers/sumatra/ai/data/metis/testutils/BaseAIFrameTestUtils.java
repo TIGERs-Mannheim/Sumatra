@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.data.metis.testutils;
 
 import org.mockito.Mockito;
 
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ids.BotIDMap;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
@@ -25,8 +25,8 @@ public class BaseAIFrameTestUtils
 	 */
 	public static BaseAiFrame mockBaseAiFrameForWorldFrameID(final long idToSet)
 	{
-		SimpleWorldFrame simpleWorldFrame = new SimpleWorldFrame(new BotIDMap<>(), null, null, idToSet, 0);
-		WorldFrame worldFrame = new WorldFrame(simpleWorldFrame, EAiTeam.BLUE_PRIMARY, true);
+		SimpleWorldFrame simpleWorldFrame = new SimpleWorldFrame(new BotIDMap<>(), null, null, null, idToSet, 0);
+		WorldFrame worldFrame = new WorldFrame(simpleWorldFrame, EAiTeam.BLUE, true);
 		
 		BaseAiFrame baseAiFrame = Mockito.mock(BaseAiFrame.class);
 		Mockito.when(baseAiFrame.getWorldFrame()).thenReturn(worldFrame);

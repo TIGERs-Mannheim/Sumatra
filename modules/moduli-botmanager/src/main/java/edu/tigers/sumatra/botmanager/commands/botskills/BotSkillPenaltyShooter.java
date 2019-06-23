@@ -75,9 +75,10 @@ public class BotSkillPenaltyShooter extends ABotSkill
 	 * @param dribbleSpeed
 	 */
 	@SuppressWarnings("squid:S00107")
-	public BotSkillPenaltyShooter(double angle, double timeToShoot, double approachSpeed,
-			double rotationSpeed, double penaltyKickSpeed, IVector2 speedInTurn, double accMax, double accMaxW,
-			double jerkMax, double jerkMaxW, double dribbleSpeed)
+	public BotSkillPenaltyShooter(final double angle, final double timeToShoot, final double approachSpeed,
+			final double rotationSpeed, final double penaltyKickSpeed, final IVector2 speedInTurn, final double accMax,
+			final double accMaxW,
+			final double jerkMax, final double jerkMaxW, final double dribbleSpeed)
 	{
 		this();
 		setTimeToShoot(timeToShoot);
@@ -158,7 +159,7 @@ public class BotSkillPenaltyShooter extends ABotSkill
 	 * 
 	 * @param speed
 	 */
-	public void setSpeedInTurn(IVector2 speed)
+	public void setSpeedInTurn(final IVector2 speed)
 	{
 		speedInTurnX = (int) (speed.x() * 1e2);
 		speedInTurnY = (int) (speed.y() * 1e2);
@@ -177,7 +178,7 @@ public class BotSkillPenaltyShooter extends ABotSkill
 	}
 	
 	
-	public void setPenaltyKickSpeed(double penaltyKickSpeed)
+	public void setPenaltyKickSpeed(final double penaltyKickSpeed)
 	{
 		this.penaltyKickSpeed = (int) ((penaltyKickSpeed / 0.04) + 0.5);
 	}
@@ -201,13 +202,13 @@ public class BotSkillPenaltyShooter extends ABotSkill
 	}
 	
 	
-	public void setTargetAngle(double targetAngle)
+	public void setTargetAngle(final double targetAngle)
 	{
 		this.targetAngle = (int) (1e3 * targetAngle);
 	}
 	
 	
-	public void setApproachSpeed(double approachSpeed)
+	public void setApproachSpeed(final double approachSpeed)
 	{
 		this.approachSpeed = (int) (1e3 * approachSpeed);
 	}
@@ -356,7 +357,7 @@ public class BotSkillPenaltyShooter extends ABotSkill
 		 * @param accMax
 		 * @return
 		 */
-		public Builder accMax(double accMax)
+		public Builder accMax(final double accMax)
 		{
 			this.accMax = accMax;
 			return this;
@@ -369,7 +370,7 @@ public class BotSkillPenaltyShooter extends ABotSkill
 		 * @param accMaxW
 		 * @return
 		 */
-		public Builder accMaxW(double accMaxW)
+		public Builder accMaxW(final double accMaxW)
 		{
 			this.accMaxW = accMaxW;
 			return this;
@@ -382,7 +383,7 @@ public class BotSkillPenaltyShooter extends ABotSkill
 		 * @param jerkMax
 		 * @return
 		 */
-		public Builder jerkMax(double jerkMax)
+		public Builder jerkMax(final double jerkMax)
 		{
 			this.jerkMax = jerkMax;
 			return this;
@@ -395,7 +396,7 @@ public class BotSkillPenaltyShooter extends ABotSkill
 		 * @param jerkMaxW
 		 * @return
 		 */
-		public Builder jerkMaxW(double jerkMaxW)
+		public Builder jerkMaxW(final double jerkMaxW)
 		{
 			this.jerkMaxW = jerkMaxW;
 			return this;
@@ -404,13 +405,10 @@ public class BotSkillPenaltyShooter extends ABotSkill
 		
 		/**
 		 * validate
-		 * 
-		 * @return
 		 */
 		private void validate()
 		{
 			Validate.isTrue(timeToShoot > 0);
-			Validate.isTrue(targetAngle > 0);
 			Validate.isTrue(approachSpeed > 0);
 			Validate.isTrue(abs(rotationSpeed) > 0);
 			Validate.notNull(speedInTurn);

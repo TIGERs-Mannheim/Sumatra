@@ -1,0 +1,28 @@
+# The Sumatra Trainer Server Manual
+This server manages different Sumatra-Configurations and provide them to the clients, whose will run a simulation with a configuration and send the results back to this server.
+The results are currently stored inside the docker container.
+Different sets of sumatra configurations can be send to the server via the REST Interface.
+
+## The REST-Interface
+BASE_URL: sumatra-server-trainer:8080/sumatra/sumatra-trainer-server/
+BASE_URL/client/new POST <- generate a new client id
+BASE_URL/training/result POST <- accept an ResultSet, which contains the results
+BASE_URL/training-set/get/{id} GET <- get the current TrainingSet for client {id}
+BASE_URL/training-set/new POST <- add a TrainingSet, which will be assigned to a client later
+
+## Results
+The Results can be found  within the docker image under /modules/sumatra-trainer-server/data
+There each result within the ResultSet is stored in a separate file.
+
+## Build sumatra
+mvn clean install -f ../../ -DskipTests
+
+## Build the image
+NOTE: a docker deamon has to run on the local machine to build the image
+mvn docker:build
+
+## (Only once) Create a network 
+docker network create sumatra-trainer-net
+
+## Run the sumatra-trainer-server with docker
+docker run --name sumatra-server-trainer --network net -p 8080:8080 sumatra-trainer-server

@@ -4,160 +4,95 @@
   -->
 
 <centralSoftware>
-    <moduliPath></moduliPath>
-
     <globalConfiguration>
         <environment>ROBOCUP</environment>
     </globalConfiguration>
 
 
-    <module id="cam" type="ACam">
+    <module id="edu.tigers.sumatra.cam.ACam">
         <implementation>edu.tigers.sumatra.cam.SSLVisionCam</implementation>
-
-        <properties>
-        </properties>
     </module>
 
-    <module id="geometryUpdater" type="GeometryUpdater">
-        <implementation>edu.tigers.sumatra.geometry.GeometryUpdater</implementation>
-
-        <properties>
-        </properties>
-
-        <dependency>cam</dependency>
+    <module id="edu.tigers.sumatra.geometry.GeometryUpdater">
+        <dependency>edu.tigers.sumatra.cam.ACam</dependency>
     </module>
 
 
-    <module id="visionFilter" type="AVisionFilter">
+    <module id="edu.tigers.sumatra.vision.AVisionFilter">
         <implementation>edu.tigers.sumatra.vision.VisionFilterImpl</implementation>
 
-        <properties>
-        </properties>
-
-        <dependency>referee</dependency>
-        <dependency>cam</dependency>
-        <dependency>timer</dependency>
-        <dependency>botparams</dependency>
+        <dependency>edu.tigers.sumatra.referee.AReferee</dependency>
+        <dependency>edu.tigers.sumatra.cam.ACam</dependency>
+        <dependency>edu.tigers.sumatra.timer.ATimer</dependency>
+        <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
     </module>
 
 
-    <module id="worldpredictor" type="AWorldpredictor">
+    <module id="edu.tigers.sumatra.wp.AWorldPredictor">
         <implementation>edu.tigers.sumatra.wp.WorldInfoCollector</implementation>
 
-        <properties>
-        </properties>
-
-        <dependency>cam</dependency>
-        <dependency>timer</dependency>
-        <dependency>botparams</dependency>
+        <dependency>edu.tigers.sumatra.cam.ACam</dependency>
+        <dependency>edu.tigers.sumatra.timer.ATimer</dependency>
+        <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
     </module>
 
 
-    <module id="referee" type="AReferee">
-        <implementation>edu.tigers.sumatra.referee.Referee
-        </implementation>
-
-        <properties>
-        </properties>
+    <module id="edu.tigers.sumatra.referee.AReferee">
+        <implementation>edu.tigers.sumatra.referee.Referee</implementation>
     </module>
 
 
-    <module id="botmanager" type="ABotManager">
-        <implementation>edu.tigers.sumatra.botmanager.BotManager
-        </implementation>
+    <module id="edu.tigers.sumatra.botmanager.ABotManager">
+        <implementation>edu.tigers.sumatra.botmanager.BotManager</implementation>
 
         <properties>
             <basestation-impl>edu.tigers.sumatra.botmanager.basestation.TigersBaseStation
             </basestation-impl>
         </properties>
 
-        <dependency>botparams</dependency>
+        <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
     </module>
 
 
-    <module id="skillsystem" type="ASkillSystem">
-        <implementation>
-            edu.tigers.sumatra.skillsystem.GenericSkillSystem
-        </implementation>
+    <module id="edu.tigers.sumatra.skillsystem.ASkillSystem">
+        <implementation>edu.tigers.sumatra.skillsystem.GenericSkillSystem</implementation>
 
-        <properties>
-        </properties>
-
-        <dependency>botmanager</dependency>
+        <dependency>edu.tigers.sumatra.botmanager.ABotManager</dependency>
     </module>
 
 
-    <module id="ai" type="AAgent">
-        <implementation>
-            edu.tigers.sumatra.ai.Agent
-        </implementation>
+    <module id="edu.tigers.sumatra.ai.AAgent">
+        <implementation>edu.tigers.sumatra.ai.Agent</implementation>
 
-        <properties>
-        </properties>
-
-        <dependency>skillsystem</dependency>
-        <dependency>worldpredictor</dependency>
-        <dependency>timer</dependency>
+        <dependency>edu.tigers.sumatra.skillsystem.ASkillSystem</dependency>
+        <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
+        <dependency>edu.tigers.sumatra.timer.ATimer</dependency>
     </module>
 
 
-    <module id="timer" type="ATimer">
-        <implementation>edu.tigers.sumatra.timer.SumatraTimer
-        </implementation>
-
-        <properties>
-        </properties>
+    <module id="edu.tigers.sumatra.timer.ATimer">
+        <implementation>edu.tigers.sumatra.timer.SumatraTimer</implementation>
     </module>
 
-    <module id="recorder" type="RecordManager">
-        <implementation>edu.tigers.sumatra.persistence.RecordManager
-        </implementation>
-
-        <properties>
-        </properties>
+    <module id="edu.tigers.sumatra.persistence.RecordManager">
+        <implementation>edu.tigers.sumatra.ai.AiRecordManager</implementation>
     </module>
 
-    <module id="gui_notifications_controller" type="GuiNotificationsController">
-        <implementation>edu.tigers.sumatra.guinotifications.GuiNotificationsController
-        </implementation>
+    <module id="edu.tigers.sumatra.guinotifications.GuiNotificationsController"/>
 
-        <properties>
-        </properties>
-    </module>
+    <module id="edu.tigers.sumatra.gamenotifications.GameNotificationController"/>
 
-    <module id="game_notification_controller" type="GameNotificationController">
-        <implementation>edu.tigers.sumatra.gamenotifications.GameNotificationController
-        </implementation>
-
-        <properties>
-        </properties>
-    </module>
-
-    <module id="telegram_notification_controller" type="ATelegramNotificationController">
+    <module id="edu.tigers.sumatra.telegram.ATelegramNotificationController">
         <implementation>edu.tigers.sumatra.telegram.TelegramNotificationController</implementation>
 
-        <properties>
-        </properties>
-
-        <dependency>referee</dependency>
-        <dependency>game_notification_controller</dependency>
+        <dependency>edu.tigers.sumatra.referee.AReferee</dependency>
+        <dependency>edu.tigers.sumatra.gamenotifications.GameNotificationController</dependency>
     </module>
 
-    <module id="botparams" type="BotParams">
-        <implementation>edu.tigers.sumatra.botparams.BotParamsManager
-        </implementation>
+    <module id="edu.tigers.sumatra.botparams.BotParamsManager"/>
 
-        <properties>
-        </properties>
-    </module>
-
-    <module id="movementobserver" type="MovementObserver">
-        <implementation>edu.tigers.sumatra.movementlimits.MovementObserverModule</implementation>
-
-        <properties>
-        </properties>
-
-        <dependency>worldpredictor</dependency>
-        <dependency>botparams</dependency>
+    <module id="edu.tigers.sumatra.movementlimits.MovementObserverModule">
+        <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
+        <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
     </module>
 </centralSoftware>

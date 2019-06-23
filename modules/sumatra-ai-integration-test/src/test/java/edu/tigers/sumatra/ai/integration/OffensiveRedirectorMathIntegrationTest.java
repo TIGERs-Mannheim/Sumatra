@@ -1,27 +1,28 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.integration;
 
-import edu.tigers.sumatra.ai.math.OffensiveRedirectorMath;
-import edu.tigers.sumatra.ai.metis.support.IPassTarget;
-import edu.tigers.sumatra.ai.pandora.roles.offense.states.kickstate.ERedirectAction;
-import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.vector.AVector2;
-import edu.tigers.sumatra.referee.data.GameState;
-import edu.tigers.sumatra.wp.data.DynamicPosition;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
-import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.Test;
+
+import edu.tigers.sumatra.ai.metis.general.ChipKickReasonableDecider;
+import edu.tigers.sumatra.ai.metis.offense.OffensiveRedirectorMath;
+import edu.tigers.sumatra.ai.metis.support.IPassTarget;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.referee.data.GameState;
+import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
 /**
@@ -67,6 +68,58 @@ public class OffensiveRedirectorMathIntegrationTest extends AAiIntegrationTest
 	}
 	
 	
+	@Test
+	public void testIsChipKickRequired() throws IOException
+	{
+		loadSnapshot("snapshots/offensiveIsChipKickRequired1.snap");
+		preTest();
+		
+		IVector2 source = getAthenaAiFrame().getWorldFrame().getBall().getPos();
+		IVector2 shootTarget = Vector2.fromXY(0, 0);
+		ChipKickReasonableDecider chipDecider = new ChipKickReasonableDecider(source,
+				shootTarget,
+				getMetisAiFrame().getWorldFrame().getBots().values(),
+				5.0);
+		
+		boolean isChipKickRequired = chipDecider.isChipKickReasonable();
+		// 2 bots in the path, decent vel -> chip should be required
+		assertThat(isChipKickRequired).isTrue();
+		
+		source = getAthenaAiFrame().getWorldFrame().getBall().getPos();
+		shootTarget = Vector2.fromXY(0, 0);
+		chipDecider = new ChipKickReasonableDecider(source,
+				shootTarget,
+				getMetisAiFrame().getWorldFrame().getBots().values(),
+				2.0);
+		isChipKickRequired = chipDecider.isChipKickReasonable();
+		// 2 bots in the path, but speed to slow to overchip -> should be false
+		assertThat(isChipKickRequired).isFalse();
+		
+		shootTarget = Vector2.fromXY(3500, 2000);
+		source = getAthenaAiFrame().getWorldFrame().getBall().getPos();
+		chipDecider = new ChipKickReasonableDecider(source,
+				shootTarget,
+				getMetisAiFrame().getWorldFrame().getBots().values(),
+				5.0);
+		isChipKickRequired = chipDecider.isChipKickReasonable();
+		// path to target is free, no chip needed
+		assertThat(isChipKickRequired).isFalse();
+		
+		shootTarget = Geometry.getGoalTheir().getCenter();
+		source = getAthenaAiFrame().getWorldFrame().getBall().getPos();
+		chipDecider = new ChipKickReasonableDecider(source,
+				shootTarget,
+				getMetisAiFrame().getWorldFrame().getBots().values(),
+				5.0);
+		isChipKickRequired = chipDecider.isChipKickReasonable();
+		// path to target is free, no chip needed
+		assertThat(isChipKickRequired).isFalse();
+		
+		assertNoErrorLog();
+		assertNoWarnLog();
+	}
+	
+	
 	private Optional<IPassTarget> calcReceiver()
 	{
 		ITrackedBot sender = getAthenaAiFrame().getWorldFrame().getTiger(BotID.createBotId(1, ETeamColor.YELLOW));
@@ -77,7 +130,7 @@ public class OffensiveRedirectorMathIntegrationTest extends AAiIntegrationTest
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 		
 		return redirectorMath.calcBestRedirectPassTarget(getAthenaAiFrame().getWorldFrame(), botMap,
-				sender, getAthenaAiFrame().getTacticalField(), null);
+				sender, getAthenaAiFrame().getTacticalField(), null, getAthenaAiFrame());
 	}
 	
 	
@@ -87,37 +140,14 @@ public class OffensiveRedirectorMathIntegrationTest extends AAiIntegrationTest
 		nextFrame();
 		nextFrame();
 		nextFrame();
+		nextFrame();
+		nextFrame();
+		nextFrame();
+		nextFrame();
+		nextFrame();
+		nextFrame();
+		nextFrame();
+		nextFrame();
+		nextFrame();
 	}
-	
-	
-	@Test
-	public void checkStateSwitches() throws IOException
-	{
-		loadSnapshot("snapshots/offensiveStateSwitches1.snap");
-		preTest();
-		
-		ITrackedBot myBot = getAthenaAiFrame().getWorldFrame().getTiger(BotID.createBotId(1, ETeamColor.YELLOW));
-		Optional<IPassTarget> passTarget = calcReceiver();
-		
-		IPassTarget nonOptPassTarget = null;
-		if (passTarget.isPresent())
-		{
-			nonOptPassTarget = passTarget.get();
-		}
-
-		ERedirectAction action = redirectorMath.checkStateSwitches(getAthenaAiFrame(),
-				ERedirectAction.CATCH, myBot,
-				myBot.getPos(), new DynamicPosition(Geometry.getGoalTheir().getCenter()),
-				nonOptPassTarget, AVector2.ZERO_VECTOR);
-
-		// check for toggling in this situation, receiver has to CATCH in this situation
-		assertThat(action).isEqualTo(ERedirectAction.CATCH);
-		nextFrame();
-		assertThat(action).isEqualTo(ERedirectAction.CATCH);
-		nextFrame();
-		assertThat(action).isEqualTo(ERedirectAction.CATCH);
-		nextFrame();
-		assertThat(action).isEqualTo(ERedirectAction.CATCH);
-	}
-	
 }

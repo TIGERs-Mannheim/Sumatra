@@ -1,16 +1,13 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 26, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.events;
 
+import java.util.List;
 import java.util.Optional;
 
 import edu.tigers.autoreferee.engine.FollowUpAction;
+import edu.tigers.sumatra.MessagesRobocupSslGameEvent.SSL_Referee_Game_Event;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 
@@ -24,12 +21,6 @@ public interface IGameEvent
 	 * @return
 	 */
 	EGameEvent getType();
-	
-	
-	/**
-	 * @return
-	 */
-	EEventCategory getCategory();
 	
 	
 	/**
@@ -53,7 +44,7 @@ public interface IGameEvent
 	/**
 	 * @return the cardPenalty
 	 */
-	Optional<CardPenalty> getCardPenalty();
+	List<CardPenalty> getCardPenalties();
 	
 	
 	/**
@@ -66,4 +57,10 @@ public interface IGameEvent
 	 * @return
 	 */
 	FollowUpAction getFollowUpAction();
+	
+	
+	/**
+	 * @return the protobuf data format of this game event
+	 */
+	SSL_Referee_Game_Event toProtobuf();
 }

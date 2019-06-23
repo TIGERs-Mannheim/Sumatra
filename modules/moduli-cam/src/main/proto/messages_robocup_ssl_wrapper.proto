@@ -1,3 +1,4 @@
+syntax = "proto2";
 package edu.tigers.sumatra;
 
 import "messages_robocup_ssl_detection.proto";

@@ -1,17 +1,11 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 1, 2013
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.visualizer;
 
+import java.util.Arrays;
+
 import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.visualizer.view.EVisualizerOptions;
-import edu.tigers.sumatra.visualizer.view.IOptionsPanelObserver;
-import edu.tigers.sumatra.visualizer.view.field.IFieldPanel;
 
 
 /**
@@ -21,17 +15,8 @@ import edu.tigers.sumatra.visualizer.view.field.IFieldPanel;
  */
 public class OptionsPanelPresenter implements IOptionsPanelObserver
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	private final IFieldPanel	fieldPanel;
-	private boolean				saveOptions	= true;
-														
-														
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
+	private final IFieldPanel fieldPanel;
+	private boolean saveOptions = true;
 	
 	
 	/**
@@ -41,11 +26,6 @@ public class OptionsPanelPresenter implements IOptionsPanelObserver
 	{
 		this.fieldPanel = fieldPanel;
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	
 	/**
@@ -80,28 +60,25 @@ public class OptionsPanelPresenter implements IOptionsPanelObserver
 	 */
 	public void reactOnActionCommand(final String actionCommand, final boolean isSelected)
 	{
-		try
+		if (actionCommand.startsWith(VisualizerOptionsMenu.SOURCE_PREFIX))
+		{
+			String layer = actionCommand.replace(VisualizerOptionsMenu.SOURCE_PREFIX, "");
+			fieldPanel.setSourceVisibility(layer, isSelected);
+		} else if (isVisualizerOption(actionCommand))
 		{
 			EVisualizerOptions option = EVisualizerOptions.valueOf(actionCommand);
 			fieldPanel.onOptionChanged(option, isSelected);
-		} catch (IllegalArgumentException err)
+		} else
 		{
-			fieldPanel.setLayerVisiblility(actionCommand, isSelected);
+			fieldPanel.setShapeLayerVisibility(actionCommand, isSelected);
 		}
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	/**
-	 * @return the saveOptions
-	 */
-	public final boolean isSaveOptions()
+	private boolean isVisualizerOption(String actionCommand)
 	{
-		return saveOptions;
+		return Arrays.stream(EVisualizerOptions.values()).map(Enum::name)
+				.anyMatch(actionCommand::equals);
 	}
 	
 	
@@ -112,6 +89,4 @@ public class OptionsPanelPresenter implements IOptionsPanelObserver
 	{
 		this.saveOptions = saveOptions;
 	}
-	
-	
 }

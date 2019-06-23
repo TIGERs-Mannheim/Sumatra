@@ -10,6 +10,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 
+import edu.tigers.sumatra.geometry.RuleConstraints;
 import org.junit.Test;
 
 import edu.tigers.sumatra.geometry.Geometry;
@@ -17,11 +18,10 @@ import edu.tigers.sumatra.geometry.IPenaltyArea;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.rectangle.Rectangle;
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.VectorMath;
-import edu.tigers.sumatra.referee.TeamConfig;
 
 
 /**
@@ -40,7 +40,7 @@ public class AutoRefMathTest
 		List<IVector2> corners = field.getCorners();
 		List<IVector2> closerCorners = field.withMargin(-AutoRefMath.THROW_IN_DISTANCE).getCorners();
 		
-		Rectangle smallRect = Rectangle.fromCenter(AVector2.ZERO_VECTOR, 5, 5);
+		Rectangle smallRect = Rectangle.fromCenter(Vector2f.ZERO_VECTOR, 5, 5);
 		List<IVector2> smallCorners = smallRect.getCorners();
 		
 		for (int i = 0; i < 4; i++)
@@ -62,7 +62,7 @@ public class AutoRefMathTest
 		List<IVector2> closerCorners = field
 				.withMarginXy(-AutoRefMath.GOAL_KICK_DISTANCE, -AutoRefMath.THROW_IN_DISTANCE)
 				.getCorners();
-		Rectangle smallRect = Rectangle.fromCenter(AVector2.ZERO_VECTOR, 5, 5);
+		Rectangle smallRect = Rectangle.fromCenter(Vector2f.ZERO_VECTOR, 5, 5);
 		List<IVector2> smallCorners = smallRect.getCorners();
 		
 		for (int i = 0; i < 4; i++)
@@ -99,11 +99,11 @@ public class AutoRefMathTest
 	@Test
 	public void testPositionInPenaltyKickArea()
 	{
-		ETeamColor leftTeam = TeamConfig.getLeftTeam();
+		ETeamColor leftTeam = Geometry.getNegativeHalfTeam();
 		ETeamColor rightTeam = leftTeam.opposite();
 		
 		double maxX = Geometry.getPenaltyMarkTheir().x()
-				- Geometry.getDistancePenaltyMarkToPenaltyLine();
+				- RuleConstraints.getDistancePenaltyMarkToPenaltyLine();
 		double margin = 10.0d;
 		IVector2 posInside = Vector2.fromXY(maxX + (margin / 2.0d), 0);
 		IVector2 posOutside = Vector2.fromXY(maxX - (margin / 2.0d), 0);

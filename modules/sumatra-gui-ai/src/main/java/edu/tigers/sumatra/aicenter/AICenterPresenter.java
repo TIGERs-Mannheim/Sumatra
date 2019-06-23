@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.aicenter;
@@ -10,19 +10,14 @@ import java.util.Optional;
 
 import javax.swing.SwingUtilities;
 
-import org.apache.log4j.Logger;
-
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
-import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.ai.AAgent;
+import edu.tigers.sumatra.ai.AIInfoFrame;
 import edu.tigers.sumatra.ai.Agent;
 import edu.tigers.sumatra.ai.Ai;
 import edu.tigers.sumatra.ai.IAIObserver;
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
-import edu.tigers.sumatra.ai.data.EAIControlState;
-import edu.tigers.sumatra.ai.data.frames.AIInfoFrame;
-import edu.tigers.sumatra.ai.data.frames.VisualizationFrame;
-import edu.tigers.sumatra.ai.lachesis.RoleFinderInfo;
+import edu.tigers.sumatra.ai.athena.EAIControlState;
+import edu.tigers.sumatra.ai.athena.roleassigner.RoleMapping;
 import edu.tigers.sumatra.ai.metis.ECalculator;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
@@ -48,10 +43,8 @@ import edu.tigers.sumatra.views.ISumatraView;
  */
 public class AICenterPresenter extends ASumatraViewPresenter implements ILookAndFeelStateObserver
 {
-	private static final Logger log = Logger.getLogger(AICenterPresenter.class.getName());
-	
 	private Agent agent;
-	private AICenterPanel aiCenterPanel = null;
+	private final AICenterPanel aiCenterPanel = new AICenterPanel();
 	private final AiObserver aiObserver = new AiObserver();
 	
 	
@@ -60,9 +53,6 @@ public class AICenterPresenter extends ASumatraViewPresenter implements ILookAnd
 	 */
 	public AICenterPresenter()
 	{
-		aiCenterPanel = new AICenterPanel();
-		
-		
 		for (EAiTeam team : EAiTeam.values())
 		{
 			GuiFeedbackObserver guiFeedbackObserver = new GuiFeedbackObserver(team);
@@ -89,33 +79,13 @@ public class AICenterPresenter extends ASumatraViewPresenter implements ILookAnd
 	
 	
 	@Override
-	public void onModuliStateChanged(final ModulesState state)
+	public void onStop()
 	{
-		switch (state)
+		if (SumatraModel.getInstance().isModuleLoaded(AAgent.class))
 		{
-			case ACTIVE:
-				start();
-				break;
-			case RESOLVED:
-				stop();
-				break;
-			case NOT_LOADED:
-			default:
-				break;
-		}
-	}
-	
-	
-	private void stop()
-	{
-		try
-		{
-			agent = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
+			agent = (Agent) SumatraModel.getInstance().getModule(AAgent.class);
 			agent.removeVisObserver(aiObserver);
 			agent.removeObserver(aiObserver);
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("Could not get agent module", err);
 		}
 		
 		for (EAiTeam team : EAiTeam.values())
@@ -127,16 +97,14 @@ public class AICenterPresenter extends ASumatraViewPresenter implements ILookAnd
 	}
 	
 	
-	private void start()
+	@Override
+	public void onStart()
 	{
-		try
+		if (SumatraModel.getInstance().isModuleLoaded(AAgent.class))
 		{
-			agent = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
+			agent = (Agent) SumatraModel.getInstance().getModule(AAgent.class);
 			agent.addVisObserver(aiObserver);
 			agent.addObserver(aiObserver);
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("Could not get agent module", err);
 		}
 		
 		for (EAiTeam team : EAiTeam.values())
@@ -151,13 +119,16 @@ public class AICenterPresenter extends ASumatraViewPresenter implements ILookAnd
 	
 	private void updateAiControlStateForTeam(EAiTeam team)
 	{
-		Optional<Ai> ai = agent.getAi(team);
-		if (ai.isPresent())
+		if (agent != null)
 		{
-			aiCenterPanel.setAiControlStateForAi(ai.get().getAthena().getControlState(), team);
-		} else
-		{
-			aiCenterPanel.setAiControlStateForAi(EAIControlState.OFF, team);
+			Optional<Ai> ai = agent.getAi(team);
+			if (ai.isPresent())
+			{
+				aiCenterPanel.setAiControlStateForAi(ai.get().getAthena().getControlState(), team);
+			} else
+			{
+				aiCenterPanel.setAiControlStateForAi(EAIControlState.OFF, team);
+			}
 		}
 	}
 	
@@ -204,37 +175,10 @@ public class AICenterPresenter extends ASumatraViewPresenter implements ILookAnd
 		
 		
 		@Override
-		public void addPlay(final APlay play)
+		public void addRole(final ARole role, final int botId)
 		{
-			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().addPlay(play));
-		}
-		
-		
-		@Override
-		public void removePlay(final APlay play)
-		{
-			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().removePlay(play));
-		}
-		
-		
-		@Override
-		public void addRoles2Play(final APlay play, final int numRoles)
-		{
-			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().addRoles2Play(play, numRoles));
-		}
-		
-		
-		@Override
-		public void removeRolesFromPlay(final APlay play, final int numRoles)
-		{
-			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().removeRolesFromPlay(play, numRoles));
-		}
-		
-		
-		@Override
-		public void addRole(final ARole role, final BotID botId)
-		{
-			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().addRole(role, botId));
+			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().addRole(role,
+					BotID.createBotId(botId, ai.getAiTeam().getTeamColor())));
 		}
 		
 		
@@ -242,6 +186,13 @@ public class AICenterPresenter extends ASumatraViewPresenter implements ILookAnd
 		public void removeRole(final ARole role)
 		{
 			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().removeRole(role));
+		}
+		
+		
+		@Override
+		public void clearRoles()
+		{
+			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().clearRoles());
 		}
 		
 		
@@ -258,19 +209,19 @@ public class AICenterPresenter extends ASumatraViewPresenter implements ILookAnd
 		
 		
 		@Override
-		public void onNewRoleFinderInfos(final Map<EPlay, RoleFinderInfo> infos)
+		public void onNewRoleMapping(final Map<EPlay, RoleMapping> infos)
 		{
-			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().getRoleFinderInfos().clear());
-			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().getRoleFinderInfos().putAll(infos));
+			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().getRoleMapping().clear());
+			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().getRoleMapping().putAll(infos));
 		}
 		
 		
 		@Override
-		public void onNewRoleFinderUseAiFlags(final Map<EPlay, Boolean> overrides)
+		public void onNewUseAiFlags(final Map<EPlay, Boolean> useAiFlags)
 		{
-			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().getRoleFinderUseAiFlags().clear());
+			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().getUseAiFlags().clear());
 			getAI().ifPresent(
-					ai -> ai.getAthena().getAthenaAdapter().getAiControl().getRoleFinderUseAiFlags().putAll(overrides));
+					ai -> ai.getAthena().getAthenaAdapter().getAiControl().getUseAiFlags().putAll(useAiFlags));
 		}
 		
 		
@@ -281,26 +232,8 @@ public class AICenterPresenter extends ASumatraViewPresenter implements ILookAnd
 		}
 	}
 	
-	
-	/**
-	 * Update with latest frame
-	 * 
-	 * @param frame
-	 */
-	public void update(VisualizationFrame frame)
-	{
-		aiCenterPanel.getAthenaPanelForAi(frame.getAiTeam()).updateVisualizationFrame(frame);
-	}
-	
 	private class AiObserver implements IVisualizationFrameObserver, IAIObserver
 	{
-		@Override
-		public void onNewVisualizationFrame(final VisualizationFrame frame)
-		{
-			update(frame);
-		}
-		
-		
 		@Override
 		public void onNewAIInfoFrame(final AIInfoFrame lastFrame)
 		{

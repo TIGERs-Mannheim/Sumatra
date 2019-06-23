@@ -1,7 +1,0 @@
-package edu.tigers.sumatra;
-
-import "radio_protocol_command.proto";
-
-message RadioProtocolWrapper {
-  repeated RadioProtocolCommand command = 1;
-}

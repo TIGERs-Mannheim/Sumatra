@@ -1,0 +1,15 @@
+syntax = "proto2";
+package edu.tigers.sumatra.proto;
+
+option java_package = "edu.tigers.sumatra.proto";
+option java_outer_classname = "ParamInstanceProtos";
+
+message ParamInstance {
+	required string name = 1;
+	repeated Param params = 2;
+}
+
+message Param {
+	required string name = 1;
+	required string value = 2;
+}

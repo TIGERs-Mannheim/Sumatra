@@ -1,21 +1,16 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jun 29, 2016
- * Author(s): Phillipp Mevenkamp <phillippmevenkamp@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.data.metis.testutils;
 
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.ballpossession.BallPossession;
-import edu.tigers.sumatra.ai.data.ballpossession.EBallPossession;
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.ETeamColor;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.ai.metis.ballpossession.BallPossession;
+import edu.tigers.sumatra.ai.metis.ballpossession.EBallPossession;
+import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.ETeamColor;
 
 
 /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math;
@@ -61,7 +61,7 @@ public final class BotMath
 	 */
 	public static Line getDribblerFrontLine(final IVector3 pos, final double radius, final double center2DribblerDist)
 	{
-		double theta = Math.acos((center2DribblerDist) / (radius));
+		double theta = SumatraMath.acos((center2DribblerDist) / (radius));
 		IVector2 leftBotEdge = pos.getXYVector()
 				.addNew(Vector2.fromAngle(pos.z() - theta).scaleTo(radius));
 		IVector2 rightBotEdge = pos.getXYVector()

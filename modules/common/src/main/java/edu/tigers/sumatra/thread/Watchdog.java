@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.thread;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 
 /**
@@ -17,10 +17,10 @@ import java.util.List;
  */
 public class Watchdog
 {
-	private final List<IWatchdogObserver>	observers		= new ArrayList<>();
-	private boolean								reset				= false;
-	private int										period			= 1000;
-	private Thread									watchdogThread	= null;
+	private final List<IWatchdogObserver> observers = new CopyOnWriteArrayList<>();
+	private boolean reset = false;
+	private int period;
+	private Thread watchdogThread = null;
 	
 	
 	/**
@@ -32,27 +32,9 @@ public class Watchdog
 	}
 	
 	
-	/**
-	 * @param period
-	 * @param o
-	 */
-	public Watchdog(final int period, final IWatchdogObserver o)
-	{
-		this.period = period;
-		
-		addObserver(o);
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	private void addObserver(final IWatchdogObserver o)
 	{
-		synchronized (observers)
-		{
-			observers.add(o);
-		}
+		observers.add(o);
 	}
 	
 	
@@ -123,12 +105,9 @@ public class Watchdog
 	{
 		watchdogThread = null;
 		
-		synchronized (observers)
+		for (final IWatchdogObserver o : observers)
 		{
-			for (final IWatchdogObserver o : observers)
-			{
-				o.onWatchdogTimeout();
-			}
+			o.onWatchdogTimeout();
 		}
 	}
 	

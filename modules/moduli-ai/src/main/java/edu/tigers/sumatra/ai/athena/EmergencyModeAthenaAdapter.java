@@ -1,15 +1,10 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 8, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.athena;
 
-import edu.tigers.sumatra.ai.data.PlayStrategy.Builder;
-import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
+import edu.tigers.sumatra.ai.athena.PlayStrategy.Builder;
+import edu.tigers.sumatra.ai.metis.MetisAiFrame;
 
 
 /**

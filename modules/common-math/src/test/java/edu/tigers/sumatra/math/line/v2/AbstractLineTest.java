@@ -14,6 +14,7 @@ import java.util.function.Function;
 
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -26,10 +27,10 @@ abstract class AbstractLineTest
 	
 	void doTestGetSlope(final LineConstructor lineConstructor)
 	{
-		ILineBase zeroLine = lineConstructor.apply(Vector2.ZERO_VECTOR);
+		ILineBase zeroLine = lineConstructor.apply(Vector2f.ZERO_VECTOR);
 		assertThat(zeroLine.getSlope(), isNotPresent());
 		
-		ILineBase verticalLine = lineConstructor.apply(Vector2.Y_AXIS);
+		ILineBase verticalLine = lineConstructor.apply(Vector2f.Y_AXIS);
 		assertThat(verticalLine.getSlope(), isNotPresent());
 		
 		IVector2 dV = Vector2.fromXY(21, 42);
@@ -40,7 +41,7 @@ abstract class AbstractLineTest
 	
 	void doTestGetAngle(final LineConstructor lineConstructor)
 	{
-		ILineBase zeroLine = lineConstructor.apply(Vector2.ZERO_VECTOR);
+		ILineBase zeroLine = lineConstructor.apply(Vector2f.ZERO_VECTOR);
 		assertThat(zeroLine.getAngle(), isNotPresent());
 		
 		double angle = Math.PI / 2;
@@ -52,15 +53,15 @@ abstract class AbstractLineTest
 	
 	void doTestOrientation(final LineConstructor lineConstructor)
 	{
-		ILineBase zeroLine = lineConstructor.apply(Vector2.ZERO_VECTOR);
+		ILineBase zeroLine = lineConstructor.apply(Vector2f.ZERO_VECTOR);
 		assertThat(zeroLine.isHorizontal(), is(false));
 		assertThat(zeroLine.isVertical(), is(false));
 		
-		ILineBase verticalLine = lineConstructor.apply(Vector2.Y_AXIS);
+		ILineBase verticalLine = lineConstructor.apply(Vector2f.Y_AXIS);
 		assertThat(verticalLine.isHorizontal(), is(false));
 		assertThat(verticalLine.isVertical(), is(true));
 		
-		ILineBase horizontalLine = lineConstructor.apply(Vector2.X_AXIS);
+		ILineBase horizontalLine = lineConstructor.apply(Vector2f.X_AXIS);
 		assertThat(horizontalLine.isHorizontal(), is(true));
 		assertThat(horizontalLine.isVertical(), is(false));
 		
@@ -74,7 +75,7 @@ abstract class AbstractLineTest
 	{
 		IVector2 dV = Vector2.fromAngle(1.5d);
 		ILineBase nonZeroLine = lineConstructor.apply(dV);
-		ILineBase zeroLine = lineConstructor.apply(Vector2.ZERO_VECTOR);
+		ILineBase zeroLine = lineConstructor.apply(Vector2f.ZERO_VECTOR);
 		
 		assertThat(nonZeroLine.isParallelTo(zeroLine), is(false));
 		assertThat(zeroLine.isParallelTo(nonZeroLine), is(false));

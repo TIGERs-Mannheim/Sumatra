@@ -1,22 +1,26 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.offensive.view;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-import javax.swing.*;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 
-import edu.tigers.sumatra.ai.data.OffensiveStrategy.EOffensiveStrategy;
-import edu.tigers.sumatra.ai.data.SpecialMoveCommand;
-import edu.tigers.sumatra.ai.metis.offense.data.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.moves.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.strategy.EOffensiveStrategy;
 import edu.tigers.sumatra.ai.metis.support.IPassTarget;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -31,40 +35,12 @@ import net.miginfocom.swing.MigLayout;
  */
 public class TeamOffensiveStrategyPanel extends JPanel
 {
-	/**  */
-	private static final long	serialVersionUID						= 5289153581163080893L;
+	private static final long serialVersionUID = 5289153581163080893L;
 	
-	private JPanel					numberPanel								= null;
-	private JLabel					numberLabel								= null;
-	private JLabel					minNumberLabel							= null;
-	private JTextField			minNumberText							= null;
-	private JLabel					maxNumberLabel							= null;
-	private JTextField			maxNumberText							= null;
-	
-	private JPanel					desiredBotsPanel						= null;
-	private JLabel					desiredBotsLabel						= null;
-	private JTable					desiredBotsTable						= null;
-	private TableModel			desiredBotsTableModel				= null;
-	
-	private JPanel					playConfigurationPanel				= null;
-	private JLabel					playConfigurationLabel				= null;
-	private JTable					playConfigurationTable				= null;
-	private TableModel			playConfigurationTableModel		= null;
-	
-	private JPanel					unassignedStrategiesPanel			= null;
-	private JLabel					unassignedStrategiesLabel			= null;
-	private JTable					unassignedStrategiesTable			= null;
-	private TableModel			unassignedStrategiesTableModel	= null;
-	
-	private JPanel					specialMoveCommandsPanel			= null;
-	private JLabel					specialMoveCommandsLabel			= null;
-	private JTable					specialMoveCommandsTable			= null;
-	private TableModel			specialMoveCommandsTableModel		= null;
-	
-	private JPanel					offensiveActionsPanel				= null;
-	private JLabel					offensiveActionsLabel				= null;
-	private JTable					offensiveActionsTable				= null;
-	private TableModel			offensiveActionsTableModel			= null;
+	private final TableModel desiredBotsTableModel;
+	private final TableModel playConfigurationTableModel;
+	private final TableModel specialMoveCommandsTableModel;
+	private final TableModel offensiveActionsTableModel;
 	
 	
 	/**
@@ -74,29 +50,12 @@ public class TeamOffensiveStrategyPanel extends JPanel
 	{
 		setLayout(new MigLayout());
 		
-		numberPanel = new JPanel(new MigLayout("fill", "", ""));
-		numberLabel = new JLabel("Number of bots:");
-		
-		minNumberLabel = new JLabel("min.");
-		minNumberText = new JTextField("0");
-		minNumberText.setEditable(false);
-		
-		maxNumberLabel = new JLabel("max.");
-		maxNumberText = new JTextField("0");
-		maxNumberText.setEditable(false);
-		
-		numberPanel.add(numberLabel);
-		numberPanel.add(minNumberLabel);
-		numberPanel.add(minNumberText);
-		numberPanel.add(maxNumberLabel);
-		numberPanel.add(maxNumberText);
-		
 		String botIdHeader = "Bot ID";
 		
-		desiredBotsPanel = new JPanel(new MigLayout());
-		desiredBotsLabel = new JLabel("Desired Bots:");
+		final JPanel desiredBotsPanel = new JPanel(new MigLayout());
+		final JLabel desiredBotsLabel = new JLabel("Desired Bots:");
 		desiredBotsTableModel = new TableModel(new String[] { botIdHeader });
-		desiredBotsTable = new JTable(desiredBotsTableModel);
+		final JTable desiredBotsTable = new JTable(desiredBotsTableModel);
 		desiredBotsTable.setPreferredScrollableViewportSize(new Dimension(1920, 1080));
 		JScrollPane desiredBotsScrollPane = new JScrollPane(desiredBotsTable);
 		desiredBotsTable.setFillsViewportHeight(true);
@@ -104,10 +63,10 @@ public class TeamOffensiveStrategyPanel extends JPanel
 		desiredBotsPanel.add(desiredBotsLabel, "wrap");
 		desiredBotsPanel.add(desiredBotsScrollPane);
 		
-		playConfigurationPanel = new JPanel(new MigLayout());
-		playConfigurationLabel = new JLabel("Current Configuration:");
+		final JPanel playConfigurationPanel = new JPanel(new MigLayout());
+		final JLabel playConfigurationLabel = new JLabel("Current Configuration:");
 		playConfigurationTableModel = new TableModel(new String[] { botIdHeader, "Offensive Strategy" });
-		playConfigurationTable = new JTable(playConfigurationTableModel);
+		final JTable playConfigurationTable = new JTable(playConfigurationTableModel);
 		playConfigurationTable.setPreferredScrollableViewportSize(new Dimension(1920, 1080));
 		JScrollPane playConfigurationScrollPane = new JScrollPane(playConfigurationTable);
 		playConfigurationTable.setFillsViewportHeight(true);
@@ -115,21 +74,10 @@ public class TeamOffensiveStrategyPanel extends JPanel
 		playConfigurationPanel.add(playConfigurationLabel, "wrap");
 		playConfigurationPanel.add(playConfigurationScrollPane);
 		
-		unassignedStrategiesPanel = new JPanel(new MigLayout());
-		unassignedStrategiesLabel = new JLabel("Unassigned Startegies:");
-		unassignedStrategiesTableModel = new TableModel(new String[] { "Unassigned Strategy" });
-		unassignedStrategiesTable = new JTable(unassignedStrategiesTableModel);
-		unassignedStrategiesTable.setPreferredScrollableViewportSize(new Dimension(1920, 1080));
-		JScrollPane unassignedStrategiesScrollPane = new JScrollPane(unassignedStrategiesTable);
-		unassignedStrategiesTable.setFillsViewportHeight(true);
-		
-		unassignedStrategiesPanel.add(unassignedStrategiesLabel, "wrap");
-		unassignedStrategiesPanel.add(unassignedStrategiesScrollPane);
-		
-		specialMoveCommandsPanel = new JPanel(new MigLayout());
-		specialMoveCommandsLabel = new JLabel("Special Move Commands:");
+		final JPanel specialMoveCommandsPanel = new JPanel(new MigLayout());
+		final JLabel specialMoveCommandsLabel = new JLabel("Special Move Commands:");
 		specialMoveCommandsTableModel = new TableModel(new String[] { "Move Positions" });
-		specialMoveCommandsTable = new JTable(specialMoveCommandsTableModel);
+		final JTable specialMoveCommandsTable = new JTable(specialMoveCommandsTableModel);
 		specialMoveCommandsTable.setPreferredScrollableViewportSize(new Dimension(1920, 1080));
 		JScrollPane specialMoveCommandsScrollPane = new JScrollPane(specialMoveCommandsTable);
 		specialMoveCommandsTable.setFillsViewportHeight(true);
@@ -138,11 +86,11 @@ public class TeamOffensiveStrategyPanel extends JPanel
 		specialMoveCommandsPanel.add(specialMoveCommandsScrollPane);
 		
 		
-		offensiveActionsPanel = new JPanel(new MigLayout());
-		offensiveActionsLabel = new JLabel("Offensive Actions:");
+		final JPanel offensiveActionsPanel = new JPanel(new MigLayout());
+		final JLabel offensiveActionsLabel = new JLabel("Offensive Actions:");
 		offensiveActionsTableModel = new TableModel(new String[] { botIdHeader, "Pass Target", "Pass Target Bot ID",
-				"Pass Target Rating", "Direct Shot and Clearing Target", "Action", "Value" });
-		offensiveActionsTable = new JTable(offensiveActionsTableModel);
+				"Pass Target Rating", "Kick Target", "Action", "Value" });
+		final JTable offensiveActionsTable = new JTable(offensiveActionsTableModel);
 		offensiveActionsTable.setPreferredScrollableViewportSize(new Dimension(1920, 1080));
 		JScrollPane offensiveActionsScrollPane = new JScrollPane(offensiveActionsTable);
 		offensiveActionsTable.setFillsViewportHeight(true);
@@ -165,30 +113,10 @@ public class TeamOffensiveStrategyPanel extends JPanel
 		offensiveActionsPanel.add(offensiveActionsLabel, "wrap");
 		offensiveActionsPanel.add(offensiveActionsScrollPane);
 		
-		add(numberPanel, "wrap,span");
 		add(desiredBotsPanel);
 		add(playConfigurationPanel);
-		add(unassignedStrategiesPanel);
 		add(specialMoveCommandsPanel, "wrap");
 		add(offensiveActionsPanel, "span");
-	}
-	
-	
-	/**
-	 * @param num minimum number of bots need
-	 */
-	public void setMinNumberOfBots(final int num)
-	{
-		minNumberText.setText(String.valueOf(num));
-	}
-	
-	
-	/**
-	 * @param num max number of bots that can be handled
-	 */
-	public void setMaxNumberOfBots(final int num)
-	{
-		maxNumberText.setText(String.valueOf(num));
 	}
 	
 	
@@ -227,38 +155,16 @@ public class TeamOffensiveStrategyPanel extends JPanel
 	}
 	
 	
-	/**
-	 * @param unassignedStartegies
-	 */
-	public void setUnassignedStrategies(final List<EOffensiveStrategy> unassignedStartegies)
+	public void setSpecialMoveCommands(final IPassTarget passTarget)
 	{
-		String[][] strategies = new String[unassignedStartegies.size()][1];
-		int i = 0;
-		for (EOffensiveStrategy strategy : unassignedStartegies)
+		String[][] commands = new String[1][1];
+		if (passTarget != null)
 		{
-			strategies[i][0] = strategy.toString();
-			i++;
-		}
-		unassignedStrategiesTableModel.setData(strategies);
-		unassignedStrategiesTableModel.fireTableDataChanged();
-	}
-	
-	
-	/**
-	 * @param specialMoveCommands
-	 */
-	public void setSpecialMoveCommands(final List<SpecialMoveCommand> specialMoveCommands)
-	{
-		String[][] commands = new String[specialMoveCommands.size()][1];
-		int i = 0;
-		for (SpecialMoveCommand command : specialMoveCommands)
+			IVector2 position = passTarget.getKickerPos();
+			commands[0][0] = "(" + position.x() + ", " + position.y() + ")";
+		} else
 		{
-			commands[i][0] = "";
-			for (IVector2 position : command.getMovePosition())
-			{
-				commands[i][0] += "(" + position.x() + ", " + position.y() + ")";
-			}
-			i++;
+			commands[0][0] = "";
 		}
 		specialMoveCommandsTableModel.setData(commands);
 		specialMoveCommandsTableModel.fireTableDataChanged();
@@ -275,9 +181,10 @@ public class TeamOffensiveStrategyPanel extends JPanel
 		for (Map.Entry<BotID, OffensiveAction> entry : offensiveActions.entrySet())
 		{
 			OffensiveAction action = entry.getValue();
-			actions[i][0] = entry.getKey().toString();
+			final BotID botID = entry.getKey();
+			actions[i][0] = botID.toString();
 			
-			IPassTarget passTarget = action.getPassTarget();
+			IPassTarget passTarget = action.getPassTarget().orElse(null);
 			if (passTarget != null)
 			{
 				actions[i][1] = "(" + (((int) (passTarget.getKickerPos().x() * 100)) / 100.0) + ", "
@@ -291,16 +198,16 @@ public class TeamOffensiveStrategyPanel extends JPanel
 				actions[i][3] = null;
 			}
 			
-			DynamicPosition directShotAndClearingTarget = action.getDirectShotAndClearingTarget();
-			if (directShotAndClearingTarget != null)
+			DynamicPosition kickTarget = action.getKickTarget().getTarget();
+			if (kickTarget != null)
 			{
-				actions[i][4] = "(" + directShotAndClearingTarget.x() + ", " + directShotAndClearingTarget.y() + ")";
+				actions[i][4] = "(" + kickTarget.x() + ", " + kickTarget.y() + ")";
 			} else
 			{
 				actions[i][4] = null;
 			}
 			
-			actions[i][5] = action.getType().toString();
+			actions[i][5] = action.getAction().toString();
 			actions[i][6] = String.valueOf((int) (action.getViability() * 100) / 100.0);
 			i++;
 		}
@@ -317,9 +224,9 @@ public class TeamOffensiveStrategyPanel extends JPanel
 	private static class TableModel extends AbstractTableModel
 	{
 		/**  */
-		private static final long	serialVersionUID	= -8703476015733916026L;
-		private final String[]		columns;
-		private String[][]			data;
+		private static final long serialVersionUID = -8703476015733916026L;
+		private final String[] columns;
+		private String[][] data;
 		
 		
 		public TableModel(final String[] columnNames)

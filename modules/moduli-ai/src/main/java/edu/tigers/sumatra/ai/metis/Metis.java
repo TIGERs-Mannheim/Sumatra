@@ -13,10 +13,8 @@ import com.github.g3force.configurable.IConfigClient;
 import com.github.g3force.configurable.IConfigObserver;
 import com.github.g3force.instanceables.InstanceableClass.NotCreateableException;
 
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.AIInfoFrame;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
-import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
+import edu.tigers.sumatra.ai.AIInfoFrame;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.ids.ETeamColor;
@@ -56,7 +54,7 @@ public class Metis implements IConfigObserver
 	private static final Logger log = Logger.getLogger(Metis.class.getName());
 	
 	private final Map<ECalculator, ACalculator> calculators = new EnumMap<>(ECalculator.class);
-	private ETeamColor teamColor = ETeamColor.UNINITIALIZED;
+	private ETeamColor teamColor = ETeamColor.NEUTRAL;
 	
 	
 	/**
@@ -94,7 +92,7 @@ public class Metis implements IConfigObserver
 	 */
 	public MetisAiFrame process(final BaseAiFrame baseAiFrame)
 	{
-		if (teamColor == ETeamColor.UNINITIALIZED)
+		if (teamColor == ETeamColor.NEUTRAL)
 		{
 			teamColor = baseAiFrame.getTeamColor();
 			afterApply(null);

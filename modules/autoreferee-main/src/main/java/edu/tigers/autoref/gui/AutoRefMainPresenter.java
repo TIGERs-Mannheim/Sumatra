@@ -1,15 +1,20 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.gui;
 
 import org.apache.log4j.Logger;
 
+import edu.tigers.autoref.AutoRefReplayPresenter;
 import edu.tigers.autoref.gui.view.AutoRefMainFrame;
 import edu.tigers.moduli.exceptions.InitModuleException;
+import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.moduli.exceptions.StartModuleException;
 import edu.tigers.sumatra.AMainPresenter;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.persistence.BerkeleyDb;
+import edu.tigers.sumatra.persistence.IRecordObserver;
+import edu.tigers.sumatra.persistence.RecordManager;
 
 
 /**
@@ -17,13 +22,13 @@ import edu.tigers.sumatra.model.SumatraModel;
  */
 public class AutoRefMainPresenter extends AMainPresenter
 {
-	private static final Logger		log							= Logger.getLogger(AutoRefMainPresenter.class);
-	private static final String		LAST_LAYOUT_FILENAME		= "last.ly";
-	private static final String		DEFAULT_LAYOUT				= "default.ly";
-	private static final String		KEY_LAYOUT_PROP			= AutoRefMainPresenter.class.getName() + ".layout";
-	private static final String		DEFAULT_MODULI_FILENAME	= "moduli.xml";
+	private static final Logger log = Logger.getLogger(AutoRefMainPresenter.class);
+	private static final String LAST_LAYOUT_FILENAME = "last.ly";
+	private static final String DEFAULT_LAYOUT = "default.ly";
+	private static final String KEY_LAYOUT_PROP = AutoRefMainPresenter.class.getName() + ".layout";
+	private static final String DEFAULT_MODULI_FILENAME = "moduli.xml";
 	
-	private final AutoRefMainFrame	mainFrame;
+	private RecordManagerObserver recordManagerObserver;
 	
 	
 	/**
@@ -32,12 +37,12 @@ public class AutoRefMainPresenter extends AMainPresenter
 	public AutoRefMainPresenter()
 	{
 		super(new AutoRefMainFrame());
-		mainFrame = (AutoRefMainFrame) getMainFrame();
+		final AutoRefMainFrame mainFrame = (AutoRefMainFrame) getMainFrame();
 		
 		startupModuli();
 		
 		mainFrame.activate();
-
+		
 		Runtime.getRuntime().addShutdownHook(new Thread(this::onExit));
 	}
 	
@@ -58,11 +63,13 @@ public class AutoRefMainPresenter extends AMainPresenter
 		{
 			log.error("Module startup exception --- The referee might not function correctly", e);
 		}
+		initRecordManagerBinding();
 	}
 	
 	
 	private void shutdownModuli()
 	{
+		deinitRecordManagerBinding();
 		SumatraModel.getInstance().stopModules();
 	}
 	
@@ -95,6 +102,50 @@ public class AutoRefMainPresenter extends AMainPresenter
 		
 		shutdownModuli();
 		SumatraModel.getInstance().saveUserProperties();
+	}
+	
+	
+	private void initRecordManagerBinding()
+	{
+		try
+		{
+			RecordManager recordManager = SumatraModel.getInstance().getModule(RecordManager.class);
+			recordManagerObserver = new RecordManagerObserver();
+			recordManager.addObserver(recordManagerObserver);
+		} catch (ModuleNotFoundException e)
+		{
+			log.debug("There is no record manager. Wont't add observer", e);
+		}
+	}
+	
+	
+	private void deinitRecordManagerBinding()
+	{
+		try
+		{
+			RecordManager recordManager = SumatraModel.getInstance().getModule(RecordManager.class);
+			recordManager.removeObserver(recordManagerObserver);
+			recordManagerObserver = null;
+		} catch (ModuleNotFoundException e)
+		{
+			log.debug("There is no record manager. Wont't add observer", e);
+		}
+	}
+	
+	private static class RecordManagerObserver implements IRecordObserver
+	{
+		@Override
+		public void onStartStopRecord(final boolean recording)
+		{
+			// nothing to do here
+		}
+		
+		
+		@Override
+		public void onViewReplay(final BerkeleyDb persistence, final long startTime)
+		{
+			new AutoRefReplayPresenter().start(persistence, startTime);
+		}
 	}
 	
 }

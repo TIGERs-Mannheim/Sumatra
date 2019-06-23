@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands.botskills.data;
 
@@ -14,11 +14,12 @@ import edu.tigers.sumatra.math.vector.IVector3;
  */
 public class BotSkillInput
 {
-	private final ABotSkill	skill;
-	private final IVector3	curPos;		// [mm, rad]
-	private final IVector3	curVelLocal;
-	private final IVector3	curAccLocal;
-	private final long		tNow;
+	private final ABotSkill skill;
+	private final IVector3 curPos; // [mm, rad]
+	private final IVector3 curVelLocal;
+	private final IVector3 curAccLocal;
+	private final long tNow;
+	private final boolean strictVelocityLimit;
 	
 	
 	/**
@@ -27,16 +28,18 @@ public class BotSkillInput
 	 * @param curVelLocal
 	 * @param curAccLocal
 	 * @param tNow
+	 * @param strictVelocityLimit
 	 */
 	public BotSkillInput(final ABotSkill skill, final IVector3 curPos, final IVector3 curVelLocal,
 			final IVector3 curAccLocal,
-			final long tNow)
+			final long tNow, final boolean strictVelocityLimit)
 	{
 		this.skill = skill;
 		this.curPos = curPos;
 		this.curVelLocal = curVelLocal;
 		this.curAccLocal = curAccLocal;
 		this.tNow = tNow;
+		this.strictVelocityLimit = strictVelocityLimit;
 	}
 	
 	
@@ -70,5 +73,11 @@ public class BotSkillInput
 	public ABotSkill getSkill()
 	{
 		return skill;
+	}
+	
+	
+	public boolean isStrictVelocityLimit()
+	{
+		return strictVelocityLimit;
 	}
 }

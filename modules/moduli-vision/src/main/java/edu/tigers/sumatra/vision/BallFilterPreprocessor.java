@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.vision;
 
@@ -16,15 +16,17 @@ import org.apache.log4j.Logger;
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 
+import edu.tigers.sumatra.bot.RobotInfo;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.vector.AVector2;
-import edu.tigers.sumatra.math.vector.AVector3;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
+import edu.tigers.sumatra.math.vector.Vector3f;
 import edu.tigers.sumatra.vision.data.FilteredVisionBall;
 import edu.tigers.sumatra.vision.data.FilteredVisionBot;
 import edu.tigers.sumatra.vision.data.KickEvent;
@@ -74,16 +76,20 @@ public class BallFilterPreprocessor
 	 * @param lastFilteredBall
 	 * @param ballTrackers All ball trackers on the field.
 	 * @param mergedRobots Already merged robots.
+	 * @param robotInfos Robot info map
 	 * @param timestamp Prediction/Frame timestamp.
 	 * @return
 	 */
 	public BallFilterPreprocessorOutput update(final FilteredVisionBall lastFilteredBall,
 			final List<BallTracker> ballTrackers,
-			final List<FilteredVisionBot> mergedRobots, final long timestamp)
+			final List<FilteredVisionBot> mergedRobots,
+			final Map<BotID, RobotInfo> robotInfos,
+			final long timestamp)
 	{
 		MergedBall optMergedBall = ballTrackerMerger.process(ballTrackers, timestamp, lastFilteredBall);
 		KickEvent optKickEvent = kickDetectors.process(optMergedBall, mergedRobots);
-		FilteredVisionBall optKickFitState = kickEstimators.process(optKickEvent, optMergedBall, mergedRobots, timestamp);
+		FilteredVisionBall optKickFitState = kickEstimators.process(optKickEvent,
+				optMergedBall, mergedRobots, robotInfos, timestamp);
 		
 		return new BallFilterPreprocessorOutput(optMergedBall, optKickEvent, optKickFitState);
 	}
@@ -127,7 +133,8 @@ public class BallFilterPreprocessor
 		
 		
 		private FilteredVisionBall process(final KickEvent kickEvent, final MergedBall ball,
-				final List<FilteredVisionBot> mergedRobots, final long timestamp)
+				final List<FilteredVisionBot> mergedRobots, final Map<BotID, RobotInfo> robotInfos,
+				final long timestamp)
 		{
 			if ((ball != null) && ball.getLatestCamBall().isPresent())
 			{
@@ -145,7 +152,7 @@ public class BallFilterPreprocessor
 			}
 			
 			// handle new kick event and spawn/merge estimators
-			updateEstimators(kickEvent, timestamp);
+			updateEstimators(kickEvent, robotInfos, timestamp);
 			
 			// get best kick fit state
 			return getBestKickFitState(timestamp);
@@ -153,7 +160,8 @@ public class BallFilterPreprocessor
 		
 		
 		@SuppressWarnings("squid:MethodCyclomaticComplexity")
-		private void updateEstimators(final KickEvent kickEvent, final long timestamp)
+		private void updateEstimators(final KickEvent kickEvent,
+				final Map<BotID, RobotInfo> robotInfos, final long timestamp)
 		{
 			// check for kick event (needs direction vector)
 			if ((kickEvent == null) || !kickEvent.getKickDirection().isPresent())
@@ -182,9 +190,23 @@ public class BallFilterPreprocessor
 				return;
 			}
 			
-			if (!kickEvent.isEarlyDetection())
+			RobotInfo kickRobotInfo = robotInfos.get(kickEvent.getKickingBot());
+			if ((kickRobotInfo != null) && kickRobotInfo.isArmed() && kickRobotInfo.isChip())
 			{
-				// always spawn a new chip estimator if this is a slow kick detection event
+				log.debug("Angle: " + kickRobotInfo.getBotParams().getKickerSpecs().getChipAngle());
+				log.debug("Speed: " + (kickRobotInfo.getKickSpeed() * 1000.0));
+				
+				// always spawn a new chip estimator if there is a kicking robot nearby
+				chipEstimator = new ChipKickEstimator(Geometry.getLastCamGeometry().getCalibrations(),
+						kickEvent, kickRobotInfo.getKickSpeed() * 1000.0,
+						kickRobotInfo.getBotParams().getKickerSpecs().getChipAngle());
+				
+				log.debug("Spawned chip estimator with prior knowledge from RobotInfo");
+			}
+			
+			if ((chipEstimator == null) && !kickEvent.isEarlyDetection())
+			{
+				// spawn a new chip estimator if this is a slow kick detection event and no estimator exists yet
 				chipEstimator = new ChipKickEstimator(Geometry.getLastCamGeometry().getCalibrations(), kickEvent);
 				
 				log.debug("Spawned chip estimator");
@@ -259,7 +281,7 @@ public class BallFilterPreprocessor
 					estimators
 							.removeIf(k -> k.getFitResult()
 									.orElse(new KickFitResult(null, 0,
-											new StraightBallTrajectory(AVector2.ZERO_VECTOR, AVector3.ZERO_VECTOR, 0)))
+											new StraightBallTrajectory(Vector2f.ZERO_VECTOR, Vector3f.ZERO_VECTOR, 0)))
 									.getAvgDistance() > bestKickFitResult.getAvgDistance());
 				}
 				
@@ -383,7 +405,7 @@ public class BallFilterPreprocessor
 			
 			lastSearchPositions.clear();
 			List<BallTracker> primaryTrackers;
-			if (lastFilteredBall.isChipped())
+			if (lastFilteredBall.isChipped() && !Geometry.getLastCamGeometry().getCalibrations().isEmpty())
 			{
 				// if the ball is airborne we project its position to the ground from all cameras and use these locations as
 				// search point
@@ -403,6 +425,7 @@ public class BallFilterPreprocessor
 				lastSearchPositions.add(lastFilteredBall.getPos().getXYVector());
 				
 				primaryTrackers = ballTrackers.stream()
+						.filter(BallTracker::isGrownUp)
 						.filter(t -> t.getPosition(timestamp)
 								.distanceTo(lastFilteredBall.getPos().getXYVector()) < lastBallSearchRadius)
 						.collect(Collectors.toList());

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.autoreferee.engine.states.impl;
@@ -33,11 +33,11 @@ import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
  */
 public class PrepareKickoffState extends AbstractAutoRefState
 {
-	@Configurable(comment = "[ms] The minimum time to wait before sending the kickoff signal")
-	private static long	MIN_WAIT_TIME_MS		= 4_000;
+	@Configurable(comment = "[ms] The minimum time to wait before sending the kickoff signal", defValue = "4000")
+	private static long minWaitTimeMs = 4_000;
 	
-	@Configurable(comment = "[ms] The minimum time to wait before sending the kickoff signal")
-	private static long	READY_WAIT_TIME_MS	= 1_500;
+	@Configurable(comment = "[ms] The minimum time to wait before sending the kickoff signal", defValue = "1500")
+	private static long readyWaitTimeMs = 1_500;
 	
 	static
 	{
@@ -47,18 +47,10 @@ public class PrepareKickoffState extends AbstractAutoRefState
 	private Long readyWaitTime = null;
 	
 	
-	/**
-	 *
-	 */
-	public PrepareKickoffState()
-	{
-	}
-	
-	
 	@Override
 	public void doUpdate(final IAutoRefFrame frame, final IAutoRefStateContext ctx)
 	{
-		if (!timeElapsedSinceEntry(MIN_WAIT_TIME_MS))
+		if (stillInTime(minWaitTimeMs))
 		{
 			return;
 		}
@@ -82,9 +74,9 @@ public class PrepareKickoffState extends AbstractAutoRefState
 			{
 				readyWaitTime = frame.getTimestamp();
 			}
-			long waitTime_ms = TimeUnit.NANOSECONDS.toMillis(frame.getTimestamp() - readyWaitTime);
-			readyWaitTimeOver = waitTime_ms > READY_WAIT_TIME_MS;
-			drawReadyCircle((int) ((waitTime_ms * 100) / READY_WAIT_TIME_MS), ball.getPos(), shapes);
+			long waitTime = TimeUnit.NANOSECONDS.toMillis(frame.getTimestamp() - readyWaitTime);
+			readyWaitTimeOver = waitTime > readyWaitTimeMs;
+			drawReadyCircle((int) ((waitTime * 100) / readyWaitTimeMs), ball.getPos(), shapes);
 		} else
 		{
 			readyWaitTime = null;
@@ -92,7 +84,7 @@ public class PrepareKickoffState extends AbstractAutoRefState
 		
 		if (readyWaitTimeOver || ctx.doProceed())
 		{
-			sendCommandIfReady(ctx, new RefboxRemoteCommand(Command.NORMAL_START), ctx.doProceed());
+			sendCommandIfReady(ctx, new RefboxRemoteCommand(Command.NORMAL_START, null), ctx.doProceed());
 		}
 	}
 	

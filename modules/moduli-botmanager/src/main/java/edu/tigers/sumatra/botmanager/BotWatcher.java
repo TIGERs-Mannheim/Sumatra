@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jun 5, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager;
 
@@ -19,13 +14,15 @@ import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.botskills.EDataAcquisitionMode;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemMatchFeedback;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqBotModel;
+import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqBotModelV2;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqDelays;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqMotorModel;
+import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqSetMode;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqVelocity;
 import edu.tigers.sumatra.export.CSVExporter;
-import edu.tigers.sumatra.math.vector.AVector3;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.Vector3f;
 
 
 /**
@@ -34,11 +31,11 @@ import edu.tigers.sumatra.math.vector.Vector3;
  */
 public class BotWatcher implements IABotObserver
 {
-	private final ABot						bot;
-	private final EDataAcquisitionMode	acqMode;
-	private CSVExporter						exporter			= null;
-	private long								frameId			= 0;
-	private boolean							dataReceived	= false;
+	private final ABot bot;
+	private final EDataAcquisitionMode acqMode;
+	private CSVExporter exporter = null;
+	private long frameId = 0;
+	private boolean dataReceived = false;
 	
 	
 	/**
@@ -80,13 +77,16 @@ public class BotWatcher implements IABotObserver
 			case MOTOR_MODEL:
 				exporter = new CSVExporter("data/motorModel/" + sdf.format(new Date()), false);
 				break;
+			case BOT_MODEL_V2:
+				exporter = new CSVExporter("data/botModelV2/" + sdf.format(new Date()), false);
+				break;
 			case NONE:
 				exporter = new CSVExporter("data/botstatus/" + sdf.format(new Date()), false);
 				break;
 			default:
 				throw new IllegalStateException();
 		}
-		bot.getMatchCtrl().setDataAcquisitionMode(acqMode);
+		bot.execute(new TigerDataAcqSetMode(acqMode));
 		
 		dataReceived = false;
 		bot.addObserver(this);
@@ -98,7 +98,7 @@ public class BotWatcher implements IABotObserver
 	 */
 	public void stop()
 	{
-		bot.getMatchCtrl().setDataAcquisitionMode(EDataAcquisitionMode.NONE);
+		bot.execute(new TigerDataAcqSetMode(EDataAcquisitionMode.NONE));
 		bot.removeObserver(this);
 		exporter.close();
 	}
@@ -127,7 +127,7 @@ public class BotWatcher implements IABotObserver
 		nbrs.addAll(bot.getColor().getNumberList());
 		nbrs.addAll(pos.getNumberList());
 		nbrs.addAll(vel.getNumberList());
-		nbrs.addAll(AVector3.ZERO_VECTOR.getNumberList());
+		nbrs.addAll(Vector3f.ZERO_VECTOR.getNumberList());
 		nbrs.add(frameId);
 		nbrs.add(System.nanoTime());
 		nbrs.add(cmd.isPositionValid() ? 1 : 0);
@@ -171,6 +171,9 @@ public class BotWatcher implements IABotObserver
 				break;
 			case CMD_DATA_ACQ_VELOCITY:
 				handleAcqVelocity(cmd, nbrs);
+				break;
+			case CMD_DATA_ACQ_BOT_MODEL_V2:
+				handleAcqBotModelV2(cmd, nbrs);
 				break;
 			default:
 				break;
@@ -218,6 +221,23 @@ public class BotWatcher implements IABotObserver
 	}
 	
 	
+	private void handleAcqBotModelV2(final ACommand cmd, final List<Number> nbrs)
+	{
+		TigerDataAcqBotModelV2 bm = (TigerDataAcqBotModelV2) cmd;
+		nbrs.add(bot.getBotId().getNumberWithColorOffsetBS());
+		nbrs.add(bm.getTimestamp());
+		nbrs.addAll(bm.getStateVelocityList());
+		nbrs.addAll(bm.getEncoderVelocityList());
+		nbrs.addAll(bm.getOutputForceList());
+		nbrs.add(bm.getEfficiencyXY());
+		nbrs.add(bm.getEfficiencyW());
+		nbrs.add(bm.getModeXY());
+		nbrs.add(bm.getModeW());
+		exporter.addValues(nbrs);
+		dataReceived = true;
+	}
+	
+	
 	private void handleAcqMotorModel(final ACommand cmd, final List<Number> nbrs)
 	{
 		TigerDataAcqMotorModel mm = (TigerDataAcqMotorModel) cmd;
@@ -227,5 +247,14 @@ public class BotWatcher implements IABotObserver
 		nbrs.addAll(mm.getMotorVelocityList());
 		exporter.addValues(nbrs);
 		dataReceived = true;
+	}
+	
+	
+	/**
+	 * @return the acqMode
+	 */
+	public EDataAcquisitionMode getAcqMode()
+	{
+		return acqMode;
 	}
 }

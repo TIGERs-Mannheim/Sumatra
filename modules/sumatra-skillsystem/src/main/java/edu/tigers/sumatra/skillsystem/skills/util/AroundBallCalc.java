@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills.util;
@@ -23,7 +23,7 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Calculate the destination to get around the ball
  */
 public class AroundBallCalc
 {
@@ -62,28 +62,12 @@ public class AroundBallCalc
 	
 	
 	/**
-	 * @param copy values to copy
-	 * @return a new factory
-	 */
-	public static Builder aroundBall(final AroundBallCalc copy)
-	{
-		Builder builder = new Builder();
-		builder.ballPos = copy.ballPos;
-		builder.tBot = copy.tBot;
-		builder.maxMargin = copy.maxMargin;
-		builder.minMargin = copy.minMargin;
-		builder.destination = copy.destination;
-		return builder;
-	}
-	
-	
-	/**
 	 * @return a destination to safely move around the ball
 	 */
 	public IVector2 getAroundBallDest()
 	{
 		// if we are far away from ball, choose dest a bit more clever
-		// else, we would drive directy towards the ball and would need
+		// else, we would drive directly towards the ball and would need
 		// to change direction when near enough
 		if (getBallPos().distanceTo(getTBot().getPos()) > 300)
 		{

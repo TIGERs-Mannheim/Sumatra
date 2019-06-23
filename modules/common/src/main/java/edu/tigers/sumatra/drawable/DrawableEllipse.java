@@ -1,17 +1,19 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
 
 import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.math.ellipse.Ellipse;
 import edu.tigers.sumatra.math.ellipse.IEllipse;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -29,7 +31,7 @@ public class DrawableEllipse extends ADrawableWithStroke
 	@SuppressWarnings("unused")
 	private DrawableEllipse()
 	{
-		ellipse = Ellipse.createEllipse(Vector2.ZERO_VECTOR, 1, 1);
+		ellipse = Ellipse.createEllipse(Vector2f.ZERO_VECTOR, 1, 1);
 	}
 	
 	
@@ -85,9 +87,7 @@ public class DrawableEllipse extends ADrawableWithStroke
 	}
 	
 	
-	/**
-	 * @param fill
-	 */
+	@Override
 	public void setFill(final boolean fill)
 	{
 		this.fill = fill;

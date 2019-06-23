@@ -1,18 +1,16 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Oct 24, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.trajectory;
+
+import edu.tigers.sumatra.math.IMirrorable;
+
 
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  * @param <T>
  */
-public interface ITrajectory<T>
+public interface ITrajectory<T> extends IMirrorable<ITrajectory<T>>
 {
 	/**
 	 * Get position at time t.

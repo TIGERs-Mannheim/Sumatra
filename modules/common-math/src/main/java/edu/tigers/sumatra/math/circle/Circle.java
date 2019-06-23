@@ -1,27 +1,30 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.circle;
 
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.DecompositionSolver;
-import org.apache.commons.math3.linear.LUDecomposition;
 import org.apache.commons.math3.linear.QRDecomposition;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.linear.SingularMatrixException;
 
+import com.google.common.collect.Streams;
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.math.MathException;
 import edu.tigers.sumatra.math.SumatraMath;
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
+import edu.tigers.sumatra.stream.StreamUtil;
 
 
 /**
@@ -32,13 +35,13 @@ import edu.tigers.sumatra.math.vector.Vector2;
 @Persistent(version = 1)
 public class Circle extends ACircle
 {
-	private final IVector2 center;
+	private final Vector2f center;
 	private final double radius;
 	
 	
 	protected Circle()
 	{
-		this(AVector2.ZERO_VECTOR, 1);
+		this(Vector2f.ZERO_VECTOR, 1);
 	}
 	
 	
@@ -65,8 +68,25 @@ public class Circle extends ACircle
 		{
 			throw new IllegalArgumentException("Radius of a circle must be larger than zero!");
 		}
-		this.center = Vector2.copy(center);
+		this.center = Vector2f.copy(center);
 		this.radius = radius;
+	}
+	
+	
+	/**
+	 * Create the smallest circle from 2 points on the arc (no center given).
+	 * Center is in the middle between the two points.
+	 *
+	 * @param p1 First point
+	 * @param p2 Second point
+	 * @return The unique circle going through all given points.
+	 */
+	public static ICircle from2Points(final IVector2 p1, final IVector2 p2)
+	{
+		IVector2 center = p1.addNew(p2).multiply(0.5);
+		double radius = center.distanceTo(p1);
+		
+		return createCircle(center, radius);
 	}
 	
 	
@@ -76,48 +96,31 @@ public class Circle extends ACircle
 	 * @param p1 First point
 	 * @param p2 Second point
 	 * @param p3 Third point
-	 * @return The unique circle going through all given points.
-	 * @throws MathException If all points are on a line, no finite solution exists!
+	 * @return The unique circle going through all given points, if this is possible
 	 */
-	public static ICircle from3Points(final IVector2 p1, final IVector2 p2, final IVector2 p3)
-			throws MathException
+	public static Optional<ICircle> from3Points(final IVector2 p1, final IVector2 p2, final IVector2 p3)
 	{
-		RealMatrix luA = new Array2DRowRealMatrix(new double[][] { { 1, p1.x(), p1.y() }, { 1, p2.x(), p2.y() },
-				{ 1, p3.x(), p3.y() } }, false);
-		
-		DecompositionSolver solver = new LUDecomposition(luA).getSolver();
-		
-		RealVector luB = new ArrayRealVector(new double[] { (p1.x() * p1.x()) + (p1.y() * p1.y()),
-				(p2.x() * p2.x()) + (p2.y() * p2.y()), (p3.x() * p3.x()) + (p3.y() * p3.y()) }, false);
-		
-		RealVector solution;
-		try
-		{
-			solution = solver.solve(luB);
-		} catch (SingularMatrixException err)
-		{
-			throw new MathException("Infinite circle => line", err);
-		}
-		
-		RealVector center = solution.getSubVector(1, 2).mapMultiplyToSelf(0.5);
-		
-		double sq = center.ebeMultiply(center).getL1Norm() + solution.getEntry(0);
-		double radius = Math.sqrt(sq);
-		
-		return createCircle(Vector2.fromReal(center), radius);
+		return fromNPoints(Arrays.asList(p1, p2, p3));
 	}
 	
 	
 	/**
-	 * Create a circle from 3 points on the arc (no center given).
+	 * Create a circle from N points on the arc (no center given).
 	 *
 	 * @param points
-	 * @return The unique circle going through all given points.
-	 * @throws MathException If all points are on a line, no finite solution exists!
+	 * @return The best matching circle for all given points, if this is possible
 	 */
-	public static ICircle fromNPoints(final List<IVector2> points)
-			throws MathException
+	public static Optional<ICircle> fromNPoints(final List<IVector2> points)
 	{
+		if (points.size() < 2)
+		{
+			throw new IllegalArgumentException("At least 2 points required");
+		}
+		if (points.size() == 2)
+		{
+			// the implementation does not work for 2 points, so use #from2Points
+			return Optional.of(from2Points(points.get(0), points.get(1)));
+		}
 		RealMatrix qrA = new Array2DRowRealMatrix(points.size(), 3);
 		RealVector qrB = new ArrayRealVector(points.size());
 		for (int i = 0; i < points.size(); i++)
@@ -135,17 +138,36 @@ public class Circle extends ACircle
 		try
 		{
 			solution = solver.solve(qrB);
-		} catch (SingularMatrixException err)
+		} catch (@SuppressWarnings("squid:S1166") SingularMatrixException err)
 		{
-			throw new MathException("Infinite circle => line", err);
+			return Optional.empty();
 		}
 		
 		RealVector center = solution.getSubVector(1, 2).mapMultiplyToSelf(0.5);
 		
 		double sq = center.ebeMultiply(center).getL1Norm() + solution.getEntry(0);
-		double radius = Math.sqrt(sq);
+		double radius = SumatraMath.sqrt(sq);
 		
-		return createCircle(Vector2.fromReal(center), radius);
+		return Optional.of(createCircle(Vector2.fromReal(center), radius));
+	}
+	
+	
+	/**
+	 * Create a circle that encloses all points in the list.
+	 * This method is not the most effective one and should not be used in match mode.
+	 *
+	 * @param points
+	 * @return Smallest circle enclosing all points.
+	 */
+	public static Optional<ICircle> hullCircle(final List<IVector2> points)
+	{
+		return Streams
+				.concat(StreamUtil.nonRepeatingPermutation2Fold(points), StreamUtil.nonRepeatingPermutation3Fold(points))
+				.map(Circle::fromNPoints)
+				.filter(Optional::isPresent)
+				.map(Optional::get)
+				.filter(c -> points.stream().allMatch(p -> c.isPointInShape(p, 1e-10)))
+				.min(Comparator.comparing(ICircle::radius));
 	}
 	
 	
@@ -161,7 +183,7 @@ public class Circle extends ACircle
 	
 	
 	@Override
-	public ICircle withMargin(double margin)
+	public ICircle withMargin(final double margin)
 	{
 		return new Circle(center(), radius() + margin);
 	}
@@ -192,9 +214,13 @@ public class Circle extends ACircle
 	public final boolean equals(final Object o)
 	{
 		if (this == o)
+		{
 			return true;
+		}
 		if (!(o instanceof ICircle))
+		{
 			return false;
+		}
 		
 		final ICircle circle = (ICircle) o;
 		
@@ -210,7 +236,7 @@ public class Circle extends ACircle
 		long temp;
 		result = center.hashCode();
 		temp = Double.doubleToLongBits(radius);
-		result = 31 * result + (int) (temp ^ (temp >>> 32));
+		result = (31 * result) + (int) (temp ^ (temp >>> 32));
 		return result;
 	}
 	

@@ -1,14 +1,11 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Apr 14, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.events;
 
 import java.text.DecimalFormat;
+import java.util.Collections;
+import java.util.Optional;
 
 import edu.tigers.autoreferee.engine.FollowUpAction;
 import edu.tigers.sumatra.ids.BotID;
@@ -20,7 +17,7 @@ import edu.tigers.sumatra.ids.BotID;
 public class DistanceViolation extends GameEvent
 {
 	/** speed in m/s */
-	private final double	distance;
+	private final double distance;
 	
 	
 	/**
@@ -48,7 +45,8 @@ public class DistanceViolation extends GameEvent
 	public DistanceViolation(final EGameEvent eventType, final long timestamp, final BotID botAtFault,
 			final FollowUpAction followUp, final CardPenalty cardPenalty, final double distance)
 	{
-		super(eventType, timestamp, botAtFault, followUp, cardPenalty);
+		super(eventType, timestamp, botAtFault, followUp,
+				Optional.ofNullable(cardPenalty).map(Collections::singletonList).orElseGet(Collections::emptyList));
 		this.distance = distance;
 	}
 	

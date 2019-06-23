@@ -12,6 +12,7 @@ import java.util.Optional;
 import org.apache.commons.lang.NotImplementedException;
 
 import edu.tigers.sumatra.math.I2DShape;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.LineMath;
@@ -28,7 +29,7 @@ public class Polygon implements I2DShape
 	private final IVector2[]		points;
 	private final IVector2			centroid;
 	private static final double	ACCURACY	= 1e-3;
-	private static final double	SQRT2		= Math.sqrt(2);
+	private static final double SQRT2 = SumatraMath.sqrt(2);
 	
 	
 	/**

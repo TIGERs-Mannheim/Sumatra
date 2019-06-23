@@ -21,7 +21,7 @@ public interface IRecordObserver
 	 * @param persistence the open persistence reference
 	 * @param startTime the initial time after opening the replay (timestamp in ns)
 	 */
-	default void onViewReplay(ABerkeleyPersistence persistence, long startTime)
+	default void onViewReplay(BerkeleyDb persistence, long startTime)
 	{
 	}
 	

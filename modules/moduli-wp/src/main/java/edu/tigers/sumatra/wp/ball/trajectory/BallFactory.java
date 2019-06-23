@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.ball.trajectory;
@@ -7,9 +7,9 @@ package edu.tigers.sumatra.wp.ball.trajectory;
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.wp.ball.prediction.IChipBallConsultant;
@@ -36,10 +36,10 @@ public final class BallFactory
 {
 	@Configurable(comment = "Type of model that will be created for flat balls", spezis = { "",
 			"SUMATRA" }, defValueSpezis = { "TWO_PHASE_DYNAMIC_VEL", "TWO_PHASE_DYNAMIC_VEL", })
-	private static EFlatBallModel	ballModelTypeFlat	= EFlatBallModel.TWO_PHASE_DYNAMIC_VEL;
+	private static EFlatBallModel ballModelTypeFlat = EFlatBallModel.TWO_PHASE_DYNAMIC_VEL;
 	
 	@Configurable(comment = "Type of model that will be created for chipped balls", defValue = "FIXED_LOSS_PLUS_ROLLING")
-	private static EChipBallModel	ballModelTypeChip	= EChipBallModel.FIXED_LOSS_PLUS_ROLLING;
+	private static EChipBallModel ballModelTypeChip = EChipBallModel.FIXED_LOSS_PLUS_ROLLING;
 	
 	static
 	{
@@ -77,7 +77,10 @@ public final class BallFactory
 			switch (ballModelTypeChip)
 			{
 				case FIXED_LOSS_PLUS_ROLLING:
-					trajectory = FixedLossPlusRollingBallTrajectory.fromState(state.getPos(), state.getVel(),
+					trajectory = FixedLossPlusRollingBallTrajectory.fromState(
+							state.getPos().getXYZVector(),
+							state.getVel().getXYZVector(),
+							state.getSpin(),
 							new FixedLossPlusRollingParameters());
 					break;
 				default:
@@ -88,11 +91,15 @@ public final class BallFactory
 			switch (ballModelTypeFlat)
 			{
 				case TWO_PHASE_FIXED_VEL:
-					trajectory = TwoPhaseFixedVelBallTrajectory.fromState(state.getPos(), state.getVel(),
+					trajectory = TwoPhaseFixedVelBallTrajectory.fromState(
+							state.getPos().getXYVector(),
+							state.getVel().getXYVector(),
 							new TwoPhaseFixedVelParameters());
 					break;
 				case TWO_PHASE_DYNAMIC_VEL:
-					trajectory = TwoPhaseDynamicVelBallTrajectory.fromState(state.getPos(), state.getVel(),
+					trajectory = TwoPhaseDynamicVelBallTrajectory.fromState(
+							state.getPos().getXYVector(),
+							state.getVel().getXYVector(),
 							state.getvSwitchToRoll(),
 							new TwoPhaseDynamicVelParameters());
 					break;
@@ -122,54 +129,83 @@ public final class BallFactory
 		double partVelz = 0;
 		if (chip)
 		{
-			partVelz = AngleMath.cos(chipAngle) * kickVel.getLength2();
-			double partVelxy = AngleMath.sin(chipAngle) * kickVel.getLength2();
+			partVelz = SumatraMath.cos(chipAngle) * kickVel.getLength2();
+			double partVelxy = SumatraMath.sin(chipAngle) * kickVel.getLength2();
 			
 			xyVector = kickVel.scaleToNew(partVelxy);
 		}
 		return createTrajectoryFromKick(kickPos, Vector3.from2d(xyVector, partVelz), chip);
 	}
 	
+	
 	/**
 	 * Create a ball trajectory based on a kick
+	 * <br>
+	 * Consider using {@link #createTrajectoryFromChipKick(IVector2, IVector)} or
+	 * {@link #createTrajectoryFromStraightKick(IVector2, IVector)}
 	 * 
 	 * @param kickPos [mm]
 	 * @param kickVel [mm/s]
 	 * @param chip
 	 * @return
 	 */
-	public static ABallTrajectory createTrajectoryFromKick(final IVector2 kickPos, final IVector3 kickVel,
+	public static ABallTrajectory createTrajectoryFromKick(final IVector2 kickPos, final IVector kickVel,
 			final boolean chip)
 	{
-		final ABallTrajectory trajectory;
-		
 		if (chip)
 		{
-			switch (ballModelTypeChip)
-			{
-				case FIXED_LOSS_PLUS_ROLLING:
-					trajectory = FixedLossPlusRollingBallTrajectory.fromKick(kickPos, kickVel,
-							new FixedLossPlusRollingParameters());
-					break;
-				default:
-					throw new UnsupportedOperationException();
-			}
-		} else
-		{
-			switch (ballModelTypeFlat)
-			{
-				case TWO_PHASE_FIXED_VEL:
-					trajectory = TwoPhaseFixedVelBallTrajectory.fromKick(kickPos, kickVel, new TwoPhaseFixedVelParameters());
-					break;
-				case TWO_PHASE_DYNAMIC_VEL:
-					trajectory = TwoPhaseDynamicVelBallTrajectory.fromKick(kickPos, kickVel,
-							new TwoPhaseDynamicVelParameters());
-					break;
-				default:
-					throw new UnsupportedOperationException();
-			}
+			return createTrajectoryFromChipKick(kickPos, kickVel);
 		}
-		
+		return createTrajectoryFromStraightKick(kickPos, kickVel);
+	}
+	
+	
+	/**
+	 * Create a ball trajectory based on a chip kick
+	 *
+	 * @param kickPos [mm]
+	 * @param kickVel [mm/s]
+	 * @return
+	 */
+	public static ABallTrajectory createTrajectoryFromStraightKick(final IVector2 kickPos, final IVector kickVel)
+	{
+		final ABallTrajectory trajectory;
+		switch (ballModelTypeFlat)
+		{
+			case TWO_PHASE_FIXED_VEL:
+				trajectory = TwoPhaseFixedVelBallTrajectory.fromKick(kickPos, kickVel.getXYVector(),
+						new TwoPhaseFixedVelParameters());
+				break;
+			case TWO_PHASE_DYNAMIC_VEL:
+				trajectory = TwoPhaseDynamicVelBallTrajectory.fromKick(kickPos, kickVel.getXYVector(),
+						new TwoPhaseDynamicVelParameters());
+				break;
+			default:
+				throw new UnsupportedOperationException();
+		}
+		return trajectory;
+	}
+	
+	
+	/**
+	 * Create a ball trajectory based on a straight kick
+	 *
+	 * @param kickPos [mm]
+	 * @param kickVel [mm/s]
+	 * @return
+	 */
+	public static ABallTrajectory createTrajectoryFromChipKick(final IVector2 kickPos, final IVector kickVel)
+	{
+		final ABallTrajectory trajectory;
+		switch (ballModelTypeChip)
+		{
+			case FIXED_LOSS_PLUS_ROLLING:
+				trajectory = FixedLossPlusRollingBallTrajectory.fromKick(kickPos, kickVel.getXYZVector(),
+						0, new FixedLossPlusRollingParameters());
+				break;
+			default:
+				throw new UnsupportedOperationException();
+		}
 		return trajectory;
 	}
 	

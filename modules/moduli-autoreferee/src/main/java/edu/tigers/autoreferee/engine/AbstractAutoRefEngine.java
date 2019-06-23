@@ -1,17 +1,20 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
 
 import edu.tigers.autoreferee.IAutoRefFrame;
+import edu.tigers.autoreferee.engine.events.EGameEvent;
+import edu.tigers.autoreferee.engine.events.EGameEventDetectorType;
 import edu.tigers.autoreferee.engine.events.GameEventEngine;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
-import edu.tigers.autoreferee.engine.events.IGameEventDetector.EGameEventDetectorType;
 import edu.tigers.autoreferee.engine.log.GameLog;
 import edu.tigers.autoreferee.engine.log.GameTime;
 import edu.tigers.autoreferee.engine.log.IGameLog;
@@ -27,9 +30,12 @@ public abstract class AbstractAutoRefEngine implements IAutoRefEngine
 {
 	private static final Logger log = Logger.getLogger(AbstractAutoRefEngine.class);
 	
-	private GameEventEngine gameEventEngine = null;
-	protected EEngineState engineState = null;
+	private GameEventEngine gameEventEngine;
+	protected EEngineState engineState;
 	protected GameLog gameLog = new GameLog();
+	protected AutoRefGlobalState autoRefGlobalState = new AutoRefGlobalState();
+	protected Set<EGameEvent> activeGameEvents = new HashSet<>();
+	
 	
 	protected enum EEngineState
 	{
@@ -45,22 +51,21 @@ public abstract class AbstractAutoRefEngine implements IAutoRefEngine
 	{
 		gameEventEngine = new GameEventEngine();
 		engineState = EEngineState.RUNNING;
-	}
-	
-	
-	/**
-	 * @param detectors
-	 */
-	public AbstractAutoRefEngine(final Set<EGameEventDetectorType> detectors)
-	{
-		gameEventEngine = new GameEventEngine(detectors);
+		activeGameEvents.addAll(Arrays.asList(EGameEvent.values()));
 	}
 	
 	
 	@Override
-	public synchronized void setActiveGameEvents(final Set<EGameEventDetectorType> types)
+	public synchronized void setActiveGameEventDetectors(final Set<EGameEventDetectorType> types)
 	{
 		gameEventEngine.setActiveDetectors(types);
+	}
+	
+	
+	@Override
+	public void setActiveGameEvents(final Set<EGameEvent> activeGameEvents)
+	{
+		this.activeGameEvents = activeGameEvents;
 	}
 	
 	

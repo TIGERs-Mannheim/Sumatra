@@ -1,8 +1,8 @@
 /*
  * *********************************************************
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  * Project: TIGERs - Sumatra
- * Date: Mar 22, 2017
+ * Date: June 04, 2018
  * *********************************************************
  */
 
@@ -34,6 +34,5 @@ It can be found on our homepage.
 
 You can run AI against AI within one Sumatra instance. After pressing the run button, you can use the original refbox or the ref view in Sumatra to start a game.
 Make sure you configure "moduli_sumatra" in the menu bar for simulation.
-There are additional moduli configs for example to use shared radio. 
 Most configs can be found in the config view.
 

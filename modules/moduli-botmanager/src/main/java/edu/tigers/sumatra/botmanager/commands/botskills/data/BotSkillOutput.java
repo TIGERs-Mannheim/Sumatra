@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands.botskills.data;
 
@@ -13,6 +13,7 @@ import edu.tigers.sumatra.bot.params.BotMovementLimits;
 import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
 import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
+import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.IVectorN;
 import edu.tigers.sumatra.math.vector.Vector3;
@@ -24,25 +25,27 @@ import edu.tigers.sumatra.math.vector.Vector3;
 public class BotSkillOutput
 {
 	/** --- DRIVE output -- */
-	private final IVector3			targetPos;
-	private final IVector3			targetVelLocal;
-	private final IVectorN			targetWheelVel;
+	private final IVector3 targetPos;
+	private final IVector3 targetVelLocal;
+	private final IVectorN targetWheelVel;
+	private final IVector2 primaryDirection;
 	
-	private final EDriveMode		modeXY;
-	private final EDriveMode		modeW;
+	private final EDriveMode modeXY;
+	private final EDriveMode modeW;
 	
-	private final MoveConstraints	driveLimits;
+	private final MoveConstraints driveLimits;
+	private final boolean strictVelocityLimit;
 	
 	/** --- DRIBBLER output -- */
-	private final double				dribblerRPM;
+	private final double dribblerRPM;
 	
 	/** --- KICKER output -- */
-	private final EKickerDevice	kickDevice;
-	private final EKickerMode		kickMode;
-	private final double				kickSpeed;
+	private final EKickerDevice kickDevice;
+	private final EKickerMode kickMode;
+	private final double kickSpeed;
 	
 	/** Optional commands a bot skill can send */
-	private final List<ACommand>	commands;
+	private final List<ACommand> commands;
 	
 	
 	private BotSkillOutput(final Builder builder)
@@ -50,6 +53,7 @@ public class BotSkillOutput
 		targetPos = builder.targetPos;
 		targetVelLocal = builder.targetVelLocal;
 		targetWheelVel = builder.targetWheelVel;
+		primaryDirection = builder.primaryDirection;
 		modeXY = builder.modeXY;
 		modeW = builder.modeW;
 		dribblerRPM = builder.dribblerRPM;
@@ -57,6 +61,7 @@ public class BotSkillOutput
 		kickMode = builder.kickMode;
 		kickSpeed = builder.kickSpeed;
 		driveLimits = builder.driveLimits;
+		strictVelocityLimit = builder.strictVelocityLimit;
 		commands = builder.commands;
 	}
 	
@@ -65,17 +70,19 @@ public class BotSkillOutput
 	 */
 	public static final class Builder
 	{
-		private IVector3			targetPos;
-		private IVector3			targetVelLocal;
-		private IVectorN			targetWheelVel;
-		private EDriveMode		modeXY;
-		private EDriveMode		modeW;
-		private MoveConstraints	driveLimits;
-		private double				dribblerRPM;
-		private EKickerDevice	kickDevice;
-		private EKickerMode		kickMode;
-		private double				kickSpeed;
-		private List<ACommand>	commands	= new ArrayList<>();
+		private IVector3 targetPos;
+		private IVector3 targetVelLocal;
+		private IVectorN targetWheelVel;
+		private IVector2 primaryDirection;
+		private EDriveMode modeXY;
+		private EDriveMode modeW;
+		private MoveConstraints driveLimits;
+		private boolean strictVelocityLimit;
+		private double dribblerRPM;
+		private EKickerDevice kickDevice;
+		private EKickerMode kickMode;
+		private double kickSpeed;
+		private List<ACommand> commands = new ArrayList<>();
 		
 		
 		private Builder()
@@ -163,6 +170,17 @@ public class BotSkillOutput
 		
 		
 		/**
+		 * @param primaryDirection
+		 * @return this builder
+		 */
+		public Builder primaryDirection(final IVector2 primaryDirection)
+		{
+			this.primaryDirection = primaryDirection;
+			return this;
+		}
+		
+		
+		/**
 		 * @param modeXY
 		 * @return this builder
 		 */
@@ -235,6 +253,17 @@ public class BotSkillOutput
 		public Builder driveLimits(final MoveConstraints driveLimits)
 		{
 			this.driveLimits = driveLimits;
+			return this;
+		}
+		
+		
+		/**
+		 * @param strictVelocityLimit
+		 * @return this builder
+		 */
+		public Builder strictVelocityLimit(final boolean strictVelocityLimit)
+		{
+			this.strictVelocityLimit = strictVelocityLimit;
 			return this;
 		}
 		
@@ -322,5 +351,17 @@ public class BotSkillOutput
 	public List<ACommand> getCommands()
 	{
 		return commands;
+	}
+	
+	
+	public IVector2 getPrimaryDirection()
+	{
+		return primaryDirection;
+	}
+	
+	
+	public boolean isStrictVelocityLimit()
+	{
+		return strictVelocityLimit;
 	}
 }

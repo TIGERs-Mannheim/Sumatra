@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 25.07.2015
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.filter.ukf;
 
@@ -15,6 +10,7 @@ import java.util.List;
 import Jama.CholeskyDecomposition;
 import Jama.Matrix;
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.SumatraMath;
 
 
 /**
@@ -123,7 +119,7 @@ public abstract class AUnscentedKalmanFilter
 	{
 		double lambda = (alpha * alpha * (numStates + ki)) - numStates;
 		double c = numStates + lambda;
-		this.c = Math.sqrt(c);
+		this.c = SumatraMath.sqrt(c);
 		
 		Wm.set(0, 0, lambda / c);
 		Wc.set(0, 0, (lambda / c) + ((1 - (alpha * alpha)) + beta));

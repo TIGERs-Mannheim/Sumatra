@@ -11,6 +11,7 @@ import java.util.Random;
 
 import org.junit.Test;
 
+import edu.tigers.sumatra.ai.metis.defense.DefenseMath;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;

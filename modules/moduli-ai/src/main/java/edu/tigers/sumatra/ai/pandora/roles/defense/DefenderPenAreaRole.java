@@ -1,47 +1,54 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.defense;
 
-import static edu.tigers.sumatra.skillsystem.skills.AKickSkill.EKickMode.MAX;
-
 import java.awt.Color;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.apache.log4j.Logger;
 
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.ai.data.EAiShapesLayer;
-import edu.tigers.sumatra.ai.data.EBallResponsibility;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.ballresponsibility.EBallResponsibility;
+import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
-import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.IPenaltyArea;
-import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
-import edu.tigers.sumatra.skillsystem.skills.AKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
-import edu.tigers.sumatra.skillsystem.skills.KickNormalSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveOnPenaltyAreaSkill;
-import edu.tigers.sumatra.skillsystem.skills.util.ExtendedPenaltyArea;
+import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
+import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
+import edu.tigers.sumatra.skillsystem.skills.util.penarea.IDefensePenArea;
+import edu.tigers.sumatra.skillsystem.skills.util.penarea.PenAreaFactory;
+import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
 import edu.tigers.sumatra.statemachine.IState;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
+import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
 /**
  * DefenderPenAreaRole
  *
  * @author Jonas, Stefan
+ * @author Sebastian Stein <sebastian-stein@gmx.de>
  */
 public class DefenderPenAreaRole extends ADefenseRole
 {
+	private static final Logger log = Logger.getLogger(DefenderPenAreaRole.class.getName());
 	
 	@Configurable(defValue = "1.0")
 	private static double requiredMinimumSlackTime = 1.0;
@@ -67,7 +74,6 @@ public class DefenderPenAreaRole extends ADefenseRole
 	
 	private IVector2 destination = Vector2.fromXY(0, 0);
 	private double distanceToPenArea = 300;
-	private boolean isRoleTestMode = false;
 	private final IPenaltyArea penaltyAreaOur = Geometry.getPenaltyAreaOur()
 			.withMargin(Geometry.getBotRadius() * 2 + Geometry.getBallRadius());
 	
@@ -93,19 +99,6 @@ public class DefenderPenAreaRole extends ADefenseRole
 	
 	
 	/**
-	 * Constructor for TextMode
-	 * 
-	 * @param isRoleTestMode
-	 */
-	public DefenderPenAreaRole(final Boolean isRoleTestMode)
-	{
-		this();
-		this.isRoleTestMode = isRoleTestMode;
-		this.destination = Geometry.getPenaltyAreaOur().withMargin(distanceToPenArea).stepAlongPenArea(Vector2.zero(), 0);
-	}
-	
-	
-	/**
 	 * can be called from play to set the destination of this role
 	 * 
 	 * @param destination
@@ -114,10 +107,14 @@ public class DefenderPenAreaRole extends ADefenseRole
 	{
 		this.destination = destination;
 		// update distance to penalty area
-		final ExtendedPenaltyArea toProjectOn = new ExtendedPenaltyArea(Geometry.getPenaltyAreaOur().getRadius());
-		double destinationToPenAreaDist = Vector2
-				.fromPoints(toProjectOn.projectPointOnPenaltyAreaLine(destination), destination).getLength();
+		final IDefensePenArea toProjectOn = PenAreaFactory.buildWithMargin(0);
+		double destinationToPenAreaDist = toProjectOn.projectPointOnPenaltyAreaLine(destination).distanceTo(destination);
 		distanceToPenArea = destinationToPenAreaDist;
+		
+		if (Geometry.getPenaltyAreaOur().isPointInShape(destination, Geometry.getBotRadius() - 5))
+		{
+			log.warn("Dest inside penArea " + destination, new Exception());
+		}
 	}
 	
 	
@@ -155,7 +152,7 @@ public class DefenderPenAreaRole extends ADefenseRole
 		}
 	}
 	
-	private class MoveDirectlyState implements IState
+	private class MoveDirectlyState extends AState
 	{
 		private AMoveToSkill moveToPenAreaSkill;
 		
@@ -171,17 +168,29 @@ public class DefenderPenAreaRole extends ADefenseRole
 		@Override
 		public void doUpdate()
 		{
-			ExtendedPenaltyArea extendedPenArea = new ExtendedPenaltyArea(
-					Geometry.getPenaltyAreaOur().getRadius() + distanceToPenArea);
+			Set<BotID> companions = getAiFrame().getPlayStrategy().getActiveRoles(ERole.DEFENDER_PEN_AREA).stream()
+					.map(ARole::getBotID).collect(Collectors.toSet());
+			Set<BotID> closeOpponents = getWFrame().getFoeBots().values().stream()
+					.filter(b -> b.getPos().distanceTo(destination) < Geometry.getBotRadius() * 3)
+					.map(ITrackedBot::getBotId).collect(Collectors.toSet());
+			Set<BotID> ignoredBots = new HashSet<>();
+			ignoredBots.addAll(companions);
+			ignoredBots.addAll(closeOpponents);
+			moveToPenAreaSkill.getMoveCon().setIgnoredBots(ignoredBots);
+			
+			IDefensePenArea extendedPenArea = PenAreaFactory.buildWithMargin(distanceToPenArea);
 			if (extendedPenArea.isPointInShape(getPos(), Geometry.getBotRadius() + moveDirectlyMargin))
 			{
 				triggerEvent(EEvent.REACHED_PEN_AREA);
 			}
 			moveToPenAreaSkill.getMoveCon().updateDestination(destination);
+			
+			double targetAngle = getPos().subtractNew(Geometry.getGoalOur().getCenter()).getAngle();
+			moveToPenAreaSkill.getMoveCon().updateTargetAngle(targetAngle);
 		}
 	}
 	
-	private class MoveOnPenAreaState implements IState
+	private class MoveOnPenAreaState extends AState
 	{
 		private MoveOnPenaltyAreaSkill moveOnPenAreaSkill;
 		
@@ -197,10 +206,10 @@ public class DefenderPenAreaRole extends ADefenseRole
 		@Override
 		public void doUpdate()
 		{
-			if (isRoleTestMode)
-			{
-				destination = getTestDestination();
-			}
+			boolean distanceRequired = getAiFrame().getGamestate().isDistanceToBallRequired();
+			moveOnPenAreaSkill.getMoveCon().setIgnoreGameStateObstacles(!distanceRequired);
+			moveOnPenAreaSkill.getMoveCon().setBallObstacle(distanceRequired);
+			
 			moveOnPenAreaSkill.updateDistanceToPenArea(distanceToPenArea);
 			moveOnPenAreaSkill.updateDestination(destination);
 			armDefenders(moveOnPenAreaSkill);
@@ -212,41 +221,19 @@ public class DefenderPenAreaRole extends ADefenseRole
 		{
 			List<IDrawableShape> shapes = getAiFrame().getTacticalField().getDrawableShapes()
 					.get(EAiShapesLayer.DEFENSE_PENALTY_AREA_ROLE);
-			shapes.add(new DrawableCircle(Circle.createCircle(destination, Geometry.getBotRadius() + 20),
-					getBotID().getTeamColor().getColor()));
 			shapes.add(new DrawableLine(Line.fromPoints(destination, getPos()), Color.GREEN));
-		}
-		
-		
-		// for testing purposes, use intersection of ball-to-goal-center-line with penalty area as target point
-		private IVector2 getTestDestination()
-		{
-			IVector2 ballPos = getBall().getPos();
-			ExtendedPenaltyArea extendedPenArea = new ExtendedPenaltyArea(
-					Geometry.getPenaltyAreaOur().getRadius() + distanceToPenArea);
-			destination = extendedPenArea.lineIntersectionsBallGoalLine(ballPos);
-			if (ballPos.x() <= (-Geometry.getFieldLength() / 2))
-			{
-				// invert y coordinate because the wrong penalty area line is intersected by constructing a line from ball
-				// via own goal center to penArea
-				destination = Vector2.fromXY(destination.x(), destination.y() * -1);
-			}
-			return destination;
 		}
 	}
 	
-	private class KickBallState implements IState
+	private class KickBallState extends AState
 	{
-		
-		private AKickSkill kickSkill = null;
-		
-		
 		@Override
 		public void doEntryActions()
 		{
-			kickSkill = new KickNormalSkill(new DynamicPosition(Geometry.getGoalTheir().getCenter()), MAX,
-					EKickerDevice.CHIP, 8);
-			setNewSkill(kickSkill);
+			IVector2 targetDest = Vector2.fromXY(Geometry.getCenter().x(),
+					Math.signum(getPos().y()) * Geometry.getFieldWidth() / 2);
+			setNewSkill(
+					new TouchKickSkill(new DynamicPosition(targetDest, 0.6), KickParams.maxChip()));
 		}
 		
 		

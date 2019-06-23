@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays;
 
@@ -9,12 +9,14 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
-import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
+import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
+import edu.tigers.sumatra.ai.metis.MetisAiFrame;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.referee.data.GameState;
+import edu.tigers.sumatra.wp.data.ITrackedBall;
+import edu.tigers.sumatra.wp.data.WorldFrame;
 
 
 /**
@@ -26,10 +28,11 @@ import edu.tigers.sumatra.referee.data.GameState;
  */
 public abstract class APlay
 {
-	private static final Logger	log	= Logger.getLogger(APlay.class.getName());
+	private static final Logger log = Logger.getLogger(APlay.class.getName());
 	
-	private final List<ARole>		roles;
-	private final EPlay				type;
+	private final List<ARole> roles;
+	private final EPlay type;
+	private AthenaAiFrame aiFrame;
 	
 	
 	/**
@@ -55,25 +58,27 @@ public abstract class APlay
 	 *
 	 * @param oldRole the currently assigned role
 	 * @param newRole the new (not assigned) role
+	 * @return new new role, if switch was successful
 	 */
-	protected final void switchRoles(final ARole oldRole, final ARole newRole)
+	protected final ARole switchRoles(final ARole oldRole, final ARole newRole)
 	{
 		if (newRole.isCompleted())
 		{
 			log.error("Role is already completed. Can not switch to new role: " + newRole.getType());
-			return;
+			return oldRole;
 		}
 		
 		boolean removed = roles.remove(oldRole);
 		if (!removed)
 		{
 			log.error("Could not switch roles. Role to switch is not in list. + " + oldRole);
-			return;
+			return oldRole;
 		}
 		roles.add(newRole);
 		
 		newRole.assignBotID(oldRole.getBotID());
 		newRole.update(oldRole.getAiFrame());
+		return newRole;
 	}
 	
 	
@@ -114,15 +119,14 @@ public abstract class APlay
 	 * Ask the play to add the specified number of roles
 	 * 
 	 * @param count number of roles to add
-	 * @param frame current frame
 	 * @return the added roles
 	 */
-	public final List<ARole> addRoles(final int count, final MetisAiFrame frame)
+	public final List<ARole> addRoles(final int count)
 	{
 		List<ARole> newRoles = new ArrayList<>();
 		for (int i = 0; i < count; i++)
 		{
-			ARole role = onAddRole(frame);
+			ARole role = onAddRole();
 			newRoles.add(role);
 			addRole(role);
 		}
@@ -135,18 +139,14 @@ public abstract class APlay
 	 * 
 	 * @param count number of roles to be removed
 	 * @param frame current frame
-	 * @return removed roles
 	 */
-	public final List<ARole> removeRoles(final int count, final MetisAiFrame frame)
+	public final void removeRoles(final int count, final MetisAiFrame frame)
 	{
-		List<ARole> removedRoles = new ArrayList<>();
 		for (int i = 0; i < count; i++)
 		{
 			ARole role = onRemoveRole(frame);
-			removedRoles.add(role);
 			removeRole(role);
 		}
-		return removedRoles;
 	}
 	
 	
@@ -165,10 +165,9 @@ public abstract class APlay
 	 * Please assume that the Play will start with zero roles until the play can only run with
 	 * a static number of roles anyway
 	 * 
-	 * @param frame current frame
 	 * @return the added role
 	 */
-	protected abstract ARole onAddRole(MetisAiFrame frame);
+	protected abstract ARole onAddRole();
 	
 	
 	/**
@@ -199,6 +198,7 @@ public abstract class APlay
 	 */
 	public void updateBeforeRoles(final AthenaAiFrame frame)
 	{
+		aiFrame = frame;
 	}
 	
 	
@@ -325,5 +325,23 @@ public abstract class APlay
 			rolesSorted.add(theRole);
 		}
 		setReorderedRoles(rolesSorted);
+	}
+	
+	
+	protected AthenaAiFrame getAiFrame()
+	{
+		return aiFrame;
+	}
+	
+	
+	protected WorldFrame getWorldFrame()
+	{
+		return aiFrame.getWorldFrame();
+	}
+	
+	
+	protected ITrackedBall getBall()
+	{
+		return getWorldFrame().getBall();
 	}
 }

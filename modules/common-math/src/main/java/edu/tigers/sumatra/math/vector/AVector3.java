@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.vector;
@@ -20,16 +20,6 @@ import com.sleepycat.persist.model.Persistent;
 @Persistent(version = 1)
 public abstract class AVector3 extends AVector implements IVector3
 {
-	/** Vector3f(1,0,0) */
-	public static final Vector3f	X_AXIS		= Vector3f.fromXYZ(1, 0, 0);
-	/** Vector3f(0,1,0) */
-	public static final Vector3f	Y_AXIS		= Vector3f.fromXYZ(0, 1, 0);
-	/** Vector3f(0,0,1) */
-	public static final Vector3f	Z_AXIS		= Vector3f.fromXYZ(0, 0, 1);
-	/** Vector3f(0,0,0) */
-	public static final Vector3f	ZERO_VECTOR	= Vector3f.fromXYZ(0, 0, 0);
-	
-	
 	@Override
 	public double get(final int i)
 	{
@@ -49,7 +39,7 @@ public abstract class AVector3 extends AVector implements IVector3
 	
 	
 	@Override
-	public synchronized Vector3 addNew(final IVector vector)
+	public Vector3 addNew(final IVector3 vector)
 	{
 		Vector3 result = Vector3.copy(this);
 		return result.add(vector);
@@ -57,7 +47,7 @@ public abstract class AVector3 extends AVector implements IVector3
 	
 	
 	@Override
-	public synchronized Vector3 subtractNew(final IVector vector)
+	public Vector3 subtractNew(final IVector3 vector)
 	{
 		Vector3 result = Vector3.copy(this);
 		return result.subtract(vector);
@@ -65,14 +55,14 @@ public abstract class AVector3 extends AVector implements IVector3
 	
 	
 	@Override
-	public synchronized Vector3 multiplyNew(final double f)
+	public Vector3 multiplyNew(final double f)
 	{
 		return Vector3.fromXYZ(x() * f, y() * f, z() * f);
 	}
 	
 	
 	@Override
-	public synchronized Vector3 multiplyNew(final IVector vector)
+	public Vector3 multiplyNew(final IVector3 vector)
 	{
 		return Vector3.fromXYZ(
 				x() * vector.x(),
@@ -82,14 +72,14 @@ public abstract class AVector3 extends AVector implements IVector3
 	
 	
 	@Override
-	public synchronized Vector3 absNew()
+	public Vector3 absNew()
 	{
 		return applyNew(Math::abs);
 	}
 	
 	
 	@Override
-	public synchronized Vector3 normalizeNew()
+	public Vector3 normalizeNew()
 	{
 		if (isZeroVector())
 		{
@@ -101,7 +91,7 @@ public abstract class AVector3 extends AVector implements IVector3
 	
 	
 	@Override
-	public synchronized Vector3 applyNew(final Function<Double, Double> function)
+	public Vector3 applyNew(final Function<Double, Double> function)
 	{
 		return Vector3.fromXYZ(
 				function.apply(x()),
@@ -111,10 +101,28 @@ public abstract class AVector3 extends AVector implements IVector3
 	
 	
 	@Override
-	public synchronized Vector2 projectToGroundNew(final IVector3 origin)
+	public Vector2 projectToGroundNew(final IVector3 origin)
 	{
 		double scale = origin.z() / (origin.z() - z());
 		return Vector2.fromXY(((x() - origin.x()) * scale) + origin.x(), ((y() - origin.y()) * scale) + origin.y());
+	}
+	
+	
+	@Override
+	public double dotNew(final IVector3 vector)
+	{
+		return (x() * vector.x()) + (y() * vector.y()) + (z() * vector.z());
+	}
+	
+	
+	@Override
+	public IVector3 crossNew(final IVector3 vector)
+	{
+		double x = (y() * vector.z()) - (z() * vector.y());
+		double y = (z() * vector.x()) - (x() * vector.z());
+		double z = (x() * vector.y()) - (y() * vector.x());
+		
+		return Vector3.fromXYZ(x, y, z);
 	}
 	
 	

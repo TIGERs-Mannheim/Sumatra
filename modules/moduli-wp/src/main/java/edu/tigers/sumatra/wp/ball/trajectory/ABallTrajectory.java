@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.ball.trajectory;
@@ -12,6 +12,9 @@ import org.apache.commons.lang.Validate;
 
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.wp.ball.prediction.IBallTrajectory;
@@ -23,9 +26,9 @@ import edu.tigers.sumatra.wp.data.BallTrajectoryState;
  */
 public abstract class ABallTrajectory implements IBallTrajectory
 {
-	protected final IVector3	kickPos;
-	protected final IVector3	kickVel;
-	protected final double		tKickToNow;
+	protected final IVector kickPos;
+	protected final IVector kickVel;
+	protected final double tKickToNow;
 	
 	
 	/**
@@ -33,7 +36,7 @@ public abstract class ABallTrajectory implements IBallTrajectory
 	 * @param kickVel
 	 * @param tKickToNow
 	 */
-	protected ABallTrajectory(final IVector3 kickPos, final IVector3 kickVel, final double tKickToNow)
+	protected ABallTrajectory(final IVector kickPos, final IVector kickVel, final double tKickToNow)
 	{
 		this.kickPos = kickPos;
 		this.kickVel = kickVel;
@@ -82,49 +85,35 @@ public abstract class ABallTrajectory implements IBallTrajectory
 	
 	
 	@Override
-	public IVector3 getPos3ByTime(final double time)
+	public IVector getPosByTime(final double time)
 	{
 		return getMilliStateAtTime(tKickToNow + time).getPos();
 	}
 	
 	
 	@Override
-	public IVector3 getVel3ByTime(final double time)
+	public IVector getVelByTime(final double time)
 	{
 		return getMilliStateAtTime(tKickToNow + time).getVel().multiplyNew(0.001);
 	}
 	
 	
 	@Override
-	public IVector3 getAcc3ByTime(final double time)
+	public IVector getAccByTime(final double time)
 	{
 		return getMilliStateAtTime(tKickToNow + time).getAcc().multiplyNew(0.001);
 	}
 	
 	
 	@Override
-	public IVector2 getPosByTime(final double time)
+	public double getSpinByTime(final double time)
 	{
-		return getPos3ByTime(time).getXYVector();
+		return getMilliStateAtTime(tKickToNow + time).getSpin();
 	}
 	
 	
 	@Override
-	public IVector2 getVelByTime(final double time)
-	{
-		return getVel3ByTime(time).getXYVector();
-	}
-	
-	
-	@Override
-	public IVector2 getAccByTime(final double time)
-	{
-		return getAcc3ByTime(time).getXYVector();
-	}
-	
-	
-	@Override
-	public IVector2 getPosByVel(final double targetVelocity)
+	public IVector getPosByVel(final double targetVelocity)
 	{
 		if (getAbsVelByTime(0) < targetVelocity)
 		{
@@ -139,7 +128,7 @@ public abstract class ABallTrajectory implements IBallTrajectory
 	@Override
 	public double getTimeByDist(final double travelDistance)
 	{
-		double distToNow = kickPos.getXYVector().distanceTo(getPosByTime(0));
+		double distToNow = kickPos.getXYVector().distanceTo(getPosByTime(0).getXYVector());
 		return getTimeByDistanceInMillimeters(travelDistance + distToNow) - tKickToNow;
 	}
 	
@@ -190,14 +179,14 @@ public abstract class ABallTrajectory implements IBallTrajectory
 	@Override
 	public boolean isInterceptableByTime(final double time)
 	{
-		return getPos3ByTime(time).z() < 150;
+		return getPosByTime(time).getXYZVector().z() < 150;
 	}
 	
 	
 	@Override
 	public boolean isRollingByTime(final double time)
 	{
-		return getPos3ByTime(time).z() < 10;
+		return getPosByTime(time).getXYZVector().z() < 10;
 	}
 	
 	
@@ -210,9 +199,17 @@ public abstract class ABallTrajectory implements IBallTrajectory
 	
 	
 	@Override
-	public ILine getTravelLineRolling()
+	public ILineSegment getTravelLineSegment()
 	{
-		return getTravelLine();
+		IVector2 finalPos = getPosByTime(getTimeAtRest() - tKickToNow).getXYVector();
+		return Lines.segmentFromPoints(getPosByTime(0).getXYVector(), finalPos);
+	}
+	
+	
+	@Override
+	public ILineSegment getTravelLineRolling()
+	{
+		return getTravelLineSegment();
 	}
 	
 	
@@ -232,13 +229,13 @@ public abstract class ABallTrajectory implements IBallTrajectory
 	
 	public IVector3 getKickPos()
 	{
-		return kickPos;
+		return kickPos.getXYZVector();
 	}
 	
 	
 	public IVector3 getKickVel()
 	{
-		return kickVel;
+		return kickVel.getXYZVector();
 	}
 	
 	

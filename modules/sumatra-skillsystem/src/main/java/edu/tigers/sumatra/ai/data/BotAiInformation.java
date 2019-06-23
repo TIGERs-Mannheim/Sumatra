@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.data;
 
+import java.text.DecimalFormat;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,10 +25,12 @@ import edu.tigers.sumatra.statemachine.IState;
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@Persistent(version = 2)
+@Persistent(version = 3)
 public class BotAiInformation
 {
 	private final Map<EBotInformation, String> map = new EnumMap<>(EBotInformation.class);
+	
+	private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
 	
 	
 	/**
@@ -61,94 +63,100 @@ public class BotAiInformation
 	}
 	
 	
-	public void setBattery(double percent)
+	public void setBattery(final double percent)
 	{
 		map.put(EBotInformation.BATTERY, Integer.toString((int) (percent * 100)));
 	}
 	
 	
-	public void setKickerCharge(double voltage)
+	public void setVersion(final String version)
 	{
-		map.put(EBotInformation.KICKER_CHARGE, Integer.toString((int) voltage));
+		map.put(EBotInformation.VERSION, version);
 	}
 	
 	
-	public void setBrokenFeatures(Set<EFeature> features)
+	public void setKickerCharge(final double voltage)
+	{
+		map.put(EBotInformation.KICKER_CHARGE, DECIMAL_FORMAT.format(voltage));
+	}
+	
+	
+	public void setBrokenFeatures(final Set<EFeature> features)
 	{
 		map.put(EBotInformation.BROKEN_FEATURES, StringUtils.join(features, ","));
 	}
 	
 	
-	public void setBallContact(boolean contact)
+	public void setBallContact(final String contact)
 	{
-		map.put(EBotInformation.BALL_CONTACT, contact ? "YES" : "NO");
+		map.put(EBotInformation.BALL_CONTACT, contact);
 	}
 	
 	
-	public void setKickerSpeed(double speed)
+	public void setKickerSpeed(final double speed)
 	{
 		map.put(EBotInformation.KICKER_SPEED, vel2Str(speed));
 	}
 	
 	
-	public void setKickerDevice(EKickerDevice device)
+	public void setKickerDevice(final EKickerDevice device)
 	{
 		map.put(EBotInformation.KICKER_DEVICE, device.name());
 	}
 	
 	
-	public void setDribblerSpeed(double speed)
+	public void setDribblerSpeed(final double speed)
 	{
 		map.put(EBotInformation.DRIBBLER_SPEED, Integer.toString((int) speed));
 	}
 	
 	
-	public void setVelocityCurrent(double velocity)
+	public void setVelocityCurrent(final double velocity)
 	{
 		map.put(EBotInformation.VELOCITY_CURRENT, vel2Str(velocity));
 	}
 	
 	
-	public void setVelocityMax(double velocityMax)
+	public void setVelocityMax(final double velocityMax)
 	{
 		map.put(EBotInformation.VELOCITY_MAX, vel2Str(velocityMax));
 	}
 	
 	
-	public void setVelocityLimit(double velocityLimit)
+	public void setVelocityLimit(final double velocityLimit)
 	{
 		map.put(EBotInformation.VELOCITY_LIMIT, vel2Str(velocityLimit));
 	}
 	
 	
-	public void setAccelerationLimit(double accelerationLimit)
+	public void setAccelerationLimit(final double accelerationLimit)
 	{
 		map.put(EBotInformation.ACCELERATION_LIMIT, vel2Str(accelerationLimit));
 	}
 	
 	
-	public void setPlay(String play)
+	public void setPlay(final String play)
 	{
 		map.put(EBotInformation.PLAY, play);
 	}
 	
 	
-	public void setRole(String role)
+	public void setRole(final String role)
 	
 	{
 		map.put(EBotInformation.ROLE, role);
 	}
 	
 	
-	public void setSkill(ESkill skill)
+	public void setSkill(final ESkill skill)
 	{
 		map.put(EBotInformation.SKILL, skill.name());
 	}
 	
 	
-	private String vel2Str(double vel)
+	private String vel2Str(final double vel)
 	{
-		return String.format(Locale.ENGLISH, "%.1f", vel);
+		return DECIMAL_FORMAT.format(vel);
 	}
 	
 	
@@ -167,5 +175,17 @@ public class BotAiInformation
 	public void setBotSkill(final String botSkill)
 	{
 		map.put(EBotInformation.BOT_SKILL, botSkill);
+	}
+	
+	
+	public void setMaxProcTime(final double maxProcTime)
+	{
+		map.put(EBotInformation.MAX_PROC_TIME, String.valueOf(Math.round(maxProcTime * 1000)));
+	}
+	
+	
+	public void setAvgProcTime(final double avgProcTime)
+	{
+		map.put(EBotInformation.AVG_PROC_TIME, String.valueOf(Math.round(avgProcTime * 1000)));
 	}
 }

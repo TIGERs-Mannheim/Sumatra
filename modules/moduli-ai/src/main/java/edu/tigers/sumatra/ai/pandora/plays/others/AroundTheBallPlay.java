@@ -1,16 +1,17 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.others;
 
-import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
-import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
+import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
+import edu.tigers.sumatra.ai.metis.MetisAiFrame;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.Goal;
+import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -30,7 +31,7 @@ public class AroundTheBallPlay extends APlay
 	
 	private final Goal	goal		= Geometry.getGoalOur();
 	
-	private final double	radius	= Geometry.getBotToBallDistanceStop();
+	private final double	radius	= RuleConstraints.getStopRadius();
 	
 	
 	// --------------------------------------------------------------------------
@@ -81,7 +82,7 @@ public class AroundTheBallPlay extends APlay
 	
 	
 	@Override
-	protected ARole onAddRole(final MetisAiFrame frame)
+	protected ARole onAddRole()
 	{
 		return (new MoveRole());
 	}

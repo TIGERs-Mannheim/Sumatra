@@ -2,7 +2,7 @@
   <configuration default="false" name="Sumatra Match" type="Application" factoryName="Application" singleton="true">
     <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea" />
     <option name="MAIN_CLASS_NAME" value="edu.tigers.sumatra.Sumatra" />
-    <option name="VM_PARAMETERS" value="-Dproductive=true -Xms512m -Xmx12G -server -XX:NewSize=64M -d64 -Xmaxjitcodesize128m -Xnoclassgc -Xverify:none -Dsun.java2d.d3d=false -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true -XX:-OmitStackTraceInFastThrow" />
+    <option name="VM_PARAMETERS" value="-Dproductive=true -Xms512m -Xmx12G -server -Xnoclassgc -Xverify:none -Dsun.java2d.d3d=false -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true -XX:-OmitStackTraceInFastThrow -XX:+AggressiveOpts" />
     <option name="PROGRAM_PARAMETERS" value="" />
     <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
     <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />

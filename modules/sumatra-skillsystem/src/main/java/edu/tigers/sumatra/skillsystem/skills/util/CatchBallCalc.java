@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills.util;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -12,6 +13,7 @@ import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.IPenaltyArea;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.botshape.BotShape;
@@ -20,7 +22,6 @@ import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.pathfinder.MovementCon;
-import edu.tigers.sumatra.time.TimestampTimer;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrame;
@@ -46,10 +47,12 @@ public class CatchBallCalc
 	private WorldFrame wFrame;
 	
 	private Function<IVector2, Double> calcTargetOrientation = this::targetOrientationReceive;
-	private IVector2 curDesDest = null;
+	private IVector2 curKickerDest = null;
+	private IVector2 lastInterceptionDest = null;
 	
-	private IVector2 desiredDestination = null;
-	private TimestampTimer stillTimer = new TimestampTimer(0.2);
+	private IVector2 externallySetDestination = null;
+	
+	private CachedBallInterception cachedBallInterception;
 	
 	
 	/**
@@ -70,9 +73,13 @@ public class CatchBallCalc
 	{
 		trackedBot = wFrame.getBot(botID);
 		this.wFrame = wFrame;
-		if (curDesDest == null)
+		if (curKickerDest == null)
 		{
-			curDesDest = trackedBot.getBotKickerPos();
+			curKickerDest = trackedBot.getBotKickerPos();
+		}
+		if (cachedBallInterception == null)
+		{
+			cachedBallInterception = new CachedBallInterception(botID);
 		}
 	}
 	
@@ -82,9 +89,9 @@ public class CatchBallCalc
 	 */
 	public void reset()
 	{
-		curDesDest = null;
-		desiredDestination = null;
-		stillTimer.reset();
+		curKickerDest = null;
+		externallySetDestination = null;
+		cachedBallInterception = null;
 	}
 	
 	
@@ -93,137 +100,129 @@ public class CatchBallCalc
 	 */
 	public CatchBallResult calculate()
 	{
-		calcKickerDest();
-		double targetOrientation = calcTargetOrientation();
-		IVector2 destination = calcBotDestination(targetOrientation);
+		curKickerDest = calcKickerDest();
+		double targetOrientation = calcTargetOrientation.apply(curKickerDest);
+		IVector2 botDest = kickerDestToBotDest(curKickerDest, targetOrientation);
 		
 		CatchBallResult result = new CatchBallResult();
-		result.kickerDest = curDesDest;
+		result.kickerDest = curKickerDest;
 		result.targetOrientation = targetOrientation;
-		result.botDest = destination;
+		result.botDest = botDest;
+		
 		moveCon.setMinDistToBall(Geometry.getBotRadius() + Geometry.getBallRadius() + 20);
 		moveCon.updateTargetAngle(targetOrientation);
-		moveCon.updateDestination(destination);
+		moveCon.updateDestination(botDest);
+		moveCon.setBallObstacle(isBallObstacle(curKickerDest));
+		
 		return result;
 	}
 	
 	
-	private void calcKickerDest()
+	private IVector2 calcKickerDest()
 	{
-		if (isBallVerySlow())
+		IVector2 dest = isBallVerySlow() ? getKickerDestinationForLyingBall() : getKickerDestinationForMovingBall();
+		return validatedDestination(dest);
+	}
+	
+	
+	private IVector2 validatedDestination(IVector2 destIn)
+	{
+		IVector2 dest = validateKickerPosNoCollision(destIn, getBallTravelLine());
+		return SkillUtil.movePosInsideFieldWrtBall(dest, getBall().getPos());
+	}
+	
+	
+	private IVector2 getKickerDestinationForMovingBall()
+	{
+		double ballToBotDist = getBall().getPos().distanceTo(getTBot().getPos());
+		if (ballToBotDist > Geometry.getBotRadius())
 		{
-			curDesDest = getKickerDestinationForLyingBall();
-		} else
-		{
-			getKickerDestinationForMovingBall();
-			
+			if (lastInterceptionDest == null || ballToBotDist > 500)
+			{
+				lastInterceptionDest = calcChipInterception().orElseGet(this::calcStraightInterception);
+			}
+			IVector2 desiredKickerDest = getKickerDestination(getBallTravelLine(), lastInterceptionDest);
+			IVector2 botDest = desiredKickerDest
+					.addNew(getBallTravelLine().directionVector().scaleToNew(getTBot().getCenter2DribblerDist()));
+			if (getBallTravelLine().isPointInFront(botDest))
+			{
+				return desiredKickerDest;
+			}
 		}
-		
-		validateDestination();
+		return curKickerDest;
 	}
 	
 	
-	private void validateDestination()
+	private boolean chipDestReachable(final IVector2 chipDest)
 	{
-		curDesDest = validateKickerPosNoCollision(curDesDest, getBallTravelLine());
-		curDesDest = SkillUtil.movePosInsideFieldWrtBall(curDesDest, getBall().getPos());
-	}
-	
-	
-	private void getKickerDestinationForMovingBall()
-	{
-		IVector2 chipDest = handleChippedBall();
-		IVector2 straightDest = handleStraightBall();
-		IVector2 newDest = chipDestIsUnreachable(chipDest, straightDest) ? straightDest : chipDest;
-		
-		stillTimer.reset();
-		IVector2 desiredKickerDest = getKickerDestination(getBallTravelLine(), newDest);
-		IVector2 botDest = desiredKickerDest
-				.addNew(getBallTravelLine().directionVector().scaleToNew(getTBot().getCenter2DribblerDist()));
-		if (getBallTravelLine().isPointInFront(botDest))
+		double timeToDest = getBall().getTrajectory().getTimeByPos(chipDest);
+		if (cachedBallInterception.getOptimalBallInterception() != null)
 		{
-			curDesDest = desiredKickerDest;
+			double slackTime = cachedBallInterception.getOptimalBallInterception().slackTime(timeToDest);
+			return slackTime > -0.2;
 		}
+		return false;
 	}
 	
 	
-	private boolean chipDestIsUnreachable(final IVector2 chipDest, final IVector2 straightDest)
-	{
-		return getBall().getPos().distanceTo(straightDest) > getBall().getPos().distanceTo(chipDest);
-	}
-	
-	
-	private IVector2 handleChippedBall()
+	private Optional<IVector2> calcChipInterception()
 	{
 		if (!getBall().isChipped())
 		{
-			return getBall().getPos();
+			return Optional.empty();
 		}
-		final IVector2 newDest;
 		List<IVector2> touchdowns = getBall().getTrajectory().getTouchdownLocations();
-		IVector2 touchdownLocation = touchdowns.stream().limit(4).reduce((first, second) -> second).orElse(null);
+		IVector2 touchdownLocation = getTouchdownLocationAfterAtMostTouchdowns(touchdowns, 4);
 		if (touchdownLocation != null)
 		{
 			double dist = Geometry.getBallRadius() + getTBot().getCenter2DribblerDist();
-			newDest = touchdownLocation.addNew(getBallTravelLine().directionVector().scaleToNew(-dist));
-		} else
-		{
-			newDest = handleStraightBall();
+			IVector2 newDest = touchdownLocation.addNew(getBallTravelLine().directionVector().scaleToNew(-dist));
+			if (chipDestReachable(newDest))
+			{
+				return Optional.of(newDest);
+			}
 		}
-		return newDest;
+		return Optional.empty();
 	}
 	
 	
-	private IVector2 handleStraightBall()
+	private IVector2 getTouchdownLocationAfterAtMostTouchdowns(final List<IVector2> touchdowns, int numTouchdowns)
+	{
+		return touchdowns.stream().limit(numTouchdowns).reduce((first, second) -> second).orElse(null);
+	}
+	
+	
+	private IVector2 calcStraightInterception()
 	{
 		final IVector2 newDest;
 		if (isBehindBall())
 		{
 			// outrun ball by driving to the end of the ball travel line
-			newDest = getBall().getTrajectory().getPosByVel(0);
+			newDest = getBall().getTrajectory().getPosByVel(0).getXYVector();
 		} else
 		{
-			Optional<Double> interceptTime = BallInterceptor.aBallInterceptor()
-					.withBallTrajectory(getBall().getTrajectory())
-					.withMoveConstraints(getMoveCon().getMoveConstraints())
-					.withTrackedBot(getTBot())
-					.build()
-					.optimalTimeIfReasonable();
-			
-			if (!interceptTime.isPresent() && !getBallTravelLine().isPointOnLineSegment(curDesDest))
-			{
-				newDest = getBallTravelLine().nearestPointOnLineSegment(getTBot().getBotKickerPos());
-			} else
-			{
-				// intercept the ball normally
-				// catch the nearby ball
-				newDest = interceptTime.map(aDouble -> getBall().getTrajectory().getPosByTime(aDouble))
-						.orElseGet(this::getKickerDestinationForCatchBall);
-			}
+			cachedBallInterception.update(getWorldFrame(), getMoveCon().getMoveConstraints());
+			double interceptionTime = externallySetDestinationIfReachable()
+					.orElse(cachedBallInterception.getInterceptionTime());
+			newDest = getBall().getTrajectory().getPosByTime(interceptionTime).getXYVector();
 		}
 		return newDest;
 	}
 	
 	
-	private double calcTargetOrientation()
+	private Optional<Double> externallySetDestinationIfReachable()
 	{
-		final double targetOrientation;
-		if (isBallVerySlow())
+		if (externallySetDestination != null && getBallTravelLine().distanceTo(externallySetDestination) < 200)
 		{
-			getMoveCon().setBallObstacle(false);
-			if (getBall().getVel().getLength2() < 0.1)
+			double timeToExternallySet = getBall().getTrajectory().getTimeByPos(externallySetDestination);
+			double slackTimeAtExternallySet = cachedBallInterception.getOptimalBallInterception()
+					.slackTime(timeToExternallySet);
+			if (cachedBallInterception.isAcceptableSlackTime(slackTimeAtExternallySet) || slackTimeAtExternallySet > 0)
 			{
-				targetOrientation = getBall().getPos().subtractNew(getTBot().getPos()).getAngle();
-			} else
-			{
-				targetOrientation = calcTargetOrientation.apply(curDesDest);
+				return Optional.of(timeToExternallySet);
 			}
-		} else
-		{
-			getMoveCon().setBallObstacle(isBallObstacle(curDesDest));
-			targetOrientation = calcTargetOrientation.apply(curDesDest);
 		}
-		return targetOrientation;
+		return Optional.empty();
 	}
 	
 	
@@ -233,12 +232,19 @@ public class CatchBallCalc
 	}
 	
 	
-	private IVector2 calcBotDestination(final double targetOrientation)
+	private IVector2 kickerDestToBotDest(final IVector2 kickerDest, final double targetOrientation)
 	{
-		IVector2 destination = getDestination(curDesDest, targetOrientation);
-		destination = SkillUtil.movePosOutOfPenAreaWrtBall(destination, getBall(),
-				Geometry.getPenaltyAreaTheir().withMargin(getTBot().getCenter2DribblerDist()),
-				Geometry.getPenaltyAreaOur().withMargin(Geometry.getBotRadius() * 2));
+		IVector2 destination = getDestination(kickerDest, targetOrientation);
+		List<IPenaltyArea> penAreas = new ArrayList<>(2);
+		if (moveCon.isPenaltyAreaForbiddenOur())
+		{
+			penAreas.add(Geometry.getPenaltyAreaOur().withMargin(Geometry.getBotRadius() * 2));
+		}
+		if (moveCon.isPenaltyAreaForbiddenTheir())
+		{
+			penAreas.add(Geometry.getPenaltyAreaTheir().withMargin(getTBot().getCenter2DribblerDist()));
+		}
+		destination = SkillUtil.movePosOutOfPenAreaWrtBall(destination, getBall(), penAreas);
 		return destination;
 	}
 	
@@ -261,22 +267,16 @@ public class CatchBallCalc
 	private IVector2 getKickerDestination(ILine ballLine, final IVector2 newKickerDest)
 	{
 		IVector2 lp = ballLine.leadPointOf(newKickerDest);
-		if (desiredDestination != null && ballLine.isPointInFront(desiredDestination)
-				&& ballLine.distanceTo(desiredDestination) < 200)
+		if (externallySetDestination != null && ballLine.isPointInFront(externallySetDestination)
+				&& ballLine.distanceTo(externallySetDestination) < 200)
 		{
-			IVector2 lpDesired = ballLine.leadPointOf(desiredDestination);
+			IVector2 lpDesired = ballLine.leadPointOf(externallySetDestination);
 			if (lp.distanceTo(getBall().getPos()) < lpDesired.distanceTo(getBall().getPos()))
 			{
 				return lpDesired;
 			}
 		}
 		return lp;
-	}
-	
-	
-	private IVector2 getKickerDestinationForCatchBall()
-	{
-		return getBallTravelLine().leadPointOf(curDesDest);
 	}
 	
 	
@@ -329,9 +329,9 @@ public class CatchBallCalc
 	}
 	
 	
-	public void setDesiredDestination(final IVector2 desiredDestination)
+	public void setExternallySetDestination(final IVector2 externallySetDestination)
 	{
-		this.desiredDestination = desiredDestination;
+		this.externallySetDestination = externallySetDestination;
 	}
 	
 	
@@ -348,18 +348,22 @@ public class CatchBallCalc
 		{
 			return ball.getTrajectory().getTravelLinesInterceptable().get(0);
 		}
-		return Line.fromPoints(ball.getPos(), curDesDest);
+		return Line.fromPoints(ball.getPos(), curKickerDest);
 	}
 	
 	
 	private IVector2 getKickerDestinationForLyingBall()
 	{
-		stillTimer.update(getWorldFrame().getTimestamp());
-		if (desiredDestination != null && stillTimer.isTimeUp(getWorldFrame().getTimestamp()))
+		double distanceToBall = curKickerDest.distanceTo(getBall().getPos());
+		if (distanceToBall > 300)
 		{
-			curDesDest = desiredDestination;
+			return externallySetDestination != null ? externallySetDestination : curKickerDest;
+		} else if (distanceToBall > Geometry.getBallRadius() + 10)
+		{
+			return LineMath.stepAlongLine(getBall().getPos(), getTBot().getBotKickerPos(),
+					Geometry.getBallRadius());
 		}
-		return curDesDest;
+		return curKickerDest;
 	}
 	
 	
@@ -386,6 +390,11 @@ public class CatchBallCalc
 		return wFrame;
 	}
 	
+	
+	public CachedBallInterception getCachedBallInterception()
+	{
+		return cachedBallInterception;
+	}
 	
 	/**
 	 * Data structure representing the result of this calculator

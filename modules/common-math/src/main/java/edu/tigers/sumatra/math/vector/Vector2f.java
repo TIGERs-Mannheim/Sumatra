@@ -1,10 +1,12 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.vector;
 
 import com.sleepycat.persist.model.Persistent;
+
+import edu.tigers.sumatra.math.SumatraMath;
 
 
 /**
@@ -18,10 +20,17 @@ import com.sleepycat.persist.model.Persistent;
  * @author Gero
  */
 @Persistent
-public class Vector2f extends AVector2
+public final class Vector2f extends AVector2
 {
-	private final double	x;
-	private final double	y;
+	/** Vector2f(1,0) */
+	public static final Vector2f X_AXIS = fromXY(1, 0);
+	/** Vector2f(0,1) */
+	public static final Vector2f Y_AXIS = fromXY(0, 1);
+	/** Vector2f(0,0) */
+	public static final Vector2f ZERO_VECTOR = fromXY(0, 0);
+	
+	private final double x;
+	private final double y;
 	
 	
 	private Vector2f()
@@ -43,6 +52,26 @@ public class Vector2f extends AVector2
 	
 	
 	/**
+	 * @param x value for x
+	 * @return new Vector2(x,0)
+	 */
+	public static Vector2f fromX(final double x)
+	{
+		return fromXY(x, 0);
+	}
+	
+	
+	/**
+	 * @param y value for y
+	 * @return new Vector2(0,y)
+	 */
+	public static Vector2f fromY(final double y)
+	{
+		return fromXY(0, y);
+	}
+	
+	
+	/**
 	 * @param x value
 	 * @param y value
 	 * @return new instance
@@ -50,6 +79,31 @@ public class Vector2f extends AVector2
 	public static Vector2f fromXY(final double x, final double y)
 	{
 		return new Vector2f(x, y);
+	}
+	
+	
+	/**
+	 * @param angle an angle
+	 * @return new vector with given angle and length==1
+	 */
+	public static Vector2f fromAngle(final double angle)
+	{
+		final double yn = SumatraMath.sin(angle);
+		final double xn = SumatraMath.cos(angle);
+		return Vector2f.fromXY(xn, yn);
+	}
+	
+	
+	/**
+	 * @param angle an angle
+	 * @param length the length
+	 * @return new vector with given angle and given length
+	 */
+	public static Vector2f fromAngleLength(final double angle, final double length)
+	{
+		final double yn = SumatraMath.sin(angle) * length;
+		final double xn = SumatraMath.cos(angle) * length;
+		return Vector2f.fromXY(xn, yn);
 	}
 	
 	

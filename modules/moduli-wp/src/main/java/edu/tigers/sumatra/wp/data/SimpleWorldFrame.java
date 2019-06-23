@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.data;
@@ -21,14 +21,16 @@ import edu.tigers.sumatra.vision.data.IKickEvent;
  * 
  * @author Gero
  */
-@Persistent(version = 3)
+@Persistent(version = 4)
 public class SimpleWorldFrame implements IMirrorable<SimpleWorldFrame>
 {
-	private final long							frameNumber;
-	private final long							timestamp;
-	private final IBotIDMap<ITrackedBot>	bots;
-	private final ITrackedBall					ball;
-	private final IKickEvent					kickEvent;
+	private final long frameNumber;
+	private final long timestamp;
+	private final long tAssembly;
+	private final IBotIDMap<ITrackedBot> bots;
+	private final ITrackedBall ball;
+	private final IKickEvent kickEvent;
+	private final BallKickFitState kickFitState;
 	
 	
 	@SuppressWarnings("unused")
@@ -38,7 +40,9 @@ public class SimpleWorldFrame implements IMirrorable<SimpleWorldFrame>
 		bots = null;
 		ball = null;
 		kickEvent = null;
+		kickFitState = null;
 		timestamp = 0;
+		tAssembly = 0;
 	}
 	
 	
@@ -46,10 +50,12 @@ public class SimpleWorldFrame implements IMirrorable<SimpleWorldFrame>
 	 * @param bots
 	 * @param ball
 	 * @param kickEvent
+	 * @param kickFitState
 	 * @param frameNumber
 	 * @param timestamp
 	 */
 	public SimpleWorldFrame(final IBotIDMap<ITrackedBot> bots, final ITrackedBall ball, final IKickEvent kickEvent,
+			final BallKickFitState kickFitState,
 			final long frameNumber,
 			final long timestamp)
 	{
@@ -58,6 +64,9 @@ public class SimpleWorldFrame implements IMirrorable<SimpleWorldFrame>
 		this.frameNumber = frameNumber;
 		this.bots = BotIDMapConst.unmodifiableBotIDMap(bots);
 		this.kickEvent = kickEvent;
+		this.kickFitState = kickFitState;
+		
+		tAssembly = System.nanoTime();
 	}
 	
 	
@@ -70,9 +79,11 @@ public class SimpleWorldFrame implements IMirrorable<SimpleWorldFrame>
 	{
 		ball = swf.getBall();
 		timestamp = swf.timestamp;
+		tAssembly = swf.tAssembly;
 		frameNumber = swf.frameNumber;
 		bots = swf.bots;
 		kickEvent = swf.kickEvent;
+		kickFitState = swf.kickFitState;
 	}
 	
 	
@@ -91,7 +102,8 @@ public class SimpleWorldFrame implements IMirrorable<SimpleWorldFrame>
 			newBots.put(bot.getBotId(), mBot);
 		}
 		ITrackedBall mBall = getBall().mirrored();
-		return new SimpleWorldFrame(newBots, mBall, kickEvent, frameNumber, timestamp);
+		IKickEvent mKickEvent = Optional.ofNullable(kickEvent).map(IKickEvent::mirrored).orElse(null);
+		return new SimpleWorldFrame(newBots, mBall, mKickEvent, kickFitState, frameNumber, timestamp);
 	}
 	
 	
@@ -106,7 +118,7 @@ public class SimpleWorldFrame implements IMirrorable<SimpleWorldFrame>
 	{
 		final IBotIDMap<ITrackedBot> bots = new BotIDMap<>();
 		final IKickEvent kickEvent = null;
-		return new SimpleWorldFrame(bots, TrackedBall.createStub(), kickEvent, frameNumber, timestamp);
+		return new SimpleWorldFrame(bots, TrackedBall.createStub(), kickEvent, null, frameNumber, timestamp);
 	}
 	
 	
@@ -162,5 +174,23 @@ public class SimpleWorldFrame implements IMirrorable<SimpleWorldFrame>
 	public Optional<IKickEvent> getKickEvent()
 	{
 		return Optional.ofNullable(kickEvent);
+	}
+	
+	
+	/**
+	 * @return the last kick fit state
+	 */
+	public Optional<BallKickFitState> getKickFitState()
+	{
+		return Optional.ofNullable(kickFitState);
+	}
+	
+	
+	/**
+	 * @return the assembly timestamp in [ns]
+	 */
+	public long gettAssembly()
+	{
+		return tAssembly;
 	}
 }

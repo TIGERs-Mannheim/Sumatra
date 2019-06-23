@@ -10,7 +10,6 @@ import java.util.Map;
 import edu.tigers.sumatra.Referee;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.referee.TeamConfig;
 
 
 /**
@@ -37,7 +36,7 @@ public class RefereeMsgBuilder
 	private void initTeamInfo(ETeamColor teamColor)
 	{
 		Referee.SSL_Referee.TeamInfo.Builder builder = Referee.SSL_Referee.TeamInfo.newBuilder();
-		builder.setGoalie(TeamConfig.getKeeperId(teamColor));
+		builder.setGoalie(0);
 		builder.setName(teamColor.name());
 		builder.setScore(0);
 		builder.setYellowCards(0);

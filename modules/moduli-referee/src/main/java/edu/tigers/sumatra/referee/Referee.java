@@ -6,17 +6,14 @@ package edu.tigers.sumatra.referee;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.configuration.SubnodeConfiguration;
-
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 import com.github.g3force.configurable.IConfigClient;
 import com.github.g3force.configurable.IConfigObserver;
 
-import edu.tigers.moduli.exceptions.InitModuleException;
-import edu.tigers.moduli.exceptions.StartModuleException;
 import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest;
 import edu.tigers.sumatra.Referee.SSL_Referee;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.referee.source.ARefereeMessageSource;
 import edu.tigers.sumatra.referee.source.DirectRefereeMsgForwarder;
@@ -49,10 +46,9 @@ public class Referee extends AReferee implements IConfigObserver, IRefereeSource
 	
 	
 	/**
-	 * @param subconfig
+	 * Create new instance
 	 */
-	@SuppressWarnings("unused")
-	public Referee(final SubnodeConfiguration subconfig)
+	public Referee()
 	{
 		msgSources.add(new NetworkRefereeReceiver());
 		msgSources.add(new RefBox());
@@ -61,7 +57,7 @@ public class Referee extends AReferee implements IConfigObserver, IRefereeSource
 	
 	
 	@Override
-	public void initModule() throws InitModuleException
+	public void initModule()
 	{
 		ConfigRegistration.applySpezi(CONFIG_CATEGORY, SumatraModel.getInstance().getEnvironment());
 		ConfigRegistration.registerConfigurableCallback(CONFIG_CATEGORY, this);
@@ -71,6 +67,7 @@ public class Referee extends AReferee implements IConfigObserver, IRefereeSource
 	@Override
 	public void afterApply(final IConfigClient configClient)
 	{
+		ConfigRegistration.applySpezi(CONFIG_CATEGORY, SumatraModel.getInstance().getEnvironment());
 		changeSource(activeSource);
 	}
 	
@@ -88,15 +85,18 @@ public class Referee extends AReferee implements IConfigObserver, IRefereeSource
 				.findAny()
 				.orElse(source);
 		
-		source.addObserver(this);
-		source.start();
-		
-		notifyRefereeMsgSourceChanged(source);
+		if (source != null)
+		{
+			source.addObserver(this);
+			source.start();
+			
+			notifyRefereeMsgSourceChanged(source);
+		}
 	}
 	
 	
 	@Override
-	public void startModule() throws StartModuleException
+	public void startModule()
 	{
 		source = msgSources.stream()
 				.filter(s -> s.getType() == activeSource)
@@ -128,8 +128,6 @@ public class Referee extends AReferee implements IConfigObserver, IRefereeSource
 	@Override
 	public void onNewRefereeMessage(final SSL_Referee msg)
 	{
-		TeamConfig.setKeeperIdYellow(msg.getYellow().getGoalie());
-		TeamConfig.setKeeperIdBlue(msg.getBlue().getGoalie());
 		notifyNewRefereeMsg(msg);
 	}
 	
@@ -165,5 +163,12 @@ public class Referee extends AReferee implements IConfigObserver, IRefereeSource
 	public void setActiveSource(final ERefereeMessageSource type)
 	{
 		changeSource(type);
+	}
+	
+	
+	@Override
+	public void updateKeeperId(BotID keeperId)
+	{
+		source.updateKeeperId(keeperId);
 	}
 }

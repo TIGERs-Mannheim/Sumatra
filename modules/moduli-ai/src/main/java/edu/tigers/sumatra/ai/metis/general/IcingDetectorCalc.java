@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.general;
@@ -10,11 +10,10 @@ import java.util.Optional;
 
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.ai.data.EAiShapesLayer;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
-import edu.tigers.sumatra.bot.MoveConstraints;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableTube;
 import edu.tigers.sumatra.drawable.IDrawableShape;
@@ -31,20 +30,14 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 /**
  * Calculator tries to detect secure icing of opponent:
- * opponent shot in his own half fast to goal line and cannot reach ball himself anymore
+ * opponent kick in his own half fast to goal line and cannot reach ball himself anymore
  * 
  * @author Ulrike Leipscher <ulrike.leipscher@dlr.de>.
  */
 public class IcingDetectorCalc extends ACalculator
 {
 	@Configurable(comment = "check when icing detection should be used", defValue = "true")
-	private static boolean useIcingDetection = false;
-	
-	@Configurable(comment = "[m/s] Offset for opponent max velocity", defValue = "0")
-	private static double maxVelOffset = 0;
-	
-	@Configurable(comment = "[m/s^2] Offset for opponent max acceleration", defValue = "0")
-	private static double maxAccOffset = 0;
+	private static boolean useIcingDetection = true;
 	
 	private boolean possibleNewIcingEvent = true;
 	private IVector2 kickerPos = null;
@@ -58,11 +51,13 @@ public class IcingDetectorCalc extends ACalculator
 			newTacticalField.setOpponentWillDoIcing(false);
 			return;
 		}
-		List<IDrawableShape> shapes = newTacticalField.getDrawableShapes().get(EAiShapesLayer.ICING);
-		BotID lastTouched = newTacticalField.getBotLastTouchedBall();
-		ITrackedBot botLastTouched = getWFrame().getBot(lastTouched);
-		if (botLastTouched != null && lastTouched.getTeamColor() != baseAiFrame.getTeamColor())
+		List<IDrawableShape> shapes = newTacticalField.getDrawableShapes().get(EAiShapesLayer.AI_ICING);
+		Optional<BotID> lastTouched = newTacticalField.getBotsLastTouchedBall().stream()
+				.filter(b -> b.getTeamColor() != baseAiFrame.getTeamColor())
+				.findAny();
+		if (lastTouched.isPresent())
 		{
+			ITrackedBot botLastTouched = getWFrame().getBot(lastTouched.get());
 			if (possibleNewIcingEvent
 					&& Geometry.getFieldHalfTheir().isPointInShape(botLastTouched.getPos())
 					&& Math.abs(botLastTouched.getPos().x()) > 200)
@@ -94,7 +89,6 @@ public class IcingDetectorCalc extends ACalculator
 				.filter(bot -> getBall().getPos().x() > bot.getPos().x())
 				.filter(bot -> LineMath.isPointInFront(getBall().getTrajectory().getTravelLine(), bot.getPos()))
 				.count();
-		addOffsetsToMoveConstraints();
 		long possibleIntersects2 = getWFrame().foeBots.values().stream()
 				.filter(bot -> (TrajectoryGenerator.generatePositionTrajectory(bot,
 						goalLineIntersection, bot.getMoveConstraints()).getTotalTime()) < getBall()
@@ -134,16 +128,5 @@ public class IcingDetectorCalc extends ACalculator
 	{
 		possibleNewIcingEvent = true;
 		kickerPos = null;
-	}
-	
-	
-	private void addOffsetsToMoveConstraints()
-	{
-		for (ITrackedBot bot : getWFrame().foeBots.values())
-		{
-			MoveConstraints movCon = bot.getMoveConstraints();
-			movCon.setAccMax(movCon.getAccMax() + maxAccOffset);
-			movCon.setVelMax(movCon.getVelMax() + maxVelOffset);
-		}
 	}
 }

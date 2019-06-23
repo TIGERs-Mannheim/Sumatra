@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.line;
@@ -11,6 +11,7 @@ import org.hamcrest.number.IsCloseTo;
 import org.junit.Test;
 
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -93,7 +94,7 @@ public class LineTest
 		assertThat(line.isPointInFront(Vector2.fromXY(0, 3)), is(true));
 		assertThat(line.isPointInFront(Vector2.fromXY(-2, 1)), is(false));
 		
-		line = Line.fromDirection(Vector2.zero(), Vector2.fromY(5));
+		line = Line.fromDirection(Vector2f.ZERO_VECTOR, Vector2.fromY(5));
 		assertThat(line.isPointInFront(Vector2.fromXY(1, 0)), is(true));
 		assertThat(line.isPointInFront(Vector2.fromXY(-1, 0)), is(true));
 		assertThat(line.isPointInFront(Vector2.fromXY(1, -1)), is(false));

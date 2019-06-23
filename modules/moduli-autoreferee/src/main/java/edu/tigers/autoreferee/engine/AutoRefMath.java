@@ -10,12 +10,12 @@ import java.util.stream.Stream;
 import edu.tigers.autoreferee.AutoRefConfig;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.IPenaltyArea;
+import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.VectorMath;
-import edu.tigers.sumatra.referee.TeamConfig;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
@@ -122,7 +122,7 @@ public class AutoRefMath
 	}
 	
 	
-	private static IVector2 getOffenseKickPos(final IVector2 pos)
+	public static IVector2 getOffenseKickPos(final IVector2 pos)
 	{
 		IPenaltyArea penArea = NGeometry.getPenaltyArea(NGeometry.getTeamOfClosestGoalLine(pos))
 				.withMargin(OFFENSE_FREE_KICK_DISTANCE);
@@ -218,7 +218,7 @@ public class AutoRefMath
 	
 	
 	/**
-	 * Returns true if all bots are located further than {@link Geometry#getBotToBallDistanceStop()} from the ball
+	 * Returns true if all bots are located further than {@link RuleConstraints#getStopRadius()} from the ball
 	 * 
 	 * @param frame
 	 * @return
@@ -229,7 +229,7 @@ public class AutoRefMath
 		IVector2 ballPos = frame.getBall().getPos();
 		
 		return bots.stream().allMatch(
-				bot -> VectorMath.distancePP(bot.getPos(), ballPos) > Geometry.getBotToBallDistanceStop());
+				bot -> VectorMath.distancePP(bot.getPos(), ballPos) > RuleConstraints.getStopRadius());
 	}
 	
 	
@@ -276,8 +276,8 @@ public class AutoRefMath
 	public static boolean positionInPenaltyKickArea(final ETeamColor execTeam, final IVector2 pos, final double margin)
 	{
 		double kickAreaX = Geometry.getPenaltyMarkTheir().x()
-				- Geometry.getDistancePenaltyMarkToPenaltyLine();
-		int side = execTeam == TeamConfig.getLeftTeam() ? 1 : -1;
+				- RuleConstraints.getDistancePenaltyMarkToPenaltyLine();
+		int side = execTeam == Geometry.getNegativeHalfTeam() ? 1 : -1;
 		
 		return (pos.x() * side) >= (kickAreaX - margin);
 	}

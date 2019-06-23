@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.botmanager;
@@ -9,15 +9,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentSkipListMap;
 
-import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.IConfigClient;
 import com.github.g3force.configurable.IConfigObserver;
 
-import edu.tigers.moduli.exceptions.InitModuleException;
+import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.bot.IBot;
 import edu.tigers.sumatra.botmanager.basestation.IBaseStation;
 import edu.tigers.sumatra.botmanager.basestation.IBaseStationObserver;
@@ -25,11 +26,21 @@ import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.BotSkillFactory;
 import edu.tigers.sumatra.botmanager.commands.CommandFactory;
+import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationCameraViewport;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand.ConsoleCommandTarget;
+import edu.tigers.sumatra.botparams.BotParamsManager;
+import edu.tigers.sumatra.botparams.BotParamsProvider;
+import edu.tigers.sumatra.botparams.NoBotParamsProvider;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.vision.AVisionFilter;
+import edu.tigers.sumatra.vision.IVisionFilterObserver;
+import edu.tigers.sumatra.vision.data.FilteredVisionFrame;
+import edu.tigers.sumatra.wp.AWorldPredictor;
+import edu.tigers.sumatra.wp.util.IRobotInfoProvider;
 
 
 /**
@@ -37,28 +48,24 @@ import edu.tigers.sumatra.model.SumatraModel;
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class BotManager extends ABotManager implements IConfigObserver
+public class BotManager extends ABotManager implements IConfigObserver, IVisionFilterObserver
 {
-	private static final Logger log = Logger.getLogger(BotManager.class
-			.getName());
+	private static final Logger log = Logger.getLogger(BotManager.class.getName());
 	private static final String PROP_AUTO_CHARGE = BotManager.class.getName() + ".autoCharge";
 	private boolean autoCharge = true;
 	
+	private final Map<BotID, ABot> botTable = new ConcurrentSkipListMap<>(BotID.getComparator());
 	private final List<IBaseStation> baseStations = new ArrayList<>();
-	private final List<BasestationObserver> basestationObservers = new ArrayList<>();
+	private final List<BaseStationObserver> baseStationObservers = new ArrayList<>();
 	
 	
-	/**
-	 * Setup properties.
-	 * 
-	 * @param subnodeConfiguration Properties for module-configuration
-	 */
-	public BotManager(final SubnodeConfiguration subnodeConfiguration)
+	@Override
+	public void initModule()
 	{
 		autoCharge = Boolean.valueOf(SumatraModel.getInstance().getUserProperty(
 				PROP_AUTO_CHARGE, String.valueOf(true)));
 		
-		String[] bsImplsArr = subnodeConfiguration.getStringArray("basestation-impl");
+		String[] bsImplsArr = getSubnodeConfiguration().getStringArray("basestation-impl");
 		for (String impl : bsImplsArr)
 		{
 			try
@@ -81,13 +88,6 @@ public class BotManager extends ABotManager implements IConfigObserver
 	
 	
 	@Override
-	public void initModule() throws InitModuleException
-	{
-		// empty
-	}
-	
-	
-	@Override
 	public void deinitModule()
 	{
 		// empty
@@ -101,29 +101,66 @@ public class BotManager extends ABotManager implements IConfigObserver
 		CommandFactory.getInstance().loadCommands();
 		for (IBaseStation baseStation : baseStations)
 		{
-			BasestationObserver bso = new BasestationObserver();
-			basestationObservers.add(bso);
+			BaseStationObserver bso = new BaseStationObserver();
+			baseStationObservers.add(bso);
 			baseStation.addObserver(bso);
 			baseStation.connect();
+		}
+		
+		try
+		{
+			AVisionFilter visionFilter = SumatraModel.getInstance().getModule(AVisionFilter.class);
+			visionFilter.addObserver(this);
+		} catch (ModuleNotFoundException e)
+		{
+			log.debug("No VisionFilter found. Viewports won't be forwared.", e);
+		}
+		
+		IRobotInfoProvider robotInfoProvider = new RobotInfoProvider(this, getBotParamsProvider());
+		try
+		{
+			SumatraModel.getInstance().getModule(AWorldPredictor.class).setRobotInfoProvider(robotInfoProvider);
+		} catch (ModuleNotFoundException e)
+		{
+			log.warn("Could not find WP module. Can not set robot info provider", e);
 		}
 		
 		ConfigRegistration.registerConfigurableCallback("botmgr", this);
 	}
 	
 	
+	private BotParamsProvider getBotParamsProvider()
+	{
+		if (SumatraModel.getInstance().isModuleLoaded(BotParamsManager.class))
+		{
+			return SumatraModel.getInstance().getModule(BotParamsManager.class);
+		}
+		return new NoBotParamsProvider();
+	}
+	
+	
 	@Override
 	public void stopModule()
 	{
+		try
+		{
+			AVisionFilter visionFilter = SumatraModel.getInstance().getModule(AVisionFilter.class);
+			visionFilter.removeObserver(this);
+		} catch (ModuleNotFoundException e)
+		{
+			log.debug("No VisionFilter found. Viewports won't be forwared.", e);
+		}
+		
 		for (IBaseStation baseStation : baseStations)
 		{
 			baseStation.disconnect();
-			for (IBaseStationObserver obs : basestationObservers)
+			for (IBaseStationObserver obs : baseStationObservers)
 			{
 				baseStation.removeObserver(obs);
 			}
 		}
-		basestationObservers.clear();
-		Collection<ABot> bots = new ArrayList<>(getBotTable().values());
+		baseStationObservers.clear();
+		Collection<ABot> bots = new ArrayList<>(botTable.values());
 		for (IBot bot : bots)
 		{
 			removeBot(bot.getBotId());
@@ -135,24 +172,28 @@ public class BotManager extends ABotManager implements IConfigObserver
 	@Override
 	public void chargeAll()
 	{
-		for (final ABot bot : getAllBots().values())
+		for (final ABot bot : botTable.values())
 		{
 			bot.getMatchCtrl().setKickerAutocharge(true);
 		}
-		autoCharge = true;
-		SumatraModel.getInstance().setUserProperty(PROP_AUTO_CHARGE,
-				String.valueOf(autoCharge));
+		setAutoCharge(true);
 	}
 	
 	
 	@Override
 	public void dischargeAll()
 	{
-		for (final ABot bot : getAllBots().values())
+		for (final ABot bot : botTable.values())
 		{
 			bot.getMatchCtrl().setKickerAutocharge(false);
 		}
-		autoCharge = false;
+		setAutoCharge(false);
+	}
+	
+	
+	private void setAutoCharge(final boolean autoCharge)
+	{
+		this.autoCharge = autoCharge;
 		SumatraModel.getInstance().setUserProperty(PROP_AUTO_CHARGE,
 				String.valueOf(autoCharge));
 	}
@@ -161,7 +202,7 @@ public class BotManager extends ABotManager implements IConfigObserver
 	@Override
 	public void removeBot(final BotID id)
 	{
-		ABot bot = getBotTable().remove(id);
+		ABot bot = botTable.remove(id);
 		if (bot == null)
 		{
 			log.warn("Tried to remove a non-existing bot with id " + id);
@@ -180,9 +221,9 @@ public class BotManager extends ABotManager implements IConfigObserver
 	
 	
 	@Override
-	public Map<BotID, ABot> getAllBots()
+	public Map<BotID, ABot> getBots()
 	{
-		return Collections.unmodifiableMap(getBotTable());
+		return Collections.unmodifiableMap(botTable);
 	}
 	
 	
@@ -200,25 +241,29 @@ public class BotManager extends ABotManager implements IConfigObserver
 		{
 			bs.afterApply(configClient);
 		}
-		for (ABot bot : getBotTable().values())
+		for (ABot bot : botTable.values())
 		{
 			bot.afterApply(configClient);
 		}
 	}
 	
-	private class BasestationObserver implements IBaseStationObserver
+	
+	@Override
+	public Optional<ABot> getBot(final BotID botID)
 	{
-		
-		
+		return Optional.ofNullable(getBots().get(botID));
+	}
+	
+	private class BaseStationObserver implements IBaseStationObserver
+	{
 		@Override
-		public void onIncommingBotCommand(final BotID id, final ACommand command)
+		public void onIncomingBotCommand(final BotID id, final ACommand command)
 		{
-			for (ABot bot : getAllBots().values())
+			ABot bot = botTable.get(id);
+			if (bot != null)
 			{
-				if (id.equals(bot.getBotId()))
-				{
-					bot.onIncommingBotCommand(command);
-				}
+				bot.onIncomingBotCommand(command);
+				notifyIncomingBotCommand(botTable.get(id), command);
 			}
 		}
 		
@@ -226,7 +271,8 @@ public class BotManager extends ABotManager implements IConfigObserver
 		@Override
 		public void onBotOffline(final BotID id)
 		{
-			ABot bot = getBotTable().get(id);
+			ABot bot = botTable.get(id);
+			log.debug("Bot is offline: " + bot);
 			if (bot != null)
 			{
 				bot.stop();
@@ -238,9 +284,10 @@ public class BotManager extends ABotManager implements IConfigObserver
 		@Override
 		public void onBotOnline(final ABot bot)
 		{
-			if (!getBotTable().containsKey(bot.getBotId()))
+			log.debug("Bot is online: " + bot);
+			if (!botTable.containsKey(bot.getBotId()))
 			{
-				getBotTable().put(bot.getBotId(), bot);
+				botTable.put(bot.getBotId(), bot);
 				bot.getMatchCtrl().setKickerAutocharge(autoCharge);
 				bot.start();
 				updateColorOfAllRobotsToMajority(bot);
@@ -252,14 +299,13 @@ public class BotManager extends ABotManager implements IConfigObserver
 		}
 		
 		
-		private void updateColorOfAllRobotsToMajority(ABot bot)
+		private void updateColorOfAllRobotsToMajority(final ABot bot)
 		{
-			
 			if (SumatraModel.getInstance().isProductive())
 			{
-				long numY = getBotTable().values().stream().map(b -> b.getBotId().getTeamColor())
+				long numY = botTable.values().stream().map(b -> b.getBotId().getTeamColor())
 						.filter(tc -> tc.equals(ETeamColor.YELLOW)).count();
-				long numB = getBotTable().size() - numY;
+				long numB = botTable.size() - numY;
 				String command = null;
 				if (numY > numB)
 				{
@@ -281,6 +327,21 @@ public class BotManager extends ABotManager implements IConfigObserver
 				}
 			}
 		}
+	}
+	
+	
+	@Override
+	public void onNewFilteredVisionFrame(final FilteredVisionFrame filteredVisionFrame)
+	{
+		// not used
+	}
+	
+	
+	@Override
+	public void onViewportUpdated(final int cameraId, final IRectangle viewport)
+	{
+		BaseStationCameraViewport cmd = new BaseStationCameraViewport(cameraId, viewport);
+		baseStations.forEach(b -> b.enqueueCommand(cmd));
 	}
 }
 

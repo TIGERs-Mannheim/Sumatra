@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands.basestation;
 
@@ -74,7 +74,7 @@ public class BaseStationACommand extends ACommand
 	{
 		if (child == null)
 		{
-			child = CommandFactory.getInstance().decode(childData, false);
+			child = CommandFactory.getInstance().decode(childData);
 		}
 		
 		return child;
@@ -86,7 +86,7 @@ public class BaseStationACommand extends ACommand
 	 */
 	public void setChild(final ACommand child)
 	{
-		childData = CommandFactory.getInstance().encode(child, false);
+		childData = CommandFactory.getInstance().encode(child);
 		this.child = child;
 	}
 	
@@ -130,9 +130,9 @@ public class BaseStationACommand extends ACommand
 			return BotID.noBot();
 		}
 		
-		if (id > AObjectID.BOT_ID_MAX)
+		if (id > AObjectID.BOT_ID_MIDDLE_BS)
 		{
-			return BotID.createBotId(id - (AObjectID.BOT_ID_MAX + 1), ETeamColor.BLUE);
+			return BotID.createBotId(id - (AObjectID.BOT_ID_MIDDLE_BS + 1), ETeamColor.BLUE);
 		}
 		
 		return BotID.createBotId(id, ETeamColor.YELLOW);
@@ -154,7 +154,7 @@ public class BaseStationACommand extends ACommand
 		
 		if (id.getTeamColor() == ETeamColor.BLUE)
 		{
-			return id.getNumber() + AObjectID.BOT_ID_MAX + 1;
+			return id.getNumber() + AObjectID.BOT_ID_MIDDLE_BS + 1;
 		}
 		
 		return id.getNumber();

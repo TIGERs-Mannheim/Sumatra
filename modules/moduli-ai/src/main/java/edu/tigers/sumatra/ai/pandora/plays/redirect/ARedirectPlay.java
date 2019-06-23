@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.redirect;
 
@@ -9,19 +9,17 @@ import java.util.Map;
 
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
-import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
+import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
+import edu.tigers.sumatra.ai.metis.MetisAiFrame;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.test.RedirectTestRole;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.LineMath;
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.VectorMath;
-import edu.tigers.sumatra.referee.data.GameState;
-import edu.tigers.sumatra.units.DistanceUnit;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
@@ -33,20 +31,10 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public abstract class ARedirectPlay extends APlay
 {
-	@Configurable(comment = "dist to center (radius) [mm]", defValue = "3000.0")
-	private static double distance = 3000;
-	
-	private boolean needReorder = true;
-	
-	@Configurable(defValue = "false")
-	private static boolean predictTargetPos = false;
-	
 	@Configurable(defValue = "false")
 	private static boolean turn180degOnWait = false;
 	
-	@Configurable(comment = "Assumed avg ball speed for calculating lookahead", defValue = "2.0")
-	private static double avgBallSpeed = 2.0;
-	
+	private boolean needReorder = true;
 	
 	protected enum EReceiveMode
 	{
@@ -69,17 +57,10 @@ public abstract class ARedirectPlay extends APlay
 	
 	
 	@Override
-	protected ARole onAddRole(final MetisAiFrame frame)
+	protected ARole onAddRole()
 	{
 		needReorder = true;
-		return new RedirectTestRole(new DynamicPosition(AVector2.ZERO_VECTOR));
-	}
-	
-	
-	@Override
-	protected void onGameStateChanged(final GameState gameState)
-	{
-		
+		return new RedirectTestRole(new DynamicPosition(Vector2f.ZERO_VECTOR));
 	}
 	
 	
@@ -90,7 +71,6 @@ public abstract class ARedirectPlay extends APlay
 		{
 			return;
 		}
-		
 		
 		List<IVector2> destinations = getFormation();
 		
@@ -105,63 +85,61 @@ public abstract class ARedirectPlay extends APlay
 			needReorder = false;
 		}
 		
-		int i = 0;
+		assignTargets(frame, destinations);
+		
+		RedirectTestRole nearest2BallRole = getNearestRoleToBall(frame);
+		
+		updateRoleStates(frame, nearest2BallRole);
+	}
+	
+	
+	private void updateRoleStates(final AthenaAiFrame frame, final RedirectTestRole nearest2BallRole)
+	{
+		if (frame.getWorldFrame().getBall().getVel().getLength2() < 1.0)
+		{
+			boolean robotsReady = getRoles().stream().map(r -> (RedirectTestRole) r)
+					.noneMatch(RedirectTestRole::isDrivingToDesiredDest);
+			
+			if (robotsReady && (nearest2BallRole != null))
+			{
+				nearest2BallRole.changeToPass();
+			}
+			changeAllExceptNearestToWait(nearest2BallRole);
+		} else
+		{
+			updateRoleStates(nearest2BallRole);
+		}
+	}
+	
+	
+	private void changeAllExceptNearestToWait(final RedirectTestRole nearest2BallRole)
+	{
 		for (ARole role : getRoles())
 		{
 			RedirectTestRole redRole = (RedirectTestRole) role;
-			redRole.setDesiredDestination(destinations.get(i));
-			// get opposite bot
-			int roleIdx = getReceiverTarget(i);
-			ITrackedBot targetBot = getRoles().get(roleIdx).getBot();
-			double dist2RedRole = VectorMath.distancePP(frame.getWorldFrame().getBall().getPos(), redRole.getPos());
-			double lookahead = 0;
-			if (predictTargetPos)
+			if (redRole != nearest2BallRole)
 			{
-				lookahead = DistanceUnit.MILLIMETERS.toMeters(dist2RedRole + (2 * distance)) / avgBallSpeed;
+				redRole.changeToWait();
 			}
+		}
+	}
+	
+	
+	private void assignTargets(final AthenaAiFrame frame, final List<IVector2> destinations)
+	{
+		for (int i = 0; i < getRoles().size(); i++)
+		{
+			RedirectTestRole redRole = (RedirectTestRole) getRoles().get(i);
+			redRole.setDesiredDestination(destinations.get(i));
+			int receiverIdx = getReceiverTarget(i);
+			ITrackedBot targetBot = getRoles().get(receiverIdx).getBot();
+			redRole.setTarget(new DynamicPosition(targetBot));
+			
 			if (turn180degOnWait)
 			{
 				IVector2 ball2Bot = redRole.getPos().subtractNew(frame.getWorldFrame().getBall().getPos());
 				redRole.setDesiredOrientation(ball2Bot.getAngle());
 			}
-			redRole.setTarget(new DynamicPosition(targetBot, lookahead));
-			i++;
-		}
-		
-		RedirectTestRole nearest2BallRole = getNearestRoleToBall(frame);
-		
-		if (frame.getWorldFrame().getBall().getVel().getLength2() < 1)
-		{
-			boolean needInit = false;
-			for (ARole role : getRoles())
-			{
-				if (role == nearest2BallRole)
-				{
-					continue;
-				}
-				RedirectTestRole redRole = (RedirectTestRole) role;
-				if (!redRole.getDesiredDestination().isCloseTo(redRole.getPos(), 500))
-				{
-					needInit = true;
-				}
-			}
-			
-			// ball is not moving
-			if (!needInit && (nearest2BallRole != null))
-			{
-				nearest2BallRole.changeToPass();
-			}
-			for (ARole role : getRoles())
-			{
-				RedirectTestRole redRole = (RedirectTestRole) role;
-				if (needInit || (redRole != nearest2BallRole))
-				{
-					redRole.changeToWait();
-				}
-			}
-		} else
-		{
-			updateRoleStates(nearest2BallRole);
 		}
 	}
 	
@@ -206,7 +184,7 @@ public abstract class ARedirectPlay extends APlay
 		IVector2 ballVel = frame.getWorldFrame().getBall().getVel();
 		ARole nearestRole = null;
 		double shortestDist = Double.MAX_VALUE;
-		boolean ballMoving = ballVel.getLength2() > 0.5;
+		boolean ballMoving = ballVel.getLength2() > 1.0;
 		for (ARole role : getRoles())
 		{
 			double dist;
@@ -231,14 +209,5 @@ public abstract class ARedirectPlay extends APlay
 			}
 		}
 		return (RedirectTestRole) nearestRole;
-	}
-	
-	
-	/**
-	 * @return the distance
-	 */
-	protected static double getDistance()
-	{
-		return distance;
 	}
 }

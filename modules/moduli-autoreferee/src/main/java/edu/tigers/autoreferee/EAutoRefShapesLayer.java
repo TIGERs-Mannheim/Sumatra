@@ -1,17 +1,17 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee;
 
 
-import edu.tigers.sumatra.drawable.ShapeMap;
+import edu.tigers.sumatra.drawable.IShapeLayer;
 
 
 /**
  * @author "Lukas Magel"
  */
 @SuppressWarnings("squid:S1192") // duplicated strings not avoidable here
-public enum EAutoRefShapesLayer implements ShapeMap.IShapeLayer
+public enum EAutoRefShapesLayer implements IShapeLayer
 {
 	/**  */
 	ENGINE("Engine", "AutoReferee", true),
@@ -20,8 +20,11 @@ public enum EAutoRefShapesLayer implements ShapeMap.IShapeLayer
 	/**  */
 	LAST_BALL_CONTACT_EXT("Ball Contact ext", "AutoReferee", false),
 	/**  */
-	BALL_LEFT_FIELD("Ball Left Field", "AutoReferee", true);
+	BALL_LEFT_FIELD("Ball Left Field", "AutoReferee", true),
+	/** */
+	ALLOWED_DISTANCES("Allowed Distances", "AutoReferee", true);
 	
+	private final String id;
 	private final String name;
 	private final String category;
 	private final boolean visible;
@@ -32,6 +35,7 @@ public enum EAutoRefShapesLayer implements ShapeMap.IShapeLayer
 		this.name = name;
 		this.category = category;
 		this.visible = visible;
+		id = EAutoRefShapesLayer.class.getCanonicalName() + name();
 	}
 	
 	
@@ -52,7 +56,7 @@ public enum EAutoRefShapesLayer implements ShapeMap.IShapeLayer
 	@Override
 	public String getId()
 	{
-		return EAutoRefShapesLayer.class.getCanonicalName() + name();
+		return id;
 	}
 	
 	

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder;
@@ -10,7 +10,7 @@ import java.util.Random;
 
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
@@ -22,19 +22,17 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class TrajPathFinderInput
 {
-	private MoveConstraints	moveConstraints	= null;
+	private final long timestamp;
+	private MoveConstraints moveConstraints = null;
 	
-	private double				collisionStepSize	= 0.125;
-	
-	private IVector2			pos					= Vector2.ZERO_VECTOR;
-	private IVector2			vel					= Vector2.ZERO_VECTOR;
-	private double				orientation;
-	private IVector2			dest					= Vector2.ZERO_VECTOR;
-	
-	private List<IObstacle>	obstacles			= new ArrayList<>(0);
-	private final long		timestamp;
-	private double				targetAngle;
-	private Random				rnd;
+	private IVector2 pos = Vector2f.ZERO_VECTOR;
+	private IVector2 vel = Vector2f.ZERO_VECTOR;
+	private double collisionStepSize = 0.125;
+	private IVector2 dest = Vector2f.ZERO_VECTOR;
+	private double orientation;
+	private List<IObstacle> obstacles = new ArrayList<>(0);
+	private double targetAngle;
+	private Random rnd;
 	
 	
 	/**
@@ -48,28 +46,24 @@ public class TrajPathFinderInput
 	
 	
 	/**
-	 * @param input to be copied
-	 * @param timestamp current time [ns]
+	 * Create the input from a tracked bot and the current trajectory
+	 * 
+	 * @param timestamp
+	 * @param tBot
+	 * @return
 	 */
-	public TrajPathFinderInput(final TrajPathFinderInput input, final long timestamp)
+	public static TrajPathFinderInput fromBotOrTrajectory(long timestamp, ITrackedBot tBot)
 	{
-		this(timestamp);
-		pos = input.pos;
-		vel = input.vel;
-		orientation = input.orientation;
-		dest = input.dest;
-		obstacles.addAll(input.obstacles);
-		targetAngle = input.targetAngle;
-		rnd = input.rnd;
-		collisionStepSize = input.collisionStepSize;
-		moveConstraints = input.getMoveConstraints();
+		TrajPathFinderInput input = new TrajPathFinderInput(timestamp);
+		input.setTrackedBot(tBot);
+		return input;
 	}
 	
 	
 	/**
 	 * @param tBot
 	 */
-	public final void setTrackedBot(final ITrackedBot tBot)
+	private void setTrackedBot(final ITrackedBot tBot)
 	{
 		pos = tBot.getPos();
 		orientation = tBot.getOrientation();
@@ -209,6 +203,12 @@ public class TrajPathFinderInput
 	public void setRnd(final Random rnd)
 	{
 		this.rnd = rnd;
+	}
+	
+	
+	public void setCollisionStepSize(final double collisionStepSize)
+	{
+		this.collisionStepSize = collisionStepSize;
 	}
 	
 	

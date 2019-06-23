@@ -115,7 +115,7 @@ public class BallInterceptorTest
 		double tAtMinTSlack = 0;
 		for (double t = 0; t < tEnd; t += 0.01)
 		{
-			IVector2 dest = ball.getTrajectory().getPosByTime(t);
+			IVector2 dest = ball.getTrajectory().getPosByTime(t).getXYVector();
 			BangBangTrajectory2D traj = TrajectoryGenerator.generatePositionTrajectory(moveConstraints, botPos, botVel,
 					dest);
 			double tSlack = Math.abs(traj.getTotalTime() - t);

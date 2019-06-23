@@ -1,15 +1,13 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense.strategy;
 
-import org.apache.log4j.Logger;
-
-import edu.tigers.sumatra.ai.data.OffensiveStrategy;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
-import edu.tigers.sumatra.ai.metis.offense.data.TemporaryOffensiveInformation;
+import edu.tigers.sumatra.ai.BaseAiFrame;
+import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.wp.data.ITrackedBall;
+import edu.tigers.sumatra.wp.data.WorldFrame;
 
 
 /**
@@ -17,54 +15,40 @@ import edu.tigers.sumatra.ai.metis.offense.data.TemporaryOffensiveInformation;
  */
 public abstract class AOffensiveStrategyFeature
 {
-	
-	/**
-	 * Used to describe the activity of the current calculations
-	 */
-	public enum EFeatureActivity
-	{
-		/**
-		 *
-		 */
-		NONE,
-		/**
-		 *
-		 */
-		PARTIALLY,
-		/**
-		 *
-		 */
-		FULL
-	}
-	
-	protected static final Logger	log		= Logger
-			.getLogger(AOffensiveStrategyFeature.class.getName());
-	
-	protected EFeatureActivity		activity	= EFeatureActivity.NONE;
+	private BaseAiFrame baseAiFrame;
 	
 	
 	/**
 	 * Resetting some private parameters for next frame
 	 */
-	public void initFeature()
+	public void update(final BaseAiFrame baseAiFrame)
 	{
-		activity = EFeatureActivity.NONE;
+		this.baseAiFrame = baseAiFrame;
 	}
 	
 	
 	/**
 	 * @param newTacticalField current Tactical field
-	 * @param baseAiFrame baseAiFrame
 	 * @param strategy will be filled with data
-	 * @param tempInfo
 	 */
-	public abstract void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame,
-			TemporaryOffensiveInformation tempInfo, OffensiveStrategy strategy);
+	public abstract void doCalc(final TacticalField newTacticalField,
+			OffensiveStrategy strategy);
 	
 	
-	public EFeatureActivity getActivity()
+	protected BaseAiFrame getAiFrame()
 	{
-		return activity;
+		return baseAiFrame;
 	}
 	
+	
+	protected WorldFrame getWFrame()
+	{
+		return baseAiFrame.getWorldFrame();
+	}
+	
+	
+	protected ITrackedBall getBall()
+	{
+		return baseAiFrame.getWorldFrame().getBall();
+	}
 }

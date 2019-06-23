@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 24.11.2016
- * Author(s): AndreR <andre@ryll.cc>
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.vision.tracker;
 
@@ -26,10 +21,9 @@ import edu.tigers.sumatra.filter.tracking.TrackingFilterPosVel1D;
 import edu.tigers.sumatra.filter.tracking.TrackingFilterPosVel2D;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.vision.data.FilteredVisionBot;
 
 
@@ -47,7 +41,6 @@ public class RobotTracker
 	private final List<Long> updateTimestamps = new ArrayList<>();
 	
 	private long lastUpdateTimestamp;
-	private long lastPredictTimestamp;
 	
 	private double visionQuality;
 	private double lastCamOrientation;
@@ -74,12 +67,8 @@ public class RobotTracker
 	private static double maxLinearVel = 6000.0;
 	@Configurable(defValue = "30.0", comment = "Maximum assumed angular robot speed in [rad/s] to filter outliers")
 	private static double maxAngularVel = 30.0;
-	@Configurable(defValue = "1000.0", comment = "Increase measurement error depending on frame time deviation from average.")
-	private static double measErrorDtDeviationPenalty = 1000.0;
 	@Configurable(defValue = "20", comment = "Reciprocal health is used as uncertainty, increased on update, decreased on prediction")
 	private static int maxHealth = 20;
-	@Configurable(defValue = "0.0", comment = "Prediction horizon for robots.")
-	private static double predictionTime = 0.0;
 	
 	static
 	{
@@ -101,7 +90,6 @@ public class RobotTracker
 		
 		lastCamOrientation = robot.getOrientation();
 		lastUpdateTimestamp = robot.gettCapture();
-		lastPredictTimestamp = robot.gettCapture();
 		botId = robot.getBotId();
 		camId = robot.getCameraId();
 	}
@@ -126,7 +114,6 @@ public class RobotTracker
 		
 		lastCamOrientation = robot.getOrientation();
 		lastUpdateTimestamp = robot.gettCapture();
-		lastPredictTimestamp = robot.gettCapture();
 		botId = robot.getBotId();
 		camId = robot.getCameraId();
 	}
@@ -140,15 +127,8 @@ public class RobotTracker
 	 */
 	public void predict(final long timestamp, final double avgFrameDt)
 	{
-		double dtInSec = (timestamp - lastPredictTimestamp) * 1e-9;
-		
-		filterXY.setMeasurementError(measErrorXY + (Math.abs(avgFrameDt - dtInSec) * measErrorDtDeviationPenalty));
-		filterW.setMeasurementError(measErrorW + (Math.abs(avgFrameDt - dtInSec) * measErrorDtDeviationPenalty));
-		
 		filterXY.predict(timestamp);
 		filterW.predict(timestamp);
-		
-		lastPredictTimestamp = timestamp;
 		
 		if (health > 1)
 		{
@@ -293,11 +273,10 @@ public class RobotTracker
 	 * @param id BotID of the final robot.
 	 * @param robots List of robot trackers. Must not be empty.
 	 * @param timestamp Extrapolation time stamp to use for the final robot.
-	 * @param trajAcc
 	 * @return Merged filtered vision robot.
 	 */
 	public static FilteredVisionBot mergeRobotTrackers(final BotID id, final List<RobotTracker> robots,
-			final long timestamp, final IVector3 trajAcc)
+			final long timestamp)
 	{
 		Validate.notEmpty(robots);
 		
@@ -328,8 +307,8 @@ public class RobotTracker
 		Validate.isTrue(totalOrientUnc > 0);
 		Validate.isTrue(totalAVelUnc > 0);
 		
-		IVector2 pos = AVector2.ZERO_VECTOR;
-		IVector2 vel = AVector2.ZERO_VECTOR;
+		IVector2 pos = Vector2f.ZERO_VECTOR;
+		IVector2 vel = Vector2f.ZERO_VECTOR;
 		double orient = 0;
 		double aVel = 0;
 		
@@ -354,10 +333,6 @@ public class RobotTracker
 		vel = vel.multiplyNew(1.0 / totalVelUnc);
 		orient /= totalOrientUnc;
 		aVel /= totalAVelUnc;
-		
-		pos = pos.addNew(vel.multiplyNew(predictionTime))
-				.add(trajAcc.getXYVector().multiplyNew(0.5 * predictionTime * predictionTime));
-		vel = vel.addNew(trajAcc.getXYVector().multiplyNew(predictionTime));
 		
 		return FilteredVisionBot.Builder.create()
 				.withId(id)
@@ -402,17 +377,17 @@ public class RobotTracker
 		double orient = getOrientation(timestamp);
 		
 		DrawableBotShape botShape = new DrawableBotShape(pos, orient, 120, 100);
-		botShape.setFill(false);
+		botShape.setFillColor(null);
 		shapes.add(botShape);
 		
 		DrawableAnnotation id = new DrawableAnnotation(pos, Integer.toString(botId.getNumber()), true);
-		id.setOffset(Vector2.fromY(150));
+		id.withOffset(Vector2.fromY(150));
 		id.setColor(botId.getTeamColor().getColor());
 		shapes.add(id);
 		
 		DrawableAnnotation unc = new DrawableAnnotation(pos,
 				String.format("%3.2f", filterXY.getPositionUncertainty().getLength() * getUncertainty()));
-		unc.setOffset(Vector2.fromX(-150));
+		unc.withOffset(Vector2.fromX(-150));
 		unc.setColor(botId.getTeamColor().getColor());
 		shapes.add(unc);
 		

@@ -25,16 +25,34 @@ public interface IVector2 extends IVector, IEuclideanDistance
 	}
 	
 	
-	@Override
-	Vector2 addNew(IVector vector);
+	/**
+	 * Adds 'this' and 'vector' and returns the result in a new object, while 'this' and 'vector' stay unaffected.
+	 *
+	 * @param vector
+	 * @return The result as a new object
+	 */
+	Vector2 addNew(IVector2 vector);
 	
 	
-	@Override
-	Vector2 subtractNew(IVector vector);
+	/**
+	 * Subtracts the given 'vector' from 'this' and returns the result in a new object, while 'this' and 'vector' stay
+	 * unaffected.
+	 *
+	 * @param vector
+	 * @return The result as a new object
+	 */
+	Vector2 subtractNew(IVector2 vector);
 	
 	
-	@Override
-	Vector2 multiplyNew(IVector vector);
+	/**
+	 * Multiplies each element of the given 'vector' with the corresponding element of 'this' and returns the result in a
+	 * new object, while 'this' and 'vector' stay
+	 * unaffected.
+	 *
+	 * @param vector
+	 * @return The result as a new object
+	 */
+	Vector2 multiplyNew(IVector2 vector);
 	
 	
 	@Override

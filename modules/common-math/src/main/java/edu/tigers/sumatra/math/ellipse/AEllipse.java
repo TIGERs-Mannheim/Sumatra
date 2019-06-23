@@ -10,6 +10,7 @@ import org.apache.commons.lang.NotImplementedException;
 
 import com.sleepycat.persist.model.Persistent;
 
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -52,12 +53,12 @@ abstract class AEllipse implements IEllipse
 		final double y;
 		if (getRadiusX() > getRadiusY())
 		{
-			x = Math.sqrt((getRadiusX() * getRadiusX()) - (getRadiusY() * getRadiusY()));
+			x = SumatraMath.sqrt((getRadiusX() * getRadiusX()) - (getRadiusY() * getRadiusY()));
 			y = 0;
 		} else
 		{
 			x = 0;
-			y = Math.sqrt((getRadiusY() * getRadiusY()) - (getRadiusX() * getRadiusX()));
+			y = SumatraMath.sqrt((getRadiusY() * getRadiusY()) - (getRadiusX() * getRadiusX()));
 		}
 		return Vector2.fromXY(x, y).turn(getTurnAngle());
 	}
@@ -121,7 +122,7 @@ abstract class AEllipse implements IEllipse
 	public double getCircumference()
 	{
 		double l = (getRadiusX() - getRadiusY()) / (getRadiusX() + getRadiusY());
-		double e = 1 + ((3 * l * l) / (10.0 + Math.sqrt(4 - (3 * l * l))));
+		double e = 1 + ((3 * l * l) / (10.0 + SumatraMath.sqrt(4 - (3 * l * l))));
 		return Math.PI * (getRadiusX() + getRadiusY()) * e;
 	}
 	

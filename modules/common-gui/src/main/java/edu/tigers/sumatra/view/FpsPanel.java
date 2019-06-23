@@ -39,19 +39,21 @@ public class FpsPanel extends JPanel
 	public enum EFpsType
 	{
 		/**  */
-		CAM("Cam: "),
+		CAM("Cam: ", "Camera FPS"),
 		/**  */
-		WP("WP: "),
+		WP("WP: ", "World Predictor FPS"),
 		/**  */
-		AI_Y("AIY: "),
+		AI_Y("AIY: ", "Yellow Team AI FPS"),
 		/**  */
-		AI_B("AIB: "), ;
+		AI_B("AIB: ", "Blue Team AI FPS"), ;
 		final String	prefix;
+		final String    desc;
 		
 		
-		private EFpsType(final String prefix)
+		EFpsType(final String prefix, final String desc)
 		{
 			this.prefix = prefix;
+			this.desc = desc;
 		}
 	}
 	
@@ -70,6 +72,7 @@ public class FpsPanel extends JPanel
 		for (EFpsType ft : EFpsType.values())
 		{
 			JLabel lbl = new JLabel(ft.prefix + "-");
+			lbl.setToolTipText(ft.desc);
 			labelMap.put(ft, lbl);
 			add(lbl);
 			lbl.setMinimumSize(new Dimension(width, 0));

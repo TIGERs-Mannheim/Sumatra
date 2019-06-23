@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Sep 10, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.statistics;
 
@@ -16,7 +11,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 
-import edu.tigers.sumatra.math.vector.IVector;
+import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.vector.IVectorN;
 import edu.tigers.sumatra.math.vector.VectorN;
 import edu.tigers.sumatra.statistics.CollectorVectorStd.Accumulator;
 
@@ -24,15 +20,15 @@ import edu.tigers.sumatra.statistics.CollectorVectorStd.Accumulator;
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class CollectorVectorStd implements Collector<IVector, Accumulator, VectorN>
+public class CollectorVectorStd implements Collector<IVectorN, Accumulator, VectorN>
 {
-	private final IVector	avg;
+	private final IVectorN avg;
 	
 	
 	/**
 	 * @param avg
 	 */
-	public CollectorVectorStd(final IVector avg)
+	public CollectorVectorStd(final IVectorN avg)
 	{
 		this.avg = avg;
 	}
@@ -46,11 +42,11 @@ public class CollectorVectorStd implements Collector<IVector, Accumulator, Vecto
 	
 	
 	@Override
-	public BiConsumer<Accumulator, IVector> accumulator()
+	public BiConsumer<Accumulator, IVectorN> accumulator()
 	{
 		return (acc, vec) ->
 		{
-			IVector tmp = vec.subtractNew(avg);
+			IVectorN tmp = vec.subtractNew(avg);
 			acc.vector.add(tmp.multiplyNew(tmp));
 			acc.count++;
 		};
@@ -74,7 +70,7 @@ public class CollectorVectorStd implements Collector<IVector, Accumulator, Vecto
 	{
 		return acc -> acc.count == 0 ? VectorN.zero(avg.getNumDimensions()) : acc.vector.multiplyNew(1f / acc.count)
 				.applyNew(
-						f -> Math.sqrt(f));
+								SumatraMath::sqrt);
 	}
 	
 	

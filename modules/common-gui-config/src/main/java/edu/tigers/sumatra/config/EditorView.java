@@ -8,9 +8,9 @@
  */
 package edu.tigers.sumatra.config;
 
-import java.awt.event.ActionEvent;
-import java.util.LinkedList;
-import java.util.List;
+import edu.tigers.sumatra.treetable.ITreeTableModel;
+import edu.tigers.sumatra.treetable.JTreeTable;
+import org.apache.commons.configuration.HierarchicalConfiguration;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -23,11 +23,9 @@ import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
-
-import org.apache.commons.configuration.HierarchicalConfiguration;
-
-import edu.tigers.sumatra.treetable.ITreeTableModel;
-import edu.tigers.sumatra.treetable.JTreeTable;
+import java.awt.event.ActionEvent;
+import java.util.LinkedList;
+import java.util.List;
 
 
 /**
@@ -41,22 +39,25 @@ public class EditorView extends JPanel
 	// --------------------------------------------------------------------------
 	// --- constants and variables ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long								serialVersionUID	= -7098099480668190062L;
-																							
-	private static final boolean							disableApply		= false;
-																							
-	private final String										configKey;
-																	
-																	
-	private transient ITreeTableModel					model;
-	private final JTreeTable								treetable;
-																	
-	private final Action										applyAction;
-	private final Action										saveAction;
-																	
-	private final List<IConfigEditorViewObserver>	observers			= new LinkedList<IConfigEditorViewObserver>();
-																							
-																							
+	private static final long serialVersionUID = -7098099480668190062L;
+	
+	private static final boolean disableApply = false;
+	
+	private boolean wasLoaded = false;
+	
+	private final String configKey;
+	
+	
+	private transient ITreeTableModel model;
+	private final JTreeTable treetable;
+	
+	private final Action applyAction;
+	private final Action saveAction;
+	private final Action reloadAction;
+	
+	private final List<IConfigEditorViewObserver> observers = new LinkedList<IConfigEditorViewObserver>();
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructor ----------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -118,7 +119,7 @@ public class EditorView extends JPanel
 		controls.add(saveBtn);
 		controls.add(Box.createHorizontalGlue());
 		
-		Action reloadAction = new AbstractAction("Load")
+		reloadAction = new AbstractAction("Reload")
 		{
 			private static final long serialVersionUID = 1L;
 			
@@ -208,9 +209,18 @@ public class EditorView extends JPanel
 	}
 	
 	
-	private void reload()
+	public void initialReload()
+	{
+		if (wasLoaded)
+			return;
+		
+		reload();
+	}
+
+	public void reload()
 	{
 		notifyReloadPressed(configKey);
+		wasLoaded = true;
 	}
 	
 	

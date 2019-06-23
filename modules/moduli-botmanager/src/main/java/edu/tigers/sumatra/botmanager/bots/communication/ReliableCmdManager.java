@@ -1,16 +1,11 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 15.07.2014
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.bots.communication;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 
@@ -28,14 +23,11 @@ import edu.tigers.sumatra.thread.GeneralPurposeTimer;
  */
 public class ReliableCmdManager
 {
-	private static final Logger				log				= Logger.getLogger(ReliableCmdManager.class.getName());
-	
-	private final Map<Integer, TimerTask>	activeCmds		= new HashMap<>();
-	private int										nextSeq			= 0;
-	private static final int					RETRY_TIMEOUT	= 100;
-	
-	private final Object							sync				= new Object();
-	private final ABot							bot;
+	private static final Logger log = Logger.getLogger(ReliableCmdManager.class.getName());
+	private static final int RETRY_TIMEOUT = 100;
+	private final Map<Integer, TimerTask> activeCmds = new ConcurrentHashMap<>();
+	private final ABot bot;
+	private int nextSeq = 0;
 	
 	
 	/**
@@ -47,7 +39,6 @@ public class ReliableCmdManager
 	{
 		this.bot = bot;
 	}
-	
 	
 	/**
 	 * Process an outgoing command and check if it is a reliable one.
@@ -61,31 +52,28 @@ public class ReliableCmdManager
 			return; // not a reliable command
 		}
 		
-		synchronized (sync)
+		if (cmd.getSeq() == -1) // first time we see this command?
 		{
-			if (cmd.getSeq() == -1) // first time we see this command?
+			TimerTask tTask = activeCmds.remove(nextSeq);
+			if (tTask != null)
 			{
-				TimerTask tTask = activeCmds.remove(nextSeq);
-				if (tTask != null)
-				{
-					tTask.cancel(); // just in case this sequence number is still used, we delete it. this command is lost!
-				}
-				
-				cmd.setSeq(nextSeq); // assign new sequence number
-				++nextSeq;
-				nextSeq %= 0xFFFF;
+				tTask.cancel(); // just in case this sequence number is still used, we delete it. this command is lost!
 			}
 			
-			cmd.incRetransmits();
-			if (cmd.getRetransmits() > 20)
-			{
-				log.warn("Too many retransmits for cmd " + cmd.getType());
-			} else
-			{
-				CommandTimeout timeout = new CommandTimeout(cmd);
-				GeneralPurposeTimer.getInstance().schedule(timeout, RETRY_TIMEOUT);
-				activeCmds.put(cmd.getSeq(), timeout);
-			}
+			cmd.setSeq(nextSeq); // assign new sequence number
+			++nextSeq;
+			nextSeq %= 0xFFFF;
+		}
+		
+		cmd.incRetransmits();
+		if (cmd.getRetransmits() > 20)
+		{
+			log.warn("Too many retransmits for cmd " + cmd.getType());
+		} else
+		{
+			CommandTimeout timeout = new CommandTimeout(cmd);
+			GeneralPurposeTimer.getInstance().schedule(timeout, RETRY_TIMEOUT);
+			activeCmds.put(cmd.getSeq(), timeout);
 		}
 	}
 	
@@ -109,31 +97,11 @@ public class ReliableCmdManager
 		{
 			TigerSystemAck ack = (TigerSystemAck) cmd;
 			
-			synchronized (sync)
+			TimerTask tTask = activeCmds.remove(ack.getSeq());
+			if (tTask != null)
 			{
-				TimerTask tTask = activeCmds.remove(ack.getSeq());
-				if (tTask != null)
-				{
-					tTask.cancel();
-				}
+				tTask.cancel();
 			}
-		}
-	}
-	
-	
-	/**
-	 * Cancel all unacknowldeged commands and clear the pending list.
-	 */
-	public void clearAllPendingCmds()
-	{
-		synchronized (sync)
-		{
-			for (TimerTask t : activeCmds.values())
-			{
-				t.cancel();
-			}
-			
-			activeCmds.clear();
 		}
 	}
 	

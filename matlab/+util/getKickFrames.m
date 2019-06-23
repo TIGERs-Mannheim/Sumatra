@@ -42,8 +42,6 @@ function [measFrames, pKickoff, cam] = getKickFrames(frames, numCams, fieldSize)
         lastFrame = size(allFrames,1);
     end
     measFrames = allFrames(firstFrame:lastFrame,:);
-    
-    pKickoff = mean(allFrames(firstFrame-14:firstFrame-4,2:3));
 end
 
 
@@ -147,8 +145,8 @@ function [ frames ] = camTrackingFilter( frames )
         end
 
         searchRadius = dtValid*vMax;
-        if searchRadius > 500
-            searchRadius = 500;
+        if searchRadius > 2000
+            searchRadius = 2000;
         end
 
         deltaPos = frames(f,2:3)-pValid;

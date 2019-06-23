@@ -1,11 +1,11 @@
 function params = motor(filename)
 
 %% Load data %%
-Ts = 0.001;
+Ts = 0.00125;
 csv = csvread(filename);
 
 %% Calculate data loss
-dataLoss = 1-size(csv,1)/((csv(end,2)-csv(1,2))*1e-6*500);
+dataLoss = 1-size(csv,1)/((csv(end,2)-csv(1,2))*1e-6*800);
 
 [~, ia] = unique(csv(:,2));
 csv = csv(ia, :);

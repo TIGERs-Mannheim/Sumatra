@@ -1,14 +1,15 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.vis;
 
-import java.awt.*;
+import java.awt.Color;
 import java.util.List;
 
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
@@ -24,9 +25,9 @@ public class VelocityVisCalc implements IWpCalc
 	
 	
 	@Override
-	public void process(final WorldFrameWrapper wfw)
+	public void process(final WorldFrameWrapper wfw, final ShapeMap shapeMap)
 	{
-		List<IDrawableShape> shapes = wfw.getShapeMap().get(EWpShapesLayer.VELOCITY);
+		List<IDrawableShape> shapes = shapeMap.get(EWpShapesLayer.VELOCITY);
 		
 		ITrackedBall ball = wfw.getSimpleWorldFrame().getBall();
 		if (ball.getVel().getLength() > 0.1)

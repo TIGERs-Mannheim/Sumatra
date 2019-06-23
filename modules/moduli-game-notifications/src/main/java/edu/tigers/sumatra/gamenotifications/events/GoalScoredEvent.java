@@ -15,10 +15,10 @@ import edu.tigers.sumatra.gamenotifications.EGameEvent;
 public class GoalScoredEvent extends AGameEvent
 {
 	
-	private Referee.SSL_Referee.TeamInfo	teamScoring;
-	private Referee.SSL_Referee.TeamInfo	teamOther;
+	private Referee.SSL_Referee.TeamInfo teamScoring;
+	private Referee.SSL_Referee.TeamInfo teamOther;
 	
-	private boolean								validChange	= true;
+	private boolean validChange = true;
 	
 	
 	/**
@@ -28,9 +28,9 @@ public class GoalScoredEvent extends AGameEvent
 	 * @param teamOther The opposite team
 	 * @param refMsg
 	 */
-	public GoalScoredEvent(Referee.SSL_Referee.TeamInfo teamScoring, Referee.SSL_Referee.TeamInfo teamOther, Referee.SSL_Referee refMsg)
+	public GoalScoredEvent(Referee.SSL_Referee.TeamInfo teamScoring, Referee.SSL_Referee.TeamInfo teamOther,
+			Referee.SSL_Referee refMsg)
 	{
-		
 		super(EGameEvent.GOAL_SCORED, refMsg);
 		
 		this.teamScoring = teamScoring;

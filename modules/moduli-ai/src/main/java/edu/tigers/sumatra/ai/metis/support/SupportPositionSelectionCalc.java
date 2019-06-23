@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.support;
@@ -14,10 +14,11 @@ import java.util.stream.Collectors;
 
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.ai.data.EAiShapesLayer;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.ai.pandora.roles.support.behaviors.PassReceiver;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
@@ -73,6 +74,13 @@ public class SupportPositionSelectionCalc extends ACalculator
 		
 		drawGlobalPositions(selectedPositions);
 		newTacticalField.setSelectedSupportPositions(selectedPositions);
+	}
+	
+	
+	@Override
+	public boolean isCalculationNecessary(TacticalField tacticalField, BaseAiFrame aiFrame)
+	{
+		return PassReceiver.isActive();
 	}
 	
 	
@@ -133,9 +141,9 @@ public class SupportPositionSelectionCalc extends ACalculator
 			DrawableAnnotation dTxtScores = new DrawableAnnotation(pos.getPos(),
 					score,
 					Color.black);
-			dTxtScores.setFontHeight(50);
-			dTxtScores.setCenterHorizontally(true);
-			dTxtScores.setOffset(Vector2.fromXY(0, 35));
+			dTxtScores.withFontHeight(50);
+			dTxtScores.withCenterHorizontally(true);
+			dTxtScores.withOffset(Vector2.fromXY(0, 35));
 			debugShapes.add(dTxtScores);
 		}
 	}

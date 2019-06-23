@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.ball.collision;
@@ -8,11 +8,14 @@ import static edu.tigers.sumatra.geometry.Geometry.getBallRadius;
 import static edu.tigers.sumatra.geometry.Geometry.getBotRadius;
 import static java.lang.Math.acos;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 import java.util.Optional;
 
 import org.junit.Test;
 
+import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -34,7 +37,8 @@ public class BotCollisionTest
 		double center2Dribbler = 75;
 		double obsRadius = getBotRadius() + getBallRadius();
 		double obsFront = center2Dribbler + getBallRadius();
-		BotCollision colHandler = new BotCollision(pos, vel, center2Dribbler);
+		BotID botID = BotID.createBotId(1, ETeamColor.YELLOW);
+		BotCollision colHandler = new BotCollision(pos, vel, center2Dribbler, botID);
 		
 		Optional<ICollision> collision;
 		
@@ -89,13 +93,14 @@ public class BotCollisionTest
 		assertThat(collision.get().getPos()).isEqualTo(Vector2.fromXY(obsFront, 1));
 		assertThat(collision.get().getNormal().normalizeNew()).isEqualTo(Vector2.fromXY(1, 0));
 		
-		double theta = acos((center2Dribbler + getBallRadius()) / (getBallRadius() + getBotRadius()));
+		double theta = acos((center2Dribbler + getBallRadius()) / (getBallRadius() + getBotRadius())) + 0.001;
 		IVector2 mostInnerCircleColPre = Vector2.fromAngle(theta).scaleTo(120);
 		
 		collision = colHandler.getCollision(Vector3.from2d(mostInnerCircleColPre, 0), Vector3.fromXY(0, 0));
 		assertThat(collision).isPresent();
-		assertThat(collision.get().getPos()).isEqualTo(Vector2.fromAngle(theta).scaleTo(obsRadius));
-		assertThat(collision.get().getNormal().normalizeNew()).isEqualTo(Vector2.fromAngle(theta));
+		assertThat(collision.get().getPos().subtractNew(Vector2.fromAngle(theta).scaleTo(obsRadius)).getLength2())
+				.isCloseTo(0, within(0.1));
+		assertThat(collision.get().getNormal().getAngle()).isEqualTo(theta, within(0.001));
 		
 		double theta2 = theta - 0.01;
 		IVector2 outerLineColPre = Vector2.fromAngle(theta2).scaleTo(120);
@@ -114,7 +119,8 @@ public class BotCollisionTest
 		double center2Dribbler = 75;
 		double obsRadius = getBotRadius() + getBallRadius();
 		double obsFront = center2Dribbler + getBallRadius();
-		BotCollision colHandler = new BotCollision(pos, vel, center2Dribbler);
+		BotID botID = BotID.createBotId(1, ETeamColor.YELLOW);
+		BotCollision colHandler = new BotCollision(pos, vel, center2Dribbler, botID);
 		
 		Optional<ICollision> collision;
 		

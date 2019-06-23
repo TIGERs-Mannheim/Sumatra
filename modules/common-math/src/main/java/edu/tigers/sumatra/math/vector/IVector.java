@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.vector;
@@ -33,12 +33,6 @@ public interface IVector extends IJsonString, INumberListable
 	
 	
 	/**
-	 * @return The Z part of the vector
-	 */
-	double z();
-	
-	
-	/**
 	 * @param i
 	 * @return the value at index i
 	 */
@@ -49,36 +43,6 @@ public interface IVector extends IJsonString, INumberListable
 	 * @return
 	 */
 	int getNumDimensions();
-	
-	
-	/**
-	 * Adds 'this' and 'vector' and returns the result in a new object, while 'this' and 'vector' stay unaffected.
-	 * 
-	 * @param vector
-	 * @return The result as a new object
-	 */
-	IVector addNew(IVector vector);
-	
-	
-	/**
-	 * Subtracts the given 'vector' from 'this' and returns the result in a new object, while 'this' and 'vector' stay
-	 * unaffected.
-	 * 
-	 * @param vector
-	 * @return The result as a new object
-	 */
-	IVector subtractNew(IVector vector);
-	
-	
-	/**
-	 * Multiplies each element of the given 'vector' with the corresponding element of 'this' and returns the result in a
-	 * new object, while 'this' and 'vector' stay
-	 * unaffected.
-	 * 
-	 * @param vector
-	 * @return The result as a new object
-	 */
-	IVector multiplyNew(IVector vector);
 	
 	
 	/**
@@ -124,6 +88,12 @@ public interface IVector extends IJsonString, INumberListable
 	 * @return The 2dim-length of the vector.
 	 */
 	double getLength2();
+	
+	
+	/**
+	 * @return The L1 norm of the vector, i.e. the sum ob absolute values.
+	 */
+	double getL1Norm();
 	
 	
 	/**

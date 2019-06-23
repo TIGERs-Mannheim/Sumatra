@@ -1,6 +1,0 @@
-dyn <- read.csv("dynamics.log")
-par(mfrow=c(2,2))
-plot(dyn$acc~dyn$t, main="Acceleration", type="l")
-plot(dyn$vel~dyn$t, main="Velocity", type="l")
-plot(dyn$dist~dyn$t, main="Distance", type="l")
-print(summary(dyn))

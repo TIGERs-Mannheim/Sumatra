@@ -3,8 +3,6 @@
  */
 package edu.tigers.sumatra.ai.athena;
 
-import edu.tigers.sumatra.ai.data.EAIControlState;
-
 
 /**
  * Interface for all ai-module panels.

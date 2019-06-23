@@ -5,7 +5,7 @@ package edu.tigers.sumatra.aicenter.view;
 
 import java.util.Map;
 
-import edu.tigers.sumatra.ai.lachesis.RoleFinderInfo;
+import edu.tigers.sumatra.ai.athena.roleassigner.RoleMapping;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 
 
@@ -19,11 +19,11 @@ public interface IAthenaControlPanelObserver
 	/**
 	 * @param infos
 	 */
-	void onNewRoleFinderInfos(Map<EPlay, RoleFinderInfo> infos);
+	void onNewRoleMapping(Map<EPlay, RoleMapping> infos);
 	
 	
 	/**
-	 * @param overrides
+	 * @param useAiFlags
 	 */
-	void onNewRoleFinderUseAiFlags(Map<EPlay, Boolean> overrides);
+	void onNewUseAiFlags(Map<EPlay, Boolean> useAiFlags);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.botmanager.commands.botskills;
@@ -23,24 +23,21 @@ import edu.tigers.sumatra.math.vector.Vector2;
 public class BotSkillFastGlobalPosition extends AMoveBotSkill
 {
 	@SerialData(type = ESerialDataType.INT16)
-	private final int[]					pos						= new int[3];
+	private final int[] pos = new int[3];
 	
 	@SerialData(type = ESerialDataType.UINT8)
-	private int								velMax					= 0;
+	private int velMax = 0;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int								velMaxW					= 0;
+	private int velMaxW = 0;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int								accMax					= 0;
+	private int accMax = 0;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int								accMaxW					= 0;
+	private int accMaxW = 0;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int								accMaxFast				= 0;
+	private int accMaxFast = 0;
 	
 	@SerialData(type = ESerialDataType.EMBEDDED)
-	private KickerDribblerCommands	kickerDribbler			= new KickerDribblerCommands();
-	
-	@SerialData(type = ESerialDataType.UINT8)
-	private int								dataAcqusitionMode	= 0;
+	private KickerDribblerCommands kickerDribbler = new KickerDribblerCommands();
 	
 	
 	/**
@@ -68,11 +65,11 @@ public class BotSkillFastGlobalPosition extends AMoveBotSkill
 		pos[2] = (int) (orientation * 1000.0);
 		
 		
-		setVelMax(mc.getVelMaxFast());
+		setVelMax(mc.getVelMax());
 		setVelMaxW(mc.getVelMaxW());
 		setAccMax(mc.getAccMax());
 		setAccMaxW(mc.getAccMaxW());
-		setAccMaxFast(mc.getAccMaxFast());
+		setAccMaxFast(mc.getAccMax());
 		
 	}
 	
@@ -88,6 +85,7 @@ public class BotSkillFastGlobalPosition extends AMoveBotSkill
 	 * @param accMaxW
 	 * @param accMaxFast
 	 */
+	@SuppressWarnings("unused") // used by UI
 	public BotSkillFastGlobalPosition(final IVector2 xy, final double orientation,
 			final double velMax, final double velMaxW, final double accMax, final double accMaxW, final double accMaxFast)
 	{
@@ -269,25 +267,5 @@ public class BotSkillFastGlobalPosition extends AMoveBotSkill
 	public double getDribbleSpeed()
 	{
 		return kickerDribbler.getDribblerSpeed();
-	}
-	
-	
-	/**
-	 * @return the dataAcqusitionMode
-	 */
-	@Override
-	public EDataAcquisitionMode getDataAcquisitionMode()
-	{
-		return EDataAcquisitionMode.getModeConstant(dataAcqusitionMode);
-	}
-	
-	
-	/**
-	 * @param dataAcqusitionMode the dataAcqusitionMode to set
-	 */
-	@Override
-	public void setDataAcquisitionMode(final EDataAcquisitionMode dataAcqusitionMode)
-	{
-		this.dataAcqusitionMode = dataAcqusitionMode.getId();
 	}
 }

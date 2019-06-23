@@ -1,252 +1,170 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.geometry;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
-import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.circle.Arc;
-import edu.tigers.sumatra.math.circle.IArc;
+import com.sleepycat.persist.model.Persistent;
+
+import edu.tigers.sumatra.drawable.DrawableRectangle;
+import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.line.LineMath;
+import edu.tigers.sumatra.math.line.v2.IHalfLine;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.line.v2.Lines;
-import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.rectangle.Rectangle;
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
- * Class representing a penalty area
- * The PenaltyArea is built out of one rectangle in the middle, with two quarter circles on the top and the
- * bottom half
- * A little sketch with the given points
- *
- * <pre>
- *         circlePointUpperNeg   penalty mark   circlePointUpperPos
- *                    v             v             v
- * |------------------+-------------+-------------+------------------|
- * |outer Rectangle ..|[-------front Line--------]|..                |
- * |           ....:  |                           |  :....           |
- * |         .:       |                           |       :.         |
- * |       .:         |                           |         :.       |
- * |      :           |                           |           :      |
- * |     :            |   centre Rectangle        |            :     |
- * |    :             |                           |             :    |
- * |   :              |                           |              :   |
- * |  :   neg-circle  |                           | pos-circle    :  |
- * | :                |                           |                : |
- * |:                 |                           |                 :|
- * +------------------+-------------+-------------+------------------+
- * ^                  ^             ^             ^                  ^
- * |           circleCentreNeg  goal centre  circleCentrePos    circlePointLowerPos
- * circlePointLowerNeg
- * </pre>
- *
- * @author Malte, Frieder, KaiE
+ * Class representing a rectangular penalty area
  */
+@Persistent
 public class PenaltyArea implements IPenaltyArea
 {
-	private final double radius;
-	private final double frontLineLength;
+	private final double goalCenterX;
+	private final double length;
+	private final double depth;
 	
-	private final IArc arcNeg;
-	private final IArc arcPos;
-	private final ILineSegment frontLine;
+	private transient Rectangle rectangle;
+	private transient IVector2 goalCenter;
+	
+	
+	@SuppressWarnings("unused") // used by berkeley
+	private PenaltyArea()
+	{
+		goalCenterX = 0;
+		length = 0;
+		depth = 0;
+	}
 	
 	
 	/**
-	 * @param radius of the quarter circles
-	 * @param frontLineLength length of the front line
+	 * Creates a PenaltyArea
+	 *
+	 * @param goalCenter
+	 * @param length
+	 * @param depth
 	 */
-	public PenaltyArea(final double radius, final double frontLineLength)
+	public PenaltyArea(final IVector2 goalCenter, final double depth, final double length)
 	{
-		this.radius = radius;
-		this.frontLineLength = frontLineLength;
-		
-		double lowerX = -0.5 * Geometry.getFieldLength();
-		final double offsetFromCentre = 0.5 * frontLineLength;
-		IVector2 circleCentrePos = Vector2f.fromXY(lowerX, offsetFromCentre);
-		IVector2 circleCentreNeg = Vector2f.fromXY(lowerX, -offsetFromCentre);
-		IVector2 circlePointUpperNeg = Vector2f.fromXY(circleCentreNeg.x() + (radius), circleCentreNeg.y());
-		IVector2 circlePointUpperPos = Vector2f.fromXY(circleCentrePos.x() + (radius), circleCentrePos.y());
-		
-		frontLine = Lines.segmentFromPoints(circlePointUpperPos, circlePointUpperNeg);
-		arcNeg = getPenAreaArc(circleCentreNeg, radius);
-		arcPos = getPenAreaArc(circleCentrePos, radius);
+		this.goalCenterX = goalCenter.x();
+		this.length = length;
+		this.depth = depth;
+		ensureInitialized();
+	}
+	
+	
+	private void ensureInitialized()
+	{
+		if (rectangle == null || goalCenter == null)
+		{
+			double centerOffset = Math.signum(goalCenterX) * depth / -2.;
+			IVector2 center = Vector2.fromX(goalCenterX + centerOffset);
+			rectangle = Rectangle.fromCenter(center, depth, length);
+			this.goalCenter = Vector2.fromX(goalCenterX);
+		}
 	}
 	
 	
 	@Override
 	public IPenaltyArea withMargin(final double margin)
 	{
-		return new PenaltyArea(Math.max(0, radius + margin), frontLineLength);
+		double newDepth = Math.max(0, this.depth + margin);
+		double newLength = Math.max(0, this.length + margin * 2);
+		return new PenaltyArea(getGoalCenter(), newDepth, newLength);
 	}
 	
 	
 	@Override
-	public double getPerimeterFrontCurve()
+	public List<IVector2> lineIntersections(final edu.tigers.sumatra.math.line.v2.ILine line)
 	{
-		return (getRadius() * AngleMath.PI) + frontLineLength;
+		return getEdges().stream()
+				.map(edge -> edge.intersectLine(line))
+				.filter(Optional::isPresent)
+				.map(Optional::get)
+				.distinct()
+				.collect(Collectors.toList());
 	}
 	
 	
 	@Override
-	public IVector2 stepAlongPenArea(final double length)
+	public List<IVector2> lineIntersections(final ILineSegment line)
 	{
-		final double quarterCircleLength = AngleMath.PI_HALF * getRadius();
-		if ((0 <= length) && (length <= quarterCircleLength))
+		return getEdges().stream()
+				.map(edge -> edge.intersectSegment(line))
+				.filter(Optional::isPresent)
+				.map(Optional::get)
+				.distinct()
+				.collect(Collectors.toList());
+	}
+	
+	
+	@Override
+	public List<IVector2> lineIntersections(final IHalfLine line)
+	{
+		return getEdges().stream()
+				.map(edge -> edge.intersectHalfLine(line))
+				.filter(Optional::isPresent)
+				.map(Optional::get)
+				.distinct()
+				.collect(Collectors.toList());
+	}
+	
+	
+	private List<ILineSegment> getEdges()
+	{
+		List<ILineSegment> edges = new ArrayList<>();
+		double lowerX = getGoalCenter().x();
+		double upperX = lowerX - Math.signum(getGoalCenter().x()) * getDepth();
+		double negY = -getLength() / 2;
+		double posY = getLength() / 2;
+		IVector2 p1 = Vector2.fromXY(lowerX, negY);
+		IVector2 p2 = Vector2.fromXY(upperX, negY);
+		IVector2 p3 = Vector2.fromXY(upperX, posY);
+		IVector2 p4 = Vector2.fromXY(lowerX, posY);
+		edges.add(Lines.segmentFromPoints(p1, p2));
+		edges.add(Lines.segmentFromPoints(p2, p3));
+		edges.add(Lines.segmentFromPoints(p3, p4));
+		return edges;
+	}
+	
+	
+	@Override
+	public List<IVector2> lineIntersections(final ILine line)
+	{
+		return lineIntersections(Lines.lineFromLegacyLine(line));
+	}
+	
+	
+	@Override
+	@SuppressWarnings("squid:S1244") // equality check intended
+	public IVector2 projectPointOnToPenaltyAreaBorder(final IVector2 point)
+	{
+		if (point.x() * Math.signum(getGoalCenter().x()) >= Math.abs(getGoalCenter().x()))
 		{
-			return getPointOnCircle(arcPos.center(), getRadius(),
-					(length / getRadius()) + (AngleMath.PI_HALF));
-		} else if (length < (quarterCircleLength + frontLineLength))
-		{
-			return LineMath.stepAlongLine(frontLine.getStart(), frontLine.getEnd(), length - quarterCircleLength);
-		} else if (length <= ((quarterCircleLength * 2) + frontLineLength))
-		{
-			return getPointOnCircle(arcNeg.center(), getRadius(),
-					((length - quarterCircleLength - frontLineLength) / getRadius()) + (AngleMath.PI));
-		} else
-		{
-			throw new IllegalArgumentException("Tried to step too long along penalty area: " + length);
+			if (point.y() == 0.0)
+			{
+				return getGoalCenter().addNew(Vector2.fromX(getDepth()));
+			}
+			return getGoalCenter().addNew(Vector2.fromY(Math.signum(point.y()) * getLength() / 2));
 		}
+		return point.nearestToOpt(lineIntersections(Lines.lineFromPoints(point, getGoalCenter())))
+				.orElseGet(() -> getGoalCenter().addNew(Vector2.fromX(getDepth())));
 	}
 	
 	
 	@Override
 	public boolean isPointInShape(final IVector2 point)
 	{
-		return getInnerRectangle().isPointInShape(point) ||
-				arcPos.isPointInShape(point) ||
-				arcNeg.isPointInShape(point);
-	}
-	
-	
-	/**
-	 * Projects a Point on PenaltyArea
-	 *
-	 * @param point that should be projected
-	 * @return the projected Point
-	 */
-	@Override
-	public IVector2 projectPointOnPenaltyAreaLine(final IVector2 point)
-	{
-		IVector2 refPointOnGoalLine;
-		// check whether point is in front of front line or in front of quarter circles
-		if ((point.y() <= frontLine.getStart().y()) && (point.y() >= frontLine.getEnd().y()))
-		{
-			// front line, project straight on goal line
-			refPointOnGoalLine = Vector2.fromXY(Geometry.getGoalOur().getCenter().x(), point.y());
-		} else if (point.y() <= frontLine.getEnd().y())
-		{
-			refPointOnGoalLine = arcNeg.center();
-		} else
-		{
-			refPointOnGoalLine = arcPos.center();
-		}
-		// build a line from point to goal and check where it intersects the penalty area line
-		Line pointToGoal = Line.fromPoints(point, refPointOnGoalLine);
-		// duplicate line in the other direction in case the point is inside penalty area
-		IVector2 pFrom = pointToGoal.getStart().subtractNew(pointToGoal.directionVector());
-		pointToGoal = Line.fromPoints(pFrom, refPointOnGoalLine);
-		List<IVector2> penaltyAreaIntersections = lineIntersections(pointToGoal);
-		if (penaltyAreaIntersections.isEmpty())
-		{
-			// point is probably exactly on goal line
-			final double goalLineXVal = Geometry.getGoalOur().getCenter().x();
-			final double epsilon = 1e-6;
-			if ((point.x() > (goalLineXVal - epsilon)) && (point.x() < (goalLineXVal + epsilon)))
-			{
-				if (point.y() < 0)
-				{
-					return arcNeg.center().addNew(Vector2.fromY(-getRadius()));
-				}
-				
-				return arcPos.center().addNew(Vector2.fromY(getRadius()));
-			}
-			
-			return null;
-		}
-		return penaltyAreaIntersections.get(0);
-	}
-	
-	
-	/**
-	 * @param point
-	 * @return
-	 */
-	@Override
-	public double lengthToPointOnPenArea(final IVector2 point)
-	{
-		// step 1: get the penalty area line length to startPoint
-		double startPointLengthOnPenArea;
-		final double quarterCircLength = AngleMath.PI_HALF * radius;
-		
-		IVector2 intersectionPoint = projectPointOnPenaltyAreaLine(point);
-		if (intersectionPoint == null)
-		{
-			throw new UnsupportedOperationException(
-					"Line to goal does not intersect penalty area line - start point is probably behind goal");
-		}
-		
-		// positive circle
-		if (frontLine.getStart().y() < intersectionPoint.y())
-		{
-			final double alpha = Math.acos((intersectionPoint.y() - frontLine.getStart().y()) / getRadius());
-			startPointLengthOnPenArea = Math.abs(alpha * getRadius());
-		}
-		// front line
-		else if (frontLine.getEnd().y() < intersectionPoint.y())
-		{
-			final double additionalLengthOnFrontLine = Math.abs(intersectionPoint.y() - frontLine.getStart().y());
-			startPointLengthOnPenArea = quarterCircLength + additionalLengthOnFrontLine;
-		}
-		// negative circle
-		else
-		{
-			final double alpha = Math.asin((frontLine.getEnd().y() - intersectionPoint.y()) / getRadius());
-			final double secondCircleSectorLength = Math.abs(alpha * getRadius());
-			startPointLengthOnPenArea = quarterCircLength + frontLineLength + secondCircleSectorLength;
-		}
-		// avoid tried to step to long along penalty area exception
-		if (startPointLengthOnPenArea < 0)
-		{
-			return 0;
-		}
-		if (startPointLengthOnPenArea > getLength())
-			return getLength();
-		
-		return startPointLengthOnPenArea;
-	}
-	
-	
-	/**
-	 * @param startPoint
-	 * @param length
-	 * @return the point that is <length> away from <startPoint> when stepping on penalty area line
-	 */
-	@Override
-	public IVector2 stepAlongPenArea(final IVector2 startPoint, final double length)
-	{
-		double lengthToStartPoint = lengthToPointOnPenArea(startPoint);
-		return stepAlongPenArea(lengthToStartPoint + length);
-	}
-	
-	
-	/**
-	 * @return total Length of PenaltyArea
-	 */
-	@Override
-	public double getLength()
-	{
-		return (radius * Math.PI) + frontLineLength;
+		return getRectangle().isPointInShape(point);
 	}
 	
 	
@@ -267,174 +185,80 @@ public class PenaltyArea implements IPenaltyArea
 	@Override
 	public IVector2 nearestPointInside(final IVector2 point)
 	{
-		if (isPointInShape(point))
-		{
-			return point;
-		}
-		return nearestPointOutside(Vector2.fromXY(arcNeg.center().x(), 0.0), point);
+		return getRectangle().nearestPointInside(point);
 	}
 	
 	
 	@Override
 	public IVector2 nearestPointOutside(final IVector2 point)
 	{
-		if (isBehindPenaltyArea(point))
+		if (getRectangle().isPointInShape(point))
 		{
-			return getPointOutsideForPointBehindGoalLine(point);
-		}
-		
-		if (getInnerRectangle().isPointInShape(point))
-		{
-			return Vector2f.fromXY(frontLine.getStart().x(), point.y());
-		}
-		
-		IArc arc = point.y() > 0 ? arcPos : arcNeg;
-		if (arc.isPointInShape(point))
-		{
-			return LineMath.stepAlongLine(arc.center(), point, getRadius());
+			return point.nearestTo(
+					getEdges().stream()
+							.map(e -> e.closestPointOnLine(point))
+							.collect(Collectors.toList()));
 		}
 		return point;
 	}
 	
 	
 	@Override
-	public IVector2 nearestPointOutside(final IVector2 point, final IVector2 pointToBuildLine)
-	{
-		if (!isPointInShapeOrBehind(point))
-		{
-			return point;
-		}
-		if (isBehindGoalLine(pointToBuildLine))
-		{
-			return getPointOutsideForPointBehindGoalLine(pointToBuildLine);
-		}
-		
-		return point.nearestToOpt(lineIntersections(Line.fromPoints(point, pointToBuildLine)))
-				.orElseGet(() -> nearestPointOutside(point));
-	}
-	
-	
-	@Override
 	public boolean isIntersectingWithLine(final ILine line)
 	{
-		return !lineIntersections(line).isEmpty();
-	}
-	
-	
-	@Override
-	public List<IVector2> lineIntersections(final ILine line)
-	{
-		List<IVector2> result = new ArrayList<>();
-		
-		frontLine.intersectLine(Lines.lineFromPoints(line.getStart(), line.getEnd())).ifPresent(result::add);
-		result.addAll(arcNeg.lineIntersections(line));
-		result.addAll(arcPos.lineIntersections(line));
-		
-		return result;
-	}
-	
-	
-	private IVector2 getPointOutsideForPointBehindGoalLine(final IVector2 pointToBuildLine)
-	{
-		if (Math.abs(pointToBuildLine.y()) < getFrontLineHalfLength())
-		{
-			return Vector2f.fromXY(frontLine.getStart().x(), pointToBuildLine.y());
-		}
-		return Vector2.fromXY(arcNeg.center().x(), Math.signum(pointToBuildLine.y()) * getMaxAbsY());
-	}
-	
-	
-	private IArc getPenAreaArc(final IVector2 center, final double radius)
-	{
-		double startAngle = AVector2.X_AXIS.multiplyNew(-center.x()).getAngle();
-		double stopAngle = AVector2.Y_AXIS.multiplyNew(center.y()).getAngle();
-		double rotation = AngleMath.difference(stopAngle, startAngle);
-		return Arc.createArc(center, radius, startAngle, rotation);
-	}
-	
-	
-	private IVector2 getPointOnCircle(final IVector2 origin, final double radius, final double angle)
-	{
-		return Vector2f.fromXY(origin.x() - (radius * Math.cos(angle)),
-				origin.y() + (radius * Math.sin(angle)));
+		return getRectangle().isIntersectingWithLine(line);
 	}
 	
 	
 	@Override
 	public boolean isBehindPenaltyArea(final IVector2 point)
 	{
-		return isBehindGoalLine(point) &&
-				(Math.abs(point.y()) <= getMaxAbsY());
-	}
-	
-	
-	private boolean isBehindGoalLine(final IVector2 point)
-	{
-		return point.x() <= arcNeg.center().x();
-	}
-	
-	
-	/**
-	 * @return the maximum absolute Y-value of this penalty area
-	 */
-	private double getMaxAbsY()
-	{
-		return getFrontLineHalfLength() + getRadius();
-	}
-	
-	
-	@Override
-	public IRectangle getInnerRectangle()
-	{
-		return Rectangle.fromPoints(frontLine.getStart(), arcNeg.center());
+		return (Math.abs(point.x()) > Math.abs(getGoalCenter().x()))
+				&& ((int) Math.signum(point.x()) == (int) Math.signum(getGoalCenter().x()))
+				&& Math.abs(point.y()) < getLength() / 2;
 	}
 	
 	
 	@Override
 	public IVector2 getGoalCenter()
 	{
-		return Vector2.fromXY(arcNeg.center().x(), 0.0);
+		ensureInitialized();
+		return goalCenter;
 	}
 	
 	
 	@Override
-	public final ILineSegment getFrontLine()
+	public Rectangle getRectangle()
 	{
-		return frontLine;
+		ensureInitialized();
+		return rectangle;
+	}
+	
+	
+	private double getLength()
+	{
+		return getRectangle().yExtent();
+	}
+	
+	
+	private double getDepth()
+	{
+		return getRectangle().xExtent();
 	}
 	
 	
 	@Override
-	public double getRadius()
+	public List<IDrawableShape> getDrawableShapes()
 	{
-		return radius;
+		List<IDrawableShape> shapes = new ArrayList<>(1);
+		shapes.add(new DrawableRectangle(getRectangle(), Color.white));
+		return shapes;
 	}
 	
 	
 	@Override
-	public double getFrontLineLength()
+	public double distanceTo(final IVector2 point)
 	{
-		return frontLineLength;
-	}
-	
-	
-	@Override
-	public double getFrontLineHalfLength()
-	{
-		return 0.5 * frontLineLength;
-	}
-	
-	
-	@Override
-	public IArc getArcNeg()
-	{
-		return arcNeg;
-	}
-	
-	
-	@Override
-	public IArc getArcPos()
-	{
-		return arcPos;
+		return nearestPointInside(point).distanceTo(point);
 	}
 }

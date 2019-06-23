@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.geometry;
 
-import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
 import com.github.g3force.configurable.ConfigRegistration;
@@ -29,11 +28,6 @@ public class GeometryUpdater extends AModule
 	@SuppressWarnings("unused")
 	private static final Logger		log							= Logger.getLogger(GeometryUpdater.class.getName());
 	
-	/** */
-	public static final String			MODULE_TYPE					= "GeometryUpdater";
-	/** */
-	public static final String			MODULE_ID					= "geometryUpdater";
-	
 	@Configurable(comment = "Receive geometry from SSL vision")
 	private static boolean				receiveGeometry			= true;
 	
@@ -46,15 +40,6 @@ public class GeometryUpdater extends AModule
 	static
 	{
 		ConfigRegistration.registerClass("geom", GeometryUpdater.class);
-	}
-	
-	
-	/**
-	 * @param config
-	 */
-	public GeometryUpdater(SubnodeConfiguration config)
-	{
-		// empty
 	}
 	
 	
@@ -79,7 +64,7 @@ public class GeometryUpdater extends AModule
 		
 		try
 		{
-			ACam cam = (ACam) SumatraModel.getInstance().getModule(ACam.MODULE_ID);
+			ACam cam = SumatraModel.getInstance().getModule(ACam.class);
 			cam.addObserver(camFrameObserver);
 		} catch (ModuleNotFoundException err)
 		{
@@ -93,7 +78,7 @@ public class GeometryUpdater extends AModule
 	{
 		try
 		{
-			ACam cam = (ACam) SumatraModel.getInstance().getModule(ACam.MODULE_ID);
+			ACam cam = SumatraModel.getInstance().getModule(ACam.class);
 			cam.removeObserver(camFrameObserver);
 		} catch (ModuleNotFoundException err)
 		{

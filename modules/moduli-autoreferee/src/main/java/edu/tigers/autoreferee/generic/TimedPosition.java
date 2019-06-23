@@ -1,25 +1,23 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.generic;
 
 
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
+
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.IVector3;
-import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
- * Vector subclass which carries a timestamp corresponding to the time the vector was captured
- * 
- * @author "Lukas Magel"
+ * Position which carries a timestamp corresponding to the time it was captured
  */
 public class TimedPosition
 {
-	private final long		timestamp;
-	private final IVector2	position;
-	private final IVector3 pos3D;
+	private final long timestamp;
+	private final IVector2 position;
 	
 	
 	/**
@@ -28,8 +26,7 @@ public class TimedPosition
 	public TimedPosition()
 	{
 		timestamp = 0;
-		position = Vector2.ZERO_VECTOR;
-		pos3D = Vector3.zero();
+		position = Vector2f.ZERO_VECTOR;
 	}
 	
 	
@@ -41,15 +38,16 @@ public class TimedPosition
 	{
 		this.position = position;
 		this.timestamp = timestamp;
-		pos3D = position.getXYZVector();
 	}
 	
 	
-	public TimedPosition(final long timestamp, final IVector3 position)
+	/**
+	 * @param currentTimestamp
+	 * @return the age in [s]
+	 */
+	public double getAge(final long currentTimestamp)
 	{
-		this.timestamp = timestamp;
-		this.pos3D = position;
-		this.position = position.getXYVector();
+		return (currentTimestamp - timestamp) / 1e9;
 	}
 	
 	
@@ -68,8 +66,46 @@ public class TimedPosition
 	}
 	
 	
-	public IVector3 getPos3D()
+	@Override
+	public boolean equals(final Object o)
 	{
-		return pos3D;
+		if (this == o)
+			return true;
+		
+		if (o == null || getClass() != o.getClass())
+			return false;
+		
+		final TimedPosition that = (TimedPosition) o;
+		
+		return new EqualsBuilder()
+				.append(timestamp, that.timestamp)
+				.append(position, that.position)
+				.isEquals();
+	}
+	
+	
+	@Override
+	public int hashCode()
+	{
+		return new HashCodeBuilder(17, 37)
+				.append(timestamp)
+				.append(position)
+				.toHashCode();
+	}
+	
+	
+	/**
+	 * @param other
+	 * @return true, if other is similar to this
+	 */
+	public boolean similarTo(final TimedPosition other)
+	{
+		if (other == null)
+		{
+			return false;
+		}
+		boolean similarInTime = Math.abs(timestamp - other.timestamp) < 2e9;
+		boolean similarInSpace = position.distanceToSqr(other.position) < 200 * 200;
+		return similarInTime && similarInSpace;
 	}
 }

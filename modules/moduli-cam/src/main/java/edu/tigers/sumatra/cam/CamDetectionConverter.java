@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.cam;
 
 import java.util.ArrayList;
@@ -21,6 +25,26 @@ public class CamDetectionConverter
 	private long frameId = 0;
 	
 	
+	private static CamRobot convertRobot(
+			final MessagesRobocupSslDetection.SSL_DetectionRobot bot,
+			final ETeamColor color,
+			final long frameId,
+			final int camId,
+			final long tCapture)
+	{
+		return new CamRobot(
+				bot.getConfidence(),
+				Vector2.fromXY(bot.getPixelX(), bot.getPixelY()),
+				tCapture,
+				camId,
+				frameId,
+				Vector2.fromXY(bot.getX(), bot.getY()),
+				bot.getOrientation(),
+				bot.getHeight(),
+				BotID.createBotId(bot.getRobotId(), color));
+	}
+	
+	
 	/**
 	 * @param detectionFrame SSL vision frame from a single camera
 	 * @param timeSync sync handle to convert timestamps
@@ -39,7 +63,7 @@ public class CamDetectionConverter
 		for (final MessagesRobocupSslDetection.SSL_DetectionRobot bot : detectionFrame.getRobotsBlueList())
 		{
 			blues.add(convertRobot(bot, ETeamColor.BLUE, frameId, detectionFrame.getCameraId(),
-					localCaptureNs, localSentNs));
+					localCaptureNs));
 		}
 		
 		// --- process team Yellow ---
@@ -47,48 +71,26 @@ public class CamDetectionConverter
 		{
 			yellows.add(convertRobot(bot, ETeamColor.YELLOW, frameId,
 					detectionFrame.getCameraId(),
-					localCaptureNs, localSentNs));
+					localCaptureNs));
 		}
 		
 		// --- process ball ---
 		for (final MessagesRobocupSslDetection.SSL_DetectionBall ball : detectionFrame.getBallsList())
 		{
-			balls.add(convertBall(ball, localCaptureNs, localSentNs, detectionFrame.getCameraId(),
+			balls.add(convertBall(ball, localCaptureNs, detectionFrame.getCameraId(),
 					frameId));
 		}
 		
 		
 		return new CamDetectionFrame(localCaptureNs, localSentNs, detectionFrame.getCameraId(),
+				detectionFrame.getFrameNumber(),
 				frameId++, balls, yellows, blues);
-	}
-	
-	
-	private static CamRobot convertRobot(
-			final MessagesRobocupSslDetection.SSL_DetectionRobot bot,
-			final ETeamColor color,
-			final long frameId,
-			final int camId,
-			final long tCapture,
-			final long tSent)
-	{
-		return new CamRobot(
-				bot.getConfidence(),
-				Vector2.fromXY(bot.getPixelX(), bot.getPixelY()),
-				tCapture,
-				tSent,
-				camId,
-				frameId,
-				Vector2.fromXY(bot.getX(), bot.getY()),
-				bot.getOrientation(),
-				bot.getHeight(),
-				BotID.createBotId(bot.getRobotId(), color));
 	}
 	
 	
 	private static CamBall convertBall(
 			final MessagesRobocupSslDetection.SSL_DetectionBall ball,
 			final long tCapture,
-			final long tSent,
 			final int camId,
 			final long frameId)
 	{
@@ -98,7 +100,6 @@ public class CamDetectionConverter
 				Vector3.fromXYZ(ball.getX(), ball.getY(), ball.getZ()),
 				Vector2.fromXY(ball.getPixelX(), ball.getPixelY()),
 				tCapture,
-				tSent,
 				camId,
 				frameId);
 	}

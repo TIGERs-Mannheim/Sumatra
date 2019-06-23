@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.line;
@@ -17,9 +17,9 @@ import org.apache.commons.math3.linear.SingularMatrixException;
 
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -33,16 +33,16 @@ import edu.tigers.sumatra.math.vector.Vector2;
 public class Line extends ALine
 {
 	/** ("Stuetzvektor") */
-	private final IVector2	supportVector;
+	private final IVector2 supportVector;
 	
 	/** ("Richtungsvektor" */
-	private final IVector2	directionVector;
+	private final IVector2 directionVector;
 	
 	
 	@SuppressWarnings("unused")
 	private Line()
 	{
-		this(AVector2.ZERO_VECTOR, AVector2.ZERO_VECTOR);
+		this(Vector2f.ZERO_VECTOR, Vector2f.ZERO_VECTOR);
 	}
 	
 	
@@ -91,7 +91,7 @@ public class Line extends ALine
 	 * @param points
 	 * @return Optional Line.
 	 */
-	@SuppressWarnings("squid:S1166")
+	@SuppressWarnings("squid:S1166") // Exception from solver not logged
 	public static Optional<Line> fromPointsList(final List<IVector2> points)
 	{
 		int numPoints = points.size();
@@ -128,8 +128,8 @@ public class Line extends ALine
 		double x1 = points.get(0).x();
 		double x2 = points.get(points.size() - 1).x();
 		
-		Vector2 p1 = Vector2.fromXY(x1, (x1 * slope) + offset);
-		Vector2 p2 = Vector2.fromXY(x2, (x2 * slope) + offset);
+		IVector2 p1 = Vector2f.fromXY(x1, (x1 * slope) + offset);
+		IVector2 p2 = Vector2f.fromXY(x2, (x2 * slope) + offset);
 		
 		return Optional.of(Line.fromPoints(p1, p2));
 	}

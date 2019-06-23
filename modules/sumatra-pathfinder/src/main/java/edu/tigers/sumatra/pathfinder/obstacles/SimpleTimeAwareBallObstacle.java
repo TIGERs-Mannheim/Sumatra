@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder.obstacles;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics2D;
 
 import com.sleepycat.persist.model.Persistent;
 
@@ -59,7 +60,7 @@ public class SimpleTimeAwareBallObstacle implements IObstacle
 		{
 			return false;
 		}
-		IVector2 pos = ball.getTrajectory().getPosByTime(t);
+		IVector2 pos = ball.getTrajectory().getPosByTime(t).getXYVector();
 		ICircle circle = Circle.createCircle(pos, radius + margin);
 		return circle.isPointInShape(point);
 	}
@@ -74,7 +75,7 @@ public class SimpleTimeAwareBallObstacle implements IObstacle
 		double tStep = Math.max(0.05f, tBallStop / 10.0);
 		for (double t = 0; t <= tBallStop; t += tStep)
 		{
-			IVector2 ballPos = ball.getTrajectory().getPosByTime(t);
+			IVector2 ballPos = ball.getTrajectory().getPosByTime(t).getXYVector();
 			if (isPointCollidingWithObstacle(ballPos, t))
 			{
 				final IVector2 center = tool.transformToGuiCoordinates(ballPos, invert);

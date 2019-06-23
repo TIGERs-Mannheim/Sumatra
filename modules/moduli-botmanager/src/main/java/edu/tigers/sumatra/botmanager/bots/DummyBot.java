@@ -131,8 +131,13 @@ public class DummyBot extends ABot
 	{
 		return ERobotMode.READY;
 	}
-	
-	
+
+	@Override
+	public boolean isOK() {
+		return true;
+	}
+
+
 	@Override
 	public IBotParams getBotParams()
 	{

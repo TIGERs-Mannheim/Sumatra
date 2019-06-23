@@ -1,22 +1,18 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.events;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumMap;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.Sets;
-
 import edu.tigers.autoreferee.IAutoRefFrame;
-import edu.tigers.autoreferee.engine.events.IGameEventDetector.EGameEventDetectorType;
 import edu.tigers.autoreferee.engine.events.impl.AttackerToDefenseAreaDistanceDetector;
 import edu.tigers.autoreferee.engine.events.impl.AttackerTouchKeeperDetector;
 import edu.tigers.autoreferee.engine.events.impl.BallHoldInPenAreaDetector;
@@ -31,7 +27,9 @@ import edu.tigers.autoreferee.engine.events.impl.DoubleTouchDetector;
 import edu.tigers.autoreferee.engine.events.impl.DribblingDetector;
 import edu.tigers.autoreferee.engine.events.impl.GoalDetector;
 import edu.tigers.autoreferee.engine.events.impl.KickTimeoutDetector;
+import edu.tigers.autoreferee.engine.events.impl.MultipleYellowCardsDetector;
 import edu.tigers.autoreferee.engine.events.impl.NoProgressDetector;
+import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.referee.data.GameState;
 
 
@@ -40,65 +38,30 @@ import edu.tigers.sumatra.referee.data.GameState;
  */
 public class GameEventEngine
 {
-	private Map<EGameEventDetectorType, IGameEventDetector> detectors = new EnumMap<>(EGameEventDetectorType.class);
+	private final List<IGameEventDetector> allDetectors = new ArrayList<>();
+	private Set<EGameEventDetectorType> activeDetectors;
 	
 	
-	/**
-	 * constructor
-	 */
 	public GameEventEngine()
 	{
-		this(new HashSet<>(Arrays.asList(EGameEventDetectorType.values())));
-	}
-	
-	
-	/**
-	 * @param detectorTypes
-	 */
-	public GameEventEngine(final Set<EGameEventDetectorType> detectorTypes)
-	{
-		detectorTypes.forEach(type -> detectors.put(type, createDetector(type)));
-	}
-	
-	
-	@SuppressWarnings("squid:MethodCyclomaticComplexity")
-	private static IGameEventDetector createDetector(final EGameEventDetectorType type)
-	{
-		switch (type)
-		{
-			case ATTACKER_TO_DEFENSE_DISTANCE:
-				return new AttackerToDefenseAreaDistanceDetector();
-			case ATTACKER_TOUCHED_KEEPER:
-				return new AttackerTouchKeeperDetector();
-			case BALL_LEFT_FIELD_ICING:
-				return new BallLeftFieldDetector();
-			case BALL_SPEEDING:
-				return new BallSpeedingDetector();
-			case BOT_COLLISION:
-				return new BotCollisionDetector();
-			case BOT_IN_DEFENSE_AREA:
-				return new BotInDefenseAreaDetector();
-			case BOT_NUMBER:
-				return new BotNumberDetector();
-			case BOT_STOP_SPEED:
-				return new BotStopSpeedDetector();
-			case DOUBLE_TOUCH:
-				return new DoubleTouchDetector();
-			case DRIBBLING:
-				return new DribblingDetector();
-			case DEFENDER_TO_KICK_POINT_DISTANCE:
-				return new DefenderToKickPointDistanceDetector();
-			case GOAL:
-				return new GoalDetector();
-			case KICK_TIMEOUT:
-				return new KickTimeoutDetector();
-			case BALL_HOLD_IN_PENAREA:
-				return new BallHoldInPenAreaDetector();
-			case NO_PROGRESS:
-				return new NoProgressDetector();
-			default:
-				throw new IllegalArgumentException("Please add the new type \"" + type + "\" to this switch case clause!");
-		}
+		allDetectors.add(new AttackerToDefenseAreaDistanceDetector());
+		allDetectors.add(new AttackerTouchKeeperDetector());
+		allDetectors.add(new BallLeftFieldDetector());
+		allDetectors.add(new BallSpeedingDetector());
+		allDetectors.add(new BotCollisionDetector());
+		allDetectors.add(new BotInDefenseAreaDetector());
+		allDetectors.add(new BotNumberDetector(ETeamColor.YELLOW));
+		allDetectors.add(new BotNumberDetector(ETeamColor.BLUE));
+		allDetectors.add(new BotStopSpeedDetector());
+		allDetectors.add(new DoubleTouchDetector());
+		allDetectors.add(new DribblingDetector());
+		allDetectors.add(new DefenderToKickPointDistanceDetector());
+		allDetectors.add(new GoalDetector());
+		allDetectors.add(new KickTimeoutDetector());
+		allDetectors.add(new BallHoldInPenAreaDetector());
+		allDetectors.add(new NoProgressDetector());
+		allDetectors.add(new MultipleYellowCardsDetector());
+		activeDetectors = new HashSet<>(Arrays.asList(EGameEventDetectorType.values()));
 	}
 	
 	
@@ -107,32 +70,7 @@ public class GameEventEngine
 	 */
 	public void setActiveDetectors(final Set<EGameEventDetectorType> detectorTypes)
 	{
-		Set<EGameEventDetectorType> toBeRemoved = Sets.difference(detectors.keySet(), detectorTypes).immutableCopy();
-		Set<EGameEventDetectorType> toBeAdded = Sets.difference(detectorTypes, detectors.keySet()).immutableCopy();
-		
-		toBeRemoved.forEach(type -> detectors.remove(type));
-		toBeAdded.forEach(type -> detectors.put(type, createDetector(type)));
-	}
-	
-	
-	/**
-	 * @param type
-	 */
-	public void activateDetector(final EGameEventDetectorType type)
-	{
-		if (!detectors.containsKey(type))
-		{
-			detectors.put(type, createDetector(type));
-		}
-	}
-	
-	
-	/**
-	 * @param type
-	 */
-	public void deactivateDetector(final EGameEventDetectorType type)
-	{
-		detectors.remove(type);
+		this.activeDetectors = detectorTypes;
 	}
 	
 	
@@ -141,7 +79,7 @@ public class GameEventEngine
 	 */
 	public void reset()
 	{
-		detectors.values().forEach(IGameEventDetector::reset);
+		allDetectors.forEach(IGameEventDetector::reset);
 	}
 	
 	
@@ -157,22 +95,23 @@ public class GameEventEngine
 		/*
 		 * Retrieve all rules which are active in the current gamestate
 		 */
-		List<IGameEventDetector> activeDetectors = detectors.values().stream()
-				.filter(detector -> detector.isActiveIn(currentState.getState()))
-				.sorted(IGameEventDetector.GameEventDetectorComparator.INSTANCE)
+		List<IGameEventDetector> detectors = this.allDetectors.stream()
+				.filter(d -> activeDetectors.contains(d.getType()))
+				.filter(d -> d.isActiveIn(currentState.getState()))
+				.sorted(Comparator.comparingInt(IGameEventDetector::getPriority))
 				.collect(Collectors.toList());
 		
 		/*
 		 * Reset the detectors which have now become active
 		 */
-		activeDetectors.stream()
+		detectors.stream()
 				.filter(detector -> !detector.isActiveIn(lastState.getState()))
 				.forEach(IGameEventDetector::reset);
 		
 		List<IGameEvent> gameEvents = new ArrayList<>();
-		for (IGameEventDetector detector : activeDetectors)
+		for (IGameEventDetector detector : detectors)
 		{
-			Optional<IGameEvent> result = detector.update(frame, gameEvents);
+			Optional<IGameEvent> result = detector.update(frame);
 			result.ifPresent(gameEvents::add);
 		}
 		

@@ -1,13 +1,15 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays;
 
 import com.github.g3force.instanceables.IInstanceableEnum;
 import com.github.g3force.instanceables.InstanceableClass;
 
-import edu.tigers.sumatra.ai.pandora.plays.defense.DefensePlay;
-import edu.tigers.sumatra.ai.pandora.plays.learning.LearningPlay;
+import edu.tigers.sumatra.ai.pandora.plays.match.DefensePlay;
+import edu.tigers.sumatra.ai.pandora.plays.match.KeeperPlay;
+import edu.tigers.sumatra.ai.pandora.plays.match.OffensivePlay;
+import edu.tigers.sumatra.ai.pandora.plays.match.SupportPlay;
 import edu.tigers.sumatra.ai.pandora.plays.others.AroundTheBallPlay;
 import edu.tigers.sumatra.ai.pandora.plays.others.CheeringPlay;
 import edu.tigers.sumatra.ai.pandora.plays.others.ExchangePositioningPlay;
@@ -16,13 +18,20 @@ import edu.tigers.sumatra.ai.pandora.plays.others.FormationStaticPlay;
 import edu.tigers.sumatra.ai.pandora.plays.others.GuiTestPlay;
 import edu.tigers.sumatra.ai.pandora.plays.others.InitPlay;
 import edu.tigers.sumatra.ai.pandora.plays.others.MaintenancePlay;
+import edu.tigers.sumatra.ai.pandora.plays.others.RobotInterchangePlay;
 import edu.tigers.sumatra.ai.pandora.plays.positioning.PositioningPlay;
+import edu.tigers.sumatra.ai.pandora.plays.redirect.PassingDualPlay;
 import edu.tigers.sumatra.ai.pandora.plays.redirect.PassingPlay;
 import edu.tigers.sumatra.ai.pandora.plays.redirect.RedirectCirclePlay;
-import edu.tigers.sumatra.ai.pandora.plays.redirect.RedirectDualPlay;
 import edu.tigers.sumatra.ai.pandora.plays.redirect.RedirectDynamicTrianglePlay;
 import edu.tigers.sumatra.ai.pandora.plays.redirect.RedirectRectanglePlay;
 import edu.tigers.sumatra.ai.pandora.plays.redirect.RedirectTrianglePlay;
+import edu.tigers.sumatra.ai.pandora.plays.redirect.ReproducibleRedirectPlay;
+import edu.tigers.sumatra.ai.pandora.plays.standard.BallPlacementPlay;
+import edu.tigers.sumatra.ai.pandora.plays.standard.KickoffPlay;
+import edu.tigers.sumatra.ai.pandora.plays.standard.OneOnOneShootoutPlay;
+import edu.tigers.sumatra.ai.pandora.plays.standard.PenaltyThemPlay;
+import edu.tigers.sumatra.ai.pandora.plays.standard.PenaltyWePlay;
 
 
 /**
@@ -33,7 +42,7 @@ public enum EPlay implements IInstanceableEnum
 	/**  */
 	OFFENSIVE(new InstanceableClass(OffensivePlay.class), 20),
 	/**  */
-	AUTOMATED_THROW_IN(new InstanceableClass(AutomatedThrowInPlay.class), 10),
+	BALL_PLACEMENT(new InstanceableClass(BallPlacementPlay.class), 10),
 	/**  */
 	KICKOFF(new InstanceableClass(KickoffPlay.class), 10),
 	/** */
@@ -43,11 +52,7 @@ public enum EPlay implements IInstanceableEnum
 	/**  */
 	KEEPER(new InstanceableClass(KeeperPlay.class), 1),
 	/**  */
-	LEARNING_PLAY(new InstanceableClass(LearningPlay.class)),
-	/**  */
 	ATTACKER_SHOOTOUT(new InstanceableClass(OneOnOneShootoutPlay.class), 1),
-    /** */
-    KEEPER_SHOOTOUT(new InstanceableClass(KeeperShootoutPlay.class), 1),
     /**  */
 	PENALTY_THEM(new InstanceableClass(PenaltyThemPlay.class), 5),
 	/**  */
@@ -69,7 +74,7 @@ public enum EPlay implements IInstanceableEnum
 	/**  */
 	REDIRECT_ANGLE(new InstanceableClass(RedirectRectanglePlay.class), 0),
 	/**  */
-	REDIRECT_DUAL(new InstanceableClass(RedirectDualPlay.class), 0),
+	REDIRECT_DUAL(new InstanceableClass(PassingDualPlay.class), 0),
 	/**  */
 	REDIRECT_TRIANGLE(new InstanceableClass(RedirectTrianglePlay.class), 0),
 	/**  */
@@ -82,12 +87,13 @@ public enum EPlay implements IInstanceableEnum
 	/**  */
 	FORMATION_MOVING(new InstanceableClass(FormationMovingPlay.class)),
 
+	INTERCHANGE(new InstanceableClass(RobotInterchangePlay.class)),
+
 	/**  */
 	POSITIONING_PLAY(new InstanceableClass(PositioningPlay.class)),
-	
-	/**  */
-	@Deprecated
-	REDIRECT_TEST(new InstanceableClass(Object.class));
+
+	/** */
+    REPRODUCIBLE_REDIRECT(new InstanceableClass(ReproducibleRedirectPlay.class));
 	
 	private final InstanceableClass	clazz;
 	private int								priority;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.line.v2;
@@ -12,6 +12,7 @@ import com.carrotsearch.junitbenchmarks.BenchmarkOptions;
 
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -30,11 +31,11 @@ public class LineMathPerfTest extends AbstractBenchmark
 	@BeforeClass
 	public static void setup()
 	{
-		IVector2 sVA = Vector2.ZERO_VECTOR;
+		IVector2 sVA = Vector2f.ZERO_VECTOR;
 		IVector2 sVB = Vector2.fromXY(0, 1);
 		
-		IVector2 dVA = Vector2.X_AXIS;
-		IVector2 dVB = Vector2.Y_AXIS;
+		IVector2 dVA = Vector2f.X_AXIS;
+		IVector2 dVB = Vector2f.Y_AXIS;
 		
 		lineV1A = edu.tigers.sumatra.math.line.Line.fromDirection(sVA, dVA);
 		lineV1B = edu.tigers.sumatra.math.line.Line.fromDirection(sVB, dVB);

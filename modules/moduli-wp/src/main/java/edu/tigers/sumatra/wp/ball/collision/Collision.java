@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.ball.collision;
@@ -13,9 +13,9 @@ import edu.tigers.sumatra.math.vector.IVector3;
  */
 public class Collision implements ICollision
 {
-	private final IVector2				pos;
-	private final IVector2				normal;
-	private final ICollisionObject	object;
+	private final IVector2 pos;
+	private final IVector2 normal;
+	private final ICollisionObject object;
 	
 	
 	/**
@@ -56,13 +56,6 @@ public class Collision implements ICollision
 	public IVector3 getObjectVel()
 	{
 		return object.getVel();
-	}
-	
-	
-	@Override
-	public boolean isSticky()
-	{
-		return object.isSticky();
 	}
 	
 	

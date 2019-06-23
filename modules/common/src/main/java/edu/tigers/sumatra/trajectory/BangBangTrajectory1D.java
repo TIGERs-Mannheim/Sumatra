@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.trajectory;
 
@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.sleepycat.persist.model.Persistent;
+
+import edu.tigers.sumatra.math.SumatraMath;
 
 
 /**
@@ -17,62 +19,13 @@ import com.sleepycat.persist.model.Persistent;
 @Persistent
 public class BangBangTrajectory1D implements ITrajectory<Double>
 {
-	/** */
-	public static final int						BANG_BANG_TRAJECTORY_1D_PARTS_MAX	= 3;
+	private final List<BBTrajectoryPart> parts = new ArrayList<>();
 	
-	private final List<BBTrajectoryPart>	parts											= new ArrayList<>();
-	
-	/**
-	 * Part of trajectory
-	 */
-	@Persistent
-	static class BBTrajectoryPart
-	{
-		/** */
-		double	tEnd;
-		/** */
-		double	acc;
-		/** */
-		double	v0;
-		/** */
-		double	s0;
-		
-		
-		@SuppressWarnings("unused")
-		private BBTrajectoryPart()
-		{
-			// required for Berkeley
-		}
-		
-		
-		/**
-		 * @param tEnd
-		 * @param acc
-		 * @param v0
-		 * @param s0
-		 */
-		private BBTrajectoryPart(final double tEnd, final double acc, final double v0, final double s0)
-		{
-			this.tEnd = tEnd;
-			this.acc = acc;
-			this.v0 = v0;
-			this.s0 = s0;
-		}
-	}
-	
-	@Persistent
-	static class PosVelAcc
-	{
-		double	pos;	// [m]
-		double	vel;	// [m/s]
-		double	acc;	// [m/s^2]
-	}
-	
-	double	initialPos;	// [m]
-	double	finalPos;	// [m]
-	double	initialVel;	// [m/s]
-	double	maxAcc;		// [m/s^2]
-	double	maxVel;		// [m/s]
+	double initialPos; // [m]
+	double finalPos; // [m]
+	double initialVel; // [m/s]
+	double maxAcc; // [m/s^2]
+	double maxVel; // [m/s]
 	
 	
 	BangBangTrajectory1D()
@@ -207,7 +160,7 @@ public class BangBangTrajectory1D implements ITrajectory<Double>
 			double sq = ((a * (s2 - s0)) + (0.5 * v0 * v0)) / (a * a);
 			if (sq > 0.0)
 			{
-				t2 = Math.sqrt(sq);
+				t2 = SumatraMath.sqrt(sq);
 			} else
 			{
 				t2 = 0;
@@ -222,7 +175,7 @@ public class BangBangTrajectory1D implements ITrajectory<Double>
 			double sq = ((a * (s0 - s2)) + (0.5 * v0 * v0)) / (a * a);
 			if (sq > 0.0f)
 			{
-				t2 = Math.sqrt(sq);
+				t2 = SumatraMath.sqrt(sq);
 			} else
 			{
 				t2 = 0;
@@ -369,18 +322,61 @@ public class BangBangTrajectory1D implements ITrajectory<Double>
 	}
 	
 	
-	/**
-	 * @return
-	 */
-	public String getInitParams()
-	{
-		return String.format("%03.20f %03.20f %03.20f %03.20f %03.20f", initialPos, finalPos,
-				initialVel, maxAcc, maxVel);
-	}
-	
-	
 	public List<BBTrajectoryPart> getParts()
 	{
 		return parts;
+	}
+	
+	
+	@Override
+	public BangBangTrajectory1D mirrored()
+	{
+		return new BangBangTrajectory1D(-initialPos, -finalPos, -initialVel, maxVel, maxAcc);
+	}
+	
+	/**
+	 * Part of trajectory
+	 */
+	@Persistent
+	static class BBTrajectoryPart
+	{
+		/** */
+		double tEnd;
+		/** */
+		double acc;
+		/** */
+		double v0;
+		/** */
+		double s0;
+		
+		
+		@SuppressWarnings("unused")
+		private BBTrajectoryPart()
+		{
+			// required for Berkeley
+		}
+		
+		
+		/**
+		 * @param tEnd
+		 * @param acc
+		 * @param v0
+		 * @param s0
+		 */
+		private BBTrajectoryPart(final double tEnd, final double acc, final double v0, final double s0)
+		{
+			this.tEnd = tEnd;
+			this.acc = acc;
+			this.v0 = v0;
+			this.s0 = s0;
+		}
+	}
+	
+	@Persistent
+	static class PosVelAcc
+	{
+		double pos; // [m]
+		double vel; // [m/s]
+		double acc; // [m/s^2]
 	}
 }

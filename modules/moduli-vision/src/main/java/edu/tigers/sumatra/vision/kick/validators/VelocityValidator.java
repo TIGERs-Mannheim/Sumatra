@@ -10,8 +10,8 @@ import java.util.stream.Collectors;
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 
+import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.vision.data.CamBallInternal;
 import edu.tigers.sumatra.vision.data.FilteredVisionBot;
 import edu.tigers.sumatra.vision.tracker.BallTracker.MergedBall;
 
@@ -50,10 +50,10 @@ public class VelocityValidator implements IKickValidator
 			boolean valid = true;
 			for (int i = 1; i < group.size(); i++)
 			{
-				CamBallInternal bPrev = group.get(i - 1).getLatestCamBall().orElseThrow(IllegalStateException::new);
-				CamBallInternal bNow = group.get(i).getLatestCamBall().orElseThrow(IllegalStateException::new);
-				long tPrev = bPrev.gettCapture() + (long) (bPrev.getDtDeviation() * 1e9);
-				long tNow = bNow.gettCapture() + (long) (bNow.getDtDeviation() * 1e9);
+				CamBall bPrev = group.get(i - 1).getLatestCamBall().orElseThrow(IllegalStateException::new);
+				CamBall bNow = group.get(i).getLatestCamBall().orElseThrow(IllegalStateException::new);
+				long tPrev = bPrev.gettCapture();
+				long tNow = bNow.gettCapture();
 				IVector2 prev = bPrev.getFlatPos();
 				IVector2 now = bNow.getFlatPos();
 				

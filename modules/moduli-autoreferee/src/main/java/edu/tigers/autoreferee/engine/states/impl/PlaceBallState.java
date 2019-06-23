@@ -1,23 +1,25 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.states.impl;
 
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.log4j.Logger;
 
 import edu.tigers.autoreferee.AutoRefConfig;
 import edu.tigers.autoreferee.IAutoRefFrame;
+import edu.tigers.autoreferee.engine.AutoRefGlobalState;
 import edu.tigers.autoreferee.engine.AutoRefMath;
+import edu.tigers.autoreferee.engine.FollowUpAction;
 import edu.tigers.autoreferee.engine.RefboxRemoteCommand;
+import edu.tigers.autoreferee.engine.events.EGameEvent;
+import edu.tigers.autoreferee.engine.events.GameEvent;
 import edu.tigers.autoreferee.engine.states.IAutoRefStateContext;
 import edu.tigers.sumatra.Referee.SSL_Referee.Command;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.referee.data.EGameState;
-import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
 
@@ -31,89 +33,107 @@ import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
  */
 public class PlaceBallState extends AbstractAutoRefState
 {
-	private Long entryTime;
+	private static final Logger log = Logger.getLogger(PlaceBallState.class.getName());
+	
 	private boolean stopSend = false;
+	
+	
+	@Override
+	protected void prepare(final IAutoRefFrame frame, final IAutoRefStateContext ctx)
+	{
+		super.prepare(frame, ctx);
+		ctx.getAutoRefGlobalState().setBallPlacementStage(AutoRefGlobalState.EBallPlacementStage.IN_PROGRESS);
+	}
 	
 	
 	@Override
 	public void doUpdate(final IAutoRefFrame frame, final IAutoRefStateContext ctx)
 	{
-		updateEntryTime(frame);
-		
-		if ((ctx.getFollowUpAction() == null) || !ctx.getFollowUpAction().getNewBallPosition().isPresent())
+		if (placementNotPossible(ctx))
 		{
 			// No idea where the ball is supposed to be placed, this situation needs to be fixed by the human ref
 			return;
 		}
 		
-		IVector2 targetPos = ctx.getFollowUpAction().getNewBallPosition().get();
+		IVector2 targetPos = ctx.getFollowUpAction().getNewBallPosition().orElseThrow(IllegalStateException::new);
 		if (criteriaAreMet(frame.getWorldFrame(), targetPos))
 		{
 			// The ball has been placed at the kick position. Return to the stopped state to perform the action
-			sendCommandIfReady(ctx, new RefboxRemoteCommand(Command.STOP), !stopSend);
+			sendCommandIfReady(ctx, new RefboxRemoteCommand(Command.STOP, null), !stopSend);
 			stopSend = true;
+			
+			ctx.getAutoRefGlobalState().setBallPlacementStage(AutoRefGlobalState.EBallPlacementStage.SUCCEEDED);
+			
+			// reset failure log
+			ctx.getAutoRefGlobalState().getFailedBallPlacements().put(frame.getGameState().getForTeam(), 0);
 			return;
 		}
 		
 		// Wait until the team has had enough time to place the ball
-		if ((frame.getTimestamp() - entryTime) < TimeUnit.MILLISECONDS.toNanos(AutoRefConfig.getBallPlacementWindow()))
+		// For teams with 5 failed attempts, the placement will fail immediately
+		if (ctx.getAutoRefGlobalState().getFailedBallPlacements().getOrDefault(frame.getGameState().getForTeam(), 0) < 5
+				&& (frame.getTimestamp() - getEntryTime()) < TimeUnit.MILLISECONDS
+						.toNanos(AutoRefConfig.getBallPlacementWindow()))
 		{
 			return;
 		}
 		
-		RefboxRemoteCommand cmd = determineNextAction(frame, targetPos);
+		RefboxRemoteCommand cmd = determineNextAction(frame, ctx);
 		sendCommandIfReady(ctx, cmd, !stopSend);
+		ctx.getAutoRefGlobalState().setBallPlacementStage(AutoRefGlobalState.EBallPlacementStage.FAILED);
+		
+		if (!stopSend)
+		{
+			logFailure(frame, ctx);
+		}
+		
 		stopSend = cmd.getCommand() == Command.STOP;
 	}
 	
 	
-	/**
-	 * @param frame
-	 * @return
-	 */
-	private RefboxRemoteCommand determineNextAction(final IAutoRefFrame frame, final IVector2 targetPos)
+	private boolean placementNotPossible(final IAutoRefStateContext ctx)
 	{
-		List<ETeamColor> completedAttempts = determinePlacementAttempts(frame);
-		List<ETeamColor> capableTeams = AutoRefConfig.getBallPlacementTeams();
-		
-		capableTeams.removeAll(completedAttempts);
-		
-		RefboxRemoteCommand cmd = new RefboxRemoteCommand(Command.STOP, null);
-		
-		if (!capableTeams.isEmpty())
+		return (ctx.getFollowUpAction() == null) || !ctx.getFollowUpAction().getNewBallPosition().isPresent();
+	}
+	
+	
+	private RefboxRemoteCommand determineNextAction(final IAutoRefFrame frame, final IAutoRefStateContext ctx)
+	{
+		final RefboxRemoteCommand cmd;
+		if (frame.getGameState().getForTeam() != ctx.getFollowUpAction().getTeamInFavor()
+				&& ctx.getFollowUpAction().getTeamInFavor() != ETeamColor.NEUTRAL)
 		{
-			cmd = new RefboxRemoteCommand(capableTeams.get(0) == ETeamColor.BLUE ? Command.BALL_PLACEMENT_BLUE
-					: Command.BALL_PLACEMENT_YELLOW, targetPos);
+			// ball placement failed, but was not executed by team in favor
+			GameEvent gameEvent = new GameEvent(EGameEvent.BALL_PLACEMENT_FAILED,
+					frame.getTimestamp(),
+					ctx.getFollowUpAction().getTeamInFavor().opposite(),
+					null);
+			cmd = new RefboxRemoteCommand(Command.STOP, gameEvent.toProtobuf());
+		} else
+		{
+			FollowUpAction followUpAction = new FollowUpAction(FollowUpAction.EActionType.INDIRECT_FREE,
+					frame.getGameState().getForTeam().opposite(),
+					ctx.getFollowUpAction().getNewBallPosition().orElseThrow(IllegalStateException::new));
+			GameEvent gameEvent = new GameEvent(EGameEvent.BALL_PLACEMENT_FAILED,
+					frame.getTimestamp(),
+					frame.getGameState().getForTeam(),
+					followUpAction);
+			ctx.setFollowUpAction(followUpAction);
+			cmd = new RefboxRemoteCommand(Command.STOP, gameEvent.toProtobuf());
 		}
-		
 		
 		return cmd;
 	}
 	
 	
-	private List<ETeamColor> determinePlacementAttempts(final IAutoRefFrame frame)
+	private void logFailure(final IAutoRefFrame frame, final IAutoRefStateContext ctx)
 	{
-		List<ETeamColor> placements = new ArrayList<>();
-		
-		// Add the team which is currently attempting to place the ball
-		placements.add(frame.getGameState().getForTeam());
-		
-		// Add the last state if it was also a placement attempt
-		List<GameState> stateHistory = frame.getStateHistory();
-		if ((stateHistory.size() > 1) && (stateHistory.get(1).getState() == EGameState.BALL_PLACEMENT))
+		ETeamColor team = frame.getGameState().getForTeam();
+		int failures = ctx.getAutoRefGlobalState().getFailedBallPlacements()
+				.compute(team, (k, v) -> v == null ? 1 : v + 1);
+		if (failures <= 5)
 		{
-			placements.add(stateHistory.get(1).getForTeam());
-		}
-		
-		return placements;
-	}
-	
-	
-	private void updateEntryTime(final IAutoRefFrame frame)
-	{
-		if ((entryTime == null) || !(frame.getGameState().equals(frame.getPreviousFrame().getGameState())))
-		{
-			entryTime = frame.getTimestamp();
+			log.info(String.format("Ball placement failed %d times for team %s", failures, team));
 		}
 	}
 	
@@ -133,8 +153,6 @@ public class PlaceBallState extends AbstractAutoRefState
 	@Override
 	public void doReset()
 	{
-		entryTime = null;
 		stopSend = false;
 	}
-	
 }

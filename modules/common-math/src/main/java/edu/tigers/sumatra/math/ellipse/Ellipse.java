@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.ellipse;
@@ -9,7 +9,7 @@ import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -30,7 +30,7 @@ public class Ellipse extends AEllipse
 	@SuppressWarnings("unused")
 	protected Ellipse()
 	{
-		this(Vector2.ZERO_VECTOR, 1, 1, 0);
+		this(Vector2f.ZERO_VECTOR, 1, 1, 0);
 	}
 	
 	

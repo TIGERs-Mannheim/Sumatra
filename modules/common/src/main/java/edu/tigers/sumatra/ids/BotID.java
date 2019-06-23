@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ids;
@@ -45,7 +45,7 @@ public final class BotID extends AObjectID
 	private BotID()
 	{
 		super();
-		teamColor = ETeamColor.UNINITIALIZED;
+		teamColor = ETeamColor.NEUTRAL;
 	}
 	
 	
@@ -91,7 +91,7 @@ public final class BotID extends AObjectID
 		{
 			case BLUE:
 				return createBotId(BLUE_BOT_IDS, number, color);
-			case UNINITIALIZED:
+			case NEUTRAL:
 				return createBotId(UNKNOWN_BOT_IDS, number, color);
 			case YELLOW:
 				return createBotId(YELLOW_BOT_IDS, number, color);
@@ -116,9 +116,9 @@ public final class BotID extends AObjectID
 		
 		ETeamColor color = ETeamColor.YELLOW;
 		int colorDependentNumber = number;
-		if (number > BOT_ID_MAX)
+		if (number > BOT_ID_MIDDLE_BS)
 		{
-			colorDependentNumber -= BOT_ID_MAX + 1;
+			colorDependentNumber -= BOT_ID_MIDDLE_BS + 1;
 			color = ETeamColor.BLUE;
 		}
 		return createBotId(colorDependentNumber, color);
@@ -140,6 +140,13 @@ public final class BotID extends AObjectID
 	public String toString()
 	{
 		return "BotID " + getNumber() + " " + teamColor.name().substring(0, 1);
+	}
+	
+	
+	@Override
+	public String getSaveableString()
+	{
+		return String.format("%d %s", getNumber(), getTeamColor().name().substring(0, 1));
 	}
 	
 	
@@ -166,7 +173,7 @@ public final class BotID extends AObjectID
 	 */
 	public int getNumberWithColorOffsetBS()
 	{
-		return getNumber() + (teamColor == ETeamColor.YELLOW ? 0 : AObjectID.BOT_ID_MAX + 1);
+		return getNumber() + (teamColor == ETeamColor.YELLOW ? 0 : AObjectID.BOT_ID_MIDDLE_BS + 1);
 	}
 	
 	

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.autoreferee.engine.calc;
@@ -29,12 +29,12 @@ import edu.tigers.sumatra.wp.data.ITrackedBall;
  */
 public class PossibleGoalCalc implements IRefereeCalc
 {
-	@Configurable(comment = "[degree] The angle by which the ball heading needs to change while inside the goal to count as goal")
+	@Configurable(comment = "[degree] The angle by which the ball heading needs to change while inside the goal to count as goal", defValue = "45.0")
 	private static double goalBallAngleChange = 45;
-	@Configurable(comment = "[mm] negative margin for penArea: ball will be tracked in this smaller region of penArea and behind", defValue = "-500")
+	@Configurable(comment = "[mm] negative margin for penArea: ball will be tracked in this smaller region of penArea and behind", defValue = "-500.0")
 	private static double marginToDecreasePenArea = -500;
 	@Configurable(comment = "[mm] margin added to field -> moves goal line in x to make sure ball is definitely inside goal", defValue = "21.5")
-	private static double goalMarginInX = Geometry.getBallRadius();
+	private static double goalMarginInX = 21.5;
 	
 	static
 	{
@@ -89,14 +89,14 @@ public class PossibleGoalCalc implements IRefereeCalc
 			{
 				buffer = new LinkedList<>();
 				detectedGoal = null;
-				frame.setBallLeftFieldPos(new TimedPosition(frame.getTimestamp(), ballPosOutsideGoal));
+				frame.setBallLeftFieldPos(new TimedPosition(frame.getTimestamp(), ballPosOutsideGoal.getXYVector()));
 			} else
 			{
-				buffer.add(new TimedPosition(prevFrame.getTimestamp(), ballPosOutsideGoal));
+				buffer.add(new TimedPosition(prevFrame.getTimestamp(), ballPosOutsideGoal.getXYVector()));
 			}
 		}
 		ballWasInGoal = true;
-		buffer.add(new TimedPosition(frame.getTimestamp(), ballPos));
+		buffer.add(new TimedPosition(frame.getTimestamp(), ballPos.getXYVector()));
 		if (buffer.size() > 3)
 		{
 			detectedGoal = new PossibleGoal(frame.getTimestamp(), getGoalColor(ballPos.getXYVector()));

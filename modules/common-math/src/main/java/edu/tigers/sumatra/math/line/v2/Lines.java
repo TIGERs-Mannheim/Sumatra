@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.line.v2;
@@ -76,6 +76,21 @@ public final class Lines
 	
 	
 	/**
+	 * Create a new line instance from a legacy line.
+	 *
+	 * @param line
+	 *           A legacy line
+	 * @return
+	 * 			A new line instance
+	 * @throws IllegalArgumentException If the {@code displacement} has a length of zero
+	 */
+	public static ILine lineFromLegacyLine(final edu.tigers.sumatra.math.line.ILine line)
+	{
+		return Line.fromDirection(line.supportVector(), line.directionVector());
+	}
+	
+	
+	/**
 	 * Create a new {@link IHalfLine} instance which extends from the specified {@code supportVector} in the direction of
 	 * {@code directionVector} indefinitely.
 	 *
@@ -92,6 +107,26 @@ public final class Lines
 	public static IHalfLine halfLineFromDirection(final IVector2 supportVector, final IVector2 directionVector)
 	{
 		return HalfLine.fromDirection(supportVector, directionVector);
+	}
+	
+	
+	/**
+	 * Create a new {@link IHalfLine} instance which extends from the specified {@code start} in the direction of
+	 * {@code end} indefinitely.
+	 *
+	 * @param start
+	 *           The point from which the line extends
+	 * @param end
+	 *           The point which the line extends to
+	 * @return
+	 * 			A new {@code IHalfLine} instance
+	 * @throws IllegalArgumentException
+	 *            If the {@code start} and {@code end} are equal. Please perform a check in your code before you
+	 *            call this method!
+	 */
+	public static IHalfLine halfLineFromPoints(final IVector2 start, final IVector2 end)
+	{
+		return HalfLine.fromDirection(start, end.subtractNew(start));
 	}
 	
 	

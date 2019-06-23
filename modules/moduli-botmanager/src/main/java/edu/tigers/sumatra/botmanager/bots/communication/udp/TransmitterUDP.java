@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.bots.communication.udp;
 
@@ -24,29 +24,17 @@ import edu.tigers.sumatra.botmanager.commands.CommandFactory;
  */
 public class TransmitterUDP implements ITransmitterUDP
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	// Logger
-	private static final Logger				log				= Logger.getLogger(TransmitterUDP.class.getName());
+	private static final Logger log = Logger.getLogger(TransmitterUDP.class.getName());
 	
-	private InetAddress							destination		= null;
-	private int										destPort			= 0;
-	private DatagramSocket						socket			= null;
-	private final BlockingQueue<ACommand>	sendQueue		= new LinkedBlockingQueue<>();
-	private Thread									sendingThread	= null;
-	private final Statistics					stats				= new Statistics();
-	private boolean								legacy			= false;
+	private InetAddress destination = null;
+	private int destPort = 0;
+	private DatagramSocket socket = null;
+	private final BlockingQueue<ACommand> sendQueue = new LinkedBlockingQueue<>();
+	private Thread sendingThread = null;
+	private final Statistics stats = new Statistics();
+	private boolean running = true;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	@Override
 	public void enqueueCommand(final ACommand cmd)
 	{
@@ -71,8 +59,8 @@ public class TransmitterUDP implements ITransmitterUDP
 		
 		stats.reset();
 		
+		running = true;
 		sendingThread = new Thread(new Sender(), "TransmitterUDP");
-		
 		sendingThread.start();
 	}
 	
@@ -98,6 +86,7 @@ public class TransmitterUDP implements ITransmitterUDP
 			}
 		}
 		
+		running = false;
 		sendingThread.interrupt();
 		try
 		{
@@ -112,7 +101,7 @@ public class TransmitterUDP implements ITransmitterUDP
 	
 	
 	@Override
-	public void setSocket(final DatagramSocket newSocket) throws IOException
+	public void setSocket(final DatagramSocket newSocket)
 	{
 		boolean start = false;
 		
@@ -139,9 +128,6 @@ public class TransmitterUDP implements ITransmitterUDP
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	@Override
 	public Statistics getStats()
 	{
@@ -149,28 +135,7 @@ public class TransmitterUDP implements ITransmitterUDP
 	}
 	
 	
-	/**
-	 * @return the legacy
-	 */
-	public boolean isLegacy()
-	{
-		return legacy;
-	}
-	
-	
-	/**
-	 * @param legacy the legacy to set
-	 */
-	@Override
-	public void setLegacy(final boolean legacy)
-	{
-		this.legacy = legacy;
-	}
-	
-	// --------------------------------------------------------------------------
-	// --- Threads --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	protected class Sender implements Runnable
+	private class Sender implements Runnable
 	{
 		@Override
 		public void run()
@@ -183,7 +148,7 @@ public class TransmitterUDP implements ITransmitterUDP
 			
 			Thread.currentThread().setName("Transmitter UDP " + socket.getInetAddress() + ":" + socket.getPort());
 			
-			while (!Thread.currentThread().isInterrupted())
+			while (running)
 			{
 				ACommand cmd;
 				
@@ -198,7 +163,7 @@ public class TransmitterUDP implements ITransmitterUDP
 				
 				try
 				{
-					byte[] data = CommandFactory.getInstance().encode(cmd, legacy);
+					byte[] data = CommandFactory.getInstance().encode(cmd);
 					
 					DatagramPacket packet = new DatagramPacket(data, data.length, destination, destPort);
 					socket.send(packet);

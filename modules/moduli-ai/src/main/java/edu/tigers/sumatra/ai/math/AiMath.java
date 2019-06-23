@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.math;
@@ -22,6 +22,7 @@ import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.skillsystem.skills.util.SkillUtil;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
@@ -133,7 +134,7 @@ public final class AiMath
 	 */
 	public static IBotIDMap<ITrackedBot> getNonMovingBots(final IBotIDMap<ITrackedBot> bots, final double velThreshold)
 	{
-		IBotIDMap<ITrackedBot> result = new BotIDMap<>(bots.size());
+		IBotIDMap<ITrackedBot> result = new BotIDMap<>();
 		for (ITrackedBot bot : bots.values())
 		{
 			if (bot.getVel().getLength2() <= velThreshold)
@@ -269,7 +270,7 @@ public final class AiMath
 		{
 			ILine line = Line.fromDirection(pos, Vector2.fromAngle(a));
 			targets.add(
-					pos.farthestToOpt(Geometry.getField().lineIntersections(line)).orElse(Vector2.zero()));
+					pos.farthestToOpt(Geometry.getField().lineIntersections(line)).orElse(Vector2f.ZERO_VECTOR));
 		}
 		return pos.farthestTo(targets);
 	}

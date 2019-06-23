@@ -61,4 +61,14 @@ abstract class ATriangle implements ITriangle
 	{
 		throw new NotImplementedException();
 	}
+	
+	
+	@Override
+	public boolean isNeighbour(ITriangle triangle)
+	{
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public double area(){ throw new NotImplementedException();}
 }

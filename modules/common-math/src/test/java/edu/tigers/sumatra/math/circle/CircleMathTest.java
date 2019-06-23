@@ -13,6 +13,7 @@ import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -21,7 +22,7 @@ import edu.tigers.sumatra.math.vector.Vector2;
 public class CircleMathTest
 {
 	@Test
-	public void tangentialIntersections() throws Exception
+	public void tangentialIntersections()
 	{
 		ICircle circle = Circle.createCircle(Vector2.fromXY(1000, 500), 300);
 		
@@ -48,7 +49,7 @@ public class CircleMathTest
 	
 	
 	@Test
-	public void lineIntersectionsCircle() throws Exception
+	public void lineIntersectionsCircle()
 	{
 		ICircle circle = Circle.createCircle(Vector2.fromXY(-300, 200), 100);
 		ILine line;
@@ -76,7 +77,7 @@ public class CircleMathTest
 	
 	
 	@Test
-	public void lineSegmentIntersections() throws Exception
+	public void lineSegmentIntersections()
 	{
 		ICircle circle = Circle.createCircle(Vector2.fromXY(200, -200), 100);
 		ILine line;
@@ -104,7 +105,7 @@ public class CircleMathTest
 	
 	
 	@Test
-	public void nearestPointOutsideCircle() throws Exception
+	public void nearestPointOutsideCircle()
 	{
 		double radius = 300;
 		double posX = 1000;
@@ -134,7 +135,7 @@ public class CircleMathTest
 	
 	
 	@Test
-	public void isPointInCircle() throws Exception
+	public void isPointInCircle()
 	{
 		double radius = 300;
 		double margin = 0.0;
@@ -166,7 +167,7 @@ public class CircleMathTest
 	
 	
 	@Test
-	public void isPointInArc180degStart0deg() throws Exception
+	public void isPointInArc180degStart0deg()
 	{
 		double radius = 300;
 		double margin = 0.0;
@@ -185,7 +186,7 @@ public class CircleMathTest
 	
 	
 	@Test
-	public void isPointInArc180degStart90deg() throws Exception
+	public void isPointInArc180degStart90deg()
 	{
 		double radius = 300;
 		double margin = 0.0;
@@ -204,7 +205,7 @@ public class CircleMathTest
 	
 	
 	@Test
-	public void isPointInArc180degStartMinus90deg() throws Exception
+	public void isPointInArc180degStartMinus90deg()
 	{
 		double radius = 300;
 		double margin = 0.0;
@@ -223,7 +224,7 @@ public class CircleMathTest
 	
 	
 	@Test
-	public void isPointInArc90degStart0deg() throws Exception
+	public void isPointInArc90degStart0deg()
 	{
 		double radius = 300;
 		double margin = 0.0;
@@ -242,7 +243,7 @@ public class CircleMathTest
 	
 	
 	@Test
-	public void isPointInArc90degStart180deg() throws Exception
+	public void isPointInArc90degStart180deg()
 	{
 		double radius = 300;
 		double margin = 0.0;
@@ -261,7 +262,7 @@ public class CircleMathTest
 	
 	
 	@Test
-	public void isPointInArc90degStartMinus180deg() throws Exception
+	public void isPointInArc90degStartMinus180deg()
 	{
 		double radius = 300;
 		double margin = 0.0;
@@ -280,7 +281,7 @@ public class CircleMathTest
 	
 	
 	@Test
-	public void isPointInArcMinus90degStart180deg() throws Exception
+	public void isPointInArcMinus90degStart180deg()
 	{
 		double radius = 300;
 		double margin = 0.0;
@@ -299,7 +300,7 @@ public class CircleMathTest
 	
 	
 	@Test
-	public void lineIntersectionsArc() throws Exception
+	public void lineIntersectionsArc()
 	{
 		ILine line;
 		IVector2 center = Vector2.fromXY(-200, 100);
@@ -322,9 +323,9 @@ public class CircleMathTest
 	
 	
 	@Test
-	public void nearestPointOutsideArc() throws Exception
+	public void nearestPointOutsideArc()
 	{
-		IArc arc = Arc.createArc(Vector2.ZERO_VECTOR, 100, 0, Math.PI / 2);
+		IArc arc = Arc.createArc(Vector2f.ZERO_VECTOR, 100, 0, Math.PI / 2);
 		
 		assertThat(
 				CircleMath.nearestPointOutsideArc(arc, Vector2.fromXY(20, 20)).distanceTo(Vector2.fromXY(70.711, 70.711)))
@@ -337,7 +338,7 @@ public class CircleMathTest
 	
 	
 	@Test
-	public void stepAlongCircle() throws Exception
+	public void stepAlongCircle()
 	{
 		IVector2 center = Vector2.fromXY(100, 100);
 		

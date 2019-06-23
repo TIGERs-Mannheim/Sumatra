@@ -1,18 +1,23 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.circle;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Random;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-import edu.tigers.sumatra.math.MathException;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -45,7 +50,7 @@ public class CircleTest
 		Assert.assertEquals(true, circle.isIntersectingWithLine(line3));
 		
 		// Test false
-		Line line2 = Line.fromDirection(Vector2.zero(), Vector2.fromXY(-1, 1));
+		Line line2 = Line.fromDirection(Vector2f.ZERO_VECTOR, Vector2.fromXY(-1, 1));
 		Assert.assertEquals(false, circle.isIntersectingWithLine(line2));
 	}
 	
@@ -60,7 +65,7 @@ public class CircleTest
 	{
 		// Test 1
 		ICircle circle = Circle.createCircle(Vector2.fromXY(1, 1), 1);
-		Line line = Line.fromDirection(Vector2.zero(), Vector2.fromXY(-1, 1));
+		Line line = Line.fromDirection(Vector2f.ZERO_VECTOR, Vector2.fromXY(-1, 1));
 		if (circle.lineIntersections(line).size() == 0)
 		{
 			Assert.assertTrue(true);
@@ -131,20 +136,11 @@ public class CircleTest
 		IVector2 P2 = Vector2.fromXY(1, 0);
 		IVector2 P3 = Vector2.fromXY(2, 1);
 		
-		ICircle circle;
+		ICircle circle = Circle.from3Points(P1, P2, P3).orElseThrow(() -> new AssertionError("No circle found"));
 		
-		try
-		{
-			circle = Circle.from3Points(P1, P2, P3);
-		} catch (MathException err)
-		{
-			Assert.fail();
-			return;
-		}
-		
-		Assert.assertEquals(1.0, circle.radius(), Double.MIN_VALUE);
-		Assert.assertEquals(1.0, circle.center().x(), Double.MIN_VALUE);
-		Assert.assertEquals(1.0, circle.center().y(), Double.MIN_VALUE);
+		Assert.assertEquals(1.0, circle.radius(), 1e-10);
+		Assert.assertEquals(1.0, circle.center().x(), 1e-10);
+		Assert.assertEquals(1.0, circle.center().y(), 1e-10);
 	}
 	
 	
@@ -158,15 +154,10 @@ public class CircleTest
 		IVector2 P2 = Vector2.fromXY(1, 0);
 		IVector2 P3 = Vector2.fromXY(2, 0);
 		
-		try
+		if (Circle.from3Points(P1, P2, P3).isPresent())
 		{
-			Circle.from3Points(P1, P2, P3);
-		} catch (MathException err)
-		{
-			return;
+			Assert.fail();
 		}
-		
-		Assert.fail();
 	}
 	
 	
@@ -176,23 +167,67 @@ public class CircleTest
 	@Test
 	public void testSmallCircleFrom3Points()
 	{
-		IVector2 P1 = Vector2.fromXY(0, 1e-9f);
-		IVector2 P2 = Vector2.fromXY(1e-9f, 0);
-		IVector2 P3 = Vector2.fromXY(2e-9f, 1e-9f);
+		IVector2 P1 = Vector2.fromXY(0, 1e-9);
+		IVector2 P2 = Vector2.fromXY(1e-9, 0);
+		IVector2 P3 = Vector2.fromXY(2e-9, 1e-9);
 		
-		ICircle circle;
+		ICircle circle = Circle.from3Points(P1, P2, P3).orElseThrow(() -> new AssertionError("No circle found"));
 		
-		try
+		Assert.assertEquals(1e-9, circle.radius(), 1e-20);
+		Assert.assertEquals(1e-9, circle.center().x(), 1e-20);
+		Assert.assertEquals(1e-9, circle.center().y(), 1e-20);
+	}
+	
+	
+	@Test
+	public void testCircleFrom2Points()
+	{
+		IVector2 P1 = Vector2.fromXY(1, 0);
+		IVector2 P2 = Vector2.fromXY(-1, 0);
+		
+		ICircle circle = Circle.from2Points(P1, P2);
+		
+		Assert.assertEquals(1, circle.radius(), Double.MIN_VALUE);
+		Assert.assertEquals(0, circle.center().x(), Double.MIN_VALUE);
+		Assert.assertEquals(0, circle.center().y(), Double.MIN_VALUE);
+	}
+	
+	
+	@Test
+	public void testHullCircle()
+	{
+		List<IVector2> points = new ArrayList<>();
+		points.add(Vector2.fromXY(1, 0));
+		points.add(Vector2.fromXY(-1, 0));
+		points.add(Vector2.fromXY(0, 0.5));
+		points.add(Vector2.fromXY(0, -0.5));
+		
+		ICircle circle = Circle.hullCircle(points).orElseThrow(AssertionError::new);
+		
+		Assert.assertEquals(1.0, circle.radius(), Double.MIN_VALUE);
+		Assert.assertEquals(0.0, circle.center().x(), Double.MIN_VALUE);
+		Assert.assertEquals(0.0, circle.center().y(), Double.MIN_VALUE);
+	}
+	
+	
+	@Test
+	public void testHullCircleRandomPoints()
+	{
+		Random rnd = new Random(42);
+		
+		long iterations = 1000;
+		for (int i = 0; i < iterations; i++)
 		{
-			circle = Circle.from3Points(P1, P2, P3);
-		} catch (MathException err)
-		{
-			Assert.fail();
-			return;
+			int n = 2 + rnd.nextInt(10);
+			List<IVector2> points = new ArrayList<>();
+			for (int j = 0; j < n; j++)
+			{
+				points.add(Vector2.fromXY((rnd.nextDouble() * 2000) - 1000, (rnd.nextDouble() + 2000) - 1000));
+			}
+			Optional<ICircle> hullCircleOpt = Circle.hullCircle(points);
+			
+			ICircle hullCircle = hullCircleOpt.orElseThrow(AssertionError::new);
+			assertThat(points).allMatch(p -> hullCircle.isPointInShape(p, 1e-10));
 		}
-		
-		Assert.assertEquals(1e-9f, circle.radius(), Double.MIN_VALUE);
-		Assert.assertEquals(1e-9f, circle.center().x(), Double.MIN_VALUE);
-		Assert.assertEquals(1e-9f, circle.center().y(), Double.MIN_VALUE);
 	}
 }

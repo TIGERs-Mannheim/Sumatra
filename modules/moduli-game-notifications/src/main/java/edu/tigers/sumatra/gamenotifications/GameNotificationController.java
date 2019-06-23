@@ -5,9 +5,10 @@
 package edu.tigers.sumatra.gamenotifications;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
 import edu.tigers.moduli.AModule;
@@ -24,6 +25,8 @@ import edu.tigers.sumatra.gamenotifications.events.PenaltyShootoutEvent;
 import edu.tigers.sumatra.gamenotifications.events.StartCommandEvent;
 import edu.tigers.sumatra.gamenotifications.events.StopCommandEvent;
 import edu.tigers.sumatra.gamenotifications.events.TimeoutEvent;
+import edu.tigers.sumatra.gamenotifications.events.YellowCardEvent;
+import edu.tigers.sumatra.gamenotifications.events.YellowCardOverEvent;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.referee.AReferee;
 import edu.tigers.sumatra.referee.IRefereeObserver;
@@ -34,10 +37,6 @@ import edu.tigers.sumatra.referee.IRefereeObserver;
  */
 public class GameNotificationController extends AModule implements IRefereeObserver
 {
-	
-	public static final String MODULE_TYPE = "GameNotificationController";
-	public static final String MODULE_ID = "game_notification_controller";
-	
 	private static final Logger log = Logger
 			.getLogger(GameNotificationController.class.getName());
 	
@@ -47,16 +46,7 @@ public class GameNotificationController extends AModule implements IRefereeObser
 	private Referee.SSL_Referee.Command lastRefCommand = null;
 	private Referee.SSL_Referee.Stage lastStage = null;
 	
-	
-	/**
-	 * Creates a new Controller
-	 *
-	 * @param subconfig
-	 */
-	public GameNotificationController(SubnodeConfiguration subconfig)
-	{
-		// Nothing to do.
-	}
+	private Map<String, Referee.SSL_Referee.TeamInfo> teamInfoMapLastFrame = new HashMap<>();
 	
 	
 	@Override
@@ -86,7 +76,7 @@ public class GameNotificationController extends AModule implements IRefereeObser
 	{
 		try
 		{
-			AReferee aRef = (AReferee) SumatraModel.getInstance().getModule(AReferee.MODULE_ID);
+			AReferee aRef = SumatraModel.getInstance().getModule(AReferee.class);
 			aRef.addObserver(this);
 		} catch (ModuleNotFoundException e)
 		{
@@ -100,7 +90,7 @@ public class GameNotificationController extends AModule implements IRefereeObser
 	{
 		try
 		{
-			AReferee aRef = (AReferee) SumatraModel.getInstance().getModule(AReferee.MODULE_ID);
+			AReferee aRef = SumatraModel.getInstance().getModule(AReferee.class);
 			aRef.removeObserver(this);
 		} catch (ModuleNotFoundException e)
 		{
@@ -118,6 +108,9 @@ public class GameNotificationController extends AModule implements IRefereeObser
 		{
 			calculateStageEvent(refMsg, stage);
 		}
+		
+		calculateTeamInfoEvents(refMsg, refMsg.getBlue());
+		calculateTeamInfoEvents(refMsg, refMsg.getYellow());
 		
 		// Determine event to distribute
 		calculateCommandEvent(refMsg, command);
@@ -153,6 +146,27 @@ public class GameNotificationController extends AModule implements IRefereeObser
 			default:
 				break;
 		}
+	}
+	
+	
+	private void calculateTeamInfoEvents(final Referee.SSL_Referee refereeMsg,
+			final Referee.SSL_Referee.TeamInfo teamInfo)
+	{
+		final String team = teamInfo.getName();
+		Referee.SSL_Referee.TeamInfo teamInfoLastFrame = teamInfoMapLastFrame.get(team);
+		
+		if (teamInfoLastFrame != null)
+		{
+			if (teamInfoLastFrame.getYellowCardTimesList().size() < teamInfo.getYellowCardTimesList().size())
+			{
+				distributeEvent(new YellowCardEvent(refereeMsg, teamInfo));
+			} else if (teamInfoLastFrame.getYellowCardTimesList().size() > teamInfo.getYellowCardTimesList().size())
+			{
+				distributeEvent(new YellowCardOverEvent(refereeMsg, teamInfo));
+			}
+		}
+		
+		teamInfoMapLastFrame.put(team, teamInfo);
 	}
 	
 	
@@ -247,7 +261,7 @@ public class GameNotificationController extends AModule implements IRefereeObser
 			
 			GoalScoredEvent e = new GoalScoredEvent(teamScoring, teamOther, refMsg);
 			
-			if (goalSum < goalCounter)
+			if (goalSum > goalCounter)
 			{
 				e.setValidChange(false);
 			}

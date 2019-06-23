@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jun 3, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.statemachine;
 
@@ -78,7 +73,7 @@ public class StateMachineTest
 		EVENT_2
 	}
 	
-	private static class DummyState implements IState
+	private static class DummyState extends AState
 	{
 		@Override
 		public void doEntryActions()
@@ -100,7 +95,7 @@ public class StateMachineTest
 		
 	}
 	
-	private static class Dummy1State implements IState
+	private static class Dummy1State extends AState
 	{
 		@Override
 		public void doEntryActions()
@@ -122,7 +117,7 @@ public class StateMachineTest
 		
 	}
 	
-	private static class Dummy2State implements IState
+	private static class Dummy2State extends AState
 	{
 		@Override
 		public void doEntryActions()

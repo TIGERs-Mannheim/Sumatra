@@ -1,23 +1,28 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.keeper.states;
 
 import java.util.Optional;
 
-import edu.tigers.sumatra.ai.math.kick.PassInterceptionRater;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.keeper.EKeeperState;
+import edu.tigers.sumatra.ai.metis.offense.OffensiveMath;
 import edu.tigers.sumatra.ai.metis.support.IPassTarget;
 import edu.tigers.sumatra.ai.metis.support.PassTarget;
+import edu.tigers.sumatra.ai.metis.targetrater.PassInterceptionRater;
 import edu.tigers.sumatra.ai.pandora.roles.keeper.KeeperRole;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
+import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.skillsystem.skills.AKickSkill;
-import edu.tigers.sumatra.skillsystem.skills.KickChillSkill;
-import edu.tigers.sumatra.skillsystem.skills.KickNormalSkill;
+import edu.tigers.sumatra.skillsystem.skills.AMoveSkill;
 import edu.tigers.sumatra.skillsystem.skills.RunUpChipSkill;
+import edu.tigers.sumatra.skillsystem.skills.SingleTouchKickSkill;
+import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
+import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.ITrackedObject;
@@ -30,8 +35,8 @@ import edu.tigers.sumatra.wp.data.ITrackedObject;
  */
 public class ChipFastState extends AKeeperState
 {
-	private AKickSkill skill;
 	private IPassTarget pTarget = null;
+	private DynamicPosition target;
 	
 	
 	/**
@@ -39,7 +44,7 @@ public class ChipFastState extends AKeeperState
 	 */
 	public ChipFastState(final KeeperRole parent)
 	{
-		super(parent);
+		super(parent, EKeeperState.CHIP_FAST);
 	}
 	
 	
@@ -53,27 +58,30 @@ public class ChipFastState extends AKeeperState
 		{
 			chippingPosition = Geometry.getCenter();
 		}
+		final AMoveSkill skill;
 		if (isBallDangerous())
 		{
-			KickNormalSkill kickSkill = new KickNormalSkill(new DynamicPosition(chippingPosition));
-			kickSkill.setPanic(true);
+			target = new DynamicPosition(chippingPosition, 0.6);
+			TouchKickSkill kickSkill = new TouchKickSkill(target,
+					KickParams.chip(getKickSpeed(chippingPosition)));
 			skill = kickSkill;
 		} else if (KeeperRole.isChipFarToPassTarget())
 		{
 			Optional<ITrackedBot> fallBackReceiver = getWFrame().getTigerBotsVisible().values().stream()
 					.filter(bot -> isPassTargetBehindPassLine(bot.getPos()))
-					.sorted((a, b) -> (int) (a.getPos().x() - b.getPos().x())).findFirst();
+					.min((a, b) -> (int) (a.getPos().x() - b.getPos().x()));
 			IVector2 fallBack = fallBackReceiver.map(ITrackedObject::getPos).orElseGet(Geometry::getCenter);
 			
 			chippingPosition = findBestPassTargetForKeeper(ballPos).orElse(fallBack);
-			skill = new RunUpChipSkill(new DynamicPosition(chippingPosition), AKickSkill.EKickMode.POINT);
-			skill.setKickMode(AKickSkill.EKickMode.PASS);
+			target = new DynamicPosition(chippingPosition);
+			skill = new RunUpChipSkill(target, getKickSpeed(chippingPosition));
 		} else
 		{
 			// chippingPosition
 			chippingPosition = getAiFrame().getTacticalField().getChipKickTarget();
-			skill = new KickChillSkill(new DynamicPosition(chippingPosition));
-			skill.setKickMode(AKickSkill.EKickMode.POINT);
+			target = new DynamicPosition(chippingPosition);
+			skill = new SingleTouchKickSkill(target,
+					KickParams.chip(getKickSpeed(chippingPosition)));
 			if (KeeperRole.isPassTargetSet())
 			{
 				ITrackedBot bot = getAiFrame().getTacticalField().getChipKickTargetBot();
@@ -82,10 +90,16 @@ public class ChipFastState extends AKeeperState
 				pTarget = bot != null ? new PassTarget(newKickerPos, bot.getBotId()) : null;
 			}
 		}
-		skill.setDevice(EKickerDevice.CHIP);
 		skill.getMoveCon().setGoalPostObstacle(true);
 		skill.getMoveCon().setPenaltyAreaAllowedOur(true);
 		setNewSkill(skill);
+	}
+	
+	
+	private double getKickSpeed(final IVector2 chippingPosition)
+	{
+		double distance = chippingPosition.distanceTo(getWFrame().getBall().getPos());
+		return OffensiveMath.passSpeedChip(distance);
 	}
 	
 	
@@ -95,7 +109,7 @@ public class ChipFastState extends AKeeperState
 		if (!isBallDangerous() && !KeeperRole.isChipFarToPassTarget() && !isKeeperCloseToBall())
 		{
 			IVector2 chippingPos = getAiFrame().getTacticalField().getChipKickTarget();
-			skill.setReceiver(new DynamicPosition(chippingPos));
+			target.update(new DynamicPosition(chippingPos));
 			if (KeeperRole.isPassTargetSet())
 			{
 				ITrackedBot bot = getAiFrame().getTacticalField().getChipKickTargetBot();
@@ -103,10 +117,23 @@ public class ChipFastState extends AKeeperState
 						chippingPos.distanceTo(getWFrame().getBall().getPos()) + Geometry.getBotRadius());
 				pTarget = bot != null ? new PassTarget(newKickerPos, bot.getBotId()) : null;
 			}
+		} else if (!isBallDangerous() && !isKeeperCloseToBall())
+		{
+			Optional<ITrackedBot> fallBackReceiver = getWFrame().getTigerBotsVisible().values().stream()
+					.filter(bot -> isPassTargetBehindPassLine(bot.getPos()))
+					.min((a, b) -> (int) (a.getPos().x() - b.getPos().x()));
+			IVector2 fallBack = fallBackReceiver.map(ITrackedObject::getPos).orElseGet(Geometry::getCenter);
+			
+			IVector2 chippingPosition = findBestPassTargetForKeeper(getWFrame().getBall().getPos()).orElse(fallBack);
+			target = new DynamicPosition(chippingPosition);
+			
+			DrawableLine line = new DrawableLine(Line.fromPoints(getWFrame().getBall().getPos(), target));
+			getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.AI_KEEPER).add(line);
+			fallBackReceiver.ifPresent(iTrackedBot -> pTarget = new PassTarget(target, iTrackedBot.getBotId()));
 		}
 		if (pTarget != null)
 		{
-			getAiFrame().getAICom().setPassTarget(pTarget);
+			getAiFrame().getTacticalField().getAiInfoForNextFrame().announcePassingTo(pTarget);
 		}
 	}
 	

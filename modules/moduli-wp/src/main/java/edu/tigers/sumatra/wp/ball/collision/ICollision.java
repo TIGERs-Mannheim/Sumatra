@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.ball.collision;
@@ -30,12 +30,6 @@ public interface ICollision
 	 * @return the normal
 	 */
 	IVector2 getNormal();
-	
-	
-	/**
-	 * @return if the ball should stick at obstacle (dribbler)
-	 */
-	boolean isSticky();
 	
 	
 	/**

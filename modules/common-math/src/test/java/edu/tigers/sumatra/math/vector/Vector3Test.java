@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.vector;
@@ -229,7 +229,7 @@ public class Vector3Test
 	@Test
 	public void testValueOf()
 	{
-		assertThat(Vector3.valueOf("0,0,0").isCloseTo(Vector3.ZERO_VECTOR)).isTrue();
+		assertThat(Vector3.valueOf("0,0,0").isCloseTo(Vector3f.ZERO_VECTOR)).isTrue();
 		assertThat(Vector3.valueOf("42,21,1").isCloseTo(Vector3.fromXYZ(42, 21, 1))).isTrue();
 		assertThat(Vector3.valueOf("pi,0,0").isCloseTo(Vector3.fromXYZ(AngleMath.PI, 0, 0))).isTrue();
 		assertThat(Vector3.valueOf("21+21,1*42,1").isCloseTo(Vector3.fromXYZ(42, 42, 1))).isTrue();
@@ -241,7 +241,7 @@ public class Vector3Test
 	public void testSet()
 	{
 		Vector3 vector = Vector3.zero();
-		assertThat(vector.isCloseTo(Vector3.ZERO_VECTOR)).isTrue();
+		assertThat(vector.isCloseTo(Vector3f.ZERO_VECTOR)).isTrue();
 		vector.set(0, 42);
 		assertThat(vector.isCloseTo(Vector3.fromXYZ(42, 0, 0))).isTrue();
 		vector.set(1, 21);
@@ -345,7 +345,7 @@ public class Vector3Test
 		list.add(Vector3.fromXYZ(123, -321, 20));
 		double muX = StatisticsMath.mean(list.stream().map(IVector::x).collect(Collectors.toList()));
 		double muY = StatisticsMath.mean(list.stream().map(IVector::y).collect(Collectors.toList()));
-		double muZ = StatisticsMath.mean(list.stream().map(IVector::z).collect(Collectors.toList()));
+		double muZ = StatisticsMath.mean(list.stream().map(e -> e.get(2)).collect(Collectors.toList()));
 		IVector muVector = Vector3.meanVector(list);
 		IVector muRefVector = VectorN.from(muX, muY, muZ);
 		assertThat(muVector.isCloseTo(muRefVector, 1e-2)).withFailMessage("expected: %s, but: %s", muVector, muRefVector)
@@ -362,7 +362,7 @@ public class Vector3Test
 		list.add(Vector3.fromXYZ(-21, 10, 21));
 		double varX = StatisticsMath.variance(list.stream().map(IVector::x).collect(Collectors.toList()));
 		double varY = StatisticsMath.variance(list.stream().map(IVector::y).collect(Collectors.toList()));
-		double varZ = StatisticsMath.variance(list.stream().map(IVector::z).collect(Collectors.toList()));
+		double varZ = StatisticsMath.variance(list.stream().map(e -> e.get(2)).collect(Collectors.toList()));
 		IVector varVector = Vector3.varianceVector(list);
 		IVector varRefVector = VectorN.from(varX, varY, varZ);
 		assertThat(varVector.isCloseTo(varRefVector, 1e-2))
@@ -379,7 +379,7 @@ public class Vector3Test
 		list.add(Vector3.fromXYZ(-21, 10, 41));
 		double stdX = StatisticsMath.std(list.stream().map(IVector::x).collect(Collectors.toList()));
 		double stdY = StatisticsMath.std(list.stream().map(IVector::y).collect(Collectors.toList()));
-		double stdZ = StatisticsMath.std(list.stream().map(IVector::z).collect(Collectors.toList()));
+		double stdZ = StatisticsMath.std(list.stream().map(e -> e.get(2)).collect(Collectors.toList()));
 		IVector stdVector = Vector3.stdVector(list);
 		IVector stdRefVector = VectorN.from(stdX, stdY, stdZ);
 		assertThat(stdVector.isCloseTo(stdRefVector, 1e-2))

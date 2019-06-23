@@ -11,6 +11,7 @@ import org.junit.Test;
 
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.Vector3f;
 import edu.tigers.sumatra.wp.data.MotionContext;
 
 
@@ -24,14 +25,14 @@ public class TwoPhaseDynamicsModelTest
 	
 	private static IVector3			initialPos		= Vector3.fromXYZ(0, 0, 0);
 	private static IVector3			initialVel		= Vector3.fromXYZ(7.0, 0, 0);
-	private static IVector3			initialAcc		= Vector3.ZERO_VECTOR;
+	private static IVector3 initialAcc = Vector3f.ZERO_VECTOR;
 	private static IState			initialState	= new BallState(initialPos, initialVel, initialAcc);
-	private static IAction			ballAction		= new BallAction(Vector3.ZERO_VECTOR);
+	private static IAction ballAction = new BallAction(Vector3f.ZERO_VECTOR);
 	private static MotionContext	context			= new MotionContext();
 	
 	
 	@Before
-	public void setUp() throws Exception
+	public void setUp()
 	{
 		dynamicsModel = new BallDynamicsModelTwoPhase();
 		currentState = new BallState(initialState);
@@ -45,7 +46,7 @@ public class TwoPhaseDynamicsModelTest
 	 * @throws Exception
 	 */
 	@Test
-	public void testConvergence() throws Exception
+	public void testConvergence()
 	{
 		final double interval = 25.0;
 		final double dt = 0.05;

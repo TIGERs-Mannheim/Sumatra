@@ -1,11 +1,13 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.geometry;
 
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.rectangle.Rectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -22,10 +24,13 @@ public class Goal
 {
 	private final double width;
 	private final double depth;
+	private final double wallThickness;
 	private final Vector2f center;
 	private final Vector2f leftPost;
 	private final Vector2f rightPost;
 	private final ILine line;
+	private final ILineSegment lineSegment;
+	private final IRectangle rectangle;
 	
 	
 	/**
@@ -33,15 +38,19 @@ public class Goal
 	 * @param center
 	 * @param depth
 	 */
-	public Goal(final double width, final IVector2 center, final double depth)
+	public Goal(final double width, final IVector2 center, final double depth, final double wallThickness)
 	{
 		this.width = width;
 		this.depth = depth;
+		this.wallThickness = wallThickness;
 		this.center = Vector2f.copy(center);
 		
 		leftPost = Vector2f.fromXY(center.x(), center.y() + (width / 2.0));
 		rightPost = Vector2f.fromXY(center.x(), center.y() - (width / 2.0));
 		line = Line.fromPoints(leftPost, rightPost);
+		lineSegment = Lines.segmentFromPoints(leftPost, rightPost);
+		rectangle = Rectangle.fromPoints(leftPost,
+				rightPost.addNew(Vector2.fromX(Math.signum(center.x()) * depth)));
 	}
 	
 	
@@ -60,6 +69,12 @@ public class Goal
 	public double getDepth()
 	{
 		return depth;
+	}
+	
+	
+	public double getWallThickness()
+	{
+		return wallThickness;
 	}
 	
 	
@@ -101,15 +116,38 @@ public class Goal
 	
 	
 	/**
+	 * @return the goal line from left to right post
+	 */
+	public ILineSegment getLineSegment()
+	{
+		return lineSegment;
+	}
+	
+	
+	public IRectangle getRectangle()
+	{
+		return rectangle;
+	}
+	
+	
+	/**
 	 * @param point
 	 * @param margin
 	 * @return
 	 */
 	public boolean isPointInShape(final IVector2 point, final double margin)
 	{
-		IRectangle goalRectangle = Rectangle.fromPoints(leftPost,
-				rightPost.addNew(Vector2.fromX(Math.signum(center.x()) * depth)));
-		return goalRectangle.isPointInShape(point, margin);
+		return rectangle.isPointInShape(point, margin);
+	}
+	
+	
+	/**
+	 * @param point
+	 * @return
+	 */
+	public boolean isPointInShape(final IVector2 point)
+	{
+		return rectangle.isPointInShape(point);
 	}
 	
 	
@@ -130,6 +168,6 @@ public class Goal
 	 */
 	public Goal withMargin(double xMargin, double yMargin)
 	{
-		return new Goal(width + 2 * yMargin, center, depth + 2 * xMargin);
+		return new Goal(width + 2 * yMargin, center, depth + 2 * xMargin, wallThickness);
 	}
 }

@@ -1,6 +1,11 @@
+/*
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.math.line.v2;
 
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -11,16 +16,16 @@ import edu.tigers.sumatra.math.vector.IVector2;
  */
 abstract class AUnboundedLine extends ALine implements IUnboundedLine
 {
-	private final IVector2	supportVector;
-	private final IVector2	directionVector;
+	private final Vector2f supportVector;
+	private final Vector2f directionVector;
 	
 	private final boolean	isValid;
 	
 	
 	AUnboundedLine(final IVector2 supportVector, final IVector2 directionVector)
 	{
-		this.supportVector = supportVector;
-		this.directionVector = directionVector;
+		this.supportVector = Vector2f.copy(supportVector);
+		this.directionVector = Vector2f.copy(directionVector);
 		
 		isValid = !directionVector.isZeroVector();
 	}

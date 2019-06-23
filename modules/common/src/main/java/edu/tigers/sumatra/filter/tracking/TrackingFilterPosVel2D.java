@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 23.11.2016
- * Author(s): rYan
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.filter.tracking;
 
@@ -14,6 +9,7 @@ import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
 import edu.tigers.sumatra.filter.kf.KalmanFilter;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 
@@ -233,15 +229,37 @@ public class TrackingFilterPosVel2D extends KalmanFilter
 	}
 	
 	
-	public IVector2 getPositionUncertainty()
+	/**
+	 * Optimal process noise error if we assume white noise on acceleration with zero mean.
+	 *
+	 * @param m 4x4 matrix
+	 * @param dt
+	 * @param error
+	 */
+	public static void getOptimalProcessNoise(final RealMatrix m, final double dt, final double error)
 	{
-		return Vector2.fromXY(Math.sqrt(errorCovariance.getEntry(0, 0)), Math.sqrt(errorCovariance.getEntry(1, 1)));
+		double sigma = SumatraMath.sqrt((3.0 * error) / dt) / dt;
+		double dt3 = (1.0 / 3.0) * dt * dt * dt * sigma * sigma;
+		double dt2 = (1.0 / 2.0) * dt * dt * sigma * sigma;
+		double dt1 = dt * sigma * sigma;
+		m.setEntry(0, 0, dt3);
+		m.setEntry(0, 2, dt2);
+		
+		m.setEntry(1, 1, dt3);
+		m.setEntry(1, 3, dt2);
+		
+		m.setEntry(2, 0, dt2);
+		m.setEntry(2, 2, dt1);
+		
+		m.setEntry(3, 1, dt2);
+		m.setEntry(3, 3, dt1);
 	}
 	
 	
-	public IVector2 getVelocityUncertainty()
+	public IVector2 getPositionUncertainty()
 	{
-		return Vector2.fromXY(Math.sqrt(errorCovariance.getEntry(2, 2)), Math.sqrt(errorCovariance.getEntry(3, 3)));
+		return Vector2.fromXY(SumatraMath.sqrt(errorCovariance.getEntry(0, 0)),
+				SumatraMath.sqrt(errorCovariance.getEntry(1, 1)));
 	}
 	
 	
@@ -273,29 +291,9 @@ public class TrackingFilterPosVel2D extends KalmanFilter
 	}
 	
 	
-	/**
-	 * Optimal process noise error if we assume white noise on acceleration with zero mean.
-	 * 
-	 * @param m 4x4 matrix
-	 * @param dt
-	 * @param error
-	 */
-	public static void getOptimalProcessNoise(final RealMatrix m, final double dt, final double error)
+	public IVector2 getVelocityUncertainty()
 	{
-		double sigma = Math.sqrt((3.0 * error) / dt) / dt;
-		double dt3 = (1.0 / 3.0) * dt * dt * dt * sigma * sigma;
-		double dt2 = (1.0 / 2.0) * dt * dt * sigma * sigma;
-		double dt1 = dt * sigma * sigma;
-		m.setEntry(0, 0, dt3);
-		m.setEntry(0, 2, dt2);
-		
-		m.setEntry(1, 1, dt3);
-		m.setEntry(1, 3, dt2);
-		
-		m.setEntry(2, 0, dt2);
-		m.setEntry(2, 2, dt1);
-		
-		m.setEntry(3, 1, dt2);
-		m.setEntry(3, 3, dt1);
+		return Vector2.fromXY(SumatraMath.sqrt(errorCovariance.getEntry(2, 2)),
+				SumatraMath.sqrt(errorCovariance.getEntry(3, 3)));
 	}
 }

@@ -1,4 +1,5 @@
-package edu.dhbw.mannheim.tigers.sumatra.model.data;
+syntax = "proto2";
+package edu.tigers.sumatra.model.data;
 
 import "messages_robocup_ssl_detection.proto";
 import "messages_robocup_ssl_geometry_legacy.proto";

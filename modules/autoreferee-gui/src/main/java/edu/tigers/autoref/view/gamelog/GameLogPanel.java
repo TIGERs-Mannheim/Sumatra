@@ -1,14 +1,23 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.view.gamelog;
 
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+import java.awt.Point;
+import java.awt.Rectangle;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
-import javax.swing.*;
+import javax.swing.BoxLayout;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.SwingUtilities;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import javax.swing.event.TableModelEvent;
@@ -26,7 +35,7 @@ import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.components.EnumCheckBoxPanel;
 import edu.tigers.sumatra.components.IEnumPanel;
 import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.persistence.ARecordManager;
+import edu.tigers.sumatra.persistence.RecordManager;
 import edu.tigers.sumatra.views.ISumatraView;
 
 
@@ -89,17 +98,20 @@ public class GameLogPanel extends JPanel implements IGameLogPanel, ISumatraView
 	private void viewRecording()
 	{
 		int selectedRow = entryTable.getSelectedRow();
+		long startTime;
 		if (selectedRow < 0)
 		{
-			return;
+			startTime = 0;
+		} else
+		{
+			int row = entryTable.convertRowIndexToModel(selectedRow);
+			GameLogEntry value = (GameLogEntry) entryTable.getModel().getValueAt(row, 0);
+			startTime = value.getTimestamp() - TimeUnit.SECONDS.toNanos(3);
 		}
-		int row = entryTable.convertRowIndexToModel(selectedRow);
-		GameLogEntry value = (GameLogEntry) entryTable.getModel().getValueAt(row, 0);
-		long startTime = value.getTimestamp() - TimeUnit.SECONDS.toNanos(3);
 		
 		try
 		{
-			ARecordManager recordManager = (ARecordManager) SumatraModel.getInstance().getModule(ARecordManager.MODULE_ID);
+			RecordManager recordManager = SumatraModel.getInstance().getModule(RecordManager.class);
 			recordManager.notifyViewReplay(startTime);
 		} catch (ModuleNotFoundException e)
 		{

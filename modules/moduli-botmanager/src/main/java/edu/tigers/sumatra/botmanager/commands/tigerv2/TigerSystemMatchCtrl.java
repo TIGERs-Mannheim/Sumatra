@@ -15,9 +15,7 @@ import edu.tigers.sumatra.botmanager.commands.IMatchCommand;
 import edu.tigers.sumatra.botmanager.commands.MatchCommand;
 import edu.tigers.sumatra.botmanager.commands.MultimediaControl;
 import edu.tigers.sumatra.botmanager.commands.botskills.ABotSkill;
-import edu.tigers.sumatra.botmanager.commands.botskills.AMoveBotSkill;
 import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillMotorsOff;
-import edu.tigers.sumatra.botmanager.commands.botskills.EDataAcquisitionMode;
 import edu.tigers.sumatra.botmanager.commands.other.ESong;
 import edu.tigers.sumatra.botmanager.serial.SerialData;
 import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
@@ -32,38 +30,33 @@ import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
 public class TigerSystemMatchCtrl extends ACommand implements IMatchCommand
 {
 	/** */
-	public static final int			MAX_SKILL_DATA_SIZE	= 15;
+	public static final int MAX_SKILL_DATA_SIZE = 16;
 	
 	/** [mm], [mrad] */
 	@SerialData(type = ESerialDataType.INT16)
-	private final int[]				curPosition				= new int[3];
+	private final int[] curPosition = new int[3];
 	
 	/** [Q6.2 ms] */
 	@SerialData(type = ESerialDataType.UINT8)
-	private int							posDelay;
+	private int posDelay;
 	
 	/** Vision camera ID */
 	@SerialData(type = ESerialDataType.UINT8)
-	private int							camId;
-	
-	/** [Hz] */
-	@SerialData(type = ESerialDataType.UINT8)
-	private int							feedbackFreq;
+	private int camId;
 	
 	@SerialData(type = ESerialDataType.UINT8)
-	private int							flags;
+	private int flags;
 	
 	@SerialData(type = ESerialDataType.UINT8)
-	private int							skillId;
+	private int skillId;
 	
 	/** */
 	@SerialData(type = ESerialDataType.TAIL)
-	private byte[]						skillData;
+	private byte[] skillData;
 	
-	private ABotSkill					skill;
-	private EDataAcquisitionMode	acqMode					= EDataAcquisitionMode.NONE;
+	private ABotSkill skill;
 	
-	private static final int		UNUSED_FIELD			= 0x7FFF;
+	private static final int UNUSED_FIELD = 0x7FFF;
 	
 	
 	/** Constructor. */
@@ -85,11 +78,10 @@ public class TigerSystemMatchCtrl extends ACommand implements IMatchCommand
 	public TigerSystemMatchCtrl(final MatchCommand matchCtrl)
 	{
 		this();
-		setDataAcquisitionMode(matchCtrl.getDataAcquisitionMode());
 		setSkill(matchCtrl.getSkill());
-		setFeedbackFreq(matchCtrl.getFeedbackFreq());
 		setKickerAutocharge(matchCtrl.isAutoCharge());
 		setMultimediaControl(matchCtrl.getMultimediaControl());
+		setStrictVelocityLimit(matchCtrl.isStrictVelocityLimit());
 	}
 	
 	
@@ -99,20 +91,6 @@ public class TigerSystemMatchCtrl extends ACommand implements IMatchCommand
 	@Override
 	public void setSkill(final ABotSkill skill)
 	{
-		switch (skill.getType())
-		{
-			case GLOBAL_POSITION:
-			case GLOBAL_VELOCITY:
-			case GLOBAL_VEL_XY_POS_W:
-			case LOCAL_VELOCITY:
-			case WHEEL_VELOCITY:
-				AMoveBotSkill moveSkill = (AMoveBotSkill) skill;
-				moveSkill.setDataAcquisitionMode(acqMode);
-				break;
-			default:
-				break;
-		}
-		
 		this.skill = skill;
 		skillData = BotSkillFactory.getInstance().encode(skill);
 		skillId = skill.getType().getId();
@@ -126,16 +104,6 @@ public class TigerSystemMatchCtrl extends ACommand implements IMatchCommand
 	public final ABotSkill getSkill()
 	{
 		return skill;
-	}
-	
-	
-	/**
-	 * @param freq
-	 */
-	@Override
-	public void setFeedbackFreq(final int freq)
-	{
-		feedbackFreq = freq;
 	}
 	
 	
@@ -162,6 +130,21 @@ public class TigerSystemMatchCtrl extends ACommand implements IMatchCommand
 		flags &= ~(0x03);
 		
 		flags |= (song.getId() & 0x03);
+	}
+	
+	
+	/**
+	 * @param enable
+	 */
+	@Override
+	public void setStrictVelocityLimit(final boolean enable)
+	{
+		flags &= ~(0x04);
+		
+		if (enable)
+		{
+			flags |= 0x04;
+		}
 	}
 	
 	
@@ -203,12 +186,5 @@ public class TigerSystemMatchCtrl extends ACommand implements IMatchCommand
 	{
 		setLEDs(control.isLeftRed(), control.isLeftGreen(), control.isRightRed(), control.isRightGreen());
 		setSong(control.getSong());
-	}
-	
-	
-	@Override
-	public void setDataAcquisitionMode(final EDataAcquisitionMode acqMode)
-	{
-		this.acqMode = acqMode;
 	}
 }

@@ -9,7 +9,7 @@ import java.util.Map;
 
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector3;
-import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.Vector3f;
 
 
 /**
@@ -33,7 +33,7 @@ public class MotionContext
 		private boolean			chip						= false;
 		private double				dribbleRpm				= 0;
 		private double				center2DribblerDist	= 0;
-		private IVector3			vel						= Vector3.ZERO_VECTOR;
+		private IVector3 vel = Vector3f.ZERO_VECTOR;
 		private boolean			ballContact				= false;
 		
 		

@@ -62,4 +62,12 @@ public interface ITriangle extends I2DShape
 	 * @return a new triangle
 	 */
 	ITriangle shortenToPoint(final IVector2 x);
+	
+	
+	/**
+	 * @return iff both triangles share a side
+	 */
+	boolean isNeighbour(ITriangle triangle);
+	
+	double area();
 }

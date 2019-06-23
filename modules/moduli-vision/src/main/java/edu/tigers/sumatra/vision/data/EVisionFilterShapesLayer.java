@@ -1,27 +1,29 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.vision.data;
 
-import edu.tigers.sumatra.drawable.ShapeMap;
+import edu.tigers.sumatra.drawable.IShapeLayer;
+import edu.tigers.sumatra.drawable.ShapeMap.EShapeLayerPersistenceType;
 
 
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public enum EVisionFilterShapesLayer implements ShapeMap.IShapeLayer
+public enum EVisionFilterShapesLayer implements IShapeLayer
 {
 	QUALITY_SHAPES("Quality Inspector"),
 	CAM_INFO_SHAPES("Cam Info"),
 	VIEWPORT_SHAPES("Viewports"),
-	ROBOT_TRACKER_SHAPES("Robot Trackers"),
-	BALL_TRACKER_SHAPES("Ball Trackers");
+	ROBOT_TRACKER_SHAPES("Robot Trackers", false, EShapeLayerPersistenceType.DEBUG_PERSIST),
+	BALL_TRACKER_SHAPES("Ball Trackers", false, EShapeLayerPersistenceType.DEBUG_PERSIST);
 	
-	
-	private final String		name;
-	private final boolean	visible;
-	private final int			orderId;
+	private final String id;
+	private final String name;
+	private final boolean visible;
+	private final int orderId;
+	private final EShapeLayerPersistenceType persistenceType;
 	
 	
 	/**
@@ -29,18 +31,21 @@ public enum EVisionFilterShapesLayer implements ShapeMap.IShapeLayer
 	 */
 	EVisionFilterShapesLayer(final String name)
 	{
-		this(name, false);
+		this(name, false, EShapeLayerPersistenceType.ALWAYS_PERSIST);
 	}
 	
 	
 	/**
 	 *
 	 */
-	EVisionFilterShapesLayer(final String name, final boolean visible)
+	EVisionFilterShapesLayer(final String name, final boolean visible,
+			final EShapeLayerPersistenceType persistenceType)
 	{
 		this.name = name;
 		this.visible = visible;
 		orderId = 10 + ordinal();
+		id = EVisionFilterShapesLayer.class.getCanonicalName() + name();
+		this.persistenceType = persistenceType;
 	}
 	
 	
@@ -64,16 +69,6 @@ public enum EVisionFilterShapesLayer implements ShapeMap.IShapeLayer
 	}
 	
 	
-	/**
-	 * @return the persist
-	 */
-	@Override
-	public final boolean persist()
-	{
-		return true;
-	}
-	
-	
 	@Override
 	public int getOrderId()
 	{
@@ -84,7 +79,14 @@ public enum EVisionFilterShapesLayer implements ShapeMap.IShapeLayer
 	@Override
 	public String getId()
 	{
-		return EVisionFilterShapesLayer.class.getCanonicalName() + name();
+		return id;
+	}
+	
+	
+	@Override
+	public EShapeLayerPersistenceType getPersistenceType()
+	{
+		return persistenceType;
 	}
 	
 	

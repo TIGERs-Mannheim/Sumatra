@@ -2,6 +2,8 @@ package edu.tigers.sumatra.math.line.v2;
 
 import java.util.Optional;
 
+import com.sleepycat.persist.model.Persistent;
+
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
 
@@ -11,6 +13,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
  * 
  * @author Lukas Magel
  */
+@Persistent
 abstract class ALine implements ILineBase
 {
 	static final double LINE_MARGIN = 1e-6;
@@ -19,8 +22,9 @@ abstract class ALine implements ILineBase
 	@Override
 	public edu.tigers.sumatra.math.line.Line toLegacyLine()
 	{
-		return Line.fromDirection(this.toLine().supportVector(), this.toLine().directionVector());
+		return Line.fromDirection(toLine().supportVector(), toLine().directionVector());
 	}
+	
 	
 	@Override
 	public Optional<Double> getSlope()
@@ -53,7 +57,7 @@ abstract class ALine implements ILineBase
 	@Override
 	public boolean isParallelTo(final ILineBase other)
 	{
-		return this.isValid()
+		return isValid()
 				&& other.isValid()
 				&& directionVector().isParallelTo(other.directionVector());
 	}

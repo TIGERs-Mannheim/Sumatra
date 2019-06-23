@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.move.path;
@@ -15,12 +15,14 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.referee.data.RefereeMsg;
-import edu.tigers.sumatra.skillsystem.skills.AKickSkill;
+import edu.tigers.sumatra.skillsystem.skills.AMoveSkill;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
-import edu.tigers.sumatra.skillsystem.skills.KickNormalSkill;
-import edu.tigers.sumatra.skillsystem.skills.ReceiverSkill;
-import edu.tigers.sumatra.skillsystem.skills.RedirectSkill;
+import edu.tigers.sumatra.skillsystem.skills.ReceiveBallSkill;
+import edu.tigers.sumatra.skillsystem.skills.RedirectBallSkill;
+import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
+import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
+import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
 import edu.tigers.sumatra.statemachine.IState;
 import edu.tigers.sumatra.testplays.commands.ACommand;
@@ -41,13 +43,13 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
 public class MoveAlongPathRole extends ARole
 {
 	
-	private List<ACommand>	commands			= null;
+	private List<ACommand> commands;
 	
-	private List<ACommand>	commandQueue	= null;
-	private ACommand			nextCommand		= null;
+	private List<ACommand> commandQueue;
+	private ACommand nextCommand = null;
 	
-	private int					commandId;
-	private boolean			repeat			= false;
+	private int commandId;
+	private boolean repeat;
 	
 	private long lastCommandCounter = 0;
 	
@@ -65,19 +67,6 @@ public class MoveAlongPathRole extends ARole
 		REDIRECT,
 		DONE,
 		RESTART
-	}
-	
-	
-	/**
-	 * Creates a new role with the given command queue
-	 * 
-	 * @param commands
-	 * @param id
-	 */
-	public MoveAlongPathRole(List<ACommand> commands, int id)
-	{
-		
-		this(commands, id, false);
 	}
 	
 	
@@ -134,7 +123,7 @@ public class MoveAlongPathRole extends ARole
 		return commandId;
 	}
 	
-	private class InitialState implements IState
+	private class InitialState extends AState
 	{
 		
 		@Override
@@ -183,11 +172,11 @@ public class MoveAlongPathRole extends ARole
 		}
 	}
 	
-	private class MoveState implements IState
+	private class MoveState extends AState
 	{
 		
-		private List<Point>	path	= null;
-		private AMoveToSkill	skill	= null;
+		private List<Point> path = null;
+		private AMoveToSkill skill = null;
 		
 		
 		@Override
@@ -236,14 +225,14 @@ public class MoveAlongPathRole extends ARole
 		}
 	}
 	
-	private class SynchronizeState implements IState
+	private class SynchronizeState extends AState
 	{
 		
 		private SynchronizeCommand command;
 		
 		
 		@Override
-		public synchronized void doEntryActions()
+		public void doEntryActions()
 		{
 			
 			command = (SynchronizeCommand) nextCommand;
@@ -295,11 +284,9 @@ public class MoveAlongPathRole extends ARole
 		}
 	}
 	
-	private class KickState implements IState
+	private class KickState extends AState
 	{
-		
-		private AKickSkill	skill	= null;
-		private KickCommand	command;
+		private KickCommand command;
 		
 		
 		@Override
@@ -307,18 +294,20 @@ public class MoveAlongPathRole extends ARole
 		{
 			
 			command = (KickCommand) nextCommand;
-			skill = new KickNormalSkill(new DynamicPosition(command.getDestination().createVector2()));
 			
+			KickParams kickParams;
 			if (command.getKickSpeed() > 0)
 			{
-				skill.setKickMode(AKickSkill.EKickMode.FIXED_SPEED);
-				skill.setKickSpeed(command.getKickSpeed());
+				kickParams = KickParams.of(command.getKickerDevice(), command.getKickSpeed());
 			} else
 			{
-				skill.setKickMode(AKickSkill.EKickMode.PASS);
+				double distance = command.getDestination().createVector2().distanceTo(getBall().getPos());
+				double kickSpeed = getBall().getStraightConsultant().getInitVelForDist(distance, 3.0);
+				kickParams = KickParams.of(command.getKickerDevice(), kickSpeed);
 			}
 			
-			skill.setDevice(command.getKickerDevice());
+			AMoveSkill skill = new TouchKickSkill(new DynamicPosition(command.getDestination().createVector2()),
+					kickParams);
 			
 			skill.getMoveCon().setPenaltyAreaAllowedOur(true);
 			skill.getMoveCon().setPenaltyAreaAllowedTheir(true);
@@ -364,52 +353,44 @@ public class MoveAlongPathRole extends ARole
 				return false;
 			}
 			
-			return ballVel > Math.max(skill.getKickSpeed() * 0.75, 0.5);
+			return ballVel > 0.5;
 			
 		}
 	}
 	
-	private class PassState implements IState
+	private class PassState extends AState
 	{
-		
-		private PassCommand	command;
-		private AKickSkill	kickSkill;
-		ITrackedBot				foreignBot;
+		private PassCommand command;
+		ITrackedBot foreignBot;
 		
 		
 		@Override
 		public void doEntryActions()
 		{
-			kickSkill = null;
-			foreignBot = null;
 			command = (PassCommand) nextCommand;
+			
+			foreignBot = findReceivingBot(command.getPassGroup());
+			
+			if (foreignBot == null)
+			{
+				return;
+			}
+			
+			double distance = foreignBot.getPos().distanceTo(getBall().getPos());
+			double kickSpeed = getBall().getStraightConsultant().getInitVelForDist(distance, 3.0);
+			AMoveSkill kickSkill = new TouchKickSkill(new DynamicPosition(foreignBot),
+					KickParams.of(command.getKickerDevice(), kickSpeed));
+			setNewSkill(kickSkill);
 		}
 		
 		
 		@Override
 		public void doUpdate()
 		{
-			
-			if (kickSkill == null)
-			{
-				foreignBot = findReceivingBot(command.getPassGroup());
-				
-				if (foreignBot == null)
-				{
-					return;
-				}
-				
-				kickSkill = new KickNormalSkill(new DynamicPosition(foreignBot));
-				kickSkill.setKickMode(AKickSkill.EKickMode.PASS);
-				kickSkill.setDevice(command.getKickerDevice());
-				setNewSkill(kickSkill);
-			}
-			
 			if (foreignBot.getPos().distanceTo(getWFrame().getBall().getPos()) <= Geometry.getBallRadius() + 200)
 			{
 				triggerEvent(EEvent.NEXT);
 			}
-			
 		}
 		
 		
@@ -442,66 +423,54 @@ public class MoveAlongPathRole extends ARole
 	}
 	
 	
-	private class ReceiveState implements IState
+	private class ReceiveState extends AState
 	{
-		
-		private ReceiveCommand	command;
-		private ReceiverSkill	skill;
+		private ReceiveCommand command;
 		
 		
 		@Override
 		public void doEntryActions()
 		{
-			skill = null;
 			command = (ReceiveCommand) nextCommand;
+			
+			boolean roleFound = false;
+			
+			for (ARole role : getAiFrame().getPlayStrategy().getActiveRoles(ERole.MOVE_ALONG_PATH))
+			{
+				if (!"PassState".equals(role.getCurrentState().getIdentifier()))
+				{
+					continue;
+				}
+				
+				PassState passState = (PassState) role.getCurrentState();
+				if (passState.command.getPassGroup() == command.getPassGroup())
+				{
+					roleFound = true;
+				}
+				
+			}
+			
+			if (!roleFound)
+			{
+				return;
+			}
+			
+			setNewSkill(new ReceiveBallSkill(getPos()));
 		}
 		
 		
 		@Override
 		public void doUpdate()
 		{
-			
-			if (skill == null)
-			{
-				boolean roleFound = false;
-				
-				
-				for (ARole role : getAiFrame().getPlayStrategy().getActiveRoles(ERole.MOVE_ALONG_PATH))
-				{
-					
-					if (!"PassState".equals(role.getCurrentState().getIdentifier()))
-					{
-						continue;
-					}
-					
-					PassState passState = (PassState) role.getCurrentState();
-					if (passState.command.getPassGroup() == command.getPassGroup())
-					{
-						roleFound = true;
-					}
-					
-				}
-				
-				if (!roleFound)
-				{
-					return;
-				}
-				
-				skill = new ReceiverSkill();
-				setNewSkill(skill);
-			}
-			
 			if (getPos().distanceTo(getWFrame().getBall().getPos()) <= Geometry.getBallRadius() + 100)
 			{
 				triggerEvent(EEvent.NEXT);
 			}
-			
 		}
 	}
 	
-	private class RedirectState implements IState
+	private class RedirectState extends AState
 	{
-		private RedirectSkill skill = null;
 		private RedirectCommand command;
 		
 		
@@ -510,7 +479,8 @@ public class MoveAlongPathRole extends ARole
 		{
 			
 			command = (RedirectCommand) nextCommand;
-			skill = new RedirectSkill(new DynamicPosition(command.getDestination().createVector2()));
+			AMoveSkill skill = new RedirectBallSkill(getPos(),
+					new DynamicPosition(command.getDestination().createVector2()), KickParams.maxStraight());
 			
 			setNewSkill(skill);
 		}
@@ -560,7 +530,7 @@ public class MoveAlongPathRole extends ARole
 		}
 	}
 	
-	private class IdleState implements IState
+	private class IdleState extends AState
 	{
 		
 		@Override

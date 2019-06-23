@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.defense;
@@ -8,9 +8,9 @@ import java.awt.Color;
 
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.ai.data.EAiShapesLayer;
-import edu.tigers.sumatra.ai.math.DefenseMath;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.DefenseConstants;
+import edu.tigers.sumatra.ai.metis.defense.DefenseMath;
 import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
@@ -25,10 +25,9 @@ import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
-import edu.tigers.sumatra.skillsystem.skills.MoveToTrajSkill;
 import edu.tigers.sumatra.skillsystem.skills.util.SkillUtil;
+import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
-import edu.tigers.sumatra.statemachine.IState;
 
 
 /**
@@ -41,15 +40,6 @@ public class ManToManMarkerRole extends ADefenseRole
 	
 	@Configurable(comment = "minimal Distance to marked foe", defValue = "100.0")
 	private static double minDistanceToFoe = 100.0;
-	
-	@Configurable(comment = "maximal Distance to marked foe", defValue = "2000.0")
-	private static double maxDistanceToFoe = 2000;
-	
-	@Configurable(comment = "time to look ahead in foe trajectory", defValue = "0.25")
-	private static double lookahead = 0.25;
-	
-	@Configurable(comment = "Use FastMove when foe is moving fast", defValue = "false")
-	private static boolean useFastMove = false;
 	
 	private IDefenseThreat threat;
 	
@@ -74,24 +64,25 @@ public class ManToManMarkerRole extends ADefenseRole
 	{
 		if (protectionTarget == EProtectionTarget.GOAL)
 		{
-			return DefenseMath.getThreatDefendingLineForManToManMarker(threatLine, minDistanceToFoe);
+			return getThreatDefendingLineForManToManMarker(threatLine, minDistanceToFoe);
 		}
 		
 		return DefenseMath.getThreatDefendingLineToBall(threatLine.getStart(),
-				getBall().getTrajectory().getPosByTime(0.1),
+				getBall().getTrajectory().getPosByTime(0.1).getXYVector(),
 				minDistanceToFoe, DefenseConstants.getMinGoOutDistance(), DefenseConstants.getMaxGoOutDistance());
 	}
 	
 	
 	private void drawManMarkerShapes(final IVector2 newPosition, final IVector2 toProtect)
 	{
-		getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.MAN_MARKER)
+		getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.DEFENSE_MAN_MARKER)
 				.add(new DrawableCircle(Circle.createCircle(newPosition, Geometry.getBotRadius()), Color.GREEN));
-		getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.MAN_MARKER)
+		getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.DEFENSE_MAN_MARKER)
 				.add(new DrawableLine(Line.fromPoints(threat.getPos(), toProtect)));
 		if (threat.isBot())
 		{
-			getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.MAN_MARKER).add(new DrawableLine(
+			getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.DEFENSE_MAN_MARKER)
+					.add(new DrawableLine(
 					Line.fromPoints(threat.getPos(),
 							protectionTarget == EProtectionTarget.GOAL ? Geometry.getGoalOur().getCenter()
 									: getBall().getPos()),
@@ -99,6 +90,23 @@ public class ManToManMarkerRole extends ADefenseRole
 		}
 	}
 	
+	
+	/**
+	 * Construct a line based on {@link DefenseMath#getThreatDefendingLine(ILineSegment, double, double, double)} with
+	 * parameters
+	 * for man to man marker role
+	 *
+	 * @param threatLine
+	 * @param marginToThreat
+	 * @return
+	 */
+	public ILineSegment getThreatDefendingLineForManToManMarker(final ILineSegment threatLine,
+			final double marginToThreat)
+	{
+		return DefenseMath.getThreatDefendingLine(threatLine, marginToThreat,
+				DefenseConstants.getMinGoOutDistance(),
+				DefenseConstants.getMaxGoOutDistance());
+	}
 	
 	private enum EManMarkerEvent implements IEvent
 	{
@@ -134,6 +142,8 @@ public class ManToManMarkerRole extends ADefenseRole
 		{
 			parent.getCurrentSkill().getMoveCon()
 					.setTheirBotsObstacle(getPos().distanceTo(threat.getPos()) > minDistanceToFoe);
+			parent.getCurrentSkill().getMoveCon()
+					.getMoveConstraints().setPrimaryDirection(threat.getThreatLine().directionVector());
 			if (getBall().getPos().distanceTo(threat.getPos()) < minDistanceToFoe)
 			{
 				triggerEvent(EManMarkerEvent.BALL_NEAR_FOE);
@@ -150,7 +160,7 @@ public class ManToManMarkerRole extends ADefenseRole
 	}
 	
 	
-	private class ManMarkerState implements IState
+	private class ManMarkerState extends AState
 	{
 		private AMoveToSkill skill;
 		
@@ -158,7 +168,7 @@ public class ManToManMarkerRole extends ADefenseRole
 		@Override
 		public void doEntryActions()
 		{
-			skill = new MoveToTrajSkill();
+			skill = AMoveToSkill.createMoveToSkill();
 			setNewSkill(skill);
 		}
 		
@@ -167,6 +177,8 @@ public class ManToManMarkerRole extends ADefenseRole
 		public void doUpdate()
 		{
 			skill.getMoveCon().setTheirBotsObstacle(getPos().distanceTo(threat.getPos()) > minDistanceToFoe);
+			skill.getMoveCon()
+					.getMoveConstraints().setPrimaryDirection(threat.getThreatLine().directionVector());
 			if (getBall().getPos().distanceTo(threat.getPos()) < minDistanceToFoe)
 			{
 				triggerEvent(EManMarkerEvent.BALL_NEAR_FOE);
@@ -178,7 +190,7 @@ public class ManToManMarkerRole extends ADefenseRole
 				toProtect = threat.getThreatLine().getEnd();
 			} else
 			{
-				toProtect = getBall().getTrajectory().getPosByTime(0.1);
+				toProtect = getBall().getTrajectory().getPosByTime(0.1).getXYVector();
 			}
 			
 			IVector2 desiredPos = LineMath.stepAlongLine(threat.getPos(), toProtect, minDistanceToFoe);
@@ -195,7 +207,7 @@ public class ManToManMarkerRole extends ADefenseRole
 		}
 	}
 	
-	private class HinderFoeState implements IState
+	private class HinderFoeState extends AState
 	{
 		
 		private AMoveToSkill skill;
@@ -204,7 +216,7 @@ public class ManToManMarkerRole extends ADefenseRole
 		@Override
 		public void doEntryActions()
 		{
-			skill = new MoveToTrajSkill();
+			skill = AMoveToSkill.createMoveToSkill();
 			skill.getMoveCon().setBallObstacle(false);
 			skill.getMoveCon().setTheirBotsObstacle(false);
 			setNewSkill(skill);
@@ -214,7 +226,7 @@ public class ManToManMarkerRole extends ADefenseRole
 		@Override
 		public void doUpdate()
 		{
-			IVector2 ballPos = getBall().getTrajectory().getPosByTime(0.1);
+			IVector2 ballPos = getBall().getTrajectory().getPosByTime(0.1).getXYVector();
 			IVector2 toProtect = protectionTarget == EProtectionTarget.GOAL ? threat.getThreatLine().getEnd()
 					: ballPos;
 			IVector2 desiredPos = (protectionTarget == EProtectionTarget.GOAL) && (ballPos.x() > threat.getPos().x())

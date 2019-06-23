@@ -1,16 +1,12 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jun 30, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.tigers.autoreferee.engine.calc.AllowedDistancesVisCalc;
 import edu.tigers.autoreferee.engine.calc.BallLeftFieldCalc;
 import edu.tigers.autoreferee.engine.calc.BotBallContactCalc;
 import edu.tigers.autoreferee.engine.calc.GameStateHistoryCalc;
@@ -40,6 +36,7 @@ public class AutoRefFramePreprocessor
 		calculators.add(new GameStateHistoryCalc());
 		calculators.add(new PossibleGoalCalc());
 		calculators.add(new LastStopBallPositionCalc());
+		calculators.add(new AllowedDistancesVisCalc());
 	}
 	
 	

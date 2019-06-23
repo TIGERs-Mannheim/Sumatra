@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.timer;
@@ -22,10 +22,12 @@ import java.util.concurrent.ConcurrentSkipListMap;
 public class TimerInfo
 {
 	/** key -> (frameId -> duration) */
-	private final Map<String, SortedMap<Long, Long>>	timings		= new ConcurrentHashMap<>();
-	private static final int									BUFFER_SIZE	= 1000;
+	private final Map<String, SortedMap<Long, Long>> timings = new ConcurrentHashMap<>();
+	private static final int BUFFER_SIZE = 1000;
 	
-	private final Object											lock			= new Object();
+	private final TimerInfoSync lock = new TimerInfoSync()
+	{
+	};
 	
 	
 	/**
@@ -37,14 +39,7 @@ public class TimerInfo
 		synchronized (lock)
 		{
 			SortedMap<Long, Long> map = getOrCreateTimings(tId.getTimable());
-			Long existingValue = map.get(tId.getId());
-			if (existingValue != null)
-			{
-				map.put(tId.getId(), value + existingValue);
-			} else
-			{
-				map.put(tId.getId(), value);
-			}
+			map.merge(tId.getId(), value, (a, b) -> b + a);
 			if (map.size() > BUFFER_SIZE)
 			{
 				map.remove(map.firstKey());
@@ -153,5 +148,9 @@ public class TimerInfo
 		}
 		// the last frames will not be included.
 		return avageres;
+	}
+	
+	private interface TimerInfoSync
+	{
 	}
 }

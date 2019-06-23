@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.general;
@@ -11,9 +11,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ids.BotID;
 
@@ -35,7 +35,9 @@ public class DesiredGameStateBotsCalc extends ACalculator
 		Map<EPlay, Set<BotID>> desiredBots = new EnumMap<>(EPlay.class);
 		for (Map.Entry<EPlay, Integer> entry : tacticalField.getPlayNumbers().entrySet())
 		{
-			if (!(tacticalField.getDesiredBotMap().keySet().contains(entry.getKey()) || entry.getKey() == EPlay.SUPPORT))
+			if (!(tacticalField.getDesiredBotMap().keySet().contains(entry.getKey())
+					|| entry.getKey() == EPlay.SUPPORT
+					|| entry.getKey() == EPlay.INTERCHANGE))
 			{
 				desiredBots.put(entry.getKey(), getNBots(entry.getValue(), availableBots));
 			}
@@ -70,13 +72,13 @@ public class DesiredGameStateBotsCalc extends ACalculator
 	private void exchangeDoubleAssignedBots(TacticalField tacticalField, Set<BotID> availableBots)
 	{
 		Map<EPlay, Set<BotID>> desiredBotMap = tacticalField.getDesiredBotMap();
-		if (desiredBotMap.containsKey(EPlay.AUTOMATED_THROW_IN))
+		if (desiredBotMap.containsKey(EPlay.BALL_PLACEMENT))
 		{
 			int lostBots = 0;
 			Set<BotID> defenseBots = new HashSet<>();
 			for (BotID id : desiredBotMap.get(EPlay.DEFENSIVE))
 			{
-				if (!desiredBotMap.get(EPlay.AUTOMATED_THROW_IN).contains(id))
+				if (!desiredBotMap.get(EPlay.BALL_PLACEMENT).contains(id))
 				{
 					defenseBots.add(id);
 				} else

@@ -20,11 +20,11 @@ import org.apache.commons.math3.util.Pair;
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 
+import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.vision.data.CamBallInternal;
 import edu.tigers.sumatra.vision.data.FilteredVisionBot;
 import edu.tigers.sumatra.vision.tracker.BallTracker.MergedBall;
 
@@ -37,9 +37,9 @@ import edu.tigers.sumatra.vision.tracker.BallTracker.MergedBall;
 public class DirectionValidator implements IKickValidator
 {
 	@Configurable(comment = "Maximum angle difference for a valid kick")
-	private static double	maxAngleDiff	= 45;
+	private static double maxAngleDiff = 45;
 	
-	private double				lastAngDiffDeg	= 0;
+	private double lastAngDiffDeg = 0;
 	
 	static
 	{
@@ -98,7 +98,7 @@ public class DirectionValidator implements IKickValidator
 	 * @param balls
 	 * @return Pair of kick timestamp and kick position.
 	 */
-	@SuppressWarnings("squid:S1166")
+	@SuppressWarnings("squid:S1166") // Exception from solver not logged
 	public static Optional<Pair<Long, IVector2>> backtrack(final List<FilteredVisionBot> bots,
 			final List<MergedBall> balls)
 	{
@@ -149,16 +149,15 @@ public class DirectionValidator implements IKickValidator
 			RealMatrix matA = new Array2DRowRealMatrix(numPoints, 2);
 			RealVector b = new ArrayRealVector(numPoints);
 			
-			CamBallInternal bFirst = bestGroup.get(0).getLatestCamBall().get();
+			CamBall bFirst = bestGroup.get(0).getLatestCamBall().get();
 			for (int i = 0; i < numPoints; i++)
 			{
 				matA.setEntry(i, 0,
 						bestGroup.get(i).getLatestCamBall().get().getPos().getXYVector().distanceTo(kickPos.get()));
 				matA.setEntry(i, 1, 1.0);
 				
-				CamBallInternal bNow = bestGroup.get(i).getLatestCamBall().get();
-				double time = (((bNow.gettCapture() + (long) (bNow.getDtDeviation() * 1e9)) - bFirst.gettCapture())
-						+ (long) (bFirst.getDtDeviation() * 1e9)) * 1e-9;
+				CamBall bNow = bestGroup.get(i).getLatestCamBall().get();
+				double time = ((bNow.gettCapture()) - bFirst.gettCapture()) * 1e-9;
 				b.setEntry(i, time);
 			}
 			
@@ -172,7 +171,7 @@ public class DirectionValidator implements IKickValidator
 				return Optional.empty();
 			}
 			
-			long tKick = ((long) (x.getEntry(1) * 1e9)) + bFirst.gettCapture() + (long) (bFirst.getDtDeviation() * 1e9);
+			long tKick = ((long) (x.getEntry(1) * 1e9)) + bFirst.gettCapture();
 			
 			return Optional.of(new Pair<>(tKick, kickPos.get()));
 		}

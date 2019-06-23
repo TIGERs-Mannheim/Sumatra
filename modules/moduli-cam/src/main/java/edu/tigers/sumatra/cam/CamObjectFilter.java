@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.cam;
@@ -16,7 +16,7 @@ import edu.tigers.sumatra.cam.data.CamDetectionFrame;
 import edu.tigers.sumatra.cam.data.CamRobot;
 import edu.tigers.sumatra.math.rectangle.Rectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -26,20 +26,20 @@ import edu.tigers.sumatra.math.vector.Vector2;
  */
 public class CamObjectFilter
 {
-	@Configurable(comment = "Perform filtering of cam objects")
+	@Configurable(comment = "Perform filtering of cam objects", defValue = "false")
 	private static boolean	filterEnabled		= false;
 	
-	@Configurable(comment = "P1 of rectangle defining a range where objects are ignored")
-	private static IVector2	exclusionRectP1	= Vector2.ZERO_VECTOR;
-	@Configurable(comment = "P2 of rectangle defining a range where objects are ignored")
-	private static IVector2	exclusionRectP2	= Vector2.ZERO_VECTOR;
+	@Configurable(comment = "P1 of rectangle defining a range where objects are ignored", defValue = "0.0;0.0")
+	private static IVector2 exclusionRectP1 = Vector2f.ZERO_VECTOR;
+	@Configurable(comment = "P2 of rectangle defining a range where objects are ignored", defValue = "0.0;0.0")
+	private static IVector2 exclusionRectP2 = Vector2f.ZERO_VECTOR;
 	
-	@Configurable(comment = "Specified cameras will be filtered")
+	@Configurable(comment = "Specified cameras will be filtered", defValue = "1;3")
 	private static Integer[]	excludedCameras	= {};
 	
 	static
 	{
-		ConfigRegistration.registerClass("cam", CamObjectFilter.class);
+		ConfigRegistration.registerClass("user", CamObjectFilter.class);
 	}
 	
 	

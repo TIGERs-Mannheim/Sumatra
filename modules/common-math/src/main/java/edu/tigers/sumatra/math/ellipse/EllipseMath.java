@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.ellipse;
@@ -7,11 +7,12 @@ package edu.tigers.sumatra.math.ellipse;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.VectorMath;
 
 
@@ -64,7 +65,7 @@ public final class EllipseMath
 			
 			final IVector2 relStart = curPt.subtractNew(ellipse.center());
 			// tangent formula, see Wikipedia, not sure if it is correct for a turned ellipse
-			final IVector2 dir = Vector2.fromXY((-ellipse.getRadiusX() * relStart.y()) / ellipse.getRadiusY(),
+			final IVector2 dir = Vector2f.fromXY((-ellipse.getRadiusX() * relStart.y()) / ellipse.getRadiusY(),
 					(ellipse.getRadiusY() * relStart.x())
 							/ ellipse.getRadiusX());
 			final IVector2 tmpP1 = curPt.addNew(dir.scaleToNew(curStep)).add(relStart);
@@ -160,17 +161,17 @@ public final class EllipseMath
 		
 		if (d >= 0)
 		{
-			final double e = Math.sqrt(d);
+			final double e = SumatraMath.sqrt(d);
 			final double u1 = (-b - e) / a;
 			final double u2 = (-b + e) / a;
 			if (endlessLine || ((0 <= u1) && (u1 <= 1)))
 			{
-				final IVector2 tmpP = Vector2.fromXY(p1.x() + (x21 * u1), p1.y() + (y21 * u1));
+				final IVector2 tmpP = Vector2f.fromXY(p1.x() + (x21 * u1), p1.y() + (y21 * u1));
 				result.add(transformToTurned(ellipse, tmpP));
 			}
 			if (endlessLine || ((0 <= u2) && (u2 <= 1)))
 			{
-				final IVector2 tmpP = Vector2.fromXY(p1.x() + (x21 * u2), p1.y() + (y21 * u2));
+				final IVector2 tmpP = Vector2f.fromXY(p1.x() + (x21 * u2), p1.y() + (y21 * u2));
 				result.add(transformToTurned(ellipse, tmpP));
 			}
 		}

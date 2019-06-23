@@ -57,7 +57,7 @@ public abstract class ASimBot extends ABot implements IConfigObserver
 	
 	
 	@Override
-	public void onIncommingBotCommand(final ACommand cmd)
+	public void onIncomingBotCommand(final ACommand cmd)
 	{
 	}
 	
@@ -115,5 +115,10 @@ public abstract class ASimBot extends ABot implements IConfigObserver
 	public ERobotMode getRobotMode()
 	{
 		return ERobotMode.READY;
+	}
+
+	@Override
+	public boolean isOK() {
+		return true;
 	}
 }

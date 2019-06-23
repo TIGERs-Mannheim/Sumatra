@@ -1,33 +1,34 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.support;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.ai.data.EAiShapesLayer;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
-import edu.tigers.sumatra.ai.math.DefenseMath;
-import edu.tigers.sumatra.ai.math.OffensiveMath;
-import edu.tigers.sumatra.ai.math.kick.BestDirectShotBallPossessingBot;
-import edu.tigers.sumatra.ai.math.kick.PassInterceptionRater;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.ai.metis.defense.DefenseMath;
+import edu.tigers.sumatra.ai.metis.general.ChipKickReasonableDecider;
+import edu.tigers.sumatra.ai.metis.offense.OffensiveMath;
+import edu.tigers.sumatra.ai.metis.targetrater.AngleRangeRater;
+import edu.tigers.sumatra.ai.metis.targetrater.IRatedTarget;
+import edu.tigers.sumatra.ai.metis.targetrater.PassInterceptionRater;
+import edu.tigers.sumatra.ai.pandora.roles.support.behaviors.PassReceiver;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.drawable.ValuedField;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.BotIDMap;
+import edu.tigers.sumatra.ids.IBotIDMap;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.ValuePoint;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
@@ -37,7 +38,6 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class SupportPositionRatingCalc extends ACalculator
 {
-	
 	@Configurable(defValue = "0.5", comment = "Max time of interception")
 	private static double maxTimeOfInterception = 0.5;
 	
@@ -46,80 +46,71 @@ public class SupportPositionRatingCalc extends ACalculator
 	
 	private List<IDrawableShape> fieldRatingShapes;
 	private BotID passPlayerID;
+	private AngleRangeRater targetRater;
 	
 	
 	@Override
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
 		fieldRatingShapes = newTacticalField.getDrawableShapes().get(EAiShapesLayer.SUPPORTER_POSITION_FIELD_RATING);
-		BotID primaryOffensive = getAiFrame().getKeeperId();
-		if (newTacticalField.getOffensiveStrategy().getDesiredBots().iterator().hasNext())
-		{
-			primaryOffensive = newTacticalField.getOffensiveStrategy().getDesiredBots().iterator().next();
-		}
+		passPlayerID = newTacticalField.getOffensiveStrategy().getAttackerBot().orElse(getAiFrame().getKeeperId());
 		
-		if (primaryOffensive != null)
-		{
-			passPlayerID = primaryOffensive;
-			rateSupportPositions(newTacticalField.getGlobalSupportPositions());
-			drawWholeField();
-		}
+		targetRater = AngleRangeRater.forGoal(Geometry.getGoalTheir());
+		targetRater.setObstacles(getWFrame().getFoeBots().values());
+		targetRater.setStraightBallConsultant(getBall().getStraightConsultant());
+		targetRater.setTimeToKick(0);
+		
+		IVector2 alternativeBallPos = getBall().getPos();
+		rateSupportPositions(newTacticalField.getGlobalSupportPositions(), alternativeBallPos);
+		drawWholeField();
 	}
 	
 	
-	private void rateSupportPositions(final List<SupportPosition> positions)
+	@Override
+	public boolean isCalculationNecessary(TacticalField tacticalField, BaseAiFrame aiFrame)
 	{
-		positions.forEach(pos -> pos.setShootScore(calcShootScore(pos)));
-		positions.forEach(pos -> pos.setPassScore(calcPassScore(pos.getPos())));
+		return PassReceiver.isActive();
 	}
 	
 	
-	private double calcShootScore(final SupportPosition pos)
+	private void rateSupportPositions(final List<SupportPosition> positions, final IVector2 passOrigin)
 	{
-		List<ITrackedBot> foes = Collections.list(Collections.enumeration(getWFrame().getFoeBots().values()));
-		
-		double tDeflect = DefenseMath.calculateTDeflect(pos.getPos(), getBall().getPos(),
+		positions.forEach(pos -> pos.setShootScore(shootScore(pos)));
+		// prefer shoot score over pass score by reducing pass score to at most 0.5
+		positions.forEach(pos -> pos.setPassScore(0.5 * passScore(passOrigin, pos.getPos())));
+	}
+	
+	
+	private double shootScore(final SupportPosition supportPosition)
+	{
+		double tDeflect = DefenseMath.calculateTDeflect(supportPosition.getPos(), getBall().getPos(),
 				DefenseMath.getBisectionGoal(getBall().getPos()));
 		
-		return BestDirectShotBallPossessingBot.getBestShot(Geometry.getGoalTheir(), pos.getPos(), foes, tDeflect)
-				.orElse(new ValuePoint(Geometry.getGoalTheir().getCenter(), 0.)).getValue();
+		targetRater.setTimeToKick(tDeflect);
+		return targetRater.rate(supportPosition.getPos()).map(IRatedTarget::getScore).orElse(0.0);
 	}
 	
 	
-	private double calcPassScore(final IVector2 pos)
+	private double passScore(final IVector2 passOrigin, final IVector2 passTarget)
 	{
-		Optional<ITrackedBot> offensiveBot = getWFrame().getTigerBotsVisible().values().stream()
-				.min(Comparator.comparingDouble(a -> a.getPos().distanceToSqr(getBall().getPos())));
-		return offensiveBot.map(iTrackedBot -> Math.min(calcMinFoePassSlackTime(iTrackedBot, pos),
-				maxTimeOfInterception)).orElse(Double.NEGATIVE_INFINITY);
-	}
-	
-	
-	private double calcMinFoePassSlackTime(final ITrackedBot offensiveBot, final IVector2 target)
-	{
-		PassTarget passTarget = new PassTarget(target, passPlayerID);
-		passTarget.setTimeReached(getWFrame().getTimestamp() + (long) 1e9);
+		double passDistance = getWFrame().getBall().getPos().distanceTo(passTarget);
+		IBotIDMap<ITrackedBot> obstacles = new BotIDMap<>(getWFrame().getBots());
+		obstacles.remove(passPlayerID);
+		ChipKickReasonableDecider chipDecider = new ChipKickReasonableDecider(
+				getWFrame().getBall().getPos(),
+				passTarget,
+				obstacles.values(),
+				OffensiveMath.passSpeedChip(passDistance));
 		
-		// pass speed for chip pass
-		double passSpeedForChipDetection = getBall().getChipConsultant()
-				.getInitVelForDistAtTouchdown(getWFrame().getBall().getPos().distanceTo(target), 4);
-		
-		boolean isChipKickRequired = OffensiveMath.isChipKickRequired(getWFrame(), passPlayerID, passTarget,
-				passSpeedForChipDetection);
-		
-		List<ITrackedBot> consideredBots = Collections.list(Collections.enumeration(getWFrame().getFoeBots().values()))
-				.stream()
+		List<ITrackedBot> consideredBots = getWFrame().getFoeBots().values().stream()
 				.filter(b -> b.getBotId() != getAiFrame().getKeeperFoeId())
 				.collect(Collectors.toList());
 		
-		if (PassTargetRatingCalc.isAlternativeDistanceRating())
+		if (chipDecider.isChipKickReasonable())
 		{
-			return PassInterceptionRater.getScoreForPassAlternative(consideredBots, offensiveBot, passTarget, getBall(),
-					getWFrame().getTimestamp());
+			return PassInterceptionRater.rateChippedPass(passOrigin, passTarget, consideredBots);
 		}
-		
-		return PassInterceptionRater.getScoreForPass(consideredBots, offensiveBot, passTarget, getBall(),
-				getWFrame().getTimestamp(), isChipKickRequired);
+		return PassInterceptionRater.rateStraightPass(passOrigin, passTarget, consideredBots);
 	}
 	
 	
@@ -143,19 +134,13 @@ public class SupportPositionRatingCalc extends ACalculator
 				}
 			}
 			
-			rateSupportPositions(visPositions);
+			rateSupportPositions(visPositions, getBall().getPos());
 			
 			
 			double[] data = visPositions.stream()
 					.mapToDouble(p -> SumatraMath.relative(p.getPassScore(), -2, maxTimeOfInterception)).toArray();
-			ValuedField field = new ValuedField(data, numX, numY, 0, height, width);
+			ValuedField field = new ValuedField(data, numX, numY, 0);
 			fieldRatingShapes.add(field);
 		}
-	}
-	
-	
-	public static double getMaxTimeOfInterception()
-	{
-		return maxTimeOfInterception;
 	}
 }

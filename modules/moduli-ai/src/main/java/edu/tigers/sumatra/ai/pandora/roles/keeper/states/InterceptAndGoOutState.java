@@ -1,15 +1,16 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.keeper.states;
 
+import edu.tigers.sumatra.ai.metis.keeper.EKeeperState;
 import edu.tigers.sumatra.ai.pandora.roles.keeper.KeeperRole;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.skillsystem.skills.CatchSkill;
-import edu.tigers.sumatra.skillsystem.skills.MoveToTrajSkill;
+import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
+import edu.tigers.sumatra.skillsystem.skills.CatchBallSkill;
 
 /**
  * For OneOnOne Keeper. If ball velocity is directed to Goal, first intercept the shooting line and then go out.
@@ -22,16 +23,16 @@ public class InterceptAndGoOutState extends AKeeperState {
      * @param parent
      */
     public InterceptAndGoOutState(final KeeperRole parent) {
-        super(parent);
+		super(parent, EKeeperState.INTERCEPT_AND_GO_OUT);
     }
 
     @Override
     public void doEntryActions() {
-        CatchSkill catchSkill = new CatchSkill();
-        catchSkill.getMoveCon().setDestinationOutsideFieldAllowed(true);
-        catchSkill.getMoveCon().setPenaltyAreaAllowedOur(true);
-        catchSkill.getMoveCon().setBotsObstacle(false);
-        setNewSkill(catchSkill);
+		CatchBallSkill catchBallSkill = new CatchBallSkill();
+		catchBallSkill.getMoveCon().setDestinationOutsideFieldAllowed(true);
+		catchBallSkill.getMoveCon().setPenaltyAreaAllowedOur(true);
+		catchBallSkill.getMoveCon().setBotsObstacle(false);
+		setNewSkill(catchBallSkill);
     }
 
 
@@ -47,7 +48,7 @@ public class InterceptAndGoOutState extends AKeeperState {
 
         if (ballLine.distanceTo(getPos()) < Geometry.getBotRadius() / 2) {
             if (isCatchSkillActive && !getWFrame().getBall().isChipped() && parent.getBot().getVel().getLength2() < 0.1) {
-                MoveToTrajSkill moveToTrajSkill = new MoveToTrajSkill();
+				AMoveToSkill moveToTrajSkill = AMoveToSkill.createMoveToSkill();
                 moveToTrajSkill.getMoveCon().setDestinationOutsideFieldAllowed(false);
                 moveToTrajSkill.getMoveCon().setPenaltyAreaAllowedOur(true);
                 moveToTrajSkill.getMoveCon().setBallObstacle(false);
@@ -62,11 +63,11 @@ public class InterceptAndGoOutState extends AKeeperState {
             }
         } else {
             if (!isCatchSkillActive) {
-                CatchSkill catchSkill = new CatchSkill();
-                catchSkill.getMoveCon().setDestinationOutsideFieldAllowed(true);
-                catchSkill.getMoveCon().setPenaltyAreaAllowedOur(true);
-                catchSkill.getMoveCon().setBotsObstacle(false);
-                setNewSkill(catchSkill);
+				CatchBallSkill catchBallSkill = new CatchBallSkill();
+				catchBallSkill.getMoveCon().setDestinationOutsideFieldAllowed(true);
+				catchBallSkill.getMoveCon().setPenaltyAreaAllowedOur(true);
+				catchBallSkill.getMoveCon().setBotsObstacle(false);
+				setNewSkill(catchBallSkill);
                 isCatchSkillActive = true;
             }
         }

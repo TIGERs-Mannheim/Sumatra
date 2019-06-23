@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Apr 3, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.log;
 
@@ -20,7 +15,12 @@ import edu.tigers.sumatra.referee.data.RefereeMsg;
  */
 public class GameLogFormatter
 {
-	private static final DecimalFormat	posFormat	= new DecimalFormat("###0.00");
+	private static final DecimalFormat posFormat = new DecimalFormat("###0.00");
+	
+	
+	private GameLogFormatter()
+	{
+	}
 	
 	
 	/**
@@ -67,6 +67,11 @@ public class GameLogFormatter
 					builder.append(posFormat.format(pos.y()));
 				});
 				break;
+			case GAME_EVENT_ONLY:
+				builder.append("reset game event");
+				break;
+			default:
+				throw new IllegalArgumentException("Can not format command type: " + cmd.getType());
 		}
 		return builder.toString();
 	}
@@ -78,10 +83,6 @@ public class GameLogFormatter
 	 */
 	public static String formatRefMsg(final RefereeMsg msg)
 	{
-		StringBuilder builder = new StringBuilder();
-		builder.append(msg.getCommandCounter());
-		builder.append(" ");
-		builder.append(msg.getCommand());
-		return builder.toString();
+		return String.valueOf(msg.getCommandCounter()) + " " + msg.getCommand();
 	}
 }

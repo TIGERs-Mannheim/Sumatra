@@ -7,6 +7,7 @@ package edu.tigers.sumatra.wp.ball.dynamics;
 import Jama.Matrix;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.Vector3f;
 
 
 /**
@@ -14,9 +15,9 @@ import edu.tigers.sumatra.math.vector.Vector3;
  */
 public class BallState implements IState
 {
-	private IVector3	pos	= Vector3.ZERO_VECTOR;
-	private IVector3	vel	= Vector3.ZERO_VECTOR;
-	private IVector3	acc	= Vector3.ZERO_VECTOR;
+	private IVector3 pos = Vector3f.ZERO_VECTOR;
+	private IVector3 vel = Vector3f.ZERO_VECTOR;
+	private IVector3 acc = Vector3f.ZERO_VECTOR;
 	
 	
 	/**

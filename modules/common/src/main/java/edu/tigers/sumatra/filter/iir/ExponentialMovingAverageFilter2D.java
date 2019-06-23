@@ -1,14 +1,11 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 24.11.2016
- * Author(s): AndreR <andre@ryll.cc>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.filter.iir;
 
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVectorN;
+import edu.tigers.sumatra.math.vector.VectorN;
 
 
 /**
@@ -43,7 +40,7 @@ public class ExponentialMovingAverageFilter2D extends ExponentialMovingAverageFi
 	 */
 	public ExponentialMovingAverageFilter2D(final double alpha, final IVector2 state)
 	{
-		super(alpha, state);
+		super(alpha, VectorN.copy(state));
 	}
 	
 	
@@ -55,7 +52,7 @@ public class ExponentialMovingAverageFilter2D extends ExponentialMovingAverageFi
 	 */
 	public IVector2 update(final IVector2 measurement)
 	{
-		return super.update(measurement).getXYVector();
+		return super.update(VectorN.copy(measurement)).getXYVector();
 	}
 	
 	
@@ -63,9 +60,9 @@ public class ExponentialMovingAverageFilter2D extends ExponentialMovingAverageFi
 	 * @return the state
 	 */
 	@Override
-	public IVector2 getState()
+	public IVectorN getState()
 	{
-		return state.getXYVector();
+		return state;
 	}
 	
 	
@@ -74,6 +71,6 @@ public class ExponentialMovingAverageFilter2D extends ExponentialMovingAverageFi
 	 */
 	public void setState(final IVector2 state)
 	{
-		this.state = state;
+		this.state = VectorN.copy(state);
 	}
 }

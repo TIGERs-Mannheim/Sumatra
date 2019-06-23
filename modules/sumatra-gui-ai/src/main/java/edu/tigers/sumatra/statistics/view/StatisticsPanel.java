@@ -4,14 +4,16 @@
 
 package edu.tigers.sumatra.statistics.view;
 
-import java.awt.Font;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import edu.tigers.sumatra.ai.VisualizationFrame;
+import edu.tigers.sumatra.ai.metis.ballpossession.EBallPossession;
+import edu.tigers.sumatra.ai.metis.statistics.MatchStats;
+import edu.tigers.sumatra.ai.metis.statistics.MatchStats.EMatchStatistics;
+import edu.tigers.sumatra.ai.metis.statistics.StatisticData;
+import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.statistics.Percentage;
+import edu.tigers.sumatra.views.ISumatraView;
+import net.miginfocom.swing.MigLayout;
 
 import javax.swing.ButtonGroup;
 import javax.swing.JLabel;
@@ -19,16 +21,15 @@ import javax.swing.JMenu;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.SwingUtilities;
-
-import edu.tigers.sumatra.ai.data.MatchStats;
-import edu.tigers.sumatra.ai.data.MatchStats.EMatchStatistics;
-import edu.tigers.sumatra.ai.data.ballpossession.EBallPossession;
-import edu.tigers.sumatra.ai.data.frames.VisualizationFrame;
-import edu.tigers.sumatra.ai.metis.statistics.StatisticData;
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.views.ISumatraView;
-import net.miginfocom.swing.MigLayout;
+import java.awt.Font;
+import java.awt.Panel;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -43,13 +44,13 @@ public class StatisticsPanel extends JPanel implements ISumatraView
 	private MatchStats stats = null;
 	private ETeamColor selectedTeamColor = ETeamColor.YELLOW;
 	
-	
+	private PossessionBar ballPossessionBar;
 	/**
 	 * Default
 	 */
 	public StatisticsPanel()
 	{
-		setLayout(new MigLayout("wrap"));
+		setLayout(new MigLayout());
 		
 		JRadioButton rBtnYellow = new JRadioButton(ETeamColor.YELLOW.name());
 		rBtnYellow.setActionCommand(ETeamColor.YELLOW.name());
@@ -65,16 +66,25 @@ public class StatisticsPanel extends JPanel implements ISumatraView
 		JPanel teamPanel = new JPanel();
 		teamPanel.add(rBtnYellow);
 		teamPanel.add(rBtnBlue);
-		add(teamPanel);
+		add(teamPanel, "wrap, dock north");
 		
-		lblBallPossession = new JLabel();
-		lblBallPossession.setFont(lblBallPossession.getFont().deriveFont(Font.BOLD));
-		
-		add(lblBallPossession);
+
 		
 		statTable = new StatisticsTable();
-		
-		add(statTable);
+		Panel tPanel = new Panel();
+		tPanel.setLayout(new MigLayout());
+		tPanel.add(statTable.getTableHeader(), "wrap, dock north");
+		tPanel.add(statTable, "dock center, wrap");
+		add(tPanel, "dock center, wrap");
+
+
+		lblBallPossession = new JLabel();
+		lblBallPossession.setFont(lblBallPossession.getFont().deriveFont(Font.BOLD));
+		ballPossessionBar = new PossessionBar();
+
+		add(ballPossessionBar, "dock south, wrap");
+		add(lblBallPossession, "dock south, wrap");
+
 	}
 	
 	
@@ -83,9 +93,6 @@ public class StatisticsPanel extends JPanel implements ISumatraView
 	 */
 	public void reset()
 	{
-		remove(statTable);
-		statTable = new StatisticsTable();
-		add(statTable);
 		repaint();
 	}
 	
@@ -112,11 +119,21 @@ public class StatisticsPanel extends JPanel implements ISumatraView
 	
 	private void updateBallPossession()
 	{
+		Map<EBallPossession, Percentage> bs = stats.getBallPossessionGeneral();
 		double we = 100.0 * stats.getBallPossessionGeneral().get(EBallPossession.WE).getPercent();
 		double they = 100.0 * stats.getBallPossessionGeneral().get(EBallPossession.THEY).getPercent();
 		double both = 100.0 * stats.getBallPossessionGeneral().get(EBallPossession.BOTH).getPercent();
 		lblBallPossession
 				.setText(String.format("We %3.1f%% - %3.1f%% They, Both: %3.1f%%", we, they, both));
+
+		if (selectedTeamColor == ETeamColor.YELLOW)
+		{
+			ballPossessionBar.setTeamShareBoth(bs.get(EBallPossession.WE).getPercent(), bs.get(EBallPossession.THEY).getPercent());
+		}
+		else
+		{
+			ballPossessionBar.setTeamShareBoth(bs.get(EBallPossession.THEY).getPercent(), bs.get(EBallPossession.WE).getPercent());
+		}
 	}
 	
 	
@@ -130,7 +147,7 @@ public class StatisticsPanel extends JPanel implements ISumatraView
 		}
 		
 		Set<BotID> allBots = stats.getAllBots();
-		statTable.updateTableEntries(statistics, allBots);
+		statTable.setData(statistics, allBots);
 	}
 	
 	

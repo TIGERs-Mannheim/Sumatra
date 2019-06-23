@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.planarcurve;
 
@@ -11,9 +11,9 @@ import org.junit.Test;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.trajectory.BangBangTrajectory2D;
 import junit.framework.Assert;
 
@@ -45,7 +45,7 @@ public class PlanarCurveTest
 	{
 		IVector2 initialPos = Vector2.fromXY(0, 0);
 		IVector2 finalPos = Vector2.fromXY(3, 0);
-		IVector2 initialVel = AVector2.ZERO_VECTOR;
+		IVector2 initialVel = Vector2f.ZERO_VECTOR;
 		
 		IVector2 testPoint = Vector2.fromXY(1.5, 1);
 		
@@ -79,11 +79,11 @@ public class PlanarCurveTest
 	{
 		IVector2 initialPos1 = Vector2.fromXY(0, 0);
 		IVector2 finalPos1 = Vector2.fromXY(3, 0);
-		IVector2 initialVel1 = AVector2.ZERO_VECTOR;
+		IVector2 initialVel1 = Vector2f.ZERO_VECTOR;
 		
 		IVector2 initialPos2 = Vector2.fromXY(3, -2);
 		IVector2 finalPos2 = Vector2.fromXY(3, 1);
-		IVector2 initialVel2 = AVector2.ZERO_VECTOR;
+		IVector2 initialVel2 = Vector2f.ZERO_VECTOR;
 		
 		BangBangTrajectory2D traj1 = new BangBangTrajectory2D(initialPos1, finalPos1, initialVel1, 2, 3);
 		BangBangTrajectory2D traj2 = new BangBangTrajectory2D(initialPos2, finalPos2, initialVel2, 2, 3);
@@ -134,7 +134,7 @@ public class PlanarCurveTest
 		List<IVector2> intersections = traj1.getPlanarCurve().getIntersectionsWithLineSegment(line);
 		Assert.assertTrue(intersections.size() == 1);
 		
-		Assert.assertTrue(SumatraMath.isZero(intersections.get(0).distanceTo(AVector2.ZERO_VECTOR)));
+		Assert.assertTrue(SumatraMath.isZero(intersections.get(0).distanceTo(Vector2f.ZERO_VECTOR)));
 	}
 	
 	

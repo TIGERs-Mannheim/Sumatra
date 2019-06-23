@@ -1,22 +1,19 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.athena;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.ai.data.EAIControlState;
-import edu.tigers.sumatra.ai.data.EAiShapesLayer;
-import edu.tigers.sumatra.ai.data.PlayStrategy;
-import edu.tigers.sumatra.ai.data.frames.AIInfoFrame;
-import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
-import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
-import edu.tigers.sumatra.ai.lachesis.Lachesis;
+import edu.tigers.sumatra.ai.AIInfoFrame;
+import edu.tigers.sumatra.ai.athena.roleassigner.IRoleAssigner;
+import edu.tigers.sumatra.ai.athena.roleassigner.SimpleRoleAssigner;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.MetisAiFrame;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
@@ -36,23 +33,12 @@ public class Athena
 {
 	private static final Logger log = Logger.getLogger(Athena.class.getName());
 	
-	/** Role-assigner instance */
-	private final Lachesis lachesis;
+	private final IRoleAssigner roleAssigner = new SimpleRoleAssigner();
 	
 	/** AI control from GUI */
-	private AAthenaAdapter athenaAdapter;
+	private AAthenaAdapter athenaAdapter = new MatchModeAthenaAdapter();
 	
 	private EAIControlState controlState = EAIControlState.MATCH_MODE;
-	
-	
-	/**
-	 * Default
-	 */
-	public Athena()
-	{
-		lachesis = new Lachesis();
-		athenaAdapter = new MatchModeAthenaAdapter();
-	}
 	
 	
 	/**
@@ -67,9 +53,6 @@ public class Athena
 				break;
 			case MATCH_MODE:
 				athenaAdapter = new MatchModeAthenaAdapter();
-				break;
-			case MIXED_TEAM_MODE:
-				athenaAdapter = new MixedTeamModeAthenaAdapter();
 				break;
 			case TEST_MODE:
 				athenaAdapter = new TestModeAthenaAdapter();
@@ -98,8 +81,7 @@ public class Athena
 	 */
 	public AthenaAiFrame process(final MetisAiFrame metisAiFrame)
 	{
-		final PlayStrategy.Builder playStrategyBuilder = new PlayStrategy.Builder();
-		return process(metisAiFrame, playStrategyBuilder);
+		return process(metisAiFrame, new PlayStrategy.Builder());
 	}
 	
 	
@@ -114,14 +96,11 @@ public class Athena
 	{
 		AthenaAiFrame athenaAiFrame;
 		athenaAdapter.process(metisAiFrame, playStrategyBuilder);
-		playStrategyBuilder.setAIControlState(controlState);
-		athenaAiFrame = new AthenaAiFrame(metisAiFrame, playStrategyBuilder.build());
+		IPlayStrategy playStrategy = playStrategyBuilder.build();
+		athenaAiFrame = new AthenaAiFrame(metisAiFrame, playStrategy);
 		
-		processRoleAssignment(athenaAiFrame);
-		if ((controlState == EAIControlState.MATCH_MODE) || (controlState == EAIControlState.MIXED_TEAM_MODE))
-		{
-			checkRoleCount(athenaAiFrame);
-		}
+		roleAssigner.assignRoles(playStrategy);
+		checkRoleCount(athenaAiFrame);
 		
 		updatePlays(athenaAiFrame);
 		drawRoleNames(athenaAiFrame);
@@ -131,7 +110,7 @@ public class Athena
 	
 	private void drawRoleNames(final AthenaAiFrame aiFrame)
 	{
-		List<IDrawableShape> shapes = aiFrame.getTacticalField().getDrawableShapes().get(EAiShapesLayer.ROLE_NAMES);
+		List<IDrawableShape> shapes = aiFrame.getTacticalField().getDrawableShapes().get(EAiShapesLayer.AI_ROLE_NAMES);
 		for (ARole role : aiFrame.getPlayStrategy().getActiveRoles().values())
 		{
 			if (role.getBot() == null)
@@ -148,8 +127,8 @@ public class Athena
 			}
 			DrawableAnnotation dTxtRole = new DrawableAnnotation(pos, text);
 			dTxtRole.setColor(aiFrame.getTeamColor().getColor());
-			dTxtRole.setFontHeight(50);
-			dTxtRole.setOffset(Vector2.fromX(130));
+			dTxtRole.withFontHeight(50);
+			dTxtRole.withOffset(Vector2.fromX(130));
 			shapes.add(dTxtRole);
 		}
 	}
@@ -157,7 +136,9 @@ public class Athena
 	
 	private void checkRoleCount(final AthenaAiFrame frame)
 	{
-		if (SumatraModel.getInstance().isTestMode() && !frame.getGamestate().isIdleGame())
+		if (controlState == EAIControlState.MATCH_MODE
+				&& SumatraModel.getInstance().isTestMode()
+				&& !frame.getGamestate().isIdleGame())
 		{
 			int numBots = frame.getWorldFrame().getTigerBotsAvailable().size();
 			List<ARole> roles = frame.getPlayStrategy().getActivePlays().stream()
@@ -186,32 +167,15 @@ public class Athena
 	}
 	
 	
-	private void processRoleAssignment(final AthenaAiFrame frame)
-	{
-		lachesis.assignRoles(frame);
-	}
-	
-	
 	private void updatePlays(final AthenaAiFrame frame)
 	{
-		// update all plays with the new frame and remove plays which failed or succeeded
-		for (APlay play : new ArrayList<>(frame.getPlayStrategy().getActivePlays()))
+		for (APlay play : frame.getPlayStrategy().getActivePlays())
 		{
-			
 			try
 			{
-				for (ARole role : play.getRoles())
-				{
-					role.updateBefore(frame);
-				}
-				
+				play.getRoles().forEach(role -> role.updateBefore(frame));
 				play.updateBeforeRoles(frame);
-				
-				for (ARole role : play.getRoles())
-				{
-					role.update(frame);
-				}
-				
+				play.getRoles().forEach(role -> role.update(frame));
 				play.update(frame);
 			} catch (Exception err)
 			{

@@ -1,4 +1,4 @@
-function [kicks, dist, loss] = chipFit(measFrames, camPos, pKickoff)
+function [kicks, dist, loss, firstFitKickVel] = chipFit(measFrames, camPos, pKickoff)
 %CHIPFIT Summary of this function goes here
 %   measFrames = [t px py pz id |v| event]
 %   camPos = [c1x c1y c1z; c2x ...]
@@ -7,11 +7,13 @@ function [kicks, dist, loss] = chipFit(measFrames, camPos, pKickoff)
 %   dist = chip distance until first touchdown
 %   loss = [lossXY lossZ] impulse loss factors
 
-    maxFitDiff = 100; % 10cm
+    maxFitDiff = 200; % 20cm
     
     % do a rough fitting 
-    x6 = chipSolve6(measFrames(4:23,:), camPos);
+    x6 = chipSolve6(measFrames(4:43,:), camPos);
     x1 = getKickoff(x6);
+    
+    firstFitKickVel = norm(x6(4:6))*1e-3;
     
     diffFromKickoff = norm(pKickoff(1:2)-x1(1:2)');
     
@@ -25,6 +27,12 @@ function [kicks, dist, loss] = chipFit(measFrames, camPos, pKickoff)
     % take 80% of the flight time and refine fitting with more samples
     tFly = 0.2/981*x1(6) * 0.8;
     id = find(measFrames(:,1) < measFrames(1,1)+tFly, 1, 'last');
+    if isempty(id) || id-4 < 10
+        kicks = [];
+        dist = 0;
+        loss = [0 0];
+        return;
+    end
     x6 = chipSolve6(measFrames(4:id,:), camPos);
     x2 = getKickoff(x6);
     
@@ -118,7 +126,8 @@ sqr = v_0^2-2*g*p_0;
 if sqr < 0
     % that means the ball z location is < 0 and it will not hit z = 0
     % (velocity too low)
-    error('Ball kickoff location below zero, no intersection with ground');
+    warning('Ball kickoff location below zero, no intersection with ground');
+    kickoff = ones(6,1)*inf;
 end
 
 t = (sqrt(sqr)-v_0)/g;

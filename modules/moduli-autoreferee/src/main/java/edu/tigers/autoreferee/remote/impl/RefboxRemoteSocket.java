@@ -1,21 +1,14 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Apr 8, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.remote.impl;
 
-import static edu.tigers.autoreferee.generic.CheckedRunnable.execAndCatchAll;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Base64.Encoder;
 
@@ -32,13 +25,13 @@ import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest;
  */
 public class RefboxRemoteSocket
 {
-	private static final Logger	log				= Logger.getLogger(RefboxRemoteSocket.class);
-	private static final Encoder	b64Encoder		= Base64.getEncoder();
+	private static final Logger log = Logger.getLogger(RefboxRemoteSocket.class);
+	private static final Encoder b64Encoder = Base64.getEncoder();
 	
-	private static final int		INT_FIELD_SIZE	= 4;
+	private static final int INT_FIELD_SIZE = 4;
 	
-	private SocketChannel			socket;
-	private ByteBuffer				intBuffer;
+	private SocketChannel socketChannel;
+	private ByteBuffer intBuffer;
 	
 	
 	/**
@@ -58,10 +51,9 @@ public class RefboxRemoteSocket
 	 */
 	public synchronized void connect(final String hostname, final int port) throws IOException
 	{
-		socket = SocketChannel.open();
+		socketChannel = SocketChannel.open();
 		InetSocketAddress addr = new InetSocketAddress(hostname, port);
-		socket.connect(addr);
-		socket.setOption(StandardSocketOptions.TCP_NODELAY, true);
+		socketChannel.connect(addr);
 	}
 	
 	
@@ -70,7 +62,13 @@ public class RefboxRemoteSocket
 	 */
 	public synchronized void close()
 	{
-		execAndCatchAll(() -> socket.close());
+		try
+		{
+			socketChannel.close();
+		} catch (IOException e)
+		{
+			log.warn("Error while closing socket channel", e);
+		}
 	}
 	
 	
@@ -78,28 +76,15 @@ public class RefboxRemoteSocket
 	 * @param request
 	 * @return
 	 * @throws IOException if an I/O error occurs
-	 * @throws InterruptedException If an interrupt occurred while the socket was blocked in an I/O operation or the
-	 *            close() method was invoked while the socket was blocked.
 	 * @throws InvalidProtocolBufferException If the reply could not be correctly read and parsed from the socket. This
 	 *            usually indicates that sender and receiver are out of sync and the connection should be closed and
 	 *            reopened.
 	 */
-	@SuppressWarnings("squid:S1166")
 	public SSL_RefereeRemoteControlReply sendRequest(final SSL_RefereeRemoteControlRequest request)
-			throws InterruptedException
+			throws IOException
 	{
-		try
-		{
-			writeRequest(request);
-			return readReply();
-		} catch (IOException e)
-		{
-			/*
-			 * We rethrow the AsynchronousCloseException as InterruptedException in order to be able to distinguish an
-			 * interrupt from a regular io exception further up in the code.
-			 */
-			throw new InterruptedException(e.getMessage());
-		}
+		writeRequest(request);
+		return readReply();
 	}
 	
 	
@@ -108,7 +93,7 @@ public class RefboxRemoteSocket
 		prepareBuf(INT_FIELD_SIZE);
 		while (intBuffer.hasRemaining())
 		{
-			socket.read(intBuffer);
+			socketChannel.read(intBuffer);
 		}
 		intBuffer.flip();
 		int msgLength = intBuffer.getInt();
@@ -117,21 +102,22 @@ public class RefboxRemoteSocket
 		prepareBuf(msgLength);
 		while (intBuffer.hasRemaining())
 		{
-			socket.read(intBuffer);
+			socketChannel.read(intBuffer);
 		}
 		intBuffer.flip();
 		
-		byte[] binData = intBuffer.array();
+		
+		byte[] binData = Arrays.copyOf(intBuffer.array(), msgLength);
 		
 		try
 		{
 			SSL_RefereeRemoteControlReply reply = SSL_RefereeRemoteControlReply.parseFrom(binData);
 			log.debug("Received reply: " + reply.toString());
 			return reply;
-		} catch (Exception e)
+		} catch (InvalidProtocolBufferException e)
 		{
-			log.error("Unable to parse following reply with binary size + " + msgLength + " (Base64): "
-					+ b64Encoder.encodeToString(binData));
+			log.error("Unable to parse following reply with binary size " + msgLength + " (Base64): "
+					+ b64Encoder.encodeToString(binData), e);
 			throw e;
 		}
 	}
@@ -150,7 +136,7 @@ public class RefboxRemoteSocket
 		
 		while (intBuffer.hasRemaining())
 		{
-			socket.write(intBuffer);
+			socketChannel.write(intBuffer);
 		}
 	}
 	

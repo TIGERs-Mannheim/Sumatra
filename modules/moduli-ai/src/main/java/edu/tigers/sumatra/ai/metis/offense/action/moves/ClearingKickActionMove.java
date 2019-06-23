@@ -1,17 +1,20 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
-import edu.tigers.sumatra.ai.data.EAiShapesLayer;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
-import edu.tigers.sumatra.ai.math.kick.MaxAngleKickRater;
-import edu.tigers.sumatra.ai.metis.offense.action.AOffensiveActionMove;
+import java.awt.Color;
+
+import com.github.g3force.configurable.Configurable;
+
+import edu.tigers.sumatra.ai.BaseAiFrame;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveActionMove;
-import edu.tigers.sumatra.ai.metis.offense.data.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.KickTarget;
+import edu.tigers.sumatra.ai.metis.targetrater.MaxAngleKickRater;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.DrawableTriangle;
@@ -22,20 +25,18 @@ import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 
-import java.awt.Color;
-
 
 /**
- * @author: MarkG
+ * Kick the ball away fast to clear a dangerous situation
  */
 public class ClearingKickActionMove extends AOffensiveActionMove
 {
+	@Configurable(defValue = "2.5")
+	private static double ballSpeedAtTarget = 2.5;
+	
 	private double via = 0;
 	
 	
-	/**
-	 * Default
-	 */
 	public ClearingKickActionMove()
 	{
 		super(EOffensiveActionMove.CLEARING_KICK);
@@ -44,7 +45,7 @@ public class ClearingKickActionMove extends AOffensiveActionMove
 	
 	@Override
 	public EActionViability isActionViable(final BotID id, final TacticalField newTacticalField,
-			final BaseAiFrame baseAiFrame, final OffensiveAction action)
+			final BaseAiFrame baseAiFrame)
 	{
 		if (Geometry.getFieldLength() / 2.0 - baseAiFrame.getWorldFrame().getBall().getPos().x() < 4000)
 		{
@@ -67,11 +68,9 @@ public class ClearingKickActionMove extends AOffensiveActionMove
 	
 	
 	@Override
-	public void activateAction(final BotID id, final TacticalField newTacticalField, final BaseAiFrame baseAiFrame,
-			final OffensiveAction action)
+	public OffensiveAction activateAction(final BotID id, final TacticalField newTacticalField,
+			final BaseAiFrame baseAiFrame)
 	{
-		action.setType(OffensiveAction.EOffensiveAction.CLEARING_KICK);
-		
 		// calculate good target here...
 		double danger = calcDangerScore(newTacticalField, baseAiFrame) * 0.3;
 		IVector2 bestShootTargt = getBestShootTarget(newTacticalField);
@@ -90,7 +89,11 @@ public class ClearingKickActionMove extends AOffensiveActionMove
 		newTacticalField.getDrawableShapes().get(EAiShapesLayer.OFFENSIVE_CLEARING_KICK).add(dlClear);
 		newTacticalField.getDrawableShapes().get(EAiShapesLayer.OFFENSIVE_CLEARING_KICK).add(dlMid);
 		
-		action.setDirectShotAndClearingTarget(new DynamicPosition(midTarget));
+		double passRange = 0.6;
+		KickTarget kickTarget = new KickTarget(new DynamicPosition(midTarget, passRange), ballSpeedAtTarget,
+				KickTarget.ChipPolicy.ALLOW_CHIP);
+		
+		return createOffensiveAction(EOffensiveAction.CLEARING_KICK, kickTarget);
 	}
 	
 	

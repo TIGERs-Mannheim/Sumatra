@@ -1,16 +1,11 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 23.01.2016
- * Author(s): Arne Sachtler <arne.sachtler@dlr.de>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.trajectory;
 
+import static edu.tigers.sumatra.math.SumatraMath.sqrt;
 import static java.lang.Math.max;
 import static java.lang.Math.pow;
-import static java.lang.Math.sqrt;
 
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -85,7 +80,7 @@ public final class BangBangTrajectoryMath
 	 */
 	public static double timeToBrake(final IVector2 initialVel, final double brkMax)
 	{
-		return Math.sqrt((2.0 * Math.abs(brakeDistance(initialVel, brkMax))) / Math.abs(brkMax));
+		return sqrt((2.0 * Math.abs(brakeDistance(initialVel, brkMax))) / Math.abs(brkMax));
 	}
 	
 	

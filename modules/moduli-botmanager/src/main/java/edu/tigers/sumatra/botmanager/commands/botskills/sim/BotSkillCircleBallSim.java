@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands.botskills.sim;
 
@@ -9,9 +9,10 @@ import edu.tigers.sumatra.botmanager.commands.botskills.data.BotSkillOutput;
 import edu.tigers.sumatra.botmanager.commands.botskills.data.EDriveMode;
 import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.vector.AVector3;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.Vector3f;
 
 
 /**
@@ -46,7 +47,7 @@ public class BotSkillCircleBallSim implements IBotSkillSim
 		
 		if (Math.abs(radius) < 0.01)
 		{
-			localVel = AVector3.ZERO_VECTOR;
+			localVel = Vector3f.ZERO_VECTOR;
 		} else
 		{
 			double theta = Math.atan(((curSpeedAbs * curSpeedAbs) / radius) * 9.81 * mu);
@@ -62,7 +63,8 @@ public class BotSkillCircleBallSim implements IBotSkillSim
 				kickerMode = skill.getMode();
 			}
 			
-			localVel = Vector3.fromXYZ(Math.sin(theta) * speed, Math.cos(-theta) * speed, curSpeedAbs / radius);
+			localVel = Vector3.fromXYZ(SumatraMath.sin(theta) * speed, SumatraMath.cos(-theta) * speed,
+					curSpeedAbs / radius);
 		}
 		
 		return BotSkillOutput.Builder.create()
@@ -74,7 +76,6 @@ public class BotSkillCircleBallSim implements IBotSkillSim
 				.kickMode(kickerMode)
 				.kickSpeed(skill.getKickSpeed())
 				.dribblerRPM(skill.getDribbleSpeed())
-				.addCommands(BotSkillSimulator.parseDataAcquisitionMode(input, skill.getDataAcquisitionMode()))
 				.build();
 	}
 }

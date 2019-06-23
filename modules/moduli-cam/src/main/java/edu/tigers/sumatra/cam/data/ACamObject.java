@@ -1,45 +1,44 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 01.11.2010
- * Author(s): Yakisoba
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.cam.data;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.export.INumberListable;
-import edu.tigers.sumatra.math.vector.AVector2;
+import edu.tigers.sumatra.data.collector.IExportable;
 import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
  * Base class for SSL-Vision camera objects.
  */
 @Persistent
-public abstract class ACamObject implements INumberListable
+public abstract class ACamObject implements IExportable
 {
 	/** often 1.0, unknown */
-	private final double		confidence;
+	private final double confidence;
 	
 	/** [pixel], left = 0, top = 0 */
-	private final IVector2	pixel;
+	private final IVector2 pixel;
 	
-	private final long		tCapture;
-	private final long		tSent;
-	private final int			camId;
-	private final long		frameId;
+	private final long tCapture;
+	private final long tAssembly;
+	private final int camId;
+	private final long frameId;
 	
 	
 	protected ACamObject()
 	{
 		confidence = 0;
-		pixel = AVector2.ZERO_VECTOR;
+		pixel = Vector2f.ZERO_VECTOR;
 		tCapture = 0;
-		tSent = 0;
+		tAssembly = 0;
 		camId = 0;
 		frameId = 0;
 	}
@@ -49,24 +48,22 @@ public abstract class ACamObject implements INumberListable
 	 * @param confidence
 	 * @param pixel
 	 * @param tCapture
-	 * @param tSent
 	 * @param camId
 	 * @param frameId
 	 */
 	public ACamObject(final double confidence, final IVector2 pixel, final long tCapture,
-			final long tSent, final int camId, final long frameId)
+			final int camId, final long frameId)
 	{
 		this.confidence = confidence;
 		this.pixel = pixel.copy();
 		this.tCapture = tCapture;
-		this.tSent = tSent;
+		this.tAssembly = System.nanoTime();
 		this.camId = camId;
 		this.frameId = frameId;
 	}
 	
 	
 	/**
-	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 	 * @param o
 	 */
 	public ACamObject(final ACamObject o)
@@ -74,14 +71,51 @@ public abstract class ACamObject implements INumberListable
 		confidence = o.confidence;
 		pixel = o.pixel.copy();
 		tCapture = o.tCapture;
-		tSent = o.tSent;
+		tAssembly = o.tAssembly;
 		camId = o.camId;
 		frameId = o.frameId;
 	}
 	
 	
+	@Override
+	public List<Number> getNumberList()
+	{
+		List<Number> numbers = new ArrayList<>();
+		numbers.add(getFrameId());
+		numbers.add(getCameraId());
+		numbers.add(gettCapture());
+		numbers.add(gettAssembly());
+		numbers.add(getPixel().x());
+		numbers.add(getPixel().y());
+		numbers.add(getConfidence());
+		numbers.addAll(getPos().getNumberList());
+		return numbers;
+	}
+	
+	
+	@Override
+	public List<String> getHeaders()
+	{
+		List<String> headers = new ArrayList<>();
+		headers.addAll(Arrays.asList("frameId", "camId", "tCapture", "tAssembly",
+				"pixel_x", "pixel_y", "confidence"));
+		if (getPos().getNumDimensions() >= 1)
+		{
+			headers.add("pos_x");
+		}
+		if (getPos().getNumDimensions() >= 2)
+		{
+			headers.add("pos_y");
+		}
+		if (getPos().getNumDimensions() >= 3)
+		{
+			headers.add("pos_z");
+		}
+		return headers;
+	}
+	
+	
 	/**
-	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 	 * @return
 	 */
 	public abstract IVector getPos();
@@ -144,8 +178,8 @@ public abstract class ACamObject implements INumberListable
 	/**
 	 * @return the tSent
 	 */
-	public final long gettSent()
+	public final long gettAssembly()
 	{
-		return tSent;
+		return tAssembly;
 	}
 }

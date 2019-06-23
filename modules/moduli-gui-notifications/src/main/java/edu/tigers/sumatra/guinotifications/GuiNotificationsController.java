@@ -7,8 +7,6 @@ package edu.tigers.sumatra.guinotifications;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.configuration.SubnodeConfiguration;
-
 import edu.tigers.moduli.AModule;
 import edu.tigers.moduli.exceptions.InitModuleException;
 import edu.tigers.moduli.exceptions.StartModuleException;
@@ -22,22 +20,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
  */
 public class GuiNotificationsController extends AModule implements IVisualizerObserver
 {
-	
-	public static final String				MODULE_TYPE	= "GuiNotificationsController";
-	public static final String				MODULE_ID	= "gui_notifications_controller";
-	
 	private List<IVisualizerObserver>	visualizerObservers;
-	
-	
-	/**
-	 * Creates a new Controller
-	 * 
-	 * @param subconfig
-	 */
-	public GuiNotificationsController(SubnodeConfiguration subconfig)
-	{
-		// Nothing to do.
-	}
 	
 	
 	@Override

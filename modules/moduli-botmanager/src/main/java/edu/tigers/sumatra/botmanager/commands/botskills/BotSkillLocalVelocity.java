@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands.botskills;
 
@@ -21,22 +21,19 @@ import edu.tigers.sumatra.math.vector.IVector2;
 public class BotSkillLocalVelocity extends AMoveBotSkill
 {
 	@SerialData(type = ESerialDataType.INT16)
-	private final int[]					vel						= new int[3];
+	private final int[] vel = new int[3];
 	
 	@SerialData(type = ESerialDataType.UINT8)
-	private int								accMax					= 0;
+	private int accMax = 0;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int								accMaxW					= 0;
+	private int accMaxW = 0;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int								jerkMax					= 0;
+	private int jerkMax = 0;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int								jerkMaxW					= 0;
+	private int jerkMaxW = 0;
 	
 	@SerialData(type = ESerialDataType.EMBEDDED)
-	private KickerDribblerCommands	kickerDribbler			= new KickerDribblerCommands();
-	
-	@SerialData(type = ESerialDataType.UINT8)
-	private int								dataAcqusitionMode	= 0;
+	private KickerDribblerCommands kickerDribbler = new KickerDribblerCommands();
 	
 	
 	/**
@@ -100,9 +97,8 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 	{
 		this();
 		
-		vel[0] = (int) (xy.x() * 1000.0);
-		vel[1] = (int) (xy.y() * 1000.0);
-		vel[2] = (int) (orientation * 1000.0);
+		setVelXy(xy);
+		setVelW(orientation);
 		
 		setAccMax(accMax);
 		setAccMaxW(accMaxW);
@@ -138,6 +134,19 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 	public double getW()
 	{
 		return vel[2] / 1000.0;
+	}
+	
+	
+	public void setVelXy(final IVector2 xy)
+	{
+		vel[0] = (int) (xy.x() * 1000.0);
+		vel[1] = (int) (xy.y() * 1000.0);
+	}
+	
+	
+	public void setVelW(final double w)
+	{
+		vel[2] = (int) (w * 1000.0);
 	}
 	
 	
@@ -245,25 +254,5 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 	public void setKickerDribbler(final KickerDribblerCommands kickerDribbler)
 	{
 		this.kickerDribbler = kickerDribbler;
-	}
-	
-	
-	/**
-	 * @return the dataAcqusitionMode
-	 */
-	@Override
-	public EDataAcquisitionMode getDataAcquisitionMode()
-	{
-		return EDataAcquisitionMode.getModeConstant(dataAcqusitionMode);
-	}
-	
-	
-	/**
-	 * @param dataAcqusitionMode the dataAcqusitionMode to set
-	 */
-	@Override
-	public void setDataAcquisitionMode(final EDataAcquisitionMode dataAcqusitionMode)
-	{
-		this.dataAcqusitionMode = dataAcqusitionMode.getId();
 	}
 }

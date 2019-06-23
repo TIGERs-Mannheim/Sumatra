@@ -1,3 +1,4 @@
+syntax = "proto2";
 package edu.tigers.sumatra.wp.exporter;
 
 message WorldFrame

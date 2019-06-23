@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.view;
@@ -22,34 +22,34 @@ import javax.swing.WindowConstants;
 
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.presenter.ball.BallAnalyserView;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.botcenter.BotCenterView;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.log.LogView;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.logfile.LogfileView;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.rcm.RcmView;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.referee.RefereeView;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.sim.SimulationView;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.testplays.TestPlaysControlView;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.timer.TimerView;
-import edu.dhbw.mannheim.tigers.sumatra.view.replay.ReplayLoadMenu;
-import edu.dhbw.mannheim.tigers.sumatra.view.replay.ReplayLoadMenu.IReplayLoadMenuObserver;
 import edu.tigers.autoref.view.ballspeed.BallSpeedView;
 import edu.tigers.autoref.view.gamelog.GameLogView;
 import edu.tigers.autoref.view.main.AutoRefView;
 import edu.tigers.sumatra.AMainFrame;
 import edu.tigers.sumatra.IMainFrameObserver;
-import edu.tigers.sumatra.ReplayPresenter;
 import edu.tigers.sumatra.aicenter.AICenterView;
 import edu.tigers.sumatra.botoverview.BotOverviewView;
 import edu.tigers.sumatra.botparams.view.BotParamsView;
 import edu.tigers.sumatra.config.ConfigEditorView;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.offensive.OffensiveActionTreeView;
 import edu.tigers.sumatra.offensive.OffensiveStatisticsView;
 import edu.tigers.sumatra.offensive.OffensiveStrategyView;
-import edu.tigers.sumatra.persistence.ABerkeleyPersistence;
-import edu.tigers.sumatra.persistence.RecordManager;
+import edu.tigers.sumatra.persistence.BerkeleyDb;
+import edu.tigers.sumatra.presenter.ball.BallAnalyserView;
+import edu.tigers.sumatra.presenter.botcenter.BotCenterView;
+import edu.tigers.sumatra.presenter.log.LogView;
+import edu.tigers.sumatra.presenter.logfile.LogfileView;
+import edu.tigers.sumatra.presenter.rcm.RcmView;
+import edu.tigers.sumatra.presenter.referee.RefereeView;
+import edu.tigers.sumatra.presenter.sim.SimulationView;
+import edu.tigers.sumatra.presenter.testplays.TestPlaysControlView;
+import edu.tigers.sumatra.presenter.timer.TimerView;
+import edu.tigers.sumatra.replay.AiReplayPresenter;
 import edu.tigers.sumatra.statistics.StatisticsView;
 import edu.tigers.sumatra.util.ShortcutsDialog;
+import edu.tigers.sumatra.view.replay.ReplayLoadMenu;
+import edu.tigers.sumatra.view.replay.ReplayLoadMenu.IReplayLoadMenuObserver;
 import edu.tigers.sumatra.view.toolbar.ToolBar;
 import edu.tigers.sumatra.views.ASumatraView;
 import edu.tigers.sumatra.visualizer.VisualizerAiView;
@@ -61,15 +61,14 @@ import edu.tigers.sumatra.visualizer.VisualizerAiView;
 public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 {
 	@SuppressWarnings("unused")
-	private static final Logger		log					= Logger.getLogger(MainFrame.class.getName());
-	private static final long			serialVersionUID	= -6858464942004450029L;
+	private static final Logger log = Logger.getLogger(MainFrame.class.getName());
+	private static final long serialVersionUID = -6858464942004450029L;
 	
-	private final JMenu					moduliMenu			= new JMenu("Moduli");
-	private final JMenu					lookAndFeelMenu	= new JMenu("Look & Feel");
-	private final ReplayLoadMenu		replayMenu			= new ReplayLoadMenu(
-			RecordManager::createPersistenceForRead);
+	private final JMenu moduliMenu = new JMenu("Moduli");
+	private final JMenu lookAndFeelMenu = new JMenu("Look & Feel");
+	private final ReplayLoadMenu replayMenu = new ReplayLoadMenu();
 	
-	private final transient ToolBar	toolBar				= new ToolBar();
+	private final transient ToolBar toolBar = new ToolBar();
 	
 	
 	/**
@@ -106,6 +105,7 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 		addView(new TestPlaysControlView());
 		addView(new OffensiveStatisticsView());
 		addView(new BotParamsView());
+		addView(new OffensiveActionTreeView());
 		
 		updateViewMenu();
 		
@@ -341,8 +341,8 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 	
 	
 	@Override
-	public void onLoadPersistance(final ABerkeleyPersistence p)
+	public void onOpenReplay(final BerkeleyDb db)
 	{
-		new ReplayPresenter().start(p);
+		new AiReplayPresenter().start(db, 0);
 	}
 }

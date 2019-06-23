@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.ball.prediction;
@@ -8,8 +8,9 @@ import java.util.List;
 
 import edu.tigers.sumatra.math.IMirrorable;
 import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.planarcurve.IPlanarCurveProvider;
 
 
@@ -24,7 +25,7 @@ public interface IBallTrajectory extends IMirrorable<IBallTrajectory>, IPlanarCu
 	 * @param time in [s]
 	 * @return the position after <code>time</code> seconds
 	 */
-	IVector3 getPos3ByTime(double time);
+	IVector getPosByTime(double time);
 	
 	
 	/**
@@ -33,7 +34,7 @@ public interface IBallTrajectory extends IMirrorable<IBallTrajectory>, IPlanarCu
 	 * @param time in [s]
 	 * @return the velocity after <code>time</code> seconds
 	 */
-	IVector3 getVel3ByTime(double time);
+	IVector getVelByTime(double time);
 	
 	
 	/**
@@ -42,34 +43,16 @@ public interface IBallTrajectory extends IMirrorable<IBallTrajectory>, IPlanarCu
 	 * @param time in [s]
 	 * @return the acceleration after <code>time</code> seconds
 	 */
-	IVector3 getAcc3ByTime(double time);
+	IVector getAccByTime(double time);
 	
 	
 	/**
-	 * Get the position for a given time
-	 *
+	 * Get ball spin for a given time.
+	 * 
 	 * @param time in [s]
-	 * @return the position after <code>time</code> seconds
+	 * @return ball spin, forward/topspin is positive, backspin is negative
 	 */
-	IVector2 getPosByTime(double time);
-	
-	
-	/**
-	 * Get the velocity for a given time
-	 *
-	 * @param time in [s]
-	 * @return the velocity after <code>time</code> seconds
-	 */
-	IVector2 getVelByTime(double time);
-	
-	
-	/**
-	 * Get the acceleration for a given time
-	 *
-	 * @param time in [s]
-	 * @return the acceleration after <code>time</code> seconds
-	 */
-	IVector2 getAccByTime(double time);
+	double getSpinByTime(double time);
 	
 	
 	/**
@@ -79,7 +62,7 @@ public interface IBallTrajectory extends IMirrorable<IBallTrajectory>, IPlanarCu
 	 * @param targetVelocity in [m/s]
 	 * @return the position when the ball's velocity is smaller than or equal to the targetVelocity for the first time.
 	 */
-	IVector2 getPosByVel(double targetVelocity);
+	IVector getPosByVel(double targetVelocity);
 	
 	
 	/**
@@ -177,11 +160,17 @@ public interface IBallTrajectory extends IMirrorable<IBallTrajectory>, IPlanarCu
 	
 	
 	/**
+	 * @return a line from current ball pos to ball end pos
+	 */
+	ILineSegment getTravelLineSegment();
+	
+	
+	/**
 	 * Same as getTravelLine() for a flat ball.
 	 * 
 	 * @return a line from the point where the ball is rolling on the ground to end pos
 	 */
-	ILine getTravelLineRolling();
+	ILineSegment getTravelLineRolling();
 	
 	
 	/**

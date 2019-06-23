@@ -3,9 +3,7 @@
  */
 package edu.tigers.sumatra.cam.data;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.math3.complex.Quaternion;
@@ -18,13 +16,11 @@ import org.json.simple.JSONObject;
 import edu.tigers.sumatra.MessagesRobocupSslGeometry.SSL_GeometryCameraCalibration;
 import edu.tigers.sumatra.export.IJsonString;
 import edu.tigers.sumatra.math.SumatraMath;
-import edu.tigers.sumatra.math.rectangle.IRectangle;
-import edu.tigers.sumatra.math.rectangle.Rectangle;
-import edu.tigers.sumatra.math.vector.AVector3;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.Vector3f;
 
 
 /**
@@ -34,13 +30,13 @@ import edu.tigers.sumatra.math.vector.Vector3;
  */
 public class CamCalibration implements IJsonString
 {
-	private final int				cameraId;
-	private final double			focalLength;
-	private final double			distortion;
-	private final IVector2		principalPoint;
-	private final Quaternion	rotationQuaternion;
-	private final IVector3		translation;
-	private final IVector3		cameraPosition;
+	private final int cameraId;
+	private final double focalLength;
+	private final double distortion;
+	private final IVector2 principalPoint;
+	private final Quaternion rotationQuaternion;
+	private final IVector3 translation;
+	private final IVector3 cameraPosition;
 	
 	
 	/**
@@ -62,7 +58,7 @@ public class CamCalibration implements IJsonString
 		this.distortion = distortion;
 		rotationQuaternion = q;
 		translation = t;
-		cameraPosition = transformToWorld(AVector3.ZERO_VECTOR);
+		cameraPosition = transformToWorld(Vector3f.ZERO_VECTOR);
 	}
 	
 	
@@ -84,6 +80,31 @@ public class CamCalibration implements IJsonString
 	}
 	
 	
+	/**
+	 * Is this calibration similar to another one?
+	 * 
+	 * @param other
+	 * @return true if similar enough
+	 */
+	public boolean similarTo(final CamCalibration other)
+	{
+		boolean samePoints = principalPoint.isCloseTo(other.principalPoint) &&
+				translation.isCloseTo(other.translation) &&
+				cameraPosition.isCloseTo(other.cameraPosition);
+		
+		boolean sameQuaternion = SumatraMath.isEqual(rotationQuaternion.getQ0(), other.rotationQuaternion.getQ0()) &&
+				SumatraMath.isEqual(rotationQuaternion.getQ1(), other.rotationQuaternion.getQ1()) &&
+				SumatraMath.isEqual(rotationQuaternion.getQ2(), other.rotationQuaternion.getQ2()) &&
+				SumatraMath.isEqual(rotationQuaternion.getQ3(), other.rotationQuaternion.getQ3());
+		
+		boolean sameParameters = SumatraMath.isEqual(focalLength, other.focalLength) &&
+				SumatraMath.isEqual(distortion, other.distortion) &&
+				(cameraId == other.cameraId);
+		
+		return samePoints && sameQuaternion && sameParameters;
+	}
+	
+	
 	@Override
 	public String toString()
 	{
@@ -99,13 +120,13 @@ public class CamCalibration implements IJsonString
 		builder.append(", distortion=");
 		builder.append(distortion);
 		builder.append(", q0=");
-		builder.append(rotationQuaternion.getQ3());
-		builder.append(", q1=");
-		builder.append(rotationQuaternion.getQ0());
-		builder.append(", q2=");
 		builder.append(rotationQuaternion.getQ1());
-		builder.append(", q3=");
+		builder.append(", q1=");
 		builder.append(rotationQuaternion.getQ2());
+		builder.append(", q2=");
+		builder.append(rotationQuaternion.getQ3());
+		builder.append(", q3=");
+		builder.append(rotationQuaternion.getQ0());
 		builder.append(", tx=");
 		builder.append(translation.x());
 		builder.append(", ty=");
@@ -131,10 +152,10 @@ public class CamCalibration implements IJsonString
 		top.put("principalPointX", principalPoint.x());
 		top.put("principalPointY", principalPoint.y());
 		top.put("distortion", distortion);
-		top.put("q0", rotationQuaternion.getQ3());
-		top.put("q1", rotationQuaternion.getQ0());
-		top.put("q2", rotationQuaternion.getQ1());
-		top.put("q3", rotationQuaternion.getQ2());
+		top.put("q0", rotationQuaternion.getQ1());
+		top.put("q1", rotationQuaternion.getQ2());
+		top.put("q2", rotationQuaternion.getQ3());
+		top.put("q3", rotationQuaternion.getQ0());
 		top.put("tx", translation.x());
 		top.put("ty", translation.y());
 		top.put("tz", translation.z());
@@ -278,7 +299,7 @@ public class CamCalibration implements IJsonString
 		}
 		
 		double a = distortion;
-		double b = (-9.0 * a * a * ru) + (a * Math.sqrt(a * (12.0 + (81.0 * a * ru * ru))));
+		double b = (-9.0 * a * a * ru) + (a * SumatraMath.sqrt(a * (12.0 + (81.0 * a * ru * ru))));
 		if (b < 0.0)
 		{
 			b = -Math.pow(b, 1.0 / 3.0);
@@ -386,36 +407,5 @@ public class CamCalibration implements IJsonString
 						{ 0, 0, 1 } });
 		
 		return k.multiply(h);
-	}
-	
-	
-	/**
-	 * Return an axes-aligned rectangle that reflects the inner viewport of a sensor with a given pixel size;
-	 * 
-	 * @param sensorPixelSize
-	 * @return
-	 */
-	public IRectangle getApproximatedViewport(final IVector2 sensorPixelSize)
-	{
-		List<IVector2> points = new ArrayList<>();
-		points.add(imageToField(Vector2.fromXY(sensorPixelSize.x() / 2, sensorPixelSize.y()), 150));
-		points.add(imageToField(Vector2.fromXY(sensorPixelSize.x() / 2, 0), 150));
-		points.add(imageToField(Vector2.fromXY(sensorPixelSize.x(), sensorPixelSize.y() / 2), 150));
-		points.add(imageToField(Vector2.fromXY(0, sensorPixelSize.y() / 2), 150));
-		
-		double minX = points.stream()
-				.mapToDouble(IVector2::x)
-				.min().orElse(0);
-		double maxX = points.stream()
-				.mapToDouble(IVector2::x)
-				.max().orElse(0);
-		double minY = points.stream()
-				.mapToDouble(IVector2::y)
-				.min().orElse(0);
-		double maxY = points.stream()
-				.mapToDouble(IVector2::y)
-				.max().orElse(0);
-		
-		return Rectangle.fromPoints(Vector2.fromXY(minX, minY), Vector2.fromXY(maxX, maxY));
 	}
 }

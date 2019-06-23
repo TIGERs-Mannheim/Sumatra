@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.tube;
@@ -18,7 +18,7 @@ import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -42,8 +42,8 @@ public class Tube implements ITube
 	@SuppressWarnings("unused")
 	private Tube()
 	{
-		startCenter = Vector2.zero();
-		endCenter = Vector2.zero();
+		startCenter = Vector2f.ZERO_VECTOR;
+		endCenter = Vector2f.ZERO_VECTOR;
 		radius = 1;
 	}
 	
@@ -151,6 +151,13 @@ public class Tube implements ITube
 	public IVector2 endCenter()
 	{
 		return endCenter;
+	}
+	
+	
+	@Override
+	public IVector2 center()
+	{
+		return Lines.segmentFromPoints(startCenter, endCenter).getCenter();
 	}
 	
 	

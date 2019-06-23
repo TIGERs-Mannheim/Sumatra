@@ -2,7 +2,7 @@
   ~ Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
   -->
 
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <artifactId>sumatra-skillsystem</artifactId>
@@ -10,11 +10,12 @@
     <parent>
         <groupId>edu.tigers.sumatra</groupId>
         <artifactId>sumatra-parent</artifactId>
-        <version>5.1-SNAPSHOT</version>
+        <version>6.0</version>
         <relativePath>../sumatra-parent/pom.xml</relativePath>
     </parent>
 
     <dependencies>
+
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
             <artifactId>common</artifactId>
@@ -41,14 +42,90 @@
         </dependency>
 
         <dependency>
-            <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>moduli-parameter-optimizer</artifactId>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <version>3.5.2</version>
+            <groupId>com.google.code.matlabcontrol</groupId>
+            <artifactId>matlabcontrol</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>common-math</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.tigers.moduli</groupId>
+            <artifactId>moduli</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-geometry</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-cam</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-referee</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>sumatra-pathfinder</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.g3force</groupId>
+            <artifactId>instanceables</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sleepycat</groupId>
+            <artifactId>je</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>sumatra-model</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.g3force</groupId>
+            <artifactId>configurable</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-vision</artifactId>
+        </dependency>
+
     </dependencies>
 </project>

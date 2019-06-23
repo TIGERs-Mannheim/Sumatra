@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder.obstacles;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics2D;
 
 import com.sleepycat.persist.model.Persistent;
 
@@ -23,10 +24,10 @@ import edu.tigers.sumatra.trajectory.TrajectoryWithTime;
 @Persistent
 public class TrajAwareRobotObstacle implements IObstacle
 {
-	private final TrajectoryWithTime<IVector3>	traj;
-	private final double									radius;
-	private final long									tCur;
-	private Color											color	= Color.red;
+	private final TrajectoryWithTime<IVector3> traj;
+	private final double radius;
+	private final long tCur;
+	private Color color = Color.red;
 	
 	
 	@SuppressWarnings("unused")

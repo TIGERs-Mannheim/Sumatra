@@ -1,16 +1,15 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.line;
 
 import java.util.Optional;
 
-import org.apache.log4j.Logger;
-
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.VectorMath;
 
 
@@ -23,7 +22,6 @@ import edu.tigers.sumatra.math.vector.VectorMath;
  */
 public final class LineMath
 {
-	private static final Logger	log		= Logger.getLogger(LineMath.class.getName());
 	private static final double ACCURACY = SumatraMath.getEqualTol();
 	
 	
@@ -411,6 +409,7 @@ public final class LineMath
 	 * @param supportVector2 second support vector
 	 * @param directionVector2 second direction vector
 	 * @return the lambda for the first line
+	 * @throws IllegalStateException if both lines are parallel
 	 */
 	private static double getLineIntersectionLambda(
 			final IVector2 supportVector1,
@@ -498,7 +497,7 @@ public final class LineMath
 	 */
 	private static double getLeadPointLambda(final IVector2 point, ILine line)
 	{
-		final IVector2 ortho = Vector2.fromXY(line.directionVector().y(), -line.directionVector().x());
+		final IVector2 ortho = Vector2f.fromXY(line.directionVector().y(), -line.directionVector().x());
 		if (line.directionVector().isParallelTo(ortho))
 		{
 			return 0;
@@ -562,36 +561,8 @@ public final class LineMath
 	 * @param stepSize distance
 	 * @return
 	 */
-	public static Vector2 stepAlongLine(final IVector2 start, final IVector2 end, final double stepSize)
+	public static IVector2 stepAlongLine(final IVector2 start, final IVector2 end, final double stepSize)
 	{
-		final Vector2 result = Vector2.zero();
-		
-		final double distanceSqr = VectorMath.distancePPSqr(start, end);
-		if (distanceSqr < 1e-10)
-		{
-			result.setX(end.x());
-			result.setY(end.y());
-			return result;
-		}
-		
-		final double distance = Math.sqrt(distanceSqr);
-		final double coefficient = stepSize / distance;
-		
-		final double xDistance = end.x() - start.x();
-		final double yDistance = end.y() - start.y();
-		
-		
-		result.setX((xDistance * coefficient) + start.x());
-		result.setY((yDistance * coefficient) + start.y());
-		
-		if (Double.isNaN(result.x()) || Double.isNaN(result.y()))
-		{
-			log.fatal("stepAlongLine: result contains NaNs. Very dangerous!!");
-			final String seperator = " / ";
-			log.fatal(start.toString() + seperator + end.toString() + seperator + distance + seperator + coefficient
-					+ seperator + xDistance + seperator + yDistance + seperator + result.toString());
-		}
-		
-		return result;
+		return edu.tigers.sumatra.math.line.v2.LineMath.stepAlongLine(start, end, stepSize);
 	}
 }

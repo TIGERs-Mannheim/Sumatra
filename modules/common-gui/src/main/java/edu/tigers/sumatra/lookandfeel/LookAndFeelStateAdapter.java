@@ -1,17 +1,12 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 25.08.2010
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.lookandfeel;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.UIManager;
 
@@ -26,25 +21,16 @@ import javax.swing.UIManager;
  */
 public final class LookAndFeelStateAdapter implements PropertyChangeListener
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
 	private static LookAndFeelStateAdapter instance = null;
-	private final Set<ILookAndFeelStateObserver> observers = new HashSet<>();
+	private final List<ILookAndFeelStateObserver> observers = new CopyOnWriteArrayList<>();
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	private LookAndFeelStateAdapter()
 	{
 		UIManager.addPropertyChangeListener(this);
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * @return
 	 */
@@ -63,10 +49,7 @@ public final class LookAndFeelStateAdapter implements PropertyChangeListener
 	 */
 	public void addObserver(final ILookAndFeelStateObserver observer)
 	{
-		synchronized (observers)
-		{
-			observers.add(observer);
-		}
+		observers.add(observer);
 	}
 	
 	
@@ -75,21 +58,15 @@ public final class LookAndFeelStateAdapter implements PropertyChangeListener
 	 */
 	public void removeObserver(final ILookAndFeelStateObserver observer)
 	{
-		synchronized (observers)
-		{
-			observers.remove(observer);
-		}
+		observers.remove(observer);
 	}
 	
 	
 	private void notifyLookAndFeelChanged()
 	{
-		synchronized (observers)
+		for (final ILookAndFeelStateObserver observer : observers)
 		{
-			for (final ILookAndFeelStateObserver observer : observers)
-			{
-				observer.onLookAndFeelChanged();
-			}
+			observer.onLookAndFeelChanged();
 		}
 	}
 	

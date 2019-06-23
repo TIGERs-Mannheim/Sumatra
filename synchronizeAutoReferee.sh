@@ -1,12 +1,10 @@
 #!/bin/bash
 
-PROJECTS="autoreferee-gui autoreferee-main common common-bot
-          common-clock common-gui common-gui-config common-model
-	  common-math
-	  moduli-autoreferee moduli-cam moduli-referee
-	  moduli-timer moduli-wp sumatra-gui-log
-	  sumatra-gui-visualizer moduli-vision moduli-geometry
-	  moduli-record sumatra-parent moduli-botmanager moduli-bot-params moduli-cam-logfile moduli-gamelog"
+PROJECTS="autoreferee-gui autoreferee-main moduli-autoreferee
+          common common-bot common-gui common-gui-config common-math
+          sumatra-model sumatra-parent sumatra-snapshot
+          moduli-cam moduli-referee moduli-wp moduli-vision moduli-geometry moduli-record
+          sumatra-gui-log sumatra-gui-visualizer sumatra-gui-replay"
 
 EXEC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 

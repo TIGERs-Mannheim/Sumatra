@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.ball.collision;
@@ -21,9 +21,7 @@ import edu.tigers.sumatra.wp.ball.dynamics.IState;
  */
 public class CollisionHandler
 {
-	private static final double BALL_DAMP_FACTOR = -0.5;
-	
-	private final List<ICollisionObject>	collisionObjects	= new ArrayList<>();
+	private final List<ICollisionObject> collisionObjects = new ArrayList<>();
 	
 	
 	/**
@@ -107,16 +105,16 @@ public class CollisionHandler
 	}
 	
 	
-	@SuppressWarnings("OptionalGetWithoutIsPresent")
 	private void reflect(final BallCollisionState colState)
 	{
+		ICollision collision = colState.getCollision().orElseThrow(IllegalStateException::new);
 		IVector2 curVel = colState.getVel().getXYVector();
-		IVector3 objectVel = colState.getCollision().get().getObjectVel();
-		IVector2 colNormal = colState.getCollision().get().getNormal();
-		IVector2 relativeVel = curVel.subtractNew(objectVel);
+		IVector3 objectVel = collision.getObjectVel();
+		IVector2 colNormal = collision.getNormal();
+		IVector2 relativeVel = curVel.subtractNew(objectVel.getXYVector());
 		
-		double dampFactor = BALL_DAMP_FACTOR;
-		if (colState.getCollision().get().isSticky())
+		double dampFactor = collision.getObject().getDampFactor();
+		if (collision.getObject().isSticky())
 		{
 			dampFactor = 1;
 		}
@@ -125,16 +123,16 @@ public class CollisionHandler
 	}
 	
 	
-	@SuppressWarnings("OptionalGetWithoutIsPresent")
 	private void moveOutside(final BallCollisionState colState)
 	{
-		IVector2 objectVel = colState.getCollision().get().getObjectVel().getXYVector();
-		IVector2 normal = colState.getCollision().get().getNormal();
-		boolean sticky = colState.getCollision().get().isSticky();
+		ICollision collision = colState.getCollision().orElseThrow(IllegalStateException::new);
+		IVector2 objectVel = collision.getObjectVel().getXYVector();
+		IVector2 normal = collision.getNormal();
+		boolean sticky = collision.getObject().isSticky();
 		
 		// move ball 1mm outside of obstacle
-		IVector2 newPos = colState.getCollision().get().getPos()
-				.addNew(colState.getCollision().get().getNormal().scaleToNew(sticky ? -1 : 1));
+		IVector2 newPos = collision.getPos()
+				.addNew(collision.getNormal().scaleToNew(sticky ? -1 : 1));
 		colState.setPos(Vector3.from2d(newPos, colState.getPos().z()));
 		
 		// set ball vel to object vel (e.g. robot pushes ball)
@@ -158,8 +156,6 @@ public class CollisionHandler
 		{
 			return ballVel;
 		}
-		double relDamp = Math.max(0, (angleNormalColl / AngleMath.PI_HALF) - 1);
-		double damp = relDamp * dampFactor;
 		double velInfAngle = ballVel.getAngle();
 		if (angleNormalColl > AngleMath.PI_HALF)
 		{
@@ -167,6 +163,6 @@ public class CollisionHandler
 		}
 		double velAngleDiff = AngleMath.difference(collisionNormal.getAngle(), velInfAngle);
 		return collisionNormal.turnNew(velAngleDiff).scaleTo(
-				ballVel.getLength2() * (1 - damp));
+				ballVel.getLength2() * (1 - dampFactor));
 	}
 }

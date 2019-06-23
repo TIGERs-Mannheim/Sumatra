@@ -12,8 +12,10 @@ import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
 import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
 import edu.tigers.sumatra.botmanager.serial.SerialData;
 import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
+import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -21,23 +23,26 @@ import edu.tigers.sumatra.math.vector.Vector2;
  */
 public class BotSkillGlobalPosition extends AMoveBotSkill
 {
+	private static final int UNUSED_PRIMARY_DIRECTION = -128;
+	
 	@SerialData(type = ESerialDataType.INT16)
-	private final int[]					pos						= new int[3];
+	private final int[] pos = new int[3];
 	
 	@SerialData(type = ESerialDataType.UINT8)
-	private int								velMax					= 0;
+	private int velMax = 0;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int								velMaxW					= 0;
+	private int velMaxW = 0;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int								accMax					= 0;
+	private int accMax = 0;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int								accMaxW					= 0;
+	private int accMaxW = 0;
 	
 	@SerialData(type = ESerialDataType.EMBEDDED)
-	private KickerDribblerCommands	kickerDribbler			= new KickerDribblerCommands();
+	private KickerDribblerCommands kickerDribbler = new KickerDribblerCommands();
 	
-	@SerialData(type = ESerialDataType.UINT8)
-	private int								dataAcqusitionMode	= 0;
+	/** 360°/255 */
+	@SerialData(type = ESerialDataType.INT8)
+	private int primaryDirection = UNUSED_PRIMARY_DIRECTION;
 	
 	
 	/**
@@ -69,6 +74,7 @@ public class BotSkillGlobalPosition extends AMoveBotSkill
 		setVelMaxW(mc.getVelMaxW());
 		setAccMax(mc.getAccMax());
 		setAccMaxW(mc.getAccMaxW());
+		setPrimaryDirection(mc.getPrimaryDirection());
 	}
 	
 	
@@ -81,9 +87,11 @@ public class BotSkillGlobalPosition extends AMoveBotSkill
 	 * @param velMaxW
 	 * @param accMax
 	 * @param accMaxW
+	 * @param primaryDirection
 	 */
 	public BotSkillGlobalPosition(final IVector2 xy, final double orientation,
-			final double velMax, final double velMaxW, final double accMax, final double accMaxW)
+			final double velMax, final double velMaxW, final double accMax, final double accMaxW,
+			final IVector2 primaryDirection)
 	{
 		this();
 		
@@ -96,6 +104,7 @@ public class BotSkillGlobalPosition extends AMoveBotSkill
 		setVelMaxW(velMaxW);
 		setAccMax(accMax);
 		setAccMaxW(accMaxW);
+		setPrimaryDirection(primaryDirection);
 	}
 	
 	
@@ -241,21 +250,40 @@ public class BotSkillGlobalPosition extends AMoveBotSkill
 	
 	
 	/**
-	 * @return the dataAcqusitionMode
+	 * @param direction
 	 */
-	@Override
-	public EDataAcquisitionMode getDataAcquisitionMode()
+	public void setPrimaryDirection(final IVector2 direction)
 	{
-		return EDataAcquisitionMode.getModeConstant(dataAcqusitionMode);
+		if (direction.isZeroVector())
+		{
+			primaryDirection = UNUSED_PRIMARY_DIRECTION;
+		} else
+		{
+			setPrimaryDirection(direction.getAngle());
+		}
 	}
 	
 	
 	/**
-	 * @param dataAcqusitionMode the dataAcqusitionMode to set
+	 * @param angle
 	 */
-	@Override
-	public void setDataAcquisitionMode(final EDataAcquisitionMode dataAcqusitionMode)
+	public void setPrimaryDirection(final double angle)
 	{
-		this.dataAcqusitionMode = dataAcqusitionMode.getId();
+		primaryDirection = (int) ((AngleMath.normalizeAngle(angle) * 127.0) / Math.PI);
+	}
+	
+	
+	/**
+	 * @return primary move direction
+	 */
+	public IVector2 getPrimaryDirection()
+	{
+		if (primaryDirection == UNUSED_PRIMARY_DIRECTION)
+		{
+			return Vector2f.ZERO_VECTOR;
+		}
+		
+		double angle = (primaryDirection / 127.0) * Math.PI;
+		return Vector2.fromAngle(angle);
 	}
 }

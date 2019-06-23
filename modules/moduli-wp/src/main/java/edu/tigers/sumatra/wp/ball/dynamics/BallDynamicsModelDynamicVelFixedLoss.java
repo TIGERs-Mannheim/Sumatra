@@ -5,9 +5,10 @@
 package edu.tigers.sumatra.wp.ball.dynamics;
 
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.math.vector.AVector3;
+import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.Vector3f;
 import edu.tigers.sumatra.wp.ball.trajectory.ABallTrajectory;
 import edu.tigers.sumatra.wp.ball.trajectory.BallFactory;
 import edu.tigers.sumatra.wp.data.BallTrajectoryState;
@@ -35,9 +36,9 @@ public class BallDynamicsModelDynamicVelFixedLoss
 		double v = state.getVel().getLength2();
 		double velChange = obtainedImpulse.getLength();
 		
-		IVector3 pos = state.getPos();
-		IVector3 vel = state.getVel();
-		IVector3 acc = state.getAcc();
+		IVector pos = state.getPos();
+		IVector vel = state.getVel();
+		IVector acc = state.getAcc();
 		
 		if (velChange > 0)
 		{
@@ -64,11 +65,11 @@ public class BallDynamicsModelDynamicVelFixedLoss
 		}
 		
 		if (!Double.isFinite(state.getPos().x()) || !Double.isFinite(state.getPos().y())
-				|| !Double.isFinite(state.getPos().z()))
+				|| !Double.isFinite(state.getPos().getXYZVector().z()))
 		{
-			pos = AVector3.ZERO_VECTOR;
-			vel = AVector3.ZERO_VECTOR;
-			acc = AVector3.ZERO_VECTOR;
+			pos = Vector3f.ZERO_VECTOR;
+			vel = Vector3f.ZERO_VECTOR;
+			acc = Vector3f.ZERO_VECTOR;
 		}
 		
 		BallTrajectoryState bs = BallTrajectoryState.aBallState()
@@ -77,6 +78,7 @@ public class BallDynamicsModelDynamicVelFixedLoss
 				.withAcc(acc)
 				.withChipped(chipped)
 				.withVSwitchToRoll(vSwitch)
+				.withSpin(state.getSpin())
 				.build();
 		
 		ABallTrajectory traj = BallFactory.createTrajectory(bs);

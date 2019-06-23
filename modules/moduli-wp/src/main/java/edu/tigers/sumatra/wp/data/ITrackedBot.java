@@ -1,20 +1,25 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.data;
 
+import java.util.Optional;
+
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.bot.RobotInfo;
+import edu.tigers.sumatra.bot.State;
+import edu.tigers.sumatra.data.collector.IExportable;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.math.botshape.IBotShape;
 import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public interface ITrackedBot extends ITrackedObject
+public interface ITrackedBot extends ITrackedObject, IExportable
 {
 	@Override
 	ITrackedBot mirrored();
@@ -48,15 +53,28 @@ public interface ITrackedBot extends ITrackedObject
 	
 	
 	/**
-	 * @return the visible
+	 * @param horizon the time horizon in seconds
+	 * @return true, if the ball had ball contact within given horizon
 	 */
-	boolean isVisible();
+	boolean hadBallContact(double horizon);
+	
+	
+	/**
+	 * @return the last time when ball contact was reported
+	 */
+	long getLastBallContact();
 	
 	
 	/**
 	 * @return
 	 */
 	double getCenter2DribblerDist();
+	
+	
+	/**
+	 * @return the bot shape of this bot
+	 */
+	IBotShape getBotShape();
 	
 	
 	/**
@@ -95,12 +113,6 @@ public interface ITrackedBot extends ITrackedObject
 	/**
 	 * @return
 	 */
-	double getaAcc();
-	
-	
-	/**
-	 * @return
-	 */
 	RobotInfo getRobotInfo();
 	
 	
@@ -116,4 +128,21 @@ public interface ITrackedBot extends ITrackedObject
 	 */
 	MoveConstraints getMoveConstraints();
 	
+	
+	/**
+	 * @return the current robot state
+	 */
+	State getBotState();
+	
+	
+	/**
+	 * @return the current robot state as reported by the vision filter
+	 */
+	Optional<State> getFilteredState();
+	
+	
+	/**
+	 * @return the buffered state of the current trajectory, synchronized with the filtered state
+	 */
+	Optional<State> getBufferedTrajState();
 }

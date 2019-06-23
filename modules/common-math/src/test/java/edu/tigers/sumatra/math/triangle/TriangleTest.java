@@ -4,12 +4,16 @@
 
 package edu.tigers.sumatra.math.triangle;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.List;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import edu.tigers.sumatra.math.circle.CircleMath;
+import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 
@@ -19,6 +23,37 @@ import edu.tigers.sumatra.math.vector.Vector2;
  */
 public class TriangleTest
 {
+
+	/**
+	 * Test method for
+	 * {@link Triangle#lineIntersections(ILine)}
+	 */
+	@Test
+	public void testLineIntersections()
+	{
+		Vector2 a = Vector2.fromXY(0.0, 0.0);
+		Vector2 b = Vector2.fromXY(1000.0, 0.0);
+		Vector2 c = Vector2.fromXY(0.0, 1000.0);
+		Triangle triangle = Triangle.fromCorners(a, b, c);
+		
+		// Intersecting lines
+		ILine line1 = edu.tigers.sumatra.math.line.Line.fromPoints(Vector2.fromXY(1, 1), Vector2.fromXY(2, 2));
+		assertThat(triangle.lineIntersections(line1)).hasSize(3);
+		
+		// Intersecting lines
+		ILine line4 = edu.tigers.sumatra.math.line.Line.fromPoints(Vector2.fromXY(0, 500), Vector2.fromXY(500, 500));
+		assertThat(triangle.lineIntersections(line4)).hasSize(2);
+		
+		// Non Intersecting lines
+		ILine line2 = edu.tigers.sumatra.math.line.Line.fromPoints(Vector2.fromXY(-1, 0), Vector2.fromXY(-1, 0));
+		assertThat(triangle.lineIntersections(line2)).isEmpty();
+		
+		ILine line3 = edu.tigers.sumatra.math.line.Line.fromPoints(Vector2.fromXY(0, -1), Vector2.fromXY(1, -1));
+		assertThat(triangle.lineIntersections(line3)).isEmpty();
+		
+		
+	}
+	
 	
 	/**
 	 * Test method for
@@ -33,21 +68,31 @@ public class TriangleTest
 		Vector2 c = Vector2.fromXY(0.0, 1000.0);
 		
 		Triangle triangle = Triangle.fromCorners(a, b, c);
+
+		ILineSegment abSegment = Lines.segmentFromPoints(a,b);
+		IVector2 ab = abSegment.stepAlongLine(abSegment.getLength()/2.);
+		ILineSegment bcSegment = Lines.segmentFromPoints(a,b);
+		IVector2 bc = bcSegment.stepAlongLine(bcSegment.getLength()/2.);
+		ILineSegment acSegment = Lines.segmentFromPoints(a,b);
+		IVector2 ac = acSegment.stepAlongLine(acSegment.getLength()/2.);
 		
 		testCornersWithMargin(triangle, margin);
 		
 		// Testing Corners here
-		Assert.assertTrue(triangle.isPointInShape(a));
-		Assert.assertTrue(triangle.isPointInShape(b));
-		Assert.assertTrue(triangle.isPointInShape(c));
+		assertThat(triangle.isPointInShape(a)).isTrue();
+		assertThat(triangle.isPointInShape(b)).isTrue();
+		assertThat(triangle.isPointInShape(c)).isTrue();
+		assertThat(triangle.isPointInShape(ab)).isTrue();
+		assertThat(triangle.isPointInShape(bc)).isTrue();
+		assertThat(triangle.isPointInShape(ac)).isTrue();
 		
-		Assert.assertTrue(triangle.isPointInShape(a, margin));
-		Assert.assertTrue(triangle.isPointInShape(b, margin));
-		Assert.assertTrue(triangle.isPointInShape(c, margin));
+		assertThat(triangle.isPointInShape(a, margin)).isTrue();
+		assertThat(triangle.isPointInShape(b, margin)).isTrue();
+		assertThat(triangle.isPointInShape(c, margin)).isTrue();
 		
-		Assert.assertFalse(triangle.isPointInShape(a, -margin));
-		Assert.assertFalse(triangle.isPointInShape(b, -margin));
-		Assert.assertFalse(triangle.isPointInShape(c, -margin));
+		assertThat(triangle.isPointInShape(a, -margin)).isFalse();
+		assertThat(triangle.isPointInShape(b, -margin)).isFalse();
+		assertThat(triangle.isPointInShape(c, -margin)).isFalse();
 	}
 	
 	
@@ -70,7 +115,7 @@ public class TriangleTest
 			for (int j = 0; j < 100; j++)
 			{
 				IVector2 curPoint = CircleMath.stepAlongCircle(edgePoint, corner, Math.toRadians((j * 360.0d) / 100.0d));
-				Assert.assertTrue(triangle.isPointInShape(curPoint, margin));
+				assertThat(triangle.isPointInShape(curPoint, margin)).isTrue();
 			}
 		}
 	}

@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.vision.data;
 
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.IMirrorable;
 import edu.tigers.sumatra.math.vector.IVector2;
 
 
@@ -11,7 +12,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
  * 
  * @author AndreR <andre@ryll.cc> 
  */
-public interface IKickEvent
+public interface IKickEvent extends IMirrorable<IKickEvent>
 {
 	
 	/**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.vision.kick.detectors;
 
@@ -16,10 +16,10 @@ import org.apache.log4j.Logger;
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 
+import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.vision.data.CamBallInternal;
 import edu.tigers.sumatra.vision.data.FilteredVisionBot;
 import edu.tigers.sumatra.vision.data.KickEvent;
 import edu.tigers.sumatra.vision.tracker.BallTracker.MergedBall;
@@ -33,25 +33,25 @@ import edu.tigers.sumatra.vision.tracker.BallTracker.MergedBall;
 public class EarlyKickDetector implements IKickDetector
 {
 	@SuppressWarnings("unused")
-	private static final Logger						log								= Logger
+	private static final Logger log = Logger
 			.getLogger(EarlyKickDetector.class.getName());
 	
-	private Map<Integer, LinkedList<MergedBall>>	camBallMap						= new HashedMap<>();
+	private Map<Integer, LinkedList<MergedBall>> camBallMap = new HashedMap<>();
 	
-	@Configurable(comment = "Ball velocity threshold [mm/s]")
-	private static double								velocityThreshold				= 1500;
+	@Configurable(comment = "Ball velocity threshold [mm/s]", defValue = "1000.0")
+	private static double velocityThreshold = 1000.0;
 	
-	@Configurable(comment = "A bot must be within this radius [mm]")
-	private static double								nearBotLimit					= 500;
+	@Configurable(comment = "A bot must be within this radius [mm]", defValue = "500.0")
+	private static double nearBotLimit = 500.0;
 	
-	@Configurable(comment = "Fast ball direction change threshold [deg]")
-	private static double								directionThreshold			= 20;
+	@Configurable(comment = "Fast ball direction change threshold [deg]", defValue = "20.0")
+	private static double directionThreshold = 20.0;
 	
-	@Configurable(comment = "Ball velocity threshold for direction change [mm/s]")
-	private static double								velocityThresholdDirection	= 3000;
+	@Configurable(comment = "Ball velocity threshold for direction change [mm/s]", defValue = "2000.0")
+	private static double velocityThresholdDirection = 2000.0;
 	
-	@Configurable(comment = "Clear camera buffer if ball was not visible for some time [s]")
-	private static double								camClearTimeout				= 0.1;
+	@Configurable(comment = "Clear camera buffer if ball was not visible for some time [s]", defValue = "0.1")
+	private static double camClearTimeout = 0.1;
 	
 	static
 	{
@@ -62,7 +62,7 @@ public class EarlyKickDetector implements IKickDetector
 	@Override
 	public KickEvent addRecord(final MergedBall ball, final List<FilteredVisionBot> mergedRobots)
 	{
-		Optional<CamBallInternal> camBall = ball.getLatestCamBall();
+		Optional<CamBall> camBall = ball.getLatestCamBall();
 		if (!camBall.isPresent())
 		{
 			return null;
@@ -133,22 +133,21 @@ public class EarlyKickDetector implements IKickDetector
 	
 	private boolean detectKick(final List<MergedBall> balls)
 	{
-		MergedBall ball0 = balls.get(0);
-		MergedBall ball1 = balls.get(1);
-		MergedBall ball2 = balls.get(2);
+		CamBall ball0 = balls.get(0).getLatestCamBall().get();
+		CamBall ball1 = balls.get(1).getLatestCamBall().get();
+		CamBall ball2 = balls.get(2).getLatestCamBall().get();
 		
-		// compensate incorrect vision timestamps
-		double t0 = (ball0.getTimestamp() * 1e-9) + ball0.getLatestCamBall().get().getDtDeviation();
-		double t1 = (ball1.getTimestamp() * 1e-9) + ball1.getLatestCamBall().get().getDtDeviation();
-		double t2 = (ball2.getTimestamp() * 1e-9) + ball2.getLatestCamBall().get().getDtDeviation();
+		double t0 = (ball0.gettCapture() * 1e-9);
+		double t1 = (ball1.gettCapture() * 1e-9);
+		double t2 = (ball2.gettCapture() * 1e-9);
 		
 		double dt1 = t1 - t0;
 		double dt2 = t2 - t1;
 		
-		IVector2 vel1 = ball1.getLatestCamBall().get().getFlatPos()
-				.subtractNew(ball0.getLatestCamBall().get().getFlatPos()).multiply(1.0 / dt1);
-		IVector2 vel2 = ball2.getLatestCamBall().get().getFlatPos()
-				.subtractNew(ball1.getLatestCamBall().get().getFlatPos()).multiply(1.0 / dt2);
+		IVector2 vel1 = ball1.getFlatPos()
+				.subtractNew(ball0.getFlatPos()).multiply(1.0 / dt1);
+		IVector2 vel2 = ball2.getFlatPos()
+				.subtractNew(ball1.getFlatPos()).multiply(1.0 / dt2);
 		
 		if ((vel1.getLength2() > 10000) || (vel2.getLength2() > 10000))
 		{

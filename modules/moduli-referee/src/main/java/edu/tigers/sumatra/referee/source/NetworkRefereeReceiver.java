@@ -1,17 +1,14 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Mar 24, 2013
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.referee.source;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
+import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.util.Optional;
 
 import org.apache.log4j.Logger;
 
@@ -45,6 +42,8 @@ public class NetworkRefereeReceiver extends ARefereeMessageSource implements Run
 	
 	private Thread referee;
 	private IReceiver receiver;
+	
+	private InetAddress refBoxAddress = null;
 	
 	private boolean expectIOE = false;
 	
@@ -102,6 +101,7 @@ public class NetworkRefereeReceiver extends ARefereeMessageSource implements Run
 				break;
 			}
 			
+			refBoxAddress = packet.getAddress();
 			final ByteArrayInputStream packetIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
 			
 			SSL_Referee sslRefereeMsg;
@@ -173,5 +173,12 @@ public class NetworkRefereeReceiver extends ARefereeMessageSource implements Run
 	public void handleControlRequest(final SSL_RefereeRemoteControlRequest request)
 	{
 		// cannot handle that
+	}
+	
+	
+	@Override
+	public Optional<InetAddress> getRefBoxAddress()
+	{
+		return Optional.ofNullable(refBoxAddress);
 	}
 }

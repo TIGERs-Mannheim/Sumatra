@@ -1,0 +1,6 @@
+#
+# Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+#
+
+edu.tigers.sumatra.wp.util.TimeSeriesWpDataProvider
+edu.tigers.sumatra.wp.util.TimeSeriesVisionDataProvider

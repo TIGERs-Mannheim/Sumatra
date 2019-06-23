@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 31.03.2011
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.bots.communication.udp;
 
@@ -23,10 +18,6 @@ import edu.tigers.sumatra.botmanager.commands.ACommand;
  */
 public interface ITransmitterUDP
 {
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * @param cmd
 	 */
@@ -59,17 +50,8 @@ public interface ITransmitterUDP
 	void setDestination(InetAddress dstIp, int dstPort);
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * @return
 	 */
 	Statistics getStats();
-	
-	
-	/**
-	 * @param legacy
-	 */
-	void setLegacy(boolean legacy);
 }

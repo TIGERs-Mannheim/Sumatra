@@ -22,16 +22,17 @@ import edu.tigers.sumatra.export.INumberListable;
  */
 public enum ETeamColor implements INumberListable
 {
-	/** */
 	YELLOW(0),
-	/** */
 	BLUE(1),
-	/**  */
-	NEUTRAL(2),
-	/** */
-	UNINITIALIZED(3);
+	NEUTRAL(2);
 	
-	private final int	id;
+	private final int id;
+	
+	
+	ETeamColor(final int id)
+	{
+		this.id = id;
+	}
 	
 	
 	/**
@@ -40,12 +41,6 @@ public enum ETeamColor implements INumberListable
 	public final int getId()
 	{
 		return id;
-	}
-	
-	
-	private ETeamColor(final int id)
-	{
-		this.id = id;
 	}
 	
 	
@@ -59,15 +54,15 @@ public enum ETeamColor implements INumberListable
 		{
 			case YELLOW:
 				return BLUE;
-				
+			
 			case BLUE:
 				return YELLOW;
-				
+			
 			case NEUTRAL:
 				return NEUTRAL;
-				
+			
 			default:
-				return UNINITIALIZED;
+				throw new IllegalStateException();
 		}
 	}
 	
@@ -101,12 +96,11 @@ public enum ETeamColor implements INumberListable
 				return Color.BLUE;
 			case YELLOW:
 				return Color.YELLOW;
-			case UNINITIALIZED:
+			case NEUTRAL:
 				return Color.black;
 			default:
-				break;
+				throw new IllegalStateException();
 		}
-		throw new IllegalStateException();
 	}
 	
 	
@@ -118,7 +112,7 @@ public enum ETeamColor implements INumberListable
 	 */
 	public static boolean isNonNeutral(final ETeamColor color)
 	{
-		return (color != NEUTRAL) && (color != UNINITIALIZED);
+		return color != NEUTRAL;
 	}
 	
 	
@@ -137,7 +131,7 @@ public enum ETeamColor implements INumberListable
 	public List<Number> getNumberList()
 	{
 		List<Number> numbers = new ArrayList<>();
-		numbers.add(this == ETeamColor.BLUE ? 1 : this == ETeamColor.YELLOW ? 0 : -1);
+		numbers.add(this.getId());
 		return numbers;
 	}
 	
@@ -148,7 +142,8 @@ public enum ETeamColor implements INumberListable
 	 */
 	public static ETeamColor fromNumberList(final Number value)
 	{
-		return value.intValue() == 0 ? ETeamColor.YELLOW : value.intValue() == 1 ? ETeamColor.BLUE
-				: ETeamColor.UNINITIALIZED;
+		return value.intValue() == 0 ? ETeamColor.YELLOW
+				: value.intValue() == 1 ? ETeamColor.BLUE
+						: ETeamColor.NEUTRAL;
 	}
 }

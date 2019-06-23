@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botparams;
 
@@ -9,7 +9,6 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
 import com.fasterxml.jackson.core.util.DefaultIndenter;
@@ -19,8 +18,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 import edu.tigers.moduli.AModule;
-import edu.tigers.moduli.exceptions.InitModuleException;
-import edu.tigers.moduli.exceptions.StartModuleException;
 import edu.tigers.sumatra.bot.params.BotParams;
 import edu.tigers.sumatra.bot.params.IBotParams;
 import edu.tigers.sumatra.botparams.BotParamsDatabase.IBotParamsDatabaseObserver;
@@ -31,13 +28,8 @@ import edu.tigers.sumatra.botparams.BotParamsDatabase.IBotParamsDatabaseObserver
  * 
  * @author AndreR <andre@ryll.cc>
  */
-public class BotParamsManager extends AModule implements IBotParamsDatabaseObserver
+public class BotParamsManager extends AModule implements IBotParamsDatabaseObserver, BotParamsProvider
 {
-	/** */
-	public static final String MODULE_TYPE = "BotParams";
-	/** */
-	public static final String MODULE_ID = "botparams";
-	
 	private static final String DATABASE_FILE = "config/botParamsDatabase.json";
 	
 	private BotParamsDatabase database = new BotParamsDatabase();
@@ -48,17 +40,6 @@ public class BotParamsManager extends AModule implements IBotParamsDatabaseObser
 	private final List<IBotParamsManagerObserver> observers = new CopyOnWriteArrayList<>();
 	
 	
-	/**
-	 * Moduli constructor.
-	 * 
-	 * @param subnodeConfiguration
-	 */
-	public BotParamsManager(final SubnodeConfiguration subnodeConfiguration)
-	{
-		// not used
-	}
-	
-	
 	@Override
 	public void deinitModule()
 	{
@@ -67,14 +48,14 @@ public class BotParamsManager extends AModule implements IBotParamsDatabaseObser
 	
 	
 	@Override
-	public void initModule() throws InitModuleException
+	public void initModule()
 	{
 		loadDatabase();
 	}
 	
 	
 	@Override
-	public void startModule() throws StartModuleException
+	public void startModule()
 	{
 		// not used
 	}
@@ -98,13 +79,8 @@ public class BotParamsManager extends AModule implements IBotParamsDatabaseObser
 	}
 	
 	
-	/**
-	 * Get robot parameters for a specific label.
-	 * 
-	 * @param label
-	 * @return
-	 */
-	public IBotParams getBotParams(final EBotParamLabel label)
+	@Override
+	public IBotParams get(final EBotParamLabel label)
 	{
 		return database.getSelectedParams(label);
 	}
@@ -178,7 +154,7 @@ public class BotParamsManager extends AModule implements IBotParamsDatabaseObser
 	{
 		saveDatabase();
 		
-		notifyBotParamsUpdated(label, getBotParams(label));
+		notifyBotParamsUpdated(label, get(label));
 	}
 	
 	
@@ -213,7 +189,7 @@ public class BotParamsManager extends AModule implements IBotParamsDatabaseObser
 	 * BotParamsManager observer.
 	 */
 	@FunctionalInterface
-	public static interface IBotParamsManagerObserver
+	public interface IBotParamsManagerObserver
 	{
 		/**
 		 * Bot parameters of a specific label have changed.

@@ -1,29 +1,37 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.bot;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.bot.params.IBotMovementLimits;
+import edu.tigers.sumatra.data.collector.IExportable;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 @Persistent
-public class MoveConstraints
+public class MoveConstraints implements IExportable
 {
-	private double		velMax		= 0;
-	private double		accMax		= 0;
-	private double		jerkMax		= 0;
-	private double		velMaxW		= 0;
-	private double		accMaxW		= 0;
-	private double		jerkMaxW		= 0;
-	private double		velMaxFast	= 0;
-	private double		accMaxFast	= 0;
-	private boolean	fastMove		= false;
+	private double velMax = 0;
+	private double accMax = 0;
+	private double jerkMax = 0;
+	private double velMaxW = 0;
+	private double accMaxW = 0;
+	private double jerkMaxW = 0;
+	private double velMaxFast = 0;
+	private double accMaxFast = 0;
+	private boolean fastMove = false;
+	private IVector2 primaryDirection = Vector2f.ZERO_VECTOR;
 	
 	
 	/**
@@ -68,6 +76,7 @@ public class MoveConstraints
 		velMaxFast = o.velMaxFast;
 		accMaxFast = o.accMaxFast;
 		fastMove = o.fastMove;
+		primaryDirection = o.primaryDirection;
 	}
 	
 	
@@ -84,8 +93,10 @@ public class MoveConstraints
 		accMaxW = mergeDouble(accMaxW, o.accMaxW);
 		jerkMax = mergeDouble(jerkMax, o.jerkMax);
 		jerkMaxW = mergeDouble(jerkMaxW, o.jerkMaxW);
+		velMaxFast = mergeDouble(velMaxFast, o.velMaxFast);
 		accMaxFast = mergeDouble(accMaxFast, o.accMaxFast);
 		fastMove = o.fastMove;
+		primaryDirection = o.primaryDirection;
 	}
 	
 	
@@ -109,9 +120,38 @@ public class MoveConstraints
 				", velMaxW=" + velMaxW +
 				", accMaxW=" + accMaxW +
 				", jerkMaxW=" + jerkMaxW +
+				", velMaxFast=" + velMaxFast +
 				", accMaxFast=" + accMaxFast +
 				", fastMove=" + fastMove +
+				", primaryDirection=" + primaryDirection +
 				'}';
+	}
+	
+	
+	@Override
+	public List<Number> getNumberList()
+	{
+		List<Number> nbrs = new ArrayList<>();
+		nbrs.add(velMax);
+		nbrs.add(accMax);
+		nbrs.add(jerkMax);
+		nbrs.add(velMaxW);
+		nbrs.add(accMaxW);
+		nbrs.add(jerkMaxW);
+		nbrs.add(velMaxFast);
+		nbrs.add(accMaxFast);
+		nbrs.add(fastMove ? 1 : 0);
+		nbrs.add(primaryDirection.x());
+		nbrs.add(primaryDirection.y());
+		return nbrs;
+	}
+	
+	
+	@Override
+	public List<String> getHeaders()
+	{
+		return Arrays.asList("velMax", "accMax", "jerkMax", "velMaxW", "accMaxW", "jerkMaxW", "velMaxFast", "accMaxFast",
+				"fastMove", "primaryDirectionX", "primaryDirectionY");
 	}
 	
 	
@@ -120,6 +160,10 @@ public class MoveConstraints
 	 */
 	public double getVelMax()
 	{
+		if (fastMove)
+		{
+			return velMaxFast;
+		}
 		return velMax;
 	}
 	
@@ -129,6 +173,7 @@ public class MoveConstraints
 	 */
 	public void setVelMax(final double velMax)
 	{
+		assert velMax >= 0 : "vel: " + velMax;
 		this.velMax = velMax;
 	}
 	
@@ -147,6 +192,7 @@ public class MoveConstraints
 	 */
 	public void setVelMaxW(final double velMaxW)
 	{
+		assert velMaxW >= 0;
 		this.velMaxW = velMaxW;
 	}
 	
@@ -156,6 +202,10 @@ public class MoveConstraints
 	 */
 	public double getAccMax()
 	{
+		if (fastMove)
+		{
+			return accMaxFast;
+		}
 		return accMax;
 	}
 	
@@ -165,6 +215,7 @@ public class MoveConstraints
 	 */
 	public void setAccMax(final double accMax)
 	{
+		assert accMax >= 0;
 		this.accMax = accMax;
 	}
 	
@@ -183,6 +234,7 @@ public class MoveConstraints
 	 */
 	public void setAccMaxW(final double accMaxW)
 	{
+		assert accMaxW >= 0;
 		this.accMaxW = accMaxW;
 	}
 	
@@ -201,6 +253,7 @@ public class MoveConstraints
 	 */
 	public void setJerkMax(final double jerkMax)
 	{
+		assert jerkMax >= 0;
 		this.jerkMax = jerkMax;
 	}
 	
@@ -219,6 +272,7 @@ public class MoveConstraints
 	 */
 	public void setJerkMaxW(final double jerkMaxW)
 	{
+		assert jerkMaxW >= 0;
 		this.jerkMaxW = jerkMaxW;
 	}
 	
@@ -241,37 +295,20 @@ public class MoveConstraints
 	
 	
 	/**
-	 * @return the velMaxFast
+	 * @param primaryDirection
 	 */
-	public double getVelMaxFast()
+	public void setPrimaryDirection(final IVector2 primaryDirection)
 	{
-		return velMaxFast;
+		assert primaryDirection != null;
+		this.primaryDirection = primaryDirection;
 	}
 	
 	
 	/**
-	 * @param velMaxFast the velMaxFast to set
+	 * @return the primaryDirection
 	 */
-	public void setVelMaxFast(final double velMaxFast)
+	public IVector2 getPrimaryDirection()
 	{
-		this.velMaxFast = velMaxFast;
-	}
-	
-	
-	/**
-	 * @return the accMaxFast
-	 */
-	public double getAccMaxFast()
-	{
-		return accMaxFast;
-	}
-	
-	
-	/**
-	 * @param accMaxFast the accMaxFast to set
-	 */
-	public void setAccMaxFast(final double accMaxFast)
-	{
-		this.accMaxFast = accMaxFast;
+		return primaryDirection;
 	}
 }

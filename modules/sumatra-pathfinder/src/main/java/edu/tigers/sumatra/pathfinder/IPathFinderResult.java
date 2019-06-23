@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder;
@@ -17,6 +17,15 @@ import edu.tigers.sumatra.trajectory.ITrajectory;
 @FunctionalInterface
 public interface IPathFinderResult
 {
+	/**
+	 * @return the score for this result (0 is best)
+	 */
+	default double getPenaltyScore()
+	{
+		return 0;
+	}
+	
+	
 	/**
 	 * @return the resulting trajectory
 	 */
@@ -47,6 +56,25 @@ public interface IPathFinderResult
 	default double getFirstCollisionTime()
 	{
 		return Double.POSITIVE_INFINITY;
+	}
+	
+	
+	/**
+	 * @return the last time on the trajectory without a collision - this is the total trajectory time if there is no
+	 *         collision
+	 */
+	default double getLastNonCollisionTime()
+	{
+		return getTrajectory().getTotalTime() - getCollisionDurationBack();
+	}
+	
+	
+	/**
+	 * @return true, if the full path is colliding with obstacles
+	 */
+	default boolean isAlwaysColliding()
+	{
+		return getCollisionDurationFront() >= getLastNonCollisionTime();
 	}
 	
 	
@@ -91,6 +119,15 @@ public interface IPathFinderResult
 	 */
 	default Optional<IObstacle> getCollider()
 	{
-		return null;
+		return Optional.empty();
+	}
+	
+	
+	/**
+	 * @return true, if there is any collision on the path
+	 */
+	default boolean hasCollision()
+	{
+		return hasFrontCollision() || hasIntermediateCollision() || hasBackCollision();
 	}
 }

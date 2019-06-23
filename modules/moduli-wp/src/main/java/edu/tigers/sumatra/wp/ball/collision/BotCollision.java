@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.ball.collision;
@@ -9,7 +9,9 @@ import static java.lang.Math.abs;
 import java.util.Optional;
 
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
@@ -28,23 +30,25 @@ import edu.tigers.sumatra.wp.ball.trajectory.chipped.FixedLossPlusRollingConsult
  */
 public class BotCollision implements ICollisionObject
 {
-	private final CircleCollision				circleCollision;
-	private final SingleSidedLineCollision	lineCollision;
-	private final IVector3						pos;
-	private final IVector3						vel;
-	private final double							center2DribblerDist;
-	private final ILine							frontLine;
-	private final ITriangle						frontTriangle;
+	private final CircleCollision circleCollision;
+	private final SingleSidedLineCollision lineCollision;
+	private final IVector3 pos;
+	private final IVector3 vel;
+	private final double center2DribblerDist;
+	private final ILine frontLine;
+	private final ITriangle frontTriangle;
+	private final BotID botID;
 	
 	
 	/**
 	 * @param pos
 	 * @param vel
 	 * @param center2DribblerDist
+	 * @param botID
 	 */
-	public BotCollision(final IVector3 pos, final IVector3 vel, final double center2DribblerDist)
+	public BotCollision(final IVector3 pos, final IVector3 vel, final double center2DribblerDist, final BotID botID)
 	{
-		this(pos, vel, center2DribblerDist, false, 0, false);
+		this(pos, vel, center2DribblerDist, botID, false, 0, false);
 	}
 	
 	
@@ -52,21 +56,24 @@ public class BotCollision implements ICollisionObject
 	 * @param pos
 	 * @param vel
 	 * @param center2DribblerDist
+	 * @param botID
 	 * @param sticky
 	 * @param kickSpeed
 	 * @param chip
 	 */
-	public BotCollision(final IVector3 pos, final IVector3 vel, final double center2DribblerDist, final boolean sticky,
+	public BotCollision(final IVector3 pos, final IVector3 vel, final double center2DribblerDist, final BotID botID,
+			final boolean sticky,
 			final double kickSpeed, final boolean chip)
 	{
 		this.pos = pos;
 		this.vel = vel;
 		this.center2DribblerDist = center2DribblerDist;
+		this.botID = botID;
 		
 		circleCollision = new CircleCollision(Circle.createCircle(pos.getXYVector(), Geometry.getBotRadius()
 				+ Geometry.getBallRadius()), vel);
 		
-		double theta = Math.acos((center2DribblerDist + Geometry.getBallRadius())
+		double theta = SumatraMath.acos((center2DribblerDist + Geometry.getBallRadius())
 				/ (Geometry.getBotRadius() + Geometry.getBallRadius()));
 		IVector2 leftBotEdge = pos.getXYVector()
 				.addNew(Vector2.fromAngle(pos.z() - theta).scaleTo(Geometry.getBotRadius() + Geometry.getBallRadius()));
@@ -75,7 +82,7 @@ public class BotCollision implements ICollisionObject
 		frontLine = Line.fromPoints(leftBotEdge, rightBotEdge);
 		frontTriangle = Triangle.fromCorners(pos.getXYVector(), leftBotEdge, rightBotEdge);
 		
-		lineCollision = new SingleSidedLineCollision(frontLine, vel, Vector2.fromAngle(pos.z()));
+		lineCollision = new SingleSidedLineCollision(frontLine, vel, Vector2.fromAngle(pos.z()), botID);
 		
 		IVector3 impulse;
 		if (chip)
@@ -88,8 +95,14 @@ public class BotCollision implements ICollisionObject
 			impulse = Vector2.fromAngle(pos.z()).scaleTo(kickSpeed).getXYZVector();
 		}
 		
+		if (sticky)
+		{
+			lineCollision.setAcc(Vector2.fromAngle(pos.z()).scaleTo(-10));
+		}
+		
 		lineCollision.setImpulse(impulse);
 		lineCollision.setSticky(sticky);
+		lineCollision.setDampFactor(1);
 	}
 	
 	
@@ -102,8 +115,8 @@ public class BotCollision implements ICollisionObject
 	
 	private boolean isInFront(final IVector3 prePos)
 	{
-		double bot2PrePosAngle = prePos.getXYVector().subtractNew(pos).getAngle(0);
-		double theta = Math.acos((center2DribblerDist + Geometry.getBallRadius())
+		double bot2PrePosAngle = prePos.getXYVector().subtractNew(pos.getXYVector()).getAngle(0);
+		double theta = SumatraMath.acos((center2DribblerDist + Geometry.getBallRadius())
 				/ (Geometry.getBotRadius() + Geometry.getBallRadius()));
 		double angleDiff = abs(AngleMath.difference(pos.z(), bot2PrePosAngle));
 		return angleDiff < theta;
@@ -133,13 +146,7 @@ public class BotCollision implements ICollisionObject
 			{
 				IVector2 normal = Vector2.fromAngle(pos.z());
 				IVector2 colPos;
-				if (lineCollision.isSticky())
-				{
-					colPos = pos.getXYVector().addNew(normal.scaleToNew(center2DribblerDist + Geometry.getBallRadius()));
-				} else
-				{
-					colPos = frontLine.leadPointOf(prePos.getXYVector());
-				}
+				colPos = frontLine.leadPointOf(prePos.getXYVector());
 				Collision collision = new Collision(colPos, normal, this);
 				return Optional.of(collision);
 			}
@@ -153,5 +160,12 @@ public class BotCollision implements ICollisionObject
 	public IVector3 getImpulse(final IVector3 prePos)
 	{
 		return lineCollision.getImpulse(prePos);
+	}
+	
+	
+	@Override
+	public BotID getBotID()
+	{
+		return botID;
 	}
 }

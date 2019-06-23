@@ -74,7 +74,9 @@ public enum ESumatraViewType
 	/** */
 	BOT_PARAMS(48, "Bot Params"),
 	/** */
-	STATISTICS(49, "Match Stats");
+	STATISTICS(49, "Match Stats"),
+
+	OFFENSIVE_ACTION_TREES(50, "Offensive ActionTrees");
 	
 	private final int id;
 	private final String title;

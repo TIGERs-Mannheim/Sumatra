@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.vision;
 
@@ -8,23 +8,27 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.botmanager.basestation.IBaseStation;
-import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationCameraViewport;
 import edu.tigers.sumatra.cam.data.CamCalibration;
+import edu.tigers.sumatra.cam.data.CamDetectionFrame;
 import edu.tigers.sumatra.cam.data.CamGeometry;
+import edu.tigers.sumatra.cam.data.CamRobot;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableRectangle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.rectangle.Rectangle;
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -34,33 +38,31 @@ import edu.tigers.sumatra.math.vector.Vector2;
  */
 public class ViewportArchitect
 {
-	private final List<IBaseStation> baseStations;
-	private Map<Integer, CamCalibration> calibrations = new HashMap<>();
 	private Map<Integer, Viewport> viewports = new HashMap<>();
+	private final List<IViewportArchitect> observers = new CopyOnWriteArrayList<>();
+	private Viewport field;
 	
-	@Configurable(defValue = "200", comment = "Maximum camera overlap. [mm]")
-	private static double maxViewportOverlap = 200;
 	
-	@Configurable(defValue = "780,580", comment = "Pixel size of camera sensor")
-	private static IVector2 sensorPixelSize = Vector2.fromXY(780, 580);
+	@Configurable(defValue = "400.0", comment = "Maximum camera overlap. [mm]")
+	private static double maxViewportOverlap = 400.0;
 	
-	@Configurable(defValue = "false", comment = "Add debug shapes")
-	private static boolean debugShapes = false;
+	@Configurable(defValue = "DYNAMICALLY", comment = "Method to be used to construct viewports.")
+	private static EViewportConstruction viewportConstruction = EViewportConstruction.DYNAMICALLY;
+	
+	@Configurable(defValue = "50.0", comment = "Update rate for viewport changes to base station (per camera). [Hz]")
+	private static double reportRate = 50.0;
 	
 	static
 	{
 		ConfigRegistration.registerClass("vision", ViewportArchitect.class);
 	}
 	
-	
-	/**
-	 * Constructor.
-	 * 
-	 * @param baseStations
-	 */
-	public ViewportArchitect(final List<IBaseStation> baseStations)
+	private enum EViewportConstruction
 	{
-		this.baseStations = baseStations;
+		DYNAMICALLY,
+		FROM_FIELD_SIZE,
+		FROM_CAM_POS,
+		FROM_CAM_PROJECTION,
 	}
 	
 	
@@ -75,78 +77,297 @@ public class ViewportArchitect
 		// from a single source.
 		for (CamCalibration calib : geometry.getCalibrations().values())
 		{
-			calibrations.put(calib.getCameraId(), calib);
-		}
-		
-		viewports.clear();
-		for (CamCalibration calib : calibrations.values())
-		{
-			viewports.put(calib.getCameraId(), new Viewport(calib.getCameraPosition().getXYVector(),
-					calib.getApproximatedViewport(sensorPixelSize)));
-		}
-		
-		// adjust all viewports
-		Viewport field = new Viewport(AVector2.ZERO_VECTOR, geometry.getField().getFieldWithBoundary());
-		adjustViewports(field);
-		
-		// send viewports to BS
-		for (CamCalibration calib : calibrations.values())
-		{
-			IRectangle viewport = getViewport(calib.getCameraId());
-			if (viewport == null)
+			int camId = calib.getCameraId();
+			
+			// check if the camera calibration changed => someone playing around with vision
+			if (viewports.containsKey(camId) && !viewports.get(camId).calib.similarTo(calib))
 			{
-				continue;
+				viewports.remove(camId);
 			}
 			
-			BaseStationCameraViewport cmd = new BaseStationCameraViewport(calib.getCameraId(), viewport);
-			for (IBaseStation bs : baseStations)
+			viewports.putIfAbsent(camId, new Viewport(calib.getCameraPosition().getXYVector(),
+					calib.imageToField(calib.getPrincipalPoint(), 0), calib));
+		}
+		
+		field = new Viewport(Vector2f.ZERO_VECTOR, geometry.getField().getFieldWithBoundary());
+	}
+	
+	
+	/**
+	 * Update with new detection frame. Adjusts dynamic viewports.
+	 * 
+	 * @param frame
+	 */
+	public void newDetectionFrame(final CamDetectionFrame frame)
+	{
+		if (!viewports.containsKey(frame.getCameraId()))
+		{
+			return;
+		}
+		
+		Viewport viewport = viewports.get(frame.getCameraId());
+		
+		List<IVector2> allPositions = frame.getRobots().stream()
+				.map(CamRobot::getPos)
+				.collect(Collectors.toList());
+		
+		allPositions.add(viewport.dynamicMax);
+		allPositions.add(viewport.dynamicMin);
+		
+		double maxX = allPositions.stream().mapToDouble(IVector2::x).max().orElse(viewport.dynamicMax.x());
+		double maxY = allPositions.stream().mapToDouble(IVector2::y).max().orElse(viewport.dynamicMax.y());
+		double minX = allPositions.stream().mapToDouble(IVector2::x).min().orElse(viewport.dynamicMin.x());
+		double minY = allPositions.stream().mapToDouble(IVector2::y).min().orElse(viewport.dynamicMin.y());
+		
+		viewport.dynamicMax.setX(maxX);
+		viewport.dynamicMax.setY(maxY);
+		viewport.dynamicMin.setX(minX);
+		viewport.dynamicMin.setY(minY);
+		
+		if (field == null)
+		{
+			return;
+		}
+		
+		switch (viewportConstruction)
+		{
+			case DYNAMICALLY:
+				adjustViewportsDynamically(field);
+				break;
+			case FROM_CAM_POS:
+				adjustViewportsFromCameraPos(field);
+				break;
+			case FROM_CAM_PROJECTION:
+				adjustViewportsFromPrincipalProjection(field);
+				break;
+			case FROM_FIELD_SIZE:
+				adjustViewportsFromFieldSize(field);
+				break;
+			default:
+				break;
+		}
+		
+		for (Entry<Integer, Viewport> entry : viewports.entrySet())
+		{
+			double timeSinceLastReport = (frame.gettCapture() - entry.getValue().lastReportTimestamp) * 1e-9;
+			
+			if (timeSinceLastReport > (1.0 / reportRate))
 			{
-				bs.enqueueCommand(cmd);
+				notifyViewportUpdated(entry.getKey(), entry.getValue().getRectangle());
+				entry.getValue().lastReportTimestamp = frame.gettCapture();
 			}
 		}
 	}
 	
 	
-	private void adjustViewports(final Viewport field)
+	/**
+	 * @param observer
+	 */
+	public void addObserver(final IViewportArchitect observer)
+	{
+		observers.add(observer);
+	}
+	
+	
+	/**
+	 * @param observer
+	 */
+	public void removeObserver(final IViewportArchitect observer)
+	{
+		observers.remove(observer);
+	}
+	
+	
+	private void notifyViewportUpdated(final int cameraId, final IRectangle viewport)
+	{
+		observers.forEach(o -> o.onViewportUpdated(cameraId, viewport));
+	}
+	
+	
+	private void adjustViewportsFromFieldSize(final Viewport field)
+	{
+		if (viewports.isEmpty())
+		{
+			return;
+		}
+		
+		Viewport start = viewports.values().iterator().next();
+		
+		int numCamerasUp = countViewports(0, start, EDirection.UP);
+		int numCamerasDown = countViewports(0, start, EDirection.DOWN);
+		int numCamerasLeft = countViewports(0, start, EDirection.LEFT);
+		int numCamerasRight = countViewports(0, start, EDirection.RIGHT);
+		
+		int numCamsY = 1 + numCamerasUp + numCamerasDown;
+		int numCamsX = 1 + numCamerasLeft + numCamerasRight;
+		
+		IVector2 fieldSize = field.max.subtractNew(field.min);
+		IVector2 step = fieldSize.multiplyNew(Vector2.fromXY(1.0 / numCamsX, 1.0 / numCamsY));
+		
+		for (Viewport primary : viewports.values())
+		{
+			double column = Math.floor(primary.center.x() / step.x());
+			double row = Math.floor(primary.center.y() / step.y());
+			
+			primary.min.setX((column * step.x()) - (maxViewportOverlap / 2.0));
+			primary.min.setY((row * step.y()) - (maxViewportOverlap / 2.0));
+			primary.max.setX(((column + 1) * step.x()) + (maxViewportOverlap / 2.0));
+			primary.max.setY(((row + 1) * step.y()) + (maxViewportOverlap / 2.0));
+		}
+	}
+	
+	
+	private void adjustViewportsFromCameraPos(final Viewport field)
 	{
 		for (Viewport primary : viewports.values())
 		{
-			if (primary.min.x() < field.min.x())
-			{
-				primary.min.setX(field.min.x());
-			}
+			Optional<Viewport> up = nextViewport(primary, EDirection.UP);
+			Optional<Viewport> down = nextViewport(primary, EDirection.DOWN);
+			Optional<Viewport> left = nextViewport(primary, EDirection.LEFT);
+			Optional<Viewport> right = nextViewport(primary, EDirection.RIGHT);
 			
-			if (primary.max.x() > field.max.x())
+			if (up.isPresent())
 			{
-				primary.max.setX(field.max.x());
-			}
-			
-			if (primary.min.y() < field.min.y())
-			{
-				primary.min.setY(field.min.y());
-			}
-			
-			if (primary.max.y() > field.max.y())
+				double center = (primary.center.y() + up.get().center.y()) / 2.0;
+				
+				primary.max.setY(center + (maxViewportOverlap / 2.0));
+			} else
 			{
 				primary.max.setY(field.max.y());
 			}
 			
-			Optional<Viewport> right = nextViewportRight(primary);
-			if (right.isPresent())
+			if (down.isPresent())
 			{
-				double center = (primary.max.x() + right.get().min.x()) / 2.0;
+				double center = (primary.center.y() + down.get().center.y()) / 2.0;
 				
-				primary.max.setX(center + (maxViewportOverlap / 2.0));
-				right.get().min.setX(center - (maxViewportOverlap / 2.0));
+				primary.min.setY(center - (maxViewportOverlap / 2.0));
+			} else
+			{
+				primary.min.setY(field.min.y());
 			}
 			
-			Optional<Viewport> up = nextViewportUp(primary);
+			if (left.isPresent())
+			{
+				double center = (primary.center.x() + left.get().center.x()) / 2.0;
+				
+				primary.min.setX(center - (maxViewportOverlap / 2.0));
+			} else
+			{
+				primary.min.setX(field.min.x());
+			}
+			
+			if (right.isPresent())
+			{
+				double center = (primary.center.x() + right.get().center.x()) / 2.0;
+				
+				primary.max.setX(center + (maxViewportOverlap / 2.0));
+			} else
+			{
+				primary.max.setX(field.max.x());
+			}
+		}
+	}
+	
+	
+	private void adjustViewportsFromPrincipalProjection(final Viewport field)
+	{
+		for (Viewport primary : viewports.values())
+		{
+			Optional<Viewport> up = nextViewport(primary, EDirection.UP);
+			Optional<Viewport> down = nextViewport(primary, EDirection.DOWN);
+			Optional<Viewport> left = nextViewport(primary, EDirection.LEFT);
+			Optional<Viewport> right = nextViewport(primary, EDirection.RIGHT);
+			
 			if (up.isPresent())
 			{
-				double center = (primary.max.y() + up.get().min.y()) / 2.0;
+				double center = (primary.principalProjection.y() + up.get().principalProjection.y()) / 2.0;
 				
 				primary.max.setY(center + (maxViewportOverlap / 2.0));
-				up.get().min.setY(center - (maxViewportOverlap / 2.0));
+			} else
+			{
+				primary.max.setY(field.max.y());
+			}
+			
+			if (down.isPresent())
+			{
+				double center = (primary.principalProjection.y() + down.get().principalProjection.y()) / 2.0;
+				
+				primary.min.setY(center - (maxViewportOverlap / 2.0));
+			} else
+			{
+				primary.min.setY(field.min.y());
+			}
+			
+			if (left.isPresent())
+			{
+				double center = (primary.principalProjection.x() + left.get().principalProjection.x()) / 2.0;
+				
+				primary.min.setX(center - (maxViewportOverlap / 2.0));
+			} else
+			{
+				primary.min.setX(field.min.x());
+			}
+			
+			if (right.isPresent())
+			{
+				double center = (primary.principalProjection.x() + right.get().principalProjection.x()) / 2.0;
+				
+				primary.max.setX(center + (maxViewportOverlap / 2.0));
+			} else
+			{
+				primary.max.setX(field.max.x());
+			}
+		}
+	}
+	
+	
+	private void adjustViewportsDynamically(final Viewport field)
+	{
+		for (Viewport primary : viewports.values())
+		{
+			Optional<Viewport> up = nextViewport(primary, EDirection.UP);
+			Optional<Viewport> down = nextViewport(primary, EDirection.DOWN);
+			Optional<Viewport> left = nextViewport(primary, EDirection.LEFT);
+			Optional<Viewport> right = nextViewport(primary, EDirection.RIGHT);
+			
+			if (up.isPresent())
+			{
+				double center = (primary.dynamicMax.y() + up.get().dynamicMin.y()) / 2.0;
+				
+				primary.max.setY(center + (maxViewportOverlap / 2.0));
+			} else
+			{
+				primary.max.setY(field.max.y());
+			}
+			
+			if (down.isPresent())
+			{
+				double center = (primary.dynamicMin.y() + down.get().dynamicMax.y()) / 2.0;
+				
+				primary.min.setY(center - (maxViewportOverlap / 2.0));
+			} else
+			{
+				primary.min.setY(field.min.y());
+			}
+			
+			if (left.isPresent())
+			{
+				double center = (primary.dynamicMin.x() + left.get().dynamicMax.x()) / 2.0;
+				
+				primary.min.setX(center - (maxViewportOverlap / 2.0));
+			} else
+			{
+				primary.min.setX(field.min.x());
+			}
+			
+			if (right.isPresent())
+			{
+				double center = (primary.dynamicMax.x() + right.get().dynamicMin.x()) / 2.0;
+				
+				primary.max.setX(center + (maxViewportOverlap / 2.0));
+			} else
+			{
+				primary.max.setX(field.max.x());
 			}
 		}
 	}
@@ -169,18 +390,47 @@ public class ViewportArchitect
 		return viewports.get(camId).getRectangle();
 	}
 	
+	private enum EDirection
+	{
+		UP,
+		DOWN,
+		LEFT,
+		RIGHT
+	}
+	
 	private static class Viewport
 	{
-		private IVector2 center;
+		private final IVector2 center;
+		private final CamCalibration calib;
+		private final IVector2 principalProjection;
 		private Vector2 min;
 		private Vector2 max;
+		private Vector2 dynamicMin;
+		private Vector2 dynamicMax;
+		private long lastReportTimestamp;
+		
+		
+		private Viewport(final IVector2 center, final IVector2 principalProjection, final CamCalibration calib)
+		{
+			this.center = center;
+			this.calib = calib;
+			this.principalProjection = principalProjection;
+			min = Vector2.copy(center);
+			max = Vector2.copy(center);
+			dynamicMin = Vector2.copy(center);
+			dynamicMax = Vector2.copy(center);
+		}
 		
 		
 		private Viewport(final IVector2 center, final IRectangle rect)
 		{
 			this.center = center;
+			calib = null;
+			principalProjection = center;
 			min = Vector2.fromXY(rect.minX(), rect.minY());
 			max = Vector2.fromXY(rect.maxX(), rect.maxY());
+			dynamicMin = Vector2.copy(center);
+			dynamicMax = Vector2.copy(center);
 		}
 		
 		
@@ -188,30 +438,61 @@ public class ViewportArchitect
 		{
 			return Rectangle.fromPoints(min, max);
 		}
+		
+		
+		private IRectangle getDynamicRectangle()
+		{
+			return Rectangle.fromPoints(dynamicMin, dynamicMax);
+		}
 	}
 	
 	
-	private Optional<Viewport> nextViewportRight(final Viewport left)
+	private Optional<Viewport> nextViewport(final Viewport origin, final EDirection direction)
 	{
-		IVector2 start = left.center;
-		return viewports.values().stream()
-				.sorted((v1, v2) -> Double.compare(v1.center.x(), v2.center.x()))
-				.filter(v -> v.center.x() > (start.x() + 50.0))
-				.filter(v -> (v.center.y() < (start.y() + 1000.0))
-						&& (v.center.y() > (start.y() - 1000.0)))
-				.findFirst();
+		final IVector2 start = origin.center;
+		List<Viewport> closestFour = viewports.values().stream()
+				.filter(v -> !v.equals(origin))
+				.sorted((v1, v2) -> Double.compare(v1.center.distanceToSqr(start), v2.center.distanceToSqr(start)))
+				.limit(4)
+				.collect(Collectors.toList());
+		
+		switch (direction)
+		{
+			case UP:
+				return closestFour.stream()
+						.filter(v -> Vector2.fromPoints(start, v.center).angleToAbs(Vector2f.Y_AXIS)
+								.orElse(AngleMath.PI) < AngleMath.PI_QUART)
+						.findFirst();
+			case DOWN:
+				return closestFour.stream()
+						.filter(v -> Vector2.fromPoints(start, v.center).angleToAbs(Vector2f.Y_AXIS.multiplyNew(-1.0))
+								.orElse(AngleMath.PI) < AngleMath.PI_QUART)
+						.findFirst();
+			case RIGHT:
+				return closestFour.stream()
+						.filter(v -> Vector2.fromPoints(start, v.center).angleToAbs(Vector2f.X_AXIS)
+								.orElse(AngleMath.PI) < AngleMath.PI_QUART)
+						.findFirst();
+			case LEFT:
+				return closestFour.stream()
+						.filter(v -> Vector2.fromPoints(start, v.center).angleToAbs(Vector2f.X_AXIS.multiplyNew(-1.0))
+								.orElse(AngleMath.PI) < AngleMath.PI_QUART)
+						.findFirst();
+			default:
+				return Optional.empty();
+		}
 	}
 	
 	
-	private Optional<Viewport> nextViewportUp(final Viewport down)
+	private int countViewports(final int startValue, final Viewport origin, final EDirection direction)
 	{
-		IVector2 start = down.center;
-		return viewports.values().stream()
-				.sorted((v1, v2) -> Double.compare(v1.center.y(), v2.center.y()))
-				.filter(v -> v.center.y() > (start.y() + 50.0))
-				.filter(v -> (v.center.x() < (start.x() + 1000.0))
-						&& (v.center.x() > (start.x() - 1000.0)))
-				.findFirst();
+		Optional<Viewport> next = nextViewport(origin, direction);
+		if (next.isPresent())
+		{
+			return countViewports(startValue + 1, next.get(), direction);
+		}
+		
+		return startValue;
 	}
 	
 	
@@ -224,72 +505,28 @@ public class ViewportArchitect
 	{
 		List<IDrawableShape> shapes = new ArrayList<>();
 		
-		for (CamCalibration calib : calibrations.values())
-		{
-			shapes.addAll(getCalibrationShapes(calib));
-		}
-		
 		for (Viewport viewport : viewports.values())
 		{
 			DrawableRectangle drawRect = new DrawableRectangle(viewport.getRectangle(), Color.GREEN);
 			shapes.add(drawRect);
+			
+			DrawableRectangle drawRectDyn = new DrawableRectangle(viewport.getDynamicRectangle(), Color.GRAY);
+			shapes.add(drawRectDyn);
+			
+			DrawableCircle center = new DrawableCircle(viewport.center, 20, Color.GREEN);
+			shapes.add(center);
 		}
 		
 		return shapes;
 	}
 	
-	
-	private List<IDrawableShape> getCalibrationShapes(final CamCalibration calibration)
+	/**
+	 * ViewportArchitect Observer interface.
+	 * 
+	 * @author AndreR
+	 */
+	public interface IViewportArchitect
 	{
-		List<IDrawableShape> shapes = new ArrayList<>();
-		
-		// draw projected camera center
-		IVector2 pos = calibration.imageToField(Vector2.fromXY(sensorPixelSize.x() / 2, sensorPixelSize.y() / 2), 150);
-		shapes.add(new DrawableCircle(pos, 20, Color.CYAN));
-		
-		// draw inner camera rectangles (axes-aligned)
-		IRectangle rect = calibration.getApproximatedViewport(sensorPixelSize);
-		DrawableRectangle drawRect = new DrawableRectangle(rect, new Color(50 + (calibration.getCameraId() * 25), 0, 0));
-		shapes.add(drawRect);
-		
-		if (debugShapes)
-		{
-			// Draw camera viewport projected to ground with distortion
-			for (int x = 0; x <= sensorPixelSize.x(); x += 20)
-			{
-				pos = calibration.imageToField(Vector2.fromXY(x, 0), 0);
-				DrawableCircle c = new DrawableCircle(pos, 10, Color.CYAN);
-				shapes.add(c);
-				pos = calibration.imageToField(Vector2.fromXY(x, 580), 0);
-				c = new DrawableCircle(pos, 10, Color.CYAN);
-				shapes.add(c);
-				
-				pos = calibration.imageToField(Vector2.fromXY(x, 0), 150);
-				c = new DrawableCircle(pos, 5, Color.CYAN);
-				shapes.add(c);
-				pos = calibration.imageToField(Vector2.fromXY(x, 580), 150);
-				c = new DrawableCircle(pos, 5, Color.CYAN);
-				shapes.add(c);
-			}
-			
-			for (int y = 0; y <= sensorPixelSize.y(); y += 20)
-			{
-				pos = calibration.imageToField(Vector2.fromXY(0, y), 0);
-				DrawableCircle c = new DrawableCircle(pos, 10, Color.CYAN);
-				shapes.add(c);
-				pos = calibration.imageToField(Vector2.fromXY(780, y), 0);
-				c = new DrawableCircle(pos, 10, Color.CYAN);
-				shapes.add(c);
-				
-				pos = calibration.imageToField(Vector2.fromXY(0, y), 150);
-				c = new DrawableCircle(pos, 5, Color.CYAN);
-				shapes.add(c);
-				pos = calibration.imageToField(Vector2.fromXY(780, y), 150);
-				c = new DrawableCircle(pos, 5, Color.CYAN);
-				shapes.add(c);
-			}
-		}
-		
-		return shapes;
+		void onViewportUpdated(int cameraId, IRectangle viewport);
 	}
 }

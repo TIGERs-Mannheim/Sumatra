@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.athena;
@@ -13,9 +13,7 @@ import org.apache.log4j.Logger;
 
 import com.github.g3force.instanceables.InstanceableClass.NotCreateableException;
 
-import edu.tigers.sumatra.ai.data.PlayStrategy;
-import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
-import edu.tigers.sumatra.ai.lachesis.RoleFinderInfo;
+import edu.tigers.sumatra.ai.metis.MetisAiFrame;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 
@@ -26,11 +24,10 @@ import edu.tigers.sumatra.ai.pandora.plays.EPlay;
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public abstract class AAthenaAdapter implements IAthenaAdapterObserver
+public abstract class AAthenaAdapter
 {
-	private static final Logger	log			= Logger.getLogger(AAthenaAdapter.class.getName());
-	private final AIControl			aiControl	= new AIControl();
-	private final Object				sync			= new Object();
+	private static final Logger log = Logger.getLogger(AAthenaAdapter.class.getName());
+	private final AIControl aiControl = new AIControl();
 	
 	
 	/**
@@ -39,21 +36,10 @@ public abstract class AAthenaAdapter implements IAthenaAdapterObserver
 	 */
 	public void process(final MetisAiFrame metisAiFrame, final PlayStrategy.Builder playStrategyBuilder)
 	{
-		synchronized (sync)
-		{
-			// add all previous plays
-			playStrategyBuilder.getActivePlays().addAll(metisAiFrame.getPrevFrame().getPlayStrategy().getActivePlays());
-			
-			// Remove finished plays
-			if (!metisAiFrame.getPrevFrame().getPlayStrategy().getFinishedPlays().isEmpty())
-			{
-				playStrategyBuilder.getActivePlays().removeAll(
-						metisAiFrame.getPrevFrame().getPlayStrategy().getFinishedPlays());
-			}
-			
-			doProcess(metisAiFrame, playStrategyBuilder, aiControl);
-			aiControl.reset();
-		}
+		// add all previous plays
+		playStrategyBuilder.getActivePlays().addAll(metisAiFrame.getPrevFrame().getPlayStrategy().getActivePlays());
+		
+		doProcess(metisAiFrame, playStrategyBuilder, aiControl);
 	}
 	
 	
@@ -62,7 +48,7 @@ public abstract class AAthenaAdapter implements IAthenaAdapterObserver
 	 * @param playStrategyBuilder
 	 * @param aiControl
 	 */
-	public abstract void doProcess(MetisAiFrame metisAiFrame, PlayStrategy.Builder playStrategyBuilder,
+	protected abstract void doProcess(MetisAiFrame metisAiFrame, PlayStrategy.Builder playStrategyBuilder,
 			AIControl aiControl);
 	
 	
@@ -73,32 +59,43 @@ public abstract class AAthenaAdapter implements IAthenaAdapterObserver
 	 */
 	protected void clear(final PlayStrategy.Builder playStrategyBuilder)
 	{
-		for (APlay play : playStrategyBuilder.getActivePlays())
-		{
-			play.changeToFinished();
-		}
+		playStrategyBuilder.getActivePlays().forEach(APlay::changeToFinished);
 		playStrategyBuilder.getActivePlays().clear();
 	}
 	
 	
-	protected void updatePlays(final Map<EPlay, RoleFinderInfo> roleInfos, final List<APlay> activePlays,
-			final Set<EPlay> ignoredPlays)
+	protected void syncTargetPlaySet(final Set<EPlay> targetPlaySet, final List<APlay> activePlays)
 	{
-		// get a list of ePlays from aPlays
-		Map<EPlay, APlay> activePlaysMap = new EnumMap<>(EPlay.class);
-		for (APlay aPlay : activePlays)
+		Map<EPlay, APlay> activePlaysMap = mapToPlayMap(activePlays);
+		addNewPlays(targetPlaySet, activePlays, activePlaysMap);
+		removeVanishedPlays(targetPlaySet, activePlays, activePlaysMap);
+	}
+	
+	
+	private void removeVanishedPlays(final Set<EPlay> targetPlaySet, final List<APlay> activePlays,
+			final Map<EPlay, APlay> activePlaysMap)
+	{
+		for (APlay aPlay : activePlaysMap.values())
 		{
-			activePlaysMap.put(aPlay.getType(), aPlay);
+			if (!targetPlaySet.contains(aPlay.getType()))
+			{
+				aPlay.removeRoles(aPlay.getRoles().size(), null);
+				activePlays.remove(aPlay);
+			}
 		}
-		// add plays that are not in activePlays
-		for (EPlay ePlay : roleInfos.keySet())
+	}
+	
+	
+	private void addNewPlays(final Set<EPlay> targetPlaySet, final List<APlay> activePlays,
+			final Map<EPlay, APlay> activePlaysMap)
+	{
+		for (EPlay ePlay : targetPlaySet)
 		{
 			if (!activePlaysMap.keySet().contains(ePlay))
 			{
-				APlay newPlay;
 				try
 				{
-					newPlay = (APlay) ePlay.getInstanceableClass().newDefaultInstance();
+					APlay newPlay = (APlay) ePlay.getInstanceableClass().newDefaultInstance();
 					activePlays.add(newPlay);
 				} catch (NotCreateableException err)
 				{
@@ -106,28 +103,25 @@ public abstract class AAthenaAdapter implements IAthenaAdapterObserver
 				}
 			}
 		}
-		// remove plays that should not be active anymore
-		for (APlay aPlay : activePlaysMap.values())
+	}
+	
+	
+	private Map<EPlay, APlay> mapToPlayMap(final List<APlay> activePlays)
+	{
+		Map<EPlay, APlay> activePlaysMap = new EnumMap<>(EPlay.class);
+		for (APlay aPlay : activePlays)
 		{
-			if (roleInfos.containsKey(aPlay.getType())
-					|| ignoredPlays.contains(aPlay.getType()))
-			{
-				continue;
-			}
-			aPlay.removeRoles(aPlay.getRoles().size(), null);
-			activePlays.remove(aPlay);
+			activePlaysMap.put(aPlay.getType(), aPlay);
 		}
+		return activePlaysMap;
 	}
 	
 	
 	/**
 	 * @return the aiControl
 	 */
-	public final AIControl getAiControl()
+	public final synchronized AIControl getAiControl()
 	{
-		synchronized (sync)
-		{
-			return aiControl;
-		}
+		return aiControl;
 	}
 }

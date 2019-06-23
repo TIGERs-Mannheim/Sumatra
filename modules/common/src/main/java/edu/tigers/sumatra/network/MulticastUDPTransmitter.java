@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.network;
 
 
@@ -8,7 +12,6 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.NetworkInterface;
 import java.net.NoRouteToHostException;
-import java.net.SocketException;
 import java.net.UnknownHostException;
 
 import org.apache.log4j.Logger;
@@ -35,37 +38,30 @@ public class MulticastUDPTransmitter implements ITransmitter<byte[]>
 	
 	
 	/**
-	 * @see MulticastUDPTransmitter
-	 * @param localPort
 	 * @param targetAddr
 	 * @param targetPort
 	 */
-	public MulticastUDPTransmitter(final int localPort, final String targetAddr, final int targetPort)
+	public MulticastUDPTransmitter(final String targetAddr, final int targetPort)
 	{
-		this(localPort, targetAddr, targetPort, null);
+		this(targetAddr, targetPort, null);
 	}
 	
 	
 	/**
-	 * @see MulticastUDPTransmitter
-	 * @param localPort
 	 * @param targetAddr
 	 * @param targetPort
 	 * @param nif
 	 */
-	public MulticastUDPTransmitter(int localPort, final String targetAddr, final int targetPort,
+	public MulticastUDPTransmitter(final String targetAddr, final int targetPort,
 			final NetworkInterface nif)
 	{
 		this.targetPort = targetPort;
-		
-		int tempLocalPort = localPort;
-		
 		
 		while (socket == null)
 		{
 			try
 			{
-				socket = new MulticastSocket(tempLocalPort);
+				socket = new MulticastSocket();
 				socket.setReuseAddress(true);
 				
 				// Set nif
@@ -73,12 +69,6 @@ public class MulticastUDPTransmitter implements ITransmitter<byte[]>
 				{
 					socket.setNetworkInterface(nif);
 				}
-				
-			} catch (SocketException err)
-			{
-				log.info("Port " + tempLocalPort + " used, will try " + (tempLocalPort + 1) + " instead!", err);
-				
-				tempLocalPort++;
 			} catch (IOException err)
 			{
 				log.error("Error while creating MulticastSocket!", err);

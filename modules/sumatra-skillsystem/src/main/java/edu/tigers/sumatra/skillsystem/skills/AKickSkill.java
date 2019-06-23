@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -8,13 +8,11 @@ import java.awt.Color;
 
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.bot.EFeature;
-import edu.tigers.sumatra.bot.EFeatureState;
-import edu.tigers.sumatra.botmanager.commands.botskills.data.KickerDribblerCommands;
+import edu.tigers.sumatra.bot.State;
 import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.line.Line;
@@ -22,11 +20,10 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.ESkill;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
+import edu.tigers.sumatra.skillsystem.skills.util.BotVelDirectedToTargetChecker;
+import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.skillsystem.skills.util.MinMarginChargeValue;
-import edu.tigers.sumatra.skillsystem.skills.util.SkillUtil;
 import edu.tigers.sumatra.skillsystem.skills.util.TargetAngleReachedChecker;
-import edu.tigers.sumatra.wp.ball.prediction.IChipBallConsultant;
-import edu.tigers.sumatra.wp.ball.trajectory.BallFactory;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 
 
@@ -37,19 +34,17 @@ import edu.tigers.sumatra.wp.data.DynamicPosition;
  */
 public abstract class AKickSkill extends AMoveSkill
 {
-	protected final DynamicPosition receiver;
-	protected EKickMode kickMode = EKickMode.FIXED_SPEED;
-	protected EKickerDevice device = EKickerDevice.STRAIGHT;
-	protected double kickSpeed = 0;
+	protected final DynamicPosition target;
+	protected final KickParams kickParams;
+	
 	protected MinMarginChargeValue minMarginChargeValue;
-	private double passEndVel = 3.5;
-	private double minPassTime = 0;
 	private TargetAngleReachedChecker targetAngleReachedChecker;
+	private final BotVelDirectedToTargetChecker botVelDirectedToTargetChecker = new BotVelDirectedToTargetChecker();
 	
 	private boolean readyForKick = true;
 	
 	@Configurable(defValue = "true")
-	private boolean respectSignForOrientation = true;
+	private static boolean respectSignForOrientation = true;
 	
 	@Configurable(defValue = "50", comment = "Bot will look towards ball when nearer than this to ball to ensure that the ball is not pushed away")
 	private static double ball2BotOffsetForEarlyTargetOrientation = 50;
@@ -70,17 +65,25 @@ public abstract class AKickSkill extends AMoveSkill
 	private static boolean adaptOrientationToBotVel = false;
 	
 	
-	AKickSkill(final ESkill skillName, final DynamicPosition receiver)
+	/**
+	 * UI constructor
+	 * 
+	 * @param skillName
+	 * @param target
+	 * @param device
+	 * @param kickSpeed
+	 */
+	AKickSkill(final ESkill skillName, final DynamicPosition target, final EKickerDevice device, final double kickSpeed)
+	{
+		this(skillName, target, KickParams.of(device, kickSpeed));
+	}
+	
+	
+	AKickSkill(final ESkill skillName, final DynamicPosition target, final KickParams kickParams)
 	{
 		super(skillName);
-		this.receiver = receiver;
-		if (receiver.getTrackedId().isBot())
-		{
-			setKickMode(EKickMode.PASS);
-		} else
-		{
-			setKickMode(EKickMode.MAX);
-		}
+		this.target = target;
+		this.kickParams = kickParams;
 		targetAngleReachedChecker = new TargetAngleReachedChecker(roughAngleTolerance, maxTimeTargetAngleReached);
 	}
 	
@@ -90,26 +93,17 @@ public abstract class AKickSkill extends AMoveSkill
 	{
 		super.beforeStateUpdate();
 		targetAngleReachedChecker.setRespectSign(respectSignForOrientation);
-		receiver.update(getWorldFrame());
+		targetAngleReachedChecker.setOuterAngleDiffTolerance(roughAngleTolerance + target.getPassRange() / 2);
+		target.update(getWorldFrame());
 		drawShapes();
 	}
 	
 	
-	@Override
-	protected final void updateKickerDribbler(final KickerDribblerCommands kickerDribblerOutput)
+	protected double adaptKickSpeed(final double kickSpeed)
 	{
-		super.updateKickerDribbler(kickerDribblerOutput);
-		KickerParams kickerParams = calcKickerParams();
-		updateKickerParams(kickerParams);
-		double speed = Math.max(0, Math.min(8, kickerParams.getSpeed()));
-		kickerDribblerOutput.setKick(speed, kickerParams.getDevice(), kickerParams.getMode());
-		kickerDribblerOutput.setDribblerSpeed(kickerParams.getDribbleSpeed());
-	}
-	
-	
-	private double calcKickSpeed()
-	{
-		return Math.max(0, Math.min(8, calcKickerParams().getSpeed()));
+		IVector2 targetVel = target.subtractNew(getTBot().getBotKickerPos()).scaleTo(kickSpeed);
+		double adaptedKickSpeed = targetVel.subtractNew(getBall().getVel()).getLength2();
+		return Math.max(0, Math.min(RuleConstraints.getMaxBallSpeed(), adaptedKickSpeed));
 	}
 	
 	
@@ -128,19 +122,27 @@ public abstract class AKickSkill extends AMoveSkill
 	
 	protected boolean isReadyAndFocussed()
 	{
-		return isReadyForKick() && isOrientationReached();
+		double targetOrientation = target.subtractNew(getBall().getPos()).getAngle(getAngle());
+		return isReadyForKick()
+				&& isOrientationReached(targetOrientation)
+				&& botVelDirectedToTargetChecker.check(targetOrientation, getVel());
 	}
 	
 	
-	private boolean isOrientationReached()
+	private boolean isOrientationReached(double targetOrientation)
 	{
-		double targetOrientation = receiver.subtractNew(getBall().getPos()).getAngle(getAngle());
-		targetAngleReachedChecker.update(targetOrientation, getAngle(), getWorldFrame().getTimestamp());
+		targetAngleReachedChecker.update(targetOrientation, getOrientationFromFilter(), getWorldFrame().getTimestamp());
 		return targetAngleReachedChecker.isReached();
 	}
 	
 	
-	protected boolean isReadyForKick()
+	private double getOrientationFromFilter()
+	{
+		return getTBot().getFilteredState().map(State::getOrientation).orElseGet(this::getAngle);
+	}
+	
+	
+	private boolean isReadyForKick()
 	{
 		return readyForKick;
 	}
@@ -154,18 +156,18 @@ public abstract class AKickSkill extends AMoveSkill
 	
 	protected double getTargetOrientation()
 	{
-		double finalTargetOrientation = receiver.subtractNew(getBall().getPos()).getAngle(0);
+		double finalTargetOrientation = target.subtractNew(getBall().getPos()).getAngle(0);
 		
 		if (adaptOrientationToBotVel)
 		{
-			IVector2 kickVector = Vector2.fromAngle(finalTargetOrientation).scaleTo(calcKickSpeed());
+			IVector2 kickVector = Vector2.fromAngle(finalTargetOrientation).scaleTo(kickParams.getKickSpeed());
 			double angleDiff = kickVector.addNew(getVel()).angleTo(kickVector).orElse(0.0);
 			finalTargetOrientation += angleDiff;
 		}
 		
 		double currentDirection = getBall().getPos().subtractNew(getPos()).getAngle(0);
 		double diff = AngleMath.difference(finalTargetOrientation, currentDirection);
-		double alteredDiff = Math.signum(diff) * Math.max(0, Math.abs(diff) - 0.3);
+		double alteredDiff = Math.signum(diff) * Math.max(0, Math.abs(diff) - 0.4);
 		
 		double ball2BotDist = getBall().getPos().distanceTo(getPos());
 		
@@ -184,114 +186,12 @@ public abstract class AKickSkill extends AMoveSkill
 	private void drawShapes()
 	{
 		getShapes().get(ESkillShapesLayer.KICK_SKILL)
-				.add(new DrawableLine(Line.fromPoints(getBall().getPos(), receiver),
+				.add(new DrawableLine(Line.fromPoints(getBall().getPos(), target),
 						getBotId().getTeamColor().getColor()));
 		getShapes().get(ESkillShapesLayer.KICK_SKILL)
-				.add(new DrawableLine(Line.fromDirection(getPos(), Vector2.fromAngle(getAngle()).scaleTo(5000)),
+				.add(new DrawableLine(
+						Line.fromDirection(getPos(), Vector2.fromAngle(getOrientationFromFilter()).scaleTo(5000)),
 						Color.black));
-	}
-	
-	
-	private KickerParams calcKickerParams()
-	{
-		KickerParams kickerParams = new KickerParams();
-		kickerParams.setDevice(device);
-		kickerParams.setMode(EKickerMode.ARM);
-		
-		double kickLength = receiver.subtractNew(getWorldFrame().getBall().getPos()).getLength2();
-		
-		if ((device == EKickerDevice.STRAIGHT)
-				&& (getBot().getBotFeatures().get(EFeature.STRAIGHT_KICKER) != EFeatureState.WORKING))
-		{
-			// kicker is broken, lets pass with chip
-			kickerParams.setDevice(EKickerDevice.CHIP);
-			kickMode = EKickMode.PASS;
-		} else if ((device == EKickerDevice.CHIP)
-				&& (getBot().getBotFeatures().get(EFeature.CHIP_KICKER) != EFeatureState.WORKING))
-		{
-			// good luck
-			kickerParams.setDevice(EKickerDevice.STRAIGHT);
-		}
-		
-		switch (kickerParams.getDevice())
-		{
-			case CHIP:
-				calcChipParams(kickLength, kickerParams);
-				break;
-			case STRAIGHT:
-				calcStraightParams(kickLength, kickerParams);
-				break;
-			default:
-				throw new IllegalStateException();
-		}
-		
-		return kickerParams;
-	}
-	
-	
-	private void calcStraightParams(final double length, final KickerParams kickerParams)
-	{
-		switch (kickMode)
-		{
-			case MAX:
-				kickerParams.setSpeed(8);
-				break;
-			case PASS:
-				kickerParams.setSpeed(
-						SkillUtil.passKickSpeed(getBall().getStraightConsultant(), length, passEndVel, minPassTime));
-				break;
-			case POINT:
-			case STOP:
-				kickerParams.setSpeed(getBall().getStraightConsultant().getInitVelForDist(length, 0));
-				break;
-			case FIXED_SPEED:
-				kickerParams.setSpeed(kickSpeed);
-				break;
-			default:
-				throw new IllegalStateException();
-		}
-		
-		adaptStraightKickSpeedToBallVel(kickerParams);
-	}
-	
-	
-	private void adaptStraightKickSpeedToBallVel(final KickerParams kickerParams)
-	{
-		IVector2 targetVel = receiver.subtractNew(getTBot().getBotKickerPos()).scaleTo(kickerParams.getSpeed());
-		IVector2 ballVel = getWorldFrame().getBall().getVel();
-		
-		IVector2 vel = targetVel.subtractNew(ballVel);
-		kickerParams.setSpeed(vel.getLength2());
-	}
-	
-	
-	private void calcChipParams(final double kickLength, final KickerParams kickerParams)
-	{
-		IChipBallConsultant consultant = BallFactory.createChipConsultant();
-		switch (kickMode)
-		{
-			case PASS:
-			case STOP:
-				kickerParams.setSpeed(consultant.getInitVelForDistAtTouchdown(kickLength, 4));
-				break;
-			case MAX:
-				kickerParams.setSpeed(8);
-				break;
-			case FIXED_SPEED:
-				kickerParams.setSpeed(kickSpeed);
-				break;
-			case POINT:
-				kickerParams.setSpeed(consultant.getInitVelForDistAtTouchdown(kickLength, 0));
-				break;
-			default:
-				throw new IllegalStateException();
-		}
-	}
-	
-	
-	protected void updateKickerParams(final KickerParams kickerParams)
-	{
-		// no default implementation
 	}
 	
 	
@@ -300,7 +200,7 @@ public abstract class AKickSkill extends AMoveSkill
 	 */
 	public final void setDevice(final EKickerDevice device)
 	{
-		this.device = device;
+		kickParams.setDevice(device);
 	}
 	
 	
@@ -309,36 +209,18 @@ public abstract class AKickSkill extends AMoveSkill
 	 *
 	 * @param recv
 	 */
-	public final void setReceiver(final DynamicPosition recv)
+	public final void setTarget(final DynamicPosition recv)
 	{
-		receiver.update(recv);
+		target.update(recv);
 	}
 	
 	
 	/**
 	 * @return the receiver
 	 */
-	protected final IVector2 getReceiver()
+	protected final IVector2 getTarget()
 	{
-		return receiver;
-	}
-	
-	
-	/**
-	 * @param kickMode the kickMode to set
-	 */
-	public final void setKickMode(final EKickMode kickMode)
-	{
-		this.kickMode = kickMode;
-	}
-	
-	
-	/**
-	 * @return the kickSpeed
-	 */
-	public double getKickSpeed()
-	{
-		return kickSpeed;
+		return target;
 	}
 	
 	
@@ -347,35 +229,6 @@ public abstract class AKickSkill extends AMoveSkill
 	 */
 	public void setKickSpeed(final double kickSpeed)
 	{
-		this.kickSpeed = kickSpeed;
-		kickMode = EKickMode.FIXED_SPEED;
-	}
-	
-	
-	public void setPassEndVel(final double passEndVel)
-	{
-		this.passEndVel = passEndVel;
-	}
-	
-	
-	public void setMinPassTime(final double minPassTime)
-	{
-		this.minPassTime = minPassTime;
-	}
-	
-	/**
-	 * Mode for determining the kick speed
-	 */
-	public enum EKickMode
-	{
-		/** Calculate kickSpeed for passing to receiver */
-		PASS,
-		/** Full speed */
-		MAX,
-		/** kick such that ball will come to a stop at receiver */
-		POINT,
-		STOP,
-		/** use given kickSpeed */
-		FIXED_SPEED,
+		kickParams.setKickSpeed(kickSpeed);
 	}
 }

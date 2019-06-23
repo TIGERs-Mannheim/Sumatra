@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.offense;
@@ -9,18 +9,22 @@ import java.util.Random;
 import com.github.g3force.configurable.Configurable;
 
 import edu.tigers.sumatra.Referee.SSL_Referee.Command;
-import edu.tigers.sumatra.ai.data.BotDistance;
-import edu.tigers.sumatra.ai.metis.offense.data.PenaltyPlacementTargetGroup;
+import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
+import edu.tigers.sumatra.ai.metis.shootout.PenaltyPlacementTargetGroup;
+import edu.tigers.sumatra.ai.metis.targetrater.IRatedTarget;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.skillsystem.skills.AKickSkill;
+import edu.tigers.sumatra.skillsystem.skills.AMoveSkill;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
-import edu.tigers.sumatra.skillsystem.skills.KickNormalSkill;
+import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
+import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
+import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
 import edu.tigers.sumatra.statemachine.IState;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
@@ -31,12 +35,8 @@ import edu.tigers.sumatra.wp.data.DynamicPosition;
  */
 public class OneOnOneShooter extends ARole
 {
-	
 	@Configurable(comment = "Distance to destination", defValue = "100.0")
 	private static double distanceToTarget = 100;
-	
-	@Configurable(comment = "The placement kick mode", defValue = "FIXED_SPEED")
-	private static AKickSkill.EKickMode placementKickMode = AKickSkill.EKickMode.FIXED_SPEED;
 	
 	@Configurable(comment = "The placement kick speed (if fixed_speed)", defValue = "2.0")
 	private static double placementKickSpeed = 2.0;
@@ -97,7 +97,7 @@ public class OneOnOneShooter extends ARole
 	}
 	
 	
-	private class PrepareState implements IState
+	private class PrepareState extends AState
 	{
 		AMoveToSkill skill;
 		
@@ -126,7 +126,7 @@ public class OneOnOneShooter extends ARole
 		public void doUpdate()
 		{
 			IVector2 standbyPos = getBall().getPos()
-					.subtractNew(Vector2.fromXY(Geometry.getBotToBallDistanceStop() + Geometry.getBotRadius(), 0));
+					.subtractNew(Vector2.fromXY(RuleConstraints.getStopRadius() + Geometry.getBotRadius(), 0));
 			
 			skill.getMoveCon().updateDestination(standbyPos);
 			skill.getMoveCon().updateLookAtTarget(new DynamicPosition(getWFrame().getBall()));
@@ -142,11 +142,12 @@ public class OneOnOneShooter extends ARole
 	}
 	
 	
-	private class BallPlacementState implements IState
+	private class BallPlacementState extends AState
 	{
 		IVector2 finalTarget;
 		IVector2 startPos;
-		AKickSkill skill;
+		KickParams kickParams;
+		TouchKickSkill skill;
 		
 		
 		@Override
@@ -165,8 +166,8 @@ public class OneOnOneShooter extends ARole
 			finalTarget = Geometry.getField().nearestPointInside(finalTarget, 3 * Geometry.getBotRadius());
 			startPos = getBall().getPos();
 			
-			skill = new KickNormalSkill(new DynamicPosition(finalTarget), placementKickMode,
-					EKickerDevice.STRAIGHT, placementKickSpeed);
+			kickParams = KickParams.straight(placementKickSpeed);
+			skill = new TouchKickSkill(new DynamicPosition(finalTarget), kickParams);
 			skill.getMoveCon().setPenaltyAreaAllowedOur(penaltyAllowedOur);
 			skill.getMoveCon().setPenaltyAreaAllowedTheir(penaltyAllowedTheir);
 			setNewSkill(skill);
@@ -177,12 +178,8 @@ public class OneOnOneShooter extends ARole
 		public void doUpdate()
 		{
 			IVector2 ballPos = getBall().getPos();
-			double distancePercent = finalTarget.distanceTo(ballPos) / finalTarget.distanceTo(startPos);
 			
-			double desiredKickSpeed = placementKickSpeed * Math.max(minEndSpeedPercent, distancePercent);
-			skill.setKickSpeed(desiredKickSpeed);
-			
-			if (getBall().getTrajectory().getPosByTime(1).distanceTo(finalTarget) < distanceToTarget)
+			if (getBall().getTrajectory().getPosByTime(1).getXYVector().distanceTo(finalTarget) < distanceToTarget)
 			{
 				triggerEvent(EEvent.BALL_PLACEMENT_COMPLETE);
 			}
@@ -195,15 +192,17 @@ public class OneOnOneShooter extends ARole
 				triggerEvent(EEvent.FAST_SHOT_NECESSARY);
 			}
 			
+			double distancePercent = finalTarget.distanceTo(ballPos) / finalTarget.distanceTo(startPos);
+			double desiredKickSpeed = placementKickSpeed * Math.max(minEndSpeedPercent, distancePercent);
 			if (getBall().getTrajectory().getAbsVelByTime(1.0) > desiredKickSpeed)
 			{
-				skill.setReadyForKick(false);
 				skill.getMoveCon().getMoveConstraints()
 						.setVelMax(Math.min(getBot().getRobotInfo().getBotParams().getMovementLimits().getVelMax(),
 								getBall().getTrajectory().getAbsVelByTime(1.0) * moveSpeedPercent));
+				kickParams.setKickSpeed(0);
 			} else
 			{
-				skill.setReadyForKick(true);
+				kickParams.setKickSpeed(desiredKickSpeed);
 				skill.getMoveCon().getMoveConstraints()
 						.setVelMax(getBot().getRobotInfo().getBotParams().getMovementLimits().getVelMax());
 			}
@@ -211,17 +210,14 @@ public class OneOnOneShooter extends ARole
 	}
 	
 	
-	private class ShootState implements IState
+	private class ShootState extends AState
 	{
-		KickNormalSkill skill;
-		
-		
 		@Override
 		public void doEntryActions()
 		{
 			IVector2 target = calculateBestShotTarget();
 			
-			skill = new KickNormalSkill(new DynamicPosition(target));
+			AMoveSkill skill = new TouchKickSkill(new DynamicPosition(target), KickParams.maxStraight());
 			skill.getMoveCon().setPenaltyAreaAllowedTheir(penaltyAllowedTheir);
 			skill.getMoveCon().setPenaltyAreaAllowedOur(penaltyAllowedOur);
 			
@@ -238,10 +234,10 @@ public class OneOnOneShooter extends ARole
 	}
 	
 	
-	private class FastShootState implements IState
+	private class FastShootState extends AState
 	{
 		IVector2 shotTarget;
-		KickNormalSkill skill;
+		KickParams kickParams;
 		
 		
 		@Override
@@ -249,12 +245,10 @@ public class OneOnOneShooter extends ARole
 		{
 			shotTarget = calculateBestShotTarget();
 			
-			skill = new KickNormalSkill(new DynamicPosition(shotTarget));
+			kickParams = KickParams.maxStraight();
+			AMoveSkill skill = new TouchKickSkill(new DynamicPosition(shotTarget), KickParams.maxStraight());
 			skill.getMoveCon().setPenaltyAreaAllowedTheir(penaltyAllowedTheir);
 			skill.getMoveCon().setPenaltyAreaAllowedOur(penaltyAllowedOur);
-			
-			skill.setKickMode(AKickSkill.EKickMode.MAX);
-			skill.setDevice(EKickerDevice.STRAIGHT);
 			
 			setNewSkill(skill);
 		}
@@ -263,9 +257,6 @@ public class OneOnOneShooter extends ARole
 		@Override
 		public void doUpdate()
 		{
-			skill.setKickMode(AKickSkill.EKickMode.MAX);
-			skill.setDevice(EKickerDevice.STRAIGHT);
-			
 			final BotDistance enemyClosestToBall = getAiFrame().getTacticalField().getEnemyClosestToBall();
 			
 			if (!enemyClosestToBall.equals(BotDistance.NULL_BOT_DISTANCE))
@@ -279,12 +270,12 @@ public class OneOnOneShooter extends ARole
 				{
 					if (chipKickEnabled)
 					{
-						skill.setDevice(EKickerDevice.CHIP);
+						kickParams.setDevice(EKickerDevice.CHIP);
 					}
 					
-					double initVel = getBall().getChipConsultant()
-							.getInitVelForDistAtTouchdown(getPos().distanceTo(shotTarget), 6);
-					skill.setKickSpeed(initVel);
+					final double distance = getPos().distanceTo(shotTarget);
+					double initVel = getBall().getChipConsultant().getInitVelForDistAtTouchdown(distance, 6);
+					kickParams.setKickSpeed(initVel);
 				}
 			}
 			
@@ -318,13 +309,7 @@ public class OneOnOneShooter extends ARole
 	
 	private IVector2 calculateBestShotTarget()
 	{
-		IVector2 target = getAiFrame().getTacticalField().getBestDirectShotTarget();
-		if (target == null)
-		{
-			target = Geometry.getGoalTheir().getCenter();
-		}
-		
-		return target;
+		return getAiFrame().getTacticalField().getBestGoalKickTarget().map(IRatedTarget::getTarget)
+				.orElse(new DynamicPosition(Geometry.getGoalTheir().getCenter()));
 	}
-	
 }

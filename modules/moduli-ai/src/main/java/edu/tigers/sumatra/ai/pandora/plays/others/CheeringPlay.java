@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.others;
 
-import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
-import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
+import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
+import edu.tigers.sumatra.ai.metis.MetisAiFrame;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
@@ -24,13 +24,13 @@ import edu.tigers.sumatra.math.vector.Vector2f;
  */
 public class CheeringPlay extends APlay
 {
-	private final IVector2		center				= Geometry.getCenter();
-	private final IRectangle	field					= Geometry.getField();
-	private final double			radius				= Geometry.getCenterCircle().radius();
+	private final IVector2 center = Geometry.getCenter();
+	private final IRectangle field = Geometry.getField();
+	private final double radius = Geometry.getCenterCircle().radius();
 	
-	private CheeringPhase		state					= CheeringPhase.START;
+	private CheeringPhase state = CheeringPhase.START;
 	
-	private int						numRolesLastTime	= 0;
+	private int numRolesLastTime = 0;
 	
 	
 	private enum CheeringPhase
@@ -120,7 +120,8 @@ public class CheeringPlay extends APlay
 		for (final ARole role : getRoles())
 		{
 			MoveRole moveRole = (MoveRole) role;
-			if (moveRole.getPos().isCloseTo(moveRole.getMoveCon().getDestination(), 100))
+			if (moveRole.getMoveCon().getDestination() != null
+					&& moveRole.getPos().isCloseTo(moveRole.getMoveCon().getDestination(), 100))
 			{
 				counterTrue++;
 			}
@@ -166,7 +167,7 @@ public class CheeringPlay extends APlay
 	
 	
 	@Override
-	protected ARole onAddRole(final MetisAiFrame frame)
+	protected ARole onAddRole()
 	{
 		MoveRole newRole = new MoveRole();
 		newRole.getMoveCon().setBallObstacle(false);

@@ -1,20 +1,17 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.offensive;
 
 import java.awt.Component;
 import java.util.ArrayList;
 
-import org.apache.log4j.Logger;
-
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.ai.AAgent;
 import edu.tigers.sumatra.ai.Agent;
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
-import edu.tigers.sumatra.ai.data.OffensiveStrategy;
-import edu.tigers.sumatra.ai.data.frames.VisualizationFrame;
+import edu.tigers.sumatra.ai.VisualizationFrame;
+import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.offensive.view.OffensiveStrategyPanel;
@@ -30,14 +27,9 @@ import edu.tigers.sumatra.views.ISumatraView;
  */
 public class OffensiveStrategyPresenter extends ASumatraViewPresenter implements IVisualizationFrameObserver
 {
-	@SuppressWarnings("unused")
-	private static final Logger log = Logger.getLogger(OffensiveStrategyPresenter.class.getName());
 	private final OffensiveStrategyPanel offensiveStrategyPanel;
 	
 	
-	/**
-	 * Default
-	 */
 	public OffensiveStrategyPresenter()
 	{
 		offensiveStrategyPanel = new OffensiveStrategyPanel();
@@ -47,30 +39,14 @@ public class OffensiveStrategyPresenter extends ASumatraViewPresenter implements
 	@Override
 	public void onModuliStateChanged(final ModulesState state)
 	{
-		switch (state)
+		if (state == ModulesState.ACTIVE)
 		{
-			case ACTIVE:
-				try
-				{
-					Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
-					agent.addVisObserver(this);
-				} catch (ModuleNotFoundException err)
-				{
-					log.error("Could not get agent module", err);
-				}
-				break;
-			case NOT_LOADED:
-				break;
-			case RESOLVED:
-				try
-				{
-					Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
-					agent.removeVisObserver(this);
-				} catch (ModuleNotFoundException err)
-				{
-					log.error("Could not get agent module", err);
-				}
-				break;
+			Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.class);
+			agent.addVisObserver(this);
+		} else if (state == ModulesState.RESOLVED)
+		{
+			Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.class);
+			agent.removeVisObserver(this);
 		}
 	}
 	
@@ -105,12 +81,9 @@ public class OffensiveStrategyPresenter extends ASumatraViewPresenter implements
 				strategyPanel = offensiveStrategyPanel.getYellowStrategyPanel();
 			}
 			
-			strategyPanel.setMinNumberOfBots(offensiveStrategy.getMinNumberOfBots());
-			strategyPanel.setMaxNumberOfBots(offensiveStrategy.getMaxNumberOfBots());
 			strategyPanel.setDesiredBots(new ArrayList<>(offensiveStrategy.getDesiredBots()));
 			strategyPanel.setPlayConfiguration(offensiveStrategy.getCurrentOffensivePlayConfiguration());
-			strategyPanel.setUnassignedStrategies(offensiveStrategy.getUnassignedStrategies());
-			strategyPanel.setSpecialMoveCommands(offensiveStrategy.getSpecialMoveCommands());
+			strategyPanel.setSpecialMoveCommands(offensiveStrategy.getActivePassTarget().orElse(null));
 			strategyPanel.setOffensiveActions(frame.getOffensiveActions());
 		}
 	}

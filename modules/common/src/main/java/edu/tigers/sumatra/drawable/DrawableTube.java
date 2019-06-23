@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
@@ -18,6 +18,7 @@ import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.tube.Tube;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -39,7 +40,7 @@ public class DrawableTube extends ADrawableWithStroke
 	@SuppressWarnings("unused")
 	private DrawableTube()
 	{
-		tube = Tube.create(Vector2.zero(), Vector2.zero(), 1);
+		tube = Tube.create(Vector2f.ZERO_VECTOR, Vector2f.ZERO_VECTOR, 1);
 	}
 	
 	/**
@@ -114,9 +115,7 @@ public class DrawableTube extends ADrawableWithStroke
 	}
 	
 	
-	/**
-	 * @param fill
-	 */
+	@Override
 	public void setFill(final boolean fill)
 	{
 		this.fill = fill;

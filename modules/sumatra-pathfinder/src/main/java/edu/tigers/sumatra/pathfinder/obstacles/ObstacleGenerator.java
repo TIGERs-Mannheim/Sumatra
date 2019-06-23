@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder.obstacles;
@@ -14,12 +14,13 @@ import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.ETeam;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.rectangle.Rectangle;
+import edu.tigers.sumatra.math.tube.Tube;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -51,6 +52,9 @@ public class ObstacleGenerator
 	
 	@Configurable(defValue = "1.0")
 	private static double tHorz = 1;
+	
+	@Configurable(defValue = "0.5")
+	private static double opponentBotTimeHorz = 0.5;
 	
 	
 	private double secDistBall = defSecDistBall;
@@ -198,8 +202,8 @@ public class ObstacleGenerator
 				}
 				
 				double radius = 2 * Geometry.getBotRadius();
-				IObstacle botObs = new SimpleTimeAwareRobotObstacle(bot, radius);
-				obstacles.add(botObs);
+				Tube tube = Tube.create(bot.getPos(), bot.getPosByTime(opponentBotTimeHorz), radius);
+				obstacles.add(new TubeObstacle(tube));
 			}
 		}
 		
@@ -220,7 +224,7 @@ public class ObstacleGenerator
 	
 	private double getEffectiveBotToBallDistanceOnStop()
 	{
-		return Geometry.getBotToBallDistanceStop() + Geometry.getBotRadius();
+		return RuleConstraints.getStopRadius() + Geometry.getBotRadius();
 	}
 	
 	
@@ -234,7 +238,8 @@ public class ObstacleGenerator
 	{
 		List<IObstacle> obs = new ArrayList<>();
 		
-		if (gameState.getState() == EGameState.BALL_PLACEMENT)
+		if (gameState.getState() == EGameState.BALL_PLACEMENT
+				&& placementBotNearBall(wFrame))
 		{
 			IVector2 placementPos = gameState.getBallPlacementPositionForUs();
 			obs.add(new LineObstacle(Line.fromPoints(wFrame.getBall().getPos(), placementPos),
@@ -245,6 +250,19 @@ public class ObstacleGenerator
 					getEffectiveBotToBallDistanceOnStop())));
 		}
 		return obs;
+	}
+	
+	
+	private boolean placementBotNearBall(final WorldFrame wFrame)
+	{
+		return wFrame.getBots().values().stream()
+				.map(ITrackedBot::getPos)
+				.map(p -> p.distanceToSqr(wFrame.getBall().getPos()))
+				.sorted()
+				.findFirst()
+				.map(Math::sqrt)
+				.map(d -> d < 200)
+				.orElse(false);
 	}
 	
 	
@@ -295,19 +313,19 @@ public class ObstacleGenerator
 		if (usePenAreaOur)
 		{
 			double margin = Geometry.getPenaltyAreaMargin();
-			obstacles.add(new PenaltyAreaObstacle(ETeam.TIGERS, Geometry.getPenaltyAreaOur().getRadius() + margin));
+			obstacles.add(new PenaltyAreaObstacle(Geometry.getPenaltyAreaOur().withMargin(margin)));
 		}
 		if (usePenAreaTheir)
 		{
 			double margin;
 			if (gameState.isStandardSituation())
 			{
-				margin = Geometry.getBotToPenaltyAreaMarginStandard() + Geometry.getBotRadius();
+				margin = RuleConstraints.getBotToPenaltyAreaMarginStandard() + Geometry.getBotRadius();
 			} else
 			{
 				margin = 0.0;
 			}
-			obstacles.add(new PenaltyAreaObstacle(ETeam.OPPONENTS, Geometry.getPenaltyAreaTheir().getRadius() + margin));
+			obstacles.add(new PenaltyAreaObstacle(Geometry.getPenaltyAreaTheir().withMargin(margin)));
 		}
 		return obstacles;
 	}

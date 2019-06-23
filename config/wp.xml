@@ -1,7 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<edu.tigers.sumatra.wp.util.BotLastTouchedBallCalculator base="edu.tigers.sumatra.wp.util.BotLastTouchedBallCalculator">
-    <angleThresholdDegree>5.0</angleThresholdDegree>
-    <botRadiusMargin>30.0</botRadiusMargin>
-    <minSearchRadius>300.0</minSearchRadius>
-    <velGainThreshold>0.3</velGainThreshold>
-</edu.tigers.sumatra.wp.util.BotLastTouchedBallCalculator>
+<edu.tigers.sumatra.wp.WorldInfoCollector base="edu.tigers.sumatra.wp.WorldInfoCollector">
+    <maxPositionDiff>200.0</maxPositionDiff>
+</edu.tigers.sumatra.wp.WorldInfoCollector>

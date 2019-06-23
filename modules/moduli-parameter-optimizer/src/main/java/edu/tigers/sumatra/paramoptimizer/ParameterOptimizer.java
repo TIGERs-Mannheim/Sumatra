@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.paramoptimizer;
 
-import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
 import edu.tigers.moduli.AModule;
@@ -25,21 +24,8 @@ public class ParameterOptimizer extends AModule implements IWorldFrameObserver
 	@SuppressWarnings("unused")
 	private static final Logger	log					= Logger.getLogger(ParameterOptimizer.class.getName());
 	
-	/** */
-	public static final String		MODULE_TYPE			= "ParameterOptimizer";
-	/** */
-	public static final String		MODULE_ID			= "ParameterOptimizer";
-	
 	@SuppressWarnings("unused")
 	private RedirectDetector		redirectDetector	= new RedirectDetector();
-	
-	
-	/**
-	 * @param config
-	 */
-	public ParameterOptimizer(final SubnodeConfiguration config)
-	{
-	}
 	
 	
 	@Override
@@ -61,7 +47,7 @@ public class ParameterOptimizer extends AModule implements IWorldFrameObserver
 	{
 		try
 		{
-			AWorldPredictor wp = (AWorldPredictor) SumatraModel.getInstance().getModule(AWorldPredictor.MODULE_ID);
+			AWorldPredictor wp = SumatraModel.getInstance().getModule(AWorldPredictor.class);
 			wp.addObserver(this);
 		} catch (ModuleNotFoundException e)
 		{
@@ -75,7 +61,7 @@ public class ParameterOptimizer extends AModule implements IWorldFrameObserver
 	{
 		try
 		{
-			AWorldPredictor wp = (AWorldPredictor) SumatraModel.getInstance().getModule(AWorldPredictor.MODULE_ID);
+			AWorldPredictor wp = SumatraModel.getInstance().getModule(AWorldPredictor.class);
 			wp.removeObserver(this);
 		} catch (ModuleNotFoundException e)
 		{

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder.obstacles;
@@ -13,8 +13,8 @@ import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.IDrawableTool;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
@@ -25,15 +25,15 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
 @Persistent
 public class MovingRobotObstacle implements IObstacle
 {
-	private final IVector2	pos;
-	private final IVector2	vel;
-	private final double		vmax;
-	private final double		acc;
-	private final double		brk;
-	private final double		maxtHorz;
-	private final double		radius;
+	private final IVector2 pos;
+	private final IVector2 vel;
+	private final double vmax;
+	private final double acc;
+	private final double brk;
+	private final double maxtHorz;
+	private final double radius;
 	
-	private Color				color	= Color.red;
+	private Color color = Color.red;
 	
 	
 	@SuppressWarnings("unused")
@@ -75,7 +75,7 @@ public class MovingRobotObstacle implements IObstacle
 		double v0;
 		if (vel.isZeroVector())
 		{
-			dir = AVector2.X_AXIS;
+			dir = Vector2f.X_AXIS;
 			v0 = 0;
 		} else
 		{
@@ -121,5 +121,4 @@ public class MovingRobotObstacle implements IObstacle
 	{
 		return getCircle(t, margin).isPointInShape(point);
 	}
-	
 }

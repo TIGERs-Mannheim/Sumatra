@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.vector;
@@ -108,7 +108,7 @@ public class ValuePoint extends Vector2
 	
 	
 	@Override
-	public synchronized String toString()
+	public String toString()
 	{
 		return "(x=" + x() + ",y=" + y() + ",val=" + getValue() + ")";
 	}

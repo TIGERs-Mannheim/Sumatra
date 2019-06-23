@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ids;
@@ -11,29 +11,23 @@ package edu.tigers.sumatra.ids;
 public enum EAiTeam
 {
 	/** */
-	YELLOW_PRIMARY(ETeamColor.YELLOW, EAiType.PRIMARY, true),
+	YELLOW(ETeamColor.YELLOW, true),
 	/** */
-	BLUE_PRIMARY(ETeamColor.BLUE, EAiType.PRIMARY, true),
+	BLUE(ETeamColor.BLUE, true),
 	
-	/** */
-	YELLOW_SECONDARY(ETeamColor.YELLOW, EAiType.SECONDARY, false),
-	/** */
-	BLUE_SECONDARY(ETeamColor.BLUE, EAiType.SECONDARY, false),;
+	;
 	
 	private ETeamColor teamColor;
-	private EAiType aiType;
 	private boolean activeByDefault;
 	
 	
 	/**
 	 * @param teamColor the associated team color
-	 * @param aiType the ai type
 	 * @param activeByDefault active by default
 	 */
-	EAiTeam(ETeamColor teamColor, EAiType aiType, boolean activeByDefault)
+	EAiTeam(ETeamColor teamColor, boolean activeByDefault)
 	{
 		this.teamColor = teamColor;
-		this.aiType = aiType;
 		this.activeByDefault = activeByDefault;
 	}
 	
@@ -50,12 +44,6 @@ public enum EAiTeam
 	}
 	
 	
-	public EAiType getAiType()
-	{
-		return aiType;
-	}
-	
-	
 	/**
 	 * Get the primary team of the given team color
 	 * 
@@ -66,48 +54,23 @@ public enum EAiTeam
 	{
 		if (teamColor == ETeamColor.BLUE)
 		{
-			return BLUE_PRIMARY;
+			return BLUE;
 		} else if (teamColor == ETeamColor.YELLOW)
 		{
-			return YELLOW_PRIMARY;
+			return YELLOW;
 		}
 		throw new IllegalArgumentException("Can not map team color: " + teamColor);
 	}
 	
 	
 	/**
-	 * Get the secondary team of the given team color
+	 * Check if color of aiteam matches color
 	 *
-	 * @param teamColor
+	 * @param color
 	 * @return
 	 */
-	public static EAiTeam secondary(ETeamColor teamColor)
+	public boolean matchesColor(ETeamColor color)
 	{
-		if (teamColor == ETeamColor.BLUE)
-		{
-			return BLUE_SECONDARY;
-		} else if (teamColor == ETeamColor.YELLOW)
-		{
-			return YELLOW_SECONDARY;
-		}
-		throw new IllegalArgumentException("Can not map team color: " + teamColor);
-	}
-	
-	
-	/**
-	 * @return true, if it is a primary AI
-	 */
-	public boolean isPrimary()
-	{
-		return aiType == EAiType.PRIMARY;
-	}
-	
-	
-	/**
-	 * @return true, if it is a secondary AI
-	 */
-	public boolean isSecondary()
-	{
-		return aiType == EAiType.SECONDARY;
+		return color == teamColor;
 	}
 }

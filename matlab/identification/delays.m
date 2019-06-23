@@ -1,11 +1,11 @@
 function params = delays(filename)
 
 %% Load data
-Ts = 0.001;
+Ts = 0.00125;
 csv = csvread(filename);
 
 %% Calculate data loss
-dataLoss = 1-size(csv,1)/((csv(end,2)-csv(1,2))*1e-6*500);
+dataLoss = 1-size(csv,1)/((csv(end,2)-csv(1,2))*1e-6*800);
 
 %% Identify unique samples (outVel and gyrVel)
 [~, ia] = unique(csv(:,2));
@@ -54,7 +54,7 @@ outVel = interp1(csv(:,2), csv(:,4), sampleTimes);
 gyrVel = interp1(csv(:,2), csv(:,6), sampleTimes);
 
 %% Get vision velocity
-visVel = [0; diff(visPos)]/0.001;
+visVel = [0; diff(visPos)]/0.00125;
 
 %% Shift data with 1ms steps to align sensor data to outVel
 maxShift = 50;
@@ -84,12 +84,12 @@ params = [visDelay visProcDelayMax gyrDelay dataLoss];
 % axis tight;
 % grid on;
 % grid minor;
-
+% 
 % plot(sampleTimes, outVel, 'r-', ...
 %     sampleTimes, circshift(gyrVel,-gyrDelay), 'g-', ...
 %     sampleTimes, smooth(circshift(visVel,-visDelay),50), 'c-');
 % axis tight;
 % grid on;
 % grid minor;
-
+% 
 % plotyy(1:maxShift, shiftFit(:,1), 1:maxShift, shiftFit(:,2));

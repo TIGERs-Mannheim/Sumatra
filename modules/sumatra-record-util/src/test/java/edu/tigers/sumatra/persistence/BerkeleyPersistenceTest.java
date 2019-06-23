@@ -4,11 +4,14 @@
 
 package edu.tigers.sumatra.persistence;
 
+import java.nio.file.Paths;
 import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import edu.tigers.sumatra.ai.BerkeleyAiFrame;
 
 
 /**
@@ -24,17 +27,20 @@ public class BerkeleyPersistenceTest
 	@Test
 	public void testSaveLoadBerkeleyRecordFrame()
 	{
-		AiBerkeleyPersistence pers = new AiBerkeleyPersistence(PersistenceTestHelper.DB_NAME);
-		pers.open();
-		PersistenceTestHelper helper = new PersistenceTestHelper();
-		List<RecordFrame> origFrames = helper.createOneRecordFrame();
-		pers.saveRecordFrames(origFrames);
-		pers.close();
+		BerkeleyDb db = BerkeleyDb.withCustomLocation(Paths.get(PersistenceTestHelper.DB_NAME));
+		db.add(BerkeleyAiFrame.class, new BerkeleyAccessor<>(BerkeleyAiFrame.class, true));
+		db.open();
 		
-		pers = new AiBerkeleyPersistence(PersistenceTestHelper.DB_NAME);
-		pers.open();
-		pers.getRecordFrame(pers.getFirstKey());
-		pers.close();
+		PersistenceTestHelper helper = new PersistenceTestHelper();
+		List<BerkeleyAiFrame> origFrames = helper.createOneRecordFrame();
+		db.write(BerkeleyAiFrame.class, origFrames);
+		db.close();
+		
+		db = BerkeleyDb.withCustomLocation(Paths.get(PersistenceTestHelper.DB_NAME));
+		db.add(BerkeleyAiFrame.class, new BerkeleyAccessor<>(BerkeleyAiFrame.class, true));
+		db.open();
+		db.get(BerkeleyAiFrame.class, db.getFirstKey());
+		db.close();
 	}
 	
 	
@@ -54,8 +60,4 @@ public class BerkeleyPersistenceTest
 	{
 		PersistenceTestHelper.cleanup();
 	}
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 }

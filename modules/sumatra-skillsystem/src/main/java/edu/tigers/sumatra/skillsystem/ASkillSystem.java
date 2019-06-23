@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem;
@@ -8,9 +8,8 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import edu.tigers.moduli.AModule;
-import edu.tigers.moduli.exceptions.InitModuleException;
-import edu.tigers.moduli.exceptions.StartModuleException;
 import edu.tigers.sumatra.botmanager.bots.ABot;
+import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.skillsystem.skills.ISkill;
@@ -24,11 +23,6 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
  */
 public abstract class ASkillSystem extends AModule
 {
-	/** */
-	public static final String						MODULE_TYPE	= "AMoveSystem";
-	/** */
-	public static final String						MODULE_ID	= "skillsystem";
-	
 	private final List<ISkillSystemObserver>	observers	= new CopyOnWriteArrayList<>();
 	
 	
@@ -60,8 +54,9 @@ public abstract class ASkillSystem extends AModule
 	
 	/**
 	 * @param wfw
+	 * @param shapeMap
 	 */
-	public abstract void process(final WorldFrameWrapper wfw);
+	public abstract void process(final WorldFrameWrapper wfw, final ShapeMap shapeMap);
 	
 	
 	@Override
@@ -71,13 +66,13 @@ public abstract class ASkillSystem extends AModule
 	
 	
 	@Override
-	public void initModule() throws InitModuleException
+	public void initModule()
 	{
 	}
 	
 	
 	@Override
-	public void startModule() throws StartModuleException
+	public void startModule()
 	{
 	}
 	
@@ -114,6 +109,7 @@ public abstract class ASkillSystem extends AModule
 	/**
 	 * @param observer
 	 */
+	@SuppressWarnings("squid:S2250") // Collection methods with O(n) performance should be used carefully
 	public void addObserver(final ISkillSystemObserver observer)
 	{
 		observers.add(observer);
@@ -123,6 +119,7 @@ public abstract class ASkillSystem extends AModule
 	/**
 	 * @param observer
 	 */
+	@SuppressWarnings("squid:S2250") // Collection methods with O(n) performance should be used carefully
 	public void removeObserver(final ISkillSystemObserver observer)
 	{
 		observers.remove(observer);

@@ -1,21 +1,11 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 28.10.2016
- * Author(s): Sebastian Stein <sebastian-stein@gmx.de>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.telegram;
 
-import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
-import com.github.g3force.configurable.ConfigRegistration;
-
-import edu.tigers.moduli.exceptions.InitModuleException;
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
-import edu.tigers.moduli.exceptions.StartModuleException;
 import edu.tigers.sumatra.Referee;
 import edu.tigers.sumatra.gamenotifications.AGameEvent;
 import edu.tigers.sumatra.gamenotifications.GameNotificationController;
@@ -24,6 +14,8 @@ import edu.tigers.sumatra.gamenotifications.events.GameEndEvent;
 import edu.tigers.sumatra.gamenotifications.events.GameStartEvent;
 import edu.tigers.sumatra.gamenotifications.events.GoalScoredEvent;
 import edu.tigers.sumatra.gamenotifications.events.TimeoutEvent;
+import edu.tigers.sumatra.gamenotifications.events.YellowCardEvent;
+import edu.tigers.sumatra.gamenotifications.events.YellowCardOverEvent;
 import edu.tigers.sumatra.model.SumatraModel;
 
 
@@ -41,23 +33,7 @@ public class TelegramNotificationController extends ATelegramNotificationControl
 	
 	private NotificationWorker notificationWorker;
 	
-	
-	static
-	{
-		ConfigRegistration.registerClass("telegram", TelegramNotificationController.class);
-	}
-	
-	
-	/**
-	 * Creates a new controller instance
-	 * 
-	 * @param subconfig The SubnodeConfiguration to use
-	 */
-	public TelegramNotificationController(final SubnodeConfiguration subconfig)
-	{
-		// Nothing to do....
-	}
-	
+
 	
 	/**
 	 * Returns true if broadcasting is enabled
@@ -95,7 +71,7 @@ public class TelegramNotificationController extends ATelegramNotificationControl
 	
 	
 	@Override
-	public void initModule() throws InitModuleException
+	public void initModule()
 	{
 		// Nothing to do....
 	}
@@ -108,28 +84,25 @@ public class TelegramNotificationController extends ATelegramNotificationControl
 	 */
 	private void notifySubscribingChats(final String message)
 	{
-		
 		notificationWorker.addMessage(message);
 	}
 	
 	
 	@Override
-	public void startModule() throws StartModuleException
+	public void startModule()
 	{
-		
 		notificationWorker = NotificationWorker.getInstance();
 		notificationWorker.start();
 		
 		try
 		{
-			GameNotificationController gameNotificationController = (GameNotificationController) SumatraModel.getInstance()
-					.getModule(GameNotificationController.MODULE_ID);
+			GameNotificationController gameNotificationController = SumatraModel.getInstance()
+					.getModule(GameNotificationController.class);
 			gameNotificationController.addObserver(this);
 		} catch (ModuleNotFoundException e)
 		{
 			log.error("Could not find agent", e);
 		}
-		
 	}
 	
 	
@@ -150,8 +123,8 @@ public class TelegramNotificationController extends ATelegramNotificationControl
 		
 		try
 		{
-			GameNotificationController gameNotificationController = (GameNotificationController) SumatraModel.getInstance()
-					.getModule(GameNotificationController.MODULE_ID);
+			GameNotificationController gameNotificationController = SumatraModel.getInstance()
+					.getModule(GameNotificationController.class);
 			gameNotificationController.removeObserver(this);
 		} catch (ModuleNotFoundException e)
 		{
@@ -161,6 +134,8 @@ public class TelegramNotificationController extends ATelegramNotificationControl
 	
 	
 	@Override
+	// Handles some enums.
+	@SuppressWarnings("squid:MethodCyclomaticComplexity")
 	public void onGameEvent(final AGameEvent e)
 	{
 		if (!isBroadcastEnabled())
@@ -191,43 +166,58 @@ public class TelegramNotificationController extends ATelegramNotificationControl
 			case PENALTY_SHOOTOUT:
 				processPenaltyShootoutEvent();
 				break;
+			case YELLOW_CARD:
+				processYellowCardEvent((YellowCardEvent) e);
+				break;
+			case YELLOW_CARD_OVER:
+				processYellowCardOverEvent((YellowCardOverEvent) e);
+				break;
 			default:
 				break;
 		}
 	}
 	
 	
+	private void processYellowCardOverEvent(final YellowCardOverEvent e)
+	{
+		notifySubscribingChats("Yellow card over! (" + e.getTeam().getName() + ")\n"
+				+ e.getTeam().getYellowCardTimesList().size() + " cards left active");
+	}
+	
+	
+	private void processYellowCardEvent(final YellowCardEvent e)
+	{
+		notifySubscribingChats("Yellow card for " + e.getTeam().getName() + " (Currently "
+				+ e.getTeam().getYellowCardTimesList().size() + " cards active)");
+	}
+	
+	
 	private void processPenaltyShootoutEvent()
 	{
-		
 		notifySubscribingChats("Penalty shootout is now starting!");
 	}
 	
 	
 	private void processTimeoutEvent(final TimeoutEvent e)
 	{
-		
 		notifySubscribingChats("Timeout! (" + e.getTeam().getName() + ")");
 	}
 	
 	
 	private void processGameContinuesEvent()
 	{
-		
 		notifySubscribingChats("The game continues.");
 	}
 	
 	
 	private void processHalfTimeEvent()
 	{
-		
 		notifySubscribingChats("It's half time.");
 	}
 	
 	
 	private void processGameEndEvent(final GameEndEvent e)
 	{
-		
 		Referee.SSL_Referee ref = e.getRefMsg();
 		
 		notifySubscribingChats("The match is over. Final score:\n" + getGoalScore(ref.getBlue().getName(),
@@ -237,7 +227,6 @@ public class TelegramNotificationController extends ATelegramNotificationControl
 	
 	private void processGameStartEvent(final GameStartEvent e)
 	{
-		
 		notifySubscribingChats("The match <b>" + e.getBlue().getName() + "</b> vs <b>" + e.getYellow().getName()
 				+ "</b> is now starting.");
 	}
@@ -245,7 +234,6 @@ public class TelegramNotificationController extends ATelegramNotificationControl
 	
 	private void processGoal(GoalScoredEvent e)
 	{
-		
 		int goalsScoringTeam = e.getTeamScoring().getScore();
 		int goalsOtherTeam = e.getTeamOther().getScore();
 		
@@ -257,16 +245,12 @@ public class TelegramNotificationController extends ATelegramNotificationControl
 		
 		if (e.isValidChange())
 		{
-			
 			message = "<b>" + nameScoringTeam + "</b> scored a goal!";
-			
 		} else
 		{
-			
 			message = "Score changed.";
 		}
 		
 		notifySubscribingChats(message + "\n" + goals);
-		
 	}
 }

@@ -10,20 +10,49 @@
     <parent>
         <groupId>edu.tigers.sumatra</groupId>
         <artifactId>sumatra-parent</artifactId>
-        <version>5.1-SNAPSHOT</version>
+        <version>6.0</version>
         <relativePath>../sumatra-parent/pom.xml</relativePath>
     </parent>
-    
-   <dependencies>
-    <dependency>
-      <groupId>edu.tigers.sumatra</groupId>
-      <artifactId>common-gui</artifactId>
-    </dependency>
-    
-    <dependency>
-      <groupId>edu.tigers.sumatra</groupId>
-      <artifactId>moduli-cam-logfile</artifactId>
-    </dependency>
-  </dependencies>
-    
+
+    <dependencies>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>common-gui</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-cam-logfile</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-cam</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-referee</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>sumatra-gamelog</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.moduli</groupId>
+            <artifactId>moduli</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>sumatra-model</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.miglayout</groupId>
+            <artifactId>miglayout-swing</artifactId>
+        </dependency>
+    </dependencies>
+
 </project>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.wp.ball.trajectory.chipped;
 
@@ -8,9 +8,11 @@ import java.util.List;
 import org.apache.commons.lang.Validate;
 
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.wp.ball.prediction.IChipBallConsultant;
 import edu.tigers.sumatra.wp.ball.trajectory.BallFactory;
@@ -41,19 +43,19 @@ public class FixedLossPlusRollingConsultant implements IChipBallConsultant
 	@Override
 	public IVector2 absoluteKickVelToVector(final double vel)
 	{
-		return Vector2.fromXY(Math.cos(chipAngle) * vel, Math.sin(chipAngle) * vel);
+		return Vector2.fromXY(SumatraMath.cos(chipAngle) * vel, SumatraMath.sin(chipAngle) * vel);
 	}
 	
 	
 	@Override
 	public double botVelocityToChipFartherThanMaximumDistance(final double distance, final int numTouchdowns,
-			double absMaxVel)
+			final double absMaxVel)
 	{
-		double partVelz = AngleMath.cos(chipAngle) * absMaxVel * 1000;
-		double partVelxy = AngleMath.sin(chipAngle) * absMaxVel * 1000;
+		double partVelz = SumatraMath.cos(chipAngle) * absMaxVel * 1000;
+		double partVelxy = SumatraMath.sin(chipAngle) * absMaxVel * 1000;
 		IVector3 maxVel = Vector3.fromXYZ(partVelxy, 0, partVelz);
 		List<IVector2> touchdowns = BallFactory
-				.createTrajectoryFromKick(Vector2.ZERO_VECTOR, maxVel, true)
+				.createTrajectoryFromKick(Vector2f.ZERO_VECTOR, maxVel, true)
 				.getTouchdownLocations();
 		if (!touchdowns.isEmpty())
 		{
@@ -65,7 +67,7 @@ public class FixedLossPlusRollingConsultant implements IChipBallConsultant
 		}
 		
 		double initialVel = getInitVelForDistAtTouchdown(distance, numTouchdowns);
-		return Math.abs(AngleMath.sin(chipAngle) * initialVel - partVelxy / 1000);
+		return Math.abs((SumatraMath.sin(chipAngle) * initialVel) - (partVelxy / 1000));
 	}
 	
 	
@@ -91,13 +93,22 @@ public class FixedLossPlusRollingConsultant implements IChipBallConsultant
 		double f = 0.0;
 		for (int i = 0; i <= numTouchdown; i++)
 		{
-			f += Math.pow(params.getChipDampingXY(), i) * Math.pow(params.getChipDampingZ(), i);
+			final double dampXY;
+			if (i == 0)
+			{
+				dampXY = 1.0;
+			} else
+			{
+				dampXY = params.getChipDampingXYFirstHop() * Math.pow(params.getChipDampingXYOtherHops(), i - 1.0);
+			}
+			
+			f += dampXY * Math.pow(params.getChipDampingZ(), i);
 		}
 		
-		double denom = f * Math.cos(chipAngle) * Math.sin(chipAngle);
+		double denom = f * SumatraMath.cos(chipAngle) * SumatraMath.sin(chipAngle);
 		Validate.isTrue(denom > 0);
 		
-		return Math.sqrt((distance * g * 0.5) / denom) * 0.001;
+		return SumatraMath.sqrt((distance * g * 0.5) / denom) * 0.001;
 	}
 	
 	
@@ -107,9 +118,9 @@ public class FixedLossPlusRollingConsultant implements IChipBallConsultant
 		final double g = 9810;
 		
 		// initial z velocity in [m/s]
-		double velZ = Math.sqrt(2.0 * g * height) * 0.001;
+		double velZ = SumatraMath.sqrt(2.0 * g * height) * 0.001;
 		
-		return velZ / Math.sin(chipAngle);
+		return velZ / SumatraMath.sin(chipAngle);
 	}
 	
 	
@@ -130,7 +141,7 @@ public class FixedLossPlusRollingConsultant implements IChipBallConsultant
 		}
 		
 		// time where the specified height is reached for the first time
-		double tHeight = -(Math.sqrt((velZ * velZ) - (2.0 * g * heightInM)) - velZ) / g;
+		double tHeight = -(SumatraMath.sqrt((velZ * velZ) - (2.0 * g * heightInM)) - velZ) / g;
 		
 		return kickVel.x() * tHeight * 1000.0;
 	}
@@ -153,7 +164,7 @@ public class FixedLossPlusRollingConsultant implements IChipBallConsultant
 		}
 		
 		// time where the specified height is reached for the second time
-		double tHeight = (Math.sqrt((velZ * velZ) - (2.0 * g * heightInM)) + velZ) / g;
+		double tHeight = (SumatraMath.sqrt((velZ * velZ) - (2.0 * g * heightInM)) + velZ) / g;
 		
 		return kickVel.x() * tHeight * 1000.0;
 	}

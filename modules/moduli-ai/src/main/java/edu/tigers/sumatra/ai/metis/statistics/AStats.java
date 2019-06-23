@@ -6,9 +6,8 @@ package edu.tigers.sumatra.ai.metis.statistics;
 
 import java.util.Map;
 
-import edu.tigers.sumatra.ai.data.MatchStats;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
+import edu.tigers.sumatra.ai.BaseAiFrame;
+import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ids.BotID;
 
 

@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics2D;
 
 import com.sleepycat.persist.model.Persistent;
 
@@ -20,9 +21,9 @@ import edu.tigers.sumatra.math.vector.Vector2f;
 @Persistent
 public class DrawablePoint extends ADrawable
 {
+	private final IVector2 point;
 	/** Size of a point in field unit [mm] */
-	private double				pointSize	= 25;
-	private final IVector2	point;
+	private double pointSize = 25;
 	
 	
 	@SuppressWarnings("unused")
@@ -67,13 +68,14 @@ public class DrawablePoint extends ADrawable
 		g.fillOval(drawingX, drawingY, guiPointSize, guiPointSize);
 	}
 	
-	
 	/**
 	 * @param size of the point
+	 * @return this
 	 */
-	public void setSize(final int size)
+	public DrawablePoint withSize(final double size)
 	{
 		pointSize = size;
+		return this;
 	}
 	
 	

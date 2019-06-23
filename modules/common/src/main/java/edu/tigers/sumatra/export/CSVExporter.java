@@ -11,13 +11,15 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.stream.Stream;
 
 import org.apache.log4j.Logger;
+
+import edu.tigers.sumatra.data.collector.IExportable;
 
 
 /**
@@ -51,21 +53,21 @@ public final class CSVExporter
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private static final Logger	log				= Logger.getLogger(CSVExporter.class.getName());
-	private boolean					autoIncrement	= false;
-	private final String				fileName;
-	private final Queue<String>	values			= new LinkedList<String>();
-	private final Queue<String>	header			= new LinkedList<String>();
-	private String						additionalInfo	= "";
-	private File						file;
-	private FileOutputStream		fileOutputStream;
-	private BufferedWriter			fileWriter;
-	private boolean					writeHeader		= false;
-	private static final String	delimiter		= ",";
-	private int							headerSize		= 0;
+	private static final Logger log = Logger.getLogger(CSVExporter.class.getName());
+	private boolean autoIncrement = false;
+	private final String fileName;
+	private final Queue<String> values = new LinkedList<>();
+	private final Queue<String> header = new LinkedList<>();
+	private String additionalInfo = "";
+	private File file;
+	private FileOutputStream fileOutputStream;
+	private BufferedWriter fileWriter;
+	private boolean writeHeader = false;
+	private static final String DELIMITER = ",";
+	private int headerSize = 0;
 	
-	private boolean					isClosed			= false;
-	private boolean					append			= false;
+	private boolean isClosed = false;
+	private boolean append = false;
 	
 	
 	/**
@@ -94,12 +96,29 @@ public final class CSVExporter
 	/**
 	 * @param folder
 	 * @param key
-	 * @param stream
+	 * @param list
 	 */
-	public static void exportList(final String folder, final String key, final Stream<INumberListable> stream)
+	public static void exportCollection(final String folder, final String key,
+			final Collection<? extends IExportable> list)
 	{
 		CSVExporter exporter = new CSVExporter(folder + "/" + key, false);
-		stream.forEach(nl -> exporter.addValues(nl.getNumberList()));
+		if (!list.isEmpty())
+		{
+			IExportable firstElement = list.iterator().next();
+			Collection<String> header = firstElement.getHeaders();
+			if (header.size() == firstElement.getNumberList().size())
+			{
+				exporter.setHeader(header);
+			} else if (!header.isEmpty())
+			{
+				log.warn("Element size does not match header size: " + header.size() + " != "
+						+ firstElement.getNumberList().size());
+			}
+			list.forEach(nl -> exporter.addValues(nl.getNumberList()));
+		} else
+		{
+			exporter.persistRecord();
+		}
 		exporter.close();
 	}
 	
@@ -164,10 +183,21 @@ public final class CSVExporter
 	public void setHeader(final String... header)
 	{
 		this.header.clear();
-		for (final String string : header)
-		{
-			this.header.add(string);
-		}
+		this.header.addAll(Arrays.asList(header));
+		writeHeader = true;
+		headerSize = this.header.size();
+	}
+	
+	
+	/**
+	 * set the csv header
+	 * 
+	 * @param header
+	 */
+	public void setHeader(Collection<String> header)
+	{
+		this.header.clear();
+		this.header.addAll(header);
 		writeHeader = true;
 		headerSize = this.header.size();
 	}
@@ -252,7 +282,7 @@ public final class CSVExporter
 					fileWriter.write(header.poll());
 					for (final String s : header)
 					{
-						fileWriter.write(delimiter + s);
+						fileWriter.write(DELIMITER + s);
 					}
 					fileWriter.write("\n");
 					fileWriter.flush();
@@ -263,14 +293,16 @@ public final class CSVExporter
 			{
 				throw new CSVExporterException("object count on values must match header", null);
 			}
-			fileWriter.write(values.poll());
-			for (final String s : values)
+			if (!values.isEmpty())
 			{
-				fileWriter.write(delimiter + s);
+				fileWriter.write(values.poll());
+				for (final String s : values)
+				{
+					fileWriter.write(DELIMITER + s);
+				}
+				fileWriter.write("\n");
+				fileWriter.flush();
 			}
-			fileWriter.write("\n");
-			fileWriter.flush();
-			
 		} catch (final FileNotFoundException err)
 		{
 			throw new CSVExporterException("file not found", err);

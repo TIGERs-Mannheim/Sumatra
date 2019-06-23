@@ -1,151 +1,153 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.calc;
 
 import java.util.LinkedList;
-import java.util.List;
+
+import org.apache.log4j.Logger;
 
 import com.github.g3force.configurable.Configurable;
 
 import edu.tigers.autoreferee.AutoRefFrame;
 import edu.tigers.autoreferee.EAutoRefShapesLayer;
-import edu.tigers.autoreferee.engine.NGeometry;
 import edu.tigers.autoreferee.generic.TimedPosition;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
 
 
 /**
  * Save the moment, the ball left the field
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class BallLeftFieldCalc implements IRefereeCalc
 {
+	private static final Logger log = Logger.getLogger(BallLeftFieldCalc.class.getName());
 	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	private static final int BUFFER_SIZE = 15;
-	private static final int CERTAINTY = 3;
-	@Configurable(comment = "[mm] Area behind the goal that is still considered to be part of the goal for better goal detection")
-	private static double goalMargin = 50;
+	@Configurable(comment = "Time [s] to wait before using ball positions, invaliding all positions just before a chip kick", defValue = "0.3")
+	private static double maxTimeToDetectChipKick = 0.3;
 	
-	private final LinkedList<TimedPosition> buffer = new LinkedList<>();
+	@Configurable(comment = "Time [s] between two ball positions to pass before comparing them in order to check if the ball left the field")
+	private static double minComparisonTimeSpan = 0.05;
 	
+	private final LinkedList<TimedPosition> ballPosBuffer = new LinkedList<>();
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	@Override
 	public void process(final AutoRefFrame frame)
 	{
-		updateBuffer(frame.getWorldFrame());
+		reduceBallPosBuffer(frame.getTimestamp());
+		addToBallPosBuffer(frame.getWorldFrame());
+		removeFirstChippedBallPositions(frame);
 		
-		boolean wasInsideField = frame.getPreviousFrame().isBallInsideField();
+		updateDetection(frame);
 		
-		TimedPosition leftFieldPos = frame.getPreviousFrame().getBallLeftFieldPos();
-		boolean isBallInsideField = isBallInsideField(wasInsideField);
-		if (!isBallInsideField && wasInsideField)
+		drawBallLeftFieldPos(frame);
+	}
+	
+	
+	private void updateDetection(final AutoRefFrame frame)
+	{
+		TimedPosition prePos = ballPosBuffer.peekLast();
+		TimedPosition postPos = firstValidBallPos(frame);
+		
+		TimedPosition ballLeftFieldPos = frame.getPreviousFrame().getBallLeftFieldPos().orElse(null);
+		if (ballLeftFieldPos != null && (frame.getTimestamp() - ballLeftFieldPos.getTimestamp()) / 1e9 > 2)
 		{
-			leftFieldPos = getBallLeftFieldPosition();
+			ballLeftFieldPos = null;
 		}
-		frame.setBallInsideField(isBallInsideField);
-		frame.setBallLeftFieldPos(leftFieldPos);
-		if (leftFieldPos != null)
+		
+		if (prePos != null && postPos != null
+				&& (postPos.getTimestamp() - prePos.getTimestamp()) / 1e9 >= minComparisonTimeSpan)
+		{
+			boolean postBallPosInsideField = Geometry.getField()
+					.withMargin(Geometry.getLineWidth() + Geometry.getBallRadius())
+					.isPointInShape(postPos.getPos());
+			boolean preBallPosInsideField = Geometry.getField()
+					.withMargin(Geometry.getLineWidth() + Geometry.getBallRadius())
+					.isPointInShape(prePos.getPos());
+			boolean stateChanged = postBallPosInsideField != preBallPosInsideField;
+			if (!postBallPosInsideField && stateChanged)
+			{
+				ILine line = Line.fromPoints(postPos.getPos(), prePos.getPos());
+				IVector2 pos = postPos.getPos().nearestToOpt(Geometry.getField().lineIntersections(line))
+						.orElse(postPos.getPos());
+				ballLeftFieldPos = new TimedPosition(postPos.getTimestamp(), pos);
+			}
+		}
+		
+		frame.setBallLeftFieldPos(ballLeftFieldPos);
+		frame.setBallInsideField(Geometry.getField().withMargin(Geometry.getLineWidth() + Geometry.getBallRadius())
+				.isPointInShape(frame.getWorldFrame().getBall().getPos()));
+	}
+	
+	
+	private void drawBallLeftFieldPos(final AutoRefFrame frame)
+	{
+		if (frame.getBallLeftFieldPos().isPresent())
 		{
 			frame.getShapes().get(EAutoRefShapesLayer.BALL_LEFT_FIELD)
-					.add(new DrawableCircle(Circle.createCircle(leftFieldPos.getPos(), 100)));
+					.add(new DrawableCircle(Circle.createCircle(frame.getBallLeftFieldPos().get().getPos(), 100)));
 		}
 	}
 	
 	
-	private void updateBuffer(final SimpleWorldFrame frame)
+	private TimedPosition firstValidBallPos(final AutoRefFrame frame)
 	{
-		TimedPosition pos = new TimedPosition(frame.getTimestamp(), frame.getBall().getPos3());
-		
-		if (buffer.size() >= BUFFER_SIZE)
+		for (TimedPosition timedPosition : ballPosBuffer)
 		{
-			buffer.pollLast();
-		}
-		buffer.offerFirst(pos);
-	}
-	
-	
-	private TimedPosition getBallLeftFieldPosition()
-	{
-		IRectangle field = Geometry.getField();
-		
-		TimedPosition outsidePos = null;
-		TimedPosition insidePos = null;
-		for (TimedPosition curPos : buffer)
-		{
-			if (!field.isPointInShape(curPos.getPos()))
+			if (timedPosition.getAge(frame.getTimestamp()) > maxTimeToDetectChipKick)
 			{
-				outsidePos = curPos;
+				return timedPosition;
+			}
+		}
+		return null;
+	}
+	
+	
+	private void removeFirstChippedBallPositions(final AutoRefFrame frame)
+	{
+		if (frame.getWorldFrame().getBall().isChipped())
+		{
+			if (frame.getWorldFrame().getKickEvent().isPresent())
+			{
+				double age = (frame.getTimestamp() - frame.getWorldFrame().getKickEvent().get().getTimestamp()) / 1e9;
+				if (age < maxTimeToDetectChipKick)
+				{
+					ballPosBuffer.clear();
+				}
 			} else
 			{
-				insidePos = curPos;
+				log.warn("Chipped ball has no kick event: " + frame.getWorldFrame().getBall());
+			}
+		}
+	}
+	
+	
+	private void addToBallPosBuffer(final SimpleWorldFrame frame)
+	{
+		TimedPosition pos = new TimedPosition(frame.getTimestamp(), frame.getBall().getPos());
+		ballPosBuffer.offerFirst(pos);
+	}
+	
+	
+	private void reduceBallPosBuffer(final long currentTimestamp)
+	{
+		ballPosBuffer.removeIf(t -> t.getTimestamp() > currentTimestamp);
+		while (!ballPosBuffer.isEmpty())
+		{
+			double age = (currentTimestamp - ballPosBuffer.get(ballPosBuffer.size() - 1).getTimestamp()) / 1e9;
+			if (age > maxTimeToDetectChipKick + minComparisonTimeSpan + 0.2)
+			{
+				ballPosBuffer.remove(ballPosBuffer.size() - 1);
+			} else
+			{
 				break;
 			}
 		}
-		
-		if ((insidePos != null) && (outsidePos != null))
-		{
-			ILine line = Line.fromPoints(insidePos.getPos(), outsidePos.getPos());
-			List<IVector2> intersections = field.lineIntersections(line);
-			if (!intersections.isEmpty())
-			{
-				return new TimedPosition(outsidePos.getTimestamp(), outsidePos.getPos().nearestTo(intersections));
-			}
-		}
-		return new TimedPosition();
-	}
-	
-	
-	private boolean isBallInsideField(final boolean currentlyInside)
-	{
-		if (buffer.size() < CERTAINTY)
-		{
-			return currentlyInside;
-		}
-		
-		boolean ballStateChanged = true;
-		for (int i = 0; i < CERTAINTY; i++)
-		{
-			TimedPosition pos = buffer.get(i);
-			if (isBallInsideFieldPerimeter(pos.getPos3D(), currentlyInside) == currentlyInside)
-			{
-				ballStateChanged = false;
-				break;
-			}
-		}
-		return ballStateChanged ^ currentlyInside;
-	}
-	
-	
-	private boolean isBallInsideFieldPerimeter(final IVector3 ballPos, final boolean currentlyInside)
-	{
-		return Geometry.getField().isPointInShape(ballPos.getXYVector()) || ballInsideGoal(ballPos, currentlyInside);
-	}
-	
-	
-	/**
-	 * Check if the ball is located inside the goal.
-	 * We use a hysteresis like approach to avoid false positive detections that can occur if the physical goal is not
-	 * positioned correctly and the ball enters the virtual goal after having left the field.
-	 */
-	private boolean ballInsideGoal(final IVector3 ballPos, final boolean currentlyInside)
-	{
-		return currentlyInside && NGeometry.ballInsideGoal(ballPos, 0, goalMargin);
 	}
 }

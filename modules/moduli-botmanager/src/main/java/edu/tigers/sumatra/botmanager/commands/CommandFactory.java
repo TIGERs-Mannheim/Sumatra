@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 08.08.2010
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands;
 
@@ -22,20 +17,17 @@ import edu.tigers.sumatra.botmanager.serial.SerialException;
  */
 public final class CommandFactory
 {
-	// Logger
-	private static final Logger							log							= Logger.getLogger(CommandFactory.class
-			.getName());
+	private static final Logger log = Logger.getLogger(CommandFactory.class.getName());
 	
-	private static CommandFactory							instance						= null;
+	private static CommandFactory instance = null;
 	
-	private final Map<Integer, SerialDescription>	commands						= new HashMap<>();
+	private final Map<Integer, SerialDescription> commands = new HashMap<>();
 	
-	private static final int								HEADER_LENGTH				= 2;
-	private static final int								LEGACY_HEADER_LENGTH		= 4;
-	private static final int								RELIABLE_HEADER_LENGTH	= 4;
+	private static final int HEADER_LENGTH = 2;
+	private static final int RELIABLE_HEADER_LENGTH = 4;
 	
 	/** Reliable commands use an extended header, signaled by 8th bit in section */
-	private static final int								RELIABLE_CMD_MASK			= 0x8000;
+	private static final int RELIABLE_CMD_MASK = 0x8000;
 	
 	
 	private CommandFactory()
@@ -117,16 +109,15 @@ public final class CommandFactory
 	 * Parse byte data and create command.
 	 * 
 	 * @param data
-	 * @param legacy true if this is a legacy command which's header includes data length
 	 * @return
 	 */
-	public ACommand decode(final byte[] data, final boolean legacy)
+	public ACommand decode(final byte[] data)
 	{
 		int cmdId = ACommand.byteArray2UShort(data, 0);
 		boolean reliable = false;
 		int seq = 0;
 		
-		if (!legacy && ((cmdId & RELIABLE_CMD_MASK) == RELIABLE_CMD_MASK))
+		if ((cmdId & RELIABLE_CMD_MASK) == RELIABLE_CMD_MASK)
 		{
 			reliable = true;
 			cmdId &= ~RELIABLE_CMD_MASK;
@@ -141,21 +132,14 @@ public final class CommandFactory
 		
 		byte[] cmdData;
 		
-		if (legacy)
+		if (reliable)
 		{
-			cmdData = new byte[data.length - LEGACY_HEADER_LENGTH];
-			System.arraycopy(data, LEGACY_HEADER_LENGTH, cmdData, 0, data.length - LEGACY_HEADER_LENGTH);
+			cmdData = new byte[data.length - RELIABLE_HEADER_LENGTH];
+			System.arraycopy(data, RELIABLE_HEADER_LENGTH, cmdData, 0, data.length - RELIABLE_HEADER_LENGTH);
 		} else
 		{
-			if (reliable)
-			{
-				cmdData = new byte[data.length - RELIABLE_HEADER_LENGTH];
-				System.arraycopy(data, RELIABLE_HEADER_LENGTH, cmdData, 0, data.length - RELIABLE_HEADER_LENGTH);
-			} else
-			{
-				cmdData = new byte[data.length - HEADER_LENGTH];
-				System.arraycopy(data, HEADER_LENGTH, cmdData, 0, data.length - HEADER_LENGTH);
-			}
+			cmdData = new byte[data.length - HEADER_LENGTH];
+			System.arraycopy(data, HEADER_LENGTH, cmdData, 0, data.length - HEADER_LENGTH);
 		}
 		
 		SerialDescription cmdDesc = commands.get(cmdId);
@@ -196,10 +180,9 @@ public final class CommandFactory
 	 * Encode command in byte stream.
 	 * 
 	 * @param cmd
-	 * @param legacy true if this is a legacy command which's header includes data length
 	 * @return
 	 */
-	public byte[] encode(final ACommand cmd, final boolean legacy)
+	public byte[] encode(final ACommand cmd)
 	{
 		int cmdId = cmd.getType().getId();
 		
@@ -223,35 +206,24 @@ public final class CommandFactory
 		
 		byte[] data;
 		
-		if (legacy)
+		if (cmd.isReliable())
 		{
-			data = new byte[cmdData.length + LEGACY_HEADER_LENGTH];
+			data = new byte[cmdData.length + RELIABLE_HEADER_LENGTH];
+			
+			cmdId |= RELIABLE_CMD_MASK;
 			
 			ACommand.short2ByteArray(data, 0, cmdId);
-			ACommand.short2ByteArray(data, 2, cmdData.length);
+			ACommand.short2ByteArray(data, 2, cmd.getSeq());
 			
-			System.arraycopy(cmdData, 0, data, LEGACY_HEADER_LENGTH, cmdData.length);
+			System.arraycopy(cmdData, 0, data, RELIABLE_HEADER_LENGTH, cmdData.length);
+			
 		} else
 		{
-			if (cmd.isReliable())
-			{
-				data = new byte[cmdData.length + RELIABLE_HEADER_LENGTH];
-				
-				cmdId |= RELIABLE_CMD_MASK;
-				
-				ACommand.short2ByteArray(data, 0, cmdId);
-				ACommand.short2ByteArray(data, 2, cmd.getSeq());
-				
-				System.arraycopy(cmdData, 0, data, RELIABLE_HEADER_LENGTH, cmdData.length);
-				
-			} else
-			{
-				data = new byte[cmdData.length + HEADER_LENGTH];
-				
-				ACommand.short2ByteArray(data, 0, cmdId);
-				
-				System.arraycopy(cmdData, 0, data, HEADER_LENGTH, cmdData.length);
-			}
+			data = new byte[cmdData.length + HEADER_LENGTH];
+			
+			ACommand.short2ByteArray(data, 0, cmdId);
+			
+			System.arraycopy(cmdData, 0, data, HEADER_LENGTH, cmdData.length);
 		}
 		
 		return data;
@@ -260,10 +232,9 @@ public final class CommandFactory
 	
 	/**
 	 * @param cmd
-	 * @param legacy
 	 * @return
 	 */
-	public int getLength(final ACommand cmd, final boolean legacy)
+	public int getLength(final ACommand cmd)
 	{
 		int length;
 		int cmdId = cmd.getType().getId();
@@ -285,18 +256,12 @@ public final class CommandFactory
 			return 0;
 		}
 		
-		if (legacy)
+		if (cmd.isReliable())
 		{
-			length += LEGACY_HEADER_LENGTH;
+			length += RELIABLE_HEADER_LENGTH;
 		} else
 		{
-			if (cmd.isReliable())
-			{
-				length += RELIABLE_HEADER_LENGTH;
-			} else
-			{
-				length += HEADER_LENGTH;
-			}
+			length += HEADER_LENGTH;
 		}
 		
 		return length;

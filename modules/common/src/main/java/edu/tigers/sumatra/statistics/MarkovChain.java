@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 17, 2016
- * Author(s): Phillipp Mevenkamp <phillippmevenkamp@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.statistics;
 
@@ -25,7 +20,7 @@ import com.sleepycat.persist.model.Persistent;
 @Persistent
 public class MarkovChain<MappedClass>
 {
-	private Map<MappedClass, MarkovChainEntry<MappedClass>>	containedStates	= new HashMap<>();
+	private Map<MappedClass, MarkovChainEntry<MappedClass>> containedStates = new HashMap<>();
 	
 	
 	/**
@@ -107,5 +102,20 @@ public class MarkovChain<MappedClass>
 		}
 		
 		return 0;
+	}
+	
+	/**
+	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+	 * @param <M> This is the class that should be mapped by the markov chain. It represents the object from which
+	 *           the transistions happen.
+	 */
+	@Persistent
+	private class MarkovChainEntry<M>
+	{
+		/** This is the count for absolute transitions happen to a given state */
+		Map<M, Integer> absoluteTransitions = new HashMap<>();
+		
+		/** This is the count of absolute transitions */
+		int transitions = 1;
 	}
 }

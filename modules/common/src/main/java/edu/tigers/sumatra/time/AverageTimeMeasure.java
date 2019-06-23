@@ -1,28 +1,37 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.time;
 
-import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.apache.commons.lang.Validate;
 
 
 /**
+ * Measure times and build an average over a defined duration (averagingTime=1s)
+ * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class AverageTimeMeasure
 {
-	private double			averagingTime	= 1;
+	private final Deque<Long> measurements = new ConcurrentLinkedDeque<>();
+	private final Deque<Long> measureTimes = new ConcurrentLinkedDeque<>();
+	private double averagingTime = 1;
+	private Long tStart = null;
+	private Long tLastAvgTime = null;
 	
-	private Deque<Long>	measurements	= new ArrayDeque<>();
-	private Long			tStart			= null;
-	private Deque<Long>	measureTimes	= new ArrayDeque<>();
 	
-	private Long			tLastAvgTime	= null;
+	/**
+	 * Make sure no measurement is running
+	 */
+	public void resetMeasure()
+	{
+		tStart = null;
+	}
 	
 	
 	/**

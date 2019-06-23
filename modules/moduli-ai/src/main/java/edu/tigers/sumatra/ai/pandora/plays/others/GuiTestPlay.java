@@ -1,47 +1,26 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 10.11.2010
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.others;
 
-import org.apache.log4j.Logger;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
-import com.github.g3force.instanceables.InstanceableClass.NotCreateableException;
-
-import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
+import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
+import edu.tigers.sumatra.ai.metis.MetisAiFrame;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
-import edu.tigers.sumatra.ai.pandora.roles.ERole;
-import edu.tigers.sumatra.ai.pandora.roles.RoleFactory;
+import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
 
 
 /**
  * This play is the role-container for any {@link ARole} selected by the GUI
- * 
- * @author Gero
  */
 public class GuiTestPlay extends APlay
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
+	private Set<ARole> roleToBeAdded = new LinkedHashSet<>();
 	
-	private static final Logger	log					= Logger.getLogger(GuiTestPlay.class.getName());
-	
-	private ARole						roleToBeRemoved	= null;
-	private ARole						roleToBeAdded		= null;
-	
-	private ERole						lastAddedRoleType	= ERole.MOVE;
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 * Default
@@ -52,64 +31,38 @@ public class GuiTestPlay extends APlay
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
+	@Override
+	protected void doUpdate(final AthenaAiFrame frame)
+	{
+		roleToBeAdded.clear();
+	}
 	
 	
 	@Override
 	protected ARole onRemoveRole(final MetisAiFrame frame)
 	{
-		if (roleToBeRemoved != null)
-		{
-			ARole role = roleToBeRemoved;
-			roleToBeRemoved = null;
-			return role;
-		}
 		return getLastRole();
 	}
 	
 	
 	@Override
-	protected ARole onAddRole(final MetisAiFrame frame)
+	protected ARole onAddRole()
 	{
-		if (roleToBeAdded != null)
+		if (roleToBeAdded.isEmpty())
 		{
-			ARole role = roleToBeAdded;
-			lastAddedRoleType = role.getType();
-			return role;
+			return new MoveRole();
 		}
-		log.warn(
-				"Could not add requested role. Creating new default instance. Your custom parameters will not be used! You may need to set a fixed botID.");
-		try
-		{
-			return RoleFactory.createDefaultRole(lastAddedRoleType);
-		} catch (NotCreateableException err)
-		{
-			log.error("Could not create role " + lastAddedRoleType, err);
-		}
-		return null;
+		return roleToBeAdded.iterator().next();
 	}
 	
 	
 	/**
-	 * Little bit hacky... do not ask
+	 * Add a role to be added by this play
 	 * 
 	 * @param role
 	 */
-	public void setRoleToBeRemoved(final ARole role)
+	public void addRoleToBeAdded(final ARole role)
 	{
-		roleToBeRemoved = role;
-	}
-	
-	
-	/**
-	 * Little bit hacky... do not ask
-	 * 
-	 * @param role
-	 */
-	public void setRoleToBeAdded(final ARole role)
-	{
-		roleToBeAdded = role;
+		roleToBeAdded.add(role);
 	}
 }

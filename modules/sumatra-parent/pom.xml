@@ -7,55 +7,30 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>edu.tigers.sumatra</groupId>
     <artifactId>sumatra-parent</artifactId>
-    <version>5.1-SNAPSHOT</version>
+    <version>6.0</version>
 
     <packaging>pom</packaging>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <moduli.version>1.3</moduli.version>
-        <protobuf.version>2.6.1</protobuf.version>
+        <protobuf.version>3.5.1</protobuf.version>
     </properties>
 
     <repositories>
-
         <repository>
             <id>tigers_public</id>
             <url>http://tigers-mannheim.de/nexus/content/groups/public/</url>
-        </repository>
-
-        <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
-        </repository>
-
-        <repository>
-            <id>oracleReleases</id>
-            <name>Oracle Released Java Packages</name>
-            <url>http://download.oracle.com/maven</url>
-            <layout>default</layout>
         </repository>
     </repositories>
 
 
     <pluginRepositories>
         <pluginRepository>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <id>bintray-sergei-ivanov-maven</id>
-            <name>bintray-plugins</name>
-            <url>http://dl.bintray.com/sergei-ivanov/maven</url>
+            <id>tigers_public</id>
+            <url>http://tigers-mannheim.de/nexus/content/groups/public/</url>
         </pluginRepository>
     </pluginRepositories>
-
-    <dependencies>
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>1.2.17</version>
-        </dependency>
-    </dependencies>
 
     <dependencyManagement>
         <dependencies>
@@ -91,12 +66,6 @@
 
             <dependency>
                 <groupId>edu.tigers.sumatra</groupId>
-                <artifactId>common-clock</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>edu.tigers.sumatra</groupId>
                 <artifactId>common-gui</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -115,7 +84,7 @@
 
             <dependency>
                 <groupId>edu.tigers.sumatra</groupId>
-                <artifactId>common-model</artifactId>
+                <artifactId>sumatra-model</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -127,19 +96,13 @@
 
             <dependency>
                 <groupId>edu.tigers.sumatra</groupId>
-                <artifactId>moduli-aisimulation</artifactId>
+                <artifactId>sumatra-simulation-control</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>edu.tigers.sumatra</groupId>
                 <artifactId>moduli-autoreferee</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>edu.tigers.sumatra</groupId>
-                <artifactId>moduli-bot-data-sampler</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -187,7 +150,7 @@
 
             <dependency>
                 <groupId>edu.tigers.sumatra</groupId>
-                <artifactId>moduli-rcm</artifactId>
+                <artifactId>sumatra-rcm</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -211,7 +174,7 @@
 
             <dependency>
                 <groupId>edu.tigers.sumatra</groupId>
-                <artifactId>moduli-testplays</artifactId>
+                <artifactId>sumatra-testplays</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -235,25 +198,7 @@
 
             <dependency>
                 <groupId>edu.tigers.sumatra</groupId>
-                <artifactId>moduli-wp-bot</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>edu.tigers.sumatra</groupId>
                 <artifactId>moduli-wp-export</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>edu.tigers.sumatra</groupId>
-                <artifactId>moduli-wp-kalman2</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>edu.tigers.sumatra</groupId>
-                <artifactId>sumatra-augmented</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -361,13 +306,13 @@
 
             <dependency>
                 <groupId>edu.tigers.sumatra</groupId>
-                <artifactId>sumatra-shared-radio</artifactId>
+                <artifactId>sumatra-multi-team-communication</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>edu.tigers.sumatra</groupId>
-                <artifactId>sumatra-sim</artifactId>
+                <artifactId>moduli-vision-simulation</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -391,7 +336,7 @@
 
             <dependency>
                 <groupId>edu.tigers.sumatra</groupId>
-                <artifactId>moduli-gamelog</artifactId>
+                <artifactId>sumatra-gamelog</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -403,40 +348,242 @@
 
             <dependency>
                 <groupId>edu.tigers.sumatra</groupId>
-                <artifactId>sumatra-movement-limit-observer</artifactId>
+                <artifactId>moduli-movement-limit-observer</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-ai-controller</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- ########## external libs ################ -->
+
+            <dependency>
                 <groupId>com.github.g3force</groupId>
                 <artifactId>configurable</artifactId>
-                <version>v2.2</version>
+                <version>v2.4</version>
             </dependency>
 
             <dependency>
-                <groupId>org.assertj</groupId>
-                <artifactId>assertj-core</artifactId>
-                <version>3.5.2</version>
+                <groupId>log4j</groupId>
+                <artifactId>log4j</artifactId>
+                <version>1.2.17</version>
             </dependency>
 
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
-                <version>2.8.8</version>
+                <version>2.9.2</version>
             </dependency>
 
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
-                <version>2.8.8</version>
+                <version>2.9.2</version>
             </dependency>
 
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.8.8</version>
+                <version>2.9.2</version>
             </dependency>
 
+            <dependency>
+                <groupId>edu.tigers.moduli</groupId>
+                <artifactId>moduli</artifactId>
+                <version>2.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>commons-configuration</groupId>
+                <artifactId>commons-configuration</artifactId>
+                <version>1.10</version>
+            </dependency>
+
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.12</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.assertj</groupId>
+                <artifactId>assertj-core</artifactId>
+                <version>3.8.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.hamcrest</groupId>
+                <artifactId>hamcrest-core</artifactId>
+                <version>1.3</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.hamcrest</groupId>
+                <artifactId>hamcrest-all</artifactId>
+                <version>1.3</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.hamcrest</groupId>
+                <artifactId>hamcrest-library</artifactId>
+                <version>1.3</version>
+            </dependency>
+
+            <dependency>
+                <groupId>nl.jqno.equalsverifier</groupId>
+                <artifactId>equalsverifier</artifactId>
+                <version>2.4</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>com.carrotsearch</groupId>
+                <artifactId>junit-benchmarks</artifactId>
+                <version>0.7.2</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>com.sleepycat</groupId>
+                <artifactId>je</artifactId>
+                <version>7.5.11</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-math3</artifactId>
+                <version>3.6.1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.googlecode.json-simple</groupId>
+                <artifactId>json-simple</artifactId>
+                <version>1.1.1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>gov.nist.math</groupId>
+                <artifactId>jama</artifactId>
+                <version>1.0.3</version>
+            </dependency>
+
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>2.6</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.g3force</groupId>
+                <artifactId>String2ValueConverter</artifactId>
+                <version>v2.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>23.4-jre</version>
+            </dependency>
+
+            <dependency>
+                <groupId>idw-gpl</groupId>
+                <artifactId>idw-gpl</artifactId>
+                <version>1.6.1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.miglayout</groupId>
+                <artifactId>miglayout-swing</artifactId>
+                <version>5.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>2.6</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-collections4</artifactId>
+                <version>4.1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>${protobuf.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.g3force</groupId>
+                <artifactId>instanceables</artifactId>
+                <version>v1.3</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.google.code.matlabcontrol</groupId>
+                <artifactId>matlabcontrol</artifactId>
+                <version>4.1.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-all</artifactId>
+                <version>1.10.19</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.g3force.AndroidBluetoothProtobuf</groupId>
+                <artifactId>core</artifactId>
+                <version>v1.4</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.g3force.AndroidBluetoothProtobuf</groupId>
+                <artifactId>libpc</artifactId>
+                <version>v1.4</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.java.jinput</groupId>
+                <artifactId>jinput-platform</artifactId>
+                <version>2.0.4-1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.sf.jchart2d</groupId>
+                <artifactId>jchart2d</artifactId>
+                <version>3.3.2</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.swinglabs.swingx</groupId>
+                <artifactId>swingx-all</artifactId>
+                <version>1.6.5-1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.vladium.utils</groupId>
+                <artifactId>objectprofiler</artifactId>
+                <version>1.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.jafama</groupId>
+                <artifactId>jafama</artifactId>
+                <version>2.1.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>1.4.191</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -445,7 +592,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.3</version>
+                <version>3.7.0</version>
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
@@ -455,19 +602,20 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.19.1</version>
+                <version>2.20.1</version>
                 <configuration>
                     <excludes>
                         <exclude>**/*PerfTest.java</exclude>
                         <exclude>**/*IntegrationTest.java</exclude>
                     </excludes>
+                    <runOrder>alphabetical</runOrder>
                 </configuration>
             </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
-                <version>2.4</version>
+                <version>3.0.1</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
@@ -481,7 +629,19 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>2.10</version>
+                <version>3.0.2</version>
+                <executions>
+                    <execution>
+                        <id>analyze</id>
+                        <goals>
+                            <goal>analyze-only</goal>
+                        </goals>
+                        <configuration>
+                            <failOnWarning>true</failOnWarning>
+                            <outputXML>true</outputXML>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
 
@@ -491,7 +651,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>2.10.3</version>
+                    <version>3.0.0-M1</version>
                     <executions>
                         <execution>
                             <id>attach-javadocs</id>
@@ -523,6 +683,18 @@
                             </configuration>
                         </execution>
                     </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>versions-maven-plugin</artifactId>
+                    <version>2.5</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>1.6.0</version>
                 </plugin>
             </plugins>
         </pluginManagement>

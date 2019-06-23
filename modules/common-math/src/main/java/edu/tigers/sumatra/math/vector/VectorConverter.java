@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.vector;
@@ -55,7 +55,7 @@ public class VectorConverter implements IString2ValueConverter
 		} catch (NumberFormatException err)
 		{
 			log.warn(MSG_NOT_PARSABLE, err);
-			return AVector2.ZERO_VECTOR;
+			return Vector2f.ZERO_VECTOR;
 		}
 	}
 	
@@ -68,7 +68,7 @@ public class VectorConverter implements IString2ValueConverter
 		} catch (NumberFormatException err)
 		{
 			log.warn(MSG_NOT_PARSABLE, err);
-			return AVector3.ZERO_VECTOR;
+			return Vector3f.ZERO_VECTOR;
 		}
 	}
 	

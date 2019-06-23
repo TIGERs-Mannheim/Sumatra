@@ -17,10 +17,10 @@ import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.CircleMath;
 import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.triangle.TriangleMath;
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.VectorMath;
 
 
@@ -62,16 +62,16 @@ public class LineMathTest
 	public void testDistancePP()
 	{
 		// 1)
-		Assert.assertEquals(1, VectorMath.distancePP(AVector2.X_AXIS, AVector2.ZERO_VECTOR), TEST_ACCURACY);
-		Assert.assertEquals(1, VectorMath.distancePP(AVector2.Y_AXIS, AVector2.ZERO_VECTOR), TEST_ACCURACY);
-		Assert.assertEquals(Math.sqrt(2), VectorMath.distancePP(AVector2.X_AXIS, AVector2.Y_AXIS), TEST_ACCURACY);
+		Assert.assertEquals(1, VectorMath.distancePP(Vector2f.X_AXIS, Vector2f.ZERO_VECTOR), TEST_ACCURACY);
+		Assert.assertEquals(1, VectorMath.distancePP(Vector2f.Y_AXIS, Vector2f.ZERO_VECTOR), TEST_ACCURACY);
+		Assert.assertEquals(SumatraMath.sqrt(2), VectorMath.distancePP(Vector2f.X_AXIS, Vector2f.Y_AXIS), TEST_ACCURACY);
 		
 		// 2)
 		for (double i = 0; i < (2 * Math.PI); i += 0.1)
 		{
 			final double spiralCoeff = i + 1e-3;
-			IVector2 p = Vector2.fromXY(spiralCoeff * Math.cos(i), spiralCoeff * Math.sin(i));
-			Assert.assertEquals(spiralCoeff, VectorMath.distancePP(AVector2.ZERO_VECTOR, p), TEST_ACCURACY_SQR);
+			IVector2 p = Vector2.fromXY(spiralCoeff * SumatraMath.cos(i), spiralCoeff * SumatraMath.sin(i));
+			Assert.assertEquals(spiralCoeff, VectorMath.distancePP(Vector2f.ZERO_VECTOR, p), TEST_ACCURACY_SQR);
 		}
 		
 		// 3)
@@ -80,7 +80,8 @@ public class LineMathTest
 			Vector2 a = createRandomVector(Math.pow(10, (i - 5)));
 			Vector2 b = createRandomVector((i - 5));
 			double distance = VectorMath.distancePP(a, b);
-			Assert.assertEquals(Math.sqrt(((b.x() - a.x()) * (b.x() - a.x())) + ((b.y() - a.y()) * (b.y() - a.y()))),
+			Assert.assertEquals(
+					SumatraMath.sqrt(((b.x() - a.x()) * (b.x() - a.x())) + ((b.y() - a.y()) * (b.y() - a.y()))),
 					distance,
 					TEST_ACCURACY_SQR);
 		}
@@ -107,9 +108,9 @@ public class LineMathTest
 				{ createRandomVector(1e3), createRandomVector(1e3) },
 				{ createRandomVector(1e2), createRandomVector(1e2) },
 				{ createRandomVector(1e1), createRandomVector(1e1) },
-				{ AVector2.X_AXIS, AVector2.ZERO_VECTOR },
-				{ AVector2.Y_AXIS, AVector2.ZERO_VECTOR },
-				{ AVector2.X_AXIS, AVector2.Y_AXIS },
+				{ Vector2f.X_AXIS, Vector2f.ZERO_VECTOR },
+				{ Vector2f.Y_AXIS, Vector2f.ZERO_VECTOR },
+				{ Vector2f.X_AXIS, Vector2f.Y_AXIS },
 				{ createRandomVector(1e-1), createRandomVector(1e-1) },
 				{ createRandomVector(1e-2), createRandomVector(1e-2) },
 				{ createRandomVector(1e-3), createRandomVector(1e-3) },
@@ -121,7 +122,7 @@ public class LineMathTest
 		for (IVector2[] pnts : testpoints)
 		{
 			final double euclDis = VectorMath.distancePP(pnts[0], pnts[1]);
-			Assert.assertEquals(Math.sqrt(VectorMath.distancePPSqr(pnts[0], pnts[1])), euclDis,
+			Assert.assertEquals(SumatraMath.sqrt(VectorMath.distancePPSqr(pnts[0], pnts[1])), euclDis,
 					TEST_ACCURACY_SQR);
 		}
 		
@@ -157,23 +158,23 @@ public class LineMathTest
 		{
 			idx.add(i);
 			final double spiralCoeff = i + 1e-3;
-			IVector2 p2 = Vector2.fromXY(spiralCoeff * Math.cos(i), spiralCoeff * Math.sin(i));
-			lines.add(Line.fromDirection(AVector2.ZERO_VECTOR, p2));
+			IVector2 p2 = Vector2.fromXY(spiralCoeff * SumatraMath.cos(i), spiralCoeff * SumatraMath.sin(i));
+			lines.add(Line.fromDirection(Vector2f.ZERO_VECTOR, p2));
 		}
 		for (int i = 0; i < idx.size(); ++i)
 		{
 			final double scalefactor = idx.get(i) * Math.pow(10, idx.get(i) - Math.PI);
-			final IVector2 scaledX = AVector2.X_AXIS.multiplyNew(scalefactor);
-			final IVector2 scaledY = AVector2.Y_AXIS.multiplyNew(scalefactor);
+			final IVector2 scaledX = Vector2f.X_AXIS.multiplyNew(scalefactor);
+			final IVector2 scaledY = Vector2f.Y_AXIS.multiplyNew(scalefactor);
 			final double distanceX = LineMath.distancePL(scaledX, lines.get(i));
 			final double distanceY = LineMath.distancePL(scaledY, lines.get(i));
-			Assert.assertEquals(Math.abs(scalefactor * Math.sin(idx.get(i))), distanceX, TEST_ACCURACY_SQR);
-			Assert.assertEquals(Math.abs(scalefactor * Math.cos(idx.get(i))), distanceY, TEST_ACCURACY_SQR);
+			Assert.assertEquals(Math.abs(scalefactor * SumatraMath.sin(idx.get(i))), distanceX, TEST_ACCURACY_SQR);
+			Assert.assertEquals(Math.abs(scalefactor * SumatraMath.cos(idx.get(i))), distanceY, TEST_ACCURACY_SQR);
 			
 			final double distanceX2 = LineMath.distancePL(scaledX, lines.get(i));
 			final double distanceY2 = LineMath.distancePL(scaledY, lines.get(i));
-			Assert.assertEquals(Math.abs(scalefactor * Math.sin(idx.get(i))), distanceX2, TEST_ACCURACY_SQR);
-			Assert.assertEquals(Math.abs(scalefactor * Math.cos(idx.get(i))), distanceY2, TEST_ACCURACY_SQR);
+			Assert.assertEquals(Math.abs(scalefactor * SumatraMath.sin(idx.get(i))), distanceX2, TEST_ACCURACY_SQR);
+			Assert.assertEquals(Math.abs(scalefactor * SumatraMath.cos(idx.get(i))), distanceY2, TEST_ACCURACY_SQR);
 			
 			Assert.assertTrue(distanceX == distanceX2);
 			Assert.assertTrue(distanceY == distanceY2);
@@ -198,7 +199,7 @@ public class LineMathTest
 	public void testLeadPointOnLine()
 	{
 		
-		ILine line = Line.fromPoints(AVector2.ZERO_VECTOR, AVector2.X_AXIS);
+		ILine line = Line.fromPoints(Vector2f.ZERO_VECTOR, Vector2f.X_AXIS);
 		for (double i = 0.0; i < 10; i += 0.1)
 		{
 			IVector2 point = Vector2.fromXY(i * i, Math.pow(10, i - 5));
@@ -207,7 +208,7 @@ public class LineMathTest
 			Assert.assertTrue(expected.isCloseTo(LineMath.leadPointOnLine(line, point), TEST_ACCURACY_SQR));
 		}
 		
-		line = Line.fromPoints(AVector2.ZERO_VECTOR, AVector2.Y_AXIS);
+		line = Line.fromPoints(Vector2f.ZERO_VECTOR, Vector2f.Y_AXIS);
 		for (double i = 0.0; i < 10; i += 0.1)
 		{
 			IVector2 point = Vector2.fromXY(Math.pow(10, i - 5), i * i);
@@ -219,11 +220,11 @@ public class LineMathTest
 		for (double i = 0; i < (3 * (2 * Math.PI)); i += 0.1)
 		{
 			final double spiralCoeff = i + 1e-3;
-			IVector2 linepoint = Vector2.fromXY(spiralCoeff * Math.cos(i), spiralCoeff * Math.sin(i));
-			IVector2 point = Vector2.fromXY(spiralCoeff * Math.cos(i + (Math.PI / 2)),
-					spiralCoeff * Math.sin(i + (Math.PI / 2)));
-			line = Line.fromPoints(AVector2.ZERO_VECTOR, linepoint);
-			Assert.assertTrue(AVector2.ZERO_VECTOR.isCloseTo(LineMath.leadPointOnLine(line, point), TEST_ACCURACY_SQR));
+			IVector2 linepoint = Vector2.fromXY(spiralCoeff * SumatraMath.cos(i), spiralCoeff * SumatraMath.sin(i));
+			IVector2 point = Vector2.fromXY(spiralCoeff * SumatraMath.cos(i + (Math.PI / 2)),
+					spiralCoeff * SumatraMath.sin(i + (Math.PI / 2)));
+			line = Line.fromPoints(Vector2f.ZERO_VECTOR, linepoint);
+			Assert.assertTrue(Vector2f.ZERO_VECTOR.isCloseTo(LineMath.leadPointOnLine(line, point), TEST_ACCURACY_SQR));
 		}
 	}
 	
@@ -238,10 +239,10 @@ public class LineMathTest
 		for (double i = 0; i < (2 * Math.PI); i += 0.01)
 		{
 			final double spiralCoeff = Math.pow(10, i - (0.5 * Math.PI));
-			IVector2 p1 = Vector2.fromXY(spiralCoeff * Math.cos(i), spiralCoeff * Math.sin(i));
-			IVector2 p2 = Vector2.fromXY(spiralCoeff * Math.cos(i + 0.5), spiralCoeff * Math.sin(i + 0.5));
+			IVector2 p1 = Vector2.fromXY(spiralCoeff * SumatraMath.cos(i), spiralCoeff * SumatraMath.sin(i));
+			IVector2 p2 = Vector2.fromXY(spiralCoeff * SumatraMath.cos(i + 0.5), spiralCoeff * SumatraMath.sin(i + 0.5));
 			IVector2 e = Vector2.fromXY(p1.x() + (0.5 * (p2.x() - p1.x())), p1.y() + (0.5 * (p2.y() - p1.y())));
-			final IVector calculated = TriangleMath.bisector(AVector2.ZERO_VECTOR, p1, p2);
+			final IVector calculated = TriangleMath.bisector(Vector2f.ZERO_VECTOR, p1, p2);
 			Assert.assertTrue(calculated.isCloseTo(e, TEST_ACCURACY));
 		}
 	}
@@ -296,8 +297,8 @@ public class LineMathTest
 	{
 		for (double i = 0; i < (10 * Math.PI); i += 0.001)
 		{
-			Assert.assertTrue(CircleMath.stepAlongCircle(AVector2.X_AXIS, AVector2.ZERO_VECTOR, i).isCloseTo(
-					Vector2.fromXY(Math.cos(i), Math.sin(i)),
+			Assert.assertTrue(CircleMath.stepAlongCircle(Vector2f.X_AXIS, Vector2f.ZERO_VECTOR, i).isCloseTo(
+					Vector2.fromXY(SumatraMath.cos(i), SumatraMath.sin(i)),
 					TEST_ACCURACY));
 		}
 	}
@@ -344,7 +345,7 @@ public class LineMathTest
 		
 		for (double i = 0; i < 10; i += 0.001)
 		{
-			final IVector2 point = Vector2.fromXY(Math.cos(i), Math.sin(i));
+			final IVector2 point = Vector2.fromXY(SumatraMath.cos(i), SumatraMath.sin(i));
 			ILine line = Line.fromPoints(l1p1, l1p2);
 			final IVector2 result = LineMath.nearestPointOnLineSegment(line, point);
 			IVector2 expected;
@@ -364,7 +365,7 @@ public class LineMathTest
 	@Test
 	public void testIsPointOnLineSegment()
 	{
-		ILine segment = Line.fromPoints(Vector2.ZERO_VECTOR, Vector2.X_AXIS);
+		ILine segment = Line.fromPoints(Vector2f.ZERO_VECTOR, Vector2f.X_AXIS);
 		
 		final double margin = 1e-5;
 		IVector2 point = Vector2.fromXY(1 + margin / 2.0, 0);
@@ -388,8 +389,8 @@ public class LineMathTest
 		point = Vector2.fromXY(0.0 - margin / 2, 0.0);
 		Assert.assertTrue(LineMath.isPointOnLineSegment(segment, point, margin));
 		
-		point = Vector2.fromXY(-AngleMath.cos(AngleMath.deg2rad(45)) * margin,
-				-AngleMath.cos(AngleMath.deg2rad(45)) * margin);
+		point = Vector2.fromXY(-SumatraMath.cos(AngleMath.deg2rad(45)) * margin,
+				-SumatraMath.cos(AngleMath.deg2rad(45)) * margin);
 		Assert.assertTrue(LineMath.isPointOnLineSegment(segment, point, margin));
 	}
 	
@@ -466,8 +467,8 @@ public class LineMathTest
 			Line l2 = Line.fromDirection(Vector2.fromXY(2, 0), Vector2.fromXY(2, -3));
 			Assert.assertTrue(LineMath.intersectionPoint(l1, l2).isPresent());
 			
-			l1 = Line.fromDirection(Vector2.fromXY(0, 0), AVector2.Y_AXIS);
-			l2 = Line.fromDirection(Vector2.fromXY(2, 0), AVector2.Y_AXIS);
+			l1 = Line.fromDirection(Vector2.fromXY(0, 0), Vector2f.Y_AXIS);
+			l2 = Line.fromDirection(Vector2.fromXY(2, 0), Vector2f.Y_AXIS);
 			Assert.assertFalse(LineMath.intersectionPoint(l1, l2).isPresent());
 		}
 		

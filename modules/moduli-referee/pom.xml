@@ -11,7 +11,7 @@
     <parent>
         <groupId>edu.tigers.sumatra</groupId>
         <artifactId>sumatra-parent</artifactId>
-        <version>5.1-SNAPSHOT</version>
+        <version>6.0</version>
         <relativePath>../sumatra-parent/pom.xml</relativePath>
     </parent>
 
@@ -20,32 +20,54 @@
 
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>common-model</artifactId>
+            <artifactId>sumatra-model</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>edu.tigers.moduli</groupId>
-            <artifactId>moduli</artifactId>
-            <version>${moduli.version}</version>
-        </dependency>
-
-        <!-- team color -->
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
             <artifactId>common</artifactId>
         </dependency>
 
-        <!-- ball replacer... -->
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>moduli-cam</artifactId>
+            <artifactId>common-math</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.tigers.moduli</groupId>
+            <artifactId>moduli</artifactId>
         </dependency>
 
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
-            <version>${protobuf.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.g3force</groupId>
+            <artifactId>configurable</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sleepycat</groupId>
+            <artifactId>je</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-geometry</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

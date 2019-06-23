@@ -2,31 +2,61 @@
   ~ Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <artifactId>sumatra-gui-sim</artifactId>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>sumatra-gui-sim</artifactId>
 
-  <parent>
-    <groupId>edu.tigers.sumatra</groupId>
-    <artifactId>sumatra-parent</artifactId>
-      <version>5.1-SNAPSHOT</version>
-    <relativePath>../sumatra-parent/pom.xml</relativePath>
-  </parent>
+    <parent>
+        <groupId>edu.tigers.sumatra</groupId>
+        <artifactId>sumatra-parent</artifactId>
+        <version>6.0</version>
+        <relativePath>../sumatra-parent/pom.xml</relativePath>
+    </parent>
 
-  <dependencies>
-    <dependency>
-      <groupId>edu.tigers.sumatra</groupId>
-      <artifactId>common-gui</artifactId>
-    </dependency>
-    
-    <dependency>
-      <groupId>edu.tigers.sumatra</groupId>
-      <artifactId>moduli-aisimulation</artifactId>
-    </dependency>
+    <dependencies>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>common-gui</artifactId>
+        </dependency>
 
-    <dependency>
-    	<groupId>edu.tigers.sumatra</groupId>
-    	<artifactId>sumatra-snapshot</artifactId>
-    </dependency>
-  </dependencies>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>sumatra-simulation-control</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>sumatra-snapshot</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-wp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-vision-simulation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-vision</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.moduli</groupId>
+            <artifactId>moduli</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>sumatra-model</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.googlecode.json-simple</groupId>
+            <artifactId>json-simple</artifactId>
+        </dependency>
+    </dependencies>
 </project>

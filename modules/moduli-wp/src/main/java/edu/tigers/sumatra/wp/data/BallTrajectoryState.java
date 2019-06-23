@@ -8,9 +8,10 @@ import org.apache.commons.lang.Validate;
 
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.math.vector.AVector3;
+import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.Vector3f;
 
 
 /**
@@ -23,11 +24,12 @@ import edu.tigers.sumatra.math.vector.Vector3;
 @Persistent
 public class BallTrajectoryState
 {
-	private final IVector3	pos;
-	private final IVector3	vel;
-	private final IVector3	acc;
-	private final double		vSwitchToRoll;
-	private final boolean	chipped;
+	private final IVector pos;
+	private final IVector vel;
+	private final IVector acc;
+	private final double vSwitchToRoll;
+	private final boolean chipped;
+	private final double spin;
 	
 	
 	/**
@@ -35,11 +37,12 @@ public class BallTrajectoryState
 	 */
 	protected BallTrajectoryState()
 	{
-		pos = AVector3.ZERO_VECTOR;
-		vel = AVector3.ZERO_VECTOR;
-		acc = AVector3.ZERO_VECTOR;
+		pos = Vector3f.ZERO_VECTOR;
+		vel = Vector3f.ZERO_VECTOR;
+		acc = Vector3f.ZERO_VECTOR;
 		vSwitchToRoll = 0;
 		chipped = false;
+		spin = 0;
 	}
 	
 	
@@ -49,15 +52,17 @@ public class BallTrajectoryState
 	 * @param acc
 	 * @param vSwitchToRoll
 	 * @param chipped
+	 * @param spin
 	 */
-	private BallTrajectoryState(final IVector3 pos, final IVector3 vel, final IVector3 acc, final double vSwitchToRoll,
-			final boolean chipped)
+	private BallTrajectoryState(final IVector pos, final IVector vel, final IVector acc, final double vSwitchToRoll,
+			final boolean chipped, final double spin)
 	{
 		this.pos = pos;
 		this.vel = vel;
 		this.acc = acc;
 		this.vSwitchToRoll = vSwitchToRoll;
 		this.chipped = chipped;
+		this.spin = spin;
 	}
 	
 	
@@ -71,6 +76,7 @@ public class BallTrajectoryState
 		acc = builder.acc;
 		vSwitchToRoll = builder.vSwitchToRoll;
 		chipped = builder.chipped;
+		spin = builder.spin;
 	}
 	
 	
@@ -95,6 +101,7 @@ public class BallTrajectoryState
 		builder.acc = copy.acc;
 		builder.vSwitchToRoll = copy.vSwitchToRoll;
 		builder.chipped = copy.chipped;
+		builder.spin = copy.spin;
 		return builder;
 	}
 	
@@ -104,7 +111,7 @@ public class BallTrajectoryState
 	 * 
 	 * @return
 	 */
-	public IVector3 getPos()
+	public IVector getPos()
 	{
 		return pos;
 	}
@@ -115,7 +122,7 @@ public class BallTrajectoryState
 	 * 
 	 * @return
 	 */
-	public IVector3 getVel()
+	public IVector getVel()
 	{
 		return vel;
 	}
@@ -126,7 +133,7 @@ public class BallTrajectoryState
 	 * 
 	 * @return
 	 */
-	public IVector3 getAcc()
+	public IVector getAcc()
 	{
 		return acc;
 	}
@@ -162,15 +169,24 @@ public class BallTrajectoryState
 	
 	
 	/**
+	 * @return the spin
+	 */
+	public double getSpin()
+	{
+		return spin;
+	}
+	
+	
+	/**
 	 * @return mirrored copy
 	 */
 	public BallTrajectoryState mirrored()
 	{
-		IVector3 newPos = Vector3.from2d(pos.getXYVector().multiplyNew(-1), pos.z());
-		IVector3 newVel = Vector3.from2d(vel.getXYVector().multiplyNew(-1), vel.z());
-		IVector3 newAcc = Vector3.from2d(acc.getXYVector().multiplyNew(-1), acc.z());
+		IVector3 newPos = Vector3.from2d(pos.getXYVector().multiplyNew(-1), pos.getXYZVector().z());
+		IVector3 newVel = Vector3.from2d(vel.getXYVector().multiplyNew(-1), vel.getXYZVector().z());
+		IVector3 newAcc = Vector3.from2d(acc.getXYVector().multiplyNew(-1), acc.getXYZVector().z());
 		
-		return new BallTrajectoryState(newPos, newVel, newAcc, vSwitchToRoll, chipped);
+		return new BallTrajectoryState(newPos, newVel, newAcc, vSwitchToRoll, chipped, spin);
 	}
 	
 	
@@ -179,11 +195,12 @@ public class BallTrajectoryState
 	 */
 	public static final class Builder
 	{
-		private IVector3	pos;
-		private IVector3	vel;
-		private IVector3	acc				= Vector3.ZERO_VECTOR;
-		private double		vSwitchToRoll	= 0;
-		private boolean	chipped			= false;
+		private IVector pos;
+		private IVector vel;
+		private IVector acc = Vector3f.ZERO_VECTOR;
+		private double vSwitchToRoll = 0;
+		private boolean chipped = false;
+		private double spin = 0;
 		
 		
 		private Builder()
@@ -197,7 +214,7 @@ public class BallTrajectoryState
 		 * @param pos the {@code pos} to set
 		 * @return a reference to this Builder
 		 */
-		public Builder withPos(final IVector3 pos)
+		public Builder withPos(final IVector pos)
 		{
 			this.pos = pos;
 			return this;
@@ -210,7 +227,7 @@ public class BallTrajectoryState
 		 * @param vel the {@code vel} to set in [mm/s]
 		 * @return a reference to this Builder
 		 */
-		public Builder withVel(final IVector3 vel)
+		public Builder withVel(final IVector vel)
 		{
 			this.vel = vel;
 			return this;
@@ -223,7 +240,7 @@ public class BallTrajectoryState
 		 * @param acc the {@code acc} to set in [mm/s^2]
 		 * @return a reference to this Builder
 		 */
-		public Builder withAcc(final IVector3 acc)
+		public Builder withAcc(final IVector acc)
 		{
 			this.acc = acc;
 			return this;
@@ -253,6 +270,20 @@ public class BallTrajectoryState
 		public Builder withChipped(final boolean chipped)
 		{
 			this.chipped = chipped;
+			return this;
+		}
+		
+		
+		/**
+		 * Sets the {@code spin} and returns a reference to this Builder so that the methods can be chained
+		 * together.
+		 *
+		 * @param spin the {@code spin} to set
+		 * @return a reference to this Builder
+		 */
+		public Builder withSpin(final double spin)
+		{
+			this.spin = spin;
 			return this;
 		}
 		

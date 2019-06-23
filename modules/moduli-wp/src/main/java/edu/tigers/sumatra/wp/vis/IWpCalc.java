@@ -1,13 +1,9 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Sep 1, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.wp.vis;
 
+import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
 
@@ -19,8 +15,9 @@ public interface IWpCalc
 {
 	/**
 	 * @param wfw
+	 * @param shapeMap
 	 */
-	void process(WorldFrameWrapper wfw);
+	void process(WorldFrameWrapper wfw, final ShapeMap shapeMap);
 	
 	
 	/**

@@ -13,7 +13,7 @@ import edu.tigers.sumatra.ai.AAgent;
 import edu.tigers.sumatra.ai.Agent;
 import edu.tigers.sumatra.ai.IAIObserver;
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
-import edu.tigers.sumatra.ai.data.frames.VisualizationFrame;
+import edu.tigers.sumatra.ai.VisualizationFrame;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.statistics.view.StatisticsPanel;
@@ -57,7 +57,7 @@ public class StatisticsPresenter extends ASumatraViewPresenter implements IVisua
 			case ACTIVE:
 				try
 				{
-					Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
+					Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.class);
 					agent.addVisObserver(this);
 				} catch (ModuleNotFoundException err)
 				{
@@ -69,7 +69,7 @@ public class StatisticsPresenter extends ASumatraViewPresenter implements IVisua
 			case RESOLVED:
 				try
 				{
-					Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
+					Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.class);
 					agent.removeVisObserver(this);
 				} catch (ModuleNotFoundException err)
 				{

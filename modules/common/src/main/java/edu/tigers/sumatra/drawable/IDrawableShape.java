@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics2D;
 
 
 /**
@@ -37,6 +38,16 @@ public interface IDrawableShape
 	 * @param strokeWidth
 	 */
 	default void setStrokeWidth(double strokeWidth)
+	{
+	}
+	
+	
+	/**
+	 * Fill the shape, if supported
+	 * 
+	 * @param fill
+	 */
+	default void setFill(boolean fill)
 	{
 	}
 }

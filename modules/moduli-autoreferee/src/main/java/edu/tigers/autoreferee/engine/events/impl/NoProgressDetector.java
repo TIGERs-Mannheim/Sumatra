@@ -1,16 +1,17 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.autoreferee.engine.events.impl;
 
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Optional;
 
 import edu.tigers.autoreferee.IAutoRefFrame;
+import edu.tigers.autoreferee.engine.AutoRefMath;
 import edu.tigers.autoreferee.engine.FollowUpAction;
 import edu.tigers.autoreferee.engine.events.EGameEvent;
+import edu.tigers.autoreferee.engine.events.EGameEventDetectorType;
 import edu.tigers.autoreferee.engine.events.GameEvent;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
 import edu.tigers.sumatra.ids.ETeamColor;
@@ -38,7 +39,7 @@ public class NoProgressDetector extends APreparingGameEventDetector
 	 */
 	public NoProgressDetector()
 	{
-		super(EnumSet.of(EGameState.RUNNING));
+		super(EGameEventDetectorType.NO_PROGRESS, EnumSet.of(EGameState.RUNNING));
 	}
 	
 	
@@ -58,7 +59,7 @@ public class NoProgressDetector extends APreparingGameEventDetector
 	
 	
 	@Override
-	protected Optional<IGameEvent> doUpdate(final IAutoRefFrame frame, final List<IGameEvent> violations)
+	protected Optional<IGameEvent> doUpdate(final IAutoRefFrame frame)
 	{
 		IVector2 ballPos = frame.getWorldFrame().getBall().getPos();
 		
@@ -75,8 +76,9 @@ public class NoProgressDetector extends APreparingGameEventDetector
 		
 		if ((frame.getTimestamp() - lastTime) / 1e9 > TIMEOUT)
 		{
+			IVector2 placementPos = AutoRefMath.getOffenseKickPos(ballPos);
 			FollowUpAction followUp = new FollowUpAction(FollowUpAction.EActionType.FORCE_START, ETeamColor.NEUTRAL,
-					ballPos);
+					placementPos);
 			GameEvent violation = new GameEvent(EGameEvent.NO_PROGRESS_IN_GAME, frame.getTimestamp(), ETeamColor.NEUTRAL,
 					followUp);
 			lastTime = 0;

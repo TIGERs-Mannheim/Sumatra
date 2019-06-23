@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.defense;
@@ -10,8 +10,8 @@ import java.util.Set;
 
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.ai.data.EAiShapesLayer;
-import edu.tigers.sumatra.ai.math.DefenseMath;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.defense.DefenseMath;
 import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.ai.pandora.roles.defense.states.InterceptState;
@@ -27,8 +27,8 @@ import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
+import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
-import edu.tigers.sumatra.statemachine.IState;
 
 
 /**
@@ -121,6 +121,14 @@ public class CenterBackRole extends ADefenseRole
 	}
 	
 	
+	private boolean isBehindBall()
+	{
+		IVector2 ball2Goal = Geometry.getGoalOur().getCenter().subtractNew(getBall().getPos());
+		IVector2 ball2Bot = getPos().subtractNew(getBall().getPos());
+		double angle = ball2Goal.angleToAbs(ball2Bot).orElse(0.0);
+		return angle > AngleMath.PI_HALF;
+	}
+	
 	/**
 	 * Specifies the bots position
 	 */
@@ -150,7 +158,7 @@ public class CenterBackRole extends ADefenseRole
 		REACHED_INTERCEPT_POINT
 	}
 	
-	private class CenterBackState implements IState
+	private class CenterBackState extends AState
 	{
 		
 		private AMoveToSkill skill;
@@ -164,12 +172,12 @@ public class CenterBackRole extends ADefenseRole
 		}
 		
 		
-		@SuppressWarnings("squid:MethodCyclomaticComplexity")
 		@Override
 		public void doUpdate()
 		{
 			skill.getMoveCon().setIgnoredBots(companions);
 			skill.getMoveCon().setBallObstacle(isBehindBall());
+			skill.getMoveCon().getMoveConstraints().setPrimaryDirection(threat.getThreatLine().directionVector());
 			armDefenders(skill);
 			
 			
@@ -188,7 +196,8 @@ public class CenterBackRole extends ADefenseRole
 			
 			DrawableLine dProtectionLine = new DrawableLine(protectionLine, Color.GRAY);
 			dProtectionLine.setStrokeWidth(20);
-			getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.CENTER_BACK).add(dProtectionLine);
+			getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.DEFENSE_CENTER_BACK)
+					.add(dProtectionLine);
 			
 			ILine goalLine = Line.fromPoints(threat.getPos(), goal.getCenter());
 			ILine orthogonalLine = goalLine.getOrthogonalLine();
@@ -202,11 +211,9 @@ public class CenterBackRole extends ADefenseRole
 			skill.getMoveCon().updateDestination(finalDest);
 			
 			ILine lineToGoal = Line.fromPoints(Geometry.getGoalOur().getCenter(), getPos());
-			
 			double targetAngle = lineToGoal.getAngle().orElse(0.0);
 			skill.getMoveCon().updateTargetAngle(targetAngle);
 			
-			skill.getMoveCon().setBotsObstacle(getPos().distanceTo(finalDest) > 200);
 			drawCenterBackShapes();
 			
 			if (protectionLine.distanceTo(getPos()) > ((2 * Geometry.getBotRadius()) + Math.abs(distance)))
@@ -218,20 +225,12 @@ public class CenterBackRole extends ADefenseRole
 		
 		private void drawCenterBackShapes()
 		{
-			getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.CENTER_BACK)
+			getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.DEFENSE_CENTER_BACK)
 					.add(new DrawableLine(Line.fromPoints(threat.getPos(), Geometry.getGoalOur().getLeftPost())));
-			getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.CENTER_BACK)
+			getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.DEFENSE_CENTER_BACK)
 					.add(new DrawableLine(Line.fromPoints(threat.getPos(), Geometry.getGoalOur().getRightPost())));
 		}
 		
-		
-		private boolean isBehindBall()
-		{
-			IVector2 ball2Goal = Geometry.getGoalOur().getCenter().subtractNew(getBall().getPos());
-			IVector2 ball2Bot = getPos().subtractNew(getBall().getPos());
-			double angle = ball2Goal.angleToAbs(ball2Bot).orElse(0.0);
-			return angle > AngleMath.PI_HALF;
-		}
 	}
 	
 	private class CenterInterceptState extends InterceptState
@@ -251,6 +250,9 @@ public class CenterBackRole extends ADefenseRole
 		@Override
 		public void doUpdate()
 		{
+			getSkill().getMoveCon().setIgnoredBots(companions);
+			getSkill().getMoveCon().setBallObstacle(isBehindBall());
+			getSkill().getMoveCon().getMoveConstraints().setPrimaryDirection(threat.getThreatLine().directionVector());
 			ILineSegment protectionLine = getProtectionLine(threat.getThreatLine());
 			
 			IVector2 orthoDir = Line.fromPoints(threat.getPos(), Geometry.getGoalOur().getCenter()).directionVector()

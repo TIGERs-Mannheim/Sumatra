@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills.util;
@@ -19,7 +19,7 @@ public class TargetAngleReachedChecker
 	private boolean reached = false;
 	private boolean lastSignPositive = true;
 	
-	private final double outerAngleDiffTolerance;
+	private double outerAngleDiffTolerance;
 	private final ChargingValue angleDiffChargingValue;
 	
 	private boolean respectSign = true;
@@ -74,5 +74,11 @@ public class TargetAngleReachedChecker
 	public void setRespectSign(final boolean respectSign)
 	{
 		this.respectSign = respectSign;
+	}
+	
+	
+	public void setOuterAngleDiffTolerance(final double outerAngleDiffTolerance)
+	{
+		this.outerAngleDiffTolerance = outerAngleDiffTolerance;
 	}
 }

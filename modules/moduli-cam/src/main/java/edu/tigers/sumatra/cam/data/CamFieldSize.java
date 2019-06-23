@@ -1,10 +1,5 @@
 /*
- * ********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 5.11.2016
- * Author(s): $user.name
- * ********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.cam.data;
 
@@ -20,9 +15,9 @@ import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.rectangle.Rectangle;
-import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -130,7 +125,7 @@ public class CamFieldSize
 	 */
 	public IRectangle getFieldWithBoundary()
 	{
-		return Rectangle.fromCenter(AVector2.ZERO_VECTOR, fieldLength + (2 * boundaryWidth),
+		return Rectangle.fromCenter(Vector2f.ZERO_VECTOR, fieldLength + (2 * boundaryWidth),
 				fieldWidth + (2 * boundaryWidth));
 	}
 	
@@ -142,7 +137,7 @@ public class CamFieldSize
 	 */
 	public IRectangle getField()
 	{
-		return Rectangle.fromCenter(AVector2.ZERO_VECTOR, fieldLength, fieldWidth);
+		return Rectangle.fromCenter(Vector2f.ZERO_VECTOR, fieldLength, fieldWidth);
 	}
 	
 	

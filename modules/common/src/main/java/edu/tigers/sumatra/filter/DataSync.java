@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jun 13, 2016
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.filter;
 
@@ -12,15 +7,20 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.log4j.Logger;
+
 
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * @param <TYPE>
+ * @param <T>
  */
-public class DataSync<TYPE>
+public class DataSync<T>
 {
-	private List<DataStore>	buffer	= new LinkedList<>();
-	private final int			bufferSize;
+	private static final Logger log = Logger.getLogger(DataSync.class.getName());
+	
+	private final int bufferSize;
+	private List<DataStore> buffer = new LinkedList<>();
 	
 	
 	/**
@@ -36,11 +36,15 @@ public class DataSync<TYPE>
 	 * @param timestamp
 	 * @param data
 	 */
-	public synchronized void add(final long timestamp, final TYPE data)
+	public synchronized void add(final long timestamp, final T data)
 	{
-		DataStore store = new DataStore();
-		store.timestamp = timestamp;
-		store.data = data;
+		DataStore store = new DataStore(timestamp, data);
+		if (!buffer.isEmpty() && timestamp < buffer.get(0).getTimestamp())
+		{
+			log.debug("Clearing buffer, since incoming timestamp is smaller than buffered timestamp (" + timestamp + "<"
+					+ buffer.get(0).getTimestamp() + ")");
+			buffer.clear();
+		}
 		if (buffer.size() >= bufferSize)
 		{
 			buffer.remove(0);
@@ -55,44 +59,111 @@ public class DataSync<TYPE>
 	 * @param timestamp
 	 * @return
 	 */
-	public synchronized Optional<TYPE> get(final long timestamp)
+	public synchronized Optional<DataPair> get(final long timestamp)
 	{
-		DataStore candidate = null;
-		for (DataStore ds : buffer)
+		if (buffer.size() < 2 || buffer.get(0).getTimestamp() > timestamp
+				|| buffer.get(buffer.size() - 1).getTimestamp() < timestamp)
 		{
-			if (ds.timestamp > timestamp)
+			return Optional.empty();
+		}
+		
+		DataStore previous = null;
+		for (DataStore current : buffer)
+		{
+			if (current.timestamp >= timestamp && previous != null)
 			{
-				if (candidate == null)
-				{
-					candidate = ds;
-				} else
-				{
-					long diff1 = Math.abs(candidate.timestamp - timestamp);
-					long diff2 = Math.abs(ds.timestamp - timestamp);
-					if (diff1 > diff2)
-					{
-						return Optional.of(ds.data);
-					}
-					return Optional.of(candidate.data);
-				}
+				assert previous.getTimestamp() <= timestamp;
+				assert current.getTimestamp() >= timestamp;
+				return Optional.of(new DataPair(previous, current));
 			}
-		}
-		if (candidate != null)
-		{
-			return Optional.of(candidate.data);
-		}
-		if (!buffer.isEmpty())
-		{
-			return Optional.of(buffer.get(buffer.size() - 1).data);
+			previous = current;
 		}
 		return Optional.empty();
 	}
 	
 	
-	private class DataStore
+	public synchronized Optional<DataStore> getLatest()
 	{
-		long	timestamp;
-		TYPE	data;
+		if (buffer.isEmpty())
+		{
+			return Optional.empty();
+		}
+		return Optional.of(buffer.get(buffer.size() - 1));
+	}
+	
+	
+	public synchronized void reset()
+	{
+		buffer.clear();
+	}
+	
+	public class DataStore
+	{
+		private long timestamp;
+		private T data;
 		
+		
+		public DataStore(final long timestamp, final T data)
+		{
+			this.timestamp = timestamp;
+			this.data = data;
+		}
+		
+		
+		public long getTimestamp()
+		{
+			return timestamp;
+		}
+		
+		
+		public T getData()
+		{
+			return data;
+		}
+		
+		
+		@Override
+		public String toString()
+		{
+			return new ToStringBuilder(this)
+					.append("timestamp", timestamp)
+					.append("data", data)
+					.toString();
+		}
+	}
+	
+	public class DataPair
+	{
+		private DataStore first;
+		private DataStore second;
+		
+		
+		public DataPair(final DataStore first, final DataStore second)
+		{
+			this.first = first;
+			this.second = second;
+		}
+		
+		
+		public DataStore getFirst()
+		{
+			return first;
+		}
+		
+		
+		public DataStore getSecond()
+		{
+			return second;
+		}
+		
+		
+		@Override
+		public String toString()
+		{
+			return new ToStringBuilder(this)
+					.append("first", first)
+					.append("second", second)
+					.toString();
+		}
 	}
 }

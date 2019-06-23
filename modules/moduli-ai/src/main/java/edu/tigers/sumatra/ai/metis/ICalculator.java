@@ -4,8 +4,7 @@
 
 package edu.tigers.sumatra.ai.metis;
 
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 
 
 /**

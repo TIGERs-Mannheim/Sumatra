@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.bot.params;
 
@@ -15,14 +15,19 @@ import com.sleepycat.persist.model.Persistent;
 @Persistent
 public class BotParams implements IBotParams
 {
-	protected BotMovementLimits	movementLimits	= new BotMovementLimits();
-	protected BotDimensions			dimensions		= new BotDimensions();
-	protected BotKickerSpecs		kickerSpecs		= new BotKickerSpecs();
+	private final BotMovementLimits movementLimits = new BotMovementLimits();
+	private final BotDimensions dimensions = new BotDimensions();
+	private final BotKickerSpecs kickerSpecs = new BotKickerSpecs();
+	private double feedbackDelay;
 	
 	
-	/**
-	 * @return the movementLimits
-	 */
+	@Override
+	public double getFeedbackDelay()
+	{
+		return feedbackDelay;
+	}
+	
+	
 	@Override
 	public IBotMovementLimits getMovementLimits()
 	{
@@ -30,9 +35,6 @@ public class BotParams implements IBotParams
 	}
 	
 	
-	/**
-	 * @return the dimensions
-	 */
 	@Override
 	public IBotDimensions getDimensions()
 	{
@@ -40,12 +42,15 @@ public class BotParams implements IBotParams
 	}
 	
 	
-	/**
-	 * @return the kickerSpecs
-	 */
 	@Override
 	public IBotKickerSpecs getKickerSpecs()
 	{
 		return kickerSpecs;
+	}
+	
+	
+	public void setFeedbackDelay(final double feedbackDelay)
+	{
+		this.feedbackDelay = feedbackDelay;
 	}
 }

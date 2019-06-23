@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 21.07.2010
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.cam.data;
 
@@ -13,11 +8,10 @@ import java.util.List;
 
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.math.vector.AVector3;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
-import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.Vector3f;
 
 
 /**
@@ -28,10 +22,10 @@ import edu.tigers.sumatra.math.vector.Vector3;
 @Persistent
 public class CamBall extends ACamObject
 {
-	private final int			area;
+	private final int area;
 	
 	/** [mm], (z == 0 in current SSLVision) */
-	private final IVector3	pos;
+	private final IVector3 pos;
 	
 	
 	/**
@@ -41,7 +35,7 @@ public class CamBall extends ACamObject
 	{
 		super();
 		area = 0;
-		pos = AVector3.ZERO_VECTOR;
+		pos = Vector3f.ZERO_VECTOR;
 	}
 	
 	
@@ -57,29 +51,16 @@ public class CamBall extends ACamObject
 	 * @param pos
 	 * @param pixel
 	 * @param tCapture
-	 * @param tSent
 	 * @param camId
 	 * @param frameId
 	 */
-	@SuppressWarnings("squid:S00107")
 	public CamBall(final double confidence, final int area, final IVector3 pos,
-			final IVector2 pixel, final long tCapture, final long tSent, final int camId,
+			final IVector2 pixel, final long tCapture, final int camId,
 			final long frameId)
 	{
-		super(confidence, pixel, tCapture, tSent, camId, frameId);
+		super(confidence, pixel, tCapture, camId, frameId);
 		this.area = area;
 		this.pos = pos;
-	}
-	
-	
-	/**
-	 * @param base
-	 * @param pos
-	 */
-	public CamBall(final CamBall base, final IVector2 pos)
-	{
-		this(base.getConfidence(), base.getArea(), Vector3.fromXYZ(pos.x(), pos.y(), base.getPos().z()), base.getPixel(),
-				base.gettCapture(), base.gettSent(), base.getCameraId(), base.getFrameId());
 	}
 	
 	
@@ -88,39 +69,31 @@ public class CamBall extends ACamObject
 	 */
 	public CamBall(final CamBall newCamBall)
 	{
-		super(newCamBall.getConfidence(), newCamBall.getPixel(), newCamBall.gettCapture(),
-				newCamBall.gettSent(), newCamBall.getCameraId(), newCamBall.getFrameId());
+		super(newCamBall);
 		area = newCamBall.getArea();
 		pos = Vector3.copy(newCamBall.getPos());
 	}
 	
 	
 	/**
-	 * @param list
-	 * @return
+	 * New CamBall with adjusted tCapture.
+	 * 
+	 * @param newCamBall
+	 * @param tCapture
 	 */
-	public static CamBall fromNumberList(final List<? extends Number> list)
+	public CamBall(final CamBall newCamBall, final long tCapture)
 	{
-		final long tCapture = list.get(0).longValue();
-		final int camId = list.get(1).intValue();
-		final double x = list.get(2).doubleValue();
-		final double y = list.get(3).doubleValue();
-		final double z = list.get(4).doubleValue();
-		final long frameId = list.size() <= 5 ? 0 : list.get(5).longValue();
-		final double pixelX = list.size() <= 6 ? 0 : list.get(6).doubleValue();
-		final double pixelY = list.size() <= 7 ? 0 : list.get(7).doubleValue();
-		final int area = list.size() <= 8 ? 0 : list.get(8).intValue();
-		final double confidence = list.size() <= 9 ? 0 : list.get(9).doubleValue();
-		final long tSent = list.size() <= 10 ? 0 : list.get(10).longValue();
-		
-		return new CamBall(confidence, area, Vector3.fromXYZ(x, y, z), Vector2.fromXY(pixelX, pixelY), tCapture, tSent,
-				camId, frameId);
+		super(newCamBall.getConfidence(), newCamBall.getPixel(), tCapture, newCamBall.getCameraId(),
+				newCamBall.getFrameId());
+		area = newCamBall.getArea();
+		pos = Vector3.copy(newCamBall.getPos());
 	}
 	
 	
 	@Override
 	public String toString()
 	{
+		// noinspection StringBufferReplaceableByString
 		StringBuilder builder = new StringBuilder();
 		builder.append("SSLBall [timestamp=");
 		builder.append(getTimestamp());
@@ -173,16 +146,19 @@ public class CamBall extends ACamObject
 	@Override
 	public List<Number> getNumberList()
 	{
-		List<Number> numbers = new ArrayList<>();
-		numbers.add(gettCapture());
-		numbers.add(getCameraId());
-		numbers.addAll(pos.getNumberList());
-		numbers.add(getFrameId());
-		numbers.add(getPixel().x());
-		numbers.add(getPixel().y());
-		numbers.add(getArea());
-		numbers.add(getConfidence());
-		numbers.add(gettSent());
+		List<Number> numbers = super.getNumberList();
+		numbers.add(area);
+		numbers.add(pos.z());
 		return numbers;
+	}
+	
+	
+	@Override
+	public List<String> getHeaders()
+	{
+		List<String> headers = new ArrayList<>(super.getHeaders());
+		headers.add("area");
+		headers.add("height");
+		return headers;
 	}
 }

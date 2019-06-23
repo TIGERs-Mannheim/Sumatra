@@ -1,33 +1,35 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.support;
 
-import static edu.tigers.sumatra.ai.metis.support.PassTargetGenerationCalc.getFullFieldVisualizationBotId;
 import static edu.tigers.sumatra.math.SumatraMath.min;
-import static java.lang.Math.pow;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+import java.awt.Color;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.ai.data.EAiShapesLayer;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
-import edu.tigers.sumatra.ai.math.DefenseMath;
-import edu.tigers.sumatra.ai.math.OffensiveMath;
-import edu.tigers.sumatra.ai.math.kick.BestDirectShotBallPossessingBot;
-import edu.tigers.sumatra.ai.math.kick.PassInterceptionRater;
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
-import edu.tigers.sumatra.drawable.ValuedField;
-import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.ai.metis.general.ChipKickReasonableDecider;
+import edu.tigers.sumatra.ai.metis.offense.OffensiveMath;
+import edu.tigers.sumatra.ai.metis.targetrater.MaxAngleKickRater;
+import edu.tigers.sumatra.ai.metis.targetrater.PassInterceptionRater;
+import edu.tigers.sumatra.ai.pandora.roles.ERole;
+import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
+import edu.tigers.sumatra.drawable.DrawableCircle;
+import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.BotIDMap;
+import edu.tigers.sumatra.ids.IBotIDMap;
 import edu.tigers.sumatra.math.SumatraMath;
-import edu.tigers.sumatra.math.vector.ValuePoint;
+import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
@@ -36,7 +38,6 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class PassTargetRatingCalc extends ACalculator
 {
-	// Other configurable
 	@Configurable(comment = "Upper x-ball position for Situation weight", defValue = "2500")
 	private static double upperBallSituationPosition = 2500;
 	
@@ -46,135 +47,110 @@ public class PassTargetRatingCalc extends ACalculator
 	@Configurable(comment = "ReceiveWeightBias (guaranteed percentage of receive weight)", defValue = "0.3")
 	private static double receiveWeightBias = 0.3;
 	
-	@Configurable(defValue = "10")
-	private static double redirectAngleSafety = 10;
-	
-	@Configurable(comment = "Use distance passed pass target rating", defValue = "false")
-	private static boolean alternativeDistanceRating = false;
+	private ITrackedBot attacker = null;
+	private boolean attackerCanKickOrCatchTheBall = false;
+	private IVector2 passOrigin;
 	
 	
 	@Override
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
-		if (getWFrame().getTigerBotsVisible().isEmpty())
-		{
-			return;
-		}
-		final List<WeightedScoreFunction> receiveRatingFunctions = new ArrayList<>();
-		receiveRatingFunctions
-				.add(new WeightedScoreFunction(this::pBallReachesPassTarget, 1));
-		
-		final List<WeightedScoreFunction> shootRatingFunctions = new ArrayList<>();
-		shootRatingFunctions.add(new WeightedScoreFunction(this::pBotCanScoreGoal, 1));
+		attacker = attackerId().map(id -> getWFrame().getBot(id)).orElse(null);
+		attackerCanKickOrCatchTheBall = attackerRole().map(AttackerRole::canKickOrCatchTheBall).orElse(false);
+		passOrigin = attackerCanKickOrCatchTheBall ? attackerPosition() : getBall().getPos();
 		
 		for (PassTarget passTarget : newTacticalField.getAllPassTargets())
 		{
-			passTarget.setReceiveScore(calcWeightedScore(receiveRatingFunctions, passTarget));
-			passTarget.setShootScore(calcWeightedScore(shootRatingFunctions, passTarget));
-			double situationWeight = calcSituationShootWeight();
-			passTarget.setScore(
-					(passTarget.getReceiveScore() * (1 - situationWeight)) + (passTarget.getShootScore() * situationWeight));
+			final double passScore = passScore(passTarget);
+			final double goalKickScore = goalKickScore(passTarget);
+			passTarget.setPassScore(passScore);
+			passTarget.setGoalKickScore(goalKickScore);
+			passTarget.setScore(weightBySituation(passScore, goalKickScore));
 		}
-		drawFullField(newTacticalField);
 	}
 	
 	
-	private double calcSituationShootWeight()
+	private double weightBySituation(final double passScore, final double goalkickScore)
 	{
-		double ballX = getBall().getPos().x();
+		double situationWeight = situationShootWeight(passOrigin);
+		return (passScore * (1 - situationWeight)) + (goalkickScore * situationWeight);
+	}
+	
+	
+	private Optional<BotID> attackerId()
+	{
+		return getAiFrame().getPrevFrame().getTacticalField().getOffensiveStrategy().getAttackerBot();
+	}
+	
+	
+	private IVector2 attackerPosition()
+	{
+		IVector2 attackerKickerPos = attacker.getBotKickerPos();
+		getNewTacticalField().getDrawableShapes().get(EAiShapesLayer.PASS_TARGETS).add(
+				new DrawableCircle(Circle.createCircle(attackerKickerPos, 200), Color.RED));
+		getNewTacticalField().getDrawableShapes().get(EAiShapesLayer.PASS_TARGETS).add(
+				new DrawableCircle(Circle.createCircle(attackerKickerPos, 220), Color.RED));
+		return attackerKickerPos;
+	}
+	
+	
+	private Optional<AttackerRole> attackerRole()
+	{
+		return getAiFrame().getPrevFrame().getPlayStrategy()
+				.getActiveRoles(ERole.ATTACKER)
+				.stream()
+				.map(r -> (AttackerRole) r)
+				.findFirst();
+	}
+	
+	
+	private double situationShootWeight(IVector2 alternativeBallPos)
+	{
+		double ballX = alternativeBallPos.x();
 		double situationScoreWeight = SumatraMath.relative(ballX, lowerBallSituationPosition, upperBallSituationPosition);
 		situationScoreWeight = min(situationScoreWeight, 1 - receiveWeightBias);
 		return situationScoreWeight;
-		
 	}
 	
 	
-	private double calcWeightedScore(final List<WeightedScoreFunction> scoreFunctions, final IPassTarget passTarget)
+	private double passScore(final IPassTarget passTarget)
 	{
-		List<Double> scores = scoreFunctions.stream()
-				.map(rf -> rf.apply(passTarget))
-				.collect(Collectors.toList());
-		
-		passTarget.getIntermediateScores().addAll(scores);
-		
-		double sumWeights = scoreFunctions.stream().map(WeightedScoreFunction::getWeight).reduce(0.0,
-				(a, b) -> a + b);
-		
-		double score = scores.stream().reduce(1d, (a, b) -> a * b);
-		if (!SumatraMath.isEqual(sumWeights, 1.0, 1e-3))
-		{
-			score = pow(score, 1.0 / sumWeights); // geometric mean
-		}
-		return score;
-	}
-	
-	
-	private double pBallReachesPassTarget(final IPassTarget passTarget)
-	{
-		ITrackedBot offensiveBot = getWFrame().getTigerBotsVisible().values().stream()
-				.min(Comparator.comparingDouble(a -> a.getPos().distanceToSqr(getBall().getPos())))
-				.orElse(getWFrame().getBot(getAiFrame().getKeeperId()));
-		
-		if (offensiveBot == null)
+		if (attacker == null)
 		{
 			return 0;
 		}
 		
-		double passSpeedForChipDetection = getBall().getChipConsultant()
-				.getInitVelForDistAtTouchdown(getWFrame().getBall().getPos().distanceTo(passTarget.getKickerPos()), 4);
-		boolean isChipKickRequired = OffensiveMath.isChipKickRequired(getWFrame(), passTarget.getBotId(), passTarget,
-				passSpeedForChipDetection);
-		
-		List<ITrackedBot> consideredBots = Collections.list(Collections.enumeration(getWFrame().getFoeBots().values()))
-				.stream()
+		List<ITrackedBot> consideredBots = getWFrame().getFoeBots().values().stream()
 				.filter(b -> b.getBotId() != getAiFrame().getKeeperFoeId())
 				.collect(Collectors.toList());
 		
-		if (alternativeDistanceRating)
+		if (attackerCanKickOrCatchTheBall && chipKickIsRequiredFor(passTarget))
 		{
-			return PassInterceptionRater.getScoreForPassAlternative(consideredBots, offensiveBot, passTarget, getBall(),
-					getWFrame().getTimestamp());
+			return PassInterceptionRater.rateChippedPass(passOrigin, passTarget.getKickerPos(), consideredBots);
 		}
-		
-		return PassInterceptionRater.getScoreForPass(consideredBots, offensiveBot, passTarget, getBall(),
-				getWFrame().getTimestamp(),
-				isChipKickRequired);
+		return PassInterceptionRater.rateStraightPass(passOrigin, passTarget.getKickerPos(), consideredBots);
 	}
 	
 	
-	private double pBotCanScoreGoal(final IPassTarget passTarget)
+	private boolean chipKickIsRequiredFor(final IPassTarget passTarget)
 	{
-		List<ITrackedBot> foes = Collections.list(Collections.enumeration(getWFrame().getFoeBots().values()));
+		final double distance = passOrigin.distanceTo(passTarget.getKickerPos());
+		double passSpeedForChipDetection = OffensiveMath.passSpeedChip(distance);
 		
-		double tDeflect = DefenseMath.calculateTDeflect(passTarget.getKickerPos(), getBall().getPos(),
-				DefenseMath.getBisectionGoal(getBall().getPos()));
+		IBotIDMap<ITrackedBot> obstacles = new BotIDMap<>(getWFrame().getBots());
+		obstacles.remove(passTarget.getBotId());
 		
-		return BestDirectShotBallPossessingBot
-				.getBestShot(Geometry.getGoalTheir(), passTarget.getKickerPos(), foes, tDeflect)
-				.orElse(new ValuePoint(Geometry.getGoalTheir().getCenter(), 0.)).getValue();
+		return new ChipKickReasonableDecider(
+				passOrigin,
+				passTarget.getKickerPos(),
+				obstacles.values(),
+				passSpeedForChipDetection)
+						.isChipKickReasonable();
 	}
 	
 	
-	private void drawFullField(final TacticalField newTacticalField)
+	private double goalKickScore(final IPassTarget passTarget)
 	{
-		if (getFullFieldVisualizationBotId() >= 0)
-		{
-			double width = Geometry.getFieldWidth();
-			double height = Geometry.getFieldLength();
-			int numX = 200;
-			int numY = 150;
-			double[] data = newTacticalField.getAllPassTargets().stream().mapToDouble(PassTarget::getScore).toArray();
-			ValuedField field = new ValuedField(data, numX, numY, 0, height, width);
-			newTacticalField.getDrawableShapes().get(EAiShapesLayer.PASS_TARGETS_GRID).add(field);
-		}
-	}
-	
-	
-	/**
-	 * @return the alternativeDistanceRating
-	 */
-	public static boolean isAlternativeDistanceRating()
-	{
-		return alternativeDistanceRating;
+		return MaxAngleKickRater.getDirectShootScoreChance(getWFrame().getFoeBots().values(), passTarget.getKickerPos());
 	}
 }

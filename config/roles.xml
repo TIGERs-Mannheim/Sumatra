@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <edu.tigers.sumatra.ai.pandora.roles base="edu.tigers.sumatra.ai.pandora.roles">
     <defense>
+        <ADefenseRole>
+            <configurableKickSpeed>3.0</configurableKickSpeed>
+        </ADefenseRole>
         <CenterBackRole>
             <distanceBetweenBots>15</distanceBetweenBots>
         </CenterBackRole>
-        <DefenderPenAreaRole>
-            <moveDirectlyMargin>0.0</moveDirectlyMargin>
-        </DefenderPenAreaRole>
     </defense>
     <keeper>
         <KeeperRole>
@@ -20,21 +20,16 @@
         </OneOnOneShooter>
     </offense>
     <support>
-        <states>
-            <GlobalPositionRunnerState>
-                <distanceReached>200.0</distanceReached>
-                <maxPossibleNextPositions>5</maxPossibleNextPositions>
-                <timeToReachPosition>3</timeToReachPosition>
-            </GlobalPositionRunnerState>
-            <MoveToGlobalPosState>
-                <distanceReachedGlobalPosition>1000.0</distanceReachedGlobalPosition>
-            </MoveToGlobalPosState>
-            <PassTargetFollowerState>
-                <minDistanceFollowingBestPassTarget>1500.0</minDistanceFollowingBestPassTarget>
-            </PassTargetFollowerState>
-        </states>
-        <SupportRole>
-            <useGlobalPositionRunner>true</useGlobalPositionRunner>
-        </SupportRole>
+        <behaviors>
+            <repulsive>
+                <ARepulsiveBehavior>
+                    <magnitudeFoeBot>-1500.0</magnitudeFoeBot>
+                    <sigmaTeamBot>1000.0</sigmaTeamBot>
+                </ARepulsiveBehavior>
+                <RepulsivePassReceiver>
+                    <radiusMeanBallDistance>2000.0</radiusMeanBallDistance>
+                </RepulsivePassReceiver>
+            </repulsive>
+        </behaviors>
     </support>
 </edu.tigers.sumatra.ai.pandora.roles>

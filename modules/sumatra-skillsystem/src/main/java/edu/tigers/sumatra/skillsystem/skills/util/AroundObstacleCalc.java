@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills.util;
@@ -7,6 +7,7 @@ package edu.tigers.sumatra.skillsystem.skills.util;
 import java.util.Optional;
 
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -18,11 +19,11 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class AroundObstacleCalc
 {
-	private IVector2		obstacle;
-	private IVector2		ballPos;
-	private ITrackedBot	bot;
+	private IVector2 obstacle;
+	private IVector2 ballPos;
+	private ITrackedBot bot;
 	
-	private double			obstacleRadius	= Geometry.getBotRadius() - 30;
+	private double obstacleRadius = Geometry.getBotRadius();
 	
 	
 	/**
@@ -85,8 +86,9 @@ public class AroundObstacleCalc
 	 */
 	public boolean isAroundObstacleNeeded(final IVector2 desiredDestination)
 	{
-		double minDist = obstacleRadius + Geometry.getBotRadius();
-		return obstacle.distanceTo(desiredDestination) < minDist;
+		double obstacleToBall = obstacle.distanceTo(ballPos);
+		double botToBall = desiredDestination.distanceTo(ballPos);
+		return obstacleToBall - botToBall < obstacleRadius;
 	}
 	
 	
@@ -98,10 +100,10 @@ public class AroundObstacleCalc
 	public Optional<IVector2> getAroundObstacleDest()
 	{
 		double a = getDistance(0);
-		double b = getBallPos().distanceTo(obstacle);
+		double b = Math.max(Geometry.getBotRadius(), getBallPos().distanceTo(obstacle));
 		double c = obstacleRadius + Geometry.getBotRadius();
 		
-		double gamma = Math.acos(((c * c) - (a * a) - (b * b)) / (-2.0 * a * b));
+		double gamma = SumatraMath.acos(((c * c) - (a * a) - (b * b)) / (-2.0 * a * b));
 		if (!Double.isFinite(gamma))
 		{
 			return Optional.empty();

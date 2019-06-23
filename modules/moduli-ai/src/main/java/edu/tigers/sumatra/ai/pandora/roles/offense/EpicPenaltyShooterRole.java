@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.offense;
@@ -9,17 +9,21 @@ import java.util.Random;
 import com.github.g3force.configurable.Configurable;
 
 import edu.tigers.sumatra.Referee.SSL_Referee.Command;
+import edu.tigers.sumatra.ai.metis.targetrater.IRatedTarget;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.VectorMath;
+import edu.tigers.sumatra.skillsystem.skills.AMoveSkill;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.ASkill;
-import edu.tigers.sumatra.skillsystem.skills.KickChillSkill;
-import edu.tigers.sumatra.skillsystem.skills.KickNormalSkill;
 import edu.tigers.sumatra.skillsystem.skills.PenaltyShootSkill;
+import edu.tigers.sumatra.skillsystem.skills.SingleTouchKickSkill;
+import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
+import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
+import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
 import edu.tigers.sumatra.statemachine.IState;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
@@ -35,12 +39,10 @@ public class EpicPenaltyShooterRole extends ARole
 {
 	@Configurable(comment = "distance to penArea mark on preparation", defValue = "200.0")
 	private static double preDistance = 400;
-	@Configurable(comment = "use shooter with trajectory", defValue = "true")
-	private static boolean useTrajectorySkill = true;
+	
 	@Configurable(comment = "disables the shooter skill completely and uses KickSkill", defValue = "false")
 	private static boolean ignoreKeeperMovement = false;
-	@Configurable(comment = "the time until the shoot is done in ms", defValue = "50")
-	private static int timeToShoot = 50;
+	
 	@Configurable(defValue = "true")
 	private static boolean epic = true;
 	
@@ -55,21 +57,22 @@ public class EpicPenaltyShooterRole extends ARole
 	public EpicPenaltyShooterRole()
 	{
 		super(ERole.EPIC_PENALTY_SHOOTER);
-		IState state1 = new PrepareState();
-		IState state2 = new TestRightState();
-		IState state3 = new WaitRightState();
-		IState state4 = new TestLeftState();
-		IState state5 = new WaitLeftState();
-		IState state6 = new ShootState();
-		IState state7 = new NoKeeperState();
+		IState prepareState = new PrepareState();
+		IState testRightState = new TestRightState();
+		IState waitRightState = new WaitRightState();
+		IState testLeftState = new TestLeftState();
+		IState waitLeftState = new WaitLeftState();
+		IState shootState = new ShootState();
+		IState noKeeperState = new NoKeeperState();
 		
-		setInitialState(state1);
-		addTransition(state1, EEvent.PREPARED, state2);
-		addTransition(state2, EEvent.TESTEDRIGHT, state3);
-		addTransition(state3, EEvent.WAITEDRIGHT, state4);
-		addTransition(state4, EEvent.TESTEDLEFT, state5);
-		addTransition(state5, EEvent.WAITEDLEFT, state6);
-		addTransition(state6, EEvent.SHOTCENTER, state7);
+		setInitialState(prepareState);
+		addTransition(prepareState, EEvent.PREPARED, testRightState);
+		addTransition(prepareState, EEvent.SHOTCENTER, noKeeperState);
+		addTransition(testRightState, EEvent.TESTEDRIGHT, waitRightState);
+		addTransition(waitRightState, EEvent.WAITEDRIGHT, testLeftState);
+		addTransition(testLeftState, EEvent.TESTEDLEFT, waitLeftState);
+		addTransition(waitLeftState, EEvent.WAITEDLEFT, shootState);
+		addTransition(shootState, EEvent.SHOTCENTER, noKeeperState);
 	}
 	
 	// --------------------------------------------------------------------------
@@ -87,7 +90,7 @@ public class EpicPenaltyShooterRole extends ARole
 		SHOTCENTER
 	}
 	
-	private class PrepareState implements IState
+	private class PrepareState extends AState
 	{
 		private IVector2 firstDestination;
 		private AMoveToSkill skill;
@@ -132,7 +135,7 @@ public class EpicPenaltyShooterRole extends ARole
 		
 	}
 	
-	private class TestRightState implements IState
+	private class TestRightState extends AState
 	{
 		IVector2 destination;
 		
@@ -171,7 +174,7 @@ public class EpicPenaltyShooterRole extends ARole
 		
 	}
 	
-	private class WaitRightState implements IState
+	private class WaitRightState extends AState
 	{
 		
 		private long time;
@@ -196,7 +199,7 @@ public class EpicPenaltyShooterRole extends ARole
 		
 	}
 	
-	private class TestLeftState implements IState
+	private class TestLeftState extends AState
 	{
 		IVector2 destination;
 		
@@ -235,7 +238,7 @@ public class EpicPenaltyShooterRole extends ARole
 		
 	}
 	
-	private class WaitLeftState implements IState
+	private class WaitLeftState extends AState
 	{
 		
 		private long time;
@@ -258,7 +261,7 @@ public class EpicPenaltyShooterRole extends ARole
 		}
 	}
 	
-	private class ShootState implements IState
+	private class ShootState extends AState
 	{
 		private PenaltyShootSkill backupShooter;
 		
@@ -274,12 +277,10 @@ public class EpicPenaltyShooterRole extends ARole
 				setNewSkill(backupShooter);
 			} else
 			{
-				IVector2 directShotTarget = getAiFrame().getTacticalField().getBestDirectShotTarget();
-				if (directShotTarget == null)
-				{
-					directShotTarget = Geometry.getGoalTheir().getCenter();
-				}
-				ASkill skill = new KickNormalSkill(new DynamicPosition(directShotTarget));
+				DynamicPosition directShotTarget = getAiFrame().getTacticalField().getBestGoalKickTarget()
+						.map(IRatedTarget::getTarget)
+						.orElse(new DynamicPosition(Geometry.getGoalTheir().getCenter()));
+				ASkill skill = new TouchKickSkill(directShotTarget, KickParams.maxStraight());
 				skill.getMoveCon().setPenaltyAreaAllowedTheir(true);
 				skill.getMoveCon().setPenaltyAreaAllowedOur(true);
 				setNewSkill(skill);
@@ -316,13 +317,13 @@ public class EpicPenaltyShooterRole extends ARole
 		
 	}
 	
-	private class NoKeeperState implements IState
+	private class NoKeeperState extends AState
 	{
 		@Override
 		public void doEntryActions()
 		{
-			KickChillSkill kick = new KickChillSkill(
-					new DynamicPosition(Geometry.getGoalTheir().getCenter()));
+			AMoveSkill kick = new SingleTouchKickSkill(
+					new DynamicPosition(Geometry.getGoalTheir().getCenter()), KickParams.maxStraight());
 			kick.getMoveCon().setPenaltyAreaAllowedOur(true);
 			setNewSkill(kick);
 		}

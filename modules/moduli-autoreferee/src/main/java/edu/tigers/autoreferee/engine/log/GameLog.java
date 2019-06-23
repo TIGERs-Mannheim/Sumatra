@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.log;
 
@@ -37,13 +37,18 @@ public class GameLog implements IGameLog
 	}
 	
 	
-	/**
-	 * @return a read only view of the log entries
-	 */
 	@Override
 	public List<GameLogEntry> getEntries()
 	{
 		return Collections.unmodifiableList(entries);
+	}
+	
+	
+	@Override
+	public void clearEntries()
+	{
+		entries.clear();
+		observer.forEach(IGameLogObserver::onClear);
 	}
 	
 	
@@ -186,7 +191,6 @@ public class GameLog implements IGameLog
 	/**
 	 * @author "Lukas Magel"
 	 */
-	@FunctionalInterface
 	public interface IGameLogObserver
 	{
 		/**
@@ -194,5 +198,8 @@ public class GameLog implements IGameLog
 		 * @param entry
 		 */
 		void onNewEntry(int id, GameLogEntry entry);
+		
+		
+		void onClear();
 	}
 }

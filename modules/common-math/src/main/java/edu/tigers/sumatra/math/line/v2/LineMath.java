@@ -11,6 +11,7 @@ import org.apache.log4j.Logger;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.VectorMath;
 
 
@@ -47,27 +48,23 @@ public final class LineMath
 	 * @param stepSize distance
 	 * @return
 	 */
-	public static Vector2 stepAlongLine(final IVector2 start, final IVector2 end, final double stepSize)
+	public static IVector2 stepAlongLine(final IVector2 start, final IVector2 end, final double stepSize)
 	{
-		final Vector2 result = Vector2.zero();
-		
 		final double distanceSqr = VectorMath.distancePPSqr(start, end);
 		if (distanceSqr < 1e-10)
 		{
-			result.setX(end.x());
-			result.setY(end.y());
-			return result;
+			return end;
 		}
 		
-		final double distance = Math.sqrt(distanceSqr);
+		final double distance = SumatraMath.sqrt(distanceSqr);
 		final double coefficient = stepSize / distance;
 		
 		final double xDistance = end.x() - start.x();
 		final double yDistance = end.y() - start.y();
 		
-		
-		result.setX((xDistance * coefficient) + start.x());
-		result.setY((yDistance * coefficient) + start.y());
+		final IVector2 result = Vector2f.fromXY(
+				(xDistance * coefficient) + start.x(),
+				(yDistance * coefficient) + start.y());
 		
 		if (Double.isNaN(result.x()) || Double.isNaN(result.y()))
 		{
@@ -424,7 +421,7 @@ public final class LineMath
 		IVector2 supportVector = accessor.getSupportVector(line);
 		IVector2 directionVector = accessor.getDirectionVector(line);
 		
-		final IVector2 ortho = Vector2.fromXY(directionVector.y(), -directionVector.x());
+		final IVector2 ortho = Vector2f.fromXY(directionVector.y(), -directionVector.x());
 		if (directionVector.isParallelTo(ortho))
 		{
 			return 0;

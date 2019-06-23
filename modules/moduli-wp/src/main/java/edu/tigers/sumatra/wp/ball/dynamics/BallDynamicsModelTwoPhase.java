@@ -12,7 +12,7 @@ import Jama.Matrix;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.Vector3f;
 import edu.tigers.sumatra.wp.data.MotionContext;
 
 
@@ -61,7 +61,7 @@ public class BallDynamicsModelTwoPhase implements IBallDynamicsModel
 		this.accSlide = accSlide;
 		acc = accRoll;
 		this.cSwitch = cSwitch;
-		initialState = new BallState(Vector3.ZERO_VECTOR, Vector3.ZERO_VECTOR, Vector3.ZERO_VECTOR);
+		initialState = new BallState(Vector3f.ZERO_VECTOR, Vector3f.ZERO_VECTOR, Vector3f.ZERO_VECTOR);
 	}
 	
 	

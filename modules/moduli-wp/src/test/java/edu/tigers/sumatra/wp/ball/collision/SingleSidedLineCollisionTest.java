@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.ball.collision;
@@ -10,6 +10,7 @@ import java.util.Optional;
 
 import org.junit.Test;
 
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -31,7 +32,7 @@ public class SingleSidedLineCollisionTest
 		ILine obstacleLine = Line.fromPoints(Vector2.fromXY(0, -2), Vector2.fromXY(0, 2));
 		IVector3 vel = Vector3.zero();
 		IVector2 normal = Vector2.fromX(1);
-		SingleSidedLineCollision colHandler = new SingleSidedLineCollision(obstacleLine, vel, normal);
+		SingleSidedLineCollision colHandler = new SingleSidedLineCollision(obstacleLine, vel, normal, BotID.noBot());
 		
 		Optional<ICollision> collision;
 		

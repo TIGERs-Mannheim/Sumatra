@@ -13,6 +13,8 @@ import edu.tigers.sumatra.gamenotifications.events.PenaltyShootoutEvent;
 import edu.tigers.sumatra.gamenotifications.events.StartCommandEvent;
 import edu.tigers.sumatra.gamenotifications.events.StopCommandEvent;
 import edu.tigers.sumatra.gamenotifications.events.TimeoutEvent;
+import edu.tigers.sumatra.gamenotifications.events.YellowCardEvent;
+import edu.tigers.sumatra.gamenotifications.events.YellowCardOverEvent;
 
 
 /**
@@ -29,7 +31,9 @@ public enum EGameEvent
 	STOP_COMMAND(StopCommandEvent.class),
 	TIMEOUT(TimeoutEvent.class),
 	HALF_TIME(HalfTimeEvent.class),
-	GOAL_SCORED(GoalScoredEvent.class);
+	GOAL_SCORED(GoalScoredEvent.class),
+	YELLOW_CARD(YellowCardEvent.class),
+	YELLOW_CARD_OVER(YellowCardOverEvent.class);
 	
 	private Class impl;
 	

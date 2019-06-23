@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.states.impl;
 
@@ -41,8 +41,8 @@ public class RunningState extends AbstractAutoRefState
 				ETeamColor teamInFavor = gameEvent.getResponsibleTeam();
 				Command goalCmd = teamInFavor == ETeamColor.BLUE ? Command.GOAL_BLUE : Command.GOAL_YELLOW;
 				
-				ctx.sendCommand(new RefboxRemoteCommand(Command.STOP));
-				ctx.sendCommand(new RefboxRemoteCommand(goalCmd));
+				ctx.sendCommand(new RefboxRemoteCommand(goalCmd, null));
+				ctx.sendCommand(new RefboxRemoteCommand(Command.STOP, gameEvent.toProtobuf()));
 				ctx.setFollowUpAction(gameEvent.getFollowUpAction());
 				return true;
 			case INDIRECT_GOAL:

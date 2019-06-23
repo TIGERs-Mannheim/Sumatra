@@ -1,17 +1,24 @@
 function [ wpBall ] = loadWpBall( file )
-    T = importdata(file);
-    wpBall.pos = T(:,1:3);
-    wpBall.vel = T(:,4:6);
-    wpBall.acc = T(:,7:9);
-    if size(T,2) > 9
-      wpBall.frameId = T(:,10);
+    D = importdata(file);
+    if(isstruct(D))
+        T = D.data;
+    else
+        T = D;
     end
-    if size(T,2) > 10
-      wpBall.timestamp = T(:,11);
-      wpBall.time = wpBall.timestamp / 1e9;
+    
+    % {'timestamp'  'pos_x'  'pos_y'  'pos_z'  'vel_x'  'vel_y'  'vel_z'  'acc_x'  'acc_y'  'acc_z'  'lastVisibleTimestamp'  'vSwitchToRoll'  'chipped', 'tAssembly'}
+    wpBall.timestamp = T(:,1);
+    wpBall.pos = T(:,2:4);
+    wpBall.vel = T(:,5:7);
+    wpBall.acc = T(:,8:10);
+    wpBall.lastVisibleTimestamp = T(:,11);
+    wpBall.vSwitchToRoll = T(:,12);
+    wpBall.chipped = T(:,13);
+    if size(T,2) > 13
+        wpBall.tAssembly = T(:,14);
     end
-    if size(T,2) > 11
-      wpBall.confidence = T(:,12);
-    end
+
+    % derived 
+    wpBall.time = (wpBall.timestamp - wpBall.timestamp(1)) / 1e9;
 end
 

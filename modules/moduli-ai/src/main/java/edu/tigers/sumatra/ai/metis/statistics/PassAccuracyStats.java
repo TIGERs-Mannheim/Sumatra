@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.statistics;
@@ -8,11 +8,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import edu.tigers.sumatra.ai.data.ITacticalField;
-import edu.tigers.sumatra.ai.data.MatchStats;
-import edu.tigers.sumatra.ai.data.MatchStats.EMatchStatistics;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
+import edu.tigers.sumatra.ai.BaseAiFrame;
+import edu.tigers.sumatra.ai.metis.ITacticalField;
+import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.ai.metis.statistics.MatchStats.EMatchStatistics;
 import edu.tigers.sumatra.ai.metis.support.IPassTarget;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.statistics.Percentage;
@@ -71,7 +70,7 @@ public class PassAccuracyStats extends AStats
 		
 		tacticalField = newTacticalField;
 		
-		IPassTarget newPassTarget = baseAiFrame.getPrevFrame().getAICom().getPassTarget();
+		IPassTarget newPassTarget = newTacticalField.getOffensiveStrategy().getActivePassTarget().orElse(null);
 		
 		if ((oldPassTarget != newPassTarget) && (newPassTarget != null))
 		{
@@ -93,7 +92,7 @@ public class PassAccuracyStats extends AStats
 		
 		oldPassTarget = newPassTarget;
 		
-		passProcessor.processPossiblePass(baseAiFrame);
+		passProcessor.processPossiblePass(baseAiFrame, newTacticalField);
 		
 	}
 	
@@ -126,9 +125,9 @@ public class PassAccuracyStats extends AStats
 		private BotID kickingBot;
 		
 		
-		private void processPossiblePass(final BaseAiFrame baseAiFrame)
+		private void processPossiblePass(final BaseAiFrame baseAiFrame, final TacticalField newTacticalField)
 		{
-			Optional<IKickEvent> kickEvent = tacticalField.getKicking();
+			Optional<IKickEvent> kickEvent = baseAiFrame.getWorldFrame().getKickEvent();
 			
 			boolean ourBotIsKicking = false;
 			
@@ -151,20 +150,15 @@ public class PassAccuracyStats extends AStats
 				processActivePass();
 			} else
 			{
-				IPassTarget passTarget = baseAiFrame.getPrevFrame().getAICom().getPassTarget();
-				
-				if (passTarget != null)
-				{
-					currentPassReceiver = passTarget.getBotId();
-				}
+				newTacticalField.getOffensiveStrategy().getActivePassTarget()
+						.ifPresent(p -> currentPassReceiver = p.getBotId());
 			}
-			
 		}
 		
 		
 		private void processActivePass()
 		{
-			final boolean passStillActive = kickingBot == tacticalField.getBotLastTouchedBall();
+			final boolean passStillActive = tacticalField.getBotsLastTouchedBall().contains(kickingBot);
 			
 			if (!passStillActive)
 			{
@@ -180,7 +174,7 @@ public class PassAccuracyStats extends AStats
 				totalPassesBot++;
 				countPasses.put(kickingBot, totalPassesBot);
 				
-				if (currentPassReceiver == tacticalField.getBotLastTouchedBall())
+				if (tacticalField.getBotsLastTouchedBall().contains(currentPassReceiver))
 				{
 					processSuccessfulPass();
 				}

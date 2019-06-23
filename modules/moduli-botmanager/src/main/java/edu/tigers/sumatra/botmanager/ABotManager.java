@@ -1,16 +1,15 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import edu.tigers.moduli.AModule;
 import edu.tigers.sumatra.botmanager.basestation.IBaseStation;
 import edu.tigers.sumatra.botmanager.bots.ABot;
+import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.ids.BotID;
 
 
@@ -19,28 +18,9 @@ import edu.tigers.sumatra.ids.BotID;
  * 
  * @author Gero
  */
-public abstract class ABotManager extends AModule
+public abstract class ABotManager extends AModule implements IBotProvider
 {
-	/** */
-	public static final String						MODULE_TYPE					= "ABotManager";
-	/** */
-	public static final String						MODULE_ID					= "botmanager";
-	
-	
-	/** */
-	public static final String						KEY_BOTMANAGER_CONFIG	= ABotManager.class.getName()
-			+ ".botmanagerConfig";
-	/** */
-	public static final String						BOTMANAGER_CONFIG_PATH	= "./config/botmanager/";
-	/**  */
-	public static final String						VALUE_BOTMANAGER_CONFIG	= "botmanager_sumatra.xml";
-	
-	
-	private final Map<BotID, ABot>				botTable						= new ConcurrentSkipListMap<>(
-			BotID.getComparator());
-	
-	
-	private final List<IBotManagerObserver>	observers					= new ArrayList<>();
+	private final List<IBotManagerObserver> observers = new CopyOnWriteArrayList<>();
 	
 	
 	/**
@@ -53,12 +33,6 @@ public abstract class ABotManager extends AModule
 	 * @param baseStation
 	 */
 	public abstract void addBasestation(IBaseStation baseStation);
-	
-	
-	/**
-	 * @return
-	 */
-	public abstract Map<BotID, ABot> getAllBots();
 	
 	
 	/**
@@ -84,10 +58,7 @@ public abstract class ABotManager extends AModule
 	 */
 	public void addObserver(final IBotManagerObserver o)
 	{
-		synchronized (observers)
-		{
-			observers.add(o);
-		}
+		observers.add(o);
 	}
 	
 	
@@ -96,42 +67,33 @@ public abstract class ABotManager extends AModule
 	 */
 	public void removeObserver(final IBotManagerObserver o)
 	{
-		synchronized (observers)
-		{
-			observers.remove(o);
-		}
+		observers.remove(o);
 	}
 	
 	
 	protected void notifyBotAdded(final ABot bot)
 	{
-		synchronized (observers)
+		for (final IBotManagerObserver o : observers)
 		{
-			for (final IBotManagerObserver o : observers)
-			{
-				o.onBotAdded(bot);
-			}
+			o.onBotAdded(bot);
 		}
 	}
 	
 	
 	protected void notifyBotRemoved(final ABot bot)
 	{
-		synchronized (observers)
+		for (final IBotManagerObserver o : observers)
 		{
-			for (final IBotManagerObserver o : observers)
-			{
-				o.onBotRemoved(bot);
-			}
+			o.onBotRemoved(bot);
 		}
 	}
 	
 	
-	/**
-	 * @return the botTable
-	 */
-	public Map<BotID, ABot> getBotTable()
+	protected void notifyIncomingBotCommand(ABot bot, ACommand command)
 	{
-		return botTable;
+		for (final IBotManagerObserver o : observers)
+		{
+			o.onIncomingBotCommand(bot, command);
+		}
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.vector;
@@ -51,7 +51,6 @@ public class Vector3fTest
 	{
 		assertThat(Vector3f.copy(Vector3.fromXYZ(42, 1337, 3.14))).isEqualTo(Vector3.fromXYZ(42, 1337, 3.14));
 		assertThat(Vector3f.copy(Vector3.fromXYZ(42, 42, 3.14))).isNotEqualTo(Vector3.fromXYZ(42, 1337, 3.14));
-		assertThat(Vector3f.copy(Vector2.fromXY(42, 1337))).isEqualTo(Vector3.fromXYZ(42, 1337, 0));
 	}
 	
 	

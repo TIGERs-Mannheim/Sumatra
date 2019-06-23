@@ -6,7 +6,7 @@ package edu.tigers.sumatra.skillsystem.skills;
 
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.skillsystem.ESkill;
-import edu.tigers.sumatra.statemachine.IState;
+import edu.tigers.sumatra.statemachine.AState;
 
 
 /**
@@ -29,7 +29,7 @@ public class RotationSkill extends AMoveSkill
 		setInitialState(new DefaultState());
 	}
 	
-	private class DefaultState implements IState
+	private class DefaultState extends AState
 	{
 		double targetAngle;
 		

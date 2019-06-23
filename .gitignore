@@ -13,3 +13,4 @@
 *.iml
 **/Sumatra.log
 sonarlint
+**/target/

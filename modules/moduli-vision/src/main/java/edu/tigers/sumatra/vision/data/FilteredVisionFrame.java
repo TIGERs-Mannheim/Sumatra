@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.vision.data;
@@ -11,30 +11,43 @@ import java.util.Optional;
 import org.apache.commons.lang.Validate;
 
 import edu.tigers.sumatra.drawable.ShapeMap;
-import edu.tigers.sumatra.math.vector.AVector3;
+import edu.tigers.sumatra.math.vector.Vector3f;
 
 
 /**
+ * The output frame of a vision filter
+ * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class FilteredVisionFrame
 {
-	private final long							id;
-	private final long							timestamp;
-	private final FilteredVisionBall			ball;
-	private final List<FilteredVisionBot>	bots;
-	private final ShapeMap						shapeMap	= new ShapeMap();
-	private final IKickEvent					kickEvent;
+	private final long id;
+	private final long timestamp;
+	private final long tAssembly;
+	private final FilteredVisionBall ball;
+	private final List<FilteredVisionBot> bots;
+	private final ShapeMap shapeMap;
+	private final IKickEvent kickEvent;
+	private final FilteredVisionBall kickFitState;
 	
 	
-	private FilteredVisionFrame(final long id, final long timestamp, final FilteredVisionBall ball,
-			final List<FilteredVisionBot> bots, final IKickEvent kickEvent)
+	private FilteredVisionFrame(final Builder builder)
 	{
-		this.id = id;
-		this.timestamp = timestamp;
-		this.ball = ball;
-		this.bots = bots;
-		this.kickEvent = kickEvent;
+		id = builder.id;
+		timestamp = builder.timestamp;
+		ball = builder.ball;
+		bots = builder.bots;
+		kickEvent = builder.kickEvent;
+		kickFitState = builder.kickFitState;
+		if (builder.shapeMap != null)
+		{
+			shapeMap = builder.shapeMap;
+		} else
+		{
+			shapeMap = new ShapeMap();
+		}
+		
+		tAssembly = System.nanoTime();
 	}
 	
 	
@@ -74,6 +87,21 @@ public class FilteredVisionFrame
 	}
 	
 	
+	public Optional<FilteredVisionBall> getKickFitState()
+	{
+		return Optional.ofNullable(kickFitState);
+	}
+	
+	
+	/**
+	 * @return the assembly timestamp in [ns]
+	 */
+	public long gettAssembly()
+	{
+		return tAssembly;
+	}
+	
+	
 	@Override
 	public String toString()
 	{
@@ -90,11 +118,13 @@ public class FilteredVisionFrame
 	 */
 	public static final class Builder
 	{
-		private Long							id;
-		private Long							timestamp;
-		private FilteredVisionBall			ball;
-		private List<FilteredVisionBot>	bots;
-		private IKickEvent					kickEvent;
+		private Long id;
+		private Long timestamp;
+		private FilteredVisionBall ball;
+		private List<FilteredVisionBot> bots;
+		private IKickEvent kickEvent;
+		private ShapeMap shapeMap = null;
+		private FilteredVisionBall kickFitState;
 		
 		
 		private Builder()
@@ -119,16 +149,16 @@ public class FilteredVisionFrame
 		public static FilteredVisionFrame createEmptyFrame()
 		{
 			FilteredVisionBall b = FilteredVisionBall.Builder.create()
-					.withPos(AVector3.ZERO_VECTOR)
-					.withVel(AVector3.ZERO_VECTOR)
-					.withAcc(AVector3.ZERO_VECTOR)
+					.withPos(Vector3f.ZERO_VECTOR)
+					.withVel(Vector3f.ZERO_VECTOR)
+					.withAcc(Vector3f.ZERO_VECTOR)
 					.withIsChipped(false)
 					.build();
 			
 			return create()
 					.withId(0)
 					.withTimestamp(0)
-					.withBots(new ArrayList<FilteredVisionBot>())
+					.withBots(new ArrayList<>())
 					.withBall(b)
 					.build();
 		}
@@ -190,6 +220,28 @@ public class FilteredVisionFrame
 		
 		
 		/**
+		 * @param ball
+		 * @return
+		 */
+		public Builder withKickFitState(final FilteredVisionBall ball)
+		{
+			kickFitState = ball;
+			return this;
+		}
+		
+		
+		/**
+		 * @param map
+		 * @return
+		 */
+		public Builder withShapeMap(final ShapeMap map)
+		{
+			shapeMap = map;
+			return this;
+		}
+		
+		
+		/**
 		 * @return new instance
 		 */
 		public FilteredVisionFrame build()
@@ -198,7 +250,7 @@ public class FilteredVisionFrame
 			Validate.notNull(timestamp);
 			Validate.notNull(ball);
 			Validate.notNull(bots);
-			return new FilteredVisionFrame(id, timestamp, ball, bots, kickEvent);
+			return new FilteredVisionFrame(this);
 		}
 	}
 }

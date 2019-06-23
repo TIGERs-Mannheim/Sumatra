@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.presenter;
 
-import java.awt.*;
+import java.awt.Component;
+import java.awt.EventQueue;
 import java.util.Optional;
 import java.util.Set;
 
@@ -21,7 +22,8 @@ import edu.tigers.autoreferee.engine.ActiveAutoRefEngine.IAutoRefEngineObserver;
 import edu.tigers.autoreferee.engine.FollowUpAction;
 import edu.tigers.autoreferee.engine.IAutoRefEngine;
 import edu.tigers.autoreferee.engine.IAutoRefEngine.AutoRefMode;
-import edu.tigers.autoreferee.engine.events.IGameEventDetector.EGameEventDetectorType;
+import edu.tigers.autoreferee.engine.events.EGameEvent;
+import edu.tigers.autoreferee.engine.events.EGameEventDetectorType;
 import edu.tigers.autoreferee.module.AutoRefModule;
 import edu.tigers.autoreferee.module.AutoRefState;
 import edu.tigers.moduli.exceptions.StartModuleException;
@@ -36,9 +38,10 @@ import edu.tigers.sumatra.views.ISumatraViewPresenter;
  */
 public class AutoRefPresenter implements ISumatraViewPresenter
 {
-	private static final Logger	log			= Logger.getLogger(AutoRefPresenter.class);
+	private static final Logger log = Logger.getLogger(AutoRefPresenter.class);
 	
-	private AutoRefMainPanel	mainPanel	= new AutoRefMainPanel();
+	private AutoRefMainPanel mainPanel = new AutoRefMainPanel();
+	
 	
 	/**
 	 *
@@ -46,12 +49,14 @@ public class AutoRefPresenter implements ISumatraViewPresenter
 	public AutoRefPresenter()
 	{
 		mainPanel.getStartStopPanel().addObserver(new StartStopPanelObserver());
-		mainPanel.getEventPanel().addObserver(new GameEventsPanelObserver());
-
+		mainPanel.getGameEventDetectorPanel().addObserver(new GameEventDetectorsPanelObserver());
+		mainPanel.getGameEventPanel().addObserver(new GameEventsPanelObserver());
+		
 		IActiveEnginePanel enginePanel = mainPanel.getEnginePanel();
 		enginePanel.setPanelEnabled(false);
 		enginePanel.addObserver(new ActiveEnginePanelObserver());
 	}
+	
 	
 	@Override
 	public Component getComponent()
@@ -59,11 +64,13 @@ public class AutoRefPresenter implements ISumatraViewPresenter
 		return mainPanel;
 	}
 	
+	
 	@Override
 	public ISumatraView getSumatraView()
 	{
 		return mainPanel;
 	}
+	
 	
 	@Override
 	public void onModuliStateChanged(final ModulesState state)
@@ -74,6 +81,7 @@ public class AutoRefPresenter implements ISumatraViewPresenter
 				Optional<AutoRefModule> optModule = AutoRefUtil.getAutoRefModule();
 				optModule.ifPresent(autoref -> autoref.addObserver(new AutoRefStateObserver()));
 				setPanelsEnabledLater(true);
+				performAutostart();
 				break;
 			case NOT_LOADED:
 			case RESOLVED:
@@ -82,10 +90,30 @@ public class AutoRefPresenter implements ISumatraViewPresenter
 		}
 	}
 	
+	
+	private void performAutostart()
+	{
+		String autoRefMode = System.getProperty("autoref.mode");
+		if (autoRefMode != null)
+		{
+			try
+			{
+				AutoRefMode mode = AutoRefMode.valueOf(autoRefMode);
+				mainPanel.getStartStopPanel().setModeSetting(mode);
+				startAutoRef();
+			} catch (IllegalArgumentException e)
+			{
+				log.warn("Could not parse autoRef mode: " + autoRefMode, e);
+			}
+		}
+	}
+	
+	
 	private void setPanelsEnabledLater(final boolean enabled)
 	{
 		EventQueue.invokeLater(() -> setPanelsEnabled(enabled));
 	}
+	
 	
 	private void setPanelsEnabled(final boolean enabled)
 	{
@@ -96,39 +124,51 @@ public class AutoRefPresenter implements ISumatraViewPresenter
 		}
 	}
 	
+	
+	private void startAutoRef()
+	{
+		new Thread(new AutoRefStarter(mainPanel.getStartStopPanel().getModeSetting())).start();
+	}
+	
 	private class AutoRefStateObserver implements IAutoRefStateObserver
 	{
-
+		
 		@Override
 		public void onAutoRefStateChanged(final AutoRefState state)
 		{
 			EventQueue.invokeLater(() -> mainPanel.getStartStopPanel().setState(state));
-
+			
 			switch (state)
 			{
 				case STOPPED:
 					EventQueue.invokeLater(() -> mainPanel.getEnginePanel().setPanelEnabled(false));
 					break;
 				case STARTED:
-					Optional<AutoRefModule> optModule = AutoRefUtil.getAutoRefModule();
-					if (optModule.isPresent())
-					{
-						AutoRefModule module = optModule.get();
-						IAutoRefEngine engine = module.getEngine();
-						if (engine.getMode() == AutoRefMode.ACTIVE)
-						{
-							EventQueue.invokeLater(() -> mainPanel.getEnginePanel().setPanelEnabled(true));
-							ActiveAutoRefEngine activeEngine = (ActiveAutoRefEngine) engine;
-							activeEngine.addObserver(new AutoRefEngineObserver());
-						}
-					}
+					onAutoRefStateChangedToStarted();
 					break;
 				default:
 					break;
 			}
 		}
-
-
+		
+		
+		private void onAutoRefStateChangedToStarted()
+		{
+			Optional<AutoRefModule> optModule = AutoRefUtil.getAutoRefModule();
+			if (optModule.isPresent())
+			{
+				AutoRefModule module = optModule.get();
+				IAutoRefEngine engine = module.getEngine();
+				if (engine.getMode() == AutoRefMode.ACTIVE)
+				{
+					EventQueue.invokeLater(() -> mainPanel.getEnginePanel().setPanelEnabled(true));
+					ActiveAutoRefEngine activeEngine = (ActiveAutoRefEngine) engine;
+					activeEngine.addObserver(new AutoRefEngineObserver());
+				}
+			}
+		}
+		
+		
 		@Override
 		public void onNewAutoRefFrame(final IAutoRefFrame frame)
 		{
@@ -136,12 +176,26 @@ public class AutoRefPresenter implements ISumatraViewPresenter
 		}
 	}
 	
-	private class GameEventsPanelObserver implements IEnumPanelObserver<EGameEventDetectorType>
+	private class GameEventDetectorsPanelObserver implements IEnumPanelObserver<EGameEventDetectorType>
 	{
 		@Override
 		public void onValueTicked(final EGameEventDetectorType type, final boolean value)
 		{
-			Set<EGameEventDetectorType> types = mainPanel.getEventPanel().getValues();
+			Set<EGameEventDetectorType> types = mainPanel.getGameEventDetectorPanel().getValues();
+			Optional<AutoRefModule> autoref = AutoRefUtil.getAutoRefModule();
+			if (autoref.isPresent() && (autoref.get().getState() == AutoRefState.RUNNING))
+			{
+				autoref.get().getEngine().setActiveGameEventDetectors(types);
+			}
+		}
+	}
+	
+	private class GameEventsPanelObserver implements IEnumPanelObserver<EGameEvent>
+	{
+		@Override
+		public void onValueTicked(final EGameEvent type, final boolean value)
+		{
+			Set<EGameEvent> types = mainPanel.getGameEventPanel().getValues();
 			Optional<AutoRefModule> autoref = AutoRefUtil.getAutoRefModule();
 			if (autoref.isPresent() && (autoref.get().getState() == AutoRefState.RUNNING))
 			{
@@ -153,8 +207,8 @@ public class AutoRefPresenter implements ISumatraViewPresenter
 	private class AutoRefStarter implements Runnable
 	{
 		private final AutoRefMode mode;
-
-
+		
+		
 		/**
 		 * @param mode
 		 */
@@ -162,8 +216,8 @@ public class AutoRefPresenter implements ISumatraViewPresenter
 		{
 			this.mode = mode;
 		}
-
-
+		
+		
 		@Override
 		public void run()
 		{
@@ -174,14 +228,18 @@ public class AutoRefPresenter implements ISumatraViewPresenter
 				{
 					AutoRefModule autoref = optAutoref.get();
 					autoref.start(mode);
-					autoref.getEngine().setActiveGameEvents(mainPanel.getEventPanel().getValues());
+					autoref.getEngine().setActiveGameEventDetectors(mainPanel.getGameEventDetectorPanel().getValues());
+					autoref.getEngine().setActiveGameEvents(mainPanel.getGameEventPanel().getValues());
+				} else
+				{
+					log.error("AutoRef module not found");
 				}
 			} catch (StartModuleException e)
 			{
 				log.error("Error during Autoref startup: " + e.getMessage(), e);
 			}
 		}
-
+		
 	}
 	
 	private class StartStopPanelObserver implements IStartStopPanelObserver
@@ -189,24 +247,24 @@ public class AutoRefPresenter implements ISumatraViewPresenter
 		@Override
 		public void onStartButtonPressed()
 		{
-			new Thread(new AutoRefStarter(mainPanel.getStartStopPanel().getModeSetting())).start();
+			startAutoRef();
 		}
-
-
+		
+		
 		@Override
 		public void onStopButtonPressed()
 		{
 			AutoRefUtil.ifAutoRefModulePresent(AutoRefModule::stop);
 		}
-
-
+		
+		
 		@Override
 		public void onPauseButtonPressed()
 		{
 			AutoRefUtil.ifAutoRefModulePresent(AutoRefModule::pause);
 		}
-
-
+		
+		
 		@Override
 		public void onResumeButtonPressed()
 		{
@@ -216,14 +274,14 @@ public class AutoRefPresenter implements ISumatraViewPresenter
 	
 	private class AutoRefEngineObserver implements IAutoRefEngineObserver
 	{
-
+		
 		@Override
 		public void onStateChanged(final boolean proceedPossible)
 		{
 			EventQueue.invokeLater(() -> mainPanel.getEnginePanel().setProceedButtonEnabled(proceedPossible));
 		}
-
-
+		
+		
 		@Override
 		public void onFollowUpChanged(final FollowUpAction action)
 		{
@@ -233,14 +291,14 @@ public class AutoRefPresenter implements ISumatraViewPresenter
 	
 	private class ActiveEnginePanelObserver implements IActiveEnginePanelObserver
 	{
-
+		
 		@Override
 		public void onResetButtonPressed()
 		{
 			AutoRefUtil.ifAutoRefModulePresent(module -> module.getEngine().reset());
 		}
-
-
+		
+		
 		@Override
 		public void onProceedButtonPressed()
 		{
@@ -248,7 +306,7 @@ public class AutoRefPresenter implements ISumatraViewPresenter
 			if (optModule.isPresent())
 			{
 				AutoRefModule module = optModule.get();
-
+				
 				IAutoRefEngine engine = module.getEngine();
 				if ((engine != null) && (engine.getMode() == AutoRefMode.ACTIVE))
 				{
@@ -257,7 +315,7 @@ public class AutoRefPresenter implements ISumatraViewPresenter
 				}
 			}
 		}
-
+		
 	}
 	
 }

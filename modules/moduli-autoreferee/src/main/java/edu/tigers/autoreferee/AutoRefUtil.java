@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Mar 16, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee;
 
@@ -176,11 +171,11 @@ public final class AutoRefUtil
 	{
 		try
 		{
-			AutoRefModule autoRef = (AutoRefModule) SumatraModel.getInstance().getModule(AutoRefModule.MODULE_ID);
+			AutoRefModule autoRef = SumatraModel.getInstance().getModule(AutoRefModule.class);
 			return Optional.of(autoRef);
 		} catch (ModuleNotFoundException e)
 		{
-			log.error("Module not found", e);
+			log.info("AutoReferee not available", e);
 		}
 		return Optional.empty();
 	}

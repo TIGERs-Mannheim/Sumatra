@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine;
 
 import java.util.Optional;
 
+import edu.tigers.sumatra.MessagesRobocupSslGameEvent.SSL_Referee_Game_Event;
 import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest.CardInfo.CardType;
 import edu.tigers.sumatra.Referee.SSL_Referee.Command;
 import edu.tigers.sumatra.ids.ETeamColor;
@@ -24,39 +25,36 @@ public class RefboxRemoteCommand
 	private final IVector2 kickPos;
 	private final CardType cardType;
 	private final ETeamColor cardTeam;
+	private final SSL_Referee_Game_Event gameEvent;
 	
 	
-	/**
-	 * @param command
-	 */
-	public RefboxRemoteCommand(final Command command)
+	public RefboxRemoteCommand(final SSL_Referee_Game_Event gameEvent)
 	{
-		this(command, null);
+		this(RemoteCommandType.GAME_EVENT_ONLY, null, null, null, null, gameEvent);
 	}
 	
 	
-	/**
-	 * @param command
-	 * @param kickPos
-	 */
-	public RefboxRemoteCommand(final Command command, final IVector2 kickPos)
+	public RefboxRemoteCommand(final Command command, final SSL_Referee_Game_Event gameEvent)
 	{
-		this(RemoteCommandType.COMMAND, command, kickPos, null, null);
+		this(RemoteCommandType.COMMAND, command, null, null, null, gameEvent);
 	}
 	
 	
-	/**
-	 * @param cardType
-	 * @param cardTeam
-	 */
-	public RefboxRemoteCommand(final CardType cardType, final ETeamColor cardTeam)
+	public RefboxRemoteCommand(final Command command, final IVector2 kickPos, final SSL_Referee_Game_Event gameEvent)
 	{
-		this(RemoteCommandType.CARD, null, null, cardType, cardTeam);
+		this(RemoteCommandType.COMMAND, command, kickPos, null, null, gameEvent);
+	}
+	
+	
+	public RefboxRemoteCommand(final CardType cardType, final ETeamColor cardTeam,
+			final SSL_Referee_Game_Event gameEvent)
+	{
+		this(RemoteCommandType.CARD, null, null, cardType, cardTeam, gameEvent);
 	}
 	
 	
 	private RefboxRemoteCommand(final RemoteCommandType type, final Command command, final IVector2 kickPos,
-			final CardType cardType, final ETeamColor cardTeam)
+			final CardType cardType, final ETeamColor cardTeam, final SSL_Referee_Game_Event gameEvent)
 	{
 		this.type = type;
 		
@@ -65,6 +63,8 @@ public class RefboxRemoteCommand
 		
 		this.cardType = cardType;
 		this.cardTeam = cardTeam;
+		
+		this.gameEvent = gameEvent;
 	}
 	
 	
@@ -113,6 +113,12 @@ public class RefboxRemoteCommand
 	}
 	
 	
+	public SSL_Referee_Game_Event getGameEvent()
+	{
+		return gameEvent;
+	}
+	
+	
 	@Override
 	public boolean equals(final Object obj)
 	{
@@ -154,6 +160,13 @@ public class RefboxRemoteCommand
 				return other.kickPos == null;
 			}
 			return kickPos.equals(other.kickPos);
+		} else if (type == RemoteCommandType.GAME_EVENT_ONLY)
+		{
+			if (gameEvent == null)
+			{
+				return other.gameEvent == null;
+			}
+			return gameEvent.equals(other.gameEvent);
 		}
 		return false;
 	}
@@ -188,22 +201,20 @@ public class RefboxRemoteCommand
 		switch (type)
 		{
 			case COMMAND:
-				return command + " " + kickPos;
+				return command + " " + kickPos + " (" + gameEvent + ")";
 			case CARD:
-				return cardType + " for " + cardTeam;
+				return cardType + " for " + cardTeam + " (" + gameEvent + ")";
+			case GAME_EVENT_ONLY:
+				return "game event only: " + gameEvent;
 			default:
 				throw new IllegalStateException();
 		}
 	}
 	
-	/**
-	 * @author "Lukas Magel"
-	 */
 	public enum RemoteCommandType
 	{
-		/**  */
 		COMMAND,
-		/**  */
-		CARD
+		CARD,
+		GAME_EVENT_ONLY
 	}
 }

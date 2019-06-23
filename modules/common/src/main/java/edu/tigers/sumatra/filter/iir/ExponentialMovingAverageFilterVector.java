@@ -1,16 +1,11 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 24.11.2016
- * Author(s): AndreR <andre@ryll.cc>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.filter.iir;
 
 import org.apache.commons.lang.Validate;
 
-import edu.tigers.sumatra.math.vector.IVector;
+import edu.tigers.sumatra.math.vector.IVectorN;
 import edu.tigers.sumatra.math.vector.VectorN;
 
 
@@ -28,7 +23,7 @@ import edu.tigers.sumatra.math.vector.VectorN;
 public class ExponentialMovingAverageFilterVector
 {
 	private double		alpha;
-	protected IVector	state;
+	protected IVectorN state;
 	
 	
 	/**
@@ -51,7 +46,7 @@ public class ExponentialMovingAverageFilterVector
 	 * @param alpha
 	 * @param state
 	 */
-	public ExponentialMovingAverageFilterVector(final double alpha, final IVector state)
+	public ExponentialMovingAverageFilterVector(final double alpha, final IVectorN state)
 	{
 		Validate.isTrue((alpha >= 0.0) && (alpha <= 1.0), "alpha must be in range 0.0 - 1.0");
 		this.alpha = alpha;
@@ -65,7 +60,7 @@ public class ExponentialMovingAverageFilterVector
 	 * @param measurement
 	 * @return
 	 */
-	public IVector update(final IVector measurement)
+	public IVectorN update(final IVectorN measurement)
 	{
 		state = state.multiplyNew(alpha).addNew(measurement.multiplyNew(1.0 - alpha));
 		return state;
@@ -93,7 +88,7 @@ public class ExponentialMovingAverageFilterVector
 	/**
 	 * @return the state
 	 */
-	public IVector getState()
+	public IVectorN getState()
 	{
 		return state;
 	}
@@ -102,7 +97,7 @@ public class ExponentialMovingAverageFilterVector
 	/**
 	 * @param state the state to set
 	 */
-	public void setState(final IVector state)
+	public void setState(final IVectorN state)
 	{
 		this.state = state;
 	}

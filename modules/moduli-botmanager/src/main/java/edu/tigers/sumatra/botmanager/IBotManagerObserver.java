@@ -1,14 +1,10 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 10.08.2010
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager;
 
 import edu.tigers.sumatra.botmanager.bots.ABot;
+import edu.tigers.sumatra.botmanager.commands.ACommand;
 
 
 /**
@@ -19,11 +15,26 @@ public interface IBotManagerObserver
 	/**
 	 * @param bot
 	 */
-	void onBotAdded(ABot bot);
+	default void onBotAdded(ABot bot)
+	{
+	}
 	
 	
 	/**
 	 * @param bot
 	 */
-	void onBotRemoved(ABot bot);
+	default void onBotRemoved(ABot bot)
+	{
+	}
+	
+	
+	/**
+	 * A new bot command has arrived
+	 * 
+	 * @param bot the bot
+	 * @param command the bot command
+	 */
+	default void onIncomingBotCommand(final ABot bot, final ACommand command)
+	{
+	}
 }

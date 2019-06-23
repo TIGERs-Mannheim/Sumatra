@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.keeper;
@@ -7,7 +7,7 @@ package edu.tigers.sumatra.ai.pandora.roles.keeper;
 
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.ai.metis.keeper.KeeperStateCalc;
+import edu.tigers.sumatra.ai.metis.keeper.EKeeperState;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.ai.pandora.roles.keeper.states.CatchOverChipState;
 import edu.tigers.sumatra.ai.pandora.roles.keeper.states.InterceptAndGoOutState;
@@ -16,25 +16,22 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.referee.data.GameState;
-import edu.tigers.sumatra.skillsystem.skills.MoveToTrajSkill;
+import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
+import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
-import edu.tigers.sumatra.statemachine.IState;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
 /**
- * KeeperRole in OneOnOne Penalty Shootout
+ * KeeperRole in OneOnOne Penalty ShootoutRound
  *
  * @author ChrisC
  */
 public class KeeperOneOnOneRole extends KeeperRole
 {
 	
-	@Configurable(comment = "Keeper rambo distance", defValue = "2000.0")
-	private static double keeperRamboDistance = 2000;
-	
 	@Configurable(comment = "Keeper go out lookahead", defValue = "0.2")
-	private static double	lookahead				= 0.2;
+	private static double lookahead = 0.2;
 	
 	
 	/**
@@ -59,19 +56,23 @@ public class KeeperOneOnOneRole extends KeeperRole
 	@Override
 	protected void beforeUpdate()
 	{
-		GameState gameState = getAiFrame().getTacticalField().getGameState();
 		
-		KeeperStateCalc.EKeeperState keeperState = getAiFrame().getTacticalField().getKeeperState();
+		
+		GameState gameState = getAiFrame().getTacticalField().getGameState();
+		double keeperRamboDistance = getAiFrame().getTacticalField().getKeeperRamboDistance();
+		
+		EKeeperState keeperState = getAiFrame().getTacticalField().getKeeperState();
 		if (gameState.isPreparePenaltyForThem())
 		{
 			triggerEvent(KeeperOneOnOneEvents.PREPARE_SHOOTOUT);
-		} else if (isKeeperGoingRambo())
+		} else if (isKeeperGoingRambo(keeperRamboDistance))
 		{
+			// Move to ball
 			triggerEvent(KeeperOneOnOneEvents.RAMBO);
 		} else if ((getPos().x() > getBall().getPos().x()) && !gameState.isStop())
 		{
 			triggerEvent(KeeperOneOnOneEvents.CATCH);
-		} else if (keeperState == KeeperStateCalc.EKeeperState.INTERCEPT_BALL)
+		} else if (keeperState == EKeeperState.CRITICAL)
 		{
 			triggerEvent(KeeperOneOnOneEvents.INTERCEPT_AND_GO_OUT);
 		} else
@@ -81,11 +82,11 @@ public class KeeperOneOnOneRole extends KeeperRole
 	}
 	
 	
-	private boolean isKeeperGoingRambo()
+	private boolean isKeeperGoingRambo(double keeperRamboDistance)
 	{
 		boolean isBallCloseToGoal = Geometry.getPenaltyAreaOur().isPointInShape(getBall().getPos(), keeperRamboDistance);
 		boolean isNotShootingAtGoal = !getAiFrame().getTacticalField().getKeeperState()
-				.equals(KeeperStateCalc.EKeeperState.INTERCEPT_BALL);
+				.equals(EKeeperState.CRITICAL);
 		
 		ITrackedBot foe = getAiFrame().getTacticalField().getEnemyClosestToBall().getBot();
 		if (foe == null)
@@ -110,19 +111,21 @@ public class KeeperOneOnOneRole extends KeeperRole
 		PREPARE_SHOOTOUT
 	}
 	
-	private class PreparePenaltyShootout implements IState
+	private class PreparePenaltyShootout extends AState
 	{
-		MoveToTrajSkill posSkill;
+		AMoveToSkill posSkill;
 		
 		
 		@Override
 		public void doEntryActions()
 		{
-			posSkill = new MoveToTrajSkill();
+			posSkill = AMoveToSkill.createMoveToSkill();
 			posSkill.getMoveCon().setPenaltyAreaAllowedOur(true);
 			posSkill.getMoveCon()
 					.updateDestination(Geometry.getGoalOur().getCenter().addNew(Vector2.fromX(Geometry.getBotRadius())));
 			setNewSkill(posSkill);
 		}
 	}
+	
+	
 }

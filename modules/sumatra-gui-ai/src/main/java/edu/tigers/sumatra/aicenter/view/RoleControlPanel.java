@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 19.09.2010
- * Author(s): Oliver Steinbrecher <OST1988@aol.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.aicenter.view;
 
@@ -17,8 +12,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -37,11 +32,9 @@ import org.apache.log4j.Logger;
 import com.github.g3force.instanceables.IInstanceableObserver;
 import com.github.g3force.instanceables.InstanceablePanel;
 
-import edu.tigers.sumatra.ai.data.EAIControlState;
+import edu.tigers.sumatra.ai.athena.EAIControlState;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.model.SumatraModel;
 import net.miginfocom.swing.MigLayout;
 
@@ -57,25 +50,21 @@ public class RoleControlPanel extends JPanel
 	private static Logger log = LogManager.getLogger(RoleControlPanel.class);
 	
 	private static final long serialVersionUID = -6902947971327765508L;
-	
-	private JList<ARole> activeRolesList = null;
-	private DefaultListModel<ARole> activeRolesListModel = null;
-	
-	private final InstanceablePanel instanceablePanel;
-	private final JButton clearRolesButton;
-	private final JButton deleteRoleButton;
-	
-	private final List<JComponent> components = new ArrayList<>();
-	
 	private static final Color ERROR_COLOR = Color.RED;
 	private static final Color DEFAULT_COLOR = Color.WHITE;
 	private static final int LIST_SIZE_X = 250;
 	private static final int LIST_SIZE_Y = 100;
+	private static final String ROLE_KEY = RoleControlPanel.class.getName() + ".role";
+	
+	private final JList<ARole> activeRolesList;
+	private final DefaultListModel<ARole> activeRolesListModel;
+	private final InstanceablePanel instanceablePanel;
+	
+	private final List<JComponent> components = new ArrayList<>();
+	
 	private final JSpinner textBotId;
 	
-	private final transient List<IRoleControlPanelObserver> observers = new LinkedList<>();
-	
-	private static final String ROLE_KEY = RoleControlPanel.class.getName() + ".role";
+	private final List<IRoleControlPanelObserver> observers = new CopyOnWriteArrayList<>();
 	
 	
 	/**
@@ -99,10 +88,10 @@ public class RoleControlPanel extends JPanel
 		JButton createRoleButton = new JButton("Create");
 		createRoleButton.addActionListener(new CreateRoleListener());
 		
-		clearRolesButton = new JButton("clear");
+		final JButton clearRolesButton = new JButton("clear");
 		clearRolesButton.addActionListener(new ClearRolesListener());
 		
-		deleteRoleButton = new JButton("delete");
+		final JButton deleteRoleButton = new JButton("delete");
 		deleteRoleButton.addActionListener(new DeleteRoleListener());
 		
 		String idStr = SumatraModel.getInstance().getUserProperty(RoleControlPanel.class.getCanonicalName() + ".id", "0");
@@ -138,10 +127,7 @@ public class RoleControlPanel extends JPanel
 	 */
 	public void addObserver(final IRoleControlPanelObserver observer)
 	{
-		synchronized (observers)
-		{
-			observers.add(observer);
-		}
+		observers.add(observer);
 	}
 	
 	
@@ -150,17 +136,12 @@ public class RoleControlPanel extends JPanel
 	 */
 	public void removeObserver(final IRoleControlPanelObserver oddObserver)
 	{
-		synchronized (observers)
-		{
-			observers.remove(oddObserver);
-		}
+		observers.remove(oddObserver);
 	}
 	
 	
 	public void setAiControlState(final EAIControlState mode)
 	{
-		clearRoles();
-		
 		if (mode == EAIControlState.TEST_MODE)
 		{
 			setEnabled(true);
@@ -243,22 +224,11 @@ public class RoleControlPanel extends JPanel
 		@Override
 		public void actionPerformed(final ActionEvent arg0)
 		{
-			clearRoles();
-		}
-	}
-	
-	
-	private void clearRoles()
-	{
-		for (int i = 0; i < activeRolesListModel.size(); i++)
-		{
-			ARole role = activeRolesListModel.elementAt(i);
 			for (final IRoleControlPanelObserver o : observers)
 			{
-				o.removeRole(role);
+				o.clearRoles();
 			}
 		}
-		activeRolesListModel.clear();
 	}
 	
 	
@@ -292,24 +262,21 @@ public class RoleControlPanel extends JPanel
 		@Override
 		public void onNewInstance(final Object object)
 		{
-			synchronized (observers)
+			try
 			{
-				try
+				final ARole role = (ARole) object;
+				SumatraModel.getInstance().setUserProperty(ROLE_KEY, instanceablePanel.getSelectedItem().name());
+				int botId = (int) textBotId.getValue();
+				SumatraModel.getInstance().setUserProperty(RoleControlPanel.class.getCanonicalName() + ".id",
+						String.valueOf(botId));
+				for (final IRoleControlPanelObserver o : observers)
 				{
-					final ARole role = (ARole) object;
-					SumatraModel.getInstance().setUserProperty(ROLE_KEY, instanceablePanel.getSelectedItem().name());
-					BotID botId = BotID.createBotId((int) textBotId.getValue(), ETeamColor.UNINITIALIZED);
-					SumatraModel.getInstance().setUserProperty(RoleControlPanel.class.getCanonicalName() + ".id",
-							String.valueOf(botId.getNumber()));
-					for (final IRoleControlPanelObserver o : observers)
-					{
-						o.addRole(role, botId);
-					}
-				} catch (final NumberFormatException nfe)
-				{
-					// Don't do anything else
-					EventQueue.invokeLater(() -> textBotId.setBackground(ERROR_COLOR));
+					o.addRole(role, botId);
 				}
+			} catch (final NumberFormatException nfe)
+			{
+				// Don't do anything else
+				EventQueue.invokeLater(() -> textBotId.setBackground(ERROR_COLOR));
 			}
 		}
 	}

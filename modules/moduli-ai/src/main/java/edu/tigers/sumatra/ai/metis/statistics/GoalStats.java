@@ -1,22 +1,22 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.statistics;
 
-import static edu.tigers.sumatra.ai.data.MatchStats.EMatchStatistics;
+import static edu.tigers.sumatra.ai.metis.statistics.MatchStats.EMatchStatistics;
 
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.ai.data.EPossibleGoal;
-import edu.tigers.sumatra.ai.data.MatchStats;
-import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
+import edu.tigers.sumatra.ai.BaseAiFrame;
+import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.ai.metis.statistics.possiblegoal.EPossibleGoal;
 import edu.tigers.sumatra.ids.BotID;
 
 
@@ -45,8 +45,11 @@ public class GoalStats extends AStats
 	@Override
 	public void onStatisticUpdate(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
-		BotID botLastTouched = newTacticalField.getBotLastTouchedBall();
-		updateBallContactBuffer(botLastTouched);
+		Set<BotID> botLastTouched = newTacticalField.getBotsLastTouchedBall();
+		if (botLastTouched.size() == 1)
+		{
+			updateBallContactBuffer(botLastTouched.iterator().next());
+		}
 		
 		EPossibleGoal ePossibleGoal = newTacticalField.getPossibleGoal();
 		if (ePossibleGoal == lastPossibleGoalVal)
@@ -73,8 +76,7 @@ public class GoalStats extends AStats
 		
 		if (shooter != null)
 		{
-			possibleBotGoals.putIfAbsent(shooter, 0);
-			possibleBotGoals.compute(shooter, (id, goals) -> goals + 1);
+			possibleBotGoals.compute(shooter, (id, goals) -> goals == null ? 1 : goals + 1);
 		} else
 		{
 			log.debug("Could not determine goal shooter. None of last touched bots is ours: " + ballContactBuffer);

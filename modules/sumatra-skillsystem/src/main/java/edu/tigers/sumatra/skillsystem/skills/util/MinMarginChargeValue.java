@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills.util;
 
 import static edu.tigers.sumatra.skillsystem.skills.util.ChargingValue.aChargingValue;
 
-import edu.tigers.sumatra.math.Hysterese;
+import edu.tigers.sumatra.math.Hysteresis;
 
 
 /**
@@ -17,20 +17,21 @@ import edu.tigers.sumatra.math.Hysterese;
  */
 public class MinMarginChargeValue
 {
-	private final Hysterese			dist2DestHysterese;
-	private final ChargingValue	chargingValue;
+	private final Hysteresis dist2DestHysteresis;
+	private final ChargingValue chargingValue;
 	
-	private double						minMargin;
+	private double minMargin;
 	
 	
 	private MinMarginChargeValue(final Builder builder)
 	{
-		dist2DestHysterese = new Hysterese(builder.lowerThreshold, builder.upperThreshold);
+		dist2DestHysteresis = new Hysteresis(builder.lowerThreshold, builder.upperThreshold);
 		chargingValue = aChargingValue().withDefaultValue(builder.defaultValue)
 				.withChargeRate(builder.chargeRate)
 				.withLimit(builder.limit)
+				.withInitValue(builder.initValue)
 				.build();
-		minMargin = builder.defaultValue;
+		minMargin = builder.initValue;
 	}
 	
 	
@@ -49,8 +50,8 @@ public class MinMarginChargeValue
 	 */
 	public void updateMinMargin(final double dist, final long timestamp)
 	{
-		dist2DestHysterese.update(dist);
-		if (dist2DestHysterese.isLower())
+		dist2DestHysteresis.update(dist);
+		if (dist2DestHysteresis.isLower())
 		{
 			chargingValue.update(timestamp);
 		} else
@@ -80,11 +81,12 @@ public class MinMarginChargeValue
 	 */
 	public static final class Builder
 	{
-		private double	lowerThreshold	= 5;
-		private double	upperThreshold	= 20;
-		private double	chargeRate		= -50;
-		private double	defaultValue	= -1;
-		private double	limit				= Double.POSITIVE_INFINITY;
+		private double lowerThreshold = 5;
+		private double upperThreshold = 20;
+		private double chargeRate = -50;
+		private double defaultValue = -1;
+		private double limit = Double.POSITIVE_INFINITY;
+		private Double initValue = null;
 		
 		
 		private Builder()
@@ -162,12 +164,29 @@ public class MinMarginChargeValue
 		
 		
 		/**
+		 * Sets the {@code initValue} and returns a reference to this Builder so that the methods can be chained together.
+		 *
+		 * @param initValue the {@code initValue} to set
+		 * @return a reference to this Builder
+		 */
+		public Builder withInitValue(final double initValue)
+		{
+			this.initValue = initValue;
+			return this;
+		}
+		
+		
+		/**
 		 * Returns a {@code MinMarginChargeValue} built from the parameters previously set.
 		 *
 		 * @return a {@code MinMarginChargeValue} built with parameters of this {@code MinMarginChargeValue.Builder}
 		 */
 		public MinMarginChargeValue build()
 		{
+			if (initValue == null)
+			{
+				initValue = defaultValue;
+			}
 			return new MinMarginChargeValue(this);
 		}
 	}

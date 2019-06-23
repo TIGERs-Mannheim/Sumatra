@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jun 9, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.log;
 
@@ -24,6 +19,12 @@ public interface IGameLog
 	 * @return a read only view of the log entries
 	 */
 	List<GameLogEntry> getEntries();
+	
+	
+	/**
+	 * Clear all entries
+	 */
+	void clearEntries();
 	
 	
 	/**

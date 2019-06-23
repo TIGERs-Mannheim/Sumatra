@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.events.impl;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-
-import org.apache.log4j.Logger;
 
 import com.github.g3force.configurable.Configurable;
 
@@ -16,16 +16,14 @@ import edu.tigers.autoreferee.engine.FollowUpAction;
 import edu.tigers.autoreferee.engine.FollowUpAction.EActionType;
 import edu.tigers.autoreferee.engine.events.DistanceViolation;
 import edu.tigers.autoreferee.engine.events.EGameEvent;
+import edu.tigers.autoreferee.engine.events.EGameEventDetectorType;
 import edu.tigers.autoreferee.engine.events.GameEvent;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
 import edu.tigers.autoreferee.generic.BotPosition;
-import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.referee.data.EGameState;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
 /**
@@ -36,22 +34,16 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
 public class DribblingDetector extends APreparingGameEventDetector
 {
 	private static final int PRIORITY = 1;
-	private static final Logger	log									= Logger.getLogger(DribblingDetector.class);
 	
-	@Configurable(comment = "[mm] Any dribbling distance above this value is considered a violation")
+	@Configurable(comment = "[mm] Any dribbling distance above this value is considered a violation", defValue = "1000.0")
 	private static double maxDribblingLength = 1000;
-	
-	@Configurable(comment = "[mm] Any distance to the ball closer than this value is considered dribbling")
-	private static double dribblingBotBallDistance = 40;
 	
 	static
 	{
 		AGameEventDetector.registerClass(DribblingDetector.class);
 	}
 	
-	/** The position where the currently dribbling bot first touched the ball */
-	private BotPosition	firstContact;
-	private long			resetTime;
+	private final Map<BotID, BotPosition> currentContacts = new HashMap<>();
 	
 	
 	/**
@@ -59,7 +51,7 @@ public class DribblingDetector extends APreparingGameEventDetector
 	 */
 	public DribblingDetector()
 	{
-		super(EGameState.RUNNING);
+		super(EGameEventDetectorType.DRIBBLING, EGameState.RUNNING);
 	}
 	
 	
@@ -71,82 +63,69 @@ public class DribblingDetector extends APreparingGameEventDetector
 	
 	
 	@Override
-	protected void prepare(final IAutoRefFrame frame)
+	public Optional<IGameEvent> doUpdate(final IAutoRefFrame frame)
 	{
-		resetTime = frame.getTimestamp();
+		List<BotPosition> botsTouchingBall = frame.getBotsTouchingBall();
+		
+		// add new touching bots
+		botsTouchingBall.forEach(b -> currentContacts.putIfAbsent(b.getBotID(), b));
+		// remove vanished touching bots
+		currentContacts.keySet().removeIf(k -> botsTouchingBall.stream().noneMatch(b -> b.getBotID().equals(k)));
+		
+		Optional<IGameEvent> gameEvent = botsTouchingBall.stream()
+				.filter(b -> dribbleDistance(b) > maxDribblingLength)
+				.findFirst()
+				.map(b -> createViolation(frame, b));
+		
+		gameEvent.ifPresent(g -> doReset());
+		return gameEvent;
+	}
+	
+	
+	private IVector2 dribbleStartPosition(final BotPosition b)
+	{
+		return currentContacts.get(b.getBotID()).getPos();
+	}
+	
+	
+	private double dribbleDistance(final BotPosition b)
+	{
+		return b.getPos().distanceTo(dribbleStartPosition(b));
+	}
+	
+	
+	private GameEvent createViolation(final IAutoRefFrame frame, final BotPosition finalBotPosition)
+	{
+		final BotID violatorId = finalBotPosition.getBotID();
+		final ETeamColor teamInFavor = violatorId.getTeamColor().opposite();
+		final IVector2 kickPos = AutoRefMath.getClosestFreekickPos(
+				dribbleStartPosition(finalBotPosition),
+				teamInFavor);
+		
+		FollowUpAction followUp = new FollowUpAction(
+				EActionType.INDIRECT_FREE,
+				teamInFavor,
+				kickPos);
+		
+		return new DistanceViolation(
+				EGameEvent.BALL_DRIBBLING,
+				frame.getTimestamp(),
+				violatorId,
+				followUp,
+				dribbleDistance(finalBotPosition));
 	}
 	
 	
 	@Override
-	public Optional<IGameEvent> doUpdate(final IAutoRefFrame frame, final List<IGameEvent> violations)
+	protected void prepare(final IAutoRefFrame frame)
 	{
-		BotPosition curContact = frame.getLastBotCloseToBall();
-		if (!isSane(firstContact))
-		{
-			if (isSane(curContact) && (curContact.getTimestamp() >= resetTime))
-			{
-				firstContact = curContact;
-			} else
-			{
-				return Optional.empty();
-			}
-		}
-		
-		BotID dribblerID = firstContact.getBotID();
-		IVector2 ballPos = frame.getWorldFrame().getBall().getPos();
-		ITrackedBot dribblerBot = frame.getWorldFrame().getBot(dribblerID);
-		if (dribblerBot == null)
-		{
-			log.warn("Bot that last touched the ball disappeard from the field: " + dribblerID);
-			return Optional.empty();
-		}
-		
-		if (!curContact.getBotID().equals(dribblerID))
-		{
-			resetRule(curContact.getTimestamp());
-			return Optional.empty();
-		}
-		
-		// The ball has not been touched since the last contact
-		if (VectorMath.distancePP(dribblerBot.getPos(), ballPos) > (dribblingBotBallDistance + Geometry
-				.getBotRadius() + Geometry.getBallRadius()))
-		{
-			resetRule(frame.getTimestamp());
-			return Optional.empty();
-		}
-		
-		double totalDistance = VectorMath.distancePP(firstContact.getPos(), ballPos);
-		if (totalDistance > maxDribblingLength)
-		{
-			ETeamColor dribblerColor = dribblerID.getTeamColor();
-			IVector2 kickPos = AutoRefMath.getClosestFreekickPos(ballPos, dribblerColor.opposite());
-			FollowUpAction followUp = new FollowUpAction(EActionType.INDIRECT_FREE, dribblerColor.opposite(), kickPos);
-			GameEvent violation = new DistanceViolation(EGameEvent.BALL_DRIBBLING, frame.getTimestamp(),
-					dribblerID, followUp, totalDistance);
-			resetRule(frame.getTimestamp());
-			return Optional.of(violation);
-		}
-		return Optional.empty();
+		// nothing to prepare
 	}
 	
 	
 	@Override
 	protected void doReset()
 	{
-		firstContact = null;
+		currentContacts.clear();
 	}
-	
-	
-	private void resetRule(final long ts)
-	{
-		resetTime = ts;
-		doReset();
-	}
-	
-	
-	private boolean isSane(final BotPosition pos)
-	{
-		return pos != null && !pos.getBotID().isUninitializedID();
-	}
-	
 }

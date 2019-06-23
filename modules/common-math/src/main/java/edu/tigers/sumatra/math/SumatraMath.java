@@ -9,6 +9,8 @@ import java.util.List;
 
 import org.apache.commons.lang.Validate;
 
+import net.jafama.FastMath;
+
 
 /**
  * This class holds basic math-functions for every day use.
@@ -33,7 +35,7 @@ public final class SumatraMath
 	 */
 	public static double sqrt(final double number)
 	{
-		return Math.sqrt(number);
+		return FastMath.sqrt(number);
 	}
 	
 	
@@ -256,8 +258,8 @@ public final class SumatraMath
 		} else if (d > 0.0)
 		{
 			double pHalf = p * 0.5;
-			double x1 = -pHalf + Math.sqrt((pHalf * pHalf) - q);
-			double x2 = -pHalf - Math.sqrt((pHalf * pHalf) - q);
+			double x1 = -pHalf + SumatraMath.sqrt((pHalf * pHalf) - q);
+			double x2 = -pHalf - SumatraMath.sqrt((pHalf * pHalf) - q);
 			roots.add(x1);
 			roots.add(x2);
 		} else
@@ -311,18 +313,18 @@ public final class SumatraMath
 		if (d < 0.0)
 		{
 			// Three unequal real roots.
-			double theta = Math.acos(r / Math.sqrt(-qCube));
-			double sqrtQ = Math.sqrt(-q);
-			double x1 = (2.0 * sqrtQ * Math.cos(theta / 3.0)) - aOver3;
-			double x2 = (2.0 * sqrtQ * Math.cos((theta + AngleMath.PI_TWO) / 3.0)) - aOver3;
-			double x3 = (2.0 * sqrtQ * Math.cos((theta + (AngleMath.PI * 4.0)) / 3.0)) - aOver3;
+			double theta = SumatraMath.acos(r / SumatraMath.sqrt(-qCube));
+			double sqrtQ = SumatraMath.sqrt(-q);
+			double x1 = (2.0 * sqrtQ * SumatraMath.cos(theta / 3.0)) - aOver3;
+			double x2 = (2.0 * sqrtQ * SumatraMath.cos((theta + AngleMath.PI_TWO) / 3.0)) - aOver3;
+			double x3 = (2.0 * sqrtQ * SumatraMath.cos((theta + (AngleMath.PI * 4.0)) / 3.0)) - aOver3;
 			roots.add(x1);
 			roots.add(x2);
 			roots.add(x3);
 		} else if (d > 0.0)
 		{
 			// One real root.
-			double sqrtD = Math.sqrt(d);
+			double sqrtD = SumatraMath.sqrt(d);
 			double s = Math.cbrt(r + sqrtD);
 			double t = Math.cbrt(r - sqrtD);
 			double x1 = (s + t) - aOver3;
@@ -344,5 +346,74 @@ public final class SumatraMath
 	public static double getEqualTol()
 	{
 		return EQUAL_TOL;
+	}
+	
+	
+	/**
+	 * @param x
+	 * @return
+	 */
+	public static double acos(double x)
+	{
+		return FastMath.acos(x);
+	}
+	
+	
+	/**
+	 * @param x
+	 * @return
+	 */
+	public static double asin(double x)
+	{
+		return FastMath.asin(x);
+	}
+	
+	
+	/**
+	 * A replaceable implementation
+	 * 
+	 * @param y
+	 * @param x
+	 * @return
+	 */
+	public static double atan2(double y, double x)
+	{
+		return FastMath.atan2(y, x);
+	}
+	
+	
+	/**
+	 * A replaceable implementation
+	 * 
+	 * @param angle
+	 * @return
+	 */
+	public static double cos(double angle)
+	{
+		return FastMath.cos(angle);
+	}
+	
+	
+	/**
+	 * A replaceable implementation
+	 * 
+	 * @param angle
+	 * @return
+	 */
+	public static double sin(double angle)
+	{
+		return FastMath.sin(angle);
+	}
+	
+	
+	/**
+	 * A replaceable implementation
+	 *
+	 * @param angle
+	 * @return
+	 */
+	public static double tan(double angle)
+	{
+		return FastMath.tan(angle);
 	}
 }

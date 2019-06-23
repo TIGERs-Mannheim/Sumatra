@@ -16,6 +16,7 @@ import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.rectangle.Rectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -39,18 +40,18 @@ public final class CircleMath
 	 * @see <a href="https://de.wikipedia.org/wiki/Kreistangente">Kreistangente</a>
 	 * @param circle a circle
 	 * @param externalPoint some point
-	 * @return two tangential intersections
+	 * @return two tangential intersections: [right, left]
 	 */
 	public static List<IVector2> tangentialIntersections(final ICircle circle, final IVector2 externalPoint)
 	{
 		IVector2 dir = externalPoint.subtractNew(circle.center());
 		double d = Math.max(circle.radius(), dir.getLength2());
-		double alpha = Math.acos(circle.radius() / d);
+		double alpha = SumatraMath.acos(circle.radius() / d);
 		double beta = dir.getAngle();
 		
 		List<IVector2> points = new ArrayList<>(2);
-		points.add(circle.center().addNew(Vector2.fromAngle(beta + alpha).scaleTo(circle.radius())));
-		points.add(circle.center().addNew(Vector2.fromAngle(beta - alpha).scaleTo(circle.radius())));
+		points.add(Vector2.fromAngleLength(beta + alpha, circle.radius()).add(circle.center()));
+		points.add(Vector2.fromAngleLength(beta - alpha, circle.radius()).add(circle.center()));
 		return points;
 	}
 	
@@ -91,9 +92,9 @@ public final class CircleMath
 		
 		if (SumatraMath.isZero(inRoot))
 		{
-			final Vector2 temp = Vector2.zero();
-			temp.setX((det * dy) / (dr * dr));
-			temp.setY((-det * dx) / (dr * dr));
+			final Vector2 temp = Vector2.fromXY(
+					(det * dy) / (dr * dr),
+					(-det * dx) / (dr * dr));
 			// because of moved coordinate system (newSupport):
 			temp.add(circle.center());
 			
@@ -101,14 +102,14 @@ public final class CircleMath
 			
 			return result;
 		}
-		final double sqRoot = Math.sqrt(inRoot);
-		final Vector2 temp1 = Vector2.zero();
-		final Vector2 temp2 = Vector2.zero();
+		final double sqRoot = SumatraMath.sqrt(inRoot);
 		
-		temp1.setX(((det * dy) + (dx * sqRoot)) / (dr * dr));
-		temp1.setY(((-det * dx) + (dy * sqRoot)) / (dr * dr));
-		temp2.setX(((det * dy) - (dx * sqRoot)) / (dr * dr));
-		temp2.setY(((-det * dx) - (dy * sqRoot)) / (dr * dr));
+		final Vector2 temp1 = Vector2.fromXY(
+				((det * dy) + (dx * sqRoot)) / (dr * dr),
+				((-det * dx) + (dy * sqRoot)) / (dr * dr));
+		final Vector2 temp2 = Vector2.fromXY(
+				((det * dy) - (dx * sqRoot)) / (dr * dr),
+				((-det * dx) - (dy * sqRoot)) / (dr * dr));
 		// because of moved coordinate system (newSupport):
 		temp1.add(circle.center());
 		temp2.add(circle.center());
@@ -157,7 +158,7 @@ public final class CircleMath
 			direction.add(circle.center());
 			return direction;
 		}
-		return point.addNew(Vector2.fromXY(circle.radius(), 0));
+		return point.addNew(Vector2f.fromXY(circle.radius(), 0));
 	}
 	
 	

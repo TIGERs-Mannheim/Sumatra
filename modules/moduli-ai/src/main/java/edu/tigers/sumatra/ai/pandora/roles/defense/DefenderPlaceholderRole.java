@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.defense;
@@ -9,7 +9,7 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
-import edu.tigers.sumatra.statemachine.IState;
+import edu.tigers.sumatra.statemachine.AState;
 
 
 /**
@@ -50,7 +50,7 @@ public class DefenderPlaceholderRole extends ADefenseRole
 		return threatLine;
 	}
 	
-	private class MoveState implements IState
+	private class MoveState extends AState
 	{
 		private AMoveToSkill skill;
 		
@@ -70,7 +70,6 @@ public class DefenderPlaceholderRole extends ADefenseRole
 		{
 			if (target != null)
 			{
-				skill.getMoveCon().setBotsObstacle(getPos().distanceTo(target) > 500);
 				skill.getMoveCon().updateDestination(target);
 				double targetAngle = target.subtractNew(Geometry.getGoalOur().getCenter()).getAngle();
 				skill.getMoveCon().updateTargetAngle(targetAngle);

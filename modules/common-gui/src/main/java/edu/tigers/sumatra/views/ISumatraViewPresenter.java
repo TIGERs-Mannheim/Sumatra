@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jul 19, 2013
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.views;
 
@@ -34,4 +29,14 @@ public interface ISumatraViewPresenter extends IModuliStateObserver
 	 * @return
 	 */
 	ISumatraView getSumatraView();
+	
+	
+	default void onStart()
+	{
+	}
+	
+	
+	default void onStop()
+	{
+	}
 }
