@@ -9,7 +9,8 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.test.junit.util;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,7 +47,7 @@ public class ThreadUtilTest
 		}
 	}
 	
-
+	
 	/**
 	 * Test method for
 	 * {@link edu.dhbw.mannheim.tigers.sumatra.util.ThreadUtil#parkNanosSafe(long, java.util.concurrent.atomic.AtomicBoolean)}
@@ -55,7 +56,7 @@ public class ThreadUtilTest
 	@Test
 	public void testParkNanosSafeLongAtomicBoolean()
 	{
-		// ###	Check result if canceled
+		// ### Check result if canceled
 		final long awakeAfter = 50; // [ms]
 		
 		for (int i = 0; i < 10; i++)
@@ -91,7 +92,7 @@ public class ThreadUtilTest
 		}
 		
 		
-		// ###	Check result if not canceled
+		// ### Check result if not canceled
 		for (int i = 0; i < 10; i++)
 		{
 			// Send to sleep

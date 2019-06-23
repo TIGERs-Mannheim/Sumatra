@@ -1,20 +1,20 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 30.05.2011
  * Author(s): Yakisoba
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.cam.sslvision;
 
 import java.io.Serializable;
+import java.util.Arrays;
+
 
 /**
- * TODO Yakisoba, add comment!
- * - What should this type do (in one sentence)?
- * - If not intuitive: A simple example how to use this class
+ * Container class for SSLVision data.
  * 
  * @author Yakisoba
  * 
@@ -23,19 +23,35 @@ public class SSLVisionData implements Serializable
 {
 	private static final long	serialVersionUID	= -1885492267591611080L;
 	
-	private long timestamp;
-	private byte[] data;
+	private final long			timestamp;
+	private final byte[]			data;
 	
-	public SSLVisionData(long timestamp, byte[] data) {
+	
+	/**
+	 * @param timestamp
+	 * @param data
+	 */
+	public SSLVisionData(long timestamp, byte[] data)
+	{
 		this.timestamp = timestamp;
-		this.data = data;
+		this.data = Arrays.copyOf(data, data.length);
 	}
 	
-	public byte[] getData() {
-		return data;
+	
+	/**
+	 * @return
+	 */
+	public byte[] getData()
+	{
+		return Arrays.copyOf(data, data.length);
 	}
 	
-	public long getTimestamp() {
+	
+	/**
+	 * @return
+	 */
+	public long getTimestamp()
+	{
 		return timestamp;
 	}
 }

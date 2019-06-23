@@ -8,15 +8,21 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
+import org.apache.commons.configuration.tree.ConfigurationNode;
+import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature.EFeatureState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ITransceiver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.devices.TigerDevices;
 
 
 /**
@@ -30,14 +36,23 @@ public abstract class ABot
 	// --------------------------------------------------------------
 	// --- variables ------------------------------------------------
 	// --------------------------------------------------------------
-	protected int					botId;
-	protected String				ip				= "";
-	protected int					port			= 0;
-	protected EBotType			type			= EBotType.UNKNOWN;
-	protected String				name			= "John Doe";
-	protected boolean				active		= true;
-
-	private List<IBotObserver> observers = new ArrayList<IBotObserver>();
+	private static final Logger						log				= Logger.getLogger(ABot.class.getName());
+	
+	private static final String						TYPE				= "type";
+	
+	protected BotID										botId;
+	private EBotType										type				= EBotType.UNKNOWN;
+	protected String										name				= "John Doe";
+	protected boolean										active			= true;
+	private String											controlledBy	= "";
+	
+	private final Map<EFeature, EFeatureState>	botFeatures;
+	private int												kickerMaxCap	= 0;
+	
+	private final Set<IBotObserver>					observers		= new HashSet<IBotObserver>();
+	
+	private final TigerDevices							devices;
+	
 	
 	// --------------------------------------------------------------
 	// --- constructor(s) -------------------------------------------
@@ -48,60 +63,138 @@ public abstract class ABot
 	public ABot(SubnodeConfiguration botConfig)
 	{
 		// --- set default values of botDB ---
-		this.botId = botConfig.getInt("[@id]");
-		this.ip = botConfig.getString("ip");
-		this.port = botConfig.getInt("port");
-		this.active = botConfig.getBoolean("active", true);
+		botId = new BotID(botConfig.getInt("[@id]"));
+		active = botConfig.getBoolean("active", true);
 		
-		if (botConfig.getString("type").equals("CtBot"))
-		{
-			this.type = EBotType.CT;
-		}
-		if (botConfig.getString("type").equals("SysoutBot"))
-		{
-			this.type = EBotType.SYSOUT;
-		}
-		if (botConfig.getString("type").equals("TigerBot"))
-		{
-			this.type = EBotType.TIGER;
-		}
+		botFeatures = getDefaultFeatureStates();
+		readFeatures(botConfig);
 		
-		this.name = botConfig.getString("name");
+		type = EBotType.getTypeFromCfgName(botConfig.getString(TYPE));
+		name = botConfig.getString("name");
+		
+		devices = new TigerDevices(type);
 	}
 	
-	public ABot(EBotType type, int id)
+	
+	/**
+	 * @param type
+	 * @param id
+	 */
+	public ABot(EBotType type, BotID id)
 	{
-		this.botId = id;
+		botId = id;
 		this.type = type;
+		botFeatures = getDefaultFeatureStates();
+		
+		devices = new TigerDevices(type);
 	}
-
+	
+	
+	private void readFeatures(SubnodeConfiguration botConfig)
+	{
+		final List<?> features = botConfig.configurationsAt("features");
+		for (final Object obj : features)
+		{
+			if (!(obj instanceof SubnodeConfiguration))
+			{
+				log.warn("Unexpected state: object is no SubnodeConfiguration");
+				continue;
+			}
+			final SubnodeConfiguration featureConfig = (SubnodeConfiguration) obj;
+			
+			List<ConfigurationNode> nodes = featureConfig.getRoot().getChildren();
+			for (ConfigurationNode node : nodes)
+			{
+				String key = node.getName();
+				String value = featureConfig.getString(key);
+				
+				try
+				{
+					EFeature feature = EFeature.valueOf(key);
+					EFeatureState state = EFeatureState.valueOf(value);
+					botFeatures.put(feature, state);
+				} catch (IllegalArgumentException e)
+				{
+					log.error("Could not parse feature type or state in config file. key=" + key + " value=" + value);
+				}
+			}
+		}
+	}
+	
+	
 	// --------------------------------------------------------------
 	// --- abstract-methods -----------------------------------------
 	// --------------------------------------------------------------
+	
+	protected abstract Map<EFeature, EFeatureState> getDefaultFeatureStates();
+	
+	
+	/**
+	 * 
+	 * @param cmd
+	 */
 	public abstract void execute(ACommand cmd);
+	
+	
+	/**
+	 * 
+	 */
 	public abstract void start();
+	
+	
+	/**
+	 * 
+	 */
 	public abstract void stop();
-	public abstract ITransceiver getTransceiver();
-
+	
+	
+	/**
+	 * @return [V]
+	 */
+	public abstract float getBatteryLevel();
+	
+	
+	/**
+	 * @return [V]
+	 */
+	public abstract float getKickerLevel();
+	
+	
+	/**
+	 * @return
+	 */
+	public abstract ENetworkState getNetworkState();
+	
+	
 	// --------------------------------------------------------------
 	// --- setter/getter --------------------------------------------
 	// --------------------------------------------------------------
+	/**
+	 * 
+	 * @param active
+	 */
 	public void setActive(boolean active)
 	{
 		this.active = active;
-	}	
+	}
 	
+	
+	/**
+	 * 
+	 * @param o
+	 */
 	public void addObserver(IBotObserver o)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
 			observers.add(o);
 		}
 	}
 	
+	
 	protected boolean addObserverIfNotPresent(IBotObserver o)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
 			if (observers.contains(o))
 			{
@@ -111,112 +204,107 @@ public abstract class ABot
 		}
 	}
 	
+	
+	/**
+	 * 
+	 * @param o
+	 */
 	public void removeObserver(IBotObserver o)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
 			observers.remove(o);
 		}
 	}
 	
-	public void internalSetBotId(int newId)
+	
+	/**
+	 * 
+	 * @param newId
+	 */
+	public void internalSetBotId(BotID newId)
 	{
-		int oldId = botId;
+		final BotID oldId = botId;
 		
 		botId = newId;
 		
 		notifyIdChanged(oldId, newId);
 	}
 	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public HierarchicalConfiguration getConfiguration()
 	{
-		HierarchicalConfiguration config = new HierarchicalConfiguration();
+		final HierarchicalConfiguration config = new HierarchicalConfiguration();
 		
-		String type = "Unknown";
-		
-		switch(this.type)
-		{
-			case CT:
-				type = "CtBot";
-				break;
-			case SYSOUT:
-				type = "SysoutBot";
-				break;
-			case TIGER:
-				type = "TigerBot";
-				break;
-		}
-		
-		config.addProperty("bot[@id]", botId);
+		config.addProperty("bot[@id]", botId.getNumber());
 		config.addProperty("bot.name", name);
-		config.addProperty("bot.type", type);
-		config.addProperty("bot.ip", ip);
-		config.addProperty("bot.port", port);
+		config.addProperty("bot.type", type.getCfgName());
 		config.addProperty("bot.active", active);
+		
+		for (Map.Entry<EFeature, EFeatureState> entry : getBotFeatures().entrySet())
+		{
+			config.addProperty("bot.features." + entry.getKey(), entry.getValue());
+		}
 		
 		return config;
 	}
 	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public EBotType getType()
 	{
 		return type;
-	}	
-
+	}
+	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public String getName()
 	{
 		return name;
 	}
 	
+	
+	/**
+	 * 
+	 * @param name
+	 */
 	public void setName(String name)
 	{
 		this.name = name;
 		
 		notifyNameChanged();
 	}
-
-	public int getBotId()
+	
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public BotID getBotID()
 	{
 		return botId;
-	}	
-
-	public String getIp()
-	{
-		return ip;
 	}
 	
-	public void setIp(String ip)
-	{
-		this.ip = ip;
-
-		notifyIpChanged();
-	}
 	
-	public int getPort()
-	{
-		return port;
-	}
-	
-	public void setPort(int port)
-	{
-		this.port = port;
-		
-		notifyPortChanged();
-	}
-	
-	public float getMaxSpeed(float angle)
-	{
-		return 0;
-	}	
-
-	public float getMaxAngularVelocity()
-	{
-		return 0;
-	}
-	
+	/**
+	 * 
+	 * @return
+	 */
 	public boolean isActive()
 	{
 		return active;
 	}
+	
 	
 	@Override
 	public String toString()
@@ -224,58 +312,106 @@ public abstract class ABot
 		return "[Bot: " + getName() + "|" + botId + "]";
 	}
 	
+	
 	protected void notifyNameChanged()
-	{	
-		synchronized(observers)
+	{
+		synchronized (observers)
 		{
-			for(IBotObserver o : observers)
+			for (final IBotObserver o : observers)
 			{
 				o.onNameChanged(name);
 			}
 		}
 	}
 	
-	protected void notifyIdChanged(int oldId, int newId)
+	
+	protected void notifyIdChanged(BotID oldId, BotID newId)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for(IBotObserver o : observers)
+			for (final IBotObserver o : observers)
 			{
 				o.onIdChanged(oldId, newId);
 			}
 		}
 	}
 	
-	protected void notifyIpChanged()
-	{
-		synchronized(observers)
-		{
-			for(IBotObserver o : observers)
-			{
-				o.onIpChanged(ip);
-			}
-		}
-	}
-	
-	protected void notifyPortChanged()
-	{
-		synchronized(observers)
-		{
-			for(IBotObserver o : observers)
-			{
-				o.onPortChanged(port);
-			}
-		}
-	}
 	
 	protected void notifyNetworkStateChanged(ENetworkState state)
 	{
 		synchronized (observers)
 		{
-			for(IBotObserver o : observers)
+			for (final IBotObserver o : observers)
 			{
 				o.onNetworkStateChanged(state);
 			}
 		}
+	}
+	
+	
+	/**
+	 * @return the botFeatures
+	 */
+	public final Map<EFeature, EFeatureState> getBotFeatures()
+	{
+		return botFeatures;
+	}
+	
+	
+	/**
+	 * @return the kickerMaxCap
+	 */
+	public final int getKickerMaxCap()
+	{
+		return kickerMaxCap;
+	}
+	
+	
+	/**
+	 * @param kickerMaxCap the kickerMaxCap to set
+	 */
+	public final void setKickerMaxCap(int kickerMaxCap)
+	{
+		this.kickerMaxCap = kickerMaxCap;
+	}
+	
+	
+	/**
+	 * @return the devices
+	 */
+	public final TigerDevices getDevices()
+	{
+		return devices;
+	}
+	
+	
+	protected void notifyBotBlocked(boolean blocked)
+	{
+		synchronized (observers)
+		{
+			for (final IBotObserver o : observers)
+			{
+				o.onBlocked(blocked);
+			}
+		}
+	}
+	
+	
+	/**
+	 * @return the controlledBy
+	 */
+	public final String getControlledBy()
+	{
+		return controlledBy;
+	}
+	
+	
+	/**
+	 * @param controlledBy the controlledBy to set
+	 */
+	public final void setControlledBy(String controlledBy)
+	{
+		this.controlledBy = controlledBy;
+		notifyBotBlocked(!controlledBy.isEmpty());
 	}
 }

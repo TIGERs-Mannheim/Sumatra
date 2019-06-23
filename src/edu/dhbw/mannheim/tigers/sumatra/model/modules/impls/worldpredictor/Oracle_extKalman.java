@@ -4,7 +4,7 @@
  * Project: TIGERS - Sumatra
  * Date: 22.07.2010
  * Author(s):
- * Maren Künemund <Orphen@fantasymail.de>,
+ * Maren Kï¿½nemund <Orphen@fantasymail.de>,
  * Peter Birkenkampf <birkenkampf@web.de>,
  * Marcel Sauer <sauermarcel@yahoo.de>,
  * Gero
@@ -20,12 +20,12 @@ import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.CamBall;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.CamDetectionFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.CamRobot;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamBall;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamDetectionFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamRobot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.timer.Timer;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.BotControlObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.Director;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.benchmarking.Precision;
@@ -51,105 +51,112 @@ import edu.moduli.exceptions.ModuleNotFoundException;
  */
 public class Oracle_extKalman extends AWorldPredictor implements IWorldPredictorObservable
 {
-
 	// --------------------------------------------------------------------------
 	// --- variable(s) ----------------------------------------------------------
 	// --------------------------------------------------------------------------
-	private final Logger									log						= Logger.getLogger(getClass());
+	// Logger
+	private static final Logger				log						= Logger.getLogger(Oracle_extKalman.class.getName());
 	
-
-	private final SumatraModel							model						= SumatraModel.getInstance();
 	
-	protected ITimer										timer						= null;
+	private ITimer									timer						= null;
 	
 	// CamDetectionFrame-Consumer
-	private ACam											cam						= null;
-	private SyncedCamFrameBuffer                 freshCamDetnFrames;
+	private ACam									cam						= null;
+	private final SyncedCamFrameBuffer		freshCamDetnFrames;
 	
 	// Handling of robot control commands
-	private ArrayList<BotControlObserver>			botControlObserver	= new ArrayList<BotControlObserver>(5);
+	private final List<BotControlObserver>	botControlObserver	= new ArrayList<BotControlObserver>(5);
 	
 	// Processing
-	private Director										director;
+	private Director								director;
 	
 	// Prediction
-	private final PredictionContext					context;
+	private final PredictionContext			context;
 	
-	private int useCam = -1;
+	private int										useCam					= -1;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructor(s) -------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param properties
+	 */
 	public Oracle_extKalman(SubnodeConfiguration properties)
 	{
 		super();
 		
-		// TODO WP: Einstellungen abfragen und weitere Einstellung aus wp-config ins moduli config übertragen
+		// TODO WP: Einstellungen abfragen und weitere Einstellung aus wp-config ins moduli config ï¿½bertragen
 		// ModuleProcessorFactory.getInstance().setProperties(properties.getString("ballPrediction", "LINEAR"),
 		// properties.getString("tigerPrediction", "LINEAR"), properties.getString("foePrediction", "LINEAR"));
 		
 		context = new PredictionContext(properties);
 		
-		useCam = properties.getInt("useCam",-1);
+		useCam = properties.getInt("useCam", -1);
 		
 		
-		freshCamDetnFrames = new SyncedCamFrameBuffer(context.numberCams, (long) (WPConfig.MIN_CAMFRAME_DELAY_TIME / WPConfig.FILTER_CONVERT_NS_TO_INTERNAL_TIME));
+		freshCamDetnFrames = new SyncedCamFrameBuffer(context.numberCams,
+				(long) (WPConfig.MIN_CAMFRAME_DELAY_TIME / WPConfig.FILTER_CONVERT_NS_TO_INTERNAL_TIME));
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- method(s) ------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
 	public void initModule()
-	{		
+	{
+		final SumatraModel model = SumatraModel.getInstance();
 		try
 		{
 			cam = (ACam) model.getModule(ACam.MODULE_ID);
 			cam.setCamFrameConsumer(this);
-		} catch (ModuleNotFoundException err)
+		} catch (final ModuleNotFoundException err)
 		{
 			log.error("Unable to find module '" + ACam.MODULE_ID + "'!");
 		}
 		
 		try
 		{
-			timer = (ATimer) model.getModule(Timer.MODULE_ID);
-		} catch (ModuleNotFoundException err)
+			timer = (ATimer) model.getModule(ATimer.MODULE_ID);
+		} catch (final ModuleNotFoundException err)
 		{
 			log.debug("No timer found.");
 		}
 		
 		if (WPConfig.DEBUG)
+		{
 			Precision.getInstance().open(context.stepCount);
+		}
 		
 		if (WPConfig.DEBUG_FLYING)
+		{
 			WriteFlyData.getInstance().open();
+		}
 		
-		log.info("Initialized.");
+		log.debug("Initialized.");
 		
-		director = new Director(freshCamDetnFrames, context, this); // this is used for observercommunication
+		// this is used for observercommunication
+		director = new Director(freshCamDetnFrames, context, this);
 	}
 	
-
+	
 	@Override
 	public void startModule()
 	{
-		SumatraModel model = SumatraModel.getInstance();
+		final SumatraModel model = SumatraModel.getInstance();
 		ABotManager botmanager;
-		Map<Integer, ABot> botMap = null;		
+		Map<BotID, ABot> botMap = null;
 		try
 		{
 			botmanager = (ABotManager) model.getModule(ABotManager.MODULE_ID);
 			botMap = botmanager.getAllBots();
 			botmanager.addObserver(this);
-			for (ABot bot : botMap.values())
+			for (final ABot bot : botMap.values())
 			{
-				//botControlObserver.add(new BotControlObserver(bot, context.tigers));
 				onBotAdded(bot);
 			}
-		} catch (ModuleNotFoundException e)
+		} catch (final ModuleNotFoundException e)
 		{
 			log.error("Botmanager not found!");
 		}
@@ -164,10 +171,10 @@ public class Oracle_extKalman extends AWorldPredictor implements IWorldPredictor
 		director.setTimer(timer);
 		director.start();
 		
-		log.info("Started.");
+		log.debug("Started.");
 	}
 	
-
+	
 	@Override
 	public void deinitModule()
 	{
@@ -194,13 +201,14 @@ public class Oracle_extKalman extends AWorldPredictor implements IWorldPredictor
 		
 		context.reset();
 		
-		log.info("Deinitialized.");
+		log.debug("Deinitialized.");
 	}
 	
-
+	
 	@Override
 	public void stopModule()
 	{
+		consumer.onStop();
 		consumer = null;
 		timer = null;
 		
@@ -220,92 +228,97 @@ public class Oracle_extKalman extends AWorldPredictor implements IWorldPredictor
 			observers.clear();
 		}
 		
-		synchronized (functionalObservers)
-		{
-			functionalObservers.clear();
-		}
-		
-		log.info("Stopped.");
+		log.debug("Stopped.");
 	}
+	
 	
 	private float noise(float max)
 	{
-		float r = (float) ((Math.random()-0.5)*2);
-		return r*max;
+		final float r = (float) ((Math.random() - 0.5) * 2);
+		return r * max;
 	}
+	
 	
 	private List<CamBall> noisyBalls(List<CamBall> b)
 	{
-		List<CamBall> l = new ArrayList<CamBall>();
-		for (CamBall ball: b)
+		final List<CamBall> l = new ArrayList<CamBall>();
+		for (final CamBall ball : b)
 		{
-			l.add(new CamBall(ball.confidence, ball.area, ball.pos.x + noise(WPConfig.NOISE_S), ball.pos.y + noise(WPConfig.NOISE_S), ball.pos.z, ball.pixelX, ball.pixelY));
+			l.add(new CamBall(ball.confidence, ball.area, ball.pos.x() + noise(WPConfig.NOISE_S), ball.pos.y()
+					+ noise(WPConfig.NOISE_S), ball.pos.z(), ball.pixelX, ball.pixelY));
 		}
 		return l;
 	}
 	
+	
 	private List<CamRobot> noisyBots(List<CamRobot> bots)
 	{
-		List<CamRobot> l = new ArrayList<CamRobot>();
-		for (CamRobot bot: bots)
+		final List<CamRobot> l = new ArrayList<CamRobot>();
+		for (final CamRobot bot : bots)
 		{
-			l.add(new CamRobot(bot.confidence, bot.robotID, bot.pos.x + noise(WPConfig.NOISE_S), bot.pos.y + noise(WPConfig.NOISE_S), bot.orientation+noise(WPConfig.NOISE_R), bot.pixelX, bot.pixelY, bot.height));
+			l.add(new CamRobot(bot.confidence, bot.robotID, bot.pos.x() + noise(WPConfig.NOISE_S), bot.pos.y()
+					+ noise(WPConfig.NOISE_S), bot.orientation + noise(WPConfig.NOISE_R), bot.pixelX, bot.pixelY, bot.height));
 		}
-		return l;		
+		return l;
 	}
+	
 	
 	private CamDetectionFrame addNoise(CamDetectionFrame f)
 	{
-		long tCapture = f.tCapture;
-		long tSent = f.tSent;
-		long tReceived = f.tReceived;
-		int cameraId = f.cameraId;
-		long frameNumber = f.frameNumber;
-		double fps = f.fps;
-		List<CamBall> balls = noisyBalls(f.balls);
-		List<CamRobot> tigers = noisyBots(f.robotsTigers);
-		List<CamRobot> enemies = noisyBots(f.robotsEnemies);
-		CamDetectionFrame n = new CamDetectionFrame(tCapture, tSent, tReceived, cameraId, frameNumber, fps , balls , tigers , enemies);
+		final long tCapture = f.tCapture;
+		final long tSent = f.tSent;
+		final long tReceived = f.tReceived;
+		final int cameraId = f.cameraId;
+		final long frameNumber = f.frameNumber;
+		final double fps = f.fps;
+		final List<CamBall> balls = noisyBalls(f.balls);
+		final List<CamRobot> tigers = noisyBots(f.robotsTigers);
+		final List<CamRobot> enemies = noisyBots(f.robotsEnemies);
+		final CamDetectionFrame n = new CamDetectionFrame(tCapture, tSent, tReceived, cameraId, frameNumber, fps, balls,
+				tigers, enemies, f.teamProps);
 		return n;
 	}
-
+	
+	
 	@Override
 	public void onNewCamDetectionFrame(CamDetectionFrame camDetectionFrame)
 	{
 		if (useCam >= 0)
 		{
 			if (camDetectionFrame.cameraId != useCam)
+			{
 				return;
+			}
 		}
 		if (WPConfig.ADD_NOISE)
 		{
 			camDetectionFrame = addNoise(camDetectionFrame);
 		}
 		freshCamDetnFrames.put(camDetectionFrame);
-			
 	}
+	
 	
 	@Override
 	public void onBotAdded(ABot bot)
 	{
-		try 
-		{ 
-			ABotManager botmanager = (ABotManager) model.getModule(ABotManager.MODULE_ID); 
-			botControlObserver.add(new BotControlObserver(bot, context.tigers, botmanager)); 
-		} 
-		catch (ModuleNotFoundException e) 
-		{ 
-			log.error("Botmanager not found!"); 
-		} 
+		try
+		{
+			final ABotManager botmanager = (ABotManager) SumatraModel.getInstance().getModule(ABotManager.MODULE_ID);
+			botControlObserver.add(new BotControlObserver(bot, context.tigers, botmanager));
+		} catch (final ModuleNotFoundException e)
+		{
+			log.error("Botmanager not found!");
+		}
 	}
-
+	
+	
 	@Override
 	public void onBotRemoved(ABot bot)
 	{
-		int id = bot.getBotId();
-		for (BotControlObserver bco : botControlObserver)
+		final BotID id = bot.getBotID();
+		for (final BotControlObserver bco : botControlObserver)
 		{
-			if (bco.getId() == id)
+			if (bco.getId().equals(id))
 			{
 				bco.stopObserving();
 				botControlObserver.remove(bco);
@@ -313,43 +326,50 @@ public class Oracle_extKalman extends AWorldPredictor implements IWorldPredictor
 			}
 		}
 	}
-
+	
+	
 	@Override
-	public void onBotIdChanged(int oldId, int newId)
+	public void onBotIdChanged(BotID oldId, BotID newId)
 	{
-		for (BotControlObserver bco : botControlObserver)
+		for (final BotControlObserver bco : botControlObserver)
 		{
-			if (bco.getId() == oldId)
+			if (bco.getId().equals(oldId))
 			{
-				bco.setId(newId);
+				bco.setID(newId);
 				return;
-			}
-		}		
-	}
-	
-	
-	@Override
-	public void notifyFunctionalNewWorldFrame(WorldFrame wFrame)
-	{
-		synchronized (functionalObservers)
-		{
-			for (IWorldPredictorObserver observer : functionalObservers)
-			{
-				observer.onNewWorldFrame(new WorldFrame(wFrame));
 			}
 		}
 	}
 	
-
+	
 	@Override
 	public void notifyNewWorldFrame(WorldFrame wFrame)
 	{
 		synchronized (observers)
 		{
-			for (IWorldPredictorObserver observer : observers)
+			for (final IWorldPredictorObserver observer : observers)
 			{
-				observer.onNewWorldFrame(new WorldFrame(wFrame));
+				observer.onNewWorldFrame(wFrame);
 			}
 		}
+	}
+	
+	
+	@Override
+	public void notifyVisionSignalLost(WorldFrame emptyWf)
+	{
+		synchronized (observers)
+		{
+			for (final IWorldPredictorObserver observer : observers)
+			{
+				observer.onVisionSignalLost(emptyWf);
+			}
+		}
+	}
+	
+	
+	@Override
+	public void onBotConnectionChanged(ABot bot)
+	{
 	}
 }

@@ -1,0 +1,18 @@
+package edu.dhbw.mannheim.tigers.sumatra.proto;
+
+option java_package = "edu.dhbw.mannheim.tigers.sumatra.proto.model.modules.impls.rcm";
+option java_outer_classname = "ActionCommandProtos";
+message BotActionCommand {
+	required int32 botId = 1;
+	optional float translateX = 2;
+	optional float translateY = 3;
+	optional float rotate = 4;
+	optional float kick = 5;
+	optional float chipKick = 6;
+	optional float arm = 7;
+	optional float chipArm = 8;
+	optional float dribble = 9;
+
+	optional float pass = 10;
+}
+

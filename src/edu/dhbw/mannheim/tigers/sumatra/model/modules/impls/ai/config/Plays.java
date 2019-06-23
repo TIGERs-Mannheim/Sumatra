@@ -10,13 +10,19 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config;
 
-import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.commons.configuration.Configuration;
+import org.apache.log4j.Logger;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeam;
 
 
 /**
  * Configuration object for the plays.
  * 
- * @author FlorianS
+ * Please put parameters that could correspond to more than one role directly
+ * into this class and give it a good name
+ * 
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  * 
  */
 public class Plays
@@ -25,261 +31,171 @@ public class Plays
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	// parent node for all inner classes
-	protected final static String					parentNodePath	= "plays.";
+	private static final Logger		log			= Logger.getLogger(Plays.class.getName());
 	
-	ConfigGameOffensePrepareWithThree			gameOffensePrepareWithThree;
-	ConfigGameOffensePrepareWithTwo				gameOffensePrepareWithTwo;
-	ConfigPassToKeeper								passToKeeper;
-	ConfigPositionImprovingNoBallWithOne		positionImprovingNoBallWithOne;
-	ConfigPositionImprovingNoBallWithTwo		positionImprovingNoBallWithTwo;
-	ConfigAroundTheBall								aroundTheBall;
-	ConfigPositioningOnKickOffThem				positioningOnKickOffThem;
-	ConfigPositioningOnStoppedPlayWithTwo		positioningOnStoppedPlayWithTwo;
-	ConfigPositioningOnStoppedPlayWithThree	positioningOnStoppedPlayWithThree;
-	ConfigDirectShot									directShot;
+	// parent node for all inner classes
+	private static final String		NODE_PATH	= "plays.";
+	
+	private ConfigTecShootChalPlay	tecShootCalPlay;
+	private ConfigNDefenderPlay		nDefenderPlay;
+	
+	private ConfigKeeperSoloPlay		keeperSoloPlay;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	
-	public Plays(XMLConfiguration configFile)
+	/**
+	 * @param configFile
+	 */
+	public Plays(Configuration configFile)
 	{
-		gameOffensePrepareWithThree = new ConfigGameOffensePrepareWithThree(configFile);
-		gameOffensePrepareWithTwo = new ConfigGameOffensePrepareWithTwo(configFile);
-		passToKeeper = new ConfigPassToKeeper(configFile);
-		positionImprovingNoBallWithOne = new ConfigPositionImprovingNoBallWithOne(configFile);
-		positionImprovingNoBallWithTwo = new ConfigPositionImprovingNoBallWithTwo(configFile);
-		aroundTheBall = new ConfigAroundTheBall(configFile);
-		positioningOnKickOffThem = new ConfigPositioningOnKickOffThem(configFile);
-		positioningOnStoppedPlayWithTwo = new ConfigPositioningOnStoppedPlayWithTwo(configFile);
-		positioningOnStoppedPlayWithThree = new ConfigPositioningOnStoppedPlayWithThree(configFile);
-		directShot = new ConfigDirectShot(configFile);
+		tecShootCalPlay = new ConfigTecShootChalPlay(configFile);
+		nDefenderPlay = new ConfigNDefenderPlay(configFile);
+		keeperSoloPlay = new ConfigKeeperSoloPlay(configFile);
 	}
 	
 	// --------------------------------------------------------------------------
 	// --- inner classes --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	public static class ConfigGameOffensePrepareWithTwo
+	/**
+	 */
+	public static class ConfigTecShootChalPlay
 	{
-		private final String	nodePath	= parentNodePath + "GAME_OFFENSE_PREPARE_WITH_TWO.";
+		private static final String	NODE_PATH_LOC	= NODE_PATH + "TEC_SHOOT_CHAL_TEST.";
+		private final ETeam				goalOfTeam;
+		private final float				speed;
 		
-		private final float	improvement_value;
 		
-		
-		public ConfigGameOffensePrepareWithTwo(XMLConfiguration configFile)
+		/**
+		 * @param configFile
+		 */
+		public ConfigTecShootChalPlay(Configuration configFile)
 		{
-			improvement_value = configFile.getFloat(nodePath + "IMPROVEMENT_VALUE");
+			String strGoalOfTeam = configFile.getString(NODE_PATH_LOC + "teamside");
+			ETeam tmpGoalOfTeam = ETeam.TIGERS;
+			try
+			{
+				tmpGoalOfTeam = ETeam.valueOf(strGoalOfTeam);
+			} catch (IllegalArgumentException err)
+			{
+				log.warn("Could not read teamside: " + strGoalOfTeam);
+			}
+			goalOfTeam = tmpGoalOfTeam;
+			speed = configFile.getFloat(NODE_PATH_LOC + "speed");
 		}
 		
 		
 		/**
-		 * @return improvement_value
+		 * @return gap
 		 */
-		public float getImprovementValue()
+		public ETeam getGoalOfTeam()
 		{
-			return improvement_value;
+			return goalOfTeam;
+		}
+		
+		
+		/**
+		 * @return
+		 */
+		public float getSpeed()
+		{
+			return speed;
 		}
 	}
 	
-	public static class ConfigGameOffensePrepareWithThree
+	
+	/**
+	 * Configuration from the NDefnederPlay
+	 * 
+	 * @author PhilippP {ph.posovszky@gmail.com
+	 * 
+	 */
+	public static class ConfigNDefenderPlay
 	{
-		private final String	nodePath	= parentNodePath + "GAME_OFFENSE_PREPARE_WITH_THREE.";
+		private static final String	NODE_PATH_LOC	= NODE_PATH + "NDEFENDER.";
+		private final float				blockRadius;
+		private final float				allowedBallSpeed;
+		private final boolean			allowedBlockModus;
 		
-		private final float	improvement_value;
 		
-		
-		public ConfigGameOffensePrepareWithThree(XMLConfiguration configFile)
+		/**
+		 * @param configFile
+		 */
+		public ConfigNDefenderPlay(Configuration configFile)
 		{
-			improvement_value = configFile.getFloat(nodePath + "IMPROVEMENT_VALUE");
+			allowedBallSpeed = configFile.getFloat(NODE_PATH_LOC + "ballSpeedToProtect");
+			allowedBlockModus = configFile.getBoolean(NODE_PATH_LOC + "blockmodus");
+			blockRadius = configFile.getFloat(NODE_PATH_LOC + "radiusToProtect");
 		}
 		
 		
 		/**
-		 * @return improvement_value
+		 * @return the allowedBallSpeed
 		 */
-		public float getImprovementValue()
+		public float getAllowedBallSpeed()
 		{
-			return improvement_value;
+			return allowedBallSpeed;
+		}
+		
+		
+		/**
+		 * @return the blockRadius
+		 */
+		public float getBlockRadius()
+		{
+			return blockRadius;
+		}
+		
+		
+		/**
+		 * @return the allowedBlockModus
+		 */
+		public boolean isAllowedBlockModus()
+		{
+			return allowedBlockModus;
 		}
 	}
 	
-	public static class ConfigPassToKeeper
+	/**
+	 * Configuration from the NDefnederPlay
+	 * 
+	 * @author PhilippP {ph.posovszky@gmail.com
+	 * 
+	 */
+	public static class ConfigKeeperSoloPlay
 	{
-		private final String	nodePath	= parentNodePath + "PASS_TO_KEEPER.";
+		private static final String	NODE_PATH_LOC	= NODE_PATH + "KEEPERSOLO.";
+		private final float				initx;
+		private final float				inity;
 		
-		private final float	finished_ballspeed;
 		
-		
-		public ConfigPassToKeeper(XMLConfiguration configFile)
+		/**
+		 * @param configFile
+		 */
+		public ConfigKeeperSoloPlay(Configuration configFile)
 		{
-			finished_ballspeed = configFile.getFloat(nodePath + "FINISHED_BALLSPEED");
+			initx = configFile.getFloat(NODE_PATH_LOC + "vector.initx");
+			inity = configFile.getFloat(NODE_PATH_LOC + "vector.inity");
 		}
 		
 		
 		/**
-		 * @return finished_ballspeed
+		 * @return the init YValue
 		 */
-		public float getFinishedBallspeed()
+		public float getInitX()
 		{
-			return finished_ballspeed;
-		}
-	}
-	
-	public static class ConfigPositionImprovingNoBallWithOne
-	{
-		private final String	nodePath	= parentNodePath + "POSITION_IMPROVING_NO_BALL_WITH_ONE.";
-		
-		private final float	improvement_value;
-		
-		
-		public ConfigPositionImprovingNoBallWithOne(XMLConfiguration configFile)
-		{
-			improvement_value = configFile.getFloat(nodePath + "IMPROVEMENT_VALUE");
+			return initx;
 		}
 		
 		
 		/**
-		 * @return improvement_value
+		 * @return the init YValue
 		 */
-		public float getImprovementValue()
+		public float getInitY()
 		{
-			return improvement_value;
-		}
-	}
-	
-	public static class ConfigPositionImprovingNoBallWithTwo
-	{
-		private final String	nodePath	= parentNodePath + "POSITION_IMPROVING_NO_BALL_WITH_TWO.";
-		
-		private final float	improvement_value;
-		
-		
-		public ConfigPositionImprovingNoBallWithTwo(XMLConfiguration configFile)
-		{
-			improvement_value = configFile.getFloat(nodePath + "IMPROVEMENT_VALUE");
-		}
-		
-		
-		/**
-		 * @return improvement_value
-		 */
-		public float getImprovementValue()
-		{
-			return improvement_value;
-		}
-	}
-	
-	public static class ConfigAroundTheBall
-	{
-		private final String	nodePath	= parentNodePath + "AROUND_THE_BALL.";
-		
-		private final float	radius;
-		
-		
-		public ConfigAroundTheBall(XMLConfiguration configFile)
-		{
-			radius = configFile.getFloat(nodePath + "RADIUS");
-		}
-		
-		
-		/**
-		 * @return radius
-		 */
-		public float getRadius()
-		{
-			return radius;
-		}
-	}
-	
-	public static class ConfigPositioningOnKickOffThem
-	{
-		private final String	nodePath	= parentNodePath + "POSITIONING_ON_KICK_OFF_THEM.";
-		
-		private final float	maximum_length;
-		
-		
-		public ConfigPositioningOnKickOffThem(XMLConfiguration configFile)
-		{
-			maximum_length = configFile.getFloat(nodePath + "MAXIMUM_LENGTH");
-		}
-		
-		
-		/**
-		 * @return maximum_length
-		 */
-		public float getMaximumLength()
-		{
-			return maximum_length;
-		}
-	}
-	
-	public static class ConfigPositioningOnStoppedPlayWithTwo
-	{
-		private final String	nodePath	= parentNodePath + "POSITIONING_ON_STOPPED_PLAY_WITH_TWO.";
-		
-		private final float	space_between_bots;
-		
-		
-		public ConfigPositioningOnStoppedPlayWithTwo(XMLConfiguration configFile)
-		{
-			space_between_bots = configFile.getFloat(nodePath + "SPACE_BETWEEN_BOTS");
-		}
-		
-		
-		/**
-		 * @return space_between_bots
-		 */
-		public float getSpaceBetweenBots()
-		{
-			return space_between_bots;
-		}
-	}
-	
-	public static class ConfigPositioningOnStoppedPlayWithThree
-	{
-		private final String	nodePath	= parentNodePath + "POSITIONING_ON_STOPPED_PLAY_WITH_THREE.";
-		
-		private final float	space_between_bots;
-		
-		
-		public ConfigPositioningOnStoppedPlayWithThree(XMLConfiguration configFile)
-		{
-			space_between_bots = configFile.getFloat(nodePath + "SPACE_BETWEEN_BOTS");
-		}
-		
-		
-		/**
-		 * @return space_between_bots
-		 */
-		public float getSpaceBetweenBots()
-		{
-			return space_between_bots;
-		}
-	}
-	
-	public static class ConfigDirectShot
-	{
-		private final String	nodePath	= parentNodePath + "DIRECT_SHOT.";
-		
-		private final float	range_tolerance;
-		
-		
-		public ConfigDirectShot(XMLConfiguration configFile)
-		{
-			range_tolerance = configFile.getFloat(nodePath + "RANGE_TOLERANCE");
-		}
-		
-		
-		/**
-		 * @return range_tolerance
-		 */
-		public float getRangeTolerance()
-		{
-			return range_tolerance;
+			return inity;
 		}
 	}
 	
@@ -287,63 +203,33 @@ public class Plays
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	public ConfigGameOffensePrepareWithTwo getGameOffensePrepareWithTwo()
+	/**
+	 * @return
+	 */
+	public ConfigTecShootChalPlay getTecShootCalPlay()
 	{
-		return gameOffensePrepareWithTwo;
+		return tecShootCalPlay;
 	}
 	
 	
-	public ConfigGameOffensePrepareWithThree getGameOffensePrepareWithThree()
+	/**
+	 * @return the nDefenderPlay
+	 */
+	public ConfigNDefenderPlay getnDefenderPlay()
 	{
-		return gameOffensePrepareWithThree;
+		return nDefenderPlay;
 	}
 	
 	
-	public ConfigPassToKeeper getPassToKeeper()
+	/**
+	 * TODO Philipp, add comment!
+	 * 
+	 * @return
+	 */
+	public ConfigKeeperSoloPlay getKeeperSoloPlay()
 	{
-		return passToKeeper;
+		return keeperSoloPlay;
 	}
 	
 	
-	public ConfigPositionImprovingNoBallWithOne getPositionImprovingNoBallWithOne()
-	{
-		return positionImprovingNoBallWithOne;
-	}
-	
-	
-	public ConfigPositionImprovingNoBallWithTwo getPositionImprovingNoBallWithTwo()
-	{
-		return positionImprovingNoBallWithTwo;
-	}
-	
-	
-	public ConfigAroundTheBall getAroundTheBall()
-	{
-		return aroundTheBall;
-	}
-	
-	
-	public ConfigPositioningOnKickOffThem getPositioningOnKickOffThem()
-	{
-		return positioningOnKickOffThem;
-	}
-	
-	
-	public ConfigPositioningOnStoppedPlayWithTwo getPositioningOnStoppedPlayWithTwo()
-	{
-		return positioningOnStoppedPlayWithTwo;
-	}
-	
-	
-	public ConfigPositioningOnStoppedPlayWithThree getPositioningOnStoppedPlayWithThree()
-	{
-		return positioningOnStoppedPlayWithThree;
-	}
-	
-	
-	public ConfigDirectShot getDirectShot()
-	{
-		return directShot;
-	}
 }

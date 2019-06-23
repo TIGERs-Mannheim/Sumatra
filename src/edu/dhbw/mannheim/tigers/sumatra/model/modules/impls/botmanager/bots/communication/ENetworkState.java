@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 04.03.2011
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication;
@@ -17,7 +17,10 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.com
  */
 public enum ENetworkState
 {
+	/** */
 	ONLINE,
+	/** */
 	CONNECTING,
+	/** */
 	OFFLINE,
 }

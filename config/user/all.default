@@ -1,0 +1,14 @@
+#Sat Nov 19 16:12:43 CET 2011
+edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent.config=ai_default.xml
+edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent.bot=bots_default.xml
+edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent.geometry=RoboCup_2012.xml
+edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent.team=yellow_default.xml
+edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel.moduliConfig=moduli_sim.xml
+edu.dhbw.mannheim.tigers.sumatra.presenter.main.MainPresenter.layout=Overview.ly
+edu.dhbw.mannheim.tigers.sumatra.presenter.main.MainPresenter.lookAndFeel=Windows
+edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ABotManager.botmanagerConfig=botmanager_sim.xml
+edu.dhbw.mannheim.tigers.sumatra.presenter.main.MainPresenter.y=-8
+edu.dhbw.mannheim.tigers.sumatra.presenter.main.MainPresenter.disyplayCount=1
+edu.dhbw.mannheim.tigers.sumatra.presenter.main.MainPresenter.x=80
+edu.dhbw.mannheim.tigers.sumatra.presenter.main.MainPresenter.w=1608
+edu.dhbw.mannheim.tigers.sumatra.presenter.main.MainPresenter.h=1066

@@ -15,22 +15,18 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 
-import org.apache.log4j.Logger;
-
-import edu.dhbw.mannheim.tigers.sumatra.model.commons.NoOldFrameCriteria;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.TrackedTigerBot;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.IAIProcessor;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ARole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.Sisyphus;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillGroup;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.GenericSkillSystem;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.SkillFacade;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ImmediateStopSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ASkillSystem;
-import edu.dhbw.mannheim.tigers.sumatra.util.collection.ISyncedFIFO;
 
 
 /**
@@ -55,18 +51,12 @@ public class Ares implements IAIProcessor
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	protected final Logger						log				= Logger.getLogger(getClass());
 	
-
-	private final ISyncedFIFO<WorldFrame>	wfFifo;
-	private final NoOldFrameCriteria			criteria			= new NoOldFrameCriteria();
-	private CountDownLatch						startSignal		= new CountDownLatch(1);
+	private final Sisyphus					sisyphus;
+	private ASkillSystem						skillSystem;
 	
-	private final Sisyphus						sisyphus;
-	private ASkillSystem							skillSystem;
 	
-
-	private final Map<Integer, Boolean>		botIsStopped	= new HashMap<Integer, Boolean>();
+	private final Map<BotID, Boolean>	botIsStopped	= new HashMap<BotID, Boolean>();
 	
 	
 	// --------------------------------------------------------------------------
@@ -74,114 +64,74 @@ public class Ares implements IAIProcessor
 	// --------------------------------------------------------------------------
 	/**
 	 * @param sisyphus
-	 * @param wfFifo
+	 * @param skillSystem
 	 */
-	public Ares(Sisyphus sisyphus, ISyncedFIFO<WorldFrame> wfFifo)
+	public Ares(Sisyphus sisyphus, ASkillSystem skillSystem)
 	{
 		this.sisyphus = sisyphus;
-		this.wfFifo = wfFifo;
+		setSkillSystem(skillSystem);
 	}
 	
-
+	
 	@Override
-	public AIInfoFrame process(AIInfoFrame frame, AIInfoFrame previousFrame)
+	public void process(AIInfoFrame frame, AIInfoFrame previousFrame)
 	{
-		// ### Go and see whether there already is a newer WorldFrame in the buffer...
-		WorldFrame wFrame = wfFifo.peekFirstIfMatches(criteria);
-		if (wFrame == null)
-		{
-			wFrame = frame.worldFrame;
-		}
-		criteria.setOldFrame(wFrame);
+		WorldFrame wFrame = frame.worldFrame;
 		
-
 		// ### Restore certain state
 		// First, identify bots whose roles changed
-		Set<Integer> roleChanged = new HashSet<Integer>(7);	// Contains the ids of bots whose roles changed in the current cycle
-//		if (!frame.playStrategy.getFinishedPlays().isEmpty())
-//		{
-//			roleChanged = new HashSet<Integer>(5);
-//			for (APlay oldPlay : frame.playStrategy.getFinishedPlays())
-//			{
-//				for (ARole oldRole : oldPlay.getRoles())
-//				{
-//					if (oldRole.hasBeenAssigned())
-//					{
-//						roleChanged.add(oldRole.getBotID());
-//					}
-//				}
-//			}
-//		}
+		// Contains the ids of bots whose roles changed in the current cycle
+		final Set<BotID> roleChanged = new HashSet<BotID>(7);
 		
-		for (ARole oldRole : previousFrame.assignedRoles.values())
+		for (final Entry<BotID, ARole> oldAssignment : previousFrame.getAssigendRoles())
 		{
-			if (!frame.assignedRoles.containsValue(oldRole))
+			if (!frame.getAssigendERoles().containsValue(oldAssignment.getValue()))
 			{
-				roleChanged.add(oldRole.getBotID());
+				roleChanged.add(oldAssignment.getKey());
 			}
 		}
 		
-
+		
 		// ### Iterate over current assigned roles and execute them. If a bot has no role, stop him
-		for (Entry<Integer, TrackedTigerBot> entry : wFrame.tigerBots.entrySet())
+		for (final Entry<BotID, TrackedTigerBot> entry : wFrame.tigerBotsAvailable.entrySet())
 		{
-			Integer botId = entry.getKey();
-			ARole role = frame.assignedRoles.get(botId);
+			final BotID botId = entry.getKey();
+			final ARole role = frame.getAssigendRoles().getWithNull(botId);
 			if (role != null)
 			{
-				// # Calc skills
-				final SkillFacade facade = new SkillFacade();
-				role.calculateSkills(wFrame, facade);
-				
-				// # If this role is new (changed from previousFrame to frame), disable dribbler and disarm kicker
-				// (if the role has no other plans)
-				if (roleChanged != null && roleChanged.contains(botId))
+				AMoveSkill skill = role.getNewSkill();
+				if (skill != null)
 				{
-					if (facade.isSlotFree(ESkillGroup.DRIBBLE))
-					{
-						facade.dribble(false);
-					}
-					
-					if (facade.isSlotFree(ESkillGroup.KICK))
-					{
-						facade.disarm();
-					}
+					// # Execute skills!
+					skillSystem.execute(role.getBotID(), skill);
+					botIsStopped.put(botId, Boolean.FALSE);
 				}
-				
-				// # Execute skills!
-				skillSystem.execute(role.getBotID(), facade);
-				botIsStopped.put(botId, Boolean.FALSE);
 			} else
 			{
 				// No role for this bot: Stop him (if not yet done)
-				Boolean stopped = botIsStopped.get(botId);
-				if (stopped == null || !stopped)
+				final Boolean stopped = botIsStopped.get(botId);
+				if ((stopped == null) || !stopped)
 				{
-					SkillFacade stopBag = new SkillFacade();
-					stopBag.dribble(false);
-					stopBag.disarm();
-					stopBag.stop();
-					
-					skillSystem.execute(botId, stopBag);
+					skillSystem.execute(botId, new ImmediateStopSkill());
 					botIsStopped.put(botId, Boolean.TRUE);
 				}
 			}
 		}
-		
-		return frame;
 	}
 	
-
-	public void setSkillSystem(ASkillSystem skillSystem)
+	
+	/**
+	 * @param skillSystem
+	 */
+	public final void setSkillSystem(ASkillSystem skillSystem)
 	{
 		if (skillSystem != null)
 		{
-			GenericSkillSystem gss = (GenericSkillSystem) skillSystem;
+			final GenericSkillSystem gss = (GenericSkillSystem) skillSystem;
 			gss.setSisyphus(sisyphus);
-			startSignal.countDown();
 		} else
 		{
-			GenericSkillSystem oldGss = (GenericSkillSystem) this.skillSystem;
+			final GenericSkillSystem oldGss = (GenericSkillSystem) this.skillSystem;
 			oldGss.setSisyphus(null);
 		}
 		

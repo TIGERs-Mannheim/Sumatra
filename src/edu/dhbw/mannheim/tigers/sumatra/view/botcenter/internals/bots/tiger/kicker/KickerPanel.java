@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 04.09.2010
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.kicker;
@@ -20,6 +20,7 @@ import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.kick
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.kicker.KickerChargeManualPanel.IKickerChargeManualObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.kicker.KickerFirePanel.IKickerFirePanelObserver;
 
+
 /**
  * Kicker panel
  * 
@@ -28,33 +29,38 @@ import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.kick
  */
 public class KickerPanel extends JPanel
 {
-	public interface IKickerPanelObserver extends IKickerFirePanelObserver,
-		IKickerChargeManualObserver, IKickerAutoloadPanelObserver
+	/**
+	 */
+	public interface IKickerPanelObserver extends IKickerFirePanelObserver, IKickerChargeManualObserver,
+			IKickerAutoloadPanelObserver
 	{
 	}
 	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long	serialVersionUID	= -8425791161859489657L;
-
-	private KickerStatusPanel statusPanel;
-	private KickerPlotPanel plotPanel;
-	private KickerFirePanel firePanel;
-	private KickerChargeManualPanel chargeManualPanel;
-	private KickerAutoloadPanel chargeAutoPanel;
+	private static final long						serialVersionUID	= -8425791161859489657L;
 	
-	private final List<IKickerPanelObserver> observers = new ArrayList<IKickerPanelObserver>();
+	private final KickerStatusPanel				statusPanel;
+	private final KickerPlotPanel					plotPanel;
+	private final KickerFirePanel					firePanel;
+	private final KickerChargeManualPanel		chargeManualPanel;
+	private final KickerAutoloadPanel			chargeAutoPanel;
 	
-		// --------------------------------------------------------------------------
+	private final List<IKickerPanelObserver>	observers			= new ArrayList<IKickerPanelObserver>();
+	
+	
+	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 */
 	public KickerPanel()
 	{
 		setLayout(new MigLayout("fill"));
 		
 		statusPanel = new KickerStatusPanel();
-		plotPanel = new KickerPlotPanel();
+		plotPanel = new KickerPlotPanel(400.0f);
 		firePanel = new KickerFirePanel();
 		chargeManualPanel = new KickerChargeManualPanel();
 		chargeAutoPanel = new KickerAutoloadPanel();
@@ -65,14 +71,18 @@ public class KickerPanel extends JPanel
 		add(statusPanel, "gapleft 20");
 		add(Box.createGlue(), "wrap, pushx");
 		add(plotPanel, "grow, span, pushy");
-	}	
-
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param observer
+	 */
 	public void addObserver(IKickerPanelObserver observer)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
 			observers.add(observer);
 			firePanel.addObserver(observer);
@@ -81,9 +91,13 @@ public class KickerPanel extends JPanel
 		}
 	}
 	
+	
+	/**
+	 * @param observer
+	 */
 	public void removeObserver(IKickerPanelObserver observer)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
 			observers.remove(observer);
 			firePanel.removeObserver(observer);
@@ -91,12 +105,20 @@ public class KickerPanel extends JPanel
 			chargeAutoPanel.removeObserver(observer);
 		}
 	}
-
+	
+	
+	/**
+	 * @return
+	 */
 	public KickerStatusPanel getStatusPanel()
 	{
 		return statusPanel;
 	}
 	
+	
+	/**
+	 * @return
+	 */
 	public KickerPlotPanel getPlotPanel()
 	{
 		return plotPanel;

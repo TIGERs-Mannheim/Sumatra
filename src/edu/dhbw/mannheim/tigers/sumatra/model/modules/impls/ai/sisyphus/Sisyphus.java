@@ -9,18 +9,29 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.WorldFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.XYSpline;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.IActiveAIProcessor;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.pathfinding.Path;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.types.EGameSituation;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline.ISpline;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move.MovementCon;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.ERRTPlanner_WPC;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IAIObserver;
+import edu.dhbw.mannheim.tigers.sumatra.util.NamedThreadFactory;
 
 
 /*
@@ -45,101 +56,81 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IAIObserver;
 /**
  * Contains the pathfinding-logic of Sumatra. <br>
  * 
- * @author Christian Koenig, Bernhard Perun
+ * @author Christian Koenig, Bernhard Perun, Dirk Klostermann
  */
-public class Sisyphus implements IActiveAIProcessor
+public class Sisyphus
 {
 	// ------------------------------------------------------------------------
 	// --- variables ----------------------------------------------------------
 	// ------------------------------------------------------------------------
-	
-	// --- log ---
-	private final Logger					log		= Logger.getLogger(getClass());
+	// Logger
+	private static final Logger						log								= Logger.getLogger(Sisyphus.class.getName());
 	
 	// --- errt and dss ---
-	// private final ERRTPlanner errtPlanner = new ERRTPlanner();
-	// private final DynamicSafetySearch dynamicSafetySearch = new DynamicSafetySearch();
+	private Map<BotID, ScheduledExecutorService>	schedulers						= new ConcurrentHashMap<BotID, ScheduledExecutorService>();
 	
 	// --- current-paths ---
-	private final ArrayList<Path>		oldPaths	= new ArrayList<Path>();
+	private Map<BotID, Path>							currentPaths					= new ConcurrentHashMap<BotID, Path>();
 	
-	// --- just for debug ---
-	public final List<IAIObserver>	aiObservers;
+	private Map<BotID, PathFinderThread>			pathFinderThreads				= new ConcurrentHashMap<BotID, PathFinderThread>();
 	
-	private static final boolean		IS_SECOND_TRY = false;
+	// --- just for DEBUG ---
+	/** */
+	private final List<IAIObserver>					aiObservers;
+	
+	private Map<BotID, Integer>						destOrientChangedCounter	= new ConcurrentHashMap<BotID, Integer>();
 	
 	
 	// ------------------------------------------------------------------------
 	// --- constructor & destructor -------------------------------------------
 	// ------------------------------------------------------------------------
 	
+	/**
+	 * 
+	 */
+	public Sisyphus()
+	{
+		// --- set aiObservers for DEBUG-data ---
+		aiObservers = new ArrayList<IAIObserver>();
+	}
+	
+	
+	/**
+	 * 
+	 * @param observers
+	 */
 	public Sisyphus(List<IAIObserver> observers)
 	{
-		// --- set aiObservers for debug-data ---
+		// --- set aiObservers for DEBUG-data ---
 		aiObservers = observers;
-		
-		// --- init oldPaths list - add 0-12 robots to oldPaths-list ---
-		for (int i = 0; i < 13; i++)
-		{
-			oldPaths.add(null);
-		}
-		
 	}
 	
-
-	@Override
-	public void start()
-	{
-		
-	}
 	
-
-	@Override
-	public void stop()
-	{
-		
-	}
-	
-
 	// ------------------------------------------------------------------------
 	// --- methods ------------------------------------------------------------
 	// ------------------------------------------------------------------------
 	
-	/**
-	 * Returns a path from bot to target.
-	 * @param wFrame current worldframe
-	 * @param botId id of bot
-	 * @param target description of the target point (format: Vector2)
-	 */
-	public Path calcPath(WorldFrame wFrame, int botId, IVector2 target)
-	{
-		return calcPath(wFrame, botId, target, true, false, EGameSituation.GAME);// considerBall --> true; kickOff --> false
-	}
 	
-
 	/**
 	 * Returns a path from bot to target.
+	 * 
+	 * old param: 'restrictedArea' area the bot is not allowed to enter this area; if there is no such area: use null; if
+	 * current botpos
+	 * or target are within restrictedArea it is set null automatically
+	 * 
 	 * @param wFrame current worldframe
 	 * @param botId id of bot
-	 * @param target description of the target point (format: Vector2)
+	 * @param currentTimeOnSpline
+	 * @param moveCon
+	 * @return
 	 */
-	public Path calcPath(WorldFrame wFrame, int botId, IVector2 target, boolean considerBall)
+	public Path calcPath(WorldFrame wFrame, BotID botId, float currentTimeOnSpline, MovementCon moveCon)
 	{
-		return calcPath(wFrame, botId, target, considerBall, false, EGameSituation.GAME);// kickOff --> false
-	}
-
-	/**
-	 * Returns a path from bot to target.
-	 * @param wFrame current worldframe
-	 * @param botId id of bot
-	 * @param target description of the target point (format: PathPoint with end-velocity and end-angle)
-	 * @param restrictedArea area the bot is not allowed to enter this area; if there is no such area: use null; if
-	 *           current botpos
-	 *           or target are within restrictedArea it is set null automatically
-	 */
-	public Path calcPath(WorldFrame wFrame, int botId, IVector2 target, boolean considerBall, boolean isGoalie, EGameSituation gameSit)
-	{
-		// log.debug("get path");
+		// --- check botId ---
+		if (botId.isUninitializedID())
+		{
+			return null;
+		}
 		
 		// --- checks in front of path getting ---
 		if (wFrame == null)
@@ -147,45 +138,202 @@ public class Sisyphus implements IActiveAIProcessor
 			log.error("worldframe=null");
 			return null;
 		}
-		if (target == null)
+		
+		PathFinderInput pathFinderInput = new PathFinderInput(wFrame, botId, currentPaths, currentTimeOnSpline, moveCon);
+		if (schedulers.get(botId) == null)
 		{
-			log.error("target=null");
-			return null;
+			initializeSchedulerForBot(botId, wFrame, pathFinderInput);
+		} else
+		{
+			pathFinderThreads.get(botId).setPathFinderInput(pathFinderInput);
+			// if there is a new target do something different
+			if (currentPaths.get(botId) != null)
+			{
+				IVector2 oldTarget = currentPaths.get(botId).getTarget();
+				IVector2 newTarget = moveCon.getDestCon().getDestination();
+				float distanceTargets = oldTarget.subtractNew(newTarget).getLength2();
+				float distanceBotNewTarget = wFrame.getTiger(botId).getPos().subtractNew(newTarget).getLength2();
+				boolean targetChangedMoreThanTol = !oldTarget.equals(newTarget,
+						AIConfig.getBotConfig(wFrame.getTiger(botId).getBotType()).getTolerances().getPositioning());
+				boolean targetChanged = (moveCon.getDestCon().isActive() && ((distanceTargets * 10) > distanceBotNewTarget) && (distanceBotNewTarget > 100))
+						|| ((distanceBotNewTarget < 100) && targetChangedMoreThanTol);
+				boolean orientationChanged = moveCon.getAngleCon().isActive()
+						&& !SumatraMath.isEqual(currentPaths.get(botId).getDestOrient(), pathFinderInput.getDstOrient(),
+								AIConfig.getBotConfig(wFrame.getTiger(botId).getBotType()).getTolerances().getAiming());
+				int counter = 0;
+				if (destOrientChangedCounter.containsKey(botId))
+				{
+					counter = destOrientChangedCounter.get(botId);
+				}
+				if (targetChanged || orientationChanged || moveCon.isForceNewSpline())
+				{
+					// if (counter == 0)
+					// {
+					counter++;
+					log.trace("Target changed: " + targetChanged + " / Orientation changed: " + orientationChanged
+							+ " (oldOrient: " + currentPaths.get(botId).getDestOrient() + " / newOrient: "
+							+ pathFinderInput.getDstOrient() + " (oldDest: " + currentPaths.get(botId).getTarget()
+							+ " / newDest: " + pathFinderInput.getTarget() + ")");
+					pathFinderThreads.get(botId).getPath().setOld(true);
+					pathFinderThreads.get(botId).waitForPath();
+					// }
+					// TODO DirkK move to config
+					// counter = (counter++) % 10;
+				} else
+				{
+					counter = 0;
+				}
+				destOrientChangedCounter.put(botId, counter);
+			}
 		}
 		
-		// --- ERRT - algorithm ---
-		ERRTPlanner_WPC errtPlanner = new ERRTPlanner_WPC();
-		Path errtPath = errtPlanner.doCalculation(wFrame, botId, oldPaths.get(botId), target, considerBall, isGoalie, gameSit, IS_SECOND_TRY);
-		// System.out.println("got path. elements: "+errtPath.path.size()+"; target: "+target+"; current: "+wFrame.tigerBots.get(botId).pos);
-		// Path errtPath = new Path(botId);
-		// errtPath.path.add(target);
+		Path path = currentPaths.get(botId);
 		
-
-		// --- dynamic safety search - algorithm ---
-		// dynamicSafetySearch.doCalculation(errtPath, wFrame, botId);
-		
-		// spline smoothing only first time and when path has changed
-		if (errtPath.changed || errtPath.getSpline() == null)
+		// Even the SkillSystem gets its own...
+		return path.copyLight();
+	}
+	
+	
+	/**
+	 * Use this method to create your own (virtual) path
+	 * You can set the spline in the path to visualize it
+	 * 
+	 * @param path
+	 */
+	public void newExternalPath(Path path)
+	{
+		notifyObservers(path);
+	}
+	
+	
+	private void notifyObservers(Path path)
+	{
+		for (final IAIObserver o1 : aiObservers)
 		{
-			// if (errtPath.changed)
-			// System.out.println("path changed");
-			// if (errtPath.getSpline() == null)
-			// System.out.println("new path");
-			
-			XYSpline spline = new XYSpline(errtPath.path, wFrame.tigerBots.get(botId).pos);
-			errtPath.setSpline(spline);
-			errtPath.changed = true;
+			// Every observer its own copy!
+			o1.onNewPath(path.copyLight());
 		}
-		// --- set new path as old path ---
-		oldPaths.set(botId, errtPath);
+	}
+	
+	
+	private void initializeSchedulerForBot(BotID botId, WorldFrame wFrame, PathFinderInput pathFinderInput)
+	{
 		
-
+		ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory(
+				"Pathplanner-" + botId.getNumber()));
+		schedulers.put(botId, scheduler);
+		
+		Path path = new Path(botId, pathFinderInput.getTarget(), pathFinderInput.getDstOrient());
+		path.setOld(true);
+		currentPaths.put(botId, path);
+		PathFinderThread pathFinderThread = new PathFinderThread(this, botId, path);
+		pathFinderThreads.put(botId, pathFinderThread);
+		
+		pathFinderThread.setPathFinderInput(pathFinderInput);
+		
+		TrackedTigerBot bot = wFrame.tigerBotsVisible.getWithNull(botId);
+		if (bot == null)
+		{
+			log.warn("Bot " + botId + " not found.");
+			return;
+		}
+		// calculate a new path every PATH_PLANNING_INTERVAL seconds
+		final int pathPlanningInterval = AIConfig.getGeneral(bot.getBotType()).getPathplanningInterval();
+		scheduler.scheduleAtFixedRate(pathFinderThread, 0, pathPlanningInterval, TimeUnit.MILLISECONDS);
+		
+		// to have a path immediately let the thread run once within this thread
+		pathFinderThread.waitForPath();
+		
+	}
+	
+	
+	/**
+	 * @param botId
+	 * @param path the oldPath to add
+	 * @param pfi the PathFinderInput which was used to calculate this path
+	 */
+	public final void onNewPath(BotID botId, Path path, PathFinderInput pfi)
+	{
+		currentPaths.put(botId, path);
+		pfi.getwFrame().getTiger(botId).setPath(path);
 		// --- notify observers ---
-		for (IAIObserver o1 : aiObservers)
+		if (path.isChanged())
 		{
-			o1.onNewPath(oldPaths.get(botId).copyLight()); // Every observer its own copy!
+			notifyObservers(path);
 		}
+	}
+	
+	
+	/**
+	 * stops the thread for the given bot
+	 * 
+	 * @param botId
+	 */
+	public final void stopPathPlanning(BotID botId)
+	{
+		if (schedulers.get(botId) != null)
+		{
+			clearPath(botId);
+			PathFinderInput pfi = pathFinderThreads.get(botId).getPathFinderInput();
+			pfi.setActive(false);
+			pathFinderThreads.get(botId).setPathFinderInput(pfi);
+		}
+	}
+	
+	
+	/**
+	 * clears the painted path and spline
+	 * 
+	 * @param botId
+	 */
+	public final void clearPath(BotID botId)
+	{
+		final Path path;
+		if (currentPaths.get(botId) != null)
+		{
+			path = new Path(botId, currentPaths.get(botId).getTarget(), currentPaths.get(botId).getDestOrient());
+			
+		} else
+		{
+			path = new Path(botId, Vector2.ZERO_VECTOR, 0f);
+		}
+		notifyObservers(path);
+	}
+	
+	
+	/**
+	 * stops all threads
+	 */
+	public final void stopAllPathPlanning()
+	{
+		for (ScheduledExecutorService scheduler : schedulers.values())
+		{
+			scheduler.shutdown();
+		}
+		schedulers.clear();
+	}
+	
+	
+	/**
+	 * calculates a spline for a bot according a given movement condition
+	 * 
+	 * NOT TESTED PROPERLY YET
+	 * 
+	 * @param bot
+	 * @param worldFrame
+	 * @param moveCon
+	 * @return
+	 */
+	public ISpline calculateSpline(TrackedTigerBot bot, WorldFrame worldFrame, MovementCon moveCon)
+	{
+		Map<BotID, Path> dummy = new HashMap<BotID, Path>();
+		PathFinderInput pfi = new PathFinderInput(worldFrame, bot.getId(), dummy, 0f, moveCon);
+		ERRTPlanner_WPC planner = new ERRTPlanner_WPC();
+		Path path = planner.calcPath(pfi);
 		
-		return errtPath.copyLight(); // Even the SkillSystem gets its own...
+		PathFinderThread pft = new PathFinderThread(null, bot.getId(), null);
+		pft.addAHermiteSpline(path, pfi);
+		
+		return path.getSpline();
 	}
 }

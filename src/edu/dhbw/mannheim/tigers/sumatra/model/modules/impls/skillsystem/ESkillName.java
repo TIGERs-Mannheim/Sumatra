@@ -8,6 +8,9 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ASkill;
+
+
 /**
  * An enumeration that uniquely identifies each {@link ASkill}-implementation
  * 
@@ -15,37 +18,48 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem;
  */
 public enum ESkillName
 {
-	DUMMY,
-	
-	// Stop skills
+	/** */
 	IMMEDIATE_STOP,
-	IMMEDIATE_DISARM,
-	IMMEDIATE_STOP_DRIBBLER,
+	/**  */
+	NORMAL_STOP,
 	
-	// Dribble skills
-	DRIBBLE_BALL,
-	
-	// Kick skill
-	KICK_BALL,
-	KICK_AUTO,
-	
-	// Move skills
+	/** */
 	STRAIGHT_MOVE,
+	/** */
 	MOVE_DATA_COLLECTOR,
-	
-	MOVE_FIXED_GLOBAL_ORIENTATION,
-	MOVE_FIXED_CURRENT_ORIENTATION,
-	MOVE_DYNAMIC_TARGET,
-	MOVE_FIXED_TARGET,
-	MOVE_AHEAD,
+	/** */
 	SINUS,
-	// MOVE_IN_CIRCLE,
-	AIM,
-	DIRECT_MOVE,
-	BALL_MOVE,
-	BALL_MOVE_V2,
-	MOVE_ON_PATH,
-	MOVE_FAST,
-	MOVE_V2,
-	GET_BALL_AND_AIM,
+	
+	/** */
+	MOVE_TO,
+	/**  */
+	MOVE_BALL,
+	/**  */
+	MOVE_BALL_TO,
+	/**  */
+	TURN_AROUND_BALL,
+	/**  */
+	KICK_AUTO,
+	/**  */
+	GET_BALL,
+	/**  */
+	RECEIVE_BALL,
+	/**  */
+	MOVE_AND_STAY,
+	/**  */
+	CHIP_KICK,
+	/**  */
+	PULL_BACK,
+	/**  */
+	REDIRECT_BALL,
+	/**  */
+	PULL_BACK_AND_TURN,
+	/** */
+	MOVE_AND_BLOCK,
+	/**  */
+	ROTATE,
+	/**  */
+	EIGHT,
+	/**  */
+	TURN_TEST,
 }

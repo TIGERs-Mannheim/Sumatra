@@ -9,11 +9,11 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter;
 
-import java.util.List;
-
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena.control.AthenaControl;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
 
@@ -29,7 +29,8 @@ public abstract class AICenterState implements IAICenterState
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final Logger						log	= Logger.getLogger(getClass());
+	// Logger
+	private static final Logger			log	= Logger.getLogger(AICenterState.class.getName());
 	
 	protected final AICenterPresenter	presenter;
 	
@@ -38,14 +39,14 @@ public abstract class AICenterState implements IAICenterState
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * @param panel
+	 * @param presenter
 	 */
 	public AICenterState(AICenterPresenter presenter)
 	{
 		this.presenter = presenter;
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -58,55 +59,56 @@ public abstract class AICenterState implements IAICenterState
 		sendControl();
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- roles ----------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
-	public void addRole(ERole role, int botId)
+	public void addRole(ERole role, BotID botId)
 	{
 		log.warn("This behavior is not intended by the AICenterPresenter!");
 	}
 	
-
+	
 	@Override
 	public void addRole(ERole role)
 	{
 		log.warn("This behavior is not intended by the AICenterPresenter!");
 	}
 	
-
+	
 	@Override
 	public void removeRole(ERole role)
 	{
 		log.warn("This behavior is not intended by the AICenterPresenter!");
 	}
 	
-
+	
 	@Override
 	public void clearRoles()
 	{
 		log.warn("This behavior is not intended by the AICenterPresenter!");
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- plays ----------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
 	@Override
-	public void addPlay(EPlay play)
+	public void addNewPlay(EPlay play, int numRolesToAssign)
 	{
 		log.warn("This behavior is not intended by the AICenterPresenter!");
 	}
 	
-
+	
 	@Override
-	public void removePlay(List<EPlay> oddPlays)
+	public void removePlay(APlay play)
 	{
 		log.warn("This behavior is not intended by the AICenterPresenter!");
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- match ----------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -116,8 +118,12 @@ public abstract class AICenterState implements IAICenterState
 		log.warn("This behavior is not intended by the AICenterPresenter!");
 	}
 	
-
-
+	
+	// --------------------------------------------------------------------------
+	// --- ApollonControl - should always work-----------------------------------
+	// --------------------------------------------------------------------------
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -126,7 +132,7 @@ public abstract class AICenterState implements IAICenterState
 		return presenter.getControl();
 	}
 	
-
+	
 	protected void sendControl()
 	{
 		presenter.sendControl();

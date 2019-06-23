@@ -1,0 +1,40 @@
+package edu.dhbw.mannheim.tigers.sumatra.proto;
+/** See http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/lf5/LogRecord.html for LogRecord definition in Log4J */
+option java_package = "edu.dhbw.mannheim.tigers.sumatra.util.log";
+option java_outer_classname = "LogProtos";
+
+message LogLevel{
+	required string level = 1;
+}
+
+message FileTree{
+	required string name = 1;
+	required int32 depth = 2;
+	required int32 element = 3;
+	repeated FileTree childs = 4;
+}
+
+message LoggingEventProto {
+	// FQ name of logger
+	required string loggerName = 1;
+	required string message = 4;
+	required string threadName = 6;
+	optional Throwable thrown = 7;
+	required int64 timestamp = 8;
+}
+
+message Throwable{
+	required string name = 1;
+	optional Throwable cause = 2;
+	repeated StackTraceElement stackTrace = 3;
+	optional string message = 4;
+	optional string messageLocal = 5;
+}
+
+message StackTraceElement{
+	optional string className = 1;
+	optional string fileName = 2;
+	optional int32 lineNumber = 3;
+	optional string methodname = 4;
+	optional bool nativeMethod = 5;
+}

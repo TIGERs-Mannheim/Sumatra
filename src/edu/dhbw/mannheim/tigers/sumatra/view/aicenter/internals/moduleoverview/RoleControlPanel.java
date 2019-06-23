@@ -18,15 +18,20 @@ import java.util.LinkedList;
 import java.util.List;
 
 import javax.swing.BorderFactory;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
+import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.RoleFactory;
 
 
 /**
@@ -43,7 +48,7 @@ public class RoleControlPanel extends JPanel implements IChangeGUIMode
 	// --------------------------------------------------------------------------
 	private static final long								serialVersionUID	= -6902947971327765508L;
 	
-	private final JComboBox									roleComboBox;
+	private final JComboBox<ERole>						roleComboBox;
 	
 	private final JButton									addRoleButton;
 	private final JButton									clearRolesButton;
@@ -54,6 +59,8 @@ public class RoleControlPanel extends JPanel implements IChangeGUIMode
 	private final JTextField								textBotId;
 	
 	private final List<IRoleControlPanelObserver>	observers			= new LinkedList<IRoleControlPanelObserver>();
+	
+	private static final String							ROLE_KEY				= RoleControlPanel.class.getName() + ".role";
 	
 	
 	// --------------------------------------------------------------------------
@@ -67,8 +74,8 @@ public class RoleControlPanel extends JPanel implements IChangeGUIMode
 		setLayout(new MigLayout("fillx", "[]push"));
 		setBorder(BorderFactory.createTitledBorder("Role Control Panel"));
 		
-
-		roleComboBox = new JComboBox(ERole.testRoles());
+		
+		roleComboBox = new JComboBox<ERole>(ERole.values());
 		
 		addRoleButton = new JButton("add Role assignment");
 		addRoleButton.addActionListener(new AddRoleListener());
@@ -76,7 +83,7 @@ public class RoleControlPanel extends JPanel implements IChangeGUIMode
 		clearRolesButton = new JButton("clear all Roles");
 		clearRolesButton.addActionListener(new ClearRolesListener());
 		
-		JPanel botIdPanel = new JPanel();
+		final JPanel botIdPanel = new JPanel();
 		checkUseBotId = new JCheckBox();
 		checkUseBotId.setSelected(true);
 		checkUseBotId.addActionListener(new UseBotIdListener());
@@ -87,7 +94,7 @@ public class RoleControlPanel extends JPanel implements IChangeGUIMode
 		botIdPanel.add(checkUseBotId);
 		botIdPanel.add(textBotId);
 		
-
+		
 		add(new JLabel("Role:"), "wrap, growx");
 		add(roleComboBox, "wrap, growx");
 		
@@ -97,10 +104,13 @@ public class RoleControlPanel extends JPanel implements IChangeGUIMode
 		add(clearRolesButton, "growx");
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param observer
+	 */
 	public void addObserver(IRoleControlPanelObserver observer)
 	{
 		synchronized (observers)
@@ -109,7 +119,10 @@ public class RoleControlPanel extends JPanel implements IChangeGUIMode
 		}
 	}
 	
-
+	
+	/**
+	 * @param oddObserver
+	 */
 	public void removeObserver(IRoleControlPanelObserver oddObserver)
 	{
 		synchronized (observers)
@@ -118,74 +131,117 @@ public class RoleControlPanel extends JPanel implements IChangeGUIMode
 		}
 	}
 	
-
+	
 	@Override
 	public void setPlayTestMode()
 	{
-		this.setEnabled(false);
-		
-		roleComboBox.setEnabled(false);
-		addRoleButton.setEnabled(false);
-		clearRolesButton.setEnabled(false);
-		
-		textBotId.setEnabled(false);
-		checkUseBotId.setEnabled(false);
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				setEnabled(false);
+				
+				roleComboBox.setEnabled(false);
+				addRoleButton.setEnabled(false);
+				clearRolesButton.setEnabled(false);
+				
+				textBotId.setEnabled(false);
+				checkUseBotId.setEnabled(false);
+			}
+		});
 	}
 	
-
+	
 	@Override
 	public void setRoleTestMode()
 	{
-		this.setEnabled(true);
-		
-		roleComboBox.setEnabled(true);
-		addRoleButton.setEnabled(true);
-		clearRolesButton.setEnabled(true);
-		
-		textBotId.setEnabled(true);
-		checkUseBotId.setEnabled(true);
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				setEnabled(true);
+				
+				List<ERole> availRoles = RoleFactory.getAvailableRoles();
+				roleComboBox.setModel(new DefaultComboBoxModel<ERole>(availRoles.toArray(new ERole[availRoles.size()])));
+				String roleStr = SumatraModel.getInstance().getUserProperty(ROLE_KEY);
+				if (roleStr != null)
+				{
+					try
+					{
+						ERole role = ERole.valueOf(roleStr);
+						roleComboBox.setSelectedItem(role);
+					} catch (IllegalArgumentException err)
+					{
+						// ignore
+					}
+				}
+				
+				roleComboBox.setEnabled(true);
+				addRoleButton.setEnabled(true);
+				clearRolesButton.setEnabled(true);
+				
+				textBotId.setEnabled(true);
+				checkUseBotId.setEnabled(true);
+			}
+		});
 	}
 	
-
+	
 	@Override
 	public void setMatchMode()
 	{
 		disablePanel();
 	}
 	
-
+	
 	@Override
 	public void setEmergencyMode()
 	{
 		disablePanel();
 	}
 	
-
+	
 	@Override
 	public void onStart()
 	{
 	}
 	
-
+	
 	@Override
 	public void onStop()
 	{
-		disablePanel();
-		textBotId.setText("");
-		textBotId.setBackground(DEFAULT_COLOR);
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				disablePanel();
+				textBotId.setText("");
+				textBotId.setBackground(DEFAULT_COLOR);
+			}
+		});
 	}
 	
-
+	
 	private void disablePanel()
 	{
-		this.setEnabled(false);
-		
-		roleComboBox.setEnabled(false);
-		addRoleButton.setEnabled(false);
-		clearRolesButton.setEnabled(false);
-		
-		textBotId.setEnabled(false);
-		checkUseBotId.setEnabled(false);
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				setEnabled(false);
+				
+				roleComboBox.setEnabled(false);
+				addRoleButton.setEnabled(false);
+				clearRolesButton.setEnabled(false);
+				
+				textBotId.setEnabled(false);
+				checkUseBotId.setEnabled(false);
+			}
+		});
 	}
 	
 	
@@ -202,26 +258,34 @@ public class RoleControlPanel extends JPanel implements IChangeGUIMode
 				try
 				{
 					final boolean useId = checkUseBotId.isSelected();
-					ERole role = (ERole) roleComboBox.getSelectedItem();
+					final ERole role = (ERole) roleComboBox.getSelectedItem();
+					SumatraModel.getInstance().setUserProperty(ROLE_KEY, role.name());
 					if (useId)
 					{
-						final int botId = Integer.parseInt(textBotId.getText());
-						for (IRoleControlPanelObserver o : observers)
+						final BotID botId = new BotID(Integer.parseInt(textBotId.getText()));
+						for (final IRoleControlPanelObserver o : observers)
 						{
 							o.addRole(role, botId);
 						}
 					} else
 					{
-						for (IRoleControlPanelObserver o : observers)
+						for (final IRoleControlPanelObserver o : observers)
 						{
 							o.addRole(role);
 						}
 					}
 					
-				} catch (NumberFormatException nfe)
+				} catch (final NumberFormatException nfe)
 				{
-					textBotId.setBackground(ERROR_COLOR);
-					// Don't do anything else
+					SwingUtilities.invokeLater(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							textBotId.setBackground(ERROR_COLOR);
+							// Don't do anything else
+						}
+					});
 				}
 			}
 		}
@@ -233,10 +297,17 @@ public class RoleControlPanel extends JPanel implements IChangeGUIMode
 		@Override
 		public void keyReleased(KeyEvent e)
 		{
-			if (textBotId.getBackground() == ERROR_COLOR)
+			SwingUtilities.invokeLater(new Runnable()
 			{
-				textBotId.setBackground(DEFAULT_COLOR);
-			}
+				@Override
+				public void run()
+				{
+					if (textBotId.getBackground() == ERROR_COLOR)
+					{
+						textBotId.setBackground(DEFAULT_COLOR);
+					}
+				}
+			});
 		}
 	}
 	
@@ -248,7 +319,14 @@ public class RoleControlPanel extends JPanel implements IChangeGUIMode
 		{
 			synchronized (observers)
 			{
-				textBotId.setEnabled(!textBotId.isEnabled());
+				SwingUtilities.invokeLater(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						textBotId.setEnabled(!textBotId.isEnabled());
+					}
+				});
 			}
 		}
 	}
@@ -261,7 +339,7 @@ public class RoleControlPanel extends JPanel implements IChangeGUIMode
 		{
 			synchronized (observers)
 			{
-				for (IRoleControlPanelObserver o : observers)
+				for (final IRoleControlPanelObserver o : observers)
 				{
 					o.clearRoles();
 				}

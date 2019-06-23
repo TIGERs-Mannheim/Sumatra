@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 04.09.2010
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.kicker;
@@ -20,6 +20,7 @@ import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
 
+
 /**
  * Kicker status panel
  * 
@@ -33,14 +34,17 @@ public class KickerStatusPanel extends JPanel
 	// --------------------------------------------------------------------------
 	private static final long	serialVersionUID	= -6057961786996601478L;
 	
-	private JTextField cap;
-	private JTextField TDiode[];
-	private JTextField TIGBT[];
-	private JTextField chg;
+	private final JTextField	cap;
+	private final JTextField	TDiode[];
+	private final JTextField	TIGBT[];
+	private final JTextField	chg;
+	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 */
 	public KickerStatusPanel()
 	{
 		setLayout(new MigLayout("fill, wrap 3", "[50]10[50,fill][20]"));
@@ -62,52 +66,56 @@ public class KickerStatusPanel extends JPanel
 		add(new JLabel("A"));
 		add(new JLabel("T IGBT Straight:"));
 		add(TIGBT[0]);
-		add(new JLabel("°C"));
+		add(new JLabel("ï¿½C"));
 		add(new JLabel("T Diode Straight:"));
 		add(TDiode[0]);
-		add(new JLabel("°C"));
+		add(new JLabel("ï¿½C"));
 		add(new JLabel("T IGBT Chip:"));
 		add(TIGBT[1]);
-		add(new JLabel("°C"));
+		add(new JLabel("ï¿½C"));
 		add(new JLabel("T Diode Chip:"));
 		add(TDiode[1]);
-		add(new JLabel("°C"));
-	
+		add(new JLabel("ï¿½C"));
+		
 		setBorder(BorderFactory.createTitledBorder("Status"));
 	}
-
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param f
+	 */
 	public void setCap(final float f)
 	{
 		float green = 1;
 		float red = 0;
 		
-		if(f < 200)	// increase red level => yellow
+		// increase red level => yellow
+		if (f < 200)
 		{
-			red = f/200;
-		}
-		else
+			red = f / 200;
+		} else
 		{
 			red = 1;
 		}
 		
-		if(f > 200)	// decrease green level => red
+		// decrease green level => red
+		if (f > 200)
 		{
-			green = 1 - (f-200)/200;
-		}
-		else
+			green = 1 - ((f - 200) / 200);
+		} else
 		{
 			green = 1;
 		}
 		
-		if(green < 0)
+		if (green < 0)
 		{
 			green = 0;
 		}
 		
-		if(red < 0)
+		if (red < 0)
 		{
 			red = 0;
 		}
@@ -126,9 +134,13 @@ public class KickerStatusPanel extends JPanel
 		});
 	}
 	
+	
+	/**
+	 * @param t
+	 */
 	public void setTIGBT(final float[] t)
 	{
-		if(t.length < 2)
+		if (t.length < 2)
 		{
 			return;
 		}
@@ -143,10 +155,14 @@ public class KickerStatusPanel extends JPanel
 			}
 		});
 	}
-
+	
+	
+	/**
+	 * @param t
+	 */
 	public void setTDiode(final float[] t)
 	{
-		if(t.length < 2)
+		if (t.length < 2)
 		{
 			return;
 		}
@@ -161,7 +177,11 @@ public class KickerStatusPanel extends JPanel
 			}
 		});
 	}
-
+	
+	
+	/**
+	 * @param f
+	 */
 	public void setChg(final float f)
 	{
 		SwingUtilities.invokeLater(new Runnable()

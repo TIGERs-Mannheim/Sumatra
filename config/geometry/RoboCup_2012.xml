@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<geometry>
+    <!-- [mm] -->
+    <ballRadius>21.5</ballRadius>
+    <!-- [mm] -->
+    <botRadius>90</botRadius>
+    <!-- [mm] -->
+    <botCenterToDribblerDist>75</botCenterToDribblerDist>
+    <field>
+        <!-- x [mm] -->
+        <length>6050</length>
+        <!-- y [mm] -->
+        <width>4050</width>
+        <!-- [mm] -->
+        <lineWidth>10</lineWidth>
+        <!-- The border around the field -->
+        <border>
+            <widthL>250</widthL>
+            <widthW>250</widthW>
+        </border>
+        <!-- The judge-area which encloses the field and inner border -->
+        <judgesBorder>
+            <widthL>425</widthL>
+            <widthW>425</widthW>
+        </judgesBorder>
+        <!-- The goal dimensions -->
+        <goal>
+            <innerWidth>700</innerWidth>
+            <innerDepth>180</innerDepth>
+            <innerHeight>155</innerHeight>
+        </goal>
+        <!-- distance goal line - penalty mark [mm] -->
+        <distanceToPenaltyMark>750</distanceToPenaltyMark>
+        <!-- radius of the two, small quarter circles at the sides of the penalty 
+			area. -->
+        <distanceToPenaltyArea>800</distanceToPenaltyArea>
+        <!-- the length of the short line of the penalty area, that is parallel 
+			to the goal line -->
+        <lengthOfPenaltyAreaFrontLine>350</lengthOfPenaltyAreaFrontLine>
+        <!-- The radius of the center circle ("Mittelkreis") [mm] -->
+        <centerCircleRadius>500</centerCircleRadius>
+        <!-- The center ("Mittelpunkt") -->
+        <center>0;0</center>
+        <maintenancePosition>-100,2100</maintenancePosition>
+        <!-- penalty line (bots must be behind goal line + penalty mark + penaltyLine 
+			when a penalty kick is executed -->
+        <distanceToPenaltyLine>400</distanceToPenaltyLine>
+        <!-- distance between bot and ball (centers) that is needed during STOP 
+			phase -->
+        <botToBallDistanceStop>500</botToBallDistanceStop>
+    </field>
+</geometry>

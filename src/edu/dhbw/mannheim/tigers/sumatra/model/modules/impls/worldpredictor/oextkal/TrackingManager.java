@@ -4,7 +4,7 @@
  * Project: TIGERS - Sumatra
  * Date: 16.05.2010
  * Authors:
- * Maren Künemund <Orphen@fantasymail.de>,
+ * Maren Kï¿½nemund <Orphen@fantasymail.de>,
  * Peter Birkenkampf <birkenkampf@web.de>,
  * Marcel Sauer <sauermarcel@yahoo.de>,
  * Gero
@@ -39,25 +39,32 @@ public class TrackingManager
 	// --------------------------------------------------------------------------
 	// private Logger log = Logger.getLogger(this.getClass().getName());
 	
-	private PredictionContext	context;
-	private double					latestCaptureTimestamp;
+	private final PredictionContext	context;
+	private double							latestCaptureTimestamp;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructor(s) -------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 * @param context
+	 */
 	public TrackingManager(PredictionContext context)
 	{
 		this.context = context;
 		latestCaptureTimestamp = Double.MIN_VALUE;
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- method(s) ------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 *
+	 */
 	public void checkItems()
-	{	
+	{
 		
 		latestCaptureTimestamp = context.getLatestCaptureTimestamp();
 		
@@ -79,7 +86,7 @@ public class TrackingManager
 		// i = 0;
 	}
 	
-
+	
 	private void checkNewTigers()
 	{
 		// log.debug("Checking new tigers");
@@ -96,29 +103,29 @@ public class TrackingManager
 		// --- there are possible new tigerbots on the field ---
 		// --- iterate through all detections of possible new tigerbots ---
 		// --- we use Iterator to safely remove data from the Map if neccessary ---
-		Iterator<UnregisteredBot> it = context.newTigers.values().iterator();
+		final Iterator<UnregisteredBot> it = context.newTigers.values().iterator();
 		while (it.hasNext())
 		{
-			UnregisteredBot newTiger = it.next();
+			final UnregisteredBot newTiger = it.next();
 			// --- consistent detection of tigerbot? ---
 			// --- is the oldest required detection/sighting of the bot newer than the allowed maximum time? ---
 			// --- in general, we should have enough detections ---
-			if (newTiger.oldTimestamp <= (latestCaptureTimestamp - WPConfig.ADD_MAX_TIME_BOT)
-					&& newTiger.count >= WPConfig.ADD_MIN_FRAMES_BOTS)
+			if ((newTiger.oldTimestamp <= (latestCaptureTimestamp - WPConfig.ADD_MAX_TIME_BOT))
+					&& (newTiger.count >= WPConfig.ADD_MIN_FRAMES_BOTS))
 			{
 				// --- new tigerbot with sufficient certainty detected ---
 				// --- add him to tigers-list of the context and remove it form newTigers-list ---
 				// --- after that, continue with next new tigerbot ---
 				// NOTE Changed newTiger.get(0) to position
-
-				IFilter tiger = FilterSelector.getTigerFilter();
-				IMotionModel motionModel = new TigersMotionModel();
+				
+				final IFilter tiger = FilterSelector.getTigerFilter();
+				final IMotionModel motionModel = new TigersMotionModel();
 				tiger.init(motionModel, context, newTiger.newTimestamp, newTiger.visionBot);
 				synchronized (context.tigers)
 				{
 					context.tigers.put(newTiger.visionBot.id + WPConfig.TIGER_ID_OFFSET, tiger);
 				}
-
+				
 				it.remove();
 				// log.debug("Tiger " + new_tiger.get(0).id + " added.");
 				continue;
@@ -134,10 +141,10 @@ public class TrackingManager
 				it.remove();
 			}
 		}// --- end iteration on new tigerbots on the field ---
-		// }// --- end synchronize context.newTigers ---
+			// }// --- end synchronize context.newTigers ---
 	}
 	
-
+	
 	private void checkNewFood()
 	{
 		// --- check, if there are any new foodbot detections at all ---
@@ -151,21 +158,21 @@ public class TrackingManager
 		// --- there are possible new foodbots on the field ---
 		// --- iterate through all detections of possible new foodbots ---
 		// --- we use Iterator to safely remove data from the Map if neccessary ---
-		Iterator<UnregisteredBot> it = context.newFood.values().iterator();
+		final Iterator<UnregisteredBot> it = context.newFood.values().iterator();
 		while (it.hasNext())
 		{
-			UnregisteredBot newFood = it.next();
+			final UnregisteredBot newFood = it.next();
 			// --- consistent detection of foodbot? ---
 			// --- is the oldest required detection/sighting of the bot newer than the allowed maximum time? ---
 			// --- in general, we should have enough detections ---
-			if (newFood.oldTimestamp <= (latestCaptureTimestamp - WPConfig.ADD_MAX_TIME_BOT)
-					&& newFood.count >= WPConfig.ADD_MIN_FRAMES_BOTS)
+			if ((newFood.oldTimestamp <= (latestCaptureTimestamp - WPConfig.ADD_MAX_TIME_BOT))
+					&& (newFood.count >= WPConfig.ADD_MIN_FRAMES_BOTS))
 			{
 				// --- new foodbot with sufficient certainty detected ---
 				// --- add him to food-list of the context and remove it form newFood-list ---
 				// --- after that, continue with next new foodbot ---
-				IFilter food = FilterSelector.getFoodFilter();
-				IMotionModel motionModel = new FoodMotionModel();
+				final IFilter food = FilterSelector.getFoodFilter();
+				final IMotionModel motionModel = new FoodMotionModel();
 				food.init(motionModel, context, newFood.newTimestamp, newFood.visionBot);
 				synchronized (context.food)
 				{
@@ -185,10 +192,10 @@ public class TrackingManager
 				it.remove();
 			}
 		}// --- end iteration on new foodbots on the field ---
-		// }// --- end synchronize context.newFood ---
+			// }// --- end synchronize context.newFood ---
 	}
 	
-
+	
 	private void checkNewBalls()
 	{
 		// log.debug("Checking new balls");
@@ -210,7 +217,7 @@ public class TrackingManager
 			return;
 		}
 		
-
+		
 		// --- there is a new ball with id 0 on the field ---
 		
 		// --- consistent detection of ball? ---
@@ -218,18 +225,18 @@ public class TrackingManager
 		// --- in general, we should have enough detections ---
 		// CamInfoBall oldestSighting = newBall.peekLast(); // As FIFO may get get smaller we have to check for null!
 		
-		if (newBall.oldTimestamp <= (latestCaptureTimestamp - WPConfig.ADD_MAX_TIME_BALL)
-				&& newBall.count >= WPConfig.ADD_MIN_FRAMES_BALL)
+		if ((newBall.oldTimestamp <= (latestCaptureTimestamp - WPConfig.ADD_MAX_TIME_BALL))
+				&& (newBall.count >= WPConfig.ADD_MIN_FRAMES_BALL))
 		{
 			// --- new ball with sufficient certainty detected ---
 			// --- add him to balls-list of the context and remove it form newBalls-list ---
 			// --- after that, we're done ---
 			
-//			IBallModule ball = ModuleSelector.getBallModule();
-			IFilter ball = FilterSelector.getBallFilter();
-			IMotionModel motionModel = new BallMotionModel();
+			// IBallModule ball = ModuleSelector.getBallModule();
+			final IFilter ball = FilterSelector.getBallFilter();
+			final IMotionModel motionModel = new BallMotionModel();
 			ball.init(motionModel, context, newBall.newTimestamp, newBall.visionBall);
-//			ball.init(context, newBall.newTimestamp, newBall.visionBall);
+			// ball.init(context, newBall.newTimestamp, newBall.visionBall);
 			context.ball = ball;
 			context.newBall = null;
 			// log.debug("Ball 0 added.");
@@ -247,7 +254,7 @@ public class TrackingManager
 		// }// --- end synchronize context.newBalls ---
 	}
 	
-
+	
 	private void checkTigers()
 	{
 		// log.debug("Checking tigers");
@@ -256,10 +263,10 @@ public class TrackingManager
 		// --- in general there are tigerbots on the field ---
 		// --- so iterate through all tigerbots ---
 		// --- we use Iterator to safely remove data from the Map if neccessary ---
-		Iterator<IFilter> it = context.tigers.values().iterator();
+		final Iterator<IFilter> it = context.tigers.values().iterator();
 		while (it.hasNext())
 		{
-			IFilter tiger = it.next();
+			final IFilter tiger = it.next();
 			// --- no consistent detection of tigerbot anymore? ---
 			// --- is the last detection of the bot older than the allowed maximum time? ---
 			if (tiger.getTimestamp() <= (latestCaptureTimestamp - WPConfig.REM_MAX_TIME_BOT))
@@ -273,7 +280,7 @@ public class TrackingManager
 		// }
 	}
 	
-
+	
 	private void checkFood()
 	{
 		// log.debug("Checking food");
@@ -282,10 +289,10 @@ public class TrackingManager
 		// --- in general there are foodbots on the field ---
 		// --- so iterate through all foodbots ---
 		// --- we use Iterator to safely remove data from the Map if neccessary ---
-		Iterator<IFilter> it = context.food.values().iterator();
+		final Iterator<IFilter> it = context.food.values().iterator();
 		while (it.hasNext())
 		{
-			IFilter food = it.next();
+			final IFilter food = it.next();
 			// --- no consistent detection of foodbot anymore? ---
 			// --- is the last detection of the bot older than the allowed maximum time? ---
 			if (food.getTimestamp() <= (latestCaptureTimestamp - WPConfig.REM_MAX_TIME_BOT))
@@ -300,7 +307,7 @@ public class TrackingManager
 		// }
 	}
 	
-
+	
 	private void checkBall()
 	{
 		// --- if ball is empty because we just started to track ball
@@ -312,7 +319,7 @@ public class TrackingManager
 		// --- in general there are balls on the field ---
 		// --- so iterate through all balls ---
 		// --- we use Iterator to safely remove data from the Map if neccessary ---
-		IFilter ball = context.ball;
+		final IFilter ball = context.ball;
 		
 		// --- no consistent detection of ball anymore? ---
 		// --- is the last detection of the ball older than the allowed maximum time? ---
@@ -323,7 +330,7 @@ public class TrackingManager
 			
 			// --- the ball was removed from the field ---
 			// --- so remove this ball from our balls-list ---
-			//context.ball = null;
+			// context.ball = null;
 		}
 	}
 }

@@ -1,0 +1,24 @@
+package edu.dhbw.mannheim.tigers.sumatra.proto;
+
+option java_package = "edu.dhbw.mannheim.tigers.sumatra.proto.model.modules.impls.ai";
+option java_outer_classname = "AIModulesProtos" ;
+message PlaysOverview {
+	optional int32 botsWithoutRole = 1;
+	repeated string activePlays = 2;
+}
+
+message TacticalField {
+	optional bool tigersScoringchance = 1;
+	optional bool tigersApproximateScoringchance = 2;
+	optional bool foesScoringchance = 3;
+	optional bool foesApproximateScoringchance = 4;
+	optional string botLastTouched = 5;
+	optional string closestTeamToBall = 6;
+	optional BallPossesion ballPossesion = 7;
+}
+
+message BallPossesion{
+	required string ballPossesion = 1;
+	optional string tigersBotId = 2;
+	optional string foeBotId = 3;
+}

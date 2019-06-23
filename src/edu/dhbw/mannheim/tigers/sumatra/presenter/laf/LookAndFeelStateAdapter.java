@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 25.08.2010
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.laf;
@@ -16,6 +16,7 @@ import java.util.List;
 
 import javax.swing.UIManager;
 
+
 /**
  * This class acts as a simple observable and informs all observers about
  * Look and Feel changes.
@@ -25,13 +26,14 @@ import javax.swing.UIManager;
  * @author AndreR
  * 
  */
-public class LookAndFeelStateAdapter implements PropertyChangeListener
+public final class LookAndFeelStateAdapter implements PropertyChangeListener
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static LookAndFeelStateAdapter instance = null;
-	private final List<ILookAndFeelStateObserver> observers = new ArrayList<ILookAndFeelStateObserver>();
+	private static LookAndFeelStateAdapter				instance		= null;
+	private final List<ILookAndFeelStateObserver>	observers	= new ArrayList<ILookAndFeelStateObserver>();
+	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
@@ -41,9 +43,13 @@ public class LookAndFeelStateAdapter implements PropertyChangeListener
 		UIManager.addPropertyChangeListener(this);
 	}
 	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @return
+	 */
 	public static synchronized LookAndFeelStateAdapter getInstance()
 	{
 		if (instance == null)
@@ -53,18 +59,25 @@ public class LookAndFeelStateAdapter implements PropertyChangeListener
 		return instance;
 	}
 	
+	
+	/**
+	 * @param observer
+	 */
 	public void addObserver(ILookAndFeelStateObserver observer)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
 			observers.add(observer);
 		}
 	}
 	
 	
+	/**
+	 * @param observer
+	 */
 	public void removeObserver(ILookAndFeelStateObserver observer)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
 			observers.remove(observer);
 		}
@@ -73,19 +86,20 @@ public class LookAndFeelStateAdapter implements PropertyChangeListener
 	
 	private void notifyLookAndFeelChanged()
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for (ILookAndFeelStateObserver observer : observers)
+			for (final ILookAndFeelStateObserver observer : observers)
 			{
 				observer.onLookAndFeelChanged();
 			}
 		}
 	}
-
+	
+	
 	@Override
 	public void propertyChange(PropertyChangeEvent e)
 	{
-		if(e.getPropertyName().equals("lookAndFeel"))
+		if (e.getPropertyName().equals("lookAndFeel"))
 		{
 			notifyLookAndFeelChanged();
 		}

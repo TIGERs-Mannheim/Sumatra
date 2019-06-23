@@ -2,55 +2,62 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oext
 
 import Jama.Matrix;
 
-public class TigersMotionModel extends AOmniBot_V2 {
 
+/**
+ *
+ */
+public class TigersMotionModel extends AOmniBot_V2
+{
+	
 	@Override
 	public Matrix dynamics(Matrix state, Matrix control, double dt)
 	{
-		double x			= state.get(0, 0);
-		double y			= state.get(1, 0);
-		double orient	= state.get(2, 0);
-		double movAng	= state.get(3, 0);
-		double v			= state.get(4, 0);
-		double omega	= state.get(5, 0);
-		double eta		= state.get(6, 0);
+		double x = state.get(0, 0);
+		double y = state.get(1, 0);
+		double orient = state.get(2, 0);
+		double movAng = state.get(3, 0);
+		double v = state.get(4, 0);
+		double omega = state.get(5, 0);
+		double eta = state.get(6, 0);
 		
-		double u_v		= control.get(0, 0);
-		double u_omega	= control.get(1, 0);
-		double u_eta	= control.get(2, 0);
-		double u_ang   = control.get(3, 0);
+		final double uV = control.get(0, 0);
+		final double uOmega = control.get(1, 0);
+		final double uEta = control.get(2, 0);
+		final double uAng = control.get(3, 0);
 		
 		// dynamics
-		if (Math.abs(omega) < noRotationBorder)
+		if (Math.abs(omega) < getNoRotationBorder())
 		{
 			// straight movement
-			x = x + v*Math.cos(movAng)*dt;
-			y = y + v*Math.sin(movAng)*dt;
-		}
-		else
+			x = x + (v * Math.cos(movAng) * dt);
+			y = y + (v * Math.sin(movAng) * dt);
+		} else
 		{
 			// circular movement
-			double r = v/omega;
-			x = x + r*(-Math.sin(movAng) + Math.sin(movAng+omega*dt));
-			y = y + r*( Math.cos(movAng) - Math.cos(movAng+omega*dt));
+			final double r = v / omega;
+			x = x + (r * (-Math.sin(movAng) + Math.sin(movAng + (omega * dt))));
+			y = y + (r * (Math.cos(movAng) - Math.cos(movAng + (omega * dt))));
 		}
-		orient= orient + (omega+eta)*dt;
+		orient = orient + ((omega + eta) * dt);
 		
-		if (v > angleTakeVel)
-			movAng = movAng + angleTakeFactor * determineAngleDifference(u_ang, movAng);
-		else
+		if (v > getAngleTakeVel())
 		{
-			movAng = movAng + ((1-v/angleTakeVel) * (1-angleTakeFactor) + angleTakeFactor) * determineAngleDifference(u_ang, movAng);
-		//	System.out.println((1-v/angleTakeVel) * (1-angleTakeFactor) + angleTakeFactor);
+			movAng = movAng + (getAngleTakeFactor() * determineAngleDifference(uAng, movAng));
+		} else
+		{
+			movAng = movAng
+					+ ((((1 - (v / getAngleTakeVel())) * (1 - getAngleTakeFactor())) + getAngleTakeFactor()) * determineAngleDifference(
+							uAng, movAng));
+			// System.out.println((1-v/angleTakeVel) * (1-angleTakeFactor) + angleTakeFactor);
 		}
 		
-		movAng= movAng + omega*dt;
-		v		= estimateVelocity(v, u_v, dt, botCtrl_maxAccel, botCtrl_maxBrakeAccel);
-		omega	= estimateVelocity(omega, u_omega, dt, botCtrl_maxAngAccel, botCtrl_maxAngBrakeAccel);
-		eta	= estimateVelocity(eta, u_eta, dt, botCtrl_maxAngAccel, botCtrl_maxAngBrakeAccel);
+		movAng = movAng + (omega * dt);
+		v = estimateVelocity(v, uV, dt, getBotCtrlMaxAccel(), getBotCtrlMaxBrakeAccel());
+		omega = estimateVelocity(omega, uOmega, dt, getBotCtrlMaxAngAccel(), getBotCtrlMaxAngBrakeAccel());
+		eta = estimateVelocity(eta, uEta, dt, getBotCtrlMaxAngAccel(), getBotCtrlMaxAngBrakeAccel());
 		
 		// create return object
-		Matrix f = new Matrix(7, 1);
+		final Matrix f = new Matrix(7, 1);
 		f.set(0, 0, x);
 		f.set(1, 0, y);
 		f.set(2, 0, orient);
@@ -61,4 +68,3 @@ public class TigersMotionModel extends AOmniBot_V2 {
 		return f;
 	}
 }
- 

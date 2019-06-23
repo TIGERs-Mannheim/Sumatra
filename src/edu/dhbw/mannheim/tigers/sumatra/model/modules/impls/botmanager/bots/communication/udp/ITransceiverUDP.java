@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 04.03.2011
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.udp;
@@ -12,6 +12,7 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.com
 import java.net.NetworkInterface;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ITransceiver;
+
 
 /**
  * Transceiver interface.
@@ -21,14 +22,65 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.comm
  */
 public interface ITransceiverUDP extends ITransceiver
 {
-	void 			addObserver(ITransceiverUDPObserver o);
-	void 			removeObserver(ITransceiverUDPObserver o);
+	/**
+	 * 
+	 * @param o
+	 */
+	void addObserver(ITransceiverUDPObserver o);
 	
-	void			open();
-	void 			open(String host, int dstPort);
-	void 			close();
-	boolean 		isOpen();
-	void 			setDestination(String host, int port);
-	void			setLocalPort(int port);
-	void			setNetworkInterface(NetworkInterface network);
+	
+	/**
+	 * 
+	 * @param o
+	 */
+	void removeObserver(ITransceiverUDPObserver o);
+	
+	
+	/**
+ *
+ */
+	void open();
+	
+	
+	/**
+	 * 
+	 * @param host
+	 * @param dstPort
+	 */
+	void open(String host, int dstPort);
+	
+	
+	/**
+ *
+ */
+	void close();
+	
+	
+	/**
+	 * 
+	 * @return
+	 */
+	boolean isOpen();
+	
+	
+	/**
+	 * 
+	 * @param host
+	 * @param port
+	 */
+	void setDestination(String host, int port);
+	
+	
+	/**
+	 * 
+	 * @param port
+	 */
+	void setLocalPort(int port);
+	
+	
+	/**
+	 * 
+	 * @param network
+	 */
+	void setNetworkInterface(NetworkInterface network);
 }

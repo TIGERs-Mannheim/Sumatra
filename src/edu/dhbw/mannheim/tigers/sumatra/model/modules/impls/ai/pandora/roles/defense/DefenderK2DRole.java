@@ -9,28 +9,38 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.AVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Line;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Linef;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.MathException;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.TrackedBall;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2f;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.WorldFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.AIMath;
+import java.util.List;
+
+import org.apache.log4j.Logger;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.exceptions.MathException;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.field.Goal;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Line;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Linef;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBall;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.types.Goal;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.defense.KeeperPlus2DefenderPlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.EWAI;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.SkillFacade;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ASkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveAndStaySkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleState;
 
 
 /**
- * Defender Role for {@link KeeperPlus2DefenderPlay}<br>
+ * Defender Role for
+ * {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.defense.KeeperPlus2DefenderPlay}<br>
  * That role is assigned exactly two times (a left and a right defender).
+ * 
+ * This is an old role, just used for backup
  * 
  * @author Malte
  * 
@@ -40,47 +50,75 @@ public class DefenderK2DRole extends ADefenseRole
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	/**  */
-	private static final long	serialVersionUID		= 6240720493178226795L;
+	private static final Logger	log						= Logger.getLogger(DefenderK2DRole.class.getName());
 	
 	/** Current keeper position */
-	private IVector2				keeperPos;
+	private IVector2					keeperPos;
 	
 	/** Direction [Goal -> protectAgainst] */
-	private Vector2				direction;
+	private Vector2					direction;
 	
 	/** Left or Right defender? */
-	private final EWAI			type;
+	private final EWAI				type;
 	
 	/** Where to go? */
-	private final Vector2		destination;
+	private final Vector2			destination;
 	
 	/** 'vertical' gap between defender and keeper */
-	private final float			SPACE_BEFORE_KEEPER	= AIConfig.getRoles().getDefenderK2D().getSpaceBeforeKeeper();
+	private final float				SPACE_BEFORE_KEEPER	= AIConfig.getRoles().getDefenderK2D().getSpaceBeforeKeeper();
 	
 	/** 'horizontal' gap between defender and keeper */
-	private final float			SPACE_BESIDE_KEEPER	= AIConfig.getRoles().getDefenderK2D().getSpaceBesideKeeper();
+	private final float				SPACE_BESIDE_KEEPER	= AIConfig.getRoles().getDefenderK2D().getSpaceBesideKeeper();
 	
-	private boolean				criticalAngle			= false;
+	private boolean					criticalAngle			= false;
 	
-	private Vector2				target					= new Vector2(AIConfig.INIT_VECTOR);
-	private Vector2f				goalCenterTheir		= AIConfig.getGeometry().getGoalTheir().getGoalCenter();
+	private Vector2					target					= new Vector2(GeoMath.INIT_VECTOR);
+	private final Vector2f			goalCenterTheir		= AIConfig.getGeometry().getGoalTheir().getGoalCenter();
 	
-	private Goal goal = AIConfig.getGeometry().getGoalOur();
+	private final Goal				goal						= AIConfig.getGeometry().getGoalOur();
+	
+	private enum EStateId
+	{
+		NORMAL
+	}
+	
+	private enum EEvent
+	{
+		DONE
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	
+	/**
+	 * Default constructor
+	 */
+	public DefenderK2DRole()
+	{
+		this(EWAI.LEFT);
+	}
+	
+	
+	/**
+	 * @param type
+	 */
 	public DefenderK2DRole(EWAI type)
 	{
-		super(ERole.DEFENDER_K2D);
-		this.type = type;
-		keeperPos = AIConfig.INIT_VECTOR;
+		super(ERole.DEFENDER_K2D, false, true);
 		
-		destination = new Vector2(AIConfig.INIT_VECTOR);
+		setInitialState(new NormalDefendState());
+		addEndTransition(EStateId.NORMAL, EEvent.DONE);
+		this.type = type;
+		keeperPos = GeoMath.INIT_VECTOR;
+		
+		destination = new Vector2(GeoMath.INIT_VECTOR);
 		direction = new Vector2();
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -97,51 +135,144 @@ public class DefenderK2DRole extends ADefenseRole
 		this.keeperPos = keeperPos;
 	}
 	
-
+	
 	@Override
-	public void update(AIInfoFrame currentFrame)
+	public void updateMoveCon(AIInfoFrame currentFrame)
 	{
-		Vector2f protectAgainst = currentFrame.worldFrame.ball.pos;
 		
-		if (!currentFrame.tacticalInfo.isBallInOurPenArea())
+	}
+	
+	
+	/**
+	 * @param criticalAngle the criticalAngle to set
+	 */
+	public void setCriticalAngle(boolean criticalAngle)
+	{
+		this.criticalAngle = criticalAngle;
+	}
+	
+	
+	/**
+	 * @return the criticalAngle
+	 */
+	public boolean isCriticalAngle()
+	{
+		return criticalAngle;
+	}
+	
+	
+	@Override
+	public void fillNeededFeatures(final List<EFeature> features)
+	{
+	}
+	
+	// --------------------------------------------------------------------------
+	// --- getter/setter --------------------------------------------------------
+	// --------------------------------------------------------------------------
+	
+	
+	// --------------------------------------------------------------------------
+	// --- InnerClass --------------------------------------------------------
+	// --------------------------------------------------------------------------
+	private class NormalDefendState implements IRoleState
+	{
+		
+		@Override
+		public void onSkillStarted(ASkill skill, BotID botID)
 		{
-			if (!criticalAngle)
+			
+		}
+		
+		
+		@Override
+		public void onSkillCompleted(ASkill skill, BotID botID)
+		{
+			
+		}
+		
+		
+		@Override
+		public void doEntryActions()
+		{
+			setNewSkill(new MoveAndStaySkill(getMoveCon()));
+		}
+		
+		
+		@Override
+		public void doExitActions()
+		{
+			
+		}
+		
+		
+		@Override
+		public void doUpdate()
+		{
+			final IVector2 protectAgainst = getAiFrame().worldFrame.ball.getPos();
+			
+			if (!getAiFrame().tacticalInfo.isBallInOurPenArea())
 			{
-				//Wird der ball auf unser Tor geschossen?
-				TrackedBall ball = currentFrame.worldFrame.ball;
-				Vector2f interceptPoint;
-				if(ball.vel.x() < -0.3)
+				if (!criticalAngle)
 				{
-					Linef ballShootLine = new Linef(ball.pos, ball.vel);
-
-					try
+					// Wird der ball auf unser Tor geschossen?
+					final TrackedBall ball = getAiFrame().worldFrame.ball;
+					Vector2f interceptPoint;
+					if (ball.getVel().x() < -0.3)
 					{
-						interceptPoint = new Vector2f(AIMath.intersectionPoint(ballShootLine,
-								new Line(goal.getGoalCenter(), AVector2.Y_AXIS)));
-					} catch (MathException err)
+						final Linef ballShootLine = new Linef(ball.getPos(), ball.getVel());
+						try
+						{
+							interceptPoint = new Vector2f(GeoMath.intersectionPoint(ballShootLine,
+									new Line(goal.getGoalCenter(), AVector2.Y_AXIS)));
+						} catch (final MathException err)
+						{
+							interceptPoint = new Vector2f(0, 99999);
+						}
+						
+						// Ball wird auf unser Tor geschossen!
+						
+						if ((interceptPoint.y() < (goal.getGoalPostLeft().y() + 50))
+								&& (interceptPoint.y() > (goal.getGoalPostRight().y() - 50)))
+						{
+							// TODO PhilippP maybe eigenenState mit block
+							destination.set(GeoMath.leadPointOnLine(getPos(), ballShootLine));
+						}
+					} else
 					{
-						interceptPoint = new Vector2f(0, 99999);
+						// First we take keeperPos at start Position
+						destination.set(keeperPos);
+						
+						direction = protectAgainst.subtractNew(keeperPos);
+						direction.scaleTo(SPACE_BEFORE_KEEPER);
+						destination.add(direction);
+						direction.turn(AngleMath.PI_HALF);
+						direction.scaleTo(SPACE_BESIDE_KEEPER);
+						
+						
+						if (type == EWAI.RIGHT)
+						{
+							destination.subtract(direction);
+						} else if (type == EWAI.LEFT)
+						{
+							destination.add(direction);
+						} else
+						{
+							log.warn("Role called with non-suiting EWAI");
+						}
 					}
-					
-					//Ball wird auf unser Tor geschossen!
-					
-					if(interceptPoint.y() <  goal.getGoalPostLeft().y()+50
-						&& interceptPoint.y() >  goal.getGoalPostRight().y()-50)
-					{
-					destination.set(AIMath.leadPointOnLine(this.getPos(currentFrame), ballShootLine));
-					}
-				}
-				else{
-				// First we take keeperPos at start Position
+					target = new Vector2(goalCenterTheir);
+				} else
+				{
+					// First we take keeperPos at start Position
 					destination.set(keeperPos);
 					
 					direction = protectAgainst.subtractNew(keeperPos);
 					direction.scaleTo(SPACE_BEFORE_KEEPER);
 					destination.add(direction);
-					direction.turn(AIMath.PI_HALF);
-					direction.scaleTo(SPACE_BESIDE_KEEPER);
+					direction.turn(AngleMath.PI_HALF);
+					direction.scaleTo(SPACE_BESIDE_KEEPER - 100);
 					
-
+					
 					if (type == EWAI.RIGHT)
 					{
 						destination.subtract(direction);
@@ -152,22 +283,23 @@ public class DefenderK2DRole extends ADefenseRole
 					{
 						log.warn("Role called with non-suiting EWAI");
 					}
+					target = new Vector2(getAiFrame().worldFrame.ball.getPos());
 				}
-
-				target = new Vector2(goalCenterTheir);
-
-			} else
+			}
+			
+			// Ball is inside our penalty area
+			else
 			{
 				// First we take keeperPos at start Position
 				destination.set(keeperPos);
-				
 				direction = protectAgainst.subtractNew(keeperPos);
 				direction.scaleTo(SPACE_BEFORE_KEEPER);
-				destination.add(direction);
-				direction.turn(AIMath.PI_HALF);
-				direction.scaleTo(SPACE_BESIDE_KEEPER - 100);
+				// HERE IT IS SUBTRACT
+				destination.subtract(direction);
+				direction.turn(AngleMath.PI_HALF);
+				direction.scaleTo(SPACE_BESIDE_KEEPER);
 				
-
+				
 				if (type == EWAI.RIGHT)
 				{
 					destination.subtract(direction);
@@ -178,76 +310,17 @@ public class DefenderK2DRole extends ADefenseRole
 				{
 					log.warn("Role called with non-suiting EWAI");
 				}
-				target = new Vector2(currentFrame.worldFrame.ball.pos);
 			}
-			
-			
+			updateDestination(destination);
+			updateLookAtTarget(target);
 		}
-
-		// Ball is inside our penalty area
-		else
+		
+		
+		@Override
+		public Enum<? extends Enum<?>> getIdentifier()
 		{
-			// First we take keeperPos at start Position
-			destination.set(keeperPos);
-			
-			direction = protectAgainst.subtractNew(keeperPos);
-			direction.scaleTo(SPACE_BEFORE_KEEPER);
-			// HERE IT IS SUBTRACT
-			destination.subtract(direction);
-			direction.turn(AIMath.PI_HALF);
-			direction.scaleTo(SPACE_BESIDE_KEEPER);
-			
-
-			if (type == EWAI.RIGHT)
-			{
-				destination.subtract(direction);
-			} else if (type == EWAI.LEFT)
-			{
-				destination.add(direction);
-			} else
-			{
-				log.warn("Role called with non-suiting EWAI");
-			}
-		}
-		destCon.updateDestination(destination);
-		lookAtCon.updateTarget(target);
-	}
-	
-
-	@Override
-	public void calculateSkills(WorldFrame wFrame, SkillFacade skills)
-	{
-		super.calculateSkills(wFrame, skills);
-		float angle = wFrame.tigerBots.get(getBotID()).angle;
-		if (angle < AIMath.PI_QUART && angle > -AIMath.PI_QUART)
-		{
-			skills.kickArm();
-		} else
-		{
-			skills.disarm();
+			return EStateId.NORMAL;
 		}
 	}
-	
-
-	/**
-	 * @param criticalAngle the criticalAngle to set
-	 */
-	public void setCriticalAngle(boolean criticalAngle)
-	{
-		this.criticalAngle = criticalAngle;
-	}
-	
-
-	/**
-	 * @return the criticalAngle
-	 */
-	public boolean isCriticalAngle()
-	{
-		return criticalAngle;
-	}
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 }

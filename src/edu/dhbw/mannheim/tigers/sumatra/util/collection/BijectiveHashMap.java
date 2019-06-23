@@ -21,25 +21,29 @@ import org.apache.log4j.Logger;
 
 /**
  * Bijective HashMap. Every Key has a distince Value AND every value has a distinct Key!
+ * 
  * @author MalteM
- * TODO: This Bijective Hash Map is only usable for objects from the same class.
- * 		We could maybe expand it for Objects from the same class and all inherating classes?
+ * @param <K>
+ * @param <V>
+ * 
  */
 public class BijectiveHashMap<K, V>
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
+	// Logger
+	private static final Logger	log	= Logger.getLogger(BijectiveHashMap.class.getName());
 	
-	private HashMap<K, V>	keyValueMap;
-	private HashMap<V, K>	valueKeyMap;
-	
-	protected final Logger	log	= Logger.getLogger(getClass());
+	private final HashMap<K, V>	keyValueMap;
+	private final HashMap<V, K>	valueKeyMap;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 */
 	public BijectiveHashMap()
 	{
 		keyValueMap = new HashMap<K, V>();
@@ -52,27 +56,28 @@ public class BijectiveHashMap<K, V>
 	// --------------------------------------------------------------------------
 	/**
 	 * Put key and value in the map.
-	 * 
-	 * @param key
+	 * put
+	 * @param i
 	 * @param value
 	 */
-	public void put(K key, V value)
+	public void put(K i, V value)
 	{
-		if (keyValueMap.containsKey(key) || keyValueMap.containsValue(value))
+		if (keyValueMap.containsKey(i) || keyValueMap.containsValue(value))
 		{
-			log.warn("Can't put key: '" + key.toString() + "' and value: '" + value.toString() + "'"
+			log.warn("Can't put key: '" + i.toString() + "' and value: '" + value.toString() + "'"
 					+ "in Bijective HashMap. Already there.");
 		} else
 		{
-			keyValueMap.put(key, value);
-			valueKeyMap.put(value, key);
-		}	
+			keyValueMap.put(i, value);
+			valueKeyMap.put(value, i);
+		}
 	}
+	
 	
 	/**
 	 * Put given entry in the map.
-	 * 
-	 * @param Entry
+	 * put
+	 * @param entry
 	 */
 	public void put(Entry<K, V> entry)
 	{
@@ -82,7 +87,7 @@ public class BijectiveHashMap<K, V>
 	
 	/**
 	 * Returns the <b>Key</b> to a given <b>Value</b>.
-	 * @param value
+	 * @param v
 	 * @return key
 	 */
 	public K getKey(V v)
@@ -93,7 +98,7 @@ public class BijectiveHashMap<K, V>
 	
 	/**
 	 * Returns the <b>Value</b> to a given <b>Key</b>.
-	 * @param key
+	 * @param k
 	 * @return value
 	 */
 	public V getValue(K k)
@@ -102,21 +107,28 @@ public class BijectiveHashMap<K, V>
 	}
 	
 	
+	/**
+	 * @param v
+	 */
 	public void removeValue(V v)
 	{
-		K k = valueKeyMap.get(v);
+		final K k = valueKeyMap.get(v);
 		valueKeyMap.remove(v);
 		keyValueMap.remove(k);
 	}
 	
 	
+	/**
+	 * @param k
+	 */
 	public void removeKey(K k)
 	{
-		V v = keyValueMap.get(k);
+		final V v = keyValueMap.get(k);
 		keyValueMap.remove(k);
 		valueKeyMap.remove(v);
 		
 	}
+	
 	
 	/**
 	 * Clears the whole map.
@@ -128,31 +140,37 @@ public class BijectiveHashMap<K, V>
 		valueKeyMap.clear();
 	}
 	
+	
 	/**
 	 * Returns a Collection of all values.
+	 * @return
 	 */
 	public Collection<V> values()
 	{
 		return keyValueMap.values();
 	}
 	
+	
 	/**
 	 * Returns a Set of all Keys.
+	 * @return
 	 */
 	public Set<K> keySet()
 	{
 		return keyValueMap.keySet();
 	}
 	
+	
 	/**
 	 * Puts the given map in the BijectiveHashMap.
+	 * @param map
 	 */
-	public void putAll(Map <K,V> map)
+	public void putAll(Map<K, V> map)
 	{
-		Iterator<Entry<K,V>> it = map.entrySet().iterator();
-		while(it.hasNext())
+		final Iterator<Entry<K, V>> it = map.entrySet().iterator();
+		while (it.hasNext())
 		{
 			this.put(it.next());
-		}		
+		}
 	}
 }

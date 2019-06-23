@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: Aug 21, 2010
  * Author(s): bernhard
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.wpcenter.internals;
@@ -23,9 +23,10 @@ import javax.swing.border.TitledBorder;
 
 import net.miginfocom.swing.MigLayout;
 
+
 /**
  * Visualizes all available robots.
- *
+ * 
  * @author bernhard
  * 
  */
@@ -34,20 +35,24 @@ public class ABCPanel extends JPanel
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long	serialVersionUID	= 6408342941543334436L;
-	private List<IABCPanelObserver> observers = new CopyOnWriteArrayList<IABCPanelObserver>();
-	private CheckboxListener checkboxListener = null;
+	private static final long					serialVersionUID	= 6408342941543334436L;
+	private final List<IABCPanelObserver>	observers			= new CopyOnWriteArrayList<IABCPanelObserver>();
+	private CheckboxListener					checkboxListener	= null;
 	
 	// --- checkboxes ---
-	private JCheckBox cbVelocity = null;
-	private JCheckBox cbAcceleration = null;
-	private JCheckBox cbGrid = null;
-	private JCheckBox cbPaths = null;
-	private JCheckBox cbDebugPoints = null;
+	private JCheckBox								cbVelocity			= null;
+	private JCheckBox								cbAcceleration		= null;
+	private JCheckBox								cbGrid				= null;
+	private JCheckBox								cbPaths				= null;
+	private JCheckBox								cbDebugPoints		= null;
+	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	  * 
+	  */
 	public ABCPanel()
 	{
 		// --- configure panel ---
@@ -56,7 +61,7 @@ public class ABCPanel extends JPanel
 		setLayout(new MigLayout("", "", "[top]"));
 		
 		// --- border ---
-		TitledBorder border = BorderFactory.createTitledBorder("options");
+		final TitledBorder border = BorderFactory.createTitledBorder("options");
 		border.setTitleJustification(TitledBorder.CENTER);
 		setBorder(border);
 		
@@ -92,7 +97,7 @@ public class ABCPanel extends JPanel
 		cbPaths.setActionCommand("paths");
 		add(cbPaths, "wrap");
 		
-		cbDebugPoints = new JCheckBox("debug points");
+		cbDebugPoints = new JCheckBox("DEBUG points");
 		cbDebugPoints.setBackground(Color.orange);
 		cbDebugPoints.addActionListener(checkboxListener);
 		cbDebugPoints.setActionCommand("debugPoints");
@@ -101,16 +106,26 @@ public class ABCPanel extends JPanel
 		
 	}
 	
+	
 	// --------------------------------------------------------------------------
 	// --- observer -------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
 	
+	/**
+	 * 
+	 * @param o
+	 */
 	public void addObserver(IABCPanelObserver o)
 	{
 		observers.add(o);
 	}
 	
+	
+	/**
+	 * 
+	 * @param o
+	 */
 	public void removeObserver(IABCPanelObserver o)
 	{
 		observers.remove(o);
@@ -122,19 +137,17 @@ public class ABCPanel extends JPanel
 	
 	protected class CheckboxListener implements ActionListener
 	{
-
+		
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			;
-			for (IABCPanelObserver o : observers)
+			for (final IABCPanelObserver o : observers)
 			{
-				o.onCheckboxClick(((JCheckBox)e.getSource()).getActionCommand(), ((JCheckBox)e.getSource()).isSelected());
+				o.onCheckboxClick(((JCheckBox) e.getSource()).getActionCommand(), ((JCheckBox) e.getSource()).isSelected());
 			}
 		}
 		
 	}
-	
 	
 	
 }

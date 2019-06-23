@@ -1,0 +1,7 @@
+bin/
+config/gui/guiposition.props
+config/user/*.props
+*.lck
+/target
+*~
+benchmark/

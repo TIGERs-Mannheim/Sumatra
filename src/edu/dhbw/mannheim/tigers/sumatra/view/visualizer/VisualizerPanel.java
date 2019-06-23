@@ -14,23 +14,28 @@ import java.awt.Component;
 import java.util.List;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JMenu;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.TitledBorder;
 
 import net.miginfocom.swing.MigLayout;
+import edu.dhbw.mannheim.tigers.sumatra.presenter.visualizer.IFieldPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.main.ISumatraView;
-import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.FieldPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.OptionsPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.RobotsPanel;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.FieldPanel;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.replay.ReplayLoadPanel;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.replay.ReplayOptionsPanel;
 
 
 /**
  * Visualizes the current game situation.
- * It also allows the user to set a robot at a determinated position.
+ * It also allows the user to set a robot at a determined position.
  * 
- * @author BernhardP
+ * @author BernhardP, OliverS
  * 
  */
 public class VisualizerPanel extends JPanel implements ISumatraView
@@ -38,35 +43,48 @@ public class VisualizerPanel extends JPanel implements ISumatraView
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long	serialVersionUID	= 2686191777355388548L;
+	private static final long			serialVersionUID		= 2686191777355388548L;
 	
-	private FieldPanel			fieldPanel			= null;
+	private static final int			ID							= 4;
+	private static final String		TITLE						= "Visualizer";
 	
-
-	private JTextField			teamColor			= null;
-	private RobotsPanel			robotsPanel			= null;
-	private OptionsPanel			optionsPanel		= null;
+	private final FieldPanel			fieldPanel;
+	
+	private final JTextField			teamColor;
+	private final RobotsPanel			robotsPanel;
+	private final OptionsPanel			optionsPanel;
+	private final ReplayOptionsPanel	replayOptionsPanel;
+	private final ReplayLoadPanel		replayLoadPanel;
+	
+	private Boolean						lastTigersAreYellow	= null;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 */
 	public VisualizerPanel()
 	{
 		// --- set layout ---
-		setLayout(new MigLayout("fill, inset 0", "[70!][455!][150!]", "[100]"));
+		setLayout(new MigLayout("fill, inset 0", "[min!][left][]", "[top]"));
 		
 		// --- left panel ---
-		JPanel leftPanel = new JPanel(new MigLayout("fill, inset 0", "[70!]", "[40!]30[]"));
+		final JPanel leftPanel = new JPanel();
+		leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.PAGE_AXIS));
+		// --- right panel ---
+		final JPanel rightPanel = new JPanel();
+		rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.PAGE_AXIS));
 		
 		
 		// team color panel
 		teamColor = new JTextField();
 		teamColor.setEditable(false);
 		teamColor.setBackground(Color.WHITE);
-		JPanel teamColorPanel = new JPanel(new MigLayout("fill", "[fill]", "[fill]"));
+		final JPanel teamColorPanel = new JPanel(new MigLayout("fill", "[fill]", "[fill]"));
 		
-		TitledBorder border = BorderFactory.createTitledBorder("Team:");
+		final TitledBorder border = BorderFactory.createTitledBorder("Team");
 		border.setTitleJustification(TitledBorder.CENTER);
 		teamColorPanel.setBorder(border);
 		teamColorPanel.add(teamColor);
@@ -76,123 +94,159 @@ public class VisualizerPanel extends JPanel implements ISumatraView
 		robotsPanel = new RobotsPanel();
 		fieldPanel = new FieldPanel();
 		optionsPanel = new OptionsPanel();
+		replayOptionsPanel = new ReplayOptionsPanel();
+		replayLoadPanel = new ReplayLoadPanel();
+		
+		optionsPanel.setAlignmentX(LEFT_ALIGNMENT);
+		replayOptionsPanel.setAlignmentX(LEFT_ALIGNMENT);
+		replayLoadPanel.setAlignmentX(LEFT_ALIGNMENT);
 		
 		// --- set panels ---
 		leftPanel.add(teamColorPanel, "grow, top, wrap");
 		leftPanel.add(robotsPanel, "grow, top");
-		add(leftPanel, "growY");
+		leftPanel.add(Box.createVerticalGlue());
+		rightPanel.add(optionsPanel);
+		rightPanel.add(replayOptionsPanel);
+		rightPanel.add(replayLoadPanel);
+		rightPanel.add(Box.createVerticalGlue());
+		
+		add(leftPanel);
 		add(fieldPanel, "grow, top");
-		add(optionsPanel, "growY, top");
+		add(rightPanel);
 		
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
+	// --- ISumatraView ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
 	@Override
-	public int getID()
+	public int getId()
 	{
-		return 4;
+		return ID;
 	}
 	
-
+	
 	@Override
 	public String getTitle()
 	{
-		return "Visualizer";
+		return TITLE;
 	}
 	
-
+	
 	@Override
 	public Component getViewComponent()
 	{
 		return this;
 	}
 	
-
+	
 	@Override
 	public List<JMenu> getCustomMenus()
 	{
-		/*
-		 * List<JMenu> menus = new ArrayList<JMenu>();
-		 * JMenu editBots = new JMenu("Bots bearbeiten");
-		 * JMenuItem addBot = new JMenuItem("hinzuf�gen");
-		 * JMenuItem removeBot = new JMenuItem("entfernen");
-		 * editBots.add(addBot);
-		 * editBots.add(removeBot);
-		 * JMenu botConfig = new JMenu("Botkonfiguration");
-		 * JMenuItem saveConfig = new JMenuItem("speichern");
-		 * JMenuItem loadConfig = new JMenuItem("laden");
-		 * botConfig.add(saveConfig);
-		 * botConfig.add(loadConfig);
-		 * 
-		 * menus.add(editBots);
-		 * menus.add(botConfig);
-		 * 
-		 * return menus;
-		 */
 		return null;
 	}
 	
-
+	
 	@Override
 	public void onShown()
 	{
 	}
 	
-
+	
 	@Override
 	public void onHidden()
 	{
 	}
 	
-
+	
 	@Override
 	public void onFocused()
 	{
 	}
 	
-
+	
 	@Override
 	public void onFocusLost()
 	{
 	}
 	
-
-	public FieldPanel getFieldPanel()
+	
+	// --------------------------------------------------------------------------
+	// --- getter/setter --------------------------------------------------------
+	// --------------------------------------------------------------------------
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public IFieldPanel getFieldPanel()
 	{
 		return fieldPanel;
 	}
 	
-
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public RobotsPanel getRobotsPanel()
 	{
 		return robotsPanel;
 	}
 	
-
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public OptionsPanel getOptionsPanel()
 	{
 		return optionsPanel;
 	}
 	
-
-	public void setTigersAreYellow(boolean yellow)
+	
+	/**
+	 * 
+	 * @param tigersAreYellow
+	 */
+	public void setTigersAreYellow(boolean tigersAreYellow)
 	{
-		if (yellow)
+		if ((lastTigersAreYellow == null) || (lastTigersAreYellow != tigersAreYellow))
 		{
-			teamColor.setText("YELLOW");
-			teamColor.setBackground(Color.YELLOW);
-		} else
-		{
-			teamColor.setText("BLUE");
-			teamColor.setBackground(Color.BLUE);
+			if (tigersAreYellow)
+			{
+				teamColor.setText("YELLOW");
+				teamColor.setBackground(Color.YELLOW);
+			} else
+			{
+				teamColor.setText("BLUE");
+				teamColor.setBackground(Color.BLUE);
+			}
+			
+			// Sub-panels
+			getRobotsPanel().setTigersAreYellow(tigersAreYellow);
+			
+			lastTigersAreYellow = tigersAreYellow;
 		}
-		
-		// Sub-panels
-		getRobotsPanel().setTigersAreYellow(yellow);
-		getFieldPanel().setTigersAreYellow(yellow);
+	}
+	
+	
+	/**
+	 * @return the replayOptionsPanel
+	 */
+	public final ReplayOptionsPanel getReplayOptionsPanel()
+	{
+		return replayOptionsPanel;
+	}
+	
+	
+	/**
+	 * @return the replayOptionsPanel
+	 */
+	public final ReplayLoadPanel getReplayLoadPanel()
+	{
+		return replayLoadPanel;
 	}
 }

@@ -9,7 +9,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
 
 
 /**
@@ -23,7 +23,6 @@ public interface IAIProcessor
 	/**
 	 * @param currentFrame
 	 * @param previousFrame
-	 * @return The formerly passed {@link AIInfoFrame}, hopefully filled with more interesting information
 	 */
-	public AIInfoFrame process(AIInfoFrame currentFrame, AIInfoFrame previousFrame);
+	void process(AIInfoFrame currentFrame, AIInfoFrame previousFrame);
 }

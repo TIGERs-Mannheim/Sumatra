@@ -8,251 +8,366 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays;
 
-import java.util.Collections;
-import java.util.LinkedList;
+import java.lang.reflect.Constructor;
+import java.util.Arrays;
 import java.util.List;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.APlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.calibrate.ChipKickCalibratePlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.calibrate.StraightKickCalibratePlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.defense.KeeperSoloPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.defense.NDefenderWDPPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.offense.BallBreakingPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.offense.BallBreakingV2Play;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.offense.BallConquerPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.offense.BallGettingPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.offense.DirectShotV2Play;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.offense.DirectShotV3Play;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.offense.DoublePassPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.offense.FlyingTigerPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.offense.IndirectShotMultiplePlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.offense.IndirectShotV2Play;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.offense.IndirectShotV3Play;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.offense.IndirectShotV4Play;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.offense.IntelligentBallGetterPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.offense.MovingShotPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.offense.PassingPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.offense.RamboPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.offense.mixedteam.IndirectReceiverPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.offense.mixedteam.PassReceiverPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.offense.mixedteam.PasserPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.others.AroundTheBallPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.others.CheeringPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.others.DestChangedTestPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.others.GuiTestPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.others.InitPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.others.MaintenancePlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.others.MoveTestPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.standard.HaltPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.standard.freekick.CornerPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.standard.freekick.FreekickMarkerPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.standard.freekick.FreekickMovePlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.standard.freekick.ThrowInUsPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.standard.kickoff.KickOffChipPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.standard.kickoff.KickOffIndirectPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.standard.kickoff.PositioningOnKickOffThem;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.standard.penalty.PenaltyShootoutThemPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.standard.penalty.PenaltyShootoutUsPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.standard.penalty.PenaltyThemPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.standard.penalty.PenaltyUsPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.standard.stop.StopMarkerPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.standard.stop.StopMovePlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.support.BreakClearPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.support.BreakClearRedirecterPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.support.ManToManMarkerPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.support.PatternBlockPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.tecchallenges.NavigationChallengePlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.tecchallenges.ShootingChallengePlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.test.DebugShapesTestPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.test.PathplanningTestPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.test.TecShootChalTestPlay;
 
 
 /**
  * Enumeration that represents the different {@link APlay}.
  * <p>
- * <b>Important:</b> Don't forget to add your play in the {@link PlayFactory} if you wrote a new one!!!
+ * <b>Important:</b> An entry in the {@link PlayFactory} isn't necessary anymore. A play is reflected by it's class and
+ * the constructor.
  * </p>
+ * <b>Never</b> delete existing plays here. Mark them as {@link EPlayType#DEPRECATED}. Else, the knowledgebase may fail
+ * to load
+ * because the enum field is missing...
+ * 
  * 
  * @author Gero
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * @author DanielAl
  */
 public enum EPlay
 {
 	// ##### OFFENSE
+	/**  */
+	RAMBO(EPlayType.OFFENSIVE, 1, 1, RamboPlay.class),
+	/**  */
+	BALL_GETTING(EPlayType.DISABLED, 1, 1, BallGettingPlay.class),
+	/**  */
+	INTELLIGENT_BALL_GETTING(EPlayType.DISABLED, 1, 1, IntelligentBallGetterPlay.class),
+	/**  */
+	BALL_BREAKING(EPlayType.DISABLED, 1, 1, BallBreakingPlay.class),
+	/**  */
+	BALL_BREAKING_V2(EPlayType.OFFENSIVE, 1, 1, BallBreakingV2Play.class),
+	/**  */
+	BALL_CONQUER(EPlayType.DEFECT, 1, 2, BallConquerPlay.class),
+	/**  */
+	DIRECT_SHOTV2(EPlayType.DISABLED, 1, 1, DirectShotV2Play.class, EProperty.GOAL_SCORER),
+	/**  */
+	DIRECT_SHOTV3(EPlayType.OFFENSIVE, 1, 1, DirectShotV3Play.class, EProperty.GOAL_SCORER),
+	/**  */
+	MOVING_SHOT(EPlayType.DEPRECATED, 1, 1, MovingShotPlay.class, EProperty.GOAL_SCORER),
+	/**  */
+	INDIRECT_SHOTV2(EPlayType.OFFENSIVE, 2, 2, IndirectShotV2Play.class, EProperty.GOAL_SCORER),
+	/**  */
+	INDIRECT_SHOTV3(EPlayType.DISABLED, 2, 2, IndirectShotV3Play.class, EProperty.GOAL_SCORER),
+	/**  */
+	INDIRECT_SHOTV4(EPlayType.OFFENSIVE, 2, 2, IndirectShotV4Play.class, EProperty.GOAL_SCORER),
+	/**  */
+	INDIRECT_SHOT_MULTIPLE(EPlayType.OFFENSIVE, 2, 3, IndirectShotMultiplePlay.class, EProperty.GOAL_SCORER),
+	/**  */
+	DOUBLE_PASS(EPlayType.DEFECT, 2, 2, DoublePassPlay.class, EProperty.GOAL_SCORER),
 	
-	// attack
-	BALL_GETTING(Type.TEST),
-	DIRECT_SHOT(Type.TEST),
-	BALL_GETTING_AND_IMMEDIATE_SHOT,
-	INDIRECT_SHOT(Type.TEST),
-	GAME_OFFENSE_PREPARE_WITH_THREE(Type.TEST),
-	GAME_OFFENSE_PREPARE_WITH_TWO(Type.TEST),
-	PASS_FORWARD(Type.TEST),
+	/**  */
+	PASSING(EPlayType.DISABLED, 2, 2, PassingPlay.class),
+	/** */
+	FLYING_TIGER(EPlayType.OFFENSIVE, 2, 2, FlyingTigerPlay.class),
 	
-	BALLCAPTURING_WITH_DOUBLING(Type.TEST),
-	BALLCAPTURING_WITH_ONE_PASS_BLOCKER(Type.TEST),
-	BALLWINNING_WITH_ONE_BLOCKER(Type.TEST),
-	BALLWINNING_WITH_ONE_PASS_BLOCKER(Type.TEST),
+	// ##### SUPPORT
+	/**  */
+	MAN_TO_MAN_MARKER(EPlayType.SUPPORT, 1, 3, ManToManMarkerPlay.class),
+	/**  */
+	BREAK_CLEAR(EPlayType.SUPPORT, 1, 2, BreakClearPlay.class),
+	/**  */
+	BREAK_CLEAR_REDIRECT(EPlayType.SUPPORT, 1, 2, BreakClearRedirecterPlay.class),
 	
-	// support
-	POSITION_IMPROVING_NO_BALL_WITH_ONE(Type.TEST),
-	POSITION_IMPROVING_NO_BALL_WITH_TWO(Type.TEST),
-	SUPPORT_WITH_ONE_BLOCKER(Type.TEST),
-	SUPPORT_WITH_ONE_PASS_BLOCKER(Type.TEST),
-	SUPPORT_WITH_ONE_MARKER,
-	PULL_BACK(Type.TEST),
+	/**  */
+	// BREAK_CLEAR_OWN_SIDE(EPlayType.SUPPORT, 1, 2, BreakClearOwnSidePlay.class),
+	/**  */
+	PATTERN_BLOCK_PLAY(EPlayType.DEFECT, 1, 1, PatternBlockPlay.class),
 	
 	// ##### DEFENSE
-	KEEPER_SOLO,
-	KEEPER_PLUS_1_DEFENDER,
-	KEEPER_PLUS_2_DEFENDER,
-	MAN_TO_MAN_MARKER(Type.TEST),
+	/**  */
+	KEEPER_SOLO(EPlayType.KEEPER, 1, 1, KeeperSoloPlay.class),
+	/** */
+	N_DEFENDER_DEFENSPOINTS(EPlayType.DEFENSIVE, 1, 3, NDefenderWDPPlay.class),
+	
+	// ##### MIXED TEAM
+	/**  */
+	PASSER_MIXED(EPlayType.OFFENSIVE, 1, 1, PasserPlay.class, EProperty.MIXED_TEAM),
+	/**  */
+	PASS_RECEIVER_MIXED(EPlayType.DISABLED, 1, 1, PassReceiverPlay.class, EProperty.MIXED_TEAM),
+	/**  */
+	INDIRECT_RECEIVER_MIXED(EPlayType.OFFENSIVE, 1, 1, IndirectReceiverPlay.class, EProperty.MIXED_TEAM),
 	
 	// ##### STANDARD
-	HALT(Type.STANDARD),
-	INIT(Type.STANDARD),
-	INIT4(Type.STANDARD),
-	POSITIONING_ON_STOPPED_PLAY_WITH_THREE(Type.STANDARD),
-	POSITIONING_ON_STOPPED_PLAY_WITH_TWO(Type.STANDARD),
+	/**  */
+	HALT(EPlayType.STANDARD, EPlay.MAX_BOTS, EPlay.MAX_BOTS, HaltPlay.class),
+	/**  */
+	INIT(EPlayType.STANDARD, EPlay.MAX_BOTS, EPlay.MAX_BOTS, InitPlay.class),
+	/**  */
+	MAINTENANCE(EPlayType.STANDARD, EPlay.MAX_BOTS, EPlay.MAX_BOTS, MaintenancePlay.class),
+	/** */
+	CHEERING(EPlayType.TEST, EPlay.MAX_BOTS, EPlay.MAX_BOTS, CheeringPlay.class),
 	
 	// free kick
-	FREEKICK_WITH_TWO(Type.TEST),
-	FREEKICK_MARKER(Type.STANDARD),
-	FREEKICK_V2(Type.STANDARD),
+	/**  */
+	FREEKICK_MARKER(EPlayType.STANDARD, 2, 2, FreekickMarkerPlay.class),
+	/**  */
+	FREEKICK_MOVE(EPlayType.STANDARD, 1, 3, FreekickMovePlay.class),
+	/**  */
+	THROW_IN_US(EPlayType.STANDARD, 2, 2, ThrowInUsPlay.class),
+	/** */
+	CORNER_US(EPlayType.TEST, 3, 3, CornerPlay.class),
 	
 	// kick-off
-	POSITIONING_ON_KICK_OFF_THEM(Type.STANDARD),
-	KICK_OF_US_SYMMETRY_POSITION(Type.STANDARD),
-	STOP_MOVE(Type.STANDARD),
-	STOP_MARKER(Type.STANDARD),
+	/**  */
+	POSITIONING_ON_KICK_OFF_THEM(EPlayType.STANDARD, 1, 4, PositioningOnKickOffThem.class),
+	/**  */
+	KICK_OFF_INDIRECT(EPlayType.DEFECT, 4, 4, KickOffIndirectPlay.class),
+	/**  */
+	KICK_OFF_CHIP(EPlayType.STANDARD, 1, 1, KickOffChipPlay.class),
+	
+	// stop
+	/**  */
+	STOP_MOVE(EPlayType.STANDARD, 1, 4, StopMovePlay.class),
+	/**  */
+	STOP_MARKER(EPlayType.STANDARD, 1, 1, StopMarkerPlay.class),
 	
 	// penalty kick
-	PENALTY_US(Type.STANDARD),
-	PENALTY_THEM(Type.STANDARD),
+	/** Penalty Game */
+	PENALTY_THEM(EPlayType.STANDARD, EPlay.MAX_BOTS, EPlay.MAX_BOTS, PenaltyThemPlay.class),
+	/** penalty Game */
+	PENALTY_US(EPlayType.STANDARD, EPlay.MAX_BOTS, EPlay.MAX_BOTS, PenaltyUsPlay.class),
+	/** Penalty Shoutout */
+	PENALTY_SHOOTOUT_US(EPlayType.STANDARD, EPlay.MAX_BOTS, EPlay.MAX_BOTS, PenaltyShootoutUsPlay.class),
+	/** Penalty Shoutout */
+	PENALTY_SHOOTOUT_THEM(EPlayType.STANDARD, EPlay.MAX_BOTS, EPlay.MAX_BOTS, PenaltyShootoutThemPlay.class),
 	
-
-	// ##### TEST
+	// calibrate
+	/**  */
+	CHIP_KICK_CALIBRATE(EPlayType.CALIBRATE, 1, 1, ChipKickCalibratePlay.class),
+	/**  */
+	STRAIGHT_KICK_CALIBRATE(EPlayType.CALIBRATE, 1, 1, StraightKickCalibratePlay.class),
 	
-	PASS_TO_KEEPER(Type.TEST),
-	PASS_TWO_BOTS(Type.TEST),
-	SHOOT_THREE_BOTS(Type.TEST),
-	PASS_TRAINING(Type.TEST),
+	// tecchallenges
+	/** */
+	SHOOTING_CHALLENGE(EPlayType.CHALLENGE, 1, 1, ShootingChallengePlay.class),
+	/**  */
+	NAVIGATION_CHALLENGE(EPlayType.CHALLENGE, 3, 3, NavigationChallengePlay.class),
 	
-
-	ONE_BOT_TEST(Type.TEST),
-	AROUND_THE_BALL(Type.TEST),
-	PP_PLAY(Type.TEST),
-	MAINTENANCE(Type.TEST),
-	GUI_TEST_PLAY(Type.TEST),
+	// test
+	/**  */
+	AROUND_THE_BALL(EPlayType.TEST, EPlay.MAX_BOTS, EPlay.MAX_BOTS, AroundTheBallPlay.class),
+	/**  */
+	GUI_TEST_PLAY(EPlayType.HELPER, EPlay.MAX_BOTS, EPlay.MAX_BOTS, GuiTestPlay.class),
+	/**  */
+	PATHPLANNING_TEST_PLAY(EPlayType.TEST, 1, EPlay.MAX_BOTS, PathplanningTestPlay.class),
+	/**  */
+	DEBUG_SHAPES(EPlayType.TEST, 1, 1, DebugShapesTestPlay.class),
+	/**  */
+	MOVE_TEST(EPlayType.TEST, 2, 2, MoveTestPlay.class),
+	/**  */
+	DEST_CHANGED_TEST(EPlayType.TEST, 1, 1, DestChangedTestPlay.class),
+	/**  */
+	TEC_SHOOT_CHAL_TEST(EPlayType.TEST, 1, 5, TecShootChalTestPlay.class),
 	
-	CHIP_FORWARD(Type.TEST),
-	FREEKICK_OFFENSE_PREPARE_WITH_THREE(Type.TEST),
-	INDIRECT_SHOTV2;
+	
+	/**  */
+	UNITIALIZED(EPlayType.HELPER, 1, 1, null), ;
+	
+	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	/**
-	 * The type of a play may be either:
-	 * <ul>
-	 * <li> {@link Type#STANDARD},</li>
-	 * <li> {@link Type#GAME} or</li>
-	 * <li> {@link Type#TEST}.</li>
-	 * </ul>
-	 * 
-	 * @author Gero
-	 */
-	private static enum Type
+	
+	/** constant that indicates that the maximum number of bots is needed */
+	public static final int			MAX_BOTS	= 0;
+	
+	/** @see EPlayType */
+	private final EPlayType			type;
+	private final int					minRoles;
+	private final int					maxRoles;
+	private final List<EProperty>	properties;
+	private final Class<?>			impl;
+	
+	
+	private enum EProperty
 	{
-		/** Each play that is meant to handle a "standard"-situation */
-		STANDARD,
-		/** Each play that is free to be chosen during a game */
-		GAME,
-		/** Plays that are meant for testing-purposes only */
-		TEST;
+		DUMMY,
+		GOAL_SCORER,
+		MIXED_TEAM,
 	}
-	
-	private static List<EPlay>	gamePlays;
-	private static List<EPlay>	standardPlays;
-	
-	/** @see Type */
-	private final Type			type;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
 	/**
-	 * Calls {@link #EPlay(Type)} with {@link Type#GAME}
+	 * 
+	 * @param type
+	 * @param minRoles minimal number of roles that
+	 * @param maxRoles
+	 * @param impl
 	 */
-	private EPlay()
+	private EPlay(EPlayType type, int minRoles, int maxRoles, Class<?> impl)
 	{
-		this(Type.GAME);
+		this(type, minRoles, maxRoles, impl, EProperty.DUMMY);
 	}
 	
-
+	
 	/**
+	 * 
 	 * @param type
-	 * @see EPlay
+	 * @param minRoles minimal number of roles that
+	 * @param maxRoles
+	 * @param impl
+	 * @param properties
 	 */
-	private EPlay(Type type)
+	private EPlay(EPlayType type, int minRoles, int maxRoles, Class<?> impl, EProperty... properties)
 	{
 		this.type = type;
-		
-		if (type == Type.GAME)
-		{
-			registerGamePlay(this);
-		} else if (type == Type.STANDARD)
-		{
-			registerStandardPlay(this);
-		}
+		this.minRoles = minRoles;
+		this.maxRoles = maxRoles;
+		this.impl = impl;
+		this.properties = Arrays.asList(properties);
+		PlayType.registerPlay(this);
 	}
 	
-
-	private static void registerGamePlay(EPlay type)
-	{
-		if (gamePlays == null)
-		{
-			gamePlays = new LinkedList<EPlay>();
-		}
-		
-		if (type.isGamePlay())
-		{
-			gamePlays.add(type);
-		}
-	}
 	
-
-	private static void registerStandardPlay(EPlay type)
-	{
-		if (standardPlays == null)
-		{
-			standardPlays = new LinkedList<EPlay>();
-		}
-		
-		if (type.isStandardPlay())
-		{
-			standardPlays.add(type);
-		}
-	}
-	
-
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * @return The {@link Type}
+	 * @return The {@link EPlayType}
 	 */
-	public Type getType()
+	public EPlayType getType()
 	{
 		return type;
 	}
 	
-
+	
 	/**
-	 * @return Whether this is a play worth considering during a real match
+	 * 
+	 * @return
 	 */
-	public boolean isGamePlay()
+	public int getMinRoles()
 	{
-		return this.type.equals(Type.GAME);
+		return minRoles;
 	}
 	
-
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public int getMaxRoles()
+	{
+		return maxRoles;
+	}
+	
+	
+	/**
+	 * Returns the first public constructor of the Play.
+	 * @return
+	 * @throws SecurityException
+	 */
+	public Constructor<?> getConstructor()
+	{
+		return impl.getConstructors()[0];
+	}
+	
+	
 	/**
 	 * @return Whether this play is of type
 	 */
-	public boolean isStandardPlay()
+	public boolean isDeprecatedPlay()
 	{
-		return this.type.equals(Type.STANDARD);
+		return type.equals(EPlayType.DEPRECATED);
 	}
 	
-
+	
 	/**
-	 * @return An immutable list of {@link EPlay}s which are of type {@link Type#GAME}
+	 * @return Whether this play can/should be used in a game
 	 */
-	public static List<EPlay> getGamePlays()
+	public boolean isOperative()
 	{
-		return Collections.unmodifiableList(gamePlays);
+		return type.equals(EPlayType.OFFENSIVE) || type.equals(EPlayType.DEFENSIVE) || type.equals(EPlayType.SUPPORT);
 	}
 	
-
-	/**
-	 * @return An immutable list of {@link EPlay}s which are of type {@link Type#STANDARD}
-	 */
-	public static List<EPlay> getStandardPlays()
-	{
-		return Collections.unmodifiableList(standardPlays);
-	}
 	
-
 	@Override
 	public String toString()
 	{
-		switch (this)
-		{
-			case KEEPER_PLUS_2_DEFENDER:
-			{
-				return new String("K+2");
-			}
-			case KEEPER_PLUS_1_DEFENDER:
-			{
-				return new String("K+1");
-			}
-			case KEEPER_SOLO:
-			{
-				return new String("K+0");
-			}
-			default:
-			{
-				return this.name();
-			}
-		}
-		
+		return name();
+	}
+	
+	
+	/**
+	 * Is this play intended for scoring goals?
+	 * 
+	 * @return
+	 */
+	public boolean isGoalScorer()
+	{
+		return properties.contains(EProperty.GOAL_SCORER);
+	}
+	
+	
+	/**
+	 * Is this play intended for scoring goals?
+	 * 
+	 * @return
+	 */
+	public boolean isMixedTeamPlay()
+	{
+		return properties.contains(EProperty.MIXED_TEAM);
 	}
 }

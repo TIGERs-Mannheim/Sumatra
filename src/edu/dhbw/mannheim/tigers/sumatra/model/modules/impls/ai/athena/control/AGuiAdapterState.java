@@ -9,7 +9,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena.control;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
 
 
 /**
@@ -22,7 +22,7 @@ public abstract class AGuiAdapterState implements IGuiAdapterState
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	protected final AthenaGuiAdapter	adapter;
+	private final AthenaGuiAdapter	adapter;
 	
 	
 	// --------------------------------------------------------------------------
@@ -36,7 +36,7 @@ public abstract class AGuiAdapterState implements IGuiAdapterState
 		this.adapter = adapter;
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -46,35 +46,35 @@ public abstract class AGuiAdapterState implements IGuiAdapterState
 		
 	}
 	
-
+	
 	@Override
 	public void choosePlays(AIInfoFrame current, AIInfoFrame previous)
 	{
 		
 	}
 	
-
+	
 	@Override
 	public void betweenPlayRole(AIInfoFrame current, AIInfoFrame previous)
 	{
 		
 	}
 	
-
+	
 	@Override
 	public void assignRoles(AIInfoFrame current, AIInfoFrame previous)
 	{
 		
 	}
 	
-
+	
 	@Override
 	public void afterRoleAssignment(AIInfoFrame current, AIInfoFrame previous)
 	{
 		
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -84,7 +84,7 @@ public abstract class AGuiAdapterState implements IGuiAdapterState
 	}
 	
 	
-	protected boolean hasChanged()
+	protected boolean adapterHasChanged()
 	{
 		return adapter.hasChanged();
 	}

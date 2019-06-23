@@ -19,6 +19,7 @@ import java.util.List;
  * 
  * @see ISyncedFIFO
  * @author Gero
+ * @param <D>
  * 
  */
 public interface ISortedBuffer<D> extends List<D>, Deque<D>, IBuffer<D>, Serializable
@@ -29,7 +30,7 @@ public interface ISortedBuffer<D> extends List<D>, Deque<D>, IBuffer<D>, Seriali
 	 * <code>false</code> is returned (true otherwise ;-)).
 	 * 
 	 * @param data
-	 * @return		Whether the given data fits into the list and has been added
+	 * @return Whether the given data fits into the list and has been added
 	 */
-	public boolean insert(D data);
+	boolean insert(D data);
 }

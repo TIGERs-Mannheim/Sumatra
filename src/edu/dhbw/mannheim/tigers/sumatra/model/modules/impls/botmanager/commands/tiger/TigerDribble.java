@@ -29,12 +29,13 @@ public class TigerDribble extends ACommand
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
+	// Logger
+	private static final Logger	log		= Logger.getLogger(TigerDribble.class.getName());
+	
 	/** [rpm] */
-	private int	rpm;
-	
-	private final Logger log = Logger.getLogger(getClass());
-	
-	public static final int MAX_RPM = 25000;
+	private int							rpm;
+	/** */
+	public static final int			MAX_RPM	= 25000;
 	
 	
 	// --------------------------------------------------------------------------
@@ -48,7 +49,7 @@ public class TigerDribble extends ACommand
 		rpm = 0;
 	}
 	
-
+	
 	/**
 	 * @param speed [rpm]
 	 */
@@ -56,14 +57,14 @@ public class TigerDribble extends ACommand
 	{
 		rpm = speed;
 		
-		if(speed > MAX_RPM)
+		if (speed > MAX_RPM)
 		{
 			log.warn("Dribble speed above " + MAX_RPM + ", cut off");
 			rpm = MAX_RPM;
 		}
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -73,16 +74,17 @@ public class TigerDribble extends ACommand
 		rpm = byteArray2Short(data, 0);
 	}
 	
-
+	
 	@Override
 	public byte[] getData()
 	{
-		byte data[] = new byte[getDataLength()];
+		final byte data[] = new byte[getDataLength()];
 		
 		short2ByteArray(data, 0, rpm);
 		
 		return data;
 	}
+	
 	
 	@Override
 	public int getCommand()
@@ -90,13 +92,14 @@ public class TigerDribble extends ACommand
 		return CommandConstants.CMD_MOTOR_DRIBBLE;
 	}
 	
+	
 	@Override
 	public int getDataLength()
 	{
 		return 2;
 	}
 	
-
+	
 	/**
 	 * @return [rpm]
 	 */
@@ -105,12 +108,15 @@ public class TigerDribble extends ACommand
 		return rpm;
 	}
 	
-
+	
+	/**
+	 * @param rpm
+	 */
 	public void setSpeed(int rpm)
 	{
 		this.rpm = rpm;
-
-		if(rpm > MAX_RPM)
+		
+		if (rpm > MAX_RPM)
 		{
 			log.warn("Dribble speed above " + MAX_RPM + ", cut off");
 			this.rpm = MAX_RPM;

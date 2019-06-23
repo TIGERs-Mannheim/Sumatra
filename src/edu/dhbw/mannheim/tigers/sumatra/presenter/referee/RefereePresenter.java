@@ -9,17 +9,11 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.referee;
 
-import java.awt.Component;
-import java.util.List;
-
-import javax.swing.JMenu;
-
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.RefereeMsg;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.referee.RefereeMsgTransmitter;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IOwnRefereeMsgObserver;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee.Command;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.referee.RefereeMsg;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IRefereeObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AReferee;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.ILookAndFeelStateObserver;
@@ -28,6 +22,7 @@ import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.IModuliStateObserver;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.ModuliStateAdapter;
 import edu.dhbw.mannheim.tigers.sumatra.view.main.ISumatraView;
 import edu.dhbw.mannheim.tigers.sumatra.view.referee.CreateRefereeMsgPanel;
+import edu.dhbw.mannheim.tigers.sumatra.view.referee.ICreateRefereeMsgObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.referee.RefereePanel;
 import edu.moduli.exceptions.ModuleNotFoundException;
 import edu.moduli.listenerVariables.ModulesState;
@@ -39,31 +34,28 @@ import edu.moduli.listenerVariables.ModulesState;
  * @author MalteM
  * 
  */
-public class RefereePresenter implements ISumatraView, ILookAndFeelStateObserver, IModuliStateObserver,
-		IRefereeObserver, IOwnRefereeMsgObserver
+public class RefereePresenter implements ILookAndFeelStateObserver, IModuliStateObserver, IRefereeObserver,
+		ICreateRefereeMsgObserver
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	private final Logger				log	= Logger.getLogger(getClass());
+	// Logger
+	private static final Logger	log	= Logger.getLogger(RefereePresenter.class.getName());
 	
 	// model
 	private final SumatraModel		model	= SumatraModel.getInstance();
-	private AReferee					refereeMsgReceiver;
-	private RefereeMsgTransmitter	transmitter;
+	private AReferee					refereeHandler;
 	
 	// view
-	private RefereePanel				refereePanel;
-	
-	// constants
-	private final String				TITLE	= "Referee";
-	private final int					ID		= 66;
+	private final RefereePanel		refereePanel;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 */
 	public RefereePresenter()
 	{
 		refereePanel = new RefereePanel();
@@ -71,7 +63,7 @@ public class RefereePresenter implements ISumatraView, ILookAndFeelStateObserver
 		ModuliStateAdapter.getInstance().addObserver(this);
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -85,106 +77,56 @@ public class RefereePresenter implements ISumatraView, ILookAndFeelStateObserver
 				try
 				{
 					refereePanel.start();
-					refereeMsgReceiver = (AReferee) model.getModule(AReferee.MODULE_ID);
-					refereeMsgReceiver.addObserver(this);
-					refereePanel.getCreateRefereeMsgPanel().addOwnRefMsgObserver(this);
-					transmitter = new RefereeMsgTransmitter(refereeMsgReceiver.getSubnodeConfiguration());
+					refereeHandler = (AReferee) model.getModule(AReferee.MODULE_ID);
+					refereeHandler.addObserver(this);
+					refereePanel.getCreateRefereeMsgPanel().addObserver(this);
 					
-				} catch (ModuleNotFoundException err)
+				} catch (final ModuleNotFoundException err)
 				{
 					log.fatal("AI Module not found");
 				}
 				break;
 			}
-				
-
+			
+			
 			case RESOLVED:
 			{
-				if (refereeMsgReceiver != null)
+				if (refereeHandler != null)
 				{
-					refereeMsgReceiver.removeObserver(this);
+					refereeHandler.removeObserver(this);
 				}
 				if (refereePanel != null)
 				{
-					CreateRefereeMsgPanel p = refereePanel.getCreateRefereeMsgPanel();
+					refereePanel.stop();
+					final CreateRefereeMsgPanel p = refereePanel.getCreateRefereeMsgPanel();
 					if (p != null)
 					{
-						p.removeOwnRefMsgObserver(this);
+						p.removeObserver(this);
 					}
 				}
 				break;
 			}
+			case NOT_LOADED:
+			default:
+				break;
 		}
 	}
 	
-
+	
 	@Override
 	public void onNewRefereeMsg(RefereeMsg msg)
 	{
 		refereePanel.getShowRefereeMsgPanel().newRefereeMsg(msg);
 	}
 	
-
+	
 	@Override
-	public void onNewOwnRefereeMsg(RefereeMsg msg)
+	public void onSendOwnRefereeMsg(int id, Command cmd, int goalsBlue, int goalsYellow, short timeLeft)
 	{
-		transmitter.sendOwnRefereeMsg(msg);
+		refereeHandler.sendOwnRefereeMsg(id, cmd, goalsBlue, goalsYellow, timeLeft);
 	}
 	
-
-	@Override
-	public int getID()
-	{
-		return ID;
-	}
 	
-
-	@Override
-	public String getTitle()
-	{
-		return TITLE;
-	}
-	
-
-	@Override
-	public Component getViewComponent()
-	{
-		return refereePanel;
-	}
-	
-
-	@Override
-	public List<JMenu> getCustomMenus()
-	{
-		return null;
-	}
-	
-
-	@Override
-	public void onShown()
-	{
-		
-	}
-	
-
-	@Override
-	public void onHidden()
-	{
-	}
-	
-
-	@Override
-	public void onFocused()
-	{
-	}
-	
-
-	@Override
-	public void onFocusLost()
-	{
-	}
-	
-
 	@Override
 	public void onLookAndFeelChanged()
 	{
@@ -194,4 +136,13 @@ public class RefereePresenter implements ISumatraView, ILookAndFeelStateObserver
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public ISumatraView getView()
+	{
+		return refereePanel;
+	}
 }

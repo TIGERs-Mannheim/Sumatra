@@ -11,11 +11,11 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.criteria.local;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.ATrackedObject;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.TrackedPosition;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.AIMath;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ATrackedObject;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedPosition;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACriterion;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.criteria.ECriterion;
 
@@ -35,52 +35,47 @@ public class ObjectPositionCrit extends ACriterion
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private TrackedPosition	object;
-	private float				radius;
+	private final TrackedPosition	object;
+	private final float				radius;
 	
-	private Vector2			wish;
+	private final Vector2			destination;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	public ObjectPositionCrit(Vector2 wish, float penaltyFactor, ATrackedObject object, float radius)
-	{
-		super(ECriterion.OBJECT_POSITION, penaltyFactor);
-		
-		this.object = new TrackedPosition(object);
-		this.radius = radius;
-		this.wish = wish;
-		this.penaltyFactor = normalizePenaltyFactor(penaltyFactor);
-	}
-	
-
-	public ObjectPositionCrit(Vector2 wish, ATrackedObject object, float radius)
+	/**
+	 * Create criterion that checks if trackedObject is at destination
+	 * 
+	 * @param destination
+	 * @param object
+	 * @param radius
+	 */
+	public ObjectPositionCrit(Vector2 destination, ATrackedObject object, float radius)
 	{
 		super(ECriterion.OBJECT_POSITION);
 		
 		this.object = new TrackedPosition(object);
 		this.radius = radius;
-		this.wish = wish;
+		this.destination = destination;
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
+	@Override
 	public float doCheckCriterion(AIInfoFrame currentFrame)
 	{
 		object.update(currentFrame);
 		
-		if (AIMath.distancePP(object.getPos(), wish) < radius)
+		if (GeoMath.distancePP(object.getPos(), destination) < radius)
 		{
-			return 1.0f;
-		} else
-		{
-			return penaltyFactor * 10 / (AIMath.distancePP(object.getPos(), wish) - radius);
+			return MAX_SCORE;
 		}
+		return 10 / (GeoMath.distancePP(object.getPos(), destination) - radius);
 	}
 	
 	// --------------------------------------------------------------------------

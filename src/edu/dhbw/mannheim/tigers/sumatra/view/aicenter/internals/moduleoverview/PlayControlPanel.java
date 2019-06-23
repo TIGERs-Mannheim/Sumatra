@@ -13,6 +13,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.EventQueue;
+import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.LinkedList;
@@ -28,14 +29,18 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
-import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.types.PlayScore;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.APlay;
+
+import org.apache.log4j.Logger;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.PlayType;
 
 
 /**
@@ -51,182 +56,364 @@ public class PlayControlPanel extends JPanel implements IChangeGUIMode
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long						serialVersionUID			= -2647962360775299686L;
+	private static final long								serialVersionUID			= -2647962360775299686L;
+	private static final Logger							log							= Logger.getLogger(PlayControlPanel.class
+																											.getName());
 	
-
-	private JList										activePlaysList			= null;
-	private DefaultListModel						activePlaysListModel		= null;
+	private JList<APlay>										activePlaysList			= null;
+	private DefaultListModel<APlay>						activePlaysListModel		= null;
 	
-	private JTable										tableBestPlays				= null;
+	private JButton											forceNewDecisionButton	= null;
 	
-	private JPanel										activePlaysPanel;
-	private JPanel										bestPlaysPanel;
-	private JTabbedPane								tabbedPane;
+	private JButton											deletePlayButton			= null;
+	private JButton											addPlayButton				= null;
+	private JButton											clearPlaysButton			= null;
 	
-
-	private JButton									forceNewDecisionButton	= null;
+	private JComboBox<EPlayType>							selectPlayTypeBox			= null;
+	private JComboBox<EPlay>								selectPlayBox				= null;
 	
-	private JButton									deletePlayButton			= null;
-	private JButton									addPlayButton				= null;
+	private JTextField										numRolesToAssign			= null;
 	
-	private JComboBox									selectPlayBox				= null;
+	private JTextField										freeBots						= null;
+	private static final int								INIT_FREE_BOTS				= -1;
+	private static final int								PLAYS_LIST_SIZE_X			= 350;
+	private static final int								PLAYS_LIST_SIZE_Y			= 120;
+	private int													lastFreeBots				= INIT_FREE_BOTS;
 	
-	private JTextField								freeBots						= null;
-	private static final int						INIT_FREE_BOTS				= -1;
-	private int											lastFreeBots				= INIT_FREE_BOTS;
+	private final List<IPlayControlPanelObserver>	observers					= new LinkedList<IPlayControlPanelObserver>();
 	
-	private List<IPlayControlPanelObserver>	observers					= new LinkedList<IPlayControlPanelObserver>();
+	
+	private enum EPlayType
+	{
+		GAME("Game"),
+		STANDARD("Standard"),
+		KEEPER("Keeper"),
+		TEST("Test"),
+		CALIBRATE("Caliabrate"),
+		DEPRECATED("Deprecated"),
+		DEFECT("Defect"),
+		MIXED_TEAM("Mixed Team"),
+		CHALLENGE("Challenge"),
+		DISABLED("Disabled"),
+		ALL("All");
+		
+		private final String	text;
+		
+		
+		private EPlayType(String text)
+		{
+			this.text = text;
+		}
+		
+		
+		/**
+		 * @return the text
+		 */
+		public final String getText()
+		{
+			return text;
+		}
+		
+		
+		@Override
+		public String toString()
+		{
+			return getText();
+		}
+		
+	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 */
 	public PlayControlPanel()
 	{
 		setLayout(new MigLayout());
 		setBorder(BorderFactory.createTitledBorder("Play Control Panel"));
 		
-		activePlaysPanel = new JPanel();
+		JPanel activePlaysPanel = new JPanel();
 		activePlaysPanel.setName("Active Plays");
-		bestPlaysPanel = new JPanel(new MigLayout());
-		bestPlaysPanel.setName("Best Plays");
-		tabbedPane = new JTabbedPane();
+		JTabbedPane tabbedPane = new JTabbedPane();
 		tabbedPane.add(activePlaysPanel);
-		tabbedPane.add(bestPlaysPanel);
 		
-		activePlaysListModel = new DefaultListModel();
-		// activePlaysListModel.addListDataListener(new PlayListChangeListener());
-		activePlaysList = new JList(activePlaysListModel);
+		activePlaysListModel = new DefaultListModel<APlay>();
+		activePlaysList = new JList<APlay>(activePlaysListModel);
 		activePlaysList.setCellRenderer(new PlayListRenderer());
-		activePlaysList.setVisibleRowCount(5);
-		activePlaysList.setPreferredSize(new Dimension(440, 50));
-		JScrollPane scrollPaneActivePlays = new JScrollPane();
+		activePlaysList.setPreferredSize(new Dimension(PLAYS_LIST_SIZE_X, PLAYS_LIST_SIZE_Y));
+		final JScrollPane scrollPaneActivePlays = new JScrollPane();
 		scrollPaneActivePlays.getViewport().setView(activePlaysList);
 		activePlaysPanel.add(activePlaysList);
 		
-
-		tableBestPlays = new JTable(8, 2);
-		tableBestPlays.setEnabled(false);
-		// table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-		tableBestPlays.setPreferredSize(tabbedPane.getPreferredSize());
-		tableBestPlays.getColumnModel().getColumn(1).setMaxWidth(30);
-		// tableBestPlays.getColumnModel().getColumn(1).setPreferredWidth(20);
-		// tableBestPlays.setRowHeight(50);
-		// tableBestPlays.setGridColor(Color.blue);
-		// tableBestPlays.setForeground(Color.yellow);
-		
-
-		bestPlaysPanel.add(tableBestPlays);
-		
-
 		forceNewDecisionButton = new JButton("Force new decision");
 		forceNewDecisionButton.addActionListener(new ForceNewDecisionListener());
 		forceNewDecisionButton.setEnabled(false);
 		
-
+		
 		deletePlayButton = new JButton("delete play");
 		deletePlayButton.addActionListener(new DeleteSelectedPlayListener());
 		deletePlayButton.setEnabled(false);
 		
-
-		selectPlayBox = new JComboBox(EPlay.values());
+		selectPlayTypeBox = new JComboBox<EPlayType>(EPlayType.values());
+		selectPlayTypeBox.addActionListener(new SelectPlayTypeListener());
+		selectPlayTypeBox.setEnabled(false);
 		
-
+		selectPlayBox = new JComboBox<EPlay>();
+		
 		addPlayButton = new JButton("add play");
 		addPlayButton.addActionListener(new AddSelectedPlayListener());
 		addPlayButton.setEnabled(false);
 		
+		clearPlaysButton = new JButton("clear");
+		clearPlaysButton.addActionListener(new ClearPlaysListener());
+		clearPlaysButton.setEnabled(false);
+		
 		freeBots = new JTextField();
 		freeBots.setEditable(false);
 		freeBots.setBackground(Color.WHITE);
-		JPanel freeBotsPanel = new JPanel(new MigLayout("fill", "[]10[40,fill]"));
+		final JPanel freeBotsPanel = new JPanel(new MigLayout("fill", "[]10[40,fill]"));
 		freeBotsPanel.add(new JLabel("Bots without Play:"));
 		freeBotsPanel.add(freeBots);
 		
-		JPanel controlPanel = new JPanel(new MigLayout("fill"));
+		numRolesToAssign = new JTextField("0", 3);
+		numRolesToAssign.setToolTipText("Number of roles to assign to next added play.");
+		final JPanel numRolesToAssignPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+		numRolesToAssignPanel.add(new JLabel("Roles to assign: "));
+		numRolesToAssignPanel.add(numRolesToAssign);
+		
+		final JPanel controlPanel = new JPanel(new MigLayout("fill"));
 		controlPanel.add(forceNewDecisionButton, "wrap");
 		controlPanel.add(freeBotsPanel, "wrap");
-		controlPanel.add(deletePlayButton, "wrap");
+		controlPanel.add(deletePlayButton);
+		controlPanel.add(clearPlaysButton, "wrap");
+		controlPanel.add(selectPlayTypeBox, "wrap");
 		controlPanel.add(selectPlayBox, "span");
 		controlPanel.add(addPlayButton);
+		controlPanel.add(numRolesToAssignPanel);
 		
 		add(tabbedPane);
 		add(controlPanel);
 	}
 	
-
+	
+	@Override
 	public void setPlayTestMode()
 	{
-		this.setEnabled(true);
-		
-		addPlayButton.setEnabled(true);
-		deletePlayButton.setEnabled(true);
-		
-		forceNewDecisionButton.setEnabled(false);
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				setEnabled(true);
+				
+				String selectedPlayTypeStr = SumatraModel.getInstance().getUserProperty(
+						PlayControlPanel.class.getCanonicalName() + ".selectedPlayType");
+				try
+				{
+					// selectedPlayStr may be null, so convert
+					EPlayType selectedPlayType = EPlayType.valueOf(String.valueOf(selectedPlayTypeStr));
+					selectPlayTypeBox.setSelectedItem(selectedPlayType);
+				} catch (IllegalArgumentException e)
+				{
+					// Could not read selected play from user properties: do not care, its not important.
+					// maybe the user just starts Sumatra the first time
+				}
+				
+				setSelectPlayBox();
+				String selectedPlayStr = SumatraModel.getInstance().getUserProperty(
+						PlayControlPanel.class.getCanonicalName() + ".selectedPlay");
+				try
+				{
+					// selectedPlayStr may be null, so convert
+					EPlay selectedPlay = EPlay.valueOf(String.valueOf(selectedPlayStr));
+					selectPlayBox.setSelectedItem(selectedPlay);
+				} catch (IllegalArgumentException e)
+				{
+					// Could not read selected play from user properties: do not care, its not important.
+					// maybe the user just starts Sumatra the first time
+				}
+				
+				addPlayButton.setEnabled(true);
+				deletePlayButton.setEnabled(true);
+				clearPlaysButton.setEnabled(true);
+				selectPlayTypeBox.setEnabled(true);
+				selectPlayBox.setEnabled(true);
+				
+				forceNewDecisionButton.setEnabled(false);
+			}
+		});
 	}
 	
-
+	
+	private void setSelectPlayBox()
+	{
+		selectPlayBox.removeAllItems();
+		switch ((EPlayType) selectPlayTypeBox.getSelectedItem())
+		{
+			case GAME:
+				for (EPlay play : PlayType.getGamePlays())
+				{
+					selectPlayBox.addItem(play);
+				}
+				break;
+			case STANDARD:
+				for (EPlay play : PlayType.getStandardPlays())
+				{
+					selectPlayBox.addItem(play);
+				}
+				break;
+			case KEEPER:
+				for (EPlay play : PlayType.getKeeperPlays())
+				{
+					selectPlayBox.addItem(play);
+				}
+				break;
+			case TEST:
+				for (EPlay play : PlayType.getTestPlays())
+				{
+					selectPlayBox.addItem(play);
+				}
+				break;
+			case CALIBRATE:
+				for (EPlay play : PlayType.getCalibratePlays())
+				{
+					selectPlayBox.addItem(play);
+				}
+				break;
+			case DEPRECATED:
+				for (EPlay play : PlayType.getDeprecatedPlays())
+				{
+					selectPlayBox.addItem(play);
+				}
+				break;
+			case DEFECT:
+				for (EPlay play : PlayType.getDefectPlays())
+				{
+					selectPlayBox.addItem(play);
+				}
+				break;
+			case MIXED_TEAM:
+				for (EPlay play : PlayType.getMixedTeamPlays())
+				{
+					selectPlayBox.addItem(play);
+				}
+				break;
+			case CHALLENGE:
+				for (EPlay play : PlayType.getChallengePlays())
+				{
+					selectPlayBox.addItem(play);
+				}
+				break;
+			case DISABLED:
+				for (EPlay play : PlayType.getDisabledPlays())
+				{
+					selectPlayBox.addItem(play);
+				}
+				break;
+			case ALL:
+				for (EPlay play : PlayType.getAllPlays())
+				{
+					selectPlayBox.addItem(play);
+				}
+		}
+	}
+	
+	
+	@Override
 	public void setRoleTestMode()
 	{
-		this.setEnabled(false);
-		
-		addPlayButton.setEnabled(false);
-		deletePlayButton.setEnabled(false);
-		
-		forceNewDecisionButton.setEnabled(false);
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				setEnabled(false);
+				
+				addPlayButton.setEnabled(false);
+				deletePlayButton.setEnabled(false);
+				clearPlaysButton.setEnabled(false);
+				selectPlayTypeBox.setEnabled(false);
+				selectPlayBox.setEnabled(false);
+				
+				forceNewDecisionButton.setEnabled(false);
+			}
+		});
 	}
 	
-
+	
+	@Override
 	public void setMatchMode()
 	{
-		this.setEnabled(false);
-		
-		addPlayButton.setEnabled(false);
-		deletePlayButton.setEnabled(false);
-		
-		forceNewDecisionButton.setEnabled(true);
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				setEnabled(false);
+				
+				addPlayButton.setEnabled(false);
+				deletePlayButton.setEnabled(false);
+				clearPlaysButton.setEnabled(false);
+				selectPlayTypeBox.setEnabled(false);
+				selectPlayBox.setEnabled(false);
+				
+				forceNewDecisionButton.setEnabled(true);
+			}
+		});
 	}
 	
-
+	
 	@Override
 	public void setEmergencyMode()
 	{
-		this.setEnabled(false);
-		
-		addPlayButton.setEnabled(false);
-		deletePlayButton.setEnabled(false);
-		
-		forceNewDecisionButton.setEnabled(false);
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				setEnabled(false);
+				
+				addPlayButton.setEnabled(false);
+				deletePlayButton.setEnabled(false);
+				clearPlaysButton.setEnabled(false);
+				selectPlayTypeBox.setEnabled(false);
+				selectPlayBox.setEnabled(false);
+				
+				forceNewDecisionButton.setEnabled(false);
+			}
+		});
 	}
 	
-
+	
 	/**
 	 * Updates the play panel with the actual active plays. Depending on the active plays
 	 * in last frame this function will add or remove plays from the list.
-	 * 
-	 * @param activePlays the actual play in aiFrame
+	 * @param plays the actual play in aiFrame
 	 */
 	public void setActivePlays(final List<APlay> plays)
 	{
 		EventQueue.invokeLater(new Runnable()
 		{
+			@Override
 			public void run()
 			{
 				// Insert
 				int i = 0;
-				while (activePlaysListModel.size() > i && plays.size() > i)
+				while ((activePlaysListModel.size() > i) && (plays.size() > i))
 				{
-					EPlay ePlay = plays.get(i).getType();
-					if (!activePlaysListModel.get(i).equals(ePlay))
+					final APlay play = plays.get(i);
+					if (!activePlaysListModel.get(i).equals(play))
 					{
-						activePlaysListModel.insertElementAt(ePlay, i);
+						activePlaysListModel.insertElementAt(play, i);
 					}
 					i++;
 				}
 				
 				// Cut off
 				final int modelSize = activePlaysListModel.size();
-				int diff = modelSize - plays.size();
+				final int diff = modelSize - plays.size();
 				if (diff > 0)
 				{
 					activePlaysListModel.removeRange(modelSize - diff, modelSize - 1);
@@ -234,55 +421,40 @@ public class PlayControlPanel extends JPanel implements IChangeGUIMode
 				{
 					for (int j = i; j < plays.size(); j++)
 					{
-						EPlay ePlay = plays.get(j).getType();
-						activePlaysListModel.addElement(ePlay);
+						activePlaysListModel.addElement(plays.get(j));
 					}
 				}
 			}
 		});
 	}
 	
-
+	
 	/**
 	 * Called by AICenterPresenter on every NewAIInfoFrame!
 	 * Sets the Textfield "Number Of Bots"
 	 * 
 	 * @param numberOfBotsWithoutRole
 	 */
-	public void setBotsWithoutRole(int numberOfBotsWithoutRole)
+	public void setBotsWithoutRole(final int numberOfBotsWithoutRole)
 	{
 		if (lastFreeBots != numberOfBotsWithoutRole)
 		{
-			freeBots.setText(Integer.toString(numberOfBotsWithoutRole));
-			lastFreeBots = numberOfBotsWithoutRole;
-		}
-	}
-	
-
-	public void setBestPlays(List<PlayScore> scores)
-	{
-		if (!scores.isEmpty())
-		{
-			// Clear
-			
-			// Re-fill
-			final int numScores = scores.size();
-			for (int i = 0; i < numScores && i < tableBestPlays.getRowCount(); i++)
+			SwingUtilities.invokeLater(new Runnable()
 			{
-				final PlayScore score = scores.get(i);
-				String playString = "";
-				for (EPlay play : score.tuple.getPlays())
+				@Override
+				public void run()
 				{
-					playString += play.toString().toLowerCase() + " , ";
+					freeBots.setText(Integer.toString(numberOfBotsWithoutRole));
+					lastFreeBots = numberOfBotsWithoutRole;
 				}
-				tableBestPlays.setValueAt(playString, i, 0);
-				tableBestPlays.setValueAt(score.score, i, 1);
-				
-			}
+			});
 		}
 	}
 	
-
+	
+	/**
+	 * @param observer
+	 */
 	public void addObserver(IPlayControlPanelObserver observer)
 	{
 		synchronized (observers)
@@ -291,7 +463,10 @@ public class PlayControlPanel extends JPanel implements IChangeGUIMode
 		}
 	}
 	
-
+	
+	/**
+	 * @param oddObserver
+	 */
 	public void removeObserver(IPlayControlPanelObserver oddObserver)
 	{
 		synchronized (observers)
@@ -300,35 +475,54 @@ public class PlayControlPanel extends JPanel implements IChangeGUIMode
 		}
 	}
 	
-
+	
 	@Override
 	public void onStart()
 	{
-		this.setEnabled(true);
-		
-		addPlayButton.setEnabled(false);
-		deletePlayButton.setEnabled(false);
-		
-		forceNewDecisionButton.setEnabled(false);
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				setEnabled(true);
+				
+				addPlayButton.setEnabled(false);
+				deletePlayButton.setEnabled(false);
+				clearPlaysButton.setEnabled(false);
+				selectPlayBox.setEnabled(false);
+				selectPlayBox.setEnabled(false);
+				
+				forceNewDecisionButton.setEnabled(false);
+			}
+		});
 	}
 	
-
+	
 	@Override
 	public void onStop()
 	{
-		this.setEnabled(false);
-		
-		addPlayButton.setEnabled(false);
-		deletePlayButton.setEnabled(false);
-		
-		forceNewDecisionButton.setEnabled(false);
-		
-		freeBots.setText("");
-		
-		// Reset performance mopeds
-		activePlaysListModel.clear();
-		lastFreeBots = INIT_FREE_BOTS;
-		
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				setEnabled(false);
+				
+				addPlayButton.setEnabled(false);
+				deletePlayButton.setEnabled(false);
+				clearPlaysButton.setEnabled(false);
+				selectPlayTypeBox.setEnabled(false);
+				selectPlayBox.setEnabled(false);
+				
+				forceNewDecisionButton.setEnabled(false);
+				
+				freeBots.setText("");
+				
+				// Reset performance mopeds
+				activePlaysListModel.clear();
+				lastFreeBots = INIT_FREE_BOTS;
+			}
+		});
 	}
 	
 	
@@ -336,92 +530,123 @@ public class PlayControlPanel extends JPanel implements IChangeGUIMode
 	// --- Actions --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- Listeners --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-
+	/**
+	 */
 	public class DeleteSelectedPlayListener implements ActionListener
 	{
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			ListSelectionModel lsm = activePlaysList.getSelectionModel();
-			int firstSelected = lsm.getMinSelectionIndex();
-			int lastSelected = lsm.getMaxSelectionIndex();
-			List<EPlay> rmPlays = new LinkedList<EPlay>();
+			final ListSelectionModel lsm = activePlaysList.getSelectionModel();
+			// If no play is selected, always select the first one of the list.
+			int firstSelected = lsm.getMinSelectionIndex() == -1 ? 0 : lsm.getMinSelectionIndex();
+			final int lastSelected = lsm.getMaxSelectionIndex() == -1 ? firstSelected : lsm.getMaxSelectionIndex();
 			
-			if (firstSelected != -1 && lastSelected != -1)
+			
+			if (activePlaysListModel.size() != 0)
 			{
 				for (int i = firstSelected; i <= lastSelected; i++)
 				{
-					rmPlays.add((EPlay) activePlaysListModel.elementAt(i));
-				}
-				// activePlaysListModel.removeRange(firstSelected, lastSelected);
-				
-				for (IPlayControlPanelObserver o : observers)
-				{
-					o.removePlay(rmPlays);
-				}
-				int size = activePlaysListModel.size();
-				
-				if (size != 0)
-				{
-					// deletePlayButton.setEnabled(false);
-					// } else
-					// {
-					// Adjust the selection.
-					if (firstSelected == activePlaysListModel.getSize())
+					for (final IPlayControlPanelObserver o : observers)
 					{
-						// Removed item in last position.
-						firstSelected--;
+						o.removePlay(activePlaysListModel.elementAt(i));
 					}
-					activePlaysList.setSelectedIndex(firstSelected);
 				}
+				
+				// Adjust the selection.
+				if (firstSelected == activePlaysListModel.getSize())
+				{
+					// Removed item in last position.
+					firstSelected--;
+				}
+				activePlaysList.setSelectedIndex(firstSelected);
 			}
 		}
 	}
 	
-	
+	/**
+	 */
 	public class ForceNewDecisionListener implements ActionListener
 	{
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			for (IPlayControlPanelObserver o : observers)
+			for (final IPlayControlPanelObserver o : observers)
 			{
 				o.forceNewDecision();
 			}
 		}
 	}
 	
-
+	
 	private class AddSelectedPlayListener implements ActionListener
 	{
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			EPlay play = (EPlay) selectPlayBox.getSelectedItem();
-			for (IPlayControlPanelObserver o : observers)
+			final EPlay play = (EPlay) selectPlayBox.getSelectedItem();
+			for (final IPlayControlPanelObserver o : observers)
 			{
-				o.addPlay(play);
+				try
+				{
+					final int roles = Integer.parseInt(numRolesToAssign.getText());
+					o.addNewPlay(play, roles);
+				} catch (final NumberFormatException err)
+				{
+					o.addNewPlay(play, EPlay.MAX_BOTS);
+					log.error("Could not parse number, using default");
+				}
+			}
+			
+			SumatraModel.getInstance().setUserProperty(PlayControlPanel.class.getCanonicalName() + ".selectedPlay",
+					play.name());
+		}
+	}
+	
+	/**
+	 */
+	public class ClearPlaysListener implements ActionListener
+	{
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
+			for (int i = 0; i < activePlaysList.getModel().getSize(); i++)
+			{
+				for (final IPlayControlPanelObserver o : observers)
+				{
+					o.removePlay(activePlaysListModel.elementAt(i));
+				}
 			}
 		}
 	}
 	
+	private class SelectPlayTypeListener implements ActionListener
+	{
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
+			setSelectPlayBox();
+			SumatraModel.getInstance().setUserProperty(PlayControlPanel.class.getCanonicalName() + ".selectedPlayType",
+					((EPlayType) selectPlayTypeBox.getSelectedItem()).name());
+		}
+	}
 	
 	private static class PlayListRenderer extends DefaultListCellRenderer
 	{
 		private static final long	serialVersionUID	= 4482431532438405782L;
 		
-
+		
 		@Override
-		public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected,
+		public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected,
 				boolean cellHasFocus)
 		{
-			final EPlay ePlay = (EPlay) value;
-			final String newName = ePlay.toString();
+			final APlay play = (APlay) value;
+			final String newName = play.getType().toString();
 			
 			if (!getText().equals(newName))
 			{
@@ -431,11 +656,11 @@ public class PlayControlPanel extends JPanel implements IChangeGUIMode
 			if (isSelected)
 			{
 				setBackground(list.getSelectionBackground());
-		      setForeground(list.getSelectionForeground());
+				setForeground(list.getSelectionForeground());
 			} else
 			{
-		      setBackground(list.getBackground());
-		      setForeground(list.getForeground());
+				setBackground(list.getBackground());
+				setForeground(list.getForeground());
 			}
 			
 			return this;

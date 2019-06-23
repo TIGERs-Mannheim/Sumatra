@@ -1,15 +1,16 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 13.08.2010
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.botcenter.bots;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
+
 
 /**
  * This factory can build bot presenter, depending on the bot type.
@@ -17,29 +18,39 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot
  * @author AndreR
  * 
  */
-public class BotPresenterFactory
+public final class BotPresenterFactory
 {
+	private BotPresenterFactory()
+	{
+		
+	}
+	
+	
+	/**
+	 * @param bot
+	 * @return
+	 */
 	public static ABotPresenter createBotPresenter(ABot bot)
 	{
 		ABotPresenter presenter = null;
 		
-		switch(bot.getType())
+		switch (bot.getType())
 		{
-			case CT:
-			{
-				presenter = new CtBotPresenter(bot);
-			}
-			break;
+			case GRSIM:
 			case TIGER:
 			{
 				presenter = new TigerBotPresenter(bot);
 			}
-			break;
-			case SYSOUT:
+				break;
+			case TIGER_V2:
 			{
-				presenter = new SysoutBotPresenter(bot);
+				presenter = new TigerBotV2Presenter(bot);
 			}
-			break;
+				break;
+			case UNKNOWN:
+				throw new IllegalStateException("bot type is unknown");
+			default:
+				break;
 		}
 		
 		return presenter;

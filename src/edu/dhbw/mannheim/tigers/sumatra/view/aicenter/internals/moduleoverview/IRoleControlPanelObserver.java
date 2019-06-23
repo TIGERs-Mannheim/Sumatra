@@ -1,15 +1,18 @@
-/* 
+/*
  * *********************************************************
+ * 
  * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 14.04.2011
  * Author(s): Gero
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
+
 
 /**
  * This observer gets called if someone interacts with the {@link RoleControlPanel}.
@@ -23,7 +26,7 @@ public interface IRoleControlPanelObserver
 	 * 
 	 * @param role
 	 */
-	public void addRole(ERole role);
+	void addRole(ERole role);
 	
 	
 	/**
@@ -32,7 +35,7 @@ public interface IRoleControlPanelObserver
 	 * @param role
 	 * @param botId
 	 */
-	public void addRole(ERole role, int botId);
+	void addRole(ERole role, BotID botId);
 	
 	
 	/**
@@ -41,11 +44,11 @@ public interface IRoleControlPanelObserver
 	 * 
 	 * @param role
 	 */
-	public void removeRole(ERole role);
+	void removeRole(ERole role);
 	
 	
 	/**
 	 * Removes all roles
 	 */
-	public void clearRoles();
+	void clearRoles();
 }

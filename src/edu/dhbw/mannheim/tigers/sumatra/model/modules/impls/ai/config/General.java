@@ -9,7 +9,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config;
 
-import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.commons.configuration.Configuration;
 
 
 /**
@@ -23,56 +23,77 @@ public class General
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final String	nodePath	= "general.";
+	private static final String	NODE_PATH	= "general.";
 	
-	private final int		keeperId;
-	
-	/** [mm/s] */
-	private final float	maxVelocity;
-	/** [mm/s^2] */
-	private final float	maxAcceleration;
-	/** [mm/s^2] */
-	private final float	maxDeacceleration;
 	/** [mm] */
-	private final float	maxBreakingDist;
+	private final float				maxBreakingDist;
 	
-	/** [mm/s] */
-	private final float	maxShootVelocity;
-	/** [mm/s] */
-	private final float	maxPassVeloctiy;
+	private final float				breakCurve;
+	
+	private final float				breakEndOfPath;
+	
+	private final int					pathplanningInterval;
+	
+	private final float				dribblingDistance;
+	private final float				positioningPreAiming;
+	private final float				positioningPostAiming;
+	private final int					minFramesHaveBall;
+	private final float				stepSizePullBackAngle;
+	private final float				stepSizePullBack;
+	private final float				ballDampFactor;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	public General(XMLConfiguration configFile)
+	/**
+	 * @param configFile
+	 * @param base
+	 */
+	public General(Configuration configFile, final General base)
 	{
-		keeperId = configFile.getInt(nodePath + "keeperId");
+		maxBreakingDist = configFile.getFloat(NODE_PATH + "maxBreakingDist", base.maxBreakingDist);
 		
-		maxVelocity = configFile.getInt(nodePath + "maxVelocity");
-		maxAcceleration = configFile.getFloat(nodePath + "maxAcceleration");
-		maxDeacceleration = configFile.getFloat(nodePath + "maxDeacceleration");
-		maxBreakingDist = configFile.getFloat(nodePath + "maxBreakingDist");
+		breakCurve = configFile.getFloat(NODE_PATH + "breakInCurve", base.breakCurve);
+		breakEndOfPath = configFile.getFloat(NODE_PATH + "breakStrengthAtEndOfPath", base.breakEndOfPath);
 		
-		maxShootVelocity = configFile.getFloat(nodePath + "maxShootVelocity");
-		maxPassVeloctiy = configFile.getFloat(nodePath + "maxPassVeloctiy");
+		pathplanningInterval = configFile.getInt((NODE_PATH) + "pathPlanningInterval", base.pathplanningInterval);
+		
+		dribblingDistance = configFile.getFloat(NODE_PATH + "DRIBBLING_DISTANCE", base.dribblingDistance);
+		positioningPreAiming = configFile.getFloat(NODE_PATH + "POSITIONING_PRE_AIMING", base.positioningPreAiming);
+		positioningPostAiming = configFile.getFloat(NODE_PATH + "POSITIONING_POST_AIMING", base.positioningPostAiming);
+		minFramesHaveBall = configFile.getInt(NODE_PATH + "MIN_FRAMES_HAVE_BALL", base.minFramesHaveBall);
+		stepSizePullBack = configFile.getFloat(NODE_PATH + "STEP_SIZE_PULL_BACK", base.stepSizePullBack);
+		stepSizePullBackAngle = configFile.getFloat(NODE_PATH + "STEP_SIZE_PULL_BACK_ANGLE", base.stepSizePullBackAngle);
+		ballDampFactor = configFile.getFloat(NODE_PATH + "ballDampFactor", base.ballDampFactor);
 	}
 	
-
+	
+	/**
+	 * @param configFile
+	 */
+	public General(Configuration configFile)
+	{
+		maxBreakingDist = configFile.getFloat(NODE_PATH + "maxBreakingDist");
+		
+		breakCurve = configFile.getFloat(NODE_PATH + "breakInCurve");
+		breakEndOfPath = configFile.getFloat(NODE_PATH + "breakStrengthAtEndOfPath");
+		
+		pathplanningInterval = configFile.getInt((NODE_PATH) + "pathPlanningInterval");
+		
+		dribblingDistance = configFile.getFloat(NODE_PATH + "DRIBBLING_DISTANCE");
+		positioningPreAiming = configFile.getFloat(NODE_PATH + "POSITIONING_PRE_AIMING");
+		positioningPostAiming = configFile.getFloat(NODE_PATH + "POSITIONING_POST_AIMING");
+		minFramesHaveBall = configFile.getInt(NODE_PATH + "MIN_FRAMES_HAVE_BALL");
+		stepSizePullBack = configFile.getFloat(NODE_PATH + "STEP_SIZE_PULL_BACK");
+		stepSizePullBackAngle = configFile.getFloat(NODE_PATH + "STEP_SIZE_PULL_BACK_ANGLE");
+		ballDampFactor = configFile.getFloat(NODE_PATH + "ballDampFactor");
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	/**
-	 * @return the keeperId
-	 */
-	public int getKeeperId()
-	{
-		return keeperId;
-	}
-	
-
 	/**
 	 * @return the maxBreakingDist [mm]
 	 */
@@ -81,49 +102,95 @@ public class General
 		return maxBreakingDist;
 	}
 	
-
-	/**
-	 * @return the maxVelocity [mm/s]
-	 */
-	public float getMaxVelocity()
-	{
-		return maxVelocity;
-	}
 	
-
 	/**
-	 * @return the maxAcceleration [mm/s^2]
+	 * @return the break strength in a curve
 	 */
-	public float getMaxAcceleration()
+	public float getBreakCurve()
 	{
-		return maxAcceleration;
+		return breakCurve;
 	}
 	
 	
 	/**
-	 * @return the maxDeacceleration [mm/s^2]
+	 * @return the break strength at the end of the path
 	 */
-	public float getMaxDeacceleration()
+	public float getBreakEndOfPath()
 	{
-		return maxDeacceleration;
+		return breakEndOfPath;
 	}
 	
-
+	
 	/**
-	 * @return the maxShootVelocity [mm/s]
+	 * @return the pathplanningInterval
 	 */
-	public float getMaxShootVelocity()
+	public final int getPathplanningInterval()
 	{
-		return maxShootVelocity;
+		return pathplanningInterval;
 	}
 	
-
+	
 	/**
-	 * @return the maxPassVeloctiy [mm/s]
+	 * @return dribblingDistance
 	 */
-	public float getMaxPassVeloctiy()
+	public float getDribblingDistance()
 	{
-		return maxPassVeloctiy;
+		return dribblingDistance;
 	}
+	
+	
+	/**
+	 * @return the positioningPreAiming
+	 */
+	public float getPositioningPreAiming()
+	{
+		return positioningPreAiming;
+	}
+	
+	
+	/**
+	 * @return the positioningPostAiming
+	 */
+	public float getPositioningPostAiming()
+	{
+		return positioningPostAiming;
+	}
+	
+	
+	/**
+	 * @return the minFramesHaveBall
+	 */
+	public int getMinFramesHaveBall()
+	{
+		return minFramesHaveBall;
+	}
+	
+	
+	/**
+	 * @return the stepSizePullBackAngle
+	 */
+	public float getStepSizePullBackAngle()
+	{
+		return stepSizePullBackAngle;
+	}
+	
+	
+	/**
+	 * @return the stepSizePullBack
+	 */
+	public float getStepSizePullBack()
+	{
+		return stepSizePullBack;
+	}
+	
+	
+	/**
+	 * @return the ballDampFactor
+	 */
+	public final float getBallDampFactor()
+	{
+		return ballDampFactor;
+	}
+	
 	
 }

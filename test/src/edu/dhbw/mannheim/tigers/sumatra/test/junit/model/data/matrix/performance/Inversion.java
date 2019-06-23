@@ -9,9 +9,11 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.test.junit.model.data.matrix.performance;
 
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.types.Matrix;
 
 
 /**
@@ -36,30 +38,62 @@ public class Inversion extends APerformanceTest
 	int	count2	= 0;
 	int	count3	= 0;
 	
+	int	size		= 2;
+	int	times		= 10;
 	
-	@Test
-	public void test()
+	
+	/**
+	 */
+	@BeforeClass
+	public static void beforeClass()
 	{
 		System.out.println("##########################################################");
 		System.out.println("Inversion");
 		System.out.println("##########################################################");
+		System.out.println("--> Many tests deactivated");
+	}
+	
+	
+	/**
+	 */
+	@Test
+	public void testSize2()
+	{
+		size = 2;
+		times = 10;
 		
 		output = false;
-		int size = 2;
-		int times = 10;
+		
 		JaMa(size, times);
 		MatrixOld(size, times);
 		MatrixNew(size, times);
 		MatrixChol(size, times);
+	}
+	
+	
+	/**
+	 */
+	@Test
+	@Ignore
+	public void testSize2Many()
+	{
+		size = 2;
+		times = timesEasyOps;
 		
 		output = true;
-		times = timesEasyOps;
-		System.out.println("Number of runs: " + times+"size"+size);
+		System.out.println("Number of runs: " + times + "size" + size);
 		JaMa(size, times);
 		MatrixOld(size, times);
 		MatrixNew(size, times);
 		MatrixChol(size, times);
-		
+	}
+	
+	
+	/**
+	 */
+	@Test
+	public void testSize6()
+	{
 		output = false;
 		size = 6;
 		times = 10;
@@ -67,130 +101,172 @@ public class Inversion extends APerformanceTest
 		MatrixOld(size, times);
 		MatrixNew(size, times);
 		MatrixChol(size, times);
-
+	}
+	
+	
+	/**
+	 */
+	@Test
+	@Ignore
+	public void testSize6Many()
+	{
 		output = true;
-		times = timesEasyOps/10;
-		System.out.println("Number of runs: " + times+"size"+size);
+		size = 6;
+		times = timesEasyOps / 10;
+		System.out.println("Number of runs: " + times + "size" + size);
 		JaMa(size, times);
 		MatrixOld(size, times);
 		MatrixNew(size, times);
 		MatrixChol(size, times);
-		
 	}
 	
-
+	
+	/**
+	 * @param size
+	 * @param times
+	 */
 	public void MatrixOld(int size, int times)
 	{
 		if (output)
+		{
 			System.out.println("MatrixOld");
+		}
 		startTimer();
 		for (int i = 0; i < times; i++)
 		{
-			Matrix A = createInvertableMatrix(size);
+			final Matrix A = createInvertableMatrix(size);
 			A.inverse(true);
 			saveMatrix(A);
 		}
 		endTimer();
 	}
 	
+	
+	/**
+	 * @param size
+	 * @param times
+	 */
 	public void MatrixChol(int size, int times)
 	{
 		if (output)
+		{
 			System.out.println("MatrixChol");
+		}
 		startTimer();
 		for (int i = 0; i < times; i++)
 		{
-			Matrix A = createInvertableMatrix(size);
+			final Matrix A = createInvertableMatrix(size);
 			A.inverseByCholesky();
 			saveMatrix(A);
 		}
 		endTimer();
 	}
 	
-
+	
+	/**
+	 * @param size
+	 * @param times
+	 */
 	public void MatrixNew(int size, int times)
 	{
 		if (output)
+		{
 			System.out.println("MatrixNew");
+		}
 		startTimer();
 		for (int i = 0; i < times; i++)
 		{
-			Matrix A = createInvertableMatrix(size);
+			final Matrix A = createInvertableMatrix(size);
 			A.inverse(false);
 			saveMatrix(A);
 		}
 		endTimer();
 	}
 	
-
+	
+	/**
+	 * @param size
+	 * @param times
+	 */
 	public void JaMa(int size, int times)
 	{
 		if (output)
+		{
 			System.out.println("JaMa");
+		}
 		startTimer();
 		for (int i = 0; i < times; i++)
 		{
-			Jama.Matrix A = createInvertableMatrixJaMa(size);
+			final Jama.Matrix A = createInvertableMatrixJaMa(size);
 			A.inverse();
 			saveJamaMatrix(A);
 		}
 		endTimer();
 	}
 	
-
+	
 	/**
 	 * create a squared matrix with randomNumbers
 	 * while this function is running, the time is waiting
+	 * @param size
+	 * @return
 	 */
 	
 	public Jama.Matrix createInvertableMatrixJaMa(int size)
 	{
 		breakTimer();
-		double[][] array = createInvertableDouble(size);
-		Jama.Matrix A = new Jama.Matrix(array);
+		final double[][] array = createInvertableDouble(size);
+		final Jama.Matrix A = new Jama.Matrix(array);
 		
 		restartTimer();
 		return A;
 	}
 	
-
+	
 	/**
 	 * create a squared matrix with randomNumbers
 	 * while this function is running, the time is waiting
+	 * @param size
+	 * @return
 	 */
 	public Matrix createInvertableMatrix(int size)
 	{
-		long fctStart = System.currentTimeMillis();
-		double[][] array = createInvertableDouble(size);
-		Matrix A = new Matrix(array);
+		final long fctStart = System.currentTimeMillis();
+		final double[][] array = createInvertableDouble(size);
+		final Matrix A = new Matrix(array);
 		
-		long fctStop = System.currentTimeMillis();
-		long diff = fctStop - fctStart;
+		final long fctStop = System.currentTimeMillis();
+		final long diff = fctStop - fctStart;
 		
 		startMillis += diff;
 		return A;
 	}
 	
-
+	
 	/**
 	 * create a squared matrix with randomNumbers
 	 * while this function is running, the time is waiting
+	 * @param size
+	 * @return
 	 */
-	public edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix createInvertableCheckMatrix(int size)
+	public Matrix createInvertableCheckMatrix(int size)
 	{
-		long fctStart = System.currentTimeMillis();
-		double[][] array = createInvertableDouble(size);
-		edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix A = new edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix(
-				array);
+		final long fctStart = System.currentTimeMillis();
+		final double[][] array = createInvertableDouble(size);
+		final Matrix A = new Matrix(array);
 		
-		long fctStop = System.currentTimeMillis();
-		long diff = fctStop - fctStart;
+		final long fctStop = System.currentTimeMillis();
+		final long diff = fctStop - fctStart;
 		
 		startMillis += diff;
 		return A;
 	}
 	
-
+	
+	/**
+	 * @param size
+	 * @return
+	 */
 	public double[][] createInvertableDouble(int size)
 	{
 		if (size == 2)
@@ -206,19 +282,20 @@ public class Inversion extends APerformanceTest
 		}
 	}
 	
-
+	
 	private double[][] createInvertableDouble6x6()
 	{
-		return  new double[][] { { -3, -1, 3, 0, -1, -6 }, { 3, 0, -5, 0, 0, -1 }, { 0, 0, 0, 3, 0, 0 },
+		return new double[][] { { -3, -1, 3, 0, -1, -6 }, { 3, 0, -5, 0, 0, -1 }, { 0, 0, 0, 3, 0, 0 },
 				{ 0, 0, 0, 0, 0, 2 }, { 0, 1, 0, 0, 0, -1 }, { -2, -3, 0, 0, -5, 0 } };
 	}
 	
-
+	
 	private double[][] createInvertableDouble2x2()
 	{
-		double[][] arr = new double[2][2];
-		
-		int val = (int) (Math.random() * 4);
+		final double[][] arr = new double[2][2];
+		// Random r = new Random();
+		// int val = r.nextInt() * 4;
+		final int val = 0;
 		// System.out.println(val);
 		switch (val)
 		{
@@ -229,31 +306,31 @@ public class Inversion extends APerformanceTest
 				arr[1][1] = 1;
 				count0++;
 				break;
-			case 1:
-				arr[0][0] = 1;
-				arr[0][1] = -1;
-				arr[1][0] = -4;
-				arr[1][1] = -1;
-				count1++;
-				break;
-			case 2:
-				arr[0][0] = 3;
-				arr[0][1] = -5;
-				arr[1][0] = -5;
-				arr[1][1] = -2;
-				count2++;
-				break;
-			case 3:
-				arr[0][0] = 0;
-				arr[0][1] = 1;
-				arr[1][0] = 5;
-				arr[1][1] = 2;
-				count3++;
-				break;
+			// case 1:
+			// arr[0][0] = 1;
+			// arr[0][1] = -1;
+			// arr[1][0] = -4;
+			// arr[1][1] = -1;
+			// count1++;
+			// break;
+			// case 2:
+			// arr[0][0] = 3;
+			// arr[0][1] = -5;
+			// arr[1][0] = -5;
+			// arr[1][1] = -2;
+			// count2++;
+			// break;
+			// case 3:
+			// arr[0][0] = 0;
+			// arr[0][1] = 1;
+			// arr[1][0] = 5;
+			// arr[1][1] = 2;
+			// count3++;
+			// break;
 			default:
 				System.out.println("Something is going wrong");
 				break;
-			
+		
 		}
 		return arr;
 	}

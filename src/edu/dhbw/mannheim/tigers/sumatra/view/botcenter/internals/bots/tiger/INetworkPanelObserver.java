@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 03.04.2011
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger;
@@ -17,6 +17,15 @@ package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger;
  */
 public interface INetworkPanelObserver
 {
-	public void onStartPing(int numPings);
-	public void onStopPing();
+	/**
+	 * 
+	 * @param numPings
+	 */
+	void onStartPing(int numPings);
+	
+	
+	/**
+	 *
+	 */
+	void onStopPing();
 }

@@ -38,14 +38,16 @@ public class ReceiverUDP
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	/** {@value} [ms] */
-	private static final int						PORT_UNREACHABLE_RETRY_WAIT	= 1500;
+	// Logger
+	private static final Logger					log									= Logger.getLogger(ReceiverUDP.class
+																											.getName());
 	
-	private final Logger								log									= Logger.getLogger(getClass());
+	/** [ms] */
+	private static final int						PORT_UNREACHABLE_RETRY_WAIT	= 1500;
 	
 	private DatagramSocket							socket								= null;
 	private Thread										receiverThread						= null;
-	private Statistics								stats									= new Statistics();
+	private final Statistics						stats									= new Statistics();
 	
 	private final List<IReceiverUDPObserver>	observers							= new ArrayList<IReceiverUDPObserver>();
 	
@@ -53,20 +55,31 @@ public class ReceiverUDP
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	  * 
+	  */
 	public ReceiverUDP()
 	{
 	}
 	
-
+	
+	/**
+	 * @param newSocket
+	 * @throws IOException
+	 */
 	public ReceiverUDP(DatagramSocket newSocket) throws IOException
 	{
 		setSocket(newSocket);
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 * @param observer
+	 */
 	public void addObserver(IReceiverUDPObserver observer)
 	{
 		synchronized (observers)
@@ -75,7 +88,11 @@ public class ReceiverUDP
 		}
 	}
 	
-
+	
+	/**
+	 * 
+	 * @param observer
+	 */
 	public void removeObserver(IReceiverUDPObserver observer)
 	{
 		synchronized (observers)
@@ -84,7 +101,10 @@ public class ReceiverUDP
 		}
 	}
 	
-
+	
+	/**
+	 * 
+	 */
 	public void start()
 	{
 		if (receiverThread != null)
@@ -94,12 +114,15 @@ public class ReceiverUDP
 		
 		stats.reset();
 		
-		receiverThread = new Thread(new Receiver());
+		receiverThread = new Thread(new Receiver(), "ReceiverUDP");
 		
 		receiverThread.start();
 	}
 	
-
+	
+	/**
+	 * 
+	 */
 	public void stop()
 	{
 		if (receiverThread == null)
@@ -111,15 +134,19 @@ public class ReceiverUDP
 		try
 		{
 			receiverThread.join(100);
-		} catch (InterruptedException err)
+		} catch (final InterruptedException err)
 		{
 		}
 		
 		receiverThread = null;
 	}
 	
-
-	public void setSocket(DatagramSocket newSocket) throws IOException
+	
+	/**
+	 * 
+	 * @param newSocket
+	 */
+	public final void setSocket(DatagramSocket newSocket)
 	{
 		boolean start = false;
 		
@@ -137,22 +164,30 @@ public class ReceiverUDP
 		}
 	}
 	
-
+	
+	/**
+	 * 
+	 * @param cmd
+	 */
 	private void notifyNewCommand(ACommand cmd)
 	{
 		synchronized (observers)
 		{
-			for (IReceiverUDPObserver observer : observers)
+			for (final IReceiverUDPObserver observer : observers)
 			{
 				observer.onNewCommand(cmd);
 			}
 		}
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 * @return
+	 */
 	public Statistics getStats()
 	{
 		return stats;
@@ -163,23 +198,23 @@ public class ReceiverUDP
 	// --------------------------------------------------------------------------
 	protected class Receiver implements Runnable
 	{
+		@Override
 		public void run()
 		{
-			Thread.currentThread().setName("Receiver UDP");
-			
 			if (socket == null)
 			{
 				log.error("Cannot start a receiver on a null socket");
 				return;
 			}
 			
+			Thread.currentThread().setName("Receiver UDP " + socket.getInetAddress() + ":" + socket.getPort());
+			
 			byte[] buf = null;
 			
 			try
 			{
 				buf = new byte[socket.getReceiveBufferSize()];
-			}
-			catch (SocketException err)
+			} catch (final SocketException err)
 			{
 				log.error("Could not get receive buffer size", err);
 				return;
@@ -189,28 +224,29 @@ public class ReceiverUDP
 			
 			while (!Thread.currentThread().isInterrupted())
 			{
-				DatagramPacket packet = new DatagramPacket(buf, buf.length);
+				final DatagramPacket packet = new DatagramPacket(buf, buf.length);
 				
 				try
 				{
 					socket.receive(packet);
 					
-					byte[] packetData = packet.getData();
+					final byte[] packetData = packet.getData();
+					final int dataLength = packet.getLength() - CommandConstants.HEADER_SIZE;
 					
-					byte[] header = new byte[CommandConstants.HEADER_SIZE];
+					final byte[] header = new byte[CommandConstants.HEADER_SIZE];
 					
 					System.arraycopy(packetData, 0, header, 0, CommandConstants.HEADER_SIZE);
 					
-					ACommand cmd = CommandFactory.createEmptyPacket(header);
+					final ACommand cmd = CommandFactory.createEmptyPacket(header);
 					if (cmd == null)
 					{
 						log.debug("Error while parsing header, message dropped. " + Arrays.toString(header));
 						continue;
 					}
 					
-					byte[] data = new byte[cmd.getDataLength()];
+					final byte[] data = new byte[dataLength];
 					
-					System.arraycopy(packetData, CommandConstants.HEADER_SIZE, data, 0, cmd.getDataLength());
+					System.arraycopy(packetData, CommandConstants.HEADER_SIZE, data, 0, dataLength);
 					
 					cmd.setData(data);
 					
@@ -219,26 +255,26 @@ public class ReceiverUDP
 					stats.raw += data.length + 54;
 					
 					notifyNewCommand(cmd);
-				} catch (PortUnreachableException e)
+				} catch (final PortUnreachableException e)
 				{
-					long waits = TimeUnit.MILLISECONDS.toSeconds(PORT_UNREACHABLE_RETRY_WAIT);
-					log.debug(socket.getLocalPort() + "->" + socket.getPort() + ": ICMP port unreachable, retry in "
-							+ waits + "s.");
+					final long waits = TimeUnit.MILLISECONDS.toSeconds(PORT_UNREACHABLE_RETRY_WAIT);
+					log.debug(socket.getLocalPort() + "->" + socket.getPort() + ": ICMP port unreachable, retry in " + waits
+							+ "s.");
 					
 					try
 					{
 						Thread.sleep(PORT_UNREACHABLE_RETRY_WAIT);
-					} catch (InterruptedException err)
+					} catch (final InterruptedException err)
 					{
 						log.debug("Interrupted while waiting after ICMP port unreachable.");
 					}
 					continue;
 					
-				} catch (SocketException e)
+				} catch (final SocketException e)
 				{
 					log.info("UDP transceiver terminating");
 					Thread.currentThread().interrupt();
-				} catch (IOException err)
+				} catch (final IOException err)
 				{
 					log.error("Some IOException", err);
 				}

@@ -17,20 +17,38 @@ package edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview;
  */
 public interface IChangeGUIMode
 {
-	public void setPlayTestMode();
+	/**
+	 *
+	 */
+	void setPlayTestMode();
 	
-
-	public void setRoleTestMode();
 	
-
-	public void setMatchMode();
+	/**
+	 *
+	 */
+	void setRoleTestMode();
 	
-
-	public void setEmergencyMode();
 	
-
-	public void onStart();
+	/**
+	 *
+	 */
+	void setMatchMode();
 	
-
-	public void onStop();
+	
+	/**
+	 *
+	 */
+	void setEmergencyMode();
+	
+	
+	/**
+	 *
+	 */
+	void onStart();
+	
+	
+	/**
+	 *
+	 */
+	void onStop();
 }

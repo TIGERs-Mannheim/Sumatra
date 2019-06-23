@@ -8,43 +8,43 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Hashtable;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.CombinedConfiguration;
-import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.apache.commons.configuration.tree.ConfigurationNode;
 import org.apache.log4j.Logger;
-import org.w3c.dom.DOMConfiguration;
-import org.w3c.dom.Document;
-import org.w3c.dom.ls.DOMImplementationLS;
-import org.w3c.dom.ls.LSOutput;
-import org.w3c.dom.ls.LSSerializer;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.basestation.BaseStation;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.BotFactory;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.BotInitException;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.TigerBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.TigerBotV2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.udp.ITransceiverUDP;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerChargeAuto;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.config.AConfigClient;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IWorldPredictorObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ABotManager;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AConfigManager;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AWorldPredictor;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IConfigClient;
+import edu.dhbw.mannheim.tigers.sumatra.util.NamedThreadFactory;
 import edu.moduli.exceptions.ModuleNotFoundException;
 
 
@@ -59,93 +59,137 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 	// --------------------------------------------------------------
 	// --- instance-variables ---------------------------------------
 	// --------------------------------------------------------------
-	private final Logger								log					= Logger.getLogger(getClass());
+	// Logger
+	private static final Logger		log				= Logger.getLogger(GenericManager.class.getName());
 	
-	private static final String					XML_ENCODING		= "ISO-8859-1";										// "UTF-8";
-	private final Map<Integer, ABot>				botTable				= new ConcurrentHashMap<Integer, ABot>();
-	private boolean									moduleRunning		= false;
-	private AWorldPredictor							wp						= null;
+	// "UTF-8";
+	private static final String		XML_ENCODING	= "ISO-8859-1";
+	private final Map<BotID, ABot>	botTable			= new ConcurrentSkipListMap<BotID, ABot>();
+	private boolean						moduleRunning	= false;
+	private AWorldPredictor				wp					= null;
 	
-	private MulticastDelegate						mcastDelegate		= null;
-	private boolean useMulticast = false;
+	private MulticastDelegate			mcastDelegate	= null;
+	private boolean						useMulticast	= false;
+	private BaseStation					baseStation		= null;
+	
+	private AConfigManager				configMgr		= null;
+	private final IConfigClient		configClient	= new ConfigClient();
+	
+	private final boolean				autoChargeInitially;
+	private final int						maxCap;
+	
 	
 	// --------------------------------------------------------------
 	// --- constructor(s) -------------------------------------------
 	// --------------------------------------------------------------
 	/**
 	 * Setup properties.
-	 * @param properties Properties for module-configuration
+	 * @param subnodeConfiguration Properties for module-configuration
 	 */
 	public GenericManager(SubnodeConfiguration subnodeConfiguration)
 	{
-		mcastDelegate = new MulticastDelegate(subnodeConfiguration, this);
-
-		loadConfig(selectedPersistentConfig);
-		
-		try
-		{
-			wp = (AWorldPredictor) SumatraModel.getInstance().getModule(AWorldPredictor.MODULE_ID);
-			wp.addFunctionalObserver(this);
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("Unable to find module '" + AWorldPredictor.MODULE_ID + "'!");
-			return;
-		}
+		AConfigManager.registerConfigClient(configClient);
+		autoChargeInitially = subnodeConfiguration.getBoolean("autoChargeInitially");
+		maxCap = subnodeConfiguration.getInt("maxCap");
 	}
 	
-
+	
 	// --------------------------------------------------------------
 	// --- module-method(s) -----------------------------------------
 	// --------------------------------------------------------------
 	@Override
 	public void initModule()
 	{
-		log.info("Initialized.");
+		try
+		{
+			wp = (AWorldPredictor) SumatraModel.getInstance().getModule(AWorldPredictor.MODULE_ID);
+			wp.addObserver(this);
+		} catch (final ModuleNotFoundException err)
+		{
+			log.error("Unable to find module '" + AWorldPredictor.MODULE_ID + "'!");
+			return;
+		}
+		
+		try
+		{
+			configMgr = (AConfigManager) SumatraModel.getInstance().getModule(AConfigManager.MODULE_ID);
+		} catch (final ModuleNotFoundException err)
+		{
+			log.error("Unable to find module '" + AConfigManager.MODULE_ID + "'!");
+			return;
+		}
+		
+		log.debug("Initialized.");
 	}
 	
-
+	
 	@Override
 	public void startModule()
 	{
+		configMgr.reloadConfig(ABotManager.KEY_BOTMANAGER_CONFIG);
+		
 		mcastDelegate.enable(useMulticast);
+		baseStation.connect();
 		
 		moduleRunning = true;
 		
-		loadConfig(selectedPersistentConfig);
+		startBots();
 		
-		log.info("Started.");
+		if (autoChargeInitially)
+		{
+			ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory(
+					"AutoCharge"));
+			executor.schedule(new Runnable()
+			{
+				
+				@Override
+				public void run()
+				{
+					log.info("Auto charging bots");
+					for (final ABot bot : getAllBots().values())
+					{
+						if ((bot.getType() == EBotType.TIGER) || (bot.getType() == EBotType.GRSIM))
+						{
+							bot.execute(new TigerKickerChargeAuto(maxCap));
+						}
+					}
+				}
+			}, 2, TimeUnit.SECONDS);
+			executor.shutdown();
+		}
+		
+		log.debug("Started.");
 	}
 	
-
+	
 	@Override
 	public void stopModule()
 	{
-		saveConfig(selectedPersistentConfig);
+		stopBots();
 		
-		removeAllBots();
-
+		baseStation.disconnect();
 		mcastDelegate.enable(false);
 		
 		moduleRunning = false;
 		
-		log.info("Stopped.");
+		log.debug("Stopped.");
 	}
 	
-
+	
 	@Override
 	public void deinitModule()
 	{
-		log.info("Deinitialized.");
+		log.debug("Deinitialized.");
 	}
 	
-
+	
 	/**
 	 * Be aware of the fact that this method might be called from several threads
 	 */
 	@Override
-	public void execute(int id, ACommand cmd)
+	public void execute(BotID id, ACommand cmd)
 	{
-		ABot bot = botTable.get(id);
+		final ABot bot = botTable.get(id);
 		if (bot != null)
 		{
 			bot.execute(cmd);
@@ -155,20 +199,33 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 		}
 	}
 	
-
-	public ABot addBot(EBotType type, int id, String name)
+	
+	@Override
+	public void botConnectionChanged(ABot bot)
+	{
+		notifyBotConnectionChanged(bot);
+	}
+	
+	
+	@Override
+	public ABot addBot(EBotType type, BotID id, String name)
 	{
 		if (botTable.containsKey(id))
 		{
 			return null;
 		}
 		
-		ABot bot = BotFactory.createBot(type, id, name);
+		final ABot bot = BotFactory.createBot(type, id, name);
 		botTable.put(id, bot);
 		
-		if (bot.getType() == EBotType.TIGER)
+		if ((bot.getType() == EBotType.TIGER) || (bot.getType() == EBotType.GRSIM))
 		{
 			((TigerBot) bot).setMulticastDelegate(mcastDelegate);
+		}
+		
+		if (bot.getType() == EBotType.TIGER_V2)
+		{
+			((TigerBotV2) bot).setBaseStation(baseStation);
 		}
 		
 		notifyBotAdded(bot);
@@ -176,33 +233,38 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 		return bot;
 	}
 	
-
-	public void removeBot(int id)
+	
+	@Override
+	public void removeBot(BotID id)
 	{
-		ABot bot = botTable.remove(id);
-		
-		if (bot.getType() == EBotType.TIGER)
-		{
-			((TigerBot) bot).setMulticastDelegate(null);
-		}
-		
+		final ABot bot = botTable.remove(id);
 		if (bot != null)
 		{
+			if ((bot.getType() == EBotType.TIGER) || (bot.getType() == EBotType.GRSIM))
+			{
+				((TigerBot) bot).setMulticastDelegate(null);
+			}
+			
+			if (bot.getType() == EBotType.TIGER_V2)
+			{
+				((TigerBotV2) bot).setBaseStation(null);
+			}
+			
 			bot.stop();
+			notifyBotRemoved(bot);
 		}
-		
-		notifyBotRemoved(bot);
 	}
 	
-
-	public void changeBotId(int oldId, int newId)
+	
+	@Override
+	public void changeBotId(BotID oldId, BotID newId)
 	{
 		if (!botTable.containsKey(oldId))
 		{
 			return;
 		}
 		
-		ABot bot = botTable.get(oldId);
+		final ABot bot = botTable.get(oldId);
 		
 		if (botTable.containsKey(newId))
 		{
@@ -219,19 +281,20 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 		notifyBotIdChanged(oldId, newId);
 	}
 	
-
+	
 	@Override
-	public Map<Integer, ABot> getAllBots()
+	public Map<BotID, ABot> getAllBots()
 	{
 		return botTable;
 	}
 	
-
+	
+	@Override
 	public void removeAllBots()
 	{
 		stopBots();
 		
-		for (ABot bot : botTable.values())
+		for (final ABot bot : botTable.values())
 		{
 			notifyBotRemoved(bot);
 		}
@@ -239,104 +302,29 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 		botTable.clear();
 	}
 	
-	public void loadConfig(String config)
+	
+	private void loadConfig(XMLConfiguration config)
 	{
-		if(!getAvailableConfigs().contains(config))
-		{
-			return;
-		}
+		readConfiguration(config);
 		
-		if(!config.equals(selectedPersistentConfig))
+		if (moduleRunning)
 		{
-			saveConfig(selectedPersistentConfig);
-		}
-		
-		// load config
-		selectedPersistentConfig = config;
-
-		readConfiguration(config, moduleRunning);
-
-		if(moduleRunning)
-		{
+			mcastDelegate.enable(useMulticast);
+			baseStation.connect();
+			
 			startBots();
 		}
 	}
 	
-	public List<String> getAvailableConfigs()
-	{
-		List<String> configs = new ArrayList<String>();
-		
-		File dir = new File(BOTMANAGER_CONFIG_PATH);
-		File[] fileList = dir.listFiles();
-		for (File f : fileList)
-		{
-			if (!f.isHidden())
-			{
-				String name = f.getName();
-				
-				configs.add(name);
-			}
-		}
-		
-		return configs;
-	}
 	
+	@Override
 	public ITransceiverUDP getMulticastTransceiver()
 	{
 		return mcastDelegate.getTransceiver();
 	}
 	
-	/**
-	 * Can be null if current config has been deleted.
-	 * 
-	 * @return config file name or NULL
-	 */
-	public String getLoadedConfig()
-	{
-		return selectedPersistentConfig;
-	}
 	
-	public void saveConfig(String filename)
-	{
-		if(filename == null)
-		{
-			return;
-		}
-		
-		if (!filename.endsWith(".xml"))
-		{
-			filename += ".xml";
-		}
-		
-		saveConfiguration(BOTMANAGER_CONFIG_PATH + filename);
-		
-		selectedPersistentConfig = filename;
-	}
-	
-	public void deleteConfig(String config)
-	{
-		if(selectedPersistentConfig == null)
-		{
-			return;
-		}
-		
-		File file = new File(BOTMANAGER_CONFIG_PATH + selectedPersistentConfig);
-		
-		if(file.exists())
-		{
-			if(!file.delete())
-			{
-				log.warn("Could not delete config");
-			}
-			else
-			{
-				selectedPersistentConfig = null;
-
-				log.debug("Deleted file: " + file.getAbsoluteFile());
-			}
-		}
-	}
-	
+	@Override
 	public void setUseMulticast(boolean enable)
 	{
 		useMulticast = enable;
@@ -344,56 +332,68 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 		mcastDelegate.enable(enable);
 	}
 	
+	
+	@Override
 	public boolean getUseMulticast()
 	{
 		return useMulticast;
 	}
 	
+	
+	@Override
 	public void setUpdateAllSleepTime(long time)
 	{
 		mcastDelegate.setUpdateAllSleepTime(time);
 	}
 	
+	
+	@Override
 	public long getUpdateAllSleepTime()
 	{
 		return mcastDelegate.getUpdateAllSleepTime();
 	}
-
-	private boolean readConfiguration(String filename, boolean loadBots)
+	
+	
+	@Override
+	public BaseStation getBaseStation()
+	{
+		return baseStation;
+	}
+	
+	
+	private boolean readConfiguration(XMLConfiguration config)
 	{
 		removeAllBots();
 		
-		XMLConfiguration config;
+		final SubnodeConfiguration mcastConfig = config.configurationAt("multicast");
+		mcastDelegate = new MulticastDelegate(mcastConfig, this);
 		
-		filename = BOTMANAGER_CONFIG_PATH + filename;
+		useMulticast = config.getBoolean("updateAll.useMulticast", false);
+		mcastDelegate.setUpdateAllSleepTime(config.getLong("updateAll.sleep", 20));
 		
-		try
+		if (config.configurationsAt("baseStation").isEmpty())
 		{
-			config = new XMLConfiguration(filename);
-		} catch (ConfigurationException err)
+			baseStation = new BaseStation();
+		} else
 		{
-			log.error("Could not read botfile: " + filename);
-			return false;
+			baseStation = new BaseStation(config.configurationAt("baseStation"));
 		}
 		
-		useMulticast = config.getBoolean("multicast", false);
-		mcastDelegate.setUpdateAllSleepTime(config.getLong("updateAllSleep", 20));
-		
-		List<?> bots = config.configurationsAt("bots.bot");
-		for (Iterator<?> it = bots.iterator(); it.hasNext();)
+		final List<?> bots = config.configurationsAt("bots.bot");
+		for (final Object name : bots)
 		{
-			SubnodeConfiguration botConfig = (SubnodeConfiguration) it.next();
+			final SubnodeConfiguration botConfig = (SubnodeConfiguration) name;
 			
 			try
 			{
-				ABot bot = BotFactory.createBot(botConfig);
+				final ABot bot = BotFactory.createBot(botConfig);
 				
-				botTable.put(bot.getBotId(), bot);
+				botTable.put(bot.getBotID(), bot);
 				notifyBotAdded(bot);
 				
-			} catch (BotInitException err)
+			} catch (final BotInitException err)
 			{
-				log.error("Error while instantiating bot from '" + filename + "': " + err.getMessage(), err);
+				log.error("Error while instantiating bot from '" + config.getFileName() + "': " + err.getMessage(), err);
 				removeAllBots();
 				return false;
 			}
@@ -402,130 +402,111 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 		return true;
 	}
 	
-
-	private void saveConfiguration(String filename)
+	
+	private XMLConfiguration saveConfiguration()
 	{
-		XMLConfiguration config = new XMLConfiguration();
-		config.setRootElementName("botmanager");
-		config.setEncoding(XML_ENCODING);
+		final CombinedConfiguration botmanager = new CombinedConfiguration();
 		
-		CombinedConfiguration botmanager = new CombinedConfiguration();
+		botmanager.addConfiguration(mcastDelegate.getConfig(), "multicast", "multicast");
 		
-		botmanager.addProperty("multicast", useMulticast);
-		botmanager.addProperty("updateAllSleep", mcastDelegate.getUpdateAllSleepTime());
+		botmanager.addConfiguration(baseStation.getConfig(), "baseStation", "baseStation");
 		
-		List<ConfigurationNode> nodes = new ArrayList<ConfigurationNode>();
+		botmanager.addProperty("updateAll.useMulticast", useMulticast);
+		botmanager.addProperty("updateAll.sleep", mcastDelegate.getUpdateAllSleepTime());
 		
-		List<Integer> sortedBots = new ArrayList<Integer>();
+		final List<ConfigurationNode> nodes = new ArrayList<ConfigurationNode>();
+		
+		final List<BotID> sortedBots = new ArrayList<BotID>();
 		sortedBots.addAll(botTable.keySet());
 		Collections.sort(sortedBots);
 		
-		for (Integer i : sortedBots)
+		for (final BotID i : sortedBots)
 		{
-			ABot bot = botTable.get(i);
+			final ABot bot = botTable.get(i);
 			nodes.add(bot.getConfiguration().getRootNode().getChild(0));
 		}
 		
 		botmanager.addNodes("bots", nodes);
 		
-		config.setRootNode(botmanager.getRootNode());
-		
-		
-		// Write formatted string to XML-file
-		try
-		{
-			// Save unformatted data to dummy-out, which creates our document as side-effect...
-			ByteArrayOutputStream bOut = new ByteArrayOutputStream();
-			config.save(new OutputStreamWriter(bOut, XML_ENCODING));
-			
-			Document doc = config.getDocument();
-			
-
-			// Format document
-			DOMImplementationLS domLS = (DOMImplementationLS) doc.getImplementation();
-			
-			LSSerializer serializer = domLS.createLSSerializer();
-			
-			DOMConfiguration domConfig = serializer.getDomConfig();
-			if (domConfig.canSetParameter("format-pretty-print", Boolean.TRUE))
-			{
-				domConfig.setParameter("format-pretty-print", Boolean.TRUE);
-			}
-			serializer.setNewLine("\n");
-			
-
-			// Prepare output...
-			FileOutputStream fOut = new FileOutputStream(filename, false);
-			
-			LSOutput output = domLS.createLSOutput();
-			output.setEncoding(XML_ENCODING);
-			output.setByteStream(fOut);
-			
-
-			// ...and finally write!
-			serializer.write(doc, output);
-			
-			fOut.close();
-		} catch (IOException err)
-		{
-			log.error("Error while saving file!", err);
-		} catch (ConfigurationException err)
-		{
-			log.error("Error while buffering (unformatted) config!", err);
-		}
+		final XMLConfiguration config = new XMLConfiguration(botmanager);
+		config.setRootElementName("botmanager");
+		config.setEncoding(XML_ENCODING);
+		return config;
 	}
 	
-
+	
 	private void stopBots()
 	{
-		for (ABot bot : botTable.values())
+		for (final ABot bot : botTable.values())
 		{
 			bot.stop();
 			
-			if (bot.getType() == EBotType.TIGER)
+			if ((bot.getType() == EBotType.TIGER) || (bot.getType() == EBotType.GRSIM))
 			{
 				((TigerBot) bot).setMulticastDelegate(null);
+			}
+			
+			if (bot.getType() == EBotType.TIGER_V2)
+			{
+				((TigerBotV2) bot).setBaseStation(null);
 			}
 		}
 	}
 	
-
+	
 	private void startBots()
 	{
-		for (ABot bot : botTable.values())
+		for (final ABot bot : botTable.values())
 		{
-			if (bot.getType() == EBotType.TIGER)
+			if ((bot.getType() == EBotType.TIGER) || (bot.getType() == EBotType.GRSIM))
 			{
 				((TigerBot) bot).setMulticastDelegate(mcastDelegate);
+			}
+			
+			if (bot.getType() == EBotType.TIGER_V2)
+			{
+				((TigerBotV2) bot).setBaseStation(baseStation);
 			}
 			
 			bot.start();
 		}
 	}
 	
-
-	@Override
-	public Map<String, EBotType> getBotTypeMap()
-	{
-		Map<String, EBotType> types = new Hashtable<String, EBotType>();
-		
-		types.put("Tiger Bot", EBotType.TIGER);
-		types.put("CT Bot", EBotType.CT);
-		types.put("Sysout Bot", EBotType.SYSOUT);
-		
-		return types;
-	}
-
+	
 	@Override
 	public void onNewWorldFrame(WorldFrame wf)
 	{
-		List<Integer> botsOnField = new ArrayList<Integer>();
-		
-		for(Integer i : wf.tigerBots.keySet())
+		mcastDelegate.setOnFieldBots(wf.tigerBotsVisible.keySet());
+	}
+	
+	
+	@Override
+	public void onVisionSignalLost(WorldFrame emptyWf)
+	{
+		mcastDelegate.setOnFieldBots(new HashSet<BotID>());
+	}
+	
+	
+	private final class ConfigClient extends AConfigClient
+	{
+		private ConfigClient()
 		{
-			botsOnField.add(i);
+			super("BotManager Config", ABotManager.BOTMANAGER_CONFIG_PATH, ABotManager.KEY_BOTMANAGER_CONFIG,
+					ABotManager.VALUE_BOTMANAGER_CONFIG, false);
 		}
 		
-		mcastDelegate.setOnFieldBots(botsOnField);
+		
+		@Override
+		public void onLoad(Configuration newConfig)
+		{
+			loadConfig((XMLConfiguration) newConfig);
+		}
+		
+		
+		@Override
+		public XMLConfiguration prepareConfigForSaving(XMLConfiguration loadedConfig)
+		{
+			return saveConfiguration();
+		}
 	}
 }

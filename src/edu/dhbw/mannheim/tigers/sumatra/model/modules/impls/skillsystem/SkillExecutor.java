@@ -11,76 +11,80 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.LockSupport;
 
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.Sisyphus;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.tiger.AMoveSkillV2;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.NormalStopSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IWorldPredictorObserver;
-import edu.dhbw.mannheim.tigers.sumatra.util.ThreadUtil;
 
 
 /**
  * Skill executer with nano second precision.
  * 
- * @author AndreR
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  * 
  */
-public class SkillExecutor extends Thread implements IWorldPredictorObserver
+public class SkillExecutor implements Runnable, IWorldPredictorObserver
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final ASkill									slots[]				= new ASkill[ESkillGroup.count()];
-	private final ASkill									newSkills[]			= new ASkill[ESkillGroup.count()];
+	private static final Logger						log							= Logger.getLogger(SkillExecutor.class
+																										.getName());
 	
-	/** [us] */
-	private final static int							DEFAULT_PERIOD		= 20000;
+	private static final long							NO_SKILL_TIMEOUT_NS		= TimeUnit.MILLISECONDS.toNanos(500);
+	
+	private AMoveSkill									skill							= null;
+	
+	private final BotID									botId;
 	
 	/** [ns] */
 	private final long									period;
-	/** Used to cancel {@link ThreadUtil#parkNanosSafe(long, AtomicBoolean)} */
-	private final AtomicBoolean						sleepCancelSwitch	= new AtomicBoolean(false);
-	
-	/** Volatile because this is altered in {@link #terminate()} from extern threads */
-	private volatile boolean							active				= true;
 	
 	/** Volatile because it is written from the outside */
-	private volatile WorldFrame						latestWorldFrame	= null;
+	private volatile WorldFrame						latestWorldFrame			= null;
+	private Sisyphus										latestSisyphus				= null;
+	private final List<ISkillExecutorObserver>	observers					= new ArrayList<ISkillExecutorObserver>();
 	
-	private final List<ISkillExecutorObserver>	observers			= new ArrayList<ISkillExecutorObserver>();
+	private final BlockingDeque<AMoveSkill>		newSkills					= new LinkedBlockingDeque<AMoveSkill>(1);
 	
-	private final Logger									log					= Logger.getLogger(getClass());
+	private long											timeLastCompletedSkill	= 0;
+	private boolean										stopSent						= false;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/**
-	 * Calls {@link #SkillExecutor(long)} with {@link #DEFAULT_PERIOD}({@value #DEFAULT_PERIOD})
-	 */
-	public SkillExecutor()
-	{
-		this(DEFAULT_PERIOD);
-	}
 	
-
 	/**
+	 * @param botId
 	 * @param period [us]
 	 */
-	public SkillExecutor(long period)
+	public SkillExecutor(BotID botId, long period)
 	{
+		this.botId = botId;
 		this.period = TimeUnit.MICROSECONDS.toNanos(period);
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	
+	/**
+	 * @param observer
+	 */
 	public void addObserver(ISkillExecutorObserver observer)
 	{
 		synchronized (observers)
@@ -89,7 +93,10 @@ public class SkillExecutor extends Thread implements IWorldPredictorObserver
 		}
 	}
 	
-
+	
+	/**
+	 * @param observer
+	 */
 	public void removeObserver(ISkillExecutorObserver observer)
 	{
 		synchronized (observers)
@@ -98,221 +105,232 @@ public class SkillExecutor extends Thread implements IWorldPredictorObserver
 		}
 	}
 	
-
-	@Override
-	public void run()
-	{
-		while (active)
-		{
-			long loopStarted = 0;
-			long loopFinished = 0;
-			
-			synchronized (slots)
-			{
-				loopStarted = System.nanoTime();
-				
-				for (ASkill skill : slots)
-				{
-					if (skill == null)
-					{
-						continue;
-					}
-					
-					skill.setWorldFrame(latestWorldFrame);
-					
-					if (skill.isComplete())
-					{
-						List<ACommand> cmds = skill.calcExitActions();
-						
-						for (ACommand cmd : cmds)
-						{
-							notifyNewCommand(cmd);
-						}
-						
-						notifySkillCompleted(skill);
-						
-						// replace by new skill (if available) or remove
-						if (newSkills[skill.getGroupID()] != null)
-						{
-							ASkill newSkill = newSkills[skill.getGroupID()];
-							slots[skill.getGroupID()] = newSkill;
-							newSkills[skill.getGroupID()] = null;
-							
-							newSkill.setPeriod(period);
-							
-							skill = newSkill;
-							
-							skill.setWorldFrame(latestWorldFrame);
-							
-							cmds = skill.calcEntryActions();
-							
-							for (ACommand cmd : cmds)
-							{
-								notifyNewCommand(cmd);
-							}
-							
-							notifySkillStarted(newSkill);
-						} else
-						{
-							slots[skill.getGroupID()] = null;
-							
-							skill = null;
-						}
-					}
-					
-					if (skill == null)
-					{
-						continue;
-					}
-					
-					// process
-					List<ACommand> cmds = skill.calcActions();
-					
-					for (ACommand cmd : cmds)
-					{
-						notifyNewCommand(cmd);
-					}
-				}
-				
-				loopFinished = System.nanoTime(); // This line _inside_ synchronized...
-			}
-			
-			long duration = loopFinished - loopStarted;
-			long sleep = period - duration;
-
-			sleepCancelSwitch.set(false);
-			ThreadUtil.parkNanosSafe(sleep, sleepCancelSwitch);
-		}
-	}
 	
-
-	void terminate()
+	@Override
+	public synchronized void run()
 	{
-		active = false;
-		this.interrupt();
-		
 		try
 		{
-			this.join();
-		} catch (InterruptedException e)
+			final WorldFrame worldFrame = latestWorldFrame;
+			
+			if (worldFrame == null)
+			{
+				return;
+			}
+			final TrackedTigerBot bot = worldFrame.tigerBotsVisible.getWithNull(botId);
+			
+			
+			if (bot == null)
+			{
+				resetSkills();
+				return;
+			}
+			AMoveSkill newSkill;
+			synchronized (newSkills)
+			{
+				newSkill = newSkills.poll();
+			}
+			if ((skill != null) || (newSkill != null))
+			{
+				process(bot, worldFrame, newSkill);
+				if ((skill != null) && (skill.getSkillName() != ESkillName.IMMEDIATE_STOP))
+				{
+					stopSent = false;
+				}
+			} else if (!stopSent && ((System.nanoTime() - timeLastCompletedSkill) > NO_SKILL_TIMEOUT_NS))
+			{
+				sentStop(worldFrame);
+			}
+		} catch (Throwable err)
 		{
-			log.error("Could not join SkillExecutor");
+			log.error("Exception in Skillexecuter: " + err.getMessage(), err);
+			resetSkills();
 		}
 	}
 	
-
+	
+	private void process(TrackedTigerBot bot, WorldFrame worldFrame, AMoveSkill newSkill)
+	{
+		if ((newSkill != null))
+		{
+			// switch to new skill
+			log.trace("Switch to new skill: " + newSkill);
+			
+			if (skill != null)
+			{
+				skill.setWorldFrame(latestWorldFrame);
+				enqueueCmds(skill.calcExitActions(bot));
+			}
+			
+			skill = newSkill;
+			
+			skill.setWorldFrame(latestWorldFrame);
+			
+			enqueueCmds(skill.calcEntryActions(bot));
+			notifySkillStarted(skill);
+		} else
+		{
+			skill.setWorldFrame(worldFrame);
+			
+			if (skill.isComplete())
+			{
+				enqueueCmds(skill.calcExitActions(bot));
+				notifySkillCompleted(skill);
+				skill = null;
+				timeLastCompletedSkill = System.nanoTime();
+			} else
+			{
+				// process
+				enqueueCmds(skill.calcActions(bot));
+			}
+		}
+	}
+	
+	
+	/**
+	 * Clears all skills
+	 */
+	private synchronized void resetSkills()
+	{
+		skill = null;
+		synchronized (newSkills)
+		{
+			newSkills.clear();
+		}
+		timeLastCompletedSkill = System.nanoTime();
+	}
+	
+	
+	private void enqueueCmds(List<ACommand> cmds)
+	{
+		for (ACommand cmd : cmds)
+		{
+			notifyNewCommand(cmd);
+		}
+	}
+	
+	
 	private void notifyNewCommand(ACommand cmd)
 	{
 		synchronized (observers)
 		{
-			for (ISkillExecutorObserver observer : observers)
+			for (final ISkillExecutorObserver observer : observers)
 			{
 				observer.onNewCommand(cmd);
 			}
 		}
 	}
 	
-
-	private void notifySkillCompleted(ASkill skill)
+	
+	private void notifySkillCompleted(AMoveSkill skill)
 	{
 		synchronized (observers)
 		{
-			for (ISkillExecutorObserver observer : observers)
+			for (final ISkillExecutorObserver observer : observers)
 			{
 				observer.onSkillCompleted(skill);
 			}
 		}
 	}
 	
-
-	private void notifySkillStarted(ASkill skill)
+	
+	private void notifySkillStarted(AMoveSkill skill)
 	{
 		synchronized (observers)
 		{
-			for (ISkillExecutorObserver observer : observers)
+			for (final ISkillExecutorObserver observer : observers)
 			{
 				observer.onSkillStarted(skill);
 			}
 		}
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	void setSkill(int botId, ASkill newSkill, ISkillWorldInfoProvider provider)
+	/**
+	 * Set a new skill
+	 * 
+	 * @param nSkill
+	 * @param provider
+	 */
+	public void setSkill(AMoveSkill nSkill, ISkillWorldInfoProvider provider)
 	{
-		synchronized (slots)
+		// synchronized (this)
+		// {
+		latestSisyphus = provider.getSisyphus();
+		// }
+		nSkill.setSisyphus(latestSisyphus);
+		nSkill.setPeriod(period);
+		synchronized (newSkills)
 		{
-			newSkill.setBotId(botId);
-			newSkill.setSisyphus(provider.getSisyphus());
-			doSetSkill(newSkill);
-		}
-	}
-	
-
-	void setSkills(int botId, SkillFacade facade, ISkillWorldInfoProvider provider)
-	{
-		synchronized (slots)
-		{
-			for (ASkill newSkill : facade.skills)
+			if (newSkills.remainingCapacity() == 0)
 			{
-				if (newSkill != null)
+				try
 				{
-					newSkill.setBotId(botId);
-					newSkill.setSisyphus(provider.getSisyphus());
-					doSetSkill(newSkill);
+					newSkills.remove();
+				} catch (NoSuchElementException err)
+				{
+					log.warn("newSkills was modified between statements. No proper synchronization!");
 				}
 			}
+			newSkills.add(nSkill);
 		}
 	}
 	
-
-	private void doSetSkill(ASkill newSkill)
-	{
-		ASkill oldSkill = slots[newSkill.getGroupID()];
-		
-		if (oldSkill != null)
-		{
-			if (oldSkill.compare(newSkill))
-			{
-				// Drop new skill (skills are equal)
-				
-				// clear eventually existent new skill (which is now outdated)
-				newSkills[oldSkill.getGroupID()] = null;
-			} else
-			{
-				// schedule skill as replacement
-				newSkills[oldSkill.getGroupID()] = newSkill;
-				oldSkill.complete();
-				
-				// AMoveSkills? Move PID-state from old to new.
-				if (newSkill.getGroup() == ESkillGroup.MOVE)
-				{
-					// Ok, both are Move-skills. But are they really AMoveSkills?
-					if (newSkill instanceof AMoveSkillV2 && oldSkill instanceof AMoveSkillV2)
-					{
-						AMoveSkillV2 newMove = (AMoveSkillV2) newSkill;
-						AMoveSkillV2 oldMove = (AMoveSkillV2) oldSkill;
-						newMove.setPidStateLen(oldMove.getPidStateLen());
-						newMove.setPidStateW(oldMove.getPidStateW());
-					}
-				}
-				
-				// Fire!
-				sleepCancelSwitch.set(true);
-				LockSupport.unpark(this); // fire immediate update of skills
-			}
-		} else
-		{
-			slots[newSkill.getGroupID()] = newSkill;
-		}
-	}
 	
-
 	@Override
 	public void onNewWorldFrame(WorldFrame wf)
 	{
 		latestWorldFrame = wf;
+	}
+	
+	
+	@Override
+	public void onVisionSignalLost(WorldFrame emptyWf)
+	{
+		if (latestWorldFrame != null)
+		{
+			sentStop(latestWorldFrame);
+			latestWorldFrame = null;
+		}
+	}
+	
+	
+	/**
+	 * Sent immediate stop signal
+	 * 
+	 * @param wFrame
+	 */
+	public synchronized void sentStop(WorldFrame wFrame)
+	{
+		if (wFrame == null)
+		{
+			return;
+		}
+		
+		if (!stopSent)
+		{
+			final TrackedTigerBot bot = wFrame.tigerBotsVisible.getWithNull(botId);
+			if ((bot != null) && (latestSisyphus != null))
+			// && ((bot.getBotType() != EBotType.TIGER_V2) || (((TigerBotV2) bot.getBot()).getControllerType() ==
+			// ControllerType.FUSION_VEL)))
+			{
+				AMoveSkill stopSkill = new NormalStopSkill();
+				stopSkill.setSisyphus(latestSisyphus);
+				process(bot, wFrame, stopSkill);
+				stopSent = true;
+			}
+		}
+	}
+	
+	
+	/**
+	 * Sent immediate stop signal
+	 */
+	public void sentStop()
+	{
+		sentStop(latestWorldFrame);
 	}
 }

@@ -10,18 +10,26 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.TrackedTigerBot;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.WorldFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.AIMath;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ARole;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.PermutationGenerator;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.score.AScore;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.score.BehaviourScore;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.score.EScore;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.score.FeatureScore;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.score.PenaltyScore;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.score.RoleToBallScore;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.score.RoleToBotScore;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 
 
 /**
@@ -30,7 +38,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ARole;
  * reaching every given roles target position and then chooses the possibility with the lowest 'cost'.
  * </p>
  * <p>
- * The term 'cost' is defined by the function {@link #calcCost(TrackedTigerBot, ARole, WorldFrame)}.
+ * The term 'cost' is defined by the function {@link #calcCost(TrackedTigerBot, ARole, AIInfoFrame)}.
  * </p>
  * 
  * Other things then distances between current and target position which are worth considering:
@@ -41,7 +49,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ARole;
  * <li>(...)</li>
  * </ul>
  * 
- * @see #assignRoles(AIInfoFrame, Map)
+ * @see OptimizedRoleAssigner#assignRoles(Collection, List, AIInfoFrame)
  * 
  * @author Gero, Oliver Steinbrecher
  * 
@@ -51,61 +59,84 @@ public class OptimizedRoleAssigner implements IRoleAssigner
 	// --------------------------------------------------------------------------
 	// --- instance variables ---------------------------------------------------
 	// --------------------------------------------------------------------------
-	private final Logger						log							= Logger.getLogger(getClass());
+	// Logger
+	private static final Logger	log							= Logger.getLogger(OptimizedRoleAssigner.class.getName());
 	
 	
-	private final Assigner					assigner;
-
-	/** Maximum number of bots who have to receive a role */
-	private static final int				MAX_NUM_BOTS				= 5;
+	private final Assigner			assigner;
+	
+	/** Maximum number of bots who have to receive a role (dynamically increased) */
+	private static int				maxNumBots					= 0;
 	
 	/**
 	 * 1.: Number of bots/roles<br />
-	 * 2.: Permutations/paths/possibilities (normally 24 if {@link #MAX_NUM_BOTS} == 5 - 1 keeper...)<br />
+	 * 2.: Permutations/paths/possibilities (normally 24 if {@link #maxNumBots} == 5 - 1 keeper...)<br />
 	 * 3.: Bot->Role combination: The position is the bots position in the 'assignees'-list, and the content the roles
 	 * position in the 'requiredRoles'-list<br />
 	 * <br />
 	 * As it's a static array, we have to make it at least as big as the biggest field, #5.
 	 */
-	private final int[][][]					paths;
+	private static int[][][]		paths;
 	
 	/** Threshold which leads to end of further calculations because the cost for the regroup seem to be small enough */
-	private static final float				CANCEL_COST_THRESHOLD	= 1;
+	private static final float		CANCEL_COST_THRESHOLD	= 1;
 	
 	/**
 	 * This is the metric which is assigned to a role-bot pair if there is no role left for the bot (see
 	 * 'lessRolesThenBots')
 	 */
-	private static final int				NO_ROLE_COST				= 1;
+	private static final int		NO_ROLE_COST				= 1;
 	
-
-//	/** The role-assignments from last frame */
-//	private final Map<Integer, ARole>	roleCache					= new HashMap<Integer, ARole>();
+	private Map<EScore, AScore>	scores;
 	
 	
+	/**
+	 */
 	public OptimizedRoleAssigner()
 	{
-		this.assigner = new Assigner();
+		assigner = new Assigner();
+		initPaths(6);
+		scores = new HashMap<EScore, AScore>();
 		
-		// MAX_NUM_BOTS + 1 as we are indexing by 1 - 5 here...
-		this.paths = new int[MAX_NUM_BOTS + 1][(int) AIMath.faculty(MAX_NUM_BOTS)][MAX_NUM_BOTS];
-		for (int k = 2; k <= MAX_NUM_BOTS; k++)
+		scores.put(EScore.PENALTY, new PenaltyScore());
+		scores.put(EScore.BOT_ROLE_DISTANCE, new RoleToBotScore());
+		scores.put(EScore.BALL_ROLE_DISTANCE, new RoleToBallScore());
+		scores.put(EScore.FEATURES, new FeatureScore());
+		scores.put(EScore.BEHAVIOUR, new BehaviourScore());
+	}
+	
+	
+	// --------------------------------------------------------------
+	// --- methods --------------------------------------------------
+	// --------------------------------------------------------------
+	/**
+	 * Checks if paths is initialized for enough bots.
+	 * If not, paths will be reinitialized with the given bot number
+	 * 
+	 * @param numBots
+	 */
+	private static void initPaths(int numBots)
+	{
+		if (numBots > maxNumBots)
 		{
-			PermutationGenerator gen = new PermutationGenerator(k);
-			int i = 0;
-			while (gen.hasMore())
+			maxNumBots = numBots;
+			// MAX_NUM_BOTS + 1 as we are indexing by 1 - 5 here...
+			paths = new int[maxNumBots + 1][(int) SumatraMath.faculty(maxNumBots)][maxNumBots];
+			for (int k = 2; k <= maxNumBots; k++)
 			{
-				int[] next = gen.getNext();
-				this.paths[k][i] = next;
-				i++;
+				final PermutationGenerator gen = new PermutationGenerator(k);
+				int i = 0;
+				while (gen.hasMore())
+				{
+					final int[] next = gen.getNext();
+					paths[k][i] = next;
+					i++;
+				}
 			}
 		}
 	}
 	
-
-	// --------------------------------------------------------------
-	// --- methods --------------------------------------------------
-	// --------------------------------------------------------------
+	
 	/**
 	 * <p>
 	 * <u>Idea:</u><br/>
@@ -125,84 +156,80 @@ public class OptimizedRoleAssigner implements IRoleAssigner
 	 * </p>
 	 */
 	@Override
-	public void assignRoles(Collection<TrackedTigerBot> assignees, List<ARole> rolesToAssign,
-			Map<Integer, ARole> assignments, AIInfoFrame frame)
+	public void assignRoles(Collection<TrackedTigerBot> assignees, List<ARole> rolesToAssign, AIInfoFrame frame)
 	{
-//		log.info("roleassigner called");
-//		log.debug("assignees:" + assignees);
-//		log.debug("rolesToAssign:" + rolesToAssign);
-//		log.debug("assignments:" + assignments);
+		initPaths(frame.worldFrame.tigerBotsAvailable.size());
 		
 		// ##### Check for easy cases
 		final int numTigers = assignees.size();
 		final int numRoles = rolesToAssign.size();
 		
-		if (numTigers == 0 || numRoles == 0)
+		if ((assignees.isEmpty()) || (rolesToAssign.isEmpty()))
 		{
-//			log.warn("No roles or tigers left, cannot assign!");
-			return; // Return silently, as this is normal
+			return;
 		}
-		// 'numRoles > 0'
 		
-
 		if (numTigers == 1)
 		{
-			TrackedTigerBot bot = assignees.toArray(new TrackedTigerBot[1])[0];
+			final TrackedTigerBot bot = assignees.toArray(new TrackedTigerBot[1])[0];
 			if (numRoles != 1)
 			{
 				// 'numRoles > 1' !
 				log.warn("More roles then bots in this assignment!");
 				// Anyway, take first role in rolesToAssign
 			}
-			assigner.assign(bot, assignees, rolesToAssign.get(0), assignments);
-			return; // That was easy!
+			assigner.assign(bot, assignees, rolesToAssign.get(0), frame);
+			// That was easy!
+			return;
 		}
 		
 		boolean lessRolesThenBots = false;
 		if (numRoles < numTigers)
 		{
 			lessRolesThenBots = true;
-			// Stay silent. No perfect situation, but... who cares =)
-//			log.warn("Less roles then bots, OptimizedRoleAssigner may be inefficient!");
 		} else if (numRoles > numTigers)
 		{
-			log.warn("More roles then bots in role-assignment!");
+			log.warn("More roles then bots in role-assignment! " + numRoles + ">" + numTigers);
 		}
 		
-
+		
 		// ##### Find cheapest possibility to regroup
 		
-
+		
 		// Array that stores the costs a assignment of Tiger->Role would result in
-		int[][] combinationsCost = new int[numTigers][numTigers]; // No more roles then bots...
+		// No more roles then bots..
+		final int[][] combinationsCost = new int[numTigers][numTigers];
 		
 		// Compare costs to find cheapest path
 		int[] cheapestPath = null;
 		int cheapestCost = Integer.MAX_VALUE;
-		for (int c = 0; c < AIMath.faculty(numTigers); c++)
+		for (int c = 0; c < SumatraMath.faculty(numTigers); c++)
 		{
 			// Selected a combination path through our possible combinations, now step through this paths Tiger->Role
 			// assignments and cumulate costs
 			int cost = 0;
 			int tigerI = 0;
-			for (TrackedTigerBot tBot : assignees)
+			for (final TrackedTigerBot tBot : assignees)
 			{
 				// Retrieve the path through the possibilities from the paths-store...
-				int roleI = paths[numTigers][c][tigerI];
+				final int roleI = paths[numTigers][c][tigerI];
 				
-				int tempCost = combinationsCost[tigerI][roleI]; // Get cost from cost-store
+				// Get cost from cost-store
+				int tempCost = combinationsCost[tigerI][roleI];
 				
-				if (tempCost == 0) // Not calculated yet!
+				// Not calculated yet!
+				if (tempCost == 0)
 				{
 					// Less roles then bots...
-					if (lessRolesThenBots && roleI > rolesToAssign.size() - 1)
+					if (lessRolesThenBots && (roleI > (rolesToAssign.size() - 1)))
 					{
 						tempCost = NO_ROLE_COST;
 					} else
 					{
-						tempCost = calcCost(tBot, rolesToAssign.get(roleI), frame.worldFrame);
+						tempCost = calcCost(tBot, rolesToAssign.get(roleI), frame);
 					}
-					combinationsCost[tigerI][roleI] = tempCost; // Store for reuse
+					// Store for reuse
+					combinationsCost[tigerI][roleI] = tempCost;
 				}
 				cost += tempCost;
 				
@@ -212,7 +239,8 @@ public class OptimizedRoleAssigner implements IRoleAssigner
 			if (cost < cheapestCost)
 			{
 				cheapestCost = cost;
-				cheapestPath = paths[numTigers][c]; // Return current path
+				// Return current path
+				cheapestPath = paths[numTigers][c];
 			}
 			
 			if (cheapestCost < CANCEL_COST_THRESHOLD)
@@ -221,33 +249,36 @@ public class OptimizedRoleAssigner implements IRoleAssigner
 			}
 		}
 		
-
+		if (cheapestPath == null)
+		{
+			throw new IllegalStateException("No cheapestPath found. This should not happen.");
+		}
+		
+		
 		// Apply cheapest bot<->role path
 		int tiger = 0;
-		Iterator<TrackedTigerBot> it = assignees.iterator(); // Needed because of the 'remove'-operation in assign!
+		// Needed because of the 'remove'-operation in assign!
+		final Iterator<TrackedTigerBot> it = assignees.iterator();
 		while (it.hasNext())
 		{
-			TrackedTigerBot tBot = it.next();
-			int roleI = cheapestPath[tiger];
+			final TrackedTigerBot tBot = it.next();
+			final int roleI = cheapestPath[tiger];
 			
-			if (lessRolesThenBots && roleI > rolesToAssign.size() - 1)
+			if (lessRolesThenBots && (roleI > (rolesToAssign.size() - 1)))
 			{
 				tiger++;
-				continue; // No role for this bot!
+				// No role for this bot!
+				continue;
 			}
 			
-			ARole role = rolesToAssign.get(roleI);
-			assigner.assign(tBot, it, role, assignments);
+			final ARole role = rolesToAssign.get(roleI);
+			assigner.assign(tBot, it, role, frame);
 			
 			tiger++;
 		}
-		
-
-//		// Update roleCache
-//		roleCache.putAll(assignments);
 	}
 	
-
+	
 	/**
 	 * This is the point where you can add some deeper thoughts to the whole calculation very comfortably
 	 * <p>
@@ -257,16 +288,131 @@ public class OptimizedRoleAssigner implements IRoleAssigner
 	 * 
 	 * @param tiger
 	 * @param role
-	 * @param wFrame
+	 * @param frame
 	 * @return The cost this tiger would have to effort to take this role
 	 */
-	private int calcCost(TrackedTigerBot tiger, ARole role, WorldFrame wFrame)
+	private int calcCost(TrackedTigerBot tiger, ARole role, AIInfoFrame frame)
 	{
-		IVector2 dest = role.getDestination();
-		if (dest == null)
+		// use this method to deactivate a score. there is not yet a gui interface TODO unassigned create gui
+		scores.get(EScore.BALL_ROLE_DISTANCE).setActive(true);
+		int score = 0;
+		for (AScore method : scores.values())
 		{
-			log.fatal("Role doesn't contain a destination!");
+			score += method.calcScore(tiger, role, frame);
 		}
-		return Math.round(AIMath.distancePP(tiger, dest));
+		return score;
+	}
+	
+	
+	/**
+	 * This method can be used to assign a set of roles to a set of positions.
+	 * The idea is, that you can use this method in your play, if you have a number
+	 * of equal roles and want to assign them to some destinations.<br>
+	 * Number of roles and positions must be equal!
+	 * 
+	 * @param roles
+	 * @param positions
+	 * @param frame
+	 * @return
+	 */
+	public Map<ARole, IVector2> assign(List<ARole> roles, List<IVector2> positions, AIInfoFrame frame)
+	{
+		Map<ARole, IVector2> resultMap = new HashMap<ARole, IVector2>();
+		initPaths(roles.size());
+		
+		if ((roles.size() != positions.size()))
+		{
+			throw new IllegalArgumentException("number of roles and positions must be equal");
+		}
+		
+		if (roles.isEmpty())
+		{
+			// empty map
+			return resultMap;
+		}
+		
+		// Array that stores the costs a assignment of Tiger->Role would result in
+		// No more roles then bots..
+		final int[][] combinationsCost = new int[roles.size()][roles.size()];
+		
+		// Compare costs to find cheapest path
+		int[] cheapestPath = null;
+		int cheapestCost = Integer.MAX_VALUE;
+		for (int c = 0; c < SumatraMath.faculty(roles.size()); c++)
+		{
+			// Selected a combination path through our possible combinations, now step through this paths Tiger->Role
+			// assignments and cumulate costs
+			int cost = 0;
+			int tigerI = 0;
+			for (final ARole role : roles)
+			{
+				// Retrieve the path through the possibilities from the paths-store...
+				final int posI = paths[roles.size()][c][tigerI];
+				
+				// Get cost from cost-store
+				int tempCost = combinationsCost[tigerI][posI];
+				
+				// Not calculated yet!
+				if (tempCost == 0)
+				{
+					// Less roles then bots...
+					tempCost = calcCost(role, positions.get(posI), frame);
+					// Store for reuse
+					combinationsCost[tigerI][posI] = tempCost;
+				}
+				cost += tempCost;
+				
+				tigerI++;
+			}
+			
+			if (cost < cheapestCost)
+			{
+				cheapestCost = cost;
+				// Return current path
+				cheapestPath = paths[roles.size()][c];
+			}
+			
+			if (cheapestCost < CANCEL_COST_THRESHOLD)
+			{
+				break;
+			}
+		}
+		
+		if (cheapestPath == null)
+		{
+			throw new IllegalStateException("No cheapestPath found. This should not happen.");
+		}
+		
+		
+		// Apply cheapest bot<->role path
+		int tiger = 0;
+		// Needed because of the 'remove'-operation in assign!
+		final Iterator<ARole> it = roles.iterator();
+		while (it.hasNext())
+		{
+			final ARole role = it.next();
+			final int posI = cheapestPath[tiger];
+			
+			resultMap.put(role, positions.get(posI));
+			tiger++;
+		}
+		
+		return resultMap;
+	}
+	
+	
+	/**
+	 * Costs for role to get to position.
+	 * This is just the distance between roles pos to position atm.
+	 * 
+	 * @param role
+	 * @param position
+	 * @param frame
+	 * @return The cost this tiger would have to effort to take this role
+	 */
+	private int calcCost(final ARole role, final IVector2 position, final AIInfoFrame frame)
+	{
+		AScore distScore = scores.get(EScore.BOT_ROLE_DISTANCE);
+		return distScore.calcScoreOnPos(position, role, frame);
 	}
 }

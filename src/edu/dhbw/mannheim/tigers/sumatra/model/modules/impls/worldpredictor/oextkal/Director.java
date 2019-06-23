@@ -4,7 +4,7 @@
  * Project: TIGERS - Sumatra
  * Date: 16.05.2010
  * Authors:
- * Maren Künemund <Orphen@fantasymail.de>,
+ * Maren Kï¿½nemund <Orphen@fantasymail.de>,
  * Peter Birkenkampf <birkenkampf@web.de>,
  * Marcel Sauer <sauermarcel@yahoo.de>,
  * Gero
@@ -12,16 +12,22 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal;
 
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.CamDetectionFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.FrameID;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamDetectionFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.WPConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.data.PredictionContext;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.data.SyncedCamFrameBuffer;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IWorldPredictorObservable;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ITimer;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IWorldFrameConsumer;
+import edu.dhbw.mannheim.tigers.sumatra.util.FpsCounter;
 
 
 /**
@@ -32,67 +38,150 @@ public class Director implements Runnable
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final Logger								log		= Logger.getLogger(getClass());
+	// Logger
+	private static final Logger					log						= Logger.getLogger(Director.class.getName());
 	
-
+	
+	private static final long						WAIT_ON_FIRST_FRAME	= 100;
+	
+	
+	private static final int						WAIT_CAM_TIMEOUT		= 1000;
+	
+	
 	private Thread										processingThread;
 	
 	private final SyncedCamFrameBuffer			camBuffer;
 	private final PredictionContext				context;
-	private IWorldFrameConsumer					consumer	= null;
+	private IWorldFrameConsumer					consumer					= null;
 	
 	private final TrackingManager					trackingManager;
 	private double										trackingFrames;
 	
 	private final WorldFramePacker				packer;
-	private final IWorldPredictorObservable	observable;										// our oracle main class
-																													
+	// our oracle main class
+	private final IWorldPredictorObservable	observable;
+	
 	private final BallProcessor					ballProcessor;
 	private final BotProcessor						botProcessor;
 	private final BallCorrector					ballCorrector;
 	
-	private CamDetectionFrame						newFrame	= null;
 	
-	private ITimer										timer		= null;
-	private boolean									first;
+	private ITimer										timer						= null;
+	
+	private boolean									correctBallData		= true;
+	
+	private FpsCounter								fpsCounterCam			= new FpsCounter();
+	private FpsCounter								fpsCounterWF			= new FpsCounter();
+	
+	private boolean									warnNoVision;
+	private WorldFrame								lastwFrame				= null;
+	
+	private Timer										scheduledNotifier		= null;
+	
+	private CamDetectionFrame						lastCompletedFrame	= null;
+	
+	private long										nextFrameNumber		= 0;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors----------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	public Director(SyncedCamFrameBuffer freshCamDetnFrames, PredictionContext context,
-			IWorldPredictorObservable observable)
+	/**
+	 * @param freshCamDetnFrames
+	 * @param con
+	 * @param obs
+	 */
+	public Director(SyncedCamFrameBuffer freshCamDetnFrames, PredictionContext con, IWorldPredictorObservable obs)
 	{
-		this.camBuffer = freshCamDetnFrames;
+		camBuffer = freshCamDetnFrames;
 		
-		this.context = context;
-		this.packer = new WorldFramePacker(context);
+		context = con;
+		packer = new WorldFramePacker(context);
 		
-		this.trackingManager = new TrackingManager(this.context);
-		this.trackingFrames = context.getLatestCaptureTimestamp();
+		trackingManager = new TrackingManager(context);
+		trackingFrames = context.getLatestCaptureTimestamp();
 		
-		this.observable = observable;
+		observable = obs;
 		
-		this.ballProcessor = new BallProcessor(this.context);
-		this.botProcessor = new BotProcessor(this.context);
+		ballProcessor = new BallProcessor(context);
+		botProcessor = new BotProcessor(context);
 		
-		this.ballCorrector = new BallCorrector();
+		ballCorrector = new BallCorrector();
+		
+		warnNoVision = false;
+		
+		TimerTask action = new TimerTask()
+		{
+			@Override
+			public void run()
+			{
+				synchronized (context)
+				{
+					synchronized (packer)
+					{
+						// Prediction and packaging
+						WorldFrame wFrame = null;
+						if (lastCompletedFrame != null)
+						{
+							FrameID frameID = new FrameID(lastCompletedFrame.cameraId, nextFrameNumber);
+							startTime(frameID);
+							wFrame = packer.pack(nextFrameNumber, lastCompletedFrame.cameraId);
+							wFrame.setCamFps(fpsCounterCam.getAvgFps());
+							wFrame.setWfFps(fpsCounterWF.getAvgFps());
+							fpsCounterWF.newFrame();
+							// Push!
+							if (consumer != null)
+							{
+								consumer.onNewWorldFrame(wFrame);
+							}
+							
+							observable.notifyNewWorldFrame(wFrame);
+							stopTime(frameID);
+							nextFrameNumber++;
+						} else if (lastwFrame != null)
+						{
+							wFrame = WorldFrameFactory.createEmptyWorldFrame(lastwFrame.id.getFrameNumber(),
+									lastwFrame.teamProps);
+							if (consumer != null)
+							{
+								consumer.onVisionSignalLost(wFrame);
+							}
+							observable.notifyVisionSignalLost(wFrame);
+						}
+						
+						if (wFrame != null)
+						{
+							lastwFrame = wFrame;
+						}
+					}
+				}
+			}
+		};
+		scheduledNotifier = new Timer();
+		scheduledNotifier.schedule(action, 0, context.worldframesPublishIntervalMS);
 	}
 	
-
+	
+	/**
+	 * @param consumer
+	 */
 	public void setConsumer(IWorldFrameConsumer consumer)
 	{
 		this.consumer = consumer;
 	}
 	
-
+	
+	/**
+	 * @param timer
+	 */
 	public void setTimer(ITimer timer)
 	{
 		this.timer = timer;
 	}
 	
-
+	
+	/**
+	 */
 	public void start()
 	{
 		processingThread = new Thread(this, "WP_Director");
@@ -100,93 +189,138 @@ public class Director implements Runnable
 		processingThread.start();
 	}
 	
-
+	
 	@Override
 	public void run()
 	{
-		first = true;
-		while (!Thread.currentThread().isInterrupted())
+		boolean first = true;
+		mainloop: while (!Thread.currentThread().isInterrupted())
 		{
-			try
+			CamDetectionFrame newFrame = null;
+			do
 			{
-				do
+				try
 				{
-					newFrame = camBuffer.take();
-					if(first) {
-						WPConfig.FILTER_TIME_OFFSET = newFrame.tCapture;
-						first = false;
-					}
-					if(WPConfig.CORRECT_BALL_DATA)
+					newFrame = camBuffer.take(WAIT_CAM_TIMEOUT, TimeUnit.MILLISECONDS);
+					if (newFrame == null)
 					{
-						try
+						if (first)
 						{
-							newFrame = ballCorrector.correctFrame(newFrame);
-						} catch (Exception err)
-						{
-							WPConfig.CORRECT_BALL_DATA= false;
-							log.error("Turned off the WP-Ballcorrector, because there was an intern exception!");
+							Thread.sleep(WAIT_ON_FIRST_FRAME);
+							continue mainloop;
 						}
+						if (warnNoVision)
+						{
+							camBuffer.reset();
+							log.warn("No vision connection!");
+							warnNoVision = false;
+						}
+					} else
+					{
+						if (!warnNoVision)
+						{
+							camBuffer.reset();
+							log.info("Vision is back");
+						}
+						warnNoVision = true;
 					}
-					startTime(newFrame);					
+				} catch (final InterruptedException err)
+				{
+					log.debug("Interrupted while waiting for new CamDetectionFrame.");
+					camBuffer.clear();
+					// Called from end(), so it is meant to =)
+					return;
+				}
+				if (newFrame == null)
+				{
+					break;
+				}
+				if (first)
+				{
+					WPConfig.setFilterTimeOffset(newFrame.tCapture);
+					first = false;
+				}
+				if (correctBallData)
+				{
+					try
+					{
+						newFrame = ballCorrector.correctFrame(newFrame);
+					} catch (final Exception err)
+					{
+						correctBallData = false;
+						log.error("Turned off the WP-Ballcorrector, because there was an intern exception!", err);
+					}
+					if (newFrame == null)
+					{
+						break;
+					}
+				}
+				
+				synchronized (context)
+				{
+					context.setLatestCaptureTimestamp((newFrame.tCapture - WPConfig.getFilterTimeOffset())
+							* WPConfig.FILTER_CONVERT_NS_TO_INTERNAL_TIME);
+					context.setLatestTeamProps(newFrame.teamProps);
 					
-					context.setLatestCaptureTimestamp((newFrame.tCapture-WPConfig.FILTER_TIME_OFFSET)*WPConfig.FILTER_CONVERT_NS_TO_INTERNAL_TIME);
-					
-					// Processing
-					botProcessor.process(newFrame.robotsTigers, newFrame.robotsEnemies); // see \/
-					ballProcessor.process(newFrame.balls); // updates ball filter, uses position information form argument
-																		// and time-stamp from context
-				} while (camBuffer.merge());
+					// Processing // see \/
+					botProcessor.process(newFrame.robotsTigers, newFrame.robotsEnemies);
+					// updates ball filter, uses position information form argument and time-stamp from context
+					ballProcessor.process(newFrame.balls);
+				}
+			} while (camBuffer.merge());
+			camBuffer.clear();
+			
+			synchronized (context)
+			{
 				botProcessor.normalizePredictionTime();
 				ballProcessor.normalizePredictionTime();
 				botProcessor.performCollisionAwareLookahead();
 				ballProcessor.performCollisionAwareLookahead();
-			} catch (InterruptedException err)
-			{
-				log.debug("Interrupted while waiting for new CamDetectionFrame.");
-				camBuffer.clear();
-				break; // Called from end(), so it is meant to =)
 			}
-			camBuffer.clear();
 			
-			// Prediction and packaging
-			WorldFrame wFrame = packer.pack(newFrame.frameNumber, newFrame.cameraId);
+			// ###########################
+			synchronized (packer)
+			{
+				lastCompletedFrame = newFrame;
+			}
+			// ###########################
 			
-			// Push!
-			consumer.onNewWorldFrame(new WorldFrame(wFrame));
-			
-			observable.notifyFunctionalNewWorldFrame(wFrame);
-			observable.notifyNewWorldFrame(wFrame);
-			
-			if (trackingFrames + WPConfig.TRACKING_CHECK_INTERVAL <= context.getLatestCaptureTimestamp())
+			if ((trackingFrames + WPConfig.TRACKING_CHECK_INTERVAL) <= context.getLatestCaptureTimestamp())
 			{
 				trackingManager.checkItems();
 				trackingFrames = context.getLatestCaptureTimestamp();
 			}
-			stopTime(wFrame);
-		}
-	}
-
-	private void startTime(CamDetectionFrame detnFrame)
-	{
-		if (timer != null)
-		{
-			timer.startWP(detnFrame);
+			
+			fpsCounterCam.newFrame();
 		}
 	}
 	
-
-	private void stopTime(WorldFrame wFrame)
+	
+	private void startTime(FrameID frameId)
 	{
 		if (timer != null)
 		{
-			timer.stopWP(wFrame);
+			timer.start("WP", frameId);
 		}
 	}
 	
-
+	
+	private void stopTime(FrameID frameId)
+	{
+		if (timer != null)
+		{
+			timer.stop("WP", frameId);
+		}
+	}
+	
+	
+	/**
+	 */
 	public void end()
 	{
+		consumer.onStop();
 		processingThread.interrupt();
+		scheduledNotifier.cancel();
 	}
 	
 }

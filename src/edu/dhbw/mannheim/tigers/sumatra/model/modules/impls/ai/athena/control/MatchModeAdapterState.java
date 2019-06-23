@@ -9,14 +9,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena.control;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena.PlayMap;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena.PlayTuple;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.types.PlayScore;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
 
 
 /**
@@ -34,7 +27,6 @@ public class MatchModeAdapterState extends AGuiAdapterState
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final List<PlayTuple>	tuples	= PlayMap.getInstance().getTuples();
 	
 	
 	// --------------------------------------------------------------------------
@@ -48,20 +40,21 @@ public class MatchModeAdapterState extends AGuiAdapterState
 		super(adapter);
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
 	public void beforePlayFinding(AIInfoFrame current, AIInfoFrame previous)
 	{
-		if (hasChanged())
+		if (adapterHasChanged())
 		{
 			if (getControl().isForceNewDecision())
 			{
 				current.playStrategy.setForceNewDecision();
 				
-				getControl().forceNewDecision(false); // Event, disable
+				// Event, disable
+				getControl().forceNewDecision(false);
 			} else
 			{
 				current.playStrategy.setStateChanged(true);
@@ -69,25 +62,7 @@ public class MatchModeAdapterState extends AGuiAdapterState
 		}
 	}
 	
-
-	@Override
-	public void betweenPlayRole(AIInfoFrame current, AIInfoFrame previous)
-	{
-		
-		// Calc scores
-		List<PlayScore> scores = new ArrayList<PlayScore>();
-		for (PlayTuple tuple : tuples)
-		{
-			scores.add(new PlayScore(tuple, tuple.calcPlayableScore(current, 5)));
-		}
-		Collections.sort(scores, PlayScore.COMPARATOR_INVERSE);
-		
-		// Add to frame
-		current.playStrategy.getBestPlays().addAll(scores);
-		
-	}
 	
-
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -97,7 +72,7 @@ public class MatchModeAdapterState extends AGuiAdapterState
 		return false;
 	}
 	
-
+	
 	@Override
 	public boolean overrideRoleAssignment()
 	{

@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.basestation.BaseStation;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.udp.ITransceiverUDP;
@@ -32,77 +34,126 @@ public abstract class ABotManager extends AModule
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	public static final String	MODULE_TYPE						= "ABotManager";
-	public static final String	MODULE_ID						= "botmanager";
+	/** */
+	public static final String	MODULE_TYPE					= "ABotManager";
+	/** */
+	public static final String	MODULE_ID					= "botmanager";
 	
-
-	public final static String	BOTMANAGER_CONFIG_PATH		= "./config/botmanager/";
-	public final static String	BOTMANAGER_DEFAULT_CONFIG	= "botmanager_default.xml";
 	
-	protected static String		selectedPersistentConfig	= BOTMANAGER_DEFAULT_CONFIG;
+	/** */
+	public static final String	KEY_BOTMANAGER_CONFIG	= ABotManager.class.getName() + ".botmanagerConfig";
+	/** */
+	public static final String	BOTMANAGER_CONFIG_PATH	= "./config/botmanager/";
+	/**  */
+	public static final String	VALUE_BOTMANAGER_CONFIG	= "botmanager_sim.xml";
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	public abstract void execute(int id, ACommand cmd);
+	/**
+	 * 
+	 * @param id
+	 * @param cmd
+	 */
+	public abstract void execute(BotID id, ACommand cmd);
 	
-
-	public abstract ABot addBot(EBotType type, int id, String name);
 	
-
-	public abstract void removeBot(int id);
+	/**
+	 * 
+	 * @param type
+	 * @param id
+	 * @param name
+	 * @return
+	 */
+	public abstract ABot addBot(EBotType type, BotID id, String name);
 	
-
-	public abstract void changeBotId(int oldId, int newId);
 	
-
-	public abstract Map<Integer, ABot> getAllBots();
+	/**
+	 * 
+	 * @param bot
+	 */
+	public abstract void botConnectionChanged(ABot bot);
 	
-
+	
+	/**
+	 * 
+	 * @param id
+	 */
+	public abstract void removeBot(BotID id);
+	
+	
+	/**
+	 * 
+	 * @param oldId
+	 * @param newId
+	 */
+	public abstract void changeBotId(BotID oldId, BotID newId);
+	
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public abstract Map<BotID, ABot> getAllBots();
+	
+	
+	/**
+	 */
 	public abstract void removeAllBots();
 	
-	/**
-	 * Internally used to save selected config during Sumatra shutdown.
-	 * 
-	 * @param currentConfig
-	 */
-	public static void setSelectedPersistentConfig(String currentConfig)
-	{
-		ABotManager.selectedPersistentConfig = currentConfig;
-	}
 	
 	/**
-	 * Internally used to set selected config after Sumatra start.
 	 * 
-	 * @return config
+	 * @param enable
 	 */
-	public static String getSelectedPersistentConfig()
-	{
-		return selectedPersistentConfig;
-	}
-	
-	public abstract void loadConfig(String config);
-	public abstract List<String> getAvailableConfigs();
-	public abstract String getLoadedConfig();
-	public abstract void saveConfig(String filename);
-	public abstract void deleteConfig(String config);
-
-	public abstract Map<String, EBotType> getBotTypeMap();
-
 	public abstract void setUseMulticast(boolean enable);
+	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public abstract boolean getUseMulticast();
+	
+	
+	/**
+	 * 
+	 * @param time
+	 */
 	public abstract void setUpdateAllSleepTime(long time);
+	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public abstract long getUpdateAllSleepTime();
 	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public abstract ITransceiverUDP getMulticastTransceiver();
-
-	private List<IBotManagerObserver>	observers	= new ArrayList<IBotManagerObserver>();
+	
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public abstract BaseStation getBaseStation();
+	
+	private final List<IBotManagerObserver>	observers	= new ArrayList<IBotManagerObserver>();
 	
 	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 * @param o
+	 */
 	public void addObserver(IBotManagerObserver o)
 	{
 		synchronized (observers)
@@ -111,7 +162,11 @@ public abstract class ABotManager extends AModule
 		}
 	}
 	
-
+	
+	/**
+	 * 
+	 * @param o
+	 */
 	public void removeObserver(IBotManagerObserver o)
 	{
 		synchronized (observers)
@@ -120,36 +175,48 @@ public abstract class ABotManager extends AModule
 		}
 	}
 	
-
+	
+	protected void notifyBotConnectionChanged(ABot bot)
+	{
+		synchronized (observers)
+		{
+			for (final IBotManagerObserver o : observers)
+			{
+				o.onBotConnectionChanged(bot);
+			}
+		}
+	}
+	
+	
 	protected void notifyBotAdded(ABot bot)
 	{
 		synchronized (observers)
 		{
-			for (IBotManagerObserver o : observers)
+			for (final IBotManagerObserver o : observers)
 			{
 				o.onBotAdded(bot);
 			}
 		}
 	}
 	
-
+	
 	protected void notifyBotRemoved(ABot bot)
 	{
 		synchronized (observers)
 		{
-			for (IBotManagerObserver o : observers)
+			for (final IBotManagerObserver o : observers)
 			{
 				o.onBotRemoved(bot);
 			}
 		}
 	}
 	
-
-	protected void notifyBotIdChanged(int oldId, int newId)
+	
+	protected void notifyBotIdChanged(BotID oldId, BotID newId)
 	{
 		synchronized (observers)
 		{
-			for (IBotManagerObserver observer : observers)
+			for (final IBotManagerObserver observer : observers)
 			{
 				observer.onBotIdChanged(oldId, newId);
 			}

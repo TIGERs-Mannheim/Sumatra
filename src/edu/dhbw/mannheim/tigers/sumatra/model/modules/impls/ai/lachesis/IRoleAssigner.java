@@ -13,11 +13,10 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.TrackedTigerBot;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ARole;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 
 
 /**
@@ -31,8 +30,7 @@ public interface IRoleAssigner
 	/**
 	 * @param assignees The {@link TrackedTigerBot}s which are waiting for {@link ARole}
 	 * @param rolesToAssign The {@link ARole}s which have to be assigned
-	 * @param assignments The map the assignments of this AI-cycle are placed in. May very well be the {@link AIInfoFrame#assignedRoles}!
 	 * @param frame The {@link AIInfoFrame} of the current AI-cycle
 	 */
-	public void assignRoles(Collection<TrackedTigerBot> assignees, List<ARole> rolesToAssign, Map<Integer, ARole> assignments, AIInfoFrame frame);
+	void assignRoles(Collection<TrackedTigerBot> assignees, List<ARole> rolesToAssign, AIInfoFrame frame);
 }

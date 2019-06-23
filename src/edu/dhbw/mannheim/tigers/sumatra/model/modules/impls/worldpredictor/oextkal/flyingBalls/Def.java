@@ -1,15 +1,22 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: May 17, 2011
  * Author(s): Birgit
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.flyingBalls;
 
-import edu.dhbw.mannheim.tigers.sumatra.test.junit.model.modules.impls.worldpredictor.oextkal.flyingBalls.cases.ATestCase;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamCalibration;
 
 
 /**
@@ -18,99 +25,128 @@ import edu.dhbw.mannheim.tigers.sumatra.test.junit.model.modules.impls.worldpred
  * @author Birgit
  * 
  */
-public class Def
+public final class Def
 {
 	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	//parameter for test
-	public static double eps = 12e-12;
-	public static double hund = 0.01;
-	public static double zehn = 0.1;
+	// Logger
+	private static final Logger		log								= Logger.getLogger(Def.class.getName());
 	
-	//parameter for run
-
-	//Parameter 
-	public static final double	MIN_FLY_HEIGHT						= 300;//mm
-	public static final double	MIN_FLY_LENGTH						= 400;//mm
-	public static final double START_BOT2BALL_MAX_ANGLE 		= Math.PI/3;
-	public static final double RUN_BOT2BALL_MAX_ANGLE 			= Math.PI/6;
-	public static final double BALL2BALL_MIN_DISTANCE			= 30;//mm
+	// parameter for test
+	/** */
+	public static double					eps								= 12e-12;
+	/** */
+	public static final double			HUND								= 0.01;
+	/** */
+	public static final double			ZEHN								= 0.1;
 	
-	//feste Konstanten
-	public static final double KICK_RADIUS_AROUND_BOT 			= 100;//mm
-	public static final double BOT_RADIUS							= 70;//mm
-	public static final double DUMMY 								= Double.NEGATIVE_INFINITY;
-	public static final int		MAX_NUMBER_FLYS					= 3;
-	public static final int		MAX_NUMBER_BALLS_GO_BACK		= 2;
+	// parameter for run
 	
-
+	// Parameter
+	/** mm */
+	public static final double			MIN_FLY_HEIGHT					= 300;
+	/** mm */
+	public static final double			MIN_FLY_LENGTH					= 400;
+	/** */
+	public static final double			START_BOT2BALL_MAX_ANGLE	= Math.PI / 3;
+	/** */
+	public static final double			RUN_BOT2BALL_MAX_ANGLE		= Math.PI / 6;
+	/** mm */
+	public static final double			BALL2BALL_MIN_DISTANCE		= 30;
 	
-	public static boolean debug = false;
-	public static boolean debugCam = false;
-	public static boolean debugFlyHeight = false;
+	// feste Konstanten
+	/** mm */
+	public static final double			KICK_RADIUS_AROUND_BOT		= 100;
+	/** mm */
+	public static final double			BOT_RADIUS						= 70;
+	/** */
+	public static final double			DUMMY								= Double.NEGATIVE_INFINITY;
+	/** */
+	public static final int				MAX_NUMBER_FLYS				= 3;
+	/** */
+	public static final int				MAX_NUMBER_BALLS_GO_BACK	= 2;
 	
-	public static boolean isParametersSet = false;
-	public static double CamHeight = Def.DUMMY;
-	public static double CamNullX = Def.DUMMY;
-	public static double CamNullY = Def.DUMMY;
-	public static double CamOneX = Def.DUMMY;
-	public static double CamOneY = Def.DUMMY;
-	public static int	CamIDNull = -1;
-	public static int CamIDOne = -1;
 	
-	public static void setParameter(
-			  double aCamHeight,
-			  double aCamNullX,
-			  double aCamNullY,
-			  int aNullCamID,
-			  double aCamOneX,
-			  double aCamOneY,
-			  int aOneCamID)
-	{	
-		CamHeight = aCamHeight;
-		CamNullX  = aCamNullX;
-		CamNullY  = aCamNullY;
-		CamIDNull = aNullCamID;
-		CamOneX  = aCamOneX;
-		CamOneY  = aCamOneY;
-		CamIDOne = aOneCamID;
+	/** */
+	public static final boolean		DEBUG								= false;
+	/** */
+	public static final boolean		DEBUG_CAM						= false;
+	/** */
+	public static final boolean		DEBUG_FLY_HEIGHT				= false;
+	
+	/** */
+	public static boolean				isParametersSet				= false;
+	/** */
+	public static double					camHeight						= Def.DUMMY;
+	
+	/** */
+	public static Map<Integer, Cam>	cams								= new HashMap<Integer, Cam>();
+	
+	/**
+	 */
+	public static class Cam
+	{
+		int		id	= -1;
+		double	x	= Def.DUMMY;
+		double	y	= Def.DUMMY;
+	}
+	
+	
+	private Def()
+	{
+	}
+	
+	
+	/**
+	 * @param aCamHeight
+	 * @param camCalibration
+	 */
+	public static void setParameter(double aCamHeight, List<CamCalibration> camCalibration)
+	{
+		for (CamCalibration camCal : camCalibration)
+		{
+			Cam cam = new Cam();
+			cam.id = camCal.cameraId;
+			cam.x = camCal.derivedCameraWorldTx;
+			cam.y = camCal.derivedCameraWorldTy;
+			cams.put(camCal.cameraId, cam);
+		}
+		camHeight = aCamHeight;
 		
 		isParametersSet = true;
 		
-		if(Def.debug)
+		if (Def.DEBUG)
 		{
-		System.err.println("Parameter gesetzt: ");
-		System.out.println("CamHeight"+aCamHeight);
-		System.out.println("CamNullX "+aCamNullX );
-		System.out.println("CamNullY "+aCamNullY );
-		System.out.println("NullID"+aNullCamID);
-		System.out.println("CamOneX "+aCamOneX );
-		System.out.println("CamOneY "+aCamOneY );
-		System.out.println("OneCamID"+aOneCamID);
+			Level old = log.getLevel();
+			log.setLevel(Level.INFO);
+			log.info("Parameter gesetzt: ");
+			log.info("camHeight" + aCamHeight);
+			log.setLevel(old);
 		}
 	}
 	
-
-
-	//public static ATestCase t = new TestCaseFour();
-	public static ATestCase t = null;
 	
-
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	//help-functions
+	// help-functions
+	/**
+	 * @param x
+	 * @param y
+	 * @param eps
+	 * @return
+	 */
 	public static boolean equals(double x, double y, double eps)
 	{
-		if(Math.abs(x-y) < eps)
+		if (Math.abs(x - y) < eps)
 		{
 			return true;
 		}
@@ -118,9 +154,13 @@ public class Def
 	}
 	
 	
-	public static String toString(Jama.Matrix ma)
+	/**
+	 * @param ma
+	 * @return
+	 */
+	public static String jamaMatrixToString(Jama.Matrix ma)
 	{
-		String str = "";
+		final StringBuilder str = new StringBuilder();
 		
 		int i = -1;
 		int j = -1;
@@ -129,16 +169,16 @@ public class Def
 		{
 			for (j = 0; j < ma.getColumnDimension(); j++)
 			{
-				str += "[";
-				str += String.format("% 10.4e ", ma.get(i,j));
-				str += "]";
+				str.append("[");
+				str.append(String.format("% 10.4e ", ma.get(i, j)));
+				str.append("]");
 			}
-			str += "\n";
+			str.append("\n");
 		}
-		return str;	
+		return str.toString();
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------

@@ -1,15 +1,16 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 06.08.2010
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.log.internals;
 
 import org.apache.log4j.Level;
+
 
 /**
  * Observes changes in log level slider.
@@ -19,5 +20,9 @@ import org.apache.log4j.Level;
  */
 public interface ISlidePanelObserver
 {
-	public void onLevelChanged(Level level);
+	/**
+	 * 
+	 * @param level
+	 */
+	void onLevelChanged(Level level);
 }

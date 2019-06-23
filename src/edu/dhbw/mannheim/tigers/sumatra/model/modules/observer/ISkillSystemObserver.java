@@ -9,7 +9,8 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.observer;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ASkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ASkill;
 
 
 /**
@@ -23,14 +24,16 @@ public interface ISkillSystemObserver
 	 * Called after a skill is started.
 	 * 
 	 * @param skill The skill which state is now ACTIVE.
+	 * @param botID
 	 */
-	public void onSkillStarted(ASkill skill, int botID);
+	void onSkillStarted(ASkill skill, BotID botID);
 	
-
+	
 	/**
 	 * Called after a Skill is DONE.
 	 * 
 	 * @param skill Completed Skill.
+	 * @param botID
 	 */
-	public void onSkillCompleted(ASkill skill, int botID);
+	void onSkillCompleted(ASkill skill, BotID botID);
 }

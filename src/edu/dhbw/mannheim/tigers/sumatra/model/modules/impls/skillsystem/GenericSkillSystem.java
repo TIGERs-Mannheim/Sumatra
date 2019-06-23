@@ -10,25 +10,26 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.Sisyphus;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.tiger.DribbleBall;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.tiger.ImmediateDisarm;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.tiger.ImmediateStop;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ImmediateStopSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IBotManagerObserver;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IWorldPredictorObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ABotManager;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ASkillSystem;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AWorldPredictor;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IEmergencyStop;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ITimer;
+import edu.dhbw.mannheim.tigers.sumatra.util.NamedThreadFactory;
 import edu.moduli.exceptions.InitModuleException;
 import edu.moduli.exceptions.ModuleNotFoundException;
 
@@ -39,65 +40,67 @@ import edu.moduli.exceptions.ModuleNotFoundException;
  * @author AndreR
  * 
  */
-public class GenericSkillSystem extends ASkillSystem implements IWorldPredictorObserver, ISkillWorldInfoProvider,
-		IBotManagerObserver, IEmergencyStop
+public class GenericSkillSystem extends ASkillSystem implements ISkillWorldInfoProvider, IBotManagerObserver,
+		IEmergencyStop
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final Logger										log					= Logger.getLogger(getClass());
+	// Logger
+	private static final Logger						log				= Logger.getLogger(GenericSkillSystem.class.getName());
 	
-	private final SumatraModel								model					= SumatraModel.getInstance();
+	private ABotManager									botManager		= null;
+	private AWorldPredictor								worldpredictor	= null;
 	
-	protected ABotManager									botManager			= null;
-	private AWorldPredictor									wp						= null;
-	protected ITimer											timer					= null;
-	
-	private final Map<Integer, SkillExecutorInfo>	skillExecutors		= new HashMap<Integer, SkillExecutorInfo>();
+	private final Map<BotID, SkillExecutorInfo>	skillExecutors	= new HashMap<BotID, SkillExecutorInfo>();
 	/** [us] */
-	private final long										minPeriod;
+	private final long									minPeriod;
 	
-	private volatile WorldFrame							currentSituation	= null;
-	private volatile Sisyphus								sisyphus				= null;
+	private volatile Sisyphus							sisyphus			= null;
 	
 	private static class SkillExecutorInfo
 	{
-		public SkillExecutor		executor;
-		public ExecutorHandler	handler;
+		/** */
+		public SkillExecutor					executor;
+		/** */
+		public ExecutorHandler				handler;
+		
+		public ScheduledExecutorService	service;
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param subnodeConfiguration
+	 */
 	public GenericSkillSystem(SubnodeConfiguration subnodeConfiguration)
 	{
-		this.minPeriod = subnodeConfiguration.getLong("minProcessingPeriod");
-		// this.numThreads = subnodeConfiguration.getInt("numThreads", 1);
+		minPeriod = subnodeConfiguration.getLong("minProcessingPeriod");
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
 	public void initModule() throws InitModuleException
 	{
-		log.info("Initialized.");
+		log.debug("Initialized.");
 	}
 	
-
+	
 	@Override
 	public void startModule()
 	{
 		try
 		{
-			botManager = (ABotManager) model.getModule(ABotManager.MODULE_ID);
+			botManager = (ABotManager) SumatraModel.getInstance().getModule(ABotManager.MODULE_ID);
 			
-			wp = (AWorldPredictor) model.getModule(AWorldPredictor.MODULE_ID);
-			wp.addFunctionalObserver(this);
+			worldpredictor = (AWorldPredictor) SumatraModel.getInstance().getModule(AWorldPredictor.MODULE_ID);
 			
-		} catch (ModuleNotFoundException err)
+		} catch (final ModuleNotFoundException err)
 		{
 			log.error("Unable to find module '" + ABotManager.MODULE_ID + "'!");
 			return;
@@ -106,20 +109,20 @@ public class GenericSkillSystem extends ASkillSystem implements IWorldPredictorO
 		botManager.addObserver(this);
 		
 		// Finish initialization
-		Map<Integer, ABot> botList = botManager.getAllBots();
+		final Map<BotID, ABot> botList = botManager.getAllBots();
 		
 		// create bot skill executors
-		for (int botId : botList.keySet())
+		for (final BotID botId : botList.keySet())
 		{
 			addExecutor(botId);
 			
 			log.debug("Created skill executor for bot: " + botId);
 		}
 		
-		log.info("Started.");
+		log.debug("Started.");
 	}
 	
-
+	
 	@Override
 	public void stopModule()
 	{
@@ -128,225 +131,204 @@ public class GenericSkillSystem extends ASkillSystem implements IWorldPredictorO
 			botManager.removeObserver(this);
 		}
 		
-		for (SkillExecutorInfo info : skillExecutors.values())
+		for (final SkillExecutorInfo info : skillExecutors.values())
 		{
-			removeExecutor(info.handler.getBotId());
+			info.executor.sentStop();
+			removeExecutor(info.handler.getBotID());
 		}
 		
-		if (wp != null)
+		if (sisyphus != null)
 		{
-			wp.removeFunctionalObserver(this);
+			sisyphus.stopAllPathPlanning();
 		}
 		
 		skillExecutors.clear();
 		
-		log.info("Stopped.");
+		log.debug("Stopped.");
 	}
 	
-
+	
 	@Override
 	public void deinitModule()
 	{
+		super.deinitModule();
+		
 		botManager = null;
-		wp = null;
+		worldpredictor = null;
 		
-		synchronized (observers)
-		{
-			observers.clear();
-		}
-		
-		log.info("Deinitialized.");
+		log.debug("Deinitialized.");
 	}
 	
-
-	@Override
-	public void onNewWorldFrame(WorldFrame wf)
-	{
-		currentSituation = wf;
-	}
 	
-
 	@Override
-	public WorldFrame getCurrentWorldFrame()
+	public void execute(BotID botId, AMoveSkill skill)
 	{
-		return currentSituation;
-	}
-	
-
-	@Override
-	public void execute(int botId, ASkill skill)
-	{
-		SkillExecutorInfo info = skillExecutors.get(botId);
-		if (info == null || info.executor == null)
+		final SkillExecutorInfo info = skillExecutors.get(botId);
+		if ((info == null) || (info.executor == null))
 		{
 			log.warn("invalid botID: " + botId);
 			return;
 		}
 		
-		info.executor.setSkill(botId, skill, this);
+		info.executor.setSkill(skill, this);
 		
-		time(currentSituation);
 	}
 	
-
+	
 	@Override
-	public void execute(int botId, SkillFacade facade)
+	public void onBotIdChanged(BotID oldId, BotID newId)
 	{
-		SkillExecutorInfo info = skillExecutors.get(botId);
-		if (info == null || info.executor == null)
-		{
-			log.warn("invalid botID: " + botId);
-			return;
-		}
-		info.executor.setSkills(botId, facade, this);
-		
-		time(currentSituation);
-	}
-	
-
-	private void time(WorldFrame wFrame)
-	{
-		if (timer != null && wFrame != null)
-		{
-			timer.time(wFrame.id);
-		}
-	}
-	
-
-	@Override
-	public void onBotIdChanged(int oldId, int newId)
-	{
-		SkillExecutorInfo info = skillExecutors.get(oldId);
+		final SkillExecutorInfo info = skillExecutors.get(oldId);
 		info.handler.setBotId(newId);
 		
 		skillExecutors.put(newId, info);
 		skillExecutors.remove(oldId);
 	}
 	
-
+	
 	@Override
 	public void onBotAdded(ABot bot)
 	{
-		addExecutor(bot.getBotId());
+		addExecutor(bot.getBotID());
 		
 		log.debug("Created skill executor for bot: " + bot.getName());
 	}
 	
-
+	
 	@Override
 	public void onBotRemoved(ABot bot)
 	{
-		removeExecutor(bot.getBotId());
+		removeExecutor(bot.getBotID());
 		
 		log.debug("Removed skill executor for bot: " + bot.getName());
 	}
 	
-
-	private void addExecutor(int botId)
+	
+	private void addExecutor(BotID botID)
 	{
-		SkillExecutor executor = new SkillExecutor(minPeriod);
-		executor.setName("SkillExecutor " + botId);
-		ExecutorHandler handler = new ExecutorHandler(botId);
+		final SkillExecutor executor = new SkillExecutor(botID, minPeriod);
+		final ExecutorHandler handler = new ExecutorHandler(botID);
 		
 		executor.addObserver(handler);
-		wp.addFunctionalObserver(executor);
+		worldpredictor.addObserver(executor);
 		
-		SkillExecutorInfo info = new SkillExecutorInfo();
+		final SkillExecutorInfo info = new SkillExecutorInfo();
 		info.executor = executor;
 		info.handler = handler;
-		skillExecutors.put(botId, info);
+		info.service = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("SkillExecutor bot "
+				+ botID.getNumber()));
+		skillExecutors.put(botID, info);
 		
-		executor.start();
+		info.service.scheduleAtFixedRate(executor, 0, minPeriod, TimeUnit.MICROSECONDS);
 	}
 	
-
-	private void removeExecutor(int botId)
+	
+	private void removeExecutor(BotID botID)
 	{
-		SkillExecutorInfo info = skillExecutors.get(botId);
+		final SkillExecutorInfo info = skillExecutors.get(botID);
 		if (info == null)
 		{
-			log.warn("Invalid executor id: " + botId);
+			log.warn("Invalid executor id: " + botID);
 			return;
 		}
 		
-		wp.removeFunctionalObserver(info.executor);
-		info.executor.terminate();
+		worldpredictor.removeObserver(info.executor);
+		info.service.shutdown();
+		try
+		{
+			info.service.awaitTermination(minPeriod, TimeUnit.MICROSECONDS);
+		} catch (InterruptedException err)
+		{
+			log.error("Interrupted.", err);
+		}
 		info.executor.removeObserver(info.handler);
 	}
 	
 	private class ExecutorHandler implements ISkillExecutorObserver
 	{
-		private int	botId;
+		private BotID	botID;
 		
 		
-		public ExecutorHandler(int id)
+		/**
+		 * @param id
+		 */
+		public ExecutorHandler(BotID id)
 		{
-			botId = id;
+			botID = id;
 		}
 		
-
-		public void setBotId(int botId)
+		
+		/**
+		 * @param botID
+		 */
+		public void setBotId(BotID botID)
 		{
-			this.botId = botId;
+			this.botID = botID;
 		}
 		
-
-		public int getBotId()
+		
+		/**
+		 * @return
+		 */
+		public BotID getBotID()
 		{
-			return botId;
+			return botID;
 		}
 		
-
+		
 		@Override
 		public void onNewCommand(ACommand command)
 		{
-			botManager.execute(botId, command);
+			botManager.execute(botID, command);
 		}
 		
-
+		
 		@Override
-		public void onSkillStarted(ASkill skill)
+		public void onSkillStarted(AMoveSkill skill)
 		{
-			notifySkillStarted(skill, botId);
-			
-			log.debug("Started Skill " + skill.getSkillName() + " on Bot " + botId);
+			log.trace("Started Skill " + skill.getSkillName() + " on Bot " + botID);
+			notifySkillStarted(skill, botID);
 		}
 		
-
+		
 		@Override
-		public void onSkillCompleted(ASkill skill)
+		public void onSkillCompleted(AMoveSkill skill)
 		{
-			notifySkillCompleted(skill, botId);
-			
-			log.debug("Completed Skill " + skill.getSkillName() + " on Bot " + botId);
+			log.trace("Completed Skill " + skill.getSkillName() + " on Bot " + botID);
+			notifySkillCompleted(skill, botID);
 		}
 	}
 	
 	
 	/**
 	 * Sets the default {@link Sisyphus}-instance all skills may access
+	 * @param sisyphus
 	 */
 	public void setSisyphus(Sisyphus sisyphus)
 	{
 		this.sisyphus = sisyphus;
 	}
 	
-
+	
 	@Override
 	public Sisyphus getSisyphus()
 	{
 		return sisyphus;
 	}
 	
-
+	
 	@Override
 	public void emergencyStop()
 	{
-		for (ABot bot : botManager.getAllBots().values())
+		for (final ABot bot : botManager.getAllBots().values())
 		{
-			execute(bot.getBotId(), new ImmediateStop());
-			execute(bot.getBotId(), new ImmediateDisarm());
-			execute(bot.getBotId(), new DribbleBall(0));
+			execute(bot.getBotID(), new ImmediateStopSkill());
 		}
+	}
+	
+	
+	@Override
+	public void onBotConnectionChanged(ABot bot)
+	{
 	}
 }

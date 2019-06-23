@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<team>
+    <!-- one of BLUE or YELLOW -->
+    <color>YELLOW</color>
+    <!-- id of bot, that should be keeper (will be changed by referee sig) -->
+    <keeperId>6</keeperId>
+    <!-- leftToRight or sth else -->
+    <ourDirection>leftToRight</ourDirection>
+</team>

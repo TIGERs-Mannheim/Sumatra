@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 01.03.2011
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.udp;
@@ -22,6 +22,7 @@ import org.apache.log4j.Logger;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.Statistics;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 
+
 /**
  * Transceiver communicating with UDP packets via multicast.
  * 
@@ -33,58 +34,71 @@ public class MulticastTransceiverUDP implements ITransceiverUDP, IReceiverUDPObs
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final Logger log = Logger.getLogger(getClass());
+	// Logger
+	private static final Logger						log			= Logger.getLogger(MulticastTransceiverUDP.class.getName());
 	
-	private int dstPort = 0;
-	private int localPort = 0;
-	private InetAddress group = null;
-	private MulticastSocket socket = null;
-	private NetworkInterface network = null;
+	private int												dstPort		= 0;
+	private int												localPort	= 0;
+	private InetAddress									group			= null;
+	private MulticastSocket								socket		= null;
+	private NetworkInterface							network		= null;
 	
-	private TransmitterUDP transmitter = new TransmitterUDP();
-	private ReceiverUDP receiver = new ReceiverUDP();
+	private final TransmitterUDP						transmitter	= new TransmitterUDP();
+	private final ReceiverUDP							receiver		= new ReceiverUDP();
 	
-	private final List<ITransceiverUDPObserver> observers = new ArrayList<ITransceiverUDPObserver>();
+	private final List<ITransceiverUDPObserver>	observers	= new ArrayList<ITransceiverUDPObserver>();
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 */
 	public MulticastTransceiverUDP()
-	{		
+	{
 	}
 	
+	
+	/**
+	 * @param group
+	 * @param dstPort
+	 * @param localPort
+	 * @param open
+	 */
 	public MulticastTransceiverUDP(String group, int dstPort, int localPort, boolean open)
 	{
 		setDestination(group, dstPort);
 		setLocalPort(localPort);
-		if(open)
+		if (open)
 		{
 			open();
 		}
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	@Override
 	public void addObserver(ITransceiverUDPObserver observer)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
 			observers.add(observer);
 		}
 	}
 	
 	
+	@Override
 	public void removeObserver(ITransceiverUDPObserver observer)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
 			observers.remove(observer);
 		}
 	}
-
+	
+	
 	@Override
 	public void open()
 	{
@@ -102,21 +116,22 @@ public class MulticastTransceiverUDP implements ITransceiverUDP, IReceiverUDPObs
 			
 			transmitter.setSocket(socket);
 			transmitter.setDestination(group, dstPort);
-
+			
 			receiver.addObserver(this);
 			
 			transmitter.start();
 			receiver.start();
 		}
 		
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			log.error("Could not create UDP multicast socket on port: " + localPort);
 			
 			socket = null;
 		}
 	}
-
+	
+	
 	@Override
 	public void open(String host, int dstPort)
 	{
@@ -124,27 +139,30 @@ public class MulticastTransceiverUDP implements ITransceiverUDP, IReceiverUDPObs
 		{
 			close();
 			
-			this.group = InetAddress.getByName(host);
+			group = InetAddress.getByName(host);
 			this.dstPort = dstPort;
 			
 			open();
 		}
 		
-		catch (UnknownHostException err)
+		catch (final UnknownHostException err)
 		{
 			log.error("Could not resolve " + host, err);
 		}
 	}
-
+	
+	
 	@Override
 	public boolean isOpen()
 	{
 		return (socket != null);
 	}
-
+	
+	
+	@Override
 	public void enqueueCommand(ACommand cmd)
 	{
-		if(socket == null)
+		if (socket == null)
 		{
 			return;
 		}
@@ -154,15 +172,17 @@ public class MulticastTransceiverUDP implements ITransceiverUDP, IReceiverUDPObs
 		transmitter.enqueueCommand(cmd);
 	}
 	
+	
+	@Override
 	public void close()
 	{
-		if(socket == null)
+		if (socket == null)
 		{
 			return;
 		}
 		
 		receiver.removeObserver(this);
-
+		
 		transmitter.stop();
 		receiver.stop();
 		
@@ -171,48 +191,51 @@ public class MulticastTransceiverUDP implements ITransceiverUDP, IReceiverUDPObs
 			socket.leaveGroup(group);
 		}
 		
-		catch (IOException e)
+		catch (final IOException e)
 		{
 			log.error("Could not leave UDP multicast group: " + group.getHostAddress());
 		}
 		
-		if(!socket.isClosed())
+		if (!socket.isClosed())
 		{
 			socket.close();
 		}
-					
+		
 		socket = null;
 	}
-
+	
+	
 	@Override
 	public void onNewCommand(ACommand cmd)
 	{
 		notifyIncommingCommand(cmd);
 	}
-
+	
+	
 	private void notifyIncommingCommand(ACommand cmd)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for (ITransceiverUDPObserver observer : observers)
+			for (final ITransceiverUDPObserver observer : observers)
 			{
 				observer.onIncommingCommand(cmd);
 			}
 		}
 	}
 	
+	
 	private void notifyOutgoingCommand(ACommand cmd)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for (ITransceiverUDPObserver observer : observers)
+			for (final ITransceiverUDPObserver observer : observers)
 			{
 				observer.onOutgoingCommand(cmd);
 			}
 		}
 	}
-
-
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -221,7 +244,7 @@ public class MulticastTransceiverUDP implements ITransceiverUDP, IReceiverUDPObs
 	{
 		boolean start = false;
 		
-		if(socket != null)
+		if (socket != null)
 		{
 			start = true;
 			close();
@@ -229,48 +252,50 @@ public class MulticastTransceiverUDP implements ITransceiverUDP, IReceiverUDPObs
 		
 		try
 		{
-			this.dstPort = port;
+			dstPort = port;
 			this.group = InetAddress.getByName(group);
 		}
 		
-		catch(UnknownHostException e)
+		catch (final UnknownHostException e)
 		{
 			log.error("Unknown group: " + group);
 			
 			return;
 		}
 		
-		if(start)
+		if (start)
 		{
 			open();
 		}
 	}
+	
 	
 	@Override
 	public void setLocalPort(int port)
 	{
 		boolean start = false;
 		
-		if(socket != null)
+		if (socket != null)
 		{
 			start = true;
 			close();
 		}
 		
-		this.localPort = port;
+		localPort = port;
 		
-		if(start)
+		if (start)
 		{
 			open();
 		}
 	}
+	
 	
 	@Override
 	public void setNetworkInterface(NetworkInterface network)
 	{
 		boolean start = false;
 		
-		if(socket != null)
+		if (socket != null)
 		{
 			start = true;
 			close();
@@ -278,24 +303,26 @@ public class MulticastTransceiverUDP implements ITransceiverUDP, IReceiverUDPObs
 		
 		this.network = network;
 		
-		if(start)
+		if (start)
 		{
 			open();
-		}		
+		}
 	}
-
+	
+	
 	@Override
 	public Statistics getReceiverStats()
 	{
 		return receiver.getStats();
 	}
-
+	
+	
 	@Override
 	public Statistics getTransmitterStats()
 	{
 		return transmitter.getStats();
 	}
-
+	
 	// --------------------------------------------------------------------------
 	// --- Threads --------------------------------------------------------
 	// --------------------------------------------------------------------------

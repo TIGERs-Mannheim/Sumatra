@@ -9,127 +9,76 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.standard.penalty;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.AVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.ERefereeCommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Line;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.TrackedBot;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2;
+import java.util.LinkedList;
+import java.util.List;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.APlay;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACondition.EConditionState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense.PassiveDefenderRole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.standards.penalty.KeeperPenaltyThemRole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.standard.penalty.KeeperPenaltyThemRole;
 
 
 /**
- * Play which is choosen, when opponent team gets a penalty.<br>
- * Requires:<li>1 {@link KeeperPenaltyThemRole}</li> <li>4 {@link PassiveDefenderRole}</li> TODO: Handle alignment of
+ * Play which is chosen, when opponent team gets a penalty.<br>
+ * Requires:<li>1 {@link KeeperPenaltyThemRole}</li> <li>{@link PassiveDefenderRole}s</li> of
  * the shooter!
  * 
  * @author Malte
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class PenaltyThemPlay extends APlay
+public class PenaltyThemPlay extends APenaltyThemPlay
 {
-	/**  */
-	private static final long		serialVersionUID	= -8454158178552382074L;
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private KeeperPenaltyThemRole	keeper;
-	private PassiveDefenderRole	defender1;
-	private PassiveDefenderRole	defender2;
-	private PassiveDefenderRole	defender3;
-	private PassiveDefenderRole	defender4;
-	
-	private Line						defenderLine;
-	
-	private boolean					ready;
-	private final int[]				initPositions = new int[] {600, 300, -300, -600};
+	private final List<PassiveDefenderRole>	defenders	= new LinkedList<PassiveDefenderRole>();
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	public PenaltyThemPlay(AIInfoFrame aiFrame)
+	
+	/**
+	 * @param aiFrame
+	 * @param numAssignedRoles
+	 */
+	public PenaltyThemPlay(AIInfoFrame aiFrame, int numAssignedRoles)
 	{
-		super(EPlay.PENALTY_THEM, aiFrame);
-		keeper = new KeeperPenaltyThemRole();
-//		Vector2f pp = AIConfig.getGeometry().getPenaltyMarkOur();
-		/**
-		 * Line parallel to our goal line shifted 500mm.
-		 * "The robots other than the kicker are located:
-		 * - inside the field of play
-		 * - behind a line parallel to the goal line and 400 mm behind the penalty mark"
-		 */
-		defenderLine = new Line(AIConfig.getGeometry().getPenaltyMarkOur(), AVector2.Y_AXIS);
-		defenderLine.setSupportVector(new Vector2(defenderLine.supportVector().x() + 1000, defenderLine.supportVector()
-				.y()));
+		super(aiFrame, numAssignedRoles);
 		
-		addDefensiveRole(keeper, AIConfig.getGeometry().getGoalOur().getGoalCenter());
-		defender1 = new PassiveDefenderRole();
-		addDefensiveRole(defender1);
-		defender2 = new PassiveDefenderRole();
-		addDefensiveRole(defender2);
-		defender3 = new PassiveDefenderRole();
-		addDefensiveRole(defender3);
-		defender4 = new PassiveDefenderRole();
-		addDefensiveRole(defender4);
-
-		setDest(defender1, defender2, defender3, defender4);
-		ready = false;
-
+		for (int i = 0; i < (getNumAssignedRoles() - 1); i++)
+		{
+			final IVector2 position = getNextInitPosition(false);
+			final PassiveDefenderRole defender = new PassiveDefenderRole(position, AIConfig.getGeometry().getGoalTheir()
+					.getGoalCenter());
+			addDefensiveRole(defender, position);
+			defenders.add(defender);
+		}
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	
 	@Override
 	protected void beforeUpdate(AIInfoFrame currentFrame)
 	{
-		TrackedBot shooter = null;
-		for (TrackedBot bot : currentFrame.worldFrame.foeBots.values())
-		{
-			if (shooter == null)
-			{
-				shooter = bot;
-			}
-			else
-			{
-				if (bot.pos.x < shooter.pos.x)
-				{
-					shooter = bot;
-				}
-			}
-		}
-		keeper.setShooter(shooter);
+		super.beforeUpdate(currentFrame);
 		
-		if (currentFrame.refereeMsg != null && currentFrame.refereeMsg.cmd == ERefereeCommand.Ready)
+		for (final PassiveDefenderRole defender : defenders)
 		{
-			ready = true;
-			keeper.setReady(ready);
-		}
-		setDest(defender1, defender2, defender3, defender4);
-		defender1.setTarget(new Vector2(currentFrame.worldFrame.ball.pos));
-		defender2.setTarget(new Vector2(currentFrame.worldFrame.ball.pos));
-		defender3.setTarget(new Vector2(currentFrame.worldFrame.ball.pos));
-		defender4.setTarget(new Vector2(currentFrame.worldFrame.ball.pos));
-		
-	}
-	
-	
-	private void setDest(PassiveDefenderRole... defenderRoles)
-	{
-		int i = 0;
-		for (PassiveDefenderRole defRole : defenderRoles)
-		{
-			defRole.setDest(new Vector2(defenderLine.supportVector().x(), initPositions[i]));
-			i++;
+			if (defender.checkMovementCondition(currentFrame.worldFrame) == EConditionState.BLOCKED)
+			{
+				defender.updateDestination(getNextInitPosition(false));
+			}
+			defender.updateLookAtTarget(currentFrame.worldFrame.ball.getPos());
 		}
 	}
 	
-
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------

@@ -12,25 +12,24 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.vis;
 import java.io.IOException;
 import java.net.NetworkInterface;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sim.engine.plugins.visualization.SimVisMessages.SimVisData;
-import edu.dhbw.mannheim.tigers.sim.util.network.ITransmitter;
-import edu.dhbw.mannheim.tigers.sim.util.network.MulticastUDPTransmitter;
-import edu.dhbw.mannheim.tigers.sim.util.network.NetworkUtility;
-import edu.dhbw.mannheim.tigers.sim.util.network.UnicastUDPTransmitter;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.pathfinding.Path;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.vis.data.Translator;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IAIObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AVisDataConnector;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AWorldPredictor;
-import edu.dhbw.mannheim.tigers.sumatra.util.collection.ISyncedFIFO;
-import edu.dhbw.mannheim.tigers.sumatra.util.collection.SyncedArrayFIFO;
+import edu.dhbw.mannheim.tigers.sumatra.util.network.ITransmitter;
+import edu.dhbw.mannheim.tigers.sumatra.util.network.MulticastUDPTransmitter;
+import edu.dhbw.mannheim.tigers.sumatra.util.network.NetworkUtility;
 import edu.moduli.exceptions.InitModuleException;
 import edu.moduli.exceptions.ModuleNotFoundException;
 import edu.moduli.exceptions.StartModuleException;
@@ -42,40 +41,43 @@ import edu.moduli.exceptions.StartModuleException;
  */
 public class SimVisDataConnector extends AVisDataConnector implements Runnable, IAIObserver
 {
-	protected final Logger						log					= Logger.getLogger(getClass());
+	// Logger
+	private static final Logger						log					= Logger.getLogger(SimVisDataConnector.class
+																								.getName());
 	
 	// Model
-	private final SumatraModel					model					= SumatraModel.getInstance();
+	private final SumatraModel							model					= SumatraModel.getInstance();
 	
 	// Thread
-	private Thread									thread;
-	private boolean								expectInterrupt	= false;
-	private final int								sleepFor;
+	private Thread											thread;
+	private boolean										expectInterrupt	= false;
+	private final int										sleepFor;
 	
 	// Connection
-	private ITransmitter<byte[]>				transmitter;
-	private final int								localPort;
-	private final int								targetPort;
-	private final String							address;
-	private final boolean						multicastMode;
+	private ITransmitter<byte[]>						transmitter;
+	private final int										localPort;
+	private final int										targetPort;
+	private final String									address;
 	
-	private final String							network;
-	private final NetworkUtility				networkUtil			= new NetworkUtility();
-	private final NetworkInterface			nif;
+	private final String									network;
+	private final NetworkInterface					nif;
 	
 	// Input
-	private AAgent									agent					= null;
-	private final ISyncedFIFO<AIInfoFrame>	frameBuffer			= new SyncedArrayFIFO<AIInfoFrame>(1);
-	private HashMap<Integer, Path>			pathsBuffer			= new HashMap<Integer, Path>();
-	private final Object							pathsSync			= new Object();
+	private AAgent											agent					= null;
+	private final AtomicReference<AIInfoFrame>	frameBuffer			= new AtomicReference<AIInfoFrame>();
+	private HashMap<BotID, Path>						pathsBuffer			= new HashMap<BotID, Path>();
+	private final Object									pathsSync			= new Object();
 	
 	// Translation
-	private final Translator					translator;
+	private final Translator							translator;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructor(s) -------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param subnodeConfiguration
+	 */
 	public SimVisDataConnector(SubnodeConfiguration subnodeConfiguration)
 	{
 		localPort = subnodeConfiguration.getInt("localPort", 10130);
@@ -84,12 +86,10 @@ public class SimVisDataConnector extends AVisDataConnector implements Runnable, 
 		
 		sleepFor = Integer.parseInt(subnodeConfiguration.getString("sleepFor", "50"));
 		
-		multicastMode = model.getGlobalConfiguration().getBoolean("multicastMode", true);
-		
 		network = subnodeConfiguration.getString("interface", "192.168.1.0");
 		
 		// --- Choose network-interface
-		nif = networkUtil.chooseNetworkInterface(network, 3);
+		nif = NetworkUtility.chooseNetworkInterface(network, 3);
 		if (nif == null)
 		{
 			log.error("No proper nif for sim-vis in network '" + network + "' found!");
@@ -101,15 +101,17 @@ public class SimVisDataConnector extends AVisDataConnector implements Runnable, 
 		translator = new Translator();
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- collect and send -----------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
 	public void run()
 	{
-		AIInfoFrame frame = null; // Temporary WorldFrames
-		HashMap<Integer, Path> paths = null; // Temporary list of Paths
+		// Temporary WorldFrames
+		AIInfoFrame frame = null;
+		// Temporary list of Paths
+		HashMap<BotID, Path> paths = null;
 		
 		try
 		{
@@ -118,15 +120,15 @@ public class SimVisDataConnector extends AVisDataConnector implements Runnable, 
 				// Sleep
 				Thread.sleep(sleepFor);
 				
-				frame = frameBuffer.take();
+				frame = frameBuffer.get();
 				
 				synchronized (pathsSync)
 				{
 					paths = pathsBuffer;
-					pathsBuffer = new HashMap<Integer, Path>();
+					pathsBuffer = new HashMap<BotID, Path>();
 				}
 				
-
+				
 				// Convert wfs to VisData (if there's any)
 				if (frame != null)
 				{
@@ -144,16 +146,16 @@ public class SimVisDataConnector extends AVisDataConnector implements Runnable, 
 				
 				// ...more data
 				
-
+				
 				// Get SimVisData, convert and send as byte[]
-				SimVisData data = translator.build();
+				final SimVisData data = translator.build();
 				transmitter.send(data.toByteArray());
 				
 				// Reset
 				translator.reset();
 			}
 			
-		} catch (InterruptedException err)
+		} catch (final InterruptedException err)
 		{
 			if (!expectInterrupt)
 			{
@@ -171,7 +173,7 @@ public class SimVisDataConnector extends AVisDataConnector implements Runnable, 
 			try
 			{
 				transmitter.cleanup();
-			} catch (IOException err)
+			} catch (final IOException err)
 			{
 				if (!expectInterrupt)
 				{
@@ -181,52 +183,43 @@ public class SimVisDataConnector extends AVisDataConnector implements Runnable, 
 		}
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- input ----------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void onNewFieldRaster(int columnSize, int rowSize, int columnSizeAnalysing, int rowSizeAnalysing)
-	{
-		// Do nothing for now. Maybe later on?
-	}
-	
-
 	@Override
 	public void onNewPath(Path path)
 	{
 		synchronized (pathsSync)
 		{
-			pathsBuffer.put(path.botID, path);
+			pathsBuffer.put(path.getBotID(), path);
 		}
 	}
 	
-
+	
 	@Override
 	public void onNewAIInfoFrame(AIInfoFrame lastAIInfoframe)
 	{
-		frameBuffer.put(lastAIInfoframe);
+		frameBuffer.lazySet(lastAIInfoframe);
 	}
 	
-
+	
+	@Override
+	public void onAIException(Exception ex, AIInfoFrame frame, AIInfoFrame prevFrame)
+	{
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- life-cycle -----------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
 	public void initModule() throws InitModuleException
 	{
-		if (multicastMode)
-		{
-			transmitter = new MulticastUDPTransmitter(localPort, address, targetPort, nif);
-		} else
-		{
-			transmitter = new UnicastUDPTransmitter(localPort, address, targetPort);
-		}
-		
-		log.info("Initialized");
+		transmitter = new MulticastUDPTransmitter(localPort, address, targetPort, nif);
 	}
 	
-
+	
 	@Override
 	public void startModule() throws StartModuleException
 	{
@@ -239,7 +232,7 @@ public class SimVisDataConnector extends AVisDataConnector implements Runnable, 
 			agent = (AAgent) model.getModule(AAgent.MODULE_ID);
 			agent.addObserver(this);
 			
-		} catch (ModuleNotFoundException err)
+		} catch (final ModuleNotFoundException err)
 		{
 			log.error("Unable to find module '" + AWorldPredictor.MODULE_ID + "'!", err);
 		}
@@ -247,11 +240,9 @@ public class SimVisDataConnector extends AVisDataConnector implements Runnable, 
 		//
 		// // register at Sisyphus
 		// Sisyphus.getInstance().addObserver(this);
-		
-		log.info("Started");
 	}
 	
-
+	
 	@Override
 	public void stopModule()
 	{
@@ -263,15 +254,13 @@ public class SimVisDataConnector extends AVisDataConnector implements Runnable, 
 			agent.removeObserver(this);
 			agent = null;
 		}
-		
-		log.info("Stopped");
 	}
 	
-
+	
 	@Override
 	public void deinitModule()
 	{
-		log.info("Deinitialized.");
+		log.debug("Deinitialized.");
 	}
 	
 }

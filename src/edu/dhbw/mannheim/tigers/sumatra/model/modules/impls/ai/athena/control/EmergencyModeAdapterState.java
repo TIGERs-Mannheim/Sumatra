@@ -9,7 +9,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena.control;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
 
 
 /**
@@ -28,7 +28,7 @@ public class EmergencyModeAdapterState extends AGuiAdapterState
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -41,7 +41,7 @@ public class EmergencyModeAdapterState extends AGuiAdapterState
 		super(adapter);
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -52,35 +52,35 @@ public class EmergencyModeAdapterState extends AGuiAdapterState
 		// do nothing
 	}
 	
-
+	
 	@Override
 	public void choosePlays(AIInfoFrame current, AIInfoFrame previous)
 	{
 		// do nothing
 	}
 	
-
+	
 	@Override
 	public void betweenPlayRole(AIInfoFrame current, AIInfoFrame previous)
 	{
 		// do nothing
 	}
 	
-
+	
 	@Override
 	public void assignRoles(AIInfoFrame current, AIInfoFrame previous)
 	{
 		// do nothing
 	}
 	
-
+	
 	@Override
 	public void afterRoleAssignment(AIInfoFrame current, AIInfoFrame previous)
 	{
 		// do nothing
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -91,7 +91,7 @@ public class EmergencyModeAdapterState extends AGuiAdapterState
 		return true;
 	}
 	
-
+	
 	@Override
 	public boolean overrideRoleAssignment()
 	{

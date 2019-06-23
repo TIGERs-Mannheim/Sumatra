@@ -1,0 +1,4 @@
+# This is a comment
+topic read $SYS/#
+user roger
+topic foo/bar

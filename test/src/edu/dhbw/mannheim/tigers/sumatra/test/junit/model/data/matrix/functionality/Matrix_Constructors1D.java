@@ -9,12 +9,12 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.test.junit.model.data.matrix.functionality;
 
-import static org.junit.Assert.*;
-
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 import org.junit.Test;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.types.Matrix;
 
 
 /**
@@ -41,49 +41,57 @@ public class Matrix_Constructors1D
 		// wrong value
 	}
 	
-
+	
+	/**
+	 */
 	@Test
 	public void testCheckMatrixDoubleArrayArrayIntIntBoolean_correct()
 	{
 		// create a 2x4 matrix and control the content
-		Matrix M = new Matrix(r2_4_a, 2,4, true);
+		Matrix M = new Matrix(r2_4_a, 2, 4, true);
 		
 		for (int i = 0; i < 2; i++)
 		{
 			for (int j = 0; j < 4; j++)
 			{
-				assertEquals(r2_4_a[i*4+j], M.get(i, j),1E-15);
+				assertEquals(r2_4_a[(i * 4) + j], M.get(i, j), 1E-15);
 			}
 		}
 		
 		// create a 2x4 matrix and control the content
-		M = new Matrix(r2_4_a, 2,4, false);
+		M = new Matrix(r2_4_a, 2, 4, false);
 		
 		for (int i = 0; i < 2; i++)
 		{
 			for (int j = 0; j < 4; j++)
 			{
-				assertEquals(r2_4_a[i*4+j], M.get(i, j), 0.000001);
+				assertEquals(r2_4_a[(i * 4) + j], M.get(i, j), 0.000001);
 			}
 		}
 		
-		//change the matrix and control
-		M.set(0,0,123);
+		// change the matrix and control
+		M.set(0, 0, 123);
 		assertEquals(M.get(0, 0), 123, 1E-15);
-		assertFalse(M.get(0,0) ==  r2_4_a[0]);
+		assertFalse(M.get(0, 0) == r2_4_a[0]);
 		
 	}
 	
-	@Test (expected = IllegalArgumentException.class)
+	
+	/**
+	 */
+	@Test(expected = IllegalArgumentException.class)
 	public void testCheckMatrixDoubleArrayArrayIntIntBoolean_wrongRow()
 	{
-		new Matrix(r2_4_a, 1,4, true);
+		new Matrix(r2_4_a, 1, 4, true);
 	}
 	
-	@Test (expected = IllegalArgumentException.class)
+	
+	/**
+	 */
+	@Test(expected = IllegalArgumentException.class)
 	public void testCheckMatrixDoubleArrayArrayIntIntBoolean_wrongCol()
 	{
-		new Matrix(r2_4_a, 2,6, true);
+		new Matrix(r2_4_a, 2, 6, true);
 	}
-
+	
 }

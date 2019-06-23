@@ -9,17 +9,26 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config;
 
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.XMLConfiguration;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import java.lang.reflect.Array;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.CamGeometryFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2f;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector3f;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.exceptions.LoadConfigException;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.ICamGeomObservable;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.ICamGeomObserver;
+import org.apache.commons.configuration.Configuration;
+import org.apache.log4j.Logger;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.exceptions.LoadConfigException;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.config.AConfigClient;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IConfigClient;
 
 
 /**
@@ -27,39 +36,38 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.ICamGeomObserver;
  * hard choices - null == usual procedures in classes
  * @author Oliver Steinbrecher <OST1988@aol.com>, Malte
  */
-public class AIConfig implements ICamGeomObserver
+public final class AIConfig
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
+	// Logger
+	private static final Logger				log				= Logger.getLogger(AIConfig.class.getName());
 	
-	/** Senseless Vector. Vector2f(42000,42000). Use it to initialize your vector. */
-	public static final Vector2f	INIT_VECTOR		= new Vector2f(42000, 42000);
+	/** max number of bots that are in one team */
+	public static final int						MAX_NUM_BOTS	= 13;
 	
-	/** Senseless Vector. Vector3f(42000,42000). Use it to initialize your vector. */
-	public static final Vector3f	INIT_VECTOR3	= new Vector3f(42000, 42000, 42000);
+	// Observers
+	private final List<IAIConfigObserver>	observers		= new LinkedList<IAIConfigObserver>();
 	
-
-	protected final Log				log				= LogFactory.getLog(this.getClass().getName());
+	// AIConfig
+	private final IConfigClient				aiClient			= new AIConfigClient();
+	private Errt									errt				= null;
+	private OptimizationConfig					optimization	= null;
+	private FieldRasterConfig					fieldRaster		= null;
+	private MetisCalculators					calculators		= null;
+	private Tactics								tactics			= null;
+	private Roles									roles				= null;
+	private Plays									plays				= null;
 	
-	private XMLConfiguration		aiXMLConfig;
-	private XMLConfiguration		tacticsXMLConfig;
+	// Geometry
+	private final IConfigClient				geomClient		= new GeometryConfigClient();
+	private volatile Geometry					geometry;
 	
-	private General					general;
-	private Tolerances				tolerances;
-	private Errt						errt;
-	private Gui							gui;
-	private volatile Geometry		geometry;
-	private FieldRaster				fieldRaster;
-	private Skills						skills;
-	private Roles						roles;
-	private Plays						plays;
-	private Calculators				calucators;
-	private AthenaConfig				athenaConfig;
-	
-	private Tactics					tactics;
-	
-	private boolean					loaded;
+	// BotConfig
+	private IConfigClient						botClient		= new BotConfigClient();
+	private BotConfig								defaultBotConfig;
+	private Map<EBotType, BotConfig>			botConfig		= new HashMap<EBotType, BotConfig>();
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
@@ -72,118 +80,189 @@ public class AIConfig implements ICamGeomObserver
 	
 	private AIConfig()
 	{
-		loaded = false;
 	}
 	
-
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public static AIConfig getInstance()
 	{
 		return AIConfigHolder.CONFIG;
 	}
 	
-
-	// --------------------------------------------------------------------------
-	// --- public-method(s) -----------------------------------------------------
-	// --------------------------------------------------------------------------
 	
-	/**
-	 * Function to load ai configuration from file.
-	 * 
-	 * @param xmlFile Path to configuration file.
-	 * @throws Throws LoadConfigException when configuration file cannot be read or configuration is invalid.
-	 */
-	public void loadAIConfig(String xmlFile) throws LoadConfigException
+	// --------------------------------------------------------------------------
+	// --- IConfigClients -------------------------------------------------------
+	// --------------------------------------------------------------------------
+	private final class AIConfigClient extends AConfigClient
 	{
-		try
+		private AIConfigClient()
 		{
-			aiXMLConfig = new XMLConfiguration();
-			aiXMLConfig.setDelimiterParsingDisabled(true);
-			aiXMLConfig.load(xmlFile);
-			aiXMLConfig.setFileName(xmlFile.substring(xmlFile.lastIndexOf('/')+1));
-			
-			general = new General(aiXMLConfig);
-			tolerances = new Tolerances(aiXMLConfig);
-			gui = new Gui(aiXMLConfig);
-			geometry = new Geometry(aiXMLConfig);
-			errt = new Errt(aiXMLConfig);
-			fieldRaster = new FieldRaster(aiXMLConfig);
-			skills = new Skills(aiXMLConfig);
-			calucators = new Calculators(aiXMLConfig);
-			athenaConfig = new AthenaConfig(aiXMLConfig);
-			
-			loaded = true;
-		} catch (Exception e)
+			super("AI Config", AAgent.AI_CONFIG_PATH, AAgent.KEY_AI_CONFIG, AAgent.VALUE_AI_CONFIG, true);
+		}
+		
+		
+		@Override
+		public void onLoad(Configuration newConfig)
 		{
-			log.error("Error loading AI-Config!", e);
-			throw new RuntimeException("Error loading AI-Config!", e);
+			errt = new Errt(newConfig);
+			optimization = new OptimizationConfig(newConfig);
+			try
+			{
+				fieldRaster = new FieldRasterConfig(newConfig);
+			} catch (final LoadConfigException err)
+			{
+				log.error("Error while parsing FieldRaster-Config: ", err);
+			}
+			calculators = new MetisCalculators(newConfig);
+			tactics = new Tactics(newConfig);
+			roles = new Roles(newConfig);
+			plays = new Plays(newConfig);
+			
+			notifyNewFieldRaster();
 		}
 	}
 	
-
+	
 	/**
-	 * Stores the actual aiConfiguration to file. Nothing happens when
-	 * no configuration has been loaded.
 	 * 
-	 * @throws ConfigurationException
+	 * @return
 	 */
-	public void saveAIConfig() throws ConfigurationException
+	public IConfigClient getAiClient()
 	{
-		if (aiXMLConfig != null)
+		return aiClient;
+	}
+	
+	
+	private final class GeometryConfigClient extends AConfigClient
+	{
+		private GeometryConfigClient()
 		{
-			aiXMLConfig.save();
-		} else
+			super("Geometry", AAgent.GEOMETRY_CONFIG_PATH, AAgent.KEY_GEOMETRY_CONFIG, AAgent.VALUE_GEOMETRY_CONFIG, true);
+		}
+		
+		
+		@Override
+		public void onLoad(Configuration config)
 		{
-			log.error("Error while saving AI-Config! Reason: no configuration loaded yet");
+			geometry = new Geometry(config);
 		}
 	}
 	
-
-	/**
-	 * Function to load tactics configuration from file.
-	 * 
-	 * @param xmlFile Path to configuration file.
-	 * @throws Throws LoadConfigException when configuration file cannot be read or configuration is invalid.
-	 * @author Malte
-	 */
-	public void loadTacticsConfig(String xmlFile) throws LoadConfigException
+	private final class BotConfigClient extends AConfigClient
 	{
-		try
+		private BotConfigClient()
 		{
-			tacticsXMLConfig = new XMLConfiguration(xmlFile);
-			tactics = new Tactics(tacticsXMLConfig);
-			roles = new Roles(tacticsXMLConfig);
-			plays = new Plays(tacticsXMLConfig);
+			super("Bot Config", AAgent.BOT_CONFIG_PATH, AAgent.KEY_BOT_CONFIG, AAgent.VALUE_BOT_CONFIG, true);
+		}
+		
+		
+		@Override
+		public void onLoad(Configuration newConfig)
+		{
+			Iterator<String> it = newConfig.getKeys();
+			Set<String> keys = new HashSet<String>();
+			while (it.hasNext())
+			{
+				keys.add((String) Array.get(it.next().split("\\."), 0));
+			}
+			keys.remove("default");
+			defaultBotConfig = new BotConfig(newConfig.subset("default"));
+			botConfig.put(EBotType.UNKNOWN, defaultBotConfig);
+			for (String key : keys)
+			{
+				Configuration conf = newConfig.subset(key);
+				try
+				{
+					EBotType botType = EBotType.valueOf(key.toUpperCase(Locale.ENGLISH));
+					botConfig.put(botType, new BotConfig(conf, defaultBotConfig));
+				} catch (IllegalArgumentException e)
+				{
+					log.error("Could not load bot specific parameters from " + getConfigPath() + getDefaultValue()
+							+ " for bot type " + key);
+				}
+			}
+		}
+	}
+	
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public IConfigClient getGeomClient()
+	{
+		return geomClient;
+	}
+	
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public IConfigClient getBotClient()
+	{
+		return botClient;
+	}
+	
+	
+	// --------------------------------------------------------------------------
+	// --- observable -----------------------------------------------------------
+	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 * @param newObserver
+	 */
+	public void addObserver(IAIConfigObserver newObserver)
+	{
+		synchronized (observers)
+		{
+			observers.add(newObserver);
 			
-		} catch (Exception e)
-		{
-			log.error("Error loading Tactics-Config!", e);
-			throw new RuntimeException("Error loading Tactics-Config!", e);
+			newObserver.onNewFieldRaster(fieldRaster);
 		}
 	}
 	
-
-	// --------------------------------------------------------------------------
-	// --- private-method(s) ----------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
-	 * @return the general configuration
+	 * 
+	 * @param oldObserver
 	 */
-	public static General getGeneral()
+	public void removeObserver(IAIConfigObserver oldObserver)
 	{
-		return AIConfig.getInstance().general;
+		synchronized (observers)
+		{
+			observers.remove(oldObserver);
+		}
 	}
 	
-
+	
 	/**
-	 * @return the tolerances configuration
+	 * 
+	 * This function is used to visualize the positioning field raster in sumatra field view.
+	 * Thus field raster will only be loaded once at startup this method is private and will
+	 * be called with AI-Module start.
+	 * 
 	 */
-	public static Tolerances getTolerances()
+	private void notifyNewFieldRaster()
 	{
-		return AIConfig.getInstance().tolerances;
+		synchronized (observers)
+		{
+			for (final IAIConfigObserver o : observers)
+			{
+				o.onNewFieldRaster(fieldRaster);
+			}
+		}
 	}
 	
-
+	
+	// --------------------------------------------------------------------------
+	// --- accessors ------------------------------------------------------------
+	// --------------------------------------------------------------------------
+	
+	
 	/**
 	 * @return the errt configuration
 	 */
@@ -192,43 +271,63 @@ public class AIConfig implements ICamGeomObserver
 		return AIConfig.getInstance().errt;
 	}
 	
-
+	
 	/**
-	 * @return the gui configuration
+	 * Do not call this method in {@link ARole#update(AIInfoFrame)} or similar
+	 * frequently called methods. Rather store this value locally (but not static!!)
+	 * 
+	 * @param botType
+	 * @return the botConfig configuration
 	 */
-	public static Gui getGui()
+	public static BotConfig getBotConfig(EBotType botType)
 	{
-		return AIConfig.getInstance().gui;
+		BotConfig botConfig = AIConfig.getInstance().botConfig.get(botType);
+		if (botConfig == null)
+		{
+			log.warn("You requested a botConfig for a botType (" + botType + ") that has no specialized config.");
+			log.warn("Maybe you called this before the botType is known. (botType will be unknown then)");
+			log.warn(
+					"The default config will be loaded, but you should make sure you grap the configs later in your code!",
+					new Exception());
+			return AIConfig.getInstance().defaultBotConfig;
+		}
+		return botConfig;
 	}
 	
-
+	
+	/**
+	 * Use this only, if you do not care about bot specific config params.
+	 * 
+	 * @return the defaultBotConfig
+	 */
+	public static BotConfig getDefaultBotConfig()
+	{
+		return AIConfig.getInstance().defaultBotConfig;
+	}
+	
+	
 	/**
 	 * @return geometry values
 	 */
 	public static Geometry getGeometry()
 	{
+		if (AIConfig.getInstance().geometry == null)
+		{
+			throw new IllegalStateException("geometry is null!");
+		}
 		return AIConfig.getInstance().geometry;
 	}
 	
-
+	
 	/**
 	 * @return the field raster configuration
 	 */
-	public static FieldRaster getFieldRaster()
+	public static FieldRasterConfig getFieldRaster()
 	{
 		return AIConfig.getInstance().fieldRaster;
 	}
 	
-
-	/**
-	 * @return the skill configuration
-	 */
-	public static Skills getSkills()
-	{
-		return AIConfig.getInstance().skills;
-	}
 	
-
 	/**
 	 * @return the role configuration
 	 */
@@ -237,46 +336,81 @@ public class AIConfig implements ICamGeomObserver
 		return AIConfig.getInstance().roles;
 	}
 	
-
+	
 	/**
-	 * @return the play configuration
+	 * @return the role configuration
 	 */
 	public static Plays getPlays()
 	{
 		return AIConfig.getInstance().plays;
 	}
 	
-
+	
 	/**
-	 * @return the skill configuration
+	 * @return the calculators configuration
 	 */
-	public static Calculators getCalculators()
+	public static MetisCalculators getMetisCalculators()
 	{
-		return AIConfig.getInstance().calucators;
+		return AIConfig.getInstance().calculators;
 	}
 	
-
-	public static AthenaConfig getAthenaConfig()
-	{
-		return AIConfig.getInstance().athenaConfig;
-	}
 	
-
+	/**
+	 * 
+	 * @return
+	 */
 	public static Tactics getTactics()
 	{
 		return AIConfig.getInstance().tactics;
 	}
 	
-
-	@Override
-	public void update(ICamGeomObservable observable, CamGeometryFrame event)
+	
+	/**
+	 * Do not call this method in {@link ARole#update(AIInfoFrame)} or similar
+	 * frequently called methods. Rather store this value locally (but not static!!)
+	 * 
+	 * @param botType
+	 * @return the general
+	 */
+	public static General getGeneral(EBotType botType)
 	{
-		Geometry newGeom = new Geometry(event.fieldGeometry, AIConfig.getInstance().geometry);
-		AIConfig.getInstance().geometry = newGeom;
+		return AIConfig.getBotConfig(botType).getGeneral();
 	}
 	
-	public static boolean isLoaded()
+	
+	/**
+	 * Do not call this method in {@link ARole#update(AIInfoFrame)} or similar
+	 * frequently called methods. Rather store this value locally (but not static!!)
+	 * 
+	 * @param botType
+	 * @return the tolerances
+	 */
+	public static Tolerances getTolerances(EBotType botType)
 	{
-		return AIConfig.getInstance().loaded;
+		return AIConfig.getBotConfig(botType).getTolerances();
 	}
+	
+	
+	/**
+	 * Do not call this method in {@link ARole#update(AIInfoFrame)} or similar
+	 * frequently called methods. Rather store this value locally (but not static!!)
+	 * 
+	 * @param botType
+	 * @return the skills
+	 */
+	public static Skills getSkills(EBotType botType)
+	{
+		return AIConfig.getBotConfig(botType).getSkills();
+	}
+	
+	
+	/**
+	 * @return the optimization
+	 */
+	public static OptimizationConfig getOptimization()
+	{
+		return AIConfig.getInstance().optimization;
+	}
+	
+	
 }

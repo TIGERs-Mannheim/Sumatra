@@ -1,15 +1,16 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 04.03.2011
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
+
 
 /**
  * Transceiver base observer interface.
@@ -24,12 +25,13 @@ public interface ITransceiverObserver
 	 * 
 	 * @param cmd New command.
 	 */
-	public void onIncommingCommand(ACommand cmd);
+	void onIncommingCommand(ACommand cmd);
+	
 	
 	/**
 	 * Called after Sumatra sends a command to the target
 	 * 
 	 * @param cmd Command
 	 */
-	public void onOutgoingCommand(ACommand cmd);
+	void onOutgoingCommand(ACommand cmd);
 }

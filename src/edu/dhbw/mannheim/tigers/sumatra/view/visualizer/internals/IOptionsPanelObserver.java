@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 11.08.2010
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals;
@@ -17,5 +17,16 @@ package edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals;
  */
 public interface IOptionsPanelObserver
 {
-	public void onCheckboxClick(String string, boolean isSelected);
+	/**
+	 * 
+	 * @param string
+	 * @param isSelected
+	 */
+	void onCheckboxClick(String string, boolean isSelected);
+	
+	
+	/**
+	 * Turn the field clockwise 90deg
+	 */
+	void onTurnField();
 }

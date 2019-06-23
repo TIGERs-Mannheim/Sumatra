@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 11.09.2010
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.kicker;
@@ -22,6 +22,7 @@ import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
 
+
 /**
  * Manual duty cycle control.
  * 
@@ -30,25 +31,35 @@ import net.miginfocom.swing.MigLayout;
  */
 public class KickerChargeManualPanel extends JPanel
 {
+	/**
+	 */
 	public interface IKickerChargeManualObserver
 	{
-		public void onKickerChargeManual(int duration, int on, int off);
+		/**
+		 * @param duration
+		 * @param on
+		 * @param off
+		 */
+		void onKickerChargeManual(int duration, int on, int off);
 	}
 	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long	serialVersionUID	= 4491788507190622525L;
+	private static final long								serialVersionUID	= 4491788507190622525L;
 	
-	private JTextField time;
-	private JTextField on;
-	private JTextField off;
+	private final JTextField								time;
+	private final JTextField								on;
+	private final JTextField								off;
 	
-	private final List<IKickerChargeManualObserver> observers = new ArrayList<IKickerChargeManualObserver>();
+	private final List<IKickerChargeManualObserver>	observers			= new ArrayList<IKickerChargeManualObserver>();
+	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 */
 	public KickerChargeManualPanel()
 	{
 		setLayout(new MigLayout("fill, wrap 3", "[50][100,fill][30]"));
@@ -57,7 +68,7 @@ public class KickerChargeManualPanel extends JPanel
 		off = new JTextField();
 		time = new JTextField();
 		
-		JButton set = new JButton("Set");
+		final JButton set = new JButton("Set");
 		
 		set.addActionListener(new Set());
 		
@@ -75,32 +86,39 @@ public class KickerChargeManualPanel extends JPanel
 		setBorder(BorderFactory.createTitledBorder("Manual Charge"));
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param observer
+	 */
 	public void addObserver(IKickerChargeManualObserver observer)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
 			observers.add(observer);
 		}
 	}
 	
 	
+	/**
+	 * @param observer
+	 */
 	public void removeObserver(IKickerChargeManualObserver observer)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
 			observers.remove(observer);
 		}
 	}
 	
+	
 	private void notifySet(int duration, int on, int off)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for (IKickerChargeManualObserver observer : observers)
+			for (final IKickerChargeManualObserver observer : observers)
 			{
 				observer.onKickerChargeManual(duration, on, off);
 			}
@@ -115,22 +133,21 @@ public class KickerChargeManualPanel extends JPanel
 		@Override
 		public void actionPerformed(ActionEvent arg0)
 		{
-			int t_on;
-			int t_off;
+			int tOn;
+			int tOff;
 			int t;
 			
 			try
 			{
 				t = Integer.parseInt(time.getText());
-				t_on = Integer.parseInt(on.getText());
-				t_off = Integer.parseInt(off.getText());
-			}
-			catch(NumberFormatException e)
+				tOn = Integer.parseInt(on.getText());
+				tOff = Integer.parseInt(off.getText());
+			} catch (final NumberFormatException e)
 			{
 				return;
 			}
 			
-			notifySet(t, t_on, t_off);
+			notifySet(t, tOn, tOff);
 		}
 	}
 }

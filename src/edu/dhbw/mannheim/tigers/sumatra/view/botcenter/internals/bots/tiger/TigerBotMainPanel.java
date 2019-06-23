@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 30.08.2010
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger;
@@ -25,7 +25,9 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
+
 
 /**
  * Main panel for the tiger bot.
@@ -38,44 +40,47 @@ public class TigerBotMainPanel extends JPanel
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long	serialVersionUID	= 8270294413292980459L;
-
-	private JTextField id = new JTextField();
-	private JTextField name = new JTextField();
-	private JTextField ip = new JTextField();
-	private JTextField port = new JTextField();
-	private JTextField status = new JTextField();
-	private JTextField mac = new JTextField();
-	private JTextField serverPort = new JTextField();
-	private JTextField cpuId = new JTextField();
-	private JCheckBox useUpdateAll = new JCheckBox();
-	private JCheckBox logMovement = new JCheckBox();
-	private JCheckBox logKicker = new JCheckBox();
-	private JCheckBox logAccel = new JCheckBox();
-	private JCheckBox logIr = new JCheckBox();
-	private JButton connect = new JButton("Connect");
+	private static final long								serialVersionUID	= 8270294413292980459L;
 	
-	private final List<ITigerBotMainPanelObserver> observers = new ArrayList<ITigerBotMainPanelObserver>();
-
+	private final JTextField								id						= new JTextField();
+	private final JTextField								name					= new JTextField();
+	private final JTextField								ip						= new JTextField();
+	private final JTextField								port					= new JTextField();
+	private final JTextField								status				= new JTextField();
+	private final JTextField								mac					= new JTextField();
+	private final JTextField								serverPort			= new JTextField();
+	private final JTextField								cpuId					= new JTextField();
+	private final JCheckBox									useUpdateAll		= new JCheckBox();
+	private final JCheckBox									logMovement			= new JCheckBox();
+	private final JCheckBox									logKicker			= new JCheckBox();
+	private final JCheckBox									logIr					= new JCheckBox();
+	private final JButton									connect				= new JButton("Connect");
+	
+	private final List<ITigerBotMainPanelObserver>	observers			= new ArrayList<ITigerBotMainPanelObserver>();
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 */
 	public TigerBotMainPanel()
 	{
 		setLayout(new MigLayout("fill"));
 		
 		status.setEditable(false);
 		
-		JButton saveGeneral = new JButton("Save");
-		JButton saveLogs = new JButton("Apply");
-
+		final JButton saveGeneral = new JButton("Save");
+		final JButton saveLogs = new JButton("Apply");
+		
 		saveGeneral.addActionListener(new SaveGeneral());
 		connect.addActionListener(new ConnectionChange());
 		saveLogs.addActionListener(new SaveLogs());
 		
-		JPanel general = new JPanel(new MigLayout("fill", "[50]10[200,fill]"));
-		JPanel network = new JPanel(new MigLayout("fill", "[50][100,fill]10[100,fill]"));
-		JPanel logs = new JPanel(new MigLayout("fill", "[100]10[150,fill]"));
+		final JPanel general = new JPanel(new MigLayout("fill", "[50]10[200,fill]"));
+		final JPanel network = new JPanel(new MigLayout("fill", "[50][100,fill]10[100,fill]"));
+		final JPanel logs = new JPanel(new MigLayout("fill", "[100]10[150,fill]"));
 		
 		general.setBorder(BorderFactory.createTitledBorder("General"));
 		network.setBorder(BorderFactory.createTitledBorder("Network"));
@@ -107,8 +112,6 @@ public class TigerBotMainPanel extends JPanel
 		logs.add(logMovement, "wrap");
 		logs.add(new JLabel("Kicker:"));
 		logs.add(logKicker, "wrap");
-		logs.add(new JLabel("Acceleration:"));
-		logs.add(logAccel, "wrap");
 		logs.add(new JLabel("IR:"));
 		logs.add(logIr, "wrap");
 		logs.add(saveLogs, "span 2");
@@ -119,44 +122,68 @@ public class TigerBotMainPanel extends JPanel
 		add(Box.createGlue(), "push");
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 * @param observer
+	 */
 	public void addObserver(ITigerBotMainPanelObserver observer)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
 			observers.add(observer);
 		}
 	}
 	
 	
+	/**
+	 * 
+	 * @param observer
+	 */
 	public void removeObserver(ITigerBotMainPanelObserver observer)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
 			observers.remove(observer);
 		}
 	}
 	
-	public void setId(final int idVal)
+	
+	/**
+	 * 
+	 * @param idVal
+	 */
+	public void setId(final BotID idVal)
 	{
 		SwingUtilities.invokeLater(new Runnable()
 		{
 			@Override
 			public void run()
 			{
-				id.setText(String.valueOf(idVal));
+				id.setText(String.valueOf(idVal.getNumber()));
 			}
 		});
 	}
 	
-	public int getId() throws NumberFormatException
+	
+	/**
+	 * 
+	 * @return
+	 * @throws NumberFormatException
+	 */
+	public int getId()
 	{
 		return Integer.parseInt(id.getText());
 	}
 	
+	
+	/**
+	 * 
+	 * @param nameVal
+	 */
 	public void setBotName(final String nameVal)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -169,11 +196,21 @@ public class TigerBotMainPanel extends JPanel
 		});
 	}
 	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public String getBotName()
 	{
 		return name.getText();
 	}
 	
+	
+	/**
+	 * 
+	 * @param ipVal
+	 */
 	public void setIp(final String ipVal)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -186,11 +223,21 @@ public class TigerBotMainPanel extends JPanel
 		});
 	}
 	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public String getIp()
 	{
 		return ip.getText();
 	}
 	
+	
+	/**
+	 * 
+	 * @param portVal
+	 */
 	public void setPort(final int portVal)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -203,11 +250,22 @@ public class TigerBotMainPanel extends JPanel
 		});
 	}
 	
-	public int getPort() throws NumberFormatException
+	
+	/**
+	 * 
+	 * @return
+	 * @throws NumberFormatException
+	 */
+	public int getPort()
 	{
- 		return Integer.parseInt(port.getText());
+		return Integer.parseInt(port.getText());
 	}
-		
+	
+	
+	/**
+	 * 
+	 * @param state
+	 */
 	public void setConnectionState(final ENetworkState state)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -215,28 +273,33 @@ public class TigerBotMainPanel extends JPanel
 			@Override
 			public void run()
 			{
-				switch(state)
+				switch (state)
 				{
 					case OFFLINE:
 						status.setText("Offline");
 						connect.setText("Connect");
 						status.setBackground(new Color(255, 128, 128));
-					break;
+						break;
 					case CONNECTING:
 						status.setText("Connecting");
 						connect.setText("Disconnect");
 						status.setBackground(Color.CYAN);
-					break;
+						break;
 					case ONLINE:
 						status.setText("Online");
 						connect.setText("Disconnect");
 						status.setBackground(Color.GREEN);
-					break;
+						break;
 				}
 			}
 		});
 	}
 	
+	
+	/**
+	 * 
+	 * @param id
+	 */
 	public void setCpuId(final String id)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -249,11 +312,21 @@ public class TigerBotMainPanel extends JPanel
 		});
 	}
 	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public String getCpuId()
 	{
 		return cpuId.getText();
 	}
 	
+	
+	/**
+	 * 
+	 * @param newMac
+	 */
 	public void setMac(final String newMac)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -266,11 +339,21 @@ public class TigerBotMainPanel extends JPanel
 		});
 	}
 	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public String getMac()
 	{
 		return mac.getText();
 	}
 	
+	
+	/**
+	 * 
+	 * @param portVal
+	 */
 	public void setServerPort(final int portVal)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -283,14 +366,26 @@ public class TigerBotMainPanel extends JPanel
 		});
 	}
 	
-	public int getServerPort() throws NumberFormatException
+	
+	/**
+	 * 
+	 * @return
+	 * @throws NumberFormatException
+	 */
+	public int getServerPort()
 	{
- 		return Integer.parseInt(serverPort.getText());
+		return Integer.parseInt(serverPort.getText());
 	}
 	
+	
+	/**
+	 * 
+	 * @param enable
+	 */
 	public void setUseUpdateAll(final boolean enable)
 	{
-		SwingUtilities.invokeLater(new Runnable() {
+		SwingUtilities.invokeLater(new Runnable()
+		{
 			@Override
 			public void run()
 			{
@@ -299,19 +394,35 @@ public class TigerBotMainPanel extends JPanel
 		});
 	}
 	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public boolean getUseUpdateAll()
 	{
 		return useUpdateAll.isSelected();
 	}
 	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public boolean getLogMovement()
 	{
 		return logMovement.isSelected();
 	}
 	
+	
+	/**
+	 * 
+	 * @param enable
+	 */
 	public void setLogMovement(final boolean enable)
 	{
-		SwingUtilities.invokeLater(new Runnable() {
+		SwingUtilities.invokeLater(new Runnable()
+		{
 			@Override
 			public void run()
 			{
@@ -320,14 +431,25 @@ public class TigerBotMainPanel extends JPanel
 		});
 	}
 	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public boolean getLogKicker()
 	{
 		return logKicker.isSelected();
 	}
-
+	
+	
+	/**
+	 * 
+	 * @param enable
+	 */
 	public void setLogKicker(final boolean enable)
 	{
-		SwingUtilities.invokeLater(new Runnable() {
+		SwingUtilities.invokeLater(new Runnable()
+		{
 			@Override
 			public void run()
 			{
@@ -335,31 +457,26 @@ public class TigerBotMainPanel extends JPanel
 			}
 		});
 	}
-
-	public boolean getLogAccel()
-	{
-		return logAccel.isSelected();
-	}
 	
-	public void setLogAccel(final boolean enable)
-	{
-		SwingUtilities.invokeLater(new Runnable() {
-			@Override
-			public void run()
-			{
-				logAccel.setSelected(enable);
-			}
-		});
-	}
 	
+	/**
+	 * 
+	 * @return
+	 */
 	public boolean getLogIr()
 	{
 		return logIr.isSelected();
 	}
 	
+	
+	/**
+	 * 
+	 * @param enable
+	 */
 	public void setLogIr(final boolean enable)
 	{
-		SwingUtilities.invokeLater(new Runnable() {
+		SwingUtilities.invokeLater(new Runnable()
+		{
 			@Override
 			public void run()
 			{
@@ -367,40 +484,43 @@ public class TigerBotMainPanel extends JPanel
 			}
 		});
 	}
-
+	
+	
 	protected void notifySaveGeneral()
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for(ITigerBotMainPanelObserver o : observers)
+			for (final ITigerBotMainPanelObserver o : observers)
 			{
 				o.onSaveGeneral();
 			}
 		}
 	}
-
+	
+	
 	protected void notifyConnectionChange()
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for(ITigerBotMainPanelObserver o : observers)
+			for (final ITigerBotMainPanelObserver o : observers)
 			{
 				o.onConnectionChange();
 			}
 		}
 	}
 	
+	
 	private void notifySaveLogs()
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for (ITigerBotMainPanelObserver observer : observers)
+			for (final ITigerBotMainPanelObserver observer : observers)
 			{
 				observer.onSaveLogs();
 			}
 		}
 	}
-
+	
 	// --------------------------------------------------------------------------
 	// --- Actions --------------------------------------------------------------
 	// --------------------------------------------------------------------------

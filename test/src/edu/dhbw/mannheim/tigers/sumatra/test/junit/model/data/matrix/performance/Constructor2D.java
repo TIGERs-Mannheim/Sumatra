@@ -9,9 +9,11 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.test.junit.model.data.matrix.performance;
 
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.types.Matrix;
 
 
 /**
@@ -22,81 +24,124 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix;
  */
 public class Constructor2D extends APerformanceTest
 {
-	@Test
-	public void test()
+	int	times	= 10;
+	
+	
+	/**
+	 */
+	@BeforeClass
+	public static void beforeClass()
 	{
 		System.out.println("##########################################################");
 		System.out.println("Constructor2D");
 		System.out.println("##########################################################");
-		
+		System.out.println("--> Many tests deactivated");
+	}
+	
+	
+	/**
+	 */
+	@Test
+	public void test()
+	{
 		output = false;
-		int times = 10;
-		testMatrixDoubleArrayArray(times);
-		testMatrixDoubleArrayArrayIntInt(times);
-		testJamaMatrixDoubleArrayArray(times);
-		testJamaMatrixDoubleArrayArrayIntInt(times);
-		
-
+		testMatrixDoubleArrayArray();
+		testMatrixDoubleArrayArrayIntInt();
+		testJamaMatrixDoubleArrayArray();
+		testJamaMatrixDoubleArrayArrayIntInt();
+	}
+	
+	
+	/**
+	 */
+	@Ignore
+	@Test
+	public void testMany()
+	{
 		output = true;
 		times = timesInit;
 		System.out.println("Number of runs: " + times);
-		testMatrixDoubleArrayArray(times);
-		testMatrixDoubleArrayArrayIntInt(times);
-		testJamaMatrixDoubleArrayArray(times);
-		testJamaMatrixDoubleArrayArrayIntInt(times);
+		testMatrixDoubleArrayArray();
+		testMatrixDoubleArrayArrayIntInt();
+		testJamaMatrixDoubleArrayArray();
+		testJamaMatrixDoubleArrayArrayIntInt();
 	}
 	
-
-	public void testMatrixDoubleArrayArrayIntInt(int times)
+	
+	/**
+	 */
+	@Ignore
+	@Test
+	public void testMatrixDoubleArrayArrayIntInt()
 	{
 		if (output)
+		{
 			System.out.println("testMatrixDoubleArrayArrayIntInt");
+		}
 		startTimer();
 		for (int i = 0; i < times; i++)
 		{
-			Matrix A = new Matrix(new double[][] { { 1, 2, 3 }, { -4, -5, -6 }, { 7, 8, 9 } }, 3, 3);
+			final Matrix A = new Matrix(new double[][] { { 1, 2, 3 }, { -4, -5, -6 }, { 7, 8, 9 } }, 3, 3);
 			saveMatrix(A);
 		}
 		endTimer();
 	}
 	
-
-	public void testMatrixDoubleArrayArray(int times)
+	
+	/**
+	 */
+	@Ignore
+	@Test
+	public void testMatrixDoubleArrayArray()
 	{
 		if (output)
+		{
 			System.out.println("testMatrixDoubleArrayArray");
+		}
 		startTimer();
 		for (int i = 0; i < times; i++)
 		{
-			Matrix A = new Matrix(new double[][] { { 1, 2, 3 }, { -4, -5, -6 }, { 7, 8, 9 } });
+			final Matrix A = new Matrix(new double[][] { { 1, 2, 3 }, { -4, -5, -6 }, { 7, 8, 9 } });
 			saveMatrix(A);
 		}
 		endTimer();
 	}
 	
-
-	public void testJamaMatrixDoubleArrayArrayIntInt(int times)
+	
+	/**
+	 */
+	@Ignore
+	@Test
+	public void testJamaMatrixDoubleArrayArrayIntInt()
 	{
 		if (output)
+		{
 			System.out.println("testJamaMatrixDoubleArrayArrayIntInt");
+		}
 		startTimer();
 		for (int i = 0; i < times; i++)
 		{
-			Jama.Matrix A = new Jama.Matrix(new double[][] { { 1, 2, 3 }, { -4, -5, -6 }, { 7, 8, 9 } }, 3, 3);
+			final Jama.Matrix A = new Jama.Matrix(new double[][] { { 1, 2, 3 }, { -4, -5, -6 }, { 7, 8, 9 } }, 3, 3);
 			saveJamaMatrix(A);
 		}
 		endTimer();
 	}
 	
-
-	public void testJamaMatrixDoubleArrayArray(int times)
+	
+	/**
+	 */
+	@Ignore
+	@Test
+	public void testJamaMatrixDoubleArrayArray()
 	{
 		if (output)
+		{
 			System.out.println("testJamaMatrixDoubleArrayArray");
+		}
 		startTimer();
 		for (int i = 0; i < times; i++)
 		{
-			Jama.Matrix A = new Jama.Matrix(new double[][] { { 1, 2, 3 }, { -4, -5, -6 }, { 7, 8, 9 } });
+			final Jama.Matrix A = new Jama.Matrix(new double[][] { { 1, 2, 3 }, { -4, -5, -6 }, { 7, 8, 9 } });
 			saveJamaMatrix(A);
 		}
 		endTimer();

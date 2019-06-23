@@ -1,0 +1,17 @@
+package edu.dhbw.mannheim.tigers.sumatra.proto;
+
+option
+java_package = "edu.dhbw.mannheim.tigers.sumatra.proto.model.modules.impls.ai";
+option java_outer_classname = "LachesisProtos" ;
+message AvailableRoles {
+	repeated string roles = 1;
+}
+
+message RoleCommand {
+	required string roleName = 1;
+	optional int32 botId = 2;
+}
+
+message ClearRoleCommand {
+	optional bool doAction = 1 [default = true];
+}

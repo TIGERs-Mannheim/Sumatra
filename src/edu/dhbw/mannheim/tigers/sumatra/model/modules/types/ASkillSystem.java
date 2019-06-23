@@ -9,11 +9,12 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.types;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ASkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.SkillFacade;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.ISkillSystemObserver;
 import edu.moduli.AModule;
 
@@ -29,22 +30,41 @@ public abstract class ASkillSystem extends AModule
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	public static final String							MODULE_TYPE	= "ASkillSystem";
-	public static final String							MODULE_ID	= "skillsystem";
 	
-	protected final List<ISkillSystemObserver>	observers	= new ArrayList<ISkillSystemObserver>();
+	/** */
+	public static final String						MODULE_TYPE	= "AMoveSystem";
+	/** */
+	public static final String						MODULE_ID	= "skillsystem";
+	
+	private final Set<ISkillSystemObserver>	observers	= Collections
+																					.newSetFromMap(new ConcurrentHashMap<ISkillSystemObserver, Boolean>());
 	
 	
 	// --------------------------------------------------------------------------
 	// --- interface ------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	public abstract void execute(int botId, ASkill skill);
-	public abstract void execute(int botId, SkillFacade facade);
+	/**
+	 * @param botId
+	 * @param skill
+	 */
+	public abstract void execute(BotID botId, AMoveSkill skill);
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	
+	@Override
+	public void deinitModule()
+	{
+		observers.clear();
+	}
+	
+	
+	/**
+	 * @param observer
+	 */
 	public void addObserver(ISkillSystemObserver observer)
 	{
 		synchronized (observers)
@@ -53,34 +73,30 @@ public abstract class ASkillSystem extends AModule
 		}
 	}
 	
-
+	
+	/**
+	 * @param observer
+	 */
 	public void removeObserver(ISkillSystemObserver observer)
 	{
-		synchronized (observers)
+		observers.remove(observer);
+	}
+	
+	
+	protected void notifySkillStarted(AMoveSkill skill, BotID botId)
+	{
+		for (final ISkillSystemObserver observer : observers)
 		{
-			observers.remove(observer);
+			observer.onSkillStarted(skill, botId);
 		}
 	}
 	
-	protected void notifySkillStarted(ASkill skill, int botId)
-	{
-		synchronized(observers)
-		{
-			for (ISkillSystemObserver observer : observers)
-			{
-				observer.onSkillStarted(skill, botId);
-			}
-		}
-	}
 	
-	protected void notifySkillCompleted(ASkill skill, int botId)
+	protected void notifySkillCompleted(AMoveSkill skill, BotID botId)
 	{
-		synchronized(observers)
+		for (final ISkillSystemObserver observer : observers)
 		{
-			for (ISkillSystemObserver observer : observers)
-			{
-				observer.onSkillCompleted(skill, botId);
-			}
+			observer.onSkillCompleted(skill, botId);
 		}
 	}
 }

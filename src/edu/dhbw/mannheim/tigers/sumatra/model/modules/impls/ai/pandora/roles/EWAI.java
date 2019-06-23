@@ -4,7 +4,7 @@
  * Project: TIGERS - Sumatra
  * Date: 03.08.2010
  * Author(s):
- * Daniel Waigand, Christian König
+ * Daniel Waigand, Christian Kï¿½nig
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles;
@@ -21,16 +21,28 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles;
  */
 public enum EWAI
 {
+	/** */
 	ONLY,
+	/** */
 	FIRST,
+	/** */
 	SECOND,
 	
+	/** */
 	MIDDLE,
+	/** */
 	LEFT,
+	/** */
 	RIGHT,
 	
+	/** */
 	GOALIE,
-	DEFENDER;
+	/** */
+	DEFENDER,
+	/**
+	 * 
+	 */
+	OTHER;
 	
-
+	
 }

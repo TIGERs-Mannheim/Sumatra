@@ -11,9 +11,11 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oext
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.configuration.SubnodeConfiguration;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamProps;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.WPConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.filter.IFilter;
 
@@ -30,53 +32,67 @@ public class PredictionContext
 {
 	/** used for prediction and updates */
 	/** The currently detected TIGER-bots */
-	public final Map<Integer, IFilter>					tigers;
+	public final Map<Integer, IFilter>				tigers;
 	/** The currently detected foe-bots */
-	public final Map<Integer, IFilter>						food;
+	public final Map<Integer, IFilter>				food;
 	/** The currently detected balls */
-	public 		 IFilter										ball;
+	public IFilter											ball;
 	
 	/** used for tracking-manager */
 	/** The new detected TIGER-bots */
-	public final Map<Integer, UnregisteredBot> 				newTigers;
+	public final Map<Integer, UnregisteredBot>	newTigers;
 	/** The new detected foe-bots */
-	public final Map<Integer, UnregisteredBot>				newFood;
+	public final Map<Integer, UnregisteredBot>	newFood;
 	/** The new detected balls */
-	public 		UnregisteredBall									newBall;
+	public UnregisteredBall								newBall;
 	
 	/** used for lookahead predictions and to determine time to predict */
-	/** time which one lookahead prediction step should look ahead (in internalTime)*/
-	public final double													stepSize;
+	/** time which one lookahead prediction step should look ahead (in internalTime) */
+	public final double									stepSize;
 	/** number of lookahead steps which should be performed */
-	public final int													stepCount;
+	public final int										stepCount;
 	/** number of particles used in particle filter */
-	public final int													numberParticle;
+	public final int										numberParticle;
 	/** threshold for particle filter when to resample */
-	public final double												pfESS;
-	public final String												resampler;
+	public final double									pfESS;
+	/** */
+	public final String									resampler;
 	
 	/** used for cam-frame merging */
-	public final int 													numberCams;
-
-	public final int													minTigersInWorldFrame;
-	public final int													minFoodInWorldFrame;
+	public final int										numberCams;
+	
+	/** */
+	public final int										minTigersInWorldFrame;
+	/** */
+	public final int										minFoodInWorldFrame;
+	
+	/** */
+	public final int										worldframesPublishIntervalMS;
 	
 	/** time-stamp of last incoming frame */
-	private volatile double											latestCaptureTimestamp;
+	private volatile double								latestCaptureTimestamp;
+	
+	/** The {@link TeamProps} of the latest world-frame processed */
+	private TeamProps										latestTeamProps	= null;
 	
 	
+	/**
+	 * 
+	 * @param properties
+	 */
 	public PredictionContext(SubnodeConfiguration properties)
 	{
 		// maps an id (integer) to a ObjectData, maximum 10 elements, 100% load
-		tigers = new HashMap<Integer, IFilter>(10, 1);
-		food = new HashMap<Integer, IFilter>(10, 1);
+		tigers = new ConcurrentHashMap<Integer, IFilter>(10, 1);
+		food = new ConcurrentHashMap<Integer, IFilter>(10, 1);
 		ball = null;
 		
 		newTigers = new HashMap<Integer, UnregisteredBot>(10, 1);
 		newFood = new HashMap<Integer, UnregisteredBot>(10, 1);
 		newBall = null;
 		
-		stepSize = properties.getLong("stepSize", 10)*1000000*WPConfig.FILTER_CONVERT_NS_TO_INTERNAL_TIME;//convert from ms to ns
+		// convert from ms to ns
+		stepSize = properties.getLong("stepSize", 10) * 1000000 * WPConfig.FILTER_CONVERT_NS_TO_INTERNAL_TIME;
 		stepCount = properties.getInt("stepCount", 5);
 		
 		numberParticle = properties.getInt("numberParticle", 500);
@@ -87,9 +103,12 @@ public class PredictionContext
 		
 		minTigersInWorldFrame = properties.getInt("minTigersInWorldFrame", 5);
 		minFoodInWorldFrame = properties.getInt("minFoesInWorldFrame", 5);
+		
+		worldframesPublishIntervalMS = properties.getInt("worldframePublishIntervalMS", 16);
 		reset();
 	}
-
+	
+	
 	/**
 	 * Clear all maps and resets the rest to default
 	 */
@@ -102,9 +121,10 @@ public class PredictionContext
 		newFood.clear();
 		newBall = null;
 		
-		latestCaptureTimestamp = -1.0*Double.MAX_VALUE;
+		latestCaptureTimestamp = -1.0 * Double.MAX_VALUE;
 	}
-
+	
+	
 	/**
 	 * @return The time-stamp of the latest frame processed
 	 */
@@ -113,12 +133,31 @@ public class PredictionContext
 		return latestCaptureTimestamp;
 	}
 	
-
+	
 	/**
-	 * @return The time-stamp of the latest frame processed
+	 * @param latestCaptureTimestamp
 	 */
 	public void setLatestCaptureTimestamp(double latestCaptureTimestamp)
 	{
 		this.latestCaptureTimestamp = latestCaptureTimestamp;
+	}
+	
+	
+	/**
+	 * @return {@link #latestTeamProps}
+	 */
+	public TeamProps getLatestTeamProps()
+	{
+		return latestTeamProps;
+	}
+	
+	
+	/**
+	 * Sets {@link #latestTeamProps}
+	 * @param latestTeamProps
+	 */
+	public void setLatestTeamProps(TeamProps latestTeamProps)
+	{
+		this.latestTeamProps = latestTeamProps;
 	}
 }

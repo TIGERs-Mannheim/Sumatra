@@ -10,8 +10,8 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.criteria.global;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.types.ETeam;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeam;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACriterion;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.criteria.ECriterion;
 
@@ -31,43 +31,36 @@ public class TeamClosestToBallCrit extends ACriterion
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private ETeam	wish	= ETeam.UNKNOWN;
+	private final ETeam	team;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	public TeamClosestToBallCrit(ETeam wish, float penaltyFactor)
-	{
-		super(ECriterion.TEAM_CLOSEST_TO_BALL, penaltyFactor);
-		
-		this.wish = wish;
-	}
-	
-	
-	public TeamClosestToBallCrit(ETeam wish)
+	/**
+	 * @param team
+	 */
+	public TeamClosestToBallCrit(ETeam team)
 	{
 		super(ECriterion.TEAM_CLOSEST_TO_BALL);
 		
-		this.wish = wish;
+		this.team = team;
 	}
-
+	
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-
+	
 	@Override
 	public float doCheckCriterion(AIInfoFrame currentFrame)
 	{
-		if (currentFrame.tacticalInfo.getTeamClosestToBall() == wish)
+		if (currentFrame.tacticalInfo.getTeamClosestToBall() == team)
 		{
-			return 1.0f;
-		} else
-		{
-			return penaltyFactor;
+			return MAX_SCORE;
 		}
+		return MIN_SCORE;
 	}
 	
 	// --------------------------------------------------------------------------

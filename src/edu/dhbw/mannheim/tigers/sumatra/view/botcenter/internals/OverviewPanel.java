@@ -1,15 +1,16 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 11.08.2010
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals;
 
-import java.util.ArrayList;
+import java.util.Map;
+import java.util.TreeMap;
 
 import javax.swing.Box;
 import javax.swing.JLabel;
@@ -17,10 +18,12 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+
 
 /**
  * Overview of all bots.
- *  
+ * 
  * @author AndreR
  * 
  */
@@ -29,23 +32,30 @@ public class OverviewPanel extends JPanel
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long	serialVersionUID	= -3183090653608159807L;
-	private ArrayList<JPanel> botPanels = new ArrayList<JPanel>();
-	private boolean active = false;
-
+	private static final long			serialVersionUID	= -3183090653608159807L;
+	private final Map<BotID, JPanel>	botPanels			= new TreeMap<BotID, JPanel>();
+	private boolean						active				= false;
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 */
 	public OverviewPanel()
 	{
 		setLayout(new MigLayout("fill", "", ""));
 		
 		setActive(false);
 	}
-
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param active
+	 */
 	public void setActive(boolean active)
 	{
 		this.active = active;
@@ -53,20 +63,32 @@ public class OverviewPanel extends JPanel
 		updatePanels();
 	}
 	
-	public void addBotPanel(JPanel panel)
+	
+	/**
+	 * @param botID
+	 * @param panel
+	 */
+	public void addBotPanel(BotID botID, JPanel panel)
 	{
-		botPanels.add(panel);
+		botPanels.put(botID, panel);
 		
 		updatePanels();
 	}
 	
-	public void removeBotPanel(JPanel panel)
+	
+	/**
+	 * @param botID
+	 */
+	public void removeBotPanel(BotID botID)
 	{
-		botPanels.remove(panel);
+		botPanels.remove(botID);
 		
 		updatePanels();
 	}
 	
+	
+	/**
+	 */
 	public void removeAllBotPanels()
 	{
 		botPanels.clear();
@@ -74,35 +96,30 @@ public class OverviewPanel extends JPanel
 		updatePanels();
 	}
 	
+	
 	private void updatePanels()
 	{
 		final JPanel panel = this;
 		
 		SwingUtilities.invokeLater(new Runnable()
 		{
+			@Override
 			public void run()
 			{
 				removeAll();
-
-				if(active)
+				
+				if (active)
 				{
-					for(JPanel panel : botPanels)
+					for (final JPanel panel : botPanels.values())
 					{
 						add(panel, "wrap, gapbottom 0");
 					}
-				}
-				else
+				} else
 				{
 					add(new JLabel("Botcenter unavailable - botmanager stopped"), "wrap");
 				}
 				
 				add(Box.createGlue(), "push");
-								
-//				Graphics g = getGraphics();
-//				if(g != null)
-//				{
-//					update(g);
-//				}
 				
 				SwingUtilities.updateComponentTreeUI(panel);
 			}

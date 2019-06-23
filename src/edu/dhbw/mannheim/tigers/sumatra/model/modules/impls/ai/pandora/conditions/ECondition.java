@@ -17,11 +17,24 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditio
  */
 public enum ECondition
 {
+	/** */
+	MOVEMENT,
+	/** */
 	BALL_VISIBLE,
+	/** */
 	TARGET_VISIBLE,
+	/** */
 	VISIBLE,
+	/** */
 	DESTINATION,
+	/** */
 	VIEW_ANGLE,
+	/** */
 	AIMING,
+	/** */
 	LOOK_AT,
+	/** */
+	DEST_FREE,
+	/** */
+	DUMMY,
 }

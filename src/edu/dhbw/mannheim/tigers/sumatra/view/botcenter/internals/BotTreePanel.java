@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 11.08.2010
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals;
@@ -35,6 +35,7 @@ import javax.swing.tree.TreeSelectionModel;
 
 import net.miginfocom.swing.MigLayout;
 
+
 /**
  * Bot tree with fancy icons.
  * 
@@ -46,27 +47,32 @@ public class BotTreePanel extends JPanel
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long	serialVersionUID	= 5912473356244041156L;
-	private List<IBotTreeObserver> observers = new ArrayList<IBotTreeObserver>();
+	private static final long					serialVersionUID		= 5912473356244041156L;
+	private final List<IBotTreeObserver>	observers				= new ArrayList<IBotTreeObserver>();
 	
-	private JTree tree = null;
-	private TreeModel treeModel = null;
+	private JTree									tree						= null;
+	private TreeModel								treeModel				= null;
 	
-	private ImageIcon rootIcon = null;
-	private ImageIcon botIcon = null;
-	private ImageIcon graphIcon = null;
-	private ImageIcon lampIcon = null;
-	private ImageIcon kickIcon = null;
-	private ImageIcon lightningIcon = null;
-	private ImageIcon motorIcon = null;
-	private ImageIcon apIcon = null;
+	private ImageIcon								rootIcon					= null;
+	private ImageIcon								botIcon					= null;
+	private ImageIcon								graphIcon				= null;
+	private ImageIcon								lampIcon					= null;
+	private ImageIcon								kickIcon					= null;
+	private ImageIcon								lightningIcon			= null;
+	private ImageIcon								motorIcon				= null;
+	private ImageIcon								apIcon					= null;
+	private ImageIcon								consoleIcon				= null;
 	
-	private Point lastMouseRightClick = new Point();
-	private BotCenterTreeNode lastSelectedNode = null;
-
+	private final Point							lastMouseRightClick	= new Point();
+	private BotCenterTreeNode					lastSelectedNode		= null;
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param root
+	 */
 	public BotTreePanel(BotCenterTreeNode root)
 	{
 		// load icons
@@ -78,6 +84,7 @@ public class BotTreePanel extends JPanel
 		lightningIcon = new ImageIcon(ClassLoader.getSystemResource("lightning.png"));
 		motorIcon = new ImageIcon(ClassLoader.getSystemResource("motor.png"));
 		apIcon = new ImageIcon(ClassLoader.getSystemResource("ap.png"));
+		consoleIcon = new ImageIcon(ClassLoader.getSystemResource("console.png"));
 		
 		
 		// make the layout
@@ -90,37 +97,51 @@ public class BotTreePanel extends JPanel
 		tree.setCellRenderer(new CustomRenderer());
 		tree.addMouseListener(new MouseContext());
 		
-		JScrollPane treeScrollPane = new JScrollPane(tree);
+		final JScrollPane treeScrollPane = new JScrollPane(tree);
 		treeScrollPane.setMinimumSize(new Dimension(150, 0));
-						
+		
 		add(treeScrollPane, "grow, push, w 150");
 	}
-
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
+	/**
+	 * @param o
+	 */
 	public void addObserver(IBotTreeObserver o)
 	{
 		observers.add(o);
 	}
 	
+	
+	/**
+	 * @param o
+	 */
 	public void removeObserver(IBotTreeObserver o)
 	{
 		observers.remove(o);
 	}
 	
+	
+	/**
+	 * @return
+	 */
 	public TreeModel getTreeModel()
 	{
 		return treeModel;
 	}
 	
+	
+	/**
+	 */
 	public void showAddRemoveContextMenu()
 	{
-		JPopupMenu context = new JPopupMenu();
-
-		JMenuItem addBot = new JMenuItem("Add");
-		JMenuItem removeBot = new JMenuItem("Remove");
+		final JPopupMenu context = new JPopupMenu();
+		
+		final JMenuItem addBot = new JMenuItem("Add");
+		final JMenuItem removeBot = new JMenuItem("Remove");
 		
 		addBot.addActionListener(new AddBot());
 		removeBot.addActionListener(new RemoveBot());
@@ -131,12 +152,15 @@ public class BotTreePanel extends JPanel
 		context.show(this, lastMouseRightClick.x, lastMouseRightClick.y);
 	}
 	
+	
+	/**
+	 */
 	public void showAddContextMenu()
 	{
-		JPopupMenu context = new JPopupMenu();
-
-		JMenuItem addBot = new JMenuItem("Add");
-
+		final JPopupMenu context = new JPopupMenu();
+		
+		final JMenuItem addBot = new JMenuItem("Add");
+		
 		addBot.addActionListener(new AddBot());
 		
 		context.add(addBot);
@@ -144,44 +168,48 @@ public class BotTreePanel extends JPanel
 		context.show(this, lastMouseRightClick.x, lastMouseRightClick.y);
 	}
 	
+	
 	private void notifyItemSelected(BotCenterTreeNode node)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for (IBotTreeObserver observer : observers)
+			for (final IBotTreeObserver observer : observers)
 			{
 				observer.onItemSelected(node);
 			}
 		}
 	}
 	
+	
 	private void notifyNodeRightClicked(BotCenterTreeNode node)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for (IBotTreeObserver observer : observers)
+			for (final IBotTreeObserver observer : observers)
 			{
 				observer.onNodeRightClicked(node);
 			}
 		}
 	}
 	
+	
 	private void notifyAddBot()
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for (IBotTreeObserver observer : observers)
+			for (final IBotTreeObserver observer : observers)
 			{
 				observer.onAddBot();
 			}
 		}
 	}
 	
+	
 	private void notifyRemoveBot(BotCenterTreeNode node)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for (IBotTreeObserver observer : observers)
+			for (final IBotTreeObserver observer : observers)
 			{
 				observer.onRemoveBot(node);
 			}
@@ -193,9 +221,9 @@ public class BotTreePanel extends JPanel
 		@Override
 		public void valueChanged(TreeSelectionEvent e)
 		{
-			BotCenterTreeNode node = (BotCenterTreeNode)tree.getLastSelectedPathComponent();
+			final BotCenterTreeNode node = (BotCenterTreeNode) tree.getLastSelectedPathComponent();
 			
-			if(node == null)
+			if (node == null)
 			{
 				return;
 			}
@@ -207,16 +235,17 @@ public class BotTreePanel extends JPanel
 	protected class CustomRenderer extends DefaultTreeCellRenderer
 	{
 		private static final long	serialVersionUID	= 2116635664278328553L;
-
-		public Component getTreeCellRendererComponent(
-				JTree tree, Object value, boolean sel, boolean expanded, boolean leaf,
-				int row, boolean hasFocus)
+		
+		
+		@Override
+		public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded,
+				boolean leaf, int row, boolean hasFocus)
 		{
 			super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
-
-			BotCenterTreeNode node = (BotCenterTreeNode)value;
 			
-			switch(node.getIconType())
+			final BotCenterTreeNode node = (BotCenterTreeNode) value;
+			
+			switch (node.getIconType())
 			{
 				case ROOT:
 					setIcon(rootIcon);
@@ -242,6 +271,9 @@ public class BotTreePanel extends JPanel
 				case AP:
 					setIcon(apIcon);
 					break;
+				case CONSOLE:
+					setIcon(consoleIcon);
+					break;
 				default:
 					setIcon(null);
 					break;
@@ -256,19 +288,20 @@ public class BotTreePanel extends JPanel
 		@Override
 		public void mousePressed(MouseEvent e)
 		{
-			TreePath selPath = tree.getPathForLocation(e.getX(), e.getY());
-			if(e.getButton() == MouseEvent.BUTTON2 || e.getButton() == MouseEvent.BUTTON3)	// right or middle click
+			final TreePath selPath = tree.getPathForLocation(e.getX(), e.getY());
+			// right or middle click
+			if ((e.getButton() == MouseEvent.BUTTON2) || (e.getButton() == MouseEvent.BUTTON3))
 			{
 				BotCenterTreeNode node = null;
 				lastSelectedNode = null;
 				
-				if(selPath != null)
+				if (selPath != null)
 				{
 					tree.setSelectionPath(selPath);
 					
-					node = (BotCenterTreeNode)selPath.getLastPathComponent();
+					node = (BotCenterTreeNode) selPath.getLastPathComponent();
 					
-					lastSelectedNode = node; 
+					lastSelectedNode = node;
 				}
 				
 				lastMouseRightClick.x = e.getX();

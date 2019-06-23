@@ -1,7 +1,6 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.filter;
 
 import java.security.InvalidParameterException;
-import java.util.Random;
 
 import org.apache.log4j.Logger;
 import org.uncommons.maths.random.ContinuousUniformGenerator;
@@ -15,92 +14,102 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextk
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.motionModels.IMotionModel;
 
 
+/**
+ * 
+ */
 public class ParticleFilter implements IFilter
 {
-	private final Logger				log	= Logger.getLogger(getClass());
+	// Logger
+	private static final Logger	log	= Logger.getLogger(ParticleFilter.class.getName());
 	
+	/** */
 	public int							id;
-	protected double					time;
+	private double						time;
 	
-	protected PredictionContext	context;
-	protected IMotionModel			motion;
+	private PredictionContext		context;
+	private IMotionModel				motion;
 	
-	protected int						stepcount;
-	protected double					stepsize;
-	protected double					offset;
+	private int							stepcount;
+	private double						stepsize;
+	private double						offset;
 	
-	protected Particle[]				particle;
+	private Particle[]				particle;
 	
-	protected int						nParticle;
-	protected double					essThreshold;
+	private int							nParticle;
+	private double						essThreshold;
 	
 	enum Resampler
 	{
 		STRATIFIED,
-		RANDOM
-	}; // to be extended...maybe
+		RANDOM;
+	} // to be extended...maybe
 	
-	protected Resampler							resampler;
-	protected Random								rng;
-	protected ContinuousUniformGenerator	generator;
-	private boolean keptAlive;	
+	private Resampler							resampler;
+	private ContinuousUniformGenerator	generator;
+	private boolean							keptAlive;
 	
+	
+	/**
+	 */
 	public ParticleFilter()
 	{
-		this.id = 0;
-		this.time = 0.0;
-		this.context = null;
-		this.motion = null;
-		this.stepcount = 0;
-		this.stepsize = 0.0;
-		this.offset = 0.0;
+		id = 0;
+		time = 0.0;
+		context = null;
+		motion = null;
+		stepcount = 0;
+		stepsize = 0.0;
+		offset = 0.0;
 		
-		this.nParticle = 0;
-		this.essThreshold = 0.0;
-		this.resampler = Resampler.STRATIFIED;
+		nParticle = 0;
+		essThreshold = 0.0;
+		resampler = Resampler.STRATIFIED;
 		
-		this.rng = new MersenneTwisterRNG();
-		this.generator = new ContinuousUniformGenerator(0.0, 1.0, rng);
+		generator = new ContinuousUniformGenerator(0.0, 1.0, new MersenneTwisterRNG());
 		
-		this.keptAlive = true;
+		keptAlive = true;
 	}
 	
-
+	
 	@Override
 	public void init(IMotionModel motionModel, PredictionContext context, double firstTimestamp,
 			AWPCamObject firstObservation)
 	{
-		this.motion = motionModel;
+		motion = motionModel;
 		this.context = context;
 		
-		this.id = this.motion.extraxtObjectID(firstObservation);
+		id = motion.extraxtObjectID(firstObservation);
 		
-		this.time = firstTimestamp;
-		this.offset = 0.0;
+		time = firstTimestamp;
+		offset = 0.0;
 		
-		this.stepsize = this.context.stepSize;
-		this.stepcount = this.context.stepCount;
+		stepsize = this.context.stepSize;
+		stepcount = this.context.stepCount;
 		
-		this.keptAlive = false;
+		keptAlive = false;
 		
-		this.nParticle = context.numberParticle;
-		this.particle = new Particle[nParticle];
-		this.essThreshold = context.pfESS;
+		nParticle = context.numberParticle;
+		particle = new Particle[nParticle];
+		essThreshold = context.pfESS;
 		
 		if (context.resampler.equalsIgnoreCase("stratified"))
+		{
 			resampler = Resampler.STRATIFIED;
-		else if (context.resampler.equalsIgnoreCase("random"))
+		} else if (context.resampler.equalsIgnoreCase("random"))
+		{
 			resampler = Resampler.RANDOM;
-		else
+		} else
+		{
 			resampler = Resampler.STRATIFIED;
+		}
 		
-		Matrix measurement = this.motion.generateMeasurementMatrix(firstObservation, null);
-		Matrix control		 = this.motion.generateControlMatrix(null,null);
-		for(int i=0; i<nParticle; i++) 
+		final Matrix measurement = motion.generateMeasurementMatrix(firstObservation, null);
+		final Matrix control = motion.generateControlMatrix(null, null);
+		for (int i = 0; i < nParticle; i++)
 		{
 			particle[i] = new Particle();
 			particle[i].init(measurement);
-			for (int j = 0; j <= this.stepcount; j++)
+			for (int j = 0; j <= stepcount; j++)
 			{
 				particle[i].state[j] = motion.sample(particle[i].state[0], particle[i].contr);
 			}
@@ -109,18 +118,18 @@ public class ParticleFilter implements IFilter
 		
 	}
 	
-
+	
 	@Override
 	public double getTimestamp()
 	{
 		return time;
 	}
 	
-
+	
 	@Override
 	public double getLookaheadTimestamp(int index)
 	{
-		if (index < 0 || index > stepcount)
+		if ((index < 0) || (index > stepcount))
 		{
 			log.debug("Lookahead prediction with index " + index + " is out of " + "lookahead bounds" + " (min: 0; max: "
 					+ stepcount + ")");
@@ -131,17 +140,15 @@ public class ParticleFilter implements IFilter
 		if (index == 0)
 		{
 			return time;
-		} else
-		{
-			return time + offset + stepsize * index;
 		}
+		return time + offset + (stepsize * index);
 	}
 	
-
+	
 	@Override
 	public AMotionResult getLookahead(int index)
 	{
-		if (index < 0 || index > stepcount)
+		if ((index < 0) || (index > stepcount))
 		{
 			log.debug("Lookahead prediction with index " + index + " is out of " + "lookahead bounds" + " (min: 0; max: "
 					+ stepcount + ")");
@@ -150,35 +157,37 @@ public class ParticleFilter implements IFilter
 		}
 		
 		performAutoLookahead(index);
-//		Matrix res = histogramm(index);
-//		System.out.println(res.get(3,0) + " " + res.get(4,0) + " " + res.get(5,0));
+		// Matrix res = histogramm(index);
+		// System.out.println(res.get(3,0) + " " + res.get(4,0) + " " + res.get(5,0));
 		
 		return motion.generateMotionResult(id, histogramm(index), !keptAlive);
 	}
 	
-
+	
 	@Override
 	public void observation(double timestamp, AWPCamObject observation)
 	{
-		this.keptAlive = false;
+		keptAlive = false;
 		
-		Matrix measurement = motion.generateMeasurementMatrix(observation, null); //TODO WP: pass former state for continuous angles of bots
+		// TODO WP: pass former state for continuous angles of bots
+		final Matrix measurement = motion.generateMeasurementMatrix(observation, null);
 		
-		double[] weight = new double[nParticle];
+		final double[] weight = new double[nParticle];
 		double sumW = 0;
-		double dt = timestamp - time;
+		final double dt = timestamp - time;
 		int index = stepcount;
 		
-		while (dt < (stepsize * index + offset) && index > 0)
+		while ((dt < ((stepsize * index) + offset)) && (index > 0))
 		{
 			index--;
 		}
-		Matrix old = histogramm(index);
+		final Matrix old = histogramm(index);
 		double vx = 0.0;
 		double vy = 0.0;
-		if(dt != 0.0) {
-			vx = (measurement.get(0,0) - old.get(0, 0))/dt;
-			vy = (measurement.get(1,0) - old.get(1, 0))/dt;
+		if (dt != 0.0)
+		{
+			vx = (measurement.get(0, 0) - old.get(0, 0)) / dt;
+			vy = (measurement.get(1, 0) - old.get(1, 0)) / dt;
 		}
 		
 		for (int i = 0; i < nParticle; i++)
@@ -189,8 +198,9 @@ public class ParticleFilter implements IFilter
 			stateNew = motion.sample(stateNew, particle[i].contr);
 			particle[i].state[0] = stateNew.copy();
 			
-			double prob = motion.measurementProbability(stateNew, measurement, dt);
-			weight[i] = prob;//particle[i].weight * prob;
+			final double prob = motion.measurementProbability(stateNew, measurement, dt);
+			// particle[i].weight * prob;
+			weight[i] = prob;
 			sumW += weight[i];
 		}
 		
@@ -201,16 +211,16 @@ public class ParticleFilter implements IFilter
 			weight[i] /= sumW;
 			particle[i].weight = weight[i];
 		}
-		if (getESS() <= this.essThreshold)
+		if (getESS() <= essThreshold)
 		{
 			resample();
 		}
 		
-		this.time = timestamp;
-		this.offset = 0.0;
+		time = timestamp;
+		offset = 0.0;
 	}
 	
-
+	
 	@Override
 	public void updateOffset(double timestamp)
 	{
@@ -221,11 +231,11 @@ public class ParticleFilter implements IFilter
 		
 	}
 	
-
+	
 	@Override
 	public void performLookahead(int index)
 	{
-		if (index < 1 || index > stepcount)
+		if ((index < 1) || (index > stepcount))
 		{
 			log.debug("Lookahead prediction with index " + index + " is out of " + "lookahead bounds" + " (min: 1; max: "
 					+ stepcount + "). " + "Therefore no lookahead was performed.");
@@ -254,14 +264,14 @@ public class ParticleFilter implements IFilter
 		
 	}
 	
-
+	
 	@Override
 	public void handleCollision(int index, IControl effect)
 	{
-		//TODO WP: implement collision handling!		
+		// TODO WP: implement collision handling!
 	}
 	
-
+	
 	@Override
 	public void setControl(IControl control)
 	{
@@ -273,14 +283,14 @@ public class ParticleFilter implements IFilter
 		deleteLookaheads();
 	}
 	
-
+	
 	@Override
 	public int getId()
 	{
 		return id;
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -293,7 +303,8 @@ public class ParticleFilter implements IFilter
 		}
 		return sumState;
 	}
-
+	
+	
 	protected double getESS()
 	{
 		double sumsq = 0;
@@ -305,9 +316,10 @@ public class ParticleFilter implements IFilter
 		return (1.0 / sumsq) / nParticle;
 	}
 	
+	
 	protected void resample()
 	{
-		int[] rsCount = new int[nParticle], rsIndices = new int[nParticle];
+		final int[] rsCount = new int[nParticle], rsIndices = new int[nParticle];
 		int j = 1;
 		
 		switch (resampler)
@@ -316,7 +328,7 @@ public class ParticleFilter implements IFilter
 				j = 0;
 				while (j < nParticle)
 				{
-					for (int i = 0; i < nParticle && j < nParticle; i++)
+					for (int i = 0; (i < nParticle) && (j < nParticle); i++)
 					{
 						if (particle[i].weight > generator.nextValue())
 						{
@@ -333,20 +345,22 @@ public class ParticleFilter implements IFilter
 				double weightCumulative = particle[0].weight;
 				
 				for (int i = 0; i < nParticle; i++)
+				{
 					rsCount[i] = 0;
+				}
 				int cntPartikel = 0;
 				while (j < nParticle)
 				{
-					while (weightCumulative > (((double) j) / nParticle) && j < nParticle)
+					while ((weightCumulative > (((double) j) / nParticle)) && (j < nParticle))
 					{
 						rsCount[k]++;
 						cntPartikel++;
 						j++;
 					}
 					k++;
-					if (k == nParticle || j == nParticle)
+					if ((k == nParticle) || (j == nParticle))
 					{
-						rsCount[k - 1] = nParticle - cntPartikel + 1;
+						rsCount[k - 1] = (nParticle - cntPartikel) + 1;
 						break;
 					}
 					weightCumulative += particle[k].weight;
@@ -363,19 +377,23 @@ public class ParticleFilter implements IFilter
 						while (rsCount[i] > 1)
 						{
 							while (rsCount[j] > 0)
-								++j; // find next free spot
-							rsIndices[j++] = i; // assign index
-							--rsCount[i]; // decrement number of remaining offsprings
+							{
+								// find next free spot
+								++j;
+							}
+							// assign index
+							rsIndices[j++] = i;
+							// decrement number of remaining offsprings
+							--rsCount[i];
 						}
 						
 					}
 				}
 				break;
-			
+		
 		} // resampler switch-case
 		
-		Particle[] tmpParticle = new Particle[nParticle];
-		tmpParticle = particle.clone();
+		Particle[] tmpParticle = particle.clone();
 		
 		for (int i = 0; i < nParticle; ++i)
 		{
@@ -388,16 +406,17 @@ public class ParticleFilter implements IFilter
 					particle[i].contr = tmpParticle[rsIndices[i]].contr.copy();
 				}
 			}
-			particle[i].weight = (1.0 / (double) nParticle);
+			particle[i].weight = (1.0 / nParticle);
 		}
 	}
+	
 	
 	protected Matrix predictStateAtTime(int index, double targetTime)
 	{
 		double dt = targetTime - time;
 		
 		int basisState = stepcount;
-		while (dt < (stepsize * basisState + offset) && basisState > 0)
+		while ((dt < ((stepsize * basisState) + offset)) && (basisState > 0))
 		{
 			basisState--;
 		}
@@ -405,10 +424,11 @@ public class ParticleFilter implements IFilter
 		if (basisState > 0)
 		{
 			performAutoLookahead(basisState);
-			dt = dt - (stepsize * basisState + offset);
+			dt = dt - ((stepsize * basisState) + offset);
 		}
 		return motion.dynamics(particle[index].state[basisState], particle[index].contr, dt);
 	}
+	
 	
 	private void performAutoLookahead(int index)
 	{
@@ -425,6 +445,7 @@ public class ParticleFilter implements IFilter
 		}
 	}
 	
+	
 	private void deleteLookaheads()
 	{
 		for (int j = 0; j < nParticle; j++)
@@ -439,39 +460,42 @@ public class ParticleFilter implements IFilter
 	
 	private class Particle
 	{
-		public Matrix	contr;	// control vector
-		public Matrix[]	state;	// state vector
-											
-		public double		weight;
+		/** control vector */
+		private Matrix		contr;
+		/** state vector */
+		private Matrix[]	state;
+		/** */
+		private double		weight;
 		
 		
+		/**
+		 * @param measurement
+		 */
 		public void init(Matrix measurement)
 		{
-			this.weight = 1.0 / nParticle;
-			this.state = new Matrix[stepcount + 1];
+			weight = 1.0 / nParticle;
+			state = new Matrix[stepcount + 1];
 			
-			this.contr = motion.generateControlMatrix(null, null);
-			this.state[0] = motion.generateStateMatrix(measurement, this.contr);
+			contr = motion.generateControlMatrix(null, null);
+			state[0] = motion.generateStateMatrix(measurement, contr);
 		}
 		
-
+		
+		@Override
 		public String toString()
 		{
-			return new String(state[0].get(0, 0) + " " + state[0].get(1, 0) + " " + weight);
+			return state[0].get(0, 0) + " " + state[0].get(1, 0) + " " + weight;
 		}
 	}
-
+	
+	
 	@Override
 	public void keepPositionAliveOnNoObservation()
 	{
-		this.keptAlive = true;
-		
-		// TODO Auto-generated method stub
-		// Implement what happens when we got no observation... 
-		// The best would be to keep the last most probable state.
-		
+		keptAlive = true;
 	}
-
+	
+	
 	@Override
 	public boolean positionKeptAlive()
 	{

@@ -9,9 +9,11 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.test.junit.model.data.matrix.performance;
 
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.types.Matrix;
 
 
 /**
@@ -22,6 +24,10 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix;
  */
 public class Multiplication extends APerformanceTest
 {
+	int	size	= 2;
+	int	times	= 10;
+	
+	
 	/**
 	 * Testing the times-functions with performance-fokus
 	 * 
@@ -29,53 +35,80 @@ public class Multiplication extends APerformanceTest
 	 * alloc Matrix B (random)
 	 * multiply them
 	 */
-	@Test
-	public void test()
+	@BeforeClass
+	public static void beforeClass()
 	{
 		System.out.println("##########################################################");
 		System.out.println("Multiplication");
 		System.out.println("##########################################################");
-		
+		System.out.println("--> Many tests deactivated");
+	}
+	
+	
+	/**
+	 */
+	@Test
+	public void test()
+	{
 		output = false;
-		int size = 2;
-		int times = 10;
+		size = 2;
+		times = 10;
 		JaMa(size, times);
 		MatrixNew(size, times);
-		
+	}
+	
+	
+	/**
+	 */
+	@Ignore
+	@Test
+	public void testMany()
+	{
 		output = true;
 		times = timesEasyOps;
 		System.out.println("Number of runs: " + times);
 		JaMa(size, times);
 		MatrixNew(size, times);
-
 	}
-
 	
+	
+	/**
+	 * @param size
+	 * @param times
+	 */
 	public void MatrixNew(int size, int times)
 	{
 		if (output)
+		{
 			System.out.println("MatrixNew");
+		}
 		startTimer();
 		for (int i = 0; i < times; i++)
 		{
-			Matrix A = createRandomMatrix(size);
-			Matrix B = createRandomMatrix(size);
+			final Matrix A = createRandomMatrix(size);
+			final Matrix B = createRandomMatrix(size);
 			A.times(B);
 			saveMatrix(A);
 		}
 		endTimer();
 	}
 	
-
+	
+	/**
+	 * @param size
+	 * @param times
+	 */
 	public void JaMa(int size, int times)
 	{
 		if (output)
+		{
 			System.out.println("JaMa");
+		}
 		startTimer();
 		for (int i = 0; i < times; i++)
 		{
-			Jama.Matrix A = createRandomMatrixJaMa(size);
-			Jama.Matrix B = createRandomMatrixJaMa(size);
+			final Jama.Matrix A = createRandomMatrixJaMa(size);
+			final Jama.Matrix B = createRandomMatrixJaMa(size);
 			A.times(B);
 			saveJamaMatrix(A);
 		}

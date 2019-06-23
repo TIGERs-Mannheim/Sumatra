@@ -8,11 +8,13 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
 
 
+/**
+ */
 public class TigerSystemStatusMovement extends ACommand
 {
 	/** [mm/s] */
@@ -23,11 +25,20 @@ public class TigerSystemStatusMovement extends ACommand
 	private int	vw;
 	
 	
+	/**
+	 * 
+	 */
 	public TigerSystemStatusMovement()
 	{
 	}
 	
-
+	
+	/**
+	 * 
+	 * @param vx
+	 * @param vy
+	 * @param vw
+	 */
 	public TigerSystemStatusMovement(float vx, float vy, float vw)
 	{
 		this();
@@ -37,7 +48,7 @@ public class TigerSystemStatusMovement extends ACommand
 		setVw(vw);
 	}
 	
-
+	
 	@Override
 	public void setData(byte[] data)
 	{
@@ -46,11 +57,11 @@ public class TigerSystemStatusMovement extends ACommand
 		vw = byteArray2Int(data, 8);
 	}
 	
-
+	
 	@Override
 	public byte[] getData()
 	{
-		byte data[] = new byte[getDataLength()];
+		final byte data[] = new byte[getDataLength()];
 		
 		int2ByteArray(data, 0, vx);
 		int2ByteArray(data, 4, vy);
@@ -59,26 +70,31 @@ public class TigerSystemStatusMovement extends ACommand
 		return data;
 	}
 	
+	
 	@Override
 	public int getCommand()
 	{
 		return CommandConstants.CMD_SYSTEM_STATUS_MOVEMENT;
 	}
 	
+	
 	@Override
 	public int getDataLength()
 	{
 		return 12;
 	}
-
 	
-
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public Vector2 getVelocity()
 	{
 		return new Vector2(vx / 1000.0f, vy / 1000.0f);
 	}
 	
-
+	
 	/**
 	 * Get angular velocity.
 	 * 
@@ -86,10 +102,10 @@ public class TigerSystemStatusMovement extends ACommand
 	 */
 	public float getAngularVelocity()
 	{
-		return (float) (vw / 1000f);
+		return vw / 1000f;
 	}
 	
-
+	
 	/**
 	 * @param vx [m/s]
 	 */
@@ -98,7 +114,7 @@ public class TigerSystemStatusMovement extends ACommand
 		this.vx = (int) (vx * 1000);
 	}
 	
-
+	
 	/**
 	 * @param vy [m/s]
 	 */
@@ -107,7 +123,7 @@ public class TigerSystemStatusMovement extends ACommand
 		this.vy = (int) (vy * 1000);
 	}
 	
-
+	
 	/**
 	 * @param vw [rad/s]
 	 */

@@ -11,11 +11,12 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.criteria.global;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.types.EBallPossession;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ballpossession.EBallPossession;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACriterion;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.criteria.ECriterion;
 
@@ -26,6 +27,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.criteria.
  * Otherwise the parameter 'penaltyFactor' will be returned.
  * 
  * @author FlorianS
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  * 
  */
 public class BallPossessionCrit extends ACriterion
@@ -34,37 +36,27 @@ public class BallPossessionCrit extends ACriterion
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private final List<EBallPossession>	wishes	= new ArrayList<EBallPossession>();
+	private final Set<EBallPossession>	ballPossessions;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	public BallPossessionCrit(float penaltyFactor, EBallPossession... wishes)
-	{
-		super(ECriterion.BALL_POSSESSION, penaltyFactor);
-		
-		// add wishes to wish list
-		for (EBallPossession input : wishes)
-		{
-			this.wishes.add(input);
-		}
-	}
-	
-
-	public BallPossessionCrit(EBallPossession... wishes)
+	/**
+	 * Create a ballPossession criterion with given ballPossession.
+	 * Create additional criteria, if you need more than one ballPossession
+	 * 
+	 * @param ballPossessions
+	 */
+	public BallPossessionCrit(EBallPossession... ballPossessions)
 	{
 		super(ECriterion.BALL_POSSESSION);
 		
-		// add wishes to wish list
-		for (EBallPossession input : wishes)
-		{
-			this.wishes.add(input);
-		}
+		this.ballPossessions = new HashSet<EBallPossession>(Arrays.asList(ballPossessions));
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -72,15 +64,14 @@ public class BallPossessionCrit extends ACriterion
 	@Override
 	public float doCheckCriterion(AIInfoFrame currentFrame)
 	{
-		for(EBallPossession wish : wishes)
+		for (final EBallPossession ballPossession : ballPossessions)
 		{
-			if (wish == (currentFrame.tacticalInfo.getBallPossesion().getEBallPossession()))
+			if (ballPossession == currentFrame.tacticalInfo.getBallPossession().getEBallPossession())
 			{
-				return 1.0f;
+				return MAX_SCORE;
 			}
 		}
-		
-		return penaltyFactor;
+		return MIN_SCORE;
 	}
 	
 	// --------------------------------------------------------------------------

@@ -17,6 +17,7 @@ import java.util.LinkedList;
  * Base class for buffers with a given size, who can insert data stable using {@link #insert(Object)}
  * 
  * @author Gero
+ * @param <D>
  * 
  */
 public abstract class ASortedBuffer<D> extends LinkedList<D> implements ISortedBuffer<D>
@@ -26,7 +27,7 @@ public abstract class ASortedBuffer<D> extends LinkedList<D> implements ISortedB
 	// --------------------------------------------------------------------------
 	private static final long	serialVersionUID	= 2170718043154560764L;
 	
-
+	
 	protected final Object		sync					= new Object();
 	private final int				allowedSize;
 	
@@ -34,6 +35,9 @@ public abstract class ASortedBuffer<D> extends LinkedList<D> implements ISortedB
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param allowedSize
+	 */
 	public ASortedBuffer(int allowedSize)
 	{
 		super();
@@ -41,7 +45,11 @@ public abstract class ASortedBuffer<D> extends LinkedList<D> implements ISortedB
 		this.allowedSize = allowedSize;
 	}
 	
-
+	
+	/**
+	 * @param allowedSize
+	 * @param old
+	 */
 	public ASortedBuffer(int allowedSize, Collection<? extends D> old)
 	{
 		super();
@@ -51,7 +59,7 @@ public abstract class ASortedBuffer<D> extends LinkedList<D> implements ISortedB
 		synchronized (sync)
 		{
 			int i = 0;
-			for (D d : old)
+			for (final D d : old)
 			{
 				if (i > allowedSize)
 				{
@@ -65,7 +73,7 @@ public abstract class ASortedBuffer<D> extends LinkedList<D> implements ISortedB
 		}
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -74,7 +82,7 @@ public abstract class ASortedBuffer<D> extends LinkedList<D> implements ISortedB
 		return allowedSize;
 	}
 	
-
+	
 	@Override
 	public void put(D data)
 	{
@@ -91,7 +99,7 @@ public abstract class ASortedBuffer<D> extends LinkedList<D> implements ISortedB
 		}
 	}
 	
-
+	
 	@Override
 	public D peek()
 	{
@@ -101,7 +109,7 @@ public abstract class ASortedBuffer<D> extends LinkedList<D> implements ISortedB
 		}
 	}
 	
-
+	
 	@Override
 	public D poll()
 	{
@@ -111,7 +119,7 @@ public abstract class ASortedBuffer<D> extends LinkedList<D> implements ISortedB
 		}
 	}
 	
-
+	
 	@Override
 	public D remove()
 	{

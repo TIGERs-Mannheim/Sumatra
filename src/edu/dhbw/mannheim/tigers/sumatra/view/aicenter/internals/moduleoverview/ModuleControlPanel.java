@@ -10,7 +10,6 @@
 package edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview;
 
 
-import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.LinkedList;
@@ -23,6 +22,7 @@ import javax.swing.DefaultButtonModel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JTabbedPane;
+import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
 
@@ -42,34 +42,41 @@ public class ModuleControlPanel extends JPanel implements IChangeGUIMode
 	private static final String							TITLE					= "Sub-Module Controller";
 	
 	private final JRadioButton								matchControl;
+	private final JRadioButton								mixedTeamControl;
 	private final JRadioButton								athenaControl;
 	private final JRadioButton								lachesisControl;
 	private final JRadioButton								emergencyControl;
 	
-
 	private final JTabbedPane								tabbedPane;
 	private final PlayControlPanel						playPanel;
 	private final RoleControlPanel						rolePanel;
 	private final TacticalFieldControlPanel			tacticalFieldPanel;
+	private final MetisCalculatorsPanel					metisCalculatorsPanel;
+	private final ApollonControlPanel					learningPanel;
 	private final ButtonGroup								modeGroup;
 	
-
 	private final List<IModuleControlPanelObserver>	observers			= new LinkedList<IModuleControlPanelObserver>();
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 */
 	public ModuleControlPanel()
 	{
 		setLayout(new MigLayout("fill"));
-		setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.BLUE), TITLE));
+		setBorder(BorderFactory.createTitledBorder(TITLE));
 		
-
-		JPanel controlPanel = new JPanel(new MigLayout("fill", ""));
+		
+		final JPanel controlPanel = new JPanel(new MigLayout("fill", ""));
 		matchControl = new JRadioButton("Match Mode");
 		matchControl.addActionListener(new MatchModeControlListener());
 		controlPanel.add(matchControl);
+		
+		mixedTeamControl = new JRadioButton("Mixed Team Mode");
+		mixedTeamControl.addActionListener(new MixedTeamControlListener());
+		controlPanel.add(mixedTeamControl);
 		
 		athenaControl = new JRadioButton("Play Test Mode");
 		athenaControl.addActionListener(new AthenaControlListener());
@@ -85,44 +92,52 @@ public class ModuleControlPanel extends JPanel implements IChangeGUIMode
 		
 		modeGroup = new ButtonGroup();
 		modeGroup.add(matchControl);
+		modeGroup.add(mixedTeamControl);
 		modeGroup.add(lachesisControl);
 		modeGroup.add(athenaControl);
 		modeGroup.add(emergencyControl);
-		ButtonModel btnModel = new DefaultButtonModel();
+		final ButtonModel btnModel = new DefaultButtonModel();
 		btnModel.setGroup(modeGroup);
 		// modeGroup.setSelected(btnModel, true);
 		athenaControl.setSelected(true);
 		
-
-		JPanel moduleStates = new JPanel(new MigLayout("fill"));
+		
+		final JPanel moduleStates = new JPanel(new MigLayout("fill"));
 		moduleStates.add(controlPanel);
 		
 		playPanel = new PlayControlPanel();
 		rolePanel = new RoleControlPanel();
 		tacticalFieldPanel = new TacticalFieldControlPanel();
+		metisCalculatorsPanel = new MetisCalculatorsPanel();
+		learningPanel = new ApollonControlPanel();
 		
-		JPanel lachesisPanel = new JPanel(new MigLayout("fill"));
+		final JPanel lachesisPanel = new JPanel(new MigLayout("fill"));
 		lachesisPanel.add(rolePanel);
 		
-
+		
 		tabbedPane = new JTabbedPane();
 		tabbedPane.addTab("Athena", playPanel);
 		tabbedPane.addTab("Lachesis", rolePanel);
 		tabbedPane.addTab("Metis", tacticalFieldPanel);
+		tabbedPane.addTab("Metis Calcs", metisCalculatorsPanel);
+		tabbedPane.addTab("Apollon", learningPanel);
 		
-
+		
 		add(moduleStates, "wrap");
 		add(tabbedPane);
 		
-
+		
 		// Initialize
 		onStop();
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param observer
+	 */
 	public void addObserver(IModuleControlPanelObserver observer)
 	{
 		synchronized (observers)
@@ -131,7 +146,10 @@ public class ModuleControlPanel extends JPanel implements IChangeGUIMode
 		}
 	}
 	
-
+	
+	/**
+	 * @param oddObserver
+	 */
 	public void removeObserver(IModuleControlPanelObserver oddObserver)
 	{
 		synchronized (observers)
@@ -140,96 +158,158 @@ public class ModuleControlPanel extends JPanel implements IChangeGUIMode
 		}
 	}
 	
-
+	
+	/**
+	 * @return
+	 */
 	public PlayControlPanel getPlayPanel()
 	{
 		return playPanel;
 	}
 	
-
+	
+	/**
+	 * @return
+	 */
 	public RoleControlPanel getRolePanel()
 	{
 		return rolePanel;
 	}
 	
 	
+	/**
+	 * @return
+	 */
 	public TacticalFieldControlPanel getTacticalFieldControlPanel()
 	{
 		return tacticalFieldPanel;
 	}
 	
-
+	
+	/**
+	 * @return
+	 */
+	public ApollonControlPanel getApollonControlPanel()
+	{
+		return learningPanel;
+	}
+	
+	
 	@Override
 	public void setPlayTestMode()
 	{
-		tabbedPane.setSelectedComponent(playPanel);
-		
-		playPanel.setPlayTestMode();
-		rolePanel.setPlayTestMode();
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				tabbedPane.setSelectedComponent(playPanel);
+				
+				playPanel.setPlayTestMode();
+				rolePanel.setPlayTestMode();
+			}
+		});
 	}
 	
-
+	
 	@Override
 	public void setRoleTestMode()
 	{
-		tabbedPane.setSelectedComponent(rolePanel);
-		
-		playPanel.setRoleTestMode();
-		rolePanel.setRoleTestMode();
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				tabbedPane.setSelectedComponent(rolePanel);
+				
+				playPanel.setRoleTestMode();
+				rolePanel.setRoleTestMode();
+			}
+		});
 	}
 	
-
+	
 	@Override
 	public void setMatchMode()
 	{
-		tabbedPane.setSelectedComponent(playPanel);
-		
-		playPanel.setMatchMode();
-		rolePanel.setMatchMode();
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				tabbedPane.setSelectedComponent(playPanel);
+				
+				playPanel.setMatchMode();
+				rolePanel.setMatchMode();
+			}
+		});
 	}
 	
-
+	
 	@Override
 	public void setEmergencyMode()
 	{
-		tabbedPane.setSelectedComponent(playPanel);
-		
-		emergencyControl.setSelected(true);
-		
-		playPanel.setEmergencyMode();
-		rolePanel.setEmergencyMode();
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				tabbedPane.setSelectedComponent(playPanel);
+				
+				emergencyControl.setSelected(true);
+				
+				playPanel.setEmergencyMode();
+				rolePanel.setEmergencyMode();
+			}
+		});
 	}
 	
-
+	
 	@Override
 	public void onStart()
 	{
-		this.setEnabled(true);
-		
-		matchControl.setEnabled(true);
-		athenaControl.setEnabled(true);
-		lachesisControl.setEnabled(true);
-		emergencyControl.setEnabled(true);
-		
-		playPanel.onStop();
-		rolePanel.onStop();
-		
-		setPlayTestMode();
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				setEnabled(true);
+				
+				matchControl.setEnabled(true);
+				mixedTeamControl.setEnabled(true);
+				athenaControl.setEnabled(true);
+				lachesisControl.setEnabled(true);
+				emergencyControl.setEnabled(true);
+				
+				playPanel.onStop();
+				rolePanel.onStop();
+				
+				setPlayTestMode();
+			}
+		});
 	}
 	
-
+	
 	@Override
 	public void onStop()
 	{
-		this.setEnabled(false);
-		
-		matchControl.setEnabled(false);
-		athenaControl.setEnabled(false);
-		lachesisControl.setEnabled(false);
-		emergencyControl.setEnabled(false);
-		
-		playPanel.onStop();
-		rolePanel.onStop();
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				setEnabled(false);
+				
+				matchControl.setEnabled(false);
+				mixedTeamControl.setEnabled(false);
+				athenaControl.setEnabled(false);
+				lachesisControl.setEnabled(false);
+				emergencyControl.setEnabled(false);
+				
+				playPanel.onStop();
+				rolePanel.onStop();
+			}
+		});
 	}
 	
 	
@@ -240,7 +320,7 @@ public class ModuleControlPanel extends JPanel implements IChangeGUIMode
 		{
 			synchronized (observers)
 			{
-				for (IModuleControlPanelObserver o : observers)
+				for (final IModuleControlPanelObserver o : observers)
 				{
 					o.onPlayTestMode();
 				}
@@ -255,9 +335,24 @@ public class ModuleControlPanel extends JPanel implements IChangeGUIMode
 		{
 			synchronized (observers)
 			{
-				for (IModuleControlPanelObserver o : observers)
+				for (final IModuleControlPanelObserver o : observers)
 				{
 					o.onMatchMode();
+				}
+			}
+		}
+	}
+	
+	private class MixedTeamControlListener implements ActionListener
+	{
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
+			synchronized (observers)
+			{
+				for (final IModuleControlPanelObserver o : observers)
+				{
+					o.onMixedTeamMode();
 				}
 			}
 		}
@@ -271,7 +366,7 @@ public class ModuleControlPanel extends JPanel implements IChangeGUIMode
 		{
 			synchronized (observers)
 			{
-				for (IModuleControlPanelObserver o : observers)
+				for (final IModuleControlPanelObserver o : observers)
 				{
 					o.onRoleTestMode();
 				}
@@ -286,12 +381,21 @@ public class ModuleControlPanel extends JPanel implements IChangeGUIMode
 		{
 			synchronized (observers)
 			{
-				for (IModuleControlPanelObserver o : observers)
+				for (final IModuleControlPanelObserver o : observers)
 				{
 					o.onEmergencyMode();
 				}
 			}
 		}
+	}
+	
+	
+	/**
+	 * @return the metisCalculatorsPanel
+	 */
+	public final MetisCalculatorsPanel getMetisCalculatorsPanel()
+	{
+		return metisCalculatorsPanel;
 	}
 	
 }

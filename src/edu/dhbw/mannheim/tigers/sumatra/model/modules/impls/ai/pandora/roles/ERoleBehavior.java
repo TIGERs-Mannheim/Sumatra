@@ -1,4 +1,4 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
@@ -9,11 +9,10 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.APlay;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ARole;
 
 /**
- * This enumeration classifies a {@link ARole}s behavior during a certain {@link APlay}
+ * This enumeration classifies a {@link ARole}s behavior during a certain
+ * {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay}
  * 
  * @author Gero, Oliver
  * 
@@ -27,5 +26,8 @@ public enum ERoleBehavior
 	CREATIVE,
 	
 	/** Roles with this tag want to get somewhere near the ball */
-	AGGRESSIVE;
+	AGGRESSIVE,
+	
+	/** not yet set */
+	UNKNOWN;
 }

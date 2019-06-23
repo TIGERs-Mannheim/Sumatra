@@ -10,11 +10,12 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.criteria.local;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.TrackedBot;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2f;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.WorldFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.AIMath;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACriterion;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.criteria.ECriterion;
 
@@ -34,52 +35,38 @@ public class OpponentPassReceiverCrit extends ACriterion
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private static final int	UNINITIALIZED_ID	= -1;
-	private int						ignored				= UNINITIALIZED_ID;
+	private final BotID		ignored;
 	
-	private boolean				wish					= false;
+	private final boolean	canPass;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	public OpponentPassReceiverCrit(boolean wish, float penaltyFactor)
+	/**
+	 * 
+	 * @param canPass
+	 */
+	public OpponentPassReceiverCrit(boolean canPass)
 	{
-		super(ECriterion.OPPONENT_PASS_RECEIVER, penaltyFactor);
-		
-		this.wish = wish;
-		this.penaltyFactor = normalizePenaltyFactor(penaltyFactor);
+		this(canPass, new BotID());
 	}
 	
-
-	public OpponentPassReceiverCrit(boolean wish, float penaltyFactor, int ignored)
-	{
-		super(ECriterion.OPPONENT_PASS_RECEIVER, penaltyFactor);
-		
-		this.wish = wish;
-		this.penaltyFactor = penaltyFactor;
-		this.ignored = ignored;
-	}
 	
-
-	public OpponentPassReceiverCrit(boolean wish)
+	/**
+	 * 
+	 * @param canPass
+	 * @param ignored
+	 */
+	public OpponentPassReceiverCrit(boolean canPass, BotID ignored)
 	{
 		super(ECriterion.OPPONENT_PASS_RECEIVER);
 		
-		this.wish = wish;
-	}
-	
-
-	public OpponentPassReceiverCrit(boolean wish, int ignored)
-	{
-		super(ECriterion.OPPONENT_PASS_RECEIVER);
-		
-		this.wish = wish;
+		this.canPass = canPass;
 		this.ignored = ignored;
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -87,55 +74,63 @@ public class OpponentPassReceiverCrit extends ACriterion
 	@Override
 	public float doCheckCriterion(AIInfoFrame currentFrame)
 	{
-		boolean passReceiver = checkPassReceiver(currentFrame.worldFrame, ignored);
+		final boolean passReceiver = checkPassReceiver(currentFrame.worldFrame, ignored);
 		
-		if (passReceiver == wish)
+		if (passReceiver == canPass)
 		{
-			return 1;
-		} else
-		{
-			return penaltyFactor;
+			return MAX_SCORE;
 		}
+		return MIN_SCORE;
 	}
 	
-
-	public static boolean checkPassReceiver(WorldFrame worldFrame, int ignored)
+	
+	/**
+	 * 
+	 * @param worldFrame
+	 * @param ignored
+	 * @return
+	 */
+	public static boolean checkPassReceiver(WorldFrame worldFrame, BotID ignored)
 	{
 		boolean passReceiver = false;
 		
 		TrackedBot opponentBallGetter = null;
-		Vector2f ballPos = worldFrame.ball.pos;
-		float distanceToBall = UNINITIALIZED_ID;
-		float closestDistanceToBall = UNINITIALIZED_ID;
+		final IVector2 ballPos = worldFrame.ball.getPos();
+		float closestDistanceToBall = Float.MAX_VALUE;
 		
 		// identify their ball getter / ball carrier
-		for (TrackedBot currentBot : worldFrame.foeBots.values())
+		for (final TrackedBot currentBot : worldFrame.foeBots.values())
 		{
-			distanceToBall = AIMath.distancePP(currentBot, ballPos);
+			float distanceToBall = GeoMath.distancePP(currentBot, ballPos);
 			
-			if (closestDistanceToBall == UNINITIALIZED_ID || distanceToBall < closestDistanceToBall)
+			if ((distanceToBall < closestDistanceToBall))
 			{
 				closestDistanceToBall = distanceToBall;
 				opponentBallGetter = currentBot;
 			}
 		}
 		
-
+		if (opponentBallGetter == null)
+		{
+			return false;
+		}
+		
+		
 		// check whether there is a potential opponent pass receiver which also can see our goal
-		for (TrackedBot currentBot : worldFrame.foeBots.values())
+		for (final TrackedBot currentBot : worldFrame.foeBots.values())
 		{
 			boolean ballVisibleForThem;
-			if (ignored != UNINITIALIZED_ID)
+			if (!ignored.isUninitializedID())
 			{
-				ballVisibleForThem = AIMath.p2pVisibility(worldFrame, currentBot.pos, ballPos, ignored);
+				ballVisibleForThem = GeoMath.p2pVisibility(worldFrame, currentBot.getPos(), ballPos, ignored);
 			} else
 			{
-				ballVisibleForThem = AIMath.p2pVisibility(worldFrame, currentBot.pos, ballPos);
+				ballVisibleForThem = GeoMath.p2pVisibility(worldFrame, currentBot.getPos(), ballPos);
 			}
 			
-
+			
 			// exclude opponent ball getter and check whether the bot can see the ball
-			if (currentBot.id != opponentBallGetter.id && ballVisibleForThem)
+			if (!currentBot.getId().equals(opponentBallGetter.getId()) && ballVisibleForThem)
 			{
 				passReceiver = true;
 			}

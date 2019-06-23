@@ -42,9 +42,10 @@ public class Observable<S extends IObservable<S, O, E>, O extends IObserver<S, O
 	 */
 	/**
 	 * Adds the given observer to registeredObservers
-	 * 
-	 * @param observers: The {@link AObserver} that should listen to this observable.
+	 * @param initEvent
+	 * @param observers The {@link AObserver} that should listen to this observable.
 	 */
+	@SafeVarargs
 	public Observable(E initEvent, O... observers)
 	{
 		this(initEvent);
@@ -52,13 +53,16 @@ public class Observable<S extends IObservable<S, O, E>, O extends IObserver<S, O
 		addObservers(observers);
 	}
 	
-
+	
+	/**
+	 * @param initEvent
+	 */
 	public Observable(E initEvent)
 	{
 		this.lastEvent = initEvent;
 	}
 	
-
+	
 	/*
 	 * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	 * Notify
@@ -66,7 +70,7 @@ public class Observable<S extends IObservable<S, O, E>, O extends IObserver<S, O
 	/**
 	 * Notifies all registered observers.
 	 * 
-	 * @param event: The event (e) that changed the model
+	 * @param event The event (e) that changed the model
 	 */
 	@Override
 	public synchronized void notifyObservers(E event)
@@ -76,24 +80,24 @@ public class Observable<S extends IObservable<S, O, E>, O extends IObserver<S, O
 		doNotify(event);
 	}
 	
-
+	
 	@Override
 	public synchronized void notifyObservers()
 	{
 		doNotify(lastEvent);
 	}
 	
-
+	
 	@SuppressWarnings("unchecked")
 	private void doNotify(E event)
 	{
-		for (O observer : registeredObservers)
+		for (final O observer : registeredObservers)
 		{
 			observer.update((S) this, event);
 		}
 	}
 	
-
+	
 	/*
 	 * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	 * Observer management
@@ -114,12 +118,13 @@ public class Observable<S extends IObservable<S, O, E>, O extends IObserver<S, O
 		
 		synchronized (this)
 		{
-			for (O obs : observers)
+			for (final O obs : observers)
 			{
 				if (obs != null)
 				{
 					registeredObservers.add(obs);
-					if (lastEvent != null) {
+					if (lastEvent != null)
+					{
 						obs.update((S) this, lastEvent);
 					}
 					// obs.onAdd();
@@ -133,11 +138,11 @@ public class Observable<S extends IObservable<S, O, E>, O extends IObserver<S, O
 		return result;
 	}
 	
-
+	
 	@Override
 	public synchronized boolean removeObserver(O observer)
 	{
-		boolean containedObs = registeredObservers.remove(observer);
+		final boolean containedObs = registeredObservers.remove(observer);
 		
 		// if (containedObs)
 		// {

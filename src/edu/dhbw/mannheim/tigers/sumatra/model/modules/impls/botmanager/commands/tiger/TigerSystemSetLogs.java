@@ -1,16 +1,17 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 18.04.2011
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+
 
 /**
  * Enable/Disable various logs.
@@ -20,22 +21,26 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.
  */
 public class TigerSystemSetLogs extends ACommand
 {
-
+	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private int motor[] = new int[5];
-	private int kicker;
-	private int movement;
-	private int accel;
-	private int ir;	
-
+	private final int	motor[]	= new int[5];
+	private int			kicker;
+	private int			movement;
+	private int			accel;
+	private int			ir;
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 */
 	public TigerSystemSetLogs()
 	{
-		for(int i = 0; i < 5; i++)
+		for (int i = 0; i < 5; i++)
 		{
 			motor[i] = 0;
 		}
@@ -46,14 +51,19 @@ public class TigerSystemSetLogs extends ACommand
 		ir = 0;
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
+	// --------------------------------------------------------------------------
+	
+	
+	// --------------------------------------------------------------------------
+	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
 	public void setData(byte[] data)
 	{
-		for(int i = 0; i < 5; i++)
+		for (int i = 0; i < 5; i++)
 		{
 			motor[i] = byteArray2UByte(data, i);
 		}
@@ -63,13 +73,14 @@ public class TigerSystemSetLogs extends ACommand
 		accel = byteArray2UByte(data, 7);
 		ir = byteArray2UByte(data, 8);
 	}
-
+	
+	
 	@Override
 	public byte[] getData()
 	{
-		byte data[] = new byte[getDataLength()];
+		final byte data[] = new byte[getDataLength()];
 		
-		for(int i = 0; i < 5; i++)
+		for (int i = 0; i < 5; i++)
 		{
 			byte2ByteArray(data, i, motor[i]);
 		}
@@ -81,20 +92,22 @@ public class TigerSystemSetLogs extends ACommand
 		
 		return data;
 	}
-
+	
+	
 	@Override
 	public int getCommand()
 	{
 		return CommandConstants.CMD_SYSTEM_SET_LOGS;
 	}
-
+	
+	
 	@Override
 	public int getDataLength()
 	{
 		return 9;
 	}
-
-
+	
+	
 	/**
 	 * @return the kicker
 	 */
@@ -102,8 +115,8 @@ public class TigerSystemSetLogs extends ACommand
 	{
 		return kicker > 0 ? true : false;
 	}
-
-
+	
+	
 	/**
 	 * @param kicker the kicker to set
 	 */
@@ -111,8 +124,8 @@ public class TigerSystemSetLogs extends ACommand
 	{
 		this.kicker = kicker ? 1 : 0;
 	}
-
-
+	
+	
 	/**
 	 * @return the movement
 	 */
@@ -120,8 +133,8 @@ public class TigerSystemSetLogs extends ACommand
 	{
 		return movement > 0 ? true : false;
 	}
-
-
+	
+	
 	/**
 	 * @param movement the movement to set
 	 */
@@ -129,8 +142,8 @@ public class TigerSystemSetLogs extends ACommand
 	{
 		this.movement = movement ? 1 : 0;
 	}
-
-
+	
+	
 	/**
 	 * @return the accel
 	 */
@@ -138,8 +151,8 @@ public class TigerSystemSetLogs extends ACommand
 	{
 		return accel > 0 ? true : false;
 	}
-
-
+	
+	
 	/**
 	 * @param accel the accel to set
 	 */
@@ -147,8 +160,8 @@ public class TigerSystemSetLogs extends ACommand
 	{
 		this.accel = accel ? 1 : 0;
 	}
-
-
+	
+	
 	/**
 	 * @return the ir
 	 */
@@ -156,8 +169,8 @@ public class TigerSystemSetLogs extends ACommand
 	{
 		return ir > 0 ? true : false;
 	}
-
-
+	
+	
 	/**
 	 * @param ir the ir to set
 	 */
@@ -166,9 +179,15 @@ public class TigerSystemSetLogs extends ACommand
 		this.ir = ir ? 1 : 0;
 	}
 	
+	
+	/**
+	 * 
+	 * @param id
+	 * @return
+	 */
 	public boolean getMotor(int id)
 	{
-		if(id > 4 || id < 0)
+		if ((id > 4) || (id < 0))
 		{
 			return false;
 		}
@@ -176,9 +195,15 @@ public class TigerSystemSetLogs extends ACommand
 		return motor[id] > 0 ? true : false;
 	}
 	
+	
+	/**
+	 * 
+	 * @param id
+	 * @param enable
+	 */
 	public void setMotor(int id, boolean enable)
 	{
-		if(id > 4 || id < 0)
+		if ((id > 4) || (id < 0))
 		{
 			return;
 		}
@@ -186,8 +211,13 @@ public class TigerSystemSetLogs extends ACommand
 		motor[id] = enable ? 1 : 0;
 	}
 	
-
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public int[] getMotors()
+	{
+		return motor;
+	}
 }

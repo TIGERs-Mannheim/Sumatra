@@ -9,6 +9,8 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.test.junit.model.data.matrix.performance;
 
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -20,6 +22,19 @@ import org.junit.Test;
  */
 public class Addition extends APerformanceTest
 {
+	final int	size	= 2;
+	final int	times	= 10;
+	
+	
+	/**
+	 * 
+	 */
+	public Addition()
+	{
+		super();
+	}
+	
+	
 	/**
 	 * Testing the add-functions with performance-fokus
 	 * 
@@ -27,39 +42,57 @@ public class Addition extends APerformanceTest
 	 * alloc Matrix B (random)
 	 * add them (random)
 	 */
-	@Test
-	public void test()
+	@BeforeClass
+	public static void beforeClass()
 	{
 		System.out.println("##########################################################");
 		System.out.println("Addition");
 		System.out.println("##########################################################");
-		
+		System.out.println("--> Many tests deactivated");
+	}
+	
+	
+	/**
+	 */
+	@Test
+	public void test()
+	{
 		output = false;
-		int size = 2;
-		int times = 10;
-		JaMa(size, times);
-		MatrixOld(size, times);
-		MatrixNew(size, times);
-		
-
-		output = true;
-		times = timesEasyOps;
-		System.out.println("Number of runs: " + times);
 		JaMa(size, times);
 		MatrixOld(size, times);
 		MatrixNew(size, times);
 	}
 	
-
+	
+	/**
+	 */
+	@Ignore
+	@Test
+	public void testMany()
+	{
+		output = true;
+		System.out.println("Number of runs: " + timesEasyOps);
+		JaMa(size, timesEasyOps);
+		MatrixOld(size, timesEasyOps);
+		MatrixNew(size, timesEasyOps);
+	}
+	
+	
+	/**
+	 * @param size
+	 * @param times
+	 */
 	public void MatrixNew(int size, int times)
 	{
 		if (output)
+		{
 			System.out.println("MatrixNew");
+		}
 		startTimer();
 		for (int i = 0; i < times; i++)
 		{
-			edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix A = createRandomMatrix(size);
-			edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix B = createRandomMatrix(size);
+			final edu.dhbw.mannheim.tigers.sumatra.model.data.math.types.Matrix A = createRandomMatrix(size);
+			final edu.dhbw.mannheim.tigers.sumatra.model.data.math.types.Matrix B = createRandomMatrix(size);
 			A.plus(B, false);
 			saveMatrix(A);
 		}
@@ -67,16 +100,22 @@ public class Addition extends APerformanceTest
 		
 	}
 	
-
+	
+	/**
+	 * @param size
+	 * @param times
+	 */
 	public void MatrixOld(int size, int times)
 	{
 		if (output)
+		{
 			System.out.println("MatrixOld");
+		}
 		startTimer();
 		for (int i = 0; i < times; i++)
 		{
-			edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix A = createRandomMatrix(size);
-			edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix B = createRandomMatrix(size);
+			final edu.dhbw.mannheim.tigers.sumatra.model.data.math.types.Matrix A = createRandomMatrix(size);
+			final edu.dhbw.mannheim.tigers.sumatra.model.data.math.types.Matrix B = createRandomMatrix(size);
 			A.plus(B, true);
 			saveMatrix(A);
 		}
@@ -84,16 +123,22 @@ public class Addition extends APerformanceTest
 		
 	}
 	
-
+	
+	/**
+	 * @param size
+	 * @param times
+	 */
 	public void JaMa(int size, int times)
 	{
 		if (output)
+		{
 			System.out.println("JaMa");
+		}
 		startTimer();
 		for (int i = 0; i < times; i++)
 		{
-			Jama.Matrix A = createRandomMatrixJaMa(size);
-			Jama.Matrix B = createRandomMatrixJaMa(size);
+			final Jama.Matrix A = createRandomMatrixJaMa(size);
+			final Jama.Matrix B = createRandomMatrixJaMa(size);
 			A.plus(B);
 			saveJamaMatrix(A);
 		}

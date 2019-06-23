@@ -19,6 +19,7 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 
 
 /**
@@ -37,7 +38,7 @@ public class KickerConfig extends JPanel
 	
 	private static final int	SAFETY_VOLTAGE		= 20;
 	
-	private final int				botId;
+	private final BotID			botId;
 	
 	private JCheckBox				cbAutoload			= null;
 	private JTextField			actualCap			= null;
@@ -46,8 +47,10 @@ public class KickerConfig extends JPanel
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	public KickerConfig(int botId)
+	/**
+	 * @param botId
+	 */
+	public KickerConfig(BotID botId)
 	{
 		this.botId = botId;
 		
@@ -65,28 +68,36 @@ public class KickerConfig extends JPanel
 		add(actualCap);
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	public int getBotId()
+	/**
+	 * @return
+	 */
+	public BotID getBotId()
 	{
 		return botId;
 	}
 	
-
+	
+	/**
+	 * @return
+	 */
 	public boolean isAutoloadEnabled()
 	{
 		return cbAutoload.isSelected();
 	}
 	
-
+	
+	/**
+	 * @param chg
+	 */
 	public void setChargeLvL(final float chg)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -94,14 +105,14 @@ public class KickerConfig extends JPanel
 			@Override
 			public void run()
 			{
-				KickerConfig.this.actualCap.setText(Float.toString(chg));
+				actualCap.setText(Float.toString(chg));
 				
 				if (chg <= SAFETY_VOLTAGE)
 				{
-					KickerConfig.this.actualCap.setBackground(Color.GREEN);
+					actualCap.setBackground(Color.GREEN);
 				} else
 				{
-					KickerConfig.this.actualCap.setBackground(Color.RED);
+					actualCap.setBackground(Color.RED);
 				}
 				
 			}

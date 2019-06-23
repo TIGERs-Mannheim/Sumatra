@@ -1,17 +1,21 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: May 17, 2011
  * Author(s): Birgit
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.flyingBalls;
 
 import java.util.ArrayList;
+import java.util.List;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Coord;
+import org.apache.log4j.Logger;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.Coord;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.flyingBalls.Def.Cam;
 
 
 /**
@@ -24,77 +28,70 @@ public class Fly
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	public  ArrayList<FlyingBall> m_balls	 				= new ArrayList<FlyingBall>();
-	private Coord 						m_kickPos 				= new Coord(Def.DUMMY, Def.DUMMY);
-	private LinFunc 					m_roboViewFunction	= null;
-	private RegParab 					m_flyParabel			= null;
-	private double						m_lastDistance			= 0;
-	private int 						m_backCount 			= 0;
-
+	// Logger
+	private static final Logger	log					= Logger.getLogger(Fly.class.getName());
+	
+	/** */
+	private List<FlyingBall>		balls					= new ArrayList<FlyingBall>();
+	private Coord						kickPos				= new Coord(Def.DUMMY, Def.DUMMY);
+	private LinFunc					roboViewFunction	= null;
+	private RegParab					flyParabel			= null;
+	private double						lastDistance		= 0;
+	private int							backCount			= 0;
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/*
+	/**
 	 * create a new fly
+	 * @param aRoboPos
+	 * @param aViewAngle
 	 */
-	public Fly (final Coord a_roboPos, final double a_viewAngle)
+	public Fly(final Coord aRoboPos, final double aViewAngle)
 	{
-		//function through roboter and angle
-		m_roboViewFunction = new LinFunc(a_roboPos, a_viewAngle);	
-		//set the kickingPosition
-		m_kickPos = m_roboViewFunction.goDistanceFromPoint(a_roboPos, Def.BOT_RADIUS);	
+		// function through roboter and angle
+		roboViewFunction = new LinFunc(aRoboPos, aViewAngle);
+		// set the kickingPosition
+		kickPos = roboViewFunction.goDistanceFromPoint(aRoboPos, Def.BOT_RADIUS);
 	}
-
+	
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/*
+	/**
 	 * add a new ball and control, weather it has an orientation between given borders
+	 * @param aBallPos
+	 * @param camID
+	 * @return
 	 */
-	public boolean addNewBall(final Coord a_ballPos, final int camID)
+	public boolean addNewBall(final Coord aBallPos, final int camID)
 	{
-		//Create new ballInstance
-		FlyingBall ball = new FlyingBall(a_ballPos);
+		// Create new ballInstance
+		final FlyingBall ball = new FlyingBall(aBallPos);
 		
-		//set the line through the ball and the cam
+		// set the line through the ball and the cam
 		LinFunc ballOrientation;
 		
-		//System.out.println("camId: "+camID);
+		Cam cam = Def.cams.get(camID);
+		if (Def.DEBUG_CAM)
+		{
+			log.info("Kamera: " + cam.id + "..." + cam.x + ":" + cam.y);
+		}
+		ballOrientation = new LinFunc(new Coord(cam.x, cam.y), aBallPos);
 		
-		if(camID == Def.CamIDOne)
-		{
-			if(Def.debugCam)
-			System.out.println("Kamera: "+Def.CamIDOne+"..."+Def.CamOneX+":"+Def.CamOneY);
-			
-			ballOrientation = new LinFunc(
-				new Coord(Def.CamOneX, Def.CamOneY), 
-				a_ballPos);
-		}
-		else if(camID == Def.CamIDNull)
-		{
-			if(Def.debugCam)
-			System.out.println("Kamera: "+Def.CamIDNull+"..."+Def.CamNullX+":"+Def.CamNullY);
-			
-			ballOrientation = new LinFunc(
-					new Coord(Def.CamNullX, Def.CamNullY), 
-					a_ballPos);
-		}
-		else
-		{
-			throw new IllegalArgumentException("Fly: Altigraph is not able, to detect the cam for the ball");
-		}
-				
-		
-		//look for cut with robot-line, which is flying position
-		Coord flyingPosition = LinFunc.getCutCoords(m_roboViewFunction, ballOrientation);
+		// look for cut with robot-line, which is flying position
+		final Coord flyingPosition = LinFunc.getCutCoords(roboViewFunction, ballOrientation);
 		ball.setFlyPositionAndCalculateFlyingHeight(flyingPosition, camID);
-		ball.calculateDistanceToStart(m_kickPos);
+		ball.calculateDistanceToStart(kickPos);
 		
-		//add ball to the list
-		m_balls.add(ball);		
+		// add ball to the list
+		balls.add(ball);
 		
 		return doesBallFit();
 	}
+	
 	
 	/*
 	 * check, weather the vector between current and before ball is between borders,
@@ -104,229 +101,234 @@ public class Fly
 	{
 		boolean fit = true;
 		
-		Coord ball = m_balls.get(m_balls.size()-1).getBottomPosition();
-		double dist_start_ball_x = ball.x() - m_kickPos.x();
-		double dist_start_ball_y = ball.y() - m_kickPos.y();
-		Coord distanceStartBall  = new Coord(dist_start_ball_x,dist_start_ball_y);
-		double newDis = distanceStartBall.getLength();
-		double angle = m_roboViewFunction.getAngleToVector(distanceStartBall);
+		final Coord ball = balls.get(balls.size() - 1).getBottomPosition();
+		final double distStartBallX = ball.x() - kickPos.x();
+		final double distStartBallY = ball.y() - kickPos.y();
+		final Coord distanceStartBall = new Coord(distStartBallX, distStartBallY);
+		final double newDis = distanceStartBall.getLength();
+		final double angle = roboViewFunction.getAngleToVector(distanceStartBall);
 		
 		
-		//check for longest distance
-		if(m_flyParabel != null)
+		// check for longest distance
+		if (flyParabel != null)
 		{
-			double maxDis = -m_flyParabel.getD()*2;
-			if(Def.debugFlyHeight)
-			System.out.println("Höchste Distanz: "+maxDis+" und wir haben "+newDis);
-		
-			if(m_balls.size() == 1)
+			final double maxDis = -flyParabel.getD() * 2;
+			if (Def.DEBUG_FLY_HEIGHT)
 			{
-				m_lastDistance = newDis;
-				if(Def.debugFlyHeight)
-				System.out.println("Erster Ball");
+				log.info("Hï¿½chste Distanz: " + maxDis + " und wir haben " + newDis);
+			}
+			if (balls.size() == 1)
+			{
+				lastDistance = newDis;
+				if (Def.DEBUG_FLY_HEIGHT)
+				{
+					log.info("Erster Ball");
+				}
 			}
 			
-			if(newDis < m_lastDistance)
+			if (newDis < lastDistance)
 			{
-				m_backCount++;
-				if(Def.debugFlyHeight)
-				System.out.println("Fehler erhöht");
+				backCount++;
+				if (Def.DEBUG_FLY_HEIGHT)
+				{
+					log.info("Fehler erhï¿½ht");
+				}
 			}
 			
-			if(newDis > maxDis || m_backCount >= Def.MAX_NUMBER_BALLS_GO_BACK)
+			if ((newDis > maxDis) || (backCount >= Def.MAX_NUMBER_BALLS_GO_BACK))
 			{
-				if(Def.debugFlyHeight)
-				System.out.println("STOP");
+				if (Def.DEBUG_FLY_HEIGHT)
+				{
+					log.info("STOP");
+				}
 				fit = false;
 			}
 			
-			m_lastDistance = newDis;
+			lastDistance = newDis;
 		}
-
-
 		
 		
-		if(Def.debug)
-		System.out.print(" Winkel : "+angle);
-		
-		//angle fits
-		//if (	Def.MIN_BALL2BALL_ANGLE_BORDER < angle && 
-		//		Def.MAX_BALL2BALL_ANGLE_BORDER > angle)
-		if(angle < Def.RUN_BOT2BALL_MAX_ANGLE)
+		if (Def.DEBUG)
 		{
-			//-- check for long enough distance was passed
+			log.debug(" Winkel : " + angle);
+		}
+		
+		// angle fits
+		if (angle < Def.RUN_BOT2BALL_MAX_ANGLE)
+		{
+			// -- check for long enough distance was passed
 			
-			//calculate lastPos
+			// calculate lastPos
 			Coord lastBall;
-			//if we have the first ball, get the position from start
-			if(1 == m_balls.size())
+			// if we have the first ball, get the position from start
+			if (1 == balls.size())
 			{
-				lastBall = m_kickPos;
+				lastBall = kickPos;
 			}
-			//if we have many balls, get the previous ball-position
+			// if we have many balls, get the previous ball-position
 			else
 			{
-				lastBall = m_balls.get(m_balls.size()-2).getBottomPosition();
+				lastBall = balls.get(balls.size() - 2).getBottomPosition();
 			}
-			double dist_ball_ball_x = ball.x() - lastBall.x();
-			double dist_ball_ball_y = ball.y() - lastBall.y();
+			final double distBallBallX = ball.x() - lastBall.x();
+			final double distBallBallY = ball.y() - lastBall.y();
 			
-			Coord ball2ballDistance = new Coord(dist_ball_ball_x,dist_ball_ball_y);
+			final Coord ball2ballDistance = new Coord(distBallBallX, distBallBallY);
 			
-			if(ball2ballDistance.getLength() > Def.BALL2BALL_MIN_DISTANCE)
+			if (ball2ballDistance.getLength() > Def.BALL2BALL_MIN_DISTANCE)
 			{
-				if(Def.debug)
-					System.out.println(" go ");
-			}
-			else
+				if (Def.DEBUG)
+				{
+					log.info(" go ");
+				}
+			} else
 			{
-				if(Def.debug)
-					System.out.println(" STOP BY DISTANCE ");
+				if (Def.DEBUG)
+				{
+					log.info(" STOP BY DISTANCE ");
+				}
 				fit = false;
 			}
-				
-				
+			
+			
 		}
-		//angle fits not
-	/*	else
+		// angle fits not
+		else
 		{
-			
-			//if error is small enough, allow the way, because it is maybe noisy			
-			if(((double) m_balls.size())/((double) m_faultCounter) > 2)
+			if (Def.DEBUG)
 			{
-				if(Def.debug)
-				System.out.print("Length: "+vector.getLength());
-				//control inverted angle
-				double angleInvert = Math.PI - angle;
-				if (	Def.MIN_BALL2BALL_ANGLE_BORDER < angleInvert && 
-						Def.MAX_BALL2BALL_ANGLE_BORDER > angleInvert &&
-						vector.getLength() < Def.BALL2BALL_MAX_DISTANCE)
-				{
-					if(Def.debug)
-					System.out.println(" go Fehler++");
-					m_faultCounter += 1;
-				}
-				else
-				{
-					if(Def.debug)
-					System.out.println(" stop!!!");
-					fit = false;
-				}
-				
-			}*/
-			else
-			{
-				if(Def.debug)
-				System.out.println(" stop!!!");
-				fit = false;
+				log.info(" stop!!!");
 			}
+			fit = false;
+		}
 		return fit;
 	}
 	
 	
-	/*
+	/**
 	 * calculate the regressionParabel
 	 */
 	public void calculateFly()
 	{
-	
-		//if no parabel exists
-		if(null == m_flyParabel)
+		
+		// if no parabel exists
+		if (flyParabel == null)
 		{
-			//System.out.println("new Parabel");
-			int number = m_balls.size();
-			Coord[] FlyingBalls = new Coord[number];
-			//double[] width      = new double[number];
-			//double[] height     = new double[number];
-			//double[] time       = new double[number];
+			final int number = balls.size();
+			final Coord[] flyingBalls = new Coord[number];
 			
-			//getAllData
-			for(int i = 0; i < number; i++)
+			// getAllData
+			for (int i = 0; i < number; i++)
 			{
-				FlyingBall ball = m_balls.get(i);
-				FlyingBalls[i] = new Coord(ball.getDistance(), ball.getFlyingHeight());
-				
-				//width[i]  = ball.getDistance();
-				//height[i] = ball.getFlyingHeight();
-				//time[i]   = ball.getTimestamp();
+				final FlyingBall ball = balls.get(i);
+				flyingBalls[i] = new Coord(ball.getDistance(), ball.getFlyingHeight());
 			}
-			m_flyParabel = new RegParab(FlyingBalls);
-			//m_trajec = new Trajectory(width, height, time, m_flyParabel.getAlpha());
-		}
-		else
+			flyParabel = new RegParab(flyingBalls);
+		} else
 		{
-			//System.out.println("Data append");
-			int last = m_balls.size()-1;
-			m_flyParabel.appendData(new Coord(m_balls.get(last).getDistance(), 
-					m_balls.get(last).getFlyingHeight()));
+			final int last = balls.size() - 1;
+			flyParabel.appendData(new Coord(balls.get(last).getDistance(), balls.get(last).getFlyingHeight()));
 		}
 	}
 	
-	/*
+	
+	/**
 	 * return, weather minimum high at least is reached
+	 * @return
 	 */
 	public boolean isAtLeastMinHighReached()
 	{
-
-		if(Def.debug)
-		System.out.println("Erwartete Höhe: "+m_flyParabel.getE()+" bei "+(-m_flyParabel.getD()));
-		if(m_flyParabel.getE() > Def.MIN_FLY_HEIGHT && (-m_flyParabel.getD()) > Def.MIN_FLY_LENGTH)
+		
+		if (Def.DEBUG)
 		{
-			if(Def.debug)
-			System.out.println("weiter");
+			log.info("Erwartete Hï¿½he: " + flyParabel.getE() + " bei " + (-flyParabel.getD()));
+		}
+		if ((flyParabel.getE() > Def.MIN_FLY_HEIGHT) && ((-flyParabel.getD()) > Def.MIN_FLY_LENGTH))
+		{
+			if (Def.DEBUG)
+			{
+				log.info("weiter");
+			}
 			return true;
 		}
-		else
+		if (Def.DEBUG)
 		{
-			if(Def.debug)
-			System.out.println("beendet wegen Parameter");
-			return false;
+			log.info("beendet wegen Parameter");
 		}
+		return false;
 	}
 	
-
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
+	/**
+	 * @return
+	 */
 	public int size()
 	{
-		return m_balls.size();
+		return balls.size();
 	}
 	
+	
+	/**
+	 * @return
+	 */
 	public Coord getStartPos()
 	{
-		return m_kickPos;
+		return kickPos;
 	}
 	
+	
+	/**
+	 * @return
+	 */
 	public RegParab getParabel()
 	{
-		return m_flyParabel;
+		return flyParabel;
 	}
 	
+	
+	/**
+	 * @return
+	 */
 	public Coord getCurrentBallPosition()
 	{
-		return m_balls.get(m_balls.size()-1).getFlyingPosition();
+		return balls.get(balls.size() - 1).getFlyingPosition();
 	}
 	
+	
+	/**
+	 * @return
+	 */
 	public double getCurrentBallHeight()
 	{
-		return m_balls.get(m_balls.size()-1).getFlyingHeight();
+		return balls.get(balls.size() - 1).getFlyingHeight();
 	}
 	
+	
+	@Override
 	public String toString()
 	{
-		String str = "";
+		final StringBuilder str = new StringBuilder();
 		
-		for(int i = 0; i< m_balls.size(); i++)
+		for (int i = 0; i < balls.size(); i++)
 		{
-			str += "Ball "+i+":\n";
-			str += m_balls.get(i).toString();
+			str.append("Ball " + i + ":\n");
+			str.append(balls.get(i).toString());
 		}
 		
-		return str;
+		return str.toString();
 	}
-
-
+	
+	
+	/**
+	 * @return the balls
+	 */
+	public List<FlyingBall> getBalls()
+	{
+		return balls;
+	}
+	
+	
 }

@@ -10,9 +10,11 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.types;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena.control.IApollonControlHandler;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.IMetisHandler;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IAIObserver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IManualBotObserver;
 import edu.moduli.AModule;
 
 
@@ -22,57 +24,88 @@ import edu.moduli.AModule;
  * @author Gero
  * 
  */
-public abstract class AAgent extends AModule implements IWorldFrameConsumer, IRefereeMsgConsumer, IAthenaControlHandler
+public abstract class AAgent extends AModule implements IWorldFrameConsumer, IRefereeMsgConsumer,
+		IAthenaControlHandler, IManualBotObserver, IApollonControlHandler, IMetisHandler
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	public static final String				MODULE_TYPE			= "AAgent";
-	public static final String				MODULE_ID			= "ai";
+	/** */
+	public static final String			MODULE_TYPE					= "AAgent";
+	/** */
+	public static final String			MODULE_ID					= "ai";
 	
 	// --- config ---
-	public final static String				AI_CONFIG_PATH		= "./config/ai/";
-	public final static String				AI_DEFAULT_CONFIG	= "ai_default.xml";
-	public static String						currentConfig		= AI_DEFAULT_CONFIG;
+	/** */
+	public static final String			KEY_AI_CONFIG				= AAgent.class.getName() + ".config";
+	/** */
+	public static final String			AI_CONFIG_PATH				= "./config/ai/";
+	/**  */
+	public static final String			VALUE_AI_CONFIG			= "ai_default.xml";
 	
-	// --- tactic ---
-	public final static String				TACTICS_CONFIG_PATH		= "./config/tactics/";
-	public final static String				TACTICS_DEFAULT_CONFIG	= "training.xml";
-	public static String						currentTactics		= TACTICS_DEFAULT_CONFIG;
+	// --- bot config ---
+	/** */
+	public static final String			KEY_BOT_CONFIG				= AAgent.class.getName() + ".bot";
+	/** */
+	public static final String			BOT_CONFIG_PATH			= "./config/bot/";
+	/**  */
+	public static final String			VALUE_BOT_CONFIG			= "bots_default.xml";
 	
-	protected static final int				SIGNAL_COUNT		= 0;
-	protected CountDownLatch				startSignal;
+	// --- geometry ---
+	/** */
+	public static final String			KEY_GEOMETRY_CONFIG		= AAgent.class.getName() + ".geometry";
+	/** */
+	public static final String			GEOMETRY_CONFIG_PATH		= "./config/geometry/";
+	/**  */
+	public static final String			VALUE_GEOMETRY_CONFIG	= "RoboCup_2012.xml";
+	
+	// --- team ---
+	/** */
+	public static final String			KEY_TEAM_CONFIG			= AAgent.class.getName() + ".team";
+	/** */
+	public static final String			TEAM_CONFIG_PATH			= "./config/team/";
+	/**  */
+	public static final String			VALUE_TEAM_CONFIG			= "yellow_default.xml";
 	
 	// AI visualization
-	protected final List<IAIObserver>	observers			= new ArrayList<IAIObserver>();
+	/** */
+	private final List<IAIObserver>	observers					= new ArrayList<IAIObserver>();
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
+	/**
+	 * 
+	 * @param o
+	 */
 	public void addObserver(IAIObserver o)
 	{
 		synchronized (observers)
 		{
 			observers.add(o);
 		}
-		
 	}
 	
-
+	
+	/**
+	 * 
+	 * @param o
+	 */
 	public void removeObserver(IAIObserver o)
 	{
 		synchronized (observers)
 		{
 			observers.remove(o);
 		}
-		
 	}
 	
-
-	protected void resetCountDownLatch()
+	
+	/**
+	 * @return the observers
+	 */
+	public final List<IAIObserver> getObservers()
 	{
-		startSignal = new CountDownLatch(SIGNAL_COUNT);
+		return observers;
 	}
 }

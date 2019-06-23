@@ -10,7 +10,7 @@
 package edu.dhbw.mannheim.tigers.sumatra.util.observer;
 
 
-/** 
+/**
  * @param <S> Observable type (Subject)
  * @param <O> Observer type
  * @param <E> Event type
@@ -28,12 +28,12 @@ public interface IObserver<S extends IObservable<S, O, E>, O extends IObserver<S
 	 * @param observable
 	 * @param event
 	 */
-	public abstract void update(S observable, E event);
+	void update(S observable, E event);
 	
-
-	// public abstract void onAdd();
 	
-
-	// public abstract void onRemove();
+	// void onAdd();
+	
+	
+	// void onRemove();
 	
 }

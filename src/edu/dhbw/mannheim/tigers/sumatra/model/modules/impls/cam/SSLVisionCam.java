@@ -14,31 +14,28 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
-import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.apache.commons.configuration.SubnodeConfiguration;
+import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sim.util.network.IReceiver;
-import edu.dhbw.mannheim.tigers.sim.util.network.MulticastUDPReceiver;
-import edu.dhbw.mannheim.tigers.sim.util.network.NetworkUtility;
-import edu.dhbw.mannheim.tigers.sim.util.network.UnicastUDPReceiver;
-import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.CamDetectionFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.CamGeometryFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.MessagesRobocupSslWrapper.SSL_WrapperPacket;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamDetectionFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamGeometryFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.ITeamConfigObserver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamProps;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.cam.sslvision.FileReceiver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.cam.sslvision.SSLVisionCamDetectionTranslator;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.cam.sslvision.SSLVisionCamGeometryTranslator;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.cam.sslvision.SSLVisionData;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.timer.Timer;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ACam;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ATimer;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ITimer;
+import edu.dhbw.mannheim.tigers.sumatra.util.network.IReceiver;
+import edu.dhbw.mannheim.tigers.sumatra.util.network.MulticastUDPReceiver;
+import edu.dhbw.mannheim.tigers.sumatra.util.network.NetworkUtility;
 import edu.moduli.exceptions.InitModuleException;
-import edu.moduli.exceptions.ModuleNotFoundException;
 import edu.moduli.exceptions.StartModuleException;
 
 
@@ -49,93 +46,84 @@ import edu.moduli.exceptions.StartModuleException;
  * @author Gero
  * 
  */
-public class SSLVisionCam extends ACam implements Runnable, IReceiver
+public class SSLVisionCam extends ACam implements Runnable, IReceiver, ITeamConfigObserver
 {
+	// Logger
+	private static final Logger							log						= Logger
+																										.getLogger(SSLVisionCam.class.getName());
+	
 	// Constants
-	private static final int			BUFFER_SIZE	= 10000;
-	private final byte[]					bufferArr	= new byte[BUFFER_SIZE];
-	
-	// Model
-	private final SumatraModel			model			= SumatraModel.getInstance();
-	
-	protected ITimer						timer			= null;
+	private static final int								BUFFER_SIZE				= 10000;
+	private final byte[]										bufferArr				= new byte[BUFFER_SIZE];
 	
 	// Connection
-	private Thread							cam;
-	private IReceiver						receiver;
-	private final Object					receiveSync	= new Object();
+	private Thread												cam;
+	private IReceiver											receiver;
 	
-	private final int						port;
-	private final String					address;
-	private final boolean				multicastMode;
+	private final int											port;
+	private final String										address;
 	
-	private final String					network;
-	private final NetworkUtility		networkUtil	= new NetworkUtility();
-	private final NetworkInterface	nif;
+	private final NetworkInterface						nif;
 	
-	private boolean						expectIOE	= false;
+	private boolean											expectIOE				= false;
 	
 	// Translation
-	private final double					timeOffsetMillis;
-	private final long					timeOffsetNanos;
+	private final SSLVisionCamDetectionTranslator	detectionTranslator	= new SSLVisionCamDetectionTranslator();
+	private final SSLVisionCamGeometryTranslator		geometryTranslator	= new SSLVisionCamGeometryTranslator();
+	private final double										timeOffsetMillis;
+	private final long										timeOffsetNanos;
 	
-	private long							packetCount	= 0;
+	private long												packetCount				= 0;
+	private TeamProps											teamProps				= null;
+	private final Object										teampPropsSync			= new Object();
 	
-	//debug, write sslvision data
-	private long normTime;
-	private FileOutputStream fos;
-	private ObjectOutputStream out;
-	private String filename = "D:\\sslvision.log";
-	private boolean write = false;
-	private boolean read = false;
-	
+	// DEBUG, write sslvision data
+	private long												normTime;
+	private FileOutputStream								fos;
+	private ObjectOutputStream								out;
+	private final String										filename					= "D:\\sslvision.log";
+	private boolean											write						= false;
+	private final boolean									read						= false;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructor(s) -------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param subnodeConfiguration
+	 */
 	public SSLVisionCam(SubnodeConfiguration subnodeConfiguration)
 	{
-		port = subnodeConfiguration.getInt("port", 40101);
-		address = subnodeConfiguration.getString("address", "224.5.23.2");
+		port = subnodeConfiguration.getInt("port");
+		address = subnodeConfiguration.getString("address");
+		final String network = subnodeConfiguration.getString("interface");
 		
-		multicastMode = model.getGlobalConfiguration().getBoolean("multicastMode", true);
-		network = subnodeConfiguration.getString("interface", "192.168.1.0");
+		TeamConfig.getInstance().addObserver(this);
 		
-
 		// --- Compute time offset
 		// Because we can't just convert currentMillis to nanos and subtract or the other way around,
 		// we'd run into a overflow either way. So we do a little trick and separate nanos...
-		long nowNanos = System.nanoTime();
-		long currentMillis = System.currentTimeMillis();
-		// log.debug("nowNanos: " + nowNanos);
-		// log.debug("currentMillis: " + currentMillis);
+		final long nowNanos = System.nanoTime();
+		final long currentMillis = System.currentTimeMillis();
 		
-		long nowMillis = nowNanos / 1000000;
-		double restNanos = nowNanos % 1000000;
-		// double restMillis = restNanos / 1000000;
-		// log.debug("nowMillis: " + nowMillis);
-		// log.debug("restNanos: " + restNanos);
-		// log.debug("restMillis: " + restMillis);
+		final long nowMillis = nowNanos / 1000000;
+		final double restNanos = nowNanos % 1000000;
 		
-		this.timeOffsetMillis = currentMillis - nowMillis;
-		this.timeOffsetNanos = (long) restNanos;
-		// log.debug("timeOffsetMillis: " + timeOffsetMillis);
-		// log.debug("timeOffsetNanos: " + timeOffsetNanos);
+		timeOffsetMillis = currentMillis - nowMillis;
+		timeOffsetNanos = (long) restNanos;
 		
-
 		// --- Choose network-interface
-		nif = networkUtil.chooseNetworkInterface(network, 3);
+		nif = NetworkUtility.chooseNetworkInterface(network, 3);
 		if (nif == null)
 		{
-			log.error("No proper nif for vision-cam in network '" + network + "' found!");
+			log.info("No nif for vision-cam specified, will try all.");
 		} else
 		{
 			log.info("Chose nif for vision-cam: " + nif.getDisplayName() + ".");
 		}
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- init and start -------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -144,47 +132,39 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiver
 	{
 		resetCountDownLatch();
 		
-		try
-		{
-			timer = (ATimer) model.getModule(Timer.MODULE_ID);
-		} catch (ModuleNotFoundException err)
-		{
-			log.debug("No timer found.");
-		}
-		
-		log.info("Initialized.");
+		log.debug("Initialized.");
 	}
 	
-
+	
 	@Override
 	public void startModule() throws StartModuleException
 	{
-		if(read) {
+		if (read)
+		{
 			try
 			{
 				receiver = new FileReceiver(filename);
-			} catch (IOException err)
+			} catch (final IOException err)
 			{
 				log.error("Error opening file to playback");
 			}
 			write = false;
-		} else {
-			if (multicastMode)
-			{
-				receiver = new MulticastUDPReceiver(port, address, nif);
-			} else
-			{
-				receiver = new UnicastUDPReceiver(port);
-			}
+		} else if (nif == null)
+		{
+			receiver = new MulticastUDPReceiver(port, address);
+		} else
+		{
+			receiver = new MulticastUDPReceiver(port, address, nif);
 		}
 		
 		normTime = System.nanoTime();
-		if(write) {
+		if (write)
+		{
 			try
 			{
 				fos = new FileOutputStream(filename);
 				out = new ObjectOutputStream(fos);
-			} catch (Exception err)
+			} catch (final IOException err)
 			{
 				log.error("Error opening streams for playback");
 			}
@@ -192,10 +172,10 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiver
 		
 		cam = new Thread(this, "SSLVisionCam");
 		cam.start();
-		log.info("Started.");
+		log.debug("Started.");
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- receive and translate ------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -205,15 +185,15 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiver
 		try
 		{
 			startSignal.await();
-		} catch (InterruptedException err)
+		} catch (final InterruptedException err)
 		{
-			log.debug("Interrupte while waiting for consumer to be set!");
+			log.warn("Interrupted while waiting for consumer to be set!");
 			return;
 		}
 		
-
+		
 		// Create new buffer
-		ByteBuffer buffer = ByteBuffer.wrap(bufferArr);
+		final ByteBuffer buffer = ByteBuffer.wrap(bufferArr);
 		
 		while (!Thread.currentThread().isInterrupted())
 		{
@@ -224,19 +204,17 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiver
 				// Fetch packet
 				final DatagramPacket packet = new DatagramPacket(buffer.array(), buffer.capacity());
 				
-				synchronized (receiveSync)
+				if (receiver == null)
 				{
-					if (receiver == null)
-					{
-						break;
-					}
-					receive(packet);
-					if(write) {
-						byte[] copy = Arrays.copyOfRange(packet.getData(), packet.getOffset(), packet.getLength());
-						SSLVisionData object = new SSLVisionData((System.nanoTime() - normTime), copy);
-						out.writeObject(object);
-						out.flush();
-					}
+					break;
+				}
+				receive(packet);
+				if (write)
+				{
+					final byte[] copy = Arrays.copyOfRange(packet.getData(), packet.getOffset(), packet.getLength());
+					final SSLVisionData object = new SSLVisionData((System.nanoTime() - normTime), copy);
+					out.writeObject(object);
+					out.flush();
 				}
 				
 				packetCount++;
@@ -260,18 +238,29 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiver
 				// }
 				
 				final ByteArrayInputStream packetIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
-
+				
 				// Translate
-				final SSL_WrapperPacket sslPacket = SSL_WrapperPacket.parseFrom(packetIn); // tempBuffer);
+				final TeamProps teamProps = getTeamProperties();
+				if (teamProps == null)
+				{
+					// Was interrupted...
+					break;
+				}
+				
+				final SSL_WrapperPacket sslPacket;
+				try
+				{
+					sslPacket = SSL_WrapperPacket.parseFrom(packetIn);
+				} catch (Exception err)
+				{
+					log.error("invalid ssl package", err);
+					continue;
+				}
 				
 				if (sslPacket.hasDetection())
 				{
-					CamDetectionFrame frame = SSLVisionCamDetectionTranslator.translate(sslPacket.getDetection(),
-							timeOffsetMillis, timeOffsetNanos, System.nanoTime(), packetCount);
-					
-//					if(frame.balls.size() != 0)
-//						System.out.println(frame.balls.get(0).pos.x + " " + frame.balls.get(0).pos.y);
-					time(frame);
+					final CamDetectionFrame frame = detectionTranslator.translate(sslPacket.getDetection(),
+							timeOffsetMillis, timeOffsetNanos, System.nanoTime(), packetCount, teamProps);
 					
 					consumer.onNewCamDetectionFrame(frame);
 					
@@ -280,14 +269,14 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiver
 				
 				if (sslPacket.hasGeometry())
 				{
-					CamGeometryFrame frame = SSLVisionCamGeometryTranslator.translate(sslPacket.getGeometry());
+					final CamGeometryFrame frame = geometryTranslator.translate(sslPacket.getGeometry(), teamProps);
 					
 					// TODO Gero:GeometryFrame??? (Gero) consumer.onNewCamGeometryFrame(frame);
 					
 					geometryObservable.notifyObservers(frame);
 				}
 				
-			} catch (IOException err)
+			} catch (final IOException err)
 			{
 				if (!expectIOE)
 				{
@@ -301,23 +290,63 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiver
 		expectIOE = true;
 	}
 	
-
+	
 	@Override
 	public DatagramPacket receive(DatagramPacket store) throws IOException
 	{
 		return receiver.receive(store);
 	}
 	
-
-	private void time(CamDetectionFrame frame)
+	
+	// private void time(CamDetectionFrame frame)
+	// {
+	// if (timer != null)
+	// {
+	// timer.time(frame);
+	// }
+	// }
+	
+	
+	@Override
+	public void onNewTeamConfig(TeamProps teamProps)
 	{
-		if (timer != null)
+		synchronized (teampPropsSync)
 		{
-			timer.time(frame);
+			final boolean wasNull = (this.teamProps == null);
+			
+			this.teamProps = teamProps;
+			
+			if (wasNull)
+			{
+				teampPropsSync.notifyAll();
+			}
 		}
 	}
 	
-
+	
+	/**
+	 * @return <code>null</code> if interrupted!
+	 */
+	private TeamProps getTeamProperties()
+	{
+		synchronized (teampPropsSync)
+		{
+			while (teamProps == null)
+			{
+				try
+				{
+					teampPropsSync.wait();
+				} catch (final InterruptedException err)
+				{
+					return null;
+				}
+			}
+			
+			return teamProps;
+		}
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- deinit and stop ------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -325,21 +354,21 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiver
 	public void stopModule()
 	{
 		cleanup();
-		if(write) {
+		if (write)
+		{
 			try
 			{
 				fos.close();
 				out.close();
-			} catch (IOException err)
+			} catch (final IOException err)
 			{
-				// TODO Auto-generated catch block
-				err.printStackTrace();
+				log.fatal("IOException", err);
 			}
 		}
-		log.info("Stopped.");
+		log.debug("Stopped.");
 	}
 	
-
+	
 	@Override
 	public void deinitModule()
 	{
@@ -347,12 +376,11 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiver
 		geometryObservable.removeAllObservers();
 		
 		consumer = null;
-		timer = null;
 		
-		log.info("Deinitialized.");
+		log.debug("Deinitialized.");
 	}
 	
-
+	
 	@Override
 	public void cleanup()
 	{
@@ -369,42 +397,24 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiver
 			try
 			{
 				receiver.cleanup();
-			} catch (IOException err)
+			} catch (final IOException err)
 			{
 				log.debug("Socket closed...");
 			}
 			
-			synchronized (receiveSync)
-			{
-				receiver = null;
-			}
+			receiver = null;
 		}
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public int getLocalPort()
-	{
-		return receiver == null ? null : receiver.getLocalPort();
-	}
 	
 	
-	@Override
-	public InetAddress getLocalAddress()
-	{
-		return receiver == null ? null : receiver.getLocalAddress();
-	}
-	
-
 	@Override
 	public boolean isReady()
 	{
-		synchronized (receiveSync)
-		{
-			return receiver != null;
-		}
+		return true;
 	}
 }

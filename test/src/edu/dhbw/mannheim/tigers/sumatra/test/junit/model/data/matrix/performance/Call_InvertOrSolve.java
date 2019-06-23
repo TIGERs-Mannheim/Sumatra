@@ -11,9 +11,11 @@ package edu.dhbw.mannheim.tigers.sumatra.test.junit.model.data.matrix.performanc
 
 import static org.junit.Assert.assertTrue;
 
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.types.Matrix;
 
 
 /**
@@ -25,6 +27,8 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix;
  */
 public class Call_InvertOrSolve extends APerformanceTest
 {
+	final int	size	= 2;
+	final int	times	= 10;
 	
 	Matrix		MChol;
 	Matrix		MInv;
@@ -33,22 +37,25 @@ public class Call_InvertOrSolve extends APerformanceTest
 	Jama.Matrix	JInv;
 	Jama.Matrix	JLR;
 	
-	double[][]	a3	= new double[][] { { 2, -1, -3 }, { -1, 2, 4 }, { -3, 4, 9 } };
-	double[][]	x3	= new double[][] { { 8, 9, 0 }, { -3, 5, 0 }, { 2, 1, 1 } };
-	double[][]	b3	= new double[][] { { 13, 10, -3 }, { -6, 5, 4 }, { -18, 2, 9 } };
+	double[][]	a3		= new double[][] { { 2, -1, -3 }, { -1, 2, 4 }, { -3, 4, 9 } };
+	double[][]	x3		= new double[][] { { 8, 9, 0 }, { -3, 5, 0 }, { 2, 1, 1 } };
+	double[][]	b3		= new double[][] { { 13, 10, -3 }, { -6, 5, 4 }, { -18, 2, 9 } };
 	
 	
-	// @Test
+	/**
+	 */
+	@Ignore
+	@Test
 	public void vl()
 	{
-		Matrix A = new Matrix(a3);
-		Matrix B = new Matrix(b3);
-		Matrix X = new Matrix(x3);
+		final Matrix A = new Matrix(a3);
+		final Matrix B = new Matrix(b3);
+		final Matrix X = new Matrix(x3);
 		
 		Matrix Sol = A.times(X);
 		assertTrue(equals(Sol, B));
 		
-		Sol = A.solve_Cholesky(B);
+		Sol = A.solveCholesky(B);
 		assertTrue(equals(Sol, X));
 		
 		Sol = A.inverse().times(B);
@@ -57,39 +64,19 @@ public class Call_InvertOrSolve extends APerformanceTest
 		Sol = B.times(A.inverse());
 		assertTrue(equals(Sol, X));
 		
-
+		
 	}
 	
-
-	@Test
-	public void test()
+	
+	/**
+	 */
+	@BeforeClass
+	public static void beforeClass()
 	{
 		System.out.println("##########################################################");
 		System.out.println("Call_InvertOrSolve");
 		System.out.println("##########################################################");
-		
-		output = false;
-		int size = 2;
-		int times = 10;
-		JaMaInv(size, times);
-		MatrixInv(size, times);
-		JaMaChol(size, times);
-		MatrixChol(size, times);
-		JaMaLR(size, times);
-		MatrixLR(size, times);
-		
-
-		output = true;
-		times = timesEasyOps / 5;
-		System.out.println("Number of runs: " + times);
-		JaMaInv(size, times);
-		MatrixInv(size, times);
-		JaMaChol(size, times);
-		MatrixChol(size, times);
-		JaMaLR(size, times);
-		MatrixLR(size, times);
-		
-		// TODO Birgt: add 6x6
+		System.out.println("--> Many tests deactivated");
 		/*
 		 * output = false;
 		 * size = 6;
@@ -112,22 +99,61 @@ public class Call_InvertOrSolve extends APerformanceTest
 		 * MatrixChol(size, times);
 		 * vgl(size);
 		 */
-
-
+		
+		
 	}
 	
-
+	
+	/**
+	 */
+	@Test
+	public void test()
+	{
+		output = false;
+		JaMaInv(size, times);
+		MatrixInv(size, times);
+		JaMaChol(size, times);
+		MatrixChol(size, times);
+		JaMaLR(size, times);
+		MatrixLR(size, times);
+	}
+	
+	
+	/**
+	 */
+	@Ignore
+	@Test
+	public void testMany()
+	{
+		output = true;
+		final int times = timesEasyOps / 5;
+		System.out.println("Number of runs: " + times);
+		JaMaInv(size, times);
+		MatrixInv(size, times);
+		JaMaChol(size, times);
+		MatrixChol(size, times);
+		JaMaLR(size, times);
+		MatrixLR(size, times);
+	}
+	
+	
+	/**
+	 * @param size
+	 * @param times
+	 */
 	public void MatrixChol(int size, int times)
 	{
 		if (output)
+		{
 			System.out.println("MatrixChol");
-		Matrix A = getMA(size);
-		Matrix B = getMB(size);
+		}
+		final Matrix A = getMA(size);
+		final Matrix B = getMB(size);
 		Matrix X = null;
 		startTimer();
 		for (int i = 0; i < times; i++)
 		{
-			X = A.solve_Cholesky(B);
+			X = A.solveCholesky(B);
 		}
 		endTimer();
 		MChol = X;
@@ -135,13 +161,19 @@ public class Call_InvertOrSolve extends APerformanceTest
 		
 	}
 	
-
+	
+	/**
+	 * @param size
+	 * @param times
+	 */
 	public void JaMaChol(int size, int times)
 	{
 		if (output)
+		{
 			System.out.println("JaMaChol");
-		Jama.Matrix A = getJA(size);
-		Jama.Matrix B = getJB(size);
+		}
+		final Jama.Matrix A = getJA(size);
+		final Jama.Matrix B = getJB(size);
 		Jama.Matrix X = null;
 		startTimer();
 		for (int i = 0; i < times; i++)
@@ -154,18 +186,24 @@ public class Call_InvertOrSolve extends APerformanceTest
 		assertTrue(equals(JChol, getJX(size)));
 	}
 	
-
+	
+	/**
+	 * @param size
+	 * @param times
+	 */
 	public void MatrixLR(int size, int times)
 	{
 		if (output)
+		{
 			System.out.println("MatrixLR");
-		Matrix A = getMA(size);
-		Matrix B = getMB(size);
+		}
+		final Matrix A = getMA(size);
+		final Matrix B = getMB(size);
 		Matrix X = null;
 		startTimer();
 		for (int i = 0; i < times; i++)
 		{
-			X = A.solve_LR(B);
+			X = A.solveLR(B);
 			
 		}
 		endTimer();
@@ -174,13 +212,19 @@ public class Call_InvertOrSolve extends APerformanceTest
 		
 	}
 	
-
+	
+	/**
+	 * @param size
+	 * @param times
+	 */
 	public void JaMaLR(int size, int times)
 	{
 		if (output)
+		{
 			System.out.println("JaMaLR");
-		Jama.Matrix A = getJA(size);
-		Jama.Matrix B = getJB(size);
+		}
+		final Jama.Matrix A = getJA(size);
+		final Jama.Matrix B = getJB(size);
 		Jama.Matrix X = null;
 		startTimer();
 		for (int i = 0; i < times; i++)
@@ -193,14 +237,20 @@ public class Call_InvertOrSolve extends APerformanceTest
 		assertTrue(equals(JLR, getJX(size)));
 	}
 	
-
+	
+	/**
+	 * @param size
+	 * @param times
+	 */
 	public void MatrixInv(int size, int times)
 	{
 		
 		if (output)
+		{
 			System.out.println("MatrixInv");
-		Matrix B = getMB(size);
-		Matrix A = getMA(size);
+		}
+		final Matrix B = getMB(size);
+		final Matrix A = getMA(size);
 		Matrix X = null;
 		startTimer();
 		for (int i = 0; i < times; i++)
@@ -214,13 +264,19 @@ public class Call_InvertOrSolve extends APerformanceTest
 		
 	}
 	
-
+	
+	/**
+	 * @param size
+	 * @param times
+	 */
 	public void JaMaInv(int size, int times)
 	{
 		if (output)
+		{
 			System.out.println("JamaInv");
-		Jama.Matrix B = getJB(size);
-		Jama.Matrix A = getJA(size);
+		}
+		final Jama.Matrix B = getJB(size);
+		final Jama.Matrix A = getJA(size);
 		Jama.Matrix X = null;
 		startTimer();
 		for (int i = 0; i < times; i++)
@@ -233,7 +289,11 @@ public class Call_InvertOrSolve extends APerformanceTest
 		assertTrue(equals(JInv, getJX(size)));
 	}
 	
-
+	
+	/**
+	 * @param size
+	 * @return
+	 */
 	private Matrix getMA(int size)
 	{
 		breakTimer();
@@ -249,7 +309,7 @@ public class Call_InvertOrSolve extends APerformanceTest
 		return Mat;
 	}
 	
-
+	
 	private Matrix getMB(int size)
 	{
 		breakTimer();
@@ -265,7 +325,7 @@ public class Call_InvertOrSolve extends APerformanceTest
 		return Mat;
 	}
 	
-
+	
 	private Matrix getMX(int size)
 	{
 		breakTimer();
@@ -281,7 +341,7 @@ public class Call_InvertOrSolve extends APerformanceTest
 		return Mat;
 	}
 	
-
+	
 	private Jama.Matrix getJA(int size)
 	{
 		breakTimer();
@@ -297,7 +357,7 @@ public class Call_InvertOrSolve extends APerformanceTest
 		return Mat;
 	}
 	
-
+	
 	private Jama.Matrix getJB(int size)
 	{
 		breakTimer();
@@ -313,12 +373,12 @@ public class Call_InvertOrSolve extends APerformanceTest
 		return Mat;
 	}
 	
-
+	
 	private Jama.Matrix getJX(int size)
 	{
 		breakTimer();
 		Jama.Matrix Mat = null;
-		;
+		
 		if (size == 2)
 		{
 			Mat = new Jama.Matrix(x3);

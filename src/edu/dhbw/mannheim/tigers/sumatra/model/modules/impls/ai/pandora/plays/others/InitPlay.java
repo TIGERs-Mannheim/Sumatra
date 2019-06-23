@@ -9,16 +9,17 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.others;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.APlay;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense.KeeperSoloRole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense.PassiveDefenderRole;
 
 
 /**
- * Simple play, that handles 5 {@link PassiveDefenderRole}, which don't do anything.
+ * Simple play, that handles 6 {@link PassiveDefenderRole}, which don't do anything.
  * 
  * @author Malte
  * 
@@ -26,54 +27,97 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.def
 public class InitPlay extends APlay
 {
 	
-	/**  */
-	private static final long		serialVersionUID	= 990208593141445207L;
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private PassiveDefenderRole	role1;
-	private PassiveDefenderRole	role2;
-	private PassiveDefenderRole	role3;
-	private PassiveDefenderRole	role4;
-	private PassiveDefenderRole	role5;
+	
+	/** sry, no use for a name... */
+	private static final int	DIV_1	= 20;
+	private static final int	DIV_2	= 25;
+	private static final int	DIV_3	= 24;
+	private static final int	DIV_4	= 14;
+	private static final int	DIV_5	= 9;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	public InitPlay(AIInfoFrame aiFrame)
+	/**
+	 * @param aiFrame
+	 * @param numAssignedRoles
+	 */
+	public InitPlay(AIInfoFrame aiFrame, int numAssignedRoles)
 	{
-		super(EPlay.INIT, aiFrame);
-		float l = AIConfig.getGeometry().getFieldLength();
-		float w = AIConfig.getGeometry().getFieldWidth();
+		super(aiFrame, numAssignedRoles);
+		final float l = AIConfig.getGeometry().getFieldLength();
+		final float w = AIConfig.getGeometry().getFieldWidth();
+		
 		// Intitial positions of the bots
-		Vector2 d1 = new Vector2(-l / 2 + l / 24, w / 14);
-		Vector2 d2 = new Vector2(-l / 2 + l / 7, -w / 20);
-		Vector2 d3 = new Vector2(-l / 6, 0);
-		Vector2 d4 = new Vector2(-l / 20, -w / 5);
-		Vector2 d5 = new Vector2(-l / 20, w / 5);
-		Vector2 t = new Vector2(AIConfig.getGeometry().getCenter());
+		final Vector2 target = new Vector2(AIConfig.getGeometry().getCenter());
 		
-		role1 = new PassiveDefenderRole(d1, t);
-		role1.setKeeper(true); // First role is a keeper
-		
-		role2 = new PassiveDefenderRole(d2, t);
-		role3 = new PassiveDefenderRole(d3, t);
-		role4 = new PassiveDefenderRole(d4, t);
-		role5 = new PassiveDefenderRole(d5, t);
-		
-		addDefensiveRole(role1, d1);
-		addDefensiveRole(role2, d2);
-		addDefensiveRole(role3, d3);
-		addDefensiveRole(role4, d4);
-		addDefensiveRole(role5, d5);
+		for (int botNum = 0; botNum < numAssignedRoles; botNum++)
+		{
+			final Vector2 destination;
+			switch (botNum)
+			{
+				case 0:
+					// keeper pos
+					destination = new Vector2((-l / 2) + (l / DIV_3), w / DIV_4);
+					break;
+				case 1:
+					destination = new Vector2(-l / 3, -w / DIV_1);
+					break;
+				case 2:
+					destination = new Vector2(-l / DIV_5, 0);
+					break;
+				case 3:
+					destination = new Vector2(-l / DIV_2, w / 4);
+					break;
+				case 4:
+					destination = new Vector2(-l / DIV_2, -w / 4);
+					break;
+				case 5:
+					destination = new Vector2(-l / 4, w / DIV_1);
+					break;
+				case 6:
+					destination = new Vector2(0, 0);
+				default:
+					throw new IllegalStateException();
+			}
+			
+			if (botNum == 0)
+			{
+				// First role is a keeper
+				ARole role = new KeeperSoloRole();
+				addDefensiveRole(role, destination);
+			} else
+			{
+				ARole role = new PassiveDefenderRole(destination, target);
+				addDefensiveRole(role, destination);
+			}
+		}
 	}
+	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-
+	
+	@Override
+	protected void afterUpdate(AIInfoFrame currentFrame)
+	{
+		// nothing todo
+	}
+	
+	
+	@Override
+	protected void beforeUpdate(AIInfoFrame frame)
+	{
+		// nothing todo
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------

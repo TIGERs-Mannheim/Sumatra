@@ -31,9 +31,14 @@ import net.miginfocom.swing.MigLayout;
  */
 public class KickerAutoloadPanel extends JPanel
 {
+	/**
+	 */
 	public interface IKickerAutoloadPanelObserver
 	{
-		public void onKickerChargeAuto(int max);
+		/**
+		 * @param max
+		 */
+		void onKickerChargeAuto(int max);
 	}
 	
 	// --------------------------------------------------------------------------
@@ -41,7 +46,7 @@ public class KickerAutoloadPanel extends JPanel
 	// --------------------------------------------------------------------------
 	private static final long									serialVersionUID	= 1487814019231988244L;
 	
-	private JTextField											maxCap;
+	private final JTextField									maxCap;
 	
 	private final List<IKickerAutoloadPanelObserver>	observers			= new ArrayList<IKickerAutoloadPanelObserver>();
 	
@@ -49,13 +54,15 @@ public class KickerAutoloadPanel extends JPanel
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 */
 	public KickerAutoloadPanel()
 	{
 		setLayout(new MigLayout("fill, wrap 2", "[80]10[50,fill]"));
 		
-		maxCap = new JTextField("150");
+		maxCap = new JTextField("180");
 		
-		JButton save = new JButton("Set");
+		final JButton save = new JButton("Set");
 		save.addActionListener(new Set());
 		
 		add(new JLabel("Max Cap Level:"));
@@ -65,10 +72,13 @@ public class KickerAutoloadPanel extends JPanel
 		setBorder(BorderFactory.createTitledBorder("Auto Charge"));
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param observer
+	 */
 	public void addObserver(IKickerAutoloadPanelObserver observer)
 	{
 		synchronized (observers)
@@ -77,7 +87,10 @@ public class KickerAutoloadPanel extends JPanel
 		}
 	}
 	
-
+	
+	/**
+	 * @param observer
+	 */
 	public void removeObserver(IKickerAutoloadPanelObserver observer)
 	{
 		synchronized (observers)
@@ -86,12 +99,12 @@ public class KickerAutoloadPanel extends JPanel
 		}
 	}
 	
-
+	
 	private void notifyKickerSetAutoload(int max)
 	{
 		synchronized (observers)
 		{
-			for (IKickerAutoloadPanelObserver observer : observers)
+			for (final IKickerAutoloadPanelObserver observer : observers)
 			{
 				observer.onKickerChargeAuto(max);
 			}
@@ -113,8 +126,8 @@ public class KickerAutoloadPanel extends JPanel
 			{
 				max = Integer.parseInt(maxCap.getText());
 			}
-
-			catch (NumberFormatException e)
+			
+			catch (final NumberFormatException e)
 			{
 				return;
 			}

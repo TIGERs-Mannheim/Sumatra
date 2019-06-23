@@ -12,9 +12,11 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oext
 import java.util.ArrayList;
 import java.util.List;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.CamBall;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.CamDetectionFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.CamRobot;
+import org.apache.log4j.Logger;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamBall;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamDetectionFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamRobot;
 
 
 /**
@@ -25,24 +27,31 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.CamRobot;
  */
 public class FramePacker
 {
-	private CamDetectionFrame	oldFrame	= null;
-	private CamDetectionFrame	newFrame	= null;
+	private static final Logger	log		= Logger.getLogger(FramePacker.class.getName());
+	private CamDetectionFrame		oldFrame	= null;
+	private CamDetectionFrame		newFrame	= null;
 	
-	private CamBall				newBall	= null;
+	private CamBall					newBall	= null;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param frame
+	 */
 	public FramePacker(CamDetectionFrame frame)
 	{
 		oldFrame = frame;
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param frame
+	 */
 	public void setNewFrame(CamDetectionFrame frame)
 	{
 		if (newFrame == null)
@@ -54,83 +63,99 @@ public class FramePacker
 		}
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
+	/**
+	 * @return
+	 */
 	public CamDetectionFrame getMaybeCorrectedFrame()
 	{
 		if (newFrame != null)
 		{
 			return newFrame;
-		} else
-		{
-			return oldFrame;
 		}
+		return oldFrame;
 	}
 	
-
+	
+	/**
+	 * @return
+	 */
 	public CamDetectionFrame getOldFrame()
 	{
 		return oldFrame;
 	}
 	
-
+	
+	/**
+	 * @return
+	 */
 	public List<CamRobot> getBotList()
 	{
-		List<CamRobot> bots = new ArrayList<CamRobot>();
-		for (CamRobot bot : oldFrame.robotsTigers)
-			bots.add(bot);
-		for (CamRobot bot : oldFrame.robotsEnemies)
-			bots.add(bot);
-		
+		final List<CamRobot> bots = new ArrayList<CamRobot>(oldFrame.robotsTigers);
+		bots.addAll(oldFrame.robotsEnemies);
 		return bots;
 	}
 	
-
+	
+	/**
+	 * @return
+	 */
 	public CamBall getBall()
 	{
 		return oldFrame.balls.get(0);
 	}
 	
-
+	
+	/**
+	 * @param x
+	 * @param y
+	 * @param z
+	 */
 	public void setNewCamBall(float x, float y, float z)
 	{
 		if (newBall == null)
 		{
-			CamBall oldBall = oldFrame.balls.get(0);
+			final CamBall oldBall = oldFrame.balls.get(0);
 			
 			newBall = new CamBall(oldBall.confidence, oldBall.area, x, y, z, oldBall.pixelX, oldBall.pixelY);
 			
-
-			List<CamBall> newBalls = new ArrayList<CamBall>();
+			
+			final List<CamBall> newBalls = new ArrayList<CamBall>();
 			newBalls.add(newBall);
 			
 			newFrame = new CamDetectionFrame(oldFrame.tCapture, oldFrame.tSent, oldFrame.tReceived, oldFrame.cameraId,
-					oldFrame.frameNumber, oldFrame.fps, newBalls, oldFrame.robotsTigers, oldFrame.robotsEnemies);
+					oldFrame.frameNumber, oldFrame.fps, newBalls, oldFrame.robotsTigers, oldFrame.robotsEnemies,
+					oldFrame.teamProps);
 		} else
 		{
 			throw new IllegalArgumentException("WP:FlyBall:FramePacker: New Ball is already set");
 		}
 	}
 	
-
+	
+	/**
+	 * @param height
+	 * @param distance
+	 * @param fly
+	 */
 	public void print(final double height, final double distance, final boolean fly)
 	{
 		if (newFrame == null)
 		{
-			WriteFlyData.getInstance().addDataSet(oldFrame.balls.get(0).pos.x, oldFrame.balls.get(0).pos.y,
-					oldFrame.balls.get(0).pos.x, oldFrame.balls.get(0).pos.y, height, 0, 0, fly);
+			WriteFlyData.getInstance().addDataSet(oldFrame.balls.get(0).pos.x(), oldFrame.balls.get(0).pos.y(),
+					oldFrame.balls.get(0).pos.x(), oldFrame.balls.get(0).pos.y(), height, 0, 0, fly);
 		} else
 		{
-			WriteFlyData.getInstance().addDataSet(oldFrame.balls.get(0).pos.x, oldFrame.balls.get(0).pos.y,
-					newFrame.balls.get(0).pos.x, newFrame.balls.get(0).pos.y, height, newFrame.balls.get(0).pos.z, distance,
-					fly);
+			WriteFlyData.getInstance().addDataSet(oldFrame.balls.get(0).pos.x(), oldFrame.balls.get(0).pos.y(),
+					newFrame.balls.get(0).pos.x(), newFrame.balls.get(0).pos.y(), height, newFrame.balls.get(0).pos.z(),
+					distance, fly);
 			
-			if (Def.debugFlyHeight)
+			if (Def.DEBUG_FLY_HEIGHT)
 			{
-				System.out.println("---Extern: " + newFrame.balls.get(0).pos.z);
+				log.debug("---Extern: " + newFrame.balls.get(0).pos.z());
 			}
 		}
 	}

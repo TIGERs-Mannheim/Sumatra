@@ -24,5 +24,5 @@ public interface IAthenaControlHandler
 	 * 
 	 * @param newControl
 	 */
-	public abstract void onNewAthenaControl(AthenaControl newControl);
+	void onNewAthenaControl(AthenaControl newControl);
 }

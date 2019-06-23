@@ -9,9 +9,9 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config;
 
-import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.commons.configuration.Configuration;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.AIMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 
 
 /**
@@ -25,34 +25,56 @@ public class Tolerances
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final String	nodePath	= "tolerances.";
+	private static final String	NODE_PATH	= "tolerances.";
 	
 	/** [mm] */
-	private final float	positioning;
+	private final float				positioning;
 	/** [rad] */
-	private final float	viewAngle;
+	private final float				viewAngle;
 	/** [rad] */
-	private final float	aiming;
+	private final float				aiming;
 	
-	private final float	nearBall;
+	private final float				nearBall;
 	/** [mm] */
-	private final float	nextToBall;
+	private final float				nextToBall;
+	/** [mm] */
+	private final float				destEqualRadius;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	public Tolerances(XMLConfiguration configFile)
+	/**
+	 * 
+	 * @param configFile
+	 */
+	public Tolerances(Configuration configFile)
 	{
-		positioning = configFile.getFloat(nodePath + "positioning");
-		viewAngle = getAngle(configFile, nodePath + "viewAngle");
-		aiming = getAngle(configFile, nodePath + "aiming");
-		nearBall = configFile.getFloat(nodePath + "nearBall");
-		nextToBall = configFile.getFloat(nodePath + "nextToBall");
+		positioning = configFile.getFloat(NODE_PATH + "positioning");
+		viewAngle = getAngle(configFile, NODE_PATH + "viewAngle");
+		aiming = getAngle(configFile, NODE_PATH + "aiming");
+		nearBall = configFile.getFloat(NODE_PATH + "nearBall");
+		nextToBall = configFile.getFloat(NODE_PATH + "nextToBall");
+		destEqualRadius = configFile.getFloat(NODE_PATH + "destEqualRadius");
 	}
 	
-
+	
+	/**
+	 * 
+	 * @param configFile
+	 * @param base
+	 */
+	public Tolerances(Configuration configFile, final Tolerances base)
+	{
+		positioning = configFile.getFloat(NODE_PATH + "positioning", base.positioning);
+		viewAngle = getAngle(configFile, NODE_PATH + "viewAngle", base.viewAngle);
+		aiming = getAngle(configFile, NODE_PATH + "aiming", base.aiming);
+		nearBall = configFile.getFloat(NODE_PATH + "nearBall", base.nearBall);
+		nextToBall = configFile.getFloat(NODE_PATH + "nextToBall", base.nextToBall);
+		destEqualRadius = configFile.getFloat(NODE_PATH + "destEqualRadius", base.destEqualRadius);
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -62,12 +84,23 @@ public class Tolerances
 	 * @param value
 	 * @return angle [rad]
 	 */
-	private float getAngle(XMLConfiguration configFile, String value)
+	private float getAngle(Configuration configFile, String value, float defaultValue)
 	{
-		return AIMath.deg2rad(configFile.getFloat(value));
+		return AngleMath.deg2rad(configFile.getFloat(value, AngleMath.rad2deg(defaultValue)));
 	}
 	
-
+	
+	/**
+	 * @param configFile
+	 * @param value
+	 * @return angle [rad]
+	 */
+	private float getAngle(Configuration configFile, String value)
+	{
+		return AngleMath.deg2rad(configFile.getFloat(value));
+	}
+	
+	
 	/**
 	 * @return {@link #positioning}
 	 */
@@ -76,7 +109,7 @@ public class Tolerances
 		return positioning;
 	}
 	
-
+	
 	/**
 	 * @return {@link #viewAngle} [rad]
 	 */
@@ -85,7 +118,7 @@ public class Tolerances
 		return viewAngle;
 	}
 	
-
+	
 	/**
 	 * @return {@link #aiming} [rad]
 	 */
@@ -94,7 +127,7 @@ public class Tolerances
 		return aiming;
 	}
 	
-
+	
 	/**
 	 * @return the aimRadius
 	 */
@@ -103,12 +136,24 @@ public class Tolerances
 		return nearBall;
 	}
 	
-
+	
 	/**
 	 * @return {@link #nextToBall} [mm]
 	 */
 	public float getNextToBall()
 	{
 		return nextToBall;
+	}
+	
+	
+	/**
+	 * Tolerance radius between the center of two bots, up to which the destination
+	 * of the two bots is considered to be equal
+	 * 
+	 * @return the destEqualRadius [mm]
+	 */
+	public float getDestEqualRadius()
+	{
+		return destEqualRadius;
 	}
 }

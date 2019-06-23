@@ -24,6 +24,7 @@ import java.util.NoSuchElementException;
  * also in speed of some other functions. Be sure to read the doc carefully!
  * 
  * @author Gero
+ * @param <D>
  */
 public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 {
@@ -32,7 +33,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	// --------------------------------------------------------------------------
 	private static final long	serialVersionUID	= -2382323998531200972L;
 	
-
+	
 	private final D[]				store;
 	
 	/**
@@ -50,6 +51,9 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param size
+	 */
 	@SuppressWarnings("unchecked")
 	// Allowed here, obviously...
 	public ArrayRingBuffer(int size)
@@ -58,7 +62,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		this.size = size;
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -70,13 +74,13 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		return dec(head);
 	}
 	
-
+	
 	private int dec(int pos)
 	{
-		return (head - 1 + size) % size;
+		return ((head - 1) + size) % size;
 	}
 	
-
+	
 	/**
 	 * @return New head
 	 */
@@ -86,13 +90,13 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		return head;
 	}
 	
-
+	
 	private int inc(int pos)
 	{
 		return (pos + 1) % size;
 	}
 	
-
+	
 	private boolean addAtFront(D param)
 	{
 		synchronized (sync)
@@ -101,7 +105,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 			if (param != null)
 			{
 				final boolean wasEmpty = store[head] == null;
-				int newHead = front();
+				final int newHead = front();
 				
 				if (store[newHead] == null)
 				{
@@ -116,22 +120,24 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 					// Buffer was full, so we have to turn
 					store[newHead] = param;
 					head = newHead;
-					last = front(); // Get position before new front
+					// Get position before new front
+					last = front();
 				}
 				result = true;
-				sync.notifyAll(); // In case any derived class is listening for the buffer to be filled...
+				// In case any derived class is listening for the buffer to be filled...
+				sync.notifyAll();
 			}
 			
 			return result;
 		}
 	}
 	
-
+	
 	private D removeFirstElement()
 	{
 		synchronized (sync)
 		{
-			D result = store[head];
+			final D result = store[head];
 			if (result != null)
 			{
 				store[head] = null;
@@ -151,7 +157,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		}
 	}
 	
-
+	
 	@Override
 	public boolean isEmpty()
 	{
@@ -161,39 +167,42 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		}
 	}
 	
-
+	
 	@Override
 	public Object[] toArray()
 	{
 		synchronized (sync)
 		{
-			Object[] result = new Object[size()];
+			final Object[] result = new Object[size()];
 			fillArray(result);
 			return result;
 		}
 	}
 	
-
+	
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T[] toArray(T[] arr)
 	{
 		synchronized (sync)
-		{	
-			if (arr.length >= size()) {
-				fillArray(arr);	//System.arraycopy(store, 0, arr, 0, size());
+		{
+			if (arr.length >= size())
+			{
+				// System.arraycopy(store, 0, arr, 0, size());
+				fillArray(arr);
 			} else
 			{
 				try
 				{
 					arr = (T[]) Arrays.copyOf(store, store.length, arr.getClass());
 					fillArray(arr);
-				} catch (ClassCastException cce)
+				} catch (final ClassCastException cce)
 				{
-					throw new ArrayStoreException();
+					ArrayStoreException t = new ArrayStoreException();
+					t.setStackTrace(cce.getStackTrace());
+					throw t;
 				}
 			}
-			
 			return arr;
 		}
 	}
@@ -201,7 +210,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	
 	private void fillArray(Object[] arr)
 	{
-		Iterator<D> it = iterator();
+		final Iterator<D> it = iterator();
 		int i = 0;
 		while (it.hasNext())
 		{
@@ -210,14 +219,14 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		}
 	}
 	
-
+	
 	@Override
 	public boolean containsAll(Collection<?> paramCollection)
 	{
 		synchronized (sync)
 		{
 			boolean result = true;
-			for (Object data : paramCollection)
+			for (final Object data : paramCollection)
 			{
 				boolean found = data.equals(store[head]);
 				for (int i = inc(head); i != head; i = inc(i))
@@ -239,7 +248,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		}
 	}
 	
-
+	
 	/**
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
@@ -249,7 +258,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		throw new UnsupportedOperationException("addAll(Objects) is not supported!");
 	}
 	
-
+	
 	/**
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
@@ -259,7 +268,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		throw new UnsupportedOperationException("removeAll(Objects) is not supported!");
 	}
 	
-
+	
 	/**
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
@@ -269,15 +278,16 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		throw new UnsupportedOperationException("retainAll(Objects) is not supported!");
 	}
 	
-
+	
 	@Override
 	public void clear()
 	{
 		synchronized (sync)
 		{
-			Iterator<D> it = iterator();
+			final Iterator<D> it = iterator();
 			int i = 0;
-			while(it.hasNext()) {
+			while (it.hasNext())
+			{
 				store[i] = null;
 				it.next();
 				i++;
@@ -288,7 +298,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		}
 	}
 	
-
+	
 	@Override
 	public void addFirst(D paramE)
 	{
@@ -303,7 +313,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		}
 	}
 	
-
+	
 	/**
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
@@ -313,7 +323,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		throw new UnsupportedOperationException("addLast is not supported!");
 	}
 	
-
+	
 	/**
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
@@ -323,7 +333,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		throw new UnsupportedOperationException("offerFirst is not supported!");
 	}
 	
-
+	
 	/**
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
@@ -333,13 +343,13 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		throw new UnsupportedOperationException("offerLast is not supported!");
 	}
 	
-
+	
 	@Override
 	public D removeFirst()
 	{
 		synchronized (sync)
 		{
-			D result = pollFirst();
+			final D result = pollFirst();
 			if (result == null)
 			{
 				throw new NoSuchElementException("At: [" + head + "]");
@@ -349,7 +359,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		}
 	}
 	
-
+	
 	/**
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
@@ -359,7 +369,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		throw new UnsupportedOperationException("removeLast is not supported!");
 	}
 	
-
+	
 	@Override
 	public D pollFirst()
 	{
@@ -369,7 +379,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		}
 	}
 	
-
+	
 	/**
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
@@ -379,13 +389,13 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		throw new UnsupportedOperationException("pollLast is not supported!");
 	}
 	
-
+	
 	@Override
 	public D getFirst()
 	{
 		synchronized (sync)
 		{
-			D result = store[head];
+			final D result = store[head];
 			if (result == null)
 			{
 				throw new NoSuchElementException("At: " + head);
@@ -394,13 +404,13 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		}
 	}
 	
-
+	
 	@Override
 	public D getLast()
 	{
 		synchronized (sync)
 		{
-			D result = store[last];
+			final D result = store[last];
 			if (result == null)
 			{
 				throw new NoSuchElementException("At: " + last);
@@ -409,7 +419,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		}
 	}
 	
-
+	
 	@Override
 	public D peekFirst()
 	{
@@ -419,7 +429,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		}
 	}
 	
-
+	
 	@Override
 	public D peekLast()
 	{
@@ -429,7 +439,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		}
 	}
 	
-
+	
 	/**
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
@@ -439,7 +449,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		throw new UnsupportedOperationException("removeFirstOccurrence is not supported!");
 	}
 	
-
+	
 	/**
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
@@ -449,7 +459,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		throw new UnsupportedOperationException("removeLastOccurrence is not supported!");
 	}
 	
-
+	
 	/**
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
@@ -459,7 +469,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		throw new UnsupportedOperationException("add is not supported!");
 	}
 	
-
+	
 	/**
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
@@ -469,7 +479,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		throw new UnsupportedOperationException("offer is not supported!");
 	}
 	
-
+	
 	@Override
 	public D remove()
 	{
@@ -479,7 +489,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		}
 	}
 	
-
+	
 	@Override
 	public D poll()
 	{
@@ -489,7 +499,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		}
 	}
 	
-
+	
 	@Override
 	public D element()
 	{
@@ -499,7 +509,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		}
 	}
 	
-
+	
 	@Override
 	public D peek()
 	{
@@ -509,7 +519,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		}
 	}
 	
-
+	
 	@Override
 	public void push(D paramE)
 	{
@@ -519,7 +529,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		}
 	}
 	
-
+	
 	@Override
 	public D pop()
 	{
@@ -529,7 +539,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		}
 	}
 	
-
+	
 	/**
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
@@ -539,7 +549,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		throw new UnsupportedOperationException("remove(Object) is not supported!");
 	}
 	
-
+	
 	/**
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
@@ -549,7 +559,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		throw new UnsupportedOperationException("contains(Object) is not supported!");
 	}
 	
-
+	
 	/**
 	 * NOT {@link Deque#size()}, but the buffer-size of this ring-buffer!
 	 */
@@ -562,7 +572,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		}
 	}
 	
-
+	
 	@Override
 	public Iterator<D> iterator()
 	{
@@ -572,7 +582,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		}
 	}
 	
-
+	
 	/**
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
@@ -582,17 +592,18 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		throw new UnsupportedOperationException("Due to implementation details descendingIterator is not supported!");
 	}
 	
-	
+	/**
+	 */
 	public class RingBufferIterator implements Iterator<D>
 	{
 		/** The pointer to the current object */
-		private int	pos			= head;
+		private int			pos			= head;
 		
 		/** Maximum number of accesses */
-		private int	maxAccesses	= size;
+		private final int	maxAccesses	= size;
 		
 		/** Number of accesses the iterator already has performed */
-		private int	accesses		= 0;
+		private int			accesses		= 0;
 		
 		
 		private int incPos()
@@ -601,14 +612,14 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 			return pos;
 		}
 		
-
+		
 		@Override
 		public boolean hasNext()
 		{
 			return accesses < maxAccesses;
 		}
 		
-
+		
 		@Override
 		public D next()
 		{
@@ -625,7 +636,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 			return result;
 		}
 		
-
+		
 		/**
 		 * <strong>NOT (YET) SUPPORTED!</strong>
 		 */
@@ -635,5 +646,14 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 			throw new UnsupportedOperationException("Due to implementation details remove is not supported!");
 		}
 		
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public Object getSync()
+	{
+		return sync;
 	}
 }

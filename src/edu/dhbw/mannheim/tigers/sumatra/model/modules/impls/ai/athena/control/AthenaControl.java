@@ -15,7 +15,9 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.AObjectID;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter.EAIControlState;
 import edu.dhbw.mannheim.tigers.sumatra.util.collection.Pair;
@@ -33,60 +35,71 @@ public class AthenaControl
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private final Logger								log						= Logger.getLogger(getClass());
-	
-	public static final Integer					USE_ROLE_ASSIGNMENT	= -1;
+	// Logger
+	private static final Logger				log	= Logger.getLogger(AthenaControl.class.getName());
 	
 	/** Stores the actual active plays of this configuration object (May be empty if {@link #activeRoles} is not!) */
-	private final List<EPlay>						activePlays;
+	private final List<APlay>					activePlays;
+	private final List<PlayAndRoleCount>	newPlays;
 	
 	/** Stores the actual active roles of this configuration object */
-	private final List<Pair<Integer, ERole>>	activeRoles;
+	private final List<Pair<BotID, ERole>>	activeRoles;
 	
-	private EAIControlState							controlState;
+	private EAIControlState						controlState;
 	
 	/** Forces a play finder to choose new plays. */
-	private boolean									forceNewDecision;
+	private boolean								forceNewDecision;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
+	/**
+	 */
 	public AthenaControl()
 	{
-		this.controlState = EAIControlState.PLAY_TEST_MODE;
-		this.activePlays = new ArrayList<EPlay>();
-		this.activeRoles = new ArrayList<Pair<Integer, ERole>>();
-		this.forceNewDecision = false;
+		controlState = EAIControlState.PLAY_TEST_MODE;
+		activePlays = new ArrayList<APlay>();
+		newPlays = new ArrayList<PlayAndRoleCount>();
+		activeRoles = new ArrayList<Pair<BotID, ERole>>();
+		forceNewDecision = false;
 	}
 	
-
+	
+	/**
+	 * @param copy
+	 */
 	public AthenaControl(AthenaControl copy)
 	{
-		this.controlState = copy.controlState;
-		this.activePlays = new ArrayList<EPlay>(copy.activePlays);
-		this.activeRoles = new ArrayList<Pair<Integer, ERole>>(copy.activeRoles);
-		this.forceNewDecision = copy.forceNewDecision;
+		controlState = copy.controlState;
+		activePlays = new ArrayList<APlay>(copy.activePlays);
+		newPlays = new ArrayList<PlayAndRoleCount>(copy.newPlays);
+		activeRoles = new ArrayList<Pair<BotID, ERole>>(copy.activeRoles);
+		forceNewDecision = copy.forceNewDecision;
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// -------------------------------------------------------------------------
-	
+	/**
+	 * @return
+	 */
 	public boolean isForceNewDecision()
 	{
 		return forceNewDecision;
 	}
 	
-
+	
+	/**
+	 * @param b
+	 */
 	public void forceNewDecision(boolean b)
 	{
 		forceNewDecision = b;
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -99,7 +112,7 @@ public class AthenaControl
 		return controlState;
 	}
 	
-
+	
 	/**
 	 * @param controlState the guiState to set
 	 */
@@ -108,89 +121,117 @@ public class AthenaControl
 		this.controlState = controlState;
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	
-
-
 	
-
 	// --------------------------------------------------------------------------
-	
-	public List<EPlay> getActivePlays()
+	/**
+	 * @return
+	 */
+	public List<APlay> getActivePlays()
 	{
 		return activePlays;
 	}
 	
-
-	public void addPlay(EPlay play)
+	
+	/**
+	 * @param play
+	 */
+	public void addActivePlay(APlay play)
 	{
 		activePlays.add(play);
 	}
 	
-
-	public void removePlay(List<EPlay> plays)
+	
+	/**
+	 * @param parc
+	 */
+	public void addNewPlay(PlayAndRoleCount parc)
 	{
-		for (EPlay ePlay : plays)
-		{
-			if (!activePlays.remove(ePlay))
-			{
-				log.error("Play " + ePlay + " not found and cannot be removed.");
-			}
-		}
+		newPlays.add(parc);
 	}
 	
-
-	// --------------------------------------------------------------------------
 	
-	public List<Pair<Integer, ERole>> getActiveRoles()
+	/**
+	 * @param play
+	 */
+	public void removePlay(APlay play)
+	{
+		activePlays.remove(play);
+	}
+	
+	
+	// --------------------------------------------------------------------------
+	/**
+	 * @return
+	 */
+	public List<Pair<BotID, ERole>> getActiveRoles()
 	{
 		return activeRoles;
 	}
 	
-
+	
+	/**
+	 * @param role
+	 */
 	public void addRole(ERole role)
 	{
-		activeRoles.add(new Pair<Integer, ERole>(USE_ROLE_ASSIGNMENT, role));
+		activeRoles.add(new Pair<BotID, ERole>(new BotID(), role));
 	}
 	
-
-	public void addRole(ERole role, Integer botId)
+	
+	/**
+	 * @param role
+	 * @param botId
+	 */
+	public void addRole(ERole role, BotID botId)
 	{
-		activeRoles.add(new Pair<Integer, ERole>(botId, role));
+		activeRoles.add(new Pair<BotID, ERole>(botId, role));
 	}
 	
-
-	public void removeRole(ERole role, Integer botId)
+	
+	/**
+	 * @param role
+	 * @param botId
+	 */
+	public void removeRole(ERole role, BotID botId)
 	{
-		if (!activeRoles.remove(new Pair<Integer, ERole>(botId, role)))
+		if (!activeRoles.remove(new Pair<BotID, ERole>(botId, role)))
 		{
 			log.error("Role (" + role + "/" + botId + ") not found and cannot be removed.");
 		}
 	}
 	
-
+	
+	/**
+	 * @param role
+	 */
 	public void removeRole(ERole role)
 	{
-		if (!activeRoles.remove(new Pair<Integer, ERole>(USE_ROLE_ASSIGNMENT, role)))
+		if (!activeRoles.remove(new Pair<Integer, ERole>(AObjectID.UNINITIALIZED_ID, role)))
 		{
 			log.error("Role (" + role + ") not found and cannot be removed.");
 		}
 	}
 	
-
+	
+	/**
+	 */
 	public void clearRoles()
 	{
 		activeRoles.clear();
 	}
 	
-
+	
+	/**
+	 */
 	public void clearPlays()
 	{
 		activePlays.clear();
 	}
 	
-
+	
 	/**
 	 * Resets the state of this {@link AthenaControl} object to its default values (except {@link #controlState}!!!)
 	 */
@@ -198,7 +239,18 @@ public class AthenaControl
 	{
 		activePlays.clear();
 		activeRoles.clear();
+		newPlays.clear();
 		
 		forceNewDecision = false;
 	}
+	
+	
+	/**
+	 * @return the newPlays
+	 */
+	public final List<PlayAndRoleCount> getNewPlays()
+	{
+		return newPlays;
+	}
+	
 }

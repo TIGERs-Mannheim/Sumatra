@@ -22,11 +22,14 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACondition;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ARole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACondition.EConditionState;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
 import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.botoverview.ConditionTable.ConditionTableModel;
 
@@ -42,46 +45,42 @@ public class BotOverviewPanel extends JPanel
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long				serialVersionUID		= 1881197595736545167L;
+	private static final long							serialVersionUID		= 1881197595736545167L;
 	
 	// Id
-	private int									botId						= -1;
-	private final JTextField				botIdfield;
+	private BotID											botId						= new BotID();
 	
 	// Current role
-	private final JTextField				roleText;
-	private ARole								lastRole;
+	private final JTextField							roleText;
+	private transient ARole								lastRole;
 	
 	// Condition summary
-	private final JTextField				conditionStatusText;
-	private Boolean							lastConditionStatus	= null;
+	private final JTextField							conditionStatusText;
+	private Boolean										lastConditionStatus	= null;
 	
 	// Destination
-	private final JTextField				destinationText;
-	private IVector2							lastDest;
+	private final JTextField							destinationText;
+	private IVector2										lastDest;
 	/** Memories the current color for caching-purposes ({@link #setDestColorTo(Color)}) */
-	private Color								lastDestColor			= null;
+	private Color											lastDestColor			= null;
 	
-
-	// private ESkillName lastMove = null;
-	private boolean							shooter					= false;
-	private boolean							dribbler					= false;
+	// ball contact
+	private final JTextField							ballContactText;
 	
 	// Skills
-	private final SkillSwitch				skillSwitch;
-	private static final int				HISTORY_SIZE			= 10;
-	private final JList						skillHistory;
-	private final DefaultListModel		skillHistoryModel;
+	private final SkillSwitch							skillSwitch;
+	private static final int							HISTORY_SIZE			= 10;
+	private final DefaultListModel<ESkillName>	skillHistoryModel;
 	
-	private final JTextField				skillMove;
-	private final JTextField				skillShooter;
-	private final JTextField				skillDribble;
+	private final JTextField							txtSkill;
+	// State
+	private final JTextField							stateText;
 	
 	// Conditions
-	private final ConditionSwitch			conditionSwitch;
-	private boolean							roleChanged				= true;
-	private final ConditionTable			conditionTable;
-	private final ConditionTableModel	conditionModel;
+	private final ConditionSwitch						conditionSwitch;
+	private boolean										roleChanged				= true;
+	private final ConditionTable						conditionTable;
+	private final ConditionTableModel				conditionModel;
 	
 	
 	// --------------------------------------------------------------------------
@@ -91,108 +90,120 @@ public class BotOverviewPanel extends JPanel
 	 * @param botId
 	 * @param name
 	 */
-	public BotOverviewPanel(int botId, String name)
+	public BotOverviewPanel(BotID botId, String name)
 	{
 		setBotId(botId);
 		
 		setLayout(new MigLayout("fill, wrap 1", "[]", "top"));
 		setBorder(BorderFactory.createTitledBorder(name));
 		
-
+		
 		// Overview and Conditions
 		// - Build
-		botIdfield = new JTextField();
+		JTextField botIdfield = new JTextField();
 		botIdfield.setEditable(false);
 		botIdfield.setBackground(Color.WHITE);
-		botIdfield.setText("ID: " + Integer.toString(this.botId));
+		botIdfield.setText("ID: " + Integer.toString(this.botId.getNumber()));
 		
 		roleText = new JTextField();
 		roleText.setEditable(false);
 		roleText.setBackground(Color.WHITE);
+		roleText.setToolTipText("Role");
 		
 		conditionStatusText = new JTextField();
 		conditionStatusText.setEditable(false);
 		conditionStatusText.setBackground(Color.WHITE);
+		conditionStatusText.setToolTipText("All conditions fullfilled?");
 		
 		destinationText = new JTextField();
 		destinationText.setEditable(false);
 		destinationText.setBackground(Color.WHITE);
+		destinationText.setToolTipText("Destination target");
 		
-		skillMove = new JTextField();
-		skillMove.setEditable(false);
-		skillMove.setBackground(Color.WHITE);
+		ballContactText = new JTextField();
+		ballContactText.setEditable(false);
+		ballContactText.setBackground(Color.WHITE);
+		ballContactText.setToolTipText("Ball contact");
 		
-		skillShooter = new JTextField();
-		skillShooter.setEditable(false);
-		skillShooter.setBackground(Color.WHITE);
+		stateText = new JTextField();
+		stateText.setEditable(false);
+		stateText.setBackground(Color.WHITE);
+		stateText.setToolTipText("State of role");
 		
-		skillDribble = new JTextField();
-		skillDribble.setEditable(false);
-		skillDribble.setBackground(Color.WHITE);
+		txtSkill = new JTextField();
+		txtSkill.setEditable(false);
+		txtSkill.setBackground(Color.WHITE);
+		txtSkill.setToolTipText("Skill");
 		
-
+		
 		// - Assembly
 		conditionTable = new ConditionTable();
 		conditionModel = conditionTable.getConditionModel();
 		
 		conditionSwitch = new ConditionSwitch(conditionTable, true);
 		
-
+		
 		// Skills
 		// - Build
-		JPanel botIdPanel = new JPanel(new MigLayout("fill, wrap 1, ins 0", "[100!, fill]", "[][]15[][]15[][]"));
+		final JPanel botIdPanel = new JPanel(new MigLayout("fill, wrap 1, ins 0", "[100!, fill]", "[][]15[][]15[][]"));
 		botIdPanel.add(botIdfield);
-		// add(play);
 		botIdPanel.add(roleText);
 		botIdPanel.add(conditionStatusText);
 		botIdPanel.add(destinationText);
+		botIdPanel.add(ballContactText);
+		
+		// State
+		botIdPanel.add(stateText);
 		
 		botIdPanel.add(new JLabel("Conditions:"), "split 2");
 		botIdPanel.add(conditionSwitch);
 		botIdPanel.add(conditionTable);
 		add(botIdPanel);
 		
-
+		
 		// Skills
 		// - Build
 		skillSwitch = new SkillSwitch(false);
-		skillHistoryModel = new DefaultListModel();
-		skillHistory = new JList(skillHistoryModel);
+		skillHistoryModel = new DefaultListModel<ESkillName>();
+		JList<ESkillName> skillHistory = new JList<ESkillName>(skillHistoryModel);
 		
 		// - Assembly
-		JPanel skillPanel = new JPanel(new MigLayout("fill, wrap 1, ins 0", "[100!, fill]"));
+		final JPanel skillPanel = new JPanel(new MigLayout("fill, wrap 1, ins 0", "[100!, fill]"));
 		skillPanel.add(new JLabel("Skills:"), "split 2");
 		skillPanel.add(skillSwitch);
-		skillPanel.add(skillMove);
-		skillPanel.add(skillShooter);
-		skillPanel.add(skillDribble);
+		skillPanel.add(txtSkill);
 		
 		skillPanel.add(new JLabel("History:"));
 		skillPanel.add(skillHistory, "grow");
 		add(skillPanel);
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	void setBotId(int BotId)
+	/**
+	 * @param botID
+	 */
+	public final void setBotId(final BotID botID)
 	{
-		this.botId = BotId;
+		botId = new BotID(botID);
 	}
 	
-
-	int getBotId()
+	
+	/**
+	 * @return
+	 */
+	public final BotID getBotID()
 	{
 		return botId;
 	}
 	
-
+	
 	/**
 	 * @param newStatus
 	 * @param newConditions
-	 * @param newWf
 	 */
 	public void setConditions(boolean newStatus, List<ACondition> newConditions)
 	{
@@ -207,19 +218,13 @@ public class BotOverviewPanel extends JPanel
 				conditionModel.updateEntireTable(newConditions);
 				roleChanged = false;
 			}
-			// else
-			// {
-			// conditionModel.updateConditionsStatus();
-			// }
-			
-			conditionTable.repaint();
 		}
 	}
 	
-
+	
 	private void setOverallConditionStatus(boolean newStatus)
 	{
-		if (lastConditionStatus == null || lastConditionStatus != newStatus)
+		if ((lastConditionStatus == null) || (lastConditionStatus != newStatus))
 		{
 			if (newStatus)
 			{
@@ -234,13 +239,13 @@ public class BotOverviewPanel extends JPanel
 		}
 	}
 	
-
+	
 	/**
 	 * @param newRole
 	 */
 	public void setRole(ARole newRole)
 	{
-		if (lastRole != newRole)
+		if ((lastRole == null) || !lastRole.equals(newRole))
 		{
 			roleText.setText(newRole.getType().name());
 			lastRole = newRole;
@@ -248,29 +253,52 @@ public class BotOverviewPanel extends JPanel
 		}
 	}
 	
-
-	public void calcDestinationStatus(IVector2 destination, Boolean conStatus)
+	
+	/**
+	 * Set the actual state of the bot
+	 * @param state
+	 */
+	public void setState(Enum<?> state)
+	{
+		if ((state != null))
+		{
+			stateText.setText(state.toString());
+		} else
+		{
+			stateText.setText("UNKNOWN");
+		}
+	}
+	
+	
+	/**
+	 * @param destination
+	 * @param conStatus
+	 */
+	public void calcDestinationStatus(IVector2 destination, EConditionState conStatus)
 	{
 		setDestination(destination);
 		
-		if (conStatus != null && conStatus == true)
+		if (conStatus == EConditionState.FULFILLED)
 		{
 			setDestColorTo(Color.GREEN);
-		} else
+		} else if (conStatus == EConditionState.DISABLED)
+		{
+			setDestColorTo(Color.white);
+		}
 		{
 			setDestColorTo(Color.RED);
 		}
 	}
 	
-
+	
 	/**
-	 * Set the background-color of {@link #destinationX} and {@link #destinationY} to color
+	 * Set the background-color of {@link #destinationText} to color
 	 * @param color
 	 * @return Whether something has been changed or not
 	 */
 	private boolean setDestColorTo(Color color)
 	{
-		if (color != lastDestColor)
+		if (color.equals(lastDestColor))
 		{
 			destinationText.setBackground(color);
 			lastDestColor = color;
@@ -280,10 +308,10 @@ public class BotOverviewPanel extends JPanel
 		return false;
 	}
 	
-
+	
 	private void setDestination(IVector2 pos)
 	{
-		if (lastDest == null || !lastDest.equals(pos))
+		if ((pos != null) && ((lastDest == null) || !lastDest.equals(pos)))
 		{
 			final IVector2 rdPos = pos.roundNew(0);
 			destinationText.setText(Float.toString(rdPos.x()) + ", " + Float.toString(rdPos.y()));
@@ -291,34 +319,29 @@ public class BotOverviewPanel extends JPanel
 		}
 	}
 	
-	public void setSkillDribble(ESkillName name)
+	
+	/**
+	 * @param ballContact
+	 */
+	public void setBallContact(final boolean ballContact)
 	{
-		if (!dribbler && skillSwitch.updateSkills())
-		{
-			skillDribble.setText(name.toString());
-			dribbler = true;
-		}
+		ballContactText.setText(String.valueOf(ballContact));
 	}
 	
-
-	public void setSkillShooter(ESkillName name)
-	{
-		if (!shooter && skillSwitch.updateSkills())
-		{
-			skillShooter.setText(name.toString());
-			shooter = true;
-		}
-	}
 	
-
-	public void setSkillMove(final ESkillName name)
+	/**
+	 * @param name
+	 */
+	public void setSkill(final ESkillName name)
 	{
 		EventQueue.invokeLater(new Runnable()
 		{
+			@Override
 			public void run()
 			{
 				if (skillSwitch.updateSkills())
 				{
+					txtSkill.setText(name.toString());
 					// Add element
 					skillHistoryModel.insertElementAt(name, 0);
 					
@@ -333,34 +356,24 @@ public class BotOverviewPanel extends JPanel
 		});
 	}
 	
-
-	public void unSetSkillDribble()
+	
+	/**
+	 */
+	public void unSetSkill()
 	{
-		if (dribbler)
+		SwingUtilities.invokeLater(new Runnable()
 		{
-			skillDribble.setText("");
-			dribbler = false;
-		}
+			@Override
+			public void run()
+			{
+				txtSkill.setText("");
+			}
+		});
 	}
 	
-
-	public void unSetSkillShooter()
-	{
-		if (shooter)
-		{
-			skillShooter.setText("");
-			shooter = false;
-		}
-	}
 	
-
-	public void unSetSkillMove()
-	{
-		skillMove.setText("");
-		// lastMove = null;
-	}
-	
-
+	/**
+	 */
 	public void clearSkills()
 	{
 		EventQueue.invokeLater(new Runnable()
@@ -369,14 +382,14 @@ public class BotOverviewPanel extends JPanel
 			public void run()
 			{
 				skillHistoryModel.clear();
-				unSetSkillDribble();
-				unSetSkillMove();
-				unSetSkillShooter();
+				unSetSkill();
 			}
 		});
 	}
 	
-
+	
+	/**
+	 */
 	public void clearView()
 	{
 		roleText.setText("");
@@ -390,6 +403,9 @@ public class BotOverviewPanel extends JPanel
 		destinationText.setBackground(Color.WHITE);
 		lastDest = null;
 		
+		ballContactText.setText("");
+		ballContactText.setBackground(Color.WHITE);
+		
 		// Clear conditions table
 		conditionModel.resetContent();
 		
@@ -398,7 +414,7 @@ public class BotOverviewPanel extends JPanel
 	}
 	
 	
-	private class ConditionSwitch extends JCheckBox implements ActionListener
+	private static final class ConditionSwitch extends JCheckBox implements ActionListener
 	{
 		private static final long		serialVersionUID	= 2232882099444089285L;
 		
@@ -409,13 +425,13 @@ public class BotOverviewPanel extends JPanel
 		private ConditionSwitch(ConditionTable table, boolean initiallyUpdateConditions)
 		{
 			this.table = table;
-			this.updateConditions = initiallyUpdateConditions;
+			updateConditions = initiallyUpdateConditions;
 			
 			setSelected(initiallyUpdateConditions);
 			addActionListener(this);
 		}
 		
-
+		
 		@Override
 		public synchronized void actionPerformed(ActionEvent e)
 		{
@@ -427,7 +443,7 @@ public class BotOverviewPanel extends JPanel
 			}
 		}
 		
-
+		
 		private synchronized boolean updateConditions()
 		{
 			return updateConditions;
@@ -435,22 +451,22 @@ public class BotOverviewPanel extends JPanel
 	}
 	
 	
-	private class SkillSwitch extends JCheckBox implements ActionListener
+	private final class SkillSwitch extends JCheckBox implements ActionListener
 	{
-		private static final long		serialVersionUID	= 2232882099444089285L;
+		private static final long	serialVersionUID	= 2232882099444089285L;
 		
-		private boolean					updateSkills	= false;
+		private boolean				updateSkills		= false;
 		
 		
 		private SkillSwitch(boolean initiallyUpdateSkills)
 		{
-			this.updateSkills = initiallyUpdateSkills;
+			updateSkills = initiallyUpdateSkills;
 			
 			setSelected(initiallyUpdateSkills);
 			addActionListener(this);
 		}
 		
-
+		
 		@Override
 		public synchronized void actionPerformed(ActionEvent e)
 		{
@@ -461,7 +477,7 @@ public class BotOverviewPanel extends JPanel
 			}
 		}
 		
-
+		
 		private synchronized boolean updateSkills()
 		{
 			return updateSkills;

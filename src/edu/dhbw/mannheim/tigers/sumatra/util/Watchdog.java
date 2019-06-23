@@ -1,16 +1,17 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 21.08.2010
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.util;
 
 import java.util.ArrayList;
 import java.util.List;
+
 
 /**
  * The watchdog monitors timeout events.
@@ -27,87 +28,132 @@ public class Watchdog
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private List<IWatchdogObserver> observers = new ArrayList<IWatchdogObserver>();
-	private boolean reset = false;
-	private int period = 1000;
-	private Thread watchdogThread = null;
-
+	private final List<IWatchdogObserver>	observers		= new ArrayList<IWatchdogObserver>();
+	private boolean								reset				= false;
+	private int										period			= 1000;
+	private Thread									watchdogThread	= null;
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+ * 
+ */
 	public Watchdog()
 	{
 	}
 	
+	
+	/**
+	 * 
+	 * @param period
+	 */
 	public Watchdog(int period)
 	{
 		this.period = period;
 	}
 	
+	
+	/**
+	 * 
+	 * @param period
+	 * @param o
+	 */
 	public Watchdog(int period, IWatchdogObserver o)
 	{
 		this.period = period;
 		
 		addObserver(o);
 	}
-
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	private void addObserver(IWatchdogObserver o)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
 			observers.add(o);
 		}
 	}
-		
+	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public int getPeriod()
 	{
 		return period;
 	}
-
+	
+	
+	/**
+	 * 
+	 * @param period
+	 */
 	public void setPeriod(int period)
 	{
 		this.period = period;
 	}
 	
+	
+	/**
+	 * 
+	 * @param o
+	 */
 	public void start(IWatchdogObserver o)
 	{
 		stop();
 		
 		addObserver(o);
 		
-		watchdogThread = new Thread(new WatchdogRun());
+		watchdogThread = new Thread(new WatchdogRun(), "Watchdog");
 		watchdogThread.start();
 	}
-
+	
+	
+	/**
+	 *
+	 */
 	public void reset()
 	{
 		reset = true;
 	}
 	
+	
+	/**
+	 * 
+	 */
 	public void stop()
 	{
-		if(watchdogThread != null)
+		if (watchdogThread != null)
 		{
 			watchdogThread.interrupt();
 			watchdogThread = null;
 		}
 	}
 	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public boolean isActive()
 	{
 		return (watchdogThread != null);
 	}
 	
+	
 	protected void timeout()
 	{
 		watchdogThread = null;
 		
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for(IWatchdogObserver o : observers)
+			for (final IWatchdogObserver o : observers)
 			{
 				o.onWatchdogTimeout();
 			}
@@ -121,20 +167,19 @@ public class Watchdog
 		{
 			Thread.currentThread().setName("Watchdog");
 			
-			while(!Thread.currentThread().isInterrupted())
+			while (!Thread.currentThread().isInterrupted())
 			{
 				reset = false;
 				
 				try
 				{
 					Thread.sleep(period);
-				}
-				catch (InterruptedException err)
+				} catch (final InterruptedException err)
 				{
 					Thread.currentThread().interrupt();
 				}
 				
-				if(!reset)
+				if (!reset)
 				{
 					timeout();
 					Thread.currentThread().interrupt();

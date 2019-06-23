@@ -13,10 +13,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
-import java.net.InetAddress;
 
-import edu.dhbw.mannheim.tigers.sim.util.network.IReceiver;
+import org.apache.log4j.Logger;
+
 import edu.dhbw.mannheim.tigers.sumatra.util.ThreadUtil;
+import edu.dhbw.mannheim.tigers.sumatra.util.network.IReceiver;
 
 
 /**
@@ -26,87 +27,77 @@ import edu.dhbw.mannheim.tigers.sumatra.util.ThreadUtil;
  */
 public class FileReceiver implements IReceiver
 {
+	// Logger
+	private static final Logger		log	= Logger.getLogger(FileReceiver.class.getName());
 	
-	private FileInputStream		fis;
-	private ObjectInputStream	in;
-	private SSLVisionData		object;
+	private final FileInputStream		fis;
+	private final ObjectInputStream	in;
+	private SSLVisionData				object;
 	
 	
+	/**
+	 * @param filename
+	 * @throws IOException
+	 */
 	public FileReceiver(String filename) throws IOException
 	{
 		fis = new FileInputStream(filename);
 		in = new ObjectInputStream(fis);
-		object = new SSLVisionData(0, null);
+		final byte[] data = new byte[0];
+		object = new SSLVisionData(0, data);
 	}
 	
-
+	
 	@Override
 	public void cleanup() throws IOException
 	{
-		// TODO Auto-generated method stub
 		object = null;
 		fis.close();
 		in.close();
 	}
 	
-
-	@Override
-	public InetAddress getLocalAddress()
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
 	
-
-	@Override
-	public int getLocalPort()
-	{
-		// TODO Auto-generated method stub
-		return 0;
-	}
-	
-
-	@Override
-	public boolean isReady()
-	{
-		// TODO Auto-generated method stub
-		return false;
-	}
-	
-
 	@Override
 	public DatagramPacket receive(DatagramPacket arg0) throws IOException
 	{
-		long oldTimestamp = object.getTimestamp();
+		final long oldTimestamp = object.getTimestamp();
 		
 		try
 		{
 			object = (SSLVisionData) in.readObject();
-		} catch (ClassNotFoundException err)
+		} catch (final ClassNotFoundException err)
 		{
-			// TODO Auto-generated catch block
-			err.printStackTrace();
+			log.fatal("ClassNotFoundException", err);
 		}
 		arg0.setData(object.getData());
 		
 		ThreadUtil.parkNanosSafe(object.getTimestamp() - oldTimestamp);
 		return arg0;
 	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-
+	
+	@Override
+	public boolean isReady()
+	{
+		return true;
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------

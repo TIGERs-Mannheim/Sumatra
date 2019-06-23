@@ -9,9 +9,11 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.test.junit.model.data.matrix.performance;
 
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.types.Matrix;
 
 
 /**
@@ -22,56 +24,87 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix;
  */
 public class Call_AtimesPtimesAT extends APerformanceTest
 {
-	@Test
-	public void test()
+	int	times	= 10;
+	
+	
+	/**
+	 * 
+	 */
+	public Call_AtimesPtimesAT()
+	{
+		super();
+	}
+	
+	
+	/**
+	 */
+	@BeforeClass
+	public static void beforeClass()
 	{
 		System.out.println("##########################################################");
 		System.out.println("AtimesPtimesAT");
 		System.out.println("##########################################################");
-		
+		System.out.println("--> Many tests deactivated");
+	}
+	
+	
+	/**
+	 */
+	@Test
+	public void test()
+	{
 		output = false;
-		int times = 10;
-		Jama(times);
-		Matrix(times);
-		
-
-		output = true;
-		times = timesEasyOps;
-		System.out.println("Number of runs: " + times);
 		Jama(times);
 		Matrix(times);
 	}
 	
-
-	public void Matrix(int times)
+	
+	/**
+	 */
+	@Ignore
+	@Test
+	public void testMany()
+	{
+		output = true;
+		System.out.println("Number of runs: " + timesEasyOps);
+		Jama(timesEasyOps);
+		Matrix(timesEasyOps);
+	}
+	
+	
+	private void Matrix(int times)
 	{
 		if (output)
+		{
 			System.out.println("MatrixNew");
+		}
 		startTimer();
 		for (int i = 0; i < times; i++)
 		{
 			// set a random value
-			Matrix A = new Matrix(new double[][] { { Math.random(), 2 }, { 3, 4 } });
-			Matrix P = new Matrix(new double[][] { { 0, 1 }, { 1, Math.random() } });
+			final Matrix A = new Matrix(new double[][] { { Math.random(), 2 }, { 3, 4 } });
+			final Matrix P = new Matrix(new double[][] { { 0, 1 }, { 1, Math.random() } });
 			
 			A.times(P).times(A.transpose());
 		}
 		endTimer();
 	}
 	
-
-	public void Jama(int times)
+	
+	private void Jama(int times)
 	{
 		if (output)
+		{
 			System.out.println("JaMa");
+		}
 		startTimer();
 		for (int i = 0; i < times; i++)
 		{
 			// set a random value
-			Jama.Matrix A = new Jama.Matrix(new double[][] { { Math.random(), 2 }, { 3, 4 } });
-			Jama.Matrix P = new Jama.Matrix(new double[][] { { 0, 1 }, { 1, Math.random() } });
+			final Jama.Matrix A = new Jama.Matrix(new double[][] { { Math.random(), 2 }, { 3, 4 } });
+			final Jama.Matrix P = new Jama.Matrix(new double[][] { { 0, 1 }, { 1, Math.random() } });
 			
-
+			
 			A.times(P).times(A.transpose());
 		}
 		endTimer();

@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 06.08.2010
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.log.internals;
@@ -21,6 +21,7 @@ import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
 
+
 /**
  * Filter panel, select a user filter here.
  * Multiple words may be separated by a comma.
@@ -30,19 +31,22 @@ import net.miginfocom.swing.MigLayout;
  */
 public class FilterPanel extends JPanel
 {
-	private static final long	serialVersionUID	= 1L;
+	private static final long								serialVersionUID	= 1L;
 	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private ArrayList<IFilterPanelObserver> observers = new ArrayList<IFilterPanelObserver>();
+	private final ArrayList<IFilterPanelObserver>	observers			= new ArrayList<IFilterPanelObserver>();
 	
-	private JTextField	text	= null;
-	private JButton		reset	= null;
-
+	private JTextField										text					= null;
+	private JButton											reset					= null;
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 */
 	public FilterPanel()
 	{
 		setLayout(new MigLayout("fill", "[][][]", ""));
@@ -58,20 +62,27 @@ public class FilterPanel extends JPanel
 		add(reset);
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param o
+	 */
 	public void addObserver(IFilterPanelObserver o)
 	{
 		observers.add(o);
 	}
 	
+	
+	/**
+	 * @param o
+	 */
 	public void removeObserver(IFilterPanelObserver o)
 	{
 		observers.remove(o);
 	}
-
+	
 	// --------------------------------------------------------------------------
 	// --- action listener ------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -82,7 +93,7 @@ public class FilterPanel extends JPanel
 		{
 			text.setText("");
 			
-			for(IFilterPanelObserver o : observers)
+			for (final IFilterPanelObserver o : observers)
 			{
 				o.onNewFilter(new ArrayList<String>());
 			}
@@ -94,9 +105,9 @@ public class FilterPanel extends JPanel
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			ArrayList<String> allowed = new ArrayList<String>(Arrays.asList(text.getText().split(",")));
-
-			for(IFilterPanelObserver o : observers)
+			final ArrayList<String> allowed = new ArrayList<String>(Arrays.asList(text.getText().split(",")));
+			
+			for (final IFilterPanelObserver o : observers)
 			{
 				o.onNewFilter(allowed);
 			}

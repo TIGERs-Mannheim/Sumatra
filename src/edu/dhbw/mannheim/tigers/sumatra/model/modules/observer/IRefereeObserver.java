@@ -1,15 +1,16 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 02.08.2010
  * Author(s): Gero
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.observer;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.RefereeMsg;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.referee.RefereeMsg;
+
 
 /**
  * @see IRefereeObservable
@@ -18,5 +19,9 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.RefereeMsg;
  */
 public interface IRefereeObserver
 {
-	public void onNewRefereeMsg(RefereeMsg refMsg);
+	/**
+	 * 
+	 * @param refMsg
+	 */
+	void onNewRefereeMsg(RefereeMsg refMsg);
 }

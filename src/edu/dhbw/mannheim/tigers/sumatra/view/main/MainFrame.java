@@ -11,8 +11,8 @@
 package edu.dhbw.mannheim.tigers.sumatra.view.main;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Frame;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.event.ActionEvent;
@@ -26,24 +26,26 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
+import javax.swing.AbstractAction;
 import javax.swing.Box;
 import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
-import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JRadioButtonMenuItem;
-import javax.swing.JToolBar;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UIManager.LookAndFeelInfo;
+import javax.swing.WindowConstants;
 
 import net.infonode.docking.DockingWindow;
 import net.infonode.docking.DockingWindowAdapter;
@@ -59,7 +61,9 @@ import net.infonode.util.Direction;
 
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.sumatra.Sumatra;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
+import edu.dhbw.mannheim.tigers.sumatra.view.main.toolbar.ToolBar;
 
 
 /**
@@ -70,55 +74,53 @@ public class MainFrame extends JFrame implements IMainFrame
 	// ---------------------------------------------------------------
 	// --- instance vars ---------------------------------------------
 	// ---------------------------------------------------------------
+	
+	// Logger
+	private static final Logger						log					= Logger.getLogger(MainFrame.class.getName());
+	
 	/**  */
-	private static final long						serialVersionUID		= -6858464942004450029L;
+	private static final long							serialVersionUID	= -6858464942004450029L;
 	
-
-	private ArrayList<IMainFrameObserver>		observers				= new ArrayList<IMainFrameObserver>();
 	
-	private ArrayList<JRadioButtonMenuItem>	layoutItems				= new ArrayList<JRadioButtonMenuItem>();
+	private final List<IMainFrameObserver>			observers			= new ArrayList<IMainFrameObserver>();
 	
-
+	private final List<JRadioButtonMenuItem>		layoutItems			= new ArrayList<JRadioButtonMenuItem>();
+	
+	
 	// --- infonode-framework variables ---
 	/**
 	 * The one and only root window
 	 */
-	private RootWindow								rootWindow;
+	private RootWindow									rootWindow;
 	
 	/**
 	 * Contains all the static views
 	 */
-	private ViewMap									viewMap					= new ViewMap();
+	private final ViewMap								viewMap				= new ViewMap();
 	
 	/**
 	 * The currently applied docking windows theme
 	 */
-	private DockingWindowsTheme					currentTheme			= new ShapedGradientDockingTheme();
+	private final transient DockingWindowsTheme	currentTheme		= new ShapedGradientDockingTheme();
 	
 	/**
 	 * In this properties object the modified property values for close buttons etc. are stored. This object is cleared
 	 * when the theme is changed.
 	 */
-	private RootWindowProperties					properties				= new RootWindowProperties();
-	
-	// --- logger ---
-	private Logger										log						= Logger.getLogger(getClass());
+	private final RootWindowProperties				properties			= new RootWindowProperties();
 	
 	// --- menu stuff ---
-	private JMenuBar									menuBar					= null;
-	private JMenu										viewsMenu				= null;
-	private JMenu										layoutMenu				= null;
-	private JMenu										fileMenu					= null;
-	private JMenu										moduliMenu				= null;
-	private JMenu										lookAndFeelMenu		= null;
+	private JMenuBar										menuBar				= null;
+	private JMenu											viewsMenu			= null;
+	private JMenu											layoutMenu			= null;
+	private JMenu											moduliMenu			= null;
+	private JMenu											lookAndFeelMenu	= null;
+	private JMenu											helpMenu				= null;
 	
-	private List<ISumatraView>						views						= new ArrayList<ISumatraView>();
-	private Map<ISumatraView, List<JMenu>>		customMenuMap			= new Hashtable<ISumatraView, List<JMenu>>();
+	private final List<ISumatraView>					views					= new ArrayList<ISumatraView>();
+	private final Map<ISumatraView, List<JMenu>>	customMenuMap		= new Hashtable<ISumatraView, List<JMenu>>();
 	
-	// --- toolbar ---
-	private JToolBar									toolBar					= null;
-	private JButton									startStopButton		= null;
-	private JButton									emergencyStopButton	= null;
+	private ToolBar										toolBar;
 	
 	
 	// ---------------------------------------------------------------
@@ -137,11 +139,12 @@ public class MainFrame extends JFrame implements IMainFrame
 		showFrame();
 	}
 	
-
+	
 	// ---------------------------------------------------------------
 	// --- important-methods for every day use -----------------------
 	// ---------------------------------------------------------------
 	
+	@Override
 	public void addObserver(IMainFrameObserver o)
 	{
 		synchronized (observers)
@@ -150,7 +153,8 @@ public class MainFrame extends JFrame implements IMainFrame
 		}
 	}
 	
-
+	
+	@Override
 	public void removeObserver(IMainFrameObserver o)
 	{
 		synchronized (observers)
@@ -159,32 +163,8 @@ public class MainFrame extends JFrame implements IMainFrame
 		}
 	}
 	
-
-	public void setStartStopButtonState(final boolean enable)
-	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			public void run()
-			{
-				startStopButton.setEnabled(enable);
-			}
-		});
-	}
 	
-
-	public void setStartStopButtonState(final boolean enable, final ImageIcon icon)
-	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			public void run()
-			{
-				startStopButton.setEnabled(enable);
-				startStopButton.setIcon(icon);
-			}
-		});
-	}
-	
-
+	@Override
 	public void loadLayout(final String path)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -192,38 +172,33 @@ public class MainFrame extends JFrame implements IMainFrame
 			@Override
 			public void run()
 			{
-				File f = new File(path);
-				String filename = f.getName();
+				final File f = new File(path);
+				final String filename = f.getName();
 				
 				try
 				{
 					// --- Load the layout ---
-					ObjectInputStream in1 = new ObjectInputStream(new FileInputStream(path));
+					final ObjectInputStream in1 = new ObjectInputStream(new FileInputStream(path));
 					
 					try
 					{
 						rootWindow.read(in1, true);
-					} catch (NullPointerException npe)
+					} catch (final NullPointerException npe)
 					{
-						log.warn("Seems as if a view stored in the config is not available!");
-					} finally
-					{
-						if (in1 != null)
-						{
-							in1.close();
-						}
+						log.warn("Seems as if a view stored in the config is not available!", npe);
 					}
+					in1.close();
 					
 					// select RadioButton in layoutMenu
-					for (JRadioButtonMenuItem item : layoutItems)
+					for (final JRadioButtonMenuItem item : layoutItems)
 					{
-						String itemName = item.getText();
+						final String itemName = item.getText();
 						if (itemName.equals(filename))
 						{
 							item.setSelected(true);
 						}
 					}
-				} catch (IOException e1)
+				} catch (final IOException e1)
 				{
 					log.warn("Can't load layout: " + e1.getMessage());
 				}
@@ -231,35 +206,48 @@ public class MainFrame extends JFrame implements IMainFrame
 		});
 	}
 	
-
+	
+	@Override
 	public void saveLayout(String filename)
 	{
 		// --- save layout to file ---
+		ObjectOutputStream out = null;
 		try
 		{
-			FileOutputStream fileStream = new FileOutputStream(filename);
-			ObjectOutputStream out = new ObjectOutputStream(fileStream);
+			final FileOutputStream fileStream = new FileOutputStream(filename);
+			out = new ObjectOutputStream(fileStream);
 			rootWindow.write(out, false);
-			out.close();
 			
-		} catch (FileNotFoundException err)
+		} catch (final FileNotFoundException err)
 		{
 			log.error("Can't save layout:" + err.getMessage());
-		} catch (IOException err)
+		} catch (final IOException err)
 		{
 			log.error("Can't save layout:" + err.getMessage());
 		}
+		if (out != null)
+		{
+			try
+			{
+				out.close();
+			} catch (IOException err)
+			{
+				// what should we do?
+			}
+		}
 	}
 	
-
-	public void setMenuLayoutItems(final ArrayList<String> names)
+	
+	@Override
+	public void setMenuLayoutItems(final List<String> names)
 	{
 		SwingUtilities.invokeLater(new Runnable()
 		{
+			@Override
 			public void run()
 			{
 				// remove all layout items from menu
-				for (JRadioButtonMenuItem item : layoutItems)
+				for (final JRadioButtonMenuItem item : layoutItems)
 				{
 					layoutMenu.remove(item);
 				}
@@ -267,17 +255,17 @@ public class MainFrame extends JFrame implements IMainFrame
 				layoutItems.clear();
 				
 				// --- buttonGroup for layout-files ---
-				ButtonGroup group = new ButtonGroup();
-				for (String name : names)
+				final ButtonGroup group = new ButtonGroup();
+				for (final String name : names)
 				{
-					JRadioButtonMenuItem item = new JRadioButtonMenuItem(name);
+					final JRadioButtonMenuItem item = new JRadioButtonMenuItem(name);
 					group.add(item);
 					item.addActionListener(new LoadLayout(name));
 					layoutItems.add(item);
 				}
 				
 				int pos = 3;
-				for (JRadioButtonMenuItem item : layoutItems)
+				for (final JRadioButtonMenuItem item : layoutItems)
 				{
 					layoutMenu.insert(item, pos++);
 				}
@@ -285,20 +273,22 @@ public class MainFrame extends JFrame implements IMainFrame
 		});
 	}
 	
-
-	public void setMenuModuliItems(final ArrayList<String> names)
+	
+	@Override
+	public void setMenuModuliItems(final List<String> names)
 	{
 		SwingUtilities.invokeLater(new Runnable()
 		{
+			@Override
 			public void run()
 			{
 				moduliMenu.removeAll();
 				
-				ButtonGroup group = new ButtonGroup();
+				final ButtonGroup group = new ButtonGroup();
 				
-				for (String name : names)
+				for (final String name : names)
 				{
-					JRadioButtonMenuItem item = new JRadioButtonMenuItem(name);
+					final JRadioButtonMenuItem item = new JRadioButtonMenuItem(name);
 					item.addActionListener(new LoadConfig(name));
 					group.add(item);
 					moduliMenu.add(item);
@@ -307,20 +297,22 @@ public class MainFrame extends JFrame implements IMainFrame
 		});
 	}
 	
-
+	
+	@Override
 	public void selectModuliItem(final String name)
 	{
 		SwingUtilities.invokeLater(new Runnable()
 		{
+			@Override
 			public void run()
 			{
-				File f = new File(name);
-				String filename = f.getName();
+				final File f = new File(name);
+				final String filename = f.getName();
 				
 				// select RadioButton in moduliMenu
 				for (int i = 0; i < moduliMenu.getItemCount(); i++)
 				{
-					JRadioButtonMenuItem item = (JRadioButtonMenuItem) moduliMenu.getItem(i);
+					final JRadioButtonMenuItem item = (JRadioButtonMenuItem) moduliMenu.getItem(i);
 					if (item.getText().equals(filename))
 					{
 						item.setSelected(true);
@@ -330,17 +322,19 @@ public class MainFrame extends JFrame implements IMainFrame
 		});
 	}
 	
-
+	
+	@Override
 	public void selectLayoutItem(final String name)
 	{
 		SwingUtilities.invokeLater(new Runnable()
 		{
+			@Override
 			public void run()
 			{
-				File f = new File(name);
-				String filename = f.getName();
+				final File f = new File(name);
+				final String filename = f.getName();
 				
-				for (JRadioButtonMenuItem item : layoutItems)
+				for (final JRadioButtonMenuItem item : layoutItems)
 				{
 					if (item.getText().equals(filename))
 					{
@@ -351,34 +345,37 @@ public class MainFrame extends JFrame implements IMainFrame
 		});
 	}
 	
-
+	
+	@Override
 	public void addView(ISumatraView view)
 	{
-		viewMap.addView(view.getID(), new View(view.getTitle(), Icons.VIEW_ICON, view.getViewComponent()));
+		viewMap.addView(view.getId(), new View(view.getTitle(), Icons.VIEW_ICON, view.getViewComponent()));
 		
 		views.add(view);
 		
 		updateViewMenu();
 	}
 	
-
+	
+	@Override
 	public void setLookAndFeel(final String lafName)
 	{
 		final JFrame frame = this;
 		
 		SwingUtilities.invokeLater(new Runnable()
 		{
+			@Override
 			public void run()
 			{
 				// update visible components
-				int state = getExtendedState();
+				final int state = getExtendedState();
 				SwingUtilities.updateComponentTreeUI(frame);
 				setExtendedState(state);
 				
 				// update menu
 				for (int i = 0; i < lookAndFeelMenu.getItemCount(); i++)
 				{
-					JRadioButtonMenuItem item = (JRadioButtonMenuItem) lookAndFeelMenu.getItem(i);
+					final JRadioButtonMenuItem item = (JRadioButtonMenuItem) lookAndFeelMenu.getItem(i);
 					if (item.getText().equals(lafName))
 					{
 						item.setSelected(true);
@@ -386,7 +383,7 @@ public class MainFrame extends JFrame implements IMainFrame
 				}
 				
 				// update all views (including non-visible)
-				for (ISumatraView view : views)
+				for (final ISumatraView view : views)
 				{
 					SwingUtilities.updateComponentTreeUI(view.getViewComponent());
 				}
@@ -394,44 +391,52 @@ public class MainFrame extends JFrame implements IMainFrame
 		});
 	}
 	
-
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public ToolBar getToolbar()
+	{
+		return toolBar;
+	}
+	
+	
 	private void removeFromCustomMenu(final List<JMenu> menus)
 	{
 		SwingUtilities.invokeLater(new Runnable()
 		{
+			@Override
 			public void run()
 			{
-				for (JMenu menu : menus)
+				for (final JMenu menu : menus)
 				{
 					menuBar.remove(menu);
 				}
 				
-				paintAll(getGraphics());
-				
-				// customMenus.removeAll(menu);
+				menuBar.repaint();
 			}
 		});
 	}
 	
-
+	
 	private void addToCustomMenu(final List<JMenu> menus)
 	{
 		SwingUtilities.invokeLater(new Runnable()
 		{
+			@Override
 			public void run()
 			{
-				for (JMenu menu : menus)
+				for (final JMenu menu : menus)
 				{
 					menuBar.add(menu);
 				}
-				
-				// customMenus.removeAll(menu);
 			}
 		});
 		
 	}
 	
-
+	
 	/**
 	 * Initializes the frame and shows it.
 	 */
@@ -441,26 +446,32 @@ public class MainFrame extends JFrame implements IMainFrame
 		addWindowListener(new Exit());
 		
 		// --- some adjustments ---
-		this.setLayout(new BorderLayout());
+		setLayout(new BorderLayout());
 		this.setLocation(0, 0);
 		this.setSize(new Dimension(800, 600));
-		this.setTitle("Tigers Mannheim - Sumatra V " + SumatraModel.VERSION);
-		this.setIconImage(new ImageIcon(ClassLoader.getSystemResource("kralle-icon.png")).getImage());
-		this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		setTitle("Tigers Mannheim - Sumatra V " + SumatraModel.getVersion());
+		URL kralleUrl = ClassLoader.getSystemResource("kralle-icon.png");
+		if (kralleUrl != null)
+		{
+			ImageIcon icon = new ImageIcon(kralleUrl);
+			setIconImage(icon.getImage());
+		}
+		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		
 		// --- add/set components ---
-		this.add(createToolBar(), BorderLayout.NORTH);
+		toolBar = new ToolBar();
+		this.add(toolBar.getToolbar(), BorderLayout.NORTH);
 		this.add(rootWindow, BorderLayout.CENTER);
-		this.setJMenuBar(createMenuBar());
+		setJMenuBar(createMenuBar());
 		
 		// --- maximize ---
-		this.setExtendedState(this.getExtendedState() | JFrame.MAXIMIZED_BOTH);
+		setExtendedState(getExtendedState() | Frame.MAXIMIZED_BOTH);
 		
 		// --- set visible ---
-		this.setVisible(true);
+		setVisible(true);
 	}
 	
-
+	
 	// ---------------------------------------------------------------
 	// --- unimportant-methods for every day use (framework-things) --
 	// ---------------------------------------------------------------
@@ -489,39 +500,7 @@ public class MainFrame extends JFrame implements IMainFrame
 		rootWindow.getWindowBar(Direction.DOWN).setEnabled(true);
 	}
 	
-
-	/**
-	 * Creates the frame tool bar.
-	 * 
-	 * @return the frame tool bar
-	 */
-	private JToolBar createToolBar()
-	{
-		// --- configure buttons ---
-		startStopButton = new JButton();
-		startStopButton.addActionListener(new StartStopModules());
-		startStopButton.setBorder(null);
-		
-		emergencyStopButton = new JButton("Emergency Stop");
-		emergencyStopButton.setForeground(Color.red);
-		emergencyStopButton.addActionListener(new EmergencyStopListener());
-		
-
-		// --- configure toolbar ---
-		toolBar = new JToolBar();
-		toolBar.setFloatable(false);
-		toolBar.setRollover(true);
-		
-		// --- add buttons ---
-		toolBar.addSeparator();
-		toolBar.add(startStopButton);
-		toolBar.addSeparator();
-		toolBar.add(emergencyStopButton);
-		toolBar.addSeparator();
-		return toolBar;
-	}
 	
-
 	/**
 	 * Creates the frame menu bar.
 	 * 
@@ -533,7 +512,7 @@ public class MainFrame extends JFrame implements IMainFrame
 		viewsMenu = new JMenu("Views");
 		
 		// File Menu
-		fileMenu = new JMenu("File");
+		JMenu fileMenu = new JMenu("File");
 		
 		JMenuItem aboutMenuItem;
 		JMenuItem exitMenuItem;
@@ -546,18 +525,18 @@ public class MainFrame extends JFrame implements IMainFrame
 		exitMenuItem.setToolTipText("Exits the application");
 		
 		// fullscreen stuff
-		JMenu fsMenu = new JMenu("Fullscreen");
+		final JMenu fsMenu = new JMenu("Fullscreen");
 		
-		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-		GraphicsDevice[] gds = ge.getScreenDevices();
-		for (GraphicsDevice gd : gds)
+		final GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+		final GraphicsDevice[] gds = ge.getScreenDevices();
+		for (final GraphicsDevice gd : gds)
 		{
-			JMenuItem item = new JMenuItem(gd.toString());
+			final JMenuItem item = new JMenuItem(gd.toString());
 			item.addActionListener(new SetFullscreen(gd));
 			fsMenu.add(item);
 		}
 		
-		JMenuItem windowMode = new JMenuItem("Window mode");
+		final JMenuItem windowMode = new JMenuItem("Window mode");
 		windowMode.addActionListener(new SetFullscreen(null));
 		fsMenu.add(windowMode);
 		
@@ -565,7 +544,7 @@ public class MainFrame extends JFrame implements IMainFrame
 		fileMenu.add(aboutMenuItem);
 		fileMenu.add(exitMenuItem);
 		
-
+		
 		// layout menu
 		layoutMenu = new JMenu("Layout");
 		
@@ -593,12 +572,12 @@ public class MainFrame extends JFrame implements IMainFrame
 		moduliMenu = new JMenu("Moduli");
 		
 		// look and feel menu
-		ButtonGroup group = new ButtonGroup();
+		final ButtonGroup group = new ButtonGroup();
 		lookAndFeelMenu = new JMenu("Look & Feel");
-		LookAndFeelInfo[] lafs = UIManager.getInstalledLookAndFeels();
-		for (LookAndFeelInfo info : lafs)
+		final LookAndFeelInfo[] lafs = UIManager.getInstalledLookAndFeels();
+		for (final LookAndFeelInfo info : lafs)
 		{
-			JRadioButtonMenuItem item = new JRadioButtonMenuItem(info.getName());
+			final JRadioButtonMenuItem item = new JRadioButtonMenuItem(info.getName());
 			item.addActionListener(new SetLookAndFeel(info));
 			group.add(item);
 			lookAndFeelMenu.add(item);
@@ -608,28 +587,33 @@ public class MainFrame extends JFrame implements IMainFrame
 			}
 		}
 		
+		helpMenu = new JMenu("Help");
+		helpMenu.add(new JMenuItem(new HelpMenuAction()));
+		
 		menuBar = new JMenuBar();
 		menuBar.add(fileMenu);
 		menuBar.add(moduliMenu);
 		menuBar.add(layoutMenu);
 		menuBar.add(viewsMenu);
 		menuBar.add(lookAndFeelMenu);
+		menuBar.add(helpMenu);
 		menuBar.add(Box.createHorizontalStrut(50));
 		
 		return menuBar;
 	}
 	
-
+	
 	private void updateViewMenu()
 	{
 		SwingUtilities.invokeLater(new Runnable()
 		{
+			@Override
 			public void run()
 			{
 				for (int i = 0; i < viewsMenu.getItemCount(); i++)
 				{
-					ActionListener[] listener = viewsMenu.getItem(i).getActionListeners();
-					for (ActionListener l : listener)
+					final ActionListener[] listener = viewsMenu.getItem(i).getActionListeners();
+					for (final ActionListener l : listener)
 					{
 						viewsMenu.getItem(i).removeActionListener(l);
 					}
@@ -639,9 +623,9 @@ public class MainFrame extends JFrame implements IMainFrame
 				
 				for (int i = 0; i < viewMap.getViewCount(); i++)
 				{
-					View view = viewMap.getViewAtIndex(i);
+					final View view = viewMap.getViewAtIndex(i);
 					
-					JMenuItem item = new JMenuItem(view.getTitle());
+					final JMenuItem item = new JMenuItem(view.getTitle());
 					item.setEnabled(view.getRootWindow() == null);
 					item.addActionListener(new RestoreView(view));
 					viewsMenu.add(item);
@@ -655,20 +639,6 @@ public class MainFrame extends JFrame implements IMainFrame
 	// --- ActionListener ------
 	// -------------------------
 	
-	protected class StartStopModules implements ActionListener
-	{
-		@Override
-		public void actionPerformed(ActionEvent e)
-		{
-			synchronized (observers)
-			{
-				for (IMainFrameObserver o : observers)
-				{
-					o.onStartStopModules();
-				}
-			}
-		}
-	}
 	
 	protected class SaveLayout implements ActionListener
 	{
@@ -677,7 +647,7 @@ public class MainFrame extends JFrame implements IMainFrame
 		{
 			synchronized (observers)
 			{
-				for (IMainFrameObserver o : observers)
+				for (final IMainFrameObserver o : observers)
 				{
 					o.onSaveLayout();
 				}
@@ -692,7 +662,7 @@ public class MainFrame extends JFrame implements IMainFrame
 		{
 			synchronized (observers)
 			{
-				for (IMainFrameObserver o : observers)
+				for (final IMainFrameObserver o : observers)
 				{
 					o.onDeleteLayout();
 				}
@@ -702,21 +672,24 @@ public class MainFrame extends JFrame implements IMainFrame
 	
 	protected class LoadLayout implements ActionListener
 	{
-		private String	layoutName;
+		private final String	layoutName;
 		
 		
+		/**
+		 * @param name
+		 */
 		public LoadLayout(String name)
 		{
-			this.layoutName = name;
+			layoutName = name;
 		}
 		
-
+		
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
 			synchronized (observers)
 			{
-				for (IMainFrameObserver o : observers)
+				for (final IMainFrameObserver o : observers)
 				{
 					o.onLoadLayout(layoutName);
 				}
@@ -731,7 +704,7 @@ public class MainFrame extends JFrame implements IMainFrame
 		{
 			synchronized (observers)
 			{
-				for (IMainFrameObserver o : observers)
+				for (final IMainFrameObserver o : observers)
 				{
 					o.onAbout();
 				}
@@ -751,19 +724,22 @@ public class MainFrame extends JFrame implements IMainFrame
 	
 	protected class RestoreView implements ActionListener
 	{
-		View	view;
+		private final View	view;
 		
 		
+		/**
+		 * @param v
+		 */
 		public RestoreView(View v)
 		{
 			view = v;
 		}
 		
-
+		
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			JMenuItem item = (JMenuItem) e.getSource();
+			final JMenuItem item = (JMenuItem) e.getSource();
 			
 			view.restoreFocus();
 			DockingUtil.addWindow(view, rootWindow);
@@ -773,23 +749,26 @@ public class MainFrame extends JFrame implements IMainFrame
 	
 	protected class LoadConfig implements ActionListener
 	{
-		private String	configName;
+		private final String	configName;
 		
 		
+		/**
+		 * @param c
+		 */
 		public LoadConfig(String c)
 		{
 			configName = c;
 		}
 		
-
+		
 		@Override
 		public void actionPerformed(ActionEvent arg0)
 		{
 			synchronized (observers)
 			{
-				for (IMainFrameObserver o : observers)
+				for (final IMainFrameObserver o : observers)
 				{
-					o.onLoadConfig(configName);
+					o.onLoadModuliConfig(configName);
 				}
 			}
 		}
@@ -802,7 +781,7 @@ public class MainFrame extends JFrame implements IMainFrame
 		{
 			synchronized (observers)
 			{
-				for (IMainFrameObserver o : observers)
+				for (final IMainFrameObserver o : observers)
 				{
 					o.onRefreshLayoutItems();
 				}
@@ -812,21 +791,24 @@ public class MainFrame extends JFrame implements IMainFrame
 	
 	protected class SetLookAndFeel implements ActionListener
 	{
-		private LookAndFeelInfo	info;
+		private final LookAndFeelInfo	info;
 		
 		
+		/**
+		 * @param i
+		 */
 		public SetLookAndFeel(LookAndFeelInfo i)
 		{
 			info = i;
 		}
 		
-
+		
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
 			synchronized (observers)
 			{
-				for (IMainFrameObserver o : observers)
+				for (final IMainFrameObserver o : observers)
 				{
 					o.onSelectLookAndFeel(info);
 				}
@@ -836,21 +818,24 @@ public class MainFrame extends JFrame implements IMainFrame
 	
 	protected class SetFullscreen implements ActionListener
 	{
-		private GraphicsDevice	gd;
+		private final GraphicsDevice	gd;
 		
 		
+		/**
+		 * @param gd
+		 */
 		public SetFullscreen(GraphicsDevice gd)
 		{
 			this.gd = gd;
 		}
 		
-
+		
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
 			synchronized (observers)
 			{
-				for (IMainFrameObserver o : observers)
+				for (final IMainFrameObserver o : observers)
 				{
 					o.onSetFullscreen(gd);
 				}
@@ -866,16 +851,17 @@ public class MainFrame extends JFrame implements IMainFrame
 			exit();
 		}
 		
-
+		
+		@Override
 		public void windowClosing(WindowEvent w)
 		{
 			exit();
 		}
 		
-
+		
 		private void exit()
 		{
-			for (IMainFrameObserver o : observers)
+			for (final IMainFrameObserver o : observers)
 			{
 				o.onExit();
 			}
@@ -884,18 +870,21 @@ public class MainFrame extends JFrame implements IMainFrame
 	
 	protected class ViewUpdater extends DockingWindowAdapter
 	{
+		@Override
 		public void windowAdded(DockingWindow addedToWindow, DockingWindow addedWindow)
 		{
 			updateViewMenu();
 		}
 		
-
+		
+		@Override
 		public void windowRemoved(DockingWindow removedFromWindow, DockingWindow removedWindow)
 		{
 			updateViewMenu();
 		}
 		
-
+		
+		@Override
 		public void windowShown(DockingWindow window)
 		{
 			/*
@@ -904,48 +893,42 @@ public class MainFrame extends JFrame implements IMainFrame
 			 * windows get shown at once. This usually happens when loading
 			 * a layout.
 			 */
-			String titles[] = window.getTitle().split(",");
-			for (String title : titles)
+			for (final ISumatraView view : views)
 			{
-				title = title.trim();
-				
-				for (ISumatraView view : views)
 				{
-					if (view.getTitle().equals(title))
+					final List<JMenu> menu = view.getCustomMenus();
+					
+					if (menu != null)
 					{
-						List<JMenu> menu = view.getCustomMenus();
-						
-						if (menu != null)
+						if (customMenuMap.containsKey(view))
 						{
-							if (customMenuMap.containsKey(view))
-							{
-								removeFromCustomMenu(customMenuMap.get(view));
-							}
-							
-							customMenuMap.put(view, menu);
-							
-							addToCustomMenu(menu);
+							removeFromCustomMenu(customMenuMap.get(view));
 						}
 						
-						view.onShown();
+						customMenuMap.put(view, menu);
+						
+						addToCustomMenu(menu);
 					}
+					
+					view.onShown();
 				}
 			}
 		}
 		
-
+		
+		@Override
 		public void windowHidden(DockingWindow window)
 		{
-			String titles[] = window.getTitle().split(",");
+			final String titles[] = window.getTitle().split(",");
 			for (String title : titles)
 			{
 				title = title.trim();
 				
-				for (ISumatraView view : views)
+				for (final ISumatraView view : views)
 				{
 					if (view.getTitle().equals(title))
 					{
-						List<JMenu> menu = customMenuMap.remove(view);
+						final List<JMenu> menu = customMenuMap.remove(view);
 						if (menu != null)
 						{
 							removeFromCustomMenu(menu);
@@ -957,12 +940,13 @@ public class MainFrame extends JFrame implements IMainFrame
 			}
 		}
 		
-
+		
+		@Override
 		public void viewFocusChanged(View previous, View focused)
 		{
 			if (previous != null)
 			{
-				for (ISumatraView view : views)
+				for (final ISumatraView view : views)
 				{
 					if (view.getTitle().equals(previous.getTitle()))
 					{
@@ -973,7 +957,7 @@ public class MainFrame extends JFrame implements IMainFrame
 			
 			if (focused != null)
 			{
-				for (ISumatraView view : views)
+				for (final ISumatraView view : views)
 				{
 					if (view.getTitle().equals(focused.getTitle()))
 					{
@@ -985,18 +969,22 @@ public class MainFrame extends JFrame implements IMainFrame
 		
 	}
 	
-	private class EmergencyStopListener implements ActionListener
+	private class HelpMenuAction extends AbstractAction
 	{
+		private static final long	serialVersionUID	= -4270999808508994109L;
+		
+		
+		public HelpMenuAction()
+		{
+			super("Match Checklist");
+		}
+		
+		
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			synchronized (observers)
-			{
-				for (IMainFrameObserver o : observers)
-				{
-					o.onEmergencyStop();
-				}
-			}
+			JOptionPane.showMessageDialog(rootPane, Sumatra.MATCH_CHECKLIST, "Match Checklist", JOptionPane.PLAIN_MESSAGE);
 		}
 	}
+	
 }

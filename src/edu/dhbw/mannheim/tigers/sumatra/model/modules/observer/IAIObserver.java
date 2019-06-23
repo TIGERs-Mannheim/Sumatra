@@ -9,8 +9,8 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.observer;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.pathfinding.Path;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
 
 
 /**
@@ -24,29 +24,25 @@ public interface IAIObserver
 {
 	/**
 	 * 
-	 * This function notifies the actual field raster information to observers.
-	 * It can be used to visualize the positioning field raster of AI-Module. Pay attention on
-	 * the numbering of sub-fields / sub-rectangles. The raster numbering starts top left form left to right.
-	 * See ({@link http://tigers-mannheim.de/trac/wiki/Informatik#Spielfeld}) for field orientation.
-	 * Field raster will be loaded at start of AI Module.
-	 * 
-	 * @param columnSize size/length of one column
-	 * @param rowSize size/length of one row
-	 * @param columnSizeAnalysing TODO
-	 * @param rowSizeAnalysing TODO
-	 */
-	public void onNewFieldRaster(int columnSize, int rowSize, int columnSizeAnalysing, int rowSizeAnalysing);
-	
-
-	/**
-	 * 
 	 * This function is used to notify the last {@link AIInfoFrame} to visualization observers.
 	 * @param lastAIInfoframe
 	 */
-	public void onNewAIInfoFrame(AIInfoFrame lastAIInfoframe);
+	void onNewAIInfoFrame(AIInfoFrame lastAIInfoframe);
 	
-
-	public void onNewPath(Path path);
 	
-
+	/**
+	 * This is called whenever a exception occurs during the AI-cycle.
+	 * 
+	 * @param ex The exception
+	 * @param frame The frame and ... (can be <code>null</code>!!!)
+	 * @param prevFrame ...the previous frame when the exception occured (can be <code>null</code>!!!)
+	 */
+	void onAIException(Exception ex, AIInfoFrame frame, AIInfoFrame prevFrame);
+	
+	
+	/**
+	 * 
+	 * @param path
+	 */
+	void onNewPath(Path path);
 }

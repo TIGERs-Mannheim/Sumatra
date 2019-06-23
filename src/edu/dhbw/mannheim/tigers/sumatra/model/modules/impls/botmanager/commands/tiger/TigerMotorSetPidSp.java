@@ -1,16 +1,17 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 13.10.2010
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+
 
 /**
  * Set PID setpoint manually.
@@ -24,27 +25,37 @@ public class TigerMotorSetPidSp extends ACommand
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private int id;
-	private int setpoint;
+	private int	id;
+	private int	setpoint;
+	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 */
 	public TigerMotorSetPidSp()
 	{
 	}
 	
+	
+	/**
+	 * @param id
+	 * @param setpoint
+	 */
 	public TigerMotorSetPidSp(int id, int setpoint)
 	{
 		setId(id);
 		setSetpoint(setpoint);
 	}
-
+	
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -54,11 +65,12 @@ public class TigerMotorSetPidSp extends ACommand
 		id = byteArray2UByte(data, 0);
 		setpoint = byteArray2Int(data, 1);
 	}
-
+	
+	
 	@Override
 	public byte[] getData()
 	{
-		byte data[] = new byte[getDataLength()];
+		final byte data[] = new byte[getDataLength()];
 		
 		byte2ByteArray(data, 0, id);
 		int2ByteArray(data, 1, setpoint);
@@ -66,19 +78,21 @@ public class TigerMotorSetPidSp extends ACommand
 		return data;
 	}
 	
+	
 	@Override
 	public int getCommand()
 	{
 		return CommandConstants.CMD_MOTOR_SET_PID_SP;
 	}
 	
+	
 	@Override
 	public int getDataLength()
 	{
 		return 5;
 	}
-
-
+	
+	
 	/**
 	 * @return the id
 	 */
@@ -86,7 +100,8 @@ public class TigerMotorSetPidSp extends ACommand
 	{
 		return id;
 	}
-
+	
+	
 	/**
 	 * @param id the id to set
 	 */
@@ -94,7 +109,8 @@ public class TigerMotorSetPidSp extends ACommand
 	{
 		this.id = id;
 	}
-
+	
+	
 	/**
 	 * @return the setpoint
 	 */
@@ -102,7 +118,8 @@ public class TigerMotorSetPidSp extends ACommand
 	{
 		return setpoint;
 	}
-
+	
+	
 	/**
 	 * @param setpoint the setpoint to set
 	 */

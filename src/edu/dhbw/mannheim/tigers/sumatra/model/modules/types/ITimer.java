@@ -1,56 +1,50 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 08.08.2010
  * Author(s): Gero
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.types;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.CamDetectionFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.WorldFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.FrameID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.FrameID;
+
 
 /**
  * An interface that declares some methods for measurements purposes.
  * 
  * @author Gero
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public interface ITimer
 {
 	/**
-	 * Signals that the following {@link CamDetectionFrame} has been received by {@link ACam}
+	 * Stop timer of module
+	 * 
+	 * @param moduleName
+	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+	 * @param frameId
 	 */
-	public void time(CamDetectionFrame detnFrame);
+	void stop(String moduleName, FrameID frameId);
 	
 	
 	/**
-	 * Signals that the WP started processing a {@link CamDetectionFrame}
+	 * Start timer of module
+	 * 
+	 * @param moduleName
+	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+	 * @param frameId
 	 */
-	public void startWP(CamDetectionFrame detnFrame);
-	
-	/**
-	 * Signals that the following {@link WorldFrame} has been predicted by the {@link AWorldPredictor}
-	 */
-	public void stopWP(WorldFrame wFrame);
-	
-	
-	/**
-	 * Signals that the AI started processing a {@link WorldFrame}
-	 */
-	public void startAI(WorldFrame wFrame);
-	
-	/**
-	 * Signals that the following {@link AIInfoFrame} has been processed by the {@link AAgent}
-	 */
-	public void stopAI(AIInfoFrame aiFrame);
+	void start(String moduleName, FrameID frameId);
 	
 	
 	/**
-	 * Signals that a skill has been scheduled using information from the {@link WorldFrame} with this {@link FrameID}
+	 * Tell observers to refresh timerInfo
+	 * 
+	 * @param frameId
+	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 	 */
-	public void time(FrameID wfID);
+	void notifyNewTimerInfo(FrameID frameId);
 }

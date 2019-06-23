@@ -10,7 +10,7 @@
 package edu.dhbw.mannheim.tigers.sumatra.test.junit.model.data.matrix.performance;
 
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.types.Matrix;
 
 
 /**
@@ -18,100 +18,117 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix;
  * @author Birgit
  * 
  */
-public class APerformanceTest
+public abstract class APerformanceTest
 {
-	private Matrix[]			memory			= new Matrix[4];
-	private Jama.Matrix[]	JamaMemory		= new Jama.Matrix[4];
+	private final Matrix[]			memory			= new Matrix[4];
+	private final Jama.Matrix[]	JamaMemory		= new Jama.Matrix[4];
 	
-	protected long				startMillis;
-	protected long				endMillis;
+	protected long						startMillis;
+	protected long						endMillis;
 	
-	protected long				breakStartMillis;
-	protected long				breakEndMillis;
+	protected long						breakStartMillis;
+	protected long						breakEndMillis;
 	
-	protected boolean			pause				= false;
+	protected boolean					pause				= false;
 	
-	protected boolean			output			= false;
+	protected boolean					output			= false;
 	
-	protected int timesInit = 500000000;
-	protected int timesEasyOps = 100000000;
-	
-	//protected int				timesInit		= 10;
-	//protected int				timesEasyOps	= 10;
+	protected int						timesInit		= 500000000;
+	protected int						timesEasyOps	= 100000000;
 	
 	
+	// protected int timesInit = 10;
+	// protected int timesEasyOps = 10;
+	
+	/**
+	 *
+	 */
 	public void startTimer()
 	{
 		startMillis = System.currentTimeMillis();
 	}
 	
-
+	
+	/**
+	 *
+	 */
 	public void endTimer()
 	{
 		endMillis = System.currentTimeMillis();
-		long diff = endMillis - startMillis;
+		final long diff = endMillis - startMillis;
 		if (output)
 		{
 			System.out.println("Time: " + diff);
 		}
 	}
 	
-
+	
 	/**
 	 * create a squared matrix with randomNumbers
 	 * while this function is running, the time is waiting
+	 * @param size
+	 * @return
 	 */
-	
 	public Jama.Matrix createRandomMatrixJaMa(int size)
 	{
-		long fctStart = System.currentTimeMillis();
+		final long fctStart = System.currentTimeMillis();
 		
-		Jama.Matrix A = new Jama.Matrix(createRandomArray(size, false));
+		final Jama.Matrix A = new Jama.Matrix(createRandomArray(size, false));
 		
-		long fctStop = System.currentTimeMillis();
-		long diff = fctStop - fctStart;
+		final long fctStop = System.currentTimeMillis();
+		final long diff = fctStop - fctStart;
 		
 		startMillis += diff;
 		return A;
 	}
 	
-
+	
 	/**
 	 * create a squared matrix with randomNumbers
 	 * while this function is running, the time is waiting
+	 * @param size
+	 * @return
 	 */
 	public Matrix createRandomCheckMatrix(int size)
 	{
-		long fctStart = System.currentTimeMillis();
+		final long fctStart = System.currentTimeMillis();
 		
-		Matrix A = new Matrix(createRandomArray(size, false));
+		final Matrix A = new Matrix(createRandomArray(size, false));
 		
-		long fctStop = System.currentTimeMillis();
-		long diff = fctStop - fctStart;
+		final long fctStop = System.currentTimeMillis();
+		final long diff = fctStop - fctStart;
 		
 		startMillis += diff;
 		return A;
 	}
 	
-
+	
 	/**
 	 * create a squared matrix with randomNumbers
 	 * while this function is running, the time is waiting
+	 * @param size
+	 * @return
 	 */
 	public Matrix createRandomMatrix(int size)
 	{
-		long fctStart = System.currentTimeMillis();
+		final long fctStart = System.currentTimeMillis();
 		
-		Matrix A = new Matrix(createRandomArray(size, false));
+		final Matrix A = new Matrix(createRandomArray(size, false));
 		
-		long fctStop = System.currentTimeMillis();
-		long diff = fctStop - fctStart;
+		final long fctStop = System.currentTimeMillis();
+		final long diff = fctStop - fctStart;
 		
 		startMillis += diff;
 		return A;
 	}
 	
-
+	
+	/**
+	 * 
+	 * @param size
+	 * @param stopTime
+	 * @return
+	 */
 	public double[][] createRandomArray(int size, boolean stopTime)
 	{
 		long fctStart = 0;
@@ -120,7 +137,7 @@ public class APerformanceTest
 			fctStart = System.currentTimeMillis();
 		}
 		
-		double[][] array = new double[size][size];
+		final double[][] array = new double[size][size];
 		
 		for (int i = 0; i < size; i++)
 		{
@@ -132,15 +149,20 @@ public class APerformanceTest
 		
 		if (stopTime)
 		{
-			long fctStop = System.currentTimeMillis();
-			long diff = fctStop - fctStart;
+			final long fctStop = System.currentTimeMillis();
+			final long diff = fctStop - fctStart;
 			
 			startMillis += diff;
 		}
 		return array;
 	}
 	
-
+	
+	/**
+	 * 
+	 * @param M
+	 * @return
+	 */
 	public String toString(Jama.Matrix M)
 	{
 		String str = "";
@@ -166,18 +188,29 @@ public class APerformanceTest
 		return str;
 	}
 	
-
+	
+	/**
+	 * 
+	 * @param a
+	 * @return
+	 */
 	public String toString(double[] a)
 	{
 		String str = "";
-		for (int i = 0; i < a.length; i++)
+		for (final double element : a)
 		{
-			str += "[" + a[i] + "]";
+			str += "[" + element + "]";
 		}
 		return str;
 	}
 	
-
+	
+	/**
+	 * 
+	 * @param A
+	 * @param B
+	 * @return
+	 */
 	public boolean equals(Matrix A, Matrix B)
 	{
 		if (A.getRowDimension() != B.getRowDimension())
@@ -197,14 +230,13 @@ public class APerformanceTest
 				if (A.get(i, j) != B.get(i, j))
 				{
 					// pruefe auf 15 stellen genau
-					double e = 10E-12;
-					double a = A.get(i, j);
-					double b = B.get(i, j);
-					if (a + e > b && a - e < b)
+					final double e = 10E-12;
+					final double a = A.get(i, j);
+					final double b = B.get(i, j);
+					if (((a + e) > b) && ((a - e) < b))
 					{
-						//System.out.println("Nur auf 12 Stellen genau");
-					}
-					else
+						// System.out.println("Nur auf 12 Stellen genau");
+					} else
 					{
 						return false;
 					}
@@ -214,29 +246,50 @@ public class APerformanceTest
 		return true;
 	}
 	
-
-	public boolean equals( Matrix A,Jama.Matrix JB)
+	
+	/**
+	 * 
+	 * @param A
+	 * @param JB
+	 * @return
+	 */
+	public boolean equals(Matrix A, Jama.Matrix JB)
 	{
-		Matrix B = new Matrix(JB.getArray());
-		return equals(A,B);
+		final Matrix B = new Matrix(JB.getArray());
+		return equals(A, B);
 	}
 	
-
+	
+	/**
+	 * 
+	 * @param JA
+	 * @param B
+	 * @return
+	 */
 	public boolean equals(Jama.Matrix JA, Matrix B)
 	{
-		Matrix A = new Matrix(JA.getArray());
-		return equals(A,B);
+		final Matrix A = new Matrix(JA.getArray());
+		return equals(A, B);
 	}
 	
-
+	
+	/**
+	 * 
+	 * @param JA
+	 * @param JB
+	 * @return
+	 */
 	public boolean equals(Jama.Matrix JA, Jama.Matrix JB)
 	{
-		Matrix A = new Matrix(JA.getArray());
-		Matrix B = new Matrix(JB.getArray());
-		return equals(A,B);
+		final Matrix A = new Matrix(JA.getArray());
+		final Matrix B = new Matrix(JB.getArray());
+		return equals(A, B);
 	}
 	
-
+	
+	/**
+	 *
+	 */
 	public void breakTimer()
 	{
 		if (pause)
@@ -244,7 +297,7 @@ public class APerformanceTest
 			try
 			{
 				throw new Exception("We have already break");
-			} catch (Exception err)
+			} catch (final Exception err)
 			{
 				err.printStackTrace();
 			}
@@ -253,7 +306,10 @@ public class APerformanceTest
 		breakStartMillis = System.currentTimeMillis();
 	}
 	
-
+	
+	/**
+	 *
+	 */
 	public void restartTimer()
 	{
 		if (!pause)
@@ -261,7 +317,7 @@ public class APerformanceTest
 			try
 			{
 				throw new Exception("We don't have break");
-			} catch (Exception err)
+			} catch (final Exception err)
 			{
 				err.printStackTrace();
 			}
@@ -269,11 +325,11 @@ public class APerformanceTest
 		pause = false;
 		breakEndMillis = System.currentTimeMillis();
 		
-		long diff = breakEndMillis - breakStartMillis;
+		final long diff = breakEndMillis - breakStartMillis;
 		startMillis += diff;
 	}
 	
-
+	
 	/**
 	 * 
 	 * stop automatically the time
@@ -282,12 +338,12 @@ public class APerformanceTest
 	public void saveMatrix(Matrix A)
 	{
 		breakTimer();
-		memory[(int) startMillis % 4] = A;
-		memory[(int) System.currentTimeMillis() % 4] = memory[0];
+		memory[(int) (startMillis % 4)] = A;
+		memory[(int) (System.currentTimeMillis() % 4)] = memory[0];
 		restartTimer();
 	}
 	
-
+	
 	/**
 	 * 
 	 * stop automatically the time
@@ -296,8 +352,8 @@ public class APerformanceTest
 	public void saveJamaMatrix(Jama.Matrix A)
 	{
 		breakTimer();
-		JamaMemory[(int) startMillis % 4] = A;
-		JamaMemory[(int) System.currentTimeMillis() % 4] = JamaMemory[0];
+		JamaMemory[(int) (startMillis % 4)] = A;
+		JamaMemory[(int) (System.currentTimeMillis() % 4)] = JamaMemory[0];
 		restartTimer();
 	}
 }

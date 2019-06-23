@@ -25,22 +25,36 @@ public interface IObservable<S extends IObservable<S, O, E>, O extends IObserver
 	/**
 	 * Notifies all registered observers, that there is a new event - the given.
 	 * 
-	 * @param event: The {@link Event} that changed the model
+	 * @param event The event that changed the model
 	 */
-	public abstract void notifyObservers(E event);
+	void notifyObservers(E event);
 	
-
+	
 	/**
 	 * Notifies all registered observers, using the last given event.
 	 */
-	public abstract void notifyObservers();
-	
-
-	public abstract boolean addObservers(O... observers);
-	
-
-	public abstract boolean removeObserver(O observer);
+	void notifyObservers();
 	
 	
-	public abstract void removeAllObservers();
+	/**
+	 * 
+	 * @param observers
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	boolean addObservers(O... observers);
+	
+	
+	/**
+	 * 
+	 * @param observer
+	 * @return
+	 */
+	boolean removeObserver(O observer);
+	
+	
+	/**
+	 * Remove all observers
+	 */
+	void removeAllObservers();
 }

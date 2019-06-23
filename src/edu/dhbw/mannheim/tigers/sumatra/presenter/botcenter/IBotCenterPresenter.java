@@ -20,5 +20,9 @@ import javax.swing.tree.DefaultMutableTreeNode;
  */
 public interface IBotCenterPresenter
 {
-	public void reloadNode(DefaultMutableTreeNode node);
+	/**
+	 * 
+	 * @param node
+	 */
+	void reloadNode(DefaultMutableTreeNode node);
 }

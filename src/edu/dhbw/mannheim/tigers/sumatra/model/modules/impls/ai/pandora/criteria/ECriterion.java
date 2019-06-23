@@ -19,18 +19,36 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.criteria
 public enum ECriterion
 {
 	// basic
+	/** */
 	BALL_POSSESSION,
+	/** */
 	DYNAMIC_FIELD_RASTER,
+	/** */
 	OBJECT_POSITION,
+	/** */
 	TEAM_CLOSEST_TO_BALL,
 	
 	// related to our team
+	/** */
 	TIGERS_PASS_RECEIVER,
+	/** */
 	TIGERS_SCORING_CHANCE,
+	/** */
 	TIGERS_APPROXIMATE_SCORING_CHANCE,
 	
 	// related to our opponents
+	/** */
 	OPPONENT_PASS_RECEIVER,
-	OPPONENT_SCORING_CHANCE,
-	OPPONENT_APPROXIMATE_SCORING_CHANCE
+	/** */
+	SCORING_CHANCE,
+	/** */
+	OPPONENT_APPROXIMATE_SCORING_CHANCE,
+	/**  */
+	DIRECT_SHOT,
+	/**  */
+	KEEPER_AVAILABLE,
+	/**  */
+	BOT_IN_RECTANGLE,
+	/** */
+	FORCE_START,
 }

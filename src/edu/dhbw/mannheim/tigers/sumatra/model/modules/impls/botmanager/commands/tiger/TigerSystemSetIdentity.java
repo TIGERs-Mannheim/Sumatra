@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 03.03.2011
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
@@ -17,6 +17,7 @@ import org.apache.log4j.Logger;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
 
+
 /**
  * Assigns the network identity of a bot based on a unique CPU ID.
  * 
@@ -28,26 +29,32 @@ public class TigerSystemSetIdentity extends ACommand
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final Logger LOG = Logger.getLogger(TigerSystemSetIdentity.class);
+	// Logger
+	private static final Logger	log			= Logger.getLogger(TigerSystemSetIdentity.class.getName());
 	
-	private long cpuId[] = new long[3];
-	private int mac[] = new int[6];
-	private int ip[] = new int[4];
-	private int port = 0;
-	private int serverPort = 0;
-	private int botId = 0;
-
+	private final long				cpuId[]		= new long[3];
+	private final int					mac[]			= new int[6];
+	private final int					ip[]			= new int[4];
+	private int							port			= 0;
+	private int							serverPort	= 0;
+	private int							botId			= 0;
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 */
 	public TigerSystemSetIdentity()
 	{
 	}
 	
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-
+	
 	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
@@ -60,9 +67,9 @@ public class TigerSystemSetIdentity extends ACommand
 	 */
 	public void setCpuId(String id)
 	{
-		if(id.length() != 24)
+		if (id.length() != 24)
 		{
-			LOG.error("Invalid CPU ID: " + id);
+			log.error("Invalid CPU ID: " + id);
 			return;
 		}
 		
@@ -73,22 +80,28 @@ public class TigerSystemSetIdentity extends ACommand
 			cpuId[0] = Long.parseLong(id.substring(16, 24), 16);
 		}
 		
-		catch(NumberFormatException e)
+		catch (final NumberFormatException e)
 		{
-			LOG.error("Invalid CPU ID: " + id);
+			log.error("Invalid CPU ID: " + id);
 		}
 	}
 	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public String getCpuId()
 	{
 		String id;
 		
-		id = String.format("%08X", ((long)cpuId[2]) & 0xFFFFFFFF);
-		id += String.format("%08X", ((long)cpuId[1]) & 0xFFFFFFFF);
-		id += String.format("%08X", ((long)cpuId[0]) & 0xFFFFFFFF);
+		id = String.format("%08X", (cpuId[2]) & 0xFFFFFFFF);
+		id += String.format("%08X", (cpuId[1]) & 0xFFFFFFFF);
+		id += String.format("%08X", (cpuId[0]) & 0xFFFFFFFF);
 		
 		return id;
 	}
+	
 	
 	/**
 	 * Set MAC Address.
@@ -98,104 +111,148 @@ public class TigerSystemSetIdentity extends ACommand
 	 */
 	public void setMac(String mac_)
 	{
-		if(mac_.length() != 17)
+		if (mac_.length() != 17)
 		{
-			LOG.error("Invalid MAC: " + mac_);
+			log.error("Invalid MAC: " + mac_);
 			return;
 		}
 		
 		try
 		{
-			for(int i = 0; i < 6; i++)
+			for (int i = 0; i < 6; i++)
 			{
-				mac[i] = Integer.parseInt(mac_.substring(i*3, i*3+2), 16);
+				mac[i] = Integer.parseInt(mac_.substring(i * 3, (i * 3) + 2), 16);
 			}
 		}
 		
-		catch(NumberFormatException e)
+		catch (final NumberFormatException e)
 		{
-			LOG.error("Invalid MAC: " + mac_);
+			log.error("Invalid MAC: " + mac_);
 		}
 	}
 	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public String getMac()
 	{
-		String result = "";
+		final StringBuilder result = new StringBuilder();
 		
-		for(int i = 0; i < 6; i++)
+		for (int i = 0; i < 6; i++)
 		{
-			result += String.format("%02X", mac[i]);
-			if(i != 5)
-				result += "-";
+			result.append(String.format("%02X", mac[i]));
+			if (i != 5)
+			{
+				result.append("-");
+			}
 		}
 		
-		return result;
+		return result.toString();
 	}
+	
 	
 	/**
 	 * Set IP Address.
 	 * Expected format is a point separated string of four numbers (1.2.3.4).
 	 * 
-	 * @param ip IP Address
+	 * @param ip_ IP Address
 	 */
 	public void setIp(String ip_)
 	{
 		try
 		{
-			byte[] ipBytes = InetAddress.getByName(ip_).getAddress();
+			final byte[] ipBytes = InetAddress.getByName(ip_).getAddress();
 			
-			if(ipBytes.length != 4)
+			if (ipBytes.length != 4)
 			{
-				LOG.error("Not an IPv4 address: " + ip_);
+				log.error("Not an IPv4 address: " + ip_);
 			}
 			
-			for(int i = 0; i < 4; i++)
+			for (int i = 0; i < 4; i++)
 			{
 				ip[i] = ipBytes[i];
 			}
 		}
 		
-		catch (UnknownHostException err)
+		catch (final UnknownHostException err)
 		{
-			LOG.error("Invalid IP: " + ip_);
+			log.error("Invalid IP: " + ip_);
 		}
 	}
 	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public String getIp()
 	{
 		return String.format("%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
 	}
 	
+	
+	/**
+	 * 
+	 * @param port_
+	 */
 	public void setPort(int port_)
 	{
 		port = port_;
 	}
 	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public int getPort()
 	{
 		return port;
 	}
 	
+	
+	/**
+	 * 
+	 * @param port
+	 */
 	public void setServerPort(int port)
 	{
 		serverPort = port;
 	}
 	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public int getServerPort()
 	{
 		return serverPort;
 	}
 	
+	
+	/**
+	 * 
+	 * @param id
+	 */
 	public void setBotId(int id)
 	{
 		botId = id;
 	}
 	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public int getBotId()
 	{
 		return botId;
 	}
-
+	
+	
 	@Override
 	public void setData(byte[] data)
 	{
@@ -220,11 +277,12 @@ public class TigerSystemSetIdentity extends ACommand
 		
 		botId = byteArray2UByte(data, 26);
 	}
-
+	
+	
 	@Override
 	public byte[] getData()
 	{
-		byte data[] = new byte[getDataLength()];
+		final byte data[] = new byte[getDataLength()];
 		
 		int2ByteArray(data, 0, (int) cpuId[0]);
 		int2ByteArray(data, 4, (int) cpuId[1]);
@@ -246,15 +304,17 @@ public class TigerSystemSetIdentity extends ACommand
 		short2ByteArray(data, 24, serverPort);
 		
 		byte2ByteArray(data, 26, botId);
-
+		
 		return data;
 	}
+	
 	
 	@Override
 	public int getCommand()
 	{
 		return CommandConstants.CMD_SYSTEM_SET_IDENTITY;
 	}
+	
 	
 	@Override
 	public int getDataLength()

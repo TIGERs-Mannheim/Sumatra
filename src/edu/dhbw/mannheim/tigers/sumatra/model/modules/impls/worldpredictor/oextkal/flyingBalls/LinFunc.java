@@ -1,15 +1,16 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: May 17, 2011
  * Author(s): Birgit
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.flyingBalls;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Coord;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.Coord;
+
 
 /**
  * linear function with form y = a*x+n
@@ -22,143 +23,159 @@ public class LinFunc
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private double m_m = Def.DUMMY;
-	private double m_n = Def.DUMMY;
-	private boolean orientationNormal;
-
+	private double		mM	= Def.DUMMY;
+	private double		mN	= Def.DUMMY;
+	private boolean	orientationNormal;
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	public LinFunc(
-			final Coord a_pointA,
-			final Coord a_pointB)
+	/**
+	 * @param aPointA
+	 * @param aPointB
+	 */
+	public LinFunc(final Coord aPointA, final Coord aPointB)
 	{
-		m_m = ((a_pointB.y()-a_pointA.y())/(a_pointB.x()-a_pointA.x()));
-		m_n = a_pointA.y() - m_m* a_pointA.x();
+		mM = ((aPointB.y() - aPointA.y()) / (aPointB.x() - aPointA.x()));
+		mN = aPointA.y() - (mM * aPointA.x());
 		
-		if(a_pointB.x() - a_pointA.x() > 0)
+		if ((aPointB.x() - aPointA.x()) > 0)
 		{
 			orientationNormal = true;
-		}
-		else
+		} else
 		{
 			orientationNormal = false;
 		}
 	}
 	
-	public LinFunc(
-			final Coord a_point,
-			final Coord a_viewDir,
-			boolean takeThisVektorAsView)
+	
+	/**
+	 * @param aPoint
+	 * @param aViewDir
+	 * @param takeThisVektorAsView
+	 */
+	public LinFunc(final Coord aPoint, final Coord aViewDir, boolean takeThisVektorAsView)
 	{
-		m_m = (a_viewDir.y() / a_viewDir.x());
-		m_n = a_point.y() - m_m*a_point.x();
+		mM = (aViewDir.y() / aViewDir.x());
+		mN = aPoint.y() - (mM * aPoint.x());
 		
 		orientationNormal = true;
 	}
 	
-	public LinFunc(
-			final Coord a_point,
-			final double a_viewAngle)
+	
+	/**
+	 * @param aPoint
+	 * @param aViewAngle
+	 */
+	public LinFunc(final Coord aPoint, final double aViewAngle)
 	{
-		m_m = Math.tan(a_viewAngle);
-		m_n = a_point.y() - m_m*a_point.x();
+		mM = Math.tan(aViewAngle);
+		mN = aPoint.y() - (mM * aPoint.x());
 		
-		if(Math.abs(a_viewAngle) < Math.PI/2.0)
+		if (Math.abs(aViewAngle) < (Math.PI / 2.0))
 		{
 			orientationNormal = true;
-		}
-		else
+		} else
 		{
 			orientationNormal = false;
 		}
 	}
-
+	
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	public Coord goDistanceFromPoint(final Coord a_point, final double distance)
+	/**
+	 * @param aPoint
+	 * @param distance
+	 * @return
+	 */
+	public Coord goDistanceFromPoint(final Coord aPoint, final double distance)
 	{
-		Coord res = new Coord(Def.DUMMY, Def.DUMMY);
+		final Coord res = new Coord(Def.DUMMY, Def.DUMMY);
 		
-		double deltaX = Math.cos(Math.atan(m_m))*distance;
+		final double deltaX = Math.cos(Math.atan(mM)) * distance;
 		
 		double newX;
-		if(orientationNormal)
+		if (orientationNormal)
 		{
-			newX = a_point.x()+deltaX;
-		}
-		else
+			newX = aPoint.x() + deltaX;
+		} else
 		{
-			newX = a_point.x()-deltaX;
+			newX = aPoint.x() - deltaX;
 		}
 		res.set(newX, f(newX));
-				
+		
 		return res;
 	}
 	
+	
+	/**
+	 * @param x
+	 * @return
+	 */
 	public double f(final double x)
 	{
-		return m_m*x+m_n;
+		return (mM * x) + mN;
 	}
 	
-	/*
+	
+	/**
 	 * returns the cutpoint between the functions
 	 * if
+	 * @param a
+	 * @param b
+	 * @return
 	 */
-	public static Coord getCutCoords(
-			final LinFunc a, 
-			final LinFunc b)
+	public static Coord getCutCoords(final LinFunc a, final LinFunc b)
 	{
-		Coord ret = new Coord(Def.DUMMY, Def.DUMMY);
+		final Coord ret = new Coord(Def.DUMMY, Def.DUMMY);
 		
-		//m_a*x + n_a = m_b*x + n_b;
-		double x = (b.m_n -a.m_n)/(a.m_m-b.m_m);
-		double y = a.f(x);
+		/** m_a*x + n_a = m_b*x + n_b */
+		final double x = (b.mN - a.mN) / (a.mM - b.mM);
+		final double y = a.f(x);
 		
-		//if the cut not or cut in every point, because they are the same, return default
-		if(x == Def.DUMMY || x == -Def.DUMMY ||
-		   y == Def.DUMMY || y == -Def.DUMMY)
+		// if the cut not or cut in every point, because they are the same, return default
+		if (new Float(x).isInfinite() || new Float(y).isInfinite())
 		{
-			throw new IllegalArgumentException("LinFunc: The Linear Functions have no, or infinity much cutpoints!");
+			throw new IllegalArgumentException("LinFunc: The Linear Functions have no, or infinite much cutpoints!");
 		}
-		else //everything is normal
-		{
-			ret.set(x,y);
-		}
+		ret.set(x, y);
 		
 		return ret;
 	}
-
-	/*
+	
+	
+	/**
 	 * returns an angle between the given vector and the function, which is between 0 and PI
+	 * @param vecB
+	 * @return
 	 */
-	public double getAngleToVector(Coord vec_b) 
+	public double getAngleToVector(Coord vecB)
 	{
-		Coord vec_a = new Coord(1.0, m_m);
+		final Coord vecA = new Coord(1.0, mM);
 		
-		if(!orientationNormal)
+		if (!orientationNormal)
 		{
-			vec_a.set(-vec_a.x(), - vec_a.y());
+			vecA.set(-vecA.x(), -vecA.y());
 		}
 		
-		//System.out.println("vec1"+vec_a.toString());
-		//System.out.println("vec2"+vec_b.toString());
-		double up = vec_a.x()*vec_b.x() + vec_a.y()*vec_b.y();
-		double down =	Math.sqrt(vec_a.x()*vec_a.x()+vec_a.y()*vec_a.y())*
-							Math.sqrt(vec_b.x()*vec_b.x()+vec_b.y()*vec_b.y());
+		final double up = (vecA.x() * vecB.x()) + (vecA.y() * vecB.y());
+		final double down = Math.sqrt((vecA.x() * vecA.x()) + (vecA.y() * vecA.y()))
+				* Math.sqrt((vecB.x() * vecB.x()) + (vecB.y() * vecB.y()));
 		
-		double angle = Math.acos(up/down);
-		//System.out.println("Winkel hier: "+angle);
-		return angle;
+		return Math.acos(up / down);
 	}
 	
-	public String toString() 
-	{		
-		return "f(x) = "+m_m+"*x + "+m_n+" );  "+orientationNormal;
+	
+	@Override
+	public String toString()
+	{
+		return "f(x) = " + mM + "*x + " + mN + " );  " + orientationNormal;
 		
 	}
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------

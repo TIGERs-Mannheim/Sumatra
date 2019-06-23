@@ -7,36 +7,43 @@
  *
  * *********************************************************
  */
-Die Dateien in diesem Ordner enthalten die Coding-Richtlinien für das Projekt.
-Wenn ihr das Projekt ganz normal auscheckt, sollten diese standardmäßig aktiviert
-sein (siehe '.settings' Ordner; zu ändern unter Rechtsklick(Projekt)->Properties->
-Java Code Style), hier nur nochmal der Vollständigkeit halber.
+Die Dateien in diesem Ordner enthalten die Coding-Richtlinien fï¿½r das Projekt.
+Wenn ihr das Projekt ganz normal auscheckt, sollten diese standardmï¿½ï¿½ig aktiviert
+sein (siehe '.settings' Ordner; zu ï¿½ndern unter Rechtsklick(Projekt)->Properties->
+Java Code Style), hier nur nochmal der Vollstï¿½ndigkeit halber.
+
+Zusatz (NicolaiO): Die Coding-Richtlinien haben sich inzwischen mehrmals geÃ¤ndert.
+Mit Ausnahme der javatemplates wird alles automatisch mit den project-settings
+aktiviert, es ist also nichts weiter zutun. Die XML-Dateien bitte ignorieren,
+ich lasse sie der VollstÃ¤ndigkeit halber da.
+FÃ¼r die Java Templates gilt weiterhin, dass diese wie unten beschrieben importiert
+werden mÃ¼ssen!
 
 Die meisten Sachen lassen sich auf schon getippten Code - oder auch ganze
 package-Strukturen - anwenden (die Shortcuts sind deshalb gleich mitangegeben)
 
 * format.xml:
-	Einstellungen für den eclipse Java-Code-Formatierer (Ctrl+Shift+F)
+	Einstellungen fï¿½r den eclipse Java-Code-Formatierer (Ctrl+Shift+F)
 	
 * codetemplates.xml:
-	Beim Anlegen neuer Dateien/Typen/Methoden etc. einzufügende Kommentare o.ä., ist
+	Beim Anlegen neuer Dateien/Typen/Methoden etc. einzufï¿½gende Kommentare o.ï¿½., ist
 	per default aktiviert.
 	
 * cleanup.xml:
-	Definiert was bei der Aktion "Clean up" alles ausgeführt werden soll. Sehr mächtig,
-	aber dementsprechend auch mit Vorsicht zu genießen, man will seinen Code ja auch
+	Definiert was bei der Aktion "Clean up" alles ausgefï¿½hrt werden soll. Sehr mï¿½chtig,
+	aber dementsprechend auch mit Vorsicht zu genieï¿½en, man will seinen Code ja auch
 	wiedererkennen;-)
 	Deswegen ist das bei uns auf:
 		(s. Rechtsklick(Projekt)->Properties->Java Code Style->Clean Up)
-	beschränkt
+	beschrï¿½nkt
 	
-	!Sollte man sich einen Shortcut für anlegen, ich habs auf (Ctrl+Alt+C)
+	!Sollte man sich einen Shortcut fï¿½r anlegen, ich habs auf (Ctrl+Alt+C)
 	(Einzustellen unter Window->Preferences->General->Keys, nach "Clean Up" filtern,
 	einfach Key-Binding angeben, Click(Apply))
 	
 * javatemplates.xml:
 	Hier sind ein paar Templates, die das Leben des Programmiers einfacher machen sollen.
-	(Das sind die Ergänzungen, die bei Strg+Leer aufpoppen)
+	(Das sind die Ergï¿½nzungen, die bei Strg+Leer aufpoppen)
 	Im Moment gibts:
 	- (Sumatra-Observable)
 		- observable_list
@@ -45,8 +52,8 @@ package-Strukturen - anwenden (die Shortcuts sind deshalb gleich mitangegeben)
 	- singleton
 	- log (Log4j)
 	
-	Vor Benutzung müsst ihr die über Window->Preferences->Java->Editor->Templates->Import...
+	Vor Benutzung mï¿½sst ihr die ï¿½ber Window->Preferences->Java->Editor->Templates->Import...
 	importieren. (Tipp: Unten den Haken bei "Use code formatter" wegmachen, selsamer Weise
 	siehts dann besser aus...)
 	Vorschlag: Sortiert die "Template Proposals" unter (...)Editor->Content Assist->Advanced
-	(untere Liste) ganz nach oben, dann müsst ihr nach Strg+Leer nicht noch groß selektieren.
+	(untere Liste) ganz nach oben, dann mï¿½sst ihr nach Strg+Leer nicht noch groï¿½ selektieren.

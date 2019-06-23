@@ -5,12 +5,6 @@
 	<moduliPath>edu.dhbw.mannheim.tigers.sumatra.model.modules</moduliPath>
 
 	<globalConfiguration>
-
-		<ourColor>yellow</ourColor>
-		<ourGameDirection>leftToRight</ourGameDirection>
-
-		<multicastMode>true</multicastMode>			<!-- true -->
-
 	</globalConfiguration>
 
 
@@ -19,16 +13,16 @@
 		<implementation> cam.SSLVisionCam </implementation>
 
 		<properties>
-			<interface> 127.0.0.0 </interface>			<!-- 127.0.0.0 -->
+			<interface></interface>			<!-- 127.0.0.0 (empty = try all interfaces) -->
 			<address> 224.5.23.2 </address>				<!-- 224.5.23.2 -->
-			<port> 40101 </port>						<!-- 40101 [Sim]/ 10002 [SSLVision] -->
+			<port> 40102 </port>						<!-- 40102 [Sim]/ 10002 [SSLVision] -->
 		</properties>
 
 	</module>
 
 
 	<module id="worldpredictor" type="AWorldpredictor">
-
+		<!-- //:::>>> (start reading configuration)(do not delete this line!) -->
 		<implementation> worldpredictor.Oracle_extKalman </implementation>
 
 		<properties>
@@ -37,21 +31,22 @@
 			<stepCount>5</stepCount>
 			<minTigersInWorldFrame>5</minTigersInWorldFrame>
 			<minFoesInWorldFrame>5</minFoesInWorldFrame>
+			<useCam>-1</useCam><!-- use -1 to get frames from all cams -->
 		</properties>
 
 		<dependency>cam</dependency>
-
+		<!-- //:::<<< (end reading configuration)(do not delete this line!) -->
 	</module>
 
 
 	<module id="referee" type="AReferee">
 
-		<implementation> referee.RefereeReceiver </implementation>
+		<implementation> referee.RefereeHandler  </implementation>
 
 		<properties>
 			<interface>127.0.0.0</interface>		<!-- 127.0.0.0 -->
 			<address> 224.5.23.1 </address>			<!-- 224.5.23.1 -->
-			<port> 40101 </port>					<!-- 40101|10001[real] -->
+			<port> 10003 </port>					<!-- 40101|10001[real] -->
 		</properties>
 
 	</module>
@@ -62,12 +57,8 @@
 		<implementation> botmanager.GenericManager </implementation>
 
 		<properties>
-			<multicast>
-				<interface>127.0.0.0</interface>	<!-- 127.0.0.0 -->
-				<group>225.42.42.42</group>			<!-- 225.42.42.42 -->
-				<localPort>10040</localPort>		<!-- 10040 -->
-				<remotePort>10041</remotePort>		<!-- 10041 -->
-			</multicast>
+			<autoChargeInitially>true</autoChargeInitially>
+			<maxCap>350</maxCap>
 		</properties>
 
 	</module>
@@ -80,25 +71,29 @@
 		<properties>
 			<!-- [us] -->
 			<minProcessingPeriod>20000</minProcessingPeriod>	<!-- 20000 -->
-			<numThreads>5</numThreads>
+			<numThreads>6</numThreads>
 		</properties>
 
 		<dependency>botmanager</dependency>
 
 	</module>
-	
-	
-	<module id="rcs" type="ARobotControlServer">
 
-		<implementation> rcs.RobotControlServer </implementation>
 
-		<dependency>botmanager</dependency>
+	<module id="rcm" type="ARobotControlManager">
+		<implementation> rcm.RobotControlManager </implementation>
 
 		<properties>
-			<startPort> 10010 </startPort>
 		</properties>
 
+		<dependency>botmanager</dependency>
+		<dependency>skillsystem</dependency>
+
 	</module>
+
+
+	<!-- module id="rcs" type="ARobotControlServer"> <implementation> rcs.RobotControlServer 
+		</implementation> <properties> <startPort> 10010 </startPort> </properties> 
+		<dependency>botmanager</dependency> </module -->
 
 
 	<module id="ai" type="AAgent">
@@ -110,6 +105,7 @@
 		<dependency>skillsystem</dependency>
 		<dependency>referee</dependency>
 		<dependency>worldpredictor</dependency>
+		<dependency>config</dependency>
 
 	</module>
 
@@ -123,20 +119,30 @@
 
 	</module>
 
+	<!-- only for CAGE -->
+	<!-- <module id="vis" type="AVisDataConnector"> -->
 
-	<module id="vis" type="AVisDataConnector">
+	<!-- <implementation> vis.SimVisDataConnector </implementation> -->
 
-		<implementation> vis.SimVisDataConnector </implementation>
+	<!-- <properties> -->
+	<!-- <interface>127.0.0.0</interface> 127.0.0.0 -->
+	<!-- <localPort> 10030 </localPort> 10030 -->
+	<!-- <targetPort> 40201 </targetPort> 40201 -->
+	<!-- <address> 224.5.23.2 </address> 224.5.23.2 -->
+	<!-- <sleepFor> 50 </sleepFor> -->
+	<!-- </properties> -->
+
+	<!-- <dependency>worldpredictor</dependency> -->
+
+	<!-- </module> -->
+
+
+	<module id="config" type="AConfigManager">
+
+		<implementation> config.ConfigManager </implementation>
 
 		<properties>
-			<interface>127.0.0.0</interface>		<!-- 127.0.0.0 -->
-			<localPort> 10030 </localPort>			<!-- 10030 -->
-			<targetPort> 40201 </targetPort>		<!-- 40201 -->
-			<address> 224.5.23.2 </address>		<!-- 224.5.23.2 -->
-			<sleepFor> 50 </sleepFor>								
 		</properties>
-
-		<dependency>worldpredictor</dependency>
 
 	</module>
 </centralSoftware>

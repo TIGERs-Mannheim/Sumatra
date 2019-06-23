@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 08.08.2010
  * Author(s): Gero
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.util.collection;
@@ -13,6 +13,8 @@ package edu.dhbw.mannheim.tigers.sumatra.util.collection;
  * Yet another pair implementation... base class... something...
  * 
  * @author Gero
+ * @param <K>
+ * @param <V>
  * 
  */
 public class Pair<K, V>
@@ -20,20 +22,26 @@ public class Pair<K, V>
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	public final K left;
+	/** */
+	public final K	left;
+	/** */
 	public final V	right;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param left
+	 * @param right
+	 */
 	public Pair(K left, V right)
 	{
 		this.left = left;
 		this.right = right;
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------

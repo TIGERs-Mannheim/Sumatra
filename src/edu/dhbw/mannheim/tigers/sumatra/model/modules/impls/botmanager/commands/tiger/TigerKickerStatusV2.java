@@ -1,16 +1,17 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 30.08.2010
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+
 
 /**
  * Kicker status information.
@@ -31,22 +32,28 @@ public class TigerKickerStatusV2 extends ACommand
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	/** [mA], uint16_t */
-	private int chargeCurrent;
+	private int			chargeCurrent;
 	/** [V*e-1], uint16_t */
-	private int capLevel;
-	// °Ce-1
-	private int TDiode[] = new int[2];
-	// °Ce-1
-	private int TIGBT[] = new int[2];
+	private int			capLevel;
+	// ï¿½Ce-1
+	private final int	TDiode[]	= new int[2];
+	// ï¿½Ce-1
+	private final int	TIGBT[]	= new int[2];
+	
+	
 	// LENGTH = 12 bytes
-
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 */
 	public TigerKickerStatusV2()
 	{
 	}
-
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -60,11 +67,12 @@ public class TigerKickerStatusV2 extends ACommand
 		TIGBT[0] = byteArray2UShort(data, 8);
 		TIGBT[1] = byteArray2UShort(data, 10);
 	}
-
+	
+	
 	@Override
 	public byte[] getData()
 	{
-		byte data[] = new byte[getDataLength()];
+		final byte data[] = new byte[getDataLength()];
 		
 		short2ByteArray(data, 0, chargeCurrent);
 		short2ByteArray(data, 2, capLevel);
@@ -76,53 +84,84 @@ public class TigerKickerStatusV2 extends ACommand
 		return data;
 	}
 	
+	
 	@Override
 	public int getCommand()
 	{
 		return CommandConstants.CMD_KICKER_STATUSV2;
 	}
 	
+	
 	@Override
 	public int getDataLength()
 	{
 		return 12;
 	}
-
-
+	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public float getChargeCurrent()
 	{
-		return chargeCurrent/1000f;
+		return chargeCurrent / 1000f;
 	}
-
+	
+	
+	/**
+	 * 
+	 * @param chargeCurrent
+	 */
 	public void setChargeCurrent(float chargeCurrent)
 	{
-		this.chargeCurrent = (int) (chargeCurrent*1000);
+		this.chargeCurrent = (int) (chargeCurrent * 1000);
 	}
-
+	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public float getCapLevel()
 	{
-		return capLevel/10.0f;
+		return capLevel / 10.0f;
 	}
-
+	
+	
+	/**
+	 * 
+	 * @param capLevel
+	 */
 	public void setCapLevel(int capLevel)
 	{
-		this.capLevel = capLevel*10;
+		this.capLevel = capLevel * 10;
 	}
-
+	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public float[] getTDiode()
 	{
-		float temp[] = new float[2];
-		temp[0] = TDiode[0]/10.0f;
-		temp[1] = TDiode[1]/10.0f;
+		final float temp[] = new float[2];
+		temp[0] = TDiode[0] / 10.0f;
+		temp[1] = TDiode[1] / 10.0f;
 		
 		return temp;
 	}
-
+	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public float[] getTIGBT()
 	{
-		float temp[] = new float[2];
-		temp[0] = TIGBT[0]/10.0f;
-		temp[1] = TIGBT[1]/10.0f;
+		final float temp[] = new float[2];
+		temp[0] = TIGBT[0] / 10.0f;
+		temp[1] = TIGBT[1] / 10.0f;
 		
 		return temp;
 	}

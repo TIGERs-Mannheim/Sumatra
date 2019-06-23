@@ -1,15 +1,16 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 02.08.2010
  * Author(s): Gero
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.types;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.RefereeMsg;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.referee.RefereeMsg;
+
 
 /**
  * <Insert some random, sounding one-liner that explains the existence of this thin interface>
@@ -18,5 +19,9 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.RefereeMsg;
  */
 public interface IRefereeMsgConsumer
 {
-	public void onNewRefereeMsg(RefereeMsg msg);
+	/**
+	 * 
+	 * @param msg
+	 */
+	void onNewRefereeMsg(RefereeMsg msg);
 }

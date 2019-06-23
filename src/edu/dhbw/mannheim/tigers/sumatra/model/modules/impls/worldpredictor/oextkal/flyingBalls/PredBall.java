@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: May 17, 2011
  * Author(s): Birgit
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.flyingBalls;
@@ -21,59 +21,88 @@ public class PredBall
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private double m_X = Def.DUMMY;
-	private double m_Y = Def.DUMMY;
-	private double m_Z = Def.DUMMY;
+	private double	x	= Def.DUMMY;
+	private double	y	= Def.DUMMY;
+	private double	z	= Def.DUMMY;
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	public PredBall(){}
-
+	/**
+	 */
+	public PredBall()
+	{
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param val
+	 */
 	public void setX(double val)
 	{
-		m_X = val;
+		x = val;
 	}
 	
+	
+	/**
+	 * @param val
+	 */
 	public void setY(double val)
 	{
-		m_Y = val;
+		y = val;
 	}
 	
+	
+	/**
+	 * @param val
+	 */
 	public void setZ(double val)
 	{
-		m_Z = val;
+		z = val;
 	}
-
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-
+	/**
+	 * @return
+	 */
 	public double x()
 	{
-		return m_X;
+		return x;
 	}
 	
+	
+	/**
+	 * @return
+	 */
 	public double y()
 	{
-		return m_Y;
+		return y;
 	}
 	
+	
+	/**
+	 * @return
+	 */
 	public double z()
 	{
-		return m_Z;
+		return z;
 	}
 	
+	
+	@Override
 	public String toString()
 	{
 		String ret = "";
-		ret += "\nX: "+m_X;
-		ret += "\nY: "+m_Y;
-		ret += "\nZ: "+m_Z;
+		ret += "\nX: " + x;
+		ret += "\nY: " + y;
+		ret += "\nZ: " + z;
 		return ret;
 	}
 }

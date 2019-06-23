@@ -1,15 +1,17 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: May 17, 2011
  * Author(s): Birgit
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.flyingBalls;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Coord;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.Coord;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.flyingBalls.Def.Cam;
+
 
 /**
  * One Ball in a Fly
@@ -22,124 +24,152 @@ public class FlyingBall
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private Coord m_bottomPos     = new Coord(Def.DUMMY, Def.DUMMY);
-	private Coord m_flyingPos     = new Coord(Def.DUMMY, Def.DUMMY);
-		
-	private double m_flyingHeight = Def.DUMMY;
-	private double m_distance     = Def.DUMMY;
+	private Coord	mBottomPos		= new Coord(Def.DUMMY, Def.DUMMY);
+	private Coord	mFlyingPos		= new Coord(Def.DUMMY, Def.DUMMY);
+	
+	private double	mFlyingHeight	= Def.DUMMY;
+	private double	mDistance		= Def.DUMMY;
+	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	public FlyingBall(
-			final Coord a_ballPos)
+	/**
+	 * @param aBallPos
+	 */
+	public FlyingBall(final Coord aBallPos)
 	{
-		m_bottomPos = new Coord(a_ballPos);
+		mBottomPos = new Coord(aBallPos);
 	}
-
+	
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	public void setFlyPositionAndCalculateFlyingHeight(final Coord a_flyPosition, final int camId)
+	/**
+	 * @param aFlyPosition
+	 * @param camId
+	 */
+	public void setFlyPositionAndCalculateFlyingHeight(final Coord aFlyPosition, final int camId)
 	{
-		m_flyingPos = a_flyPosition;
-		double _bf_x = Math.abs(m_flyingPos.x() - m_bottomPos.x());
-		double _bf_y = Math.abs(m_flyingPos.y() - m_bottomPos.y()); 
-		double _bf_ = Math.sqrt(_bf_x*_bf_x + _bf_y*_bf_y);
+		mFlyingPos = aFlyPosition;
+		final double bfX = Math.abs(mFlyingPos.x() - mBottomPos.x());
+		final double bfY = Math.abs(mFlyingPos.y() - mBottomPos.y());
+		final double bf = Math.sqrt((bfX * bfX) + (bfY * bfY));
 		
-		double _cf_x = Def.DUMMY;
-		double _cf_y = Def.DUMMY;
-		//set the correct camSide
-		if(camId == Def.CamIDOne)
-		{
-			_cf_x = Math.abs(m_flyingPos.x() - Def.CamOneX);
-			_cf_y = Math.abs(m_flyingPos.y() - Def.CamOneY); 
-		}
-		else
-		{
-			_cf_x = Math.abs(m_flyingPos.x() - Def.CamNullX);
-			_cf_y = Math.abs(m_flyingPos.y() - Def.CamNullY); 
-		}
-
-		double _cf_ = Math.sqrt(_cf_x*_cf_x + _cf_y*_cf_y);
+		Cam cam = Def.cams.get(camId);
+		final double cfX = Math.abs(mFlyingPos.x() - cam.x);
+		final double cfY = Math.abs(mFlyingPos.y() - cam.y);
 		
-		//System.out.println("#####################################################");
-		//System.out.println("cf: "+_cf_);
-		//System.out.println("bf: "+_bf_);
+		final double cf = Math.sqrt((cfX * cfX) + (cfY * cfY));
 		
-		m_flyingHeight = Def.CamHeight*_bf_/(_bf_+_cf_);
-		
-		//System.out.println(this.toString());
-		//System.out.println("#####################################################");
+		mFlyingHeight = (Def.camHeight * bf) / (bf + cf);
 	}
-
-
+	
+	
+	/**
+	 * @param point
+	 */
 	public void calculateDistanceToStart(final Coord point)
 	{
-		if(Double.isInfinite(m_flyingPos.x()) || Double.isInfinite(m_flyingPos.y()))
+		if (Double.isInfinite(mFlyingPos.x()) || Double.isInfinite(mFlyingPos.y()))
 		{
-			throw new IllegalArgumentException("FlyingBall: calculateDistanceToPoint is not possible, before setting the flying Position.");
+			throw new IllegalArgumentException(
+					"FlyingBall: calculateDistanceToPoint is not possible, before setting the flying Position.");
 		}
 		
-		double x2 = Math.pow(Math.abs(point.x()-m_flyingPos.x()),2);
-		double y2 = Math.pow(Math.abs(point.y()-m_flyingPos.y()),2);
-		m_distance = Math.sqrt(x2+y2);
+		final double x2 = Math.pow(Math.abs(point.x() - mFlyingPos.x()), 2);
+		final double y2 = Math.pow(Math.abs(point.y() - mFlyingPos.y()), 2);
+		mDistance = Math.sqrt(x2 + y2);
 	}
-
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
+	/**
+	 * @return
+	 */
 	public double getDistance()
 	{
-		return  m_distance;
+		return mDistance;
 	}
-
+	
+	
+	/**
+	 * @return
+	 */
 	public Coord getFlyingPosition()
 	{
-		return  m_flyingPos;
+		return mFlyingPos;
 	}
-
-
+	
+	
+	/**
+	 * @return
+	 */
 	public double getFlyingPositionX()
 	{
-		return  m_flyingPos.x();
+		return mFlyingPos.x();
 	}
-
+	
+	
+	/**
+	 * @return
+	 */
 	public double getFlyingPositionY()
 	{
-		return  m_flyingPos.y();
+		return mFlyingPos.y();
 	}
-
+	
+	
+	/**
+	 * @return
+	 */
 	public Coord getBottomPosition()
 	{
-		return  m_bottomPos;
+		return mBottomPos;
 	}
-
+	
+	
+	/**
+	 * @return
+	 */
 	public double getBottomPositionX()
 	{
-		return  m_bottomPos.x();
+		return mBottomPos.x();
 	}
-
+	
+	
+	/**
+	 * @return
+	 */
 	public double getBottomPositionY()
 	{
-		return  m_bottomPos.y();
+		return mBottomPos.y();
 	}
-
+	
+	
+	/**
+	 * @return
+	 */
 	public double getFlyingHeight()
 	{
-		return m_flyingHeight;
+		return mFlyingHeight;
 	}
-
+	
+	
+	@Override
 	public String toString()
 	{
-		String str = "###Flying Ball###\n";
-		str += "bottomPosX:    "+m_bottomPos.x()+"\n";
-		str += "bottomPosY:    "+m_bottomPos.y()+"\n";
-		str += "flyingPosX:    "+m_flyingPos.x()+"\n";
-		str += "flyingPosY:    "+m_flyingPos.y()+"\n";
-		str += "flyingHeight:  "+m_flyingHeight+"\n";
+		StringBuffer str = new StringBuffer();
+		str.append("###Flying Ball###\n");
+		str.append("bottomPosX:    " + mBottomPos.x() + "\n");
+		str.append("bottomPosY:    " + mBottomPos.y() + "\n");
+		str.append("flyingPosX:    " + mFlyingPos.x() + "\n");
+		str.append("flyingPosY:    " + mFlyingPos.y() + "\n");
+		str.append("flyingHeight:  " + mFlyingHeight + "\n");
 		
-		return str;
+		return str.toString();
 	}
 }

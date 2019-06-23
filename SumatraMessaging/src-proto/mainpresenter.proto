@@ -1,0 +1,25 @@
+package edu.dhbw.mannheim.tigers.sumatra.proto;
+
+option java_package = "edu.dhbw.mannheim.tigers.sumatra.proto.presenter";
+option java_outer_classname = "MainPresenterProtos";
+
+message ModuliConfigFile {
+	required string file = 1;
+}
+
+message FilenameArray{
+	repeated string item = 1;
+}
+
+message Emergency{
+	// set the active state of emergency mode
+	required bool mode = 1;
+}
+
+message ModulesState{
+	required string state = 1;
+}
+
+message Fps{
+	required float fps = 1;
+}

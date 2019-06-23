@@ -45,7 +45,10 @@ public class TextPane extends JScrollPane
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
+	/**
+	 * 
+	 * @param maxCapacity
+	 */
 	public TextPane(int maxCapacity)
 	{
 		this.maxCapacity = maxCapacity;
@@ -65,10 +68,14 @@ public class TextPane extends JScrollPane
 		super.getViewport().add(textPane);
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param text
+	 * @param aset
+	 */
 	public void setText(String text, AttributeSet aset)
 	{
 		clear();
@@ -76,11 +83,14 @@ public class TextPane extends JScrollPane
 		append(text, aset);
 	}
 	
-
+	
+	/**
+	 */
 	public void clear()
 	{
 		SwingUtilities.invokeLater(new Runnable()
 		{
+			@Override
 			public void run()
 			{
 				try
@@ -88,18 +98,23 @@ public class TextPane extends JScrollPane
 					doc.remove(0, doc.getLength());
 					
 					entries.clear();
-				} catch (BadLocationException err)
+				} catch (final BadLocationException err)
 				{
 				}
 			}
 		});
 	}
 	
-
+	
+	/**
+	 * @param text
+	 * @param aset
+	 */
 	public void append(final String text, final AttributeSet aset)
 	{
 		SwingUtilities.invokeLater(new Runnable()
 		{
+			@Override
 			public void run()
 			{
 				try
@@ -112,26 +127,40 @@ public class TextPane extends JScrollPane
 					// If there are too much entries: Remove the first!
 					if (entries.size() > maxCapacity)
 					{
-						Integer end = entries.pollFirst();
+						final Integer end = entries.pollFirst();
 						doc.remove(0, end);
 					}
 					
-
+					
 					if (autoscroll)
 					{
 						textPane.setCaretPosition(doc.getLength());
 					}
-				} catch (BadLocationException err)
+				} catch (final BadLocationException err)
 				{
 				}
 			}
 		});
 	}
 	
-
+	
+	/**
+	 * @param en
+	 */
 	public void setAutoscroll(boolean en)
 	{
 		autoscroll = en;
 		textPane.setCaretPosition(doc.getLength() - 1);
+	}
+	
+	
+	/**
+	 * Number of entries in doc
+	 * 
+	 * @return
+	 */
+	public int getLength()
+	{
+		return doc.getLength();
 	}
 }

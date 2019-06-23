@@ -9,8 +9,9 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter;
 
-import java.util.List;
-
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena.control.PlayAndRoleCount;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena.playfinder.stats.ESelectionReason;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
 
 
@@ -25,38 +26,41 @@ public class PlayTestState extends AICenterState
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * @param panel
+	 * @param presenter
 	 */
 	public PlayTestState(AICenterPresenter presenter)
 	{
 		super(presenter);
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	
 	@Override
-	public void addPlay(EPlay play)
+	public void addNewPlay(EPlay play, int numRolesToAssign)
 	{
-		getControl().addPlay(play);
+		getControl().addNewPlay(new PlayAndRoleCount(play, numRolesToAssign, ESelectionReason.MANUEL));
 		sendControl();
 	}
 	
-
+	
 	@Override
-	public void removePlay(List<EPlay> oddPlays)
+	public void removePlay(APlay play)
 	{
-		getControl().removePlay(oddPlays);
+		play.changeToCanceled();
+		getControl().removePlay(play);
 		sendControl();
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------

@@ -11,8 +11,6 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.types;
 
 import java.util.concurrent.CountDownLatch;
 
-import org.apache.log4j.Logger;
-
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.CamDetnObservable;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.CamGeomObservable;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.ICamDetnObservable;
@@ -33,11 +31,14 @@ public abstract class ACam extends AModule implements ICamDetnFrameProducer
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
+	// Logger
+	// private static final Logger log = Logger.getLogger(ACam.class.getName());
+	
+	/** */
 	public static final String				MODULE_TYPE				= "ACam";
+	/** */
 	public static final String				MODULE_ID				= "cam";
 	
-
-	protected final Logger					log						= Logger.getLogger(getClass());
 	
 	protected final ICamDetnObservable	detectionObservable	= new CamDetnObservable(null);
 	protected final ICamGeomObservable	geometryObservable	= new CamGeomObservable(null);
@@ -57,34 +58,50 @@ public abstract class ACam extends AModule implements ICamDetnFrameProducer
 		startSignal.countDown();
 	}
 	
-
+	
 	protected void resetCountDownLatch()
 	{
 		startSignal = new CountDownLatch(SIGNAL_COUNT);
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- observer -------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 * @param o
+	 */
 	public void addCamDetectionObserver(ICamDetnObserver o)
 	{
 		detectionObservable.addObservers(o);
 	}
 	
-
+	
+	/**
+	 * 
+	 * @param o
+	 */
 	public void removeCamDetectionObserver(ICamDetnObserver o)
 	{
 		detectionObservable.removeObserver(o);
 	}
 	
-
+	
+	/**
+	 * 
+	 * @param o
+	 */
 	public void addCamGeometryObserver(ICamGeomObserver o)
 	{
 		geometryObservable.addObservers(o);
 	}
 	
-
+	
+	/**
+	 * 
+	 * @param o
+	 */
 	public void removeCamGeometryObserver(ICamGeomObserver o)
 	{
 		geometryObservable.removeObserver(o);

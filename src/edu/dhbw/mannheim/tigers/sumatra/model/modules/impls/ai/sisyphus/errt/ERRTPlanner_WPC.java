@@ -15,599 +15,357 @@ import java.util.Random;
 
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.TrackedBot;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.TrackedTigerBot;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2f;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.WorldFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.AIMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.pathfinding.Node;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.pathfinding.Path;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.types.EGameSituation;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.types.Goal;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.dss.DynamicSafetySearch;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.FieldInformation;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.IPathFinder;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.PathFinderInput;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.analyze.ParameterDebugger;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.analyze.TuneableParameter;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.tree.ITree;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.tree.Node;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.tree.simple.SimpleTree;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.waypoints.Waypoints;
 
 
 /**
- * This is part of Sisyphus. It calculates a path to target. It's not dynamic but calculates with static obstacles. The
- * dynamic part is done by {@link DynamicSafetySearch}
+ * This is part of Sisyphus. It calculates a path to target. It's not dynamic but calculates with static obstacles.
  * 
+ * This version has a waypoint cache
  * 
- * This version is the BASIS-RRT. NO EXTENSIONS
+ * For every bot a single ERRTPlanner_WPC is needed
  * 
- * 
- * @author ChristianK
- * 
+ * @author DirkK klostermannnn@googlemail.com
  */
-public class ERRTPlanner_WPC
+public class ERRTPlanner_WPC implements IPathFinder
 {
+	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	protected final Logger	log									= Logger.getLogger(getClass());
-	
-	// 100mm is the distance the cam sees behind the field in istanbul
-	private final float		FIELD_LENGTH						= AIConfig.getGeometry().getFieldLength() + 100;
-	// 150mm is the distance the cam sees next to the field in istanbul
-	private final float		FIELD_WIDTH							= AIConfig.getGeometry().getFieldWidth() + 150;
-	private final float		BOT_RADIUS							= AIConfig.getGeometry().getBotRadius();
-	private final float		BALL_RADIUS							= AIConfig.getGeometry().getBallRadius();
-	private final Goal		GOAL_OUR								= AIConfig.getGeometry().getGoalOur();
-	private final Goal		GOAL_THEIR							= AIConfig.getGeometry().getGoalTheir();
-	private final float		CENTER_CIRCLE_RADIUS				= AIConfig.getGeometry().getCenterCircleRadius();
-	private final float		GOALPOST_RADIUS					= 10f;
-	
-	/** distance between 2 nodes */
-	private final float		STEP_SIZE							= AIConfig.getErrt().getStepSize();
-	/** step size of the final path */
-	private final float		FINAL_STEP_SIZE					= AIConfig.getErrt().getFinalStepSize();
-	/** defines how much iterations will at most be created */
-	private final float		MAX_ITERATIONS						= AIConfig.getErrt().getMaxIterations();
-	/** distance, bots have to keep away from obstacles */
-	private final float		SAFETY_DISTANCE					= AIConfig.getErrt().getSafetyDistance();
-	/** distance, bots have to keep away from obstacles when checking old path */
-	// private final float SAFETY_DISTANCE_OLD_PATH = AIConfig.getErrt().getSafetyDistanceOldPath();
-	// /** distance, bots have to keep away from obstacles when in second round */
-	private final float		SAFETY_DISTANCE_SEC_TRY			= AIConfig.getErrt().getSafetyDistance2Try();
-	/** possibility to choose targetNode as next goal */
-	private final float		P_DESTINATION						= AIConfig.getErrt().getpDestination();
-	/** possibility to choose a waypoint as next goal */
-	private final float		P_WAYPOINT							= AIConfig.getErrt().getpWaypoint();
-	/** size of waypointcache */
-	private final int			WPC_SIZE								= AIConfig.getErrt().getWPCSize();
-	/** how much target can differ from target of last cycle, so that oldPath still is checked */
-	// private final float TOLLERABLE_TARGET_SHIFT = AIConfig.getErrt().getTollerableTargetShift();
-	// /** how much target can differ from target of last cycle to use WPC */
-	private final float		TOLLERABLE_TARGET_SHIFT_WPC	= AIConfig.getErrt().getTollerableTargetShiftWPC();
-	// /** tollerance for updating old path */
-	// private final float POSITIONING_TOLLERANCE = AIConfig.getTolerances().getPositioning();
-	
-	private WorldFrame		wFrame;
-	// private Path oldPath;
-	// private Path newPath;
+	// Logger
+	private static final Logger		log			= Logger.getLogger(ERRTPlanner_WPC.class.getName());
 	
 	/** bot, path is calculated for */
-	private TrackedTigerBot	thisBot;
-	private int					botId;
-	/** goal of path */
-	private Vector2f			goal;
-	private Node				goalNode;
-	/** list, all bots except thisBot are stored in */
-	private List<Node>		botPosList							= new ArrayList<Node>(12);
-	/** output list with path in it */
-	private List<IVector2>	pathPointList;
-	/** shall the ball be considered? */
-	private boolean			considerBall;
-	/** random generator for the second R in RRT (Rapidly-Exploring RANDOM Trees) */
-	private Random				generator							= new Random();
-	/** generated possibility for decision which point shall be chosen */
-	private float				p;
+	private TrackedTigerBot				thisBot;
+	
+	/** the goal of the calculated path */
+	private Node							goalNode;
+	
 	/** waypoint cache */
-	private Node[]				waypoints							= new Node[WPC_SIZE];
-	/** fill level of WPC */
-	int							WPCFillLvl							= 0;
-	/** ball */
-	private Vector2f			ballPos;
-	// /** restricted area */
-	// private List<I2DShape> restrictedAreas = new ArrayList<I2DShape>();
-	/** it's kickoff so the centercircle and the opponents half are prohibited */
-	private boolean			prohibitOpponentsHalf			= false;
-	private boolean			prohibitCenterCircle				= false;
-//	private boolean			prohibitOpponentPenArea			= false; //!!! NOT PROHIBITED BY THE RULES !!!
-	private boolean			prohibitTigersPenArea			= true;
-	private boolean			isFreekick							= false;
+	private Waypoints						waypoints;
 	
-	private IVector2			centerPoint							= new Vector2f(0, 0);
-//	private IVector2			opponentsPenAreaCircleCenter	= new Vector2f(GOAL_THEIR.getGoalCenter().x + 150,
-//																					GOAL_THEIR.getGoalCenter().y);
-	private IVector2			tigersPenAreaCircleCenter		= new Vector2f(GOAL_OUR.getGoalCenter().x - 150,
-																					GOAL_OUR.getGoalCenter().y);
-	private int					penAreaCircleRadius				= 650;																// häcks
-	// häcks
-	private int					distanceAtFreekick				= 500;
+	/** Information about the Field, calculates whether a way is free */
+	private FieldInformation			fieldInfo;
 	
-	private int					escapeStepSize						= 500;
+	private final ParameterDebugger	paramDebug	= new ParameterDebugger();
 	
-	// private int NO_SAFETY = 0;
+	private TuneableParameter			adjustableParams;
 	
-	// sounds weird, but the next two ones can be combined as you like
-	private boolean			IS_AGRESSIVE						= true;
-	private boolean			IS_RAMBO_MODE						= true;
-	
-	private float				usedSafetyDistance;
+	private ITree							ramboTree	= null;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 */
+	public ERRTPlanner_WPC()
+	{
+		adjustableParams = new TuneableParameter();
+		waypoints = new Waypoints(adjustableParams);
+	}
+	
+	
+	@Override
+	public Path calcPath(PathFinderInput pathFinderInput)
+	{
+		// TODO: DirkK delete this if you want to use the pp test play
+		adjustableParams = new TuneableParameter();
+		
+		List<Path> pathes = new ArrayList<Path>();
+		List<IVector2> intermediates = new ArrayList<IVector2>(pathFinderInput.getMoveCon().getIntermediateStops());
+		intermediates.add(new Vector2f(pathFinderInput.getFieldInfo().getPreprocessedTarget()));
+		for (int i = 0; i < intermediates.size(); i++)
+		{
+			IVector2 intermediate = intermediates.get(i);
+			IVector2 start;
+			if (i == 0)
+			{
+				start = pathFinderInput.getFieldInfo().getPreprocessedStart();
+			} else
+			{
+				start = pathes.get(i - 1).getPath().get(pathes.get(i - 1).getPath().size() - 1);
+			}
+			boolean isPathToTarget = false;
+			if (i == (intermediates.size() - 1))
+			{
+				isPathToTarget = true;
+			}
+			pathFinderInput.getFieldInfo().addIgnoredPoitn(intermediate);
+			pathes.add(doCalculation(pathFinderInput, start, intermediate, !isPathToTarget, false));
+		}
+		return merge(pathes);
+	}
+	
+	
+	private Path merge(List<Path> pathes)
+	{
+		int lastVector = 0;
+		Path pathToUse = pathes.get(pathes.size() - 1);
+		pathes.remove(pathes.size() - 1);
+		for (Path intermediatePath : pathes)
+		{
+			// intermediatePath.getPath().remove(intermediatePath.getPath().get(intermediatePath.getPath().size() - 1));
+			pathToUse.getPath().addAll(lastVector, intermediatePath.getPath());
+			lastVector = intermediatePath.size();
+		}
+		return pathToUse;
+	}
+	
 	
 	/**
 	 * starts calculation in ERRT
-	 * @param botId
-	 * @param wFrame
-	 * 
-	 * @param oldPath
-	 * @param considerBall
+	 * @param pathFinderInput
+	 * @param start
+	 * @param target
+	 * @param isIntermediate
+	 * @param isSecondTry
 	 * @return
 	 */
-	public Path doCalculation(WorldFrame wFrame, int botId, Path oldPath, IVector2 goalVec, boolean considerBall,
-			boolean isGoalie, EGameSituation gameSit, boolean isSecondTry)
+	public Path doCalculation(PathFinderInput pathFinderInput, IVector2 start, IVector2 target, boolean isIntermediate,
+			boolean isSecondTry)
 	{
-		// store parameters in local vars
-		this.wFrame = wFrame;
-		// this.oldPath = oldPath;
-		this.botId = botId;
-		this.thisBot = wFrame.tigerBots.get(botId);
-		this.goal = new Vector2f(goalVec);
-		this.goalNode = new Node(goal);
-		this.considerBall = considerBall;
-		this.ballPos = new Vector2f(wFrame.ball.pos3());
+		// if (!pathFinderInput.getFieldInfo().isWayOK(start, start.addNew(new Vector2(0.01, 0.01))))
+		// {
+		// log.warn("Cannot calculate a path, start point blocked");
+		// }
+		// if (!pathFinderInput.getFieldInfo().isWayOK(target, target.addNew(new Vector2(0.01, 0.01))))
+		// {
+		// log.warn("Cannot calculate a path, target blocked");
+		// }
+		{
+			if (!isSecondTry)
+			{
+				paramDebug.calculationStarted();
+			} else
+			{
+				paramDebug.secondTry();
+			}
+		}
 		
+		// store parameters in local vars
+		BotID botId = pathFinderInput.getBotId();
+		thisBot = pathFinderInput.getwFrame().tigerBotsVisible.get(botId);
+		goalNode = new Node(target);
+		
+		// all Informations about the field
+		fieldInfo = pathFinderInput.getFieldInfo();
+		
+		// there are always three steps to find a way
+		// 1. search for a way with a normal safety distance
+		// 2. if no way was found, search again with a smaller safety distance
+		// 3. if no way was found, take the direct path (RAMBO)
 		if (isSecondTry)
 		{
-			usedSafetyDistance = SAFETY_DISTANCE_SEC_TRY;
+			fieldInfo.setUsedSafetyDistance(adjustableParams.getSecondSafetyDistance());
 		} else
 		{
-			usedSafetyDistance = SAFETY_DISTANCE;
+			fieldInfo.setUsedSafetyDistance(adjustableParams.getSafetyDistance());
+		}
+		fieldInfo.setSafetyDistanceBall(adjustableParams.getSafetyDistanceBall());
+		
+		// clear WPC? yes if the goal has changed
+		if (!waypoints.equalsGoal(goalNode) && !isIntermediate)
+		{
+			waypoints.clear(goalNode);
 		}
 		
-		if (gameSit == EGameSituation.KICK_OFF)
+		boolean pathChanged = true;
+		Path oldPath = pathFinderInput.getExistingPathes().get(botId);
+		if ((oldPath != null) && !oldPath.getPath().isEmpty() && checkOldWay(oldPath))
 		{
-			// if bot or goal in opponents half i still use it although it's kickoff
-			if (thisBot.pos.x <= 0 && goal.x <= 0)
-			{
-				prohibitOpponentsHalf = true;
-			}
-			// if bot or goal are in centercircle i still use it although it's kickoff
-			if (AIMath.distancePP(thisBot, centerPoint) > CENTER_CIRCLE_RADIUS
-					&& AIMath.distancePP(goal, centerPoint) > CENTER_CIRCLE_RADIUS)
-			{
-				prohibitCenterCircle = true;
-			}
-		} else if (gameSit == EGameSituation.SET_PIECE)
-		{
-			if (AIMath.distancePP(thisBot, ballPos) > distanceAtFreekick
-					&& AIMath.distancePP(goal, ballPos) > distanceAtFreekick)
-			{
-				isFreekick = true;
-			}
+			pathChanged = false;
 		}
 		
-//		if (AIMath.distancePP(thisBot, opponentsPenAreaCircleCenter) < penAreaCircleRadius
-//				|| AIMath.distancePP(goal, opponentsPenAreaCircleCenter) < penAreaCircleRadius)
-//		{
-//			prohibitOpponentPenArea = false;
-//		}
+		// let the tree grow until the goal is reached
+		final ITree tree = growTree(start);
+		List<IVector2> pathPointList = null;
 		
-		if (isGoalie)
-		{
-			prohibitTigersPenArea = false;
-		} else if (AIMath.distancePP(thisBot, tigersPenAreaCircleCenter) < penAreaCircleRadius
-				|| AIMath.distancePP(goal, tigersPenAreaCircleCenter) < penAreaCircleRadius)
-		{
-			prohibitTigersPenArea = false;
-		}
-		
-		// for(I2DShape rA : restrictedAreas)
-		// {
-		// //if rA would make pathfinding impossible, don't use it
-		// if(!rA.isPointInShape(goal) && !rA.isPointInShape(thisBot.pos) )
-		// {
-		// this.restrictedAreas.add(rA);
-		// }
-		// }
-		
-		// all bots except thisBot in botPosList
-		putBotsInList();
-		
-		// all checks, if there is a need for a new RRT-cycle, are done WITHOUT ball consideration
-		// maybe this should be done, but i'm not quite sure about it
-		// maybe there shouldn't be this checks, when ball has to be considered
-		// i'll think about it, when the rest is done
-		
-
-		// is it possible to use oldPath?
-		// is oldPath existent?
-		/*
-		 * if (oldPath != null && oldPath.path != null && oldPath.path.size() > 0)
-		 * {
-		 * oldPath = actualizeOldPath();
-		 * // direct way from current pos to target free? then use it
-		 * newPath = checkDirectWayBotPos2Target();
-		 * if (newPath != null)
-		 * {
-		 * // might be oldPath, but that doesn't matter, because changed-flag is already set in that case
-		 * return newPath;
-		 * }
-		 * IVector2 oldGoal = oldPath.getGoal();
-		 * if (oldGoal.equals(goal))
-		 * {
-		 * // way still free?
-		 * if (isOldPathStillOK())
-		 * {
-		 * // System.out.println("out: old");
-		 * oldPath.changed = false;
-		 * return oldPath;
-		 * }
-		 * }
-		 * 
-		 * // if target hasn't changed too much
-		 * if (oldGoal.equals(goalNode, TOLLERABLE_TARGET_SHIFT))
-		 * {
-		 * if (isOldPathOnlySlightlyChanged())
-		 * {
-		 * oldPath.changed = true;
-		 * 
-		 * // okay, the new goal can be added to oldPath...can the previously target be replaced?
-		 * if (oldPath.path.size() > 1)
-		 * {
-		 * if (isWayOK(goal, oldPath.path.get(oldPath.path.size() - 2), SAFETY_DISTANCE_OLD_PATH))
-		 * {
-		 * oldPath.path.remove(oldPath.path.size() - 1);
-		 * }
-		 * }
-		 * // add new goal to oldPath
-		 * oldPath.path.add(goal);
-		 * 
-		 * return oldPath;
-		 * }
-		 * }
-		 * }
-		 */
-
-		if (!isGoalie && !IS_AGRESSIVE)
-		{
-			Node suckingBot = botThatIsSuckingAtItsPositionByHinderingMeToCalcAGoodPath();
-			if (suckingBot != null)
-			{
-				return calcEscapeRoute(suckingBot);
-			}
-		}
-		
-		// clear WPC? yes if targetshift is more than value
-		if (oldPath != null && oldPath.getGoal() != null)
-		{
-			if (!goal.equals(oldPath.getGoal(), TOLLERABLE_TARGET_SHIFT_WPC))
-			{
-				WPCFillLvl = 0;
-			}
-		}
-		
-		// if oldPath can be used without using RRT, this part will not be reached.
-		// if here, then RRT will have to start working
-		// System.out.println("rrt working");
-		// we have to compute a new path
-		ArrayList<Node> tree = growTree();
-		
-		final List<IVector2> pathPointList;
+		boolean rambo = false;
 		
 		if (tree != null)
 		{
-			// System.out.println("out: rrt");
+			// smoothes the tree
+			smoothTree(tree, pathFinderInput);
 			
-			fillWPC();
-			
-			tree = makeTreeDoubleLinked(tree);
-			
-			tree = smoothTree(tree);
-			reduceAmountOfPoints(tree);
-			
+			// transform it to a list
 			pathPointList = transformToPathPointList();
-		} else if (IS_RAMBO_MODE)
-		{
-			// if no way was found, choose the direct line to goal
-			// this way is as good as every other one and it's the shortest
-			if (!isSecondTry)
-			{
-				return doCalculation(wFrame, thisBot.id, oldPath, goal, considerBall, isGoalie, gameSit, true);
-			} else
-			{
-				pathPointList = new ArrayList<IVector2>(1);
-				
-				pathPointList.add(goal);
-			}
+			
+			// fill the waypoint cache with this tree
+			waypoints.fillWPC(pathPointList, goalNode);
+			
+			
 		} else
 		{
-			pathPointList = new ArrayList<IVector2>(1);
-			
-			pathPointList.add(thisBot.pos.addNew(new Vector2(0.1f, 0.1f)));
+			if (!isSecondTry)
+			{
+				// boooo :(
+				// no way has been found...lets try a shorter safety distance this time
+				return doCalculation(pathFinderInput, start, target, isIntermediate, true);
+			}
+			// if no way was found for the second time, choose the direct line to goal
+			// this way is as good as every other one and it's the shortest
+			pathPointList = new ArrayList<IVector2>(2);
+			paramDebug.ramboChosen();
+			rambo = true;
+			pathPointList.add(start);
+			pathPointList.add(target);
 		}
-		// System.out.println(this.goal);
-		isSecondTry = false;
-		return new Path(botId, pathPointList);
+		
+		paramDebug.calculationFinished();
+		
+		Path newPath = new Path(botId, pathPointList, pathFinderInput.getTarget(), pathFinderInput.getDstOrient());
+		
+		// if the start was adjusted because of the ball, add a direct way to the ball
+		if (fieldInfo.isStartAdjustedBecauseOfBall())
+		{
+			newPath.getPath().add(0, thisBot.getPos());
+		}
+		// if the target was adjusted because of the ball, add a direct way to the ball
+		if (fieldInfo.isTargetAdjustedBecauseOfBall()
+				&& pathFinderInput.getMoveCon().getVelAtDestination().equals(Vector2.ZERO_VECTOR, 0.01f))
+		{
+			newPath.getPath().add(pathFinderInput.getTarget());
+		}
+		
+		// if the bot is currently illegally in the penalty area, kick him out directly
+		if (fieldInfo.isBotIllegallyInPenaltyArea() && (thisBot.getPos().subtractNew(target).getLength2() > 500))
+		{
+			// add a node outside the penalty area, if the bot should leave this area asap
+			newPath.getPath().add(0,
+					new Node(fieldInfo.getNearestNodeOutsidePenArea().addNew(thisBot.getVel().scaleToNew(500))));
+		}
+		
+		
+		newPath.setChanged(pathChanged);
+		newPath.setRambo(rambo);
+		if (rambo)
+		{
+			newPath.setTree(ramboTree);
+		}
+		return newPath;
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	/**
-	 * puts all bots (except bot, this path is for) in list, so i can iterate over them more easily
-	 * 
-	 */
-	private void putBotsInList()
-	{
-		// clear botPosList from last run-cycle
-		botPosList.clear();
-		
-		// store tigers
-		for (TrackedTigerBot bot : wFrame.tigerBots.values())
-		{
-			// the bot itself is no obstacle
-			if (bot.id != botId)
-			{
-				// if bot blocks goal, don't consider it
-				if (!bot.pos.equals(goal, BOT_RADIUS + usedSafetyDistance))
-				{
-					botPosList.add(new Node(bot.pos));
-				}
-			}
-		}
-		// store opponents
-		for (TrackedBot bot : wFrame.foeBots.values())
-		{
-			// if bot blocks goal, don't consider it
-			if (!bot.pos.equals(goal, BOT_RADIUS + usedSafetyDistance))
-			{
-				botPosList.add(new Node(bot.pos));
-			}
-		}
-	}
 	
-
-	// /**
-	// * check if direct path is free. if it is: is it changed?
-	// *
-	// * @return either a path or, if direct way is not free, null
-	// */
-	// private Path checkDirectWayBotPos2Target()
-	// {
-	// // check if direct connection from current pos to target is free; 0 because it doesn't matter in that case
-	// if (isWayOK(thisBot.pos, goal, 0))
-	// {
-	// pathPointList = new ArrayList<IVector2>(1);
-	// pathPointList.add(goal);
-	//
-	// Path newPath = new Path(thisBot.id, pathPointList);
-	//
-	// // if oldPath has only one element, it's already been the direct connection
-	// if (oldPath != null && oldPath.path.size() <= 2 && oldPath.getGoal().equals(newPath.getGoal()))
-	// {
-	// // set changed = false, so skills are not enqueued again
-	//
-	// newPath = oldPath; // reuse old path in that case (DanielW)
-	// newPath.changed = false;
-	// }
-	//
-	// return newPath;
-	// } else
-	// {
-	// return null;
-	// }
-	// }
-	
-
-	/**
-	 * checks direct connection between given point a (e.g. botPosition) and point b (e.g. target)
-	 * 
-	 * @param a start point
-	 * @param b end point
-	 * @return true if connection is FREE
-	 */
-	private boolean isWayOK(IVector2 a, IVector2 b, float safetyDistance)
+	private boolean checkOldWay(Path path)
 	{
-		if (isBotInWay(a, b, safetyDistance))
+		for (int i = 0; i < (path.getPath().size() - 1); i++)
 		{
-			return false;
-		}
-		
-		if (isGoalPostInWay(a, b, safetyDistance))
-		{
-			return false;
-		}
-		
-		if (isProhibitedFieldAreaInWay(a, b))
-		{
-			return false;
-		}
-		
-		if (considerBall)
-		{
-			if (isBallInWay(a, b, safetyDistance))
+			IVector2 pathPoint = path.getPath().get(i);
+			IVector2 nextPoint = path.getPath().get(i + 1);
+			if (!fieldInfo.isWayOK(pathPoint, nextPoint))
 			{
 				return false;
 			}
 		}
-		
-		// YOOUUUUU SHALL NOT PASS! (watching LoTR right now^^`)
 		return true;
 	}
 	
-
-	// /**
-	// * checks result from last time
-	// *
-	// * @return
-	// */
-	// private boolean isOldPathStillOK()
-	// {
-	// int size = oldPath.path.size();
-	//
-	// // check way between current botpos and first pathpoint
-	// if (!isWayOK(thisBot.pos, oldPath.path.get(0), SAFETY_DISTANCE_OLD_PATH))
-	// {
-	// return false;
-	// }
-	//
-	// for (int i = 0; i < size - 1; ++i)
-	// {
-	// if (!isWayOK(oldPath.path.get(i), oldPath.path.get(i + 1), SAFETY_DISTANCE_OLD_PATH))
-	// {
-	// return false;
-	// }
-	// }
-	//
-	// // nothing hit yet? then path okay
-	// return true;
-	// }
 	
-
-	// /**
-	// * old goal is != new goal, but very close. so this method checks, if new goal can be reached from old goal
-	// *
-	// * @return
-	// */
-	// private boolean isOldPathOnlySlightlyChanged()
-	// {
-	// // new goal is in short range of old goal (has been checked in calling method)
-	//
-	// // check if old is still okay?
-	// if (!isOldPathStillOK())
-	// {
-	// return false;
-	// }
-	//
-	// // check if connection between last point of last cycle to new target is free
-	// int size = oldPath.path.size();
-	// if (!isWayOK(oldPath.path.get(size - 1), goal, 0))
-	// {
-	// return false;
-	// }
-	// return true;
-	// }
-	
-
 	/**
 	 * starts the RRT
 	 * 
 	 * @return nodeStorage, null if no success
 	 */
-	private ArrayList<Node> growTree()
+	private ITree growTree(IVector2 start)
 	{
 		// indicates if the pathplanner has reached his final destination
 		boolean isTargetReached = false;
 		
 		// kdTree with currentBotPos as root
-		ArrayList<Node> tree = new ArrayList<Node>();
-		tree.add(new Node(thisBot.pos));
+		final ITree tree = new SimpleTree(new Node(start), goalNode);
 		
-
-		Node nearest;
-		Node target;
-		int iterations;
-		for (iterations = 0; iterations < MAX_ITERATIONS && !isTargetReached; ++iterations)
+		
+		for (int i = 0; (i < adjustableParams.getMaxIterations()) && !isTargetReached; i++)
 		{
 			// decide, if the next target is goal, a waypoint or a random node. returns the winner ---
-			target = chooseTarget();
+			final Node directionNode = chooseTarget(thisBot.getId());
 			
 			// find nearest node to target. this one is called 'nearest'.
-			nearest = getNearest(tree, target);
+			final Node nearest = tree.getNearest(directionNode, false);
 			
 			// find point that is between 'target' and 'nearest' and distance to parent node is 'STEP_SETTING'
-			Node extended = extendTree(target, nearest, STEP_SIZE);
-			// System.out.println("t "+target+" n "+nearest+" e "+extended+" ok: "+isWayOK(nearest, extended) );
-			// if nothing is hit while moving there, the node is ok, and we can add it to 'nodeStorage'
+			final Node extended = new Node(GeoMath.stepAlongLine(nearest, directionNode, adjustableParams.getStepSize()));
 			
-			// but first we have to check if same node is still nearest one...this is only neccessary by kd-trees
-			// nearest = getNearest(tree, extended);
-			if (isWayOK(nearest, extended, usedSafetyDistance))
+			// if nothing is hit while moving there, the node is ok, and we can add it to 'nodeStorage'
+			// but first we have to check if same node is still nearest one...this is only necessary by kd-trees
+			if (fieldInfo.isWayOK(nearest, extended))
 			{
-				nearest.addChild(extended);
-				tree.add(extended);
-				
+				tree.add(nearest, extended, false);
 				// check direct link between extended and goalNode
-				if (isWayOK(extended, goalNode, usedSafetyDistance))
+				if (fieldInfo.isWayOK(extended, goalNode))
 				{
 					// why not just adding goalNode to nodeStorage? thats because then it's not possible to smooth the path
 					// as good as with doing the following stuff
-					
 					// take little steps toward goal till being there
-					// for loop to protect heapspace if something goes wrong
-					tree = subdividePath(tree, extended, goalNode);
-					
+					addSubdividePath(tree, extended, goalNode, false);
 					isTargetReached = true;
 				}
 			}
 		}
-		// System.out.println("it "+iterations);
 		// has target been reached or has MAY_ITERATIONS been reached?
 		if (!isTargetReached)
 		{
+			ramboTree = tree;
 			// so many iterations and still no success
-			// System.out.println(":(");
 			return null;
 		}
 		
 		return tree;
 	}
 	
-
-	/**
-	 * take little steps toward goal till being there
-	 */
-	private ArrayList<Node> subdividePath(ArrayList<Node> tree, Node start, Node end)
-	{
-		Node ext;
-		int i;
-		// for loop to protect heap space if something goes wrong
-		for (i = 0; (!start.equals(end, FINAL_STEP_SIZE + 1)) && i < 100; ++i)
-		{
-			ext = extendTree(end, start, FINAL_STEP_SIZE);
-			tree.add(ext);
-			start.addChild(ext);
-			start.setSuccessor(ext);
-			start = ext;
-		}
-		if (i == 100)
-		{
-			log.error("Method 'subdividePath' nearly has been in an endless-loop. That function seems to be not correct!. Please report to class-owner of ERRTPlanner");
-		}
-		start.addChild(end);
-		
-		return tree;
-	}
 	
-
 	/**
 	 * chooses between goal, waypoints and a random-point
 	 * 
 	 * @return target of next iteration
 	 */
-	private Node chooseTarget()
+	private Node chooseTarget(BotID botID)
 	{
 		// generate new float-value between 0 and 1
-		p = generator.nextFloat();
+		Random generator = new Random(System.nanoTime());
+		float p = generator.nextFloat();
 		
-		if (p <= P_DESTINATION)
+		
+		if (p <= adjustableParams.getpGoal())
 		{
-			// target is chosen
+			// goal
 			return goalNode;
-		} else if (p <= P_DESTINATION + P_WAYPOINT && WPCFillLvl > 0)
+			
+		} else if ((p <= (adjustableParams.getpGoal() + adjustableParams.getpWaypoint())) && !waypoints.isEmpty())
 		{
-			return getNodeFromWPC();
+			// waypoint
+			final IVector2 temp = waypoints.getArbitraryNode();
+			// if anything went wrong
+			if (temp == null)
+			{
+				return createRandomNode();
+			}
+			return new Node(temp);
+			
 		} else
 		{
 			// random point
@@ -615,7 +373,7 @@ public class ERRTPlanner_WPC
 		}
 	}
 	
-
+	
 	/**
 	 * creates a node, randomly placed on entire field
 	 * 
@@ -623,111 +381,16 @@ public class ERRTPlanner_WPC
 	 */
 	private Node createRandomNode()
 	{
-		// for x value: (y is alike)
-		// generator returns value between 0 and 1. Multiplication causes value between 0 and FIELDLENGTH (which is 6050)
-		// subtraction causes a shift to the regular values from -3050 to +3050
-		
-		// if opponent half is prohibited, it is scaled to -3050 to 0
-		float x, y;
-		
-		if (!prohibitOpponentsHalf)
-		{
-			x = (generator.nextFloat() * FIELD_LENGTH) - FIELD_LENGTH / 2;
-		} else
-		{
-			x = generator.nextFloat() * -(FIELD_LENGTH / 2);
-		}
-		y = (generator.nextFloat() * FIELD_WIDTH) - FIELD_WIDTH / 2;
-		
-		return (new Node(x, y));
+		return new Node(AIConfig.getGeometry().getFieldWBorders().getRandomPointInShape());
 	}
 	
-
-	/**
-	 * get nearest node in existing nodeStorage to nextNode
-	 * 
-	 * @param nodeStorage
-	 * @param nextTarget
-	 * @return
-	 */
-	private Node getNearest(List<Node> nodeStorage, Node nextTarget)
-	{
-		// calculate with squares, because real distance is not needed and: if a^2 > b^2 then |a| > |b|
-		float minSquareDistance = Float.MAX_VALUE; // longer than possible -> first tested node will be nearer
-		
-		float currentSquareDistance;
-		
-		// will be returned
-		// initialized with current botPos
-		Node nearestNode = new Node(thisBot.pos);
-		
-		for (Node currentNode : nodeStorage)
-		{
-			currentSquareDistance = AIMath.distancePPSqr(nextTarget, currentNode);
-			
-			// found a better one
-			if (currentSquareDistance < minSquareDistance)
-			{
-				nearestNode = currentNode;
-				minSquareDistance = currentSquareDistance;
-			}
-		}
-		
-		return nearestNode;
-	}
 	
-
-	/**
-	 * finds point that is between nearest node and target node and distance to nearest node is STEP_SIZE
-	 * 
-	 * @param target
-	 * @param nearest
-	 * @return
-	 */
-	private Node extendTree(Node target, Node nearest, float step)
-	{
-		Node extended = new Node(AIMath.stepAlongLine(nearest, target, step));
-		
-		// // is target in the restricted area?
-		// for(I2DShape rA : restrictedAreas)
-		// {
-		// // if point is inside restricted area: return nearest point outside
-		// // if point is outside restricted area: return point
-		// // rather if than new object...
-		// if(rA.isPointInShape(extended))
-		// {
-		// extended = new Node(rA.nearestPointOutside(target));
-		// }
-		// }
-		
-		// below: not necessary, but...every line is a child of mine, you know?
-		// if coords are less than zero or bigger than the values shown below, it's not on the field anymore ---
-		// if (extended.x < -0.5f * FIELD_LENGTH)
-		// {
-		// extended.x = 0.5f * FIELD_LENGTH;
-		// } else if (extended.x > 0.5f * FIELD_LENGTH)
-		// {
-		// extended.x = 0.5f * FIELD_LENGTH;
-		// }
-		// if (extended.y < -0.5f * FIELD_WIDTH)
-		// {
-		// extended.y = -0.5f * FIELD_WIDTH;
-		// } else if (extended.y > 0.5f * FIELD_WIDTH)
-		// {
-		// extended.y = 0.5f * FIELD_WIDTH;
-		// }
-		
-		return extended;
-	}
-	
-
 	/**
 	 * transforms the smoothedNodeStorage into a List {@literal <Vector2>}. </br>
 	 * 
 	 * smoothedNodeStorage contains every node, generated by RRT.
 	 * Also, they can only be read from back to front, because of the linked list
 	 * 
-	 * @param smoothedNodeStorage
 	 * @return result
 	 */
 	private List<IVector2> transformToPathPointList()
@@ -735,285 +398,56 @@ public class ERRTPlanner_WPC
 		// last element, added to nodeStorage is goal (or another node, damn close to it)
 		Node currentNode = goalNode;
 		
-		List<IVector2> result = new ArrayList<IVector2>();
-		// result.add(0, new Vector2(currentNode , 0 , endAngle));
-		while (currentNode.parent != null)
+		final List<IVector2> result = new ArrayList<IVector2>();
+		while (currentNode.getParent() != null)
 		{
 			result.add(0, new Vector2(currentNode));
-			currentNode = currentNode.parent;
+			currentNode = currentNode.getParent();
 		}
-		
 		return result;
 	}
 	
-
-	// /**
-	// * bot moves, so it has to be checked, if bot already reached a path point. </br>
-	// * if so, removes it
-	// *
-	// * @return
-	// */
-	// private Path actualizeOldPath()
-	// {
-	// // should run till return statement is reached
-	// while (true)
-	// {
-	// if (oldPath.path.size() > 1)
-	// {
-	// IVector2 ppA = oldPath.path.get(0);
-	// IVector2 ppB = oldPath.path.get(1);
-	//
-	// float distanceX = ppB.x() - ppA.x();
-	// float distanceY = ppB.y() - ppA.y();
-	//
-	// // should run till return statement is reached
-	// float u = ((thisBot.pos.x - ppA.x()) * distanceX + (thisBot.pos.y - ppA.y()) * distanceY)
-	// / (distanceX * distanceX + distanceY * distanceY);
-	//
-	// if (u < 0)
-	// {
-	// // bot is before ppA, i.e. path only has to be actualized, if distance is below POSITIONING_TOLLERANCE
-	// if (thisBot.pos.equals(ppA, POSITIONING_TOLLERANCE * 2))
-	// {
-	// oldPath.path.remove(0);
-	// oldPath.changed = true;
-	// }
-	// return oldPath;
-	// } else
-	// {
-	// // bot has already gone a part of the path
-	// // delete first Vector2 and check again
-	// oldPath.path.remove(0);
-	// oldPath.changed = true;
-	// }
-	// } else
-	// {
-	// return oldPath;
-	// }
-	// }
-	// }
-	//
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-
-	// --------------------------------------------------------------------------
-	// --- temp methods ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	/**
-	 * checks if the direct link between two points is free. returns true if a collision happens
-	 */
-	private synchronized boolean isBotInWay(IVector2 a, IVector2 b, float safetyDistance)
-	{
-		// --- CORRECT, BUT SLOW... ---
-		
-		// System.out.println("-------------");
-		// System.out.println("start: "+xNodeA+" "+yNodeA);
-		// System.out.println("dest : "+xNodeB+" "+yNodeB);
-		// System.out.println("obst : "+botPos.firstElement().x+" "+botPos.firstElement().y);
-		// System.out.println("<<<<<<<<<<<<<<<<<<<<");
-		
-		for (Node pos : botPosList)
-		{
-			if (isElementInWay(a, b, pos, BOT_RADIUS, safetyDistance))
-			{
-				return true;
-			}
-		}
-		
-		return false;
-	}
-	
-
-	/**
-	 * checks if ball would be hit by driving
-	 * algorithm: http://local.wasp.uwa.edu.au/~pbourke/geometry/pointline/
-	 * 
-	 * @param nodeA
-	 * @param nodeB
-	 * @return
-	 */
-	private boolean isBallInWay(IVector2 nodeA, IVector2 nodeB, float safetyDistance)
-	{
-		if (isElementInWay(nodeA, nodeB, ballPos, BALL_RADIUS, safetyDistance))
-		{
-			return true;
-		} else
-		{
-			return false;
-		}
-	}
-	
-
-	/**
-	 * checks if goalpost would be hit by driving
-	 * algorithm: http://local.wasp.uwa.edu.au/~pbourke/geometry/pointline/
-	 * 
-	 * @param nodeA
-	 * @param nodeB
-	 * @return
-	 */
-	private boolean isGoalPostInWay(IVector2 nodeA, IVector2 nodeB, float safetyDistance)
-	{
-		if (isElementInWay(nodeA, nodeB, GOAL_OUR.getGoalPostLeft(), GOALPOST_RADIUS, safetyDistance))
-		{
-			return true;
-		} else if (isElementInWay(nodeA, nodeB, GOAL_OUR.getGoalPostRight(), GOALPOST_RADIUS, safetyDistance))
-		{
-			return true;
-		} else if (isElementInWay(nodeA, nodeB, GOAL_THEIR.getGoalPostLeft(), GOALPOST_RADIUS, safetyDistance))
-		{
-			return true;
-		} else if (isElementInWay(nodeA, nodeB, GOAL_THEIR.getGoalPostRight(), GOALPOST_RADIUS, safetyDistance))
-		{
-			return true;
-		} else
-		{
-			return false;
-		}
-	}
-	
-
-	private boolean isProhibitedFieldAreaInWay(IVector2 nodeA, IVector2 nodeB)
-	{
-		// if there is more than one prohibited area, this check needs to be done for each element
-		if (prohibitCenterCircle)
-		{
-			if (isElementInWay(nodeA, nodeB, centerPoint, CENTER_CIRCLE_RADIUS, 0))// no safety needed
-			{
-				return true;
-			}
-		}
-		
-//		// opponents penalty area 			!!! NOT PROHIBITED BY THE RULES !!!
-//		if (prohibitOpponentPenArea)
-//		{
-//			if (isElementInWay(nodeA, nodeB, opponentsPenAreaCircleCenter, penAreaCircleRadius, 0))// no safety needed
-//			{
-//				return true;
-//			}
-//		}
-		
-		if (prohibitTigersPenArea)
-		{
-			if (isElementInWay(nodeA, nodeB, tigersPenAreaCircleCenter, penAreaCircleRadius, 0))// no safety needed
-			{
-				return true;
-			}
-		}
-		
-		if (isFreekick)
-		{
-			if (isElementInWay(nodeA, nodeB, ballPos, distanceAtFreekick, 0))// no safety needed
-			{
-				return true;
-			}
-		}
-		
-		return false;
-	}
-	
-
-	/**
-	 * checks if element would be hit by driving
-	 * algorithm: http://local.wasp.uwa.edu.au/~pbourke/geometry/pointline/
-	 * 
-	 * @param nodeA
-	 * @param nodeB
-	 * @return
-	 */
-	private boolean isElementInWay(IVector2 nodeA, IVector2 nodeB, IVector2 elementPos, float elementRadius,
-			float safetyDistance)
-	{
-		if (nodeA.equals(nodeB))
-		{
-			return false;
-		}
-		
-		float distanceX = nodeB.x() - nodeA.x();
-		float distanceY = nodeB.y() - nodeA.y();
-		IVector2 nearest = null;
-		
-		float u = ((elementPos.x() - nodeA.x()) * distanceX + (elementPos.y() - nodeA.y()) * distanceY)
-				/ (distanceX * distanceX + distanceY * distanceY);
-		
-		if (u < 0)
-		{
-			nearest = nodeA;
-		} else if (u > 1)
-		{
-			nearest = nodeB;
-		} else
-		{
-			// nearest point on line is between nodeA and nodeB
-			nearest = new Node(nodeA.x() + (int) (u * distanceX), nodeA.y() + (int) (u * distanceY));
-		}
-		
-		if (nearest.equals(elementPos, (BOT_RADIUS + elementRadius + safetyDistance)))
-		{
-			return true;
-		}
-		return false;
-	}
-	
-
-	/**
-	 * creates double linked list, so that it can be traversed both directions
-	 * 
-	 * @param tree
-	 * @return
-	 */
-	private ArrayList<Node> makeTreeDoubleLinked(ArrayList<Node> tree)
-	{
-		Node currentNode = goalNode;
-		
-		while (currentNode.parent != null)
-		{
-			currentNode.parent.setSuccessor(currentNode);
-			currentNode = currentNode.parent;
-		}
-		
-		return tree;
-	}
-	
-
 	/**
 	 * smoothes the path from current botPos to goal
 	 * doesn't affect all the other Nodes in nodeStorage
 	 * 
 	 * at the moment: input will be changed
 	 * @param tree
-	 * 
-	 * @param nodeStorage
-	 * @return
+	 * @param pfi
 	 */
-	private ArrayList<Node> smoothTree(ArrayList<Node> tree)
+	public void smoothTree(ITree tree, PathFinderInput pfi)
 	{
+		// set the successors on the path to have a double linked list
+		tree.makeDoubleLinkedList();
+		
 		Node end = goalNode;
-		Node start = tree.get(0);// start with first (-->current bot pos);
-		float eps = 0.01f;
+		Node start = tree.getRoot();
 		
+		final float eps = 0.01f;
 		// begin with node after goalNode (direct connection to this node has already been checked in grow tree)
-		end = end.parent;
-		
+		end = end.getParent();
 		// if null, then node before startnode is reached
-		while (end.parent != null)
+		while ((end != null) && (end.getParent() != null))
 		{
-			while (!start.equals(end, eps))
+			while ((start != null) && !start.equals(end, eps))
 			{
 				// check line between current node and compareNode
-				if (isWayOK(start, end, usedSafetyDistance))
+				if (fieldInfo.isWayOK(start, end))
 				{
-					start.addChild(end);
-					start.setSuccessor(end);
+					// remove all nodes between start and end
+					tree.removeBetween(start, end, true);
 					
 					// this may be a very long line. so i subdivide it.
-					subdividePath(tree, start, end);
+					addSubdividePath(tree, start, end, true);
+					
 					// make it break
 					start = end;
+					
+					if (Float.isNaN(start.x()) || Float.isNaN(start.x()))
+					{
+						log.fatal("BÃ¶se smoothTree NaNs");
+					}
 				}
 				// if not, move forward (in this case backward ;-)
 				else
@@ -1021,129 +455,118 @@ public class ERRTPlanner_WPC
 					start = start.getSuccessor();
 				}
 			}
-			end = end.parent;
-			start = tree.get(0);// start next time with first again (-->current bot pos);
+			end = end.getParent();
+			// start next time with first again (-->current bot pos)
+			start = tree.getRoot();
 		}
-		// now the path between goal and start is much better *slap on my back*
 		
-		return tree;
+		// reduce the points on long straight parts (easier spline afterwards)
+		reduceAmountOfPoints(tree);
 	}
 	
-
-	private void reduceAmountOfPoints(ArrayList<Node> tree)
+	
+	/**
+	 * reduce the amount of points on a straight line of the path
+	 * improves the spline
+	 * 
+	 * @param tree
+	 */
+	public void reduceAmountOfPoints(ITree tree)
 	{
-		
 		Node currentNode = goalNode;
 		
 		// if null, then node before startnode is reached
-		while (currentNode.parent.parent != null)
+		while ((currentNode != null) && (currentNode.getParent() != null)
+				&& (currentNode.getParent().getParent() != null))
 		{
 			// check line between current node and his grandfather. if free, let grandpa adopt you
-			if (isWayOK(currentNode, currentNode.parent.parent, usedSafetyDistance))
+			if (fieldInfo.isWayOK(currentNode, currentNode.getParent().getParent()))
 			{
-				currentNode.parent = currentNode.parent.parent;
-				currentNode.parent.setSuccessor(currentNode); // this has been your grandpa some milli-seconds ago
+				tree.removeBetween(currentNode.getParent().getParent(), currentNode, true);
 			}
 			// if not, move forward (in this case backward ;-)
 			else
 			{
-				currentNode = currentNode.parent;
+				currentNode = currentNode.getParent();
 			}
 		}
 		
 		// now the path between finalDestination and start has much less points *slap on my back*
 	}
 	
-
-	/**
-	 * gets one random node from waypointcache
-	 * shouldn't be called if WPC_fill_lvl == 0
-	 * @return
-	 */
-	private Node getNodeFromWPC()
-	{
-		// generates a value [0,1[. multiplys with fill lvl of waypointcache
-		// --> index between 0 and fill lvl of WPC
-		// returns that element
-		return waypoints[(int) (generator.nextFloat() * WPCFillLvl)];
-	}
 	
-
 	/**
-	 * fills waypointcache with all the nodes found on the path
+	 * add a long straight path to the tree
+	 * but subdivide it in small pieces
 	 * 
+	 * @param tree
+	 * @param start the Node where the long path should start
+	 * @param end the goal of the new path (will be created, too)
+	 * @param isSuccessor determines if the successor variable should be set, too
 	 */
-	private void fillWPC()
+	public void addSubdividePath(ITree tree, Node start, Node end, boolean isSuccessor)
 	{
-		Node currentNode = goalNode;
+		// precaclulation to get the amount of intermediate points
+		final Node subtractTemp = new Node(new Vector2f(start.x, start.y));
+		final float dist = subtractTemp.subtract(end).getLength2();
 		
-		// if null, then startnode is reached
-		while (currentNode.parent != null)
+		// amount of intermediate points needed
+		final float iterations = dist / adjustableParams.getStepSize();
+		
+		Node currentNode = start;
+		
+		// for loop to protect heap space if something goes wrong
+		for (int i = 0; (i < (Math.floor(iterations) - 1)); i++)
 		{
-			currentNode = currentNode.parent;
-			
-			insertNodeToWPC(currentNode);
+			final Node ext = new Node(GeoMath.stepAlongLine(currentNode, end, adjustableParams.getStepSize()));
+			tree.add(currentNode, ext, isSuccessor);
+			currentNode = ext;
 		}
+		// add a link to the end node
+		tree.add(currentNode, end, isSuccessor);
 	}
 	
-
+	
+	// -------------------- ONLY FOR DEBUG ---------------------
 	/**
-	 * puts a node into the waypointcache
+	 * @return the parameters used at the moment
 	 */
-	private void insertNodeToWPC(Node node)
+	public TuneableParameter getAdjustableParams()
 	{
-		// WPC is not yet full. put at the end
-		if (WPCFillLvl < WPC_SIZE)
-		{
-			waypoints[WPCFillLvl] = new Node(node);
-			WPCFillLvl++;
-			return;
-		}
-		// WPC is full. replace random node
-		else
-		{
-			waypoints[(int) (generator.nextFloat() * WPC_SIZE)] = new Node(node);
-			return;
-		}
+		return adjustableParams;
 	}
 	
-
-	private Path calcEscapeRoute(Node obstacle)
+	
+	/**
+	 * print ghe gathered information stored in the debugger (calculation times, driving times,...)
+	 */
+	public void printDebuggerLogs()
 	{
-		// calc node away from obstacle
-		IVector2 escapePoint = AIMath.stepAlongLine(obstacle, thisBot.pos, escapeStepSize);
-		
-		pathPointList = new ArrayList<IVector2>(1);
-		pathPointList.add(escapePoint);
-		
-		Path newPath = new Path(thisBot.id, pathPointList);
-		
-		return newPath;
+		log.warn(paramDebug.toString());
 	}
 	
-
-	private Node botThatIsSuckingAtItsPositionByHinderingMeToCalcAGoodPath()
+	
+	/**
+	 * a path is complete and the goal is reached, for the next path other new parameters are taken
+	 * @param adjustableParams
+	 * @param wFrame
+	 */
+	public void goalReached(TuneableParameter adjustableParams, WorldFrame wFrame)
 	{
-		Node nearestNode = null;
-		float nearest = Float.MAX_VALUE;
-		float current;
-		
-		for (Node botPos : botPosList)
-		{
-			current = AIMath.distancePP(thisBot.pos, botPos);
-			{
-				if (current < nearest)
-				{
-					nearest = current;
-					nearestNode = new Node(botPos);
-				}
-			}
-		}
-		if ((AIMath.distancePP(thisBot, nearestNode) > ((2 * BOT_RADIUS) + usedSafetyDistance))
-				&& isElementInWay(thisBot.pos, goal, nearestNode, BOT_RADIUS, 0))
-		{
-			nearestNode = null;
-		}
-		return nearestNode;
+		this.adjustableParams = adjustableParams;
+		waypoints = new Waypoints(adjustableParams);
+		paramDebug.goalReached();
+		paramDebug.changeParameterConfigToTest(adjustableParams);
 	}
+	
+	
+	/**
+	 * a path is complete and the goal is reached
+	 */
+	public void goalReached()
+	{
+		paramDebug.goalReached();
+	}
+	
+	
 }

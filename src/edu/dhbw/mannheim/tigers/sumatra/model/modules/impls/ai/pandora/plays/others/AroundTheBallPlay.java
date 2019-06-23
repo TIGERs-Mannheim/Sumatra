@@ -9,21 +9,23 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.others;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2f;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.AIMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.field.Goal;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.types.Goal;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.APlay;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.other.MoveRole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.move.MoveRole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.move.MoveRole.EMoveBehavior;
 
 
 /**
- * All 5 Robots shall move on a circle around the ball-position.
- * @see MoveRole
- * @author Malte
+ * All available Robots shall move on a circle around the ball-position.
+ * (@see {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.move.MoveWithDistanceToPointRole}
+ * )
+ * @author Malte, OliverS
  * 
  */
 public class AroundTheBallPlay extends APlay
@@ -32,63 +34,64 @@ public class AroundTheBallPlay extends APlay
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	/**  */
-	private static final long	serialVersionUID	= -5521150672629446483L;
+	private final Goal	goal		= AIConfig.getGeometry().getGoalOur();
 	
-	private final Goal			goal					= AIConfig.getGeometry().getGoalOur();
-	
-	private Vector2				ballPos;
-	private float					radius				= AIConfig.getPlays().getAroundTheBall().getRadius();
-	
-	private Vector2				direction;
-	
-	private MoveRole				role1;
-	private MoveRole				role2;
-	private MoveRole				role3;
-	private MoveRole				role4;
-	private MoveRole				role5;
+	private final float	radius	= AIConfig.getGeometry().getBotToBallDistanceStop();
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	public AroundTheBallPlay(AIInfoFrame aiFrame)
+	/**
+	 * @param aiFrame
+	 * @param numAssignedRoles
+	 */
+	public AroundTheBallPlay(AIInfoFrame aiFrame, int numAssignedRoles)
 	{
-		super(EPlay.AROUND_THE_BALL, aiFrame);
-		Vector2f bp = aiFrame.worldFrame.ball.pos;
-		role1 = new MoveRole();
-		addAggressiveRole(role1, bp);
-		role2 = new MoveRole();
-		addAggressiveRole(role2, bp);
-		role3 = new MoveRole();
-		addAggressiveRole(role3, bp);
-		role4 = new MoveRole();
-		addAggressiveRole(role4, bp);
-		role5 = new MoveRole();
-		addAggressiveRole(role5, bp);
+		super(aiFrame, numAssignedRoles);
+		
+		setTimeout(Long.MAX_VALUE);
+		
+		for (int i = 0; i < getNumAssignedRoles(); i++)
+		{
+			addAggressiveRole(new MoveRole(EMoveBehavior.LOOK_AT_BALL), aiFrame.worldFrame.ball.getPos());
+		}
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
 	protected void beforeUpdate(AIInfoFrame currentFrame)
 	{
-		ballPos = new Vector2(currentFrame.worldFrame.ball.pos);
+		IVector2 ballPos = new Vector2(currentFrame.worldFrame.ball.getPos());
 		
 		// direction: vector from ball to the middle of the goal!
-		direction = goal.getGoalCenter().subtractNew(ballPos);
-		role1.updateCirclePos(ballPos, radius, direction);
+		Vector2 direction = goal.getGoalCenter().subtractNew(ballPos);
+		// sets the length of the vector to 'radius'
+		direction.scaleTo(radius);
 		
-		// some little changes to the first direction
-		role2.updateCirclePos(ballPos, radius, direction.turnNew(AIMath.PI / 4));
-		role3.updateCirclePos(ballPos, radius, direction.turnNew(AIMath.PI / 2));
-		role4.updateCirclePos(ballPos, radius, direction.turnNew(-AIMath.PI / 4));
-		role5.updateCirclePos(ballPos, radius, direction.turnNew(-AIMath.PI / 2));
+		float turn = AngleMath.PI / 2;
+		
+		for (final ARole role : getRoles())
+		{
+			final MoveRole moveRole = (MoveRole) role;
+			
+			final IVector2 destination = ballPos.addNew(direction.turnNew(turn));
+			
+			moveRole.updateDestination(destination);
+			turn -= AngleMath.PI / 5;
+		}
 	}
 	
-
+	
+	@Override
+	protected void afterUpdate(AIInfoFrame currentFrame)
+	{
+		// nothing todo
+	}
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------

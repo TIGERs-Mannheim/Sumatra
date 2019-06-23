@@ -20,5 +20,5 @@ public interface IEmergencyStop
 	/**
 	 * Perform an emergency stop.
 	 */
-	public void emergencyStop();
+	void emergencyStop();
 }

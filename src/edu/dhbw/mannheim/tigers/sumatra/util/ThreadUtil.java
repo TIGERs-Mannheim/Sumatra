@@ -18,7 +18,13 @@ import java.util.concurrent.locks.LockSupport;
  * 
  * @author Gero
  */
-public class ThreadUtil {
+public final class ThreadUtil
+{
+	private ThreadUtil()
+	{
+		
+	}
+	
 	
 	/**
 	 * Uses {@link LockSupport#parkNanos(long)} to send this thread to sleep <i>safely</i>. That is, this thread is
@@ -29,7 +35,8 @@ public class ThreadUtil {
 	 * 
 	 * @param sleepTotal The time this thread should sleep [ns]
 	 */
-	public static void parkNanosSafe(long sleepTotal) {
+	public static void parkNanosSafe(long sleepTotal)
+	{
 		final long sleepStart = System.nanoTime();
 		long stillSleep = sleepTotal;
 		
@@ -38,11 +45,10 @@ public class ThreadUtil {
 			LockSupport.parkNanos(stillSleep);
 			long timeSinceStart = System.nanoTime() - sleepStart;
 			stillSleep = sleepTotal - timeSinceStart;
-		}
-		while (stillSleep > 0);
+		} while (stillSleep > 0);
 	}
 	
-
+	
 	/**
 	 * Uses {@link LockSupport#parkNanos(long)} to send this thread to sleep <i>safely</i>. That is, this thread is
 	 * guaranteed to really sleep the given time. Sleep may be interrupted by setting the cancelSwitch to
@@ -53,18 +59,21 @@ public class ThreadUtil {
 	 * 
 	 * @return Whether the thread really slept enough or it has been canceled
 	 */
-	public static boolean parkNanosSafe(long sleepTotal, AtomicBoolean cancelSwitch) {
+	public static boolean parkNanosSafe(long sleepTotal, AtomicBoolean cancelSwitch)
+	{
 		final long sleepStart = System.nanoTime();
 		long stillSleep = sleepTotal;
 		
 		boolean sleptEnough = false;
 		
-		do {
+		do
+		{
 			// Sleep
 			LockSupport.parkNanos(stillSleep);
 			
 			// Check:
-			if (cancelSwitch.get()) {
+			if (cancelSwitch.get())
+			{
 				return sleptEnough;
 			}
 			

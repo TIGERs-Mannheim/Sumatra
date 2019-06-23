@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: Jun 3, 2011
  * Author(s): Birgit
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.flyingBalls;
@@ -14,35 +14,39 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import org.apache.log4j.Logger;
+
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.WPConfig;
 
+
 /**
- * TODO Birgit, add comment!
- * - What should this type do (in one sentence)?
- * - If not intuitive: A simple example how to use this class
+ * Save data of a flying things in a file.
  * 
  * @author Birgit
  * 
  */
-public class WriteFlyData
+public final class WriteFlyData
 {
-// --------------------------------------------------------------------------
+	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static WriteFlyData	instance;
+	// Logger
+	private static final Logger				log			= Logger.getLogger(WriteFlyData.class.getName());
 	
-	private double[][]			posOrig;
-	private double[][]			posCorr;
-	private double[]				distance;
-	private double[]				heightIntern;
-	private double[]				heightOut;
-	private boolean[] 			isFlying;
+	private static volatile WriteFlyData	instance;
 	
-	private final int				SAVED_ITEMS	= 10000;
-	private int						count;
-
-	private FileOutputStream	fop;
-	private File					f;
+	private final double[][]					posOrig;
+	private final double[][]					posCorr;
+	private final double[]						distance;
+	private final double[]						heightIntern;
+	private final double[]						heightOut;
+	private final boolean[]						isFlying;
+	
+	private static final int					SAVED_ITEMS	= 10000;
+	private int										count;
+	
+	private FileOutputStream					fop;
+	private final File							f;
 	
 	
 	// --------------------------------------------------------------------------
@@ -51,18 +55,22 @@ public class WriteFlyData
 	private WriteFlyData()
 	{
 		f = new File(WPConfig.FLYING_DEBUGFILE);
-
+		
 		posOrig = new double[SAVED_ITEMS][2];
 		posCorr = new double[SAVED_ITEMS][2];
 		distance = new double[SAVED_ITEMS];
-		heightIntern  =  new double[SAVED_ITEMS];
-		heightOut =  new double[SAVED_ITEMS];
+		heightIntern = new double[SAVED_ITEMS];
+		heightOut = new double[SAVED_ITEMS];
 		isFlying = new boolean[SAVED_ITEMS];
 		
 		count = 0;
 	}
 	
-
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public static WriteFlyData getInstance()
 	{
 		if (instance == null)
@@ -72,10 +80,13 @@ public class WriteFlyData
 		return instance;
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 *
+	 */
 	public void clear()
 	{
 		
@@ -93,25 +104,36 @@ public class WriteFlyData
 		count = 0;
 	}
 	
+	
+	/**
+	 * 
+	 * @param posOrigX
+	 * @param posOrigY
+	 * @param posCorrX
+	 * @param posCorrY
+	 * @param heightIntern
+	 * @param heightOut
+	 * @param distance
+	 * @param isFlying
+	 */
 	@SuppressWarnings(value = { "unused" })
-	public void addDataSet(
-			final double posOrigX, final double  posOrigY,
-			final double posCorrX, final double  posCorrY,
-			final double  heightIntern, final double heightOut,
-			final double distance, final boolean isFlying )
+	public void addDataSet(final double posOrigX, final double posOrigY, final double posCorrX, final double posCorrY,
+			final double heightIntern, final double heightOut, final double distance, final boolean isFlying)
 	{
-		if (!WPConfig.DEBUG_FLYING  )
+		if (!WPConfig.DEBUG_FLYING)
+		{
 			return;
+		}
 		if (isFull())
 		{
 			write();
 			clear();
 		}
 		
-		this.posOrig[count][0] = posOrigX;
-		this.posOrig[count][1] = posOrigY;
-		this.posCorr[count][0] = posCorrX;
-		this.posCorr[count][1] = posCorrY;
+		posOrig[count][0] = posOrigX;
+		posOrig[count][1] = posOrigY;
+		posCorr[count][0] = posCorrX;
+		posCorr[count][1] = posCorrY;
 		this.heightIntern[count] = heightIntern;
 		this.heightOut[count] = heightOut;
 		this.distance[count] = distance;
@@ -119,63 +141,75 @@ public class WriteFlyData
 		
 		count++;
 	}
-
 	
+	
+	/**
+	 *
+	 */
 	public void write()
 	{
 		String str;
 		
-		for(int i = 0; i < count; i++)
+		for (int i = 0; i < count; i++)
 		{
 			str = "" + i;
-		   str += "\t " + posOrig[i][0];
-		   str += "\t " + posOrig[i][1];
-		   str += "\t " + posCorr[i][0];
-		   str += "\t " + posCorr[i][1];
-		   str += "\t " + heightIntern[i];
-		   str += "\t " + heightOut[i];
-		   str += "\t " + distance[i];
-
-		   if(true == isFlying[i])
-		   	str += " 1";
-		   else
-		   	str += " 0";
-
+			str += "\t " + posOrig[i][0];
+			str += "\t " + posOrig[i][1];
+			str += "\t " + posCorr[i][0];
+			str += "\t " + posCorr[i][1];
+			str += "\t " + heightIntern[i];
+			str += "\t " + heightOut[i];
+			str += "\t " + distance[i];
+			
+			if (isFlying[i])
+			{
+				str += " 1";
+			} else
+			{
+				str += " 0";
+			}
+			
 			str += " \n";
 			try
 			{
 				fop.write(str.getBytes());
-			} catch (IOException err)
+			} catch (final IOException err)
 			{
-				err.printStackTrace();
+				log.error("IOException", err);
 			}
 		}
-
+		
 	}
 	
-
+	
+	/**
+	 *
+	 */
 	public void close()
 	{
 		try
 		{
 			fop.close();
-		} catch (IOException err)
+		} catch (final IOException err)
 		{
-			err.printStackTrace();
+			log.error("IOException", err);
 		}
 		
 	}
 	
-
+	
+	/**
+	 *
+	 */
 	public void open()
 	{
 		try
 		{
 			fop = new FileOutputStream(f);
-
-		} catch (FileNotFoundException err)
+			
+		} catch (final FileNotFoundException err)
 		{
-			err.printStackTrace();
+			log.error("IOException", err);
 		}
 		
 		String header = "#";
@@ -192,13 +226,13 @@ public class WriteFlyData
 		try
 		{
 			fop.write(header.getBytes());
-		} catch (IOException err)
+		} catch (final IOException err)
 		{
-			err.printStackTrace();
+			log.error("IOException", err);
 		}
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -206,4 +240,5 @@ public class WriteFlyData
 	private boolean isFull()
 	{
 		return ((count) > SAVED_ITEMS);
-	}}
+	}
+}

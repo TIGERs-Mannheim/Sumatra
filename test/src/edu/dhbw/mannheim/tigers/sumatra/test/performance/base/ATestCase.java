@@ -26,32 +26,48 @@ public abstract class ATestCase implements Runnable
 	protected final ArrayList<?>	list	= new ArrayList<Object>();
 	
 	
+	/**
+	 * 
+	 * @param name
+	 * @param parent
+	 */
 	public ATestCase(String name, ATestSuite parent)
 	{
 		this.parent = parent;
 		this.name = name;
 	}
 	
-
+	
+	/**
+	 *
+	 */
 	public abstract void prepare();
 	
-
+	
+	/**
+	 * @return
+	 */
 	public String getName()
 	{
-		return this.name;
+		return name;
 	}
 	
-
+	
+	/**
+	 */
 	public void teardown()
 	{
 	}
 	
 	
-	public void writeRandomData() {
+	/**
+	 */
+	public void writeRandomData()
+	{
 		// Prevent compiler from erasing the whole method
-		Random r = new Random();
-		int randomIndex = r.nextInt(list.size());
-		Object randomObj = list.get(randomIndex);
+		final Random r = new Random();
+		final int randomIndex = r.nextInt(list.size());
+		final Object randomObj = list.get(randomIndex);
 		parent.write(randomObj.toString());
 	}
 }

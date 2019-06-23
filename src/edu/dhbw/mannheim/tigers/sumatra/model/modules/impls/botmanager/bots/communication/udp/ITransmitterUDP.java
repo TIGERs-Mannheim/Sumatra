@@ -29,24 +29,48 @@ public interface ITransmitterUDP
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	public abstract void enqueueCommand(ACommand cmd);
+	/**
+	 * 
+	 * @param cmd
+	 */
+	void enqueueCommand(ACommand cmd);
 	
-
-	public abstract void start();
 	
-
-	public abstract void stop();
+	/**
+	 *
+	 */
+	void start();
 	
-
-	public abstract void setSocket(DatagramSocket newSocket) throws IOException;
 	
-
-	public abstract void setDestination(InetAddress dstIp, int dstPort);
+	/**
+	 *
+	 */
+	void stop();
 	
-
+	
+	/**
+	 * 
+	 * @param newSocket
+	 * @throws IOException
+	 */
+	void setSocket(DatagramSocket newSocket) throws IOException;
+	
+	
+	/**
+	 * 
+	 * @param dstIp
+	 * @param dstPort
+	 */
+	void setDestination(InetAddress dstIp, int dstPort);
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	public abstract Statistics getStats();
+	/**
+	 * 
+	 * @return
+	 */
+	Statistics getStats();
 	
 }

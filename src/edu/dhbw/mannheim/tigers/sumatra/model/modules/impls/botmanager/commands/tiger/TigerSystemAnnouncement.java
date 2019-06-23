@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 03.03.2011
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
@@ -13,6 +13,7 @@ import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+
 
 /**
  * System announcement from a bot.
@@ -27,24 +28,28 @@ public class TigerSystemAnnouncement extends ACommand
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final Logger LOG = Logger.getLogger(TigerSystemAnnouncement.class);
+	// Logger
+	private static final Logger	log		= Logger.getLogger(TigerSystemAnnouncement.class.getName());
 	
-	private int cpuId[] = new int[3];
+	private final int					cpuId[]	= new int[3];
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 */
 	public TigerSystemAnnouncement()
 	{
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -56,9 +61,9 @@ public class TigerSystemAnnouncement extends ACommand
 	 */
 	public void setCpuId(String id)
 	{
-		if(id.length() != 24)
+		if (id.length() != 24)
 		{
-			LOG.error("Invalid CPU ID: " + id);
+			log.error("Invalid CPU ID: " + id);
 			return;
 		}
 		
@@ -69,12 +74,17 @@ public class TigerSystemAnnouncement extends ACommand
 			cpuId[0] = Integer.parseInt(id.substring(16, 24), 16);
 		}
 		
-		catch(NumberFormatException e)
+		catch (final NumberFormatException e)
 		{
-			LOG.error("Invalid CPU ID: " + id);
+			log.error("Invalid CPU ID: " + id);
 		}
 	}
 	
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public String getCpuId()
 	{
 		String id;
@@ -85,7 +95,8 @@ public class TigerSystemAnnouncement extends ACommand
 		
 		return id;
 	}
-
+	
+	
 	@Override
 	public void setData(byte[] data)
 	{
@@ -93,24 +104,27 @@ public class TigerSystemAnnouncement extends ACommand
 		cpuId[1] = byteArray2Int(data, 4);
 		cpuId[2] = byteArray2Int(data, 8);
 	}
-
+	
+	
 	@Override
 	public byte[] getData()
 	{
-		byte data[] = new byte[getDataLength()];
+		final byte data[] = new byte[getDataLength()];
 		
 		int2ByteArray(data, 0, cpuId[0]);
 		int2ByteArray(data, 4, cpuId[1]);
 		int2ByteArray(data, 8, cpuId[2]);
-
+		
 		return data;
 	}
+	
 	
 	@Override
 	public int getCommand()
 	{
 		return CommandConstants.CMD_SYSTEM_ANNOUNCEMENT;
 	}
+	
 	
 	@Override
 	public int getDataLength()

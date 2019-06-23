@@ -32,18 +32,22 @@ public class BotCenterPresenterNoGui implements IBotCenterPresenter, ISumatraVie
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final int	ID				= 2;
+	private static final int		ID		= 2;
+	private static final String	TITLE	= "Bot Center";
+	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 */
 	public BotCenterPresenterNoGui()
 	{
 		// Register at moduli-observer to be prepared to react on moduli-state changes
 		ModuliStateAdapter.getInstance().addObserver(this);
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -55,71 +59,71 @@ public class BotCenterPresenterNoGui implements IBotCenterPresenter, ISumatraVie
 			case ACTIVE:
 				break;
 			
-
+			
 			default:
 				break;
 		}
 	}
 	
-
+	
 	@Override
 	public void reloadNode(DefaultMutableTreeNode node)
 	{
 	}
 	
-
+	
 	@Override
-	public int getID()
+	public int getId()
 	{
 		return ID;
 	}
 	
-
+	
 	@Override
 	public String getTitle()
 	{
-		return null;
+		return TITLE;
 	}
 	
-
+	
 	@Override
 	public Component getViewComponent()
 	{
 		return null;
 	}
 	
-
+	
 	@Override
 	public List<JMenu> getCustomMenus()
 	{
 		return null;
 	}
 	
-
+	
 	@Override
 	public void onShown()
 	{
 	}
 	
-
+	
 	@Override
 	public void onHidden()
 	{
 	}
 	
-
+	
 	@Override
 	public void onFocused()
 	{
 	}
 	
-
+	
 	@Override
 	public void onFocusLost()
 	{
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------

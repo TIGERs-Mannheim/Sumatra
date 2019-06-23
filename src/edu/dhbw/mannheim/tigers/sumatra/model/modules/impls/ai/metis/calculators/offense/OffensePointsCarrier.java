@@ -11,14 +11,20 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.offense;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Rectangle;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2f;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.WorldFrame;
+import java.util.ArrayList;
+import java.util.List;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.valueobjects.PointCloud;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.valueobjects.ValuePoint;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.field.Goal;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.rectangle.Rectangle;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.types.Goal;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.types.PointCloud;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.types.ValuePoint;
 
 
 /**
@@ -33,15 +39,15 @@ public class OffensePointsCarrier extends AOffensePoints
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private static int	myMemorySize		= 3;
-	private static int	myTriesPerCircle	= 10;
+	private static int			myMemorySize		= 3;
+	private static int			myTriesPerCircle	= 10;
 	
-	private Goal			goal					= AIConfig.getGeometry().getGoalTheir();
-	private final float	goalSize				= goal.getSize();
+	private final Goal			goal					= AIConfig.getGeometry().getGoalTheir();
+	private final float			goalSize				= goal.getSize();
 	
-	private final float	fieldLength			= AIConfig.getGeometry().getFieldLength();
-	private final float	fieldWidth			= AIConfig.getGeometry().getFieldWidth();
-	private final float	penaltyAreaLength	= 500;
+	private final float			fieldLength			= AIConfig.getGeometry().getFieldLength();
+	private final float			fieldWidth			= AIConfig.getGeometry().getFieldWidth();
+	private static final float	penaltyAreaLength	= 500;
 	
 	/** enum to classify different ball position y-values */
 	private enum EBallPositionY
@@ -49,7 +55,7 @@ public class OffensePointsCarrier extends AOffensePoints
 		LEFT,
 		RIGHT,
 		CENTER
-	};
+	}
 	
 	private EBallPositionY	ballY;
 	
@@ -58,7 +64,7 @@ public class OffensePointsCarrier extends AOffensePoints
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-
+	
 	/**
 	 */
 	public OffensePointsCarrier()
@@ -66,24 +72,24 @@ public class OffensePointsCarrier extends AOffensePoints
 		super(myMemorySize, myTriesPerCircle);
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
 	protected PointCloud generateNewCloud(WorldFrame worldFrame)
 	{
-		Vector2f ballPos = worldFrame.ball.pos;
+		final IVector2 ballPos = worldFrame.ball.getPos();
 		
-		Vector2 referencePoint = new Vector2(AIConfig.INIT_VECTOR);
+		final Vector2 referencePoint = new Vector2(GeoMath.INIT_VECTOR);
 		float rectLength = 0;
 		float rectWidth = 0;
 		
 		// get attack mode
-		if (ballPos.y > goalSize / 2)
+		if (ballPos.y() > (goalSize / 2))
 		{
 			ballY = EBallPositionY.LEFT;
-		} else if (ballPos.y < -goalSize / 2)
+		} else if (ballPos.y() < (-goalSize / 2))
 		{
 			ballY = EBallPositionY.RIGHT;
 		} else
@@ -107,7 +113,7 @@ public class OffensePointsCarrier extends AOffensePoints
 		}
 		
 		// get rectangle's length
-		rectLength = fieldLength / 2 - penaltyAreaLength;
+		rectLength = (fieldLength / 2) - penaltyAreaLength;
 		
 		// get rectangle's width
 		if (ballY == EBallPositionY.LEFT)
@@ -122,15 +128,15 @@ public class OffensePointsCarrier extends AOffensePoints
 		}
 		
 		// create rectangle
-		Rectangle rect = new Rectangle(referencePoint, rectLength, rectWidth);
+		final Rectangle rect = new Rectangle(referencePoint, rectLength, rectWidth);
 		
 		// get random point from rectangle
-		Vector2 point = rect.getRandomPointInShape();
+		final Vector2 point = rect.getRandomPointInShape();
 		
 		return new PointCloud(new ValuePoint(point.x, point.y));
 	}
 	
-
+	
 	@Override
 	protected float evaluateCloud(PointCloud cloud, WorldFrame wf)
 	{
@@ -150,13 +156,18 @@ public class OffensePointsCarrier extends AOffensePoints
 		return newValue;
 	}
 	
-
+	
+	/**
+	 * @param point
+	 * @param wf
+	 * @return
+	 */
 	public static float evaluatePoint(Vector2 point, WorldFrame wf)
 	{
 		
 		// here, all different steps, that evaluate a cloud, should be called from the supertype,
 		// and be multiplied with the value please put new evaluateMethods into the supertype
-		PointCloud cloud = new PointCloud(new ValuePoint(point.x, point.y));
+		final PointCloud cloud = new PointCloud(new ValuePoint(point.x, point.y));
 		
 		float newValue = 100.0f;
 		
@@ -170,7 +181,29 @@ public class OffensePointsCarrier extends AOffensePoints
 		
 		return newValue;
 	}
+	
+	
+	@Override
+	protected void setInfoInTacticalField(AIInfoFrame curFrame, List<ValuePoint> points)
+	{
+		curFrame.tacticalInfo.setOffCarrierPoints(points);
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	
+	@Override
+	public void fallbackCalc(AIInfoFrame curFrame, AIInfoFrame preFrame)
+	{
+		// create default list
+		final Vector2f fieldCenter = AIConfig.getGeometry().getCenter();
+		final List<ValuePoint> defaultList = new ArrayList<ValuePoint>();
+		defaultList.add(new ValuePoint(fieldCenter.x(), fieldCenter.y()));
+		setInfoInTacticalField(curFrame, defaultList);
+	}
+	
+	
 }

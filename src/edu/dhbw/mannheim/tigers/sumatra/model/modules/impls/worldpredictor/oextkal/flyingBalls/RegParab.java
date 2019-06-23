@@ -1,16 +1,16 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: May 17, 2011
  * Author(s): Birgit
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.flyingBalls;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Coord;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.types.Matrix;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.Coord;
 
 
 /**
@@ -24,178 +24,198 @@ public class RegParab
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private double a = Def.DUMMY;
-	private double b = Def.DUMMY;
-	private double c = Def.DUMMY;
-	private double d = Def.DUMMY;
-	private double e = Def.DUMMY;
-	private double alpha = Def.DUMMY;
+	private double			a		= Def.DUMMY;
+	private double			b		= Def.DUMMY;
+	private double			c		= Def.DUMMY;
+	private double			d		= Def.DUMMY;
+	private double			e		= Def.DUMMY;
+	private double			alpha	= Def.DUMMY;
 	
-	private Matrix m_A;
-	private Matrix m_v_b;
+	private final Matrix	mA;
+	private final Matrix	mvb;
 	
-	//private Jama.Matrix m_A;
-	//private Jama.Matrix m_v_b;
-
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
+	/**
+	 * @param data
+	 */
 	public RegParab(final Coord[] data)
 	{
-		//if not enough elements are given, throw an exception
-		int n = data.length;
-	
-		if(n < 4)
+		// if not enough elements are given, throw an exception
+		final int n = data.length;
+		
+		if (n < 4)
 		{
 			throw new IllegalArgumentException("A RegParab-Calculation is only with at least 4 elements possible");
 		}
-		double m_a[][] = new double[3][3];
-		double v_b[] = {0,0,0};
+		final double ma[][] = new double[3][3];
+		final double vb[] = { 0, 0, 0 };
 		
 		
-		//fill Matrix
-		double Zxi1   = 0;
-		double Zxi2   = 0;
-		double Zxi3   = 0;
-		double Zxi4   = 0;
-		double Zxiyi  = 0;
-		double Zxi2yi = 0;
-		double Zyi    = 0;
+		// fill Matrix
+		double zxi1 = 0;
+		double zxi2 = 0;
+		double zxi3 = 0;
+		double zxi4 = 0;
+		double zxiyi = 0;
+		double zxi2yi = 0;
+		double zyi = 0;
 		
-		double x = Def.DUMMY;
-		double y = Def.DUMMY;
-		
-		for(int i = 0; i < n; i++)
+		for (int i = 0; i < n; i++)
 		{
-			x = data[i].x();
-			y = data[i].y();
+			final double x = data[i].x();
+			final double y = data[i].y();
 			
-			Zxi1   += x;
-			Zxi2   += x*x;
-			Zxi3   += x*x*x;
-			Zxi4   += x*x*x*x;
-			Zxiyi  += x*y;
-			Zxi2yi += x*x*y;
-			Zyi    += y;
+			zxi1 += x;
+			zxi2 += x * x;
+			zxi3 += x * x * x;
+			zxi4 += x * x * x * x;
+			zxiyi += x * y;
+			zxi2yi += x * x * y;
+			zyi += y;
 		}
-
-		m_a[0][0] = Zxi4;
-		m_a[0][1] = Zxi3;
-		m_a[0][2] = Zxi2;
-		m_a[1][0] = Zxi3;
-		m_a[1][1] = Zxi2;
-		m_a[1][2] = Zxi1;
-		m_a[2][0] = Zxi2;
-		m_a[2][1] = Zxi1;
-		m_a[2][2] = ((double) n);
-		     
-		v_b[0] = Zxi2yi;
-		v_b[1] = Zxiyi;
-		v_b[2] = Zyi;
 		
-		//eigene matrix
-		m_A = new Matrix(m_a);
-		m_v_b = new Matrix(v_b, 3,1, false);
+		ma[0][0] = zxi4;
+		ma[0][1] = zxi3;
+		ma[0][2] = zxi2;
+		ma[1][0] = zxi3;
+		ma[1][1] = zxi2;
+		ma[1][2] = zxi1;
+		ma[2][0] = zxi2;
+		ma[2][1] = zxi1;
+		ma[2][2] = (n);
 		
-		//jama
-		//m_A = new Jama.Matrix(m_a);
-		//m_v_b = new Jama.Matrix(v_b,3);
-			
-		generateParabelFromMatrix();		
+		vb[0] = zxi2yi;
+		vb[1] = zxiyi;
+		vb[2] = zyi;
+		
+		// eigene matrix
+		mA = new Matrix(ma);
+		mvb = new Matrix(vb, 3, 1, false);
+		
+		generateParabelFromMatrix();
 	}
-
+	
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param data
+	 * @return
+	 */
 	public RegParab appendData(final Coord data)
 	{
-		double x = data.x();
-		double y = data.y();
+		final double x = data.x();
+		final double y = data.y();
 		
-		m_A.set(0,0, m_A.get(0,0)+x*x*x*x);
-		m_A.set(0,1, m_A.get(0,1)+x*x*x);
-		m_A.set(0,2, m_A.get(0,2)+x*x);
-		m_A.set(1,0, m_A.get(1,0)+x*x*x);
-		m_A.set(1,1, m_A.get(1,1)+x*x);
-		m_A.set(1,2, m_A.get(1,2)+x);
-		m_A.set(2,0, m_A.get(2,0)+x*x);
-		m_A.set(2,1, m_A.get(2,1)+x);
-		m_A.set(2,2, m_A.get(2,2)+1);
-		     
-		m_v_b.set(0,0, m_v_b.get(0,0)+x*x*y);
-		m_v_b.set(1,0, m_v_b.get(1,0)+x*y);
-		m_v_b.set(2,0, m_v_b.get(2,0)+y);
+		mA.set(0, 0, mA.get(0, 0) + (x * x * x * x));
+		mA.set(0, 1, mA.get(0, 1) + (x * x * x));
+		mA.set(0, 2, mA.get(0, 2) + (x * x));
+		mA.set(1, 0, mA.get(1, 0) + (x * x * x));
+		mA.set(1, 1, mA.get(1, 1) + (x * x));
+		mA.set(1, 2, mA.get(1, 2) + x);
+		mA.set(2, 0, mA.get(2, 0) + (x * x));
+		mA.set(2, 1, mA.get(2, 1) + x);
+		mA.set(2, 2, mA.get(2, 2) + 1);
+		
+		mvb.set(0, 0, mvb.get(0, 0) + (x * x * y));
+		mvb.set(1, 0, mvb.get(1, 0) + (x * y));
+		mvb.set(2, 0, mvb.get(2, 0) + y);
 		
 		return this;
 	}
 	
+	
 	private RegParab generateParabelFromMatrix()
 	{
-		//eigene Matrix
-		Matrix v_x = m_A.solve_Cholesky(m_v_b);
+		// eigene Matrix
+		final Matrix vx = mA.solveCholesky(mvb);
 		
-		//jama
-		//Jama.Matrix v_x = m_A.lu().solve(m_v_b);
+		a = vx.get(0, 0);
+		b = vx.get(1, 0);
+		c = vx.get(2, 0);
 		
-		a = v_x.get(0, 0);
-		b = v_x.get(1, 0);
-		c = v_x.get(2, 0);
-
-		d = b/(2*a);
-		e = c-a*d*d;
+		d = b / (2 * a);
+		e = c - (a * d * d);
 		alpha = Math.atan(b);
 		
 		return this;
 	}
-
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	public double f(double a_x)
+	/**
+	 * @param ax
+	 * @return
+	 */
+	public double f(double ax)
 	{
-		return a*a_x*a_x+b*a_x+c;
+		return (a * ax * ax) + (b * ax) + c;
 	}
 	
+	
+	/**
+	 * @return
+	 */
 	public double getA()
 	{
 		return a;
 	}
 	
+	
+	/**
+	 * @return
+	 */
 	public double getB()
 	{
 		return b;
 	}
 	
+	
+	/**
+	 * @return
+	 */
 	public double getC()
 	{
 		return c;
 	}
 	
+	
+	/**
+	 * @return
+	 */
 	public double getD()
 	{
 		return d;
 	}
 	
+	
+	/**
+	 * @return
+	 */
 	public double getE()
 	{
 		return e;
 	}
 	
+	
+	/**
+	 * @return
+	 */
 	public double getAlpha()
 	{
 		return alpha;
 	}
 	
+	
+	@Override
 	public String toString()
 	{
-		String ret;
-		ret =  "\na: "+a;
-		ret += "\nb: "+b;
-		ret += "\nc: "+c;
-		ret += "\nd: "+d;
-		ret += "\ne: "+e;
-		ret += "\nAlpha: "+alpha;
-		return ret;
+		return "RegParab [a=" + a + ", b=" + b + ", c=" + c + ", d=" + d + ", e=" + e + ", alpha=" + alpha + ", mA=" + mA
+				+ ", mvb=" + mvb + "]";
 	}
 }

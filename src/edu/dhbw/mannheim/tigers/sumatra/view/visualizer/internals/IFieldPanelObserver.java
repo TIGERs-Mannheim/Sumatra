@@ -9,6 +9,9 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+
+
 /**
  * FieldPanel observer interface.
  * 
@@ -17,5 +20,13 @@ package edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals;
  */
 public interface IFieldPanelObserver
 {
-	public void onFieldClick(int x, int y, boolean ctrl, boolean alt);
+	/**
+	 * 
+	 * @param pos
+	 * @param ctrl
+	 * @param alt
+	 * @param shift
+	 * @param meta
+	 */
+	void onFieldClick(IVector2 pos, boolean ctrl, boolean alt, boolean shift, boolean meta);
 }

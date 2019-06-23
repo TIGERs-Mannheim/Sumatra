@@ -9,43 +9,81 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots;
 
 import org.apache.commons.configuration.SubnodeConfiguration;
+import org.apache.log4j.Logger;
 
-public class BotFactory
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+
+
+/**
+ */
+public final class BotFactory
 {
+	private static final Logger	log	= Logger.getLogger(BotFactory.class.getName());
+	
+	private static final String	TYPE	= "type";
+	
+	
+	private BotFactory()
+	{
+	}
+	
+	
+	/**
+	 * @param config
+	 * @return
+	 * @throws BotInitException
+	 */
 	public static ABot createBot(SubnodeConfiguration config) throws BotInitException
 	{
 		ABot bot = null;
-
-		if (config.getString("type").equals("CtBot"))
-		{
-			bot = new CtBot(config);
-		}
+		EBotType type = EBotType.getTypeFromCfgName(config.getString(TYPE));
 		
-		if (config.getString("type").equals("SysoutBot"))
+		switch (type)
 		{
-			bot = new SysoutBot(config);
-		}
-		
-		if(config.getString("type").equals("TigerBot"))
-		{
-			bot = new TigerBot(config);
+			case TIGER:
+			case GRSIM:
+				bot = new TigerBot(config);
+				break;
+			case TIGER_V2:
+				bot = new TigerBotV2(config);
+				break;
+			default:
+				throw new IllegalStateException("Bot type could not be read: " + config.getString(TYPE));
 		}
 		
 		return bot;
 	}
 	
-	public static ABot createBot(EBotType type, int id, String name)
+	
+	/**
+	 * @param type
+	 * @param id
+	 * @param name
+	 * @return
+	 */
+	public static ABot createBot(EBotType type, BotID id, String name)
 	{
 		ABot bot = null;
 		
-		switch(type)
+		switch (type)
 		{
-			case CT: bot = new CtBot(id); break;
-			case TIGER: bot = new TigerBot(id); break;
-			case SYSOUT: bot = new SysoutBot(id); break;
+			case TIGER:
+			case GRSIM:
+				bot = new TigerBot(id);
+				break;
+			case TIGER_V2:
+				bot = new TigerBotV2(id);
+				break;
+			default:
+				log.error("!! createBot() type was NOT found. Bot remains NULL !!");
+				break;
 		}
 		
-		bot.setName(name);
+		// In case something was typo'ed
+		if (bot != null)
+		{
+			bot.setName(name);
+		}
 		
 		return bot;
 	}

@@ -9,66 +9,132 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.WorldFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ARole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.LookAtCon;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ABaseRole;
+import java.util.List;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.SkillFacade;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ASkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveAndStaySkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleState;
 
 
 /**
  * Abstract class for (most) defense roles.
- * It implements the methods: {@link ARole#calculateSkills calculateSkills} and {@link ARole#getDestination
- * getDestination}.
- * Superclass: {@link ABaseRole}
  * 
- * @author Malte
- * 
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public abstract class ADefenseRole extends ABaseRole
+public abstract class ADefenseRole extends ARole
 {
 	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long	serialVersionUID	= -9180754288107911528L;
-	
-
-	protected final LookAtCon	lookAtCon;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	public ADefenseRole(ERole type)
+	/**
+	 * 
+	 * @param type
+	 * @param penaltyAreaAllowed
+	 * @param ownState
+	 */
+	// FIXME ander defensPLays anpassen
+	public ADefenseRole(ERole type, boolean penaltyAreaAllowed, boolean ownState)
 	{
-		super(type);
-		
-		lookAtCon = new LookAtCon();
-		addCondition(lookAtCon);
-	}
-	
-
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	@Override
-	public void calculateSkills(WorldFrame wFrame, SkillFacade skills)
-	{
-		
-		boolean dest = destCon.checkCondition(wFrame);
-		boolean angl = lookAtCon.checkCondition(wFrame);
-		
-		// conditions completed?
-		if (!dest || !angl)
+		super(type, penaltyAreaAllowed);
+		if (ownState == false)
 		{
-			skills.moveTo(destCon.getDestination(), lookAtCon.getLookAtTarget());
+			setInitialState(new DefendState());
+			addEndTransition(EStateId.DEFEND, EEvent.DONE);
 		}
 	}
 	
-
+	
+	/**
+	 * 
+	 * @param type
+	 */
+	public ADefenseRole(ERole type)
+	{
+		this(type, false, false);
+	}
+	
+	// --------------------------------------------------------------------------
+	// --- states ---------------------------------------------------------------
+	// --------------------------------------------------------------------------
+	
+	private enum EStateId
+	{
+		DEFEND
+	}
+	
+	private enum EEvent
+	{
+		DONE
+	}
+	
+	private class DefendState implements IRoleState
+	{
+		
+		@Override
+		public void doEntryActions()
+		{
+			setNewSkill(new MoveAndStaySkill(getMoveCon()));
+		}
+		
+		
+		@Override
+		public void doUpdate()
+		{
+			updateMoveCon(getAiFrame());
+		}
+		
+		
+		@Override
+		public void doExitActions()
+		{
+		}
+		
+		
+		@Override
+		public void onSkillStarted(ASkill skill, BotID botID)
+		{
+		}
+		
+		
+		@Override
+		public void onSkillCompleted(ASkill skill, BotID botID)
+		{
+		}
+		
+		
+		@Override
+		public Enum<? extends Enum<?>> getIdentifier()
+		{
+			return EStateId.DEFEND;
+		}
+	}
+	
+	
+	// --------------------------------------------------------------------------
+	// --- methods --------------------------------------------------------------
+	// --------------------------------------------------------------------------
+	
+	protected abstract void updateMoveCon(AIInfoFrame aiFrame);
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	
+	@Override
+	public void fillNeededFeatures(final List<EFeature> features)
+	{
+	}
 }

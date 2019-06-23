@@ -11,6 +11,7 @@ package edu.dhbw.mannheim.tigers.sumatra.presenter.log;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.text.AttributeSet;
 import javax.swing.text.SimpleAttributeSet;
@@ -20,13 +21,16 @@ import javax.swing.text.StyleContext;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
+import org.apache.log4j.Priority;
 import org.apache.log4j.WriterAppender;
 import org.apache.log4j.spi.LoggingEvent;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
 import edu.dhbw.mannheim.tigers.sumatra.view.log.LogPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.log.internals.IFilterPanelObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.log.internals.ISlidePanelObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.log.internals.ITreePanelObserver;
+import edu.dhbw.mannheim.tigers.sumatra.view.main.ISumatraView;
 
 
 /**
@@ -54,60 +58,65 @@ public class LogPresenter extends WriterAppender implements IFilterPanelObserver
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
+	
 	// colors
-	public static final Color					DEFAULT_COLOR_ALL		= new Color(0, 0, 0);
-	public static final Color					DEFAULT_COLOR_FATAL	= new Color(128, 0, 128);
-	public static final Color					DEFAULT_COLOR_ERROR	= new Color(255, 0, 0);
-	public static final Color					DEFAULT_COLOR_WARN	= new Color(0, 0, 255);
-	public static final Color					DEFAULT_COLOR_INFO	= new Color(0, 128, 0);
-	public static final Color					DEFAULT_COLOR_DEBUG	= new Color(96, 96, 96);
-	public static final Color					DEFAULT_COLOR_TRACE	= new Color(0, 0, 0);
-	public static final Color					DEFAULT_COLOR			= new Color(0, 0, 0);
+	/** */
+	public static final Color			DEFAULT_COLOR_ALL		= new Color(0, 0, 0);
+	/** */
+	public static final Color			DEFAULT_COLOR_FATAL	= new Color(128, 0, 128);
+	/** */
+	public static final Color			DEFAULT_COLOR_ERROR	= new Color(255, 0, 0);
+	/** */
+	public static final Color			DEFAULT_COLOR_WARN	= new Color(0, 0, 255);
+	/** */
+	public static final Color			DEFAULT_COLOR_INFO	= new Color(0, 128, 0);
+	/** */
+	public static final Color			DEFAULT_COLOR_DEBUG	= new Color(96, 96, 96);
+	/** */
+	public static final Color			DEFAULT_COLOR_TRACE	= new Color(0, 0, 0);
+	/** */
+	public static final Color			DEFAULT_COLOR			= new Color(0, 0, 0);
 	
-	protected final Logger						log						= Logger.getLogger(getClass());
+	private LogPanel						logPanel					= null;
 	
-	private LogPanel								logPanel					= null;
+	/** */
+	private static final int			STORAGE_CAPACITY		= 10000;
+	/** */
+	private static final int			DISPLAY_CAPACITY		= 10000;
 	
-	private static final int					STORAGE_CAPACITY		= 100;
-	private static final int					DISPLAY_CAPACITY		= 1000;
+	private final List<LoggingEvent>	eventStorage			= new ArrayList<LoggingEvent>(STORAGE_CAPACITY + 1);
 	
-	private final ArrayList<LoggingEvent>	eventStorage			= new ArrayList<LoggingEvent>(STORAGE_CAPACITY + 1);
+	private List<String>					allowedClasses			= new ArrayList<String>();
+	private List<String>					allowedStrings			= new ArrayList<String>();
 	
-	ArrayList<String>								allowedClasses			= new ArrayList<String>();
-	ArrayList<String>								allowedStrings			= new ArrayList<String>();
+	private static final String		LOG_LEVEL_KEY			= LogPresenter.class.getName() + ".loglevel";
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
+	/**
+	 */
 	public LogPresenter()
 	{
-		logPanel = new LogPanel(DISPLAY_CAPACITY);
+		// set initial log level to info to avoid performance issues
+		String strLevel = SumatraModel.getInstance().getUserProperty(LOG_LEVEL_KEY);
+		setThreshold(Level.toLevel(strLevel));
+		
+		logPanel = new LogPanel(DISPLAY_CAPACITY, getThreshold());
 		
 		logPanel.getFilterPanel().addObserver(this);
 		logPanel.getSlidePanel().addObserver(this);
 		logPanel.getTreePanel().addObserver(this);
 		
-		// set internal output layout
-		setLayout(new PatternLayout("%d{HH:mm:ss,SSS} %-5p [%t|%C{1}] %m%n"));
+		// set internal output layout -> see log4j.properties
+		setLayout(new PatternLayout("%d{ABSOLUTE} %-5p [%t|%c{1}] %m%n"));
 		
 		Logger.getRootLogger().addAppender(this);
-		
-		log.debug("Debug color test");
-		log.info("Info color test");
-		log.warn("Warn color test");
-		log.error("Error color test");
-		log.fatal("Fatal color test");
 	}
 	
-
-	public LogPanel getLogPanel()
-	{
-		return logPanel;
-	}
 	
-
+	@Override
 	public void append(LoggingEvent logEvent)
 	{
 		eventStorage.add(logEvent);
@@ -119,42 +128,43 @@ public class LogPresenter extends WriterAppender implements IFilterPanelObserver
 		appendLoggingEvent(logEvent);
 	}
 	
-
+	
 	@Override
-	public void onNewClassList(ArrayList<String> classes)
+	public void onNewClassList(List<String> classes)
 	{
 		logPanel.getTextPane().clear();
 		
 		allowedClasses = classes;
 		
-		for (LoggingEvent event : eventStorage)
+		for (final LoggingEvent event : eventStorage)
 		{
 			appendLoggingEvent(event);
 		}
 	}
 	
-
+	
 	@Override
 	public void onLevelChanged(Level level)
 	{
-		Logger.getRootLogger().setLevel(level);
+		setThreshold(level);
+		SumatraModel.getInstance().setUserProperty(LOG_LEVEL_KEY, level.toString());
 	}
 	
-
+	
 	@Override
-	public void onNewFilter(ArrayList<String> allowed)
+	public void onNewFilter(List<String> allowed)
 	{
 		logPanel.getTextPane().clear();
 		
 		allowedStrings = allowed;
 		
-		for (LoggingEvent event : eventStorage)
+		for (final LoggingEvent event : eventStorage)
 		{
 			appendLoggingEvent(event);
 		}
 	}
 	
-
+	
 	private void appendLoggingEvent(LoggingEvent event)
 	{
 		Color color = DEFAULT_COLOR;
@@ -166,36 +176,38 @@ public class LogPresenter extends WriterAppender implements IFilterPanelObserver
 		
 		switch (event.getLevel().toInt())
 		{
-			case Level.ALL_INT:
+			case Priority.ALL_INT:
 				color = DEFAULT_COLOR_ALL;
 				break;
-			case Level.FATAL_INT:
+			case Priority.FATAL_INT:
 				color = DEFAULT_COLOR_FATAL;
 				break;
-			case Level.ERROR_INT:
+			case Priority.ERROR_INT:
 				color = DEFAULT_COLOR_ERROR;
 				break;
-			case Level.WARN_INT:
+			case Priority.WARN_INT:
 				color = DEFAULT_COLOR_WARN;
 				break;
-			case Level.INFO_INT:
+			case Priority.INFO_INT:
 				color = DEFAULT_COLOR_INFO;
 				break;
-			case Level.DEBUG_INT:
+			case Priority.DEBUG_INT:
 				color = DEFAULT_COLOR_DEBUG;
 				break;
 			case Level.TRACE_INT:
 				color = DEFAULT_COLOR_TRACE;
 				break;
+			default:
+				throw new IllegalArgumentException();
 		}
 		
-		StyleContext sc = StyleContext.getDefaultStyleContext();
-		AttributeSet aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, color);
+		final StyleContext sc = StyleContext.getDefaultStyleContext();
+		final AttributeSet aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, color);
 		
 		logPanel.getTextPane().append(layout.format(event), aset);
 	}
 	
-
+	
 	/**
 	 * 
 	 * Checks if the event is from a component which is on the white-list
@@ -211,9 +223,9 @@ public class LogPresenter extends WriterAppender implements IFilterPanelObserver
 		}
 		
 		// get classname of loggingEvent
-		String from = new PatternLayout("%C{1}").format(event);
+		final String from = new PatternLayout("%C{1}").format(event);
 		
-		for (String allowed : allowedClasses)
+		for (final String allowed : allowedClasses)
 		{
 			if (from.startsWith(allowed))
 			{
@@ -224,7 +236,7 @@ public class LogPresenter extends WriterAppender implements IFilterPanelObserver
 		return false;
 	}
 	
-
+	
 	/**
 	 * 
 	 * Checks if the event contains one of the user filter strings.
@@ -239,7 +251,7 @@ public class LogPresenter extends WriterAppender implements IFilterPanelObserver
 			return true;
 		}
 		
-		for (String allowed : allowedStrings)
+		for (final String allowed : allowedStrings)
 		{
 			if (layout.format(event).contains(allowed))
 			{
@@ -248,5 +260,14 @@ public class LogPresenter extends WriterAppender implements IFilterPanelObserver
 		}
 		
 		return false;
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public ISumatraView getView()
+	{
+		return logPanel;
 	}
 }

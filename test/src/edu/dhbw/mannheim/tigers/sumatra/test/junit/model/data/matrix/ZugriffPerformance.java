@@ -9,10 +9,12 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.test.junit.model.data.matrix;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import edu.dhbw.mannheim.tigers.sumatra.test.junit.model.data.matrix.performance.APerformanceTest;
-
 
 
 /**
@@ -23,65 +25,126 @@ import edu.dhbw.mannheim.tigers.sumatra.test.junit.model.data.matrix.performance
 public class ZugriffPerformance extends APerformanceTest
 {
 	
-	public static void main(String[] args)
+	private int			l;
+	private double		dataVal;
+	private final int	times		= 10;
+	private final int	timesOps	= timesEasyOps * 5;
+	
+	
+	/**
+	 * 
+	 */
+	public ZugriffPerformance()
 	{
-		ZugriffPerformance test = new ZugriffPerformance();
-		test.test();
+		super();
 	}
 	
-	private int l;
-	private double dataVal;
-
-	@Test
-	public void test()
+	
+	/**
+	 *
+	 */
+	@BeforeClass
+	public static void beforeClass()
 	{
 		System.out.println("##########################################################");
 		System.out.println("ZugriffPerformance");
 		System.out.println("##########################################################");
-		
+		System.out.println("--> Many tests deactivated");
+	}
+	
+	
+	/**
+	 *
+	 */
+	@AfterClass
+	public static void afterClass()
+	{
+		System.out.println("##########################################################");
+		System.out.println("ZugriffPerformance End");
+		System.out.println("##########################################################");
+	}
+	
+	
+	/**
+	 */
+	@Test
+	public void testEinfach()
+	{
 		output = false;
-		int times = 10;
-
+		
 		EinfachZugriff(times);
 		EinfachSpeicher(times);
 		EinfachAnlegen(times);
 		EinfachZugriffUndSpeicher(times);
-		
-		ZweifachZugriff(times);
-		ZweifachSpeicher(times);
-		ZweifachAnlegen(times);
-		ZweifachZugriffUndSpeicher(times);
-		
-		output = true;
-		times = timesEasyOps*5;
-		System.out.println("Number of runs: " + times);
-
-		EinfachZugriff(times);
-		EinfachSpeicher(times);
-		EinfachAnlegen(times/50);
-		EinfachZugriffUndSpeicher(times);
-		
-		ZweifachZugriff(times);
-		ZweifachSpeicher(times);
-		ZweifachAnlegen(times/50);
-		ZweifachZugriffUndSpeicher(times);
-
 	}
 	
-
+	
+	/**
+	 */
+	@Test
+	@Ignore
+	public void testEinfachMany()
+	{
+		output = true;
+		System.out.println("Number of runs: " + timesOps);
+		
+		EinfachZugriff(timesOps);
+		EinfachSpeicher(timesOps);
+		EinfachAnlegen(timesOps / 50);
+		EinfachZugriffUndSpeicher(timesOps);
+	}
+	
+	
+	/**
+	 */
+	@Test
+	public void testZweifach()
+	{
+		output = false;
+		
+		ZweifachZugriff(times);
+		ZweifachSpeicher(times);
+		// ZweifachAnlegen(times);
+		ZweifachZugriffUndSpeicher(times);
+	}
+	
+	
+	/**
+	 */
+	@Ignore
+	@Test
+	public void testZweifachMany()
+	{
+		output = true;
+		System.out.println("Number of runs: " + timesOps);
+		
+		ZweifachZugriff(timesOps);
+		ZweifachSpeicher(timesOps);
+		// ZweifachAnlegen(timesOps / 50);
+		ZweifachZugriffUndSpeicher(timesOps);
+		
+	}
+	
+	
+	/**
+	 * 
+	 * @param times
+	 */
 	public void EinfachZugriff(int times)
 	{
 		if (output)
+		{
 			System.out.println("EinfachZugriff");
+		}
 		
 		// 4*14
-		int rows = 14;
-		int coles = 4;
-		double[] data = new double[rows*coles];
+		final int rows = 14;
+		final int coles = 4;
+		final double[] data = new double[rows * coles];
 		
 		for (int j = 0; j < rows; j++)
 		{
-			l = j*coles;
+			l = j * coles;
 			for (int k = 0; k < coles; k++)
 			{
 				data[l + k] = j + k;
@@ -93,10 +156,10 @@ public class ZugriffPerformance extends APerformanceTest
 		{
 			for (int j = 0; j < rows; j++)
 			{
-				l = j*coles;
+				l = j * coles;
 				for (int k = 0; k < coles; k++)
 				{
-					if(data[l+k] < 0)
+					if (data[l + k] < 0)
 					{
 						
 					}
@@ -108,19 +171,26 @@ public class ZugriffPerformance extends APerformanceTest
 		System.out.println(dataVal);
 	}
 	
+	
+	/**
+	 * 
+	 * @param times
+	 */
 	public void ZweifachZugriff(int times)
 	{
 		if (output)
+		{
 			System.out.println("ZweifachZugriff");
+		}
 		
 		// 4*14
-		int rows = 14;
-		int coles = 4;
-		double[][] data = new double[rows][coles];
+		final int rows = 14;
+		final int coles = 4;
+		final double[][] data = new double[rows][coles];
 		
 		for (int j = 0; j < rows; j++)
 		{
-			l = j*coles;
+			l = j * coles;
 			for (int k = 0; k < coles; k++)
 			{
 				data[j][k] = j + k;
@@ -132,10 +202,10 @@ public class ZugriffPerformance extends APerformanceTest
 		{
 			for (int j = 0; j < rows; j++)
 			{
-				l = j*coles;
+				l = j * coles;
 				for (int k = 0; k < coles; k++)
 				{
-					if(data[j][k] < 0)
+					if (data[j][k] < 0)
 					{
 						
 					}
@@ -148,20 +218,25 @@ public class ZugriffPerformance extends APerformanceTest
 	}
 	
 	
-	
+	/**
+	 * 
+	 * @param times
+	 */
 	public void EinfachSpeicher(int times)
 	{
 		if (output)
+		{
 			System.out.println("EinfachSpeicher");
+		}
 		
 		// 4*14
-		int rows = 14;
-		int coles = 4;
-		double[] data = new double[rows*coles];
+		final int rows = 14;
+		final int coles = 4;
+		final double[] data = new double[rows * coles];
 		
 		for (int j = 0; j < rows; j++)
 		{
-			l = j*coles;
+			l = j * coles;
 			for (int k = 0; k < coles; k++)
 			{
 				data[l + k] = j + k;
@@ -173,32 +248,38 @@ public class ZugriffPerformance extends APerformanceTest
 		{
 			for (int j = 0; j < rows; j++)
 			{
-				l = j*coles;
+				l = j * coles;
 				for (int k = 0; k < coles; k++)
 				{
-					data[l+k] = dataVal;
+					data[l + k] = dataVal;
 				}
 			}
 			
 		}
 		endTimer();
-		System.out.println(data[l%2]);
+		System.out.println(data[l % 2]);
 	}
 	
 	
+	/**
+	 * 
+	 * @param times
+	 */
 	public void ZweifachSpeicher(int times)
 	{
 		if (output)
+		{
 			System.out.println("ZweifachSpeicher");
+		}
 		
 		// 4*14
-		int rows = 14;
-		int coles = 4;
-		double[][] data = new double[rows][coles];
+		final int rows = 14;
+		final int coles = 4;
+		final double[][] data = new double[rows][coles];
 		
 		for (int j = 0; j < rows; j++)
 		{
-			l = j*coles;
+			l = j * coles;
 			for (int k = 0; k < coles; k++)
 			{
 				data[j][k] = j + k;
@@ -210,7 +291,7 @@ public class ZugriffPerformance extends APerformanceTest
 		{
 			for (int j = 0; j < rows; j++)
 			{
-				l = j*coles;
+				l = j * coles;
 				for (int k = 0; k < coles; k++)
 				{
 					data[j][k] = dataVal;
@@ -219,17 +300,23 @@ public class ZugriffPerformance extends APerformanceTest
 			
 		}
 		endTimer();
-		System.out.println(data[l%2]);
 	}
 	
+	
+	/**
+	 * 
+	 * @param times
+	 */
 	public void EinfachAnlegen(int times)
 	{
 		if (output)
+		{
 			System.out.println("EinfachAnlegen");
+		}
 		
 		// 4*14
-		int rows = 14;
-		int coles = 4;
+		final int rows = 14;
+		final int coles = 4;
 		double[] data = null;
 		startTimer();
 		for (int i = 0; i < times; i++)
@@ -238,55 +325,62 @@ public class ZugriffPerformance extends APerformanceTest
 			{
 				for (int k = 0; k < coles; k++)
 				{
-					 data = new double[rows*coles];
+					data = new double[rows * coles];
 				}
 			}
 			
 		}
 		endTimer();
-		System.out.println(data[l%2]);
-	}
-	
-	
-	public void ZweifachAnlegen(int times)
-	{
-		if (output)
-			System.out.println("ZweifachAnlegen");
-		
-		// 4*14
-		int rows = 14;
-		int coles = 4;
-		double[][] data = null;
-		startTimer();
-		for (int i = 0; i < times; i++)
+		if (data != null)
 		{
-			for (int j = 0; j < rows; j++)
-			{
-				for (int k = 0; k < coles; k++)
-				{
-					data = new double[rows][coles];
-				}
-			}
-			
+			System.out.println(data[l % 2]);
 		}
-		endTimer();
-		System.out.println(data[l%2]);
 	}
 	
 	
+	// public void ZweifachAnlegen(int times)
+	// {
+	// if (output)
+	// System.out.println("ZweifachAnlegen");
+	//
+	// // 4*14
+	// int rows = 14;
+	// int coles = 4;
+	// double[][] data = null;
+	// startTimer();
+	// for (int i = 0; i < times; i++)
+	// {
+	// for (int j = 0; j < rows; j++)
+	// {
+	// for (int k = 0; k < coles; k++)
+	// {
+	// data = new double[rows][coles];
+	// }
+	// }
+	//
+	// }
+	// endTimer();
+	// }
+	//
+	/**
+	 * 
+	 * @param times
+	 */
 	public void EinfachZugriffUndSpeicher(int times)
 	{
 		if (output)
+		{
 			System.out.println("EinfachZugriffUndSpeicher");
+		}
 		
 		// 4*14
-		int rows = 14;
-		int coles = 4;
-		double[] data = new double[rows*coles];
+		final int rows = 14;
+		final int coles = 4;
+		final double[] data = new double[rows * coles];
 		
 		for (int j = 0; j < rows; j++)
 		{
-			l = j*coles;
+			l = j * coles;
 			for (int k = 0; k < coles; k++)
 			{
 				data[l + k] = j + k;
@@ -298,31 +392,38 @@ public class ZugriffPerformance extends APerformanceTest
 		{
 			for (int j = 0; j < rows; j++)
 			{
-				l = j*coles;
+				l = j * coles;
 				for (int k = 0; k < coles; k++)
 				{
-					data[l+k] = data[k];
+					data[l + k] = data[k];
 				}
 			}
 			
 		}
 		endTimer();
-		System.out.println(data[l%2]);
+		System.out.println(data[l % 2]);
 	}
 	
+	
+	/**
+	 * 
+	 * @param times
+	 */
 	public void ZweifachZugriffUndSpeicher(int times)
 	{
 		if (output)
+		{
 			System.out.println("ZweifachZugriffUndSpeicher");
+		}
 		
 		// 4*14
-		int rows = 14;
-		int coles = 4;
-		double[][] data = new double[rows][coles];
+		final int rows = 14;
+		final int coles = 4;
+		final double[][] data = new double[rows][coles];
 		
 		for (int j = 0; j < rows; j++)
 		{
-			l = j*coles;
+			l = j * coles;
 			for (int k = 0; k < coles; k++)
 			{
 				data[j][k] = j + k;
@@ -334,7 +435,7 @@ public class ZugriffPerformance extends APerformanceTest
 		{
 			for (int j = 0; j < rows; j++)
 			{
-				l = j*coles;
+				l = j * coles;
 				for (int k = 0; k < coles; k++)
 				{
 					data[j][k] = data[0][k];
@@ -343,6 +444,5 @@ public class ZugriffPerformance extends APerformanceTest
 			
 		}
 		endTimer();
-		System.out.println(data[l%2]);
 	}
 }

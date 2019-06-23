@@ -1,4 +1,4 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 DHBW Mannheim - Tigers Mannheim
  * Project: tigers-centralSoftware
@@ -8,21 +8,31 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.main;
 
-import java.awt.*;
-import javax.swing.*;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Image;
+import java.awt.Toolkit;
+
+import javax.swing.ImageIcon;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.SwingConstants;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
+
 
 /**
  * Information about central software.
  */
-@SuppressWarnings("serial")
 public class AboutDialog extends JDialog
 {
 	// --------------------------------------------------------------------------
 	// --- instance-variables ---------------------------------------------------
 	// --------------------------------------------------------------------------
-	private static ClassLoader classLoader = AboutDialog.class.getClassLoader();
+	private static final long	serialVersionUID	= 3461893941869192656L;
+	private static ClassLoader	classLoader			= AboutDialog.class.getClassLoader();
+	
 	
 	// --------------------------------------------------------------------------
 	// --- constructor(s) -------------------------------------------------------
@@ -34,22 +44,22 @@ public class AboutDialog extends JDialog
 	{
 		// --- window configuration ---
 		this.setSize(300, 350);
-		this.setResizable(false);
-		this.setTitle("About");
-		this.setLayout(new BorderLayout());
-		this.setModal(true);
-
+		setResizable(false);
+		setTitle("About");
+		setLayout(new BorderLayout());
+		setModal(true);
+		
 		// --- alignment: center on screen ---
 		Toolkit tk = Toolkit.getDefaultToolkit();
 		Dimension screenDimension = tk.getScreenSize();
-		this.setLocation((int)(screenDimension.getWidth()-this.getWidth())/2,
-				(int)(screenDimension.getHeight()-this.getHeight())/2);
+		this.setLocation((int) (screenDimension.getWidth() - getWidth()) / 2,
+				(int) (screenDimension.getHeight() - getHeight()) / 2);
 		
 		// --- heading ---
-		JLabel heading = new JLabel("Tigers Mannheim - Sumatra", JLabel.CENTER);
+		JLabel heading = new JLabel("Tigers Mannheim - Sumatra", SwingConstants.CENTER);
 		heading.setFont(new Font("Dialog", Font.BOLD, 15));
 		this.add(heading, BorderLayout.NORTH);
-
+		
 		// --- logo ---
 		JLabel logo = new JLabel();
 		ImageIcon iconNormal = new ImageIcon(classLoader.getResource("tigerIcon.png"));
@@ -62,13 +72,9 @@ public class AboutDialog extends JDialog
 		
 		// --- text ---
 		JLabel text = new JLabel();
-		text.setText(
-				"<html>Version: " + SumatraModel.VERSION + "<br>" +
-				"Team: Tigers Mannheim<br>" +
-				"University: DHBW Mannheim<br>" +
-				"Date: July 2009 - January 2011" +
-				"</html>");
+		text.setText("<html>Version: " + SumatraModel.getVersion() + "<br>" + "Team: Tigers Mannheim<br>"
+				+ "University: DHBW Mannheim<br>" + "Date: July 2009 - December 2012" + "</html>");
 		this.add(text, BorderLayout.SOUTH);
-
+		
 	}
 }

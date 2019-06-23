@@ -9,81 +9,111 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.standard.stop;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2f;
+import java.util.ArrayList;
+import java.util.List;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.types.Goal;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.APlay;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.other.MoveRole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.standard.AStandardPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.move.MoveWithDistanceToPointRole;
 
 
 /**
- * Two bots will form a block in a distance of 500 mm to the ball in order to
+ * n bots will form a block in a distance of 500 mm to the ball in order to
  * protect the goal after the game is stopped by the referee
  * @author FlorianS
- * 
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class StopMovePlay extends APlay
+public class StopMovePlay extends AStandardPlay
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	/**  */
-	private static final long	serialVersionUID		= -3177342585857911649L;
-	private final Goal			goal						= AIConfig.getGeometry().getGoalOur();
-	private final Vector2f		US_GOAL_MID				= goal.getGoalCenter();
-	private final float			BOT_RADIUS				= AIConfig.getGeometry().getBotRadius();
-	private final float			SPACE_BETWEEN_BOTS	= AIConfig.getPlays().getPositioningOnStoppedPlayWithTwo()
-																			.getSpaceBetweenBots();
+	private static final float	SPACE_BETWEEN_BOTS	= 30;
 	
-	private Vector2				ballPos;
-	private Vector2				direction;
-	
-	private float					radius;
-	private float					turnAngle;
-	
-	private MoveRole				leftBlocker;
-	private MoveRole				rightBlocker;
+	private final float			botRadius				= AIConfig.getGeometry().getBotRadius();
+	private final float			stopRadius				= AIConfig.getGeometry().getCenterCircleRadius() + botRadius
+																			+ AIConfig.getGeometry().getBallRadius() + 50;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	public StopMovePlay(AIInfoFrame aiFrame)
+	/**
+	 * @param aiFrame
+	 * @param numAssignedRoles
+	 */
+	public StopMovePlay(AIInfoFrame aiFrame, int numAssignedRoles)
 	{
-		super(EPlay.STOP_MOVE, aiFrame);
-		Vector2 initPos = new Vector2(AIConfig.getGeometry().getCenter());
+		super(aiFrame, numAssignedRoles);
 		
-		leftBlocker = new MoveRole();
-		addAggressiveRole(leftBlocker, initPos.addY(500));
-		rightBlocker = new MoveRole();
-		addAggressiveRole(rightBlocker, initPos.addY(-1000));
+		List<IVector2> directions = getDirections(aiFrame, numAssignedRoles);
+		for (int i = 0; i < getNumAssignedRoles(); i++)
+		{
+			final MoveWithDistanceToPointRole role = new MoveWithDistanceToPointRole(aiFrame.worldFrame.ball.getPos(),
+					stopRadius, directions.get(i));
+			IVector2 dest = aiFrame.worldFrame.ball.getPos().addNew(directions.get(i).scaleToNew(stopRadius));
+			addAggressiveRole(role, dest);
+		}
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	
 	@Override
 	protected void beforeUpdate(AIInfoFrame currentFrame)
 	{
-		radius = BOT_RADIUS + 500;
-		ballPos = new Vector2(currentFrame.worldFrame.ball.pos);
-		turnAngle = (float) Math.acos(((2 * radius * radius) - (Math.pow(2 * BOT_RADIUS + SPACE_BETWEEN_BOTS, 2)))
-				/ (2 * radius * radius));
+		if (currentFrame.worldFrame.ball.getVel().getLength2() < 0.2)
+		{
+			return;
+		}
 		
-		// vector from ball to the middle of the goal
-		direction = US_GOAL_MID.subtractNew(ballPos);
+		final IVector2 ballPos = currentFrame.worldFrame.ball.getPos();
+		List<IVector2> directions = getDirections(currentFrame, getRoleCount());
 		
-		leftBlocker.updateCirclePos(ballPos, radius, direction.turnNew(-turnAngle / 2));
-		rightBlocker.updateCirclePos(ballPos, radius, direction.turnNew(turnAngle / 2));
+		for (int i = 0; i < getRoleCount(); i++)
+		{
+			final MoveWithDistanceToPointRole role = (MoveWithDistanceToPointRole) getRoles().get(i);
+			IVector2 dir = directions.get(i);
+			role.updateCirclePos(ballPos, stopRadius, dir);
+		}
 	}
 	
-
+	
+	private List<IVector2> getDirections(AIInfoFrame currentFrame, int count)
+	{
+		final Vector2f goalCenterOur = AIConfig.getGeometry().getGoalOur().getGoalCenter();
+		final IVector2 ballPos = currentFrame.worldFrame.ball.getPos();
+		final float turnAngle = (float) Math.acos(((2 * stopRadius * stopRadius) - (Math.pow((2 * botRadius)
+				+ SPACE_BETWEEN_BOTS, 2)))
+				/ (2 * stopRadius * stopRadius));
+		
+		// vector from ball to the middle of the goal
+		IVector2 direction = goalCenterOur.subtractNew(ballPos);
+		
+		final float turnAngleStart = (-turnAngle / 2) * (count - 1);
+		
+		List<IVector2> directions = new ArrayList<IVector2>(count);
+		for (int i = 0; i < count; i++)
+		{
+			directions.add(direction.turnNew(turnAngleStart + (i * turnAngle)));
+		}
+		return directions;
+	}
+	
+	
+	@Override
+	protected void afterUpdate(AIInfoFrame currentFrame)
+	{
+		// nothing todo
+	}
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------

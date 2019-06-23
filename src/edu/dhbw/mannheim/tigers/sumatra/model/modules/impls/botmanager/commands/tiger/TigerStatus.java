@@ -11,6 +11,7 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
 
+
 /**
  * Dummy command for simulator.
  * Should be replaced by TigerSystemStatusMovement in Sim ASAP.
@@ -18,24 +19,31 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.
  * @deprecated Replaced by TigerSystemStatusMovement.
  * 
  * @author AndreR
- *
+ * 
  */
+@Deprecated
 public class TigerStatus extends ACommand
 {
+	/**
+	 * 
+	 */
 	public TigerStatus()
 	{
 	}
-
+	
+	
 	@Override
 	public void setData(byte[] data)
 	{
 	}
-
+	
+	
 	@Override
 	public byte[] getData()
 	{
 		return new byte[1];
 	}
+	
 	
 	@Override
 	public int getCommand()
@@ -43,10 +51,11 @@ public class TigerStatus extends ACommand
 		return CommandConstants.CMD_SYSTEM_STATUS;
 	}
 	
+	
 	@Override
 	public int getDataLength()
 	{
 		return 0;
 	}
-
+	
 }

@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 14.04.2011
  * Author(s): Gero
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter;
@@ -21,19 +21,19 @@ public class MatchModeState extends AICenterState
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	  * @param panel
-	  */
+	 * @param presenter
+	 */
 	public MatchModeState(AICenterPresenter presenter)
 	{
 		super(presenter);
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -42,9 +42,8 @@ public class MatchModeState extends AICenterState
 	{
 		getControl().forceNewDecision(true);
 		sendControl();
-//		getControl().forceNewDecision(false);	// Event: Should only happen once.
+		// getControl().forceNewDecision(false); // Event: Should only happen once.
 	}
 	
-
-
+	
 }

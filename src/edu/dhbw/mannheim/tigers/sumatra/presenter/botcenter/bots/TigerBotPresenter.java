@@ -12,6 +12,7 @@ package edu.dhbw.mannheim.tigers.sumatra.presenter.botcenter.bots;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -19,11 +20,16 @@ import javax.swing.SwingUtilities;
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.TrackedTigerBot;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2f;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move.MovementCon;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature.EFeatureState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ITigerBotObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.TigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
@@ -41,31 +47,30 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerMotorSetParams;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerMotorSetParams.MotorMode;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerMotorSetPidSp;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerMovementLis3LogRaw;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerSystemBigPing;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerSystemPing;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerSystemPong;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerSystemPowerLog;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerSystemSetLogs;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerSystemStatusMovement;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.tiger.KickBallV1;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.tiger.KickBallV1.EKickDevice;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.tiger.KickBallV1.EKickMode;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.tiger.MoveFixedGlobalOrientation;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.tiger.MoveFixedTarget;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.tiger.MoveV2;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.tiger.TigerStraightMove;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.devices.EKickDevice;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ChipAutoSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.KickAutoSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveToSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.RotateTestSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.StraightMoveSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IWorldPredictorObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ABotManager;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ASkillSystem;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AWorldPredictor;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.botcenter.bots.tiger.TrainingPresenter;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.ILookAndFeelStateObserver;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.LookAndFeelStateAdapter;
 import edu.dhbw.mannheim.tigers.sumatra.util.GeneralPurposeTimer;
 import edu.dhbw.mannheim.tigers.sumatra.util.ThreadUtil;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.BotCenterTreeNode;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.ETreeIconType;
-import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.AccelerationPanel;
+import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.FeaturePanel;
+import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.IFeatureChangedObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.INetworkPanelObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.IRPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.ISkillsPanelObserver;
@@ -83,6 +88,7 @@ import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.moto
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.motor.IMotorEnhancedInputPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.motor.IMotorMainPanelObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.motor.MotorControlPanel;
+import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.motor.MotorInputPanel.IMotorInputPanelObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.motor.MotorMainPanel;
 import edu.moduli.exceptions.ModuleNotFoundException;
 
@@ -94,13 +100,14 @@ import edu.moduli.exceptions.ModuleNotFoundException;
  * 
  */
 public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPanelObserver, ILookAndFeelStateObserver,
-		ISkillsPanelObserver, IKickerPanelObserver, IMotorMainPanelObserver, IMotorEnhancedInputPanel,
-		INetworkPanelObserver, IWorldPredictorObserver
+		ISkillsPanelObserver, IKickerPanelObserver, IMotorMainPanelObserver, IMotorInputPanelObserver,
+		IMotorEnhancedInputPanel, INetworkPanelObserver, IWorldPredictorObserver, IFeatureChangedObserver
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final Logger							log							= Logger.getLogger(getClass());
+	// Logger
+	private static final Logger				log							= Logger.getLogger(TigerBotPresenter.class.getName());
 	
 	private TigerBot								bot							= null;
 	
@@ -115,28 +122,38 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 	private NetworkPanel							network						= null;
 	private MotorMainPanel						motorMain					= null;
 	private PowerPanel							power							= null;
-	private AccelerationPanel					acceleration				= null;
 	private IRPanel								ir								= null;
-	private TrainingPresenter					trainingPresenter			= null;
-	private MotorControlPanel					motorControls[]			= new MotorControlPanel[5];
-	private MotorConfigPresenter				motorPresenters[]			= new MotorConfigPresenter[5];
+	private FeaturePanel							features						= null;
+	private final MotorControlPanel			motorControls[]			= new MotorControlPanel[5];
+	private final MotorConfigPresenter		motorPresenters[]			= new MotorConfigPresenter[5];
 	private PingThread							pingThread					= null;
+	private IVector2								currentPos					= null;
 	
 	// Observer Handler
 	private final TigerBotObserver			tigerBotObserver			= new TigerBotObserver();
 	private final TigerBotSummaryObserver	tigerBotSummaryObserver	= new TigerBotSummaryObserver();
 	
 	
+	private long									startNewWP					= System.nanoTime();
+	private long									startMotor					= System.nanoTime();
+	// in milliseconds
+	private static final long					VISUALIZATION_FREQUENCY	= 200;
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 * @param bot
+	 */
 	public TigerBotPresenter(ABot bot)
 	{
 		try
 		{
 			botmanager = (ABotManager) SumatraModel.getInstance().getModule("botmanager");
 			worldPredictor = (AWorldPredictor) SumatraModel.getInstance().getModule("worldpredictor");
-		} catch (ModuleNotFoundException err)
+		} catch (final ModuleNotFoundException err)
 		{
 			log.error("Botmanager not found", err);
 			
@@ -146,7 +163,7 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 		try
 		{
 			skillsystem = (ASkillSystem) SumatraModel.getInstance().getModule("skillsystem");
-		} catch (ModuleNotFoundException err)
+		} catch (final ModuleNotFoundException err)
 		{
 			log.error("Skillsystem not found", err);
 			
@@ -154,14 +171,14 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 		}
 		
 		summary = new TigerBotSummary();
-		fastChgPanel = new KickerConfig(bot.getBotId());
+		fastChgPanel = new KickerConfig(bot.getBotID());
 		mainPanel = new TigerBotMainPanel();
 		skills = new SkillsPanel();
 		kicker = new KickerPanel();
 		network = new NetworkPanel();
 		motorMain = new MotorMainPanel();
 		power = new PowerPanel();
-		acceleration = new AccelerationPanel();
+		features = new FeaturePanel();
 		ir = new IRPanel();
 		
 		for (int i = 0; i < 5; i++)
@@ -172,13 +189,11 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 		
 		this.bot = (TigerBot) bot;
 		
-		trainingPresenter = new TrainingPresenter(this.bot);
-		
 		node = new BotCenterTreeNode(bot.getName(), ETreeIconType.BOT, mainPanel);
 		
 		node.add(new BotCenterTreeNode("Power", ETreeIconType.LIGHTNING, power));
 		node.add(new BotCenterTreeNode("Network", ETreeIconType.AP, network));
-		BotCenterTreeNode motorsNode = new BotCenterTreeNode("Motors", ETreeIconType.MOTOR, motorMain);
+		final BotCenterTreeNode motorsNode = new BotCenterTreeNode("Motors", ETreeIconType.MOTOR, motorMain);
 		motorsNode.add(new BotCenterTreeNode("Front Right", ETreeIconType.GRAPH, motorControls[0]));
 		motorsNode.add(new BotCenterTreeNode("Front Left", ETreeIconType.GRAPH, motorControls[1]));
 		motorsNode.add(new BotCenterTreeNode("Rear Left ", ETreeIconType.GRAPH, motorControls[2]));
@@ -187,17 +202,16 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 		node.add(motorsNode);
 		node.add(new BotCenterTreeNode("Kicker", ETreeIconType.KICK, kicker));
 		node.add(new BotCenterTreeNode("Skills", ETreeIconType.LAMP, skills));
-		node.add(new BotCenterTreeNode("Acceleration", ETreeIconType.GRAPH, acceleration));
 		node.add(new BotCenterTreeNode("IR", ETreeIconType.GRAPH, ir));
-		node.add(trainingPresenter.getNode());
+		node.add(new BotCenterTreeNode("Features", ETreeIconType.LIGHTNING, features));
 		
-		summary.setId(bot.getBotId());
+		summary.setId(bot.getBotID());
 		summary.setBotName(bot.getName());
 		
 		tigerBotObserver.onNameChanged(bot.getName());
-		tigerBotObserver.onIdChanged(0, bot.getBotId());
-		tigerBotObserver.onIpChanged(bot.getIp());
-		tigerBotObserver.onPortChanged(bot.getPort());
+		tigerBotObserver.onIdChanged(new BotID(), bot.getBotID());
+		tigerBotObserver.onIpChanged(this.bot.getIp());
+		tigerBotObserver.onPortChanged(this.bot.getPort());
 		tigerBotObserver.onNetworkStateChanged(this.bot.getNetworkState());
 		tigerBotObserver.onServerPortChanged(this.bot.getServerPort());
 		tigerBotObserver.onMacChanged(this.bot.getMac());
@@ -205,20 +219,22 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 		tigerBotObserver.onUseUpdateAllChanged(this.bot.getUseUpdateAll());
 		tigerBotObserver.onLogsChanged(this.bot.getLogs());
 		tigerBotObserver.onMotorParamsChanged(this.bot.getMotorParams());
+		tigerBotObserver.onBotFeaturesChanged(this.bot.getBotFeatures());
 		
 		tigerBotSummaryObserver.onConnectionTypeChange(this.bot.getUseUpdateAll());
 		tigerBotSummaryObserver.onOOFCheckChange(this.bot.getOofCheck());
 		
 		this.bot.addObserver(tigerBotObserver);
-		this.summary.addObserver(tigerBotSummaryObserver);
-		this.mainPanel.addObserver(this);
-		this.skills.addObserver(this);
-		this.kicker.addObserver(this);
-		this.network.addObserver(this);
-		this.worldPredictor.addObserver(this);
+		summary.addObserver(tigerBotSummaryObserver);
+		mainPanel.addObserver(this);
+		skills.addObserver(this);
+		kicker.addObserver(this);
+		network.addObserver(this);
+		worldPredictor.addObserver(this);
 		LookAndFeelStateAdapter.getInstance().addObserver(this);
 		motorMain.addObserver(this);
 		motorMain.getEnhancedInputPanel().addObserver(this);
+		features.addObserver(this);
 		for (int i = 0; i < 5; i++)
 		{
 			motorControls[i].getConfigPanel().addObserver(motorPresenters[i]);
@@ -227,7 +243,7 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 		GeneralPurposeTimer.getInstance().scheduleAtFixedRate(new NetworkStatisticsUpdater(), 0, 1000);
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -245,41 +261,40 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 		motorMain.removeObserver(this);
 		motorMain.getEnhancedInputPanel().removeObserver(this);
 		
-		trainingPresenter.delete();
-		
 		for (int i = 0; i < 5; i++)
 		{
 			motorControls[i].getConfigPanel().removeObserver(motorPresenters[i]);
 		}
 	}
 	
-
+	
 	@Override
 	public ABot getBot()
 	{
 		return bot;
 	}
 	
-
+	
 	@Override
 	public JPanel getSummaryPanel()
 	{
 		return summary;
 	}
 	
-
+	
 	@Override
 	public JPanel getFastChgPanel()
 	{
 		return fastChgPanel;
 	}
 	
-
+	
 	@Override
 	public void onLookAndFeelChanged()
 	{
 		SwingUtilities.invokeLater(new Runnable()
 		{
+			@Override
 			public void run()
 			{
 				SwingUtilities.updateComponentTreeUI(summary);
@@ -293,14 +308,15 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 		});
 	}
 	
-
+	
 	@Override
 	public void onConnectionChange()
 	{
 		connectionChange();
+		botmanager.botConnectionChanged(bot);
 	}
 	
-
+	
 	private void connectionChange()
 	{
 		switch (bot.getNetworkState())
@@ -310,9 +326,6 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 				bot.start();
 				break;
 			case CONNECTING:
-				bot.stop();
-				bot.setActive(false);
-				break;
 			case ONLINE:
 				bot.stop();
 				bot.setActive(false);
@@ -320,19 +333,19 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 		}
 	}
 	
-
+	
 	@Override
 	public void onSaveGeneral()
 	{
 		try
 		{
-			if (mainPanel.getId() != bot.getBotId())
+			if (mainPanel.getId() != bot.getBotID().getNumber())
 			{
-				botmanager.changeBotId(bot.getBotId(), mainPanel.getId());
+				botmanager.changeBotId(bot.getBotID(), new BotID(mainPanel.getId()));
 			}
 			
 			bot.setName(mainPanel.getBotName());
-			bot.setIp(mainPanel.getIp());
+			bot.setIP(mainPanel.getIp());
 			bot.setPort(mainPanel.getPort());
 			bot.setCpuId(mainPanel.getCpuId());
 			bot.setMac(mainPanel.getMac());
@@ -342,81 +355,99 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 			bot.stop();
 			bot.start();
 		}
-
-		catch (NumberFormatException e)
+		
+		catch (final NumberFormatException e)
 		{
 			log.warn("Invalid value in a general configuration field");
 		}
 	}
 	
-
+	
 	@Override
 	public void onMoveToXY(float x, float y)
 	{
-		skillsystem.execute(bot.getBotId(), new MoveV2(new Vector2(x, y), 0));
-		// skillsystem.execute(bot.getBotId(), new MoveFixedCurrentOrientation(new Vector2(x, y)));
+		final MovementCon moveCon = new MovementCon();
+		moveCon.updateDestination(new Vector2(x, y));
+		skillsystem.execute(bot.getBotID(), new MoveToSkill(moveCon));
 	}
 	
-
+	
 	@Override
 	public void onRotateAndMoveToXY(float x, float y, float angle)
 	{
-		skillsystem.execute(bot.getBotId(), new MoveFixedGlobalOrientation(new Vector2(x, y), angle));
+		final MovementCon moveCon = new MovementCon();
+		moveCon.updateDestination(new Vector2(x, y));
+		moveCon.updateTargetAngle(angle);
+		skillsystem.execute(bot.getBotID(), new MoveToSkill(moveCon));
 	}
 	
-
+	
 	@Override
-	public void onStraightMove(int time)
+	public void onStraightMove(int distance, float angle)
 	{
-		skillsystem.execute(bot.getBotId(), new TigerStraightMove(time));
+		skillsystem.execute(bot.getBotID(), new StraightMoveSkill(distance, angle));
 	}
 	
-
+	
 	@Override
 	public void onRotate(float targetAngle)
 	{
-		skillsystem.execute(bot.getBotId(), new MoveFixedGlobalOrientation(null, targetAngle));
+		skillsystem.execute(bot.getBotID(), new RotateTestSkill(targetAngle));
 	}
 	
-
+	
 	@Override
-	public void onKick(float kicklength, EKickMode mode, EKickDevice device)
+	public void onKick(float kicklength, EKickDevice device)
 	{
-		if (kicklength > 0)
-			skillsystem.execute(bot.getBotId(), new KickBallV1(kicklength, mode, device));
-		else
-			skillsystem.execute(bot.getBotId(), new KickBallV1(mode, device));
+		switch (device)
+		{
+			case CHIP:
+				skillsystem.execute(bot.getBotID(), new ChipAutoSkill(kicklength, 0));
+				break;
+			case STRAIGHT:
+				skillsystem.execute(bot.getBotID(), new KickAutoSkill(kicklength));
+				break;
+		}
 	}
 	
-
+	
 	@Override
 	public void onLookAt(Vector2 lookAtTarget)
 	{
-		skillsystem.execute(bot.getBotId(), new MoveFixedTarget(null, lookAtTarget));
+		final MovementCon moveCon = new MovementCon();
+		moveCon.updateDestination(currentPos);
+		moveCon.updateLookAtTarget(lookAtTarget);
+		skillsystem.execute(bot.getBotID(), new MoveToSkill(moveCon));
 	}
 	
-
+	
 	@Override
 	public void onDribble(int rpm)
 	{
-		// skillsystem.execute(bot.getBotId(), new DribbleBall(rpm));
 		bot.execute(new TigerDribble(rpm));
 	}
 	
-
+	
+	@Override
+	public void onSkill(AMoveSkill skill)
+	{
+		skillsystem.execute(bot.getBotID(), skill);
+	}
+	
+	
 	@Override
 	public void onKickerFire(int level, float duration, int mode, int device)
 	{
-		TigerKickerKickV2 kick = new TigerKickerKickV2(device, mode, duration, level);
+		final TigerKickerKickV2 kick = new TigerKickerKickV2(device, mode, duration, level);
 		
 		bot.execute(kick);
 	}
 	
-
+	
 	@Override
 	public void onKickerChargeManual(int duration, int on, int off)
 	{
-		if (on < 0 || off < 0 || on > 60000 || off > 60000 || duration < 0 || duration > 60000)
+		if ((on < 0) || (off < 0) || (on > 60000) || (off > 60000) || (duration < 0) || (duration > 60000))
 		{
 			return;
 		}
@@ -424,37 +455,45 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 		bot.execute(new TigerKickerChargeManual(on, off, duration));
 	}
 	
-
+	
 	@Override
-	public void onSetAutomaticSpeed(float x, float y, float w, float v)
+	public void onSetSpeed(float x, float y, float w, float v)
 	{
 		bot.execute(new TigerMotorMoveV2(new Vector2(x, y), w, v));
 	}
 	
-
+	
+	@Override
+	public void onSetSpeed(float x, float y, float w)
+	{
+		bot.execute(new TigerMotorMoveV2(new Vector2(x, y), w));
+	}
+	
+	
 	@Override
 	public void onNewVelocity(Vector2 xy)
 	{
 		bot.execute(new TigerMotorMoveV2(xy));
 	}
 	
-
+	
 	@Override
 	public void onNewAngularVelocity(float w)
 	{
-		TigerMotorMoveV2 move = new TigerMotorMoveV2(w);
+		final TigerMotorMoveV2 move = new TigerMotorMoveV2(w);
 		move.setV(0);
 		bot.execute(move);
 	}
 	
-
+	
 	@Override
 	public void onKickerChargeAuto(int max)
 	{
+		bot.setKickerMaxCap(max);
 		bot.execute(new TigerKickerChargeAuto(max));
 	}
 	
-
+	
 	@Override
 	public void onStartPing(int numPings)
 	{
@@ -464,7 +503,7 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 		pingThread.start();
 	}
 	
-
+	
 	@Override
 	public void onStopPing()
 	{
@@ -477,39 +516,63 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 		pingThread = null;
 	}
 	
-
+	
 	@Override
 	public void onSaveLogs()
 	{
-		boolean move = mainPanel.getLogMovement();
-		boolean kicker = mainPanel.getLogKicker();
-		boolean ir = mainPanel.getLogIr();
-		boolean accel = mainPanel.getLogAccel();
+		final boolean moveLog = mainPanel.getLogMovement();
+		final boolean kickerLog = mainPanel.getLogKicker();
+		final boolean irLog = mainPanel.getLogIr();
 		
-		bot.setLogMovement(move);
-		bot.setLogKicker(kicker);
-		bot.setLogIr(ir);
-		bot.setLogAccel(accel);
+		bot.setLogMovement(moveLog);
+		bot.setLogKicker(kickerLog);
+		bot.setLogIr(irLog);
 	}
 	
-
+	
 	@Override
 	public void onNewWorldFrame(WorldFrame wf)
 	{
-		TrackedTigerBot tracked = wf.tigerBots.get(bot.getBotId());
+		final TrackedTigerBot tracked = wf.tigerBotsVisible.getWithNull(bot.getBotID());
 		if (tracked == null)
+		{
 			return;
-		
-		Vector2f vel = new Vector2f(tracked.vel.turnNew(-tracked.angle));
-		
-		motorMain.getEnhancedInputPanel().setLatestWPData(new Vector2f(-vel.y, vel.x), tracked.aVel);
+		}
+		currentPos = tracked.getPos();
+		if ((System.nanoTime() - startNewWP) > TimeUnit.MILLISECONDS.toNanos(VISUALIZATION_FREQUENCY))
+		{
+			final Vector2f vel = new Vector2f(tracked.getVel().turnNew(-tracked.getAngle()));
+			
+			motorMain.getEnhancedInputPanel().setLatestWPData(new Vector2f(-vel.y(), vel.x()), tracked.getaVel());
+			startNewWP = System.nanoTime();
+		}
 	}
 	
-
+	
+	@Override
+	public void onVisionSignalLost(WorldFrame emptyWf)
+	{
+		motorMain.getEnhancedInputPanel().setLatestWPData(new Vector2f(0.0f, 0.0f), 0.0f);
+	}
+	
+	
 	@Override
 	public void onSetMotorMode(MotorMode mode)
 	{
 		bot.setMode(mode);
+	}
+	
+	
+	@Override
+	public void onFeatureChanged(EFeature feature, EFeatureState state)
+	{
+		bot.getBotFeatures().put(feature, state);
+	}
+	
+	
+	@Override
+	public void onUpdateFirmware(String filepath, boolean targetMain)
+	{
 	}
 	
 	// -------------------------------------------------------------
@@ -524,29 +587,29 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 			mainPanel.setBotName(name);
 		}
 		
-
+		
 		@Override
-		public void onIdChanged(int oldId, int newId)
+		public void onIdChanged(BotID oldId, BotID newId)
 		{
 			summary.setId(newId);
 			mainPanel.setId(newId);
 		}
 		
-
+		
 		@Override
 		public void onIpChanged(String ip)
 		{
 			mainPanel.setIp(ip);
 		}
 		
-
+		
 		@Override
 		public void onPortChanged(int port)
 		{
 			mainPanel.setPort(port);
 		}
 		
-
+		
 		@Override
 		public void onUseUpdateAllChanged(boolean useUpdateAll)
 		{
@@ -554,26 +617,26 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 			summary.setMulticast(useUpdateAll);
 		}
 		
-
+		
 		@Override
 		public void onOofCheckChanged(boolean enable)
 		{
 			summary.setOofCheck(enable);
 		}
 		
-
+		
 		@Override
 		public void onIncommingCommand(ACommand cmd)
 		{
 		}
 		
-
+		
 		@Override
 		public void onOutgoingCommand(ACommand cmd)
 		{
 		}
 		
-
+		
 		@Override
 		public void onNetworkStateChanged(ENetworkState state)
 		{
@@ -581,7 +644,7 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 			mainPanel.setConnectionState(state);
 		}
 		
-
+		
 		@Override
 		public void onNewKickerStatusV2(TigerKickerStatusV2 status)
 		{
@@ -596,15 +659,19 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 			fastChgPanel.setChargeLvL(status.getCapLevel());
 		}
 		
-
+		
 		@Override
 		public void onNewSystemStatusMovement(TigerSystemStatusMovement status)
 		{
-			motorMain.getEnhancedInputPanel().setLatestVelocity(status.getVelocity());
-			motorMain.getEnhancedInputPanel().setLatestAngularVelocity(status.getAngularVelocity());
+			if ((System.nanoTime() - startMotor) > TimeUnit.MILLISECONDS.toNanos(VISUALIZATION_FREQUENCY))
+			{
+				motorMain.getEnhancedInputPanel().setLatestVelocity(status.getVelocity());
+				motorMain.getEnhancedInputPanel().setLatestAngularVelocity(status.getAngularVelocity());
+				startMotor = System.nanoTime();
+			}
 		}
 		
-
+		
 		@Override
 		public void onNewSystemPowerLog(TigerSystemPowerLog log)
 		{
@@ -612,52 +679,51 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 			summary.setBatteryLevel(log.getBatLevel());
 		}
 		
-
+		
 		@Override
 		public void onNewKickerIrLog(TigerKickerIrLog log)
 		{
 			ir.addIrLog(log);
 		}
 		
-
-		@Override
-		public void onNewMovementLis3LogRaw(TigerMovementLis3LogRaw log)
-		{
-			acceleration.addMovementLog(log);
-		}
 		
-
 		@Override
 		public void onServerPortChanged(int port)
 		{
 			mainPanel.setServerPort(port);
 		}
 		
-
+		
 		@Override
 		public void onCpuIdChanged(String cpuId)
 		{
 			mainPanel.setCpuId(cpuId);
 		}
 		
-
+		
 		@Override
 		public void onMacChanged(String mac)
 		{
 			mainPanel.setMac(mac);
 		}
 		
-
+		
 		@Override
 		public void onLogsChanged(TigerSystemSetLogs logs)
 		{
 			mainPanel.setLogMovement(logs.getMovement());
 			mainPanel.setLogKicker(logs.getKicker());
 			mainPanel.setLogIr(logs.getIr());
-			mainPanel.setLogAccel(logs.getAccel());
 		}
 		
-
+		
+		@Override
+		public void onBotFeaturesChanged(final Map<EFeature, EFeatureState> newFeatures)
+		{
+			features.setFeatures(newFeatures);
+		}
+		
+		
 		@Override
 		public void onMotorParamsChanged(TigerMotorSetParams params)
 		{
@@ -670,7 +736,7 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 			}
 		}
 		
-
+		
 		@Override
 		public void onNewSystemPong(TigerSystemPong pong)
 		{
@@ -682,7 +748,7 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 			pingThread.pongArrived(pong.getId());
 		}
 		
-
+		
 		@Override
 		public void onNewMotorPidLog(TigerMotorPidLog log)
 		{
@@ -691,6 +757,13 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 			motorControls[log.getId()].getConfigPanel().setLatest(log.getLatest());
 			motorControls[log.getId()].getConfigPanel().setOverload(log.getOverload());
 			motorControls[log.getId()].getConfigPanel().setECurrent(log.getECurrent());
+		}
+		
+		
+		@Override
+		public void onBlocked(boolean blocked)
+		{
+			
 		}
 	}
 	
@@ -702,18 +775,18 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 			bot.setUseUpdateAll(multicast);
 		}
 		
-
+		
 		@Override
 		public void onOOFCheckChange(boolean oofCheck)
 		{
 			bot.setOofCheck(oofCheck);
 		}
 		
-
+		
 		@Override
 		public void onConnectionChange()
 		{
-			connectionChange();
+			TigerBotPresenter.this.onConnectionChange();
 		}
 	}
 	
@@ -726,13 +799,17 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 		@Override
 		public void run()
 		{
-			Statistics stat = bot.getTransceiver().getTransmitterStats();
-			network.setTxStat(stat.substract(lastTxStats));
-			lastTxStats = stat.clone();
+			if (!isStatsActive())
+			{
+				return;
+			}
+			final Statistics txStats = bot.getTransceiver().getTransmitterStats();
+			network.setTxStat(txStats.substract(lastTxStats));
+			lastTxStats = new Statistics(txStats);
 			
-			stat = bot.getTransceiver().getReceiverStats();
-			network.setRxStat(stat.substract(lastRxStats));
-			lastRxStats = stat.clone();
+			final Statistics rxStats = bot.getTransceiver().getReceiverStats();
+			network.setRxStat(rxStats.substract(lastRxStats));
+			lastRxStats = new Statistics(rxStats);
 			
 			network.setTxAllStat(lastTxStats);
 			network.setRxAllStat(lastRxStats);
@@ -741,36 +818,39 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 	
 	private class MotorConfigPresenter implements IMotorConfigurationPanelObserver
 	{
-		private int	id;
+		private final int	id;
 		
 		
+		/**
+		 * @param motorId
+		 */
 		public MotorConfigPresenter(int motorId)
 		{
 			id = motorId;
 		}
 		
-
+		
 		@Override
 		public void onSetLog(boolean logging)
 		{
 			bot.setPidLogging(id, logging);
 		}
 		
-
+		
 		@Override
 		public void onSetPidParams(float kp, float ki, float kd, int slew)
 		{
 			bot.setPid(id, kp, ki, kd, slew);
 		}
 		
-
+		
 		@Override
 		public void onSetManual(int power)
 		{
 			bot.execute(new TigerMotorSetManual(id, power));
 		}
 		
-
+		
 		@Override
 		public void onSetPidSetpoint(int setpoint)
 		{
@@ -780,19 +860,22 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 	
 	private class PingThread extends Thread
 	{
-		private long					delay			= 100000000;
+		private long							delay			= 100000000;
 		
-		private int						id				= 0;
+		private int								id				= 0;
 		
-		private Map<Integer, Long>	activePings	= new HashMap<Integer, Long>();
+		private final Map<Integer, Long>	activePings	= new HashMap<Integer, Long>();
 		
 		
+		/**
+		 * @param numPings
+		 */
 		public PingThread(int numPings)
 		{
 			delay = 1000000000 / numPings;
 		}
 		
-
+		
 		@Override
 		public void run()
 		{
@@ -803,7 +886,7 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 					activePings.put(id, System.nanoTime());
 				}
 				
-				bot.execute(new TigerSystemBigPing(id));
+				bot.execute(new TigerSystemPing(id));
 				id++;
 				
 				ThreadUtil.parkNanosSafe(delay);
@@ -812,7 +895,10 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 			activePings.clear();
 		}
 		
-
+		
+		/**
+		 * @param id
+		 */
 		public void pongArrived(int id)
 		{
 			Long startTime = null;
@@ -827,9 +913,9 @@ public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPan
 				return;
 			}
 			
-			float delay = (System.nanoTime() - startTime) / 1000000.0f;
+			final float delayPongArrive = (System.nanoTime() - startTime) / 1000000.0f;
 			
-			network.setDelay(delay);
+			network.setDelay(delayPongArrive);
 		}
 	}
 }

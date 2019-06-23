@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 01.03.2011
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.udp;
@@ -27,6 +27,7 @@ import org.apache.log4j.Logger;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.Statistics;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 
+
 /**
  * Transmitter for UDP packets.
  * 
@@ -38,53 +39,55 @@ public class BufferedTransmitterUDP implements ITransmitterUDP
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final Logger log = Logger.getLogger(getClass());
+	// Logger
+	private static final Logger				log			= Logger.getLogger(BufferedTransmitterUDP.class.getName());
 	
-	private InetAddress destination = null;
-	private int destPort = 0;
-	private DatagramSocket socket = null;
-	private Queue<ACommand> sendQueue = new LinkedList<ACommand>();
-	private Sender sender = null;
-	private Statistics stats = new Statistics();
-	private Map<Integer, Long> buffer = new HashMap<Integer, Long>();
-	private Map<Integer, ACommand> lateCmds = new HashMap<Integer, ACommand>();
-	private long minDelay = 1000000;	// in [ns]
+	private InetAddress							destination	= null;
+	private int										destPort		= 0;
+	private DatagramSocket						socket		= null;
+	private final Queue<ACommand>				sendQueue	= new LinkedList<ACommand>();
+	private Sender									sender		= null;
+	private final Statistics					stats			= new Statistics();
+	private final Map<Integer, Long>			buffer		= new HashMap<Integer, Long>();
+	private final Map<Integer, ACommand>	lateCmds		= new HashMap<Integer, ACommand>();
+	// in [ns]
+	private static final long					minDelay		= 1000000;
 	
-	private Lock lock = new ReentrantLock();
-	private Condition wakeup = lock.newCondition();
+	private final Lock							lock			= new ReentrantLock();
+	private final Condition						wakeup		= lock.newCondition();
+	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
 	public void enqueueCommand(ACommand cmd)
 	{
-		synchronized(sendQueue)
+		synchronized (sendQueue)
 		{
 			sendQueue.add(cmd);
 		}
-
+		
 		try
 		{
 			lock.lock();
-			
 			wakeup.signalAll();
-		}
-		finally
+		} finally
 		{
 			lock.unlock();
 		}
 	}
 	
+	
 	@Override
 	public void start()
 	{
-		if(sender != null)
+		if (sender != null)
 		{
 			stop();
 		}
@@ -96,22 +99,24 @@ public class BufferedTransmitterUDP implements ITransmitterUDP
 		sender.start();
 	}
 	
+	
 	@Override
 	public void stop()
 	{
-		if(sender == null)
+		if (sender == null)
 		{
 			return;
 		}
 		
-		while(!sendQueue.isEmpty())
+		while (!sendQueue.isEmpty())
 		{
 			try
 			{
+				log.debug(sender.isInterrupted() + " BLUBB");
 				Thread.sleep(10);
 			}
 			
-			catch(InterruptedException e)
+			catch (final InterruptedException e)
 			{
 			}
 		}
@@ -121,32 +126,33 @@ public class BufferedTransmitterUDP implements ITransmitterUDP
 		try
 		{
 			sender.join(100);
-		}
-		catch (InterruptedException err)
+		} catch (final InterruptedException err)
 		{
 		}
 		
 		sender = null;
 	}
-
+	
+	
 	@Override
 	public void setSocket(DatagramSocket newSocket) throws IOException
 	{
 		boolean start = false;
 		
-		if(sender != null)
+		if (sender != null)
 		{
 			stop();
 			start = true;
 		}
 		
 		socket = newSocket;
-
-		if(start)
+		
+		if (start)
 		{
 			start();
 		}
 	}
+	
 	
 	@Override
 	public void setDestination(InetAddress dstIp, int dstPort)
@@ -154,7 +160,8 @@ public class BufferedTransmitterUDP implements ITransmitterUDP
 		destination = dstIp;
 		destPort = dstPort;
 	}
-
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -163,96 +170,97 @@ public class BufferedTransmitterUDP implements ITransmitterUDP
 	{
 		return stats;
 	}
-
+	
 	// --------------------------------------------------------------------------
 	// --- Threads --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	protected class Sender extends Thread
 	{
-		private boolean active;
+		private boolean	active;
 		
+		
+		@Override
 		public void run()
 		{
 			active = true;
 			
-			Thread.currentThread().setName("Transmitter UDP");
-			
-			if(socket == null)
+			if (socket == null)
 			{
 				log.error("Cannot start a transmitter on a null socket");
 				return;
 			}
 			
+			Thread.currentThread().setName("Buffered Transmitter UDP " + socket.getInetAddress() + ":" + socket.getPort());
+			
 			ACommand cmd;
 			
-			while(active)
+			while (active)
 			{
 				cmd = null;
 				
 				do
 				{
-					synchronized(sendQueue)
+					synchronized (sendQueue)
 					{
 						cmd = sendQueue.poll();
 					}
 					
-					if(cmd != null)
+					if (cmd != null)
 					{
-						int cmdId = cmd.getCommand();
+						final int cmdId = cmd.getCommand();
 						
 						// check time constraints
-						Long lastSendTime = buffer.get(cmdId);
-						if(lastSendTime != null)
+						final Long lastSendTime = buffer.get(cmdId);
+						if (lastSendTime != null)
 						{
-							if(lastSendTime > System.nanoTime() - minDelay)
+							if (lastSendTime > (System.nanoTime() - minDelay))
 							{
 								// latest command of this type was less than <minDelay> ns ago
 								lateCmds.put(cmdId, cmd);
-							}
-							else
+							} else
 							{
 								// waited at least minDelay ms
 								buffer.put(cmdId, System.nanoTime());
 								processCommand(cmd);
 							}
-						}
-						else
+						} else
 						{
 							buffer.put(cmdId, System.nanoTime());
 							processCommand(cmd);
-						}					
+						}
 					}
-				}
-				while(cmd != null);
+				} while (cmd != null);
 				
 				// check late commands
 				long earliestTime = System.nanoTime();
 				
-				for(Iterator<ACommand> iter = lateCmds.values().iterator(); iter.hasNext(); )
+				for (final Iterator<ACommand> iter = lateCmds.values().iterator(); iter.hasNext();)
 				{
-					ACommand lateCmd = iter.next();
+					final ACommand lateCmd = iter.next();
 					
-					long lastSendTime = buffer.get(lateCmd.getCommand());
+					final long lastSendTime = buffer.get(lateCmd.getCommand());
 					
-					if(lastSendTime <= System.nanoTime() - minDelay)	// command now waited <minDelay>
+					// command now waited <minDelay>
+					if (lastSendTime <= (System.nanoTime() - minDelay))
 					{
-						synchronized(sendQueue)
+						synchronized (sendQueue)
 						{
 							sendQueue.add(lateCmd);
 						}
 						
 						iter.remove();
-					}
-					else
+					} else
 					{
-						if(lastSendTime < earliestTime)
+						if (lastSendTime < earliestTime)
+						{
 							earliestTime = lastSendTime;
+						}
 					}
 				}
 				
-				synchronized(sendQueue)
+				synchronized (sendQueue)
 				{
-					if(!sendQueue.isEmpty())
+					if (!sendQueue.isEmpty())
 					{
 						continue;
 					}
@@ -262,19 +270,16 @@ public class BufferedTransmitterUDP implements ITransmitterUDP
 				{
 					lock.lock();
 					
-					if(lateCmds.isEmpty())
+					if (lateCmds.isEmpty())
 					{
 						wakeup.await();
-					}
-					else
+					} else
 					{
 						wakeup.awaitNanos(System.nanoTime() - earliestTime);
 					}
-				} 
-				catch (InterruptedException err)
+				} catch (final InterruptedException err)
 				{
-				}
-				finally
+				} finally
 				{
 					lock.unlock();
 				}
@@ -284,30 +289,32 @@ public class BufferedTransmitterUDP implements ITransmitterUDP
 			lateCmds.clear();
 		}
 		
+		
+		/**
+		 */
 		public void disable()
 		{
 			active = false;
 		}
-
+		
+		
 		private void processCommand(ACommand cmd)
 		{
 			// process cmd
 			try
 			{
-				byte data[] = cmd.getTransferData();
+				final byte data[] = cmd.getTransferData();
 				
-				DatagramPacket packet = new DatagramPacket(data, data.length, destination, destPort);
+				final DatagramPacket packet = new DatagramPacket(data, data.length, destination, destPort);
 				socket.send(packet);
 				
-//				log.debug("Sent: " + cmd.getCommand());
-				
 				stats.packets++;
-				stats.raw += data.length + 54;	// Ethernet + IP + UDP header length
+				// Ethernet + IP + UDP header length
+				stats.raw += data.length + 54;
 				stats.payload += data.length;
-			}
-			catch (IOException e)
+			} catch (final IOException e)
 			{
-				active = false;
+				log.warn("Error while processing command", e);
 				return;
 			}
 		}

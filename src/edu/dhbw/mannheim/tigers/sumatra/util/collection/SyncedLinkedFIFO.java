@@ -15,10 +15,11 @@ import java.util.LinkedList;
 
 
 /**
- * An implementation of the {@link IFIFO}-interface, with a defined size, synchronized accesses, and based on a
+ * An implementation of the {@link ISyncedFIFO}-interface, with a defined size, synchronized accesses, and based on a
  * {@link LinkedList}
  * 
  * @author Gero
+ * @param <D>
  * 
  */
 public class SyncedLinkedFIFO<D> extends LinkedList<D> implements ISyncedFIFO<D>
@@ -26,16 +27,20 @@ public class SyncedLinkedFIFO<D> extends LinkedList<D> implements ISyncedFIFO<D>
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long		serialVersionUID	= -4349746168495530189L;
+	private static final long	serialVersionUID	= -4349746168495530189L;
+	/** timeout for waiting for new entries */
+	private static final int	TIMEOUT				= 10000;
 	
-
-	protected final Object			lock					= new Object();
-	private final int					allowedSize;
+	private final Object			lock					= new Object();
+	private final int				allowedSize;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param allowedSize
+	 */
 	public SyncedLinkedFIFO(int allowedSize)
 	{
 		super();
@@ -43,6 +48,11 @@ public class SyncedLinkedFIFO<D> extends LinkedList<D> implements ISyncedFIFO<D>
 		this.allowedSize = allowedSize;
 	}
 	
+	
+	/**
+	 * @param allowedSize
+	 * @param old
+	 */
 	public SyncedLinkedFIFO(int allowedSize, Collection<? extends D> old)
 	{
 		super();
@@ -52,8 +62,10 @@ public class SyncedLinkedFIFO<D> extends LinkedList<D> implements ISyncedFIFO<D>
 		synchronized (lock)
 		{
 			int i = 0;
-			for (D d : old) {
-				if (i > allowedSize) {
+			for (final D d : old)
+			{
+				if (i > allowedSize)
+				{
 					break;
 				}
 				
@@ -64,11 +76,12 @@ public class SyncedLinkedFIFO<D> extends LinkedList<D> implements ISyncedFIFO<D>
 		}
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	protected int allowedSize() {
+	protected int allowedSize()
+	{
 		return allowedSize;
 	}
 	
@@ -89,7 +102,7 @@ public class SyncedLinkedFIFO<D> extends LinkedList<D> implements ISyncedFIFO<D>
 		}
 	}
 	
-
+	
 	@Override
 	public D peek()
 	{
@@ -99,7 +112,7 @@ public class SyncedLinkedFIFO<D> extends LinkedList<D> implements ISyncedFIFO<D>
 		}
 	}
 	
-
+	
 	@Override
 	public D poll()
 	{
@@ -109,7 +122,7 @@ public class SyncedLinkedFIFO<D> extends LinkedList<D> implements ISyncedFIFO<D>
 		}
 	}
 	
-
+	
 	@Override
 	public D remove()
 	{
@@ -119,7 +132,7 @@ public class SyncedLinkedFIFO<D> extends LinkedList<D> implements ISyncedFIFO<D>
 		}
 	}
 	
-
+	
 	@Override
 	public D take() throws InterruptedException
 	{
@@ -128,7 +141,7 @@ public class SyncedLinkedFIFO<D> extends LinkedList<D> implements ISyncedFIFO<D>
 			D result = poll();
 			while (result == null)
 			{
-				lock.wait();
+				lock.wait(TIMEOUT);
 				result = poll();
 			}
 			
@@ -136,24 +149,27 @@ public class SyncedLinkedFIFO<D> extends LinkedList<D> implements ISyncedFIFO<D>
 		}
 	}
 	
-
+	
 	@Override
 	public D takeIfMatches(ICriteria<D> criteria) throws InterruptedException
 	{
 		synchronized (lock)
 		{
 			D result = peekFirst();
-			while (result == null || !criteria.matches(result))
+			while ((result == null) || !criteria.matches(result))
 			{
-				Iterator<D> it = iterator();
-				while (it.hasNext()) {
-					D item = it.next();
-					if (criteria.matches(item)) {
+				final Iterator<D> it = iterator();
+				while (it.hasNext())
+				{
+					final D item = it.next();
+					if (criteria.matches(item))
+					{
 						it.remove();
-						return item;	// Jump and away...
+						// Jump and away...
+						return item;
 					}
 				}
-				lock.wait();
+				lock.wait(TIMEOUT);
 				result = peekFirst();
 			}
 			// At this point, the first element got chosen: Remove it!
@@ -162,44 +178,46 @@ public class SyncedLinkedFIFO<D> extends LinkedList<D> implements ISyncedFIFO<D>
 		}
 	}
 	
-
+	
 	@Override
 	public D peekFirstIfMatches(ICriteria<D> criteria)
 	{
 		synchronized (lock)
 		{
 			D result = peekFirst();
-			if (result != null && !criteria.matches(result))
+			if ((result != null) && !criteria.matches(result))
 			{
 				result = null;
 			}
 			return result;
 		}
 	}
-
-
+	
+	
 	@Override
 	public D look() throws InterruptedException
 	{
 		synchronized (lock)
 		{
 			D result = peekFirst();
-			while (result == null) {
+			while (result == null)
+			{
 				lock.wait();
 				result = peekFirst();
 			}
 			return result;
 		}
 	}
-
-
+	
+	
 	@Override
 	public D lookIfMatches(ICriteria<D> criteria) throws InterruptedException
 	{
 		synchronized (lock)
 		{
 			D result = peekFirst();
-			while (result == null || !criteria.matches(result)) {
+			while ((result == null) || !criteria.matches(result))
+			{
 				lock.wait();
 				result = peekFirst();
 			}

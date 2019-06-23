@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 01.03.2011
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.udp;
@@ -21,6 +21,7 @@ import org.apache.log4j.Logger;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.Statistics;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 
+
 /**
  * Transmitter for UDP packets.
  * 
@@ -32,20 +33,22 @@ public class TransmitterUDP implements ITransmitterUDP
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final Logger log = Logger.getLogger(getClass());
+	// Logger
+	private static final Logger				log				= Logger.getLogger(TransmitterUDP.class.getName());
 	
-	private InetAddress destination = null;
-	private int destPort = 0;
-	private DatagramSocket socket = null;
-	private BlockingQueue<ACommand> sendQueue = new LinkedBlockingQueue<ACommand>();
-	private Thread sendingThread = null;
-	private Statistics stats = new Statistics();
+	private InetAddress							destination		= null;
+	private int										destPort			= 0;
+	private DatagramSocket						socket			= null;
+	private final BlockingQueue<ACommand>	sendQueue		= new LinkedBlockingQueue<ACommand>();
+	private Thread									sendingThread	= null;
+	private final Statistics					stats				= new Statistics();
+	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -55,43 +58,44 @@ public class TransmitterUDP implements ITransmitterUDP
 		try
 		{
 			sendQueue.put(cmd);
-		}
-		catch (InterruptedException err)
+		} catch (InterruptedException err)
 		{
 		}
 	}
 	
+	
 	@Override
 	public void start()
 	{
-		if(sendingThread != null)
+		if (sendingThread != null)
 		{
 			stop();
 		}
 		
 		stats.reset();
 		
-		sendingThread = new Thread(new Sender());
+		sendingThread = new Thread(new Sender(), "TransmitterUDP");
 		
 		sendingThread.start();
 	}
 	
+	
 	@Override
 	public void stop()
 	{
-		if(sendingThread == null)
+		if (sendingThread == null)
 		{
 			return;
 		}
 		
-		while(!sendQueue.isEmpty())
+		int retries = 100;
+		while (!sendQueue.isEmpty() && (retries > 0))
 		{
+			retries--;
 			try
 			{
 				Thread.sleep(10);
-			}
-			
-			catch(InterruptedException e)
+			} catch (InterruptedException e)
 			{
 			}
 		}
@@ -100,32 +104,33 @@ public class TransmitterUDP implements ITransmitterUDP
 		try
 		{
 			sendingThread.join(100);
-		}
-		catch (InterruptedException err)
+		} catch (InterruptedException err)
 		{
 		}
 		
 		sendingThread = null;
 	}
-
+	
+	
 	@Override
 	public void setSocket(DatagramSocket newSocket) throws IOException
 	{
 		boolean start = false;
 		
-		if(sendingThread != null)
+		if (sendingThread != null)
 		{
 			stop();
 			start = true;
 		}
 		
 		socket = newSocket;
-
-		if(start)
+		
+		if (start)
 		{
 			start();
 		}
 	}
+	
 	
 	@Override
 	public void setDestination(InetAddress dstIp, int dstPort)
@@ -133,7 +138,8 @@ public class TransmitterUDP implements ITransmitterUDP
 		destination = dstIp;
 		destPort = dstPort;
 	}
-
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -142,30 +148,30 @@ public class TransmitterUDP implements ITransmitterUDP
 	{
 		return stats;
 	}
-
+	
 	// --------------------------------------------------------------------------
 	// --- Threads --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	protected class Sender implements Runnable
 	{
+		@Override
 		public void run()
 		{
-			Thread.currentThread().setName("Transmitter UDP");
-			
-			if(socket == null)
+			if (socket == null)
 			{
 				log.error("Cannot start a transmitter on a null socket");
 			}
 			
-			while(!Thread.currentThread().isInterrupted())
+			Thread.currentThread().setName("Transmitter UDP " + socket.getInetAddress() + ":" + socket.getPort());
+			
+			while (!Thread.currentThread().isInterrupted())
 			{
 				ACommand cmd;
 				
 				try
 				{
 					cmd = sendQueue.take();
-				}
-				catch(InterruptedException e)
+				} catch (InterruptedException e)
 				{
 					Thread.currentThread().interrupt();
 					continue;
@@ -179,10 +185,10 @@ public class TransmitterUDP implements ITransmitterUDP
 					socket.send(packet);
 					
 					stats.packets++;
-					stats.raw += data.length + 54;	// Ethernet + IP + UDP header length
+					// Ethernet + IP + UDP header length
+					stats.raw += data.length + 54;
 					stats.payload += data.length;
-				}
-				catch (IOException e)
+				} catch (IOException e)
 				{
 					Thread.currentThread().interrupt();
 					continue;

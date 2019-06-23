@@ -1,0 +1,12 @@
+package edu.dhbw.mannheim.tigers.sumatra.proto;
+/** See http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/lf5/LogRecord.html for LogRecord definition in Log4J */
+option java_package = "edu.dhbw.mannheim.tigers.sumatra.proto.model";
+option java_outer_classname = "RefereeProtos";
+
+message RefereeMsg{
+	required int32 id = 1;
+	required string cmd = 2;
+	required int32 goalsBlue = 3;
+	required int32 goalsYellow = 4;
+	required int32 timeLeft = 5;
+}

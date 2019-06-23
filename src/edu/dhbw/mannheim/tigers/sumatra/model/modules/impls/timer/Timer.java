@@ -11,16 +11,15 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.timer;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.CamDetectionFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.FrameID;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.TimerInfo;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.WorldFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.FrameID;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.timer.TimerInfo;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.ITimerObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ATimer;
 import edu.dhbw.mannheim.tigers.sumatra.util.Dormouse;
@@ -30,7 +29,8 @@ import edu.moduli.exceptions.StartModuleException;
 
 
 /**
- * This class uses its implementations of the {@link ITimer}-interface to measure the time the single modules of
+ * This class uses its implementations of the {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ITimer}
+ * -interface to measure the time the single modules of
  * Sumatra. The problem is, that these measurements/timings are asynchronous, so there is a need for synchronization.
  * 
  * @see ATimer
@@ -41,90 +41,103 @@ public class Timer extends ATimer
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	protected final Logger			log	= Logger.getLogger(getClass());
+	// Logger
+	private static final Logger						log			= Logger.getLogger(Timer.class.getName());
 	
-	protected final SumatraModel	model	= SumatraModel.getInstance();
+	protected final SumatraModel						model			= SumatraModel.getInstance();
 	
-	private Thread						dormouse;
+	private Thread											dormouse;
+	
+	private final Map<String, StopWatch>			stopWatches	= new HashMap<String, StopWatch>();
+	
+	/** Capacity calculated: */
+	private final SortedMap<FrameID, TimerInfo>	timings		= new TreeMap<FrameID, TimerInfo>();
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 * @param subnodeConfiguration
+	 */
 	public Timer(SubnodeConfiguration subnodeConfiguration)
 	{
 		
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- life-cycle -----------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
 	@Override
 	public void initModule() throws InitModuleException
 	{
 		dormouse = new Thread(Dormouse.getInstance(), "Dormouse");
 		dormouse.start();
 		
-		log.info("Initialized.");
+		log.debug("Initialized.");
 	}
 	
-
+	
 	@Override
 	public void startModule() throws StartModuleException
 	{
-		log.info("Started.");
+		log.debug("Started.");
 	}
 	
-
+	
 	@Override
 	public void stopModule()
 	{
 		dormouse.interrupt();
 		
-		synchronized (observers)
+		synchronized (getObservers())
 		{
-			observers.clear();
+			getObservers().clear();
 		}
 		
-		log.info("Stopped.");
+		timings.clear();
+		
+		log.debug("Stopped.");
 	}
 	
-
+	
 	@Override
 	public void deinitModule()
 	{
-		camWatch.reset();
-		wpWatch.reset();
-		aiWatch.reset();
+		for (final StopWatch stopWatch : stopWatches.values())
+		{
+			stopWatch.reset();
+		}
 		
-		log.info("Deinitialized.");
+		log.debug("Deinitialized.");
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- main data-flow -------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/** FPS (~80 max) * measuring-points (3) * seconds (60) * minutes (30) = {@value} */
-	private static final int INIT_CAPACITY = 432000;
-	/** Capacity calculated:  */
-	private final Map<FrameID, TimerInfo>	timings	= new HashMap<FrameID, TimerInfo>(INIT_CAPACITY);
 	
 	
 	/**
-	 * Minor memory-leak here!!! ;)
-	 * 
 	 * @param id
 	 * @return
 	 */
 	private TimerInfo getTimerInfo(FrameID id)
 	{
+		if (id == null)
+		{
+			log.error("FrameID for timerinfo was null");
+			return new TimerInfo(stopWatches.keySet());
+		}
 		synchronized (timings)
 		{
 			TimerInfo result = timings.get(id);
 			if (result == null)
 			{
-				result = new TimerInfo();
+				result = new TimerInfo(stopWatches.keySet());
 				timings.put(id, result);
 			}
 			return result;
@@ -132,110 +145,45 @@ public class Timer extends ATimer
 	}
 	
 	
-	// ### Cam
-	private final StopWatch	camWatch	= new StopWatch();
-	
-	
 	@Override
-	public void time(CamDetectionFrame detnFrame)
+	public void notifyNewTimerInfo(FrameID frameId)
 	{
-		camWatch.stop(detnFrame.tReceived);
-		
-		// Add current measurement to the correct TimerInfo
-		TimerInfo info = getTimerInfo(detnFrame.id);
-		info.setCamTiming(camWatch.getCurrentTiming());
-	}
-	
-	
-	// ### WP
-	private final StopWatch	wpWatch			= new StopWatch();
-//	private double				greaterThen2ms	= 0;
-//	private double				greaterThen1ms	= 0;
-	
-	
-	@Override
-	public void startWP(CamDetectionFrame detnFrame)
-	{
-		wpWatch.start(new FrameID(detnFrame.cameraId, detnFrame.frameNumber));
-	}
-	
-
-	@Override
-	public void stopWP(WorldFrame wFrame)
-	{
-		wpWatch.stop(wFrame.id);
-//		if (duration > 1000000)
-//		{
-//			if (duration > 2000000)
-//			{
-//				greaterThen1ms++;
-//				greaterThen2ms++;
-//				double ratio = greaterThen2ms / wpWatch.count() * 100;
-//				log.debug("WP !!! >2ms #" + wFrame.id + " (=" + duration + "ns, ~" + wpWatch.mean() + "ns, " + ratio + "%)");
-//			} else
-//			{
-//				greaterThen1ms++;
-//				double ratio = greaterThen1ms / wpWatch.count() * 100;
-//				log.debug("WP !!! >1ms #" + wFrame.id + " (=" + duration + "ns, ~" + wpWatch.mean() + "ns, " + ratio + "%)");
-//			}
-//		}
-		
-		// Add current measurement to the correct TimerInfo
-		TimerInfo timer = getTimerInfo(wFrame.id);
-		timer.setWpTiming(wpWatch.getCurrentTiming());
-	}
-	
-	
-	// ### AI
-	private final StopWatch	aiWatch	= new StopWatch();
-	private long				aiCount	= 0;
-	
-	
-	@Override
-	public void startAI(WorldFrame wFrame)
-	{
-		aiWatch.start(wFrame.id);
-	}
-	
-
-	@Override
-	public void stopAI(AIInfoFrame aiFrame)
-	{
-		aiCount++;
-		aiWatch.stop(aiFrame.worldFrame.id);
-//		if (0 == aiCount % 100) // Every 100th time...
-//		{
-//			log.debug("AI: " + stop + "ns (Max: " + aiWatch.max() + "ns/Mean: " + aiWatch.mean() + "ns)");
-//		}
-		
-		// Add current measurement to the correct TimerInfo
-		TimerInfo info = getTimerInfo(aiFrame.worldFrame.id);
-		info.setAiTiming(aiWatch.getCurrentTiming());
-		
-		// Notify observers
-		if (info.isFull())
+		synchronized (getObservers())
 		{
-			notifyNewTimerInfo(info);
-		}
-	}
-	
-
-	// ### Skill received in skillsystem
-	@Override
-	public void time(FrameID wfID)
-	{
-		
-	}
-	
-
-	private void notifyNewTimerInfo(TimerInfo info)
-	{
-		synchronized (observers)
-		{
-			for (ITimerObserver observer : observers)
+			for (final ITimerObserver observer : getObservers())
 			{
-				observer.onNewTimerInfo(info);
+				observer.onNewTimerInfo(getTimerInfo(frameId));
+			}
+			synchronized (timings)
+			{
+				timings.remove(frameId);
 			}
 		}
+	}
+	
+	
+	@Override
+	public void stop(String moduleName, FrameID frameId)
+	{
+		final StopWatch stopWatch = stopWatches.get(moduleName);
+		if (stopWatch != null)
+		{
+			stopWatch.stop(frameId);
+			final TimerInfo info = getTimerInfo(frameId);
+			info.addTiming(moduleName, stopWatch.getCurrentTiming());
+		}
+	}
+	
+	
+	@Override
+	public void start(String moduleName, FrameID frameId)
+	{
+		StopWatch stopWatch = stopWatches.get(moduleName);
+		if (stopWatch == null)
+		{
+			stopWatch = new StopWatch();
+			stopWatches.put(moduleName, stopWatch);
+		}
+		stopWatch.start(frameId);
 	}
 }

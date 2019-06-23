@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 25.08.2010
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals;
@@ -22,7 +22,9 @@ import javax.swing.JLabel;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
+
 
 /**
  * Select a new bot.
@@ -35,21 +37,25 @@ public class NewBotPanel extends JDialog
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long	serialVersionUID	= -7060966523316572971L;
+	private static final long				serialVersionUID	= -7060966523316572971L;
 	
-	private JComboBox type = null;
-	private JTextField id = null;
-	private JTextField name = null;
-
-	private ImageIcon botIcon = null;
+	private JComboBox<String>				type					= null;
+	private JTextField						id						= null;
+	private JTextField						name					= null;
 	
-	private Map<String, EBotType> types;
+	private ImageIcon							botIcon				= null;
 	
-	private boolean cancelled = true;
+	private final Map<String, EBotType>	types;
+	
+	private boolean							cancelled			= true;
+	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param types
+	 */
 	public NewBotPanel(Map<String, EBotType> types)
 	{
 		botIcon = new ImageIcon(ClassLoader.getSystemResource("bot.png"));
@@ -63,18 +69,18 @@ public class NewBotPanel extends JDialog
 		
 		this.types = types;
 		
-		String[] names = types.keySet().toArray(new String[types.size()]);
-
-		type = new JComboBox(names);
+		final String[] names = types.keySet().toArray(new String[types.size()]);
+		
+		type = new JComboBox<String>(names);
 		id = new JTextField();
 		name = new JTextField();
 		
-		JButton ok = new JButton("OK");
-		JButton cancel = new JButton("Cancel");
+		final JButton ok = new JButton("OK");
+		final JButton cancel = new JButton("Cancel");
 		
 		ok.addActionListener(new CloseOperation(false));
 		cancel.addActionListener(new CloseOperation(true));
-	
+		
 		add(new JLabel("Type:"));
 		add(type);
 		add(new JLabel("ID:"));
@@ -88,22 +94,28 @@ public class NewBotPanel extends JDialog
 		
 		setMinimumSize(getSize());
 		
-		setLocation(Toolkit.getDefaultToolkit().getScreenSize().width/2-getSize().width/2, Toolkit.getDefaultToolkit().getScreenSize().height/2-getSize().height/2);
-	}	
-
+		setLocation((Toolkit.getDefaultToolkit().getScreenSize().width / 2) - (getSize().width / 2), (Toolkit
+				.getDefaultToolkit().getScreenSize().height / 2) - (getSize().height / 2));
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @return
+	 */
 	public boolean isDataValid()
 	{
-		if(cancelled)
+		if (cancelled)
+		{
 			return false;
+		}
 		
 		try
 		{
 			Integer.parseInt(id.getText());
-		}
-		catch(NumberFormatException e)
+		} catch (final NumberFormatException e)
 		{
 			return false;
 		}
@@ -111,16 +123,26 @@ public class NewBotPanel extends JDialog
 		return true;
 	}
 	
-	public EBotType getType()
+	
+	/**
+	 * @return
+	 */
+	public EBotType getEBotType()
 	{
 		return types.get(type.getSelectedItem());
 	}
 	
-	public int getId()
+	
+	/**
+	 * @return
+	 */
+	public BotID getId()
 	{
-		return Integer.parseInt(id.getText());
+		return new BotID(Integer.parseInt(id.getText()));
 	}
 	
+	
+	@Override
 	public String getName()
 	{
 		return name.getText();
@@ -128,12 +150,17 @@ public class NewBotPanel extends JDialog
 	
 	protected class CloseOperation implements ActionListener
 	{
-		private boolean cancel;
+		private final boolean	cancel;
 		
+		
+		/**
+		 * @param cancel
+		 */
 		public CloseOperation(boolean cancel)
 		{
 			this.cancel = cancel;
 		}
+		
 		
 		@Override
 		public void actionPerformed(ActionEvent e)

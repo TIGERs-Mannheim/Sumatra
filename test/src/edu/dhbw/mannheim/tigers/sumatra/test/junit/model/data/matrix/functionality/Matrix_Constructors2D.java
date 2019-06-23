@@ -14,7 +14,7 @@ import static org.junit.Assert.assertFalse;
 
 import org.junit.Test;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.types.Matrix;
 
 
 /**
@@ -24,19 +24,19 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix;
  */
 public class Matrix_Constructors2D
 {
-	Matrix	m			= null;
+	Matrix		m			= null;
 	double[][]	r2_2_a	= new double[][] { { -10, -4 }, { -2, 0 } };
 	// 0 -0,5
 	// -0,25 1,25
 	
-
+	
 	double[][]	r3_3_a	= new double[][] { { 0.0, 0.0, 10.0 }, { 10.0, -1.0, 0.0 }, { -2.0, 1.0, 3.0 } };
 	
 	// -0,0375 0,125 0,125
 	// -0,375 0,25 1,25
 	// 0,1 0 0
 	
-
+	
 	double[][]	r4_4_a	= new double[][] { { -2, 1, 3, 2 }, { 1, -3, -1, 4 }, { -1, 0, 2, 4 }, { 2, -2, -2, -4 } };
 	// -1,5 -1.0 2,5 0,75
 	// -0,75 -0,5 0,75 -0,125
@@ -60,12 +60,14 @@ public class Matrix_Constructors2D
 		// checkContent
 	}
 	
-
+	
+	/**
+	 */
 	@Test
 	public void testCheckMatrixDoubleArrayArrayIntInt_correct()
 	{
 		// create a 2x4 matrix and control the content
-		Matrix m = new Matrix(r2_4_a, 2, 4);
+		final Matrix m = new Matrix(r2_4_a, 2, 4);
 		
 		for (int i = 0; i < 2; i++)
 		{
@@ -76,33 +78,41 @@ public class Matrix_Constructors2D
 		}
 	}
 	
-
+	
+	/**
+	 */
 	@Test(expected = IllegalArgumentException.class)
 	public void testCheckMatrixDoubleArrayArrayIntInt_wrongRow()
 	{
 		m = new Matrix(r2_4_a, -5, 4);
 	}
 	
-
+	
+	/**
+	 */
 	@Test(expected = IllegalArgumentException.class)
 	public void testCheckMatrixDoubleArrayArrayIntInt_wrongCol()
 	{
 		m = new Matrix(r2_4_a, 4, -5);
 	}
 	
-
+	
+	/**
+	 */
 	@Test(expected = IllegalArgumentException.class)
 	public void testCheckMatrixDoubleArrayArrayIntInt_wrongArray()
 	{
-		double[][] wrong = new double[][] { { 1.0 }, { 2.0, 3.0 } };
+		final double[][] wrong = new double[][] { { 1.0 }, { 2.0, 3.0 } };
 		m = new Matrix(wrong, 4, 5);
 	}
 	
-
+	
+	/**
+	 */
 	@Test
 	public void testCheckMatrixDoubleArrayArrayIntIntBoolean_checkContent()
 	{
-		double[][] arr = new double[][] { { 1.0, 3.0 }, { 2.0, 3.0 } };
+		final double[][] arr = new double[][] { { 1.0, 3.0 }, { 2.0, 3.0 } };
 		
 		// array with new space
 		m = new Matrix(arr, 2, 2);
@@ -112,11 +122,11 @@ public class Matrix_Constructors2D
 		
 		boolean test = true;
 		
-		double e = 10E-15;
-		double a = m.get(0, 0);// 333.0
-		double b = arr[0][0]; // 1.0
+		final double e = 10E-15;
+		final double a = m.get(0, 0);// 333.0
+		final double b = arr[0][0]; // 1.0
 		
-		if (a + e > b && a - e < b)
+		if (((a + e) > b) && ((a - e) < b))
 		{
 			test = true;
 		} else
@@ -126,7 +136,7 @@ public class Matrix_Constructors2D
 		
 		assertFalse(test);
 		
-
+		
 		// array with this space
 		m = new Matrix(arr, 2, 2);
 		// make some changes and look for them
@@ -135,7 +145,7 @@ public class Matrix_Constructors2D
 		
 	}
 	
-
+	
 	/******************************************************************************
 	 * DoubleArrayArray
 	 ******************************************************************************/
@@ -148,12 +158,14 @@ public class Matrix_Constructors2D
 		// checkContent
 	}
 	
-
+	
+	/**
+	 */
 	@Test
 	public void testCheckMatrixDoubleArrayArray_correct()
 	{
 		// create a 2x4 matrix and control the content
-		Matrix m = new Matrix(r2_4_a);
+		final Matrix m = new Matrix(r2_4_a);
 		
 		for (int i = 0; i < 2; i++)
 		{
@@ -164,19 +176,23 @@ public class Matrix_Constructors2D
 		}
 	}
 	
-
+	
+	/**
+	 */
 	@Test(expected = IllegalArgumentException.class)
 	public void testCheckMatrixDoubleArrayArray_wrongArray()
 	{
-		double[][] wrong = new double[][] { { 1.0 }, { 2.0, 3.0 } };
+		final double[][] wrong = new double[][] { { 1.0 }, { 2.0, 3.0 } };
 		m = new Matrix(wrong);
 	}
 	
-
+	
+	/**
+	 */
 	@Test
 	public void testCheckMatrixDoubleArrayArrayBoolean_checkContent()
 	{
-		double[][] arr = new double[][] { { 1.0, 3.0 }, { 2.0, 3.0 } };
+		final double[][] arr = new double[][] { { 1.0, 3.0 }, { 2.0, 3.0 } };
 		
 		// array with new space
 		m = new Matrix(arr);
@@ -186,11 +202,11 @@ public class Matrix_Constructors2D
 		
 		boolean test = true;
 		
-		double e = 10E-15;
-		double a = m.get(0, 0);// 333.0
-		double b = arr[0][0]; // 1.0
+		final double e = 10E-15;
+		final double a = m.get(0, 0);// 333.0
+		final double b = arr[0][0]; // 1.0
 		
-		if (a + e > b && a - e < b)
+		if (((a + e) > b) && ((a - e) < b))
 		{
 			test = true;
 		} else

@@ -27,7 +27,7 @@ public class StopWatch
 	private static final long			NS_IN_S					= 1000000000;
 	private static final long			CPS_UPDATE_INTERVAL	= 500000000;
 	
-
+	
 	private final Map<Object, Long>	series					= new HashMap<Object, Long>();
 	private final Object					sync						= new Object();
 	
@@ -51,7 +51,7 @@ public class StopWatch
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- mutators -------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -63,12 +63,12 @@ public class StopWatch
 	{
 		synchronized (sync)
 		{
-			Long start = System.nanoTime();
-			start(start, idCounter);
+			final Long startTime = System.nanoTime();
+			start(startTime, idCounter);
 		}
 	}
 	
-
+	
 	/**
 	 * Gives you the possibility to associate asynchronous measurements via an identifier (If you're sure that
 	 * start(...) and stop(...) are called synchronously you may want to use {@link #start()}/{@link #stop()}).
@@ -78,34 +78,35 @@ public class StopWatch
 	{
 		synchronized (sync)
 		{
-			Long start = System.nanoTime();
-			start(start, id);
+			final Long startTime = System.nanoTime();
+			start(startTime, id);
 		}
 	}
 	
-
-	private void start(Long start, Object id)
+	
+	private void start(Long startTime, Object id)
 	{
-		series.put(id, start);
+		series.put(id, startTime);
 	}
 	
-
+	
 	/**
 	 * Use only if you're sure that start() and stop() are called synchronously, otherwise use {@link #start(Object)}
 	 * respectively {@link #stop(Object)} with external identifiers.
+	 * @return
 	 */
 	public long stop()
 	{
 		synchronized (sync)
 		{
-			long end = System.nanoTime();
+			final long endTime = System.nanoTime();
 			idCounter++;
-			Long start = series.remove(idCounter);
-			return stop(start, end);
+			final Long startTime = series.remove(idCounter);
+			return stop(startTime, endTime);
 		}
 	}
 	
-
+	
 	/**
 	 * Gives you the possibility to associate asynchronous measurements via an identifier (If you're sure that
 	 * start(...) and stop(...) are called synchronously you may want to use {@link #start()}/{@link #stop()}).
@@ -116,42 +117,43 @@ public class StopWatch
 	{
 		synchronized (sync)
 		{
-			long end = System.nanoTime();
-			Long start = series.remove(id);
-			return stop(start, end);
+			final long endTime = System.nanoTime();
+			final Long startTime = series.remove(id);
+			return stop(startTime, endTime);
 		}
 	}
 	
-
+	
 	/**
 	 * Use this method, if you want to use the benefits of this class, but the start-point of your timing is measured
 	 * somewhere else.
 	 * 
-	 * @param start The time when the measurement started, in nanoseconds (system-time)
+	 * @param startTime The time when the measurement started, in nanoseconds (system-time)
 	 * @return The time between the call to start and now.
 	 */
-	public long stop(long start)
+	public long stop(long startTime)
 	{
 		synchronized (sync)
 		{
-			long end = System.nanoTime();
-			return stop(start, end);
+			final long endTime = System.nanoTime();
+			return stop(startTime, endTime);
 		}
 	}
 	
-
-	private long stop(Long start, long end)
+	
+	private long stop(Long startTime, long endTime)
 	{
-		if (start == null)
+		if (startTime == null)
 		{
-			return -1; // No start time in #series, unknown
+			// No start time in #series, unknown
+			return -1;
 		}
 		
 		// Save to provide getCurrentTiming access!
-		this.start = start;
-		this.end = end;
+		start = startTime;
+		end = endTime;
 		
-		long duration = end - start;
+		final long duration = endTime - startTime;
 		
 		if (duration > maximum)
 		{
@@ -168,7 +170,7 @@ public class StopWatch
 		return duration;
 	}
 	
-
+	
 	/**
 	 * @return Calls per second
 	 */
@@ -176,8 +178,8 @@ public class StopWatch
 	{
 		synchronized (sync)
 		{
-			long now = System.nanoTime();
-			if (now - lastCPSPoint > CPS_UPDATE_INTERVAL)
+			final long now = System.nanoTime();
+			if ((now - lastCPSPoint) > CPS_UPDATE_INTERVAL)
 			{
 				cps = (count - cpsSize) * (NS_IN_S / CPS_UPDATE_INTERVAL);
 				
@@ -188,7 +190,7 @@ public class StopWatch
 		}
 	}
 	
-
+	
 	/**
 	 * Deletes all measurements and resets all values to <code>0</code>
 	 */
@@ -209,10 +211,14 @@ public class StopWatch
 		}
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 * @return
+	 */
 	public long mean()
 	{
 		synchronized (sync)
@@ -221,7 +227,11 @@ public class StopWatch
 		}
 	}
 	
-
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public long max()
 	{
 		synchronized (sync)
@@ -230,7 +240,11 @@ public class StopWatch
 		}
 	}
 	
-
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public long count()
 	{
 		synchronized (sync)
@@ -239,7 +253,11 @@ public class StopWatch
 		}
 	}
 	
-
+	
+	/**
+	 * 
+	 * @return
+	 */
 	public Timing getCurrentTiming()
 	{
 		synchronized (sync)
@@ -256,15 +274,31 @@ public class StopWatch
 	 */
 	public static class Timing
 	{
+		/** */
 		public final long		start;
+		/** */
 		public final long		end;
+		/** */
 		public final long		duration;
+		/** */
 		public final long		maximum;
+		/** */
 		public final long		count;
+		/** */
 		public final long		mean;
+		/** */
 		public final float	cps;
 		
 		
+		/**
+		 * @param start
+		 * @param end
+		 * @param duration
+		 * @param maximum
+		 * @param count
+		 * @param mean
+		 * @param cps
+		 */
 		public Timing(long start, long end, long duration, long maximum, long count, long mean, float cps)
 		{
 			this.start = start;
@@ -276,7 +310,15 @@ public class StopWatch
 			this.cps = cps;
 		}
 		
-
+		
+		/**
+		 * @param start
+		 * @param end
+		 * @param duration
+		 * @param maximum
+		 * @param count
+		 * @param mean
+		 */
 		public Timing(long start, long end, long duration, long maximum, long count, long mean)
 		{
 			this.start = start;
@@ -285,7 +327,7 @@ public class StopWatch
 			this.maximum = maximum;
 			this.count = count;
 			this.mean = mean;
-			this.cps = -1;
+			cps = -1;
 		}
 	}
 }

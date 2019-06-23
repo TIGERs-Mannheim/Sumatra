@@ -11,10 +11,14 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora;
 
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.FrameID;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.TrackedTigerBot;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.FrameID;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.BotConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.ECondition;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
 
 
 /**
@@ -25,9 +29,9 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.condition
  * By instantiating a Condition in a Role, you give it a state which can then be tried to achieved and worked with.
  * </p>
  * <p>
- * Conditions must implement a {@link #doCheckCondition(WorldFrame, int)} method, which will determine the state of the
- * condition and is only accessible by the {@link #checkCondition(WorldFrame, int)}-Method, which will cache the state
- * of the Condition for the next calls with the same frame-id.
+ * Conditions must implement a {@link #doCheckCondition(WorldFrame, BotID)} method, which will determine the state of
+ * the condition and is only accessible by the {@link #checkCondition(WorldFrame, BotID)}-Method, which will cache the
+ * state of the Condition for the next calls with the same frame-id.
  * </p>
  * 
  * @author GuntherB, Gero
@@ -37,88 +41,169 @@ public abstract class ACondition
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final Logger				log					= Logger.getLogger(getClass());
+	// Logger
+	private static final Logger				log					= Logger.getLogger(ACondition.class.getName());
 	
-
-	private final ECondition		type;
 	
-	/** @see #checkCondition(WorldFrame, int) */
-	private static final Boolean	UNDEFINED_RESULT	= null;
+	private ECondition							type;
 	
-	private FrameID					lastId;
-	private Boolean					lastResult			= UNDEFINED_RESULT;
+	/** @see #checkCondition(WorldFrame, BotID) */
+	private static final EConditionState	UNDEFINED_RESULT	= EConditionState.NOT_CHECKED;
+	
+	private FrameID								lastId;
+	private EConditionState						lastResult			= EConditionState.NOT_CHECKED;
 	
 	/** Used to ensure re-calculation of the conditions state ({@link #resetCache()}) */
-	private boolean					stateChanged		= false;
+	private boolean								stateChanged		= false;
 	
-
-	private ARole						role					= null;
+	private String									condition			= "not implemented";
+	
+	/** check this condition? */
+	private boolean								active				= true;
+	
+	private EBotType								botType				= EBotType.UNKNOWN;
+	
+	private BotConfig								botConfig			= null;
+	
+	/**
+	 * What is the state of this condition? This enum is used to have more than binary states
+	 */
+	public enum EConditionState
+	{
+		/** everything is fine, go on */
+		FULFILLED(true),
+		/** something blocks this condition so possibly the condition will never be fulfilled */
+		BLOCKED(false),
+		/** we are working on it */
+		PENDING(false),
+		/** this condition is disabled, no checks will be processed */
+		DISABLED(true),
+		/** condition check crashed somehow... */
+		CRASHED(false),
+		/** condition was not checked yet */
+		NOT_CHECKED(false);
+		
+		private boolean	ok;
+		
+		
+		private EConditionState(boolean ok)
+		{
+			this.ok = ok;
+		}
+		
+		
+		/**
+		 * @return true if fulfilled or disabled
+		 */
+		public boolean isOk()
+		{
+			return ok;
+		}
+	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param type
+	 */
 	public ACondition(ECondition type)
 	{
 		this.type = type;
 	}
 	
-
+	
 	/**
-	 * Called by {@link ARole} to check if this condition is valid.
+	 * Called by {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole} to check if this
+	 * condition is valid.
 	 * <p>
-	 * <strong>NOTE:</strong> {@link #updateDestination(Object)} has to be <strong>called at least once</strong> before
-	 * this returns a valid result!!!
+	 * <strong>NOTE:</strong>
+	 * {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move.MovementCon#updateDestination(edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2)}
+	 * has to be <strong>called at least once</strong> before this returns a valid result!!!
 	 * </p>
 	 * 
 	 * @param worldFrame
 	 * @param botId
 	 * @return condition state (cached, if worldFrame.id equals the one from last call!)
 	 */
-	public boolean checkCondition(WorldFrame worldFrame)
+	public EConditionState checkCondition(WorldFrame worldFrame, BotID botId)
 	{
-		if (role == null)
+		if (!active)
 		{
-			log.warn("inappropriate use of condition: role was not set");
-			return false;
+			setCondition("inactive");
+			// return true if not active
+			return EConditionState.DISABLED;
 		}
-		
-		if (stateChanged || lastId == null || !lastId.equals(worldFrame.id))
+		if (stateChanged || (lastId == null) || !lastId.equals(worldFrame.id))
 		{
 			lastId = worldFrame.id;
 			
 			// Check for valid botIds...
-			final TrackedTigerBot bot = worldFrame.tigerBots.get(role.getBotID());
+			final TrackedTigerBot bot = worldFrame.tigerBotsVisible.getWithNull(botId);
 			if (bot != null)
 			{
-				lastResult = doCheckCondition(worldFrame, role.getBotID());
+				if (botConfig == null)
+				{
+					botConfig = AIConfig.getBotConfig(bot.getBotType());
+				}
+				if (botType == EBotType.UNKNOWN)
+				{
+					botType = bot.getBotType();
+				}
+				lastResult = doCheckCondition(worldFrame, botId);
 				stateChanged = false;
 			} else
 			{
-				log.fatal("Condition [" + type + "]: Something's wrong with botId: '" + role.getBotID() + "'!");
-				return false; // if crashed, better think it's false
+				log.warn("Condition [" + type + "]: Bot with botId: '" + botId + "' vanished from WF!");
+				return EConditionState.CRASHED;
 			}
 		}
 		
-		return lastResult == UNDEFINED_RESULT ? false : lastResult;
+		return lastResult;
 	}
 	
-
+	
 	/**
-	 * @return The last result calculated by {@link #checkCondition(WorldFrame)}. <b>Note:</b> Returns <u>null</u> if
-	 *         {@link #checkCondition(WorldFrame)} got never called!
+	 * Do not call this on field initialization or in the constructor. At least one
+	 * call to doCheckCondition has to be processed!
+	 * 
+	 * @return the botConfig
 	 */
-	public Boolean getLastConditionResult()
+	public final BotConfig getBotConfig()
+	{
+		if (botConfig == null)
+		{
+			throw new IllegalStateException(
+					"botConfig is still null. Only call after at least one doCalculation was processed!");
+		}
+		return botConfig;
+	}
+	
+	
+	/**
+	 * @return the botType
+	 */
+	public final EBotType getBotType()
+	{
+		return botType;
+	}
+	
+	
+	/**
+	 * @return The last result calculated by {@link #checkCondition(WorldFrame,BotID)}
+	 */
+	public EConditionState getLastConditionResult()
 	{
 		return lastResult;
 	}
 	
-
+	
 	/**
 	 * Resets the internal cache and ensures that a new calculation is performed on
-	 * {@link #checkCondition(WorldFrame, int)}!
+	 * {@link #checkCondition(WorldFrame, BotID)}!
 	 */
-	protected void resetCache()
+	public void resetCache()
 	{
 		stateChanged = true;
 		
@@ -126,30 +211,22 @@ public abstract class ACondition
 		lastResult = UNDEFINED_RESULT;
 	}
 	
-
-	/**
-	 * @param role the role associated with that condition
-	 */
-	void setRole(ARole role)
-	{
-		this.role = role;
-	}
 	
-
 	/**
 	 * <strong>To be called from {@link ACondition} only!</strong>
 	 * <p>
-	 * <strong>NOTE:</strong> {@link #updateDestination(Object)} has to be <strong>called at least once</strong> before
-	 * this returns a valid result!!!
+	 * <strong>NOTE:</strong>
+	 * {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move.MovementCon#updateDestination(edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2)}
+	 * has to be <strong>called at least once</strong> before this returns a valid result!!!
 	 * </p>
 	 * 
 	 * @param worldFrame
 	 * @param botId
 	 * @return condition state
 	 */
-	protected abstract boolean doCheckCondition(WorldFrame worldFrame, int botId);
+	protected abstract EConditionState doCheckCondition(WorldFrame worldFrame, BotID botId);
 	
-
+	
 	/**
 	 * @return The {@link ECondition}-type
 	 */
@@ -157,4 +234,85 @@ public abstract class ACondition
 	{
 		return type;
 	}
+	
+	
+	/**
+	 * Compares with conditions.
+	 * 
+	 * @param condition
+	 * @return true when the conditions are equal
+	 */
+	public boolean compare(ACondition condition)
+	{
+		if ((condition == null) || (condition.getType() != getType()))
+		{
+			return false;
+		}
+		
+		if (!isActive() || !condition.isActive())
+		{
+			return false;
+		}
+		
+		return compareContent(condition);
+	}
+	
+	
+	/**
+	 * Compares the condition content.
+	 * 
+	 * @param condition
+	 * @return true when the conditions are equal
+	 */
+	protected abstract boolean compareContent(ACondition condition);
+	
+	
+	/**
+	 * Get the condition as a string
+	 * 
+	 * @return
+	 */
+	public String getCondition()
+	{
+		return condition;
+	}
+	
+	
+	/**
+	 * 
+	 * @param condition
+	 */
+	public void setCondition(String condition)
+	{
+		this.condition = condition;
+	}
+	
+	
+	/**
+	 * @return the active
+	 */
+	public final boolean isActive()
+	{
+		return active;
+	}
+	
+	
+	/**
+	 * @param active the active to set
+	 */
+	public final void setActive(boolean active)
+	{
+		this.active = active;
+	}
+	
+	
+	/**
+	 * @return the stateChanged
+	 */
+	public final boolean isStateChanged()
+	{
+		return stateChanged;
+	}
+	
+	
 }

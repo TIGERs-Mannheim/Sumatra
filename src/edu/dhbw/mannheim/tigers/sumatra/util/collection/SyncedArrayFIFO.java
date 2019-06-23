@@ -15,6 +15,7 @@ package edu.dhbw.mannheim.tigers.sumatra.util.collection;
  * {@link ArrayRingBuffer}, so it inherits all of its drawbacks.
  * 
  * @author Gero
+ * @param <D>
  * 
  */
 public class SyncedArrayFIFO<D> extends ArrayRingBuffer<D> implements ISyncedFIFO<D>
@@ -23,6 +24,8 @@ public class SyncedArrayFIFO<D> extends ArrayRingBuffer<D> implements ISyncedFIF
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	private static final long	serialVersionUID	= -6089410974928677935L;
+	/** timeout for waiting for new entries */
+	private static final int	TIMEOUT				= 10000;
 	
 	
 	// --------------------------------------------------------------------------
@@ -36,7 +39,7 @@ public class SyncedArrayFIFO<D> extends ArrayRingBuffer<D> implements ISyncedFIF
 		super(size);
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- mutators -------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -46,7 +49,7 @@ public class SyncedArrayFIFO<D> extends ArrayRingBuffer<D> implements ISyncedFIF
 		addFirst(data);
 	}
 	
-
+	
 	@Override
 	public D take() throws InterruptedException
 	{
@@ -55,7 +58,7 @@ public class SyncedArrayFIFO<D> extends ArrayRingBuffer<D> implements ISyncedFIF
 			D result = pollFirst();
 			while (result == null)
 			{
-				sync.wait();
+				sync.wait(TIMEOUT);
 				result = pollFirst();
 			}
 			
@@ -63,51 +66,53 @@ public class SyncedArrayFIFO<D> extends ArrayRingBuffer<D> implements ISyncedFIF
 		}
 	}
 	
-
+	
 	@Override
 	public D takeIfMatches(ICriteria<D> criteria) throws InterruptedException
 	{
 		throw new UnsupportedOperationException("takeIfMatches is not supported due to implementation details!");
 	}
 	
-
+	
 	@Override
 	public D peekFirstIfMatches(ICriteria<D> criteria)
 	{
 		synchronized (sync)
 		{
 			D result = peekFirst();
-			if (result != null && !criteria.matches(result))
+			if ((result != null) && !criteria.matches(result))
 			{
 				result = null;
 			}
 			return result;
 		}
 	}
-
-
+	
+	
 	@Override
 	public D look() throws InterruptedException
 	{
 		synchronized (sync)
 		{
 			D result = peekFirst();
-			while (result == null) {
-				sync.wait();
+			while (result == null)
+			{
+				sync.wait(TIMEOUT);
 				result = peekFirst();
 			}
 			return result;
 		}
 	}
 	
-
+	
 	@Override
 	public D lookIfMatches(ICriteria<D> criteria) throws InterruptedException
 	{
 		synchronized (sync)
 		{
 			D result = peekFirst();
-			while (result == null || !criteria.matches(result)) {
+			while ((result == null) || !criteria.matches(result))
+			{
 				sync.wait();
 				result = peekFirst();
 			}

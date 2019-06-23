@@ -24,6 +24,8 @@ public abstract class AVisDataConnector extends AModule
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
+	/** */
 	public static final String	MODULE_TYPE	= "AVisDataConnector";
+	/** */
 	public static final String	MODULE_ID	= "vis";
 }

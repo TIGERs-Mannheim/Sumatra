@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 23.08.2010
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication;
@@ -15,18 +15,39 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.com
  * @author AndreR
  * 
  */
-public class Statistics implements Cloneable
+public class Statistics
 {
-	public int payload = 0;
-	public int raw = 0;
-	public int packets = 0;
-	private long lastReset;
+	/** */
+	public int		payload	= 0;
+	/** */
+	public int		raw		= 0;
+	/** */
+	public int		packets	= 0;
+	private long	lastReset;
 	
+	
+	/**
+	 */
 	public Statistics()
 	{
 		lastReset = System.nanoTime();
 	}
 	
+	
+	/**
+	 * @param org
+	 */
+	public Statistics(Statistics org)
+	{
+		payload = org.payload;
+		raw = org.raw;
+		packets = org.packets;
+		lastReset = org.lastReset;
+	}
+	
+	
+	/**
+ */
 	public void reset()
 	{
 		payload = 0;
@@ -36,14 +57,23 @@ public class Statistics implements Cloneable
 		lastReset = System.nanoTime();
 	}
 	
+	
+	/**
+	 * @return
+	 */
 	public long getLastResetTimestamp()
 	{
 		return lastReset;
 	}
 	
+	
+	/**
+	 * @param stat
+	 * @return
+	 */
 	public Statistics substract(Statistics stat)
 	{
-		Statistics ret = new Statistics();
+		final Statistics ret = new Statistics();
 		ret.payload = payload - stat.payload;
 		ret.raw = raw - stat.raw;
 		ret.packets = packets - stat.packets;
@@ -51,9 +81,14 @@ public class Statistics implements Cloneable
 		return ret;
 	}
 	
+	
+	/**
+	 * @param stat
+	 * @return
+	 */
 	public Statistics add(Statistics stat)
 	{
-		Statistics ret = new Statistics();
+		final Statistics ret = new Statistics();
 		ret.payload = payload + stat.payload;
 		ret.raw = raw + stat.raw;
 		ret.packets = packets + stat.packets;
@@ -61,40 +96,41 @@ public class Statistics implements Cloneable
 		return ret;
 	}
 	
+	
+	/**
+	 * @return
+	 */
 	public float getOverheadPercentage()
 	{
-		if(raw == 0)
+		if (raw == 0)
 		{
 			return 0;
 		}
 		
-		return (1.0f - ((float)payload)/((float)raw));
+		return (1.0f - (((float) payload) / ((float) raw)));
 	}
 	
+	
+	/**
+	 * @param passedTime
+	 * @return
+	 */
 	public float getLoadPercentage(float passedTime)
 	{
-		if(passedTime == 0)
+		if (passedTime == 0)
 		{
 			return 0;
 		}
 		
-		return (((float)raw)/(28800.0f*passedTime));
+		return ((raw) / (28800.0f * passedTime));
 	}
 	
+	
+	/**
+	 * @return
+	 */
 	public float getLoadPercentageWithLastReset()
 	{
-		return getLoadPercentage(((float)(System.nanoTime() - lastReset))/1000000000.0f);
-	}
-	
-	public Statistics clone()
-	{
-		Statistics ret = new Statistics();
-		
-		ret.payload = payload;
-		ret.raw = raw;
-		ret.packets = packets;
-		ret.lastReset = lastReset;
-		
-		return ret;
+		return getLoadPercentage((System.nanoTime() - lastReset) / 1000000000.0f);
 	}
 }

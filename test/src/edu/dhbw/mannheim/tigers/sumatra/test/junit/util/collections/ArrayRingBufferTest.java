@@ -42,10 +42,10 @@ public class ArrayRingBufferTest
 	/** Created for every test ({@link #setUp()}) */
 	private ArrayRingBuffer<String>	buffer;
 	
-	private final String					packet1	= "packet1";
-	private final String					packet2	= "packet2";
-	private final String					packet3	= "packet3";
-	private final String					packet4	= "packet4";
+	private static final String		PACKET_1	= "packet1";
+	private static final String		PACKET_2	= "packet2";
+	private static final String		PACKET_3	= "packet3";
+	private static final String		PACKET_4	= "packet4";
 	
 	
 	/**
@@ -59,7 +59,7 @@ public class ArrayRingBufferTest
 		buffer = new ArrayRingBuffer<String>(SIZE);
 	}
 	
-
+	
 	/**
 	 * Called by JUnit after every single test
 	 * 
@@ -71,7 +71,7 @@ public class ArrayRingBufferTest
 		buffer = null;
 	}
 	
-
+	
 	/**
 	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.util.collection.ArrayRingBuffer#isEmpty()}.
 	 */
@@ -80,11 +80,11 @@ public class ArrayRingBufferTest
 	{
 		assertTrue(buffer.isEmpty());
 		
-		buffer.push(packet1);
-		buffer.push(packet2);
+		buffer.push(PACKET_1);
+		buffer.push(PACKET_2);
 		assertFalse(buffer.isEmpty());
 		
-		buffer.push(packet3);
+		buffer.push(PACKET_3);
 		assertFalse(buffer.isEmpty());
 		
 		buffer.poll();
@@ -97,19 +97,19 @@ public class ArrayRingBufferTest
 		assertTrue(buffer.isEmpty());
 	}
 	
-
+	
 	/**
 	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.util.collection.ArrayRingBuffer#toArray()}.
 	 */
 	@Test
 	public void testToArray()
 	{
-		buffer.push(packet1);
-		buffer.push(packet2);
-		buffer.push(packet3);
-		buffer.push(packet4); // Haha, turn, trick!
+		buffer.push(PACKET_1);
+		buffer.push(PACKET_2);
+		buffer.push(PACKET_3);
+		buffer.push(PACKET_4); // Haha, turn, trick!
 		
-		Object[] arr = buffer.toArray();
+		final Object[] arr = buffer.toArray();
 		assertTrue(arr.length == buffer.size());
 		
 		assertTrue(arr[0] == buffer.poll());
@@ -119,19 +119,19 @@ public class ArrayRingBufferTest
 		assertTrue(buffer.isEmpty());
 	}
 	
-
+	
 	/**
-	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.util.collection.ArrayRingBuffer#toArray(T[])}.
+	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.util.collection.ArrayRingBuffer#toArray(Object[])}.
 	 */
 	@Test
 	public void testToArrayTArray()
 	{
-		buffer.push(packet1);
-		buffer.push(packet2);
-		buffer.push(packet3);
-		buffer.push(packet4); // Haha, turn, trick!
+		buffer.push(PACKET_1);
+		buffer.push(PACKET_2);
+		buffer.push(PACKET_3);
+		buffer.push(PACKET_4); // Haha, turn, trick!
 		
-		String[] arr = buffer.toArray(new String[buffer.size()]);
+		final String[] arr = buffer.toArray(new String[buffer.size()]);
 		assertTrue(arr.length == buffer.size());
 		
 		assertTrue(arr[0].equals(buffer.poll()));
@@ -140,13 +140,13 @@ public class ArrayRingBufferTest
 		
 		assertTrue(buffer.isEmpty());
 		
-
-		buffer.push(packet1);
-		buffer.push(packet2);
-		buffer.push(packet3);
-		buffer.push(packet4); // Haha, turn, trick!
 		
-		String[] arr2 = buffer.toArray(new String[0]);
+		buffer.push(PACKET_1);
+		buffer.push(PACKET_2);
+		buffer.push(PACKET_3);
+		buffer.push(PACKET_4); // Haha, turn, trick!
+		
+		final String[] arr2 = buffer.toArray(new String[0]);
 		assertTrue(arr2.length == buffer.size());
 		
 		assertTrue(arr2[0].equals(buffer.poll()));
@@ -156,7 +156,7 @@ public class ArrayRingBufferTest
 		assertTrue(buffer.isEmpty());
 	}
 	
-
+	
 	/**
 	 * Test method for
 	 * {@link edu.dhbw.mannheim.tigers.sumatra.util.collection.ArrayRingBuffer#containsAll(java.util.Collection)}.
@@ -164,69 +164,69 @@ public class ArrayRingBufferTest
 	@Test
 	public void testContainsAll()
 	{
-		buffer.push(packet4);
-		buffer.push(packet1);
-		buffer.push(packet3);
+		buffer.push(PACKET_4);
+		buffer.push(PACKET_1);
+		buffer.push(PACKET_3);
 		
-		List<String> ls1 = new ArrayList<String>();
-		ls1.add(packet1);
-		ls1.add(packet2);
+		final List<String> ls1 = new ArrayList<String>();
+		ls1.add(PACKET_1);
+		ls1.add(PACKET_2);
 		assertFalse(buffer.containsAll(ls1));
 		
-		List<String> ls2 = new ArrayList<String>();
-		ls2.add(packet1);
+		final List<String> ls2 = new ArrayList<String>();
+		ls2.add(PACKET_1);
 		assertTrue(buffer.containsAll(ls2));
 		
-		List<String> ls3 = new ArrayList<String>();
-		ls3.add(packet3);
-		ls3.add(packet4);
+		final List<String> ls3 = new ArrayList<String>();
+		ls3.add(PACKET_3);
+		ls3.add(PACKET_4);
 		assertTrue(buffer.containsAll(ls3));
 		
-		List<String> ls4 = new ArrayList<String>();
-		ls4.add(packet1);
-		ls4.add(packet4);
-		ls4.add(packet3);
+		final List<String> ls4 = new ArrayList<String>();
+		ls4.add(PACKET_1);
+		ls4.add(PACKET_4);
+		ls4.add(PACKET_3);
 		assertTrue(buffer.containsAll(ls4));
 		
-		List<String> ls5 = new ArrayList<String>();
-		ls5.add(packet4);
-		ls5.add(packet1);
-		ls5.add(packet3);
-		ls5.add(packet3);
-		ls5.add(packet4);
+		final List<String> ls5 = new ArrayList<String>();
+		ls5.add(PACKET_4);
+		ls5.add(PACKET_1);
+		ls5.add(PACKET_3);
+		ls5.add(PACKET_3);
+		ls5.add(PACKET_4);
 		assertTrue(buffer.containsAll(ls5));
 		
-		List<String> ls6 = new ArrayList<String>();
-		ls6.add(packet4);
-		ls6.add(packet1);
-		ls6.add(packet3);
-		ls6.add(packet3);
-		ls6.add(packet4);
-		ls6.add(packet2);
+		final List<String> ls6 = new ArrayList<String>();
+		ls6.add(PACKET_4);
+		ls6.add(PACKET_1);
+		ls6.add(PACKET_3);
+		ls6.add(PACKET_3);
+		ls6.add(PACKET_4);
+		ls6.add(PACKET_2);
 		assertFalse(buffer.containsAll(ls6));
 		
-		List<String> ls7 = new ArrayList<String>();
-		ls7.add(packet2);
+		final List<String> ls7 = new ArrayList<String>();
+		ls7.add(PACKET_2);
 		assertFalse(buffer.containsAll(ls7));
 	}
 	
-
+	
 	/**
 	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.util.collection.ArrayRingBuffer#clear()}.
 	 */
 	@Test
 	public void testClear()
 	{
-		buffer.push(packet1);
-		buffer.push(packet2);
-		buffer.push(packet3);
+		buffer.push(PACKET_1);
+		buffer.push(PACKET_2);
+		buffer.push(PACKET_3);
 		assertFalse(buffer.isEmpty());
 		
 		buffer.clear();
 		assertTrue(buffer.isEmpty());
 	}
 	
-
+	
 	/**
 	 * Test method for
 	 * {@link edu.dhbw.mannheim.tigers.sumatra.util.collection.ArrayRingBuffer#addFirst(java.lang.Object)}.
@@ -238,38 +238,38 @@ public class ArrayRingBufferTest
 		{
 			buffer.addFirst(null);
 			fail("Should have thrown NullPointerException!");
-		} catch (NullPointerException npe)
+		} catch (final NullPointerException npe)
 		{
 		}
 		
-		buffer.addFirst(packet1);
-		assertTrue(packet1 == buffer.getFirst());
+		buffer.addFirst(PACKET_1);
+		assertTrue(PACKET_1 == buffer.getFirst());
 		
-		buffer.addFirst(packet2);
-		assertFalse(packet1 == buffer.getFirst());
-		assertTrue(packet2 == buffer.getFirst());
+		buffer.addFirst(PACKET_2);
+		assertFalse(PACKET_1 == buffer.getFirst());
+		assertTrue(PACKET_2 == buffer.getFirst());
 		
 		buffer.removeFirst();
-		assertTrue(packet1 == buffer.getFirst());
+		assertTrue(PACKET_1 == buffer.getFirst());
 		
 		buffer.removeFirst();
 		assertTrue(buffer.isEmpty());
 		
-		buffer.addFirst(packet1);
-		assertTrue(packet1 == buffer.getFirst());
+		buffer.addFirst(PACKET_1);
+		assertTrue(PACKET_1 == buffer.getFirst());
 		
-		buffer.addFirst(packet2);
-		assertTrue(packet2 == buffer.getFirst());
+		buffer.addFirst(PACKET_2);
+		assertTrue(PACKET_2 == buffer.getFirst());
 		
-		buffer.addFirst(packet3);
-		assertTrue(packet3 == buffer.getFirst());
+		buffer.addFirst(PACKET_3);
+		assertTrue(PACKET_3 == buffer.getFirst());
 		
-		buffer.addFirst(packet4);
-		assertTrue(packet4 == buffer.getFirst());
-		assertTrue(packet2 == buffer.getLast());
+		buffer.addFirst(PACKET_4);
+		assertTrue(PACKET_4 == buffer.getFirst());
+		assertTrue(PACKET_2 == buffer.getLast());
 	}
 	
-
+	
 	/**
 	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.util.collection.ArrayRingBuffer#removeFirst()}.
 	 */
@@ -280,24 +280,24 @@ public class ArrayRingBufferTest
 		{
 			buffer.removeFirst();
 			fail("Should have thrown NoSuchElementException!");
-		} catch (NoSuchElementException nse)
+		} catch (final NoSuchElementException nse)
 		{
 		}
 		
-		buffer.addFirst(packet1);
-		assertTrue(packet1 == buffer.removeFirst());
+		buffer.addFirst(PACKET_1);
+		assertTrue(PACKET_1 == buffer.removeFirst());
 		assertTrue(buffer.isEmpty());
 		
-		buffer.addFirst(packet1);
-		buffer.addFirst(packet2);
-		buffer.addFirst(packet3);
-		assertTrue(packet3 == buffer.removeFirst());
-		assertTrue(packet2 == buffer.removeFirst());
-		assertTrue(packet1 == buffer.removeFirst());
+		buffer.addFirst(PACKET_1);
+		buffer.addFirst(PACKET_2);
+		buffer.addFirst(PACKET_3);
+		assertTrue(PACKET_3 == buffer.removeFirst());
+		assertTrue(PACKET_2 == buffer.removeFirst());
+		assertTrue(PACKET_1 == buffer.removeFirst());
 		assertTrue(buffer.isEmpty());
 	}
 	
-
+	
 	/**
 	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.util.collection.ArrayRingBuffer#pollFirst()}.
 	 */
@@ -306,20 +306,20 @@ public class ArrayRingBufferTest
 	{
 		assertNull(buffer.pollFirst());
 		
-		buffer.push(packet1);
-		assertTrue(packet1 == buffer.pollFirst());
+		buffer.push(PACKET_1);
+		assertTrue(PACKET_1 == buffer.pollFirst());
 		
-		buffer.push(packet1);
-		buffer.push(packet2);
-		buffer.push(packet3);
-		assertTrue(packet3 == buffer.pollFirst());
-		assertTrue(packet2 == buffer.pollFirst());
-		assertTrue(packet1 == buffer.pollFirst());
+		buffer.push(PACKET_1);
+		buffer.push(PACKET_2);
+		buffer.push(PACKET_3);
+		assertTrue(PACKET_3 == buffer.pollFirst());
+		assertTrue(PACKET_2 == buffer.pollFirst());
+		assertTrue(PACKET_1 == buffer.pollFirst());
 		
 		assertNull(buffer.pollFirst());
 	}
 	
-
+	
 	// /**
 	// * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.util.collection.ArrayRingBuffer#pollLast()}.
 	// */
@@ -341,7 +341,7 @@ public class ArrayRingBufferTest
 	// assertNull(buffer.pollLast());
 	// }
 	
-
+	
 	/**
 	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.util.collection.ArrayRingBuffer#getFirst()}.
 	 */
@@ -352,21 +352,21 @@ public class ArrayRingBufferTest
 		{
 			buffer.getFirst();
 			fail("Should have thrown NoSuchElementException!");
-		} catch (NoSuchElementException nse)
+		} catch (final NoSuchElementException nse)
 		{
 		}
 		
-		buffer.addFirst(packet1);
-		assertTrue(packet1 == buffer.getFirst());
+		buffer.addFirst(PACKET_1);
+		assertTrue(PACKET_1 == buffer.getFirst());
 		
-		buffer.addFirst(packet2);
-		assertTrue(packet2 == buffer.getFirst());
+		buffer.addFirst(PACKET_2);
+		assertTrue(PACKET_2 == buffer.getFirst());
 		
-		buffer.addFirst(packet3);
-		assertTrue(packet3 == buffer.getFirst());
+		buffer.addFirst(PACKET_3);
+		assertTrue(PACKET_3 == buffer.getFirst());
 		
-		buffer.addFirst(packet4);
-		assertTrue(packet4 == buffer.getFirst());
+		buffer.addFirst(PACKET_4);
+		assertTrue(PACKET_4 == buffer.getFirst());
 		
 		// Empty and test
 		buffer.removeFirst();
@@ -378,12 +378,12 @@ public class ArrayRingBufferTest
 		{
 			buffer.getFirst();
 			fail("Should have thrown NoSuchElementException!");
-		} catch (NoSuchElementException nse)
+		} catch (final NoSuchElementException nse)
 		{
 		}
 	}
 	
-
+	
 	/**
 	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.util.collection.ArrayRingBuffer#getLast()}.
 	 */
@@ -394,21 +394,21 @@ public class ArrayRingBufferTest
 		{
 			buffer.getLast();
 			fail("Should have thrown NoSuchElementException!");
-		} catch (NoSuchElementException nse)
+		} catch (final NoSuchElementException nse)
 		{
 		}
 		
-		buffer.addFirst(packet1);
-		assertTrue(packet1 == buffer.getLast());
+		buffer.addFirst(PACKET_1);
+		assertTrue(PACKET_1 == buffer.getLast());
 		
-		buffer.addFirst(packet2);
-		assertTrue(packet1 == buffer.getLast());
+		buffer.addFirst(PACKET_2);
+		assertTrue(PACKET_1 == buffer.getLast());
 		
-		buffer.addFirst(packet3);
-		assertTrue(packet1 == buffer.getLast());
+		buffer.addFirst(PACKET_3);
+		assertTrue(PACKET_1 == buffer.getLast());
 		
-		buffer.addFirst(packet4);
-		assertTrue(packet2 == buffer.getLast());
+		buffer.addFirst(PACKET_4);
+		assertTrue(PACKET_2 == buffer.getLast());
 		
 		// Empty and test
 		buffer.removeFirst();
@@ -420,12 +420,12 @@ public class ArrayRingBufferTest
 		{
 			buffer.getLast();
 			fail("Should have thrown NoSuchElementException!");
-		} catch (NoSuchElementException nse)
+		} catch (final NoSuchElementException nse)
 		{
 		}
 	}
 	
-
+	
 	/**
 	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.util.collection.ArrayRingBuffer#peekFirst()}.
 	 */
@@ -434,30 +434,30 @@ public class ArrayRingBufferTest
 	{
 		assertNull(buffer.peekFirst());
 		
-		buffer.addFirst(packet1);
-		assertTrue(packet1 == buffer.peekFirst());
+		buffer.addFirst(PACKET_1);
+		assertTrue(PACKET_1 == buffer.peekFirst());
 		
-		buffer.addFirst(packet2);
-		assertTrue(packet2 == buffer.peekFirst());
+		buffer.addFirst(PACKET_2);
+		assertTrue(PACKET_2 == buffer.peekFirst());
 		
-		buffer.addFirst(packet3);
-		assertTrue(packet3 == buffer.peekFirst());
+		buffer.addFirst(PACKET_3);
+		assertTrue(PACKET_3 == buffer.peekFirst());
 		
-		buffer.addFirst(packet4);
-		assertTrue(packet4 == buffer.peekFirst());
+		buffer.addFirst(PACKET_4);
+		assertTrue(PACKET_4 == buffer.peekFirst());
 		
 		// Empty and test
 		buffer.removeFirst();
-		assertTrue(packet3 == buffer.peekFirst());
+		assertTrue(PACKET_3 == buffer.peekFirst());
 		buffer.removeFirst();
-		assertTrue(packet2 == buffer.peekFirst());
+		assertTrue(PACKET_2 == buffer.peekFirst());
 		buffer.removeFirst();
 		assertTrue(buffer.isEmpty());
 		
 		assertNull(buffer.peekFirst());
 	}
 	
-
+	
 	/**
 	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.util.collection.ArrayRingBuffer#peekLast()}.
 	 */
@@ -466,30 +466,30 @@ public class ArrayRingBufferTest
 	{
 		assertNull(buffer.peekLast());
 		
-		buffer.addFirst(packet1);
-		assertTrue(packet1 == buffer.peekLast());
+		buffer.addFirst(PACKET_1);
+		assertTrue(PACKET_1 == buffer.peekLast());
 		
-		buffer.addFirst(packet2);
-		assertTrue(packet1 == buffer.peekLast());
+		buffer.addFirst(PACKET_2);
+		assertTrue(PACKET_1 == buffer.peekLast());
 		
-		buffer.addFirst(packet3);
-		assertTrue(packet1 == buffer.peekLast());
+		buffer.addFirst(PACKET_3);
+		assertTrue(PACKET_1 == buffer.peekLast());
 		
-		buffer.addFirst(packet4);
-		assertTrue(packet2 == buffer.peekLast());
+		buffer.addFirst(PACKET_4);
+		assertTrue(PACKET_2 == buffer.peekLast());
 		
 		// Empty and test
 		buffer.removeFirst();
-		assertTrue(packet3 == buffer.peekFirst());
+		assertTrue(PACKET_3 == buffer.peekFirst());
 		buffer.removeFirst();
-		assertTrue(packet2 == buffer.peekFirst());
+		assertTrue(PACKET_2 == buffer.peekFirst());
 		buffer.removeFirst();
 		assertTrue(buffer.isEmpty());
 		
 		assertNull(buffer.peekLast());
 	}
 	
-
+	
 	/**
 	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.util.collection.ArrayRingBuffer#remove()}.
 	 */
@@ -500,24 +500,24 @@ public class ArrayRingBufferTest
 		{
 			buffer.remove();
 			fail("Should have thrown NoSuchElementException!");
-		} catch (NoSuchElementException nse)
+		} catch (final NoSuchElementException nse)
 		{
 		}
 		
-		buffer.addFirst(packet1);
-		assertTrue(packet1 == buffer.remove());
+		buffer.addFirst(PACKET_1);
+		assertTrue(PACKET_1 == buffer.remove());
 		assertTrue(buffer.isEmpty());
 		
-		buffer.addFirst(packet1);
-		buffer.addFirst(packet2);
-		buffer.addFirst(packet3);
-		assertTrue(packet3 == buffer.remove());
-		assertTrue(packet2 == buffer.remove());
-		assertTrue(packet1 == buffer.remove());
+		buffer.addFirst(PACKET_1);
+		buffer.addFirst(PACKET_2);
+		buffer.addFirst(PACKET_3);
+		assertTrue(PACKET_3 == buffer.remove());
+		assertTrue(PACKET_2 == buffer.remove());
+		assertTrue(PACKET_1 == buffer.remove());
 		assertTrue(buffer.isEmpty());
 	}
 	
-
+	
 	/**
 	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.util.collection.ArrayRingBuffer#poll()}.
 	 */
@@ -526,20 +526,20 @@ public class ArrayRingBufferTest
 	{
 		assertNull(buffer.poll());
 		
-		buffer.push(packet1);
-		assertTrue(packet1 == buffer.poll());
+		buffer.push(PACKET_1);
+		assertTrue(PACKET_1 == buffer.poll());
 		
-		buffer.push(packet1);
-		buffer.push(packet2);
-		buffer.push(packet3);
-		assertTrue(packet3 == buffer.poll());
-		assertTrue(packet2 == buffer.poll());
-		assertTrue(packet1 == buffer.poll());
+		buffer.push(PACKET_1);
+		buffer.push(PACKET_2);
+		buffer.push(PACKET_3);
+		assertTrue(PACKET_3 == buffer.poll());
+		assertTrue(PACKET_2 == buffer.poll());
+		assertTrue(PACKET_1 == buffer.poll());
 		
 		assertNull(buffer.poll());
 	}
 	
-
+	
 	/**
 	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.util.collection.ArrayRingBuffer#element()}.
 	 */
@@ -550,21 +550,21 @@ public class ArrayRingBufferTest
 		{
 			buffer.element();
 			fail("Should have thrown NoSuchElementException!");
-		} catch (NoSuchElementException nse)
+		} catch (final NoSuchElementException nse)
 		{
 		}
 		
-		buffer.addFirst(packet1);
-		assertTrue(packet1 == buffer.element());
+		buffer.addFirst(PACKET_1);
+		assertTrue(PACKET_1 == buffer.element());
 		
-		buffer.addFirst(packet2);
-		assertTrue(packet2 == buffer.element());
+		buffer.addFirst(PACKET_2);
+		assertTrue(PACKET_2 == buffer.element());
 		
-		buffer.addFirst(packet3);
-		assertTrue(packet3 == buffer.element());
+		buffer.addFirst(PACKET_3);
+		assertTrue(PACKET_3 == buffer.element());
 		
-		buffer.addFirst(packet4);
-		assertTrue(packet4 == buffer.element());
+		buffer.addFirst(PACKET_4);
+		assertTrue(PACKET_4 == buffer.element());
 		
 		// Empty and test
 		buffer.removeFirst();
@@ -576,12 +576,12 @@ public class ArrayRingBufferTest
 		{
 			buffer.element();
 			fail("Should have thrown NoSuchElementException!");
-		} catch (NoSuchElementException nse)
+		} catch (final NoSuchElementException nse)
 		{
 		}
 	}
 	
-
+	
 	/**
 	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.util.collection.ArrayRingBuffer#peek()}.
 	 */
@@ -590,30 +590,30 @@ public class ArrayRingBufferTest
 	{
 		assertNull(buffer.peek());
 		
-		buffer.addFirst(packet1);
-		assertTrue(packet1 == buffer.peek());
+		buffer.addFirst(PACKET_1);
+		assertTrue(PACKET_1 == buffer.peek());
 		
-		buffer.addFirst(packet2);
-		assertTrue(packet2 == buffer.peek());
+		buffer.addFirst(PACKET_2);
+		assertTrue(PACKET_2 == buffer.peek());
 		
-		buffer.addFirst(packet3);
-		assertTrue(packet3 == buffer.peek());
+		buffer.addFirst(PACKET_3);
+		assertTrue(PACKET_3 == buffer.peek());
 		
-		buffer.addFirst(packet4);
-		assertTrue(packet4 == buffer.peek());
+		buffer.addFirst(PACKET_4);
+		assertTrue(PACKET_4 == buffer.peek());
 		
 		// Empty and test
 		buffer.removeFirst();
-		assertTrue(packet3 == buffer.peek());
+		assertTrue(PACKET_3 == buffer.peek());
 		buffer.removeFirst();
-		assertTrue(packet2 == buffer.peek());
+		assertTrue(PACKET_2 == buffer.peek());
 		buffer.removeFirst();
 		assertTrue(buffer.isEmpty());
 		
 		assertNull(buffer.peek());
 	}
 	
-
+	
 	/**
 	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.util.collection.ArrayRingBuffer#push(java.lang.Object)}.
 	 */
@@ -624,38 +624,38 @@ public class ArrayRingBufferTest
 		{
 			buffer.push(null);
 			fail("Should have thrown NullPointerException!");
-		} catch (NullPointerException npe)
+		} catch (final NullPointerException npe)
 		{
 		}
 		
-		buffer.push(packet1);
-		assertTrue(packet1 == buffer.getFirst());
+		buffer.push(PACKET_1);
+		assertTrue(PACKET_1 == buffer.getFirst());
 		
-		buffer.push(packet2);
-		assertFalse(packet1 == buffer.getFirst());
-		assertTrue(packet2 == buffer.getFirst());
+		buffer.push(PACKET_2);
+		assertFalse(PACKET_1 == buffer.getFirst());
+		assertTrue(PACKET_2 == buffer.getFirst());
 		
 		buffer.removeFirst();
-		assertTrue(packet1 == buffer.getFirst());
+		assertTrue(PACKET_1 == buffer.getFirst());
 		
 		buffer.removeFirst();
 		assertTrue(buffer.isEmpty());
 		
-		buffer.push(packet1);
-		assertTrue(packet1 == buffer.getFirst());
+		buffer.push(PACKET_1);
+		assertTrue(PACKET_1 == buffer.getFirst());
 		
-		buffer.push(packet2);
-		assertTrue(packet2 == buffer.getFirst());
+		buffer.push(PACKET_2);
+		assertTrue(PACKET_2 == buffer.getFirst());
 		
-		buffer.push(packet3);
-		assertTrue(packet3 == buffer.getFirst());
+		buffer.push(PACKET_3);
+		assertTrue(PACKET_3 == buffer.getFirst());
 		
-		buffer.push(packet4);
-		assertTrue(packet4 == buffer.getFirst());
-		assertTrue(packet2 == buffer.getLast());
+		buffer.push(PACKET_4);
+		assertTrue(PACKET_4 == buffer.getFirst());
+		assertTrue(PACKET_2 == buffer.getLast());
 	}
 	
-
+	
 	/**
 	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.util.collection.ArrayRingBuffer#pop()}.
 	 */
@@ -666,40 +666,40 @@ public class ArrayRingBufferTest
 		{
 			buffer.pop();
 			fail("Should have thrown NoSuchElementException!");
-		} catch (NoSuchElementException nse)
+		} catch (final NoSuchElementException nse)
 		{
 		}
 		
-		buffer.addFirst(packet1);
-		assertTrue(packet1 == buffer.pop());
+		buffer.addFirst(PACKET_1);
+		assertTrue(PACKET_1 == buffer.pop());
 		assertTrue(buffer.isEmpty());
 		
-		buffer.addFirst(packet1);
-		buffer.addFirst(packet2);
-		buffer.addFirst(packet3);
-		assertTrue(packet3 == buffer.pop());
-		assertTrue(packet2 == buffer.pop());
-		assertTrue(packet1 == buffer.pop());
+		buffer.addFirst(PACKET_1);
+		buffer.addFirst(PACKET_2);
+		buffer.addFirst(PACKET_3);
+		assertTrue(PACKET_3 == buffer.pop());
+		assertTrue(PACKET_2 == buffer.pop());
+		assertTrue(PACKET_1 == buffer.pop());
 		assertTrue(buffer.isEmpty());
 	}
 	
-
+	
 	/**
 	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.util.collection.ArrayRingBuffer#iterator()}.
 	 */
 	@Test
 	public void testIterator()
 	{
-		buffer.push(packet3);
-		buffer.push(packet2);
-		buffer.push(packet1);
+		buffer.push(PACKET_3);
+		buffer.push(PACKET_2);
+		buffer.push(PACKET_1);
 		
-		Iterator<String> it = buffer.iterator();
+		final Iterator<String> it = buffer.iterator();
 		assertTrue(it.hasNext());
 		
-		assertTrue(packet1 == it.next());
-		assertTrue(packet2 == it.next());
-		assertTrue(packet3 == it.next());
+		assertTrue(PACKET_1 == it.next());
+		assertTrue(PACKET_2 == it.next());
+		assertTrue(PACKET_3 == it.next());
 		
 		assertFalse(it.hasNext());
 		
@@ -707,7 +707,7 @@ public class ArrayRingBufferTest
 		{
 			it.next();
 			fail("Should have thrown NoSuchElementException");
-		} catch (NoSuchElementException nse)
+		} catch (final NoSuchElementException nse)
 		{
 			
 		}

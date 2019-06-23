@@ -5,12 +5,6 @@
 	<moduliPath>edu.dhbw.mannheim.tigers.sumatra.model.modules</moduliPath>
 
 	<globalConfiguration>
-
-		<ourColor>yellow</ourColor>
-		<ourGameDirection>!leftToRight</ourGameDirection> <!-- in Istanbul: left is right -->
-
-		<multicastMode>true</multicastMode>			<!-- true -->
-
 	</globalConfiguration>
 
 
@@ -19,9 +13,9 @@
 		<implementation> cam.SSLVisionCam </implementation>
 
 		<properties>
-			<interface> 172.31.10.0 </interface>		<!-- 192.168.1.0 -->
+			<interface>192.168.2.0</interface>		<!-- 192.168.1.0 -->
 			<address> 224.5.23.2 </address>				<!-- 224.5.23.2 -->
-			<port> 10002 </port>						<!-- 40101 [Sim]/ 10002 [SSLVision] -->
+			<port> 10002 </port>						<!-- 40102 [Sim]/ 10002 [SSLVision] -->
 		</properties>
 
 	</module>
@@ -32,7 +26,7 @@
 		<implementation> worldpredictor.Oracle_extKalman </implementation>
 
 		<properties>
-			<camNo>2</camNo>
+			<camNo>4</camNo>
 			<stepSize>10</stepSize> <!-- in ms -->
 			<stepCount>5</stepCount>
 			<minTigersInWorldFrame>5</minTigersInWorldFrame>
@@ -47,12 +41,12 @@
 
 	<module id="referee" type="AReferee">
 
-		<implementation> referee.RefereeReceiver </implementation>
+		<implementation> referee.RefereeHandler </implementation>
 
 		<properties>
-			<interface> 172.31.10.0 </interface>	<!-- 192.168.1.0 -->
+			<interface>192.168.2.0 </interface>	<!-- 192.168.1.0 -->
 			<address> 224.5.23.1 </address>			<!-- 224.5.23.1 -->
-			<port> 10001 </port>					<!-- 40101|10001[real] -->
+			<port> 10003 </port>					<!-- 40101|10001[real] -->
 		</properties>
 
 	</module>
@@ -63,12 +57,8 @@
 		<implementation> botmanager.GenericManager </implementation>
 
 		<properties>
-			<multicast>
-				<interface>172.31.20.0</interface>	<!-- 192.168.7.0 -->
-				<group>225.42.42.42</group>			<!-- 225.42.42.42 -->
-				<localPort>10040</localPort>		<!-- 10040 -->
-				<remotePort>10041</remotePort>		<!-- 10041 -->
-			</multicast>
+		    <autoChargeInitially>false</autoChargeInitially>
+		    <maxCap>100</maxCap>
 		</properties>
 
 	</module>
@@ -81,7 +71,6 @@
 		<properties>
 			<!-- [us] -->
 			<minProcessingPeriod>20000</minProcessingPeriod>	<!-- 20000 -->
-			<numThreads>5</numThreads>
 		</properties>
 
 		<dependency>botmanager</dependency>
@@ -89,17 +78,16 @@
 	</module>
 	
 	
-	<!--module id="rcs" type="ARobotControlServer">
-
-		<implementation> rcs.RobotControlServer </implementation>
-
-		<dependency>botmanager</dependency>
+	<module id="rcm" type="ARobotControlManager">
+		<implementation> rcm.RobotControlManager </implementation>
 
 		<properties>
-			<startPort> 10010 </startPort>
 		</properties>
-
-	</module-->
+		
+		<dependency>botmanager</dependency>
+		<dependency>skillsystem</dependency>
+		
+	</module>
 
 
 	<module id="ai" type="AAgent">
@@ -111,6 +99,7 @@
 		<dependency>skillsystem</dependency>
 		<dependency>referee</dependency>
 		<dependency>worldpredictor</dependency>
+		<dependency>config</dependency>
 
 	</module>
 
@@ -140,4 +129,14 @@
 		<dependency>worldpredictor</dependency>
 
 	</module> -->
+	
+	
+	<module id="config" type="AConfigManager">
+		
+		<implementation> config.ConfigManager </implementation>
+		
+		<properties>
+		</properties>
+		
+	</module>
 </centralSoftware>

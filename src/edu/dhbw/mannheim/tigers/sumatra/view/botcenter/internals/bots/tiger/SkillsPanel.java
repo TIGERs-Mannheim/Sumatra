@@ -18,15 +18,17 @@ import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.tiger.KickBallV1.EKickDevice;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.tiger.KickBallV1.EKickMode;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.devices.EKickDevice;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.EightSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.TurnTestSkill;
 
 
 /**
@@ -40,130 +42,134 @@ public class SkillsPanel extends JPanel
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long						serialVersionUID	= 5399293600256113771L;
+	private static final long						serialVersionUID			= 5399293600256113771L;
 	
-	private JTextField								moveToXY_x			= null;
-	private JTextField								moveToXY_y			= null;
+	private JTextField								moveToX						= null;
+	private JTextField								moveToY						= null;
 	
-	private JTextField								rotateAndMoveToXY_x			= null;
-	private JTextField								rotateAndMoveToXY_y			= null;
-	private JTextField								rotateAndMoveToXY_angle		= null;
+	private JTextField								rotateAndMoveToX			= null;
+	private JTextField								rotateAndMoveToY			= null;
+	private JTextField								rotateAndMoveToXyAngle	= null;
 	
-	private JTextField								straightMoveTime	= null;
+	private JTextField								straightMoveDist			= null;
+	private JTextField								straightMoveAngle			= null;
 	
-	private JTextField								rotateAngle			= null;
+	private JTextField								rotateAngle					= null;
 	
-	private JTextField								kickLength			= null;
-	private JComboBox									kickMode				= null;
+	private JTextField								kickLength					= null;
 	
-	private JTextField								look_x				= null;
-	private JTextField								look_y				= null;
+	private JTextField								lookX							= null;
+	private JTextField								lookY							= null;
 	
-	private JTextField								dribbleRPM			= null;
+	private JTextField								dribbleRPM					= null;
 	
-	private final List<ISkillsPanelObserver>	observers			= new ArrayList<ISkillsPanelObserver>();
+	private JTextField								eightSize;
+	private JTextField								turnTestSize;
+	private JTextField								turnTestAngle;
+	
+	private final List<ISkillsPanelObserver>	observers					= new ArrayList<ISkillsPanelObserver>();
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 */
 	public SkillsPanel()
 	{
 		setLayout(new MigLayout("fill"));
 		
-		// MOVE TO XY
-		JPanel moveToXYPanel = new JPanel(new MigLayout("fill", "[]10[50,fill]20[]10[50,fill]20[100,fill]"));
+		// MOVING TO XY
+		final JPanel moveToXYPanel = new JPanel(new MigLayout("fill", "[]10[50,fill]20[]10[50,fill]20[100,fill]"));
 		
-		moveToXY_x = new JTextField();
-		moveToXY_y = new JTextField();
+		moveToX = new JTextField("0");
+		moveToY = new JTextField("0");
 		
-		JButton moveToXY = new JButton("Move to XY");
+		final JButton moveToXY = new JButton("Move to XY");
 		moveToXY.addActionListener(new MoveToXY());
 		
 		moveToXYPanel.add(new JLabel("X:"));
-		moveToXYPanel.add(moveToXY_x);
+		moveToXYPanel.add(moveToX);
 		moveToXYPanel.add(new JLabel("Y:"));
-		moveToXYPanel.add(moveToXY_y);
+		moveToXYPanel.add(moveToY);
 		moveToXYPanel.add(moveToXY);
 		
-		moveToXYPanel.setBorder(BorderFactory.createTitledBorder("MoveToXY"));	
+		moveToXYPanel.setBorder(BorderFactory.createTitledBorder("MoveToXY"));
 		
-		// STRAIGHT MOVE
-		JPanel straightMovePanel = new JPanel(new MigLayout("fill", "[]10[50,fill]20[100,fill]"));
+		// STRAIGHT MOVING
+		final JPanel straightMovePanel = new JPanel(new MigLayout("fill", "[]10[50,fill]20[100,fill]"));
 		
-		straightMoveTime = new JTextField();
+		straightMoveDist = new JTextField("1000");
+		straightMoveAngle = new JTextField("0");
 		
-		JButton straightMove = new JButton("Straight Move");
+		final JButton straightMove = new JButton("Straight Move");
 		straightMove.addActionListener(new StraightMove());
 		
-		straightMovePanel.add(new JLabel("Time [ms]:"));
-		straightMovePanel.add(straightMoveTime);
+		straightMovePanel.add(new JLabel("Distance [mm]:"));
+		straightMovePanel.add(straightMoveDist);
+		straightMovePanel.add(new JLabel("Angle [deg]:"));
+		straightMovePanel.add(straightMoveAngle);
 		straightMovePanel.add(straightMove);
 		
 		straightMovePanel.setBorder(BorderFactory.createTitledBorder("StraightMove"));
 		
 		// ROTATE
-		JPanel rotatePanel = new JPanel(new MigLayout("fill", "[]10[50,fill]20[100,fill]"));
+		final JPanel rotatePanel = new JPanel(new MigLayout("fill", "[]10[50,fill]20[100,fill]"));
 		
-		rotateAngle = new JTextField();
+		rotateAngle = new JTextField("90");
 		
-		JButton rotate = new JButton("rotate");
+		final JButton rotate = new JButton("rotate");
 		rotate.addActionListener(new Rotate());
 		
-		rotatePanel.add(new JLabel("target angle (rad): "));
+		rotatePanel.add(new JLabel("target angle [deg]: "));
 		rotatePanel.add(rotateAngle);
 		rotatePanel.add(rotate);
 		
 		rotatePanel.setBorder(BorderFactory.createTitledBorder("Rotate"));
 		
-
+		
 		// KICK
-		JPanel kickPanel = new JPanel(new MigLayout("fill", "[]10[50,fill]20[100,fill]"));
+		final JPanel kickPanel = new JPanel(new MigLayout("fill", "[]10[50,fill]20[100,fill]"));
 		
-		kickLength = new JTextField();
-		kickLength.setToolTipText("no input > full shoot velocity");
+		kickLength = new JTextField("1000");
+		kickLength.setToolTipText("no input -> full shoot velocity");
 		
-		String[] modes = { "FORCE", "ARM", "DISARM" };
-		kickMode = new JComboBox(modes);
-		kickMode.setSelectedIndex(2);
-		
-		JButton kick = new JButton("Kick");
+		final JButton kick = new JButton("Kick");
 		kick.addActionListener(new Kick());
-		JButton chip = new JButton("Chip");
+		final JButton chip = new JButton("Chip");
 		chip.addActionListener(new Chip());
 		
 		kickPanel.add(new JLabel("Kick Length: "));
 		kickPanel.add(kickLength);
-		kickPanel.add(kickMode);
 		kickPanel.add(kick);
 		kickPanel.add(chip);
 		
 		kickPanel.setBorder(BorderFactory.createTitledBorder("Kick"));
 		
-
-		// LOOKING
-		JPanel aimPanel = new JPanel(new MigLayout("fill", "[]10[50,fill]20[]10[50,fill]20[100,fill]"));
-		look_x = new JTextField();
-		look_y = new JTextField();
 		
-		JButton lookAt = new JButton("look xy");
+		// LOOKING
+		final JPanel aimPanel = new JPanel(new MigLayout("fill", "[]10[50,fill]20[]10[50,fill]20[100,fill]"));
+		lookX = new JTextField("0");
+		lookY = new JTextField("0");
+		
+		final JButton lookAt = new JButton("look xy");
 		lookAt.addActionListener(new LookAt());
 		
-
+		
 		aimPanel.add(new JLabel("x: "));
-		aimPanel.add(look_x);
+		aimPanel.add(lookX);
 		aimPanel.add(new JLabel("y: "));
-		aimPanel.add(look_y);
+		aimPanel.add(lookY);
 		aimPanel.add(lookAt);
 		
 		aimPanel.setBorder(BorderFactory.createTitledBorder("LookAt"));
 		
 		// DRIBBLE
-		JPanel dribblePanel = new JPanel(new MigLayout("fill", "[]10[50,fill]20[100,fill]"));
+		final JPanel dribblePanel = new JPanel(new MigLayout("fill", "[]10[50,fill]20[100,fill]"));
 		
-		dribbleRPM = new JTextField();
+		dribbleRPM = new JTextField("10000");
 		
-		JButton dribble = new JButton("Dribble");
+		final JButton dribble = new JButton("Dribble");
 		dribble.addActionListener(new Dribble());
 		
 		dribblePanel.add(new JLabel("rpm: "));
@@ -173,26 +179,47 @@ public class SkillsPanel extends JPanel
 		dribblePanel.setBorder(BorderFactory.createTitledBorder("Dribble"));
 		
 		// RotateAndMoveToXY
-		JPanel rotateAndMoveToXYPanel = new JPanel(new MigLayout("fill", "[]10[50,fill]20[]10[50,fill]20[100,fill]"));
+		final JPanel rotateAndMoveToXYPanel = new JPanel(new MigLayout("fill",
+				"[]10[50,fill]20[]10[50,fill]20[]10[50,fill]20[]"));
 		
-		rotateAndMoveToXY_x = new JTextField();
-		rotateAndMoveToXY_y = new JTextField();
-		rotateAndMoveToXY_angle = new JTextField();
+		rotateAndMoveToX = new JTextField("0");
+		rotateAndMoveToY = new JTextField("0");
+		rotateAndMoveToXyAngle = new JTextField("3");
 		
-		JButton rotateAndMoveToXY = new JButton("Move to XY and rotate");
+		final JButton rotateAndMoveToXY = new JButton("Move to XY and rotate");
 		rotateAndMoveToXY.addActionListener(new RotateAndMoveToXY());
 		
 		rotateAndMoveToXYPanel.add(new JLabel("X:"));
-		rotateAndMoveToXYPanel.add(rotateAndMoveToXY_x);
+		rotateAndMoveToXYPanel.add(rotateAndMoveToX);
 		rotateAndMoveToXYPanel.add(new JLabel("Y:"));
-		rotateAndMoveToXYPanel.add(rotateAndMoveToXY_y);
+		rotateAndMoveToXYPanel.add(rotateAndMoveToY);
 		rotateAndMoveToXYPanel.add(new JLabel("Angle:"));
-		rotateAndMoveToXYPanel.add(rotateAndMoveToXY_angle);
-
+		rotateAndMoveToXYPanel.add(rotateAndMoveToXyAngle);
+		
 		rotateAndMoveToXYPanel.add(rotateAndMoveToXY);
 		
 		rotateAndMoveToXYPanel.setBorder(BorderFactory.createTitledBorder("RotateWhileMoving"));
-
+		
+		final JPanel eightPanel = new JPanel(new MigLayout("fill", "[]10[50,fill]20[100,fill]"));
+		eightPanel.setBorder(BorderFactory.createTitledBorder("Eight"));
+		final JButton eightBtn = new JButton("Eight Skill");
+		eightSize = new JTextField("1000");
+		eightPanel.add(new JLabel("Eight [mm]: "));
+		eightPanel.add(eightSize);
+		eightPanel.add(eightBtn);
+		eightBtn.addActionListener(new Eight());
+		
+		final JPanel turnTestPanel = new JPanel(new MigLayout("fill", "[]10[50,fill]20[100,fill]"));
+		turnTestPanel.setBorder(BorderFactory.createTitledBorder("Curve"));
+		final JButton turnTestBtn = new JButton("Curve");
+		turnTestSize = new JTextField("300");
+		turnTestAngle = new JTextField("90");
+		turnTestPanel.add(new JLabel("Curve [mm], [deg]: "));
+		turnTestPanel.add(turnTestSize);
+		turnTestPanel.add(turnTestAngle);
+		turnTestPanel.add(turnTestBtn);
+		turnTestBtn.addActionListener(new Curve());
+		
 		add(moveToXYPanel, "wrap");
 		add(straightMovePanel, "wrap");
 		add(rotatePanel, "wrap");
@@ -200,13 +227,18 @@ public class SkillsPanel extends JPanel
 		add(aimPanel, "wrap");
 		add(dribblePanel, "wrap");
 		add(rotateAndMoveToXYPanel, "wrap");
+		add(eightPanel, "wrap");
+		add(turnTestPanel, "wrap");
 		add(Box.createGlue(), "push");
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param observer
+	 */
 	public void addObserver(ISkillsPanelObserver observer)
 	{
 		synchronized (observers)
@@ -215,7 +247,10 @@ public class SkillsPanel extends JPanel
 		}
 	}
 	
-
+	
+	/**
+	 * @param observer
+	 */
 	public void removeObserver(ISkillsPanelObserver observer)
 	{
 		synchronized (observers)
@@ -224,87 +259,102 @@ public class SkillsPanel extends JPanel
 		}
 	}
 	
-
+	
 	private void notifyMoveToXY(float x, float y)
 	{
 		synchronized (observers)
 		{
-			for (ISkillsPanelObserver observer : observers)
+			for (final ISkillsPanelObserver observer : observers)
 			{
 				observer.onMoveToXY(x, y);
 			}
 		}
 	}
 	
+	
 	private void notifyRotateAndMoveToXY(float x, float y, float angle)
 	{
 		synchronized (observers)
 		{
-			for (ISkillsPanelObserver observer : observers)
+			for (final ISkillsPanelObserver observer : observers)
 			{
 				observer.onRotateAndMoveToXY(x, y, angle);
 			}
 		}
 	}
-
-	private void notifyStraightMove(int time)
+	
+	
+	private void notifyStraightMove(int distance, float angle)
 	{
 		synchronized (observers)
 		{
-			for (ISkillsPanelObserver observer : observers)
+			for (final ISkillsPanelObserver observer : observers)
 			{
-				observer.onStraightMove(time);
+				observer.onStraightMove(distance, angle);
 			}
 		}
 	}
 	
-
+	
 	private void notifyRotate(float targetAngle)
 	{
 		synchronized (observers)
 		{
-			for (ISkillsPanelObserver observer : observers)
+			for (final ISkillsPanelObserver observer : observers)
 			{
 				observer.onRotate(targetAngle);
 			}
 		}
 	}
 	
-
-	private void notifyKick(float kicklength, EKickMode mode, EKickDevice device)
+	
+	private void notifyKick(float kicklength, EKickDevice device)
 	{
 		synchronized (observers)
 		{
-			for (ISkillsPanelObserver observer : observers)
+			for (final ISkillsPanelObserver observer : observers)
 			{
-				observer.onKick(kicklength, mode, device);
+				observer.onKick(kicklength, device);
 			}
 		}
 	}
 	
-
+	
 	private void notifyLookAt(Vector2 lookAtTarget)
 	{
 		synchronized (observers)
 		{
-			for (ISkillsPanelObserver observer : observers)
+			for (final ISkillsPanelObserver observer : observers)
 			{
 				observer.onLookAt(lookAtTarget);
 			}
 		}
 	}
 	
-
+	
 	private void notifyDribble(int rpm)
 	{
 		synchronized (observers)
 		{
-			for (ISkillsPanelObserver observer : observers)
+			for (final ISkillsPanelObserver observer : observers)
 			{
 				observer.onDribble(rpm);
 			}
 		}
-	}	
+	}
+	
+	
+	private void notifySkill(AMoveSkill skill)
+	{
+		synchronized (observers)
+		{
+			for (final ISkillsPanelObserver observer : observers)
+			{
+				observer.onSkill(skill);
+			}
+		}
+	}
+	
 	
 	// --------------------------------------------------------------------------
 	// --- actions --------------------------------------------------------------
@@ -319,9 +369,9 @@ public class SkillsPanel extends JPanel
 			
 			try
 			{
-				x = Float.parseFloat(moveToXY_x.getText());
-				y = Float.parseFloat(moveToXY_y.getText());
-			} catch (NumberFormatException e)
+				x = Float.parseFloat(moveToX.getText());
+				y = Float.parseFloat(moveToY.getText());
+			} catch (final NumberFormatException e)
 			{
 				return;
 			}
@@ -340,10 +390,10 @@ public class SkillsPanel extends JPanel
 			float angle;
 			try
 			{
-				x = Float.parseFloat(rotateAndMoveToXY_x.getText());
-				y = Float.parseFloat(rotateAndMoveToXY_y.getText());
-				angle = Float.parseFloat(rotateAndMoveToXY_angle.getText());
-			} catch (NumberFormatException e)
+				x = Float.parseFloat(rotateAndMoveToX.getText());
+				y = Float.parseFloat(rotateAndMoveToY.getText());
+				angle = Float.parseFloat(rotateAndMoveToXyAngle.getText());
+			} catch (final NumberFormatException e)
 			{
 				return;
 			}
@@ -357,37 +407,45 @@ public class SkillsPanel extends JPanel
 		@Override
 		public void actionPerformed(ActionEvent arg0)
 		{
-			int time;
+			int distance;
+			float angle;
 			
 			try
 			{
-				time = Integer.parseInt(straightMoveTime.getText());
-			} catch (NumberFormatException e)
+				distance = Integer.parseInt(straightMoveDist.getText());
+			} catch (final NumberFormatException e)
 			{
 				return;
 			}
 			
-			notifyStraightMove(time);
+			try
+			{
+				angle = AngleMath.deg2rad(Float.parseFloat(straightMoveAngle.getText()));
+			} catch (final NumberFormatException e)
+			{
+				return;
+			}
+			
+			notifyStraightMove(distance, angle);
 		}
 	}
-		
+	
 	private class Rotate implements ActionListener
 	{
 		
 		@Override
 		public void actionPerformed(ActionEvent arg0)
 		{
-			float angle = 0;
-			
 			try
 			{
-				angle = Float.valueOf((rotateAngle.getText()));
-			} catch (NumberFormatException err)
+				float angle = AngleMath.deg2rad(Float.parseFloat(rotateAngle.getText()));
+				angle = AngleMath.normalizeAngle(angle);
+				rotateAngle.setText(Float.toString(AngleMath.rad2deg(angle)));
+				notifyRotate(angle);
+			} catch (final NumberFormatException err)
 			{
 				return;
 			}
-			
-			notifyRotate(angle);
 		}
 	}
 	
@@ -397,28 +455,16 @@ public class SkillsPanel extends JPanel
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			float length;
+			Float length;
 			try
 			{
 				length = Float.valueOf(kickLength.getText());
-			} catch (NumberFormatException err)
+			} catch (final NumberFormatException err)
 			{
-				length = 0;
+				length = 0f;
 			}
-			EKickMode mode;
-			switch (kickMode.getSelectedIndex())
-			{
-				case 0:
-					mode = EKickMode.FORCE;
-					break;
-				case 1:
-					mode = EKickMode.ARM;
-					break;
-				default:
-					mode = EKickMode.DISARM;
-					break;
-			}
-			notifyKick(length, mode, EKickDevice.STRAIGHT);
+			
+			notifyKick(length, EKickDevice.STRAIGHT);
 		}
 		
 	}
@@ -429,31 +475,17 @@ public class SkillsPanel extends JPanel
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			float length;
+			Float length;
 			try
 			{
 				length = Float.valueOf(kickLength.getText());
-			} catch (NumberFormatException err)
+			} catch (final NumberFormatException err)
 			{
-				length = 0;
+				length = 0f;
 			}
-			EKickMode mode;
-			switch (kickMode.getSelectedIndex())
-			{
-				case 0:
-					mode = EKickMode.FORCE;
-					break;
-				case 1:
-					mode = EKickMode.ARM;
-					break;
-				default:
-					mode = EKickMode.DISARM;
-					break;
-			}
-			notifyKick(length, mode, EKickDevice.CHIP);
 			
+			notifyKick(length, EKickDevice.CHIP);
 		}
-		
 	}
 	
 	private class LookAt implements ActionListener
@@ -462,13 +494,13 @@ public class SkillsPanel extends JPanel
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			float x;
-			float y;
+			Float x;
+			Float y;
 			try
 			{
-				x = Float.valueOf(look_x.getText());
-				y = Float.valueOf(look_y.getText());
-			} catch (NumberFormatException err)
+				x = Float.valueOf(lookX.getText());
+				y = Float.valueOf(lookY.getText());
+			} catch (final NumberFormatException err)
 			{
 				return;
 			}
@@ -490,12 +522,50 @@ public class SkillsPanel extends JPanel
 			{
 				rpm = Integer.valueOf(dribbleRPM.getText());
 				dribbleRPM.setBackground(Color.WHITE);
-			} catch (NumberFormatException err)
+			} catch (final NumberFormatException err)
 			{
 				dribbleRPM.setBackground(Color.RED);
 				return;
 			}
 			notifyDribble(rpm);
+		}
+		
+	}
+	
+	private class Eight implements ActionListener
+	{
+		
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
+			try
+			{
+				float size = Float.parseFloat(eightSize.getText());
+				
+				notifySkill(new EightSkill(size));
+			} catch (NumberFormatException err)
+			{
+				eightSize.setBackground(Color.RED);
+			}
+		}
+		
+	}
+	
+	private class Curve implements ActionListener
+	{
+		
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
+			try
+			{
+				float size = Float.parseFloat(turnTestSize.getText());
+				float angle = AngleMath.deg2rad(Float.parseFloat(turnTestAngle.getText()));
+				notifySkill(new TurnTestSkill(size, angle));
+			} catch (NumberFormatException err)
+			{
+				turnTestSize.setBackground(Color.RED);
+			}
 		}
 		
 	}

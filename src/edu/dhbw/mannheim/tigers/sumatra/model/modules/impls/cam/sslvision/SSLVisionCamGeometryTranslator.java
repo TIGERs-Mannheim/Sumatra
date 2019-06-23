@@ -14,39 +14,36 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.cam.sslvision;
 import java.util.ArrayList;
 import java.util.List;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.CamCalibration;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.CamFieldGeometry;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.CamGeometryFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.MessagesRobocupSslGeometry.SSL_GeometryCameraCalibration;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.MessagesRobocupSslGeometry.SSL_GeometryData;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.cam.SSLVisionCam;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamCalibration;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamFieldGeometry;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamGeometryFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamProps;
 
 
 /**
  * Provides a static conversion-method for the {@link SSL_GeometryData} to wrap the incoming SSL-Vision formats with
  * our own, internal representations
  * 
- * @see SSLVisionCam
+ * @see edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.cam.SSLVisionCam
  * @author Lukas, Clemens, Gero
  * 
  */
 public class SSLVisionCamGeometryTranslator
 {
-	
-	// ---------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	private static final boolean	haveToTurn	= SumatraModel.getInstance().getGlobalConfiguration()
-																	.getString("ourGameDirection").equalsIgnoreCase("leftToRight");
-	
-	
 	// --------------------------------------------------------------------------
 	// --- method(s) ------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	public static CamGeometryFrame translate(SSL_GeometryData geometryFrame)
+	/**
+	 * @param geometryFrame
+	 * @param teamProps
+	 * @return
+	 */
+	public CamGeometryFrame translate(SSL_GeometryData geometryFrame, TeamProps teamProps)
 	{
+		final boolean haveToTurn = teamProps.getPlayLeftToRight();
+		
 		// --- check if detectionFrame != null ---
 		if (geometryFrame == null)
 		{
@@ -54,29 +51,27 @@ public class SSLVisionCamGeometryTranslator
 		}
 		
 		// --- new field geometry for new data ---
-		CamFieldGeometry fieldGeometry = new CamFieldGeometry(geometryFrame.getField());
+		final CamFieldGeometry fieldGeometry = new CamFieldGeometry(geometryFrame.getField());
 		
-
+		
 		// --- new calibration-list for new data ---
-		List<CamCalibration> calibration = new ArrayList<CamCalibration>();
-		for (SSL_GeometryCameraCalibration cc : geometryFrame.getCalibList())
+		final List<CamCalibration> calibration = new ArrayList<CamCalibration>();
+		for (final SSL_GeometryCameraCalibration cc : geometryFrame.getCalibList())
 		{
 			if (haveToTurn)
 			{
-				CamCalibration newCC = new CamCalibration(cc.getCameraId(), cc.getFocalLength(),
-						// TODO Gero: Have to turn?? (Gero)
-						cc.getPrincipalPointX(), cc.getPrincipalPointY(),
-						cc.getDistortion(),
-
+				final CamCalibration newCC = new CamCalibration(cc.getCameraId(), cc.getFocalLength(),
+				// TODO Gero: Have to turn?? (Gero)
+						cc.getPrincipalPointX(), cc.getPrincipalPointY(), cc.getDistortion(),
+						
 						// TODO Gero: Have to turn?? (Gero)
 						cc.getQ0(), cc.getQ1(), cc.getQ2(), cc.getQ3(),
-
+						
 						// TODO Gero: Have to turn?? (Gero)
 						cc.getTx(), cc.getTy(), cc.getTz(),
 						
 						// Turn
-						-cc.getDerivedCameraWorldTx(), -cc.getDerivedCameraWorldTy(),
-						cc.getDerivedCameraWorldTz());
+						-cc.getDerivedCameraWorldTx(), -cc.getDerivedCameraWorldTy(), cc.getDerivedCameraWorldTz());
 				calibration.add(newCC);
 			} else
 			{

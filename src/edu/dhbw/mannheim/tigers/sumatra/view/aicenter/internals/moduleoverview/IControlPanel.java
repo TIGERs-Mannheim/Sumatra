@@ -22,11 +22,12 @@ public interface IControlPanel
 	/**
 	 * This function clears the view of a control panel.
 	 */
-	public abstract void clearView();
+	void clearView();
 	
-
+	
 	/**
 	 * This function enables or disables buttons of a control panel.
+	 * @param status
 	 */
-	public abstract void setAthenaOverride(boolean status);
+	void setAthenaOverride(boolean status);
 }

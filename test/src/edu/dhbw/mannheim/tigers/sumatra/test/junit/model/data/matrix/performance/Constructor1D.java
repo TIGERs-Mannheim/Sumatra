@@ -9,87 +9,145 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.test.junit.model.data.matrix.performance;
 
+import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.types.Matrix;
 
 
 /**
- * TODO Birgit, add comment!
- * - What should this type do (in one sentence)?
- * - If not intuitive: A simple example how to use this class
+ * 
+ * Testing the add-functions with performance-fokus
+ * 
+ * alloc Matrix A (random)
+ * alloc Matrix B (random)
+ * add them (random)
  * 
  * @author Birgit
  * 
  */
 public class Constructor1D extends APerformanceTest
 {
+	
+	int	times	= timesInit;
+	
+	
 	/**
-	 * Testing the add-functions with performance-fokus
-	 * 
-	 * alloc Matrix A (random)
-	 * alloc Matrix B (random)
-	 * add them (random)
 	 */
-	@Test
-	public void test()
+	@Before
+	public void start()
 	{
 		System.out.println("##########################################################");
 		System.out.println("Constructor1D");
 		System.out.println("##########################################################");
-		
+	}
+	
+	
+	/**
+	 */
+	@Before
+	public void warmup()
+	{
 		output = false;
-		int times = 10;
-		testMatrixTrueDoubleArrayIntIntBoolean(times);
-		testMatrixFalseDoubleArrayIntIntBoolean(times);
-		testJamaMatrixDoubleArrayIntIntBoolean(times);
-		
-
+		times = 10;
+		testMatrixTrueDoubleArrayIntIntBoolean();
+		testMatrixFalseDoubleArrayIntIntBoolean();
+		testJamaMatrixDoubleArrayIntIntBoolean();
+	}
+	
+	
+	/**
+	 */
+	@Ignore
+	@Test
+	public void testMatrixTrue()
+	{
 		output = true;
 		times = timesInit;
-		System.out.println("Number of runs: " + times);
-		testMatrixTrueDoubleArrayIntIntBoolean(times);
-		testMatrixFalseDoubleArrayIntIntBoolean(times);
-		testJamaMatrixDoubleArrayIntIntBoolean(times);
+		System.out.println("testMatrixTrueDoubleArrayIntIntBoolean: Number of runs: " + times);
+		testMatrixTrueDoubleArrayIntIntBoolean();
 	}
 	
-
-	public void testMatrixTrueDoubleArrayIntIntBoolean(int times)
+	
+	/**
+	 */
+	@Ignore
+	@Test
+	public void testMatrixFalse()
+	{
+		output = true;
+		times = timesInit;
+		System.out.println("testMatrixFalseDoubleArrayIntIntBoolean: Number of runs: " + times);
+		testMatrixFalseDoubleArrayIntIntBoolean();
+	}
+	
+	
+	/**
+	 */
+	@Test
+	public void testJamaMatrix()
+	{
+		output = true;
+		System.out.println("testJamaMatrixDoubleArrayIntIntBoolean: Number of runs: " + times);
+		testJamaMatrixDoubleArrayIntIntBoolean();
+	}
+	
+	
+	/**
+	 */
+	@Ignore
+	@Test
+	public void testMatrixTrueDoubleArrayIntIntBoolean()
 	{
 		if (output)
+		{
 			System.out.println("testMatrixTrueDoubleArrayIntIntBoolean");
+		}
 		startTimer();
 		for (int i = 0; i < times; i++)
 		{
-			Matrix A = new Matrix(new double[] { 1, 2, 3, -4, -5, -6, 7, 8, 9 }, 3, 3, true);
+			final Matrix A = new Matrix(new double[] { 1, 2, 3, -4, -5, -6, 7, 8, 9 }, 3, 3, true);
 			saveMatrix(A);
 		}
 		endTimer();
 	}
 	
-
-	public void testMatrixFalseDoubleArrayIntIntBoolean(int times)
+	
+	/**
+	 */
+	@Ignore
+	@Test
+	public void testMatrixFalseDoubleArrayIntIntBoolean()
 	{
 		if (output)
+		{
 			System.out.println("testMatrixFalseDoubleArrayIntIntBoolean");
+		}
 		startTimer();
 		for (int i = 0; i < times; i++)
 		{
-			Matrix A = new Matrix(new double[] { 1, 2, 3, -4, -5, -6, 7, 8, 9 }, 3, 3, false);
+			final Matrix A = new Matrix(new double[] { 1, 2, 3, -4, -5, -6, 7, 8, 9 }, 3, 3, false);
 			saveMatrix(A);
 		}
 		endTimer();
 	}
 	
-
-	public void testJamaMatrixDoubleArrayIntIntBoolean(int times)
+	
+	/**
+	 */
+	@Ignore
+	@Test
+	public void testJamaMatrixDoubleArrayIntIntBoolean()
 	{
 		if (output)
+		{
 			System.out.println("testJamaMatrixDoubleArrayIntIntBoolean");
+		}
 		startTimer();
 		for (int i = 0; i < times; i++)
 		{
-			Jama.Matrix A = new Jama.Matrix(new double[] { 1, 2, 3, -4, -5, -6, 7, 8, 9 }, 3);
+			final Jama.Matrix A = new Jama.Matrix(new double[] { 1, 2, 3, -4, -5, -6, 7, 8, 9 }, 3);
 			saveJamaMatrix(A);
 		}
 		endTimer();

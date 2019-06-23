@@ -6,20 +6,98 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextk
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.data.PredictionContext;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.motionModels.IMotionModel;
 
-public interface IFilter {
- 
-	public void init(IMotionModel motionModel, PredictionContext context, double firstTimestamp, AWPCamObject firstObservation);
-	public abstract double getTimestamp();
-	public abstract double getLookaheadTimestamp(int index);
-	public abstract AMotionResult getLookahead(int index);
-	public abstract void observation(double timestamp, AWPCamObject observation);
-	public abstract void updateOffset(double timestamp);
-	public abstract void performLookahead(int index);
-	public abstract void handleCollision(int index, IControl effect);
-	public abstract void setControl(IControl control);
-	public abstract int getId();
+
+/**
+ *
+ */
+public interface IFilter
+{
+	/**
+	 * 
+	 * @param motionModel
+	 * @param context
+	 * @param firstTimestamp
+	 * @param firstObservation
+	 */
+	void init(IMotionModel motionModel, PredictionContext context, double firstTimestamp, AWPCamObject firstObservation);
 	
-	public abstract void keepPositionAliveOnNoObservation();
-	public abstract boolean positionKeptAlive();
+	
+	/**
+	 * 
+	 * @return
+	 */
+	double getTimestamp();
+	
+	
+	/**
+	 * 
+	 * @param index
+	 * @return
+	 */
+	double getLookaheadTimestamp(int index);
+	
+	
+	/**
+	 * 
+	 * @param index
+	 * @return
+	 */
+	AMotionResult getLookahead(int index);
+	
+	
+	/**
+	 * 
+	 * @param timestamp
+	 * @param observation
+	 */
+	void observation(double timestamp, AWPCamObject observation);
+	
+	
+	/**
+	 * 
+	 * @param timestamp
+	 */
+	void updateOffset(double timestamp);
+	
+	
+	/**
+	 * 
+	 * @param index
+	 */
+	void performLookahead(int index);
+	
+	
+	/**
+	 * 
+	 * @param index
+	 * @param effect
+	 */
+	void handleCollision(int index, IControl effect);
+	
+	
+	/**
+	 * 
+	 * @param control
+	 */
+	void setControl(IControl control);
+	
+	
+	/**
+	 * 
+	 * @return
+	 */
+	int getId();
+	
+	
+	/**
+	 *
+	 */
+	void keepPositionAliveOnNoObservation();
+	
+	
+	/**
+	 * 
+	 * @return
+	 */
+	boolean positionKeptAlive();
 }
- 

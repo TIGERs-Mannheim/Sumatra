@@ -1,0 +1,358 @@
+
+<project>
+	<modelVersion>4.0.0</modelVersion>
+	<name>Sumatra</name>
+	<artifactId>Sumatra</artifactId>
+	<groupId>com.dhbw.sumatra</groupId>
+	<version>1.0</version>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
+	<scm>
+		<connection>scm:git:http://tigers-mannheim.de/git/Sumatra.git
+		</connection>
+		<developerConnection>scm:git:http://tigers-mannheim.de/git/Sumatra.git
+		</developerConnection>
+		<url>scm:git:http://tigers-mannheim.de/git/Sumatra.git</url>
+	</scm>
+
+	<issueManagement>
+		<system>Trac</system>
+		<url>http://tigers-mannheim.de/trac</url>
+	</issueManagement>
+
+	<repositories>
+		<repository>
+			<id>maven2-repository.dev.java.net</id>
+			<name>Java.net Repository for Maven</name>
+			<url>http://download.java.net/maven/2/</url>
+			<layout>default</layout>
+		</repository>
+		<repository>
+			<id>central</id>
+			<name>Maven Repository Switchboard</name>
+			<layout>default</layout>
+			<url>http://repo1.maven.org/maven2</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+
+		<!-- for jama -->
+		<repository>
+			<id>mbari-maven-repository</id>
+			<name>MBARI Maven Repository</name>
+			<url>http://mbari-maven-repository.googlecode.com/svn/repository/
+			</url>
+		</repository>
+
+		<repository>
+			<id>tiger_repo</id>
+			<url>http://tigers-mannheim.de:8080/nexus-2.2-01/content/repositories/tiger_repo
+			</url>
+		</repository>
+
+		<repository>
+			<id>pecia-repository</id>
+			<url>http://pecia.sourceforge.net/repository</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<releases>
+			</releases>
+		</repository>
+		<repository>
+			<id>preon-repository</id>
+			<url>http://snapshots.repository.codehaus.org</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+		</repository>
+
+		<!-- <repository> <id>objectdb</id> <name>ObjectDB Repository</name> <url>http://m2.objectdb.com</url> 
+			</repository> -->
+	</repositories>
+
+	<pluginRepositories>
+		<pluginRepository>
+			<id>central</id>
+			<name>Maven Plugin Repository</name>
+			<url>http://repo1.maven.org/maven2</url>
+			<layout>default</layout>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<releases>
+				<updatePolicy>never</updatePolicy>
+			</releases>
+		</pluginRepository>
+	</pluginRepositories>
+
+
+	<dependencies>
+		<dependency>
+			<groupId>com.thoughtworks.xstream</groupId>
+			<artifactId>xstream</artifactId>
+			<version>1.4.4</version>
+		</dependency>
+
+
+		<dependency>
+			<groupId>edu.dhbw.mannheim.tigers.sumatra</groupId>
+			<artifactId>messaging</artifactId>
+			<version>1.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.jocl</groupId>
+			<artifactId>jocl</artifactId>
+			<version>0.1.9</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.ecplise.paho.mqtt</groupId>
+			<artifactId>mqtt_develop</artifactId>
+			<version>4</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.dna.mqtt</groupId>
+			<artifactId>moquette</artifactId>
+			<version>0.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>AndroidSerialization</groupId>
+			<artifactId>AndroidSerialization</artifactId>
+			<version>1.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.11</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>protobufMessages</groupId>
+			<artifactId>protobufMessages</artifactId>
+			<version>2.4.1-1</version>
+		</dependency>
+
+
+		<dependency>
+			<groupId>uncommons-maths</groupId>
+			<artifactId>uncommons-maths</artifactId>
+			<version>1.2.3</version>
+		</dependency>
+
+		<dependency>
+			<groupId>protobuf-java</groupId>
+			<artifactId>protobuf-java</artifactId>
+			<version>2.4.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>miglayout</groupId>
+			<artifactId>miglayout</artifactId>
+			<version>4.0</version>
+		</dependency>
+
+
+		<dependency>
+			<groupId>idw-gpl</groupId>
+			<artifactId>idw-gpl</artifactId>
+			<version>1.6.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>jinput</groupId>
+			<artifactId>jinput</artifactId>
+			<version>1.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>Sim_Vis_Protocol</groupId>
+			<artifactId>Sim_Vis_Protocol</artifactId>
+			<version>1.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>TIGERS_util.network</groupId>
+			<artifactId>TIGERS_util.network</artifactId>
+			<version>1.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>moduli</groupId>
+			<artifactId>moduli</artifactId>
+			<version>1.2.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>commons-configuration</groupId>
+			<artifactId>commons-configuration</artifactId>
+			<version>1.9</version>
+		</dependency>
+
+		<dependency>
+			<groupId>jchart2d</groupId>
+			<artifactId>jchart2d</artifactId>
+			<version>3.2.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.17</version>
+		</dependency>
+
+		<dependency>
+			<groupId>jama</groupId>
+			<artifactId>jama</artifactId>
+			<version>1.0.3</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.objectdb</groupId>
+			<artifactId>objectdb</artifactId>
+			<version>2.4.4_12</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.ecplise.paho.mqtt</groupId>
+			<artifactId>mqttv3</artifactId>
+			<version>3</version>
+		</dependency>
+
+		<dependency>
+			<groupId>commons-collections</groupId>
+			<artifactId>commons-collections</artifactId>
+			<version>3.2.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.codehaus.preon</groupId>
+			<artifactId>preon-binding</artifactId>
+			<version>1.1-SNAPSHOT</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.hamcrest</groupId>
+			<artifactId>hamcrest-all</artifactId>
+			<version>1.1</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+
+	<build>
+		<directory>target</directory>
+		<outputDirectory>target/classes</outputDirectory>
+		<finalName>${project.artifactId}-${project.version}</finalName>
+		<testOutputDirectory>target/test-classes</testOutputDirectory>
+		<sourceDirectory>src/</sourceDirectory>
+		<testSourceDirectory>test/src/</testSourceDirectory>
+
+
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>2.3.2</version>
+					<configuration>
+						<source>1.7</source>
+						<target>1.7</target>
+						<encoding>ISO-8859-1</encoding>
+						<compilerArgument></compilerArgument>
+					</configuration>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>2.12.4</version>
+					<configuration>
+						<includes>
+							<include>**/*.java</include>
+						</includes>
+						<excludes>
+							<exclude>**/*Helper.java</exclude>
+						</excludes>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+
+	</build>
+
+	<reporting>
+		<outputDirectory>target/site</outputDirectory>
+	</reporting>
+
+	<profiles>
+		<profile>
+			<id>release-profile</id>
+
+			<activation>
+				<property>
+					<name>performRelease</name>
+				</property>
+			</activation>
+
+			<build>
+				<plugins>
+					<plugin>
+						<inherited>true</inherited>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+
+						<executions>
+							<execution>
+								<id>attach-sources</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<inherited>true</inherited>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+
+						<executions>
+							<execution>
+								<id>attach-javadocs</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+							<execution>
+								<phase>compile</phase>
+								<goals>
+									<goal>javadoc</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<inherited>true</inherited>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-deploy-plugin</artifactId>
+
+						<configuration>
+							<updateReleaseInfo>true</updateReleaseInfo>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+</project>

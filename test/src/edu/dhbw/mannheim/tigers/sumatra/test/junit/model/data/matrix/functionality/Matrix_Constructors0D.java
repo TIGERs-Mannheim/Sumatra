@@ -14,7 +14,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.types.Matrix;
 import edu.dhbw.mannheim.tigers.sumatra.test.junit.model.data.matrix.performance.APerformanceTest;
 
 
@@ -37,12 +37,14 @@ public class Matrix_Constructors0D extends APerformanceTest
 		// wrong value
 	}
 	
-
+	
+	/**
+	 */
 	@Test
 	public void testCheckMatrixIntIntDouble_correct()
 	{
 		// create a 2x4 matrix and control the content
-		Matrix m = new Matrix(2, 4, 3.4567);
+		final Matrix m = new Matrix(2, 4, 3.4567);
 		
 		for (int i = 0; i < 2; i++)
 		{
@@ -53,7 +55,9 @@ public class Matrix_Constructors0D extends APerformanceTest
 		}
 	}
 	
-
+	
+	/**
+	 */
 	@Test(expected = IllegalArgumentException.class)
 	public void testCheckMatrixIntIntDouble_wrongRow()
 	{
@@ -61,7 +65,9 @@ public class Matrix_Constructors0D extends APerformanceTest
 		new Matrix(0, 4, 3.4567);
 	}
 	
-
+	
+	/**
+	 */
 	@Test(expected = IllegalArgumentException.class)
 	public void testCheckMatrixIntIntDouble_wrongCol()
 	{
@@ -69,7 +75,7 @@ public class Matrix_Constructors0D extends APerformanceTest
 		new Matrix(3, -30, 3.4567);
 	}
 	
-
+	
 	/******************************************************************************
 	 * testCheckMatrixInt
 	 ******************************************************************************/
@@ -80,12 +86,14 @@ public class Matrix_Constructors0D extends APerformanceTest
 		// wrong row/col
 	}
 	
-
+	
+	/**
+	 */
 	@Test
 	public void testCheckMatrixInt_correct()
 	{
 		// create a 3x3 matrix and control the content
-		Matrix m = new Matrix(3, 3);
+		final Matrix m = new Matrix(3, 3);
 		
 		for (int i = 0; i < 3; i++)
 		{
@@ -96,14 +104,16 @@ public class Matrix_Constructors0D extends APerformanceTest
 		}
 	}
 	
-
+	
+	/**
+	 */
 	@Test(expected = IllegalArgumentException.class)
 	public void testCheckMatrixInt_wrongRowCol()
 	{
 		new Matrix(-20);
 	}
 	
-
+	
 	/******************************************************************************
 	 * testCheckMatrixIntInt
 	 ******************************************************************************/
@@ -115,12 +125,14 @@ public class Matrix_Constructors0D extends APerformanceTest
 		// wrong col
 	}
 	
-
+	
+	/**
+	 */
 	@Test
 	public void testCheckMatrixIntInt_correct()
 	{
 		// create a 1x4 matrix and control the content
-		Matrix M = new Matrix(1, 4);
+		final Matrix M = new Matrix(1, 4);
 		
 		for (int i = 0; i < 1; i++)
 		{
@@ -131,49 +143,53 @@ public class Matrix_Constructors0D extends APerformanceTest
 		}
 	}
 	
-
+	
+	/**
+	 */
 	@Test(expected = IllegalArgumentException.class)
 	public void testCheckMatrixIntInt_wrongRow()
 	{
 		new Matrix(-5, 4);
 	}
 	
-
+	
+	/**
+	 */
 	@Test(expected = IllegalArgumentException.class)
 	public void testCheckMatrixIntInt_wrongCol()
 	{
 		new Matrix(2, 0);
 	}
 	
-
+	
 	/************************************************************************
-	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix#copy()}.
+	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.model.data.math.types.Matrix#copy()}.
 	 ************************************************************************/
 	@Test
 	public void testCopy()
 	{
-		Matrix A = new Matrix(new double[][] { { 1, 2 }, { 3, -4 } });
-		Matrix B = A.copy();
+		final Matrix A = new Matrix(new double[][] { { 1, 2 }, { 3, -4 } });
+		final Matrix B = A.copy();
 		
 		// test
-		assertTrue(equals(A,B));
+		assertTrue(equals(A, B));
 	}
 	
-
+	
 	/************************************************************************
-	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.model.data.Matrix#Identity(int, int)}.
+	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.model.data.math.types.Matrix#identity(int, int)}.
 	 ************************************************************************/
 	@Test
 	public void testIdentity()
 	{
 		// let create identity-matrix
-		Matrix A = Matrix.Identity(3, 4);
+		final Matrix A = Matrix.identity(3, 4);
 		
 		// create identitiy-matrix
-		Matrix B = new Matrix(new double[][] { { 1.0, 0.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0, 0.0 },
+		final Matrix B = new Matrix(new double[][] { { 1.0, 0.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0, 0.0 },
 				{ 0.0, 0.0, 1.0, 0.0 } });
-
+		
 		// test
-		assertTrue(equals(A,B));
+		assertTrue(equals(A, B));
 	}
 }

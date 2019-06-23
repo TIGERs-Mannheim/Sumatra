@@ -9,8 +9,8 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.types;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.ITimerObserver;
 import edu.moduli.AModule;
@@ -29,16 +29,21 @@ public abstract class ATimer extends AModule implements ITimer
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	public static final String					MODULE_TYPE	= "ATimer";
-	public static final String					MODULE_ID	= "timer";
+	/** */
+	public static final String				MODULE_TYPE	= "ATimer";
+	/** */
+	public static final String				MODULE_ID	= "timer";
 	
-
-	protected final List<ITimerObserver>	observers	= new ArrayList<ITimerObserver>();
+	
+	private final List<ITimerObserver>	observers	= new CopyOnWriteArrayList<ITimerObserver>();
 	
 	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param observer
+	 */
 	public void addObserver(ITimerObserver observer)
 	{
 		synchronized (observers)
@@ -47,12 +52,24 @@ public abstract class ATimer extends AModule implements ITimer
 		}
 	}
 	
-
+	
+	/**
+	 * @param observer
+	 */
 	public void removeObserver(ITimerObserver observer)
 	{
 		synchronized (observers)
 		{
 			observers.remove(observer);
 		}
+	}
+	
+	
+	/**
+	 * @return the observers
+	 */
+	public final synchronized List<ITimerObserver> getObservers()
+	{
+		return observers;
 	}
 }

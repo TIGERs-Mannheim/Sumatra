@@ -9,8 +9,8 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
 
@@ -27,24 +27,31 @@ public class TigerMotorMoveV2 extends ACommand
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private int			x;					// x component, [mm/s], int16_t
-	private int			y;					// y component, [mm/s], int16_t
-	private int			w;					// non-compensated angular velocity
-	private int			v;					// compensated angular velocity
-													
+	/** x component, [mm/s], int16_t */
+	private int			x;
+	/** y component, [mm/s], int16_t */
+	private int			y;
+	/** non-compensated angular velocity */
+	private int			w;
+	/** compensated angular velocity */
+	private int			v;
+	
 	private boolean	dirUsed	= false;
-	private boolean	wUsed	= false;
-	private boolean	vUsed = false;
+	private boolean	wUsed		= false;
+	private boolean	vUsed		= false;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 */
 	public TigerMotorMoveV2()
 	{
 	}
 	
-
+	
 	/**
 	 * Set bot speed and rotation.
 	 * 
@@ -58,6 +65,13 @@ public class TigerMotorMoveV2 extends ACommand
 		setW(turnVelocity);
 	}
 	
+	
+	/**
+	 * 
+	 * @param vec
+	 * @param turnVelocity
+	 * @param compensatedVelocity
+	 */
 	public TigerMotorMoveV2(IVector2 vec, float turnVelocity, float compensatedVelocity)
 	{
 		setX(vec.x());
@@ -66,20 +80,28 @@ public class TigerMotorMoveV2 extends ACommand
 		setV(compensatedVelocity);
 	}
 	
-
+	
+	/**
+	 * 
+	 * @param vec
+	 */
 	public TigerMotorMoveV2(IVector2 vec)
 	{
 		setX(vec.x());
 		setY(vec.y());
 	}
 	
-
+	
+	/**
+	 * 
+	 * @param turnVelocity
+	 */
 	public TigerMotorMoveV2(float turnVelocity)
 	{
 		setW(turnVelocity);
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -92,11 +114,11 @@ public class TigerMotorMoveV2 extends ACommand
 		v = byteArray2Short(data, 6);
 	}
 	
-
+	
 	@Override
 	public byte[] getData()
 	{
-		byte data[] = new byte[getDataLength()];
+		final byte data[] = new byte[getDataLength()];
 		
 		short2ByteArray(data, 0, x);
 		short2ByteArray(data, 2, y);
@@ -106,20 +128,21 @@ public class TigerMotorMoveV2 extends ACommand
 		return data;
 	}
 	
+	
 	@Override
 	public int getCommand()
 	{
 		return CommandConstants.CMD_MOTOR_MOVE_V2;
 	}
 	
+	
 	@Override
 	public int getDataLength()
 	{
 		return 8;
 	}
-
 	
-
+	
 	/**
 	 * Set XY vector [m/s]
 	 * 
@@ -131,7 +154,7 @@ public class TigerMotorMoveV2 extends ACommand
 		setY(v.y);
 	}
 	
-
+	
 	/**
 	 * Get XY vector [m/s]
 	 * 
@@ -139,15 +162,15 @@ public class TigerMotorMoveV2 extends ACommand
 	 */
 	public Vector2 getXY()
 	{
-		Vector2 v = new Vector2();
+		final Vector2 vec = new Vector2();
 		
-		v.x = getX();
-		v.y = getY();
+		vec.x = getX();
+		vec.y = getY();
 		
-		return v;
+		return vec;
 	}
 	
-
+	
 	/**
 	 * Get X component [m/s]
 	 * 
@@ -158,7 +181,7 @@ public class TigerMotorMoveV2 extends ACommand
 		return x / 1000f;
 	}
 	
-
+	
 	/**
 	 * Set X component [m/s]
 	 * 
@@ -171,7 +194,7 @@ public class TigerMotorMoveV2 extends ACommand
 		dirUsed = true;
 	}
 	
-
+	
 	/**
 	 * Get Y component [m/s]
 	 * 
@@ -182,7 +205,7 @@ public class TigerMotorMoveV2 extends ACommand
 		return y / 1000f;
 	}
 	
-
+	
 	/**
 	 * Set Y component [m/s]
 	 * 
@@ -195,7 +218,7 @@ public class TigerMotorMoveV2 extends ACommand
 		dirUsed = true;
 	}
 	
-
+	
 	/**
 	 * Get turn speed (angular velocity) [rad/s]
 	 * 
@@ -204,8 +227,9 @@ public class TigerMotorMoveV2 extends ACommand
 	public float getW()
 	{
 		return (w / 1000f);
-	}	
-
+	}
+	
+	
 	/**
 	 * Set turn speed (angular velocity) [rad/s]
 	 * 
@@ -213,11 +237,12 @@ public class TigerMotorMoveV2 extends ACommand
 	 */
 	public void setW(float w)
 	{
-		this.w = (int) (w  * 1000);
+		this.w = (int) (w * 1000);
 		
 		wUsed = true;
 	}
-
+	
+	
 	/**
 	 * Get compensated turn speed (angular velocity) [rad/s]
 	 * 
@@ -226,20 +251,28 @@ public class TigerMotorMoveV2 extends ACommand
 	public float getV()
 	{
 		return (v / 1000f);
-	}	
-
+	}
+	
+	
 	/**
 	 * Set compensated turn speed (angular velocity) [rad/s]
 	 * 
-	 * @param w turn speed
+	 * @param v turn speed
 	 */
 	public void setV(float v)
 	{
-		this.v = (int) (v  * 1000);
+		this.v = (int) (v * 1000);
 		
 		vUsed = true;
 	}
-
+	
+	
+	/**
+	 * 
+	 * @param vec
+	 * @param vw
+	 * @param vv
+	 */
 	public void setUnusedComponents(Vector2 vec, float vw, float vv)
 	{
 		if (!dirUsed)
@@ -252,7 +285,7 @@ public class TigerMotorMoveV2 extends ACommand
 			setW(vw);
 		}
 		
-		if(!vUsed)
+		if (!vUsed)
 		{
 			setV(vv);
 		}

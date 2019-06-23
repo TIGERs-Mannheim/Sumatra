@@ -1,0 +1,16 @@
+package edu.dhbw.mannheim.tigers.sumatra.proto;
+
+option java_package = "edu.dhbw.mannheim.tigers.sumatra.proto.model.modules.impls.ai";
+option java_outer_classname = "AIGeneralProtos";
+
+message AIException {
+	required string message = 1;
+}
+
+message MatchBehaviour {
+	required string behaviour = 1;
+}
+
+message AIMode {
+	required string mode = 1;
+}

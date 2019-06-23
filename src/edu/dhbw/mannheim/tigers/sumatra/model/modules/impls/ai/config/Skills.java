@@ -9,11 +9,10 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config;
 
-import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.commons.configuration.Configuration;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.tiger.AMoveSkillV2.AccelerationFacade;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.tiger.AMoveSkillV2.PIDFacade;
-import edu.dhbw.mannheim.tigers.sumatra.util.controller.PIDControllerConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.functions.Function1DFactory;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.functions.IFunction1D;
 
 
 /**
@@ -24,107 +23,134 @@ import edu.dhbw.mannheim.tigers.sumatra.util.controller.PIDControllerConfig;
  */
 public class Skills
 {
+	
+	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final String		nodePath	= "skillSystem.";
+	private static final String	NODE_PATH	= "skillSystem.";
 	
 	// Rotate
-	private final float		maxTurnSpeed;
-	private final float		rotationSpeedThreshold;
-	private final float		rotateKP;
-	private final float		rotateKI;
-	private final float		rotateKD;
+	private float						maxTurnSpeed;
+	private float						rotationSpeedThreshold;
+	/** [rad/s^2] */
+	private float						maxRotateVelocity;
+	/** [rad/s^2] */
+	private float						maxRotateAcceleration;
+	private IFunction1D				normalAngleToSpeed;
 	
 	// Dribble
-	private final int			refRPM;
+	private int							refRPM;
 	
 	// Kicker
-	private final float		ballFrictionSlide;
-	private final float		ballFrictionRoll;
-	private final int			refFiringDuration;
-	private final float		refVelocity;
-	private final float		edgeFactor;
+	private float						ballFrictionSlide;
+	private float						ballFrictionRoll;
+	private int							refFiringDuration;
+	private float						refVelocity;
+	private float						edgeFactor;
+	/** [mm/s] */
+	private float						maxShootVelocity;
+	private int							kickerDischargeTreshold;
+	private IFunction1D				kickDribbleFunc;
+	
+	// Chip kicker
+	private IFunction1D				chipDistanceFunc;
+	private IFunction1D				chipDribbleFunc;
 	
 	// Move
-	private final float		maxVelocity;
-	private final float		maxDeceleration;
-	private final float		maxBreakingDistance;
-	private final float		moveSpeedThreshold;
-	private final boolean	useSplines;
-	private final boolean	ballAsObstacle;
-	private final float		accelerationInc;
-	
-	private AccelerationFacade acceleration = new AccelerationFacade();
-	private PIDFacade			pids = new PIDFacade();
-	
-	private XMLConfiguration config;	// used to store changed values 
+	private float						moveSpeedThreshold;
+	/** [m/s] */
+	public float						maxLinearVelocity;
+	/** [m/s�] */
+	public float						maxLinearAcceleration;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	public Skills(XMLConfiguration configFile)
+	/**
+	 * empty constructor, all attributes will remain uninitialized
+	 */
+	private Skills()
 	{
-		this.config = configFile;
 		
-		maxTurnSpeed = configFile.getFloat(nodePath + "rotate.maxTurnSpeed");
-		rotationSpeedThreshold = configFile.getFloat(nodePath + "rotate.rotationSpeedThreshold");
-		rotateKP = configFile.getFloat(nodePath + "rotate.kP");
-		rotateKI = configFile.getFloat(nodePath + "rotate.kI");
-		rotateKD = configFile.getFloat(nodePath + "rotate.kD");
-		
-		refRPM = configFile.getInt(nodePath + "dribble.refRPM");
-		
-		ballFrictionSlide = configFile.getFloat(nodePath + "kicker.ballFrictionSlide");
-		ballFrictionRoll = configFile.getFloat(nodePath + "kicker.ballFrictionRoll");
-		refFiringDuration = configFile.getInt(nodePath + "kicker.refFiringDuration");
-		refVelocity = configFile.getFloat(nodePath + "kicker.refVelocity");
-		edgeFactor = configFile.getFloat(nodePath + "kicker.edgeFactor");
-		
-		maxVelocity = configFile.getFloat(nodePath + "moveTo.maxVelocity");
-		maxDeceleration = configFile.getFloat(nodePath + "moveTo.maxDeceleration");
-		maxBreakingDistance = (maxVelocity * maxVelocity) / (2 * maxDeceleration);
-		moveSpeedThreshold = configFile.getFloat(nodePath + "moveTo.moveSpeedThreshold");
-		useSplines = configFile.getBoolean(nodePath + "moveTo.useSplines");
-		ballAsObstacle = configFile.getBoolean(nodePath + "moveTo.ballAsObstacle");
-		accelerationInc = configFile.getFloat(nodePath + "moveTo.accelerationInc");
-		
-		acceleration.maxXAccelBeg.setSavedString(configFile.getString(nodePath + "move.maxXAccel.beg"));
-		acceleration.maxXAccelMid.setSavedString(configFile.getString(nodePath + "move.maxXAccel.mid"));
-		acceleration.maxXAccelEnd.setSavedString(configFile.getString(nodePath + "move.maxXAccel.end"));
-		acceleration.maxYAccelBeg.setSavedString(configFile.getString(nodePath + "move.maxYAccel.beg"));
-		acceleration.maxYAccelMid.setSavedString(configFile.getString(nodePath + "move.maxYAccel.mid"));
-		acceleration.maxYAccelEnd.setSavedString(configFile.getString(nodePath + "move.maxYAccel.end"));
-		acceleration.maxXDeccelBeg.setSavedString(configFile.getString(nodePath + "move.maxXDeccel.beg"));
-		acceleration.maxXDeccelMid.setSavedString(configFile.getString(nodePath + "move.maxXDeccel.mid"));
-		acceleration.maxXDeccelEnd.setSavedString(configFile.getString(nodePath + "move.maxXDeccel.end"));
-		acceleration.maxYDeccelBeg.setSavedString(configFile.getString(nodePath + "move.maxYDeccel.beg"));
-		acceleration.maxYDeccelMid.setSavedString(configFile.getString(nodePath + "move.maxYDeccel.mid"));
-		acceleration.maxYDeccelEnd.setSavedString(configFile.getString(nodePath + "move.maxYDeccel.end"));
-		
-		pids.velocity.p = configFile.getFloat(nodePath + "move.pidVelo.kp");
-		pids.velocity.i = configFile.getFloat(nodePath + "move.pidVelo.ki");
-		pids.velocity.d = configFile.getFloat(nodePath + "move.pidVelo.kd");
-		pids.velocity.maxOutput = configFile.getFloat(nodePath + "move.pidVelo.max");
-		pids.velocity.slewRate = configFile.getFloat(nodePath + "move.pidVelo.slew");
-		pids.orientation.p = configFile.getFloat(nodePath + "move.pidOrient.kp");
-		pids.orientation.i = configFile.getFloat(nodePath + "move.pidOrient.ki");
-		pids.orientation.d = configFile.getFloat(nodePath + "move.pidOrient.kd");
-		pids.orientation.maxOutput = configFile.getFloat(nodePath + "move.pidOrient.max");
-		pids.orientation.slewRate = configFile.getFloat(nodePath + "move.pidOrient.slew");
 	}
 	
-
+	
+	/**
+	 * @param configFile
+	 */
+	public Skills(Configuration configFile)
+	{
+		this(configFile, new Skills());
+	}
+	
+	
+	/**
+	 * @param configFile
+	 * @param base
+	 */
+	public Skills(Configuration configFile, final Skills base)
+	{
+		maxTurnSpeed = configFile.getFloat(NODE_PATH + "rotate.maxTurnSpeed", base.maxTurnSpeed);
+		rotationSpeedThreshold = configFile.getFloat(NODE_PATH + "rotate.rotationSpeedThreshold",
+				base.rotationSpeedThreshold);
+		maxRotateVelocity = configFile.getFloat(NODE_PATH + "rotate.maxRotateVelocity", base.maxRotateVelocity);
+		maxRotateAcceleration = configFile.getFloat(NODE_PATH + "rotate.maxRotateAcceleration",
+				base.maxRotateAcceleration);
+		normalAngleToSpeed = Function1DFactory.createFunctionFromString(configFile.getString(NODE_PATH
+				+ "rotate.normalAngleToSpeed", Function1DFactory.createStringFromFunction(base.normalAngleToSpeed)));
+		
+		refRPM = configFile.getInt(NODE_PATH + "dribble.refRPM", base.refRPM);
+		
+		ballFrictionSlide = configFile.getFloat(NODE_PATH + "kicker.ballFrictionSlide", base.ballFrictionSlide);
+		ballFrictionRoll = configFile.getFloat(NODE_PATH + "kicker.ballFrictionRoll", base.ballFrictionRoll);
+		refFiringDuration = configFile.getInt(NODE_PATH + "kicker.refFiringDuration", base.refFiringDuration);
+		refVelocity = configFile.getFloat(NODE_PATH + "kicker.refVelocity", base.refVelocity);
+		edgeFactor = configFile.getFloat(NODE_PATH + "kicker.edgeFactor", base.edgeFactor);
+		maxShootVelocity = configFile.getFloat(NODE_PATH + "kicker.maxShootVelocity", base.maxShootVelocity);
+		kickerDischargeTreshold = configFile.getInt(NODE_PATH + "kicker.kickerDischargeTreshold",
+				base.kickerDischargeTreshold);
+		chipDistanceFunc = Function1DFactory.createFunctionFromString(configFile.getString(NODE_PATH
+				+ "kicker.chipDistanceFunc", Function1DFactory.createStringFromFunction(base.chipDistanceFunc)));
+		chipDribbleFunc = Function1DFactory.createFunctionFromString(configFile.getString(NODE_PATH
+				+ "kicker.chipDribbleFunc", Function1DFactory.createStringFromFunction(base.chipDribbleFunc)));
+		kickDribbleFunc = Function1DFactory.createFunctionFromString(configFile.getString(NODE_PATH
+				+ "kicker.kickDribbleFunc", Function1DFactory.createStringFromFunction(base.kickDribbleFunc)));
+		
+		moveSpeedThreshold = configFile.getFloat(NODE_PATH + "move.moveSpeedThreshold", base.moveSpeedThreshold);
+		maxLinearVelocity = configFile.getFloat(NODE_PATH + "move.maxLinearVelocity", base.maxLinearVelocity);
+		maxLinearAcceleration = configFile.getFloat(NODE_PATH + "move.maxLinearAcceleration", base.maxLinearAcceleration);
+		
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	
+	/**
+	 * @return the kickerChargeLowTreshold
+	 */
+	public final int getKickerDischargeTreshold()
+	{
+		return kickerDischargeTreshold;
+	}
+	
+	
+	/**
+	 * @return the maxShootVelocity [mm/s]
+	 */
+	public float getMaxShootVelocity()
+	{
+		return maxShootVelocity;
+	}
+	
 	
 	/**
 	 * @return the rotate maxTurnSpeed
@@ -134,7 +160,7 @@ public class Skills
 		return maxTurnSpeed;
 	}
 	
-
+	
 	/**
 	 * @return the rotationSpeedThreshold
 	 */
@@ -143,13 +169,7 @@ public class Skills
 		return rotationSpeedThreshold;
 	}
 	
-
-	public PIDControllerConfig getRotatePIDConf()
-	{
-		return new PIDControllerConfig(rotateKP, rotateKI, rotateKD, maxTurnSpeed);
-	}
 	
-
 	/**
 	 * @return the dribble refRPM
 	 */
@@ -158,7 +178,7 @@ public class Skills
 		return refRPM;
 	}
 	
-
+	
 	/**
 	 * @return the refFiringDuration
 	 */
@@ -167,7 +187,7 @@ public class Skills
 		return refFiringDuration;
 	}
 	
-
+	
 	/**
 	 * @return the ballFrictionSlide
 	 */
@@ -176,7 +196,7 @@ public class Skills
 		return ballFrictionSlide;
 	}
 	
-
+	
 	/**
 	 * @return the ballFrictionRoll
 	 */
@@ -185,16 +205,16 @@ public class Skills
 		return ballFrictionRoll;
 	}
 	
-
+	
 	/**
 	 * @return the refVelocity
 	 */
-	public float getRefVelocity()
+	public float getRefKickVelocity()
 	{
 		return refVelocity;
 	}
 	
-
+	
 	/**
 	 * @return the edgeFactor
 	 */
@@ -203,34 +223,61 @@ public class Skills
 		return edgeFactor;
 	}
 	
-
+	
 	/**
-	 * @return the maxVelocity
+	 * @return the chipDistanceFunc
 	 */
-	public float getMaxVelocity()
+	public final IFunction1D getChipDistanceFunc()
 	{
-		return maxVelocity;
+		return chipDistanceFunc;
 	}
 	
-
+	
 	/**
-	 * @return the maxDeceleration
+	 * @return the chipDribbleFunc
 	 */
-	public float getMaxDeceleration()
+	public final IFunction1D getChipDribbleFunc()
 	{
-		return maxDeceleration;
+		return chipDribbleFunc;
 	}
 	
-
+	
 	/**
-	 * @return the maxBreakingDistance
+	 * @return
 	 */
-	public float getMaxBreakingDistance()
+	public IFunction1D getKickDribbleFunc()
 	{
-		return maxBreakingDistance;
+		return kickDribbleFunc;
 	}
 	
-
+	
+	/**
+	 * @return the maxRotateVelocity
+	 */
+	public float getMaxRotateVelocity()
+	{
+		return maxRotateVelocity;
+	}
+	
+	
+	/**
+	 * @return the maxRotateAcceleration
+	 */
+	public float getMaxRotateAcceleration()
+	{
+		return maxRotateAcceleration;
+	}
+	
+	
+	/**
+	 * @return the normalAngleToSpeed
+	 */
+	public IFunction1D getNormalAngleToSpeed()
+	{
+		return normalAngleToSpeed;
+	}
+	
+	
 	/**
 	 * @return the moveSpeedThreshold
 	 */
@@ -239,75 +286,23 @@ public class Skills
 		return moveSpeedThreshold;
 	}
 	
-
+	
 	/**
-	 * @return the useSplines
+	 * @return the maxLinearVelocity
 	 */
-	public boolean getUseSplines()
+	public float getMaxLinearVelocity()
 	{
-		return useSplines;
+		return maxLinearVelocity;
 	}
 	
-
+	
 	/**
-	 * @return the ballAsObstacle
+	 * @return the maxLinearAcceleration
 	 */
-	public boolean getBallAsObstacle()
+	public float getMaxLinearAcceleration()
 	{
-		return ballAsObstacle;
+		return maxLinearAcceleration;
 	}
 	
-
-	/**
-	 * @return the accelerationInc
-	 */
-	public float getAccelerationInc()
-	{
-		return accelerationInc;
-	}
-	
-	public AccelerationFacade getAcceleration()
-	{
-		return acceleration;
-	}
-	
-	public PIDFacade getPids()
-	{
-		return pids;
-	}
-	
-	public void setAcceleration(AccelerationFacade accel)
-	{
-		this.acceleration = accel;
-		
-		config.setProperty(nodePath + "move.maxXAccel.beg", accel.maxXAccelBeg.getSaveableString());
-		config.setProperty(nodePath + "move.maxXAccel.mid", accel.maxXAccelMid.getSaveableString());
-		config.setProperty(nodePath + "move.maxXAccel.end", accel.maxXAccelEnd.getSaveableString());
-		config.setProperty(nodePath + "move.maxYAccel.beg", accel.maxYAccelBeg.getSaveableString());
-		config.setProperty(nodePath + "move.maxYAccel.mid", accel.maxYAccelMid.getSaveableString());
-		config.setProperty(nodePath + "move.maxYAccel.end", accel.maxYAccelEnd.getSaveableString());
-		config.setProperty(nodePath + "move.maxXDeccel.beg", accel.maxXDeccelBeg.getSaveableString());
-		config.setProperty(nodePath + "move.maxXDeccel.mid", accel.maxXDeccelMid.getSaveableString());
-		config.setProperty(nodePath + "move.maxXDeccel.end", accel.maxXDeccelEnd.getSaveableString());
-		config.setProperty(nodePath + "move.maxYDeccel.beg", accel.maxYDeccelBeg.getSaveableString());
-		config.setProperty(nodePath + "move.maxYDeccel.mid", accel.maxYDeccelMid.getSaveableString());
-		config.setProperty(nodePath + "move.maxYDeccel.end", accel.maxYDeccelEnd.getSaveableString());
-	}
-	
-	public void setPids(PIDFacade pids)
-	{
-		this.pids = pids;
-		
-		config.setProperty(nodePath + "move.pidVelo.kp", pids.velocity.p);
-		config.setProperty(nodePath + "move.pidVelo.ki", pids.velocity.i);
-		config.setProperty(nodePath + "move.pidVelo.kd", pids.velocity.d);
-		config.setProperty(nodePath + "move.pidVelo.max", pids.velocity.maxOutput);
-		config.setProperty(nodePath + "move.pidVelo.slew", pids.velocity.slewRate);
-		config.setProperty(nodePath + "move.pidOrient.kp", pids.orientation.p);
-		config.setProperty(nodePath + "move.pidOrient.ki", pids.orientation.i);
-		config.setProperty(nodePath + "move.pidOrient.kd", pids.orientation.d);
-		config.setProperty(nodePath + "move.pidOrient.max", pids.orientation.maxOutput);
-		config.setProperty(nodePath + "move.pidOrient.slew", pids.orientation.slewRate);
-	}
 	
 }

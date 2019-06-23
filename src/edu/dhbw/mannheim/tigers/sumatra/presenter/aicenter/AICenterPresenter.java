@@ -9,37 +9,34 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter;
 
-import java.awt.Component;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
-import javax.swing.ButtonGroup;
-import javax.swing.JMenu;
-import javax.swing.JMenuItem;
-import javax.swing.JRadioButtonMenuItem;
 import javax.swing.SwingUtilities;
 
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena.control.ApollonControl;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena.control.AthenaControl;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.exceptions.LoadConfigException;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.pathfinding.Path;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.ECalculator;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACondition;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.APlay;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ARole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACondition.EConditionState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.ECondition;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ASkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ASkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IAIObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IBotManagerObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.ISkillSystemObserver;
@@ -54,6 +51,9 @@ import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.AICenterPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.InformationPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.botoverview.BotFullOverviewPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.botoverview.BotOverviewPanel;
+import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview.CalculatorList;
+import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview.IApollonControlPanelObserver;
+import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview.ICalculatorObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview.IModuleControlPanelObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview.PlayControlPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview.TacticalFieldControlPanel;
@@ -74,56 +74,61 @@ import edu.moduli.listenerVariables.ModulesState;
  * 
  * @author Oliver Steinbrecher <OST1988@aol.com>, Gero
  */
-public class AICenterPresenter implements ISumatraView, IModuliStateObserver, IAIObserver, IBotManagerObserver,
-		ILookAndFeelStateObserver, IAICenterState, IModuleControlPanelObserver, ISkillSystemObserver
+public class AICenterPresenter implements IModuliStateObserver, IAIObserver, IBotManagerObserver,
+		ILookAndFeelStateObserver, IAICenterState, IModuleControlPanelObserver, ISkillSystemObserver,
+		ICalculatorObserver, IApollonControlPanelObserver
 {
 	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final int		ID					= 3;
-	private static final String	TITLE				= "AI Center";
+	// Logger
+	private static final Logger	log							= Logger.getLogger(AICenterPresenter.class.getName());
 	
-
-	private final Logger				log				= Logger.getLogger(getClass());
+	
+	// for limiting update frequency [in milliseconds]
+	private static final long		VISUALIZATION_FREQUENCY	= 500;
+	private long						start							= System.nanoTime();
 	
 	// Modules
-	private AAgent						aiAgent			= null;
-	private ABotManager				botManager		= null;
-	private ASkillSystem				skillSystem		= null;
+	private final SumatraModel		model							= SumatraModel.getInstance();
+	private AAgent						aiAgent						= null;
+	private ABotManager				botManager					= null;
+	private ASkillSystem				skillSystem					= null;
 	
-	private AICenterPanel			aiCenterPanel	= null;
-	
-	private final JMenu				aiConfigMenu;
-	private List<JMenuItem>			aiConfigs		= new ArrayList<JMenuItem>();
-	
-	private final JMenu				tacticsMenu;
-	private List<JMenuItem>			tacticsConfigs	= new ArrayList<JMenuItem>();
+	private AICenterPanel			aiCenterPanel				= null;
 	
 	// Athena-control
 	private final AthenaControl	aiControl;
-	private AICenterState			currentState	= null;
+	private AICenterState			currentState				= null;
+	private final ApollonControl	apollonControl;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
+	/**
+	 * 
+	 */
 	public AICenterPresenter()
 	{
-		// --- ai config menu ---
-		aiConfigMenu = new JMenu("AI-configuration");
-		
-		// --- tactic config menu ---
-		tacticsMenu = new JMenu("Tactics");
-		
 		aiCenterPanel = new AICenterPanel();
 		
 		aiControl = new AthenaControl();
+		apollonControl = new ApollonControl();
+		sendApollonControl();
 		
 		aiCenterPanel.getModulesPanel().addObserver(this);
 		aiCenterPanel.getModulesPanel().getRolePanel().addObserver(this);
 		aiCenterPanel.getModulesPanel().getPlayPanel().addObserver(this);
+		aiCenterPanel.getModulesPanel().getApollonControlPanel().addObserver(this);
+		
+		CalculatorList calulatorList = aiCenterPanel.getModulesPanel().getMetisCalculatorsPanel().getCalculatorList();
+		calulatorList.addObserver(this);
+		for (ECalculator calc : ECalculator.values())
+		{
+			calulatorList.addElement(calc.name(), calc.isInitiallyActive());
+		}
 		
 		ModuliStateAdapter.getInstance().addObserver(this);
 		LookAndFeelStateAdapter.getInstance().addObserver(this);
@@ -133,59 +138,12 @@ public class AICenterPresenter implements ISumatraView, IModuliStateObserver, IA
 		aiCenterPanel.clearView();
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	@Override
-	public int getID()
-	{
-		return ID;
-	}
 	
-
-	@Override
-	public String getTitle()
-	{
-		return TITLE;
-	}
-	
-
-	@Override
-	public Component getViewComponent()
-	{
-		return aiCenterPanel;
-	}
-	
-
-	@Override
-	public List<JMenu> getCustomMenus()
-	{
-		List<JMenu> menus = new ArrayList<JMenu>();
-		
-		menus.add(aiConfigMenu);
-		menus.add(tacticsMenu);
-		
-		updateAIConfigMenu();
-		updateTacticsConfigMenu();
-		
-		return menus;
-	}
-	
-
-	@Override
-	public void onFocused()
-	{
-	}
-	
-
-	@Override
-	public void onFocusLost()
-	{
-	}
-	
-
 	@Override
 	public void onModuliStateChanged(ModulesState state)
 	{
@@ -193,7 +151,6 @@ public class AICenterPresenter implements ISumatraView, IModuliStateObserver, IA
 		{
 			case ACTIVE:
 			{
-				SumatraModel model = SumatraModel.getInstance();
 				try
 				{
 					aiAgent = (AAgent) model.getModule(AAgent.MODULE_ID);
@@ -204,7 +161,8 @@ public class AICenterPresenter implements ISumatraView, IModuliStateObserver, IA
 					skillSystem = (ASkillSystem) model.getModule(ASkillSystem.MODULE_ID);
 					skillSystem.addObserver(this);
 					
-				} catch (ModuleNotFoundException err)
+					
+				} catch (final ModuleNotFoundException err)
 				{
 					log.fatal("AI Module not found");
 				}
@@ -214,33 +172,30 @@ public class AICenterPresenter implements ISumatraView, IModuliStateObserver, IA
 					botManager = (ABotManager) model.getModule(ABotManager.MODULE_ID);
 					botManager.addObserver(this);
 					
-					BotFullOverviewPanel botPanel = aiCenterPanel.getBotOverviewPanel();
+					final BotFullOverviewPanel botPanel = aiCenterPanel.getBotOverviewPanel();
 					synchronized (botPanel)
 					{
-						for (ABot bot : botManager.getAllBots().values())
+						for (final ABot bot : botManager.getAllBots().values())
 						{
 							if (bot.isActive())
 							{
-								botPanel.addBotPanel(bot.getBotId(), bot.getName());
+								botPanel.addBotPanel(bot.getBotID(), bot.getName());
 							}
 						}
 					}
 					
-				} catch (ModuleNotFoundException err)
+				} catch (final ModuleNotFoundException err)
 				{
 					log.fatal("Botmanager not found");
 				}
 				
 				// --- update custom-menu ---
-				updateAIConfigMenu();
-				updateTacticsConfigMenu();
-				
 				aiCenterPanel.getModulesPanel().onStart();
 				
 				break;
 			}
-				
-			default:
+			
+			case RESOLVED:
 			{
 				if (aiAgent != null)
 				{
@@ -250,19 +205,26 @@ public class AICenterPresenter implements ISumatraView, IModuliStateObserver, IA
 				
 				if (skillSystem != null)
 				{
-					skillSystem.addObserver(this);
+					skillSystem.removeObserver(this);
 				}
 				skillSystem = null;
 				
 				if (botManager != null)
 				{
 					botManager.removeObserver(this);
-					BotFullOverviewPanel botPanel = aiCenterPanel.getBotOverviewPanel();
-					synchronized (botPanel)
+					SwingUtilities.invokeLater(new Runnable()
 					{
-						botPanel.removeAllBotPanels();
-					}
-					SwingUtilities.updateComponentTreeUI(aiCenterPanel);
+						@Override
+						public void run()
+						{
+							final BotFullOverviewPanel botPanel = aiCenterPanel.getBotOverviewPanel();
+							synchronized (botPanel)
+							{
+								botPanel.removeAllBotPanels();
+							}
+							SwingUtilities.updateComponentTreeUI(aiCenterPanel);
+						}
+					});
 				}
 				botManager = null;
 				
@@ -270,40 +232,64 @@ public class AICenterPresenter implements ISumatraView, IModuliStateObserver, IA
 				aiCenterPanel.clearView();
 				break;
 			}
+			case NOT_LOADED:
+			default:
+				break;
 		}
 		
 	}
 	
-
+	
+	@Override
+	public void onBotConnectionChanged(ABot bot)
+	{
+		if (bot.getNetworkState() != ENetworkState.OFFLINE)
+		{
+			onBotAdded(bot);
+		} else
+		{
+			onBotRemoved(bot);
+		}
+	}
+	
+	
 	@Override
 	public void onBotAdded(ABot bot)
 	{
-		BotFullOverviewPanel botPanel = aiCenterPanel.getBotOverviewPanel();
+		if (bot.getNetworkState() == ENetworkState.OFFLINE)
+		{
+			return;
+		}
+		final BotFullOverviewPanel botPanel = aiCenterPanel.getBotOverviewPanel();
 		synchronized (botPanel)
 		{
-			botPanel.addBotPanel(bot.getBotId(), bot.getName());
+			botPanel.addBotPanel(bot.getBotID(), bot.getName());
 		}
 	}
 	
-
+	
 	@Override
 	public void onBotRemoved(ABot bot)
 	{
-		BotFullOverviewPanel botPanel = aiCenterPanel.getBotOverviewPanel();
+		final BotFullOverviewPanel botPanel = aiCenterPanel.getBotOverviewPanel();
 		synchronized (botPanel)
 		{
-			botPanel.removeAllBotPanels();
+			botPanel.removeBotPanel(bot.getBotID());
 		}
 	}
 	
-
+	
 	@Override
-	public void onBotIdChanged(int oldId, int newId)
+	public void onBotIdChanged(BotID oldId, BotID newId)
 	{
-		// Nothing to do here
+		final BotFullOverviewPanel botPanel = aiCenterPanel.getBotOverviewPanel();
+		synchronized (botPanel)
+		{
+			botPanel.updatePanels();
+		}
 	}
 	
-
+	
 	@Override
 	public void onLookAndFeelChanged()
 	{
@@ -317,55 +303,59 @@ public class AICenterPresenter implements ISumatraView, IModuliStateObserver, IA
 		});
 	}
 	
-
+	
 	// -------------------------------------------------------------------------
 	// --- ai observers --------------------------------------------------------
 	// -------------------------------------------------------------------------
-	
-	@Override
-	public void onNewFieldRaster(int columnSize, int rowSize, int columnSizeAnalysing, int rowSizeAnalysing)
-	{
-		// / Nothing to do here
-	}
-	
-
 	@Override
 	public void onNewAIInfoFrame(AIInfoFrame lastFrame)
 	{
-		// Update InformationPanel
-		InformationPanel informationPanel = aiCenterPanel.getInformationPanel();
-		informationPanel.setPlayBehavior(lastFrame.playStrategy.getMatchBehavior());
-		
-		// Update TacticalFieldControlPanel
-		TacticalFieldControlPanel tacticalFieldPanel = aiCenterPanel.getModulesPanel().getTacticalFieldControlPanel();
-		tacticalFieldPanel.setBallPossession(lastFrame.tacticalInfo.getBallPossesion());
-		tacticalFieldPanel.setClosestTeamToBall(lastFrame.tacticalInfo.getTeamClosestToBall());
-		
-		tacticalFieldPanel.setTigersScoringChance(lastFrame.tacticalInfo.getTigersScoringChance());
-		tacticalFieldPanel.setOpponentScoringChance(lastFrame.tacticalInfo.getOpponentScoringChance());
-		tacticalFieldPanel.setTigersApproximateScoringChance(lastFrame.tacticalInfo.getTigersApproximateScoringChance());
-		tacticalFieldPanel.setOpponentApproximateScoringChance(lastFrame.tacticalInfo.getOpponentApproximateScoringChance());
-
-		// still missing:
-//		lastFrame.tacticalFieldInfo.getDefGoalPoints();
-//		lastFrame.tacticalFieldInfo.getEnemiesOnOwnSubfield();
-//		lastFrame.tacticalFieldInfo.getOffCarrierPoints();
-//		lastFrame.tacticalFieldInfo.getOffLeftReceiverPoints();
-//		lastFrame.tacticalFieldInfo.getOffRightReceiverPoints();
-
-		// Update PlayPanel and bot:play
-		PlayControlPanel playPanel = aiCenterPanel.getModulesPanel().getPlayPanel();
-		
-		playPanel.setBotsWithoutRole(calcFreeBots(lastFrame));
-		
-		playPanel.setBestPlays(lastFrame.playStrategy.getBestPlays());
-		playPanel.setActivePlays(lastFrame.playStrategy.getActivePlays());
-		
-		BotFullOverviewPanel botPanel = aiCenterPanel.getBotOverviewPanel();
-		synchronized (botPanel)
+		final long now = System.nanoTime();
+		final long timePassed = now - start;
+		final long freq = TimeUnit.MILLISECONDS.toNanos(VISUALIZATION_FREQUENCY);
+		if (timePassed > freq)
 		{
-			illustrateBots(lastFrame, botPanel);
+			// Update InformationPanel
+			final InformationPanel informationPanel = aiCenterPanel.getInformationPanel();
+			informationPanel.setPlayBehavior(lastFrame.playStrategy.getMatchBehavior());
+			
+			// Update TacticalFieldControlPanel
+			final TacticalFieldControlPanel tacticalFieldPanel = aiCenterPanel.getModulesPanel()
+					.getTacticalFieldControlPanel();
+			tacticalFieldPanel.setBallPossession(lastFrame.tacticalInfo.getBallPossession());
+			tacticalFieldPanel.setClosestTeamToBall(lastFrame.tacticalInfo.getTeamClosestToBall());
+			tacticalFieldPanel.setBotLastTouchedBall(lastFrame.tacticalInfo.getBotLastTouchedBall());
+			
+			tacticalFieldPanel.setTigersScoringChance(lastFrame.tacticalInfo.getTigersScoringChance());
+			tacticalFieldPanel.setOpponentScoringChance(lastFrame.tacticalInfo.getOpponentScoringChance());
+			tacticalFieldPanel.setTigersApproximateScoringChance(lastFrame.tacticalInfo
+					.getTigersApproximateScoringChance());
+			tacticalFieldPanel.setOpponentApproximateScoringChance(lastFrame.tacticalInfo
+					.getOpponentApproximateScoringChance());
+			
+			// Update PlayPanel and bot:play
+			final PlayControlPanel playPanel = aiCenterPanel.getModulesPanel().getPlayPanel();
+			
+			playPanel.setBotsWithoutRole(calcFreeBots(lastFrame));
+			
+			playPanel.setActivePlays(lastFrame.playStrategy.getActivePlays());
+			
+			final BotFullOverviewPanel botPanel = aiCenterPanel.getBotOverviewPanel();
+			synchronized (botPanel)
+			{
+				illustrateBots(lastFrame, botPanel);
+			}
+			start = System.nanoTime();
 		}
+	}
+	
+	
+	@Override
+	public void onAIException(Exception ex, AIInfoFrame frame, AIInfoFrame prevFrame)
+	{
+		final InformationPanel informationPanel = aiCenterPanel.getInformationPanel();
+		informationPanel.setAIException(ex);
+		
 	}
 	
 	
@@ -374,28 +364,30 @@ public class AICenterPresenter implements ISumatraView, IModuliStateObserver, IA
 	
 	private void illustrateBots(AIInfoFrame lastAIInfoframe, BotFullOverviewPanel botPanel)
 	{
-		if (lastAssignmentCount != lastAIInfoframe.assignedRoles.values().size())
+		if (lastAssignmentCount != lastAIInfoframe.getAssigendERoles().size())
 		{
 			botPanel.clearBotViews();
 		}
 		
-		final WorldFrame wf = lastAIInfoframe.worldFrame;
-		for (Entry<Integer, ARole> entry : lastAIInfoframe.assignedRoles.entrySet())
+		for (final Entry<BotID, ARole> entry : lastAIInfoframe.getAssigendRoles())
 		{
-			ARole role = entry.getValue();
-			int botId = entry.getKey();
+			final ARole role = entry.getValue();
+			final BotID botId = entry.getKey();
+			final TrackedTigerBot bot = lastAIInfoframe.worldFrame.tigerBotsVisible.getWithNull(botId);
+			if (bot == null)
+			{
+				continue;
+			}
 			
-			BotOverviewPanel botOverview = botPanel.getBotPanel(botId);
+			final BotOverviewPanel botOverview = botPanel.getBotPanel(botId);
 			
 			if (botOverview != null)
 			{
-				// final long start = System.nanoTime();
 				botOverview.setRole(role);
-				// final long afterSetRole = System.nanoTime();
-				
+				botOverview.setState(role.getCurrentState());
 				// Gather condition status
 				final List<ACondition> newConditions = new ArrayList<ACondition>();
-				for (ACondition con : role.getConditions().values())
+				for (final ACondition con : role.getConditions().values())
 				{
 					if (con.getType() != ECondition.DESTINATION)
 					{
@@ -403,49 +395,35 @@ public class AICenterPresenter implements ISumatraView, IModuliStateObserver, IA
 					}
 				}
 				
-				botOverview.setConditions(role.checkAllConditions(lastAIInfoframe), newConditions);
-				// final long afterSetConditions = System.nanoTime();
+				botOverview.setConditions(role.checkAllConditions(lastAIInfoframe.worldFrame), newConditions);
 				
 				// Set destination condition
-				ACondition destCon = role.getConditions().get(ECondition.DESTINATION);
-				botOverview.calcDestinationStatus(role.getDestination(),
-						destCon == null ? null : destCon.checkCondition(wf));
+				final ACondition destCon = role.getConditions().get(ECondition.DESTINATION);
+				if ((destCon == null) || !destCon.isActive())
+				{
+					botOverview.calcDestinationStatus(Vector2.ZERO_VECTOR, EConditionState.DISABLED);
+				} else
+				{
+					botOverview.calcDestinationStatus(role.getDestination(),
+							destCon.checkCondition(lastAIInfoframe.worldFrame, botId));
+				}
+				botOverview.setBallContact(bot.hasBallContact());
 				
-				// final long afterSetDest = System.nanoTime();
-				//
-				// if (botId == 3)
-				// {
-				// if (i % 100 == 0)
-				// {
-				// final long durSetRole = afterSetRole - start;
-				// final long durSetConditions = afterSetConditions - afterSetRole;
-				// final long durSetDest = afterSetDest - afterSetConditions;
-				//
-				// System.out.println("############################################");
-				// System.out.println("SetRole:       " + df.format(durSetRole));
-				// System.out.println("SetConditions: " + df.format(durSetConditions));
-				// System.out.println("SetDest:       " + df.format(durSetDest));
-				// }
-				// i++;
-				// }
 			} else
 			{
-				log.fatal("Threading problems with '" + Thread.currentThread().getName() + "', notify Gero!");
+				log.warn("Bot overview panel for Bot " + botId.getNumber() + " does not exist!");
 			}
 		}
 		
-		lastAssignmentCount = lastAIInfoframe.assignedRoles.values().size();
+		lastAssignmentCount = lastAIInfoframe.getAssigendERoles().size();
 	}
 	
-
-	// private int i = 0;
-	// private final DecimalFormat df = new DecimalFormat("00,000,000,000");
 	
 	private int calcFreeBots(AIInfoFrame aiFrame)
 	{
-		int counter = aiFrame.worldFrame.tigerBots.size();
+		int counter = aiFrame.worldFrame.tigerBotsAvailable.size();
 		
-		for (APlay play : aiFrame.playStrategy.getActivePlays())
+		for (final APlay play : aiFrame.playStrategy.getActivePlays())
 		{
 			counter -= play.getRoles().size();
 		}
@@ -453,83 +431,49 @@ public class AICenterPresenter implements ISumatraView, IModuliStateObserver, IA
 		return counter;
 	}
 	
-
+	
 	@Override
 	public void onNewPath(Path path)
 	{
 		// Nothing to do here
 	}
 	
-
+	
 	// -------------------------------------------------------------------------
 	// --- skill-system observers ----------------------------------------------
 	// -------------------------------------------------------------------------
 	@Override
-	public void onSkillStarted(ASkill skill, int botID)
+	public void onSkillStarted(ASkill skill, BotID botID)
 	{
-		BotFullOverviewPanel allBotPanel = aiCenterPanel.getBotOverviewPanel();
+		final BotFullOverviewPanel allBotPanel = aiCenterPanel.getBotOverviewPanel();
 		synchronized (allBotPanel)
 		{
-			BotOverviewPanel botPanel = allBotPanel.getBotPanel(botID);
+			final BotOverviewPanel botPanel = allBotPanel.getBotPanel(botID);
 			if (botPanel == null)
 			{
 				return;
 			}
-			
-			switch (skill.getGroup())
-			{
-				case MOVE:
-					botPanel.setSkillMove(skill.getSkillName());
-					
-					break;
-				
-				case DRIBBLE:
-					botPanel.setSkillDribble(skill.getSkillName());
-					
-					break;
-				
-				case KICK:
-					botPanel.setSkillShooter(skill.getSkillName());
-					
-					break;
-			}
+			botPanel.setSkill(skill.getSkillName());
 		}
 	}
 	
-
+	
 	@Override
-	public void onSkillCompleted(ASkill skill, int botID)
+	public void onSkillCompleted(ASkill skill, BotID botID)
 	{
-		BotFullOverviewPanel allBotPanel = aiCenterPanel.getBotOverviewPanel();
+		final BotFullOverviewPanel allBotPanel = aiCenterPanel.getBotOverviewPanel();
 		synchronized (allBotPanel)
 		{
-			BotOverviewPanel botPanel = allBotPanel.getBotPanel(botID);
+			final BotOverviewPanel botPanel = allBotPanel.getBotPanel(botID);
 			if (botPanel == null)
 			{
 				return;
 			}
-			
-			switch (skill.getGroup())
-			{
-				case MOVE:
-					botPanel.unSetSkillMove();
-					
-					break;
-				
-				case DRIBBLE:
-					botPanel.unSetSkillDribble();
-					
-					break;
-				
-				case KICK:
-					botPanel.unSetSkillShooter();
-					
-					break;
-			}
+			botPanel.unSetSkill();
 		}
 	}
 	
-
+	
 	// -------------------------------------------------------------------------
 	// --- gui-controls --------------------------------------------------------
 	// -------------------------------------------------------------------------
@@ -538,16 +482,35 @@ public class AICenterPresenter implements ISumatraView, IModuliStateObserver, IA
 		return aiControl;
 	}
 	
-
+	
 	void sendControl()
 	{
-		aiAgent.onNewAthenaControl(aiControl);	//new AthenaControl(aiControl));
+		aiAgent.onNewAthenaControl(aiControl);
 	}
 	
-
+	
+	private ApollonControl getApollonControl()
+	{
+		return apollonControl;
+	}
+	
+	
+	private void sendApollonControl()
+	{
+		// aiAgent is null when Moduli isn't started. The Apollon Config is stored and send when Moduli is started.
+		aiCenterPanel.getModulesPanel().getApollonControlPanel().onNewApollonControl(apollonControl);
+		if (aiAgent != null)
+		{
+			aiAgent.onNewApollonControl(new ApollonControl(apollonControl));
+		}
+	}
+	
+	
 	// -------------------------------------------------------------------------
 	// --- state handling/IModulePanelObserver ---------------------------------
 	// -------------------------------------------------------------------------
+	
+	
 	private void changeGuiState(EAIControlState state)
 	{
 		aiControl.setControlState(state);
@@ -555,6 +518,8 @@ public class AICenterPresenter implements ISumatraView, IModuliStateObserver, IA
 		switch (aiControl.getControlState())
 		{
 			case MATCH_MODE:
+			case MIXED_TEAM_MODE:
+				sendApollonControl();
 				currentState = new MatchModeState(this);
 				aiCenterPanel.getModulesPanel().setMatchMode();
 				break;
@@ -579,7 +544,7 @@ public class AICenterPresenter implements ISumatraView, IModuliStateObserver, IA
 		currentState.init();
 	}
 	
-
+	
 	@Override
 	public void onMatchMode()
 	{
@@ -587,9 +552,19 @@ public class AICenterPresenter implements ISumatraView, IModuliStateObserver, IA
 		{
 			changeGuiState(EAIControlState.MATCH_MODE);
 		}
-	};
+	}
 	
-
+	
+	@Override
+	public void onMixedTeamMode()
+	{
+		if (aiControl.getControlState() != EAIControlState.MIXED_TEAM_MODE)
+		{
+			changeGuiState(EAIControlState.MIXED_TEAM_MODE);
+		}
+	}
+	
+	
 	@Override
 	public void onPlayTestMode()
 	{
@@ -599,7 +574,7 @@ public class AICenterPresenter implements ISumatraView, IModuliStateObserver, IA
 		}
 	}
 	
-
+	
 	@Override
 	public void onRoleTestMode()
 	{
@@ -609,7 +584,7 @@ public class AICenterPresenter implements ISumatraView, IModuliStateObserver, IA
 		}
 	}
 	
-
+	
 	@Override
 	public void onEmergencyMode()
 	{
@@ -620,22 +595,23 @@ public class AICenterPresenter implements ISumatraView, IModuliStateObserver, IA
 		
 	}
 	
-
+	
 	// -------------------------------------------------------------------------
+	
 	@Override
-	public void addPlay(EPlay play)
+	public void addNewPlay(EPlay play, int numRolesToAssign)
 	{
-		currentState.addPlay(play);
+		currentState.addNewPlay(play, numRolesToAssign);
 	}
 	
-
+	
 	@Override
-	public void removePlay(List<EPlay> oddPlays)
+	public void removePlay(APlay play)
 	{
-		currentState.removePlay(oddPlays);
+		currentState.removePlay(play);
 	}
 	
-
+	
 	@Override
 	public void forceNewDecision()
 	{
@@ -643,7 +619,6 @@ public class AICenterPresenter implements ISumatraView, IModuliStateObserver, IA
 	}
 	
 	
-
 	// -------------------------------------------------------------------------
 	
 	@Override
@@ -652,191 +627,107 @@ public class AICenterPresenter implements ISumatraView, IModuliStateObserver, IA
 		currentState.addRole(role);
 	}
 	
-
+	
 	@Override
-	public void addRole(ERole role, int botId)
+	public void addRole(ERole role, BotID botId)
 	{
 		currentState.addRole(role, botId);
 	}
 	
-
+	
 	@Override
 	public void removeRole(ERole role)
 	{
 		currentState.removeRole(role);
 	}
 	
-
+	
 	@Override
 	public void clearRoles()
 	{
 		currentState.clearRoles();
 	}
 	
-	// -------------------------------------------------------------------------
-	// --- menu handling -------------------------------------------------------
-	// -------------------------------------------------------------------------
 	
-	protected class LoadAIConfig implements ActionListener
-	{
-		private String	filename;
-		
-		
-		public LoadAIConfig(String filename)
-		{
-			this.filename = filename;
-		}
-		
-
-		@Override
-		public void actionPerformed(ActionEvent e)
-		{
-			AAgent.currentConfig = filename;
-			
-			if (aiAgent == null)
-			{
-				return;
-			}
-			
-			try
-			{
-				AIConfig.getInstance().loadAIConfig(AAgent.AI_CONFIG_PATH + filename);
-			} catch (LoadConfigException err)
-			{
-				log.error("Can't load AI-Config:" + AAgent.AI_CONFIG_PATH + filename);
-			}
-			
-			updateAIConfigMenu();
-		}
-	}
-	
-	protected class LoadTacticsConfig implements ActionListener
-	{
-		private String	filename;
-		
-		
-		public LoadTacticsConfig(String filename)
-		{
-			this.filename = filename;
-		}
-		
-
-		@Override
-		public void actionPerformed(ActionEvent e)
-		{
-			AAgent.currentTactics = filename;
-			
-			if (aiAgent == null)
-			{
-				return;
-			}
-			
-			try
-			{
-				AIConfig.getInstance().loadTacticsConfig(AAgent.TACTICS_CONFIG_PATH + filename);
-			} catch (LoadConfigException err)
-			{
-				log.error("Can't load Tactics-Config:" + AAgent.TACTICS_CONFIG_PATH + filename);
-			}
-			
-			updateTacticsConfigMenu();
-		}
-	}
-	
-	
-	private void updateAIConfigMenu()
-	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			public void run()
-			{
-				for (JMenuItem item : aiConfigs)
-				{
-					aiConfigMenu.remove(item);
-				}
-				
-				aiConfigs.clear();
-				
-				ButtonGroup group = new ButtonGroup();
-				File dir = new File(AAgent.AI_CONFIG_PATH);
-				File[] fileList = dir.listFiles();
-				for (File f : fileList)
-				{
-					if (!f.isHidden())
-					{
-						String name = f.getName();
-						
-						JMenuItem item = new JRadioButtonMenuItem(name);
-						group.add(item);
-						
-						if (AAgent.currentConfig != null && name.equals(AAgent.currentConfig))
-						{
-							item.setSelected(true);
-						}
-						
-						item.addActionListener(new LoadAIConfig(name));
-						
-						aiConfigs.add(item);
-						aiConfigMenu.add(item);
-					}
-				}
-			}
-		});
-	}
-	
-
-	private void updateTacticsConfigMenu()
-	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			public void run()
-			{
-				for (JMenuItem item : tacticsConfigs)
-				{
-					tacticsMenu.remove(item);
-				}
-				
-				tacticsConfigs.clear();
-				
-				ButtonGroup group = new ButtonGroup();
-				File dir = new File(AAgent.TACTICS_CONFIG_PATH);
-				File[] fileList = dir.listFiles();
-				for (File f : fileList)
-				{
-					if (!f.isHidden())
-					{
-						String name = f.getName();
-						
-						JMenuItem item = new JRadioButtonMenuItem(name);
-						group.add(item);
-						
-						if (AAgent.currentTactics != null && name.equals(AAgent.currentTactics))
-						{
-							item.setSelected(true);
-						}
-						
-						item.addActionListener(new LoadTacticsConfig(name));
-						
-						tacticsConfigs.add(item);
-						tacticsMenu.add(item);
-					}
-				}
-			}
-		});
-	}
-	
-
 	@Override
-	public void onShown()
+	public void onKnowledgeBaseNameChanged(String newName)
 	{
-		
+		getApollonControl().setKnowledgeBaseName(newName);
+		sendApollonControl();
 	}
 	
-
+	
 	@Override
-	public void onHidden()
+	public void onAcceptableMatchChanged(int newAccMatch)
+	{
+		double acceptableMatch = newAccMatch / 100;
+		getApollonControl().setAcceptableMatch(acceptableMatch);
+		sendApollonControl();
+	}
+	
+	
+	@Override
+	public void onDatabasePathChanged(String newPath)
+	{
+		getApollonControl().setDatabasePath(newPath);
+		sendApollonControl();
+	}
+	
+	
+	@Override
+	public void onPersistStrategyChanged(boolean merge)
+	{
+		getApollonControl().setPersistStrategyMerge(merge);
+		sendApollonControl();
+	}
+	
+	
+	@Override
+	public void onSaveOnCloseChanged(boolean saveOnClose)
+	{
+		getApollonControl().setSaveOnClose(saveOnClose);
+		sendApollonControl();
+	}
+	
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public ISumatraView getView()
+	{
+		return aiCenterPanel;
+	}
+	
+	
+	@Override
+	public void selectedCalculatorsChanged(List<String> values)
+	{
+		if (aiAgent != null)
+		{
+			List<ECalculator> calculators = new ArrayList<ECalculator>(values.size());
+			for (String value : values)
+			{
+				calculators.add(ECalculator.valueOf(value));
+			}
+			aiAgent.setActiveCalculators(calculators);
+		}
+	}
+	
+	
+	@Override
+	public void onSaveKbNow()
+	{
+		if (aiAgent != null)
+		{
+			aiAgent.onSaveKnowledgeBase();
+		}
+	}
+	
+	
+	@Override
+	public void onCleanKbNow()
 	{
 		
 	}
-	
 }

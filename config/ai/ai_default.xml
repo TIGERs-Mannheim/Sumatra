@@ -1,202 +1,171 @@
-<?xml version="1.0" encoding="ISO-8859-1" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <aiConfig>
-<!-- This contains general information about our robot, which is only used to do some calculations in the AI. THEY HAVE NOT EFFECT ON THE ACTUAL MOVEMENT! -->
-<general>
-		<!--This defines the keepers id which has to be fix during the whole game -->
-		<keeperId>1</keeperId>
-
-		<!-- [mm/s] -->
-		<maxVelocity>2000</maxVelocity>
-		<!-- [mm/s^2] (value from team ODENS) -->
-		<maxAcceleration>2627</maxAcceleration>
-		<!-- [mm/s^2] (value from team SUCK_MY_BALLZ feat. team tits) -->
-		<maxDeacceleration>750</maxDeacceleration>
-		<!--distance from a path point the bot must start to brake [mm] -->
-		<maxBreakingDist>800</maxBreakingDist>
-
-		<!-- [mm/s] -->
-		<maxShootVelocity>10000</maxShootVelocity>
-		<!-- [mm/s] -->
-		<maxPassVeloctiy>5000</maxPassVeloctiy>
-	</general>
-<!-- This contains information about the geometry of the field, the goals, the bots and the ball -->
-<geometry>
-		<!-- [mm] -->
-		<ballRadius>21.5</ballRadius>
-		<!-- [mm] -->
-		<botRadius>90</botRadius>
-		
-		<maintenancePosition>-100,2000</maintenancePosition>
-		
-		<field>
-			<!-- x [mm] -->
-			<length>6050</length>
-			<!-- y [mm] -->	
-			<width>4050</width>
-			<!-- goal width [mm] -->
-			<goalSize>700</goalSize>
-			<!-- distance goal line - penalty mark [mm] -->
-			<distanceToPenaltyMark>450</distanceToPenaltyMark>
-			<!-- radius of the two, small quarter circles at the sides of the penalty area. -->
-			<distanceToPenaltyArea>500</distanceToPenaltyArea>
-			<!-- the length of the short line of the penalty area, that is parallel to the goal line -->
-			<lengthOfPenaltyAreaFrontLine>350</lengthOfPenaltyAreaFrontLine>
-			<!-- The radius of the center circle ("Mittelkreis") [mm] -->
-			<centerCircleRadius>500</centerCircleRadius>
-			<!-- The center ("Mittelpunkt") -->
-			<center>0;0</center>
-		</field>
-	</geometry>
-<!-- This tolerances are used in conditions and skills to determine whether a action has been completed -->
-<tolerances>
-		<!--this tolerance value is used to check if a bot has reached its destination. 
-			[mm] -->
-		<positioning>30</positioning>
-		<!--this tolerance value is used to check if the viewing direction of the 
-			bot is correct. [deg] -->
-		<viewAngle>3</viewAngle>
-		<!--this tolerance value is used to check if the aiming of the bot is correct. 
-			[deg] -->
-		<aiming>3</aiming>
-		<!-- distance bot-ball when aim is considered done (bot and ball radius exclusive) [mm] -->
-		<nearBall>60</nearBall>
-		<!-- minimum distance bot-ball we need to be "am Ball". Used by GetBallAndAimSkill (and the roles using it) (bot and ball radius exclusive) [mm] -->
-		<nextToBall>-14.5</nextToBall>
-	</tolerances>
-<pathplanning>
-		<errt>
-			<!-- distance between 2 nodes [mm] -->
-			<stepSize>100</stepSize>
-			<!-- step size of the final path [mm] -->
-			<finalStepSize>100</finalStepSize>
-			<!-- defines how much iterations will at most be created -->
-			<maxIterations>2500</maxIterations>
-			<!-- defines how much clearance the path has to have to obstacles [mm] -->
-			<safetyDistance>200</safetyDistance>
-			<!-- defines how much clearance the path has to have to obstacles when checking old path[mm] -->
-			<safetyDistanceOldPath>150</safetyDistanceOldPath>
-			<!-- defines how much clearance the path has to have to obstacles when in 2nd round [mm] -->
-			<safetyDistance2Try>30</safetyDistance2Try>
-			<!-- probability to choose targetNode as next goal -->
-			<pDestination>0.1</pDestination>
-			<!-- probability to choose a waypoint as next goal -->
-			<pWaypoint>0.6</pWaypoint>
-			<!-- size of waypointcache -->
-			<sizeWaypointCache>50</sizeWaypointCache>
-			<!-- how much target can differ from target of last cycle to use WPC [mm] -->
-			<tollerableTargetShiftWPC>500</tollerableTargetShiftWPC>
-			<!-- how much target can differ from target of last cycle, so that oldPath still is checked [mm] -->
-			<tollerableTargetShift>200</tollerableTargetShift>
-		</errt>
-	</pathplanning>
-<fieldRaster>
-		<positioning>
-			<rows>2</rows>
-			<columns>4</columns>
-		</positioning>
-		<analysing>
-			<!-- valid values 2,4,6,8! -->
-			<factor>2</factor>
-		</analysing>
-	</fieldRaster>
-<gui>
-		<!--this value is used to describe a "far"-distance from a bot to its destination 
-			(used in aiGui). -->
-		<farDistance>1500</farDistance>
-		<!--when the distance is smaller than this a bot has reached its destination 
-			(used in aiGui). -->
-		<reachedDistance>20</reachedDistance>
-	</gui>
-<skillSystem>
-		<rotate>
-			<!-- [rad/s] -->
-			<maxTurnSpeed>10</maxTurnSpeed>
-			<!-- when below, rotation is considered to be done [rad/s] -->
-			<rotationSpeedThreshold>0.1</rotationSpeedThreshold>
-			<kP>1.5</kP>
-			<kI>0.0</kI>
-			<kD>0.0</kD>
-		</rotate>
-		<!-- The following parameters influence the behavior of the move commands which are NOT based on AMoveSkillV2!!! -->
-		<moveTo>
-			<!-- [m/s] -->
-			<maxVelocity>3.000f</maxVelocity>
-			<!-- [m/s] -->
-			<maxDeceleration>2.5</maxDeceleration>
-			<!-- when below, move is considered to be done [m/s] -->
-			<moveSpeedThreshold>0.2</moveSpeedThreshold>
-			<!-- use spline-smoothed paths for moving -->
-			<useSplines>no</useSplines>
-			<!-- whether the ball is considered as an obstacle in pathplanning -->
-			<ballAsObstacle>true</ballAsObstacle>
-			<!-- setpoint = currentVel + accelerationInc  [m/s] -->
-			<accelerationInc>1.0f</accelerationInc>
-		</moveTo>
-		<dribble>
-		<!-- max velocity of dribble bar [rpm] -->
-			<refRPM>20000</refRPM>
-		</dribble>
-		<kicker>
-			<!-- friction between ball and green when sliding [1]-->
-			<ballFrictionSlide>0.50f</ballFrictionSlide>
-			<!-- friction between ball and green when rolling [1]-->
-			<ballFrictionRoll>0.025</ballFrictionRoll>
-			<!-- the smallest duration, which results in the fastest shoot[us] -->
-			<refFiringDuration>2000</refFiringDuration>
-			<!-- the velocity of the ball at refFiringDuration [m/s]-->
-			<refVelocity>9.0f</refVelocity>
-			<!-- percentage of start velocity at which the ball begins to roll [%] -->
-			<edgeFactor>0.5f</edgeFactor>
-		</kicker>
-		<move>
-			<maxXAccel>
-				<beg>0.0;0.4</beg>
-				<mid>1.0;0.6</mid>
-				<end>3.0;0.0</end>
-			</maxXAccel>
-			<maxYAccel>
-				<beg>0.0;0.4</beg>
-				<mid>1.0;0.6</mid>
-				<end>3.0;0.0</end>
-			</maxYAccel>
-			<maxXDeccel>
-				<beg>0.0;0.5</beg>
-				<mid>1.0;1.2</mid>
-				<end>5.0;0.3</end>
-			</maxXDeccel>
-			<maxYDeccel>
-				<beg>0.0;0.5</beg>
-				<mid>1.0;1.2</mid>
-				<end>5.0;0.3</end>
-			</maxYDeccel>
-			<pidVelo>
-				<kp>1.5</kp>
-				<ki>0.1</ki>
-				<kd>0.0</kd>
-				<max>2.0</max>
-				<slew>0.1</slew>
-			</pidVelo>
-			<pidOrient>
-				<kp>2.0</kp>
-				<ki>0.05</ki>
-				<kd>0.0</kd>
-				<max>2.0</max>
-				<slew>0.2</slew>
-			</pidOrient>
-		</move>
-	</skillSystem>
-<calculators>
-		<ballPossession>
-			<minDistanceToBot>100</minDistanceToBot>
-		</ballPossession>
-		<defenseGoalPoints>
-			<numberOfThreadPoints>8</numberOfThreadPoints>
-			<delay>0.0</delay>
-			<directShootQuantifier>3</directShootQuantifier>
-			<indirectShootQuantifier>1</indirectShootQuantifier>
-		</defenseGoalPoints>
-	</calculators>
-<athenaConfig>
-		<playFinderActive>false</playFinderActive>
-	</athenaConfig>
+    <tactics>
+        <!-- Tactical Orientation. AGGRESSIVE, DEFENSIVE or NOT_DEFINED -->
+        <tacticalOrientation>AGGRESSIVE</tacticalOrientation>
+    </tactics>
+    <!-- role specific params -->
+    <roles>
+        <!-- ball velocity at shoot destination -->
+        <passSenderBallEndVel>2.0f</passSenderBallEndVel>
+        <!-- ball speed correction that will be added to expected ball velocity of incoming ball -->
+        <indirectReceiverBallVelCorrection>0f</indirectReceiverBallVelCorrection>
+        <!-- max angle in [deg] that the indirect receiver should aim for -->
+        <indirectReceiverMaxAngle>70</indirectReceiverMaxAngle>
+        <!-- Ball will first touch ground at distance * factor at a chip pass -->
+        <chipPassDistFactor>0.7f</chipPassDistFactor>
+        <!-- Defense Roles -->
+        <DEFENDER_K1D>
+            <GAP>130</GAP>
+            <RADIUS>800</RADIUS>
+        </DEFENDER_K1D>
+        <KEEPER_K1D>
+            <GAP>160</GAP>
+            <RADIUS>500</RADIUS>
+        </KEEPER_K1D>
+        <DEFENDER_K2D>
+            <!-- 'vertical' gap between defender and keeper -->
+            <SPACE_BEFORE_KEEPER>300</SPACE_BEFORE_KEEPER>
+            <!-- 'horizontal' gap between defender and keeper -->
+            <SPACE_BESIDE_KEEPER>200</SPACE_BESIDE_KEEPER>
+        </DEFENDER_K2D>
+        <KEEPER_K2D>
+            <RADIUS>100</RADIUS>
+        </KEEPER_K2D>
+        <KEEPER_SOLO>
+            <RADIUS>100</RADIUS>
+        </KEEPER_SOLO>
+        <!-- Offense Roles -->
+        <INDIRECT_SHOOTER>
+            <MEMORYSIZE>2</MEMORYSIZE>
+            <TRIES_PER_CYCLE>10</TRIES_PER_CYCLE>
+        </INDIRECT_SHOOTER>
+        <SHOOTER>
+            <MEMORYSIZE>2</MEMORYSIZE>
+            <TRIES_PER_CYCLE>10</TRIES_PER_CYCLE>
+        </SHOOTER>
+    </roles>
+    <plays>
+        <TEC_SHOOT_CHAL_TEST>
+            <!-- one of TIGERS or OPPONENTS -->
+            <teamside>OPPONENTS</teamside>
+            <!-- speed of the moving bots -->
+            <speed>1.0f</speed>
+        </TEC_SHOOT_CHAL_TEST>
+        <NDEFENDER>
+            <blockmodus>true</blockmodus>
+            <radiusToProtect>400</radiusToProtect>
+            <ballSpeedToProtect>1</ballSpeedToProtect>
+        </NDEFENDER>
+        <KEEPERSOLO>
+            <vector>
+                <initx>-2000.0</initx>
+                <inity>1500</inity>
+            </vector>
+        </KEEPERSOLO>
+    </plays>
+    <pathplanning>
+        <errt>
+            <!-- distance between 2 nodes [mm] -->
+            <stepSize>200</stepSize>
+            <!-- step size of the final path [mm] -->
+            <finalStepSize>100</finalStepSize>
+            <!-- defines how much iterations will at most be created -->
+            <maxIterations>250</maxIterations>
+            <!-- defines how much clearance the path has to have to obstacles [mm] -->
+            <safetyDistance>50</safetyDistance>
+            <!-- defines how much clearance the path has to have to obstacles when 
+				checking old path[mm] -->
+            <safetyDistanceOldPath>150</safetyDistanceOldPath>
+            <!-- defines how much clearance the path has to have to obstacles when 
+				in 2nd round [mm] -->
+            <safetyDistance2Try>30</safetyDistance2Try>
+            <!-- probability to choose targetNode as next goal -->
+            <safetyDistanceBall>50</safetyDistanceBall>
+            <!-- probability to choose targetNode as next goal -->
+            <pDestination>0.2</pDestination>
+            <!-- probability to choose a waypoint as next goal -->
+            <pWaypoint>0.7</pWaypoint>
+            <!-- size of waypointcache -->
+            <sizeWaypointCache>50</sizeWaypointCache>
+            <!-- how much target can differ from target of last cycle to use WPC [mm] -->
+            <tollerableTargetShiftWPC>500</tollerableTargetShiftWPC>
+            <!-- how much target can differ from target of last cycle, so that oldPath 
+				still is checked [mm] -->
+            <tollerableTargetShift>50</tollerableTargetShift>
+        </errt>
+        <optimization>
+            <!-- Points on a path with a combined angle*distance score below this 
+				value will be removed -->
+            <pathReductionScore>0.0</pathReductionScore>
+            <!-- how much is the bot allowed to differ from the current spline until 
+				a new spline is calculated[mm] -->
+            <allowedDistanceToSpline>200</allowedDistanceToSpline>
+            <!-- if the new calculated path is faster by this amount of time it will 
+				replace the old path [s] -->
+            <useShorterPathIfFaster>0.5</useShorterPathIfFaster>
+            <collisionDetection>
+                <!-- the first seconds of the spline are ignored by the collision detection. 
+					So it is possible to drive away from another bot or ball -->
+                <ignoreFirstSeconds>0.3</ignoreFirstSeconds>
+                <!-- the last seconds of the spline are ignored by the collision detection. 
+					So it is possible to drive to another bot or ball -->
+                <ignoreLastSeconds>0.0</ignoreLastSeconds>
+                <!-- maximum amount of iterations done by the collision detection (started 
+					at the position of the bot) -->
+                <collisionIterationsMaximum>10</collisionIterationsMaximum>
+                <!-- step size of iterations done by the collision detection (started 
+					at the position of the bot) -->
+                <collisionIterationsStepSize>0.1</collisionIterationsStepSize>
+            </collisionDetection>
+        </optimization>
+    </pathplanning>
+    <calculators>
+        <ballPossession>
+            <minDistanceToBot>150</minDistanceToBot>
+        </ballPossession>
+        <defenseGoalPoints>
+            <numberOfThreadPoints>12</numberOfThreadPoints>
+            <delay>0.0</delay>
+            <directShootQuantifier>6</directShootQuantifier>
+            <ballQuantifier>30</ballQuantifier>
+            <indirectShootQuantifier>20</indirectShootQuantifier>
+            <indirectShootDistance>1000</indirectShootDistance>
+            <!--Gibt an umwieviel die Defender vor der PenaltyArea stehen soll (+botradius)-->
+            <scalingFactorDefense>200</scalingFactorDefense>
+            <!--Gibt Toleranc an umwieviel das Tor beim berechnen vergrößert werden soll -->
+            <toleranceGoal>50</toleranceGoal>
+        </defenseGoalPoints>
+        <patterdetection>
+            <logfile>./config/metis/patterns.config</logfile>
+        </patterdetection>
+        <fieldRaster>
+            <main>
+                <positioning>
+                    <rows>2</rows>
+                    <columns>4</columns>
+                </positioning>
+                <analysing>
+                    <!-- Changing factor between Sumatra is running creates an Exception !-->
+                    <!-- valid values 2,4,6,8! -->
+                    <factor>16</factor>
+                    <!-- Manalobis(1)/Standard(2) -->
+                    <kind>1</kind>
+                    <!-- Mode: GPU(1) or CPU(2)-->
+                    <mode>2</mode>
+                </analysing>
+            </main>
+            <playfinder>
+                <positioning>
+                    <rows>2</rows>
+                    <columns>4</columns>
+                </positioning>
+                <analysing>
+                    <factor>4</factor>
+                    <kind>1</kind>
+                    <mode>2</mode>
+                </analysing>
+            </playfinder>
+        </fieldRaster>
+    </calculators>
 </aiConfig>

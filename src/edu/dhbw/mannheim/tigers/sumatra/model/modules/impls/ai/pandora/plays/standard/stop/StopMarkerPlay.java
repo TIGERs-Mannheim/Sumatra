@@ -9,80 +9,84 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.standard.stop;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Circle;
+import java.util.LinkedList;
+import java.util.List;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.Circle;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.APlay;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.EWAI;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.standard.AStandardPlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense.ManToManMarkerRole;
 
 
 /**
- * Two bots will form a block in a distance of 500 mm to the ball in order to
- * protect the goal after the game is stopped by the referee
+ * Our bot will block one opponent pass receiver.
  * @author FlorianS
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  * 
  */
-public class StopMarkerPlay extends APlay
+public class StopMarkerPlay extends AStandardPlay
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	/**  */
-	private static final long	serialVersionUID		= -3177342585857911649L;
-//	private final Goal			goal						= AIConfig.getGeometry().getGoalOur();
-//	private final Vector2f		US_GOAL_MID				= goal.getGoalCenter();
-//	private final float			BOT_RADIUS				= AIConfig.getGeometry().getBotRadius();
-//	private final float			SPACE_BETWEEN_BOTS	= AIConfig.getPlays().getPositioningOnStoppedPlayWithTwo()
-//																			.getSpaceBetweenBots();
-//	
-//	private Vector2				ballPos;
-//	private Vector2				direction;
-//	
-//	private float					radius;
-//	private float					turnAngle;
-//	
-//	private MoveRole				leftBlocker;
-	private ManToManMarkerRole				marker;
-	private ManToManMarkerRole				marker1;
+	/** distance between middle line and the line, the bot is not allowed to cross */
+	private static final float			DISTANCE_TO_MEDIAN	= -200;
+	/** gap between bot and target */
+	private static final float			GAP						= 150;
 	
+	private List<ManToManMarkerRole>	markers					= new LinkedList<ManToManMarkerRole>();
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	public StopMarkerPlay(AIInfoFrame aiFrame)
+	/**
+	 * @param aiFrame
+	 * @param numAssignedRoles
+	 */
+	public StopMarkerPlay(AIInfoFrame aiFrame, int numAssignedRoles)
 	{
-		super(EPlay.STOP_MARKER, aiFrame);
-//		Vector2 initPos = new Vector2(AIConfig.getGeometry().getCenter());
+		super(aiFrame, numAssignedRoles);
 		
-		marker1 = new ManToManMarkerRole(EWAI.FIRST);
-		addAggressiveRole(marker1);	//, initPos.addY(500));
-		marker = new ManToManMarkerRole(EWAI.FIRST);
-		addAggressiveRole(marker);	//, initPos.addY(-1000));
+		// theoretically dynamic, but we only have one opponent pass receiver, so only one role is useful
+		for (int i = 0; i < getNumAssignedRoles(); i++)
+		{
+			ManToManMarkerRole marker = new ManToManMarkerRole(new Vector2());
+			marker.setMaxLength(DISTANCE_TO_MEDIAN);
+			marker.setGap(GAP);
+			addAggressiveRole(marker, aiFrame.tacticalInfo.getOpponentPassReceiver().getPos());
+			markers.add(marker);
+		}
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
 	@Override
 	protected void beforeUpdate(AIInfoFrame currentFrame)
 	{
-//		radiuson = US_GOAL_MID.subtractNew(ballPos);
-		
-//		leftBlocker.updateCirclePos(ballPos, radius, direction);
-		marker.updateTarget(currentFrame.tacticalInfo.getOpponentPassReceiver());
-		marker.setForbiddenCircle(new Circle(currentFrame.worldFrame.ball.pos, 500+AIConfig.getGeometry().getBotRadius()));
-		
-		marker1.updateTarget(currentFrame.tacticalInfo.getDangerousOpponents().get(2));
-		marker1.setForbiddenCircle(new Circle(currentFrame.worldFrame.ball.pos, 500+AIConfig.getGeometry().getBotRadius()));
+		for (ManToManMarkerRole marker : markers)
+		{
+			marker.updateTarget(currentFrame.tacticalInfo.getOpponentPassReceiver());
+			final float botBallDistanceStop = AIConfig.getGeometry().getBotToBallDistanceStop();
+			marker.setForbiddenCircle(new Circle(currentFrame.worldFrame.ball.getPos(), botBallDistanceStop
+					+ AIConfig.getGeometry().getBotRadius()));
+		}
 	}
 	
-
+	
+	@Override
+	protected void afterUpdate(AIInfoFrame currentFrame)
+	{
+		// nothing todo
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------

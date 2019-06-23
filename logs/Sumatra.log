@@ -1,0 +1,1802 @@
+22:56:38,210 DEBUG [main|SumatraModel] new user file created
+22:56:39,403 INFO  [main|ControllerFactory] Controller found: HID-Tastatur
+22:56:39,404 INFO  [main|ControllerFactory] Controller found: HID-konforme Maus
+22:56:39,404 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+22:56:39,404 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+22:56:39,404 INFO  [main|ControllerFactory] Controller found: USB Audio
+22:56:39,404 INFO  [main|ControllerFactory] Controller found: HID-konformes Benutzersteuergerät
+22:56:39,404 INFO  [main|ControllerFactory] Controller found: HID-konformes Gerät
+22:56:40,066 INFO  [main|RCMPresenter] 7 controllers found.
+22:56:40,104 DEBUG [main|MessageConnection] New MessageConnection
+22:56:40,185 INFO  [main|ACallback] subscribed to REGISTRY
+22:56:40,185 INFO  [main|ACallback] subscribed to AI_REGISTRY
+22:56:40,185 INFO  [main|ACallback] subscribed to MODULI_REGISTRY
+22:56:40,185 INFO  [main|ACallback] subscribed to APOLLON_REGISTRY
+22:56:40,185 INFO  [main|ACallback] subscribed to LACHESIS_REGISTRY
+22:56:40,185 INFO  [main|ACallback] subscribed to ATHENA_REGISTRY
+22:56:40,186 INFO  [main|ACallback] subscribed to LOG_REGISTRY
+22:56:40,186 INFO  [main|ACallback] subscribed to TIMER_REGISTRY
+22:56:40,186 INFO  [main|ACallback] subscribed to EMERGENCY_REGISTRY
+22:56:40,187 INFO  [main|ACallback] subscribed to REFEREE_REGISTRY
+22:56:40,187 INFO  [main|ACallback] subscribed to RCM_REGISTRY
+22:56:40,187 INFO  [main|ACallback] subscribed to WF_REGISTRY
+22:56:40,187 INFO  [main|ACallback] subscribed to TEST_REGISTRY
+22:56:40,187 DEBUG [main|MessageConnection] messaging host: localhost; port: 1883
+22:56:41,253 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+22:56:42,257 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+22:56:43,263 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+22:56:44,268 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+22:56:45,272 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+22:56:46,275 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+22:56:46,275 INFO  [main|ACallback] subscribed to BOT_ACTION_COMMAND
+22:56:46,276 INFO  [main|ACallback] subscribed to LIFE_SIGN
+22:56:46,292 DEBUG [main|MainPresenter] Loading moduli config: moduli_sim.xml
+22:56:46,391 INFO  [main|SSLVisionCam] No nif for vision-cam specified, will try all.
+22:56:46,521 INFO  [main|RefereeReceiver] Chose nif for referee: Software Loopback Interface 1.
+22:56:46,653 DEBUG [main|RobotControlManager] rcm instatiated!
+22:56:46,665 DEBUG [main|ConfigManager] Loaded config for 'Bot Config': bots_default.xml
+22:56:46,920 DEBUG [main|ConfigManager] Loaded config for 'AI Config': ai_default.xml
+22:56:46,954 DEBUG [main|ConfigManager] Loaded config for 'Team Config': yellow_default.xml
+22:56:46,957 DEBUG [main|ConfigManager] Loaded config for 'Geometry': RoboCup_2012.xml
+22:56:46,977 DEBUG [main|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+22:56:47,101 INFO  [main|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+22:56:47,223 INFO  [main|BaseStation] Chose nif for base station: Software Loopback Interface 1.
+22:56:47,270 DEBUG [main|MainPresenter] Loaded config: moduli_sim.xml
+22:56:47,270 DEBUG [main|MainPresenter] Loading layout: Overview.ly
+22:56:47,271 DEBUG [main|MainPresenter] Loaded layout: ./config/gui/Overview.ly
+22:57:19,076 DEBUG [ModuliStateChanged|SSLVisionCam] Initialized.
+22:57:19,076 DEBUG [ModuliStateChanged|Oracle_extKalman] Initialized.
+22:57:19,086 DEBUG [ModuliStateChanged|RefereeHandler] Initialized.
+22:57:19,086 DEBUG [ModuliStateChanged|GenericManager] Initialized.
+22:57:19,086 DEBUG [ModuliStateChanged|GenericSkillSystem] Initialized.
+22:57:19,086 DEBUG [ModuliStateChanged|RobotControlManager] Initialized.
+22:57:19,086 DEBUG [ModuliStateChanged|Agent] Initialized.
+22:57:19,086 DEBUG [ModuliStateChanged|Timer] Initialized.
+22:57:19,087 DEBUG [Dormouse|Dormouse] Dormouse started...
+22:57:19,260 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Found 35 network interfaces
+22:57:19,265 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Using network interface: Software Loopback Interface 1 with MTU -1
+22:57:19,265 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+22:57:19,268 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: WAN Miniport (SSTP)
+22:57:19,271 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: WAN Miniport (L2TP)
+22:57:19,274 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: WAN Miniport (PPTP)
+22:57:19,277 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: WAN Miniport (PPPOE)
+22:57:19,280 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: WAN Miniport (IPv6)
+22:57:19,283 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: WAN Miniport (Network Monitor)
+22:57:19,286 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: WAN Miniport (IP)
+22:57:19,289 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: RAS Async Adapter
+22:57:19,293 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Using network interface: Realtek PCIe GBE Family Controller with MTU 1500
+22:57:19,416 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+22:57:19,418 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: Microsoft-ISATAP-Adapter
+22:57:19,419 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: Teredo Tunneling Pseudo-Interface
+22:57:19,422 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: WAN Miniport (IKEv2)
+22:57:19,427 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: Remote NDIS based Internet Sharing Device
+22:57:19,429 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: Microsoft-ISATAP-Adapter #2
+22:57:19,432 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: Remote NDIS based Internet Sharing Device - Deterministic Network Enhancer Miniport
+22:57:19,435 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: WAN-Miniport (Netzwerkmonitor) - Deterministic Network Enhancer Miniport
+22:57:19,438 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: WAN-Miniport (IP) - Deterministic Network Enhancer Miniport
+22:57:19,441 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: Realtek PCIe GBE Family Controller - Deterministic Network Enhancer Miniport
+22:57:19,444 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: Cisco Systems VPN Adapter for 64-bit Windows
+22:57:19,447 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: Cisco Systems VPN Adapter for 64-bit Windows - Deterministic Network Enhancer Miniport
+22:57:19,449 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: Microsoft-ISATAP-Adapter #3
+22:57:19,452 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: Microsoft-6zu4-Adapter
+22:57:19,455 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: Remote NDIS based Internet Sharing Device - VirtualBox Bridged Networking Driver Miniport
+22:57:19,458 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: Realtek PCIe GBE Family Controller - VirtualBox Bridged Networking Driver Miniport
+22:57:19,462 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Using network interface: VirtualBox Host-Only Ethernet Adapter with MTU 1500
+22:57:19,702 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+22:57:19,705 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: VirtualBox Host-Only Ethernet Adapter - Deterministic Network Enhancer Miniport
+22:57:19,708 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: Cisco Systems VPN Adapter for 64-bit Windows - VirtualBox Bridged Networking Driver Miniport
+22:57:19,711 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: WAN-Miniport (Netzwerkmonitor) - Deterministic Network Enhancer Miniport-QoS Packet Scheduler-0000
+22:57:19,714 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: WAN-Miniport (IP) - Deterministic Network Enhancer Miniport-QoS Packet Scheduler-0000
+22:57:19,717 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: WAN Miniport (IPv6)-QoS Packet Scheduler-0000
+22:57:19,720 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: VirtualBox Host-Only Ethernet Adapter - Deterministic Network Enhancer Miniport-QoS Packet Scheduler-0000
+22:57:19,723 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: VirtualBox Host-Only Ethernet Adapter - Deterministic Network Enhancer Miniport-WFP LightWeight Filter-0000
+22:57:19,725 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: Realtek PCIe GBE Family Controller - VirtualBox Bridged Networking Driver Miniport-QoS Packet Scheduler-0000
+22:57:19,728 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Filtered network interface: Realtek PCIe GBE Family Controller - VirtualBox Bridged Networking Driver Miniport-WFP LightWeight Filter-0000
+22:57:19,729 DEBUG [ModuliStateChanged|SSLVisionCam] Started.
+22:57:19,734 DEBUG [ModuliStateChanged|Oracle_extKalman] Started.
+22:57:19,735 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+22:57:19,735 DEBUG [ModuliStateChanged|RefereeHandler] Started.
+22:57:19,741 DEBUG [ModuliStateChanged|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+22:57:19,862 INFO  [ModuliStateChanged|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+22:57:19,979 INFO  [ModuliStateChanged|BaseStation] Chose nif for base station: Software Loopback Interface 1.
+22:57:19,988 DEBUG [Receiver UDP null:-1|ReceiverUDP] Receive buffer size set to: 8192
+22:57:19,991 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] Receive buffer size set to: 8192
+22:57:19,991 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Marvin (BotID [team=TIGERS, number=0])
+22:57:19,992 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+22:57:19,992 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Eddie (BotID [team=TIGERS, number=1])
+22:57:19,992 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] Receive buffer size set to: 8192
+22:57:19,993 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+22:57:19,993 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Arthur (BotID [team=TIGERS, number=2])
+22:57:19,993 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] Receive buffer size set to: 8192
+22:57:19,994 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+22:57:19,995 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Baze (BotID [team=TIGERS, number=3])
+22:57:19,995 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: R2D2 (BotID [team=TIGERS, number=4])
+22:57:19,996 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] Receive buffer size set to: 8192
+22:57:19,996 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] Receive buffer size set to: 8192
+22:57:19,996 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+22:57:19,997 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+22:57:19,997 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: WallE (BotID [team=TIGERS, number=5])
+22:57:19,997 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] Receive buffer size set to: 8192
+22:57:19,997 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+22:57:19,999 DEBUG [ModuliStateChanged|GenericManager] Started.
+22:57:20,002 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=0]
+22:57:20,002 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=1]
+22:57:20,002 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=2]
+22:57:20,003 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=3]
+22:57:20,003 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=4]
+22:57:20,003 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=5]
+22:57:20,004 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=6]
+22:57:20,004 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=7]
+22:57:20,004 DEBUG [ModuliStateChanged|GenericSkillSystem] Started.
+22:57:20,004 DEBUG [ModuliStateChanged|RobotControlManager] Started.
+22:57:20,155 DEBUG [ModuliStateChanged|IndirectShotV2Play] Receiver: BotID [team=TIGERS, number=0]
+22:57:20,181 DEBUG [ModuliStateChanged|Agent] PlayFactory check done!
+22:57:20,188 DEBUG [ModuliStateChanged|Agent] Started.
+22:57:20,188 DEBUG [ModuliStateChanged|Timer] Started.
+22:57:20,367 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface Realtek PCIe GBE Family Controller
+22:57:20,988 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface VirtualBox Host-Only Ethernet Adapter
+22:57:21,609 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface Software Loopback Interface 1
+22:57:22,000 INFO  [AutoCharge|GenericManager] Auto charging bots
+22:57:22,000 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+22:57:22,000 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+22:57:22,001 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+22:57:22,001 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+22:57:22,001 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+22:57:22,000 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+22:57:22,229 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface Realtek PCIe GBE Family Controller
+22:57:22,852 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface VirtualBox Host-Only Ethernet Adapter
+22:57:23,476 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface Software Loopback Interface 1
+22:57:24,097 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface Realtek PCIe GBE Family Controller
+22:57:24,722 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface VirtualBox Host-Only Ethernet Adapter
+22:57:25,343 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface Software Loopback Interface 1
+22:57:25,967 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface Realtek PCIe GBE Family Controller
+22:57:26,584 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface VirtualBox Host-Only Ethernet Adapter
+22:57:27,215 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface Software Loopback Interface 1
+22:57:27,833 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface Realtek PCIe GBE Family Controller
+22:57:28,457 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface VirtualBox Host-Only Ethernet Adapter
+22:57:29,079 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface Software Loopback Interface 1
+22:57:29,702 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface Realtek PCIe GBE Family Controller
+22:57:30,323 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface VirtualBox Host-Only Ethernet Adapter
+22:57:30,945 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface Software Loopback Interface 1
+22:57:31,566 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface Realtek PCIe GBE Family Controller
+22:57:32,186 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface VirtualBox Host-Only Ethernet Adapter
+22:57:32,808 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface Software Loopback Interface 1
+22:57:33,440 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface Realtek PCIe GBE Family Controller
+22:57:34,060 DEBUG [SSLVisionCam|MulticastUDPReceiver] Socket timed out on iface VirtualBox Host-Only Ethernet Adapter
+22:57:34,154 DEBUG [AWT-EventQueue-0|MainPresenter] Saved configuration to: .\config\user\Fuchur_rYan.props
+22:57:34,154 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+22:57:34,154 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+22:57:34,154 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+22:57:34,154 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+22:57:34,154 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+22:57:34,154 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+22:57:34,155 DEBUG [AWT-EventQueue-0|SSLVisionCam] Stopped.
+22:57:34,155 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Stopped.
+22:57:34,155 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+22:57:34,155 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+22:57:34,155 DEBUG [AWT-EventQueue-0|RefereeHandler] Stopped.
+22:57:34,255 INFO  [Receiver UDP /127.0.0.1:10020|ReceiverUDP] UDP transceiver terminating
+22:57:34,262 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Marvin (BotID [team=TIGERS, number=0])
+22:57:34,363 INFO  [Receiver UDP /127.0.0.1:10021|ReceiverUDP] UDP transceiver terminating
+22:57:34,363 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Eddie (BotID [team=TIGERS, number=1])
+22:57:34,463 INFO  [Receiver UDP /127.0.0.1:10022|ReceiverUDP] UDP transceiver terminating
+22:57:34,463 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Arthur (BotID [team=TIGERS, number=2])
+22:57:34,563 INFO  [Receiver UDP /127.0.0.1:10023|ReceiverUDP] UDP transceiver terminating
+22:57:34,563 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Baze (BotID [team=TIGERS, number=3])
+22:57:34,663 INFO  [Receiver UDP /127.0.0.1:10024|ReceiverUDP] UDP transceiver terminating
+22:57:34,663 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: R2D2 (BotID [team=TIGERS, number=4])
+22:57:34,763 INFO  [Receiver UDP /127.0.0.1:10025|ReceiverUDP] UDP transceiver terminating
+22:57:34,763 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: WallE (BotID [team=TIGERS, number=5])
+22:57:34,871 INFO  [Receiver UDP null:-1|ReceiverUDP] UDP transceiver terminating
+22:57:34,871 DEBUG [AWT-EventQueue-0|GenericManager] Stopped.
+22:57:34,874 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Stopped.
+22:57:34,874 DEBUG [AWT-EventQueue-0|RobotControlManager] Stopped.
+22:57:34,874 DEBUG [AWT-EventQueue-0|Agent] Stopped.
+22:57:34,874 DEBUG [AWT-EventQueue-0|Timer] Stopped.
+22:57:34,874 DEBUG [Dormouse|Dormouse] Dormouse stopped.
+22:57:34,924 DEBUG [AWT-EventQueue-0|SSLVisionCam] Deinitialized.
+22:57:34,924 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Deinitialized.
+22:57:34,924 DEBUG [AWT-EventQueue-0|GenericManager] Deinitialized.
+22:57:34,924 DEBUG [WP_Director|Director] Interrupted while waiting for new CamDetectionFrame.
+22:57:34,924 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Deinitialized.
+22:57:34,924 DEBUG [AWT-EventQueue-0|Agent] Deinitialized.
+22:57:34,924 DEBUG [AWT-EventQueue-0|Timer] Deinitialized.
+23:01:25,530 INFO  [main|ControllerFactory] Controller found: HID-Tastatur
+23:01:25,531 INFO  [main|ControllerFactory] Controller found: HID-konforme Maus
+23:01:25,531 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+23:01:25,531 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+23:01:25,531 INFO  [main|ControllerFactory] Controller found: USB Audio
+23:01:25,531 INFO  [main|ControllerFactory] Controller found: HID-konformes Benutzersteuergerät
+23:01:25,531 INFO  [main|ControllerFactory] Controller found: HID-konformes Gerät
+23:01:26,172 INFO  [main|RCMPresenter] 7 controllers found.
+23:01:26,209 DEBUG [main|MessageConnection] New MessageConnection
+23:01:26,291 INFO  [main|ACallback] subscribed to REGISTRY
+23:01:26,291 INFO  [main|ACallback] subscribed to AI_REGISTRY
+23:01:26,291 INFO  [main|ACallback] subscribed to MODULI_REGISTRY
+23:01:26,291 INFO  [main|ACallback] subscribed to APOLLON_REGISTRY
+23:01:26,291 INFO  [main|ACallback] subscribed to LACHESIS_REGISTRY
+23:01:26,291 INFO  [main|ACallback] subscribed to ATHENA_REGISTRY
+23:01:26,291 INFO  [main|ACallback] subscribed to LOG_REGISTRY
+23:01:26,291 INFO  [main|ACallback] subscribed to TIMER_REGISTRY
+23:01:26,292 INFO  [main|ACallback] subscribed to EMERGENCY_REGISTRY
+23:01:26,292 INFO  [main|ACallback] subscribed to REFEREE_REGISTRY
+23:01:26,292 INFO  [main|ACallback] subscribed to RCM_REGISTRY
+23:01:26,292 INFO  [main|ACallback] subscribed to WF_REGISTRY
+23:01:26,292 INFO  [main|ACallback] subscribed to TEST_REGISTRY
+23:01:26,292 DEBUG [main|MessageConnection] messaging host: localhost; port: 1883
+23:01:27,360 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:01:28,356 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:01:29,358 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:01:30,363 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:01:31,368 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:01:32,373 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:01:32,373 INFO  [main|ACallback] subscribed to BOT_ACTION_COMMAND
+23:01:32,373 INFO  [main|ACallback] subscribed to LIFE_SIGN
+23:01:32,392 DEBUG [main|MainPresenter] Loading moduli config: moduli_sim.xml
+23:01:32,628 INFO  [main|SSLVisionCam] Chose nif for vision-cam: Software Loopback Interface 1.
+23:01:32,773 INFO  [main|RefereeReceiver] Chose nif for referee: Software Loopback Interface 1.
+23:01:32,920 DEBUG [main|RobotControlManager] rcm instatiated!
+23:01:32,931 DEBUG [main|ConfigManager] Loaded config for 'AI Config': ai_default.xml
+23:01:33,218 DEBUG [main|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+23:01:33,360 INFO  [main|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+23:01:33,496 INFO  [main|BaseStation] Chose nif for base station: Software Loopback Interface 1.
+23:01:33,516 DEBUG [main|ConfigManager] Loaded config for 'Geometry': RoboCup_2012.xml
+23:01:33,526 DEBUG [main|ConfigManager] Loaded config for 'Bot Config': bots_default.xml
+23:01:33,538 DEBUG [main|ConfigManager] Loaded config for 'Team Config': yellow_default.xml
+23:01:33,566 DEBUG [main|MainPresenter] Loaded config: moduli_sim.xml
+23:01:33,567 DEBUG [main|MainPresenter] Loading layout: Overview.ly
+23:01:33,567 DEBUG [main|MainPresenter] Loaded layout: ./config/gui/Overview.ly
+23:01:33,567 DEBUG [main|MainPresenter] Loading look and feel: Windows
+23:01:38,092 DEBUG [ModuliStateChanged|SSLVisionCam] Initialized.
+23:01:38,093 DEBUG [ModuliStateChanged|Oracle_extKalman] Initialized.
+23:01:38,114 DEBUG [ModuliStateChanged|RefereeHandler] Initialized.
+23:01:38,114 DEBUG [ModuliStateChanged|GenericManager] Initialized.
+23:01:38,114 DEBUG [ModuliStateChanged|GenericSkillSystem] Initialized.
+23:01:38,114 DEBUG [ModuliStateChanged|RobotControlManager] Initialized.
+23:01:38,114 DEBUG [ModuliStateChanged|Agent] Initialized.
+23:01:38,115 DEBUG [ModuliStateChanged|Timer] Initialized.
+23:01:38,115 DEBUG [Dormouse|Dormouse] Dormouse started...
+23:01:38,166 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+23:01:38,167 DEBUG [ModuliStateChanged|SSLVisionCam] Started.
+23:01:38,168 DEBUG [ModuliStateChanged|Oracle_extKalman] Started.
+23:01:38,168 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+23:01:38,168 DEBUG [ModuliStateChanged|RefereeHandler] Started.
+23:01:38,175 DEBUG [ModuliStateChanged|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+23:01:38,313 INFO  [ModuliStateChanged|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+23:01:38,453 INFO  [ModuliStateChanged|BaseStation] Chose nif for base station: Software Loopback Interface 1.
+23:01:38,462 DEBUG [Receiver UDP null:-1|ReceiverUDP] Receive buffer size set to: 8192
+23:01:38,465 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] Receive buffer size set to: 8192
+23:01:38,465 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Marvin (BotID [team=TIGERS, number=0])
+23:01:38,466 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+23:01:38,466 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Eddie (BotID [team=TIGERS, number=1])
+23:01:38,466 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] Receive buffer size set to: 8192
+23:01:38,467 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+23:01:38,467 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Arthur (BotID [team=TIGERS, number=2])
+23:01:38,467 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] Receive buffer size set to: 8192
+23:01:38,468 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+23:01:38,468 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Baze (BotID [team=TIGERS, number=3])
+23:01:38,468 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] Receive buffer size set to: 8192
+23:01:38,469 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+23:01:38,469 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: R2D2 (BotID [team=TIGERS, number=4])
+23:01:38,469 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] Receive buffer size set to: 8192
+23:01:38,470 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+23:01:38,470 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] Receive buffer size set to: 8192
+23:01:38,470 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: WallE (BotID [team=TIGERS, number=5])
+23:01:38,470 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+23:01:38,472 DEBUG [ModuliStateChanged|GenericManager] Started.
+23:01:38,475 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=0]
+23:01:38,476 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=1]
+23:01:38,476 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=2]
+23:01:38,476 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=3]
+23:01:38,476 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=4]
+23:01:38,477 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=5]
+23:01:38,477 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=6]
+23:01:38,477 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=7]
+23:01:38,477 DEBUG [ModuliStateChanged|GenericSkillSystem] Started.
+23:01:38,477 DEBUG [ModuliStateChanged|RobotControlManager] Started.
+23:01:38,635 DEBUG [ModuliStateChanged|IndirectShotV2Play] Receiver: BotID [team=TIGERS, number=0]
+23:01:38,661 DEBUG [ModuliStateChanged|Agent] PlayFactory check done!
+23:01:38,668 DEBUG [ModuliStateChanged|Agent] Started.
+23:01:38,668 DEBUG [ModuliStateChanged|Timer] Started.
+23:01:40,473 INFO  [AutoCharge|GenericManager] Auto charging bots
+23:01:40,473 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+23:01:40,473 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+23:01:40,473 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+23:01:40,473 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+23:01:40,473 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+23:01:40,473 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+23:02:20,758 DEBUG [Receiver UDP /127.0.0.1:10000|ReceiverUDP] Receive buffer size set to: 8192
+23:02:20,759 DEBUG [AWT-EventQueue-0|BaseStation] Base station connecting
+23:02:20,759 DEBUG [Receiver UDP /127.0.0.1:10000|ReceiverUDP] 11000->10000: ICMP port unreachable, retry in 1s.
+23:02:22,259 DEBUG [Receiver UDP /127.0.0.1:10000|ReceiverUDP] 11000->10000: ICMP port unreachable, retry in 1s.
+23:02:23,759 DEBUG [Receiver UDP /127.0.0.1:10000|ReceiverUDP] 11000->10000: ICMP port unreachable, retry in 1s.
+23:02:25,267 DEBUG [Receiver UDP /127.0.0.1:10000|ReceiverUDP] 11000->10000: ICMP port unreachable, retry in 1s.
+23:02:26,767 DEBUG [Receiver UDP /127.0.0.1:10000|ReceiverUDP] 11000->10000: ICMP port unreachable, retry in 1s.
+23:02:28,268 DEBUG [Receiver UDP /127.0.0.1:10000|ReceiverUDP] 11000->10000: ICMP port unreachable, retry in 1s.
+23:02:29,121 DEBUG [Receiver UDP /127.0.0.1:10000|ReceiverUDP] Interrupted while waiting after ICMP port unreachable.
+23:02:29,121 DEBUG [Receiver UDP /127.0.0.1:10000|ReceiverUDP] 11000->10000: ICMP port unreachable, retry in 1s.
+23:02:29,221 INFO  [AWT-EventQueue-0|BaseStation] Disconnected base station
+23:02:30,621 INFO  [Receiver UDP /127.0.0.1:10000|ReceiverUDP] UDP transceiver terminating
+23:02:39,790 DEBUG [AWT-EventQueue-0|BaseStation] Base station connecting
+23:02:39,790 DEBUG [Receiver UDP /192.168.1.210:10000|ReceiverUDP] Receive buffer size set to: 8192
+23:03:12,669 DEBUG [AWT-EventQueue-0|MainPresenter] Saved configuration to: .\config\user\Fuchur_rYan.props
+23:03:12,669 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+23:03:12,669 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+23:03:12,669 DEBUG [AWT-EventQueue-0|SSLVisionCam] Stopped.
+23:03:12,669 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Stopped.
+23:03:12,669 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+23:03:12,669 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+23:03:12,670 DEBUG [AWT-EventQueue-0|RefereeHandler] Stopped.
+23:03:12,770 INFO  [Receiver UDP /127.0.0.1:10020|ReceiverUDP] UDP transceiver terminating
+23:03:12,777 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Marvin (BotID [team=TIGERS, number=0])
+23:03:12,878 INFO  [Receiver UDP /127.0.0.1:10021|ReceiverUDP] UDP transceiver terminating
+23:03:12,878 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Eddie (BotID [team=TIGERS, number=1])
+23:03:12,978 INFO  [Receiver UDP /127.0.0.1:10022|ReceiverUDP] UDP transceiver terminating
+23:03:12,978 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Arthur (BotID [team=TIGERS, number=2])
+23:03:13,078 INFO  [Receiver UDP /127.0.0.1:10023|ReceiverUDP] UDP transceiver terminating
+23:03:13,078 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Baze (BotID [team=TIGERS, number=3])
+23:03:13,178 INFO  [Receiver UDP /127.0.0.1:10024|ReceiverUDP] UDP transceiver terminating
+23:03:13,178 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: R2D2 (BotID [team=TIGERS, number=4])
+23:03:13,278 INFO  [Receiver UDP /127.0.0.1:10025|ReceiverUDP] UDP transceiver terminating
+23:03:13,278 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: WallE (BotID [team=TIGERS, number=5])
+23:03:13,378 INFO  [Receiver UDP /192.168.1.210:10000|ReceiverUDP] UDP transceiver terminating
+23:03:13,378 INFO  [AWT-EventQueue-0|BaseStation] Disconnected base station
+23:03:13,487 DEBUG [AWT-EventQueue-0|GenericManager] Stopped.
+23:03:13,487 INFO  [Receiver UDP null:-1|ReceiverUDP] UDP transceiver terminating
+23:03:13,490 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Stopped.
+23:03:13,490 DEBUG [AWT-EventQueue-0|RobotControlManager] Stopped.
+23:03:13,490 DEBUG [AWT-EventQueue-0|Agent] Stopped.
+23:03:13,490 DEBUG [AWT-EventQueue-0|Timer] Stopped.
+23:03:13,490 DEBUG [Dormouse|Dormouse] Dormouse stopped.
+23:03:13,540 DEBUG [AWT-EventQueue-0|SSLVisionCam] Deinitialized.
+23:03:13,540 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Deinitialized.
+23:03:13,540 DEBUG [AWT-EventQueue-0|GenericManager] Deinitialized.
+23:03:13,540 DEBUG [WP_Director|Director] Interrupted while waiting for new CamDetectionFrame.
+23:03:13,540 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Deinitialized.
+23:03:13,540 DEBUG [AWT-EventQueue-0|Agent] Deinitialized.
+23:03:13,540 DEBUG [AWT-EventQueue-0|Timer] Deinitialized.
+23:03:22,731 INFO  [main|ControllerFactory] Controller found: HID-Tastatur
+23:03:22,732 INFO  [main|ControllerFactory] Controller found: HID-konforme Maus
+23:03:22,732 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+23:03:22,732 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+23:03:22,732 INFO  [main|ControllerFactory] Controller found: USB Audio
+23:03:22,732 INFO  [main|ControllerFactory] Controller found: HID-konformes Benutzersteuergerät
+23:03:22,733 INFO  [main|ControllerFactory] Controller found: HID-konformes Gerät
+23:03:23,331 INFO  [main|RCMPresenter] 7 controllers found.
+23:03:23,368 DEBUG [main|MessageConnection] New MessageConnection
+23:03:23,451 INFO  [main|ACallback] subscribed to REGISTRY
+23:03:23,451 INFO  [main|ACallback] subscribed to AI_REGISTRY
+23:03:23,451 INFO  [main|ACallback] subscribed to MODULI_REGISTRY
+23:03:23,451 INFO  [main|ACallback] subscribed to APOLLON_REGISTRY
+23:03:23,451 INFO  [main|ACallback] subscribed to LACHESIS_REGISTRY
+23:03:23,451 INFO  [main|ACallback] subscribed to ATHENA_REGISTRY
+23:03:23,451 INFO  [main|ACallback] subscribed to LOG_REGISTRY
+23:03:23,451 INFO  [main|ACallback] subscribed to TIMER_REGISTRY
+23:03:23,451 INFO  [main|ACallback] subscribed to EMERGENCY_REGISTRY
+23:03:23,451 INFO  [main|ACallback] subscribed to REFEREE_REGISTRY
+23:03:23,451 INFO  [main|ACallback] subscribed to RCM_REGISTRY
+23:03:23,451 INFO  [main|ACallback] subscribed to WF_REGISTRY
+23:03:23,452 INFO  [main|ACallback] subscribed to TEST_REGISTRY
+23:03:23,452 DEBUG [main|MessageConnection] messaging host: localhost; port: 1883
+23:03:24,515 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:03:25,521 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:03:26,526 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:03:27,531 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:03:28,536 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:03:29,541 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:03:29,541 INFO  [main|ACallback] subscribed to BOT_ACTION_COMMAND
+23:03:29,541 INFO  [main|ACallback] subscribed to LIFE_SIGN
+23:03:29,559 DEBUG [main|MainPresenter] Loading moduli config: moduli_sim.xml
+23:03:29,797 INFO  [main|SSLVisionCam] Chose nif for vision-cam: Software Loopback Interface 1.
+23:03:29,937 INFO  [main|RefereeReceiver] Chose nif for referee: Software Loopback Interface 1.
+23:03:30,081 DEBUG [main|RobotControlManager] rcm instatiated!
+23:03:30,089 DEBUG [main|ConfigManager] Loaded config for 'Team Config': yellow_default.xml
+23:03:30,096 DEBUG [main|ConfigManager] Loaded config for 'AI Config': ai_default.xml
+23:03:30,369 DEBUG [main|ConfigManager] Loaded config for 'Geometry': RoboCup_2012.xml
+23:03:30,382 DEBUG [main|ConfigManager] Loaded config for 'Bot Config': bots_default.xml
+23:03:30,406 DEBUG [main|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+23:03:30,547 INFO  [main|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+23:03:30,697 INFO  [main|BaseStation] Chose nif for base station: Realtek PCIe GBE Family Controller.
+23:03:30,700 DEBUG [Receiver UDP /192.168.1.210:10000|ReceiverUDP] Receive buffer size set to: 8192
+23:03:30,701 DEBUG [main|BaseStation] Base station connecting
+23:03:30,744 DEBUG [main|MainPresenter] Loaded config: moduli_sim.xml
+23:03:30,745 DEBUG [main|MainPresenter] Loading layout: Overview.ly
+23:03:30,746 DEBUG [main|MainPresenter] Loaded layout: ./config/gui/Overview.ly
+23:03:30,746 DEBUG [main|MainPresenter] Loading look and feel: Windows
+23:05:20,719 DEBUG [AWT-EventQueue-0|MainPresenter] Saved configuration to: .\config\user\Fuchur_rYan.props
+23:05:24,462 INFO  [main|ControllerFactory] Controller found: HID-Tastatur
+23:05:24,463 INFO  [main|ControllerFactory] Controller found: HID-konforme Maus
+23:05:24,463 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+23:05:24,463 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+23:05:24,463 INFO  [main|ControllerFactory] Controller found: USB Audio
+23:05:24,463 INFO  [main|ControllerFactory] Controller found: HID-konformes Benutzersteuergerät
+23:05:24,463 INFO  [main|ControllerFactory] Controller found: HID-konformes Gerät
+23:05:25,091 INFO  [main|RCMPresenter] 7 controllers found.
+23:05:25,129 DEBUG [main|MessageConnection] New MessageConnection
+23:05:25,211 INFO  [main|ACallback] subscribed to REGISTRY
+23:05:25,211 INFO  [main|ACallback] subscribed to AI_REGISTRY
+23:05:25,211 INFO  [main|ACallback] subscribed to MODULI_REGISTRY
+23:05:25,211 INFO  [main|ACallback] subscribed to APOLLON_REGISTRY
+23:05:25,211 INFO  [main|ACallback] subscribed to LACHESIS_REGISTRY
+23:05:25,211 INFO  [main|ACallback] subscribed to ATHENA_REGISTRY
+23:05:25,211 INFO  [main|ACallback] subscribed to LOG_REGISTRY
+23:05:25,212 INFO  [main|ACallback] subscribed to TIMER_REGISTRY
+23:05:25,212 INFO  [main|ACallback] subscribed to EMERGENCY_REGISTRY
+23:05:25,213 INFO  [main|ACallback] subscribed to REFEREE_REGISTRY
+23:05:25,213 INFO  [main|ACallback] subscribed to RCM_REGISTRY
+23:05:25,213 INFO  [main|ACallback] subscribed to WF_REGISTRY
+23:05:25,213 INFO  [main|ACallback] subscribed to TEST_REGISTRY
+23:05:25,213 DEBUG [main|MessageConnection] messaging host: localhost; port: 1883
+23:05:26,277 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:05:27,282 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:05:28,285 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:05:29,290 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:05:30,295 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:05:31,307 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:05:31,307 INFO  [main|ACallback] subscribed to BOT_ACTION_COMMAND
+23:05:31,307 INFO  [main|ACallback] subscribed to LIFE_SIGN
+23:05:31,327 DEBUG [main|MainPresenter] Loading moduli config: moduli_sim.xml
+23:05:31,564 INFO  [main|SSLVisionCam] Chose nif for vision-cam: Software Loopback Interface 1.
+23:05:31,705 INFO  [main|RefereeReceiver] Chose nif for referee: Software Loopback Interface 1.
+23:05:31,850 DEBUG [main|RobotControlManager] rcm instatiated!
+23:05:31,862 DEBUG [main|ConfigManager] Loaded config for 'AI Config': ai_default.xml
+23:05:32,063 DEBUG [main|ConfigManager] Loaded config for 'Geometry': RoboCup_2012.xml
+23:05:32,160 DEBUG [main|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+23:05:32,310 INFO  [main|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+23:05:32,459 INFO  [main|BaseStation] Chose nif for base station: Realtek PCIe GBE Family Controller.
+23:05:32,477 DEBUG [main|ConfigManager] Loaded config for 'Team Config': yellow_default.xml
+23:05:32,481 DEBUG [main|ConfigManager] Loaded config for 'Bot Config': bots_default.xml
+23:05:32,519 DEBUG [main|MainPresenter] Loaded config: moduli_sim.xml
+23:05:32,520 DEBUG [main|MainPresenter] Loading layout: Overview.ly
+23:05:32,520 DEBUG [main|MainPresenter] Loaded layout: ./config/gui/Overview.ly
+23:05:32,520 DEBUG [main|MainPresenter] Loading look and feel: Windows
+23:05:44,177 DEBUG [ModuliStateChanged|SSLVisionCam] Initialized.
+23:05:44,178 DEBUG [ModuliStateChanged|Oracle_extKalman] Initialized.
+23:05:44,193 DEBUG [ModuliStateChanged|RefereeHandler] Initialized.
+23:05:44,193 DEBUG [ModuliStateChanged|GenericManager] Initialized.
+23:05:44,193 DEBUG [ModuliStateChanged|GenericSkillSystem] Initialized.
+23:05:44,193 DEBUG [ModuliStateChanged|RobotControlManager] Initialized.
+23:05:44,193 DEBUG [ModuliStateChanged|Agent] Initialized.
+23:05:44,194 DEBUG [ModuliStateChanged|Timer] Initialized.
+23:05:44,194 DEBUG [Dormouse|Dormouse] Dormouse started...
+23:05:44,246 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+23:05:44,246 DEBUG [ModuliStateChanged|SSLVisionCam] Started.
+23:05:44,248 DEBUG [ModuliStateChanged|Oracle_extKalman] Started.
+23:05:44,248 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+23:05:44,249 DEBUG [ModuliStateChanged|RefereeHandler] Started.
+23:05:44,256 DEBUG [ModuliStateChanged|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+23:05:44,400 INFO  [ModuliStateChanged|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+23:05:44,561 INFO  [ModuliStateChanged|BaseStation] Chose nif for base station: Realtek PCIe GBE Family Controller.
+23:05:44,570 DEBUG [Receiver UDP null:-1|ReceiverUDP] Receive buffer size set to: 8192
+23:05:44,573 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] Receive buffer size set to: 8192
+23:05:44,573 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Marvin (BotID [team=TIGERS, number=0])
+23:05:44,574 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+23:05:44,574 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Eddie (BotID [team=TIGERS, number=1])
+23:05:44,574 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] Receive buffer size set to: 8192
+23:05:44,575 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+23:05:44,575 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Arthur (BotID [team=TIGERS, number=2])
+23:05:44,576 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] Receive buffer size set to: 8192
+23:05:44,576 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+23:05:44,576 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Baze (BotID [team=TIGERS, number=3])
+23:05:44,576 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] Receive buffer size set to: 8192
+23:05:44,577 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+23:05:44,577 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: R2D2 (BotID [team=TIGERS, number=4])
+23:05:44,577 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] Receive buffer size set to: 8192
+23:05:44,577 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+23:05:44,578 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: WallE (BotID [team=TIGERS, number=5])
+23:05:44,578 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] Receive buffer size set to: 8192
+23:05:44,578 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+23:05:44,580 DEBUG [ModuliStateChanged|GenericManager] Started.
+23:05:44,583 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=0]
+23:05:44,583 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=1]
+23:05:44,583 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=2]
+23:05:44,584 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=3]
+23:05:44,584 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=4]
+23:05:44,584 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=5]
+23:05:44,584 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=6]
+23:05:44,585 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=7]
+23:05:44,585 DEBUG [ModuliStateChanged|GenericSkillSystem] Started.
+23:05:44,585 DEBUG [ModuliStateChanged|RobotControlManager] Started.
+23:05:44,739 DEBUG [ModuliStateChanged|IndirectShotV2Play] Receiver: BotID [team=TIGERS, number=2]
+23:05:44,768 DEBUG [ModuliStateChanged|Agent] PlayFactory check done!
+23:05:44,775 DEBUG [ModuliStateChanged|Agent] Started.
+23:05:44,775 DEBUG [ModuliStateChanged|Timer] Started.
+23:05:46,581 INFO  [AutoCharge|GenericManager] Auto charging bots
+23:05:46,581 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+23:05:46,581 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+23:05:46,581 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+23:05:46,581 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+23:05:46,581 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+23:05:46,581 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+23:05:53,329 DEBUG [Receiver UDP /192.168.1.210:10000|ReceiverUDP] Receive buffer size set to: 8192
+23:05:53,330 DEBUG [AWT-EventQueue-0|BaseStation] Base station connecting
+23:05:55,698 DEBUG [AWT-EventQueue-0|MainPresenter] Saved configuration to: .\config\user\Fuchur_rYan.props
+23:05:55,698 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+23:05:55,698 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+23:05:55,698 DEBUG [AWT-EventQueue-0|SSLVisionCam] Stopped.
+23:05:55,698 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Stopped.
+23:05:55,698 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+23:05:55,698 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+23:05:55,698 DEBUG [AWT-EventQueue-0|RefereeHandler] Stopped.
+23:05:55,799 INFO  [Receiver UDP /127.0.0.1:10020|ReceiverUDP] UDP transceiver terminating
+23:05:55,805 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Marvin (BotID [team=TIGERS, number=0])
+23:05:55,905 INFO  [Receiver UDP /127.0.0.1:10021|ReceiverUDP] UDP transceiver terminating
+23:05:55,905 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Eddie (BotID [team=TIGERS, number=1])
+23:05:56,005 INFO  [Receiver UDP /127.0.0.1:10022|ReceiverUDP] UDP transceiver terminating
+23:05:56,005 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Arthur (BotID [team=TIGERS, number=2])
+23:05:56,105 INFO  [Receiver UDP /127.0.0.1:10023|ReceiverUDP] UDP transceiver terminating
+23:05:56,105 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Baze (BotID [team=TIGERS, number=3])
+23:05:56,205 INFO  [Receiver UDP /127.0.0.1:10024|ReceiverUDP] UDP transceiver terminating
+23:05:56,205 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: R2D2 (BotID [team=TIGERS, number=4])
+23:05:56,305 INFO  [Receiver UDP /127.0.0.1:10025|ReceiverUDP] UDP transceiver terminating
+23:05:56,305 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: WallE (BotID [team=TIGERS, number=5])
+23:05:56,405 INFO  [Receiver UDP /192.168.1.210:10000|ReceiverUDP] UDP transceiver terminating
+23:05:56,405 INFO  [AWT-EventQueue-0|BaseStation] Disconnected base station
+23:05:56,518 DEBUG [AWT-EventQueue-0|GenericManager] Stopped.
+23:05:56,518 INFO  [Receiver UDP null:-1|ReceiverUDP] UDP transceiver terminating
+23:05:56,521 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Stopped.
+23:05:56,521 DEBUG [AWT-EventQueue-0|RobotControlManager] Stopped.
+23:05:56,521 DEBUG [AWT-EventQueue-0|Agent] Stopped.
+23:05:56,521 DEBUG [AWT-EventQueue-0|Timer] Stopped.
+23:05:56,521 DEBUG [Dormouse|Dormouse] Dormouse stopped.
+23:05:56,571 DEBUG [AWT-EventQueue-0|SSLVisionCam] Deinitialized.
+23:05:56,571 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Deinitialized.
+23:05:56,571 DEBUG [AWT-EventQueue-0|GenericManager] Deinitialized.
+23:05:56,571 DEBUG [WP_Director|Director] Interrupted while waiting for new CamDetectionFrame.
+23:05:56,571 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Deinitialized.
+23:05:56,571 DEBUG [AWT-EventQueue-0|Agent] Deinitialized.
+23:05:56,571 DEBUG [AWT-EventQueue-0|Timer] Deinitialized.
+23:05:59,940 INFO  [main|ControllerFactory] Controller found: HID-Tastatur
+23:05:59,941 INFO  [main|ControllerFactory] Controller found: HID-konforme Maus
+23:05:59,941 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+23:05:59,941 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+23:05:59,941 INFO  [main|ControllerFactory] Controller found: USB Audio
+23:05:59,941 INFO  [main|ControllerFactory] Controller found: HID-konformes Benutzersteuergerät
+23:05:59,941 INFO  [main|ControllerFactory] Controller found: HID-konformes Gerät
+23:06:00,541 INFO  [main|RCMPresenter] 7 controllers found.
+23:06:00,578 DEBUG [main|MessageConnection] New MessageConnection
+23:06:00,660 INFO  [main|ACallback] subscribed to REGISTRY
+23:06:00,660 INFO  [main|ACallback] subscribed to AI_REGISTRY
+23:06:00,660 INFO  [main|ACallback] subscribed to MODULI_REGISTRY
+23:06:00,660 INFO  [main|ACallback] subscribed to APOLLON_REGISTRY
+23:06:00,660 INFO  [main|ACallback] subscribed to LACHESIS_REGISTRY
+23:06:00,660 INFO  [main|ACallback] subscribed to ATHENA_REGISTRY
+23:06:00,661 INFO  [main|ACallback] subscribed to LOG_REGISTRY
+23:06:00,661 INFO  [main|ACallback] subscribed to TIMER_REGISTRY
+23:06:00,661 INFO  [main|ACallback] subscribed to EMERGENCY_REGISTRY
+23:06:00,661 INFO  [main|ACallback] subscribed to REFEREE_REGISTRY
+23:06:00,661 INFO  [main|ACallback] subscribed to RCM_REGISTRY
+23:06:00,661 INFO  [main|ACallback] subscribed to WF_REGISTRY
+23:06:00,661 INFO  [main|ACallback] subscribed to TEST_REGISTRY
+23:06:00,661 DEBUG [main|MessageConnection] messaging host: localhost; port: 1883
+23:06:01,726 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:06:02,741 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:06:03,746 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:06:04,771 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:06:05,773 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:06:06,778 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:06:06,778 INFO  [main|ACallback] subscribed to BOT_ACTION_COMMAND
+23:06:06,779 INFO  [main|ACallback] subscribed to LIFE_SIGN
+23:06:06,800 DEBUG [main|MainPresenter] Loading moduli config: moduli_sim.xml
+23:06:07,037 INFO  [main|SSLVisionCam] Chose nif for vision-cam: Software Loopback Interface 1.
+23:06:07,177 INFO  [main|RefereeReceiver] Chose nif for referee: Software Loopback Interface 1.
+23:06:07,322 DEBUG [main|RobotControlManager] rcm instatiated!
+23:06:07,344 DEBUG [main|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+23:06:07,482 INFO  [main|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+23:06:07,632 INFO  [main|BaseStation] Chose nif for base station: Realtek PCIe GBE Family Controller.
+23:06:07,663 DEBUG [main|ConfigManager] Loaded config for 'Geometry': RoboCup_2012.xml
+23:06:07,674 DEBUG [main|ConfigManager] Loaded config for 'Bot Config': bots_default.xml
+23:06:07,922 DEBUG [main|ConfigManager] Loaded config for 'AI Config': ai_default.xml
+23:06:07,952 DEBUG [main|ConfigManager] Loaded config for 'Team Config': yellow_default.xml
+23:06:07,980 DEBUG [main|MainPresenter] Loaded config: moduli_sim.xml
+23:06:07,980 DEBUG [main|MainPresenter] Loading layout: Overview.ly
+23:06:07,981 DEBUG [main|MainPresenter] Loaded layout: ./config/gui/Overview.ly
+23:06:07,981 DEBUG [main|MainPresenter] Loading look and feel: Windows
+23:06:18,980 DEBUG [ModuliStateChanged|SSLVisionCam] Initialized.
+23:06:18,980 DEBUG [ModuliStateChanged|Oracle_extKalman] Initialized.
+23:06:18,989 DEBUG [ModuliStateChanged|RefereeHandler] Initialized.
+23:06:18,989 DEBUG [ModuliStateChanged|GenericManager] Initialized.
+23:06:18,989 DEBUG [ModuliStateChanged|GenericSkillSystem] Initialized.
+23:06:18,989 DEBUG [ModuliStateChanged|RobotControlManager] Initialized.
+23:06:18,990 DEBUG [ModuliStateChanged|Agent] Initialized.
+23:06:18,990 DEBUG [ModuliStateChanged|Timer] Initialized.
+23:06:18,990 DEBUG [Dormouse|Dormouse] Dormouse started...
+23:06:19,042 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+23:06:19,042 DEBUG [ModuliStateChanged|SSLVisionCam] Started.
+23:06:19,044 DEBUG [ModuliStateChanged|Oracle_extKalman] Started.
+23:06:19,045 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+23:06:19,045 DEBUG [ModuliStateChanged|RefereeHandler] Started.
+23:06:19,054 DEBUG [ModuliStateChanged|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+23:06:19,199 INFO  [ModuliStateChanged|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+23:06:19,360 INFO  [ModuliStateChanged|BaseStation] Chose nif for base station: Realtek PCIe GBE Family Controller.
+23:06:19,369 DEBUG [Receiver UDP null:-1|ReceiverUDP] Receive buffer size set to: 8192
+23:06:19,371 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] Receive buffer size set to: 8192
+23:06:19,372 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Marvin (BotID [team=TIGERS, number=0])
+23:06:19,372 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+23:06:19,373 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Eddie (BotID [team=TIGERS, number=1])
+23:06:19,373 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] Receive buffer size set to: 8192
+23:06:19,373 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+23:06:19,374 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Arthur (BotID [team=TIGERS, number=2])
+23:06:19,374 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] Receive buffer size set to: 8192
+23:06:19,374 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Baze (BotID [team=TIGERS, number=3])
+23:06:19,375 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+23:06:19,375 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] Receive buffer size set to: 8192
+23:06:19,375 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+23:06:19,376 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] Receive buffer size set to: 8192
+23:06:19,376 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: R2D2 (BotID [team=TIGERS, number=4])
+23:06:19,377 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+23:06:19,377 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: WallE (BotID [team=TIGERS, number=5])
+23:06:19,377 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] Receive buffer size set to: 8192
+23:06:19,378 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+23:06:19,380 DEBUG [ModuliStateChanged|GenericManager] Started.
+23:06:19,382 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=0]
+23:06:19,383 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=1]
+23:06:19,383 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=2]
+23:06:19,383 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=3]
+23:06:19,383 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=4]
+23:06:19,384 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=5]
+23:06:19,384 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=6]
+23:06:19,384 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=7]
+23:06:19,384 DEBUG [ModuliStateChanged|GenericSkillSystem] Started.
+23:06:19,384 DEBUG [ModuliStateChanged|RobotControlManager] Started.
+23:06:19,542 DEBUG [ModuliStateChanged|IndirectShotV2Play] Receiver: BotID [team=TIGERS, number=4]
+23:06:19,569 DEBUG [ModuliStateChanged|Agent] PlayFactory check done!
+23:06:19,576 DEBUG [ModuliStateChanged|Agent] Started.
+23:06:19,576 DEBUG [ModuliStateChanged|Timer] Started.
+23:06:21,380 INFO  [AutoCharge|GenericManager] Auto charging bots
+23:06:21,380 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+23:06:21,380 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+23:06:21,380 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+23:06:21,380 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+23:06:21,380 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+23:06:21,380 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+23:06:45,414 DEBUG [Receiver UDP /192.168.1.210:10000|ReceiverUDP] Receive buffer size set to: 8192
+23:06:45,415 DEBUG [AWT-EventQueue-0|BaseStation] Base station connecting
+23:06:54,987 DEBUG [AWT-EventQueue-0|MainPresenter] Saved configuration to: .\config\user\Fuchur_rYan.props
+23:06:54,987 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+23:06:54,988 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+23:06:54,988 DEBUG [AWT-EventQueue-0|SSLVisionCam] Stopped.
+23:06:54,988 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Stopped.
+23:06:54,988 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+23:06:54,988 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+23:06:54,988 DEBUG [AWT-EventQueue-0|RefereeHandler] Stopped.
+23:06:55,089 INFO  [Receiver UDP /127.0.0.1:10020|ReceiverUDP] UDP transceiver terminating
+23:06:55,096 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Marvin (BotID [team=TIGERS, number=0])
+23:06:55,197 INFO  [Receiver UDP /127.0.0.1:10021|ReceiverUDP] UDP transceiver terminating
+23:06:55,197 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Eddie (BotID [team=TIGERS, number=1])
+23:06:55,297 INFO  [Receiver UDP /127.0.0.1:10022|ReceiverUDP] UDP transceiver terminating
+23:06:55,297 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Arthur (BotID [team=TIGERS, number=2])
+23:06:55,397 INFO  [Receiver UDP /127.0.0.1:10023|ReceiverUDP] UDP transceiver terminating
+23:06:55,397 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Baze (BotID [team=TIGERS, number=3])
+23:06:55,497 INFO  [Receiver UDP /127.0.0.1:10024|ReceiverUDP] UDP transceiver terminating
+23:06:55,497 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: R2D2 (BotID [team=TIGERS, number=4])
+23:06:55,597 INFO  [Receiver UDP /127.0.0.1:10025|ReceiverUDP] UDP transceiver terminating
+23:06:55,597 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: WallE (BotID [team=TIGERS, number=5])
+23:06:55,697 INFO  [Receiver UDP /192.168.1.210:10000|ReceiverUDP] UDP transceiver terminating
+23:06:55,697 INFO  [AWT-EventQueue-0|BaseStation] Disconnected base station
+23:06:55,806 DEBUG [AWT-EventQueue-0|GenericManager] Stopped.
+23:06:55,806 INFO  [Receiver UDP null:-1|ReceiverUDP] UDP transceiver terminating
+23:06:55,809 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Stopped.
+23:06:55,809 DEBUG [AWT-EventQueue-0|RobotControlManager] Stopped.
+23:06:55,809 DEBUG [AWT-EventQueue-0|Agent] Stopped.
+23:06:55,809 DEBUG [AWT-EventQueue-0|Timer] Stopped.
+23:06:55,809 DEBUG [Dormouse|Dormouse] Dormouse stopped.
+23:06:55,859 DEBUG [AWT-EventQueue-0|SSLVisionCam] Deinitialized.
+23:06:55,859 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Deinitialized.
+23:06:55,859 DEBUG [AWT-EventQueue-0|GenericManager] Deinitialized.
+23:06:55,859 DEBUG [WP_Director|Director] Interrupted while waiting for new CamDetectionFrame.
+23:06:55,859 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Deinitialized.
+23:06:55,859 DEBUG [AWT-EventQueue-0|Agent] Deinitialized.
+23:06:55,859 DEBUG [AWT-EventQueue-0|Timer] Deinitialized.
+23:07:51,628 INFO  [main|ControllerFactory] Controller found: HID-Tastatur
+23:07:51,629 INFO  [main|ControllerFactory] Controller found: HID-konforme Maus
+23:07:51,629 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+23:07:51,629 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+23:07:51,629 INFO  [main|ControllerFactory] Controller found: USB Audio
+23:07:51,629 INFO  [main|ControllerFactory] Controller found: HID-konformes Benutzersteuergerät
+23:07:51,629 INFO  [main|ControllerFactory] Controller found: HID-konformes Gerät
+23:07:52,232 INFO  [main|RCMPresenter] 7 controllers found.
+23:07:52,270 DEBUG [main|MessageConnection] New MessageConnection
+23:07:52,352 INFO  [main|ACallback] subscribed to REGISTRY
+23:07:52,352 INFO  [main|ACallback] subscribed to AI_REGISTRY
+23:07:52,352 INFO  [main|ACallback] subscribed to MODULI_REGISTRY
+23:07:52,352 INFO  [main|ACallback] subscribed to APOLLON_REGISTRY
+23:07:52,352 INFO  [main|ACallback] subscribed to LACHESIS_REGISTRY
+23:07:52,352 INFO  [main|ACallback] subscribed to ATHENA_REGISTRY
+23:07:52,352 INFO  [main|ACallback] subscribed to LOG_REGISTRY
+23:07:52,353 INFO  [main|ACallback] subscribed to TIMER_REGISTRY
+23:07:52,353 INFO  [main|ACallback] subscribed to EMERGENCY_REGISTRY
+23:07:52,353 INFO  [main|ACallback] subscribed to REFEREE_REGISTRY
+23:07:52,353 INFO  [main|ACallback] subscribed to RCM_REGISTRY
+23:07:52,353 INFO  [main|ACallback] subscribed to WF_REGISTRY
+23:07:52,353 INFO  [main|ACallback] subscribed to TEST_REGISTRY
+23:07:52,353 DEBUG [main|MessageConnection] messaging host: localhost; port: 1883
+23:07:53,419 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:07:54,422 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:07:55,426 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:07:56,430 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:07:57,435 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:07:58,437 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:07:58,437 INFO  [main|ACallback] subscribed to BOT_ACTION_COMMAND
+23:07:58,437 INFO  [main|ACallback] subscribed to LIFE_SIGN
+23:07:58,459 DEBUG [main|MainPresenter] Loading moduli config: moduli_sim.xml
+23:07:58,691 INFO  [main|SSLVisionCam] Chose nif for vision-cam: Software Loopback Interface 1.
+23:07:58,830 INFO  [main|RefereeReceiver] Chose nif for referee: Software Loopback Interface 1.
+23:07:58,972 DEBUG [main|RobotControlManager] rcm instatiated!
+23:07:58,985 DEBUG [main|ConfigManager] Loaded config for 'Bot Config': bots_default.xml
+23:07:59,243 DEBUG [main|ConfigManager] Loaded config for 'AI Config': ai_default.xml
+23:07:59,285 DEBUG [main|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+23:07:59,424 INFO  [main|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+23:07:59,574 INFO  [main|BaseStation] Chose nif for base station: Realtek PCIe GBE Family Controller.
+23:07:59,593 DEBUG [main|ConfigManager] Loaded config for 'Geometry': RoboCup_2012.xml
+23:07:59,602 DEBUG [main|ConfigManager] Loaded config for 'Team Config': yellow_default.xml
+23:07:59,631 DEBUG [main|MainPresenter] Loaded config: moduli_sim.xml
+23:07:59,631 DEBUG [main|MainPresenter] Loading layout: Overview.ly
+23:07:59,632 DEBUG [main|MainPresenter] Loaded layout: ./config/gui/Overview.ly
+23:07:59,632 DEBUG [main|MainPresenter] Loading look and feel: Windows
+23:08:14,679 DEBUG [ModuliStateChanged|SSLVisionCam] Initialized.
+23:08:14,679 DEBUG [ModuliStateChanged|Oracle_extKalman] Initialized.
+23:08:14,691 DEBUG [ModuliStateChanged|RefereeHandler] Initialized.
+23:08:14,691 DEBUG [ModuliStateChanged|GenericManager] Initialized.
+23:08:14,691 DEBUG [ModuliStateChanged|GenericSkillSystem] Initialized.
+23:08:14,691 DEBUG [ModuliStateChanged|RobotControlManager] Initialized.
+23:08:14,692 DEBUG [ModuliStateChanged|Agent] Initialized.
+23:08:14,692 DEBUG [ModuliStateChanged|Timer] Initialized.
+23:08:14,692 DEBUG [Dormouse|Dormouse] Dormouse started...
+23:08:14,743 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+23:08:14,744 DEBUG [ModuliStateChanged|SSLVisionCam] Started.
+23:08:14,745 DEBUG [ModuliStateChanged|Oracle_extKalman] Started.
+23:08:14,745 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+23:08:14,745 DEBUG [ModuliStateChanged|RefereeHandler] Started.
+23:08:14,751 DEBUG [ModuliStateChanged|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+23:08:14,889 INFO  [ModuliStateChanged|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+23:08:15,040 INFO  [ModuliStateChanged|BaseStation] Chose nif for base station: Realtek PCIe GBE Family Controller.
+23:08:15,050 DEBUG [Receiver UDP null:-1|ReceiverUDP] Receive buffer size set to: 8192
+23:08:15,052 DEBUG [Receiver UDP /192.168.1.210:10000|ReceiverUDP] Receive buffer size set to: 8192
+23:08:15,053 DEBUG [ModuliStateChanged|BaseStation] Base station connecting
+23:08:15,054 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] Receive buffer size set to: 8192
+23:08:15,054 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Marvin (BotID [team=TIGERS, number=0])
+23:08:15,055 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+23:08:15,055 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Eddie (BotID [team=TIGERS, number=1])
+23:08:15,055 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] Receive buffer size set to: 8192
+23:08:15,056 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+23:08:15,056 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Arthur (BotID [team=TIGERS, number=2])
+23:08:15,056 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] Receive buffer size set to: 8192
+23:08:15,057 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+23:08:15,057 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Baze (BotID [team=TIGERS, number=3])
+23:08:15,057 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] Receive buffer size set to: 8192
+23:08:15,058 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+23:08:15,058 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: R2D2 (BotID [team=TIGERS, number=4])
+23:08:15,058 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] Receive buffer size set to: 8192
+23:08:15,058 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+23:08:15,059 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: WallE (BotID [team=TIGERS, number=5])
+23:08:15,059 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] Receive buffer size set to: 8192
+23:08:15,059 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+23:08:15,061 DEBUG [ModuliStateChanged|GenericManager] Started.
+23:08:15,064 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=0]
+23:08:15,065 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=1]
+23:08:15,065 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=2]
+23:08:15,065 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=3]
+23:08:15,065 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=4]
+23:08:15,066 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=5]
+23:08:15,066 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=6]
+23:08:15,066 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=7]
+23:08:15,066 DEBUG [ModuliStateChanged|GenericSkillSystem] Started.
+23:08:15,066 DEBUG [ModuliStateChanged|RobotControlManager] Started.
+23:08:15,228 DEBUG [ModuliStateChanged|IndirectShotV2Play] Receiver: BotID [team=TIGERS, number=4]
+23:08:15,255 DEBUG [ModuliStateChanged|Agent] PlayFactory check done!
+23:08:15,272 DEBUG [ModuliStateChanged|Agent] Started.
+23:08:15,272 DEBUG [ModuliStateChanged|Timer] Started.
+23:08:17,063 INFO  [AutoCharge|GenericManager] Auto charging bots
+23:08:17,063 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+23:08:17,064 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+23:08:17,064 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+23:08:17,064 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+23:08:17,064 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+23:08:17,064 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+23:09:06,999 INFO  [Receiver UDP /192.168.1.210:10000|ReceiverUDP] UDP transceiver terminating
+23:09:06,999 INFO  [AWT-EventQueue-0|BaseStation] Disconnected base station
+23:09:07,861 DEBUG [AWT-EventQueue-0|MainPresenter] Saved configuration to: .\config\user\Fuchur_rYan.props
+23:09:07,861 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+23:09:07,861 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+23:09:07,861 DEBUG [AWT-EventQueue-0|SSLVisionCam] Stopped.
+23:09:07,861 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Stopped.
+23:09:07,861 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+23:09:07,862 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+23:09:07,862 DEBUG [AWT-EventQueue-0|RefereeHandler] Stopped.
+23:09:07,962 INFO  [Receiver UDP /127.0.0.1:10020|ReceiverUDP] UDP transceiver terminating
+23:09:07,968 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Marvin (BotID [team=TIGERS, number=0])
+23:09:08,068 INFO  [Receiver UDP /127.0.0.1:10021|ReceiverUDP] UDP transceiver terminating
+23:09:08,068 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Eddie (BotID [team=TIGERS, number=1])
+23:09:08,169 INFO  [Receiver UDP /127.0.0.1:10022|ReceiverUDP] UDP transceiver terminating
+23:09:08,169 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Arthur (BotID [team=TIGERS, number=2])
+23:09:08,269 INFO  [Receiver UDP /127.0.0.1:10023|ReceiverUDP] UDP transceiver terminating
+23:09:08,269 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Baze (BotID [team=TIGERS, number=3])
+23:09:08,369 INFO  [Receiver UDP /127.0.0.1:10024|ReceiverUDP] UDP transceiver terminating
+23:09:08,369 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: R2D2 (BotID [team=TIGERS, number=4])
+23:09:08,470 INFO  [Receiver UDP /127.0.0.1:10025|ReceiverUDP] UDP transceiver terminating
+23:09:08,470 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: WallE (BotID [team=TIGERS, number=5])
+23:09:08,573 DEBUG [AWT-EventQueue-0|GenericManager] Stopped.
+23:09:08,573 INFO  [Receiver UDP null:-1|ReceiverUDP] UDP transceiver terminating
+23:09:08,575 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Stopped.
+23:09:08,575 DEBUG [AWT-EventQueue-0|RobotControlManager] Stopped.
+23:09:08,575 DEBUG [AWT-EventQueue-0|Agent] Stopped.
+23:09:08,575 DEBUG [AWT-EventQueue-0|Timer] Stopped.
+23:09:08,575 DEBUG [Dormouse|Dormouse] Dormouse stopped.
+23:09:08,625 DEBUG [AWT-EventQueue-0|SSLVisionCam] Deinitialized.
+23:09:08,625 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Deinitialized.
+23:09:08,625 DEBUG [WP_Director|Director] Interrupted while waiting for new CamDetectionFrame.
+23:09:08,625 DEBUG [AWT-EventQueue-0|GenericManager] Deinitialized.
+23:09:08,625 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Deinitialized.
+23:09:08,625 DEBUG [AWT-EventQueue-0|Agent] Deinitialized.
+23:09:08,625 DEBUG [AWT-EventQueue-0|Timer] Deinitialized.
+23:09:12,400 INFO  [main|ControllerFactory] Controller found: HID-Tastatur
+23:09:12,401 INFO  [main|ControllerFactory] Controller found: HID-konforme Maus
+23:09:12,401 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+23:09:12,401 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+23:09:12,401 INFO  [main|ControllerFactory] Controller found: USB Audio
+23:09:12,401 INFO  [main|ControllerFactory] Controller found: HID-konformes Benutzersteuergerät
+23:09:12,401 INFO  [main|ControllerFactory] Controller found: HID-konformes Gerät
+23:09:13,032 INFO  [main|RCMPresenter] 7 controllers found.
+23:09:13,069 DEBUG [main|MessageConnection] New MessageConnection
+23:09:13,150 INFO  [main|ACallback] subscribed to REGISTRY
+23:09:13,150 INFO  [main|ACallback] subscribed to AI_REGISTRY
+23:09:13,150 INFO  [main|ACallback] subscribed to MODULI_REGISTRY
+23:09:13,150 INFO  [main|ACallback] subscribed to APOLLON_REGISTRY
+23:09:13,150 INFO  [main|ACallback] subscribed to LACHESIS_REGISTRY
+23:09:13,150 INFO  [main|ACallback] subscribed to ATHENA_REGISTRY
+23:09:13,150 INFO  [main|ACallback] subscribed to LOG_REGISTRY
+23:09:13,150 INFO  [main|ACallback] subscribed to TIMER_REGISTRY
+23:09:13,151 INFO  [main|ACallback] subscribed to EMERGENCY_REGISTRY
+23:09:13,151 INFO  [main|ACallback] subscribed to REFEREE_REGISTRY
+23:09:13,151 INFO  [main|ACallback] subscribed to RCM_REGISTRY
+23:09:13,151 INFO  [main|ACallback] subscribed to WF_REGISTRY
+23:09:13,151 INFO  [main|ACallback] subscribed to TEST_REGISTRY
+23:09:13,151 DEBUG [main|MessageConnection] messaging host: localhost; port: 1883
+23:09:14,218 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:09:15,223 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:09:16,227 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:09:17,232 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:09:18,244 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:09:19,249 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:09:19,249 INFO  [main|ACallback] subscribed to BOT_ACTION_COMMAND
+23:09:19,249 INFO  [main|ACallback] subscribed to LIFE_SIGN
+23:09:19,268 DEBUG [main|MainPresenter] Loading moduli config: moduli_sim.xml
+23:09:19,504 INFO  [main|SSLVisionCam] Chose nif for vision-cam: Software Loopback Interface 1.
+23:09:19,649 INFO  [main|RefereeReceiver] Chose nif for referee: Software Loopback Interface 1.
+23:09:19,797 DEBUG [main|RobotControlManager] rcm instatiated!
+23:09:19,808 DEBUG [main|ConfigManager] Loaded config for 'AI Config': ai_default.xml
+23:09:20,088 DEBUG [main|ConfigManager] Loaded config for 'Team Config': yellow_default.xml
+23:09:20,103 DEBUG [main|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+23:09:20,247 INFO  [main|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+23:09:20,399 INFO  [main|BaseStation] Chose nif for base station: Realtek PCIe GBE Family Controller.
+23:09:20,418 DEBUG [main|ConfigManager] Loaded config for 'Geometry': RoboCup_2012.xml
+23:09:20,429 DEBUG [main|ConfigManager] Loaded config for 'Bot Config': bots_default.xml
+23:09:20,469 DEBUG [main|MainPresenter] Loaded config: moduli_sim.xml
+23:09:20,469 DEBUG [main|MainPresenter] Loading layout: Overview.ly
+23:09:20,470 DEBUG [main|MainPresenter] Loaded layout: ./config/gui/Overview.ly
+23:09:20,470 DEBUG [main|MainPresenter] Loading look and feel: Windows
+23:09:30,229 DEBUG [ModuliStateChanged|SSLVisionCam] Initialized.
+23:09:30,229 DEBUG [ModuliStateChanged|Oracle_extKalman] Initialized.
+23:09:30,238 DEBUG [ModuliStateChanged|RefereeHandler] Initialized.
+23:09:30,238 DEBUG [ModuliStateChanged|GenericManager] Initialized.
+23:09:30,238 DEBUG [ModuliStateChanged|GenericSkillSystem] Initialized.
+23:09:30,238 DEBUG [ModuliStateChanged|RobotControlManager] Initialized.
+23:09:30,238 DEBUG [ModuliStateChanged|Agent] Initialized.
+23:09:30,239 DEBUG [ModuliStateChanged|Timer] Initialized.
+23:09:30,239 DEBUG [Dormouse|Dormouse] Dormouse started...
+23:09:30,290 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+23:09:30,291 DEBUG [ModuliStateChanged|SSLVisionCam] Started.
+23:09:30,292 DEBUG [ModuliStateChanged|Oracle_extKalman] Started.
+23:09:30,292 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+23:09:30,292 DEBUG [ModuliStateChanged|RefereeHandler] Started.
+23:09:30,299 DEBUG [ModuliStateChanged|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+23:09:30,441 INFO  [ModuliStateChanged|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+23:09:30,597 INFO  [ModuliStateChanged|BaseStation] Chose nif for base station: Realtek PCIe GBE Family Controller.
+23:09:30,606 DEBUG [Receiver UDP null:-1|ReceiverUDP] Receive buffer size set to: 8192
+23:09:30,609 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] Receive buffer size set to: 8192
+23:09:30,609 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Marvin (BotID [team=TIGERS, number=0])
+23:09:30,610 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+23:09:30,610 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Eddie (BotID [team=TIGERS, number=1])
+23:09:30,610 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] Receive buffer size set to: 8192
+23:09:30,611 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+23:09:30,611 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Arthur (BotID [team=TIGERS, number=2])
+23:09:30,611 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] Receive buffer size set to: 8192
+23:09:30,612 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+23:09:30,612 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Baze (BotID [team=TIGERS, number=3])
+23:09:30,612 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] Receive buffer size set to: 8192
+23:09:30,613 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+23:09:30,613 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] Receive buffer size set to: 8192
+23:09:30,614 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: R2D2 (BotID [team=TIGERS, number=4])
+23:09:30,614 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+23:09:30,615 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: WallE (BotID [team=TIGERS, number=5])
+23:09:30,615 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] Receive buffer size set to: 8192
+23:09:30,615 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+23:09:30,617 DEBUG [ModuliStateChanged|GenericManager] Started.
+23:09:30,620 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=0]
+23:09:30,620 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=1]
+23:09:30,620 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=2]
+23:09:30,620 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=3]
+23:09:30,621 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=4]
+23:09:30,621 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=5]
+23:09:30,621 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=6]
+23:09:30,621 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=7]
+23:09:30,621 DEBUG [ModuliStateChanged|GenericSkillSystem] Started.
+23:09:30,621 DEBUG [ModuliStateChanged|RobotControlManager] Started.
+23:09:30,776 DEBUG [ModuliStateChanged|IndirectShotV2Play] Receiver: BotID [team=TIGERS, number=2]
+23:09:30,803 DEBUG [ModuliStateChanged|Agent] PlayFactory check done!
+23:09:30,810 DEBUG [ModuliStateChanged|Agent] Started.
+23:09:30,810 DEBUG [ModuliStateChanged|Timer] Started.
+23:09:32,618 INFO  [AutoCharge|GenericManager] Auto charging bots
+23:09:32,624 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+23:09:32,624 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+23:09:32,624 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+23:09:32,624 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+23:09:32,624 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+23:09:32,624 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+23:09:56,194 DEBUG [AWT-EventQueue-0|MainPresenter] Saved configuration to: .\config\user\Fuchur_rYan.props
+23:09:56,195 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+23:09:56,195 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+23:09:56,195 DEBUG [AWT-EventQueue-0|SSLVisionCam] Stopped.
+23:09:56,195 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Stopped.
+23:09:56,195 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+23:09:56,195 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+23:09:56,195 DEBUG [AWT-EventQueue-0|RefereeHandler] Stopped.
+23:09:56,295 INFO  [Receiver UDP /127.0.0.1:10020|ReceiverUDP] UDP transceiver terminating
+23:09:56,299 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Marvin (BotID [team=TIGERS, number=0])
+23:09:56,399 INFO  [Receiver UDP /127.0.0.1:10021|ReceiverUDP] UDP transceiver terminating
+23:09:56,399 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Eddie (BotID [team=TIGERS, number=1])
+23:09:56,499 INFO  [Receiver UDP /127.0.0.1:10022|ReceiverUDP] UDP transceiver terminating
+23:09:56,499 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Arthur (BotID [team=TIGERS, number=2])
+23:09:56,599 INFO  [Receiver UDP /127.0.0.1:10023|ReceiverUDP] UDP transceiver terminating
+23:09:56,599 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Baze (BotID [team=TIGERS, number=3])
+23:09:56,699 INFO  [Receiver UDP /127.0.0.1:10024|ReceiverUDP] UDP transceiver terminating
+23:09:56,699 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: R2D2 (BotID [team=TIGERS, number=4])
+23:09:56,799 INFO  [Receiver UDP /127.0.0.1:10025|ReceiverUDP] UDP transceiver terminating
+23:09:56,799 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: WallE (BotID [team=TIGERS, number=5])
+23:09:56,913 DEBUG [AWT-EventQueue-0|GenericManager] Stopped.
+23:09:56,913 INFO  [Receiver UDP null:-1|ReceiverUDP] UDP transceiver terminating
+23:09:56,916 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Stopped.
+23:09:56,916 DEBUG [AWT-EventQueue-0|RobotControlManager] Stopped.
+23:09:56,916 DEBUG [AWT-EventQueue-0|Agent] Stopped.
+23:09:56,916 DEBUG [AWT-EventQueue-0|Timer] Stopped.
+23:09:56,917 DEBUG [Dormouse|Dormouse] Dormouse stopped.
+23:09:56,967 DEBUG [AWT-EventQueue-0|SSLVisionCam] Deinitialized.
+23:09:56,967 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Deinitialized.
+23:09:56,967 DEBUG [AWT-EventQueue-0|GenericManager] Deinitialized.
+23:09:56,967 DEBUG [WP_Director|Director] Interrupted while waiting for new CamDetectionFrame.
+23:09:56,967 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Deinitialized.
+23:09:56,967 DEBUG [AWT-EventQueue-0|Agent] Deinitialized.
+23:09:56,967 DEBUG [AWT-EventQueue-0|Timer] Deinitialized.
+23:12:58,551 INFO  [main|ControllerFactory] Controller found: HID-Tastatur
+23:12:58,552 INFO  [main|ControllerFactory] Controller found: HID-konforme Maus
+23:12:58,552 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+23:12:58,553 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+23:12:58,553 INFO  [main|ControllerFactory] Controller found: USB Audio
+23:12:58,553 INFO  [main|ControllerFactory] Controller found: HID-konformes Benutzersteuergerät
+23:12:58,553 INFO  [main|ControllerFactory] Controller found: HID-konformes Gerät
+23:12:59,200 INFO  [main|RCMPresenter] 7 controllers found.
+23:12:59,243 DEBUG [main|MessageConnection] New MessageConnection
+23:12:59,322 INFO  [main|ACallback] subscribed to REGISTRY
+23:12:59,323 INFO  [main|ACallback] subscribed to AI_REGISTRY
+23:12:59,323 INFO  [main|ACallback] subscribed to MODULI_REGISTRY
+23:12:59,323 INFO  [main|ACallback] subscribed to APOLLON_REGISTRY
+23:12:59,323 INFO  [main|ACallback] subscribed to LACHESIS_REGISTRY
+23:12:59,323 INFO  [main|ACallback] subscribed to ATHENA_REGISTRY
+23:12:59,323 INFO  [main|ACallback] subscribed to LOG_REGISTRY
+23:12:59,323 INFO  [main|ACallback] subscribed to TIMER_REGISTRY
+23:12:59,323 INFO  [main|ACallback] subscribed to EMERGENCY_REGISTRY
+23:12:59,323 INFO  [main|ACallback] subscribed to REFEREE_REGISTRY
+23:12:59,323 INFO  [main|ACallback] subscribed to RCM_REGISTRY
+23:12:59,323 INFO  [main|ACallback] subscribed to WF_REGISTRY
+23:12:59,323 INFO  [main|ACallback] subscribed to TEST_REGISTRY
+23:12:59,323 DEBUG [main|MessageConnection] messaging host: localhost; port: 1883
+23:13:00,385 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:13:01,392 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:13:02,396 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:13:03,401 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:13:04,403 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:13:05,413 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:13:05,413 INFO  [main|ACallback] subscribed to BOT_ACTION_COMMAND
+23:13:05,414 INFO  [main|ACallback] subscribed to LIFE_SIGN
+23:13:05,435 DEBUG [main|MainPresenter] Loading moduli config: moduli_sim.xml
+23:13:05,670 INFO  [main|SSLVisionCam] Chose nif for vision-cam: Software Loopback Interface 1.
+23:13:05,808 INFO  [main|RefereeReceiver] Chose nif for referee: Software Loopback Interface 1.
+23:13:05,951 DEBUG [main|RobotControlManager] rcm instatiated!
+23:13:05,964 DEBUG [main|ConfigManager] Loaded config for 'Bot Config': bots_default.xml
+23:13:06,222 DEBUG [main|ConfigManager] Loaded config for 'AI Config': ai_default.xml
+23:13:06,264 DEBUG [main|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+23:13:06,403 INFO  [main|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+23:13:06,552 INFO  [main|BaseStation] Chose nif for base station: Realtek PCIe GBE Family Controller.
+23:13:06,569 DEBUG [main|ConfigManager] Loaded config for 'Geometry': RoboCup_2012.xml
+23:13:06,579 DEBUG [main|ConfigManager] Loaded config for 'Team Config': yellow_default.xml
+23:13:06,608 DEBUG [main|MainPresenter] Loaded config: moduli_sim.xml
+23:13:06,608 DEBUG [main|MainPresenter] Loading layout: Overview.ly
+23:13:06,609 DEBUG [main|MainPresenter] Loaded layout: ./config/gui/Overview.ly
+23:13:06,609 DEBUG [main|MainPresenter] Loading look and feel: Windows
+23:13:20,429 DEBUG [ModuliStateChanged|SSLVisionCam] Initialized.
+23:13:20,429 DEBUG [ModuliStateChanged|Oracle_extKalman] Initialized.
+23:13:20,448 DEBUG [ModuliStateChanged|RefereeHandler] Initialized.
+23:13:20,448 DEBUG [ModuliStateChanged|GenericManager] Initialized.
+23:13:20,448 DEBUG [ModuliStateChanged|GenericSkillSystem] Initialized.
+23:13:20,448 DEBUG [ModuliStateChanged|RobotControlManager] Initialized.
+23:13:20,448 DEBUG [ModuliStateChanged|Agent] Initialized.
+23:13:20,449 DEBUG [ModuliStateChanged|Timer] Initialized.
+23:13:20,449 DEBUG [Dormouse|Dormouse] Dormouse started...
+23:13:20,500 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+23:13:20,501 DEBUG [ModuliStateChanged|SSLVisionCam] Started.
+23:13:20,502 DEBUG [ModuliStateChanged|Oracle_extKalman] Started.
+23:13:20,502 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+23:13:20,502 DEBUG [ModuliStateChanged|RefereeHandler] Started.
+23:13:20,509 DEBUG [ModuliStateChanged|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+23:13:20,649 INFO  [ModuliStateChanged|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+23:13:20,803 INFO  [ModuliStateChanged|BaseStation] Chose nif for base station: Realtek PCIe GBE Family Controller.
+23:13:20,812 DEBUG [Receiver UDP null:-1|ReceiverUDP] Receive buffer size set to: 8192
+23:13:20,814 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] Receive buffer size set to: 8192
+23:13:20,814 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Marvin (BotID [team=TIGERS, number=0])
+23:13:20,815 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+23:13:20,815 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Eddie (BotID [team=TIGERS, number=1])
+23:13:20,815 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] Receive buffer size set to: 8192
+23:13:20,816 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+23:13:20,816 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Arthur (BotID [team=TIGERS, number=2])
+23:13:20,816 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] Receive buffer size set to: 8192
+23:13:20,817 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+23:13:20,817 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] Receive buffer size set to: 8192
+23:13:20,817 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Baze (BotID [team=TIGERS, number=3])
+23:13:20,817 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+23:13:20,818 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: R2D2 (BotID [team=TIGERS, number=4])
+23:13:20,818 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] Receive buffer size set to: 8192
+23:13:20,819 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: WallE (BotID [team=TIGERS, number=5])
+23:13:20,819 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+23:13:20,819 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] Receive buffer size set to: 8192
+23:13:20,820 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+23:13:20,822 DEBUG [ModuliStateChanged|GenericManager] Started.
+23:13:20,824 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=0]
+23:13:20,825 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=1]
+23:13:20,825 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=2]
+23:13:20,825 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=3]
+23:13:20,825 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=4]
+23:13:20,826 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=5]
+23:13:20,826 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=6]
+23:13:20,826 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=7]
+23:13:20,826 DEBUG [ModuliStateChanged|GenericSkillSystem] Started.
+23:13:20,826 DEBUG [ModuliStateChanged|RobotControlManager] Started.
+23:13:20,978 DEBUG [ModuliStateChanged|IndirectShotV2Play] Receiver: BotID [team=TIGERS, number=2]
+23:13:21,005 DEBUG [ModuliStateChanged|Agent] PlayFactory check done!
+23:13:21,012 DEBUG [ModuliStateChanged|Agent] Started.
+23:13:21,012 DEBUG [ModuliStateChanged|Timer] Started.
+23:13:22,822 INFO  [AutoCharge|GenericManager] Auto charging bots
+23:13:22,822 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+23:13:22,822 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+23:13:22,823 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+23:13:22,823 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+23:13:22,823 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+23:13:22,823 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+23:16:22,277 DEBUG [AWT-EventQueue-0|MainPresenter] Saved configuration to: .\config\user\Fuchur_rYan.props
+23:16:22,278 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+23:16:22,278 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+23:16:22,278 DEBUG [AWT-EventQueue-0|SSLVisionCam] Stopped.
+23:16:22,278 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Stopped.
+23:16:22,278 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+23:16:22,278 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+23:16:22,278 DEBUG [AWT-EventQueue-0|RefereeHandler] Stopped.
+23:16:22,379 INFO  [Receiver UDP /127.0.0.1:10020|ReceiverUDP] UDP transceiver terminating
+23:16:22,386 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Marvin (BotID [team=TIGERS, number=0])
+23:16:22,487 INFO  [Receiver UDP /127.0.0.1:10021|ReceiverUDP] UDP transceiver terminating
+23:16:22,487 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Eddie (BotID [team=TIGERS, number=1])
+23:16:22,587 INFO  [Receiver UDP /127.0.0.1:10022|ReceiverUDP] UDP transceiver terminating
+23:16:22,587 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Arthur (BotID [team=TIGERS, number=2])
+23:16:22,687 INFO  [Receiver UDP /127.0.0.1:10023|ReceiverUDP] UDP transceiver terminating
+23:16:22,687 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Baze (BotID [team=TIGERS, number=3])
+23:16:22,787 INFO  [Receiver UDP /127.0.0.1:10024|ReceiverUDP] UDP transceiver terminating
+23:16:22,787 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: R2D2 (BotID [team=TIGERS, number=4])
+23:16:22,887 INFO  [Receiver UDP /127.0.0.1:10025|ReceiverUDP] UDP transceiver terminating
+23:16:22,887 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: WallE (BotID [team=TIGERS, number=5])
+23:16:22,997 DEBUG [AWT-EventQueue-0|GenericManager] Stopped.
+23:16:22,997 INFO  [Receiver UDP null:-1|ReceiverUDP] UDP transceiver terminating
+23:16:23,000 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Stopped.
+23:16:23,000 DEBUG [AWT-EventQueue-0|RobotControlManager] Stopped.
+23:16:23,000 DEBUG [AWT-EventQueue-0|Agent] Stopped.
+23:16:23,000 DEBUG [AWT-EventQueue-0|Timer] Stopped.
+23:16:23,000 DEBUG [Dormouse|Dormouse] Dormouse stopped.
+23:16:23,050 DEBUG [AWT-EventQueue-0|SSLVisionCam] Deinitialized.
+23:16:23,050 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Deinitialized.
+23:16:23,050 DEBUG [AWT-EventQueue-0|GenericManager] Deinitialized.
+23:16:23,050 DEBUG [WP_Director|Director] Interrupted while waiting for new CamDetectionFrame.
+23:16:23,050 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Deinitialized.
+23:16:23,050 DEBUG [AWT-EventQueue-0|Agent] Deinitialized.
+23:16:23,050 DEBUG [AWT-EventQueue-0|Timer] Deinitialized.
+23:22:17,595 INFO  [main|ControllerFactory] Controller found: HID-Tastatur
+23:22:17,596 INFO  [main|ControllerFactory] Controller found: HID-konforme Maus
+23:22:17,596 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+23:22:17,597 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+23:22:17,597 INFO  [main|ControllerFactory] Controller found: USB Audio
+23:22:17,597 INFO  [main|ControllerFactory] Controller found: HID-konformes Benutzersteuergerät
+23:22:17,597 INFO  [main|ControllerFactory] Controller found: HID-konformes Gerät
+23:22:18,236 INFO  [main|RCMPresenter] 7 controllers found.
+23:22:18,273 DEBUG [main|MessageConnection] New MessageConnection
+23:22:18,356 INFO  [main|ACallback] subscribed to REGISTRY
+23:22:18,356 INFO  [main|ACallback] subscribed to AI_REGISTRY
+23:22:18,357 INFO  [main|ACallback] subscribed to MODULI_REGISTRY
+23:22:18,357 INFO  [main|ACallback] subscribed to APOLLON_REGISTRY
+23:22:18,357 INFO  [main|ACallback] subscribed to LACHESIS_REGISTRY
+23:22:18,357 INFO  [main|ACallback] subscribed to ATHENA_REGISTRY
+23:22:18,357 INFO  [main|ACallback] subscribed to LOG_REGISTRY
+23:22:18,357 INFO  [main|ACallback] subscribed to TIMER_REGISTRY
+23:22:18,357 INFO  [main|ACallback] subscribed to EMERGENCY_REGISTRY
+23:22:18,357 INFO  [main|ACallback] subscribed to REFEREE_REGISTRY
+23:22:18,357 INFO  [main|ACallback] subscribed to RCM_REGISTRY
+23:22:18,357 INFO  [main|ACallback] subscribed to WF_REGISTRY
+23:22:18,357 INFO  [main|ACallback] subscribed to TEST_REGISTRY
+23:22:18,357 DEBUG [main|MessageConnection] messaging host: localhost; port: 1883
+23:22:19,424 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:22:20,429 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:22:21,434 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:22:22,446 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:22:23,451 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:22:24,453 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:22:24,453 INFO  [main|ACallback] subscribed to BOT_ACTION_COMMAND
+23:22:24,453 INFO  [main|ACallback] subscribed to LIFE_SIGN
+23:22:24,469 DEBUG [main|MainPresenter] Loading moduli config: moduli_sim.xml
+23:22:24,703 INFO  [main|SSLVisionCam] Chose nif for vision-cam: Software Loopback Interface 1.
+23:22:24,845 INFO  [main|RefereeReceiver] Chose nif for referee: Software Loopback Interface 1.
+23:22:24,992 DEBUG [main|RobotControlManager] rcm instatiated!
+23:22:25,003 DEBUG [main|ConfigManager] Loaded config for 'AI Config': ai_default.xml
+23:22:25,290 DEBUG [main|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+23:22:25,441 INFO  [main|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+23:22:25,590 INFO  [main|BaseStation] Chose nif for base station: Realtek PCIe GBE Family Controller.
+23:22:25,609 DEBUG [main|ConfigManager] Loaded config for 'Geometry': RoboCup_2012.xml
+23:22:25,620 DEBUG [main|ConfigManager] Loaded config for 'Bot Config': bots_default.xml
+23:22:25,631 DEBUG [main|ConfigManager] Loaded config for 'Team Config': yellow_default.xml
+23:22:25,661 DEBUG [main|MainPresenter] Loaded config: moduli_sim.xml
+23:22:25,661 DEBUG [main|MainPresenter] Loading layout: Overview.ly
+23:22:25,662 DEBUG [main|MainPresenter] Loaded layout: ./config/gui/Overview.ly
+23:22:25,662 DEBUG [main|MainPresenter] Loading look and feel: Windows
+23:22:29,805 DEBUG [ModuliStateChanged|SSLVisionCam] Initialized.
+23:22:29,805 DEBUG [ModuliStateChanged|Oracle_extKalman] Initialized.
+23:22:29,821 DEBUG [ModuliStateChanged|RefereeHandler] Initialized.
+23:22:29,821 DEBUG [ModuliStateChanged|GenericManager] Initialized.
+23:22:29,821 DEBUG [ModuliStateChanged|GenericSkillSystem] Initialized.
+23:22:29,821 DEBUG [ModuliStateChanged|RobotControlManager] Initialized.
+23:22:29,821 DEBUG [ModuliStateChanged|Agent] Initialized.
+23:22:29,822 DEBUG [ModuliStateChanged|Timer] Initialized.
+23:22:29,822 DEBUG [Dormouse|Dormouse] Dormouse started...
+23:22:29,874 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+23:22:29,874 DEBUG [ModuliStateChanged|SSLVisionCam] Started.
+23:22:29,876 DEBUG [ModuliStateChanged|Oracle_extKalman] Started.
+23:22:29,876 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+23:22:29,877 DEBUG [ModuliStateChanged|RefereeHandler] Started.
+23:22:29,884 DEBUG [ModuliStateChanged|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+23:22:30,024 INFO  [ModuliStateChanged|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+23:22:30,176 INFO  [ModuliStateChanged|BaseStation] Chose nif for base station: Realtek PCIe GBE Family Controller.
+23:22:30,184 DEBUG [Receiver UDP null:-1|ReceiverUDP] Receive buffer size set to: 8192
+23:22:30,187 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] Receive buffer size set to: 8192
+23:22:30,187 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Marvin (BotID [team=TIGERS, number=0])
+23:22:30,187 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+23:22:30,188 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Eddie (BotID [team=TIGERS, number=1])
+23:22:30,188 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] Receive buffer size set to: 8192
+23:22:30,189 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+23:22:30,189 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Arthur (BotID [team=TIGERS, number=2])
+23:22:30,189 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] Receive buffer size set to: 8192
+23:22:30,190 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+23:22:30,190 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Baze (BotID [team=TIGERS, number=3])
+23:22:30,190 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] Receive buffer size set to: 8192
+23:22:30,191 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+23:22:30,191 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: R2D2 (BotID [team=TIGERS, number=4])
+23:22:30,191 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] Receive buffer size set to: 8192
+23:22:30,191 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+23:22:30,192 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: WallE (BotID [team=TIGERS, number=5])
+23:22:30,192 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] Receive buffer size set to: 8192
+23:22:30,192 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+23:22:30,194 DEBUG [ModuliStateChanged|GenericManager] Started.
+23:22:30,197 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=0]
+23:22:30,197 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=1]
+23:22:30,197 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=2]
+23:22:30,198 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=3]
+23:22:30,198 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=4]
+23:22:30,198 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=5]
+23:22:30,198 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=6]
+23:22:30,199 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=7]
+23:22:30,199 DEBUG [ModuliStateChanged|GenericSkillSystem] Started.
+23:22:30,199 DEBUG [ModuliStateChanged|RobotControlManager] Started.
+23:22:30,358 DEBUG [ModuliStateChanged|IndirectShotV2Play] Receiver: BotID [team=TIGERS, number=3]
+23:22:30,385 DEBUG [ModuliStateChanged|Agent] PlayFactory check done!
+23:22:30,392 DEBUG [ModuliStateChanged|Agent] Started.
+23:22:30,392 DEBUG [ModuliStateChanged|Timer] Started.
+23:22:32,194 INFO  [AutoCharge|GenericManager] Auto charging bots
+23:22:32,194 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+23:22:32,194 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+23:22:32,195 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+23:22:32,195 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+23:22:32,195 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+23:22:32,195 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+23:22:37,750 DEBUG [AWT-EventQueue-0|MainPresenter] Saved configuration to: .\config\user\Fuchur_rYan.props
+23:22:37,751 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+23:22:37,751 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+23:22:37,751 DEBUG [AWT-EventQueue-0|SSLVisionCam] Stopped.
+23:22:37,751 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Stopped.
+23:22:37,751 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+23:22:37,751 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+23:22:37,752 DEBUG [AWT-EventQueue-0|RefereeHandler] Stopped.
+23:22:37,852 INFO  [Receiver UDP /127.0.0.1:10020|ReceiverUDP] UDP transceiver terminating
+23:22:37,857 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Marvin (BotID [team=TIGERS, number=0])
+23:22:37,958 INFO  [Receiver UDP /127.0.0.1:10021|ReceiverUDP] UDP transceiver terminating
+23:22:37,958 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Eddie (BotID [team=TIGERS, number=1])
+23:22:38,058 INFO  [Receiver UDP /127.0.0.1:10022|ReceiverUDP] UDP transceiver terminating
+23:22:38,058 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Arthur (BotID [team=TIGERS, number=2])
+23:22:38,158 INFO  [Receiver UDP /127.0.0.1:10023|ReceiverUDP] UDP transceiver terminating
+23:22:38,158 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Baze (BotID [team=TIGERS, number=3])
+23:22:38,258 INFO  [Receiver UDP /127.0.0.1:10024|ReceiverUDP] UDP transceiver terminating
+23:22:38,258 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: R2D2 (BotID [team=TIGERS, number=4])
+23:22:38,358 INFO  [Receiver UDP /127.0.0.1:10025|ReceiverUDP] UDP transceiver terminating
+23:22:38,358 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: WallE (BotID [team=TIGERS, number=5])
+23:22:38,478 DEBUG [AWT-EventQueue-0|GenericManager] Stopped.
+23:22:38,478 INFO  [Receiver UDP null:-1|ReceiverUDP] UDP transceiver terminating
+23:22:38,480 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Stopped.
+23:22:38,480 DEBUG [AWT-EventQueue-0|RobotControlManager] Stopped.
+23:22:38,480 DEBUG [AWT-EventQueue-0|Agent] Stopped.
+23:22:38,480 DEBUG [AWT-EventQueue-0|Timer] Stopped.
+23:22:38,480 DEBUG [Dormouse|Dormouse] Dormouse stopped.
+23:22:38,530 DEBUG [AWT-EventQueue-0|SSLVisionCam] Deinitialized.
+23:22:38,530 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Deinitialized.
+23:22:38,530 DEBUG [AWT-EventQueue-0|GenericManager] Deinitialized.
+23:22:38,530 DEBUG [WP_Director|Director] Interrupted while waiting for new CamDetectionFrame.
+23:22:38,530 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Deinitialized.
+23:22:38,530 DEBUG [AWT-EventQueue-0|Agent] Deinitialized.
+23:22:38,530 DEBUG [AWT-EventQueue-0|Timer] Deinitialized.
+23:22:47,208 INFO  [main|ControllerFactory] Controller found: HID-Tastatur
+23:22:47,209 INFO  [main|ControllerFactory] Controller found: HID-konforme Maus
+23:22:47,209 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+23:22:47,210 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+23:22:47,210 INFO  [main|ControllerFactory] Controller found: USB Audio
+23:22:47,210 INFO  [main|ControllerFactory] Controller found: HID-konformes Benutzersteuergerät
+23:22:47,210 INFO  [main|ControllerFactory] Controller found: HID-konformes Gerät
+23:22:47,770 INFO  [main|RCMPresenter] 7 controllers found.
+23:22:47,807 DEBUG [main|MessageConnection] New MessageConnection
+23:22:47,890 INFO  [main|ACallback] subscribed to REGISTRY
+23:22:47,890 INFO  [main|ACallback] subscribed to AI_REGISTRY
+23:22:47,890 INFO  [main|ACallback] subscribed to MODULI_REGISTRY
+23:22:47,890 INFO  [main|ACallback] subscribed to APOLLON_REGISTRY
+23:22:47,891 INFO  [main|ACallback] subscribed to LACHESIS_REGISTRY
+23:22:47,891 INFO  [main|ACallback] subscribed to ATHENA_REGISTRY
+23:22:47,891 INFO  [main|ACallback] subscribed to LOG_REGISTRY
+23:22:47,891 INFO  [main|ACallback] subscribed to TIMER_REGISTRY
+23:22:47,891 INFO  [main|ACallback] subscribed to EMERGENCY_REGISTRY
+23:22:47,891 INFO  [main|ACallback] subscribed to REFEREE_REGISTRY
+23:22:47,891 INFO  [main|ACallback] subscribed to RCM_REGISTRY
+23:22:47,891 INFO  [main|ACallback] subscribed to WF_REGISTRY
+23:22:47,891 INFO  [main|ACallback] subscribed to TEST_REGISTRY
+23:22:47,891 DEBUG [main|MessageConnection] messaging host: localhost; port: 1883
+23:22:48,973 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:22:49,979 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:22:50,982 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:22:51,996 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:22:53,000 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:22:54,001 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+23:22:54,001 INFO  [main|ACallback] subscribed to BOT_ACTION_COMMAND
+23:22:54,001 INFO  [main|ACallback] subscribed to LIFE_SIGN
+23:22:54,014 DEBUG [main|MainPresenter] Loading moduli config: moduli_sim.xml
+23:22:54,233 INFO  [main|SSLVisionCam] Chose nif for vision-cam: Software Loopback Interface 1.
+23:22:54,358 INFO  [main|RefereeReceiver] Chose nif for referee: Software Loopback Interface 1.
+23:22:54,487 DEBUG [main|RobotControlManager] rcm instatiated!
+23:22:54,499 DEBUG [main|ConfigManager] Loaded config for 'Bot Config': bots_default.xml
+23:22:54,758 DEBUG [main|ConfigManager] Loaded config for 'Team Config': yellow_default.xml
+23:22:54,761 DEBUG [main|ConfigManager] Loaded config for 'Geometry': RoboCup_2012.xml
+23:22:54,783 DEBUG [main|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+23:22:54,908 INFO  [main|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+23:22:55,040 INFO  [main|BaseStation] Chose nif for base station: Realtek PCIe GBE Family Controller.
+23:22:55,059 DEBUG [main|ConfigManager] Loaded config for 'AI Config': ai_default.xml
+23:22:55,116 DEBUG [main|MainPresenter] Loaded config: moduli_sim.xml
+23:22:55,117 DEBUG [main|MainPresenter] Loading layout: Overview.ly
+23:22:55,117 DEBUG [main|MainPresenter] Loaded layout: ./config/gui/Overview.ly
+23:22:55,117 DEBUG [main|MainPresenter] Loading look and feel: Windows
+23:22:58,042 DEBUG [ModuliStateChanged|SSLVisionCam] Initialized.
+23:22:58,042 DEBUG [ModuliStateChanged|Oracle_extKalman] Initialized.
+23:22:58,064 DEBUG [ModuliStateChanged|RefereeHandler] Initialized.
+23:22:58,064 DEBUG [ModuliStateChanged|GenericManager] Initialized.
+23:22:58,064 DEBUG [ModuliStateChanged|GenericSkillSystem] Initialized.
+23:22:58,065 DEBUG [ModuliStateChanged|RobotControlManager] Initialized.
+23:22:58,065 DEBUG [ModuliStateChanged|Agent] Initialized.
+23:22:58,065 DEBUG [ModuliStateChanged|Timer] Initialized.
+23:22:58,066 DEBUG [Dormouse|Dormouse] Dormouse started...
+23:22:58,116 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+23:22:58,116 DEBUG [ModuliStateChanged|SSLVisionCam] Started.
+23:22:58,118 DEBUG [ModuliStateChanged|Oracle_extKalman] Started.
+23:22:58,118 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+23:22:58,118 DEBUG [ModuliStateChanged|RefereeHandler] Started.
+23:22:58,125 DEBUG [ModuliStateChanged|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+23:22:58,251 INFO  [ModuliStateChanged|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+23:22:58,385 INFO  [ModuliStateChanged|BaseStation] Chose nif for base station: Realtek PCIe GBE Family Controller.
+23:22:58,394 DEBUG [Receiver UDP null:-1|ReceiverUDP] Receive buffer size set to: 8192
+23:22:58,397 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] Receive buffer size set to: 8192
+23:22:58,397 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Marvin (BotID [team=TIGERS, number=0])
+23:22:58,398 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+23:22:58,398 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Eddie (BotID [team=TIGERS, number=1])
+23:22:58,398 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] Receive buffer size set to: 8192
+23:22:58,399 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+23:22:58,399 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] Receive buffer size set to: 8192
+23:22:58,399 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Arthur (BotID [team=TIGERS, number=2])
+23:22:58,399 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+23:22:58,400 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Baze (BotID [team=TIGERS, number=3])
+23:22:58,400 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] Receive buffer size set to: 8192
+23:22:58,401 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+23:22:58,401 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: R2D2 (BotID [team=TIGERS, number=4])
+23:22:58,402 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] Receive buffer size set to: 8192
+23:22:58,402 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: WallE (BotID [team=TIGERS, number=5])
+23:22:58,402 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] Receive buffer size set to: 8192
+23:22:58,402 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+23:22:58,403 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+23:22:58,405 DEBUG [ModuliStateChanged|GenericManager] Started.
+23:22:58,408 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=0]
+23:22:58,408 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=1]
+23:22:58,408 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=2]
+23:22:58,408 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=3]
+23:22:58,409 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=4]
+23:22:58,409 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=5]
+23:22:58,409 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=6]
+23:22:58,409 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=7]
+23:22:58,409 DEBUG [ModuliStateChanged|GenericSkillSystem] Started.
+23:22:58,409 DEBUG [ModuliStateChanged|RobotControlManager] Started.
+23:22:58,560 DEBUG [ModuliStateChanged|IndirectShotV2Play] Receiver: BotID [team=TIGERS, number=3]
+23:22:58,586 DEBUG [ModuliStateChanged|Agent] PlayFactory check done!
+23:22:58,593 DEBUG [ModuliStateChanged|Agent] Started.
+23:22:58,593 DEBUG [ModuliStateChanged|Timer] Started.
+23:23:00,405 INFO  [AutoCharge|GenericManager] Auto charging bots
+23:23:00,406 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+23:23:00,406 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+23:23:00,406 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+23:23:00,406 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+23:23:00,406 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+23:23:00,406 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+23:23:09,414 DEBUG [AWT-EventQueue-0|MainPresenter] Saved configuration to: .\config\user\Fuchur_rYan.props
+23:23:09,414 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+23:23:09,414 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+23:23:09,414 DEBUG [AWT-EventQueue-0|SSLVisionCam] Stopped.
+23:23:09,414 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Stopped.
+23:23:09,414 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+23:23:09,414 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+23:23:09,414 DEBUG [AWT-EventQueue-0|RefereeHandler] Stopped.
+23:23:09,515 INFO  [Receiver UDP /127.0.0.1:10020|ReceiverUDP] UDP transceiver terminating
+23:23:09,522 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Marvin (BotID [team=TIGERS, number=0])
+23:23:09,623 INFO  [Receiver UDP /127.0.0.1:10021|ReceiverUDP] UDP transceiver terminating
+23:23:09,623 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Eddie (BotID [team=TIGERS, number=1])
+23:23:09,724 INFO  [Receiver UDP /127.0.0.1:10022|ReceiverUDP] UDP transceiver terminating
+23:23:09,724 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Arthur (BotID [team=TIGERS, number=2])
+23:23:09,824 INFO  [Receiver UDP /127.0.0.1:10023|ReceiverUDP] UDP transceiver terminating
+23:23:09,824 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Baze (BotID [team=TIGERS, number=3])
+23:23:09,924 INFO  [Receiver UDP /127.0.0.1:10024|ReceiverUDP] UDP transceiver terminating
+23:23:09,924 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: R2D2 (BotID [team=TIGERS, number=4])
+23:23:10,024 INFO  [Receiver UDP /127.0.0.1:10025|ReceiverUDP] UDP transceiver terminating
+23:23:10,024 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: WallE (BotID [team=TIGERS, number=5])
+23:23:10,142 DEBUG [AWT-EventQueue-0|GenericManager] Stopped.
+23:23:10,142 INFO  [Receiver UDP null:-1|ReceiverUDP] UDP transceiver terminating
+23:23:10,144 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Stopped.
+23:23:10,144 DEBUG [AWT-EventQueue-0|RobotControlManager] Stopped.
+23:23:10,144 DEBUG [AWT-EventQueue-0|Agent] Stopped.
+23:23:10,144 DEBUG [AWT-EventQueue-0|Timer] Stopped.
+23:23:10,144 DEBUG [Dormouse|Dormouse] Dormouse stopped.
+23:23:10,194 DEBUG [AWT-EventQueue-0|SSLVisionCam] Deinitialized.
+23:23:10,194 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Deinitialized.
+23:23:10,194 DEBUG [WP_Director|Director] Interrupted while waiting for new CamDetectionFrame.
+23:23:10,194 DEBUG [AWT-EventQueue-0|GenericManager] Deinitialized.
+23:23:10,194 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Deinitialized.
+23:23:10,194 DEBUG [AWT-EventQueue-0|Agent] Deinitialized.
+23:23:10,194 DEBUG [AWT-EventQueue-0|Timer] Deinitialized.
+00:27:23,425 INFO  [main|ControllerFactory] Controller found: HID-Tastatur
+00:27:23,426 INFO  [main|ControllerFactory] Controller found: HID-konforme Maus
+00:27:23,426 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+00:27:23,426 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+00:27:23,426 INFO  [main|ControllerFactory] Controller found: USB Audio
+00:27:23,426 INFO  [main|ControllerFactory] Controller found: HID-konformes Benutzersteuergerät
+00:27:23,426 INFO  [main|ControllerFactory] Controller found: HID-konformes Gerät
+00:27:24,047 INFO  [main|RCMPresenter] 7 controllers found.
+00:27:24,086 DEBUG [main|MessageConnection] New MessageConnection
+00:27:24,170 INFO  [main|ACallback] subscribed to REGISTRY
+00:27:24,170 INFO  [main|ACallback] subscribed to AI_REGISTRY
+00:27:24,170 INFO  [main|ACallback] subscribed to MODULI_REGISTRY
+00:27:24,170 INFO  [main|ACallback] subscribed to APOLLON_REGISTRY
+00:27:24,170 INFO  [main|ACallback] subscribed to LACHESIS_REGISTRY
+00:27:24,170 INFO  [main|ACallback] subscribed to ATHENA_REGISTRY
+00:27:24,170 INFO  [main|ACallback] subscribed to LOG_REGISTRY
+00:27:24,171 INFO  [main|ACallback] subscribed to TIMER_REGISTRY
+00:27:24,171 INFO  [main|ACallback] subscribed to EMERGENCY_REGISTRY
+00:27:24,171 INFO  [main|ACallback] subscribed to REFEREE_REGISTRY
+00:27:24,171 INFO  [main|ACallback] subscribed to RCM_REGISTRY
+00:27:24,171 INFO  [main|ACallback] subscribed to WF_REGISTRY
+00:27:24,171 INFO  [main|ACallback] subscribed to TEST_REGISTRY
+00:27:24,171 DEBUG [main|MessageConnection] messaging host: localhost; port: 1883
+00:27:25,239 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+00:27:26,244 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+00:27:27,246 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+00:27:28,248 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+00:27:29,260 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+00:27:30,265 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+00:27:30,265 INFO  [main|ACallback] subscribed to BOT_ACTION_COMMAND
+00:27:30,266 INFO  [main|ACallback] subscribed to LIFE_SIGN
+00:27:30,281 DEBUG [main|MainPresenter] Loading moduli config: moduli_sim.xml
+00:27:30,507 INFO  [main|SSLVisionCam] Chose nif for vision-cam: Software Loopback Interface 1.
+00:27:30,635 INFO  [main|RefereeReceiver] Chose nif for referee: Software Loopback Interface 1.
+00:27:30,768 DEBUG [main|RobotControlManager] rcm instatiated!
+00:27:30,781 DEBUG [main|ConfigManager] Loaded config for 'Bot Config': bots_default.xml
+00:27:31,047 DEBUG [main|ConfigManager] Loaded config for 'Geometry': RoboCup_2012.xml
+00:27:31,060 DEBUG [main|ConfigManager] Loaded config for 'AI Config': ai_default.xml
+00:27:31,092 DEBUG [main|ConfigManager] Loaded config for 'Team Config': yellow_default.xml
+00:27:31,106 DEBUG [main|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+00:27:31,233 INFO  [main|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+00:27:31,368 INFO  [main|BaseStation] Chose nif for base station: Realtek PCIe GBE Family Controller.
+00:27:31,416 DEBUG [main|MainPresenter] Loaded config: moduli_sim.xml
+00:27:31,416 DEBUG [main|MainPresenter] Loading layout: Overview.ly
+00:27:31,417 DEBUG [main|MainPresenter] Loaded layout: ./config/gui/Overview.ly
+00:27:31,417 DEBUG [main|MainPresenter] Loading look and feel: Windows
+00:27:41,360 DEBUG [ModuliStateChanged|SSLVisionCam] Initialized.
+00:27:41,360 DEBUG [ModuliStateChanged|Oracle_extKalman] Initialized.
+00:27:41,371 DEBUG [ModuliStateChanged|RefereeHandler] Initialized.
+00:27:41,372 DEBUG [ModuliStateChanged|GenericManager] Initialized.
+00:27:41,372 DEBUG [ModuliStateChanged|GenericSkillSystem] Initialized.
+00:27:41,372 DEBUG [ModuliStateChanged|RobotControlManager] Initialized.
+00:27:41,372 DEBUG [ModuliStateChanged|Agent] Initialized.
+00:27:41,373 DEBUG [ModuliStateChanged|Timer] Initialized.
+00:27:41,373 DEBUG [Dormouse|Dormouse] Dormouse started...
+00:27:41,424 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+00:27:41,425 DEBUG [ModuliStateChanged|SSLVisionCam] Started.
+00:27:41,426 DEBUG [ModuliStateChanged|Oracle_extKalman] Started.
+00:27:41,426 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+00:27:41,426 DEBUG [ModuliStateChanged|RefereeHandler] Started.
+00:27:41,433 DEBUG [ModuliStateChanged|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+00:27:41,558 INFO  [ModuliStateChanged|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+00:27:41,694 INFO  [ModuliStateChanged|BaseStation] Chose nif for base station: Realtek PCIe GBE Family Controller.
+00:27:41,703 DEBUG [Receiver UDP null:-1|ReceiverUDP] Receive buffer size set to: 8192
+00:27:41,705 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] Receive buffer size set to: 8192
+00:27:41,706 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Marvin (BotID [team=TIGERS, number=0])
+00:27:41,706 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+00:27:41,707 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Eddie (BotID [team=TIGERS, number=1])
+00:27:41,707 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] Receive buffer size set to: 8192
+00:27:41,707 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+00:27:41,708 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Arthur (BotID [team=TIGERS, number=2])
+00:27:41,709 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] Receive buffer size set to: 8192
+00:27:41,709 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] Receive buffer size set to: 8192
+00:27:41,709 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+00:27:41,710 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Baze (BotID [team=TIGERS, number=3])
+00:27:41,710 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+00:27:41,710 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: R2D2 (BotID [team=TIGERS, number=4])
+00:27:41,711 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] Receive buffer size set to: 8192
+00:27:41,711 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+00:27:41,711 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: WallE (BotID [team=TIGERS, number=5])
+00:27:41,711 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] Receive buffer size set to: 8192
+00:27:41,712 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+00:27:41,713 DEBUG [ModuliStateChanged|GenericManager] Started.
+00:27:41,716 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=0]
+00:27:41,716 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=1]
+00:27:41,717 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=2]
+00:27:41,717 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=3]
+00:27:41,717 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=4]
+00:27:41,717 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=5]
+00:27:41,717 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=6]
+00:27:41,718 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=7]
+00:27:41,718 DEBUG [ModuliStateChanged|GenericSkillSystem] Started.
+00:27:41,718 DEBUG [ModuliStateChanged|RobotControlManager] Started.
+00:27:41,873 DEBUG [ModuliStateChanged|IndirectShotV2Play] Receiver: BotID [team=TIGERS, number=4]
+00:27:41,901 DEBUG [ModuliStateChanged|Agent] PlayFactory check done!
+00:27:41,908 DEBUG [ModuliStateChanged|Agent] Started.
+00:27:41,908 DEBUG [ModuliStateChanged|Timer] Started.
+00:27:43,714 INFO  [AutoCharge|GenericManager] Auto charging bots
+00:27:43,714 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+00:27:43,714 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+00:27:43,714 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+00:27:43,714 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+00:27:43,714 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+00:27:43,714 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+00:28:38,132 DEBUG [AWT-EventQueue-0|MainPresenter] Saved configuration to: .\config\user\Fuchur_rYan.props
+00:28:38,132 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+00:28:38,132 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+00:28:38,132 DEBUG [AWT-EventQueue-0|SSLVisionCam] Stopped.
+00:28:38,133 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Stopped.
+00:28:38,133 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+00:28:38,133 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+00:28:38,133 DEBUG [AWT-EventQueue-0|RefereeHandler] Stopped.
+00:28:38,233 INFO  [Receiver UDP /127.0.0.1:10020|ReceiverUDP] UDP transceiver terminating
+00:28:38,239 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Marvin (BotID [team=TIGERS, number=0])
+00:28:38,340 INFO  [Receiver UDP /127.0.0.1:10021|ReceiverUDP] UDP transceiver terminating
+00:28:38,340 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Eddie (BotID [team=TIGERS, number=1])
+00:28:38,440 INFO  [Receiver UDP /127.0.0.1:10022|ReceiverUDP] UDP transceiver terminating
+00:28:38,440 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Arthur (BotID [team=TIGERS, number=2])
+00:28:38,540 INFO  [Receiver UDP /127.0.0.1:10023|ReceiverUDP] UDP transceiver terminating
+00:28:38,540 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Baze (BotID [team=TIGERS, number=3])
+00:28:38,640 INFO  [Receiver UDP /127.0.0.1:10024|ReceiverUDP] UDP transceiver terminating
+00:28:38,640 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: R2D2 (BotID [team=TIGERS, number=4])
+00:28:38,740 INFO  [Receiver UDP /127.0.0.1:10025|ReceiverUDP] UDP transceiver terminating
+00:28:38,740 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: WallE (BotID [team=TIGERS, number=5])
+00:28:38,844 DEBUG [AWT-EventQueue-0|GenericManager] Stopped.
+00:28:38,844 INFO  [Receiver UDP null:-1|ReceiverUDP] UDP transceiver terminating
+00:28:38,847 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Stopped.
+00:28:38,847 DEBUG [AWT-EventQueue-0|RobotControlManager] Stopped.
+00:28:38,847 DEBUG [AWT-EventQueue-0|Agent] Stopped.
+00:28:38,847 DEBUG [AWT-EventQueue-0|Timer] Stopped.
+00:28:38,848 DEBUG [Dormouse|Dormouse] Dormouse stopped.
+00:28:38,898 DEBUG [AWT-EventQueue-0|SSLVisionCam] Deinitialized.
+00:28:38,898 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Deinitialized.
+00:28:38,898 DEBUG [AWT-EventQueue-0|GenericManager] Deinitialized.
+00:28:38,898 DEBUG [WP_Director|Director] Interrupted while waiting for new CamDetectionFrame.
+00:28:38,898 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Deinitialized.
+00:28:38,898 DEBUG [AWT-EventQueue-0|Agent] Deinitialized.
+00:28:38,898 DEBUG [AWT-EventQueue-0|Timer] Deinitialized.
+00:28:54,610 INFO  [main|ControllerFactory] Controller found: HID-Tastatur
+00:28:54,612 INFO  [main|ControllerFactory] Controller found: HID-konforme Maus
+00:28:54,612 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+00:28:54,612 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+00:28:54,612 INFO  [main|ControllerFactory] Controller found: USB Audio
+00:28:54,612 INFO  [main|ControllerFactory] Controller found: HID-konformes Benutzersteuergerät
+00:28:54,612 INFO  [main|ControllerFactory] Controller found: HID-konformes Gerät
+00:28:55,225 INFO  [main|RCMPresenter] 7 controllers found.
+00:28:55,271 DEBUG [main|MessageConnection] New MessageConnection
+00:28:55,354 INFO  [main|ACallback] subscribed to REGISTRY
+00:28:55,354 INFO  [main|ACallback] subscribed to AI_REGISTRY
+00:28:55,354 INFO  [main|ACallback] subscribed to MODULI_REGISTRY
+00:28:55,354 INFO  [main|ACallback] subscribed to APOLLON_REGISTRY
+00:28:55,354 INFO  [main|ACallback] subscribed to LACHESIS_REGISTRY
+00:28:55,354 INFO  [main|ACallback] subscribed to ATHENA_REGISTRY
+00:28:55,355 INFO  [main|ACallback] subscribed to LOG_REGISTRY
+00:28:55,355 INFO  [main|ACallback] subscribed to TIMER_REGISTRY
+00:28:55,355 INFO  [main|ACallback] subscribed to EMERGENCY_REGISTRY
+00:28:55,355 INFO  [main|ACallback] subscribed to REFEREE_REGISTRY
+00:28:55,355 INFO  [main|ACallback] subscribed to RCM_REGISTRY
+00:28:55,355 INFO  [main|ACallback] subscribed to WF_REGISTRY
+00:28:55,355 INFO  [main|ACallback] subscribed to TEST_REGISTRY
+00:28:55,355 DEBUG [main|MessageConnection] messaging host: localhost; port: 1883
+00:28:56,421 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+00:28:57,432 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+00:28:58,436 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+00:28:59,441 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+00:29:00,445 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+00:29:01,452 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+00:29:01,453 INFO  [main|ACallback] subscribed to BOT_ACTION_COMMAND
+00:29:01,453 INFO  [main|ACallback] subscribed to LIFE_SIGN
+00:29:01,468 DEBUG [main|MainPresenter] Loading moduli config: moduli_sim.xml
+00:29:01,714 INFO  [main|SSLVisionCam] Chose nif for vision-cam: Software Loopback Interface 1.
+00:29:01,858 INFO  [main|RefereeReceiver] Chose nif for referee: Software Loopback Interface 1.
+00:29:02,009 DEBUG [main|RobotControlManager] rcm instatiated!
+00:29:02,031 DEBUG [main|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+00:29:02,175 INFO  [main|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+00:29:02,331 INFO  [main|BaseStation] Chose nif for base station: Realtek PCIe GBE Family Controller.
+00:29:02,365 DEBUG [main|ConfigManager] Loaded config for 'Bot Config': bots_default.xml
+00:29:02,621 DEBUG [main|ConfigManager] Loaded config for 'Team Config': yellow_default.xml
+00:29:02,624 DEBUG [main|ConfigManager] Loaded config for 'Geometry': RoboCup_2012.xml
+00:29:02,635 DEBUG [main|ConfigManager] Loaded config for 'AI Config': ai_default.xml
+00:29:02,692 DEBUG [main|MainPresenter] Loaded config: moduli_sim.xml
+00:29:02,692 DEBUG [main|MainPresenter] Loading layout: Overview.ly
+00:29:02,693 DEBUG [main|MainPresenter] Loaded layout: ./config/gui/Overview.ly
+00:29:02,693 DEBUG [main|MainPresenter] Loading look and feel: Windows
+00:29:07,422 DEBUG [ModuliStateChanged|SSLVisionCam] Initialized.
+00:29:07,423 DEBUG [ModuliStateChanged|Oracle_extKalman] Initialized.
+00:29:07,434 DEBUG [ModuliStateChanged|RefereeHandler] Initialized.
+00:29:07,434 DEBUG [ModuliStateChanged|GenericManager] Initialized.
+00:29:07,434 DEBUG [ModuliStateChanged|GenericSkillSystem] Initialized.
+00:29:07,434 DEBUG [ModuliStateChanged|RobotControlManager] Initialized.
+00:29:07,434 DEBUG [ModuliStateChanged|Agent] Initialized.
+00:29:07,435 DEBUG [ModuliStateChanged|Timer] Initialized.
+00:29:07,435 DEBUG [Dormouse|Dormouse] Dormouse started...
+00:29:07,486 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+00:29:07,487 DEBUG [ModuliStateChanged|SSLVisionCam] Started.
+00:29:07,488 DEBUG [ModuliStateChanged|Oracle_extKalman] Started.
+00:29:07,488 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+00:29:07,488 DEBUG [ModuliStateChanged|RefereeHandler] Started.
+00:29:07,494 DEBUG [ModuliStateChanged|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+00:29:07,637 INFO  [ModuliStateChanged|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+00:29:07,798 INFO  [ModuliStateChanged|BaseStation] Chose nif for base station: Realtek PCIe GBE Family Controller.
+00:29:07,807 DEBUG [Receiver UDP null:-1|ReceiverUDP] Receive buffer size set to: 8192
+00:29:07,821 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] Receive buffer size set to: 8192
+00:29:07,821 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Marvin (BotID [team=TIGERS, number=0])
+00:29:07,822 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+00:29:07,822 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Eddie (BotID [team=TIGERS, number=1])
+00:29:07,823 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] Receive buffer size set to: 8192
+00:29:07,823 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Arthur (BotID [team=TIGERS, number=2])
+00:29:07,824 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+00:29:07,824 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] Receive buffer size set to: 8192
+00:29:07,825 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Baze (BotID [team=TIGERS, number=3])
+00:29:07,825 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+00:29:07,825 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] Receive buffer size set to: 8192
+00:29:07,825 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+00:29:07,826 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: R2D2 (BotID [team=TIGERS, number=4])
+00:29:07,826 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] Receive buffer size set to: 8192
+00:29:07,827 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: WallE (BotID [team=TIGERS, number=5])
+00:29:07,827 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+00:29:07,827 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] Receive buffer size set to: 8192
+00:29:07,827 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+00:29:07,829 DEBUG [ModuliStateChanged|GenericManager] Started.
+00:29:07,832 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=0]
+00:29:07,832 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=1]
+00:29:07,833 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=2]
+00:29:07,833 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=3]
+00:29:07,833 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=4]
+00:29:07,834 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=5]
+00:29:07,834 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=6]
+00:29:07,834 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=7]
+00:29:07,834 DEBUG [ModuliStateChanged|GenericSkillSystem] Started.
+00:29:07,834 DEBUG [ModuliStateChanged|RobotControlManager] Started.
+00:29:07,983 DEBUG [ModuliStateChanged|IndirectShotV2Play] Receiver: BotID [team=TIGERS, number=2]
+00:29:08,011 DEBUG [ModuliStateChanged|Agent] PlayFactory check done!
+00:29:08,018 DEBUG [ModuliStateChanged|Agent] Started.
+00:29:08,018 DEBUG [ModuliStateChanged|Timer] Started.
+00:29:09,830 INFO  [AutoCharge|GenericManager] Auto charging bots
+00:29:09,830 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+00:29:09,830 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+00:29:09,830 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+00:29:09,830 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+00:29:09,830 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+00:29:09,830 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+00:29:10,457 DEBUG [Receiver UDP /192.168.1.210:10000|ReceiverUDP] Receive buffer size set to: 8192
+00:29:10,457 DEBUG [AWT-EventQueue-0|BaseStation] Base station connecting
+00:29:17,396 DEBUG [AWT-EventQueue-0|MainPresenter] Saved configuration to: .\config\user\Fuchur_rYan.props
+00:29:17,397 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+00:29:17,397 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+00:29:17,397 DEBUG [AWT-EventQueue-0|SSLVisionCam] Stopped.
+00:29:17,397 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Stopped.
+00:29:17,397 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+00:29:17,397 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+00:29:17,398 DEBUG [AWT-EventQueue-0|RefereeHandler] Stopped.
+00:29:17,498 INFO  [Receiver UDP /127.0.0.1:10020|ReceiverUDP] UDP transceiver terminating
+00:29:17,506 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Marvin (BotID [team=TIGERS, number=0])
+00:29:17,606 INFO  [Receiver UDP /127.0.0.1:10021|ReceiverUDP] UDP transceiver terminating
+00:29:17,606 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Eddie (BotID [team=TIGERS, number=1])
+00:29:17,707 INFO  [Receiver UDP /127.0.0.1:10022|ReceiverUDP] UDP transceiver terminating
+00:29:17,707 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Arthur (BotID [team=TIGERS, number=2])
+00:29:17,807 INFO  [Receiver UDP /127.0.0.1:10023|ReceiverUDP] UDP transceiver terminating
+00:29:17,807 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Baze (BotID [team=TIGERS, number=3])
+00:29:17,908 INFO  [Receiver UDP /127.0.0.1:10024|ReceiverUDP] UDP transceiver terminating
+00:29:17,908 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: R2D2 (BotID [team=TIGERS, number=4])
+00:29:18,008 INFO  [Receiver UDP /127.0.0.1:10025|ReceiverUDP] UDP transceiver terminating
+00:29:18,008 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: WallE (BotID [team=TIGERS, number=5])
+00:29:18,108 INFO  [Receiver UDP /192.168.1.210:10000|ReceiverUDP] UDP transceiver terminating
+00:29:18,108 INFO  [AWT-EventQueue-0|BaseStation] Disconnected base station
+00:29:18,226 DEBUG [AWT-EventQueue-0|GenericManager] Stopped.
+00:29:18,226 INFO  [Receiver UDP null:-1|ReceiverUDP] UDP transceiver terminating
+00:29:18,228 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Stopped.
+00:29:18,228 DEBUG [AWT-EventQueue-0|RobotControlManager] Stopped.
+00:29:18,228 DEBUG [AWT-EventQueue-0|Agent] Stopped.
+00:29:18,228 DEBUG [AWT-EventQueue-0|Timer] Stopped.
+00:29:18,229 DEBUG [Dormouse|Dormouse] Dormouse stopped.
+00:29:18,279 DEBUG [AWT-EventQueue-0|SSLVisionCam] Deinitialized.
+00:29:18,279 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Deinitialized.
+00:29:18,279 DEBUG [AWT-EventQueue-0|GenericManager] Deinitialized.
+00:29:18,279 DEBUG [WP_Director|Director] Interrupted while waiting for new CamDetectionFrame.
+00:29:18,279 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Deinitialized.
+00:29:18,279 DEBUG [AWT-EventQueue-0|Agent] Deinitialized.
+00:29:18,279 DEBUG [AWT-EventQueue-0|Timer] Deinitialized.
+00:29:41,203 INFO  [main|ControllerFactory] Controller found: HID-Tastatur
+00:29:41,204 INFO  [main|ControllerFactory] Controller found: HID-konforme Maus
+00:29:41,204 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+00:29:41,204 INFO  [main|ControllerFactory] Controller found: USB Gaming Mouse
+00:29:41,204 INFO  [main|ControllerFactory] Controller found: USB Audio
+00:29:41,204 INFO  [main|ControllerFactory] Controller found: HID-konformes Benutzersteuergerät
+00:29:41,204 INFO  [main|ControllerFactory] Controller found: HID-konformes Gerät
+00:29:41,788 INFO  [main|RCMPresenter] 7 controllers found.
+00:29:41,827 DEBUG [main|MessageConnection] New MessageConnection
+00:29:41,911 INFO  [main|ACallback] subscribed to REGISTRY
+00:29:41,911 INFO  [main|ACallback] subscribed to AI_REGISTRY
+00:29:41,911 INFO  [main|ACallback] subscribed to MODULI_REGISTRY
+00:29:41,911 INFO  [main|ACallback] subscribed to APOLLON_REGISTRY
+00:29:41,911 INFO  [main|ACallback] subscribed to LACHESIS_REGISTRY
+00:29:41,911 INFO  [main|ACallback] subscribed to ATHENA_REGISTRY
+00:29:41,911 INFO  [main|ACallback] subscribed to LOG_REGISTRY
+00:29:41,912 INFO  [main|ACallback] subscribed to TIMER_REGISTRY
+00:29:41,912 INFO  [main|ACallback] subscribed to EMERGENCY_REGISTRY
+00:29:41,912 INFO  [main|ACallback] subscribed to REFEREE_REGISTRY
+00:29:41,912 INFO  [main|ACallback] subscribed to RCM_REGISTRY
+00:29:41,912 INFO  [main|ACallback] subscribed to WF_REGISTRY
+00:29:41,912 INFO  [main|ACallback] subscribed to TEST_REGISTRY
+00:29:41,912 DEBUG [main|MessageConnection] messaging host: localhost; port: 1883
+00:29:42,977 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+00:29:43,982 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+00:29:44,986 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+00:29:45,990 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+00:29:46,995 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+00:29:48,002 ERROR [main|ACallback] Can't connect to tcp://localhost:1883; RC: 0 ;Verbindung zu Server kann nicht hergestellt werden: org.eclipse.paho.client.mqttv3.MqttException
+00:29:48,003 INFO  [main|ACallback] subscribed to BOT_ACTION_COMMAND
+00:29:48,003 INFO  [main|ACallback] subscribed to LIFE_SIGN
+00:29:48,023 DEBUG [main|MainPresenter] Loading moduli config: moduli_sim.xml
+00:29:48,247 INFO  [main|SSLVisionCam] Chose nif for vision-cam: Software Loopback Interface 1.
+00:29:48,377 INFO  [main|RefereeReceiver] Chose nif for referee: Software Loopback Interface 1.
+00:29:48,511 DEBUG [main|RobotControlManager] rcm instatiated!
+00:29:48,524 DEBUG [main|ConfigManager] Loaded config for 'Bot Config': bots_default.xml
+00:29:48,789 DEBUG [main|ConfigManager] Loaded config for 'Team Config': yellow_default.xml
+00:29:48,792 DEBUG [main|ConfigManager] Loaded config for 'Geometry': RoboCup_2012.xml
+00:29:48,814 DEBUG [main|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+00:29:48,942 INFO  [main|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+00:29:49,069 INFO  [main|BaseStation] Chose nif for base station: Software Loopback Interface 1.
+00:29:49,089 DEBUG [main|ConfigManager] Loaded config for 'AI Config': ai_default.xml
+00:29:49,147 DEBUG [main|MainPresenter] Loaded config: moduli_sim.xml
+00:29:49,148 DEBUG [main|MainPresenter] Loading layout: Overview.ly
+00:29:49,149 DEBUG [main|MainPresenter] Loaded layout: ./config/gui/Overview.ly
+00:29:49,149 DEBUG [main|MainPresenter] Loading look and feel: Windows
+00:29:52,016 DEBUG [ModuliStateChanged|SSLVisionCam] Initialized.
+00:29:52,016 DEBUG [ModuliStateChanged|Oracle_extKalman] Initialized.
+00:29:52,036 DEBUG [ModuliStateChanged|RefereeHandler] Initialized.
+00:29:52,036 DEBUG [ModuliStateChanged|GenericManager] Initialized.
+00:29:52,036 DEBUG [ModuliStateChanged|GenericSkillSystem] Initialized.
+00:29:52,036 DEBUG [ModuliStateChanged|RobotControlManager] Initialized.
+00:29:52,037 DEBUG [ModuliStateChanged|Agent] Initialized.
+00:29:52,037 DEBUG [ModuliStateChanged|Timer] Initialized.
+00:29:52,037 DEBUG [Dormouse|Dormouse] Dormouse started...
+00:29:52,088 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+00:29:52,088 DEBUG [ModuliStateChanged|SSLVisionCam] Started.
+00:29:52,089 DEBUG [ModuliStateChanged|Oracle_extKalman] Started.
+00:29:52,090 DEBUG [ModuliStateChanged|MulticastUDPReceiver] Multicast group joined
+00:29:52,090 DEBUG [ModuliStateChanged|RefereeHandler] Started.
+00:29:52,095 DEBUG [ModuliStateChanged|ConfigManager] Loaded config for 'BotManager Config': botmanager_sim.xml
+00:29:52,222 INFO  [ModuliStateChanged|MulticastDelegate] Chose nif for bot-detection: Software Loopback Interface 1.
+00:29:52,349 INFO  [ModuliStateChanged|BaseStation] Chose nif for base station: Software Loopback Interface 1.
+00:29:52,358 DEBUG [Receiver UDP null:-1|ReceiverUDP] Receive buffer size set to: 8192
+00:29:52,361 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] Receive buffer size set to: 8192
+00:29:52,362 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Marvin (BotID [team=TIGERS, number=0])
+00:29:52,362 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+00:29:52,362 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Eddie (BotID [team=TIGERS, number=1])
+00:29:52,363 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] Receive buffer size set to: 8192
+00:29:52,363 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+00:29:52,363 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] Receive buffer size set to: 8192
+00:29:52,363 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Arthur (BotID [team=TIGERS, number=2])
+00:29:52,364 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+00:29:52,364 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: Baze (BotID [team=TIGERS, number=3])
+00:29:52,365 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] Receive buffer size set to: 8192
+00:29:52,365 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+00:29:52,365 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: R2D2 (BotID [team=TIGERS, number=4])
+00:29:52,366 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] Receive buffer size set to: 8192
+00:29:52,366 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+00:29:52,366 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] Receive buffer size set to: 8192
+00:29:52,367 DEBUG [ModuliStateChanged|TigerBot] Bot connecting: WallE (BotID [team=TIGERS, number=5])
+00:29:52,367 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+00:29:52,369 DEBUG [ModuliStateChanged|GenericManager] Started.
+00:29:52,372 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=0]
+00:29:52,372 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=1]
+00:29:52,372 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=2]
+00:29:52,372 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=3]
+00:29:52,373 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=4]
+00:29:52,373 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=5]
+00:29:52,373 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=6]
+00:29:52,374 DEBUG [ModuliStateChanged|GenericSkillSystem] Created skill executor for bot: BotID [team=TIGERS, number=7]
+00:29:52,374 DEBUG [ModuliStateChanged|GenericSkillSystem] Started.
+00:29:52,374 DEBUG [ModuliStateChanged|RobotControlManager] Started.
+00:29:52,532 DEBUG [ModuliStateChanged|IndirectShotV2Play] Receiver: BotID [team=TIGERS, number=3]
+00:29:52,559 DEBUG [ModuliStateChanged|Agent] PlayFactory check done!
+00:29:52,566 DEBUG [ModuliStateChanged|Agent] Started.
+00:29:52,566 DEBUG [ModuliStateChanged|Timer] Started.
+00:29:54,369 INFO  [AutoCharge|GenericManager] Auto charging bots
+00:29:54,369 DEBUG [Receiver UDP /127.0.0.1:10020|ReceiverUDP] 10050->10020: ICMP port unreachable, retry in 1s.
+00:29:54,369 DEBUG [Receiver UDP /127.0.0.1:10023|ReceiverUDP] 10053->10023: ICMP port unreachable, retry in 1s.
+00:29:54,369 DEBUG [Receiver UDP /127.0.0.1:10025|ReceiverUDP] 10055->10025: ICMP port unreachable, retry in 1s.
+00:29:54,369 DEBUG [Receiver UDP /127.0.0.1:10022|ReceiverUDP] 10052->10022: ICMP port unreachable, retry in 1s.
+00:29:54,370 DEBUG [Receiver UDP /127.0.0.1:10021|ReceiverUDP] 10051->10021: ICMP port unreachable, retry in 1s.
+00:29:54,370 DEBUG [Receiver UDP /127.0.0.1:10024|ReceiverUDP] 10054->10024: ICMP port unreachable, retry in 1s.
+00:30:02,242 DEBUG [AWT-EventQueue-0|MainPresenter] Saved configuration to: .\config\user\Fuchur_rYan.props
+00:30:02,242 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+00:30:02,242 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+00:30:02,242 DEBUG [AWT-EventQueue-0|SSLVisionCam] Stopped.
+00:30:02,242 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Stopped.
+00:30:02,242 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Multicast group left
+00:30:02,242 DEBUG [AWT-EventQueue-0|MulticastUDPReceiver] Socket closed
+00:30:02,242 DEBUG [AWT-EventQueue-0|RefereeHandler] Stopped.
+00:30:02,343 INFO  [Receiver UDP /127.0.0.1:10020|ReceiverUDP] UDP transceiver terminating
+00:30:02,347 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Marvin (BotID [team=TIGERS, number=0])
+00:30:02,448 INFO  [Receiver UDP /127.0.0.1:10021|ReceiverUDP] UDP transceiver terminating
+00:30:02,448 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Eddie (BotID [team=TIGERS, number=1])
+00:30:02,548 INFO  [Receiver UDP /127.0.0.1:10022|ReceiverUDP] UDP transceiver terminating
+00:30:02,548 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Arthur (BotID [team=TIGERS, number=2])
+00:30:02,649 INFO  [Receiver UDP /127.0.0.1:10023|ReceiverUDP] UDP transceiver terminating
+00:30:02,649 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: Baze (BotID [team=TIGERS, number=3])
+00:30:02,750 INFO  [Receiver UDP /127.0.0.1:10024|ReceiverUDP] UDP transceiver terminating
+00:30:02,750 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: R2D2 (BotID [team=TIGERS, number=4])
+00:30:02,851 INFO  [Receiver UDP /127.0.0.1:10025|ReceiverUDP] UDP transceiver terminating
+00:30:02,851 INFO  [AWT-EventQueue-0|TigerBot] Disconnected bot: WallE (BotID [team=TIGERS, number=5])
+00:30:02,955 DEBUG [AWT-EventQueue-0|GenericManager] Stopped.
+00:30:02,955 INFO  [Receiver UDP null:-1|ReceiverUDP] UDP transceiver terminating
+00:30:02,958 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Stopped.
+00:30:02,959 DEBUG [AWT-EventQueue-0|RobotControlManager] Stopped.
+00:30:02,959 DEBUG [AWT-EventQueue-0|Agent] Stopped.
+00:30:02,959 DEBUG [AWT-EventQueue-0|Timer] Stopped.
+00:30:02,959 DEBUG [Dormouse|Dormouse] Dormouse stopped.
+00:30:03,009 DEBUG [AWT-EventQueue-0|SSLVisionCam] Deinitialized.
+00:30:03,009 DEBUG [AWT-EventQueue-0|Oracle_extKalman] Deinitialized.
+00:30:03,009 DEBUG [AWT-EventQueue-0|GenericManager] Deinitialized.
+00:30:03,009 DEBUG [WP_Director|Director] Interrupted while waiting for new CamDetectionFrame.
+00:30:03,009 DEBUG [AWT-EventQueue-0|GenericSkillSystem] Deinitialized.
+00:30:03,009 DEBUG [AWT-EventQueue-0|Agent] Deinitialized.
+00:30:03,009 DEBUG [AWT-EventQueue-0|Timer] Deinitialized.

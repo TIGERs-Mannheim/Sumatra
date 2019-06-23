@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 14.10.2010
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.motor;
@@ -14,6 +14,7 @@ import info.monitorenter.gui.chart.IAxis.AxisTitle;
 import info.monitorenter.gui.chart.ITrace2D;
 import info.monitorenter.gui.chart.axis.AAxis;
 import info.monitorenter.gui.chart.axis.AxisLinear;
+import info.monitorenter.gui.chart.axis.scalepolicy.AxisScalePolicyAutomaticBestFit;
 import info.monitorenter.gui.chart.rangepolicies.RangePolicyFixedViewport;
 import info.monitorenter.gui.chart.rangepolicies.RangePolicyHighestValues;
 import info.monitorenter.gui.chart.traces.Trace2DLtd;
@@ -26,6 +27,7 @@ import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerMotorPidLog;
+
 
 /**
  * Plots motor setpoint, current, p-i-d-error
@@ -40,24 +42,27 @@ public class MotorPidPanel extends JPanel
 	// --------------------------------------------------------------------------
 	private static final long	serialVersionUID	= -5719721842971377089L;
 	
-	private Chart2D targetChart = new Chart2D();
-	private Chart2D errorChart = new Chart2D();
+	private final Chart2D		targetChart			= new Chart2D();
+	private final Chart2D		errorChart			= new Chart2D();
 	
-	private static final int DATA_SIZE = 400;
+	private static final int	DATA_SIZE			= 400;
 	
-	private ITrace2D setpoint = new Trace2DLtd(DATA_SIZE);
-	private ITrace2D output = new Trace2DLtd(DATA_SIZE);
-	private ITrace2D latest = new Trace2DLtd(DATA_SIZE);
-	private ITrace2D pError = new Trace2DLtd(DATA_SIZE);
-	private ITrace2D iError = new Trace2DLtd(DATA_SIZE);
-	private ITrace2D dError = new Trace2DLtd(DATA_SIZE);
-	private ITrace2D current = new Trace2DLtd(DATA_SIZE);
+	private final ITrace2D		setpoint				= new Trace2DLtd(DATA_SIZE);
+	private final ITrace2D		output				= new Trace2DLtd(DATA_SIZE);
+	private final ITrace2D		latest				= new Trace2DLtd(DATA_SIZE);
+	private final ITrace2D		pError				= new Trace2DLtd(DATA_SIZE);
+	private final ITrace2D		iError				= new Trace2DLtd(DATA_SIZE);
+	private final ITrace2D		dError				= new Trace2DLtd(DATA_SIZE);
+	private final ITrace2D		current				= new Trace2DLtd(DATA_SIZE);
 	
-	private long timeOffset = 0;
+	private long					timeOffset			= 0;
+	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 */
 	public MotorPidPanel()
 	{
 		setLayout(new MigLayout("fill, wrap 1", "", ""));
@@ -77,9 +82,9 @@ public class MotorPidPanel extends JPanel
 		output.setColor(Color.BLACK);
 		output.setName("Output");
 		
-		AAxis currentAxis = new AxisLinear();
+		final AAxis<AxisScalePolicyAutomaticBestFit> currentAxis = new AxisLinear<AxisScalePolicyAutomaticBestFit>();
 		currentAxis.setRange(new Range(0, 1.0));
-
+		
 		targetChart.getAxisY().setRangePolicy(new RangePolicyFixedViewport(new Range(-9000.0, 9000.0)));
 		targetChart.getAxisX().setRangePolicy(new RangePolicyHighestValues(10));
 		targetChart.getAxisX().setMajorTickSpacing(10);
@@ -87,32 +92,35 @@ public class MotorPidPanel extends JPanel
 		targetChart.getAxisX().setAxisTitle(new AxisTitle("t [s]"));
 		targetChart.addAxisYRight(currentAxis);
 		currentAxis.setRangePolicy(new RangePolicyFixedViewport(new Range(0.0, 5.0)));
-		targetChart.setBackground(this.getBackground());
+		targetChart.setBackground(getBackground());
 		targetChart.addTrace(setpoint);
 		targetChart.addTrace(latest);
 		targetChart.addTrace(output);
 		targetChart.addTrace(current, targetChart.getAxisX(), currentAxis);
-
+		
 		errorChart.getAxisY().setRangePolicy(new RangePolicyFixedViewport(new Range(-9000.0, 9000.0)));
 		errorChart.getAxisX().setRangePolicy(new RangePolicyHighestValues(10));
 		errorChart.getAxisX().setMajorTickSpacing(10);
 		errorChart.getAxisX().setMinorTickSpacing(10);
 		errorChart.getAxisX().setAxisTitle(new AxisTitle("t [s]"));
-		errorChart.setBackground(this.getBackground());
+		errorChart.setBackground(getBackground());
 		errorChart.addTrace(pError);
 		errorChart.addTrace(iError);
 		errorChart.addTrace(dError);
-
+		
 		add(targetChart, "grow");
 		add(errorChart, "grow");
 		
 		timeOffset = System.nanoTime();
-}
+	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param log
+	 */
 	public void setLog(final TigerMotorPidLog log)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -120,13 +128,13 @@ public class MotorPidPanel extends JPanel
 			@Override
 			public void run()
 			{
-				latest.addPoint((System.nanoTime()-timeOffset)/1000000000.0, log.getLatest());
-				setpoint.addPoint((System.nanoTime()-timeOffset)/1000000000.0, log.getSetpoint());
-				output.addPoint((System.nanoTime()-timeOffset)/1000000000.0, log.getOutput());
-				pError.addPoint((System.nanoTime()-timeOffset)/1000000000.0, log.getpError());
-				iError.addPoint((System.nanoTime()-timeOffset)/1000000000.0, log.getiError());
-				dError.addPoint((System.nanoTime()-timeOffset)/1000000000.0, log.getdError());
-				current.addPoint((System.nanoTime()-timeOffset)/1000000000.0, log.getECurrent());
+				latest.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getLatest());
+				setpoint.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getSetpoint());
+				output.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getOutput());
+				pError.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getpError());
+				iError.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getiError());
+				dError.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getdError());
+				current.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getECurrent());
 			}
 		});
 	}

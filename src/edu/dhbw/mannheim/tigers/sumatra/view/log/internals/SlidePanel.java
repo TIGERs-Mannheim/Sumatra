@@ -1,21 +1,4 @@
-package edu.dhbw.mannheim.tigers.sumatra.view.log.internals;
-
-import java.awt.BorderLayout;
-import java.util.ArrayList;
-import java.util.Hashtable;
-import java.util.List;
-
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JSlider;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-
-import org.apache.log4j.Level;
-import org.apache.log4j.lf5.LogLevel;
-
-/**
- * 
+/*
  * *********************************************************
  * Copyright (c) 2010 DHBW Mannheim - Tigers Mannheim
  * Project: tigers - central software - ai
@@ -23,48 +6,105 @@ import org.apache.log4j.lf5.LogLevel;
  * Author(s): MichaelS, AndreR
  * 
  * Set Level for Log4j.
- *
+ * 
  * *********************************************************
+ */
+package edu.dhbw.mannheim.tigers.sumatra.view.log.internals;
+
+import java.awt.BorderLayout;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JSlider;
+import javax.swing.SwingConstants;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
+import org.apache.log4j.Level;
+import org.apache.log4j.Priority;
+
+
+/**
+ * Slider for choosing log level
+ * 
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * 
  */
 public class SlidePanel extends JPanel
 {
 	// class variables
-	private static final long serialVersionUID = 1L;
+	private static final long			serialVersionUID	= 1L;
 	
-	ArrayList<ISlidePanelObserver> observers = new ArrayList<ISlidePanelObserver>();
+	List<ISlidePanelObserver>			observers			= new CopyOnWriteArrayList<ISlidePanelObserver>();
 	
 	// object variables
-	private JSlider slider = null;
+	private JSlider						slider				= null;
 	
-	public SlidePanel()
-	{		
-		Hashtable<Integer, JLabel> levelTable = new Hashtable<Integer, JLabel>();
-
-		setLayout(new BorderLayout());		
+	private static final List<Level>	LOG_LEVELS			= new ArrayList<Level>();
+	
+	static
+	{
+		LOG_LEVELS.add(Level.FATAL);
+		LOG_LEVELS.add(Level.ERROR);
+		LOG_LEVELS.add(Level.WARN);
+		LOG_LEVELS.add(Level.INFO);
+		LOG_LEVELS.add(Level.DEBUG);
+		LOG_LEVELS.add(Level.TRACE);
+	}
+	
+	
+	/**
+	 * @param initialLevel
+	 * 
+	 */
+	public SlidePanel(Priority initialLevel)
+	{
+		final Hashtable<Integer, JLabel> levelTable = new Hashtable<Integer, JLabel>();
 		
-		@SuppressWarnings("unchecked")
-		List<LogLevel> levels = LogLevel.getLog4JLevels();
-		for(int i=0; i<levels.size();i++)
+		setLayout(new BorderLayout());
+		
+		int initialLevelId = -1;
+		for (int i = 0; i < LOG_LEVELS.size(); i++)
 		{
-			levelTable.put(i, new JLabel(levels.get(i).getLabel()));
+			if (initialLevel.equals(LOG_LEVELS.get(i)))
+			{
+				initialLevelId = i;
+			}
+			levelTable.put(i, new JLabel(LOG_LEVELS.get(i).toString().substring(0, 1)));
+		}
+		if (initialLevelId == -1)
+		{
+			throw new IllegalStateException("Could not find default log level");
 		}
 		
-		slider = new JSlider(JSlider.HORIZONTAL, 0, levels.size()-1, levels.size()-1);
+		slider = new JSlider(SwingConstants.HORIZONTAL, 0, LOG_LEVELS.size() - 1, initialLevelId);
 		slider.setPaintTicks(true);
 		slider.setPaintLabels(true);
 		slider.setSnapToTicks(true);
-		slider.setMajorTickSpacing(1);		
+		slider.setMajorTickSpacing(1);
 		slider.setLabelTable(levelTable);
 		slider.addChangeListener(new LevelChanged());
 		
 		add(slider, BorderLayout.CENTER);
 	}
 	
+	
+	/**
+	 * @param o
+	 */
 	public void addObserver(ISlidePanelObserver o)
 	{
 		observers.add(o);
 	}
 	
+	
+	/**
+	 * @param o
+	 */
 	public void removeObserver(ISlidePanelObserver o)
 	{
 		observers.remove(o);
@@ -75,12 +115,11 @@ public class SlidePanel extends JPanel
 		@Override
 		public void stateChanged(ChangeEvent e)
 		{
-			int level = slider.getValue();
-			LogLevel logLevel = (LogLevel)LogLevel.getLog4JLevels().get(level);
-
-			for(ISlidePanelObserver o : observers)
+			final int level = slider.getValue();
+			final Level logLevel = LOG_LEVELS.get(level);
+			for (final ISlidePanelObserver o : observers)
 			{
-				o.onLevelChanged(Level.toLevel(logLevel.getLabel()));
+				o.onLevelChanged(logLevel);
 			}
 		}
 	}

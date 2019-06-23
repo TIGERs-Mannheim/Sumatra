@@ -9,14 +9,14 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena.control;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena.Athena;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IAthenaControlHandler;
 
 
 /**
- * This class is the adapter that allows the GUI to influence the behavior of {@link Athena}. It receives
- * {@link AthenaControl}-objects from the GUI and carries them out by changing the given {@link AIInfoFrame} in on of
+ * This class is the adapter that allows the GUI to influence the behavior of
+ * {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena.Athena}. It receives {@link AthenaControl}
+ * -objects from the GUI and carries them out by changing the given {@link AIInfoFrame} in on of
  * its callbacks.
  * 
  * @author Gero
@@ -26,7 +26,6 @@ public class AthenaGuiAdapter implements IAthenaControlHandler, IGuiAdapterState
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	// private final Athena athena;
 	
 	private AthenaControl		control;
 	private boolean				changed	= false;
@@ -38,29 +37,31 @@ public class AthenaGuiAdapter implements IAthenaControlHandler, IGuiAdapterState
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * @param athena
 	 */
-	public AthenaGuiAdapter() // Athena athena)
+	public AthenaGuiAdapter()
 	{
-		this.control = new AthenaControl();
+		control = new AthenaControl();
 		onNewAthenaControl(control);
 	}
 	
-
+	
 	/**
-	 * This method is <code>synchronized</code> because it is accessed by the GUI while {@link Athena} is working on
-	 * <code>this</code>
+	 * This method is <code>synchronized</code> because it is accessed by the GUI while
+	 * {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena.Athena} is working on <code>this</code>
 	 */
 	@Override
-	public synchronized void onNewAthenaControl(AthenaControl newControl)
+	public final synchronized void onNewAthenaControl(AthenaControl newControl)
 	{
 		control = newControl;
 		
 		switch (newControl.getControlState())
 		{
-			default:
 			case MATCH_MODE:
 				currentState = new MatchModeAdapterState(this);
+				break;
+			
+			case MIXED_TEAM_MODE:
+				currentState = new MixedTeamModeAdapterState(this);
 				break;
 			
 			case PLAY_TEST_MODE:
@@ -80,7 +81,7 @@ public class AthenaGuiAdapter implements IAthenaControlHandler, IGuiAdapterState
 		changed = true;
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -90,28 +91,28 @@ public class AthenaGuiAdapter implements IAthenaControlHandler, IGuiAdapterState
 		currentState.beforePlayFinding(current, previous);
 	}
 	
-
+	
 	@Override
 	public void choosePlays(AIInfoFrame current, AIInfoFrame previous)
 	{
 		currentState.choosePlays(current, previous);
 	}
 	
-
+	
 	@Override
 	public void betweenPlayRole(AIInfoFrame current, AIInfoFrame previous)
 	{
 		currentState.betweenPlayRole(current, previous);
 	}
 	
-
+	
 	@Override
 	public void assignRoles(AIInfoFrame current, AIInfoFrame previous)
 	{
 		currentState.assignRoles(current, previous);
 	}
 	
-
+	
 	@Override
 	public void afterRoleAssignment(AIInfoFrame current, AIInfoFrame previous)
 	{
@@ -121,7 +122,7 @@ public class AthenaGuiAdapter implements IAthenaControlHandler, IGuiAdapterState
 		changed = false;
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -131,20 +132,26 @@ public class AthenaGuiAdapter implements IAthenaControlHandler, IGuiAdapterState
 		return currentState.overridePlayFinding();
 	}
 	
-
+	
 	@Override
 	public boolean overrideRoleAssignment()
 	{
 		return currentState.overrideRoleAssignment();
 	}
 	
-
+	
+	/**
+	 * @return
+	 */
 	public boolean hasChanged()
 	{
 		return changed;
 	}
 	
-
+	
+	/**
+	 * @return
+	 */
 	public AthenaControl getControl()
 	{
 		return control;

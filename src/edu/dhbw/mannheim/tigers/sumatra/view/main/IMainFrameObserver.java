@@ -13,6 +13,8 @@ import java.awt.GraphicsDevice;
 
 import javax.swing.UIManager.LookAndFeelInfo;
 
+import edu.dhbw.mannheim.tigers.sumatra.view.main.toolbar.IToolbarObserver;
+
 
 /**
  * MainFrame observer
@@ -20,37 +22,64 @@ import javax.swing.UIManager.LookAndFeelInfo;
  * @author AndreR
  * 
  */
-public interface IMainFrameObserver
+public interface IMainFrameObserver extends IToolbarObserver
 {
-	void onStartStopModules();
 	
-
+	/**
+ *
+ */
 	void onSaveLayout();
 	
-
+	
+	/**
+ *
+ */
 	void onDeleteLayout();
 	
-
+	
+	/**
+ *
+ */
 	void onAbout();
 	
-
+	
+	/**
+ *
+ */
 	void onExit();
 	
-
+	
+	/**
+	 * 
+	 * @param filename
+	 */
 	void onLoadLayout(String filename);
 	
-
-	void onLoadConfig(String filename);
 	
-
+	/**
+	 * 
+	 * @param filename
+	 */
+	void onLoadModuliConfig(String filename);
+	
+	
+	/**
+ *
+ */
 	void onRefreshLayoutItems();
 	
-
+	
+	/**
+	 * 
+	 * @param info
+	 */
 	void onSelectLookAndFeel(LookAndFeelInfo info);
 	
-
+	
+	/**
+	 * 
+	 * @param gd
+	 */
 	void onSetFullscreen(GraphicsDevice gd);
 	
-
-	void onEmergencyStop();
 }

@@ -9,8 +9,6 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview;
 
-import edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter.EAIControlState;
-
 
 /**
  * Observes the AIModuleControl Panel!
@@ -20,26 +18,32 @@ import edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter.EAIControlState;
 public interface IModuleControlPanelObserver
 {
 	/**
-	 * Change to {@link EAIControlState#PLAY_TEST_MODE}
+	 * Change to {@link edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter.EAIControlState#PLAY_TEST_MODE}
 	 */
-	public void onPlayTestMode();
+	void onPlayTestMode();
 	
-
-	/**
-	 * Change to {@link EAIControlState#ROLE_TEST_MODE}
-	 */
-	public void onRoleTestMode();
 	
-
 	/**
-	 * Change to {@link EAIControlState#MATCH_MODE}
+	 * Change to {@link edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter.EAIControlState#ROLE_TEST_MODE}
 	 */
-	public void onMatchMode();
+	void onRoleTestMode();
 	
-
+	
 	/**
-	 * Change to {@link EAIControlState#EMERGENCY_MODE}
+	 * Change to {@link edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter.EAIControlState#MATCH_MODE}
 	 */
-	public void onEmergencyMode();
+	void onMatchMode();
+	
+	
+	/**
+	 * Change to {@link edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter.EAIControlState#MIXED_TEAM_MODE}
+	 */
+	void onMixedTeamMode();
+	
+	
+	/**
+	 * Change to {@link edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter.EAIControlState#EMERGENCY_MODE}
+	 */
+	void onEmergencyMode();
 	
 }

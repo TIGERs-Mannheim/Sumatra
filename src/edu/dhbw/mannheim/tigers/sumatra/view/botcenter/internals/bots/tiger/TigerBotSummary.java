@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 30.08.2010
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger;
@@ -28,7 +28,9 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
+
 
 /**
  * Tiger bot summary for the overview panel.
@@ -38,39 +40,57 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.comm
  */
 public class TigerBotSummary extends JPanel
 {
+	/**
+	 *
+	 */
 	public interface ITigerBotSummaryObserver
 	{
+		/** */
 		void onConnectionChange();
+		
+		
+		/**
+		 * @param multicast
+		 */
 		void onConnectionTypeChange(boolean multicast);
+		
+		
+		/**
+		 * @param oofCheck
+		 */
 		void onOOFCheckChange(boolean oofCheck);
 	}
 	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long	serialVersionUID	= 5485796598824650963L;
-	private JTextField status;
-	private JRadioButton unicast;
-	private JRadioButton multicast;
-	private JCheckBox oofCheck;
-	private JProgressBar battery;
-	private JButton connect;
+	private static final long							serialVersionUID	= 5485796598824650963L;
+	private final JTextField							status;
+	private final JRadioButton							unicast;
+	private final JRadioButton							multicast;
+	private final JCheckBox								oofCheck;
+	private final JProgressBar							battery;
+	private final JButton								connect;
 	
-	private String name;
-	private int id;
-	private ENetworkState netState;
+	private String											name;
+	private BotID											id;
+	private ENetworkState								netState;
 	
-	private final List<ITigerBotSummaryObserver> observers = new ArrayList<ITigerBotSummaryObserver>();
-
+	private final List<ITigerBotSummaryObserver>	observers			= new ArrayList<ITigerBotSummaryObserver>();
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 */
 	public TigerBotSummary()
 	{
 		setLayout(new MigLayout("fill", "[100,fill]10[100,fill]30[60]10[60]10[60]30[40]5[60]", "0[]0"));
 		
 		name = "Bob";
-		id = 42;
+		id = new BotID();
 		netState = ENetworkState.CONNECTING;
 		
 		status = new JTextField();
@@ -81,7 +101,7 @@ public class TigerBotSummary extends JPanel
 		battery = new JProgressBar(12800, 16800);
 		battery.setStringPainted(true);
 		
-		ButtonGroup netGroup = new ButtonGroup();
+		final ButtonGroup netGroup = new ButtonGroup();
 		netGroup.add(unicast);
 		netGroup.add(multicast);
 		
@@ -107,39 +127,62 @@ public class TigerBotSummary extends JPanel
 		setNetworkState(ENetworkState.OFFLINE);
 		setBatteryLevel(14.2f);
 	}
-
+	
 	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param observer
+	 */
 	public void addObserver(ITigerBotSummaryObserver observer)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
 			observers.add(observer);
 		}
 	}
 	
+	
+	/**
+	 * 
+	 * @param observer
+	 */
 	public void removeObserver(ITigerBotSummaryObserver observer)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
 			observers.remove(observer);
 		}
 	}
 	
-	public void setId(int id)
+	
+	/**
+	 * 
+	 * @param id
+	 */
+	public void setId(BotID id)
 	{
 		this.id = id;
 		updateTitle();
 	}
 	
+	
+	/**
+	 * 
+	 * @param name
+	 */
 	public void setBotName(String name)
 	{
 		this.name = name;
 		updateTitle();
 	}
 	
+	
+	/**
+	 * 
+	 * @param voltage
+	 */
 	public void setBatteryLevel(final float voltage)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -153,6 +196,11 @@ public class TigerBotSummary extends JPanel
 		});
 	}
 	
+	
+	/**
+	 * 
+	 * @param enable
+	 */
 	public void setMulticast(final boolean enable)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -160,11 +208,10 @@ public class TigerBotSummary extends JPanel
 			@Override
 			public void run()
 			{
-				if(enable)
+				if (enable)
 				{
 					multicast.setSelected(true);
-				}
-				else
+				} else
 				{
 					unicast.setSelected(true);
 				}
@@ -172,6 +219,10 @@ public class TigerBotSummary extends JPanel
 		});
 	}
 	
+	
+	/**
+	 * @param enable
+	 */
 	public void setOofCheck(final boolean enable)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -184,67 +235,75 @@ public class TigerBotSummary extends JPanel
 		});
 	}
 	
+	
+	/**
+	 * @param state
+	 */
 	public void setNetworkState(ENetworkState state)
 	{
-		this.netState = state;
+		netState = state;
 		updateTitle();
 	}
 	
+	
 	private void notifyConnectionChange()
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for (ITigerBotSummaryObserver observer : observers)
+			for (final ITigerBotSummaryObserver observer : observers)
 			{
 				observer.onConnectionChange();
 			}
 		}
 	}
 	
+	
 	private void notifyConnectionTypeChange(boolean multicast)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for (ITigerBotSummaryObserver observer : observers)
+			for (final ITigerBotSummaryObserver observer : observers)
 			{
 				observer.onConnectionTypeChange(multicast);
 			}
 		}
 	}
 	
+	
 	private void notifyOOFChange(boolean oofCheck)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for (ITigerBotSummaryObserver observer : observers)
+			for (final ITigerBotSummaryObserver observer : observers)
 			{
 				observer.onOOFCheckChange(oofCheck);
 			}
 		}
 	}
 	
+	
 	private void updateTitle()
 	{
-		final String title = String.format("[ %d ] %s", id, name);
+		final String title = String.format("[ %d ] %s", id.getNumber(), name);
 		Color borderColor = null;
 		String stateText = "";
 		String buttonText = "Disconnect";
 		
-		switch(netState)
+		switch (netState)
 		{
 			case OFFLINE:
 				stateText = "Offline";
 				borderColor = Color.RED;
 				buttonText = "Connect";
-			break;
+				break;
 			case CONNECTING:
 				stateText = "Connecting";
 				borderColor = Color.BLUE;
-			break;
+				break;
 			case ONLINE:
 				stateText = "Online";
 				borderColor = Color.GREEN;
-			break;
+				break;
 		}
 		
 		final Color col = borderColor;

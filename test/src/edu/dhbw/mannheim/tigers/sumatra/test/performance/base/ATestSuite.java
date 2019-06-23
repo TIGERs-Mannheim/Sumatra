@@ -18,8 +18,9 @@ import java.util.List;
 
 
 /**
- * This is a base class for a test-suite consisting of several {@link ATestCase}s.
- * TODO It seems as if the order in which the test-cases are performed
+ * This is a base class for a test-suite consisting of several {@link ATestCase}s. <br>
+ * <br>
+ * It seems as if the order in which the test-cases are performed
  * influences the performance. Maybe we should another way then execute the
  * test-cases one after the other: maybe round robin, or Monte-Carlo-Order...?
  * 
@@ -32,7 +33,7 @@ public abstract class ATestSuite
 	
 	private FileWriter						tmpout;
 	
-
+	
 	// TestCases
 	private final ArrayList<ATestCase>	testCases	= new ArrayList<ATestCase>();
 	
@@ -58,29 +59,35 @@ public abstract class ATestSuite
 	private double			durationAverage;
 	
 	
+	/**
+	 * @param name
+	 */
 	public ATestSuite(String name)
 	{
 		this.name = name;
 	}
 	
-
+	
+	/**
+	 * @param numberOfTests
+	 */
 	public void test(int numberOfTests)
 	{
 		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 		
-		File file = new File("tmpout");
+		final File file = new File("tmpout");
 		
 		try
 		{
 			tmpout = new FileWriter(file);
-		} catch (IOException err1)
+		} catch (final IOException err1)
 		{
 			err1.printStackTrace();
 		}
 		
 		System.out.println("##### START TestSuite: " + name + " ############################################");
 		
-		for (ATestCase testCase : testCases)
+		for (final ATestCase testCase : testCases)
 		{
 			prepareTest(numberOfTests);
 			
@@ -103,7 +110,7 @@ public abstract class ATestSuite
 				startTimes.add(tmpStartTime);
 				durations.add(tmpEndTime - tmpStartTime);
 				
-				testCase.writeRandomData();	// Prevent JIT-Compiler to erase the whole testcase
+				testCase.writeRandomData(); // Prevent JIT-Compiler to erase the whole testcase
 				testCase.teardown();
 				
 				testNumber++;
@@ -122,7 +129,7 @@ public abstract class ATestSuite
 		try
 		{
 			tmpout.close();
-		} catch (IOException err)
+		} catch (final IOException err)
 		{
 			err.printStackTrace();
 		}
@@ -131,7 +138,7 @@ public abstract class ATestSuite
 		file.delete();
 	}
 	
-
+	
 	private void prepareTest(int numberOfTests)
 	{
 		// Prepare infrastructure
@@ -149,7 +156,7 @@ public abstract class ATestSuite
 		durationAverage = 0;
 	}
 	
-
+	
 	private void calculateStatistics()
 	{
 		
@@ -158,7 +165,7 @@ public abstract class ATestSuite
 		for (int i = 0; i < size; i++)
 		{
 			
-			long currentDuration = durations.get(i);
+			final long currentDuration = durations.get(i);
 			durationAverage += currentDuration;
 			
 			if (currentDuration > durationMax)
@@ -170,7 +177,11 @@ public abstract class ATestSuite
 		durationAverage /= size;
 	}
 	
-
+	
+	/**
+	 * @param name
+	 * @param numberOfTests
+	 */
 	public void printResults(String name, int numberOfTests)
 	{
 		System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
@@ -182,7 +193,7 @@ public abstract class ATestSuite
 		System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 	}
 	
-
+	
 	protected void write(String str)
 	{
 		if (tmpout != null)
@@ -190,46 +201,64 @@ public abstract class ATestSuite
 			try
 			{
 				tmpout.write(str);
-			} catch (IOException err)
+			} catch (final IOException err)
 			{
 				err.printStackTrace();
 			}
 		}
 	}
 	
-
+	
+	/**
+	 * @return
+	 */
 	public long getTestStartTime()
 	{
-		return this.testStartTime;
+		return testStartTime;
 	}
 	
-
+	
+	/**
+	 * @return
+	 */
 	public List<Long> getStartTimes()
 	{
-		return this.startTimes;
+		return startTimes;
 	}
 	
-
+	
+	/**
+	 * @return
+	 */
 	public List<Long> getEndTimes()
 	{
-		return this.endTimes;
+		return endTimes;
 	}
 	
-
+	
+	/**
+	 * @return
+	 */
 	public List<Long> getDurations()
 	{
-		return this.durations;
+		return durations;
 	}
 	
-
+	
+	/**
+	 * @return
+	 */
 	public long getTestStopTime()
 	{
-		return this.testStopTime;
+		return testStopTime;
 	}
 	
-
+	
+	/**
+	 * @return
+	 */
 	public long getDuration()
 	{
-		return this.duration;
+		return duration;
 	}
 }

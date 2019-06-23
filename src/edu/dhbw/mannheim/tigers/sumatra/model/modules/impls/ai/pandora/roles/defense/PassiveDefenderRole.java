@@ -9,19 +9,21 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2f;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.standard.penalty.PenaltyThemPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move.MovementCon.EDestFreeMode;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ASkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveAndStaySkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleState;
 
 
 /**
  * Passive Role. Gets a destination position and a lookAt position
  * by the controlling Play.
- * Used by:<li> {@link PenaltyThemPlay}</li>.
- * 
  * 
  * @author Malte
  * 
@@ -32,77 +34,138 @@ public class PassiveDefenderRole extends ADefenseRole
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	/**  */
-	private static final long	serialVersionUID	= 1941091761486677388L;
 	
-
-	private Vector2f				destination;
-	private Vector2f				target;
-	private boolean				isKeeper				= false;
+	private boolean	isKeeper	= false;
+	
+	private enum EStateId
+	{
+		NORMAL
+	}
+	
+	private enum EEvent
+	{
+		DONE
+	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 */
 	public PassiveDefenderRole()
 	{
-		super(ERole.PASSIVE_DEFENDER_THEM);
-		destination = new Vector2f(0, -AIConfig.getGeometry().getFieldLength() / 4);
-		target = new Vector2f(AIConfig.getGeometry().getCenter());
+		this(new Vector2f(-AIConfig.getGeometry().getFieldLength() / 4, 0), new Vector2f(AIConfig.getGeometry()
+				.getCenter()));
 	}
 	
-
+	
+	// --------------------------------------------------------------------------
+	/**
+	 * @param dest
+	 * @param target
+	 */
 	public PassiveDefenderRole(IVector2 dest, IVector2 target)
 	{
-		super(ERole.PASSIVE_DEFENDER_THEM);
-		this.destination = new Vector2f(dest);
-		this.target = new Vector2f(target);
+		super(ERole.PASSIVE_DEFENDER, false, true);
+		
+		setInitialState(new NormalMoveState());
+		addEndTransition(EStateId.NORMAL, EEvent.DONE);
+		
+		updateDestinationFree(EDestFreeMode.FREE_OF_TIGERS);
+		updateDestination(dest);
+		updateLookAtTarget(target);
 	}
 	
-
+	// --------------------------------------------------------------------------
+	// ---------------------InnerClass-------------------------------------
+	// --------------------------------------------------------------------------
+	private class NormalMoveState implements IRoleState
+	{
+		
+		@Override
+		public void onSkillStarted(ASkill skill, BotID botID)
+		{
+			
+		}
+		
+		
+		@Override
+		public void onSkillCompleted(ASkill skill, BotID botID)
+		{
+			
+		}
+		
+		
+		@Override
+		public void doEntryActions()
+		{
+			setNewSkill(new MoveAndStaySkill(getMoveCon()));
+		}
+		
+		
+		@Override
+		public void doExitActions()
+		{
+			
+		}
+		
+		
+		@Override
+		public void doUpdate()
+		{
+			// nothing to do
+			
+		}
+		
+		
+		@Override
+		public Enum<? extends Enum<?>> getIdentifier()
+		{
+			return EStateId.NORMAL;
+		}
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	public void setDest(IVector2 d)
-	{
-		this.destination = new Vector2f(d);
-		destCon.updateDestination(destination);
-	}
-	
-
+	/**
+	 * @param target
+	 */
 	public void setTarget(IVector2 target)
 	{
-		this.target = new Vector2f(target);
+		updateLookAtTarget(target);
 	}
 	
-
-	@Override
-	public void update(AIInfoFrame currentFrame)
-	{
-		destCon.updateDestination(destination);
-		lookAtCon.updateTarget(target);
-	}
 	
-
+	/**
+	 * @param isKeeper
+	 */
 	public void setKeeper(boolean isKeeper)
 	{
 		this.isKeeper = isKeeper;
 	}
 	
-
+	
 	@Override
 	public boolean isKeeper()
 	{
-		return this.isKeeper;
+		return isKeeper;
 	}
 	
-
+	
+	@Override
+	protected void updateMoveCon(AIInfoFrame aiFrame)
+	{
+		
+		
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	public void setDestTolerance(float newTolerance)
-	{
-		destCon.setTolerance(newTolerance);
-	}
+	
 }

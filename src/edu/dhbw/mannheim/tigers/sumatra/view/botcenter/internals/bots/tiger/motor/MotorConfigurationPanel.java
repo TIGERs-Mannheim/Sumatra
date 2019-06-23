@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 14.10.2010
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.motor;
@@ -26,6 +26,7 @@ import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
 
+
 /**
  * Configure PID parameters and control motor.
  * 
@@ -37,24 +38,27 @@ public class MotorConfigurationPanel extends JPanel
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long	serialVersionUID	= -2637554368822866305L;
-	private JTextField latest = null;
-	private JTextField eCurrent = null;
-	private JTextField kp = null;
-	private JTextField ki = null;
-	private JTextField kd = null;
-	private JTextField slewMax = null;
-	private JTextField power = null;
-	private JTextField setpoint = null;
-	private JCheckBox overload = null;
-	private JButton logging = null;
-	private boolean logOn = false;
+	private static final long										serialVersionUID	= -2637554368822866305L;
+	private JTextField												latest				= null;
+	private JTextField												eCurrent				= null;
+	private JTextField												kp						= null;
+	private JTextField												ki						= null;
+	private JTextField												kd						= null;
+	private JTextField												slewMax				= null;
+	private JTextField												power					= null;
+	private JTextField												setpoint				= null;
+	private JCheckBox													overload				= null;
+	private JButton													logging				= null;
+	private boolean													logOn					= false;
 	
-	private final List<IMotorConfigurationPanelObserver> observers = new ArrayList<IMotorConfigurationPanelObserver>();
-		
+	private final List<IMotorConfigurationPanelObserver>	observers			= new ArrayList<IMotorConfigurationPanelObserver>();
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 */
 	public MotorConfigurationPanel()
 	{
 		setLayout(new MigLayout("fill, wrap 1", "", ""));
@@ -70,9 +74,9 @@ public class MotorConfigurationPanel extends JPanel
 		setpoint = new JTextField();
 		overload = new JCheckBox();
 		
-		JButton setPidParams = new JButton("Save");
-		JButton setManual = new JButton("Set");
-		JButton setPid = new JButton("Set");
+		final JButton setPidParams = new JButton("Save");
+		final JButton setManual = new JButton("Set");
+		final JButton setPid = new JButton("Set");
 		
 		setPidParams.addActionListener(new SetPidParams());
 		setManual.addActionListener(new SetManual());
@@ -82,7 +86,7 @@ public class MotorConfigurationPanel extends JPanel
 		latest.setEditable(false);
 		overload.setEnabled(false);
 		
-		JPanel infoPanel = new JPanel(new MigLayout("fill, wrap 2", "[80]10[100,fill]"));
+		final JPanel infoPanel = new JPanel(new MigLayout("fill, wrap 2", "[80]10[100,fill]"));
 		infoPanel.setBorder(BorderFactory.createTitledBorder("Info"));
 		infoPanel.add(new JLabel("Latest:"));
 		infoPanel.add(latest);
@@ -91,8 +95,8 @@ public class MotorConfigurationPanel extends JPanel
 		infoPanel.add(new JLabel("Overload:"));
 		infoPanel.add(overload);
 		infoPanel.add(logging, "span 2, growx");
-				
-		JPanel pidParamsPanel = new JPanel(new MigLayout("fill, wrap 2", "[80]10[100,fill]"));
+		
+		final JPanel pidParamsPanel = new JPanel(new MigLayout("fill, wrap 2", "[80]10[100,fill]"));
 		pidParamsPanel.setBorder(BorderFactory.createTitledBorder("PID Parameters"));
 		pidParamsPanel.add(new JLabel("Kp:"));
 		pidParamsPanel.add(kp);
@@ -104,13 +108,13 @@ public class MotorConfigurationPanel extends JPanel
 		pidParamsPanel.add(slewMax);
 		pidParamsPanel.add(setPidParams, "span 2");
 		
-		JPanel manualPanel = new JPanel(new MigLayout("fill, wrap 2", "[80]10[100,fill]"));
+		final JPanel manualPanel = new JPanel(new MigLayout("fill, wrap 2", "[80]10[100,fill]"));
 		manualPanel.setBorder(BorderFactory.createTitledBorder("Manual Control"));
 		manualPanel.add(new JLabel("Power:"));
 		manualPanel.add(power);
 		manualPanel.add(setManual, "span 2");
 		
-		JPanel pidPanel = new JPanel(new MigLayout("fill, wrap 2", "[80]10[100,fill]"));
+		final JPanel pidPanel = new JPanel(new MigLayout("fill, wrap 2", "[80]10[100,fill]"));
 		pidPanel.setBorder(BorderFactory.createTitledBorder("PID Control"));
 		pidPanel.add(new JLabel("Setpoint:"));
 		pidPanel.add(setpoint);
@@ -123,74 +127,91 @@ public class MotorConfigurationPanel extends JPanel
 		add(Box.createVerticalGlue(), "grow, pushy");
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param observer
+	 */
 	public void addObserver(IMotorConfigurationPanelObserver observer)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
 			observers.add(observer);
 		}
 	}
 	
 	
+	/**
+	 * @param observer
+	 */
 	public void removeObserver(IMotorConfigurationPanelObserver observer)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
 			observers.remove(observer);
 		}
 	}
 	
+	
 	private void notifySetLog(boolean logging)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for (IMotorConfigurationPanelObserver observer : observers)
+			for (final IMotorConfigurationPanelObserver observer : observers)
 			{
 				observer.onSetLog(logging);
 			}
 		}
 	}
 	
+	
 	private void notifySetPidParams(float kp, float ki, float kd, int slew)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for (IMotorConfigurationPanelObserver observer : observers)
+			for (final IMotorConfigurationPanelObserver observer : observers)
 			{
 				observer.onSetPidParams(kp, ki, kd, slew);
 			}
 		}
 	}
 	
+	
 	private void notifySetManual(int power)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for (IMotorConfigurationPanelObserver observer : observers)
+			for (final IMotorConfigurationPanelObserver observer : observers)
 			{
 				observer.onSetManual(power);
 			}
 		}
 	}
 	
+	
 	private void notifySetPidSetpoint(int setpoint)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for (IMotorConfigurationPanelObserver observer : observers)
+			for (final IMotorConfigurationPanelObserver observer : observers)
 			{
 				observer.onSetPidSetpoint(setpoint);
 			}
 		}
-	}	
-
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param p
+	 * @param i
+	 * @param d
+	 * @param s
+	 */
 	public void setPidParams(final float p, final float i, final float d, final int s)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -206,6 +227,10 @@ public class MotorConfigurationPanel extends JPanel
 		});
 	}
 	
+	
+	/**
+	 * @param enLog
+	 */
 	public void setLogging(final boolean enLog)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -215,14 +240,21 @@ public class MotorConfigurationPanel extends JPanel
 			{
 				logOn = enLog;
 				
-				if(logOn)
+				if (logOn)
+				{
 					logging.setText("Disable log");
-				else
+				} else
+				{
 					logging.setText("Enable log");
+				}
 			}
 		});
 	}
 	
+	
+	/**
+	 * @param l
+	 */
 	public void setLatest(final int l)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -235,6 +267,10 @@ public class MotorConfigurationPanel extends JPanel
 		});
 	}
 	
+	
+	/**
+	 * @param ol
+	 */
 	public void setOverload(final boolean ol)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -246,7 +282,11 @@ public class MotorConfigurationPanel extends JPanel
 			}
 		});
 	}
-
+	
+	
+	/**
+	 * @param cur
+	 */
 	public void setECurrent(final float cur)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -258,7 +298,7 @@ public class MotorConfigurationPanel extends JPanel
 			}
 		});
 	}
-
+	
 	// --------------------------------------------------------------------------
 	// --- actions --------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -267,17 +307,16 @@ public class MotorConfigurationPanel extends JPanel
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			if(logOn)
+			if (logOn)
 			{
 				logOn = false;
 				logging.setText("Enable log");
-			}
-			else
+			} else
 			{
 				logOn = true;
 				logging.setText("Disable log");
 			}
-
+			
 			notifySetLog(logOn);
 		}
 	}
@@ -300,7 +339,7 @@ public class MotorConfigurationPanel extends JPanel
 				s = Integer.parseInt(slewMax.getText());
 			}
 			
-			catch(NumberFormatException ex)
+			catch (final NumberFormatException ex)
 			{
 				return;
 			}
@@ -321,7 +360,7 @@ public class MotorConfigurationPanel extends JPanel
 				pow = Integer.parseInt(power.getText());
 			}
 			
-			catch(NumberFormatException ex)
+			catch (final NumberFormatException ex)
 			{
 				return;
 			}
@@ -342,7 +381,7 @@ public class MotorConfigurationPanel extends JPanel
 				sp = Integer.parseInt(setpoint.getText());
 			}
 			
-			catch(NumberFormatException ex)
+			catch (final NumberFormatException ex)
 			{
 				return;
 			}

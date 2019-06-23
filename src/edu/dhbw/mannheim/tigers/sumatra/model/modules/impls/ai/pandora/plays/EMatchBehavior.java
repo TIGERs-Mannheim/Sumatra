@@ -13,11 +13,18 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays;
 /**
  * This enumeration classifies the behaviour of our team for the match.
  * 
- * @author Gero, Oliver
+ * @author Gero, Oliver, Dirk
  */
 public enum EMatchBehavior
 {
+	/** */
 	AGGRESSIVE,
+	/** */
 	DEFENSIVE,
+	/** */
+	CREATIVE,
+	/** */
+	CONSERVATIVE,
+	/** */
 	NOT_DEFINED;
 }

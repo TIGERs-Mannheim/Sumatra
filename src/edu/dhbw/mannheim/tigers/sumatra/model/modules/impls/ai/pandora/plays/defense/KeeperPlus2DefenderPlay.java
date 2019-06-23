@@ -9,21 +9,16 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.defense;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Vector2f;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.AIMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.field.Goal;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.types.EBallPossession;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.types.ETeam;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.types.Goal;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.APlay;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.criteria.global.BallPossessionCrit;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.criteria.global.OpponentApproximateScoringChanceCrit;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.criteria.global.TeamClosestToBallCrit;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.EWAI;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense.DefenderK2DRole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense.KeeperK2DRole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense.KeeperSoloRole;
 
 
 /**
@@ -36,7 +31,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.def
  *      D   D
  * </pre>
  * 
- * Requires: 1 {@link KeeperK2DRole Keeper} and 2 {@link DefenderK2DRole Defender}
+ * Requires: 1 {@link KeeperSoloRole Keeper} and 2 {@link DefenderK2DRole Defender}
  * 
  * @author Malte
  * 
@@ -47,44 +42,36 @@ public class KeeperPlus2DefenderPlay extends APlay
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	/**  */
-	private static final long							serialVersionUID	= 6215145269269607838L;
+	private final Goal				goal				= AIConfig.getGeometry().getGoalOur();
 	
-	private final Goal									goal					= AIConfig.getGeometry().getGoalOur();
+	private final KeeperSoloRole	keeper;
 	
-	private KeeperK2DRole								keeper;
-	
-	private DefenderK2DRole								leftDefender;
-	private DefenderK2DRole								rightDefender;
-	
-	private BallPossessionCrit							ballPossCrit		= null;
-	private TeamClosestToBallCrit						closestBallCrit	= null;
-	private OpponentApproximateScoringChanceCrit	oppScoChance		= null;
+	private final DefenderK2DRole	leftDefender;
+	private final DefenderK2DRole	rightDefender;
 	
 	/**
 	 * Target wherefrom the ball could be shot directly towards the goal.
 	 * Usually this is the current ball position.
 	 */
-	private Vector2f										protectAgainst;
+	private IVector2					protectAgainst;
 	
-	private boolean										criticalAngle		= false;
+	private boolean					criticalAngle	= false;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	public KeeperPlus2DefenderPlay(AIInfoFrame aiFrame)
+	/**
+	 * @param aiFrame
+	 * @param numAssignedRoles
+	 */
+	public KeeperPlus2DefenderPlay(AIInfoFrame aiFrame, int numAssignedRoles)
 	{
-		super(EPlay.KEEPER_PLUS_2_DEFENDER, aiFrame);
+		super(aiFrame, numAssignedRoles);
 		
-		ballPossCrit = new BallPossessionCrit(EBallPossession.THEY);
-		closestBallCrit = new TeamClosestToBallCrit(ETeam.OPPONENTS);
-		oppScoChance = new OpponentApproximateScoringChanceCrit(true);
-		addCriterion(ballPossCrit);
-		addCriterion(closestBallCrit);
-		addCriterion(oppScoChance);
+		setTimeout(Long.MAX_VALUE);
 		
-		keeper = new KeeperK2DRole();
+		keeper = new KeeperSoloRole();
 		rightDefender = new DefenderK2DRole(EWAI.RIGHT);
 		leftDefender = new DefenderK2DRole(EWAI.LEFT);
 		
@@ -102,27 +89,32 @@ public class KeeperPlus2DefenderPlay extends APlay
 	@Override
 	protected void beforeUpdate(AIInfoFrame currentFrame)
 	{
-		protectAgainst = currentFrame.worldFrame.ball.pos;
-		float angle = protectAgainst.subtractNew(AIConfig.getGeometry().getGoalOur().getGoalCenter()).getAngle();
-		if (angle > AIMath.PI_QUART || angle < -AIMath.PI_QUART)
+		protectAgainst = currentFrame.worldFrame.ball.getPos();
+		final float angle = protectAgainst.subtractNew(AIConfig.getGeometry().getGoalOur().getGoalCenter()).getAngle();
+		if ((angle > AngleMath.PI_QUART) || (angle < -AngleMath.PI_QUART))
 		{
 			criticalAngle = true;
 		} else
 		{
 			criticalAngle = false;
 		}
-		keeper.setCriticalAngle(criticalAngle);
 		leftDefender.setCriticalAngle(criticalAngle);
 		rightDefender.setCriticalAngle(criticalAngle);
 		
 		
 		// keeper position is calculated.
-		Vector2f keeperPos = new Vector2f(keeper.calcDestination(currentFrame));
+		final Vector2f keeperPos = new Vector2f(keeper.getDestination());
 		
 		// keeper position is passed to the defenders.
-		keeper.setKeeperPos(keeperPos);
 		leftDefender.updateKeeperPos(keeperPos);
 		rightDefender.updateKeeperPos(keeperPos);
+	}
+	
+	
+	@Override
+	protected void afterUpdate(AIInfoFrame currentFrame)
+	{
+		// nothing todo
 	}
 	
 	

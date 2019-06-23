@@ -11,6 +11,7 @@ package edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.botoverview;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Font;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +19,12 @@ import javax.swing.JTable;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 
+import org.apache.commons.lang.StringEscapeUtils;
+
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACondition;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACondition.EConditionState;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.DummyCondition;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.ECondition;
 
 
 /**
@@ -38,7 +44,6 @@ public class ConditionTable extends JTable
 	private static final Color				FALSE_CONDITION_CLR		= Color.RED;
 	
 	private final ConditionTableModel	conditionModel;
-	private final ConditionCellRenderer	conditionCellRenderer;
 	
 	
 	// --------------------------------------------------------------------------
@@ -52,16 +57,17 @@ public class ConditionTable extends JTable
 		super(new ConditionTableModel());
 		conditionModel = (ConditionTableModel) getModel();
 		
-		conditionCellRenderer = new ConditionCellRenderer();
+		ConditionCellRenderer conditionCellRenderer = new ConditionCellRenderer();
 		setDefaultRenderer(ACondition.class, conditionCellRenderer);
 		
-		setEnabled(false);
+		setEnabled(true);
 	}
-	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 */
 	public static class ConditionTableModel extends AbstractTableModel
 	{
 		private static final long			serialVersionUID	= 2212173179587810981L;
@@ -72,6 +78,9 @@ public class ConditionTable extends JTable
 		private static final Class<?>[]	COLUMN_CLASSES		= new Class<?>[] { ACondition.class };
 		
 		
+		/**
+		 * @param newConditions
+		 */
 		public void updateEntireTable(final List<ACondition> newConditions)
 		{
 			synchronized (content)
@@ -80,16 +89,12 @@ public class ConditionTable extends JTable
 				content.addAll(newConditions);
 			}
 			
-//			fireTableDataChanged();
+			fireTableDataChanged();
 		}
 		
-
-//		public void updateConditionsStatus()
-//		{
-//			fireTableDataChanged();
-//		}
 		
-
+		/**
+		 */
 		public void resetContent()
 		{
 			synchronized (content)
@@ -99,31 +104,37 @@ public class ConditionTable extends JTable
 			}
 		}
 		
-
+		
 		@Override
 		public Object getValueAt(int row, int col)
 		{
 			synchronized (content)
 			{
-				return content.get(row);
+				try
+				{
+					return content.get(row);
+				} catch (final IndexOutOfBoundsException e)
+				{
+					return new DummyCondition(ECondition.DUMMY);
+				}
 			}
 		}
 		
-
+		
 		@Override
 		public String getColumnName(int col)
 		{
 			return COLUMN_NAMES[col];
 		}
 		
-
+		
 		@Override
 		public Class<?> getColumnClass(int col)
 		{
 			return COLUMN_CLASSES[col];
 		}
 		
-
+		
 		@Override
 		public int getRowCount()
 		{
@@ -133,7 +144,7 @@ public class ConditionTable extends JTable
 			}
 		}
 		
-
+		
 		@Override
 		public int getColumnCount()
 		{
@@ -145,6 +156,7 @@ public class ConditionTable extends JTable
 	private static class ConditionCellRenderer extends DefaultTableCellRenderer
 	{
 		private static final long	serialVersionUID	= -5331145585820015736L;
+		private String					oldText				= "";
 		
 		
 		@Override
@@ -152,18 +164,43 @@ public class ConditionTable extends JTable
 				int row, int column)
 		{
 			final ACondition newCon = (ACondition) value;
-			final String newText = newCon.getType().name();
-			final Boolean newStatus = newCon.getLastConditionResult();
+			final String newText = newCon.getCondition();
+			final EConditionState newStatus = newCon.getLastConditionResult();
+			final String toolTipText = newCon.getType().name();
 			
-			if (!newText.equals(getText()))
+			if (!oldText.equals(newText))
 			{
-				setText(newText);
+				oldText = newText;
+				final int colWidth = 18;
+				int count = 1;
+				
+				final StringBuilder sb = new StringBuilder();
+				for (int i = 0; i < newText.length(); i++)
+				{
+					sb.append(newText.charAt(i));
+					if (((i + 1) % colWidth) == 0)
+					{
+						sb.append("\n");
+						count++;
+					}
+				}
+				
+				table.setRowHeight(row, 13 * count);
+				setText("<html>" + StringEscapeUtils.escapeHtml(sb.toString()) + "</html>");
 			}
 			
-			if (newStatus == null)
+			setVerticalAlignment(TOP);
+			setFont(new Font("monospaced", Font.PLAIN, 9));
+			
+			if (!toolTipText.equals(getToolTipText()))
+			{
+				setToolTipText(toolTipText);
+			}
+			
+			if (newStatus == EConditionState.NOT_CHECKED)
 			{
 				setBackground(UNCHECKED_CONDITION_CLR);
-			} else if (newStatus)
+			} else if (newStatus == EConditionState.FULFILLED)
 			{
 				setBackground(TRUE_CONDITION_CLR);
 			} else
@@ -179,6 +216,9 @@ public class ConditionTable extends JTable
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @return
+	 */
 	public ConditionTableModel getConditionModel()
 	{
 		return conditionModel;

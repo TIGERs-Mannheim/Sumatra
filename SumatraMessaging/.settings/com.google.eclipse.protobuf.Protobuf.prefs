@@ -1,0 +1,5 @@
+compiler.descriptorFilePath=/usr/include/google/protobuf/descriptor.proto
+compiler.enableProjectSettings=true
+compiler.javaOutputDirectory=src-proto
+compiler.protocFilePath=/usr/bin/protoc
+eclipse.preferences.version=1

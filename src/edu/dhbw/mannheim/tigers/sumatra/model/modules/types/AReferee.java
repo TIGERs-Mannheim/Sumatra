@@ -13,7 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.RefereeMsg;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee.Command;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.referee.RefereeMsg;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IRefereeObserver;
 import edu.moduli.AModule;
 
@@ -26,18 +27,35 @@ public abstract class AReferee extends AModule implements IRefereeMsgProducer
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
+	/** */
 	public static final String					MODULE_TYPE	= "AReferee";
+	/** */
 	public static final String					MODULE_ID	= "referee";
 	
-	protected IRefereeMsgConsumer				consumer;
-	protected CountDownLatch					startSignal;
+	private IRefereeMsgConsumer				consumer;
+	
+	
+	private CountDownLatch						startSignal;
 	
 	private final List<IRefereeObserver>	observers	= new ArrayList<IRefereeObserver>();
-
+	
+	
+	/**
+	  * 
+	  */
+	public AReferee()
+	{
+		resetCountDownLatch();
+	}
+	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 * @param observer
+	 */
 	public void addObserver(IRefereeObserver observer)
 	{
 		synchronized (observers)
@@ -46,7 +64,11 @@ public abstract class AReferee extends AModule implements IRefereeMsgProducer
 		}
 	}
 	
-
+	
+	/**
+	 * 
+	 * @param observer
+	 */
 	public void removeObserver(IRefereeObserver observer)
 	{
 		synchronized (observers)
@@ -55,17 +77,28 @@ public abstract class AReferee extends AModule implements IRefereeMsgProducer
 		}
 	}
 	
-
+	
 	protected void notifyNewRefereeMsg(RefereeMsg refMsg)
 	{
 		synchronized (observers)
 		{
-			for (IRefereeObserver observer : observers)
+			for (final IRefereeObserver observer : observers)
 			{
 				observer.onNewRefereeMsg(refMsg);
 			}
 		}
 	}
+	
+	
+	/**
+	 * 
+	 * @param id
+	 * @param cmd
+	 * @param goalsBlue
+	 * @param goalsYellow
+	 * @param timeLeft
+	 */
+	public abstract void sendOwnRefereeMsg(int id, Command cmd, int goalsBlue, int goalsYellow, short timeLeft);
 	
 	
 	// --------------------------------------------------------------------------
@@ -78,9 +111,27 @@ public abstract class AReferee extends AModule implements IRefereeMsgProducer
 		startSignal.countDown();
 	}
 	
-
-	protected void resetCountDownLatch()
+	
+	protected final void resetCountDownLatch()
 	{
 		startSignal = new CountDownLatch(1);
+	}
+	
+	
+	/**
+	 * @return the consumer
+	 */
+	public final IRefereeMsgConsumer getConsumer()
+	{
+		return consumer;
+	}
+	
+	
+	/**
+	 * @return the startSignal
+	 */
+	public final CountDownLatch getStartSignal()
+	{
+		return startSignal;
 	}
 }

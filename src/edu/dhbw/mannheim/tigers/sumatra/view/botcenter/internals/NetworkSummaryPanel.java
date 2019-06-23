@@ -1,10 +1,10 @@
-/* 
+/*
  * *********************************************************
  * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
  * Date: 11.09.2010
  * Author(s): AndreR
- *
+ * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals;
@@ -36,6 +36,7 @@ import javax.swing.SwingUtilities;
 import net.miginfocom.swing.MigLayout;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.Statistics;
 
+
 /**
  * Network statistics panel.
  * 
@@ -44,36 +45,49 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.comm
  */
 public class NetworkSummaryPanel extends JPanel
 {
+	/**
+	 */
 	public interface INetworkSummaryPanelObserver
 	{
+		/**
+		 * @param multicast
+		 */
 		void onEnableMulticastChanged(boolean multicast);
+		
+		
+		/**
+		 * @param time
+		 */
 		void onSleepTimeChanged(long time);
 	}
 	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long	serialVersionUID	= 5964199908873519766L;
+	private static final long									serialVersionUID	= 5964199908873519766L;
 	
-	private JTextField packets[];
-	private JTextField payload[];
-	private JTextField raw[];
-	private JProgressBar overhead[];
-	private JProgressBar load[];
-	private JCheckBox multicast;
-	private JTextField updateTime;
+	private final JTextField									packets[];
+	private final JTextField									payload[];
+	private final JTextField									raw[];
+	private final JProgressBar									overhead[];
+	private final JProgressBar									load[];
+	private final JCheckBox										multicast;
+	private final JTextField									updateTime;
 	
-	private Chart2D chart = new Chart2D();
-	private ITrace2D rxTrace = new Trace2DLtd(200);
-	private ITrace2D txTrace = new Trace2DLtd(200);
+	private final Chart2D										chart					= new Chart2D();
+	private final ITrace2D										rxTrace				= new Trace2DLtd(200);
+	private final ITrace2D										txTrace				= new Trace2DLtd(200);
 	
-	private long timeOffset = 0;
+	private long													timeOffset			= 0;
 	
-	private final List<INetworkSummaryPanelObserver> observers = new ArrayList<INetworkSummaryPanelObserver>();
+	private final List<INetworkSummaryPanelObserver>	observers			= new ArrayList<INetworkSummaryPanelObserver>();
+	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 */
 	public NetworkSummaryPanel()
 	{
 		setLayout(new MigLayout("wrap 2", "[150]10[grow]", "[][]"));
@@ -86,10 +100,10 @@ public class NetworkSummaryPanel extends JPanel
 		multicast = new JCheckBox();
 		updateTime = new JTextField();
 		
-		JButton saveSetup = new JButton("Save");
+		final JButton saveSetup = new JButton("Save");
 		saveSetup.addActionListener(new Save());
 		
-		JPanel infoPanel = new JPanel(new MigLayout("fill, wrap 2", "[100]10[50,fill]"));
+		final JPanel infoPanel = new JPanel(new MigLayout("fill, wrap 2", "[100]10[50,fill]"));
 		infoPanel.add(new JLabel("Enable Multicast:"));
 		infoPanel.add(multicast);
 		infoPanel.add(new JLabel("Sleep time [ms]:"));
@@ -97,10 +111,10 @@ public class NetworkSummaryPanel extends JPanel
 		infoPanel.add(saveSetup, "span 2, growx, gapy 10");
 		infoPanel.setBorder(BorderFactory.createTitledBorder("Setup"));
 		
-		JPanel barPanel = new JPanel(new MigLayout("wrap 3", "[100]10[150,fill]10[150,fill]",
+		final JPanel barPanel = new JPanel(new MigLayout("wrap 3", "[100]10[150,fill]10[150,fill]",
 				"[20][20][20][20]10[20,fill][20,fill][]"));
 		
-		for(int i = 0; i < 2; i++)
+		for (int i = 0; i < 2; i++)
 		{
 			packets[i] = new JTextField();
 			payload[i] = new JTextField();
@@ -115,35 +129,35 @@ public class NetworkSummaryPanel extends JPanel
 		barPanel.add(new JLabel("RX per second"));
 		
 		barPanel.add(new JLabel("Packets:"));
-		for(int i = 0; i < 2; i++)
+		for (int i = 0; i < 2; i++)
 		{
 			barPanel.add(packets[i]);
 		}
-
+		
 		barPanel.add(new JLabel("Payload [byte]:"));
-		for(int i = 0; i < 2; i++)
+		for (int i = 0; i < 2; i++)
 		{
 			barPanel.add(payload[i]);
 		}
-
+		
 		barPanel.add(new JLabel("Raw [byte]:"));
-		for(int i = 0; i < 2; i++)
+		for (int i = 0; i < 2; i++)
 		{
 			barPanel.add(raw[i]);
 		}
-
+		
 		barPanel.add(new JLabel("Overhead:"));
-		for(int i = 0; i < 2; i++)
+		for (int i = 0; i < 2; i++)
 		{
 			barPanel.add(overhead[i]);
 		}
 		
 		barPanel.add(new JLabel("Load:"));
-		for(int i = 0; i < 2; i++)
+		for (int i = 0; i < 2; i++)
 		{
 			barPanel.add(load[i]);
 		}
-
+		
 		rxTrace.setColor(Color.RED);
 		rxTrace.setName("RX raw");
 		txTrace.setColor(Color.BLUE);
@@ -153,7 +167,7 @@ public class NetworkSummaryPanel extends JPanel
 		chart.getAxisX().setRangePolicy(new RangePolicyHighestValues(10));
 		chart.getAxisX().setMajorTickSpacing(10);
 		chart.getAxisX().setMinorTickSpacing(10);
-		chart.setBackground(this.getBackground());
+		chart.setBackground(getBackground());
 		chart.setForeground(Color.BLACK);
 		chart.getAxisX().setAxisTitle(new AxisTitle("t [s]"));
 		chart.getAxisY().setAxisTitle(new AxisTitle("bytes"));
@@ -168,27 +182,37 @@ public class NetworkSummaryPanel extends JPanel
 		timeOffset = System.nanoTime();
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @param observer
+	 */
 	public void addObserver(INetworkSummaryPanelObserver observer)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
 			observers.add(observer);
 		}
 	}
 	
 	
+	/**
+	 * @param observer
+	 */
 	public void removeObserver(INetworkSummaryPanelObserver observer)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
 			observers.remove(observer);
 		}
 	}
 	
+	
+	/**
+	 * @param time
+	 */
 	public void setSleepTime(final long time)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -201,6 +225,10 @@ public class NetworkSummaryPanel extends JPanel
 		});
 	}
 	
+	
+	/**
+	 * @param enable
+	 */
 	public void setEnableMulticast(final boolean enable)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -212,7 +240,11 @@ public class NetworkSummaryPanel extends JPanel
 			}
 		});
 	}
-
+	
+	
+	/**
+	 * @param stat
+	 */
 	public void setTxStat(final Statistics stat)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -223,17 +255,21 @@ public class NetworkSummaryPanel extends JPanel
 				packets[0].setText(Integer.toString(stat.packets));
 				payload[0].setText(Integer.toString(stat.payload));
 				raw[0].setText(Integer.toString(stat.raw));
-				overhead[0].setValue((int) (stat.getOverheadPercentage()*1000));
-				load[0].setValue((int) (stat.getLoadPercentage(1.0f)*1000));
+				overhead[0].setValue((int) (stat.getOverheadPercentage() * 1000));
+				load[0].setValue((int) (stat.getLoadPercentage(1.0f) * 1000));
 				
-				overhead[0].setString(String.format(Locale.ENGLISH, "%1.2f%%", stat.getOverheadPercentage()*100));
-				load[0].setString(String.format(Locale.ENGLISH, "%1.2f%%", stat.getLoadPercentage(1.0f)*100));
+				overhead[0].setString(String.format(Locale.ENGLISH, "%1.2f%%", stat.getOverheadPercentage() * 100));
+				load[0].setString(String.format(Locale.ENGLISH, "%1.2f%%", stat.getLoadPercentage(1.0f) * 100));
 			}
 		});
 		
-		txTrace.addPoint((System.nanoTime()-timeOffset)/1000000000.0, stat.raw);
+		txTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, stat.raw);
 	}
-
+	
+	
+	/**
+	 * @param stat
+	 */
 	public void setRxStat(final Statistics stat)
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -243,34 +279,36 @@ public class NetworkSummaryPanel extends JPanel
 			{
 				packets[1].setText(Integer.toString(stat.packets));
 				payload[1].setText(Integer.toString(stat.payload));
-				raw[1].setText(Integer.toString(stat.raw));		
-				overhead[1].setValue((int) (stat.getOverheadPercentage()*1000));
-				load[1].setValue((int) (stat.getLoadPercentage(1.0f)*1000));
+				raw[1].setText(Integer.toString(stat.raw));
+				overhead[1].setValue((int) (stat.getOverheadPercentage() * 1000));
+				load[1].setValue((int) (stat.getLoadPercentage(1.0f) * 1000));
 				
-				overhead[1].setString(String.format(Locale.ENGLISH, "%1.2f%%", stat.getOverheadPercentage()*100));
-				load[1].setString(String.format(Locale.ENGLISH, "%1.2f%%", stat.getLoadPercentage(1.0f)*100));
+				overhead[1].setString(String.format(Locale.ENGLISH, "%1.2f%%", stat.getOverheadPercentage() * 100));
+				load[1].setString(String.format(Locale.ENGLISH, "%1.2f%%", stat.getLoadPercentage(1.0f) * 100));
 			}
 		});
 		
-		rxTrace.addPoint((System.nanoTime()-timeOffset)/1000000000.0, stat.raw);
+		rxTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, stat.raw);
 	}
-		
+	
+	
 	private void notifyEnableMulticastChanged(boolean enable)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for (INetworkSummaryPanelObserver observer : observers)
+			for (final INetworkSummaryPanelObserver observer : observers)
 			{
 				observer.onEnableMulticastChanged(enable);
 			}
 		}
 	}
 	
+	
 	private void notifySleepTimeChanged(int time)
 	{
-		synchronized(observers)
+		synchronized (observers)
 		{
-			for (INetworkSummaryPanelObserver observer : observers)
+			for (final INetworkSummaryPanelObserver observer : observers)
 			{
 				observer.onSleepTimeChanged(time);
 			}
@@ -289,8 +327,7 @@ public class NetworkSummaryPanel extends JPanel
 			try
 			{
 				time = Integer.parseInt(updateTime.getText());
-			}
-			catch(NumberFormatException ex)
+			} catch (final NumberFormatException ex)
 			{
 				return;
 			}

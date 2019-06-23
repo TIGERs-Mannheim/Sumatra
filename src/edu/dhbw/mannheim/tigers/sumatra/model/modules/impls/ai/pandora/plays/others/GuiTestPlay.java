@@ -9,12 +9,17 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.others;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.data.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.APlay;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ARole;
+import org.apache.log4j.Logger;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.RoleFactory;
 
@@ -27,62 +32,76 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.Rol
  */
 public class GuiTestPlay extends APlay
 {
-	/**  */
-	private static final long	serialVersionUID	= -1726001125154831729L;
+	private static final Logger	log	= Logger.getLogger(GuiTestPlay.class.getName());
+	
+	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final RoleFactory factory = RoleFactory.getInstance();
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
 	/**
-	 * Do not use this ctor. It is only used to instantiate this play for scoring calc.
-	 * (feature was requested by malte)
+	 * allowed because this is a Pseudo-Play
+	 * @param aiFrame
+	 * @param rolesAndInitPos
 	 */
-	public GuiTestPlay(AIInfoFrame aiFrame)
+	public GuiTestPlay(AIInfoFrame aiFrame, Map<ERole, IVector2> rolesAndInitPos)
 	{
-		super(EPlay.GUI_TEST_PLAY, aiFrame);
-		// do nothing
-	}
-	
-	
-	// allowed because this is a Pseudo-Play
-	public GuiTestPlay(AIInfoFrame aiFrame, List<ERole> activeRoles)
-	{
-		super(EPlay.GUI_TEST_PLAY, aiFrame);
+		super(aiFrame, rolesAndInitPos.size());
+		setType(EPlay.GUI_TEST_PLAY);
 		
-
-		for (ERole type : activeRoles)
+		setTimeout(Long.MAX_VALUE);
+		
+		for (Map.Entry<ERole, IVector2> entry : rolesAndInitPos.entrySet())
 		{
 			try
 			{
-				ARole genRole = factory.createRole(type);
-				addAggressiveRole(genRole);
-				
-			} catch (IllegalArgumentException iae)
+				final ARole genRole = RoleFactory.createRole(entry.getKey());
+				addAggressiveRole(genRole, entry.getValue());
+			} catch (final IllegalArgumentException iae)
 			{
 				log.warn(iae.getMessage());
 			}
 		}
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
- 
+	
+	
 	@Override
-	public int calcPlayableScore(AIInfoFrame currentFrame)
+	protected void afterUpdate(AIInfoFrame currentFrame)
 	{
-		return 0;
+		List<ARole> completedRoles = new ArrayList<ARole>();
+		for (final ARole role : getRoles())
+		{
+			if (role.isCompleted())
+			{
+				completedRoles.add(role);
+			}
+		}
+		for (final ARole role : completedRoles)
+		{
+			getRoles().remove(role);
+			currentFrame.removeAssignedRole(role.getBotID());
+		}
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	
+	@Override
+	protected void beforeUpdate(AIInfoFrame frame)
+	{
+		// nothing todo
+	}
 }

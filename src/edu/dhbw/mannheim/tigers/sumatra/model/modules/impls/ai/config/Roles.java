@@ -10,13 +10,19 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config;
 
-import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.commons.configuration.Configuration;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 
 
 /**
  * Configuration object for the roles.
  * 
+ * Please put parameters that could correspond to more than one role directly
+ * into this class and give it a good name
+ * 
  * @author FlorianS
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  * 
  */
 public class Roles
@@ -26,54 +32,68 @@ public class Roles
 	// --------------------------------------------------------------------------
 	
 	// parent node for all inner classes
-	protected final static String	parentNodePath	= "roles.";
+	private static final String	NODE_PATH	= "roles.";
 	
-	ConfigDefenderK1D					defenderK1D;
-	ConfigDefenderK2D					defenderK2D;
-	ConfigKeeperK1D					keeperK1D;
-	ConfigKeeperK2D					keeperK2D;
-	ConfigKeeperSolo					keeperSolo;
-	ConfigBallGetter					ballGetter;
-	ConfigIndirectShooter			indirectShooter;
-	ConfigShooter						shooter;
+	private ConfigDefenderK1D		defenderK1D;
+	private ConfigDefenderK2D		defenderK2D;
+	private ConfigKeeperK1D			keeperK1D;
+	private ConfigKeeperK2D			keeperK2D;
+	private ConfigKeeperSolo		keeperSolo;
+	private ConfigIndirectShooter	indirectShooter;
+	private ConfigShooter			shooter;
+	
+	private final float				passSenderBallEndVel;
+	private final float				indirectReceiverBallVelCorrection;
+	private final float				indirectReceiverMaxAngle;
+	private final float				chipPassDistFactor;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-
-	public Roles(XMLConfiguration configFile)
+	/**
+	 * @param configFile
+	 */
+	public Roles(Configuration configFile)
 	{
 		defenderK1D = new ConfigDefenderK1D(configFile);
 		defenderK2D = new ConfigDefenderK2D(configFile);
 		keeperK1D = new ConfigKeeperK1D(configFile);
 		keeperK2D = new ConfigKeeperK2D(configFile);
-		ballGetter = new ConfigBallGetter(configFile);
 		keeperSolo = new ConfigKeeperSolo(configFile);
 		indirectShooter = new ConfigIndirectShooter(configFile);
 		shooter = new ConfigShooter(configFile);
+		
+		passSenderBallEndVel = configFile.getFloat(NODE_PATH + "passSenderBallEndVel");
+		indirectReceiverBallVelCorrection = configFile.getFloat(NODE_PATH + "indirectReceiverBallVelCorrection");
+		indirectReceiverMaxAngle = AngleMath.deg2rad(configFile.getFloat(NODE_PATH + "indirectReceiverMaxAngle"));
+		chipPassDistFactor = configFile.getFloat(NODE_PATH + "chipPassDistFactor");
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- inner classes --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
+	/**
+	 */
 	public static class ConfigDefenderK1D
 	{
-		private final String	nodePath	= parentNodePath + "DEFENDER_K1D.";
-		private final float	gap;
-		private final float	radius;
+		private static final String	NODE_PATH_LOC	= NODE_PATH + "DEFENDER_K1D.";
+		private final float				gap;
+		private final float				radius;
 		
 		
-		public ConfigDefenderK1D(XMLConfiguration configFile)
+		/**
+		 * @param configFile
+		 */
+		public ConfigDefenderK1D(Configuration configFile)
 		{
-			gap = configFile.getFloat(nodePath + "GAP");
-			radius = configFile.getFloat(nodePath + "RADIUS");
+			gap = configFile.getFloat(NODE_PATH_LOC + "GAP");
+			radius = configFile.getFloat(NODE_PATH_LOC + "RADIUS");
 		}
 		
-
+		
 		/**
 		 * @return gap
 		 */
@@ -82,7 +102,7 @@ public class Roles
 			return gap;
 		}
 		
-
+		
 		/**
 		 * @return radius
 		 */
@@ -92,54 +112,62 @@ public class Roles
 		}
 	}
 	
-	
+	/**
+	 */
 	public static class ConfigDefenderK2D
 	{
-		private final String	nodePath	= parentNodePath + "DEFENDER_K2D.";
-		private final float	space_before_keeper;
-		private final float	space_beside_keeper;
+		private static final String	NODE_PATH_LOC	= NODE_PATH + "DEFENDER_K2D.";
+		private final float				spaceBeforeKeeper;
+		private final float				spaceBesideKeeper;
 		
 		
-		public ConfigDefenderK2D(XMLConfiguration configFile)
+		/**
+		 * @param configFile
+		 */
+		public ConfigDefenderK2D(Configuration configFile)
 		{
-			space_before_keeper = configFile.getFloat(nodePath + "SPACE_BEFORE_KEEPER");
-			space_beside_keeper = configFile.getFloat(nodePath + "SPACE_BESIDE_KEEPER");
+			spaceBeforeKeeper = configFile.getFloat(NODE_PATH_LOC + "SPACE_BEFORE_KEEPER");
+			spaceBesideKeeper = configFile.getFloat(NODE_PATH_LOC + "SPACE_BESIDE_KEEPER");
 		}
 		
-
+		
 		/**
-		 * @return space_before_keeper
+		 * @return spaceBeforeKeeper
 		 */
 		public float getSpaceBeforeKeeper()
 		{
-			return space_before_keeper;
+			return spaceBeforeKeeper;
 		}
 		
-
+		
 		/**
-		 * @return space_beside_keeper
+		 * @return spaceBesideKeeper
 		 */
 		public float getSpaceBesideKeeper()
 		{
-			return space_beside_keeper;
+			return spaceBesideKeeper;
 		}
 	}
 	
-	
+	/**
+	 */
 	public static class ConfigKeeperK1D
 	{
-		private final String	nodePath	= parentNodePath + "KEEPER_K1D.";
-		private final float	gap;
-		private final float	radius;
+		private static final String	NODE_PATH_LOC	= NODE_PATH + "KEEPER_K1D.";
+		private final float				gap;
+		private final float				radius;
 		
 		
-		public ConfigKeeperK1D(XMLConfiguration configFile)
+		/**
+		 * @param configFile
+		 */
+		public ConfigKeeperK1D(Configuration configFile)
 		{
-			gap = configFile.getFloat(nodePath + "GAP");
-			radius = configFile.getFloat(nodePath + "RADIUS");
+			gap = configFile.getFloat(NODE_PATH_LOC + "GAP");
+			radius = configFile.getFloat(NODE_PATH_LOC + "RADIUS");
 		}
 		
-
+		
 		/**
 		 * @return gap
 		 */
@@ -148,7 +176,7 @@ public class Roles
 			return gap;
 		}
 		
-
+		
 		/**
 		 * @return radius
 		 */
@@ -158,19 +186,23 @@ public class Roles
 		}
 	}
 	
-	
+	/**
+	 */
 	public static class ConfigKeeperK2D
 	{
-		private final String	nodePath	= parentNodePath + "KEEPER_K2D.";
-		private final int		radius;
+		private static final String	NODE_PATH_LOC	= NODE_PATH + "KEEPER_K2D.";
+		private final int					radius;
 		
 		
-		public ConfigKeeperK2D(XMLConfiguration configFile)
+		/**
+		 * @param configFile
+		 */
+		public ConfigKeeperK2D(Configuration configFile)
 		{
-			radius = configFile.getInt(nodePath + "RADIUS");
+			radius = configFile.getInt(NODE_PATH_LOC + "RADIUS");
 		}
 		
-
+		
 		/**
 		 * @return radius
 		 */
@@ -180,19 +212,23 @@ public class Roles
 		}
 	}
 	
-	
+	/**
+	 */
 	public static class ConfigKeeperSolo
 	{
-		private final String	nodePath	= parentNodePath + "KEEPER_SOLO.";
-		private final int		radius;
+		private static final String	NODE_PATH_LOC	= NODE_PATH + "KEEPER_SOLO.";
+		private final int					radius;
 		
 		
-		public ConfigKeeperSolo(XMLConfiguration configFile)
+		/**
+		 * @param configFile
+		 */
+		public ConfigKeeperSolo(Configuration configFile)
 		{
-			radius = configFile.getInt(nodePath + "RADIUS");
+			radius = configFile.getInt(NODE_PATH_LOC + "RADIUS");
 		}
 		
-
+		
 		/**
 		 * @return radius
 		 */
@@ -202,87 +238,25 @@ public class Roles
 		}
 	}
 	
-	
-	public static class ConfigBallGetter
-	{
-		private final String	nodePath	= parentNodePath + "BALL_GETTER.";
-		private final float	space_min;
-		private final float	space_max;
-		private final float	velocity_tolerance;
-		private final float	dribbling_distance;
-		private final float 	positioning_pre_aiming;
-		
-		
-		public ConfigBallGetter(XMLConfiguration configFile)
-		{
-			space_min = configFile.getFloat(nodePath + "SPACE_MIN");
-			space_max = configFile.getFloat(nodePath + "SPACE_MAX");
-			velocity_tolerance = configFile.getFloat(nodePath + "VELOCITY_TOLERANCE");
-			dribbling_distance = configFile.getFloat(nodePath + "DRIBBLING_DISTANCE");
-			positioning_pre_aiming = configFile.getFloat(nodePath + "POSITIONING_PRE_AIMING");
-		}
-		
-
-		/**
-		 * @return space_min
-		 */
-		public float getSpaceMin()
-		{
-			return space_min;
-		}
-		
-
-		/**
-		 * @return space_max
-		 */
-		public float getSpaceMax()
-		{
-			return space_max;
-		}
-		
-
-		/**
-		 * @return velocity_tolerance
-		 */
-		public float getVelocityTolerance()
-		{
-			return velocity_tolerance;
-		}
-		
-
-		/**
-		 * @return dribbling_distance
-		 */
-		public float getDribblingDistance()
-		{
-			return dribbling_distance;
-		}
-		
-		
-		/**
-		 * @return the positioning_pre_aiming
-		 */
-		public float getPositioningPreAiming()
-		{
-			return positioning_pre_aiming;
-		}
-	}
-	
-	
+	/**
+	 */
 	public static class ConfigIndirectShooter
 	{
-		private final String	nodePath	= parentNodePath + "INDIRECT_SHOOTER.";
-		private final int		memorysize;
-		private final int		tries_per_cycle;
+		private static final String	NODE_PATH_LOC	= NODE_PATH + "INDIRECT_SHOOTER.";
+		private final int					memorysize;
+		private final int					triesPerCycle;
 		
 		
-		public ConfigIndirectShooter(XMLConfiguration configFile)
+		/**
+		 * @param configFile
+		 */
+		public ConfigIndirectShooter(Configuration configFile)
 		{
-			memorysize = configFile.getInt(nodePath + "MEMORYSIZE");
-			tries_per_cycle = configFile.getInt(nodePath + "TRIES_PER_CYCLE");
+			memorysize = configFile.getInt(NODE_PATH_LOC + "MEMORYSIZE");
+			triesPerCycle = configFile.getInt(NODE_PATH_LOC + "TRIES_PER_CYCLE");
 		}
 		
-
+		
 		/**
 		 * @return memorysize
 		 */
@@ -291,31 +265,35 @@ public class Roles
 			return memorysize;
 		}
 		
-
+		
 		/**
-		 * @return tries_per_cycle
+		 * @return triesPerCycle
 		 */
 		public int getTriesPerCycle()
 		{
-			return tries_per_cycle;
+			return triesPerCycle;
 		}
 	}
 	
-	
+	/**
+	 */
 	public static class ConfigShooter
 	{
-		private final String	nodePath	= parentNodePath + "SHOOTER.";
-		private final int		memorysize;
-		private final int		tries_per_cycle;
+		private static final String	NODE_PATH_LOC	= NODE_PATH + "SHOOTER.";
+		private final int					memorysize;
+		private final int					triesPerCycle;
 		
 		
-		public ConfigShooter(XMLConfiguration configFile)
+		/**
+		 * @param configFile
+		 */
+		public ConfigShooter(Configuration configFile)
 		{
-			memorysize = configFile.getInt(nodePath + "MEMORYSIZE");
-			tries_per_cycle = configFile.getInt(nodePath + "TRIES_PER_CYCLE");
+			memorysize = configFile.getInt(NODE_PATH_LOC + "MEMORYSIZE");
+			triesPerCycle = configFile.getInt(NODE_PATH_LOC + "TRIES_PER_CYCLE");
 		}
 		
-
+		
 		/**
 		 * @return memorysize
 		 */
@@ -324,13 +302,13 @@ public class Roles
 			return memorysize;
 		}
 		
-
+		
 		/**
-		 * @return tries_per_cycle
+		 * @return triesPerCycle
 		 */
 		public int getTriesPerCycle()
 		{
-			return tries_per_cycle;
+			return triesPerCycle;
 		}
 	}
 	
@@ -338,51 +316,101 @@ public class Roles
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
+	/**
+	 * @return
+	 */
 	public ConfigDefenderK1D getDefenderK1D()
 	{
 		return defenderK1D;
 	}
 	
-
+	
+	/**
+	 * @return
+	 */
 	public ConfigDefenderK2D getDefenderK2D()
 	{
 		return defenderK2D;
 	}
 	
-
+	
+	/**
+	 * @return
+	 */
 	public ConfigKeeperK1D getKeeperK1D()
 	{
 		return keeperK1D;
 	}
 	
-
+	
+	/**
+	 * @return
+	 */
 	public ConfigKeeperK2D getKeeperK2D()
 	{
 		return keeperK2D;
 	}
 	
-
+	
+	/**
+	 * @return
+	 */
 	public ConfigKeeperSolo getKeeperSolo()
 	{
 		return keeperSolo;
 	}
 	
-
-	public ConfigBallGetter getBallGetter()
-	{
-		return ballGetter;
-	}
 	
-
+	/**
+	 * @return
+	 */
 	public ConfigIndirectShooter getIndirectShooter()
 	{
 		return indirectShooter;
 	}
 	
-
+	
+	/**
+	 * @return
+	 */
 	public ConfigShooter getShooter()
 	{
 		return shooter;
+	}
+	
+	
+	/**
+	 * @return the passSenderBallEndVel
+	 */
+	public final float getPassSenderBallEndVel()
+	{
+		return passSenderBallEndVel;
+	}
+	
+	
+	/**
+	 * @return the indirectReceiverBallVelCorrection
+	 */
+	public final float getIndirectReceiverBallVelCorrection()
+	{
+		return indirectReceiverBallVelCorrection;
+	}
+	
+	
+	/**
+	 * @return the indirectReceiverMaxAngle
+	 */
+	public final float getIndirectReceiverMaxAngle()
+	{
+		return indirectReceiverMaxAngle;
+	}
+	
+	
+	/**
+	 * @return the chipPassDistFactor
+	 */
+	public final float getChipPassDistFactor()
+	{
+		return chipPassDistFactor;
 	}
 }

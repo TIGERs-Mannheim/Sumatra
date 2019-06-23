@@ -15,9 +15,8 @@ import java.util.List;
 import javax.swing.JMenu;
 import javax.swing.JPanel;
 
-import edu.dhbw.mannheim.tigers.sumatra.view.main.ISumatraView;
-
 import net.miginfocom.swing.MigLayout;
+import edu.dhbw.mannheim.tigers.sumatra.view.main.ISumatraView;
 
 
 /**
@@ -36,82 +35,90 @@ public class TimerPanel extends JPanel implements ISumatraView
 	private static final int		ID						= 5;
 	private static final String	TITLE					= "Timer Info";
 	
-
+	
 	private final TimerChartPanel	chartPanel;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 */
 	public TimerPanel()
 	{
 		setLayout(new MigLayout("fill", "", ""));
 		
 		chartPanel = new TimerChartPanel();
+		chartPanel.setVisible(false);
 		
 		add(chartPanel, "grow");
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
 	public void onShown()
 	{
-		chartPanel.setVisible(true);
 	}
 	
-
+	
 	@Override
 	public void onHidden()
 	{
 		chartPanel.setVisible(false);
 	}
 	
-
+	
 	@Override
 	public void onFocused()
 	{
+		chartPanel.setVisible(true);
 	}
 	
-
+	
 	@Override
 	public void onFocusLost()
 	{
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 * @return
+	 */
 	public TimerChartPanel getChartPanel()
 	{
 		return chartPanel;
 	}
 	
-
+	
 	@Override
-	public int getID()
+	public int getId()
 	{
 		return ID;
 	}
 	
-
+	
 	@Override
 	public String getTitle()
 	{
 		return TITLE;
 	}
 	
-
+	
 	@Override
 	public Component getViewComponent()
 	{
 		return this;
 	}
 	
-
+	
 	@Override
 	public List<JMenu> getCustomMenus()
 	{

@@ -12,7 +12,7 @@ package edu.dhbw.mannheim.tigers.sumatra.presenter.timer;
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.TimerInfo;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.timer.TimerInfo;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.ITimerObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ATimer;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.IModuliStateObserver;
@@ -28,6 +28,7 @@ import edu.moduli.listenerVariables.ModulesState;
  * Presenter for the Timer-GUI
  * 
  * @author Gero
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  * 
  */
 public class TimerPresenter implements IModuliStateObserver, ITimerObserver
@@ -35,11 +36,8 @@ public class TimerPresenter implements IModuliStateObserver, ITimerObserver
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final Logger				log	= Logger.getLogger(getClass());
-	
-
-	private final SumatraModel		model	= SumatraModel.getInstance();
-	private ATimer						timer;
+	// Logger
+	private static final Logger	log	= Logger.getLogger(TimerPresenter.class.getName());
 	
 	private final TimerPanel		timerPanel;
 	private final TimerChartPanel	chartPanel;
@@ -48,6 +46,9 @@ public class TimerPresenter implements IModuliStateObserver, ITimerObserver
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 */
 	public TimerPresenter()
 	{
 		timerPanel = new TimerPanel();
@@ -56,7 +57,7 @@ public class TimerPresenter implements IModuliStateObserver, ITimerObserver
 		ModuliStateAdapter.getInstance().addObserver(this);
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -69,42 +70,51 @@ public class TimerPresenter implements IModuliStateObserver, ITimerObserver
 			{
 				try
 				{
-					timer = (ATimer) model.getModule(ATimer.MODULE_ID);
+					ATimer timer = (ATimer) SumatraModel.getInstance().getModule(ATimer.MODULE_ID);
 					timer.addObserver(this);
 					
-				} catch (ModuleNotFoundException err)
+				} catch (final ModuleNotFoundException err)
 				{
 					log.error("Timer Module not found!");
 				}
 				break;
 			}
-				
-			default:
+			
+			case RESOLVED:
 			{
-				if (timer != null)
+				try
 				{
+					ATimer timer = (ATimer) SumatraModel.getInstance().getModule(ATimer.MODULE_ID);
 					timer.removeObserver(this);
+				} catch (ModuleNotFoundException err)
+				{
+					log.error("Timer Module not found!");
 				}
 				
 				chartPanel.clearChart();
 				
 				break;
 			}
+			default:
 		}
 		
 	}
-
-
+	
+	
 	@Override
 	public void onNewTimerInfo(TimerInfo info)
 	{
 		chartPanel.onNewTimerInfo(info);
 	}
 	
-
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * 
+	 * @return
+	 */
 	public ISumatraView getView()
 	{
 		return timerPanel;
