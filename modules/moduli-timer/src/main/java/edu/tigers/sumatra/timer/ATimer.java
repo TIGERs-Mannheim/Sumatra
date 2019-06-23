@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 22.07.2010
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.timer;
 
 import java.util.List;
@@ -21,7 +17,7 @@ import edu.tigers.moduli.AModule;
  * 
  * @author Gero
  */
-public abstract class ATimer extends AModule
+public abstract class ATimer extends AModule implements ITimer
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
@@ -32,7 +28,7 @@ public abstract class ATimer extends AModule
 	public static final String				MODULE_ID	= "timer";
 	
 	
-	private final List<ITimerObserver>	observers	= new CopyOnWriteArrayList<ITimerObserver>();
+	private final List<ITimerObserver>	observers	= new CopyOnWriteArrayList<>();
 	
 	
 	// --------------------------------------------------------------------------

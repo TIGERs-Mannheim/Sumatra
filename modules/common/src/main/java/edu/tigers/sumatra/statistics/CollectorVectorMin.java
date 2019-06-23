@@ -16,8 +16,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 
-import edu.tigers.sumatra.math.IVector;
-import edu.tigers.sumatra.math.VectorN;
+import edu.tigers.sumatra.math.vector.IVector;
+import edu.tigers.sumatra.math.vector.VectorN;
 import edu.tigers.sumatra.statistics.CollectorVectorMin.Accumulator;
 
 
@@ -78,7 +78,7 @@ public class CollectorVectorMin implements Collector<IVector, Accumulator, Vecto
 	@Override
 	public Function<Accumulator, VectorN> finisher()
 	{
-		return acc -> new VectorN(acc.vector);
+		return acc -> VectorN.copy(acc.vector);
 	}
 	
 	
@@ -90,6 +90,6 @@ public class CollectorVectorMin implements Collector<IVector, Accumulator, Vecto
 	
 	protected class Accumulator
 	{
-		VectorN	vector	= new VectorN(dim).apply(f -> Double.MAX_VALUE);
+		VectorN vector = VectorN.zero(dim).apply(f -> Double.MAX_VALUE);
 	}
 }

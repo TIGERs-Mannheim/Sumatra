@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Oct 14, 2013
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ids;
 
 import java.util.ArrayList;
@@ -25,23 +21,23 @@ import com.sleepycat.persist.model.Persistent;
 @Persistent
 public final class BotID extends AObjectID
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
+	private final ETeamColor teamColor;
 	
-	/**  */
-	private static final long						serialVersionUID	= 3900802414469252613L;
-	private final ETeamColor						teamColor;
-															
-	private static final BotID						UNINITIALIZED_ID	= new BotID();
-	private static final Map<Integer, BotID>	YELLOW_BOT_IDS		= new ConcurrentHashMap<Integer, BotID>();
-	private static final Map<Integer, BotID>	BLUE_BOT_IDS		= new ConcurrentHashMap<Integer, BotID>();
-	private static final Map<Integer, BotID>	UNKNOWN_BOT_IDS	= new ConcurrentHashMap<Integer, BotID>();
-																					
-																					
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
+	private static final BotID NO_BOT_ID = new BotID();
+	private static final Map<Integer, BotID> YELLOW_BOT_IDS = new ConcurrentHashMap<>();
+	private static final Map<Integer, BotID> BLUE_BOT_IDS = new ConcurrentHashMap<>();
+	private static final Map<Integer, BotID> UNKNOWN_BOT_IDS = new ConcurrentHashMap<>();
+	
+	
+	static
+	{
+		for (int i = 0; i <= AObjectID.BOT_ID_MAX; i++)
+		{
+			YELLOW_BOT_IDS.put(i, new BotID(i, ETeamColor.YELLOW));
+			BLUE_BOT_IDS.put(i, new BotID(i, ETeamColor.BLUE));
+		}
+	}
+	
 	
 	/**
 	  * 
@@ -74,9 +70,9 @@ public final class BotID extends AObjectID
 	/**
 	 * @return
 	 */
-	public static BotID get()
+	public static BotID noBot()
 	{
-		return UNINITIALIZED_ID;
+		return NO_BOT_ID;
 	}
 	
 	
@@ -89,7 +85,7 @@ public final class BotID extends AObjectID
 	{
 		if (number == -1)
 		{
-			return UNINITIALIZED_ID;
+			return NO_BOT_ID;
 		}
 		switch (color)
 		{
@@ -111,32 +107,27 @@ public final class BotID extends AObjectID
 	 * @param number
 	 * @return
 	 */
-	public static BotID createBotIdFromIdWithColorOffsetBS(int number)
+	public static BotID createBotIdFromIdWithColorOffsetBS(final int number)
 	{
 		if (number > BOT_ID_MAX_BS)
 		{
-			return UNINITIALIZED_ID;
+			return NO_BOT_ID;
 		}
 		
 		ETeamColor color = ETeamColor.YELLOW;
+		int colorDependentNumber = number;
 		if (number > BOT_ID_MAX)
 		{
-			number -= BOT_ID_MAX + 1;
+			colorDependentNumber -= BOT_ID_MAX + 1;
 			color = ETeamColor.BLUE;
 		}
-		return createBotId(number, color);
+		return createBotId(colorDependentNumber, color);
 	}
 	
 	
 	private static BotID createBotId(final Map<Integer, BotID> bots, final int number, final ETeamColor color)
 	{
-		BotID botId = bots.get(number);
-		if (botId == null)
-		{
-			botId = new BotID(number, color);
-			bots.put(number, botId);
-		}
-		return botId;
+		return bots.computeIfAbsent(number, k -> new BotID(number, color));
 	}
 	
 	
@@ -148,7 +139,7 @@ public final class BotID extends AObjectID
 	@Override
 	public String toString()
 	{
-		return "BotID " + getNumber() + " " + teamColor;
+		return "BotID " + getNumber() + " " + teamColor.name().substring(0, 1);
 	}
 	
 	
@@ -214,11 +205,7 @@ public final class BotID extends AObjectID
 			return false;
 		}
 		BotID other = (BotID) obj;
-		if (teamColor != other.teamColor)
-		{
-			return false;
-		}
-		return true;
+		return teamColor == other.teamColor;
 	}
 	
 	
@@ -238,15 +225,7 @@ public final class BotID extends AObjectID
 	 */
 	public static Comparator<BotID> getComparator()
 	{
-		return new Comparator<BotID>()
-		{
-			
-			@Override
-			public int compare(final BotID o1, final BotID o2)
-			{
-				return Integer.compare(o1.getNumberWithColorOffset(), o2.getNumberWithColorOffset());
-			}
-		};
+		return new BotIdComparator();
 	}
 	
 	
@@ -293,5 +272,15 @@ public final class BotID extends AObjectID
 			return getAllYellow();
 		}
 		throw new IllegalArgumentException("Only blue or yellow is allowed");
+	}
+	
+	private static class BotIdComparator implements Comparator<BotID>
+	{
+		
+		@Override
+		public int compare(final BotID o1, final BotID o2)
+		{
+			return Integer.compare(o1.getNumberWithColorOffset(), o2.getNumberWithColorOffset());
+		}
 	}
 }

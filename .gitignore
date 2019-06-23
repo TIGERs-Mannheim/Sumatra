@@ -1,0 +1,15 @@
+.settings/org.sonar.ide.eclipse.core.prefs
+.settings/org.eclim.prefs
+*.lck
+*.bak
+*~
+*$
+.owncloudsync*
+.csync*
+/bin
+/logs
+/target
+/data
+*.iml
+**/Sumatra.log
+sonarlint

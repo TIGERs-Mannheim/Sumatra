@@ -11,10 +11,10 @@ package edu.tigers.sumatra.trajectory;
 import org.junit.Assert;
 import org.junit.Test;
 
-import edu.tigers.sumatra.math.IVector2;
 import edu.tigers.sumatra.math.SumatraMath;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.math.Vector2f;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -25,15 +25,15 @@ import edu.tigers.sumatra.math.Vector2f;
 public class BangBangTrajectoryMathTest
 {
 	// Constants for brake functions
-	final IVector2	testVel			= new Vector2f(1.0, 1.0);
+	final IVector2	testVel			= Vector2f.fromXY(1.0, 1.0);
 	final double	testMaxBrk		= 1.0;
-											
+	
 	// Additional constants for maxvel functions
-	final IVector2	testInitialVel	= new Vector2f(0.5, 0.5);
+	final IVector2	testInitialVel	= Vector2f.fromXY(0.5, 0.5);
 	final double	testMaxAcc		= 0.5;
 	final double	testMaxVel		= 2.0;
-											
-											
+	
+	
 	/**
 	 * Test functions concerning brake distance and -time calculations
 	 */
@@ -59,14 +59,13 @@ public class BangBangTrajectoryMathTest
 	
 	private void checkMaxVelDistance()
 	{
-		double distance = BangBangTrajectoryMath.distanceToAchieveMaxVelocity(testInitialVel, testMaxVel, testMaxAcc,
-				testMaxBrk);
-		ITrajectory<IVector2> traj = new BangBangTrajectory2D(new Vector2(0, 0),
-				new Vector2(1, 1).normalizeNew().multiplyNew(distance),
-				testInitialVel, testMaxAcc, testMaxBrk, testMaxVel + 100); // maxvel has an offset because it should be
-																								// calculated properly --> that is to check...
+		double distance = BangBangTrajectoryMath.distanceToAchieveMaxVelocity(testInitialVel, testMaxVel, testMaxAcc);
+		BangBangTrajectory2D traj = new BangBangTrajectory2D(Vector2.fromXY(0, 0),
+				Vector2.fromXY(1, 1).normalizeNew().multiplyNew(distance),
+				testInitialVel, testMaxVel + 100, testMaxAcc); // maxvel has an offset because it should be
+																				// calculated properly --> that is to check...
 		double resultvmax = BangBangTrajectoryMath.maxVelocityOfTrajectory(traj);
-		Assert.assertTrue(SumatraMath.isEqual(resultvmax, testMaxVel, 5e-3));
+		Assert.assertEquals(testMaxVel, resultvmax, 5e-3);
 		
 	}
 	
@@ -74,18 +73,18 @@ public class BangBangTrajectoryMathTest
 	private void checkMaxVelVector()
 	{
 		IVector2 distance = BangBangTrajectoryMath.distanceVectorToAchieveMaxVelocity(testInitialVel, testMaxVel,
-				testMaxAcc, testMaxBrk);
-		ITrajectory<IVector2> traj = new BangBangTrajectory2D(new Vector2(0, 0), distance, testInitialVel, testMaxAcc,
-				testMaxBrk, testMaxVel + 100);
-		Assert.assertTrue(SumatraMath.isEqual(BangBangTrajectoryMath.maxVelocityOfTrajectory(traj), testMaxVel, 5e-3));
+				testMaxAcc);
+		BangBangTrajectory2D traj = new BangBangTrajectory2D(Vector2.fromXY(0, 0), distance, testInitialVel,
+				testMaxVel + 100, testMaxAcc);
+		Assert.assertEquals(testMaxVel, BangBangTrajectoryMath.maxVelocityOfTrajectory(traj), 5e-3);
 	}
 	
 	
 	private void checkBrakeVector()
 	{
-		IVector2 expectedDistanceVector = new Vector2f(SumatraMath.sqrt(2) / 2.0, SumatraMath.sqrt(2) / 2.0);
+		IVector2 expectedDistanceVector = Vector2f.fromXY(SumatraMath.sqrt(2) / 2.0, SumatraMath.sqrt(2) / 2.0);
 		IVector2 resultVector = BangBangTrajectoryMath.brakeDistanceVector(testVel, testMaxBrk);
-		Assert.assertTrue(expectedDistanceVector.equals(resultVector, 1e-6));
+		Assert.assertTrue(expectedDistanceVector.isCloseTo(resultVector, 1e-6));
 	}
 	
 	
@@ -100,7 +99,7 @@ public class BangBangTrajectoryMathTest
 	private void checkBrakeTime()
 	{
 		double expectedTime = SumatraMath.sqrt(2);
-		double resultTime = BangBangTrajectoryMath.timeToBreak(testVel, testMaxBrk);
+		double resultTime = BangBangTrajectoryMath.timeToBrake(testVel, testMaxBrk);
 		Assert.assertTrue(SumatraMath.isEqual(expectedTime, resultTime, 1e-6));
 	}
 	

@@ -35,7 +35,7 @@ public interface IPolicyController
 	// default IVector3 getControl(final IVector3 destination, final TrackedBot bot)
 	// {
 	// IVector2 error = destination.getXYVector().subtractNew(bot.getPos()).multiply(0.001f);
-	// double errorW = AngleMath.getShortestRotation(bot.getAngle(), destination.z());
+	// double errorW = AngleMath.difference(bot.getAngle(), destination.z());
 	// double[] stateArr = new double[] { error.x(), error.y(), errorW, bot.getVel().x(), bot.getVel().y(),
 	// bot.getaVel() };
 	// Matrix state = new Matrix(stateArr, 1);

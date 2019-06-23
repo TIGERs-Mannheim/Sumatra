@@ -14,6 +14,8 @@ import org.apache.log4j.Logger;
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
+// No need to hide constructor
+@SuppressWarnings("squid:S1118")
 public abstract class ASumatraViewPresenter implements ISumatraViewPresenter
 {
 	@SuppressWarnings("unused")

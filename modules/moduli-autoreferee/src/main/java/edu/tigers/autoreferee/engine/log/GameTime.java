@@ -9,7 +9,7 @@
 package edu.tigers.autoreferee.engine.log;
 
 import edu.tigers.sumatra.Referee.SSL_Referee.Stage;
-import edu.tigers.sumatra.referee.RefereeMsg;
+import edu.tigers.sumatra.referee.data.RefereeMsg;
 
 
 /**
@@ -17,7 +17,7 @@ import edu.tigers.sumatra.referee.RefereeMsg;
  */
 public class GameTime
 {
-	private final static GameTime	empty	= new GameTime(Stage.NORMAL_FIRST_HALF_PRE, 0);
+	private static final GameTime	empty	= new GameTime(Stage.NORMAL_FIRST_HALF_PRE, 0);
 	
 	private final Stage				stage;
 	private final long				micros;
@@ -44,6 +44,7 @@ public class GameTime
 	 * @param micros
 	 * @return
 	 */
+	@SuppressWarnings("unused")
 	public static GameTime of(final Stage stage, final long micros)
 	{
 		return new GameTime(stage, micros);
@@ -64,6 +65,7 @@ public class GameTime
 	 * @param micros
 	 * @return
 	 */
+	@SuppressWarnings("unused")
 	public GameTime subtract(final long micros)
 	{
 		return new GameTime(stage, this.micros - micros);

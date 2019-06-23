@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.clock;
 
 /**
@@ -13,13 +17,14 @@ public class FpsCounter
 	private int						counter		= 0;
 	private int						updateFreq	= UPDATE_FREQ;
 	private long					totalFrames	= 0;
-														
-														
+	
+	
 	/**
-	  * 
-	  */
+	 * Default fps counter
+	 */
 	public FpsCounter()
 	{
+		this(UPDATE_FREQ);
 	}
 	
 	
@@ -28,7 +33,6 @@ public class FpsCounter
 	 */
 	public FpsCounter(final int updateFreq)
 	{
-		this();
 		this.updateFreq = updateFreq;
 	}
 	
@@ -53,6 +57,18 @@ public class FpsCounter
 		counter++;
 		totalFrames++;
 		return fpsChanged;
+	}
+	
+	
+	/**
+	 * Reset counter
+	 */
+	public void reset()
+	{
+		counter = 0;
+		totalFrames = 0;
+		lastTime = 0;
+		fps = 0;
 	}
 	
 	

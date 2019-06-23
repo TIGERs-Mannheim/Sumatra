@@ -28,11 +28,12 @@ public class TigerConfigRead extends ACommand
 	@SerialData(type = ESerialDataType.UINT16)
 	private int				configId;
 	
+	@SuppressWarnings("squid:S1170")
 	@SerialData(type = ESerialDataType.TAIL)
 	private final byte[]	data	= null;
 	
 	
-	/** */
+	/** Constructor. */
 	public TigerConfigRead()
 	{
 		super(ECommand.CMD_CONFIG_READ, true);
@@ -74,9 +75,10 @@ public class TigerConfigRead extends ACommand
 	 * @param structure
 	 * @return
 	 */
+	@SuppressWarnings("squid:S2583")
 	public List<String> getData(final TigerConfigFileStructure structure)
 	{
-		List<String> values = new ArrayList<String>();
+		List<String> values = new ArrayList<>();
 		List<EElementType> elements = structure.getElements();
 		
 		if (data == null)
@@ -97,28 +99,27 @@ public class TigerConfigRead extends ACommand
 			switch (element)
 			{
 				case UINT8:
-					val = new String("" + ACommand.byteArray2UByte(data, offset));
+					val = Integer.toString(ACommand.byteArray2UByte(data, offset));
 					break;
 				case INT8:
-					val = new String("" + (int) data[offset]);
+					val = Integer.toString(data[offset]);
 					break;
 				case UINT16:
-					val = new String("" + ACommand.byteArray2UShort(data, offset));
+					val = Integer.toString(ACommand.byteArray2UShort(data, offset));
 					break;
 				case INT16:
-					val = new String("" + ACommand.byteArray2Short(data, offset));
+					val = Integer.toString(ACommand.byteArray2Short(data, offset));
 					break;
 				case UINT32:
-					val = new String("" + ACommand.byteArray2UInt(data, offset));
+					val = Long.toString(ACommand.byteArray2UInt(data, offset));
 					break;
 				case INT32:
-					val = new String("" + ACommand.byteArray2Int(data, offset));
+					val = Integer.toString(ACommand.byteArray2Int(data, offset));
 					break;
 				case FLOAT32:
-					val = new String("" + ACommand.byteArray2Float(data, offset));
+					val = Float.toString(ACommand.byteArray2Float(data, offset));
 					break;
 				case UNKNOWN:
-					break;
 				default:
 					break;
 			}

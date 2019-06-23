@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 12, 2016
- * Author(s): Lukas Magel
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.components;
 
@@ -12,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import javax.swing.JPanel;
+import javax.swing.*;
 
 
 /**
@@ -22,7 +17,7 @@ import javax.swing.JPanel;
  * @author Lukas Magel
  * @param <T>
  */
-public abstract class BasePanel<T> extends JPanel
+public abstract class BasePanel<T> extends JPanel implements IBasePanel<T>
 {
 	
 	/**  */
@@ -34,6 +29,7 @@ public abstract class BasePanel<T> extends JPanel
 	/**
 	 * @param observer
 	 */
+	@Override
 	public void addObserver(final T observer)
 	{
 		this.observer.add(observer);
@@ -43,6 +39,7 @@ public abstract class BasePanel<T> extends JPanel
 	/**
 	 * @param observer
 	 */
+	@Override
 	public void removeObserver(final T observer)
 	{
 		this.observer.remove(observer);
@@ -57,15 +54,6 @@ public abstract class BasePanel<T> extends JPanel
 	
 	protected void informObserver(final Consumer<T> consumer)
 	{
-		observer.forEach(observer -> consumer.accept(observer));
+		observer.forEach(consumer);
 	}
-	
-	
-	/**
-	 * Enable/disable the panel and all of its components
-	 * 
-	 * @param enabled
-	 */
-	public abstract void setPanelEnabled(boolean enabled);
-	
 }

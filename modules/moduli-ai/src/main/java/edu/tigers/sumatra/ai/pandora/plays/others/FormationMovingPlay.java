@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 01.01.2015
- * Author(s): Daniel Andres <andreslopez.daniel@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.others;
 
@@ -15,21 +10,21 @@ import java.util.List;
 
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.ai.data.EGameStateTeam;
 import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
 import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
-import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole.EMoveBehavior;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.wp.data.Geometry;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.referee.data.GameState;
 
 
 /**
- * This play moves up to 5 bots to the specified moving formation. Another bot can then be used to drive to 3 positions. <br>
+ * This play moves up to 5 bots to the specified moving formation. Another bot can then be used to drive to 3 positions.
+ * <br>
  * This play is intended for testing. The three positions can be switched by clicking in Referee menu: Normal Start,
  * Stop and halt.
  * 
@@ -41,7 +36,7 @@ public class FormationMovingPlay extends APlay
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	@Configurable(comment = "Formation of Bots: LINE, CIRCLE")
+	@Configurable(comment = "Formation of Bots: LINE, CIRCLE", defValue = "LINE")
 	private static EFormations	formation	= EFormations.LINE;
 	
 	private static double		orientation	= 0;
@@ -56,8 +51,8 @@ public class FormationMovingPlay extends APlay
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	  * 
-	  */
+	 * Default
+	 */
 	public FormationMovingPlay()
 	{
 		super(EPlay.FORMATION_MOVING);
@@ -74,7 +69,7 @@ public class FormationMovingPlay extends APlay
 	@Override
 	protected ARole onAddRole(final MetisAiFrame frame)
 	{
-		MoveRole role = new MoveRole(EMoveBehavior.NORMAL);
+		MoveRole role = new MoveRole();
 		role.getMoveCon().updateTargetAngle(orientation);
 		role.getMoveCon().setPenaltyAreaAllowedOur(true);
 		
@@ -84,20 +79,19 @@ public class FormationMovingPlay extends APlay
 	
 	
 	@Override
-	protected void onGameStateChanged(final EGameStateTeam gameState)
+	protected void onGameStateChanged(final GameState gameState)
 	{
 		if (lastRole != null)
 		{
-			switch (gameState)
+			switch (gameState.getState())
 			{
 				case RUNNING:
 					init = false;
 					lastRole.getMoveCon().updateDestination(formation.getMovingBotDestinations()[1]);
 					break;
-				case STOPPED:
+				case STOP:
 					lastRole.getMoveCon().updateDestination(formation.getMovingBotDestinations()[0]);
 					break;
-				case HALTED:
 				default:
 					lastRole.getMoveCon().updateDestination(formation.getMovingBotDestinations()[2]);
 					
@@ -114,8 +108,8 @@ public class FormationMovingPlay extends APlay
 	@Override
 	protected void doUpdate(final AthenaAiFrame frame)
 	{
-		List<ARole> roles = new ArrayList<ARole>(getRoles());
-		Collections.sort(roles, Comparator.comparing(e -> e.getBotID()));
+		List<ARole> roles = new ArrayList<>(getRoles());
+		Collections.sort(roles, Comparator.comparing(ARole::getBotID));
 		
 		if ((roles.size() - 1) >= 0)
 		{
@@ -136,11 +130,9 @@ public class FormationMovingPlay extends APlay
 			for (ARole aRole : roles)
 			{
 				MoveRole moveRole = (MoveRole) aRole;
-				IVector2 dest = new Vector2(0, switchDir[i] * 500);
+				IVector2 dest = Vector2.fromXY(0, switchDir[i] * 500.0);
 				IVector2 newDest = formation.getStartBotPositions()[i].addNew(dest);
-				if (aRole.getBot().getPos().equals(newDest, Geometry.getBotRadius() * 1.5))
-				// if (moveRole.getMoveCon().checkCondition(frame.getWorldFrame(), aRole.getBotID()) ==
-				// EConditionState.FULFILLED)
+				if (aRole.getBot().getPos().isCloseTo(newDest, Geometry.getBotRadius() * 1.5))
 				{
 					switchDir[i] = switchDir[i] * -1;
 				}
@@ -160,13 +152,13 @@ public class FormationMovingPlay extends APlay
 	
 	private enum EFormations
 	{
-		LINE(new IVector2[] { new Vector2(-1000, 0), new Vector2(-200, 0),
-				new Vector2(600, 0), new Vector2(1400, 0), new Vector2(2200, 0) },
-				new IVector2[] { new Vector2(-1500, 0), new Vector2(2600, 0), new Vector2(2000, -2000) },
+		LINE(new IVector2[] { Vector2.fromXY(-1000, 0), Vector2.fromXY(-200, 0),
+				Vector2.fromXY(600, 0), Vector2.fromXY(1400, 0), Vector2.fromXY(2200, 0) },
+				new IVector2[] { Vector2.fromXY(-1500, 0), Vector2.fromXY(2600, 0), Vector2.fromXY(2000, -2000) },
 				new int[] { 1, -1, 1, -1, 1 }),
-		CIRCLE(new IVector2[] { new Vector2(-1000, 0), new Vector2(1000, 0),
-				new Vector2(0, -1000), new Vector2(0, 1000), new Vector2(-2000, -2000) },
-				new IVector2[] { new Vector2(-1500, 0), new Vector2(1500, 0), new Vector2(0, 0) },
+		CIRCLE(new IVector2[] { Vector2.fromXY(-1000, 0), Vector2.fromXY(1000, 0),
+				Vector2.fromXY(0, -1000), Vector2.fromXY(0, 1000), Vector2.fromXY(-2000, -2000) },
+				new IVector2[] { Vector2.fromXY(-1500, 0), Vector2.fromXY(1500, 0), Vector2.fromXY(0, 0) },
 				new int[] { 1, -1, 1, -1, 1 });
 		
 		private IVector2[]	startBotPositions;
@@ -174,7 +166,7 @@ public class FormationMovingPlay extends APlay
 		private int[]			switchDir;
 		
 		
-		private EFormations(final IVector2[] startBotPositions, final IVector2[] movingBotDestinations,
+		EFormations(final IVector2[] startBotPositions, final IVector2[] movingBotDestinations,
 				final int[] switchDir)
 		{
 			this.startBotPositions = startBotPositions;
@@ -213,7 +205,7 @@ public class FormationMovingPlay extends APlay
 		/**
 		 * @param switchDir
 		 */
-		public void setSwitchDir(final int[] switchDir)
+		void setSwitchDir(final int[] switchDir)
 		{
 			this.switchDir = switchDir;
 		}

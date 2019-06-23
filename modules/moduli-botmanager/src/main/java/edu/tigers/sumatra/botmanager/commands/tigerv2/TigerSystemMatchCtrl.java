@@ -13,10 +13,12 @@ import edu.tigers.sumatra.botmanager.commands.BotSkillFactory;
 import edu.tigers.sumatra.botmanager.commands.ECommand;
 import edu.tigers.sumatra.botmanager.commands.IMatchCommand;
 import edu.tigers.sumatra.botmanager.commands.MatchCommand;
+import edu.tigers.sumatra.botmanager.commands.MultimediaControl;
 import edu.tigers.sumatra.botmanager.commands.botskills.ABotSkill;
+import edu.tigers.sumatra.botmanager.commands.botskills.AMoveBotSkill;
 import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillMotorsOff;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
+import edu.tigers.sumatra.botmanager.commands.botskills.EDataAcquisitionMode;
+import edu.tigers.sumatra.botmanager.commands.other.ESong;
 import edu.tigers.sumatra.botmanager.serial.SerialData;
 import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
 
@@ -30,51 +32,41 @@ import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
 public class TigerSystemMatchCtrl extends ACommand implements IMatchCommand
 {
 	/** */
-	public static final int		MAX_SKILL_DATA_SIZE	= 12;
+	public static final int			MAX_SKILL_DATA_SIZE	= 15;
 	
 	/** [mm], [mrad] */
 	@SerialData(type = ESerialDataType.INT16)
-	private final int				curPosition[]			= new int[3];
+	private final int[]				curPosition				= new int[3];
 	
 	/** [Q6.2 ms] */
 	@SerialData(type = ESerialDataType.UINT8)
-	private int						posDelay;
+	private int							posDelay;
 	
 	/** Vision camera ID */
 	@SerialData(type = ESerialDataType.UINT8)
-	private int						camId;
-	
-	/** [Q3.5 m/s] */
-	@SerialData(type = ESerialDataType.UINT8)
-	private int						kickSpeed;
-	
-	@SerialData(type = ESerialDataType.UINT8)
-	private int						kickFlags;
-	
-	/** [rpm/100] */
-	@SerialData(type = ESerialDataType.UINT8)
-	private int						dribblerSpeed;
-	
-	@SerialData(type = ESerialDataType.UINT8)
-	private int						skillId;
-	
-	@SerialData(type = ESerialDataType.UINT8)
-	private int						flags;
+	private int							camId;
 	
 	/** [Hz] */
 	@SerialData(type = ESerialDataType.UINT8)
-	private int						feedbackFreq;
+	private int							feedbackFreq;
+	
+	@SerialData(type = ESerialDataType.UINT8)
+	private int							flags;
+	
+	@SerialData(type = ESerialDataType.UINT8)
+	private int							skillId;
 	
 	/** */
 	@SerialData(type = ESerialDataType.TAIL)
-	private byte					skillData[];
+	private byte[]						skillData;
 	
-	private ABotSkill				skill;
+	private ABotSkill					skill;
+	private EDataAcquisitionMode	acqMode					= EDataAcquisitionMode.NONE;
 	
-	private static final int	UNUSED_FIELD			= 0x7FFF;
+	private static final int		UNUSED_FIELD			= 0x7FFF;
 	
 	
-	/** */
+	/** Constructor. */
 	public TigerSystemMatchCtrl()
 	{
 		super(ECommand.CMD_SYSTEM_MATCH_CTRL);
@@ -93,14 +85,11 @@ public class TigerSystemMatchCtrl extends ACommand implements IMatchCommand
 	public TigerSystemMatchCtrl(final MatchCommand matchCtrl)
 	{
 		this();
+		setDataAcquisitionMode(matchCtrl.getDataAcquisitionMode());
 		setSkill(matchCtrl.getSkill());
-		setDribblerSpeed(matchCtrl.getDribbleSpeed());
 		setFeedbackFreq(matchCtrl.getFeedbackFreq());
 		setKickerAutocharge(matchCtrl.isAutoCharge());
-		setKick(matchCtrl.getKickSpeed(), matchCtrl.getDevice(), matchCtrl.getMode());
-		setCheering(matchCtrl.isCheer());
-		setLEDs(matchCtrl.isLeftRed(), matchCtrl.isLeftGreen(), matchCtrl.isRightRed(), matchCtrl.isRightGreen());
-		setSongFinalCountdown(matchCtrl.isSetSongFinalCountdown());
+		setMultimediaControl(matchCtrl.getMultimediaControl());
 	}
 	
 	
@@ -110,6 +99,20 @@ public class TigerSystemMatchCtrl extends ACommand implements IMatchCommand
 	@Override
 	public void setSkill(final ABotSkill skill)
 	{
+		switch (skill.getType())
+		{
+			case GLOBAL_POSITION:
+			case GLOBAL_VELOCITY:
+			case GLOBAL_VEL_XY_POS_W:
+			case LOCAL_VELOCITY:
+			case WHEEL_VELOCITY:
+				AMoveBotSkill moveSkill = (AMoveBotSkill) skill;
+				moveSkill.setDataAcquisitionMode(acqMode);
+				break;
+			default:
+				break;
+		}
+		
 		this.skill = skill;
 		skillData = BotSkillFactory.getInstance().encode(skill);
 		skillId = skill.getType().getId();
@@ -123,23 +126,6 @@ public class TigerSystemMatchCtrl extends ACommand implements IMatchCommand
 	public final ABotSkill getSkill()
 	{
 		return skill;
-	}
-	
-	
-	/**
-	 * @param speed Dribbler speed in RPM.
-	 * @note Speed must always be positive.
-	 */
-	@Override
-	public void setDribblerSpeed(final double speed)
-	{
-		if (speed < 0)
-		{
-			dribblerSpeed = 0;
-		} else
-		{
-			dribblerSpeed = ((int) (speed + 50.0)) / 100;
-		}
 	}
 	
 	
@@ -159,89 +145,23 @@ public class TigerSystemMatchCtrl extends ACommand implements IMatchCommand
 	@Override
 	public void setKickerAutocharge(final boolean enable)
 	{
-		kickFlags &= ~(0x80);
+		flags &= ~(0x08);
 		
 		if (enable)
 		{
-			kickFlags |= 0x80;
+			flags |= 0x08;
 		}
 	}
 	
 	
 	/**
-	 * Set kick details.
-	 * 
-	 * @param kickSpeed [m/s]
-	 * @param device STRAIGHT or CHIP
-	 * @param mode FORCE, ARM or DISARM
-	 * @note This command requires a state-aware instance to keep track of older values.
+	 * @param song Sing a song :)
 	 */
-	@Override
-	public void setKick(final double kickSpeed, final EKickerDevice device, final EKickerMode mode)
+	private void setSong(final ESong song)
 	{
-		setKick(kickSpeed, device.getValue(), mode.getId());
-	}
-	
-	
-	/**
-	 * Set kick details.
-	 * 
-	 * @param kickSpeed [m/s]
-	 * @param device STRAIGHT or CHIP
-	 * @param mode FORCE, ARM or DISARM
-	 * @note This command requires a state-aware instance to keep track of older values.
-	 */
-	public void setKick(final double kickSpeed, final int device, final int mode)
-	{
-		int kickSpeedA = (int) (kickSpeed);
-		int kickSpeedB = ((((int) (kickSpeed * 1000)) % 1000) + 15) / 32;
+		flags &= ~(0x03);
 		
-		if (kickSpeed > 7.96875)
-		{
-			kickSpeedA = 7;
-			kickSpeedB = 31;
-		}
-		
-		this.kickSpeed = (kickSpeedA << 5) | kickSpeedB;
-		kickFlags &= ~(0x7F); // setAutocharge also modifies a bit in this field
-		kickFlags |= device | (mode << 1);
-	}
-	
-	
-	/**
-	 * Enable the robots super-mega-top-secret and ultra-annoying cheering functionality.
-	 * 
-	 * @param enable
-	 * @note Expect severe joy and enthusiasm in the crowd!
-	 */
-	@Override
-	public void setCheering(final boolean enable)
-	{
-		if (enable)
-		{
-			flags |= 0x02;
-		} else
-		{
-			flags &= ~0x02;
-		}
-	}
-	
-	
-	/**
-	 * Start playing the intro of "Final Countdown" by Europe
-	 * 
-	 * @param enable
-	 */
-	@Override
-	public void setSongFinalCountdown(final boolean enable)
-	{
-		if (enable)
-		{
-			flags |= 0x04;
-		} else
-		{
-			flags &= ~0x04;
-		}
+		flags |= (song.getId() & 0x03);
 	}
 	
 	
@@ -251,8 +171,8 @@ public class TigerSystemMatchCtrl extends ACommand implements IMatchCommand
 	 * @param rightRed
 	 * @param rightGreen
 	 */
-	@Override
-	public void setLEDs(final boolean leftRed, final boolean leftGreen, final boolean rightRed, final boolean rightGreen)
+	private void setLEDs(final boolean leftRed, final boolean leftGreen, final boolean rightRed,
+			final boolean rightGreen)
 	{
 		flags &= ~0xF0;
 		
@@ -275,5 +195,20 @@ public class TigerSystemMatchCtrl extends ACommand implements IMatchCommand
 		{
 			flags |= 0x80;
 		}
+	}
+	
+	
+	@Override
+	public void setMultimediaControl(final MultimediaControl control)
+	{
+		setLEDs(control.isLeftRed(), control.isLeftGreen(), control.isRightRed(), control.isRightGreen());
+		setSong(control.getSong());
+	}
+	
+	
+	@Override
+	public void setDataAcquisitionMode(final EDataAcquisitionMode acqMode)
+	{
+		this.acqMode = acqMode;
 	}
 }

@@ -1,326 +1,74 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jan 31, 2014
- * Author(s): MarkG
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.pandora.roles.throwin;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.awt.Color;
 
-import org.apache.log4j.Logger;
-
-import edu.tigers.sumatra.ai.data.math.AiMath;
+import edu.tigers.sumatra.ai.data.EAiShapesLayer;
+import edu.tigers.sumatra.ai.math.AiMath;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
-import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.AVector2;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.skillsystem.ESkill;
-import edu.tigers.sumatra.skillsystem.skills.AMoveSkill;
+import edu.tigers.sumatra.drawable.DrawableRectangle;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.Goal;
+import edu.tigers.sumatra.math.line.LineMath;
+import edu.tigers.sumatra.math.rectangle.IRectangle;
+import edu.tigers.sumatra.math.rectangle.Rectangle;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
-import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
-import edu.tigers.sumatra.skillsystem.skills.KickSkill;
-import edu.tigers.sumatra.skillsystem.skills.KickSkill.EKickMode;
-import edu.tigers.sumatra.skillsystem.skills.KickSkill.EMoveMode;
-import edu.tigers.sumatra.skillsystem.skills.PullBackSkillV2;
-import edu.tigers.sumatra.statemachine.IRoleState;
+import edu.tigers.sumatra.skillsystem.skills.BallPlacementSkill;
+import edu.tigers.sumatra.skillsystem.skills.KickChillSkill;
+import edu.tigers.sumatra.statemachine.IEvent;
+import edu.tigers.sumatra.statemachine.IState;
+import edu.tigers.sumatra.time.TimestampTimer;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
-import edu.tigers.sumatra.wp.data.Geometry;
+import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
 /**
+ * Kick the ball to the secondary bot if ball is further than push dist away from placement pos.
+ * Else, clear area around placement area
+ *
  * @author MarkG
  */
 public class PrimaryPlacementRole extends APlacementRole
 {
-	private static final Logger log = Logger.getLogger(PrimaryPlacementRole.class.getName());
-	
-	
-	@Override
-	protected void beforeUpdate()
-	{
-		if (isBallAtTarget() && (getCurrentState() != EStateId.CLEAR))
-		{
-			triggerEvent(EStateId.CLEAR);
-		} else if (isBallToCloseToFieldBorder() && (getCurrentState() != EStateId.PULL))
-		{
-			triggerEvent(EStateId.PULL);
-		} else if (!isBallToCloseToFieldBorder() && (getCurrentState() == EStateId.PULL))
-		{
-			triggerEvent(EStateId.PREPARE);
-		}
-		printText(getCurrentState().name(), 0);
-	}
-	
-	
 	/**
-	  */
+	 * Default
+	 */
 	public PrimaryPlacementRole()
 	{
 		super(ERole.PRIMARY_AUTOMATED_THROW_IN);
-		setInitialState(new PrepareState());
-		addTransition(EStateId.SHOOT, new ShootState());
-		addTransition(EStateId.PULL, new PullState());
-		addTransition(EStateId.PREPARE, new PrepareState());
-		addTransition(EStateId.CLEAR, new ClearState());
+		
+		setInitialState(new KickState());
+		addTransition(EEvent.SHOOT, new KickState());
+		addTransition(EEvent.PULL, new PullState());
+		addTransition(EEvent.CLEAR, new ClearState());
 	}
 	
 	
-	private enum EStateId
+	private enum EEvent implements IEvent
 	{
-		PREPARE,
 		SHOOT,
 		PULL,
 		CLEAR
 	}
 	
-	private class PrepareState implements IRoleState
+	private class ClearState implements IState
 	{
-		private AMoveSkill skill = AMoveToSkill.createMoveToSkill();
+		private AMoveToSkill skill;
 		
 		
 		@Override
 		public void doEntryActions()
 		{
 			skill = AMoveToSkill.createMoveToSkill();
-			IVector2 ballToTarget = getAiFrame().getTacticalField().getThrowInInfo().getPos()
-					.subtractNew(getWFrame().getBall().getPos());
-			IVector2 dest = getAiFrame().getWorldFrame().getBall().getPos().addNew(ballToTarget.scaleToNew(-200));
-			if (GeoMath.distancePP(dest, getWFrame().getBall().getPos()) <= OffensiveConstants
-					.getAutomatedThrowInPushDinstance())
-			{
-				dest = getAiFrame().getWorldFrame().getBall().getPos()
-						.addNew(ballToTarget.scaleToNew(-OffensiveConstants.getAutomatedThrowInPushDinstance() * 1.2));
-			}
-			skill.getMoveCon().setPenaltyAreaAllowedTheir(true);
-			skill.getMoveCon().setPenaltyAreaAllowedOur(true);
-			skill.getMoveCon().updateDestination(dest);
-			setNewSkill(skill);
-		}
-		
-		
-		@Override
-		public void doExitActions()
-		{
-		}
-		
-		
-		@Override
-		public void doUpdate()
-		{
-			IVector2 ballToTarget = getAiFrame().getTacticalField().getThrowInInfo().getPos()
-					.subtractNew(getWFrame().getBall().getPos());
-			IVector2 dest = getAiFrame().getWorldFrame().getBall().getPos().addNew(ballToTarget.scaleToNew(-300));
-			if (GeoMath.distancePP(getAiFrame().getTacticalField().getThrowInInfo().getPos(),
-					getWFrame().getBall().getPos()) <= OffensiveConstants
-							.getAutomatedThrowInPushDinstance())
-			{
-				dest = getAiFrame().getWorldFrame().getBall().getPos()
-						.addNew(ballToTarget.scaleToNew(-OffensiveConstants.getAutomatedThrowInPushDinstance() * 1.2));
-			}
-			skill.getMoveCon().setPenaltyAreaAllowedTheir(true);
-			skill.getMoveCon().setPenaltyAreaAllowedOur(true);
-			skill.getMoveCon().updateDestination(dest);
-			skill.getMoveCon().updateLookAtTarget(getWFrame().getBall());
-			
-			if ((GeoMath.distancePP(dest, getPos()) < 50)
-					&& getAiFrame().getTacticalField().getThrowInInfo().isReceiverReady())
-			{
-				triggerEvent(EStateId.SHOOT);
-			}
-		}
-		
-		
-		@Override
-		public Enum<?> getIdentifier()
-		{
-			return EStateId.PREPARE;
-		}
-	}
-	
-	private class ClearState implements IRoleState
-	{
-		private AMoveToSkill skill = AMoveToSkill.createMoveToSkill();
-		
-		
-		@Override
-		public void doEntryActions()
-		{
-			skill = AMoveToSkill.createMoveToSkill();
-			setNewSkill(skill);
-		}
-		
-		
-		@Override
-		public void doExitActions()
-		{
-		}
-		
-		
-		@Override
-		public void doUpdate()
-		{
-			skill.getMoveCon().setPenaltyAreaAllowedTheir(true);
-			skill.getMoveCon().setPenaltyAreaAllowedOur(true);
-			IVector2 target = getWFrame().getBall().getPos()
-					.addNew(getPos().subtractNew(getWFrame().getBall().getPos()).scaleToNew(400));
-			if (GeoMath.distancePP(getPos(), getAiFrame().getTacticalField().getThrowInInfo().getPos()) > 400)
-			{
-				target = getPos();
-			}
 			skill.getMoveCon().getMoveConstraints().setAccMax(1);
 			skill.getMoveCon().getMoveConstraints().setVelMax(1);
-			skill.getMoveCon().updateDestination(target);
-			if (!isBallAtTarget())
-			{
-				triggerEvent(EStateId.PREPARE);
-			}
-		}
-		
-		
-		@Override
-		public Enum<?> getIdentifier()
-		{
-			return EStateId.CLEAR;
-		}
-		
-	}
-	
-	private class PullState implements IRoleState
-	{
-		private PullBackSkillV2	skill			= null;
-		private AMoveToSkill		move			= null;
-		private boolean			pullActive	= false;
-		
-		
-		@Override
-		public void doEntryActions()
-		{
-			pullActive = false;
-			move = AMoveToSkill.createMoveToSkill();
-			setNewSkill(move);
-		}
-		
-		
-		@Override
-		public void doExitActions()
-		{
-		}
-		
-		
-		@Override
-		public void doUpdate()
-		{
-			IVector2 movePos = calcPreparePos();
-			move.getMoveCon().updateDestination(movePos);
-			move.getMoveCon().updateLookAtTarget(getWFrame().getBall());
-			if (GeoMath.distancePP(getPos(), getWFrame().getBall().getPos()) < 400)
-			{
-				// move slow
-				move.getMoveCon().getMoveConstraints().setVelMax(0.5);
-			} else
-			{
-				// move fast
-				move.getMoveCon().getMoveConstraints().setDefaultVelLimit();
-			}
-			if (!pullActive)
-			{
-				if ((GeoMath.distancePP(getPos(), movePos) < 20) && (getBot().getVel().getLength() < 0.1))
-				{
-					pullActive = true;
-					skill = new PullBackSkillV2(AVector2.ZERO_VECTOR);
-					setNewSkill(skill);
-				}
-			} else
-			{
-				// check for switch back to prepare
-				if (skill.isIdle())
-				{
-					pullActive = false;
-					move = AMoveToSkill.createMoveToSkill();
-					setNewSkill(move);
-				}
-			}
-		}
-		
-		
-		@Override
-		public Enum<?> getIdentifier()
-		{
-			return EStateId.PULL;
-		}
-		
-		
-		private IVector2 calcPreparePos()
-		{
-			IVector2 ballPos = getWFrame().getBall().getPos();
-			double fieldWidth = Geometry.getFieldWidth();
-			double fieldLength = Geometry.getFieldLength();
-			
-			IVector2 target2 = null;
-			double dirX = 0;
-			double dirY = 0;
-			if (ballPos.x() > ((fieldLength / 2.0) - 150))
-			{
-				dirX = 1;
-			} else if (ballPos.x() < ((-fieldLength / 2.0) + 150))
-			{
-				dirX = -1;
-			}
-			if (ballPos.y() > ((fieldWidth / 2.0) - 150))
-			{
-				dirY = 1;
-			} else if (ballPos.y() < ((-fieldWidth / 2.0) + 150))
-			{
-				dirY = -1;
-			}
-			target2 = new Vector2(dirX, dirY);
-			target2 = target2.normalizeNew();
-			if ((dirX == 0) && (dirY == 0))
-			{
-				target2 = getWFrame().getBall().getPos()
-						.addNew(AVector2.ZERO_VECTOR.subtractNew(getWFrame().getBall().getPos())
-								.scaleToNew(200));
-			} else
-			{
-				target2 = ballPos.addNew(target2.multiplyNew(-200));
-			}
-			return target2;
-		}
-		
-	}
-	
-	private class ShootState implements IRoleState
-	{
-		private KickSkill		skill;
-		private boolean		kickSKillActive	= true;
-		private boolean		safeMoveActive		= false;
-		private AMoveSkill	mskill				= AMoveToSkill.createMoveToSkill();
-		private long			waitTimer			= 0;
-		private boolean		waited				= false;
-		
-		
-		@Override
-		public void doEntryActions()
-		{
-			if ((skill != null) && (skill.getMoveCon() != null))
-			{
-				skill.getMoveCon().setPenaltyAreaAllowedTheir(true);
-				skill.getMoveCon().setPenaltyAreaAllowedOur(true);
-			}
-			DynamicPosition target = null;
-			target = new DynamicPosition(getAiFrame().getTacticalField().getThrowInInfo().getPos());
-			skill = new KickSkill(target);
-			skill.setKickMode(EKickMode.FIXED_SPEED);
-			skill.setMoveMode(EMoveMode.CHILL);
-			skill.setKickSpeed(2);
+			prepareMoveCon(skill.getMoveCon());
 			setNewSkill(skill);
 		}
 		
@@ -328,145 +76,201 @@ public class PrimaryPlacementRole extends APlacementRole
 		@Override
 		public void doUpdate()
 		{
-			if ((skill != null) && (skill.getMoveCon() != null))
+			IVector2 dest = Vector2.zero();
+			if (isFreeToPushBySecondRole())
 			{
-				skill.getMoveCon().setPenaltyAreaAllowedTheir(true);
-				skill.getMoveCon().setPenaltyAreaAllowedOur(true);
+				dest = LineMath.stepAlongLine(getBall().getPos(), getPos(),
+						OffensiveConstants.getAutomatedThrowInPushDistance() + Geometry.getBotRadius());
+			} else if (getBall().getVel().getLength2() < 0.1)
+			{
+				triggerEvent(EEvent.SHOOT);
 			}
-			DynamicPosition target = null;
-			BotID receiver = null;
-			for (ARole role : getAiFrame().getPlayStrategy().getActiveRoles(ERole.SECONDARY_AUTOMATED_THROW_IN))
-			{
-				target = new DynamicPosition(getAiFrame().getTacticalField().getThrowInInfo().getPos());
-				log.trace("Placement shoot to bot: " + role.getBotID());
-				receiver = role.getBotID();
-			}
-			if (target == null)
-			{
-				log.warn("Could not find secondary throw in helper, this is not good !");
-				target = new DynamicPosition(getAiFrame().getTacticalField().getThrowInInfo().getPos());
-			}
-			if (waited && !isPathToTargetFree(target, receiver))
-			{
-				target = chooseNewTarget(target, receiver);
-			}
-			skill.setReceiver(target);
-			
-			if (!isPathToTargetFree(target, receiver) && (waitTimer == 0) && !waited && isBotBehindBall())
-			{
-				waitTimer = getWFrame().getTimestamp();
-			} else if (!isPathToTargetFree(target, receiver)
-					&& ((getWFrame().getTimestamp() - waitTimer) < OffensiveConstants
-							.getAutomatedThrowInWaitForFreeSightTime()))
-			{
-				setNewSkill(new IdleSkill());
-			} else if (getCurrentSkill().toString() != ESkill.KICK.toString())
-			{
-				waitTimer = 0;
-				waited = true;
-				skill = new KickSkill(target);
-				skill.setKickMode(EKickMode.FIXED_SPEED);
-				skill.setMoveMode(EMoveMode.CHILL);
-				skill.setKickSpeed(2);
-				setNewSkill(skill);
-			}
-			
-			if ((GeoMath.distancePP(getWFrame().getBall().getPos(),
-					getAiFrame().getTacticalField().getThrowInInfo().getPos()) < OffensiveConstants
-							.getAutomatedThrowInPushDinstance()))
-			{
-				kickSKillActive = false;
-				if (GeoMath.distancePP(getPos(), getWFrame().getBall().getPos()) < OffensiveConstants
-						.getAutomatedThrowInPushDinstance())
-				{
-					IVector2 botDest = getWFrame().getBall().getPos()
-							.addNew(new Vector2(-OffensiveConstants.getAutomatedThrowInPushDinstance() * 1.2, 0));
-					if (!Geometry.getField().isPointInShape(botDest))
-					{
-						botDest = getWFrame().getBall().getPos()
-								.addNew(new Vector2(OffensiveConstants.getAutomatedThrowInPushDinstance() * 1.2, 0));
-					}
-					if (!safeMoveActive)
-					{
-						safeMoveActive = true;
-						mskill = AMoveToSkill.createMoveToSkill();
-						setNewSkill(mskill);
-					}
-					mskill.getMoveCon().setPenaltyAreaAllowedTheir(true);
-					mskill.getMoveCon().setPenaltyAreaAllowedOur(true);
-					mskill.getMoveCon().updateDestination(botDest);
-					mskill.getMoveCon().updateLookAtTarget(getWFrame().getBall().getPos());
-				} else
-				{
-					safeMoveActive = false;
-					setNewSkill(new IdleSkill());
-				}
-			} else if (kickSKillActive == false)
-			{
-				safeMoveActive = false;
-				kickSKillActive = true;
-				skill = new KickSkill(target);
-				skill.setKickMode(EKickMode.FIXED_SPEED);
-				skill.setMoveMode(EMoveMode.CHILL);
-				skill.setKickSpeed(2);
-				setNewSkill(skill);
-			}
+			skill.getMoveCon().updateDestination(dest);
 		}
 		
 		
-		private boolean isPathToTargetFree(final IVector2 target, final BotID receiver)
+		private boolean isFreeToPushBySecondRole()
 		{
-			Collection<BotID> ignoredIds = new ArrayList<BotID>();
-			ignoredIds.add(receiver);
-			ignoredIds.add(getBotID());
-			final double raySize = 40;
-			return AiMath.p2pVisibility(getWFrame(), getWFrame().getBall().getPos(), target, raySize, ignoredIds);
-		}
-		
-		
-		private boolean isBotBehindBall()
-		{
-			/**
-			 * This method is actually not needed because the robot will only enter the shootState
-			 * when the robot is already positioned. So its ok, that this method always returns true.
-			 */
-			return true;
-		}
-		
-		
-		private DynamicPosition chooseNewTarget(final DynamicPosition target, final BotID receiver)
-		{
-			IVector2 newTarget = null;
-			IVector2 ballToTargetNormal = target.subtractNew(getWFrame().getBall().getPos()).getNormalVector()
-					.normalizeNew();
-			
-			newTarget = target.addNew(ballToTargetNormal.multiplyNew(50));
-			int i = 0;
-			while (!isPathToTargetFree(newTarget, receiver))
-			{
-				newTarget = target.addNew(ballToTargetNormal.multiplyNew(i * 50));
-				if (i > 30)
-				{
-					log.warn("Could not find suitable pass Position for ball placement");
-					break;
-				}
-				i++;
-			}
-			return new DynamicPosition(newTarget);
-		}
-		
-		
-		@Override
-		public void doExitActions()
-		{
-		}
-		
-		
-		@Override
-		public Enum<? extends Enum<?>> getIdentifier()
-		{
-			return EStateId.SHOOT;
+			return isInsidePushRadius() && (!isBallTooCloseToFieldBorder()
+					|| !Geometry.getField().isPointInShape(getPlacementPos(), -300));
 		}
 	}
 	
+	
+	private class PullState implements IState
+	{
+		private static final int GOAL_WALL_THICKNESS = 20;
+		private BallPlacementSkill skill = null;
+		private IRectangle goalRect = null;
+		private IVector2 destination;
+		
+		
+		@Override
+		public void doEntryActions()
+		{
+			destination = getDestination();
+			skill = new BallPlacementSkill(destination);
+			prepareMoveCon(skill.getMoveCon());
+			setNewSkill(skill);
+		}
+		
+		
+		@Override
+		public void doUpdate()
+		{
+			if ((!isBallTooCloseToFieldBorder()
+					|| destination.distanceTo(getBall().getPos()) < Geometry.getBallRadius() * 2)
+					&& getBall().getPos().distanceTo(getPos()) > 2 * Geometry.getBotRadius())
+			{
+				triggerEvent(EEvent.SHOOT);
+			}
+			if (goalRect != null)
+			{
+				getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.AUTOMATED_THROW_IN)
+						.add(new DrawableRectangle(goalRect, Color.cyan));
+			}
+		}
+		
+		
+		private IVector2 getDestination()
+		{
+			IVector2 ballPos = getBall().getPos();
+			IVector2 dest;
+			if (Geometry.getGoalOur().isPointInShape(ballPos, 200)
+					|| Geometry.getPenaltyAreaOur().withMargin(-500).isBehindPenaltyArea(ballPos))
+			{
+				dest = getShapeAndDestination(Geometry.getGoalOur());
+			} else if (Geometry.getGoalTheir().isPointInShape(ballPos, 200)
+					|| Geometry.getPenaltyAreaTheir().withMargin(-500).isBehindPenaltyArea(ballPos))
+			{
+				dest = getShapeAndDestination(Geometry.getGoalTheir());
+			} else
+			{
+				dest = Geometry.getField().nearestPointInside(ballPos, -2 * Geometry.getBotRadius());
+			}
+			return dest;
+		}
+		
+		
+		private IVector2 getShapeAndDestination(Goal goal)
+		{
+			goalRect = Rectangle.fromPoints(goal.getLeftPost(),
+					goal.getRightPost().addNew(Vector2.fromX(Math.signum(goal.getCenter().x()) * goal.getDepth())));
+			goalRect = goalRect.withMargin(200);
+			return getDestinationOutsideGoal(goal);
+		}
+		
+		
+		private IVector2 getDestinationOutsideGoal(Goal goal)
+		{
+			IVector2 ballPos = getBall().getPos();
+			if (isBallBesideGoal(goal))
+			{
+				IVector2 dest = Geometry.getField().nearestPointInside(ballPos, -Geometry.getBotRadius());
+				return dest.addNew(Vector2.fromY(250 * Math.signum(ballPos.y())));
+			}
+			
+			if (isBallBeforeGoalBackWall(goal))
+			{
+				return goal.getCenter().subtractNew(Vector2.fromX(250 * Math.signum(goal.getCenter().x())));
+			}
+			
+			double distanceToGoalBackWall = goal.getDepth() + GOAL_WALL_THICKNESS + 2 * Geometry.getBotRadius();
+			
+			return Vector2.fromXY(goal.getCenter().x() + distanceToGoalBackWall * Math.signum(ballPos.x()),
+					(goal.getWidth() / 2 + 2 * Geometry.getBotRadius()) * Math.signum(ballPos.y()));
+		}
+		
+		
+		private boolean isBallBesideGoal(Goal goal)
+		{
+			return Math.abs(getBall().getPos().y()) > goal.getWidth() / 2 + GOAL_WALL_THICKNESS;
+		}
+		
+		
+		private boolean isBallBeforeGoalBackWall(Goal goal)
+		{
+			return Math.abs(getBall().getPos().x()) < Math
+					.abs(goal.getCenter().x() + goal.getDepth() * Math.signum(goal.getCenter().x()));
+		}
+	}
+	
+	
+	private class KickState implements IState
+	{
+		private KickChillSkill skill;
+		private TimestampTimer timer = new TimestampTimer(1);
+		
+		
+		@Override
+		public void doEntryActions()
+		{
+			
+			DynamicPosition target = new DynamicPosition(
+					Geometry.getField().nearestPointInside(getPlacementPos(), -Geometry.getBotRadius()));
+			skill = new KickChillSkill(target);
+			skill.setReadyForKick(false);
+			skill.getMoveCon().setBotsObstacle(true);
+			prepareMoveCon(skill.getMoveCon());
+			setNewSkill(skill);
+		}
+		
+		
+		@Override
+		public void doUpdate()
+		{
+			if (isBallTooCloseToFieldBorder() && getBall().getVel().getLength2() < 0.3)
+			{
+				triggerEvent(EEvent.PULL);
+			} else if (getBall().getVel().getLength2() > 0.3 || isInsidePushRadius())
+			{
+				triggerEvent(EEvent.CLEAR);
+			}
+			
+			
+			double distToPlacementPos = getWFrame().getTigerBotsVisible().values().stream()
+					.map(ITrackedBot::getPos)
+					.map(pos -> pos
+							.distanceTo(Geometry.getField().nearestPointInside(getPlacementPos(),
+									-Geometry.getBotRadius())))
+					.sorted()
+					.findFirst()
+					.orElse(0.0);
+			if (distToPlacementPos < Geometry.getBotRadius() + 30)
+			{
+				if (isPathToTargetFree())
+				{
+					skill.setKickSpeed(getKickSpeed());
+					skill.setReadyForKick(true);
+				} else
+				{
+					timer.update(getWFrame().getTimestamp());
+					if (timer.isTimeUp(getWFrame().getTimestamp()))
+					{
+						// do not kick with more than 1.5m/s
+						// the rules state that if a ball hits an opponent robot with >1.5m/s, its a foul
+						skill.setKickSpeed(Math.min(1.5, getKickSpeed()));
+						skill.setReadyForKick(true);
+					}
+				}
+			} else
+			{
+				skill.setReadyForKick(false);
+				timer.reset();
+			}
+		}
+		
+		
+		private double getKickSpeed()
+		{
+			double dist = getPlacementPos().distanceTo(getBall().getPos());
+			return getBall().getStraightConsultant().getInitVelForDist(dist, 1);
+		}
+		
+		
+		private boolean isPathToTargetFree()
+		{
+			return AiMath.p2pVisibility(getWFrame().getBots().values(), getBall().getPos(), getPlacementPos(), 10.0);
+		}
+	}
 }

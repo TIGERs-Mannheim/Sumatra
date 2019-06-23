@@ -28,13 +28,14 @@ public abstract class ASumatraView
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final Logger		log			= Logger.getLogger(ASumatraView.class.getName());
-	private final ESumatraViewType	type;
-	private ISumatraViewPresenter		presenter	= null;
-	private View							view			= null;
-	private EViewMode						mode			= EViewMode.NORMAL;
+	private static final Logger log = Logger.getLogger(ASumatraView.class.getName());
+	private final ESumatraViewType type;
+	private ISumatraViewPresenter presenter = null;
+	private View view = null;
+	private EViewMode mode = EViewMode.NORMAL;
 	
 	/**
+	 * The view mode
 	 */
 	public enum EViewMode
 	{
@@ -162,6 +163,8 @@ public abstract class ASumatraView
 	}
 	
 	
+	// String builder more readable
+	@SuppressWarnings("StringBufferReplaceableByString")
 	@Override
 	public String toString()
 	{

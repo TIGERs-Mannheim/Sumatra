@@ -1,18 +1,13 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Oct 26, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.trajectory;
 
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.IVector3;
-import edu.tigers.sumatra.math.Vector3;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.Vector3;
 
 
 /**
@@ -23,8 +18,8 @@ public class TrajectoryXyw implements ITrajectory<IVector3>
 {
 	private final ITrajectory<IVector2>	trajXy;
 	private final ITrajectory<Double>	trajW;
-													
-													
+	
+	
 	@SuppressWarnings("unused")
 	private TrajectoryXyw()
 	{
@@ -47,28 +42,28 @@ public class TrajectoryXyw implements ITrajectory<IVector3>
 	@Override
 	public IVector3 getPositionMM(final double t)
 	{
-		return new Vector3(trajXy.getPositionMM(t), trajW.getPositionMM(t));
+		return Vector3.from2d(trajXy.getPositionMM(t), trajW.getPositionMM(t));
 	}
 	
 	
 	@Override
 	public IVector3 getPosition(final double t)
 	{
-		return new Vector3(trajXy.getPosition(t), trajW.getPosition(t));
+		return Vector3.from2d(trajXy.getPosition(t), trajW.getPosition(t));
 	}
 	
 	
 	@Override
 	public IVector3 getVelocity(final double t)
 	{
-		return new Vector3(trajXy.getVelocity(t), trajW.getVelocity(t));
+		return Vector3.from2d(trajXy.getVelocity(t), trajW.getVelocity(t));
 	}
 	
 	
 	@Override
 	public IVector3 getAcceleration(final double t)
 	{
-		return new Vector3(trajXy.getAcceleration(t), trajW.getAcceleration(t));
+		return Vector3.from2d(trajXy.getAcceleration(t), trajW.getAcceleration(t));
 	}
 	
 	

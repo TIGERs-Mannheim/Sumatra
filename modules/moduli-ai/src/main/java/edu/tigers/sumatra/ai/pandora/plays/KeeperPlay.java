@@ -1,50 +1,38 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 16.10.2010
- * Author(s): Malte
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays;
 
-import edu.tigers.sumatra.ai.data.EGameStateTeam;
+import edu.tigers.sumatra.Referee;
 import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
 import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
-import edu.tigers.sumatra.ai.pandora.roles.defense.KeeperRole;
+import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.ai.pandora.roles.defense.PenaltyKeeperRole;
+import edu.tigers.sumatra.ai.pandora.roles.keeper.KeeperOneOnOneRole;
+import edu.tigers.sumatra.ai.pandora.roles.keeper.KeeperRole;
+import edu.tigers.sumatra.referee.data.GameState;
 
 
 /**
  * A OneBot Play to realize a solo keeper behavior.<br>
  * Requires: 1 {@link PenaltyKeeperRole}
- * 
+ *
  * @author Malte
  */
 public class KeeperPlay extends APlay
 {
 	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	private ARole	keeper	= null;
+	private ARole keeper = null;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
+	 * Constructor
 	 */
 	public KeeperPlay()
 	{
 		super(EPlay.KEEPER);
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	
 	@Override
@@ -70,37 +58,41 @@ public class KeeperPlay extends APlay
 		{
 			throw new IllegalStateException("Keeper Play can not handle more than 1 role!");
 		}
-		if (frame.getTacticalField().getGameState() == EGameStateTeam.PREPARE_KICKOFF_THEY)
+		if (frame.getRefereeMsg().getStage() == Referee.SSL_Referee.Stage.PENALTY_SHOOTOUT)
 		{
-			keeper = new PenaltyKeeperRole();
+			keeper = new KeeperOneOnOneRole();
 		} else
 		{
-			keeper = new KeeperRole();
+			if (frame.getTacticalField().getGameState().isPrepareKickoffForThem())
+			{
+				keeper = new PenaltyKeeperRole();
+			} else
+			{
+				keeper = new KeeperRole();
+			}
 		}
-		return (keeper);
+		return keeper;
 	}
 	
 	
 	@Override
-	protected void onGameStateChanged(final EGameStateTeam gameState)
+	protected void onGameStateChanged(final GameState gameState)
 	{
-		ARole oldKeeper = keeper;
-		switch (gameState)
+		if (getRoles().isEmpty())
 		{
-			case PREPARE_PENALTY_THEY:
-				if (oldKeeper != null)
-				{
-					keeper = new PenaltyKeeperRole();
-					switchRoles(oldKeeper, keeper);
-				}
-				break;
-			default:
-				if (oldKeeper != null)
-				{
-					keeper = new KeeperRole();
-					switchRoles(oldKeeper, keeper);
-				}
-				break;
+			return;
+		}
+		if (gameState.isPenaltyOrPreparePenaltyForThem())
+		{
+			keeper = new PenaltyKeeperRole();
+			switchRoles(getRoles().get(0), keeper);
+		} else
+		{
+			if (keeper != null && keeper.getType() != ERole.KEEPER)
+			{
+				keeper = new KeeperRole();
+				switchRoles(getRoles().get(0), keeper);
+			}
 		}
 	}
 	
@@ -108,15 +100,6 @@ public class KeeperPlay extends APlay
 	@Override
 	protected void doUpdate(final AthenaAiFrame frame)
 	{
-		if ((keeper != null) && keeper.getClass().equals(KeeperRole.class))
-		{
-			if (frame.getTacticalField().getGameState() == EGameStateTeam.STOPPED)
-			{
-				((KeeperRole) keeper).setAllowChipkick(false);
-			} else
-			{
-				((KeeperRole) keeper).setAllowChipkick(true);
-			}
-		}
+		// Only one bot -> play is not needed
 	}
 }

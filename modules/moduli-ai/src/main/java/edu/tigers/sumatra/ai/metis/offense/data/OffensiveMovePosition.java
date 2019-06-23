@@ -1,19 +1,14 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 12.12.2014
- * Author(s): MarkG
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.metis.offense.data;
 
 import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.ai.data.TacticalField;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 
@@ -38,7 +33,7 @@ public class OffensiveMovePosition extends Vector2
 		/*** */
 		IGNORE_BALL,
 		/*** */
-		UNREACHABLE;
+		UNREACHABLE
 	}
 	
 	private final ITrackedBot	bot;
@@ -119,7 +114,7 @@ public class OffensiveMovePosition extends Vector2
 		// TrajPathFinder finder;
 		// if (!pathFinders.containsKey(bot.getBotId()))
 		// {
-		// finder = new TrajPathFinder(bot.getBot());
+		// finder = new TrajPathFinder(bot.getRobotInfo());
 		// pathFinders.put(bot.getBotId(), finder);
 		// } else
 		// {
@@ -137,8 +132,8 @@ public class OffensiveMovePosition extends Vector2
 		// input.setObstacles(obstacles);
 		// TrajPath path = finder.calcPath(input);
 		double time = 1; // placeholder until there is a real time path calculator
-		double distanceToDestination = GeoMath.distancePP(this, bot.getPos());
-		double distanceToBall = GeoMath.distancePP(wFrame.getBall().getPos(), this);
+		double distanceToDestination = VectorMath.distancePP(this, bot.getPos());
+		double distanceToBall = VectorMath.distancePP(wFrame.getBall().getPos(), this);
 		scoring = (time * 8) + ((distanceToDestination / 2.0) + (distanceToBall / 2.0));
 		
 	}

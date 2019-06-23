@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 22.04.2013
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.basestation;
 
@@ -94,7 +89,7 @@ public interface IBaseStationObserver
 	
 	
 	/**
-	 * @param botId TODO
+	 * @param botId
 	 * @param feedback
 	 */
 	default void onNewMatchFeedback(final BotID botId, final TigerSystemMatchFeedback feedback)

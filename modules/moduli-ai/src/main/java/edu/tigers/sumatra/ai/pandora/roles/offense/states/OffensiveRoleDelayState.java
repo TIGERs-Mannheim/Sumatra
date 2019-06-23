@@ -1,30 +1,21 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 26, 2014
- * Author(s): Mark Geiger <Mark.Geiger@dlr.de>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.pandora.roles.offense.states;
 
 import java.awt.Color;
 
-import edu.tigers.sumatra.ai.data.EShapesLayer;
-import edu.tigers.sumatra.ai.data.OffensiveStrategy.EOffensiveStrategy;
-import edu.tigers.sumatra.ai.data.math.OffensiveMath;
+import edu.tigers.sumatra.ai.data.EAiShapesLayer;
+import edu.tigers.sumatra.ai.data.OffensiveStrategy;
+import edu.tigers.sumatra.ai.math.OffensiveMath;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.pandora.roles.offense.OffensiveRole;
-import edu.tigers.sumatra.drawable.DrawableText;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.skillsystem.ESkill;
+import edu.tigers.sumatra.drawable.DrawableAnnotation;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
-import edu.tigers.sumatra.skillsystem.skills.DelayedKickSkill;
-import edu.tigers.sumatra.statemachine.IRoleState;
-import edu.tigers.sumatra.wp.data.DynamicPosition;
-import edu.tigers.sumatra.wp.data.Geometry;
 
 
 /**
@@ -32,16 +23,10 @@ import edu.tigers.sumatra.wp.data.Geometry;
  * 
  * @author Mark Geiger <Mark.Geiger@dlr.de>
  */
-public class OffensiveRoleDelayState extends AOffensiveRoleState implements IRoleState
+public class OffensiveRoleDelayState extends AOffensiveRoleState
 {
-	
-	// -------------------------------------------------------------------------- //
-	// --- variables and constants ---------------------------------------------- //
-	// -------------------------------------------------------------------------- //
 	private long initialTime = 0;
-	// ----------------------------------------------------------------------- //
-	// -------------------- functions ---------------------------------------- //
-	// ----------------------------------------------------------------------- //
+	private AMoveToSkill move = null;
 	
 	
 	/**
@@ -53,22 +38,23 @@ public class OffensiveRoleDelayState extends AOffensiveRoleState implements IRol
 	}
 	
 	
-	private DelayedKickSkill	skill	= null;
-	
-	private AMoveToSkill			move	= null;
+	@Override
+	public IVector2 getMoveDest()
+	{
+		return move.getMoveCon().getDestination();
+	}
 	
 	
 	@Override
-	public void doExitActions()
+	public String getIdentifier()
 	{
-		
+		return OffensiveStrategy.EOffensiveStrategy.DELAY.name();
 	}
 	
 	
 	@Override
 	public void doEntryActions()
 	{
-		skill = new DelayedKickSkill(new DynamicPosition(getAiFrame().getTacticalField().getBestDirectShootTarget()));
 		move = AMoveToSkill.createMoveToSkill();
 		setNewSkill(move);
 		initialTime = getWFrame().getTimestamp();
@@ -78,38 +64,36 @@ public class OffensiveRoleDelayState extends AOffensiveRoleState implements IRol
 	@Override
 	public void doUpdate()
 	{
-		IVector2 movePos = getWFrame().getBall().getPos().addNew(
-				Geometry.getCenter().subtractNew(getWFrame().getBall().getPos()).scaleToNew(300));
-		if ((GeoMath.distancePP(getPos(), movePos) < 50)
-				&& (getCurrentSkill().toString() != ESkill.DELAYED_KICK.toString()))
+		IVector2 dir = Geometry.getGoalTheir().getCenter().subtractNew(getWFrame().getBall().getPos()).scaleToNew(-300);
+		if (dir.isZeroVector())
 		{
-			skill = new DelayedKickSkill(new DynamicPosition(getAiFrame().getTacticalField().getBestDirectShootTarget()));
-			setNewSkill(skill);
-		} else
-		{
-			move.getMoveCon().updateLookAtTarget(getWFrame().getBall().getPos());
-			move.getMoveCon().updateDestination(movePos);
+			dir = Vector2.fromXY(-300, 0);
 		}
+		IVector2 movePos = getWFrame().getBall().getPos().addNew(
+				dir);
+		
+		move.getMoveCon().updateLookAtTarget(getWFrame().getBall().getPos());
+		move.getMoveCon().updateDestination(movePos);
 		double delayTime = OffensiveConstants.getDelayWaitTime();
 		if (OffensiveMath.isKeeperInsane(getAiFrame(), getAiFrame().getTacticalField()))
 		{
 			delayTime *= 2.5;
 		}
-		if ((getWFrame().getTimestamp() - initialTime) > delayTime)
+		
+		if ((getWFrame().getTimestamp() - initialTime) > delayTime || endDelayEarly())
 		{
 			getAiFrame().getAICom().setResponded(true);
 		}
-		DrawableText dt = new DrawableText(getWFrame().getBall().getPos().addNew(new Vector2(-500, 0)),
+		DrawableAnnotation dt = new DrawableAnnotation(getWFrame().getBall().getPos().addNew(Vector2.fromXY(-500, 0)),
 				"delay: " + ((getWFrame().getTimestamp() - initialTime) / (1000 * 1000)), Color.orange);
-		getAiFrame().getTacticalField().getDrawableShapes().get(EShapesLayer.OFFENSIVE_FINDER).add(dt);
+		getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.OFFENSIVE_FINDER).add(dt);
 	}
 	
 	
-	@Override
-	public Enum<? extends Enum<?>> getIdentifier()
+	private boolean endDelayEarly()
 	{
-		return EOffensiveStrategy.DELAY;
+		return getAiFrame().getGamestate().isDirectFreeForUs()
+				&& getPos().distanceTo(getWFrame().getBall().getPos()) < 400
+				&& OffensiveMath.willBotShoot(getWFrame());
 	}
-	
-	
 }

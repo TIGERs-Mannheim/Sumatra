@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 10, 2016
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.trajectory;
 
@@ -12,21 +7,23 @@ import com.sleepycat.persist.model.Persistent;
 
 
 /**
+ * Wrap a trajectory around some start and end time
+ * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * @param <RETURN_TYPE>
+ * @param <R> return type
  */
 @Persistent
-public class TrajectoryWrapper<RETURN_TYPE> implements ITrajectory<RETURN_TYPE>
+public class TrajectoryWrapper<R> implements ITrajectory<R>
 {
-	private final ITrajectory<RETURN_TYPE>	traj;
-	private final double							tStart;
-	private final double							tEnd;
+	private final ITrajectory<R>	traj;
+	private final double				tStart;
+	private final double				tEnd;
 	
 	
 	@SuppressWarnings("unused")
 	private TrajectoryWrapper()
 	{
-		traj = null;
+		traj = new StubTrajectory<>();
 		tStart = 0;
 		tEnd = 0;
 	}
@@ -37,7 +34,7 @@ public class TrajectoryWrapper<RETURN_TYPE> implements ITrajectory<RETURN_TYPE>
 	 * @param tStart
 	 * @param tEnd
 	 */
-	public TrajectoryWrapper(final ITrajectory<RETURN_TYPE> traj, final double tStart, final double tEnd)
+	public TrajectoryWrapper(final ITrajectory<R> traj, final double tStart, final double tEnd)
 	{
 		this.traj = traj;
 		this.tStart = tStart;
@@ -52,28 +49,28 @@ public class TrajectoryWrapper<RETURN_TYPE> implements ITrajectory<RETURN_TYPE>
 	
 	
 	@Override
-	public RETURN_TYPE getPositionMM(final double t)
+	public R getPositionMM(final double t)
 	{
 		return traj.getPositionMM(getTime(t));
 	}
 	
 	
 	@Override
-	public RETURN_TYPE getPosition(final double t)
+	public R getPosition(final double t)
 	{
 		return traj.getPosition(getTime(t));
 	}
 	
 	
 	@Override
-	public RETURN_TYPE getVelocity(final double t)
+	public R getVelocity(final double t)
 	{
 		return traj.getVelocity(getTime(t));
 	}
 	
 	
 	@Override
-	public RETURN_TYPE getAcceleration(final double t)
+	public R getAcceleration(final double t)
 	{
 		return traj.getAcceleration(getTime(t));
 	}

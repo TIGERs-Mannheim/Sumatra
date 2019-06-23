@@ -50,7 +50,7 @@ public final class RCMPanel extends JPanel implements ISumatraView
 	
 	private final JTabbedPane						controllerTabbedPane;
 	
-	// --- status of startButton (start or stop pressed)
+	// --- activity of startButton (start or stop pressed)
 	private boolean									startButton				= true;
 	private boolean									startMQTTButton		= true;
 	private boolean									startMessagingButton	= true;

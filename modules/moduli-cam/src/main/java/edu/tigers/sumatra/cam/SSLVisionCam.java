@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 22.07.2010
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.cam;
 
@@ -42,36 +37,36 @@ import edu.tigers.sumatra.network.NetworkUtility;
 public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, IConfigObserver
 {
 	
-	private static final Logger						log						= Logger
-																									.getLogger(SSLVisionCam.class.getName());
-																									
+	private static final Logger log = Logger
+			.getLogger(SSLVisionCam.class.getName());
+	
 	// Constants
-	private static final int							BUFFER_SIZE				= 10000;
-	private final byte[]									bufferArr				= new byte[BUFFER_SIZE];
-																							
+	private static final int BUFFER_SIZE = 10000;
+	private final byte[] bufferArr = new byte[BUFFER_SIZE];
+	
 	// Connection
-	private Thread											cam;
-	private IReceiver										receiver;
-																
-																
-	private boolean										expectIOE				= false;
-																							
+	private Thread cam;
+	private IReceiver receiver;
+	
+	
+	private boolean expectIOE = false;
+	
 	// Translation
-	private final SSLVisionCamGeometryTranslator	geometryTranslator	= new SSLVisionCamGeometryTranslator();
-																							
-																							
-	@Configurable(spezis = { "LAB", "GRSIM", "ROBOCUP", "TISCH" }, defValueSpezis = { "10006", "40102", "10006",
+	private final SSLVisionCamGeometryTranslator geometryTranslator = new SSLVisionCamGeometryTranslator();
+	
+	
+	@Configurable(spezis = { "LAB", "GRSIM", "ROBOCUP", "TISCH", "ANDRE" }, defValueSpezis = { "10006", "40102", "10006",
 			"10006" })
-	private int												port						= 10010;
+	private int port = 10010;
 	@Configurable(defValue = "224.5.23.2")
-	private String											address					= "224.5.23.5";
-	@Configurable(spezis = { "LAB", "GRSIM", "ROBOCUP" }, defValue = "")
-	private String											network					= "";
-																							
-	private NetworkInterface							nif;
-	private final TimeSync								timeSync					= new TimeSync();
-																							
-																							
+	private String address = "224.5.23.2";
+	@Configurable(spezis = { "LAB", "GRSIM", "ROBOCUP", "ANDRE" }, defValue = "")
+	private String network = "";
+	
+	private NetworkInterface nif;
+	private final TimeSync timeSync = new TimeSync();
+	
+	
 	static
 	{
 		ConfigRegistration.registerClass("user", SSLVisionCam.class);
@@ -187,6 +182,7 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, I
 					continue;
 				}
 				
+				notifyNewVisionPacket(sslPacket);
 				
 				if (sslPacket.hasGeometry())
 				{
@@ -208,6 +204,9 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, I
 					log.error("Error while receiving SSLVision-Packet!", err);
 					break;
 				}
+			} catch (Throwable err)
+			{
+				log.error("Error in SSL vision cam", err);
 			}
 		}
 		
@@ -251,7 +250,7 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, I
 				receiver.cleanup();
 			} catch (final IOException err)
 			{
-				log.debug("Socket closed...");
+				log.debug("Socket closed...", err);
 			}
 			
 			receiver = null;

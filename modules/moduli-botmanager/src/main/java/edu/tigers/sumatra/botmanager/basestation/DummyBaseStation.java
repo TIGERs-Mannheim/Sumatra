@@ -20,7 +20,7 @@ import edu.tigers.sumatra.ids.BotID;
 public class DummyBaseStation extends ABaseStation
 {
 	/**
-	 * 
+	 * Default constructor.
 	 */
 	public DummyBaseStation()
 	{
@@ -31,18 +31,21 @@ public class DummyBaseStation extends ABaseStation
 	@Override
 	public void enqueueCommand(final BotID id, final ACommand cmd)
 	{
+		// Dummy
 	}
 	
 	
 	@Override
 	public void onConnect()
 	{
+		// Dummy
 	}
 	
 	
 	@Override
 	public void onDisconnect()
 	{
+		// Dummy
 	}
 	
 	

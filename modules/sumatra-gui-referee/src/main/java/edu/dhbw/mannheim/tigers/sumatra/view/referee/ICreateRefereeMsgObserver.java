@@ -8,8 +8,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.referee;
 
-import edu.tigers.sumatra.Referee.SSL_Referee.Command;
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest;
 
 
 /**
@@ -20,19 +19,13 @@ import edu.tigers.sumatra.math.IVector2;
 public interface ICreateRefereeMsgObserver
 {
 	/**
-	 * Called by the gui when the "send" btn is pressed
+	 * New refbox control request.
 	 * 
-	 * @param cmd
-	 * @param goalsBlue
-	 * @param goalsYellow
-	 * @param timeLeft
-	 * @param timestamp
-	 * @param placementPos
+	 * @param request
 	 */
-	void onSendOwnRefereeMsg(Command cmd, int goalsBlue, int goalsYellow, short timeLeft, long timestamp,
-			IVector2 placementPos);
-			
-			
+	void onRefBoxRequest(SSL_RefereeRemoteControlRequest request);
+	
+	
 	/**
 	 * Should we receive external referee cmds?
 	 * 

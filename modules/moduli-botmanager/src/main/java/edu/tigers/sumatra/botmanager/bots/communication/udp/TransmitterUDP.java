@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 01.03.2011
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.bots.communication.udp;
 
@@ -38,7 +33,7 @@ public class TransmitterUDP implements ITransmitterUDP
 	private InetAddress							destination		= null;
 	private int										destPort			= 0;
 	private DatagramSocket						socket			= null;
-	private final BlockingQueue<ACommand>	sendQueue		= new LinkedBlockingQueue<ACommand>();
+	private final BlockingQueue<ACommand>	sendQueue		= new LinkedBlockingQueue<>();
 	private Thread									sendingThread	= null;
 	private final Statistics					stats				= new Statistics();
 	private boolean								legacy			= false;
@@ -60,6 +55,8 @@ public class TransmitterUDP implements ITransmitterUDP
 			sendQueue.put(cmd);
 		} catch (InterruptedException err)
 		{
+			log.debug("Could not queue cmd.", err);
+			Thread.currentThread().interrupt();
 		}
 	}
 	
@@ -97,6 +94,7 @@ public class TransmitterUDP implements ITransmitterUDP
 				Thread.sleep(10);
 			} catch (InterruptedException e)
 			{
+				Thread.currentThread().interrupt();
 			}
 		}
 		
@@ -106,6 +104,7 @@ public class TransmitterUDP implements ITransmitterUDP
 			sendingThread.join(100);
 		} catch (InterruptedException err)
 		{
+			Thread.currentThread().interrupt();
 		}
 		
 		sendingThread = null;
@@ -179,6 +178,7 @@ public class TransmitterUDP implements ITransmitterUDP
 			if (socket == null)
 			{
 				log.error("Cannot start a transmitter on a null socket");
+				return;
 			}
 			
 			Thread.currentThread().setName("Transmitter UDP " + socket.getInetAddress() + ":" + socket.getPort());
@@ -198,7 +198,7 @@ public class TransmitterUDP implements ITransmitterUDP
 				
 				try
 				{
-					byte data[] = CommandFactory.getInstance().encode(cmd, legacy);
+					byte[] data = CommandFactory.getInstance().encode(cmd, legacy);
 					
 					DatagramPacket packet = new DatagramPacket(data, data.length, destination, destPort);
 					socket.send(packet);
@@ -209,8 +209,8 @@ public class TransmitterUDP implements ITransmitterUDP
 					stats.payload += data.length;
 				} catch (IOException e)
 				{
+					log.error("Could not send packet.", e);
 					Thread.currentThread().interrupt();
-					continue;
 				}
 			}
 		}

@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jan 30, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.metis.general;
 
@@ -16,10 +11,10 @@ import org.apache.log4j.Logger;
 import edu.tigers.sumatra.ai.data.TacticalField;
 import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
-import edu.tigers.sumatra.math.ILine;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Line;
-import edu.tigers.sumatra.wp.data.Geometry;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**
@@ -65,7 +60,7 @@ public class BallLeftFieldCalc extends ACalculator
 		} else if ((baseAiFrame.getPrevFrame().getTacticalField().getBallLeftFieldPos() == null)
 				&& !lastBallPoss.isEmpty())
 		{
-			ILine line = Line.newLine(lastBallPoss.get(0), ballPos);
+			ILine line = Line.fromPoints(lastBallPoss.get(0), ballPos);
 			List<IVector2> ballIntersectionPoints = Geometry.getField().lineIntersections(line);
 			if (ballIntersectionPoints.isEmpty())
 			{

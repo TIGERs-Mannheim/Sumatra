@@ -1,12 +1,13 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Mar 26, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.view.generic;
+
+import java.awt.*;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.swing.*;
 
 import info.monitorenter.gui.chart.Chart2D;
 import info.monitorenter.gui.chart.IAxis;
@@ -17,14 +18,6 @@ import info.monitorenter.gui.chart.traces.Trace2DSimple;
 import info.monitorenter.gui.chart.traces.painters.TracePainterDisc;
 import info.monitorenter.gui.chart.traces.painters.TracePainterLine;
 import info.monitorenter.util.Range;
-
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Graphics;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.swing.JPanel;
 
 
 /**

@@ -1,21 +1,15 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 03.09.2010
- * Author(s):
- * Gunther
- * Oliver Steinbrecher <OST1988@aol.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.metis;
 
-import java.util.concurrent.TimeUnit;
-
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
 import edu.tigers.sumatra.ai.data.TacticalField;
 import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
+import edu.tigers.sumatra.wp.data.ITrackedBall;
+import edu.tigers.sumatra.wp.data.WorldFrame;
 
 
 /**
@@ -23,21 +17,15 @@ import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
  * 
  * @author Gunther, Oliver Steinbrecher <OST1988@aol.com>
  */
-public abstract class ACalculator
+public abstract class ACalculator implements ICalculator
 {
-	private static final Logger	log						= Logger.getLogger(ACalculator.class.getName());
-	private boolean					active					= true;
-																		
-	private long						lastCalculationTime	= 0;
-																		
-	private ECalculator				type						= null;
-																		
-	private Exception					lastException			= null;
-																		
-																		
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
+	private static final Logger log = LogManager.getLogger(ACalculator.class);
+	private boolean active = true;
+	private Exception lastException = null;
+	private BaseAiFrame curAiFrame = null;
+	private boolean executionStatusLastFrame = false;
+	
+	
 	/**
 	 * Calculation call from extern
 	 * 
@@ -46,67 +34,27 @@ public abstract class ACalculator
 	 */
 	public final void calculate(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
-		if (active && ((type == null)
-				|| (TimeUnit.NANOSECONDS.toMillis(
-						baseAiFrame.getSimpleWorldFrame().getTimestamp() - lastCalculationTime) >= type.getTimeRateMs())))
+		curAiFrame = baseAiFrame;
+		executionStatusLastFrame = false;
+		if (!active || !isCalculationNecessary(newTacticalField, baseAiFrame))
 		{
-			try
-			{
-				doCalc(newTacticalField, baseAiFrame);
-				lastException = null;
-			} catch (Exception err)
-			{
-				if ((lastException == null) || ((err.getMessage() != null)
-						&& !err.getMessage().equals(lastException.getMessage())))
-				{
-					log.error("Error in calculator " + getType().name(), err);
-				}
-				lastException = err;
-				fallbackCalc(newTacticalField, baseAiFrame);
-			}
-			lastCalculationTime = baseAiFrame.getSimpleWorldFrame().getTimestamp();
-		} else
-		{
-			fallbackCalc(newTacticalField, baseAiFrame);
+			return;
 		}
-	}
-	
-	
-	/**
-	 * This function should be used to analyze something.
-	 * 
-	 * @param newTacticalField
-	 * @param baseAiFrame
-	 */
-	public abstract void doCalc(TacticalField newTacticalField, BaseAiFrame baseAiFrame);
-	
-	
-	/**
-	 * This method will be called if a calculator shouldn't be executed. It should set a default value to the tactical
-	 * field, so that there won't be errors of uninitialized values.
-	 * 
-	 * @param newTacticalField
-	 * @param baseAiFrame
-	 */
-	public void fallbackCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
-	{
-	}
-	
-	
-	/**
-	 * Called before destruction
-	 */
-	public void deinit()
-	{
-	}
-	
-	
-	/**
-	 * 
-	 */
-	public void reset()
-	{
-		lastCalculationTime = -1;
+		
+		try
+		{
+			doCalc(newTacticalField, baseAiFrame);
+			executionStatusLastFrame = true;
+			lastException = null;
+		} catch (Exception err)
+		{
+			if ((lastException == null) || ((err.getMessage() != null)
+					&& !err.getMessage().equals(lastException.getMessage())))
+			{
+				log.error("Error in calculator " + getClass().getSimpleName(), err);
+			}
+			lastException = err;
+		}
 	}
 	
 	
@@ -121,20 +69,26 @@ public abstract class ACalculator
 	}
 	
 	
-	/**
-	 * @return the type
-	 */
-	public final ECalculator getType()
+	protected BaseAiFrame getAiFrame()
 	{
-		return type;
+		return curAiFrame;
 	}
 	
 	
-	/**
-	 * @param type the type to set
-	 */
-	public final void setType(final ECalculator type)
+	protected WorldFrame getWFrame()
 	{
-		this.type = type;
+		return curAiFrame.getWorldFrame();
+	}
+	
+	
+	protected ITrackedBall getBall()
+	{
+		return curAiFrame.getWorldFrame().getBall();
+	}
+	
+	
+	public boolean getExecutionStatusLastFrame()
+	{
+		return executionStatusLastFrame;
 	}
 }

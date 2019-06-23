@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 17, 2016
- * Author(s): Lukas Magel
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.autoreferee.engine.events.impl;
 
 import java.util.Collection;
@@ -24,13 +20,14 @@ import edu.tigers.autoreferee.engine.NGeometry;
 import edu.tigers.autoreferee.engine.events.DistanceViolation;
 import edu.tigers.autoreferee.engine.events.EGameEvent;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.IPenaltyArea;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
-import edu.tigers.sumatra.wp.data.Geometry;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.referee.data.EGameState;
+import edu.tigers.sumatra.referee.data.GameState;
+import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
-import edu.tigers.sumatra.wp.data.PenaltyArea;
-import edu.tigers.sumatra.wp.data.TrackedBall;
 
 
 /**
@@ -40,20 +37,18 @@ import edu.tigers.sumatra.wp.data.TrackedBall;
  */
 public class AttackerToDefenseAreaDistanceDetector extends APreparingGameEventDetector
 {
-	private static final int							priority								= 1;
+	private static final int					priority								= 1;
 	
 	/** The minimum allowed distance between the bots of the attacking team and the defense area */
-	private static final double						MIN_ATTACKER_DEFENSE_DISTANCE	= 200;
-	private static final Set<EGameStateNeutral>	ALLOWED_PREVIOUS_STATES;
+	private static final double				MIN_ATTACKER_DEFENSE_DISTANCE	= 200;
+	private static final Set<EGameState>	ALLOWED_PREVIOUS_STATES;
 	
-	private boolean										active								= false;
+	private boolean								active								= false;
 	
 	static
 	{
-		Set<EGameStateNeutral> states = EnumSet.of(
-				EGameStateNeutral.INDIRECT_KICK_BLUE, EGameStateNeutral.INDIRECT_KICK_YELLOW,
-				EGameStateNeutral.DIRECT_KICK_BLUE, EGameStateNeutral.DIRECT_KICK_YELLOW,
-				EGameStateNeutral.KICKOFF_BLUE, EGameStateNeutral.KICKOFF_YELLOW);
+		Set<EGameState> states = EnumSet.of(
+				EGameState.INDIRECT_FREE, EGameState.DIRECT_FREE, EGameState.KICKOFF);
 		ALLOWED_PREVIOUS_STATES = Collections.unmodifiableSet(states);
 	}
 	
@@ -63,7 +58,7 @@ public class AttackerToDefenseAreaDistanceDetector extends APreparingGameEventDe
 	 */
 	public AttackerToDefenseAreaDistanceDetector()
 	{
-		super(EGameStateNeutral.RUNNING);
+		super(EGameState.RUNNING);
 	}
 	
 	
@@ -77,15 +72,9 @@ public class AttackerToDefenseAreaDistanceDetector extends APreparingGameEventDe
 	@Override
 	protected void prepare(final IAutoRefFrame frame)
 	{
-		List<EGameStateNeutral> stateHistory = frame.getStateHistory();
+		List<GameState> stateHistory = frame.getStateHistory();
 		
-		if ((stateHistory.size() > 1) && ALLOWED_PREVIOUS_STATES.contains(stateHistory.get(1)))
-		{
-			active = true;
-		} else
-		{
-			active = false;
-		}
+		active = (stateHistory.size() > 1) && ALLOWED_PREVIOUS_STATES.contains(stateHistory.get(1).getState());
 	}
 	
 	
@@ -96,8 +85,8 @@ public class AttackerToDefenseAreaDistanceDetector extends APreparingGameEventDe
 		{
 			active = false;
 			
-			EGameStateNeutral lastGameState = frame.getStateHistory().get(1);
-			ETeamColor attackerColor = lastGameState.getTeamColor();
+			GameState lastGameState = frame.getStateHistory().get(1);
+			ETeamColor attackerColor = lastGameState.getForTeam();
 			
 			return new Evaluator(frame, attackerColor).evaluate();
 		}
@@ -109,6 +98,7 @@ public class AttackerToDefenseAreaDistanceDetector extends APreparingGameEventDe
 	@Override
 	public void doReset()
 	{
+		// Nothing to reset
 	}
 	
 	/**
@@ -125,9 +115,9 @@ public class AttackerToDefenseAreaDistanceDetector extends APreparingGameEventDe
 		
 		private final IAutoRefFrame				frame;
 		private final ETeamColor					attackerColor;
-		private final PenaltyArea					defenderPenArea;
+		private final IPenaltyArea defenderPenArea;
 		
-		private final TrackedBall					ball;
+		private final ITrackedBall					ball;
 		private final Collection<ITrackedBot>	bots;
 		
 		
@@ -148,7 +138,7 @@ public class AttackerToDefenseAreaDistanceDetector extends APreparingGameEventDe
 					.filter(bot -> defenderPenArea.isPointInShape(bot.getPos(), requiredMargin))
 					.findFirst();
 			
-			return optOffender.map(offender -> buildViolation(offender));
+			return optOffender.map(this::buildViolation);
 		}
 		
 		

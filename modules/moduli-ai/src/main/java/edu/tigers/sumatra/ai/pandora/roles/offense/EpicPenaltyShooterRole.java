@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 21.05.2014
- * Author(s): David Scholz <David.Scholz@dlr.de>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.pandora.roles.offense;
 
 import java.util.Random;
@@ -15,20 +11,18 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.Referee.SSL_Referee.Command;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.ASkill;
-import edu.tigers.sumatra.skillsystem.skills.KickSkill;
-import edu.tigers.sumatra.skillsystem.skills.KickSkill.EMoveMode;
+import edu.tigers.sumatra.skillsystem.skills.KickChillSkill;
+import edu.tigers.sumatra.skillsystem.skills.KickNormalSkill;
 import edu.tigers.sumatra.skillsystem.skills.PenaltyShootSkill;
-import edu.tigers.sumatra.skillsystem.skills.PenaltyShootSkill.ERotateDirection;
-import edu.tigers.sumatra.skillsystem.skills.PenaltyShootSkillNew;
-import edu.tigers.sumatra.skillsystem.skills.PenaltyShootSkillNew.ERotateTrajDirection;
-import edu.tigers.sumatra.statemachine.IRoleState;
+import edu.tigers.sumatra.statemachine.IEvent;
+import edu.tigers.sumatra.statemachine.IState;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
-import edu.tigers.sumatra.wp.data.Geometry;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
@@ -39,65 +33,50 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class EpicPenaltyShooterRole extends ARole
 {
-	@Configurable(comment = "distance to penArea mark on preparation")
-	private static double	preDistance				= 400;
+	@Configurable(comment = "distance to penArea mark on preparation", defValue = "200.0")
+	private static double preDistance = 400;
+	@Configurable(comment = "use shooter with trajectory", defValue = "true")
+	private static boolean useTrajectorySkill = true;
+	@Configurable(comment = "disables the shooter skill completely and uses KickSkill", defValue = "false")
+	private static boolean ignoreKeeperMovement = false;
+	@Configurable(comment = "the time until the shoot is done in ms", defValue = "50")
+	private static int timeToShoot = 50;
+	@Configurable(defValue = "true")
+	private static boolean epic = true;
 	
-	
-	@Configurable(comment = "use shooter with trajectory")
-	private static boolean	useTrajectorySkill	= true;
-	@Configurable(comment = "disables the shooter skill completely and uses KickSkill")
-	private static boolean	ignoreKeeperMovement	= false;
-	@Configurable(comment = "the time until the shoot is done in ms")
-	private static int		timeToShoot				= 50;
-	
-	@Configurable
-	private static boolean	epic						= false;
-	
-	private IVector2			keeperInitialPos;
-	private boolean			keeperHasMoved			= false;
-	
-	private final Random		random					= new Random();
+	private final Random random = new Random(0);
+	private IVector2 keeperInitialPos;
+	private boolean keeperHasMoved = false;
 	
 	
 	/**
-	  * 
-	  */
+	 * Default
+	 */
 	public EpicPenaltyShooterRole()
 	{
 		super(ERole.EPIC_PENALTY_SHOOTER);
-		IRoleState state1 = new PrepareState();
-		IRoleState state2 = new TestRightState();
-		IRoleState state3 = new WaitRightState();
-		IRoleState state4 = new TestLeftState();
-		IRoleState state5 = new WaitLeftState();
-		IRoleState state6 = new ShootState();
-		IRoleState state7 = new NoKeeperState();
+		IState state1 = new PrepareState();
+		IState state2 = new TestRightState();
+		IState state3 = new WaitRightState();
+		IState state4 = new TestLeftState();
+		IState state5 = new WaitLeftState();
+		IState state6 = new ShootState();
+		IState state7 = new NoKeeperState();
 		
 		setInitialState(state1);
-		addTransition(EStateId.PREPARE, EEvent.PREPARED, state2);
-		addTransition(EStateId.TESTRIGHT, EEvent.TESTEDRIGHT, state3);
-		addTransition(EStateId.WAITRIGHT, EEvent.WAITEDRIGHT, state4);
-		addTransition(EStateId.TESTLEFT, EEvent.TESTEDLEFT, state5);
-		addTransition(EStateId.WAITLEFT, EEvent.WAITEDLEFT, state6);
-		addTransition(EStateId.PREPARE, EEvent.SHOTCENTER, state7);
+		addTransition(state1, EEvent.PREPARED, state2);
+		addTransition(state2, EEvent.TESTEDRIGHT, state3);
+		addTransition(state3, EEvent.WAITEDRIGHT, state4);
+		addTransition(state4, EEvent.TESTEDLEFT, state5);
+		addTransition(state5, EEvent.WAITEDLEFT, state6);
+		addTransition(state6, EEvent.SHOTCENTER, state7);
 	}
 	
 	// --------------------------------------------------------------------------
 	// --- states ---------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private enum EStateId
-	{
-		PREPARE,
-		TESTRIGHT,
-		WAITRIGHT,
-		TESTLEFT,
-		WAITLEFT,
-		SHOOT,
-		SHOOTCENTER
-	}
-	
-	private enum EEvent
+	private enum EEvent implements IEvent
 	{
 		PREPARED,
 		TESTEDRIGHT,
@@ -108,20 +87,20 @@ public class EpicPenaltyShooterRole extends ARole
 		SHOTCENTER
 	}
 	
-	private class PrepareState implements IRoleState
+	private class PrepareState implements IState
 	{
-		private IVector2		firstDestination;
-		private AMoveToSkill	skill;
+		private IVector2 firstDestination;
+		private AMoveToSkill skill;
 		
 		
 		@Override
 		public void doEntryActions()
 		{
 			skill = AMoveToSkill.createMoveToSkill();
-			firstDestination = Geometry.getPenaltyMarkTheir().addNew(new Vector2(-preDistance, 0));
+			firstDestination = Geometry.getPenaltyMarkTheir().addNew(Vector2.fromXY(-preDistance, 0));
 			
 			skill.getMoveCon().setPenaltyAreaAllowedOur(true);
-			skill.getMoveCon().updateLookAtTarget(Geometry.getGoalTheir().getGoalCenter());
+			skill.getMoveCon().updateLookAtTarget(Geometry.getGoalTheir().getCenter());
 			skill.getMoveCon().setBallObstacle(true);
 			skill.getMoveCon().updateDestination(firstDestination);
 			setNewSkill(skill);
@@ -134,19 +113,11 @@ public class EpicPenaltyShooterRole extends ARole
 		
 		
 		@Override
-		public void doExitActions()
-		{
-			
-			
-		}
-		
-		
-		@Override
 		public void doUpdate()
 		{
 			if ((getAiFrame().getRefereeMsg() != null)
 					&& (getAiFrame().getRefereeMsg().getCommand() == Command.NORMAL_START)
-					&& (GeoMath.distancePP(firstDestination, getPos()) < 140))
+					&& (VectorMath.distancePP(firstDestination, getPos()) < 140))
 			{
 				if (keeperInitialPos != null)
 				{
@@ -159,16 +130,9 @@ public class EpicPenaltyShooterRole extends ARole
 		}
 		
 		
-		@Override
-		public Enum<? extends Enum<?>> getIdentifier()
-		{
-			
-			return EStateId.PREPARE;
-		}
-		
 	}
 	
-	private class TestRightState implements IRoleState
+	private class TestRightState implements IState
 	{
 		IVector2 destination;
 		
@@ -177,8 +141,8 @@ public class EpicPenaltyShooterRole extends ARole
 		public void doEntryActions()
 		{
 			AMoveToSkill turn = AMoveToSkill.createMoveToSkill();
-			IVector2 ballPos = new Vector2(getAiFrame().getWorldFrame().getBall().getPos());
-			IVector2 leftGoalPost = new Vector2((Geometry.getGoalTheir().getGoalPostLeft()));
+			IVector2 ballPos = Vector2.copy(getAiFrame().getWorldFrame().getBall().getPos());
+			IVector2 leftGoalPost = Vector2.copy(Geometry.getGoalTheir().getLeftPost());
 			destination = ballPos.addNew(ballPos.subtractNew(leftGoalPost).normalizeNew().multiplyNew(preDistance));
 			turn.getMoveCon().updateLookAtTarget(ballPos);
 			turn.getMoveCon().setPenaltyAreaAllowedTheir(true);
@@ -189,21 +153,14 @@ public class EpicPenaltyShooterRole extends ARole
 		
 		
 		@Override
-		public void doExitActions()
-		{
-			
-		}
-		
-		
-		@Override
 		public void doUpdate()
 		{
 			// test whether the rotation is completed
 			
-			if (getPos().equals(destination, 50))
+			if (getPos().isCloseTo(destination, 50))
 			{
 				IVector2 keeperPos = getAiFrame().getWorldFrame().getFoeBot(getAiFrame().getKeeperFoeId()).getPos();
-				if (!keeperPos.equals(keeperInitialPos, 20))
+				if (!keeperPos.isCloseTo(keeperInitialPos, 20))
 				{
 					keeperHasMoved = true;
 				}
@@ -212,15 +169,9 @@ public class EpicPenaltyShooterRole extends ARole
 		}
 		
 		
-		@Override
-		public Enum<? extends Enum<?>> getIdentifier()
-		{
-			return EStateId.TESTRIGHT;
-		}
-		
 	}
 	
-	private class WaitRightState implements IRoleState
+	private class WaitRightState implements IState
 	{
 		
 		private long time;
@@ -230,12 +181,6 @@ public class EpicPenaltyShooterRole extends ARole
 		public void doEntryActions()
 		{
 			time = getWFrame().getTimestamp() + ((500 + random.nextInt(1000)) * 1_000_000L);
-		}
-		
-		
-		@Override
-		public void doExitActions()
-		{
 		}
 		
 		
@@ -249,15 +194,9 @@ public class EpicPenaltyShooterRole extends ARole
 		}
 		
 		
-		@Override
-		public Enum<? extends Enum<?>> getIdentifier()
-		{
-			return EStateId.WAITRIGHT;
-		}
-		
 	}
 	
-	private class TestLeftState implements IRoleState
+	private class TestLeftState implements IState
 	{
 		IVector2 destination;
 		
@@ -266,8 +205,8 @@ public class EpicPenaltyShooterRole extends ARole
 		public void doEntryActions()
 		{
 			AMoveToSkill turn = AMoveToSkill.createMoveToSkill();
-			IVector2 ballPos = new Vector2(getAiFrame().getWorldFrame().getBall().getPos());
-			IVector2 rightGoalPost = new Vector2((Geometry.getGoalTheir().getGoalPostRight()));
+			IVector2 ballPos = Vector2.copy(getAiFrame().getWorldFrame().getBall().getPos());
+			IVector2 rightGoalPost = Vector2.copy(Geometry.getGoalTheir().getRightPost());
 			destination = ballPos.addNew(ballPos.subtractNew(rightGoalPost).normalizeNew().multiplyNew(preDistance));
 			turn.getMoveCon().updateLookAtTarget(ballPos);
 			turn.getMoveCon().setPenaltyAreaAllowedTheir(true);
@@ -278,21 +217,14 @@ public class EpicPenaltyShooterRole extends ARole
 		
 		
 		@Override
-		public void doExitActions()
-		{
-			
-		}
-		
-		
-		@Override
 		public void doUpdate()
 		{
 			// test whether the rotation is completed
 			
-			if (getPos().equals(destination, 50))
+			if (getPos().isCloseTo(destination, 50))
 			{
 				IVector2 keeperPos = getAiFrame().getWorldFrame().getFoeBot(getAiFrame().getKeeperFoeId()).getPos();
-				if (!keeperPos.equals(keeperInitialPos, 50))
+				if (!keeperPos.isCloseTo(keeperInitialPos, 50))
 				{
 					keeperHasMoved = true;
 				}
@@ -301,15 +233,9 @@ public class EpicPenaltyShooterRole extends ARole
 		}
 		
 		
-		@Override
-		public Enum<? extends Enum<?>> getIdentifier()
-		{
-			return EStateId.TESTLEFT;
-		}
-		
 	}
 	
-	private class WaitLeftState implements IRoleState
+	private class WaitLeftState implements IState
 	{
 		
 		private long time;
@@ -323,12 +249,6 @@ public class EpicPenaltyShooterRole extends ARole
 		
 		
 		@Override
-		public void doExitActions()
-		{
-		}
-		
-		
-		@Override
 		public void doUpdate()
 		{
 			if (getWFrame().getTimestamp() > time)
@@ -336,20 +256,11 @@ public class EpicPenaltyShooterRole extends ARole
 				triggerEvent(EEvent.WAITEDLEFT);
 			}
 		}
-		
-		
-		@Override
-		public Enum<? extends Enum<?>> getIdentifier()
-		{
-			return EStateId.WAITLEFT;
-		}
-		
 	}
 	
-	private class ShootState implements IRoleState
+	private class ShootState implements IState
 	{
-		private PenaltyShootSkillNew	trajectoryShooter;
-		private PenaltyShootSkill		backupShooter;
+		private PenaltyShootSkill backupShooter;
 		
 		
 		@Override
@@ -357,28 +268,18 @@ public class EpicPenaltyShooterRole extends ARole
 		{
 			if ((keeperHasMoved || ignoreKeeperMovement) && epic)
 			{
-				if (useTrajectorySkill)
-				{
-					trajectoryShooter = new PenaltyShootSkillNew(ERotateTrajDirection.LEFT);
-					trajectoryShooter.getMoveCon().setPenaltyAreaAllowedOur(true);
-					trajectoryShooter.getMoveCon().setBallObstacle(false);
-					setNewSkill(trajectoryShooter);
-				} else
-				{
-					backupShooter = new PenaltyShootSkill(ERotateDirection.LEFT);
-					backupShooter.getMoveCon().setPenaltyAreaAllowedOur(true);
-					backupShooter.getMoveCon().setBallObstacle(false);
-					setNewSkill(backupShooter);
-				}
-				
+				backupShooter = new PenaltyShootSkill(PenaltyShootSkill.ERotateDirection.CW);
+				backupShooter.getMoveCon().setPenaltyAreaAllowedOur(true);
+				backupShooter.getMoveCon().setBallObstacle(false);
+				setNewSkill(backupShooter);
 			} else
 			{
-				IVector2 directShotTarget = getAiFrame().getTacticalField().getBestDirectShootTarget();
+				IVector2 directShotTarget = getAiFrame().getTacticalField().getBestDirectShotTarget();
 				if (directShotTarget == null)
 				{
-					directShotTarget = Geometry.getGoalTheir().getGoalCenter();
+					directShotTarget = Geometry.getGoalTheir().getCenter();
 				}
-				ASkill skill = new KickSkill(new DynamicPosition(directShotTarget));
+				ASkill skill = new KickNormalSkill(new DynamicPosition(directShotTarget));
 				skill.getMoveCon().setPenaltyAreaAllowedTheir(true);
 				skill.getMoveCon().setPenaltyAreaAllowedOur(true);
 				setNewSkill(skill);
@@ -388,17 +289,9 @@ public class EpicPenaltyShooterRole extends ARole
 		
 		
 		@Override
-		public void doExitActions()
-		{
-			
-			
-		}
-		
-		
-		@Override
 		public void doUpdate()
 		{
-			if (keeperHasMoved || ignoreKeeperMovement)
+			if (backupShooter != null && (keeperHasMoved || ignoreKeeperMovement))
 			{
 				ITrackedBot keeperFoe = getAiFrame().getWorldFrame().getBot(getAiFrame().getKeeperFoeId());
 				if (keeperFoe != null)
@@ -407,39 +300,10 @@ public class EpicPenaltyShooterRole extends ARole
 					
 					if (keeperPosYCoordinate < 0)
 					{
-						if (useTrajectorySkill)
-						{
-							trajectoryShooter.setShootDirection(ERotateTrajDirection.RIGHT);
-						} else
-						{
-							backupShooter.setShootDirection(ERotateDirection.RIGHT);
-						}
+						backupShooter.setShootDirection(PenaltyShootSkill.ERotateDirection.CW);
 					} else if (keeperPosYCoordinate > 0)
 					{
-						if (useTrajectorySkill)
-						{
-							trajectoryShooter.setShootDirection(ERotateTrajDirection.LEFT);
-						} else
-						{
-							backupShooter.setShootDirection(ERotateDirection.LEFT);
-						}
-					} else
-					{
-						if (useTrajectorySkill)
-						{
-							trajectoryShooter.setShootDirection(ERotateTrajDirection.RIGHT);
-						} else
-						{
-							backupShooter.setShootDirection(ERotateDirection.RIGHT);
-						}
-						
-					}
-					if (useTrajectorySkill)
-					{
-						trajectoryShooter.normalStartCalled();
-					} else
-					{
-						backupShooter.normalStartCalled();
+						backupShooter.setShootDirection(PenaltyShootSkill.ERotateDirection.CCW);
 					}
 					
 				} else
@@ -450,49 +314,17 @@ public class EpicPenaltyShooterRole extends ARole
 		}
 		
 		
-		@Override
-		public Enum<? extends Enum<?>> getIdentifier()
-		{
-			
-			return EStateId.SHOOT;
-		}
-		
 	}
 	
-	private class NoKeeperState implements IRoleState
+	private class NoKeeperState implements IState
 	{
 		@Override
 		public void doEntryActions()
 		{
-			KickSkill kick = new KickSkill(
-					new DynamicPosition(Geometry.getGoalTheir().getGoalCenter()));
-			kick.setMoveMode(EMoveMode.CHILL);
+			KickChillSkill kick = new KickChillSkill(
+					new DynamicPosition(Geometry.getGoalTheir().getCenter()));
 			kick.getMoveCon().setPenaltyAreaAllowedOur(true);
 			setNewSkill(kick);
 		}
-		
-		
-		@Override
-		public void doExitActions()
-		{
-			
-		}
-		
-		
-		@Override
-		public void doUpdate()
-		{
-			
-			
-		}
-		
-		
-		@Override
-		public Enum<? extends Enum<?>> getIdentifier()
-		{
-			
-			return EStateId.SHOOTCENTER;
-		}
-		
 	}
 }

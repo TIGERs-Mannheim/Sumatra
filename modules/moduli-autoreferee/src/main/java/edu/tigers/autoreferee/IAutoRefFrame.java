@@ -1,22 +1,18 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 12, 2015
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee;
 
 import java.util.List;
 import java.util.Optional;
 
-import edu.tigers.autoreferee.engine.calc.BotPosition;
 import edu.tigers.autoreferee.engine.calc.PossibleGoalCalc.PossibleGoal;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.referee.RefereeMsg;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
-import edu.tigers.sumatra.wp.data.ShapeMap;
+import edu.tigers.autoreferee.generic.BotPosition;
+import edu.tigers.autoreferee.generic.TimedPosition;
+import edu.tigers.sumatra.drawable.ShapeMap;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.referee.data.GameState;
+import edu.tigers.sumatra.referee.data.RefereeMsg;
 import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
 
 
@@ -29,43 +25,61 @@ public interface IAutoRefFrame
 	/**
 	 * @return
 	 */
-	public IAutoRefFrame getPreviousFrame();
+	IAutoRefFrame getPreviousFrame();
 	
 	
 	/**
 	 * @return
 	 */
-	public SimpleWorldFrame getWorldFrame();
+	SimpleWorldFrame getWorldFrame();
 	
 	
 	/**
 	 * @return
 	 */
-	public EGameStateNeutral getGameState();
+	GameState getGameState();
 	
 	
 	/**
 	 * @return
 	 */
-	public BotPosition getBotLastTouchedBall();
+	BotPosition getLastBotCloseToBall();
 	
 	
 	/**
 	 * @return
 	 */
-	public Optional<BotPosition> getBotTouchedBall();
+	BotPosition getBotLastTouchedBall();
 	
 	
 	/**
 	 * @return
 	 */
-	public IVector2 getBallLeftFieldPos();
+	Optional<BotPosition> getBotTouchedBall();
 	
 	
 	/**
 	 * @return
 	 */
-	public RefereeMsg getRefereeMsg();
+	TimedPosition getBallLeftFieldPos();
+	
+	
+	/**
+	 * @return
+	 */
+	boolean isBallInsideField();
+	
+	
+	/**
+	 * @return
+	 */
+	IVector2 getLastStopBallPosition();
+	
+	
+	/**
+	 * @return
+	 */
+	RefereeMsg getRefereeMsg();
 	
 	
 	/**
@@ -73,30 +87,29 @@ public interface IAutoRefFrame
 	 * 
 	 * @return the list, not empty, unmodifiable, the current state has the index 0
 	 */
-	public List<EGameStateNeutral> getStateHistory();
+	List<GameState> getStateHistory();
 	
 	
 	/**
 	 * @return timestamp in ns
 	 */
-	public long getTimestamp();
+	long getTimestamp();
 	
 	
 	/**
-	 * 
+	 * Clean up reference to previous frame
 	 */
-	public void cleanUp();
-	
-	
-	/**
-	 * @return
-	 */
-	public ShapeMap getShapes();
+	void cleanUp();
 	
 	
 	/**
 	 * @return
 	 */
-	public Optional<PossibleGoal> getPossibleGoal();
+	ShapeMap getShapes();
 	
+	
+	/**
+	 * @return
+	 */
+	Optional<PossibleGoal> getPossibleGoal();
 }

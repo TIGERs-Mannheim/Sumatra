@@ -1,0 +1,12 @@
+/libraries/
+/shelf/
+/sonarlint/
+/encodings.xml
+/modules.xml
+/vcs.xml
+/compiler.xml
+/workspace.xml
+/uiDesigner.xml
+/misc.xml
+/sonarlint.xml
+/kotlinc.xml

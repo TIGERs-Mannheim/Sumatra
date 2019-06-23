@@ -10,7 +10,7 @@ package edu.tigers.sumatra.drawable;
 
 import java.awt.Graphics2D;
 
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**

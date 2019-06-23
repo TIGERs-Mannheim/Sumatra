@@ -1,12 +1,10 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 21.07.2010
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.wp.data;
+
+import java.util.Optional;
 
 import com.sleepycat.persist.model.Persistent;
 
@@ -14,6 +12,8 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.BotIDMap;
 import edu.tigers.sumatra.ids.BotIDMapConst;
 import edu.tigers.sumatra.ids.IBotIDMap;
+import edu.tigers.sumatra.math.IMirrorable;
+import edu.tigers.sumatra.vision.data.IKickEvent;
 
 
 /**
@@ -22,13 +22,13 @@ import edu.tigers.sumatra.ids.IBotIDMap;
  * @author Gero
  */
 @Persistent(version = 3)
-public class SimpleWorldFrame
+public class SimpleWorldFrame implements IMirrorable<SimpleWorldFrame>
 {
-	private final long									frameNumber;
-	private final IBotIDMap<ITrackedBot>			bots;
-	private final TrackedBall							ball;
-	private final long									timestamp;
-	private transient ExtendedCamDetectionFrame	frame	= null;
+	private final long							frameNumber;
+	private final long							timestamp;
+	private final IBotIDMap<ITrackedBot>	bots;
+	private final ITrackedBall					ball;
+	private final IKickEvent					kickEvent;
 	
 	
 	@SuppressWarnings("unused")
@@ -37,6 +37,7 @@ public class SimpleWorldFrame
 		frameNumber = 0;
 		bots = null;
 		ball = null;
+		kickEvent = null;
 		timestamp = 0;
 	}
 	
@@ -44,16 +45,19 @@ public class SimpleWorldFrame
 	/**
 	 * @param bots
 	 * @param ball
+	 * @param kickEvent
 	 * @param frameNumber
 	 * @param timestamp
 	 */
-	public SimpleWorldFrame(final IBotIDMap<ITrackedBot> bots, final TrackedBall ball, final long frameNumber,
+	public SimpleWorldFrame(final IBotIDMap<ITrackedBot> bots, final ITrackedBall ball, final IKickEvent kickEvent,
+			final long frameNumber,
 			final long timestamp)
 	{
 		this.ball = ball;
 		this.timestamp = timestamp;
 		this.frameNumber = frameNumber;
 		this.bots = BotIDMapConst.unmodifiableBotIDMap(bots);
+		this.kickEvent = kickEvent;
 	}
 	
 	
@@ -68,7 +72,7 @@ public class SimpleWorldFrame
 		timestamp = swf.timestamp;
 		frameNumber = swf.frameNumber;
 		bots = swf.bots;
-		frame = swf.frame;
+		kickEvent = swf.kickEvent;
 	}
 	
 	
@@ -77,18 +81,17 @@ public class SimpleWorldFrame
 	 * 
 	 * @return
 	 */
-	public SimpleWorldFrame mirrorNew()
+	@Override
+	public SimpleWorldFrame mirrored()
 	{
-		IBotIDMap<ITrackedBot> bots = new BotIDMap<>();
-		for (ITrackedBot bot : this.bots.values())
+		IBotIDMap<ITrackedBot> newBots = new BotIDMap<>();
+		for (ITrackedBot bot : bots.values())
 		{
-			ITrackedBot mBot = bot.mirrorNew();
-			bots.put(bot.getBotId(), mBot);
+			ITrackedBot mBot = bot.mirrored();
+			newBots.put(bot.getBotId(), mBot);
 		}
-		TrackedBall mBall = new TrackedBall(getBall()).mirrorNew();
-		SimpleWorldFrame frame = new SimpleWorldFrame(bots, mBall, frameNumber, timestamp);
-		frame.setCamFrame(getCamFrame());
-		return frame;
+		ITrackedBall mBall = getBall().mirrored();
+		return new SimpleWorldFrame(newBots, mBall, kickEvent, frameNumber, timestamp);
 	}
 	
 	
@@ -102,17 +105,15 @@ public class SimpleWorldFrame
 	public static SimpleWorldFrame createEmptyWorldFrame(final long frameNumber, final long timestamp)
 	{
 		final IBotIDMap<ITrackedBot> bots = new BotIDMap<>();
-		final TrackedBall ball = TrackedBall.defaultInstance();
-		
-		SimpleWorldFrame swf = new SimpleWorldFrame(bots, ball, frameNumber, timestamp);
-		return swf;
+		final IKickEvent kickEvent = null;
+		return new SimpleWorldFrame(bots, TrackedBall.createStub(), kickEvent, frameNumber, timestamp);
 	}
 	
 	
 	/**
 	 * @return all bots
 	 */
-	public final IBotIDMap<ITrackedBot> getBots()
+	public IBotIDMap<ITrackedBot> getBots()
 	{
 		return bots;
 	}
@@ -122,7 +123,7 @@ public class SimpleWorldFrame
 	 * @param botId
 	 * @return the bot or null
 	 */
-	public final ITrackedBot getBot(final BotID botId)
+	public ITrackedBot getBot(final BotID botId)
 	{
 		return bots.getWithNull(botId);
 	}
@@ -131,7 +132,7 @@ public class SimpleWorldFrame
 	/**
 	 * @return the ball
 	 */
-	public final TrackedBall getBall()
+	public final ITrackedBall getBall()
 	{
 		return ball;
 	}
@@ -156,19 +157,10 @@ public class SimpleWorldFrame
 	
 	
 	/**
-	 * @param frame
+	 * @return the last kick event
 	 */
-	public void setCamFrame(final ExtendedCamDetectionFrame frame)
+	public Optional<IKickEvent> getKickEvent()
 	{
-		this.frame = frame;
-	}
-	
-	
-	/**
-	 * @return the frame
-	 */
-	public ExtendedCamDetectionFrame getCamFrame()
-	{
-		return frame;
+		return Optional.ofNullable(kickEvent);
 	}
 }

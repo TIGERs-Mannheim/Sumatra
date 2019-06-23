@@ -8,7 +8,7 @@
  */
 package edu.tigers.autoreferee.remote.impl;
 
-import static edu.tigers.autoreferee.CheckedRunnable.execAndCatchAll;
+import static edu.tigers.autoreferee.generic.CheckedRunnable.execAndCatchAll;
 
 import java.io.IOException;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -17,7 +17,7 @@ import org.apache.log4j.Logger;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
-import edu.tigers.autoreferee.engine.RefCommand;
+import edu.tigers.autoreferee.engine.RefboxRemoteCommand;
 import edu.tigers.autoreferee.remote.ICommandResult;
 import edu.tigers.autoreferee.remote.IRefboxRemote;
 import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlReply;
@@ -87,6 +87,7 @@ public class ThreadedTCPRefboxRemote implements IRefboxRemote, Runnable
 		} catch (InterruptedException e)
 		{
 			log.warn("Error while joining the sending thread", e);
+			Thread.currentThread().interrupt();
 		}
 	}
 	
@@ -103,7 +104,7 @@ public class ThreadedTCPRefboxRemote implements IRefboxRemote, Runnable
 	
 	
 	@Override
-	public ICommandResult sendCommand(final RefCommand command)
+	public ICommandResult sendCommand(final RefboxRemoteCommand command)
 	{
 		QueueEntry entry = new QueueEntry(command);
 		try
@@ -112,6 +113,7 @@ public class ThreadedTCPRefboxRemote implements IRefboxRemote, Runnable
 		} catch (InterruptedException e)
 		{
 			log.error("", e);
+			Thread.currentThread().interrupt();
 		}
 		return entry.getResult();
 	}
@@ -147,6 +149,7 @@ public class ThreadedTCPRefboxRemote implements IRefboxRemote, Runnable
 		} catch (InterruptedException e)
 		{
 			log.debug("Interrupted", e);
+			Thread.currentThread().interrupt();
 		}
 		
 		socket.close();
@@ -163,7 +166,7 @@ public class ThreadedTCPRefboxRemote implements IRefboxRemote, Runnable
 	 * @throws InvalidProtocolBufferException
 	 * @throws IOException
 	 */
-	private void readWriteLoop() throws InterruptedException, InvalidProtocolBufferException, IOException
+	private void readWriteLoop() throws InterruptedException, IOException
 	{
 		RemoteControlProtobufBuilder pbBuilder = new RemoteControlProtobufBuilder();
 		
@@ -205,17 +208,17 @@ public class ThreadedTCPRefboxRemote implements IRefboxRemote, Runnable
 	
 	private static class QueueEntry
 	{
-		private final RefCommand			cmd;
+		private final RefboxRemoteCommand cmd;
 		private final CommandResultImpl	result;
 		
 		
-		public QueueEntry(final RefCommand cmd)
+		public QueueEntry(final RefboxRemoteCommand cmd)
 		{
 			this(cmd, new CommandResultImpl());
 		}
 		
 		
-		public QueueEntry(final RefCommand cmd, final CommandResultImpl result)
+		public QueueEntry(final RefboxRemoteCommand cmd, final CommandResultImpl result)
 		{
 			this.cmd = cmd;
 			this.result = result;
@@ -225,7 +228,7 @@ public class ThreadedTCPRefboxRemote implements IRefboxRemote, Runnable
 		/**
 		 * @return the cmd
 		 */
-		public RefCommand getCmd()
+		public RefboxRemoteCommand getCmd()
 		{
 			return cmd;
 		}

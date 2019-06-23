@@ -1,14 +1,11 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 5, 2016
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.wp.ball.collision;
 
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVector3;
 
 
 /**
@@ -16,22 +13,22 @@ import edu.tigers.sumatra.math.IVector2;
  */
 public class Collision implements ICollision
 {
-	private final IVector2	pos;
-	private final IVector2	normal;
-	private final IVector2	objectVel;
+	private final IVector2				pos;
+	private final IVector2				normal;
+	private final ICollisionObject	object;
 	
 	
 	/**
 	 * @param pos
 	 * @param normal
-	 * @param objectVel
+	 * @param object
 	 */
-	public Collision(final IVector2 pos, final IVector2 normal, final IVector2 objectVel)
+	public Collision(final IVector2 pos, final IVector2 normal, final ICollisionObject object)
 	{
 		super();
 		this.pos = pos;
 		this.normal = normal;
-		this.objectVel = objectVel;
+		this.object = object;
 	}
 	
 	
@@ -56,8 +53,22 @@ public class Collision implements ICollision
 	
 	
 	@Override
-	public IVector2 getObjectVel()
+	public IVector3 getObjectVel()
 	{
-		return objectVel;
+		return object.getVel();
+	}
+	
+	
+	@Override
+	public boolean isSticky()
+	{
+		return object.isSticky();
+	}
+	
+	
+	@Override
+	public ICollisionObject getObject()
+	{
+		return object;
 	}
 }

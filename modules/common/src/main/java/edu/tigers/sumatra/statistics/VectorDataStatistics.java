@@ -10,7 +10,7 @@ package edu.tigers.sumatra.statistics;
 
 import java.util.List;
 
-import edu.tigers.sumatra.math.IVector;
+import edu.tigers.sumatra.math.vector.IVector;
 
 
 /**

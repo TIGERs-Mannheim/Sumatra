@@ -9,7 +9,7 @@
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.bots;
 
 import edu.tigers.sumatra.botmanager.commands.botskills.ABotSkill;
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.ASkill;
 
 

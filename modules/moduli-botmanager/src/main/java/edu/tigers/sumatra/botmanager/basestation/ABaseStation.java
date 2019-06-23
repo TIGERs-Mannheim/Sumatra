@@ -29,7 +29,7 @@ import edu.tigers.sumatra.ids.BotID;
  */
 public abstract class ABaseStation implements IBaseStation, IConfigObserver
 {
-	protected final List<IBaseStationObserver>	observers	= new CopyOnWriteArrayList<IBaseStationObserver>();
+	protected final List<IBaseStationObserver>	observers	= new CopyOnWriteArrayList<>();
 	private final EBotType								botType;
 	
 	
@@ -153,6 +153,13 @@ public abstract class ABaseStation implements IBaseStation, IConfigObserver
 	@Override
 	public void stopPing()
 	{
+	}
+	
+	
+	@Override
+	public void enqueueCommand(final ACommand cmd)
+	{
+		// empty
 	}
 	
 	

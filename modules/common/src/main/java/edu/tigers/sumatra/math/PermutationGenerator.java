@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 12.08.2010
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.math;
 
@@ -38,7 +33,6 @@ public class PermutationGenerator
 	
 	/**
 	 * @param n
-	 * @see PermutationGenerator
 	 */
 	public PermutationGenerator(final int n)
 	{
@@ -88,7 +82,7 @@ public class PermutationGenerator
 	 */
 	public boolean hasMore()
 	{
-		return numLeft.compareTo(BigInteger.ZERO) == 1;
+		return numLeft.compareTo(BigInteger.ZERO) > 0;
 	}
 	
 	

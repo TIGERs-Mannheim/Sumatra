@@ -1,18 +1,12 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 10.08.2010
- * Author(s): BernhardP
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.visualizer.view;
 
-import java.awt.BorderLayout;
+import java.awt.*;
 import java.util.List;
 
-import javax.swing.JMenu;
-import javax.swing.JPanel;
+import javax.swing.*;
 
 import edu.tigers.sumatra.views.ISumatraView;
 import edu.tigers.sumatra.visualizer.view.field.FieldPanel;
@@ -36,19 +30,20 @@ public class VisualizerPanel extends JPanel implements ISumatraView
 	private final FieldPanel				fieldPanel;
 	private final RobotsPanel				robotsPanel;
 	private final VisualizerOptionsMenu	menuBar;
+	private final JPanel						panel;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
+	 * Default
 	 */
 	public VisualizerPanel()
 	{
 		setLayout(new BorderLayout());
 		menuBar = new VisualizerOptionsMenu();
-		JPanel panel = new JPanel();
+		panel = new JPanel();
 		add(menuBar, BorderLayout.PAGE_START);
 		add(panel, BorderLayout.CENTER);
 		
@@ -63,6 +58,15 @@ public class VisualizerPanel extends JPanel implements ISumatraView
 		panel.add(fieldPanel, "grow, top");
 	}
 	
+	
+	/**
+	 * Remove the robots panel
+	 */
+	public void removeRobotsPanel()
+	{
+		remove(panel);
+		add(fieldPanel);
+	}
 	
 	// --------------------------------------------------------------------------
 	// --- ISumatraView ---------------------------------------------------------

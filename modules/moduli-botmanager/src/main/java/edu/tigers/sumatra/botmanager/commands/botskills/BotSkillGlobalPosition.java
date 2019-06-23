@@ -1,19 +1,19 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 24.06.2015
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands.botskills;
 
 import edu.tigers.sumatra.bot.MoveConstraints;
+import edu.tigers.sumatra.bot.params.BotMovementLimits;
 import edu.tigers.sumatra.botmanager.commands.EBotSkill;
+import edu.tigers.sumatra.botmanager.commands.botskills.data.DriveLimits;
+import edu.tigers.sumatra.botmanager.commands.botskills.data.KickerDribblerCommands;
+import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
+import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
 import edu.tigers.sumatra.botmanager.serial.SerialData;
 import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 
 
 /**
@@ -21,22 +21,23 @@ import edu.tigers.sumatra.math.Vector2;
  */
 public class BotSkillGlobalPosition extends AMoveBotSkill
 {
-	private static final int	MAX_VEL		= 5;
-	private static final int	MAX_VEL_W	= 30;
-	private static final int	MAX_ACC		= 10;
-	private static final int	MAX_ACC_W	= 100;
-	
 	@SerialData(type = ESerialDataType.INT16)
-	private final int				pos[]			= new int[3];
+	private final int[]					pos						= new int[3];
 	
 	@SerialData(type = ESerialDataType.UINT8)
-	private int						velMax		= 0;
+	private int								velMax					= 0;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int						velMaxW		= 0;
+	private int								velMaxW					= 0;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int						accMax		= 0;
+	private int								accMax					= 0;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int						accMaxW		= 0;
+	private int								accMaxW					= 0;
+	
+	@SerialData(type = ESerialDataType.EMBEDDED)
+	private KickerDribblerCommands	kickerDribbler			= new KickerDribblerCommands();
+	
+	@SerialData(type = ESerialDataType.UINT8)
+	private int								dataAcqusitionMode	= 0;
 	
 	
 	/**
@@ -103,7 +104,7 @@ public class BotSkillGlobalPosition extends AMoveBotSkill
 	 */
 	public final IVector2 getPos()
 	{
-		return new Vector2(pos[0], pos[1]);
+		return Vector2.fromXY(pos[0], pos[1]);
 	}
 	
 	
@@ -123,7 +124,7 @@ public class BotSkillGlobalPosition extends AMoveBotSkill
 	 */
 	public final void setVelMax(final double val)
 	{
-		velMax = (int) ((val / MAX_VEL) * 255);
+		velMax = DriveLimits.toUInt8(val, DriveLimits.MAX_VEL);
 	}
 	
 	
@@ -134,7 +135,7 @@ public class BotSkillGlobalPosition extends AMoveBotSkill
 	 */
 	public final void setVelMaxW(final double val)
 	{
-		velMaxW = (int) ((val / MAX_VEL_W) * 255);
+		velMaxW = DriveLimits.toUInt8(val, DriveLimits.MAX_VEL_W);
 	}
 	
 	
@@ -145,7 +146,7 @@ public class BotSkillGlobalPosition extends AMoveBotSkill
 	 */
 	public final void setAccMax(final double val)
 	{
-		accMax = (int) ((val / MAX_ACC) * 255);
+		accMax = DriveLimits.toUInt8(val, DriveLimits.MAX_ACC);
 	}
 	
 	
@@ -156,42 +157,105 @@ public class BotSkillGlobalPosition extends AMoveBotSkill
 	 */
 	public final void setAccMaxW(final double val)
 	{
-		accMaxW = (int) ((val / MAX_ACC_W) * 255);
+		accMaxW = DriveLimits.toUInt8(val, DriveLimits.MAX_ACC_W);
 	}
 	
 	
-	/**
-	 * @return
-	 */
 	public double getVelMax()
 	{
-		return (velMax / 255.0) * MAX_VEL;
+		return DriveLimits.toDouble(velMax, DriveLimits.MAX_VEL);
 	}
 	
 	
-	/**
-	 * @return
-	 */
 	public double getVelMaxW()
 	{
-		return (velMaxW / 255.0) * MAX_VEL_W;
+		return DriveLimits.toDouble(velMaxW, DriveLimits.MAX_VEL_W);
 	}
 	
 	
-	/**
-	 * @return
-	 */
 	public double getAccMax()
 	{
-		return (accMax / 255.0) * MAX_ACC;
+		return DriveLimits.toDouble(accMax, DriveLimits.MAX_ACC);
+	}
+	
+	
+	public double getAccMaxW()
+	{
+		return DriveLimits.toDouble(accMaxW, DriveLimits.MAX_ACC_W);
+	}
+	
+	
+	@Override
+	public MoveConstraints getMoveConstraints()
+	{
+		MoveConstraints moveCon = new MoveConstraints(new BotMovementLimits());
+		moveCon.setVelMax(getVelMax());
+		moveCon.setVelMaxW(getVelMaxW());
+		moveCon.setAccMax(getAccMax());
+		moveCon.setAccMaxW(getAccMaxW());
+		
+		return moveCon;
+	}
+	
+	
+	@Override
+	public KickerDribblerCommands getKickerDribbler()
+	{
+		return kickerDribbler;
+	}
+	
+	
+	@Override
+	public void setKickerDribbler(final KickerDribblerCommands kickerDribbler)
+	{
+		this.kickerDribbler = kickerDribbler;
+	}
+	
+	
+	@Override
+	public double getKickSpeed()
+	{
+		return kickerDribbler.getKickSpeed();
+	}
+	
+	
+	@Override
+	public EKickerMode getMode()
+	{
+		return kickerDribbler.getMode();
+	}
+	
+	
+	@Override
+	public EKickerDevice getDevice()
+	{
+		return kickerDribbler.getDevice();
+	}
+	
+	
+	@Override
+	public double getDribbleSpeed()
+	{
+		return kickerDribbler.getDribblerSpeed();
 	}
 	
 	
 	/**
-	 * @return
+	 * @return the dataAcqusitionMode
 	 */
-	public double getAccMaxW()
+	@Override
+	public EDataAcquisitionMode getDataAcquisitionMode()
 	{
-		return (accMaxW / 255.0) * MAX_ACC_W;
+		return EDataAcquisitionMode.getModeConstant(dataAcqusitionMode);
+	}
+	
+	
+	/**
+	 * @param dataAcqusitionMode the dataAcqusitionMode to set
+	 */
+	@Override
+	public void setDataAcquisitionMode(final EDataAcquisitionMode dataAcqusitionMode)
+	{
+		this.dataAcqusitionMode = dataAcqusitionMode.getId();
 	}
 }

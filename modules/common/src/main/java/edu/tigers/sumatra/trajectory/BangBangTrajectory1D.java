@@ -1,21 +1,16 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 02.06.2015
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.trajectory;
 
-import com.sleepycat.persist.model.Persistent;
+import java.util.ArrayList;
+import java.util.List;
 
-import edu.tigers.sumatra.math.SumatraMath;
+import com.sleepycat.persist.model.Persistent;
 
 
 /**
  * Bang Bang Trajectory for one dimension.
- * This trajectory class can handle different acceleration and deceleration values.
  * 
  * @author AndreR
  */
@@ -23,83 +18,90 @@ import edu.tigers.sumatra.math.SumatraMath;
 public class BangBangTrajectory1D implements ITrajectory<Double>
 {
 	/** */
-	public static final int BANG_BANG_TRAJECTORY_1D_PARTS = 4;
+	public static final int						BANG_BANG_TRAJECTORY_1D_PARTS_MAX	= 3;
 	
-	/** */
+	private final List<BBTrajectoryPart>	parts											= new ArrayList<>();
+	
+	/**
+	 * Part of trajectory
+	 */
 	@Persistent
-	public static class BBTrajectoryPart
+	static class BBTrajectoryPart
 	{
 		/** */
-		public double	tEnd;
+		double	tEnd;
 		/** */
-		public double	acc;
+		double	acc;
 		/** */
-		public double	v0;
+		double	v0;
 		/** */
-		public double	s0;
-	}
-	
-	@Persistent
-	protected static class PosVelAcc
-	{
-		public double	pos;
-		public double	vel;
-		public double	acc;
-	}
-	
-	private final BBTrajectoryPart[] parts = new BBTrajectoryPart[BANG_BANG_TRAJECTORY_1D_PARTS];
-	
-	
-	{
-		for (int i = 0; i < parts.length; i++)
+		double	s0;
+		
+		
+		@SuppressWarnings("unused")
+		private BBTrajectoryPart()
 		{
-			parts[i] = new BBTrajectoryPart();
+			// required for Berkeley
+		}
+		
+		
+		/**
+		 * @param tEnd
+		 * @param acc
+		 * @param v0
+		 * @param s0
+		 */
+		private BBTrajectoryPart(final double tEnd, final double acc, final double v0, final double s0)
+		{
+			this.tEnd = tEnd;
+			this.acc = acc;
+			this.v0 = v0;
+			this.s0 = s0;
 		}
 	}
 	
+	@Persistent
+	static class PosVelAcc
+	{
+		double	pos;	// [m]
+		double	vel;	// [m/s]
+		double	acc;	// [m/s^2]
+	}
 	
-	protected double	initialPos;
-	protected double	finalPos;
-	protected double	initialVel;
-	protected double	maxAcc;
-	protected double	maxBrk;
-	protected double	maxVel;
-							
-							
-	@SuppressWarnings("unused")
-	protected BangBangTrajectory1D()
+	double	initialPos;	// [m]
+	double	finalPos;	// [m]
+	double	initialVel;	// [m/s]
+	double	maxAcc;		// [m/s^2]
+	double	maxVel;		// [m/s]
+	
+	
+	BangBangTrajectory1D()
 	{
 		initialPos = 0;
 		finalPos = 0;
 		initialVel = 0;
 		maxAcc = 0;
-		maxBrk = 0;
 		maxVel = 0;
 	}
 	
 	
 	/**
-	 * @param initialPos Initial position
-	 * @param finalPos Final position
-	 * @param initialVel Initial velocity
-	 * @param maxAcc Maximum acceleration
-	 * @param maxBrk Maximum deceleration
-	 * @param maxVel Maximum velocity
+	 * @param initialPos Initial position [m]
+	 * @param finalPos Final position [m]
+	 * @param initialVel Initial velocity [m/s]
+	 * @param maxVel Maximum velocity [m/s]
+	 * @param maxAcc Maximum acceleration [m/s^2]
 	 */
 	public BangBangTrajectory1D(final double initialPos, final double finalPos,
-			final double initialVel, final double maxAcc, final double maxBrk, final double maxVel)
+			final double initialVel, final double maxVel, final double maxAcc)
 	{
 		this.initialPos = initialPos;
 		this.finalPos = finalPos;
 		this.initialVel = initialVel;
 		this.maxAcc = maxAcc;
-		this.maxBrk = maxBrk;
 		this.maxVel = maxVel;
-		double sDiff = finalPos - initialPos;
 		
-		generateTrajectory(sDiff, initialVel, maxAcc, maxBrk, maxVel);
-		
-		calcVelPos(initialPos, initialVel);
+		generateTrajectory(initialPos, initialVel, finalPos, maxVel, maxAcc);
 	}
 	
 	
@@ -107,173 +109,173 @@ public class BangBangTrajectory1D implements ITrajectory<Double>
 	 * @param i
 	 * @return
 	 */
-	public BBTrajectoryPart getPart(final int i)
+	BBTrajectoryPart getPart(final int i)
 	{
-		return parts[i];
+		return parts.get(i);
 	}
 	
 	
-	private double dist(final double v0, final double v1, final double acc)
+	void generateTrajectory(final double x0, final double xd0, final double xTrg, final double xdMax,
+			final double xddMax)
 	{
-		double t = Math.abs(v0 - v1) / acc;
-		return 0.5 * (v0 + v1) * t;
-	}
-	
-	
-	protected void generateTrajectory(final double s, final double v0, final double acc, final double brk,
-			final double vmax)
-	{
-		if (s < 0)
-		{
-			generateTrajectory(-s, -v0, acc, brk, vmax);
-			
-			for (BBTrajectoryPart p : parts)
-			{
-				p.acc = -p.acc;
-			}
-			
-			return;
-		}
+		parts.clear();
 		
-		double T1 = 0;
-		double T2 = 0;
-		double T3 = 0;
-		double T4 = 0;
-		double[] Q;
+		double sAtZeroAcc = velChangeToZero(x0, xd0, xddMax);
 		
-		if (vmax == 0.0)
+		if (sAtZeroAcc <= xTrg)
 		{
-			// type = TRAJ_TYPE_A;
-			Q = new double[] { 0, 0, 0, 0 };
-		} else
-		{
-			if (v0 >= 0)
+			double sEnd = velTriToZero(x0, xd0, xdMax, xddMax);
+			
+			if (sEnd >= xTrg)
 			{
-				double s_n = dist(v0, 0, brk);
-				
-				if (s_n > s)
-				{
-					double s_npn = dist(v0, 0, brk) + dist(0, -vmax, acc) + dist(-vmax, 0, brk);
-					if (s_npn > s)
-					{
-						// Case G
-						T1 = v0 / brk;
-						T2 = vmax / acc;
-						T4 = vmax / brk;
-						T3 = ((v0 * T1) - (vmax * T4) - (vmax * T2) - (2 * s)) / (2.0 * vmax);
-						Q = new double[] { -brk, -acc, 0, brk };
-					} else
-					{
-						// Case F
-						T1 = v0 / brk;
-						T3 = (acc * ((v0 * v0) - (2 * brk * s))) / (brk * brk * (brk + acc));
-						if (T3 <= 0.0)
-						{
-							T3 = 0.0;
-							T2 = 0.0;
-						} else
-						{
-							T3 = SumatraMath.sqrt(T3);
-							double v1 = -brk * T3;
-							T2 = -(((v1 * T3) + (v0 * T1)) - (2 * s)) / v1;
-						}
-						Q = new double[] { -brk, -acc, brk, 0 };
-					}
-				} else
-				{
-					if (v0 > vmax)
-					{
-						// Case C
-						T1 = -(vmax - v0) / brk;
-						T2 = -((v0 * v0) - (2 * brk * s)) / (2.0 * brk * vmax);
-						T3 = vmax / brk;
-						Q = new double[] { -brk, 0, -brk, 0 };
-					} else
-					{
-						double s_pn = dist(v0, vmax, acc) + dist(vmax, 0, brk);
-						if (s_pn > s)
-						{
-							// Case A
-							T2 = SumatraMath.sqrt(((v0 * v0) + (2 * acc * s)) / (brk * (brk + acc)));
-							double v1 = brk * T2;
-							T1 = (v1 - v0) / acc;
-							Q = new double[] { acc, -brk, 0, 0 };
-						} else
-						{
-							// Case B
-							T1 = (vmax - v0) / acc;
-							T3 = vmax / brk;
-							T2 = -(((vmax * T3) + ((vmax + v0) * T1)) - (2 * s)) / (2.0 * vmax);
-							Q = new double[] { acc, 0, -brk, 0 };
-						}
-					}
-				}
+				// Triangular profile
+				calcTri(x0, xd0, xTrg, xddMax, true);
 			} else
 			{
-				double s_npn = dist(v0, 0, brk) + dist(0, vmax, acc) + dist(vmax, 0, brk);
-				if (s_npn > s)
-				{
-					// Case D
-					T1 = -v0 / brk;
-					T3 = (acc * ((v0 * v0) + (2 * brk * s))) / (brk * brk * (brk + acc));
-					
-					if (T3 <= 0.0)
-					{
-						T3 = 0.0;
-						T2 = 0.0;
-					} else
-					{
-						T3 = SumatraMath.sqrt(T3);
-						double v1 = brk * T3;
-						T2 = -(((v1 * T3) + (v0 * T1)) - (2 * s)) / v1;
-					}
-					Q = new double[] { brk, acc, -brk, 0 };
-				} else
-				{
-					// Case E
-					T1 = -v0 / brk;
-					T2 = vmax / acc;
-					T4 = vmax / brk;
-					T3 = -(((vmax * T4) + (vmax * T2) + (v0 * T1)) - (2 * s)) / (2.0 * vmax);
-					Q = new double[] { brk, acc, 0, -brk };
-				}
+				// Trapezoidal profile
+				calcTrapz(x0, xd0, xdMax, xTrg, xddMax);
+			}
+		} else
+		{
+			// even with a full brake we miss xTrg
+			double sEnd = velTriToZero(x0, xd0, -xdMax, xddMax);
+			
+			if (sEnd <= xTrg)
+			{
+				// Triangular profile
+				calcTri(x0, xd0, xTrg, xddMax, false);
+			} else
+			{
+				// Trapezoidal profile
+				calcTrapz(x0, xd0, -xdMax, xTrg, xddMax);
 			}
 		}
-		
-		parts[0].acc = Q[0];
-		parts[0].tEnd = T1;
-		parts[1].acc = Q[1];
-		parts[1].tEnd = T1 + T2;
-		parts[2].acc = Q[2];
-		parts[2].tEnd = T1 + T2 + T3;
-		parts[3].acc = Q[3];
-		parts[3].tEnd = T1 + T2 + T3 + T4;
 	}
 	
 	
-	protected void calcVelPos(final double s0, final double v0)
+	private double velChangeToZero(final double s0, final double v0, final double aMax)
 	{
-		BBTrajectoryPart first = parts[0];
+		double a;
 		
-		first.v0 = v0;
-		first.s0 = s0;
-		
-		for (int i = 1; i < BANG_BANG_TRAJECTORY_1D_PARTS; i++)
+		if (0 >= v0)
 		{
-			BBTrajectoryPart cur = parts[i];
-			BBTrajectoryPart prev = parts[i - 1];
-			
-			double tStart = 0;
-			if (i > 1)
-			{
-				tStart = parts[i - 2].tEnd;
-			}
-			
-			double dT = prev.tEnd - tStart;
-			
-			cur.v0 = prev.v0 + (prev.acc * dT);
-			cur.s0 = prev.s0 + (prev.v0 * dT) + (0.5f * prev.acc * dT * dT);
+			a = aMax;
+		} else
+		{
+			a = -aMax;
 		}
+		
+		double t = -v0 / a;
+		return s0 + (0.5 * v0 * t);
+	}
+	
+	
+	private double velTriToZero(final double s0, final double v0, final double v1, final double aMax)
+	{
+		double a1;
+		double a2;
+		
+		if (v1 >= v0)
+		{
+			a1 = aMax;
+			a2 = -aMax;
+		} else
+		{
+			a1 = -aMax;
+			a2 = aMax;
+		}
+		
+		double t1 = (v1 - v0) / a1;
+		double s1 = s0 + (0.5 * (v0 + v1) * t1);
+		
+		double t2 = -v1 / a2;
+		return s1 + (0.5 * v1 * t2);
+	}
+	
+	
+	private void calcTri(final double s0, final double v0, final double s2, final double a, final boolean isPos)
+	{
+		final double t2;
+		final double v1;
+		final double t1;
+		final double acc;
+		final double s1;
+		
+		if (isPos)
+		{
+			// + -
+			double sq = ((a * (s2 - s0)) + (0.5 * v0 * v0)) / (a * a);
+			if (sq > 0.0)
+			{
+				t2 = Math.sqrt(sq);
+			} else
+			{
+				t2 = 0;
+			}
+			v1 = a * t2;
+			t1 = (v1 - v0) / a;
+			acc = a;
+			s1 = s0 + ((v0 + v1) * 0.5 * t1);
+		} else
+		{
+			// - +
+			double sq = ((a * (s0 - s2)) + (0.5 * v0 * v0)) / (a * a);
+			if (sq > 0.0f)
+			{
+				t2 = Math.sqrt(sq);
+			} else
+			{
+				t2 = 0;
+			}
+			v1 = -a * t2;
+			t1 = (v1 - v0) / -a;
+			acc = -a;
+			s1 = s0 + ((v0 + v1) * 0.5 * t1);
+		}
+		
+		parts.add(new BBTrajectoryPart(t1, acc, v0, s0));
+		parts.add(new BBTrajectoryPart(t1 + t2, -acc, v1, s1));
+	}
+	
+	
+	private void calcTrapz(final double s0, final double v0, final double v1, final double s3, final double aMax)
+	{
+		double a1;
+		double a3;
+		double t1;
+		double t2;
+		double t3;
+		double v2;
+		double s1;
+		double s2;
+		
+		if (v0 > v1)
+		{
+			a1 = -aMax;
+		} else
+		{
+			a1 = aMax;
+		}
+		
+		if (v1 > 0)
+		{
+			a3 = -aMax;
+		} else
+		{
+			a3 = aMax;
+		}
+		
+		t1 = (v1 - v0) / a1;
+		v2 = v1;
+		t3 = -v2 / a3;
+		
+		s1 = s0 + (0.5 * (v0 + v1) * t1);
+		s2 = s3 - (0.5 * v2 * t3);
+		t2 = (s2 - s1) / v1;
+		
+		parts.add(new BBTrajectoryPart(t1, a1, v0, s0));
+		parts.add(new BBTrajectoryPart(t1 + t2, 0, v1, s1));
+		parts.add(new BBTrajectoryPart(t1 + t2 + t3, a3, v2, s2));
 	}
 	
 	
@@ -281,37 +283,35 @@ public class BangBangTrajectory1D implements ITrajectory<Double>
 	{
 		double trajTime = Math.max(0, tt);
 		PosVelAcc result = new PosVelAcc();
-		int i;
-		double t;
-		BBTrajectoryPart piece = parts[0];
+		BBTrajectoryPart piece = parts.get(0);
 		double tPieceStart = 0;
+		double t;
 		
-		for (i = 0; i < BANG_BANG_TRAJECTORY_1D_PARTS; i++)
+		if (trajTime >= getTotalTime())
 		{
-			piece = parts[i];
+			// requested time beyond final element
+			BBTrajectoryPart lastPart = parts.get(parts.size() - 1);
+			t = lastPart.tEnd - parts.get(parts.size() - 2).tEnd;
+			result.acc = 0;
+			result.vel = 0;
+			result.pos = lastPart.s0 + (lastPart.v0 * t) + (0.5 * lastPart.acc * t * t);
+			return result;
+		}
+		
+		for (BBTrajectoryPart part : parts)
+		{
+			piece = part;
 			if (trajTime < piece.tEnd)
 			{
 				break;
 			}
+			tPieceStart = piece.tEnd;
 		}
 		
-		if (i == BANG_BANG_TRAJECTORY_1D_PARTS)
-		{
-			t = piece.tEnd - parts[BANG_BANG_TRAJECTORY_1D_PARTS - 2].tEnd; // trajectory complete, use end time
-			result.acc = 0;
-		} else
-		{
-			if (i > 0)
-			{
-				tPieceStart = parts[i - 1].tEnd;
-			}
-			
-			t = trajTime - tPieceStart;
-			result.acc = piece.acc;
-		}
-		
+		t = trajTime - tPieceStart;
+		result.acc = piece.acc;
 		result.vel = piece.v0 + (piece.acc * t);
-		result.pos = piece.s0 + (piece.v0 * t) + (0.5f * piece.acc * t * t);
+		result.pos = piece.s0 + (piece.v0 * t) + (0.5 * piece.acc * t * t);
 		
 		return result;
 	}
@@ -327,7 +327,7 @@ public class BangBangTrajectory1D implements ITrajectory<Double>
 	@Override
 	public Double getPositionMM(final double t)
 	{
-		return getPosition(t) * 1000;
+		return getPosition(t) * 1000.0;
 	}
 	
 	
@@ -348,7 +348,7 @@ public class BangBangTrajectory1D implements ITrajectory<Double>
 	@Override
 	public double getTotalTime()
 	{
-		return parts[BANG_BANG_TRAJECTORY_1D_PARTS - 1].tEnd;
+		return parts.get(parts.size() - 1).tEnd;
 	}
 	
 	
@@ -358,10 +358,8 @@ public class BangBangTrajectory1D implements ITrajectory<Double>
 		StringBuilder sb = new StringBuilder();
 		
 		sb.append("Input: initialPos, finalPos, initialVel,	maxAcc, maxBrk, maxVel:\n");
-		sb.append(String.format("%03.15f %03.15f %03.15f %03.15f %03.15f %03.15f%n%nParts:%n", initialPos, finalPos,
-				initialVel,
-				maxAcc,
-				maxBrk, maxVel));
+		sb.append(String.format("%03.15f %03.15f %03.15f %03.15f %03.15f%n%nParts:%n", initialPos, finalPos,
+				initialVel, maxAcc, maxVel));
 		for (BBTrajectoryPart part : parts)
 		{
 			sb.append(String.format("%03.15f %03.15f %03.15f %03.15f%n", part.s0, part.v0, part.acc, part.tEnd));
@@ -376,9 +374,13 @@ public class BangBangTrajectory1D implements ITrajectory<Double>
 	 */
 	public String getInitParams()
 	{
-		return String.format("%03.20f %03.20f %03.20f %03.20f %03.20f %03.20f", initialPos, finalPos,
-				initialVel,
-				maxAcc,
-				maxBrk, maxVel);
+		return String.format("%03.20f %03.20f %03.20f %03.20f %03.20f", initialPos, finalPos,
+				initialVel, maxAcc, maxVel);
+	}
+	
+	
+	public List<BBTrajectoryPart> getParts()
+	{
+		return parts;
 	}
 }

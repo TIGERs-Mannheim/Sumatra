@@ -1,19 +1,15 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 27, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.util;
 
-import java.awt.KeyEventDispatcher;
-import java.awt.KeyboardFocusManager;
+import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -23,20 +19,44 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public final class GlobalShortcuts
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	private static final List<ShortcutWrapper> SHORTCUTS = new CopyOnWriteArrayList<>();
+	private static final Map<EShortcut, ShortcutWrapper> SHORTCUTS = new ConcurrentHashMap<>();
 	
 	private static class ShortcutWrapper
 	{
-		private EShortcut				shortcut;
 		private KeyEventDispatcher	dispatcher;
+	}
+
+    /**
+     * Enum which contains the available Key shortcuts
+     */
+	public enum EKeyModifier {
+		CTRL,
+		ALT,
+		SHIFT;
+
+        /**
+         * Method to evaluate if the correct keys were pressed.
+         *
+         * @param e
+         * @return
+         */
+		public boolean isKeyPressed(KeyEvent e) {
+			switch (this) {
+				case CTRL:
+					return e.isControlDown();
+				case ALT:
+					return e.isAltDown();
+				case SHIFT:
+					return e.isShiftDown();
+				default:
+						return false;
+			}
+		}
 	}
 	
 	
 	/**
+	 * Enum with all available global shortcuts
 	 */
 	public enum EShortcut
 	{
@@ -49,11 +69,11 @@ public final class GlobalShortcuts
 		MATCH_MODE(KeyEvent.VK_F1, "F1"),
 		
 		/**  */
-		MATCH_LAYOUT(KeyEvent.VK_F2, "F2"),
+		MATCH_LAYOUT(KeyEvent.VK_F8, "F8"),
 		/**  */
-		TIMEOUT_LAYOUT(KeyEvent.VK_F3, "F3"),
+		TIMEOUT_LAYOUT(KeyEvent.VK_F9, "F9"),
 		/**  */
-		DEFAULT_LAYOUT(KeyEvent.VK_F4, "F4"),
+		DEFAULT_LAYOUT(KeyEvent.VK_F10, "F10"),
 		
 		/**  */
 		CHARGE_ALL_BOTS(KeyEvent.VK_F5, "F5"),
@@ -64,22 +84,46 @@ public final class GlobalShortcuts
 		RESET_FIELD(KeyEvent.VK_F7, "F7"),
 		
 		/**  */
-		REFEREE_HALT(KeyEvent.VK_F8, "F8"),
+		REFEREE_HALT(KeyEvent.VK_F4, "F4"),
 		/**  */
-		REFEREE_STOP(KeyEvent.VK_F9, "F9"),
+		REFEREE_STOP(KeyEvent.VK_F3, "F3"),
 		/**  */
-		REFEREE_START(KeyEvent.VK_F10, "F10"),
+		REFEREE_START(KeyEvent.VK_F2, "F2"),
+
+		/** */
+		REFBOX_HALT(KeyEvent.VK_SEPARATOR, "SEPARATOR", EKeyModifier.CTRL),
+		/** */
+		REFBOX_STOP(KeyEvent.VK_NUMPAD0, "NUMPAD0", EKeyModifier.CTRL),
+		/** */
+		REFBOX_START_NORMAL(KeyEvent.VK_ENTER, "ENTER", EKeyModifier.CTRL),
+		/** */
+		REFBOX_START_FORCE(KeyEvent.VK_NUMPAD5, "NUMPAD5", EKeyModifier.CTRL),
+		/** */
+		REFBOX_KICKOFF_YELLOW(KeyEvent.VK_NUMPAD1, "NUMPAD1", EKeyModifier.CTRL),
+		/** */
+		REFBOX_KICKOFF_BLUE(KeyEvent.VK_NUMPAD3, "NUMPAD3", EKeyModifier.CTRL),
+		/** */
+		REFBOX_INDIRECT_YELLOW(KeyEvent.VK_NUMPAD4, "NUMPAD4", EKeyModifier.CTRL),
+		/** */
+		REFBOX_INDIRECT_BLUE(KeyEvent.VK_NUMPAD6, "NUMPAD6", EKeyModifier.CTRL),
+		/** */
+		REFBOX_DIRECT_YELLOW(KeyEvent.VK_NUMPAD7, "NUMPAD7", EKeyModifier.CTRL),
+		/** */
+		REFBOX_DIRECT_BLUE(KeyEvent.VK_NUMPAD9, "NUMPAD9", EKeyModifier.CTRL),
 		
 		;
 		
 		private final int		key;
 		private final String	desc;
-									
-									
-		private EShortcut(final int key, final String desc)
+		private final Set<EKeyModifier> modifiers;
+		
+		
+		EShortcut(final int key, final String desc, final EKeyModifier... modifiers)
 		{
 			this.key = key;
 			this.desc = desc;
+
+			this.modifiers = new HashSet<>(Arrays.asList(modifiers));
 		}
 		
 		
@@ -99,22 +143,18 @@ public final class GlobalShortcuts
 		{
 			return desc;
 		}
+
+		/**
+		 * @return the modifiers
+		 */
+		public final Set<EKeyModifier> getModifiers() {return modifiers;}
 	}
 	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	private GlobalShortcuts()
 	{
-	
 	}
 	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 * @param shortcut
@@ -122,26 +162,31 @@ public final class GlobalShortcuts
 	 */
 	public static void register(final EShortcut shortcut, final Runnable run)
 	{
-		KeyEventDispatcher ked = new KeyEventDispatcher()
-		{
-			@Override
-			public boolean dispatchKeyEvent(final KeyEvent e)
+		KeyEventDispatcher ked = e -> {
+			if (e.getID() == KeyEvent.KEY_PRESSED && e.getKeyCode() == shortcut.key)
 			{
-				if ((e.getID() == KeyEvent.KEY_PRESSED))
-				{
-					if ((e.getKeyCode() == shortcut.key))
-					{
-						run.run();
-					}
+				final boolean optionalKeyPressed = isOptionalKeyPressedForShortcut(e, shortcut);
+
+				if(optionalKeyPressed) {
+					run.run();
 				}
-				return false;
 			}
+			return false;
 		};
 		ShortcutWrapper w = new ShortcutWrapper();
-		w.shortcut = shortcut;
 		w.dispatcher = ked;
-		SHORTCUTS.add(w);
+		SHORTCUTS.put(shortcut, w);
 		KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(ked);
+	}
+
+	private static boolean isOptionalKeyPressedForShortcut(KeyEvent e, EShortcut shortcut) {
+		boolean keyIsPressed = true;
+
+		for (EKeyModifier modifier : shortcut.getModifiers()) {
+			keyIsPressed &= modifier.isKeyPressed(e);
+		}
+
+		return keyIsPressed;
 	}
 	
 	
@@ -150,19 +195,10 @@ public final class GlobalShortcuts
 	 */
 	public static void unregisterAll(final EShortcut shortcut)
 	{
-		List<ShortcutWrapper> toBeDeleted = new ArrayList<ShortcutWrapper>();
-		for (ShortcutWrapper w : SHORTCUTS)
+		ShortcutWrapper shortcutWrapper = SHORTCUTS.remove(shortcut);
+		if (shortcutWrapper != null)
 		{
-			if (w.shortcut.equals(shortcut))
-			{
-				toBeDeleted.add(w);
-				KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(w.dispatcher);
-			}
+			KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(shortcutWrapper.dispatcher);
 		}
-		SHORTCUTS.removeAll(toBeDeleted);
 	}
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 }

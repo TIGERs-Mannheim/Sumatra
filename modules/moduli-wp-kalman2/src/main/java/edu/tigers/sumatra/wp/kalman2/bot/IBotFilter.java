@@ -8,8 +8,7 @@
  */
 package edu.tigers.sumatra.wp.kalman2.bot;
 
-import edu.tigers.sumatra.math.IVector3;
-
+import edu.tigers.sumatra.math.vector.IVector3;
 
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>

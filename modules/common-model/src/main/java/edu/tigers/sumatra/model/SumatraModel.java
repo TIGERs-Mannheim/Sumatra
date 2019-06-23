@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jul 20, 2010
- * Author(s): bernhard
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.model;
 
 import java.io.File;
@@ -42,35 +38,34 @@ public final class SumatraModel extends Moduli
 	// --------------------------------------------------------------------------
 	
 	
-	// Logger - Start
-	private static final Logger			log								= Logger.getLogger(SumatraModel.class.getName());
-																						// Logger - End
-																						
+	private static final Logger log = Logger.getLogger(SumatraModel.class.getName());
+	
 	// --- version ---
-	private static final String			VERSION							= "5.0";
-																						
+	private static final String VERSION = "6.0";
+	
 	// --- singleton ---
-	private static final SumatraModel	INSTANCE							= new SumatraModel();
-																						
+	private static final SumatraModel INSTANCE = new SumatraModel();
+	
 	/**
 	 * These {@link Properties} contain the information necessary for the application to run properly (e.g., file paths)
 	 */
-	private Properties						userSettings					= new Properties();
-																						
+	private Properties userSettings = new Properties();
+	
 	// --- moduli config ---
-	private static final String			KEY_MODULI_CONFIG				= SumatraModel.class.getName() + ".moduliConfig";
+	private static final String KEY_MODULI_CONFIG = SumatraModel.class.getName() + ".moduliConfig";
 	/** */
-	public static final String				MODULI_CONFIG_PATH			= "./config/moduli/";
+	public static final String MODULI_CONFIG_PATH = "./config/moduli/";
 	/**  */
-	public static final String				MODULI_CONFIG_FILE_DEFAULT	= "moduli_sumatra.xml";
-																						
+	public static final String MODULI_CONFIG_FILE_DEFAULT = "moduli_sumatra.xml";
+	
 	// Application Properties
-	private static final String			CONFIG_SETTINGS_PATH			= "./config/";
-																						
-																						
-	private boolean							productive						= false;
-																						
-																						
+	private static final String CONFIG_SETTINGS_PATH = "./config/";
+	
+	
+	private boolean productive = false;
+	private boolean testMode = false;
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getInstance/constructor(s) -------------------------------------------
 	// --------------------------------------------------------------------------
@@ -85,6 +80,11 @@ public final class SumatraModel extends Moduli
 		if (prod != null)
 		{
 			productive = Boolean.valueOf(prod);
+		}
+		String test = System.getProperty("testMode");
+		if (test != null)
+		{
+			testMode = Boolean.valueOf(test);
 		}
 	}
 	
@@ -105,40 +105,18 @@ public final class SumatraModel extends Moduli
 	 */
 	private void loadApplicationProperties()
 	{
-		// Load user properties
-		// Get config file name, which consists of pcName + userName
 		userSettings = new Properties();
 		final File uf = getUserPropertiesFile();
-		
-		FileInputStream inUserSettings = null;
-		try
+		if (!uf.exists())
 		{
-			if (uf.exists())
-			{
-				inUserSettings = new FileInputStream(uf);
-				userSettings.load(inUserSettings);
-			} else
-			{
-				if (uf.createNewFile())
-				{
-					log.debug("new user file created");
-				}
-			}
+			return;
+		}
+		try (FileInputStream inUserSettings = new FileInputStream(uf))
+		{
+			userSettings.load(inUserSettings);
 		} catch (final IOException err)
 		{
-			log.warn("Config: " + uf.getPath() + " cannot be read, using default configs!");
-		} finally
-		{
-			try
-			{
-				if (inUserSettings != null)
-				{
-					inUserSettings.close();
-				}
-			} catch (IOException e)
-			{
-				log.warn("Config: " + uf.getPath() + " cannot be read, using default configs!");
-			}
+			log.warn("Config: " + uf.getPath() + " could not be read, using default configs!", err);
 		}
 	}
 	
@@ -213,7 +191,7 @@ public final class SumatraModel extends Moduli
 	 */
 	public String setUserProperty(final String key, final String value)
 	{
-		Object obj = null;
+		Object obj;
 		if (value == null)
 		{
 			obj = userSettings.remove(key);
@@ -222,7 +200,7 @@ public final class SumatraModel extends Moduli
 			obj = userSettings.setProperty(key, value);
 		}
 		
-		if ((obj == null))
+		if (obj == null)
 		{
 			// no previous item
 			return null;
@@ -279,7 +257,7 @@ public final class SumatraModel extends Moduli
 	
 	
 	/**
-	 * @return the productive
+	 * @return if we are in productive (match) mode
 	 */
 	public final boolean isProductive()
 	{
@@ -287,12 +265,44 @@ public final class SumatraModel extends Moduli
 	}
 	
 	
+	public void setTestMode(final boolean testMode)
+	{
+		this.testMode = testMode;
+	}
+	
+	
 	/**
-	 * 
+	 * @return if we are in test mode
+	 */
+	public final boolean isTestMode()
+	{
+		return testMode;
+	}
+	
+	
+	/**
+	 * save properties
 	 */
 	public void saveUserProperties()
 	{
+		if (userSettings.isEmpty())
+		{
+			return;
+		}
 		final File uf = getUserPropertiesFile();
+		if (!uf.exists())
+		{
+			try
+			{
+				if (uf.createNewFile())
+				{
+					log.debug("new user file created");
+				}
+			} catch (IOException e)
+			{
+				log.error("Could not create properties file: " + uf.getAbsolutePath(), e);
+			}
+		}
 		
 		FileOutputStream out = null;
 		try
@@ -301,7 +311,7 @@ public final class SumatraModel extends Moduli
 			userSettings.store(out, null);
 		} catch (final IOException err)
 		{
-			log.warn("Could not write to " + uf.getPath() + ", configuration is not saved");
+			log.warn("Could not write to " + uf.getPath() + ", configuration is not saved", err);
 		}
 		
 		if (out != null)
@@ -312,7 +322,7 @@ public final class SumatraModel extends Moduli
 				log.trace("Saved configuration to: " + uf.getPath());
 			} catch (IOException e)
 			{
-				log.warn("Could not close " + uf.getPath() + ", configuration is not saved");
+				log.warn("Could not close " + uf.getPath() + ", configuration is not saved", e);
 			}
 		}
 	}
@@ -338,7 +348,17 @@ public final class SumatraModel extends Moduli
 			((ConsoleAppender) appender).setThreshold(lvl);
 		}
 	}
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
+	
+	
+	/**
+	 * @return the current environment (Robocup, Lab, etc) as defined by moduli config
+	 */
+	public String getEnvironment()
+	{
+		if (getGlobalConfiguration() != null)
+		{
+			return getGlobalConfiguration().getString("environment");
+		}
+		return "";
+	}
 }

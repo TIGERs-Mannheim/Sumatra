@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 14, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.redirect;
 
@@ -18,9 +13,9 @@ import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.VectorMath;
 
 
 /**
@@ -30,33 +25,33 @@ import edu.tigers.sumatra.math.Vector2;
  */
 public class RedirectDynamicTrianglePlay extends ARedirectPlay
 {
-	@Configurable
-	private static double	angleMinDeg	= 10;
-													
-	@Configurable
-	private static double	angleMaxDeg	= 80;
-													
-	@Configurable
-	private static double	angleStep	= 0.1;
-													
-	private double				step			= -angleStep;
-	private double				angle			= angleMaxDeg * AngleMath.DEG_TO_RAD;
-	private long				tStart;
-									
-	@Configurable
-	private static double	distance		= 3000;
-													
-	@Configurable
-	private static IVector2	redirectPos	= new Vector2(2000, 1000);
-													
-	@Configurable
-	private static IVector2	dir			= new Vector2(-4, -1);
-													
-	private AthenaAiFrame	latestFrame	= null;
-													
-													
+	@Configurable(defValue = "10.0")
+	private static double angleMinDeg = 10;
+	
+	@Configurable(defValue = "80.0")
+	private static double angleMaxDeg = 80;
+	
+	@Configurable(defValue = "0.1")
+	private static double angleStep = 0.1;
+	
+	private double step = -angleStep;
+	private double angle = AngleMath.deg2rad(angleMaxDeg);
+	private long tStart;
+	
+	@Configurable(defValue = "3000.0")
+	private static double distance = 3000;
+	
+	@Configurable(defValue = "2000.0;800.0")
+	private static IVector2 redirectPos = Vector2.fromXY(2000, 1000);
+	
+	@Configurable(defValue = "-4.0;-1.0")
+	private static IVector2 dir = Vector2.fromXY(-4, -1);
+	
+	private AthenaAiFrame latestFrame = null;
+	
+	
 	/**
-	 * 
+	 * Default
 	 */
 	public RedirectDynamicTrianglePlay()
 	{
@@ -77,8 +72,8 @@ public class RedirectDynamicTrianglePlay extends ARedirectPlay
 		if (((frame.getWorldFrame().getTimestamp() - tStart) / 1e9) > 3)
 		{
 			angle += step;
-			double angleMin = (angleMinDeg * AngleMath.DEG_TO_RAD);
-			double angleMax = (angleMaxDeg * AngleMath.DEG_TO_RAD);
+			double angleMin = AngleMath.deg2rad(angleMinDeg);
+			double angleMax = AngleMath.deg2rad(angleMaxDeg);
 			if (angle < angleMin)
 			{
 				angle = angleMin;
@@ -100,7 +95,7 @@ public class RedirectDynamicTrianglePlay extends ARedirectPlay
 	{
 		IVector2 destSec1 = redirectPos.addNew(dir.turnNew((angle) / 2.0).scaleTo(distance));
 		IVector2 destSec2 = redirectPos.addNew(dir.turnNew((-angle) / 2.0).scaleTo(distance));
-		List<IVector2> formation = new ArrayList<IVector2>(3);
+		List<IVector2> formation = new ArrayList<>(3);
 		formation.add(redirectPos);
 		formation.add(destSec1);
 		formation.add(destSec2);
@@ -127,12 +122,9 @@ public class RedirectDynamicTrianglePlay extends ARedirectPlay
 		{
 			case 0:
 				return getRoleIdxFarerFromBall();
-			case 1:
-				return 0;
-			case 2:
+			default:
 				return 0;
 		}
-		return 0;
 	}
 	
 	
@@ -146,7 +138,8 @@ public class RedirectDynamicTrianglePlay extends ARedirectPlay
 		int idx = 1;
 		for (int i = 1; i < getRoles().size(); i++)
 		{
-			double dist = GeoMath.distancePP(latestFrame.getWorldFrame().getBall().getPos(), getRoles().get(i).getPos());
+			double dist = VectorMath.distancePP(latestFrame.getWorldFrame().getBall().getPos(),
+					getRoles().get(i).getPos());
 			if (dist > maxDist)
 			{
 				maxDist = dist;

@@ -18,6 +18,129 @@ public final class OsDetector
 	// --------------------------------------------------------------------------
 	// --- classes --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	private OsDetector()
+	{
+		
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public static OsIdentifier detectOs()
+	{
+		return new OsIdentifier(getOsName(), getOsArch());
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public static EOsName getOsName()
+	{
+		final EOsName detName;
+		
+		if (isWindows())
+		{
+			detName = EOsName.WINDOWS;
+		} else if (isMac())
+		{
+			detName = EOsName.MAC;
+		} else if (isUnix())
+		{
+			detName = EOsName.UNIX;
+		} else if (isSolaris())
+		{
+			detName = EOsName.SOLARIS;
+		} else
+		{
+			detName = EOsName.UNKNOWN;
+		}
+		
+		return detName;
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public static EOsArch getOsArch()
+	{
+		final String arch = System.getProperty("os.arch").toLowerCase();
+		
+		final EOsArch detArch;
+		
+		if (arch.contains("64"))
+		{
+			detArch = EOsArch.x64;
+		} else if (arch.contains("86"))
+		{
+			detArch = EOsArch.x86;
+		} else if (arch.contains("ppc"))
+		{
+			detArch = EOsArch.PPC;
+		} else if (arch.contains("sparc"))
+		{
+			detArch = EOsArch.SPARC;
+		} else
+		{
+			detArch = EOsArch.UNKNOWN;
+		}
+		
+		return detArch;
+	}
+	
+	
+	// --------------------------------------------------------------------------
+	// --- methods --------------------------------------------------------------
+	// --------------------------------------------------------------------------
+	
+	/**
+	 * @return
+	 */
+	public static boolean isWindows()
+	{
+		final String os = getPropertyOsName();
+		return os.contains("win");
+	}
+	
+	
+	private static String getPropertyOsName()
+	{
+		return System.getProperty("os.name").toLowerCase();
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public static boolean isMac()
+	{
+		final String os = getPropertyOsName();
+		return os.contains("mac");
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public static boolean isUnix()
+	{
+		final String os = getPropertyOsName();
+		return os.contains("nix") || os.contains("nux");
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public static boolean isSolaris()
+	{
+		final String os = getPropertyOsName();
+		return os.contains("sunos");
+	}
+	
+	
 	/**
 	 */
 	public enum EOsName
@@ -31,8 +154,9 @@ public final class OsDetector
 		/** */
 		SOLARIS,
 		/** */
-		UNKNOWN;
+		UNKNOWN
 	}
+	
 	
 	/**
 	 */
@@ -47,13 +171,7 @@ public final class OsDetector
 		/** */
 		PPC,
 		/** */
-		UNKNOWN;
-	}
-	
-	
-	private OsDetector()
-	{
-		
+		UNKNOWN
 	}
 	
 	/**
@@ -106,8 +224,8 @@ public final class OsDetector
 		{
 			final int prime = 31;
 			int result = 1;
-			result = (prime * result) + ((arch == null) ? 0 : arch.hashCode());
-			result = (prime * result) + ((name == null) ? 0 : name.hashCode());
+			result = prime * result + (arch == null ? 0 : arch.hashCode());
+			result = prime * result + (name == null ? 0 : name.hashCode());
 			return result;
 		}
 		
@@ -128,125 +246,7 @@ public final class OsDetector
 				return false;
 			}
 			final OsIdentifier other = (OsIdentifier) obj;
-			if (arch != other.arch)
-			{
-				return false;
-			}
-			if (name != other.name)
-			{
-				return false;
-			}
-			return true;
+			return arch == other.arch && name == other.name;
 		}
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 * @return
-	 */
-	public static OsIdentifier detectOs()
-	{
-		return new OsIdentifier(getOsName(), getOsArch());
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public static EOsName getOsName()
-	{
-		final EOsName detName;
-		
-		if (isWindows())
-		{
-			detName = EOsName.WINDOWS;
-		} else if (isMac())
-		{
-			detName = EOsName.MAC;
-		} else if (isUnix())
-		{
-			detName = EOsName.UNIX;
-		} else if (isSolaris())
-		{
-			detName = EOsName.SOLARIS;
-		} else
-		{
-			detName = EOsName.UNKNOWN;
-		}
-		
-		return detName;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public static EOsArch getOsArch()
-	{
-		final String arch = System.getProperty("os.arch").toLowerCase();
-		
-		final EOsArch detArch;
-		
-		if (arch.indexOf("64") >= 0)
-		{
-			detArch = EOsArch.x64;
-		} else if (arch.indexOf("86") >= 0)
-		{
-			detArch = EOsArch.x86;
-		} else if (arch.indexOf("ppc") >= 0)
-		{
-			detArch = EOsArch.PPC;
-		} else if (arch.indexOf("sparc") >= 0)
-		{
-			detArch = EOsArch.SPARC;
-		} else
-		{
-			detArch = EOsArch.UNKNOWN;
-		}
-		
-		return detArch;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public static boolean isWindows()
-	{
-		final String os = System.getProperty("os.name").toLowerCase();
-		return (os.indexOf("win") >= 0);
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public static boolean isMac()
-	{
-		final String os = System.getProperty("os.name").toLowerCase();
-		return (os.indexOf("mac") >= 0);
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public static boolean isUnix()
-	{
-		final String os = System.getProperty("os.name").toLowerCase();
-		return ((os.indexOf("nix") >= 0) || (os.indexOf("nux") >= 0));
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public static boolean isSolaris()
-	{
-		final String os = System.getProperty("os.name").toLowerCase();
-		return (os.indexOf("sunos") >= 0);
 	}
 }

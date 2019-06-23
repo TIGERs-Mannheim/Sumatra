@@ -29,15 +29,15 @@ import edu.tigers.sumatra.thread.GeneralPurposeTimer;
 public class ReliableCmdManager
 {
 	private static final Logger				log				= Logger.getLogger(ReliableCmdManager.class.getName());
-																			
-	private final Map<Integer, TimerTask>	activeCmds		= new HashMap<Integer, TimerTask>();
+	
+	private final Map<Integer, TimerTask>	activeCmds		= new HashMap<>();
 	private int										nextSeq			= 0;
 	private static final int					RETRY_TIMEOUT	= 100;
-																			
+	
 	private final Object							sync				= new Object();
 	private final ABot							bot;
-														
-														
+	
+	
 	/**
 	 * Reliable command manager
 	 * 

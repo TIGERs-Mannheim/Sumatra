@@ -1,10 +1,10 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
+ * ********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
- * Date: Apr 19, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Date: 5.11.2016
+ * Author(s): $user.name
+ * ********************************************************
  */
 package edu.tigers.sumatra.cam.data;
 
@@ -14,12 +14,15 @@ import java.util.List;
 import edu.tigers.sumatra.MessagesRobocupSslGeometry.SSL_FieldCicularArc;
 import edu.tigers.sumatra.MessagesRobocupSslGeometry.SSL_FieldLineSegment;
 import edu.tigers.sumatra.MessagesRobocupSslGeometry.SSL_GeometryFieldSize;
-import edu.tigers.sumatra.math.ILine;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Line;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.shapes.circle.Circle;
-import edu.tigers.sumatra.shapes.circle.ICircle;
+import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.circle.ICircle;
+import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.rectangle.IRectangle;
+import edu.tigers.sumatra.math.rectangle.Rectangle;
+import edu.tigers.sumatra.math.vector.AVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 
 
 /**
@@ -51,16 +54,16 @@ public class CamFieldSize
 		fieldLines = new ArrayList<>(field.getFieldLinesCount());
 		for (SSL_FieldLineSegment lineSegment : field.getFieldLinesList())
 		{
-			IVector2 p1 = new Vector2(lineSegment.getP1().getX(), lineSegment.getP1().getY());
-			IVector2 p2 = new Vector2(lineSegment.getP2().getX(), lineSegment.getP2().getY());
-			ILine line = Line.newLine(p1, p2);
+			IVector2 p1 = Vector2.fromXY(lineSegment.getP1().getX(), lineSegment.getP1().getY());
+			IVector2 p2 = Vector2.fromXY(lineSegment.getP2().getX(), lineSegment.getP2().getY());
+			ILine line = Line.fromPoints(p1, p2);
 			fieldLines.add(new CamFieldLine(line, lineSegment.getName(), lineSegment.getThickness()));
 		}
 		fieldArcs = new ArrayList<>(field.getFieldArcsCount());
 		for (SSL_FieldCicularArc arc : field.getFieldArcsList())
 		{
-			IVector2 center = new Vector2(arc.getCenter().getX(), arc.getCenter().getY());
-			ICircle circle = new Circle(center, arc.getRadius());
+			IVector2 center = Vector2.fromXY(arc.getCenter().getX(), arc.getCenter().getY());
+			ICircle circle = Circle.createCircle(center, arc.getRadius());
 			fieldArcs.add(new CamFieldArc(circle, arc.getName(), arc.getThickness(), arc.getA1(), arc.getA2()));
 		}
 	}
@@ -120,4 +123,34 @@ public class CamFieldSize
 	}
 	
 	
+	/**
+	 * Get field rectangle with boundary width.
+	 * 
+	 * @return
+	 */
+	public IRectangle getFieldWithBoundary()
+	{
+		return Rectangle.fromCenter(AVector2.ZERO_VECTOR, fieldLength + (2 * boundaryWidth),
+				fieldWidth + (2 * boundaryWidth));
+	}
+	
+	
+	/**
+	 * Get field rectangle.
+	 * 
+	 * @return
+	 */
+	public IRectangle getField()
+	{
+		return Rectangle.fromCenter(AVector2.ZERO_VECTOR, fieldLength, fieldWidth);
+	}
+	
+	
+	/**
+	 * @return the fieldArcs
+	 */
+	public List<CamFieldArc> getFieldArcs()
+	{
+		return fieldArcs;
+	}
 }

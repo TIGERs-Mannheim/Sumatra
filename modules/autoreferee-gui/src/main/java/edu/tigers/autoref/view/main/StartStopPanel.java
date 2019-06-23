@@ -1,62 +1,24 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 12, 2016
- * Author(s): Lukas Magel
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.view.main;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.Arrays;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
+import javax.swing.*;
 
-import net.miginfocom.swing.MigLayout;
-import edu.tigers.autoref.view.main.StartStopPanel.IStartStopPanelObserver;
-import edu.tigers.autoreferee.AutoRefModule.AutoRefState;
+import edu.tigers.autoref.view.main.IStartStopPanel.IStartStopPanelObserver;
 import edu.tigers.autoreferee.engine.IAutoRefEngine.AutoRefMode;
+import edu.tigers.autoreferee.module.AutoRefState;
 import edu.tigers.sumatra.components.BasePanel;
+import net.miginfocom.swing.MigLayout;
 
 
 /**
  * @author Lukas Magel
  */
-public class StartStopPanel extends BasePanel<IStartStopPanelObserver>
+public class StartStopPanel extends BasePanel<IStartStopPanelObserver> implements IStartStopPanel
 {
-	/**
-	 * @author Lukas Magel
-	 */
-	public interface IStartStopPanelObserver
-	{
-		/**
-		 * 
-		 */
-		void onStartButtonPressed();
-		
-		
-		/**
-		 * 
-		 */
-		void onStopButtonPressed();
-		
-		
-		/**
-		 * 
-		 */
-		void onPauseButtonPressed();
-		
-		
-		/**
-		 * 
-		 */
-		void onResumeButtonPressed();
-		
-	}
 	
 	/**  */
 	private static final long			serialVersionUID	= 1L;
@@ -69,7 +31,7 @@ public class StartStopPanel extends BasePanel<IStartStopPanelObserver>
 	
 	
 	/**
-	 * 
+	 * Create new instance
 	 */
 	public StartStopPanel()
 	{
@@ -77,33 +39,19 @@ public class StartStopPanel extends BasePanel<IStartStopPanelObserver>
 		
 		startButton = new JButton("Start");
 		startButton.setEnabled(false);
-		startButton.addActionListener(new ActionListener()
-		{
-			@Override
-			public void actionPerformed(final ActionEvent e)
-			{
-				informObserver(obs -> obs.onStartButtonPressed());
-			}
-		});
+		startButton.addActionListener(e -> informObserver(IStartStopPanelObserver::onStartButtonPressed));
 		
 		stopButton = new JButton("Stop");
 		stopButton.setEnabled(false);
-		stopButton.addActionListener(new ActionListener()
-		{
-			@Override
-			public void actionPerformed(final ActionEvent e)
-			{
-				informObserver(obs -> obs.onStopButtonPressed());
-			}
-		});
+		stopButton.addActionListener(e -> informObserver(IStartStopPanelObserver::onStopButtonPressed));
 		
 		pauseButton = new JButton("Pause");
 		pauseButton.setEnabled(false);
-		pauseButton.addActionListener(e -> informObserver(obs -> obs.onPauseButtonPressed()));
+		pauseButton.addActionListener(e -> informObserver(IStartStopPanelObserver::onPauseButtonPressed));
 		
 		resumeButton = new JButton("Resume");
 		resumeButton.setEnabled(false);
-		resumeButton.addActionListener(e -> informObserver(obs -> obs.onResumeButtonPressed()));
+		resumeButton.addActionListener(e -> informObserver(IStartStopPanelObserver::onResumeButtonPressed));
 		
 		
 		refModeBox = new JComboBox<>(AutoRefMode.values());
@@ -163,9 +111,7 @@ public class StartStopPanel extends BasePanel<IStartStopPanelObserver>
 	}
 	
 	
-	/**
-	 * @return
-	 */
+	@Override
 	public AutoRefMode getModeSetting()
 	{
 		return (AutoRefMode) refModeBox.getSelectedItem();
@@ -175,7 +121,7 @@ public class StartStopPanel extends BasePanel<IStartStopPanelObserver>
 	@Override
 	public void setPanelEnabled(final boolean enabled)
 	{
-		if (enabled == false)
+		if (!enabled)
 		{
 			Arrays.asList(startButton, pauseButton, resumeButton, stopButton, refModeBox)
 					.forEach(comp -> comp.setEnabled(false));
@@ -186,6 +132,7 @@ public class StartStopPanel extends BasePanel<IStartStopPanelObserver>
 	/**
 	 * @param state
 	 */
+	@Override
 	public void setState(final AutoRefState state)
 	{
 		boolean startEnabled = false;

@@ -1,14 +1,9 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Apr 17, 2013
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.bot;
 
-import java.util.LinkedHashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
 
@@ -33,20 +28,17 @@ public enum EFeature
 	/** */
 	V2016("v2016", 0x0020),
 	/** */
-	EXT_BOARD("Ext. Board", 0x0040);
+	EXT_BOARD("Ext. Board", 0x0040),
+	/** */
+	CHARGE_CAPS("Charge Caps", 0x0080),
+	/** */
+	KICKER_V2017("Kicker v2017", 0x0100);
 	
 	private final String	name;
 	private final int		id;
 	
 	
-	private EFeature(final String name, final int id)
-	{
-		this.name = name;
-		this.id = id;
-	}
-	
-	
-	private EFeature(final String name, final int id, final String desc)
+	EFeature(final String name, final int id)
 	{
 		this.name = name;
 		this.id = id;
@@ -60,7 +52,7 @@ public enum EFeature
 	 */
 	public static Map<EFeature, EFeatureState> createFeatureList()
 	{
-		Map<EFeature, EFeatureState> map = new LinkedHashMap<EFeature, EFeatureState>();
+		Map<EFeature, EFeatureState> map = new EnumMap<>(EFeature.class);
 		for (EFeature f : EFeature.values())
 		{
 			map.put(f, EFeatureState.UNKNOWN);

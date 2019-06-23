@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 22.07.2010
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.clock;
 
@@ -44,6 +39,12 @@ public final class Dormouse implements Runnable
 	private static volatile Dormouse	instance	= null;
 	
 	
+	private Dormouse()
+	{
+		
+	}
+	
+	
 	/**
 	 * @return
 	 */
@@ -57,12 +58,6 @@ public final class Dormouse implements Runnable
 	}
 	
 	
-	private Dormouse()
-	{
-		
-	}
-	
-	
 	@Override
 	public void run()
 	{
@@ -73,7 +68,7 @@ public final class Dormouse implements Runnable
 			Thread.sleep(Long.MAX_VALUE);
 		} catch (final InterruptedException err)
 		{
-			// This line is intentionally left blank
+			Thread.currentThread().interrupt();
 		}
 		log.trace("Dormouse stopped.");
 	}

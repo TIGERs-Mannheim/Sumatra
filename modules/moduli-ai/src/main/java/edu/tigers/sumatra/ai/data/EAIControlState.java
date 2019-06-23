@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 14.04.2011
- * Author(s): osteinbrecher
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.data;
 
@@ -16,11 +11,13 @@ package edu.tigers.sumatra.ai.data;
 public enum EAIControlState
 {
 	/** */
-	TEST_MODE,
-	/** */
 	MATCH_MODE,
 	/** */
 	MIXED_TEAM_MODE,
 	/** */
-	EMERGENCY_MODE,;
+	TEST_MODE,
+	/** */
+	EMERGENCY_MODE,
+	/** */
+	OFF
 }

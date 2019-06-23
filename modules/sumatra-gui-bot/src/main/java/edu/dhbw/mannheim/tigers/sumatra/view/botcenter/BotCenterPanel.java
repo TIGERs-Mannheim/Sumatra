@@ -33,16 +33,16 @@ public class BotCenterPanel extends JPanel implements ISumatraView
 {
 	/**  */
 	private static final long					serialVersionUID	= -7749317503520671162L;
-																				
+	
 	private final OverviewPanel				botOverview;
 	private final BotConfigOverviewPanel	botOverviewPanel;
 	private final List<BaseStationPanel>	baseStationPanels	= new ArrayList<>();
 	private final BcFeaturesPanel				featurePanel;
 	private final JTabbedPane					tabbedPane;
-														
-														
+	
+	
 	/**
-	 * 
+	 * Constructor.
 	 */
 	public BotCenterPanel()
 	{
@@ -65,22 +65,18 @@ public class BotCenterPanel extends JPanel implements ISumatraView
 	}
 	
 	
-	/**
-	 */
+	/** Do create panel. */
 	public void createPanel()
 	{
 		tabbedPane.addTab("Bot Overview", setupScrollPane(botOverview));
 		tabbedPane.addTab("Bot Details", botOverviewPanel);
-		
-		// tabbedPane.addTab("Features", setupScrollPane(featurePanel));
 		
 		add(tabbedPane, BorderLayout.CENTER);
 		repaint();
 	}
 	
 	
-	/**
-	 */
+	/** Clear panel. */
 	public void clearPanel()
 	{
 		remove(tabbedPane);
@@ -101,30 +97,6 @@ public class BotCenterPanel extends JPanel implements ISumatraView
 	public List<JMenu> getCustomMenus()
 	{
 		return Collections.emptyList();
-	}
-	
-	
-	@Override
-	public void onShown()
-	{
-	}
-	
-	
-	@Override
-	public void onHidden()
-	{
-	}
-	
-	
-	@Override
-	public void onFocused()
-	{
-	}
-	
-	
-	@Override
-	public void onFocusLost()
-	{
 	}
 	
 	

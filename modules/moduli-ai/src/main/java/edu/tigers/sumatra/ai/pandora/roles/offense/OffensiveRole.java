@@ -1,20 +1,20 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 26, 2014
- * Author(s): Mark Geiger <Mark.Geiger@dlr.de>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.pandora.roles.offense;
 
 import edu.tigers.sumatra.ai.data.OffensiveStrategy.EOffensiveStrategy;
+import edu.tigers.sumatra.ai.pandora.roles.offense.states.AOffensiveRoleState;
 import edu.tigers.sumatra.ai.pandora.roles.offense.states.OffensiveRoleDelayState;
+import edu.tigers.sumatra.ai.pandora.roles.offense.states.OffensiveRoleFreeSkirmishState;
 import edu.tigers.sumatra.ai.pandora.roles.offense.states.OffensiveRoleInterceptionState;
 import edu.tigers.sumatra.ai.pandora.roles.offense.states.OffensiveRoleKickState;
-import edu.tigers.sumatra.ai.pandora.roles.offense.states.OffensiveRoleRedirectCatchSpecialMovementState;
+import edu.tigers.sumatra.ai.pandora.roles.offense.states.OffensiveRoleSpecialMovementState;
 import edu.tigers.sumatra.ai.pandora.roles.offense.states.OffensiveRoleStopState;
 import edu.tigers.sumatra.ai.pandora.roles.offense.states.OffensiveRoleSupportiveAttackerState;
+import edu.tigers.sumatra.math.vector.IVector2;
+import org.apache.commons.lang.NotImplementedException;
 
 
 /**
@@ -24,226 +24,156 @@ import edu.tigers.sumatra.ai.pandora.roles.offense.states.OffensiveRoleSupportiv
  */
 public class OffensiveRole extends AOffensiveRole
 {
+	private final OffensiveRoleKickState kicker;
+	private final OffensiveRoleStopState stop;
+	private final OffensiveRoleDelayState delay;
+	private final OffensiveRoleSpecialMovementState specialMove;
+	private final OffensiveRoleInterceptionState intercept;
+	private final OffensiveRoleSupportiveAttackerState supporter;
+	private final OffensiveRoleFreeSkirmishState skirmish;
+	private EOffensiveStrategy eStateID = null;
 	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
+	 * Default
 	 */
 	public OffensiveRole()
 	{
 		super();
-		OffensiveRoleKickState kicker = new OffensiveRoleKickState(this);
-		OffensiveRoleStopState stop = new OffensiveRoleStopState(this);
-		OffensiveRoleDelayState delay = new OffensiveRoleDelayState(this);
-		OffensiveRoleRedirectCatchSpecialMovementState redirector = new OffensiveRoleRedirectCatchSpecialMovementState(
-				this);
-		OffensiveRoleInterceptionState intercept = new OffensiveRoleInterceptionState(this);
-		OffensiveRoleSupportiveAttackerState supporter = new OffensiveRoleSupportiveAttackerState(this);
+		kicker = new OffensiveRoleKickState(this);
+		stop = new OffensiveRoleStopState(this);
+		delay = new OffensiveRoleDelayState(this);
+		specialMove = new OffensiveRoleSpecialMovementState(this);
+		intercept = new OffensiveRoleInterceptionState(this);
+		supporter = new OffensiveRoleSupportiveAttackerState(this);
+		skirmish = new OffensiveRoleFreeSkirmishState(this);
+		setInitialState(stop);
+		initTransitions();
+	}
+	
+	
+	/**
+	 * With parameters
+	 * 
+	 * @param offensiveState
+	 * @param allowStateSwitch
+	 */
+	public OffensiveRole(final EOffensiveStrategy offensiveState, boolean allowStateSwitch)
+	{
+		super();
+		activeSwitching = false;
+		kicker = new OffensiveRoleKickState(this);
+		stop = new OffensiveRoleStopState(this);
+		delay = new OffensiveRoleDelayState(this);
+		specialMove = new OffensiveRoleSpecialMovementState(this);
+		intercept = new OffensiveRoleInterceptionState(this);
+		supporter = new OffensiveRoleSupportiveAttackerState(this);
+		skirmish = new OffensiveRoleFreeSkirmishState(this);
+		eStateID = offensiveState;
 		setInitialState(stop);
 		
+		if (allowStateSwitch)
+		{
+			initTransitions();
+		}
+	}
+	
+	
+	private void initTransitions()
+	{
 		addTransition(EOffensiveStrategy.KICK, kicker);
 		addTransition(EOffensiveStrategy.DELAY, delay);
 		addTransition(EOffensiveStrategy.STOP, stop);
-		addTransition(EOffensiveStrategy.REDIRECT_CATCH_SPECIAL_MOVE, redirector);
+		addTransition(EOffensiveStrategy.SPECIAL_MOVE, specialMove);
 		addTransition(EOffensiveStrategy.INTERCEPT, intercept);
 		addTransition(EOffensiveStrategy.SUPPORTIVE_ATTACKER, supporter);
+		addTransition(EOffensiveStrategy.FREE_SKIRMISH, skirmish);
 	}
 	
 	
 	@Override
 	public void beforeFirstUpdate()
 	{
-		EOffensiveStrategy initialState = getAiFrame().getTacticalField().getOffensiveStrategy()
-				.getCurrentOffensivePlayConfiguration().get(getBotID());
-		
-		if (initialState == null)
+		EOffensiveStrategy initialState;
+		if (eStateID != null)
 		{
-			int idx = getAiFrame().getPrevFrame().getAICom().getUnassignedStateCounter();
-			
-			if (idx >= getAiFrame().getTacticalField().getOffensiveStrategy().getUnassignedStrategies().size())
-			{
-				initialState = EOffensiveStrategy.REDIRECT_CATCH_SPECIAL_MOVE;
-			} else
-			{
-				initialState = getAiFrame().getTacticalField().getOffensiveStrategy().getUnassignedStrategies()
-						.get(idx);
-				getAiFrame().getPrevFrame().getAICom().setUnassignedStateCounter(idx + 1);
-			}
+			initialState = eStateID;
+		} else
+		{
+			initialState = getAiFrame().getTacticalField().getOffensiveStrategy()
+					.getCurrentOffensivePlayConfiguration().get(getBotID());
 		}
+		
+		initialState = determineInitialState(initialState);
 		
 		switch (initialState)
 		{
-			case REDIRECT_CATCH_SPECIAL_MOVE:
-				triggerEvent(EOffensiveStrategy.REDIRECT_CATCH_SPECIAL_MOVE);
+			case SPECIAL_MOVE:
+				setInitialState(specialMove);
 				break;
 			case DELAY:
-				triggerEvent(EOffensiveStrategy.DELAY);
-				break;
-			case GET:
-				triggerEvent(EOffensiveStrategy.GET);
-				log.warn("Added Get Offenisve, this should not happen anymore!");
+				setInitialState(delay);
 				break;
 			case INTERCEPT:
-				triggerEvent(EOffensiveStrategy.INTERCEPT);
+				setInitialState(intercept);
 				break;
 			case KICK:
-				triggerEvent(EOffensiveStrategy.KICK);
+				setInitialState(kicker);
 				break;
 			case STOP:
-				triggerEvent(EOffensiveStrategy.STOP);
+				setInitialState(stop);
 				break;
 			case SUPPORTIVE_ATTACKER:
-				triggerEvent(EOffensiveStrategy.SUPPORTIVE_ATTACKER);
+				setInitialState(supporter);
+				break;
+			case FREE_SKIRMISH:
+				setInitialState(skirmish);
 				break;
 			default:
-				break;
+				throw new NotImplementedException();
 		}
 	}
 	
 	
-	// ----------------------------------------------------------------------- //
-	// -------------------- functions ---------------------------------------- //
-	// ----------------------------------------------------------------------- //
+	private EOffensiveStrategy determineInitialState(EOffensiveStrategy initialState)
+	{
+		if (initialState == null)
+		{
+			int idx = getAiFrame().getPrevFrame().getAICom().getUnassignedStateCounter();
+			if (idx >= getAiFrame().getTacticalField().getOffensiveStrategy().getUnassignedStrategies().size())
+			{
+				return EOffensiveStrategy.SPECIAL_MOVE;
+			} else
+			{
+				getAiFrame().getPrevFrame().getAICom().setUnassignedStateCounter(idx + 1);
+				return getAiFrame().getTacticalField().getOffensiveStrategy().getUnassignedStrategies()
+						.get(idx);
+			}
+		}
+		return initialState;
+	}
 	
-	// // @Override
-	// // public void setNewSkill(final ISkill newSkill)
-	// // {
-	// // super.setNewSkill(newSkill);
-	// //
-	// // }
-	//
-	//
-	// /**
-	// * Start a timeout after which the role will be set so be completed
-	// *
-	// * @param timeMs [ms]
-	// */
-	// @Override
-	// public void setCompleted(final int timeMs)
-	// {
-	// super.setCompleted(timeMs);
-	// }
-	//
-	//
-	// /**
-	// * @return
-	// */
-	// @Override
-	// public ERole getType()
-	// {
-	// return super.getType();
-	// }
-	//
-	//
-	// /**
-	// * @return
-	// */
-	// @Override
-	// public BotID getBotID()
-	// {
-	// return super.getBotID();
-	// }
-	//
-	//
-	// /**
-	// * Returns the current position of the bot associated with this role.<br>
-	// * <strong>WARNING: Use only after role has been assigned!!!</strong> (Makes no sense otherwise...)
-	// *
-	// * @return position
-	// * @throws IllegalStateException if role has not been initialized yet
-	// */
-	// @Override
-	// public IVector2 getPos()
-	// {
-	// return super.getPos();
-	// }
-	//
-	//
-	// /**
-	// * Get the TrackedTigerBot of this role
-	// *
-	// * @return
-	// */
-	// @Override
-	// public ITrackedBot getBot()
-	// {
-	// return super.getBot();
-	// }
-	//
-	//
-	// /**
-	// * @return Whether this role has been assigned to a bot (by
-	// * {@link edu.tigers.sumatra.ai.lachesis.Lachesis})
-	// */
-	// @Override
-	// public boolean hasBeenAssigned()
-	// {
-	// return super.hasBeenAssigned();
-	// }
-	//
-	//
-	// /**
-	// * @return true when this role is completed
-	// */
-	// @Override
-	// public boolean isCompleted()
-	// {
-	// return super.isCompleted();
-	// }
-	//
-	//
-	// /**
-	// * Sets this role to completed.
-	// */
-	// @Override
-	// public void setCompleted()
-	// {
-	// super.setCompleted();
-	// }
-	//
-	//
-	// @Override
-	// public String toString()
-	// {
-	// return super.toString();
-	// }
-	//
-	//
-	// /**
-	// * @return the current ai frame
-	// * @throws NullPointerException if called before {@link #update(AthenaAiFrame)}
-	// */
-	// @Override
-	// public AthenaAiFrame getAiFrame()
-	// {
-	// return super.getAiFrame();
-	// }
-	//
-	//
-	// /**
-	// * @return the current worldframe
-	// */
-	// @Override
-	// public WorldFrame getWFrame()
-	// {
-	// return super.getWFrame();
-	// }
-	//
-	//
-	// /**
-	// * @return the currentSkill
-	// */
-	// @Override
-	// public ISkill getCurrentSkill()
-	// {
-	// return super.getCurrentSkill();
-	// }
 	
+	/**
+	 * @return shootTarget of offensive role, is null when no target is set yet
+	 */
+	public IVector2 getTarget()
+	{
+		EOffensiveStrategy state = EOffensiveStrategy.valueOf(getCurrentState().getIdentifier());
+		if (state == EOffensiveStrategy.KICK)
+		{
+			return kicker.getTarget();
+		}
+		return null;
+	}
+	
+	
+	/**
+	 * @return The current move Position of the offensiveRole
+	 */
+	public IVector2 getDestination()
+	{
+		return ((AOffensiveRoleState) getCurrentState()).getMoveDest();
+	}
 	
 }

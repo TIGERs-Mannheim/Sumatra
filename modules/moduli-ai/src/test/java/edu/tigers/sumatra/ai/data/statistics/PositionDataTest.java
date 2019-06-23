@@ -1,19 +1,14 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jul 1, 2016
- * Author(s): Phillipp Mevenkamp <phillippmevenkamp@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.data.statistics;
 
-import junit.framework.Assert;
-
 import org.junit.Test;
 
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.wp.data.Geometry;
+import edu.tigers.sumatra.ai.metis.statistics.PositionData;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import junit.framework.Assert;
 
 
 /**
@@ -50,12 +45,12 @@ public class PositionDataTest
 		
 		int usedResolution = 100;
 		
-		IVector2 topLeftCorner = Geometry.getCornerRightOur();
+		IVector2 somePoint = Vector2.fromXY(1000, 400);
 		
 		PositionData positionData = new PositionData(usedResolution, usedResolution);
-		positionData.signalPositionAt(topLeftCorner);
+		positionData.signalPositionAt(somePoint);
 		
-		int actualPositions = positionData.getEntryForPosition(topLeftCorner);
+		int actualPositions = positionData.getEntryForPosition(somePoint);
 		
 		Assert.assertEquals(expectedPositions, actualPositions);
 	}

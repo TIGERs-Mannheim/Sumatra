@@ -1,17 +1,14 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: June 02, 2015
- * Author(s): Mark Geiger <Mark.Geiger@dlr.de>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.pandora.plays.learning;
 
 
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +20,7 @@ import org.apache.log4j.Logger;
 import com.github.g3force.configurable.Configurable;
 import com.github.g3force.instanceables.InstanceableClass.NotCreateableException;
 
-import edu.tigers.sumatra.ai.data.EGameStateTeam;
-import edu.tigers.sumatra.ai.data.EShapesLayer;
+import edu.tigers.sumatra.ai.data.EAiShapesLayer;
 import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
 import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
@@ -34,10 +30,10 @@ import edu.tigers.sumatra.ai.pandora.plays.learning.lcase.ELearningCase;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
-import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole.EMoveBehavior;
-import edu.tigers.sumatra.drawable.DrawableText;
-import edu.tigers.sumatra.math.AVector2;
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.drawable.DrawableAnnotation;
+import edu.tigers.sumatra.math.vector.AVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.referee.data.GameState;
 
 
 /**
@@ -48,18 +44,18 @@ import edu.tigers.sumatra.math.IVector2;
  */
 public class LearningPlay extends APlay
 {
-	private static final Logger			log						= Logger.getLogger(LearningPlay.class
-																						.getName());
+	private static final Logger log = Logger.getLogger(LearningPlay.class
+			.getName());
 	
-	@Configurable
-	private static ELearningCase			learningType			= ELearningCase.ROBOT_MOVEMENT;
+	@Configurable(defValue = "ROBOT_MOVEMENT")
+	private static ELearningCase learningType = ELearningCase.ROBOT_MOVEMENT;
 	
-	@Configurable
-	private static boolean					runAll					= true;
+	@Configurable(defValue = "true")
+	private static boolean runAll = true;
 	
-	private final List<ELearningCase>	learningCase			= new ArrayList<ELearningCase>();
-	private int									currentLearningCase	= 0;
-	private ALearningCase					activeCase				= null;
+	private final List<ELearningCase> learningCase = new ArrayList<>();
+	private int currentLearningCase = 0;
+	private ALearningCase activeCase = null;
 	
 	
 	// --------------------------------------------------------------------------
@@ -67,14 +63,12 @@ public class LearningPlay extends APlay
 	// --------------------------------------------------------------------------
 	
 	/**
+	 * Creates a new LearningPlay
 	 */
 	public LearningPlay()
 	{
 		super(EPlay.LEARNING_PLAY);
-		for (ELearningCase ecase : ELearningCase.values())
-		{
-			learningCase.add(ecase);
-		}
+		learningCase.addAll(Arrays.asList(ELearningCase.values()));
 	}
 	
 	
@@ -98,20 +92,21 @@ public class LearningPlay extends APlay
 	@Override
 	protected ARole onAddRole(final MetisAiFrame frame)
 	{
-		return new MoveRole(EMoveBehavior.LOOK_AT_BALL);
+		return new MoveRole();
 	}
 	
 	
 	@Override
 	public void updateBeforeRoles(final AthenaAiFrame frame)
 	{
+		// Not implemented
 	}
 	
 	
 	@Override
-	protected void onGameStateChanged(final EGameStateTeam gameState)
+	protected void onGameStateChanged(final GameState gameState)
 	{
-		
+		// Not implemented
 	}
 	
 	
@@ -133,10 +128,11 @@ public class LearningPlay extends APlay
 					log.info("starting new LearningCase: " + ecase);
 					log.info("waiting to get ready:\n" + activeCase.getReadyCriteria());
 				}
+				
 				if (activeCase.isActive(frame))
 				{
 					activeCase.update(getRoles(), frame);
-					updateRoleAssignement(activeCase);
+					updateRoleAssignment(activeCase);
 					
 					if (activeCase.isFinished(frame))
 					{
@@ -147,10 +143,10 @@ public class LearningPlay extends APlay
 						{
 							currentLearningCase = Integer.MAX_VALUE;
 						}
-						List<ARole> roles = new ArrayList<ARole>(getRoles());
+						List<ARole> roles = new ArrayList<>(getRoles());
 						for (ARole role : roles)
 						{
-							switchRoles(role, new MoveRole(EMoveBehavior.LOOK_AT_BALL));
+							switchRoles(role, new MoveRole());
 						}
 					}
 				} else if (activeCase.isReady(frame, getRoles()))
@@ -159,36 +155,36 @@ public class LearningPlay extends APlay
 				}
 				
 				IVector2 pos = AVector2.ZERO_VECTOR;
-				DrawableText text = new DrawableText(pos, "still learning, active case: " + ecase, Color.black);
-				frame.getTacticalField().getDrawableShapes().get(EShapesLayer.LEARNING).add(text);
+				DrawableAnnotation text = new DrawableAnnotation(pos, "still learning, active case: " + ecase, Color.black);
+				frame.getTacticalField().getDrawableShapes().get(EAiShapesLayer.LEARNING).add(text);
 				
 			} catch (NotCreateableException err)
 			{
 				log.error("Critical error in LearningPlay, could not instanciate LearningCase", err);
 			}
-		}
-		else
+		} else
 		{
 			// lerning finished
 			IVector2 pos = AVector2.ZERO_VECTOR;
-			DrawableText text = new DrawableText(pos, "Finished learning!", Color.black);
-			frame.getTacticalField().getDrawableShapes().get(EShapesLayer.LEARNING).add(text);
+			DrawableAnnotation text = new DrawableAnnotation(pos, "Finished learning!", Color.black);
+			frame.getTacticalField().getDrawableShapes().get(EAiShapesLayer.LEARNING).add(text);
 		}
 		
 	}
 	
 	
-	private void updateRoleAssignement(final ALearningCase acase)
+	@SuppressWarnings("squid:MethodCyclomaticComplexity")
+	private void updateRoleAssignment(final ALearningCase acase)
 	{
 		List<ERole> wantedRolesSorted = activeCase.getActiveRoleTypes().stream().sorted()
 				.collect(Collectors.toList());
-		List<ERole> activeRolesSorted = new ArrayList<ERole>();
+		List<ERole> activeRolesSorted = new ArrayList<>();
 		for (ARole role : getRoles())
 		{
 			activeRolesSorted.add(role.getType());
 		}
 		activeRolesSorted = activeRolesSorted.stream().sorted().collect(Collectors.toList());
-		Map<ERole, Integer> activeStatus = new HashMap<ERole, Integer>();
+		Map<ERole, Integer> activeStatus = new EnumMap<>(ERole.class);
 		for (ERole role : activeRolesSorted)
 		{
 			if (!activeStatus.containsKey(role))
@@ -199,7 +195,7 @@ public class LearningPlay extends APlay
 				activeStatus.put(role, activeStatus.get(role) + 1);
 			}
 		}
-		Map<ERole, Integer> wantedStatus = new HashMap<ERole, Integer>();
+		Map<ERole, Integer> wantedStatus = new EnumMap<>(ERole.class);
 		for (ERole role : wantedRolesSorted)
 		{
 			if (!wantedStatus.containsKey(role))
@@ -211,11 +207,11 @@ public class LearningPlay extends APlay
 			}
 		}
 		
-		List<ERole> takeAway = new ArrayList<ERole>();
-		List<ERole> add = new ArrayList<ERole>();
+		List<ERole> takeAway = new ArrayList<>();
+		List<ERole> add = new ArrayList<>();
 		
-		Set<ERole> mergedERoles = new HashSet<ERole>(activeStatus.keySet());
-		mergedERoles.addAll(new HashSet<ERole>(wantedStatus.keySet()));
+		Set<ERole> mergedERoles = new HashSet<>(activeStatus.keySet());
+		mergedERoles.addAll(new HashSet<>(wantedStatus.keySet()));
 		
 		for (ERole key : mergedERoles)
 		{
@@ -243,13 +239,13 @@ public class LearningPlay extends APlay
 			}
 		}
 		
-		List<ARole> roles = new ArrayList<ARole>(getRoles());
+		List<ARole> roles = new ArrayList<>(getRoles());
 		for (ARole role : roles)
 		{
 			if (takeAway.contains(role.getType()))
 			{
 				takeAway.remove(role.getType());
-				if (add.size() > 0)
+				if (!add.isEmpty())
 				{
 					ARole newRole;
 					try
@@ -262,7 +258,7 @@ public class LearningPlay extends APlay
 					}
 				} else
 				{
-					switchRoles(role, new MoveRole(EMoveBehavior.LOOK_AT_BALL));
+					switchRoles(role, new MoveRole());
 				}
 			}
 		}

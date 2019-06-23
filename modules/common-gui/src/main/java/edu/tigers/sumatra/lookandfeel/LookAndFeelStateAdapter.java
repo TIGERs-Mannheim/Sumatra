@@ -29,8 +29,8 @@ public final class LookAndFeelStateAdapter implements PropertyChangeListener
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static LookAndFeelStateAdapter			instance		= null;
-	private final Set<ILookAndFeelStateObserver>	observers	= new HashSet<ILookAndFeelStateObserver>();
+	private static LookAndFeelStateAdapter instance = null;
+	private final Set<ILookAndFeelStateObserver> observers = new HashSet<>();
 	
 	
 	// --------------------------------------------------------------------------
@@ -97,7 +97,7 @@ public final class LookAndFeelStateAdapter implements PropertyChangeListener
 	@Override
 	public void propertyChange(final PropertyChangeEvent e)
 	{
-		if (e.getPropertyName().equals("lookAndFeel"))
+		if ("lookAndFeel".equals(e.getPropertyName()))
 		{
 			notifyLookAndFeelChanged();
 		}

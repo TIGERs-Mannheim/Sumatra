@@ -8,10 +8,9 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.referee;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -20,9 +19,12 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest;
 import edu.tigers.sumatra.Referee.SSL_Referee.Command;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.math.vector.AVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.referee.data.RefBoxRemoteControlFactory;
 import net.miginfocom.swing.MigLayout;
 
 
@@ -37,22 +39,21 @@ public class CreateRefereeMsgPanel extends JPanel
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long								serialVersionUID	= 5629008300026034985L;
-																							
-	private final JButton									sendButton;
-	private final JButton									start;
-	private final JButton									forceStart;
-	private final JButton									stop;
-	private final JButton									halt;
-	private final JTextField								goalsYellow;
-	private final JTextField								goalsBlue;
-	private final JComboBox<Command>						commandBox;
-	private final JCheckBox									chkReceive;
-	private final JTextField								placementPos;
-																	
-	private final List<ICreateRefereeMsgObserver>	observers			= new ArrayList<ICreateRefereeMsgObserver>();
-																							
-																							
+	private static final long serialVersionUID = 5629008300026034985L;
+	
+	private final JButton sendButton;
+	private final JButton start;
+	private final JButton forceStart;
+	private final JButton stop;
+	private final JButton halt;
+	private final JTextField goalsYellow;
+	private final JTextField goalsBlue;
+	private final JComboBox<Command> commandBox;
+	private final JCheckBox chkReceive;
+	private final JTextField placementPos;
+	private final transient List<ICreateRefereeMsgObserver> observers = new ArrayList<>();
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -66,70 +67,27 @@ public class CreateRefereeMsgPanel extends JPanel
 		goalsBlue = new JTextField("0");
 		placementPos = new JTextField("0,0");
 		
-		commandBox = new JComboBox<Command>(Command.values());
+		commandBox = new JComboBox<>(Command.values());
 		
 		sendButton = new JButton("Send!");
-		sendButton.addActionListener(new ActionListener()
-		{
-			@Override
-			public void actionPerformed(final ActionEvent e)
-			{
-				CreateRefereeMsgPanel.this.sendOwnRefereeMsg();
-			}
-		});
+		sendButton.addActionListener(e -> CreateRefereeMsgPanel.this.sendOwnRefereeMsg());
 		
 		start = new JButton("Normal Start");
-		start.addActionListener(new ActionListener()
-		{
-			@Override
-			public void actionPerformed(final ActionEvent e)
-			{
-				CreateRefereeMsgPanel.this.sendOwnRefereeMsg(Command.NORMAL_START);
-			}
-		});
+		start.addActionListener(e -> CreateRefereeMsgPanel.this.sendOwnRefereeMsg(Command.NORMAL_START));
 		
 		forceStart = new JButton("Force Start");
-		forceStart.addActionListener(new ActionListener()
-		{
-			@Override
-			public void actionPerformed(final ActionEvent e)
-			{
-				CreateRefereeMsgPanel.this.sendOwnRefereeMsg(Command.FORCE_START);
-			}
-		});
+		forceStart.addActionListener(e -> CreateRefereeMsgPanel.this.sendOwnRefereeMsg(Command.FORCE_START));
 		
 		stop = new JButton("Stop");
-		stop.addActionListener(new ActionListener()
-		{
-			@Override
-			public void actionPerformed(final ActionEvent e)
-			{
-				CreateRefereeMsgPanel.this.sendOwnRefereeMsg(Command.STOP);
-			}
-		});
-		
+		stop.addActionListener(e -> CreateRefereeMsgPanel.this.sendOwnRefereeMsg(Command.STOP));
 		
 		halt = new JButton("halt");
-		halt.addActionListener(new ActionListener()
-		{
-			@Override
-			public void actionPerformed(final ActionEvent e)
-			{
-				CreateRefereeMsgPanel.this.sendOwnRefereeMsg(Command.HALT);
-			}
-		});
+		halt.addActionListener(e -> CreateRefereeMsgPanel.this.sendOwnRefereeMsg(Command.HALT));
 		
 		chkReceive = new JCheckBox("Recv ext");
 		chkReceive.setSelected(true);
-		chkReceive.addActionListener(new ActionListener()
-		{
-			
-			@Override
-			public void actionPerformed(final ActionEvent e)
-			{
-				notifyEnableReceive(chkReceive.isSelected());
-			}
-		});
+		chkReceive.addActionListener(e -> notifyEnableReceive(chkReceive.isSelected()));
+		
 		this.add(chkReceive, "cell 0 1");
 		
 		this.add(commandBox, "cell 0 0, span 3 0");
@@ -162,6 +120,8 @@ public class CreateRefereeMsgPanel extends JPanel
 		start.setEnabled(false);
 		stop.setEnabled(false);
 		halt.setEnabled(false);
+		
+		add(new TeamPanel(ETeamColor.YELLOW));
 	}
 	
 	
@@ -172,30 +132,41 @@ public class CreateRefereeMsgPanel extends JPanel
 	
 	private void sendOwnRefereeMsg(final Command cmd)
 	{
-		// check whether input goals are numbers
-		int gBlue;
-		int gYellow;
-		try
+		if ((cmd == Command.BALL_PLACEMENT_BLUE) || (cmd == Command.BALL_PLACEMENT_YELLOW))
 		{
-			gBlue = Integer.parseInt(goalsBlue.getText());
-			gYellow = Integer.parseInt(goalsYellow.getText());
-		} catch (final NumberFormatException e)
-		{
-			goalsBlue.setText("Not a");
-			goalsYellow.setText("Number!");
-			return;
+			Optional<IVector2> place = getPlacementPos();
+			if (place.isPresent())
+			{
+				if (cmd == Command.BALL_PLACEMENT_BLUE)
+				{
+					notifyRefBoxRequest(RefBoxRemoteControlFactory.fromBallPlacement(ETeamColor.BLUE, place.get()));
+				} else
+				{
+					notifyRefBoxRequest(RefBoxRemoteControlFactory.fromBallPlacement(ETeamColor.YELLOW, place.get()));
+				}
+				
+				return;
+			}
 		}
+		
 		// send Message
-		IVector2 placementPos;
+		notifyRefBoxRequest(RefBoxRemoteControlFactory.fromCommand(cmd));
+	}
+	
+	
+	private Optional<IVector2> getPlacementPos()
+	{
+		IVector2 pos;
 		try
 		{
-			placementPos = Vector2.valueOf(this.placementPos.getText());
+			pos = AVector2.valueOf(placementPos.getText());
 		} catch (final NumberFormatException e)
 		{
-			this.placementPos.setText("Invalid input!");
-			placementPos = null;
+			placementPos.setText("Invalid input!");
+			pos = null;
 		}
-		notifySendOwnRefereeMsg(cmd, gBlue, gYellow, (short) 899, System.nanoTime(), placementPos);
+		
+		return Optional.ofNullable(pos);
 	}
 	
 	
@@ -207,23 +178,11 @@ public class CreateRefereeMsgPanel extends JPanel
 	}
 	
 	
-	/**
-	 * @param cmd
-	 * @param goalsBlue
-	 * @param goalsYellow
-	 * @param timeLeft
-	 * @param timestamp
-	 * @param placementPos
-	 */
-	public void notifySendOwnRefereeMsg(final Command cmd, final int goalsBlue, final int goalsYellow,
-			final short timeLeft, final long timestamp, final IVector2 placementPos)
+	private void notifyRefBoxRequest(final SSL_RefereeRemoteControlRequest request)
 	{
-		synchronized (observers)
+		for (ICreateRefereeMsgObserver observer : observers)
 		{
-			for (final ICreateRefereeMsgObserver observer : observers)
-			{
-				observer.onSendOwnRefereeMsg(cmd, goalsBlue, goalsYellow, timeLeft, timestamp, placementPos);
-			}
+			observer.onRefBoxRequest(request);
 		}
 	}
 	

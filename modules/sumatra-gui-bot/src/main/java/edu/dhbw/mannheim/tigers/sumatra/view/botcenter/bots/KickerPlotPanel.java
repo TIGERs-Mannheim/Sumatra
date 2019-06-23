@@ -36,14 +36,14 @@ public class KickerPlotPanel extends JPanel
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	private static final long	serialVersionUID	= -2237149164069800940L;
-																
+	
 	private final Chart2D		chart					= new Chart2D();
 	private final ITrace2D		capTrace				= new Trace2DLtd(200);
 	private final ITrace2D		chgTrace				= new Trace2DLtd(200);
-																
+	
 	private long					timeOffset			= 0;
-																
-																
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -59,7 +59,7 @@ public class KickerPlotPanel extends JPanel
 		chgTrace.setColor(Color.BLUE);
 		chgTrace.setName("Charge Current");
 		
-		final AAxis<AxisScalePolicyAutomaticBestFit> currentAxis = new AxisLinear<AxisScalePolicyAutomaticBestFit>();
+		final AAxis<AxisScalePolicyAutomaticBestFit> currentAxis = new AxisLinear<>();
 		currentAxis.setRange(new Range(0, 10.0));
 		
 		chart.getAxisY().setRangePolicy(new RangePolicyFixedViewport(new Range(0.0, maxCap)));

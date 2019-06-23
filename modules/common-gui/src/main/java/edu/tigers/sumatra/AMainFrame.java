@@ -1,29 +1,25 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Apr 10, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -40,6 +36,7 @@ import javax.swing.WindowConstants;
 import org.apache.log4j.Logger;
 
 import edu.tigers.sumatra.views.ASumatraView;
+import edu.tigers.sumatra.views.DummyView;
 import edu.tigers.sumatra.views.ESumatraViewType;
 import net.infonode.docking.DockingWindow;
 import net.infonode.docking.DockingWindowAdapter;
@@ -61,22 +58,23 @@ import net.infonode.util.Direction;
  */
 public abstract class AMainFrame extends JFrame implements IMainFrame
 {
-	private static final Logger						log					= Logger.getLogger(AMainFrame.class.getName());
-	private static final long							serialVersionUID	= -6858464942004450029L;
-																						
-	private final RootWindow							rootWindow;
-																
-	protected final List<IMainFrameObserver>		observers			= new CopyOnWriteArrayList<IMainFrameObserver>();
-	private final List<JRadioButtonMenuItem>		layoutItems			= new ArrayList<JRadioButtonMenuItem>();
-																						
-	private final JMenuBar								menuBar				= new JMenuBar();
-	private final JMenu									viewsMenu			= new JMenu("Views");
-	private final JMenu									layoutMenu			= new JMenu("Layout");
-	private final List<ASumatraView>					views					= new ArrayList<ASumatraView>();
-																						
-	private final Map<ASumatraView, List<JMenu>>	customMenuMap		= new Hashtable<ASumatraView, List<JMenu>>();
-																						
-																						
+	private static final Logger log = Logger
+			.getLogger(AMainFrame.class.getName());
+	private static final long serialVersionUID = -6858464942004450029L;
+	
+	private final RootWindow rootWindow;
+	
+	protected final transient List<IMainFrameObserver> observers = new CopyOnWriteArrayList<>();
+	private final List<JRadioButtonMenuItem> layoutItems = new ArrayList<>();
+	
+	private final JMenuBar jMenuBar = new JMenuBar();
+	private final JMenu viewsMenu = new JMenu("Views");
+	private final JMenu layoutMenu = new JMenu("Layout");
+	private final transient List<ASumatraView> views = new ArrayList<>();
+	
+	private final transient Map<ASumatraView, List<JMenu>> customMenuMap = new HashMap<>();
+	
+	
 	protected AMainFrame()
 	{
 		setLayout(new BorderLayout());
@@ -95,7 +93,9 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 		this.add(rootWindow, BorderLayout.CENTER);
 		
 		fillLayoutMenu();
-		setJMenuBar(menuBar);
+		setJMenuBar(jMenuBar);
+		viewsMenu.setMnemonic(KeyEvent.VK_V);
+		layoutMenu.setMnemonic(KeyEvent.VK_L);
 	}
 	
 	
@@ -236,34 +236,15 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 		final String filename = f.getName();
 		log.trace("Loading layout file " + filename);
 		
-		ObjectInputStream in1 = null;
-		try
+		try (FileInputStream fileInputStream = new FileInputStream(f))
 		{
-			// --- Load the layout ---
-			in1 = new ObjectInputStream(new FileInputStream(f));
-			
-			try
+			try (ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream))
 			{
-				rootWindow.read(in1, true);
-			} catch (final NullPointerException npe)
-			{
-				log.warn("Seems as if a view stored in the config is not available!", npe);
+				rootWindow.read(objectInputStream, true);
 			}
-		} catch (final IOException e1)
+		} catch (IOException err)
 		{
-			log.warn("Can't load layout: " + e1.getMessage());
-		} finally
-		{
-			if (in1 != null)
-			{
-				try
-				{
-					in1.close();
-				} catch (IOException err)
-				{
-					// ignore
-				}
-			}
+			log.error("Can't load layout.", err);
 		}
 		
 		// select RadioButton in layoutMenu
@@ -281,30 +262,15 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 	@Override
 	public void saveLayout(final String filename)
 	{
-		// --- save layout to file ---
-		ObjectOutputStream out = null;
-		try
+		try (FileOutputStream fileStream = new FileOutputStream(filename))
 		{
-			final FileOutputStream fileStream = new FileOutputStream(filename);
-			out = new ObjectOutputStream(fileStream);
-			rootWindow.write(out, false);
-			
-		} catch (final FileNotFoundException err)
-		{
-			log.error("Can't save layout:" + err.getMessage());
-		} catch (final IOException err)
-		{
-			log.error("Can't save layout:" + err.getMessage());
-		}
-		if (out != null)
-		{
-			try
+			try (ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileStream))
 			{
-				out.close();
-			} catch (IOException err)
-			{
-				// what should we do?
+				rootWindow.write(objectOutputStream, false);
 			}
+		} catch (IOException err)
+		{
+			log.error("Can't save layout.", err);
 		}
 	}
 	
@@ -355,10 +321,10 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 	{
 		for (final JMenu menu : menus)
 		{
-			menuBar.remove(menu);
+			jMenuBar.remove(menu);
 		}
 		
-		menuBar.repaint();
+		jMenuBar.repaint();
 	}
 	
 	
@@ -374,7 +340,7 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 			customMenuMap.put(view, menus);
 			for (final JMenu menu : menus)
 			{
-				menuBar.add(menu);
+				jMenuBar.add(menu);
 			}
 		}
 	}
@@ -390,10 +356,10 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 		MixedViewHandler handler = new MixedViewHandler(viewMap, new WindowViewSerializer());
 		
 		// --- create the RootWindow with MixedHandler ---
-		RootWindow rootWindow = DockingUtil.createRootWindow(viewMap, handler, true);
+		RootWindow newRootWindow = DockingUtil.createRootWindow(viewMap, handler, true);
 		
 		// --- add a listener which updates the menus when a window is closing or closed.
-		rootWindow.addListener(new ViewUpdater());
+		newRootWindow.addListener(new ViewUpdater());
 		
 		/*
 		 * In this properties object the modified property values for close buttons etc. are stored. This object is
@@ -409,12 +375,12 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 		// --- our properties object is the super object of the root window properties object, so all property values of
 		// the
 		// theme and in our property object will be used by the root window ---
-		rootWindow.getRootWindowProperties().addSuperObject(properties);
+		newRootWindow.getRootWindowProperties().addSuperObject(properties);
 		
 		// --- enable the bottom window bar ---
-		rootWindow.getWindowBar(Direction.DOWN).setEnabled(true);
+		newRootWindow.getWindowBar(Direction.DOWN).setEnabled(true);
 		
-		return rootWindow;
+		return newRootWindow;
 	}
 	
 	
@@ -548,27 +514,31 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 		}
 		
 		
+		private void hideWindow(String title)
+		{
+			for (final ASumatraView view : views)
+			{
+				if (view.getType().getTitle().equals(title))
+				{
+					final List<JMenu> menu = customMenuMap.remove(view);
+					if (menu != null)
+					{
+						removeFromCustomMenu(menu);
+					}
+					
+					view.getSumatraView().onHidden();
+				}
+			}
+		}
+		
+		
 		@Override
 		public void windowHidden(final DockingWindow window)
 		{
-			final String titles[] = window.getTitle().split(",");
+			final String[] titles = window.getTitle().split(",");
 			for (String title : titles)
 			{
-				title = title.trim();
-				
-				for (final ASumatraView view : views)
-				{
-					if (view.getType().getTitle().equals(title))
-					{
-						final List<JMenu> menu = customMenuMap.remove(view);
-						if (menu != null)
-						{
-							removeFromCustomMenu(menu);
-						}
-						
-						view.getSumatraView().onHidden();
-					}
-				}
+				hideWindow(title.trim());
 			}
 		}
 		
@@ -608,17 +578,17 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
-			exit();
+			// triggered when using menu -> exit
+			dispatchEvent(new WindowEvent(AMainFrame.this, WindowEvent.WINDOW_CLOSING));
 		}
 		
 		
 		@Override
-		public void windowClosing(final WindowEvent w)
+		public void windowClosing(final WindowEvent windowEvent)
 		{
+			super.windowClosing(windowEvent);
 			exit();
 		}
-		
-		
 	}
 	
 	private class WindowViewSerializer implements ViewSerializer
@@ -650,8 +620,13 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 					return sumatraView.getView();
 				}
 			}
-			log.error("There is no view with id " + id + ". Can not load.");
-			return null;
+			ESumatraViewType type = ESumatraViewType.fromId(id);
+			log.warn("View " + type + " with id " + id + " has been removed.");
+			if (type == null)
+			{
+				type = ESumatraViewType.DUMMY;
+			}
+			return new DummyView(type).getView();
 		}
 	}
 }

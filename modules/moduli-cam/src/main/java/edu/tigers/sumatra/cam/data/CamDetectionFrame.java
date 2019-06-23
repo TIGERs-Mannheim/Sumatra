@@ -1,13 +1,9 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 21.07.2010
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.cam.data;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -25,19 +21,20 @@ import com.sleepycat.persist.model.Persistent;
 public class CamDetectionFrame
 {
 	/** time-stamp in System.nanotime() */
-	private final long				tCapture;
+	private final long							tCapture;
 	
 	/** time-stamp in System.nanotime() */
-	private final long				tSent;
+	private final long							tSent;
 	
 	/** ID 0 or 1 */
-	private final int					cameraId;
+	private final int								cameraId;
 	
 	/** independent frame number, continuous */
-	private final long				frameNumber;
-	private final List<CamBall>	balls;
-	private final List<CamRobot>	robotsYellow;
-	private final List<CamRobot>	robotsBlue;
+	private final long							frameNumber;
+	private final List<CamBall>				balls;
+	private final List<CamRobot>				robotsYellow;
+	private final List<CamRobot>				robotsBlue;
+	private final transient List<CamRobot>	robots	= new ArrayList<>();
 	
 	
 	/**
@@ -50,8 +47,8 @@ public class CamDetectionFrame
 		cameraId = 0;
 		frameNumber = 0;
 		balls = null;
-		robotsYellow = null;
-		robotsBlue = null;
+		robotsYellow = Collections.emptyList();
+		robotsBlue = Collections.emptyList();
 	}
 	
 	
@@ -82,7 +79,6 @@ public class CamDetectionFrame
 	
 	
 	/**
-	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 	 * @param f
 	 */
 	public CamDetectionFrame(final CamDetectionFrame f)
@@ -94,6 +90,26 @@ public class CamDetectionFrame
 		balls = f.balls;
 		robotsBlue = f.robotsBlue;
 		robotsYellow = f.robotsYellow;
+	}
+	
+	
+	/**
+	 * @param f base frame to copy
+	 * @param balls new balls
+	 * @param robotsYellow new robots
+	 * @param robotsBlue new robots
+	 */
+	public CamDetectionFrame(final CamDetectionFrame f,
+			final List<CamBall> balls, final List<CamRobot> robotsYellow, final List<CamRobot> robotsBlue)
+	{
+		tCapture = f.tCapture;
+		tSent = f.tSent;
+		cameraId = f.cameraId;
+		frameNumber = f.frameNumber;
+		
+		this.balls = balls;
+		this.robotsBlue = robotsBlue;
+		this.robotsYellow = robotsYellow;
 	}
 	
 	
@@ -168,5 +184,19 @@ public class CamDetectionFrame
 	public List<CamRobot> getRobotsBlue()
 	{
 		return Collections.unmodifiableList(robotsBlue);
+	}
+	
+	
+	/**
+	 * @return all robots (yellow and blue)
+	 */
+	public List<CamRobot> getRobots()
+	{
+		if (robots.isEmpty())
+		{
+			robots.addAll(robotsYellow);
+			robots.addAll(robotsBlue);
+		}
+		return Collections.unmodifiableList(robots);
 	}
 }

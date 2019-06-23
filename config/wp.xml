@@ -1,19 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<edu.tigers.sumatra.wp base="edu.tigers.sumatra.wp">
-    <AWorldPredictor>
-        <correctFlyingBalls>false</correctFlyingBalls>
-        <exclusionRectP1>0;0</exclusionRectP1>
-        <exclusionRectP2>0;0</exclusionRectP2>
-        <ownThread>false</ownThread>
-    </AWorldPredictor>
-    <kalman>
-        <data>
-            <PredictionContext>
-                <maxStepCount>20</maxStepCount>
-                <predictionLookahead>0.0</predictionLookahead>
-                <predictionLookahead:SUMATRA>0</predictionLookahead:SUMATRA>
-                <stepSize>0.01</stepSize>
-            </PredictionContext>
-        </data>
-    </kalman>
-</edu.tigers.sumatra.wp>
+<edu.tigers.sumatra.wp.util.BotLastTouchedBallCalculator base="edu.tigers.sumatra.wp.util.BotLastTouchedBallCalculator">
+    <angleThresholdDegree>5.0</angleThresholdDegree>
+    <botRadiusMargin>30.0</botRadiusMargin>
+    <minSearchRadius>300.0</minSearchRadius>
+    <velGainThreshold>0.3</velGainThreshold>
+</edu.tigers.sumatra.wp.util.BotLastTouchedBallCalculator>

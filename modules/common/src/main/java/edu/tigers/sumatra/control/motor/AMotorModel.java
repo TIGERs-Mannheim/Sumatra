@@ -12,10 +12,10 @@ import java.util.Random;
 
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.math.IVector3;
-import edu.tigers.sumatra.math.IVectorN;
-import edu.tigers.sumatra.math.Vector3;
-import edu.tigers.sumatra.math.VectorN;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.IVectorN;
+import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.VectorN;
 
 
 /**
@@ -27,7 +27,7 @@ public abstract class AMotorModel implements IMotorModel
 	private static final Logger	log			= Logger.getLogger(AMotorModel.class.getName());
 	
 	private Random						rnd			= new Random();
-	private IVectorN					motorNoise	= new VectorN(4);
+	private IVectorN					motorNoise	= VectorN.zero(4);
 	private IVector3					xywNoise		= Vector3.ZERO_VECTOR;
 	
 	
@@ -101,7 +101,7 @@ public abstract class AMotorModel implements IMotorModel
 			this.motorNoise = motorNoise;
 		} else if (motorNoise.getNumDimensions() == 1)
 		{
-			this.motorNoise = new VectorN(4).apply(v -> motorNoise.x());
+			this.motorNoise = VectorN.zero(4).apply(v -> motorNoise.x());
 		} else
 		{
 			log.error("Invalid motor noise size: " + motorNoise.getNumDimensions());
@@ -120,7 +120,7 @@ public abstract class AMotorModel implements IMotorModel
 			this.xywNoise = xywNoise;
 		} else if (xywNoise.getNumDimensions() == 1)
 		{
-			this.xywNoise = new Vector3().apply(v -> xywNoise.x());
+			this.xywNoise = Vector3.zero().apply(v -> xywNoise.x());
 		} else
 		{
 			log.error("Invalid xyw noise size: " + xywNoise.getNumDimensions());

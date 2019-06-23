@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Sep 7, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.drawable;
 
 import java.awt.Color;
@@ -14,45 +10,39 @@ import java.awt.Graphics2D;
 
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.math.vector.AVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 
 
 /**
+ * Draw a text at a certain position with an offset.
+ * The center position is given in field coordinates. The offset is given
+ * in graphics coordinates (X right, Y down).
+ * The offset text will thus always appear at the same location regardless
+ * of field orientation.
+ *
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * @author AndreR
  */
 @Persistent
 public class DrawableAnnotation implements IDrawableShape
 {
 	private final IVector2	center;
 	private final String		text;
-									
-	private double				margin	= 0;
-	private ELocation			location	= ELocation.TOP;
-	private Color				color		= Color.BLACK;
-	private int					fontSize	= 10;
-	private transient Font	font		= null;
-												
-	/**
-	 * 
-	 */
-	public enum ELocation
-	{
-		/**  */
-		TOP,
-		/**  */
-		BOTTOM,
-		/**  */
-		LEFT,
-		/**  */
-		RIGHT
-	}
+	
+	private IVector2			offset					= Vector2.ZERO_VECTOR;
+	private boolean			centerHorizontally	= false;
+	private Color				color						= Color.BLACK;
+	private int					fontHeight				= 50;
+	private boolean			bold						= false;
 	
 	
 	@SuppressWarnings("unused")
 	private DrawableAnnotation()
 	{
-		center = null;
-		text = null;
+		center = AVector2.ZERO_VECTOR;
+		text = "";
 	}
 	
 	
@@ -68,13 +58,53 @@ public class DrawableAnnotation implements IDrawableShape
 	}
 	
 	
+	/**
+	 * @param center
+	 * @param text
+	 * @param centerHorizontal
+	 */
+	public DrawableAnnotation(final IVector2 center, final String text, final boolean centerHorizontal)
+	{
+		super();
+		this.center = center;
+		this.text = text;
+		centerHorizontally = centerHorizontal;
+	}
+	
+	
+	/**
+	 * @param center
+	 * @param text
+	 * @param offset
+	 */
+	public DrawableAnnotation(final IVector2 center, final String text, final IVector2 offset)
+	{
+		super();
+		this.center = center;
+		this.text = text;
+		this.offset = offset;
+	}
+	
+	
+	/**
+	 * @param center
+	 * @param text
+	 * @param color
+	 */
+	public DrawableAnnotation(final IVector2 center, final String text, final Color color)
+	{
+		super();
+		this.center = center;
+		this.text = text;
+		this.color = color;
+	}
+	
+	
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
-		if (font == null)
-		{
-			font = new Font("", Font.PLAIN, fontSize);
-		}
+		Font font = new Font("", bold ? Font.BOLD : Font.PLAIN, tool.scaleYLength(fontHeight));
+		
 		g.setFont(font);
 		g.setColor(color);
 		
@@ -85,75 +115,40 @@ public class DrawableAnnotation implements IDrawableShape
 		double maxWidth = 0;
 		for (String line : lines)
 		{
-			maxWidth = Math.max(maxWidth, g.getFontMetrics(font).getStringBounds(line, g).getWidth());
+			maxWidth = Math.max(maxWidth, g.getFontMetrics(font).stringWidth(line));
 		}
+		
 		double lineHeight = g.getFontMetrics(font).getHeight();
 		double textHeight = lineHeight * numLines;
 		
-		double drawingX;
-		double drawingY;
-		switch (location)
+		double drawingX = transPoint.x() + tool.scaleXLength(offset.x());
+		double drawingY = transPoint.y() + tool.scaleYLength(offset.y());
+		
+		drawingY += (textHeight / 2) - g.getFontMetrics(font).getDescent();
+		
+		if (offset.x() < 0)
 		{
-			case BOTTOM:
-				drawingX = transPoint.x() - (maxWidth / 2.0);
-				drawingY = transPoint.y() + tool.scaleYLength(margin);
-				break;
-			case LEFT:
-				drawingX = transPoint.x() - maxWidth - tool.scaleXLength(margin);
-				drawingY = transPoint.y() - (textHeight / 2.0) - (lineHeight / 2.0);
-				break;
-			case RIGHT:
-				drawingX = transPoint.x() + tool.scaleXLength(margin);
-				drawingY = transPoint.y() - (textHeight / 2.0) - (lineHeight / 2.0);
-				break;
-			case TOP:
-				drawingX = transPoint.x() - (maxWidth / 2.0);
-				drawingY = transPoint.y() - tool.scaleYLength(margin) - textHeight;
-				break;
-			default:
-				return;
+			drawingX -= maxWidth;
 		}
+		
+		if (centerHorizontally)
+		{
+			if (offset.x() < 0)
+			{
+				drawingX += maxWidth / 2;
+			} else
+			{
+				drawingX -= maxWidth / 2;
+			}
+		}
+		
+		drawingY -= (numLines - 1) * lineHeight;
 		
 		for (String txt : lines)
 		{
-			g.drawString(txt, (float) drawingX, (float) (drawingY += lineHeight));
+			g.drawString(txt, (float) drawingX, (float) drawingY);
+			drawingY += lineHeight;
 		}
-	}
-	
-	
-	/**
-	 * @return the margin
-	 */
-	public final double getMargin()
-	{
-		return margin;
-	}
-	
-	
-	/**
-	 * @param margin the margin to set
-	 */
-	public final void setMargin(final double margin)
-	{
-		this.margin = margin;
-	}
-	
-	
-	/**
-	 * @return the location
-	 */
-	public final ELocation getLocation()
-	{
-		return location;
-	}
-	
-	
-	/**
-	 * @param location the location to set
-	 */
-	public final void setLocation(final ELocation location)
-	{
-		this.location = location;
 	}
 	
 	
@@ -179,18 +174,20 @@ public class DrawableAnnotation implements IDrawableShape
 	/**
 	 * @return the fontSize
 	 */
-	public final int getFontSize()
+	public final int getFontHeight()
 	{
-		return fontSize;
+		return fontHeight;
 	}
 	
 	
 	/**
-	 * @param fontSize the fontSize to set
+	 * @param fontHeight the fontHeight to set in [mm]
+	 * @return
 	 */
-	public final void setFontSize(final int fontSize)
+	public final DrawableAnnotation setFontHeight(final int fontHeight)
 	{
-		this.fontSize = fontSize;
+		this.fontHeight = fontHeight;
+		return this;
 	}
 	
 	
@@ -209,6 +206,58 @@ public class DrawableAnnotation implements IDrawableShape
 	public final String getText()
 	{
 		return text;
+	}
+	
+	
+	/**
+	 * @return the offset
+	 */
+	public IVector2 getOffset()
+	{
+		return offset;
+	}
+	
+	
+	/**
+	 * @param offset the offset to set
+	 * @return
+	 */
+	public DrawableAnnotation setOffset(final IVector2 offset)
+	{
+		this.offset = offset;
+		return this;
+	}
+	
+	
+	/**
+	 * @return the centerHorizontally
+	 */
+	public boolean isCenterHorizontally()
+	{
+		return centerHorizontally;
+	}
+	
+	
+	/**
+	 * @param centerHorizontally the centerHorizontally to set
+	 * @return
+	 */
+	public DrawableAnnotation setCenterHorizontally(final boolean centerHorizontally)
+	{
+		this.centerHorizontally = centerHorizontally;
+		return this;
+	}
+	
+	
+	public boolean isBold()
+	{
+		return bold;
+	}
+	
+	
+	public void setBold(final boolean bold)
+	{
+		this.bold = bold;
 	}
 	
 }

@@ -38,6 +38,7 @@ public class TigerBootloaderData extends ACommand
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
+	 * Constructor.
 	 */
 	public TigerBootloaderData()
 	{

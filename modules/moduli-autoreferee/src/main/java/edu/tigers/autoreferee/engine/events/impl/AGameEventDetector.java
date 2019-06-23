@@ -14,7 +14,7 @@ import java.util.Set;
 import com.github.g3force.configurable.ConfigRegistration;
 
 import edu.tigers.autoreferee.engine.events.IGameEventDetector;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
+import edu.tigers.sumatra.referee.data.EGameState;
 
 
 /**
@@ -24,13 +24,13 @@ import edu.tigers.sumatra.wp.data.EGameStateNeutral;
  */
 public abstract class AGameEventDetector implements IGameEventDetector
 {
-	private final Set<EGameStateNeutral>	activeStates;
+	private final Set<EGameState> activeStates;
 	
 	
 	/**
 	 * @param gamestate The gamestate this rule will be active in
 	 */
-	public AGameEventDetector(final EGameStateNeutral gamestate)
+	protected AGameEventDetector(final EGameState gamestate)
 	{
 		this(EnumSet.of(gamestate));
 	}
@@ -39,14 +39,14 @@ public abstract class AGameEventDetector implements IGameEventDetector
 	/**
 	 * @param activeStates the list of game states that the rule will be active in
 	 */
-	public AGameEventDetector(final Set<EGameStateNeutral> activeStates)
+	protected AGameEventDetector(final Set<EGameState> activeStates)
 	{
 		this.activeStates = activeStates;
 	}
 	
 	
 	@Override
-	public boolean isActiveIn(final EGameStateNeutral state)
+	public boolean isActiveIn(final EGameState state)
 	{
 		return activeStates.contains(state);
 	}

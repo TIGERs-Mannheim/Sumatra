@@ -30,12 +30,12 @@ public class RoleFinderInfo
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private static final Logger	log						= Logger.getLogger(RoleFinderInfo.class.getName());
-	private final int					minRoles;
-	private final int					maxRoles;
-	private final int					desiredRoles;
-	private final List<BotID>		desiredBots				= new ArrayList<BotID>(3);
-	private int							forceNumDesiredBots	= 0;
+	private static final Logger log = Logger.getLogger(RoleFinderInfo.class.getName());
+	private final int minRoles;
+	private final int maxRoles;
+	private final int desiredRoles;
+	private final List<BotID> desiredBots = new ArrayList<>(3);
+	private int forceNumDesiredBots = 0;
 	
 	
 	@SuppressWarnings("unused")
@@ -110,7 +110,7 @@ public class RoleFinderInfo
 	/**
 	 * @return the forceNumDesiredBots
 	 */
-	public int getForceNumDesiredBots()
+	int getForceNumDesiredBots()
 	{
 		return forceNumDesiredBots;
 	}
@@ -118,7 +118,7 @@ public class RoleFinderInfo
 	
 	/**
 	 * Force the first forceNumDesiredBots number of bots in the desiredBots list, regardless of their usefulness
-	 * 
+	 *
 	 * @param forceNumDesiredBots the forceNumDesiredBots to set
 	 */
 	public void setForceNumDesiredBots(final int forceNumDesiredBots)
@@ -148,7 +148,7 @@ public class RoleFinderInfo
 	{
 		final int prime = 31;
 		int result = 1;
-		result = (prime * result) + ((desiredBots == null) ? 0 : desiredBots.hashCode());
+		result = (prime * result) + desiredBots.hashCode();
 		result = (prime * result) + desiredRoles;
 		result = (prime * result) + forceNumDesiredBots;
 		result = (prime * result) + maxRoles;
@@ -156,7 +156,9 @@ public class RoleFinderInfo
 		return result;
 	}
 	
-	
+
+	// More readable without simplified statement
+	@SuppressWarnings("SimplifiableIfStatement")
 	@Override
 	public boolean equals(final Object obj)
 	{
@@ -173,13 +175,7 @@ public class RoleFinderInfo
 			return false;
 		}
 		RoleFinderInfo other = (RoleFinderInfo) obj;
-		if (desiredBots == null)
-		{
-			if (other.desiredBots != null)
-			{
-				return false;
-			}
-		} else if (!desiredBots.equals(other.desiredBots))
+		if (!desiredBots.equals(other.desiredBots))
 		{
 			return false;
 		}
@@ -195,10 +191,6 @@ public class RoleFinderInfo
 		{
 			return false;
 		}
-		if (minRoles != other.minRoles)
-		{
-			return false;
-		}
-		return true;
+		return minRoles == other.minRoles;
 	}
 }

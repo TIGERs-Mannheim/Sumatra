@@ -11,8 +11,8 @@ package edu.tigers.sumatra.wp.kalman2.bot;
 import java.util.Arrays;
 
 import edu.tigers.sumatra.filter.ukf.AUnscentedKalmanFilter;
-import edu.tigers.sumatra.math.IVector3;
-import edu.tigers.sumatra.math.Vector3;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.Vector3;
 
 
 /**
@@ -112,42 +112,42 @@ public class BotUnscentedKalmanFilter extends AUnscentedKalmanFilter implements 
 	@Override
 	public IVector3 getPos()
 	{
-		return new Vector3(Arrays.copyOfRange(predState, 0, 3));
+		return Vector3.fromArray(Arrays.copyOfRange(predState, 0, 3));
 	}
 	
 	
 	@Override
 	public IVector3 getVel()
 	{
-		return new Vector3(Arrays.copyOfRange(predState, 3, 6));
+		return Vector3.fromArray(Arrays.copyOfRange(predState, 3, 6));
 	}
 	
 	
 	@Override
 	public IVector3 getAcc()
 	{
-		return new Vector3();
+		return Vector3.zero();
 	}
 	
 	
 	@Override
 	public IVector3 getCurAcc()
 	{
-		return new Vector3();
+		return Vector3.zero();
 	}
 	
 	
 	@Override
 	public IVector3 getCurVel()
 	{
-		return new Vector3(Arrays.copyOfRange(curState, 3, 6));
+		return Vector3.fromArray(Arrays.copyOfRange(curState, 3, 6));
 	}
 	
 	
 	@Override
 	public IVector3 getCurPos()
 	{
-		return new Vector3(Arrays.copyOfRange(curState, 0, 3));
+		return Vector3.fromArray(Arrays.copyOfRange(curState, 0, 3));
 	}
 	
 	

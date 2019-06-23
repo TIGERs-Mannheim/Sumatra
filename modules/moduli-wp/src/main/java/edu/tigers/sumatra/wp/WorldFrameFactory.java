@@ -1,23 +1,21 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 08.11.2011
- * Author(s): osteinbrecher
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.wp;
 
 import java.util.Random;
 
-import edu.tigers.sumatra.bot.DummyBot;
+import edu.tigers.sumatra.bot.RobotInfo;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.BotIDMap;
+import edu.tigers.sumatra.ids.EAiTeam;
+import edu.tigers.sumatra.ids.EAiType;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.ids.IBotIDMap;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.wp.data.Geometry;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
 import edu.tigers.sumatra.wp.data.TrackedBall;
@@ -32,21 +30,11 @@ import edu.tigers.sumatra.wp.data.WorldFrame;
  */
 public class WorldFrameFactory
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	/** random without seed for reproducibility */
-	private static final Random RND = new Random();
+	private static final Random RND = new Random(0);
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 * 
-	 */
-	public WorldFrameFactory()
+	@SuppressWarnings("unused")
+	private WorldFrameFactory()
 	{
 	}
 	
@@ -63,11 +51,6 @@ public class WorldFrameFactory
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
 	/**
 	 * @param frameNumber
 	 * @param timestamp
@@ -75,7 +58,7 @@ public class WorldFrameFactory
 	 */
 	public static WorldFrame createWorldFrame(final long frameNumber, final long timestamp)
 	{
-		return new WorldFrame(createSimpleWorldFrame(frameNumber, timestamp), ETeamColor.YELLOW, false);
+		return new WorldFrame(createSimpleWorldFrame(frameNumber, timestamp), EAiTeam.YELLOW_PRIMARY, false);
 	}
 	
 	
@@ -93,29 +76,13 @@ public class WorldFrameFactory
 		for (int i = 0; i < 6; i++)
 		{
 			BotID idF = BotID.createBotId(i, ETeamColor.BLUE);
-			bots.put(idF, createBot(timestamp, idF, ETeamColor.BLUE));
+			bots.put(idF, createBot(timestamp, idF));
 			
 			BotID idT = BotID.createBotId(i, ETeamColor.YELLOW);
-			bots.put(idT, createBot(timestamp, idT, ETeamColor.YELLOW));
+			bots.put(idT, createBot(timestamp, idT));
 		}
 		
-		final TrackedBall ball = TrackedBall.defaultInstance();
-		
-		SimpleWorldFrame swf = new SimpleWorldFrame(bots, ball, frameNumber, timestamp);
-		return swf;
-	}
-	
-	
-	/**
-	 * Creates a new WorldFrame without bots
-	 * 
-	 * @param frameNumber the id of the {@link WorldFrame}.
-	 * @param timestamp
-	 * @return
-	 */
-	public static SimpleWorldFrame createEmptyWorldFrame(final long frameNumber, final long timestamp)
-	{
-		return SimpleWorldFrame.createEmptyWorldFrame(frameNumber, timestamp);
+		return new SimpleWorldFrame(bots, TrackedBall.createStub(), null, frameNumber, timestamp);
 	}
 	
 	
@@ -124,22 +91,21 @@ public class WorldFrameFactory
 	 * 
 	 * @param timestamp
 	 * @param id
-	 * @param color
 	 * @return bot
 	 */
-	public static ITrackedBot createBot(final long timestamp, final BotID id, final ETeamColor color)
+	public static ITrackedBot createBot(final long timestamp, final BotID id)
 	{
 		double x = (RND.nextDouble() * Geometry.getFieldLength())
 				- (Geometry.getFieldLength() / 2.0);
 		double y = (RND.nextDouble() * Geometry.getFieldWidth())
 				- (Geometry.getFieldWidth() / 2.0);
-		final IVector2 pos = new Vector2(x, y);
+		final IVector2 pos = Vector2.fromXY(x, y);
 		
-		TrackedBot tBot = new TrackedBot(timestamp, id);
-		tBot.setPos(pos);
-		DummyBot bot = new DummyBot(id);
-		bot.setAvail2Ai(true);
-		tBot.setBot(bot);
-		return tBot;
+		RobotInfo robotInfo = RobotInfo.stubBuilder(id, timestamp).withAiType(EAiType.PRIMARY).build();
+		
+		return TrackedBot.stubBuilder(id, timestamp)
+				.withPos(pos)
+				.withBotInfo(robotInfo)
+				.build();
 	}
 }

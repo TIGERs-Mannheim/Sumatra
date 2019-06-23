@@ -11,7 +11,7 @@ package edu.tigers.sumatra.sim;
 import java.util.ArrayList;
 import java.util.List;
 
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**
@@ -39,7 +39,7 @@ public class SumatraBotPair
 	 */
 	public List<SumatraBot> getBotPair()
 	{
-		List<SumatraBot> botPair = new ArrayList<SumatraBot>();
+		List<SumatraBot> botPair = new ArrayList<>();
 		
 		botPair.add(botOne);
 		botPair.add(botTwo);

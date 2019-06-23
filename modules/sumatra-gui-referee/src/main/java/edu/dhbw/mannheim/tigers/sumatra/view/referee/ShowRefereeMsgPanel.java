@@ -22,8 +22,8 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
 
+import edu.tigers.sumatra.Referee.SSL_Referee;
 import edu.tigers.sumatra.Referee.SSL_Referee.Command;
-import edu.tigers.sumatra.referee.RefereeMsg;
 import edu.tigers.sumatra.view.TextPane;
 import net.miginfocom.swing.MigLayout;
 
@@ -32,55 +32,51 @@ import net.miginfocom.swing.MigLayout;
  * Incoming referee messages are displayed here.
  * 
  * @author DionH
+ * @author AndreR <andre@ryll.cc>
  */
 public class ShowRefereeMsgPanel extends JPanel
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long		serialVersionUID	= -508393753936993622L;
-																	
-	private final TextPane			commandsList;
-	private Command					lastCmd				= null;
-	private final JLabel				time;
-	private final JLabel				timeout;
-	private final JLabel				goals;
-											
-	private final DecimalFormat	df2					= new DecimalFormat("00");
-	private final Color				color					= new Color(0, 0, 0);
-																	
-																	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 */
+	private static final long serialVersionUID = -508393753936993622L;
+	
+	private final TextPane commandsList;
+	private Command lastCmd = null;
+	private final JLabel time;
+	private final JLabel goals;
+	private final JLabel stage;
+	
+	private final DecimalFormat df2 = new DecimalFormat("00");
+	private final Color color = new Color(0, 0, 0);
+	
+	
+	/** Constructor. */
 	public ShowRefereeMsgPanel()
 	{
-		setLayout(new MigLayout());
+		setLayout(new MigLayout("wrap 2", "[fill]10[fill]"));
+		
+		add(new JLabel("Stage:"));
+		stage = new JLabel();
+		stage.setFont(stage.getFont().deriveFont(Font.BOLD));
+		add(stage);
 		
 		// Goals
-		this.add(new JLabel("Goals:"));
+		add(new JLabel("Goals:"));
 		goals = new JLabel();
 		goals.setFont(goals.getFont().deriveFont(Font.BOLD));
-		this.add(goals);
+		add(goals);
+		
+		// Time
+		add(new JLabel("Time:"));
+		time = new JLabel();
+		time.setFont(time.getFont().deriveFont(Font.BOLD));
+		add(time);
 		
 		// Commands
 		commandsList = new TextPane(100);
-		commandsList.setPreferredSize(new Dimension(250, 50));
-		this.add(commandsList, "span 0 3, wrap");
-		
-		// Time
-		this.add(new JLabel("Time:"));
-		time = new JLabel();
-		time.setFont(time.getFont().deriveFont(Font.BOLD));
-		this.add(time, "wrap");
-		
-		// Timeouts
-		this.add(new JLabel("Timeouts:"), "top");
-		timeout = new JLabel();
-		timeout.setFont(timeout.getFont().deriveFont(Font.BOLD));
-		this.add(timeout, "top");
+		commandsList.setMaximumSize(new Dimension(commandsList.getMaximumSize().width, this.getPreferredSize().height));
+		add(commandsList, "span 2");
 	}
 	
 	
@@ -92,69 +88,33 @@ public class ShowRefereeMsgPanel extends JPanel
 	/**
 	 * @param msg
 	 */
-	public void newRefereeMsg(final RefereeMsg msg)
+	public void update(final SSL_Referee msg)
 	{
-		EventQueue.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
+		EventQueue.invokeLater(() -> {
+			// Goals
+			goals.setText(msg.getYellow().getScore() + " (Y) : (B) " + msg.getBlue().getScore());
+			
+			// Time
+			final long min = TimeUnit.MICROSECONDS.toMinutes(msg.getStageTimeLeft());
+			final long sec = TimeUnit.MICROSECONDS.toSeconds(msg.getStageTimeLeft()) - (60 * min);
+			time.setText(df2.format(min) + ":" + df2.format(sec));
+			
+			stage.setText(msg.getStage().name());
+			
+			if (!msg.getCommand().equals(lastCmd))
 			{
-				// Goals
-				goals.setText(msg.getTeamInfoYellow().getScore() + " (Y) : (B) " + msg.getTeamInfoBlue().getScore());
-				
-				// Time
-				final long min = TimeUnit.MICROSECONDS.toMinutes(msg.getStageTimeLeft());
-				final long sec = TimeUnit.MICROSECONDS.toSeconds(msg.getStageTimeLeft()) - (60 * min);
-				time.setText(df2.format(min) + ":" + df2.format(sec) + " (" + msg.getStage().name() + ")");
-				
-				// Timeouts yellow
-				long minTo = TimeUnit.MICROSECONDS.toMinutes(msg.getTeamInfoYellow().getTimeoutTime());
-				long secTo = TimeUnit.MICROSECONDS.toSeconds(msg.getTeamInfoYellow().getTimeoutTime()) - (60 * minTo);
-				timeout.setText("Y:" + msg.getTeamInfoYellow().getTimeouts() + " (" + df2.format(minTo) + ":"
-						+ df2.format(secTo)
-						+ ")");
-						
-				// Timeouts blue
-				minTo = TimeUnit.MICROSECONDS.toMinutes(msg.getTeamInfoBlue().getTimeoutTime());
-				secTo = TimeUnit.MICROSECONDS.toSeconds(msg.getTeamInfoBlue().getTimeoutTime()) - (60 * minTo);
-				timeout.setText(timeout.getText() + " B:" + msg.getTeamInfoBlue().getTimeouts() + " (" + df2.format(minTo)
-						+ ":"
-						+ df2.format(secTo) + ")");
-						
-				if (!msg.getCommand().equals(lastCmd))
+				// Command
+				final StyleContext sc = StyleContext.getDefaultStyleContext();
+				final AttributeSet aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, color);
+				String msgString = "";
+				if (commandsList.getLength() != 0)
 				{
-					// Command
-					final StyleContext sc = StyleContext.getDefaultStyleContext();
-					final AttributeSet aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, color);
-					String msgString = "";
-					if (commandsList.getLength() != 0)
-					{
-						msgString += "\n";
-					}
-					msgString = msgString + msg.getCommand().toString();
-					commandsList.append(msgString, aset);
-					lastCmd = msg.getCommand();
+					msgString += "\n";
 				}
+				msgString = msgString + msg.getCommand().toString();
+				commandsList.append(msgString, aset);
+				lastCmd = msg.getCommand();
 			}
 		});
-	}
-	
-	
-	/**
-	 */
-	public void init()
-	{
-		goals.setText("0 (Y) : (B) 0");
-		time.setText("00:00");
-		timeout.setText("Y:4 (05:00) B:4 (05:00)");
-		commandsList.clear();
-	}
-	
-	
-	/**
-	 */
-	public void deinit()
-	{
-		init();
 	}
 }

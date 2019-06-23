@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Aug 21, 2010
- * Author(s): bernhard
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.visualizer.view;
 
 import java.awt.event.ActionEvent;
@@ -20,9 +16,9 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 
+import edu.tigers.sumatra.drawable.ShapeMap.IShapeLayer;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.visualizer.OptionsPanelPresenter;
-import edu.tigers.sumatra.wp.data.ShapeMap.IShapeLayer;
 
 
 /**
@@ -32,15 +28,16 @@ import edu.tigers.sumatra.wp.data.ShapeMap.IShapeLayer;
  */
 public class VisualizerOptionsMenu extends JMenuBar
 {
-	private static final long									serialVersionUID	= 6408342941543334436L;
-																								
-	private final List<IOptionsPanelObserver>				observers			= new CopyOnWriteArrayList<IOptionsPanelObserver>();
-	private final Map<String, JMenu>							parentMenus			= new HashMap<>();
-	private final Map<IShapeLayer, JCheckBoxMenuItem>	checkBoxes			= new HashMap<>();
-	private final CheckboxListener							checkboxListener;
-																		
-																		
+	private static final long serialVersionUID = 6408342941543334436L;
+	
+	private final List<IOptionsPanelObserver> observers = new CopyOnWriteArrayList<>();
+	private final Map<String, JMenu> parentMenus = new HashMap<>();
+	private final Map<IShapeLayer, JCheckBoxMenuItem> checkBoxes = new HashMap<>();
+	private final CheckboxListener checkboxListener;
+	
+	
 	/**
+	 * Default
 	 */
 	public VisualizerOptionsMenu()
 	{
@@ -60,8 +57,10 @@ public class VisualizerOptionsMenu extends JMenuBar
 		pActions.add(btnReset);
 		
 		addMenuEntry(EVisualizerOptions.FANCY);
-		addMenuEntry(EVisualizerOptions.YELLOW_AI);
-		addMenuEntry(EVisualizerOptions.BLUE_AI);
+		addMenuEntry(EVisualizerOptions.YELLOW_AI_PRIMARY);
+		addMenuEntry(EVisualizerOptions.BLUE_AI_PRIMARY);
+		addMenuEntry(EVisualizerOptions.YELLOW_AI_SECONDARY);
+		addMenuEntry(EVisualizerOptions.BLUE_AI_SECONDARY);
 		
 		
 		JMenu pShortcuts = new JMenu("Shortcuts");
@@ -76,6 +75,7 @@ public class VisualizerOptionsMenu extends JMenuBar
 		pShortcuts.add(new JMenuItem("  ctrl: 8m/s to target"));
 		pShortcuts.add(new JMenuItem("  shift: stop at target"));
 		pShortcuts.add(new JMenuItem("  ctrl+shift: 2m/s at target"));
+		pShortcuts.add(new JMenuItem("  above combinations + alt: chip ball"));
 	}
 	
 	

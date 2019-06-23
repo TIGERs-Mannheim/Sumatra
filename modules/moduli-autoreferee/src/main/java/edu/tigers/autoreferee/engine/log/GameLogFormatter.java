@@ -11,8 +11,8 @@ package edu.tigers.autoreferee.engine.log;
 import java.text.DecimalFormat;
 
 import edu.tigers.autoreferee.engine.FollowUpAction;
-import edu.tigers.autoreferee.engine.RefCommand;
-import edu.tigers.sumatra.referee.RefereeMsg;
+import edu.tigers.autoreferee.engine.RefboxRemoteCommand;
+import edu.tigers.sumatra.referee.data.RefereeMsg;
 
 
 /**
@@ -48,7 +48,7 @@ public class GameLogFormatter
 	 * @param cmd
 	 * @return
 	 */
-	public static String formatCommand(final RefCommand cmd)
+	public static String formatCommand(final RefboxRemoteCommand cmd)
 	{
 		StringBuilder builder = new StringBuilder();
 		switch (cmd.getType())

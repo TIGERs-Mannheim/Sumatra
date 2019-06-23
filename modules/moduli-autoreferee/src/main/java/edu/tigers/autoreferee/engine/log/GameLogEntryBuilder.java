@@ -11,11 +11,11 @@ package edu.tigers.autoreferee.engine.log;
 import java.time.Instant;
 
 import edu.tigers.autoreferee.engine.FollowUpAction;
-import edu.tigers.autoreferee.engine.RefCommand;
+import edu.tigers.autoreferee.engine.RefboxRemoteCommand;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
 import edu.tigers.autoreferee.engine.log.GameLogEntry.ELogEntryType;
-import edu.tigers.sumatra.referee.RefereeMsg;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
+import edu.tigers.sumatra.referee.data.GameState;
+import edu.tigers.sumatra.referee.data.RefereeMsg;
 
 
 /**
@@ -23,23 +23,21 @@ import edu.tigers.sumatra.wp.data.EGameStateNeutral;
  */
 public class GameLogEntryBuilder
 {
-	private ELogEntryType		type;
+	private ELogEntryType			type;
 	/** frame timestamp in nanoseconds */
-	private Long					timestamp;
+	private Long						timestamp;
 	/** Game time left in the stage when the event was created */
-	private GameTime				gameTime;
+	private GameTime					gameTime;
 	/** The time instant this entry was created in */
-	private Instant				instant;
-	/** in nanoseconds */
-	private Long					timeSinceStart;
+	private Instant					instant;
 	
-	private IGameEvent			gameEvent;
-	private boolean				acceptedByEngine;
+	private IGameEvent				gameEvent;
+	private boolean					acceptedByEngine;
 	
-	private EGameStateNeutral	gamestate;
-	private RefereeMsg			refereeMsg;
-	private FollowUpAction		followUpAction;
-	private RefCommand			command;
+	private GameState					gamestate;
+	private RefereeMsg				refereeMsg;
+	private FollowUpAction			followUpAction;
+	private RefboxRemoteCommand	command;
 	
 	
 	private void setType(final ELogEntryType type)
@@ -76,18 +74,9 @@ public class GameLogEntryBuilder
 	
 	
 	/**
-	 * @param timeSinceStart
-	 */
-	public void setTimeSinceStart(final long timeSinceStart)
-	{
-		this.timeSinceStart = timeSinceStart;
-	}
-	
-	
-	/**
 	 * @param gamestate
 	 */
-	public void setGamestate(final EGameStateNeutral gamestate)
+	public void setGamestate(final GameState gamestate)
 	{
 		this.gamestate = gamestate;
 		setType(ELogEntryType.GAME_STATE);
@@ -129,7 +118,7 @@ public class GameLogEntryBuilder
 	/**
 	 * @param command
 	 */
-	public void setCommand(final RefCommand command)
+	public void setCommand(final RefboxRemoteCommand command)
 	{
 		this.command = command;
 		setType(ELogEntryType.COMMAND);
@@ -141,12 +130,12 @@ public class GameLogEntryBuilder
 	 */
 	public GameLogEntry toEntry()
 	{
-		if ((type == null) || (timestamp == null) || (gameTime == null) || (timeSinceStart == null) || (instant == null))
+		if ((type == null) || (timestamp == null) || (gameTime == null) || (instant == null))
 		{
 			throw new NullPointerException("Not all required fields have been set");
 		}
 		
-		return new GameLogEntry(timestamp, gameTime, timeSinceStart, instant, type, gamestate, gameEvent,
-				acceptedByEngine, refereeMsg, followUpAction, command);
+		return new GameLogEntry(timestamp, gameTime, instant, type, gamestate, gameEvent, acceptedByEngine, refereeMsg,
+				followUpAction, command);
 	}
 }

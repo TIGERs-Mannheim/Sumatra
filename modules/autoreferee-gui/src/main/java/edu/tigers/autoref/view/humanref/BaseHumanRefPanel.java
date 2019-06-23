@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jun 26, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.view.humanref;
 
@@ -13,13 +8,15 @@ import java.util.Map;
 
 import javax.swing.JPanel;
 
-import net.miginfocom.swing.MigLayout;
 import edu.tigers.autoref.view.humanref.components.GameStatePanel;
 import edu.tigers.autoref.view.humanref.components.ScorePanel;
 import edu.tigers.autoref.view.humanref.components.TimePanel;
+import edu.tigers.autoref.view.humanref.driver.BaseHumanRefViewDriver;
+import edu.tigers.autoref.view.humanref.driver.IHumanRefViewDriver;
 import edu.tigers.sumatra.Referee.SSL_Referee.Stage;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
+import edu.tigers.sumatra.referee.data.GameState;
+import net.miginfocom.swing.MigLayout;
 
 
 /**
@@ -43,6 +40,12 @@ public class BaseHumanRefPanel extends AHumanRefPanel
 	public BaseHumanRefPanel()
 	{
 		
+	}
+	
+	
+	public IHumanRefViewDriver createDriver()
+	{
+		return new BaseHumanRefViewDriver(this);
 	}
 	
 	
@@ -122,7 +125,7 @@ public class BaseHumanRefPanel extends AHumanRefPanel
 	/**
 	 * @param state
 	 */
-	public void setState(final EGameStateNeutral state)
+	public void setState(final GameState state)
 	{
 		statePanel.setState(state);
 	}

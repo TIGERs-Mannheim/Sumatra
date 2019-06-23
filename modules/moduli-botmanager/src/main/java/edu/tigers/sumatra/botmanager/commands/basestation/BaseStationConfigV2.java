@@ -24,9 +24,12 @@ import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
  * 
  * @author AndreR
  */
+@SuppressWarnings("squid:S1192")
 public class BaseStationConfigV2 extends ACommand
 {
-	/** */
+	/**
+	 * Wifi speed.
+	 */
 	public enum EWifiSpeed
 	{
 		/** */
@@ -197,7 +200,7 @@ public class BaseStationConfigV2 extends ACommand
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	@SerialData(type = ESerialDataType.UINT8)
-	private final int						visionIp[]	= new int[4];
+	private final int[]					visionIp		= new int[4];
 	@SerialData(type = ESerialDataType.UINT16)
 	private int								visionPort	= 10002;
 	@SerialData(type = ESerialDataType.EMBEDDED)
@@ -219,7 +222,9 @@ public class BaseStationConfigV2 extends ACommand
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/** */
+	/**
+	 * Constructor.
+	 */
 	public BaseStationConfigV2()
 	{
 		super(ECommand.CMD_BASE_CONFIG_V2);
@@ -250,7 +255,7 @@ public class BaseStationConfigV2 extends ACommand
 			addr = InetAddress.getByName(ip);
 		} catch (UnknownHostException err)
 		{
-			log.error("Unknown host: " + ip);
+			log.error("Unknown host: " + ip, err);
 			return;
 		}
 		
@@ -266,7 +271,7 @@ public class BaseStationConfigV2 extends ACommand
 	 */
 	public String getVisionIp()
 	{
-		return new String("" + visionIp[0] + "." + visionIp[1] + "." + visionIp[2] + "." + visionIp[3]);
+		return new String(visionIp[0] + "." + visionIp[1] + "." + visionIp[2] + "." + visionIp[3]);
 	}
 	
 	

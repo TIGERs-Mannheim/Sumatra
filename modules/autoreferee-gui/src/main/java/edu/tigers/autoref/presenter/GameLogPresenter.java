@@ -1,37 +1,27 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Mar 24, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.presenter;
 
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.EventQueue;
-import java.util.Collections;
+import java.awt.*;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.swing.BoxLayout;
+import org.apache.commons.lang.StringUtils;
 
 import edu.tigers.autoref.model.gamelog.GameLogTableModel;
 import edu.tigers.autoref.view.gamelog.GameLogPanel;
-import edu.tigers.autoref.view.generic.SumatraViewPanel;
-import edu.tigers.autoreferee.AutoRefModule.AutoRefState;
 import edu.tigers.autoreferee.AutoRefUtil;
 import edu.tigers.autoreferee.IAutoRefFrame;
 import edu.tigers.autoreferee.IAutoRefStateObserver;
-import edu.tigers.autoreferee.engine.log.GameLogEntry;
 import edu.tigers.autoreferee.engine.log.GameLogEntry.ELogEntryType;
 import edu.tigers.autoreferee.engine.log.IGameLog;
-import edu.tigers.moduli.IModuliStateObserver;
+import edu.tigers.autoreferee.module.AutoRefState;
 import edu.tigers.moduli.listenerVariables.ModulesState;
-import edu.tigers.sumatra.components.EnumCheckBoxPanel;
-import edu.tigers.sumatra.components.EnumCheckBoxPanel.IEnumPanelObserver;
-import edu.tigers.sumatra.model.ModuliStateAdapter;
+import edu.tigers.sumatra.components.IEnumPanel;
+import edu.tigers.sumatra.components.IEnumPanel.IEnumPanelObserver;
+import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.views.ISumatraView;
 import edu.tigers.sumatra.views.ISumatraViewPresenter;
 
@@ -39,56 +29,52 @@ import edu.tigers.sumatra.views.ISumatraViewPresenter;
 /**
  * @author "Lukas Magel"
  */
-public class GameLogPresenter implements ISumatraViewPresenter, IModuliStateObserver, IAutoRefStateObserver,
+public class GameLogPresenter implements ISumatraViewPresenter, IAutoRefStateObserver,
 		IEnumPanelObserver<ELogEntryType>
 {
-	private static final Set<ELogEntryType>	DEFAULT_ENABLED_BOXES;
+	public static final String ACTIVE_LOG_TYPES_KEY = GameLogPresenter.class + ".activeLogTypes";
 	
-	private SumatraViewPanel						mainPanel		= new SumatraViewPanel();
-	private GameLogPanel								gameLogPanel	= new GameLogPanel();
-	private EnumCheckBoxPanel<ELogEntryType>	logTypePanel;
-	
-	static
-	{
-		Set<ELogEntryType> types = new HashSet<>();
-		types.add(ELogEntryType.COMMAND);
-		types.add(ELogEntryType.GAME_EVENT);
-		types.add(ELogEntryType.FOLLOW_UP);
-		DEFAULT_ENABLED_BOXES = Collections.unmodifiableSet(types);
-	}
+	private GameLogPanel gameLogPanel = new GameLogPanel();
 	
 	
 	/**
-	 * 
+	 * Default
 	 */
 	public GameLogPresenter()
 	{
-		ModuliStateAdapter.getInstance().addObserver(this);
+		IEnumPanel<ELogEntryType> logPanel = gameLogPanel.getLogTypePanel();
 		
-		logTypePanel = new EnumCheckBoxPanel<GameLogEntry.ELogEntryType>(ELogEntryType.class, null, BoxLayout.LINE_AXIS);
+		Set<ELogEntryType> types = new HashSet<>();
+		String activeLogTypes = SumatraModel.getInstance().getUserProperty(ACTIVE_LOG_TYPES_KEY);
+		if (activeLogTypes == null)
+		{
+			types.add(ELogEntryType.COMMAND);
+			types.add(ELogEntryType.GAME_EVENT);
+			types.add(ELogEntryType.FOLLOW_UP);
+		} else
+		{
+			Arrays.stream(activeLogTypes.split(","))
+					.map(ELogEntryType::valueOf)
+					.forEach(types::add);
+		}
+		logPanel.setSelectedBoxes(types);
+		gameLogPanel.setActiveLogTypes(types);
 		
-		logTypePanel.setSelectedBoxes(DEFAULT_ENABLED_BOXES);
-		gameLogPanel.setActiveLogTypes(DEFAULT_ENABLED_BOXES);
-		
-		logTypePanel.addObserver(this);
-		
-		mainPanel.setLayout(new BorderLayout());
-		mainPanel.add(gameLogPanel, BorderLayout.CENTER);
-		mainPanel.add(logTypePanel, BorderLayout.PAGE_END);
+		logPanel.addObserver(this);
 	}
 	
 	
 	@Override
 	public Component getComponent()
 	{
-		return mainPanel;
+		return gameLogPanel;
 	}
 	
 	
 	@Override
 	public ISumatraView getSumatraView()
 	{
-		return mainPanel;
+		return gameLogPanel;
 	}
 	
 	
@@ -109,23 +95,36 @@ public class GameLogPresenter implements ISumatraViewPresenter, IModuliStateObse
 		{
 			AutoRefUtil.ifAutoRefModulePresent(module -> {
 				IGameLog log = module.getEngine().getGameLog();
+				EventQueue.invokeLater(() -> setGameLog(log));
 				
-				GameLogTableModel model = new GameLogTableModel(log);
-				EventQueue.invokeLater(() -> gameLogPanel.setTableModel(model));
 			});
 		}
+	}
+	
+	
+	/**
+	 * @param log
+	 */
+	public void setGameLog(final IGameLog log)
+	{
+		GameLogTableModel model = new GameLogTableModel(log);
+		gameLogPanel.setTableModel(model);
 	}
 	
 	
 	@Override
 	public void onNewAutoRefFrame(final IAutoRefFrame frame)
 	{
+		// empty
 	}
 	
 	
 	@Override
 	public void onValueTicked(final ELogEntryType type, final boolean value)
 	{
-		gameLogPanel.setActiveLogTypes(logTypePanel.getValues());
+		Set<ELogEntryType> activeTypes = gameLogPanel.getLogTypePanel().getValues();
+		gameLogPanel.setActiveLogTypes(activeTypes);
+		String propValue = StringUtils.join(activeTypes, ",");
+		SumatraModel.getInstance().setUserProperty(ACTIVE_LOG_TYPES_KEY, propValue);
 	}
 }

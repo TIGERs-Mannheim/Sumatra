@@ -47,7 +47,7 @@ public class BotTreePanel extends JPanel
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	private static final long					serialVersionUID		= 5912473356244041156L;
-	private final List<IBotTreeObserver>	observers				= new ArrayList<IBotTreeObserver>();
+	private final List<IBotTreeObserver>	observers				= new ArrayList<>();
 	
 	private JTree									tree						= null;
 	private TreeModel								treeModel				= null;
@@ -143,8 +143,7 @@ public class BotTreePanel extends JPanel
 	}
 	
 	
-	/**
-	 */
+	/** Show context menu. */
 	public void showAddRemoveContextMenu()
 	{
 		final JPopupMenu context = new JPopupMenu();
@@ -162,8 +161,7 @@ public class BotTreePanel extends JPanel
 	}
 	
 	
-	/**
-	 */
+	/** Show context menu. */
 	public void showAddContextMenu()
 	{
 		final JPopupMenu context = new JPopupMenu();
@@ -177,53 +175,6 @@ public class BotTreePanel extends JPanel
 		context.show(this, lastMouseRightClick.x, lastMouseRightClick.y);
 	}
 	
-	
-	private void notifyItemSelected(final BotCenterTreeNode node)
-	{
-		synchronized (observers)
-		{
-			for (final IBotTreeObserver observer : observers)
-			{
-				observer.onItemSelected(node);
-			}
-		}
-	}
-	
-	
-	private void notifyNodeRightClicked(final BotCenterTreeNode node)
-	{
-		synchronized (observers)
-		{
-			for (final IBotTreeObserver observer : observers)
-			{
-				observer.onNodeRightClicked(node);
-			}
-		}
-	}
-	
-	
-	private void notifyAddBot()
-	{
-		synchronized (observers)
-		{
-			for (final IBotTreeObserver observer : observers)
-			{
-				observer.onAddBot();
-			}
-		}
-	}
-	
-	
-	private void notifyRemoveBot(final BotCenterTreeNode node)
-	{
-		synchronized (observers)
-		{
-			for (final IBotTreeObserver observer : observers)
-			{
-				observer.onRemoveBot(node);
-			}
-		}
-	}
 	
 	protected class ItemSelected implements TreeSelectionListener
 	{
@@ -239,11 +190,23 @@ public class BotTreePanel extends JPanel
 			
 			notifyItemSelected(node);
 		}
+		
+		
+		private void notifyItemSelected(final BotCenterTreeNode node)
+		{
+			synchronized (observers)
+			{
+				for (final IBotTreeObserver observer : observers)
+				{
+					observer.onItemSelected(node);
+				}
+			}
+		}
 	}
 	
 	protected class CustomRenderer extends DefaultTreeCellRenderer
 	{
-		private static final long	serialVersionUID	= 2116635664278328553L;
+		private static final long serialVersionUID = 2116635664278328553L;
 		
 		
 		@Override
@@ -293,6 +256,8 @@ public class BotTreePanel extends JPanel
 				case SPLINE:
 					setIcon(splineIcon);
 					break;
+				default:
+					break;
 			}
 			
 			return this;
@@ -326,6 +291,18 @@ public class BotTreePanel extends JPanel
 				notifyNodeRightClicked(node);
 			}
 		}
+		
+		
+		private void notifyNodeRightClicked(final BotCenterTreeNode node)
+		{
+			synchronized (observers)
+			{
+				for (final IBotTreeObserver observer : observers)
+				{
+					observer.onNodeRightClicked(node);
+				}
+			}
+		}
 	}
 	
 	protected class AddBot implements ActionListener
@@ -335,6 +312,18 @@ public class BotTreePanel extends JPanel
 		{
 			notifyAddBot();
 		}
+		
+		
+		private void notifyAddBot()
+		{
+			synchronized (observers)
+			{
+				for (final IBotTreeObserver observer : observers)
+				{
+					observer.onAddBot();
+				}
+			}
+		}
 	}
 	
 	protected class RemoveBot implements ActionListener
@@ -343,6 +332,18 @@ public class BotTreePanel extends JPanel
 		public void actionPerformed(final ActionEvent e)
 		{
 			notifyRemoveBot(lastSelectedNode);
+		}
+		
+		
+		private void notifyRemoveBot(final BotCenterTreeNode node)
+		{
+			synchronized (observers)
+			{
+				for (final IBotTreeObserver observer : observers)
+				{
+					observer.onRemoveBot(node);
+				}
+			}
 		}
 	}
 }

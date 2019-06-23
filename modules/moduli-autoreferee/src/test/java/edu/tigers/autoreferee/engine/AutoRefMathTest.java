@@ -1,23 +1,27 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 14, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.autoreferee.engine;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import java.util.List;
 
 import org.junit.Test;
 
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.shapes.rectangle.Rectangle;
-import edu.tigers.sumatra.wp.data.Geometry;
-import edu.tigers.sumatra.wp.data.PenaltyArea;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.IPenaltyArea;
+import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.math.rectangle.IRectangle;
+import edu.tigers.sumatra.math.rectangle.Rectangle;
+import edu.tigers.sumatra.math.vector.AVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.VectorMath;
+import edu.tigers.sumatra.referee.TeamConfig;
 
 
 /**
@@ -27,72 +31,57 @@ public class AutoRefMathTest
 {
 	
 	/**
-	 * Test method for
-	 * {@link edu.tigers.autoreferee.engine.AutoRefMath#getClosestCornerKickPos(edu.tigers.sumatra.math.IVector2)}.
+	 * Test method for {@link edu.tigers.autoreferee.engine.AutoRefMath#getClosestCornerKickPos(IVector2)}.
 	 */
 	@Test
 	public void testGetClosestCornerKickPos()
 	{
-		Rectangle field = NGeometry.getField();
-		IVector2 topLeftCornerKick = field.topLeft().addNew(
-				new Vector2(AutoRefMath.THROW_IN_DISTANCE, -AutoRefMath.THROW_IN_DISTANCE));
-		IVector2 topRightCornerKick = field.topRight().addNew(
-				new Vector2(-AutoRefMath.THROW_IN_DISTANCE, -AutoRefMath.THROW_IN_DISTANCE));
-		IVector2 bottomLeftCornerKick = field.bottomLeft().addNew(
-				new Vector2(AutoRefMath.THROW_IN_DISTANCE, AutoRefMath.THROW_IN_DISTANCE));
-		IVector2 bottomRightCornerKick = field.bottomRight().addNew(
-				new Vector2(-AutoRefMath.THROW_IN_DISTANCE, AutoRefMath.THROW_IN_DISTANCE));
+		IRectangle field = NGeometry.getField();
+		List<IVector2> corners = field.getCorners();
+		List<IVector2> closerCorners = field.withMargin(-AutoRefMath.THROW_IN_DISTANCE).getCorners();
 		
-		assertEquals(topLeftCornerKick, AutoRefMath.getClosestCornerKickPos(field.topLeft()));
-		assertEquals(topRightCornerKick, AutoRefMath.getClosestCornerKickPos(field.topRight()));
-		assertEquals(bottomLeftCornerKick, AutoRefMath.getClosestCornerKickPos(field.bottomLeft()));
-		assertEquals(bottomRightCornerKick, AutoRefMath.getClosestCornerKickPos(field.bottomRight()));
+		Rectangle smallRect = Rectangle.fromCenter(AVector2.ZERO_VECTOR, 5, 5);
+		List<IVector2> smallCorners = smallRect.getCorners();
 		
-		assertEquals(topLeftCornerKick, AutoRefMath.getClosestCornerKickPos(new Vector2(-5, 5)));
-		assertEquals(topRightCornerKick, AutoRefMath.getClosestCornerKickPos(new Vector2(5, 5)));
-		assertEquals(bottomLeftCornerKick, AutoRefMath.getClosestCornerKickPos(new Vector2(-5, -5)));
-		assertEquals(bottomRightCornerKick, AutoRefMath.getClosestCornerKickPos(new Vector2(5, -5)));
+		for (int i = 0; i < 4; i++)
+		{
+			assertEquals(closerCorners.get(i), AutoRefMath.getClosestCornerKickPos(corners.get(i)));
+			assertEquals(closerCorners.get(i), AutoRefMath.getClosestCornerKickPos(smallCorners.get(i)));
+		}
 	}
 	
 	
 	/**
-	 * Test method for
-	 * {@link edu.tigers.autoreferee.engine.AutoRefMath#getClosestGoalKickPos(edu.tigers.sumatra.math.IVector2)}.
+	 * Test method for {@link edu.tigers.autoreferee.engine.AutoRefMath#getClosestGoalKickPos(IVector2)}.
 	 */
 	@Test
 	public void testGetClosestGoalKickPos()
 	{
-		Rectangle field = NGeometry.getField();
-		IVector2 topLeftGoalKick = field.topLeft().addNew(
-				new Vector2(AutoRefMath.GOAL_KICK_DISTANCE, -AutoRefMath.THROW_IN_DISTANCE));
-		IVector2 topRightGoalKick = field.topRight().addNew(
-				new Vector2(-AutoRefMath.GOAL_KICK_DISTANCE, -AutoRefMath.THROW_IN_DISTANCE));
-		IVector2 bottomLeftGoalKick = field.bottomLeft().addNew(
-				new Vector2(AutoRefMath.GOAL_KICK_DISTANCE, AutoRefMath.THROW_IN_DISTANCE));
-		IVector2 bottomRightGoalKick = field.bottomRight().addNew(
-				new Vector2(-AutoRefMath.GOAL_KICK_DISTANCE, AutoRefMath.THROW_IN_DISTANCE));
+		IRectangle field = NGeometry.getField();
+		List<IVector2> corners = field.getCorners();
+		List<IVector2> closerCorners = field
+				.withMarginXy(-AutoRefMath.GOAL_KICK_DISTANCE, -AutoRefMath.THROW_IN_DISTANCE)
+				.getCorners();
+		Rectangle smallRect = Rectangle.fromCenter(AVector2.ZERO_VECTOR, 5, 5);
+		List<IVector2> smallCorners = smallRect.getCorners();
 		
-		assertEquals(topLeftGoalKick, AutoRefMath.getClosestGoalKickPos(field.topLeft()));
-		assertEquals(topRightGoalKick, AutoRefMath.getClosestGoalKickPos(field.topRight()));
-		assertEquals(bottomLeftGoalKick, AutoRefMath.getClosestGoalKickPos(field.bottomLeft()));
-		assertEquals(bottomRightGoalKick, AutoRefMath.getClosestGoalKickPos(field.bottomRight()));
-		
-		assertEquals(topLeftGoalKick, AutoRefMath.getClosestGoalKickPos(new Vector2(-5, 5)));
-		assertEquals(topRightGoalKick, AutoRefMath.getClosestGoalKickPos(new Vector2(5, 5)));
-		assertEquals(bottomLeftGoalKick, AutoRefMath.getClosestGoalKickPos(new Vector2(-5, -5)));
-		assertEquals(bottomRightGoalKick, AutoRefMath.getClosestGoalKickPos(new Vector2(5, -5)));
+		for (int i = 0; i < 4; i++)
+		{
+			assertEquals(closerCorners.get(i), AutoRefMath.getClosestGoalKickPos(corners.get(i)));
+			assertEquals(closerCorners.get(i), AutoRefMath.getClosestGoalKickPos(smallCorners.get(i)));
+		}
 	}
 	
 	
 	/**
 	 * Test method for
-	 * {@link edu.tigers.autoreferee.engine.AutoRefMath#distanceToNearestPointOutside(PenaltyArea, IVector2)}.
+	 * {@link edu.tigers.autoreferee.engine.AutoRefMath#distanceToNearestPointOutside(IPenaltyArea, IVector2)}.
 	 */
 	@Test
 	public void testDistanceToNearestPointOutside()
 	{
 		double delta = 0.001d;
-		PenaltyArea penArea = Geometry.getPenaltyAreaOur();
+		IPenaltyArea penArea = Geometry.getPenaltyAreaOur();
 		IVector2 center = Geometry.getCenter();
 		IVector2 penMark = Geometry.getPenaltyMarkOur();
 		
@@ -101,9 +90,47 @@ public class AutoRefMathTest
 		
 		assertEquals(0.0d, AutoRefMath.distanceToNearestPointOutside(penArea, center), delta);
 		assertEquals(0.0d, AutoRefMath.distanceToNearestPointOutside(penArea, penMark), delta);
-		assertEquals(GeoMath.distancePP(penMark, penAreaCenter),
+		assertEquals(VectorMath.distancePP(penMark, penAreaCenter),
 				AutoRefMath.distanceToNearestPointOutside(penArea, penAreaCenter), delta);
 		
 	}
 	
+	
+	@Test
+	public void testPositionInPenaltyKickArea()
+	{
+		ETeamColor leftTeam = TeamConfig.getLeftTeam();
+		ETeamColor rightTeam = leftTeam.opposite();
+		
+		double maxX = Geometry.getPenaltyMarkTheir().x()
+				- Geometry.getDistancePenaltyMarkToPenaltyLine();
+		double margin = 10.0d;
+		IVector2 posInside = Vector2.fromXY(maxX + (margin / 2.0d), 0);
+		IVector2 posOutside = Vector2.fromXY(maxX - (margin / 2.0d), 0);
+		
+		assertTrue(AutoRefMath.positionInPenaltyKickArea(leftTeam, posInside, 0.0d));
+		assertFalse(AutoRefMath.positionInPenaltyKickArea(leftTeam, posInside, -margin));
+		
+		assertFalse(AutoRefMath.positionInPenaltyKickArea(leftTeam, posOutside, 0.0d));
+		assertTrue(AutoRefMath.positionInPenaltyKickArea(leftTeam, posOutside, margin));
+		
+		assertFalse(AutoRefMath.positionInPenaltyKickArea(rightTeam, posInside, 0.0d));
+		assertFalse(AutoRefMath.positionInPenaltyKickArea(rightTeam, posInside, -margin));
+		assertFalse(AutoRefMath.positionInPenaltyKickArea(rightTeam, posOutside, 0.0));
+		assertFalse(AutoRefMath.positionInPenaltyKickArea(rightTeam, posOutside, margin));
+		
+		posInside = posInside.multiplyNew(-1.0d);
+		posOutside = posOutside.multiplyNew(-1.0d);
+		
+		assertTrue(AutoRefMath.positionInPenaltyKickArea(rightTeam, posInside, 0.0d));
+		assertFalse(AutoRefMath.positionInPenaltyKickArea(rightTeam, posInside, -margin));
+		
+		assertFalse(AutoRefMath.positionInPenaltyKickArea(rightTeam, posOutside, 0.0d));
+		assertTrue(AutoRefMath.positionInPenaltyKickArea(rightTeam, posOutside, margin));
+		
+		assertFalse(AutoRefMath.positionInPenaltyKickArea(leftTeam, posInside, 0.0d));
+		assertFalse(AutoRefMath.positionInPenaltyKickArea(leftTeam, posInside, -margin));
+		assertFalse(AutoRefMath.positionInPenaltyKickArea(leftTeam, posOutside, 0.0d));
+		assertFalse(AutoRefMath.positionInPenaltyKickArea(leftTeam, posOutside, margin));
+	}
 }

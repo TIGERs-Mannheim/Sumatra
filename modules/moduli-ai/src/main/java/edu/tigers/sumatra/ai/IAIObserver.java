@@ -1,14 +1,11 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 02.09.2010
- * Author(s): Oliver Steinbrecher <OST1988@aol.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai;
 
+import edu.tigers.sumatra.ai.data.EAIControlState;
 import edu.tigers.sumatra.ai.data.frames.AIInfoFrame;
+import edu.tigers.sumatra.ids.EAiTeam;
 
 
 /**
@@ -24,6 +21,15 @@ public interface IAIObserver
 	 * @param lastAIInfoframe
 	 */
 	default void onNewAIInfoFrame(final AIInfoFrame lastAIInfoframe)
+	{
+	}
+	
+	
+	/**
+	 * @param aiTeam
+	 * @param mode
+	 */
+	default void onAiModeChanged(final EAiTeam aiTeam, final EAIControlState mode)
 	{
 	}
 }

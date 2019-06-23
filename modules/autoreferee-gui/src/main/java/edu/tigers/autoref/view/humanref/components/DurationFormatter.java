@@ -40,17 +40,19 @@ public class DurationFormatter implements LabelFormatter<Duration>
 	}
 	
 	
-	private String getText(Duration value)
+	private String getText(final Duration value)
 	{
+		Duration tempValue = value;
+		
 		StringBuilder strBuilder = new StringBuilder();
-		if (value.isNegative())
+		if (tempValue.isNegative())
 		{
 			strBuilder.append("-");
-			value = value.negated();
+			tempValue = tempValue.negated();
 		}
 		
-		long minutes = (int) (value.toMinutes() % 60);
-		long seconds = (int) (value.getSeconds() % 60);
+		long minutes = (int) (tempValue.toMinutes() % 60);
+		long seconds = (int) (tempValue.getSeconds() % 60);
 		
 		strBuilder.append(format.format(minutes));
 		strBuilder.append(":");

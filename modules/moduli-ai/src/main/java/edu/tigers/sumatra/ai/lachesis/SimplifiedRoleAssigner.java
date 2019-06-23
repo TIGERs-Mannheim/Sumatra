@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Oct 7, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.lachesis;
 
 import java.io.Serializable;
@@ -13,14 +9,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.EnumMap;
 import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -42,17 +34,9 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class SimplifiedRoleAssigner implements IRoleAssigner
 {
-	private static final Logger	log	= Logger.getLogger(SimplifiedRoleAssigner.class.getName());
+	private static final Logger log = Logger.getLogger(SimplifiedRoleAssigner.class.getName());
 	
-	private AthenaAiFrame			frame;
-	
-	
-	/**
-	 * 
-	 */
-	public SimplifiedRoleAssigner()
-	{
-	}
+	private AthenaAiFrame frame;
 	
 	
 	@Override
@@ -60,8 +44,8 @@ public class SimplifiedRoleAssigner implements IRoleAssigner
 			final AthenaAiFrame frame)
 	{
 		this.frame = frame;
-		List<APlay> activePlays = new ArrayList<APlay>(plays);
-		Collections.sort(activePlays, new PlayPrioComparatorAPlay());
+		List<APlay> activePlays = new ArrayList<>(plays);
+		activePlays.sort(new PlayPrioComparatorAPlay());
 		int numRolesAvail = assignees.size();
 		final Map<EPlay, RoleFinderInfo> roleFinderInfo = copyRoleFinderInfos(frame.getTacticalField()
 				.getRoleFinderInfos());
@@ -70,26 +54,6 @@ public class SimplifiedRoleAssigner implements IRoleAssigner
 		removeVanishedBots(assignees, activePlays);
 		rebalanceRoleAssigment(activePlays, numRoles, frame);
 		reassignment(assignees, activePlays, roleFinderInfo, frame);
-		
-		Set<BotID> botsAssigned = new HashSet<BotID>();
-		for (APlay play : frame.getPlayStrategy().getActivePlays())
-		{
-			for (ARole role : play.getRoles())
-			{
-				BotID botId = role.getBotID();
-				if (!botId.isBot())
-				{
-					log.error("Role " + role.getType() + " has no assigned bot id!");
-				}
-				if (botsAssigned.contains(botId))
-				{
-					log.error("Bot with id " + botId.getNumber() + " already has another role assigned. Can not assign "
-							+ role.getType());
-					continue;
-				}
-				botsAssigned.add(botId);
-			}
-		}
 	}
 	
 	
@@ -113,7 +77,7 @@ public class SimplifiedRoleAssigner implements IRoleAssigner
 	 */
 	private Map<EPlay, RoleFinderInfo> copyRoleFinderInfos(final Map<EPlay, RoleFinderInfo> orig)
 	{
-		final Map<EPlay, RoleFinderInfo> newInfo = new HashMap<EPlay, RoleFinderInfo>();
+		final Map<EPlay, RoleFinderInfo> newInfo = new EnumMap<>(EPlay.class);
 		for (Map.Entry<EPlay, RoleFinderInfo> entry : orig.entrySet())
 		{
 			newInfo.put(entry.getKey(), new RoleFinderInfo(entry.getValue()));
@@ -122,19 +86,10 @@ public class SimplifiedRoleAssigner implements IRoleAssigner
 	}
 	
 	
-	/**
-	 * Find the number of roles per play
-	 * 
-	 * @param infos
-	 * @param numRolesAvail
-	 * @return
-	 */
-	private Map<EPlay, Integer> findRoleBalancing(final Map<EPlay, RoleFinderInfo> infos, int numRolesAvail,
-			final List<EPlay> plays)
+	private void prepareRoleFinderInfos(final Map<EPlay, RoleFinderInfo> infos,
+			final List<EPlay> plays,
+			final List<Map.Entry<EPlay, RoleFinderInfo>> infoEntries)
 	{
-		Map<EPlay, Integer> numRoles = new LinkedHashMap<EPlay, Integer>(infos.size());
-		
-		List<Map.Entry<EPlay, RoleFinderInfo>> infoEntries = new ArrayList<Map.Entry<EPlay, RoleFinderInfo>>();
 		for (Map.Entry<EPlay, RoleFinderInfo> entry : infos.entrySet())
 		{
 			if (plays.contains(entry.getKey()))
@@ -142,10 +97,28 @@ public class SimplifiedRoleAssigner implements IRoleAssigner
 				infoEntries.add(entry);
 			}
 		}
-		Collections.sort(infoEntries, new PlayPrioComparatorInfo());
+		infoEntries.sort(new PlayPrioComparatorInfo());
+	}
+	
+	
+	/**
+	 * Find the number of roles per play
+	 * 
+	 * @param infos
+	 * @param totalNumRolesAvail
+	 * @return
+	 */
+	private Map<EPlay, Integer> findRoleBalancing(final Map<EPlay, RoleFinderInfo> infos, final int totalNumRolesAvail,
+			final List<EPlay> plays)
+	{
+		Map<EPlay, Integer> numRoles = new EnumMap<>(EPlay.class);
+		int numRolesAvail = totalNumRolesAvail;
+		
+		List<Map.Entry<EPlay, RoleFinderInfo>> infoEntries = new ArrayList<>();
+		prepareRoleFinderInfos(infos, plays, infoEntries);
 		
 		// remove desiredBots with lower Prio
-		List<BotID> desiredBots = new ArrayList<BotID>(4);
+		List<BotID> desiredBots = new ArrayList<>(4);
 		for (Map.Entry<EPlay, RoleFinderInfo> entry : infoEntries)
 		{
 			entry.getValue().getDesiredBots().removeAll(desiredBots);
@@ -184,7 +157,6 @@ public class SimplifiedRoleAssigner implements IRoleAssigner
 			int diff = roles - numRoles.get(entry.getKey());
 			if (diff < 0)
 			{
-				// log.warn("desiredRoles is larger than maxRoles: " + diff + " (" + entry.getKey() + ")");
 				continue;
 			}
 			numRolesAvail -= diff;
@@ -225,7 +197,7 @@ public class SimplifiedRoleAssigner implements IRoleAssigner
 	{
 		for (APlay play : activePlays)
 		{
-			List<ARole> rolesToBeDeleted = new LinkedList<ARole>();
+			List<ARole> rolesToBeDeleted = new ArrayList<>();
 			for (ARole role : play.getRoles())
 			{
 				if (role.getBotID().isBot() && !assignees.containsKey(role.getBotID()))
@@ -273,7 +245,7 @@ public class SimplifiedRoleAssigner implements IRoleAssigner
 	private void reassignment(final BotIDMap<ITrackedBot> assignees, final List<APlay> activePlays,
 			final Map<EPlay, RoleFinderInfo> infos, final MetisAiFrame frame)
 	{
-		List<BotID> availableBots = new ArrayList<BotID>(assignees.keySet());
+		List<BotID> availableBots = new ArrayList<>(assignees.keySet());
 		
 		List<BotID> allDesiredBots = new ArrayList<>(6);
 		for (RoleFinderInfo info : infos.values())
@@ -292,23 +264,14 @@ public class SimplifiedRoleAssigner implements IRoleAssigner
 				numForceDesiredBots = 0;
 			} else
 			{
-				desiredBots = new ArrayList<BotID>(info.getDesiredBots());
+				desiredBots = new ArrayList<>(info.getDesiredBots());
 				numForceDesiredBots = info.getForceNumDesiredBots();
 			}
 			
-			List<ARole> roles = new ArrayList<ARole>(play.getRoles());
+			List<ARole> roles = new ArrayList<>(play.getRoles());
 			
 			// sort so that desiredBots - unassignedBots - assignedBots
-			Collections.sort(roles, new RoleAssignedComparator());
-			
-			List<BotID> assignedBots = new ArrayList<>(roles.size());
-			// for (ARole role : roles)
-			// {
-			// if (role.getBotID().isBot())
-			// {
-			// assignedBots.add(role.getBotID());
-			// }
-			// }
+			roles.sort(new RoleAssignedComparator());
 			
 			Map<ARole, BotID> roleChanges = new IdentityHashMap<>();
 			
@@ -316,14 +279,14 @@ public class SimplifiedRoleAssigner implements IRoleAssigner
 			{
 				BotID preferredBotId = role.getBotID();
 				// if there is an unassigned desired bot, prefer this one
-				if (!desiredBots.isEmpty() && !assignedBots.contains(desiredBots.get(0)))
+				if (!desiredBots.isEmpty())
 				{
 					preferredBotId = desiredBots.get(0);
 				}
 				// if the preferred bot is not desired by this play, but desired by any other, request a new bot
 				if (!desiredBots.contains(preferredBotId) && allDesiredBots.contains(preferredBotId))
 				{
-					preferredBotId = BotID.get();
+					preferredBotId = BotID.noBot();
 				}
 				BotID bestId;
 				// if play forcably request a certain bot (keeper!), use this id.
@@ -334,7 +297,7 @@ public class SimplifiedRoleAssigner implements IRoleAssigner
 				} else
 				{
 					// based on the preferred bot, check if we can use it or get another suitable bot
-					bestId = getBestSuitedBotID(availableBots, allDesiredBots, role, preferredBotId);
+					bestId = getBestSuitedBotID(availableBots, allDesiredBots, preferredBotId);
 				}
 				desiredBots.remove(bestId);
 				allDesiredBots.remove(bestId);
@@ -345,13 +308,28 @@ public class SimplifiedRoleAssigner implements IRoleAssigner
 					roleChanges.put(role, bestId);
 				}
 			}
+			
+			// remove desiredBots from current play as they should not be considered for remaining plays
+			allDesiredBots.removeAll(desiredBots);
+			
+			// there is a known bug: Roles may get recreated although they did not change the play.
+			// here is a first draft for a fix which did not work out, as bot assignment was not consistent anymore
+			// assignedBots = roles.stream().map(ARole::getBotID).filter(BotID::isBot)
+			// roleChanges.values().removeAll(assignedBots)
+			
 			for (Map.Entry<ARole, BotID> rc : roleChanges.entrySet())
 			{
 				ARole role = rc.getKey();
 				BotID bestId = rc.getValue();
-				play.removeRole(role);
-				List<ARole> newRoles = play.addRoles(1, frame);
-				newRoles.get(0).assignBotID(bestId, frame);
+				if (role.getBotID().isBot())
+				{
+					play.removeRole(role);
+					List<ARole> newRoles = play.addRoles(1, frame);
+					newRoles.get(0).assignBotID(bestId);
+				} else
+				{
+					role.assignBotID(bestId);
+				}
 			}
 		}
 	}
@@ -362,12 +340,11 @@ public class SimplifiedRoleAssigner implements IRoleAssigner
 	 * If the current bot is at least limited useful, it will be reused
 	 * 
 	 * @param availableBots
-	 * @param role
 	 * @param preferredBotId
 	 * @return
 	 */
 	private BotID getBestSuitedBotID(final List<BotID> availableBots, final List<BotID> allDesiredBots,
-			final ARole role, final BotID preferredBotId)
+			final BotID preferredBotId)
 	{
 		// preferred bot available?
 		if (preferredBotId.isBot() && availableBots.contains(preferredBotId))
@@ -386,14 +363,13 @@ public class SimplifiedRoleAssigner implements IRoleAssigner
 			candidates.removeIf(c -> !availableBots.contains(c));
 		}
 		
-		assert !candidates.isEmpty();
 		return candidates.get(candidates.size() - 1);
 	}
 	
 	
 	private List<EPlay> getEPlays(final List<APlay> plays)
 	{
-		List<EPlay> ePlays = new ArrayList<EPlay>(plays.size());
+		List<EPlay> ePlays = new ArrayList<>(plays.size());
 		for (APlay play : plays)
 		{
 			ePlays.add(play.getType());
@@ -401,21 +377,6 @@ public class SimplifiedRoleAssigner implements IRoleAssigner
 		return ePlays;
 	}
 	
-	
-	/**
-	 * Comparator for RoleAssigner.
-	 * Sorts the Plays in assigning-order.
-	 * 
-	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
-	 */
-	private static class PlayPrioComparatorAPlay implements Comparator<APlay>
-	{
-		@Override
-		public int compare(final APlay a, final APlay b)
-		{
-			return Integer.compare(a.getType().getPrio(), b.getType().getPrio());
-		}
-	}
 	
 	/**
 	 * Compare roles, starting with all unassigned roles before assigned roles

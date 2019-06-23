@@ -1,54 +1,52 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Oct 19, 2013
- * Author(s): MarkG <Mark.Geiger@dlr.de>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.pandora.plays;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-import edu.tigers.sumatra.ai.data.EGameStateTeam;
+import com.github.g3force.configurable.Configurable;
+
 import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
 import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
+import edu.tigers.sumatra.ai.metis.support.IPassTarget;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
-import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole.EMoveBehavior;
 import edu.tigers.sumatra.ai.pandora.roles.offense.KickoffShooterRole;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.wp.data.Geometry;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.VectorMath;
+import edu.tigers.sumatra.referee.data.GameState;
 
 
 /**
  * The offensive play handles only one role, the OffensiveRole
- * 
+ *
  * @author Mark Geiger <Mark.Geiger@dlr.de>
  */
 public class KickoffPlay extends APlay
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
+	@Configurable(comment = "This is the distance of each bot to the center line", defValue = "100")
+	private static double distanceToCenterLine = 100;
 	
-	private IVector2					movePointRightBase		= new Vector2(-Geometry.getBotRadius() - 20,
-																					(Geometry.getFieldWidth() / 2.0)
-																							- Geometry.getBotRadius());
-	private IVector2					movePointLeftBase			= new Vector2(-Geometry.getBotRadius() - 20,
-																					(-Geometry.getFieldWidth() / 2.0)
-																							+ Geometry.getBotRadius());
+	@Configurable(comment = "This is the distance of the single bots to the side line", defValue = "100")
+	private static double distanceToSideLine = 100;
 	
-	private double						initialDistanceShooter	= 0;
+	private IVector2 movePointRightBase = Vector2.fromXY(-Geometry.getBotRadius() - distanceToCenterLine,
+			(Geometry.getFieldWidth() / 2.0)
+					- Geometry.getBotRadius() - distanceToSideLine);
+	private IVector2 movePointLeftBase = Vector2.fromXY(-Geometry.getBotRadius() - distanceToCenterLine,
+			(-Geometry.getFieldWidth() / 2.0)
+					+ Geometry.getBotRadius() + distanceToSideLine);
 	
-	private Map<ESides, MoveRole>	movers						= new HashMap<>();
-	KickoffShooterRole				shooter;
+	private Map<ESides, MoveRole>	movers					= new EnumMap<>(ESides.class);
 	
 	private enum ESides
 	{
@@ -57,22 +55,13 @@ public class KickoffPlay extends APlay
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
 	/**
+	 * Default
 	 */
 	public KickoffPlay()
 	{
 		super(EPlay.KICKOFF);
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	
 	@Override
@@ -96,7 +85,7 @@ public class KickoffPlay extends APlay
 		{
 			if (role.getType() == ERole.KICKOFF_SHOOTER)
 			{
-				return new MoveRole(EMoveBehavior.LOOK_AT_BALL);
+				return new MoveRole();
 			}
 		}
 		return new KickoffShooterRole();
@@ -104,50 +93,45 @@ public class KickoffPlay extends APlay
 	
 	
 	@Override
-	public void updateBeforeRoles(final AthenaAiFrame frame)
+	protected void onGameStateChanged(final GameState gameState)
 	{
-	}
-	
-	
-	@Override
-	protected void onGameStateChanged(final EGameStateTeam gameState)
-	{
-		
+		// This is not neccessary in this context, because a change of gamestate ends this play
 	}
 	
 	
 	@Override
 	protected void doUpdate(final AthenaAiFrame frame)
 	{
+		if (getRoles().size() != 3)
+		{
+			return;
+		}
+		
 		sortMovers();
 		
-		IVector2 movePointLeft = calculateFollowingPointForShooter(movePointLeftBase);
-		IVector2 movePointRight = calculateFollowingPointForShooter(movePointRightBase);
+		movers.get(ESides.LEFT).getMoveCon().updateDestination(movePointLeftBase);
+		movers.get(ESides.RIGHT).getMoveCon().updateDestination(movePointRightBase);
 		
-		movers.get(ESides.LEFT).getMoveCon().updateDestination(movePointLeft);
-		movers.get(ESides.RIGHT).getMoveCon().updateDestination(movePointRight);
+		Map<BotID, IPassTarget> bestPositions = frame.getTacticalField().getKickoffStrategy().getBestMovementPositions();
 		
-		
-		IVector2 shooterTarget = shooter.getShotTarget();
-		
-		if (shooterTarget != null)
+		for (MoveRole mover : movers.values())
 		{
-			frame.getAICom().setOffensiveRolePassTarget(shooterTarget);
-			
-			if (shooterTarget.get(1) < 0)
+			if (bestPositions.containsKey(mover.getBotID()))
 			{
-				frame.getAICom().setOffensiveRolePassTargetID(movers.get(ESides.LEFT).getBotID());
-			} else
-			{
-				frame.getAICom().setOffensiveRolePassTargetID(movers.get(ESides.RIGHT).getBotID());
+				mover.getMoveCon().updateDestination(bestPositions.get(mover.getBotID()).getKickerPos());
 			}
+		}
+		
+		for (MoveRole mover : movers.values())
+		{
+			mover.getMoveCon().updateLookAtTarget(frame.getSimpleWorldFrame().getBall().getPos());
 		}
 	}
 	
 	
 	private void sortMovers()
 	{
-		/**
+		/*
 		 * Will update the move positions for the sidewards defenders.
 		 * They will stick to the point if they get close to it
 		 */
@@ -160,16 +144,10 @@ public class KickoffPlay extends APlay
 			{
 				moveRoles.add((MoveRole) role);
 			}
-			
-			if (role instanceof KickoffShooterRole)
-			{
-				shooter = (KickoffShooterRole) role;
-				initialDistanceShooter = GeoMath.distancePP(shooter.getMoveDestination(), Geometry.getCenter());
-			}
 		}
 		
-		double firstDistanceRight = GeoMath.distancePP(movePointRightBase, moveRoles.get(0).getPos());
-		double secondDistanceRight = GeoMath.distancePP(movePointRightBase, moveRoles.get(1).getPos());
+		double firstDistanceRight = VectorMath.distancePP(movePointRightBase, moveRoles.get(0).getPos());
+		double secondDistanceRight = VectorMath.distancePP(movePointRightBase, moveRoles.get(1).getPos());
 		
 		if (firstDistanceRight < secondDistanceRight)
 		{
@@ -181,25 +159,4 @@ public class KickoffPlay extends APlay
 			movers.put(ESides.LEFT, moveRoles.get(0));
 		}
 	}
-	
-	
-	IVector2 calculateFollowingPointForShooter(final IVector2 basePosition)
-	{
-		double distanceShooterCenter = GeoMath.distancePP(shooter.getPos(), Geometry.getCenter());
-		distanceShooterCenter -= Geometry.getBotRadius();
-		
-		if (distanceShooterCenter < (initialDistanceShooter * 2))
-		{
-			double factorToScalePosition = distanceShooterCenter / initialDistanceShooter;
-			
-			double valueToSubtractFromX = 10 * Geometry.getBotRadius() * factorToScalePosition;
-			return basePosition.subtractNew(new Vector2(valueToSubtractFromX, 0));
-		}
-		return basePosition;
-	}
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
 }

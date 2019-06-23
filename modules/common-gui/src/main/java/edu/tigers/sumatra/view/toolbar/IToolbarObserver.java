@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 04.08.2010
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view.toolbar;
 
@@ -17,7 +12,7 @@ package edu.tigers.sumatra.view.toolbar;
 public interface IToolbarObserver
 {
 	/**
-	 *
+	 * Start or stop all modules
 	 */
 	default void onStartStopModules()
 	{
@@ -25,7 +20,7 @@ public interface IToolbarObserver
 	
 	
 	/**
-	 *
+	 * trigger emergency stop
 	 */
 	default void onEmergencyStop()
 	{
@@ -33,8 +28,27 @@ public interface IToolbarObserver
 	
 	
 	/**
+	 * Start or stop record
 	 */
 	default void onToggleRecord()
+	{
+	}
+	
+	
+	/**
+	 * Switch team sides
+	 */
+	default void onSwitchSides()
+	{
+	}
+	
+	
+	/**
+	 * Change match mode
+	 * 
+	 * @param matchMode
+	 */
+	default void onChangeTelegramMode(final boolean matchMode)
 	{
 	}
 }

@@ -1,16 +1,10 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 26.04.2016
- * Author(s): Dominik Engelhardt <Dominik.Engelhardt@dlr.de>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.roles.test;
 
-import edu.tigers.sumatra.ai.data.OffensiveStrategy.EOffensiveStrategy;
 import edu.tigers.sumatra.ai.pandora.roles.offense.OffensiveRole;
-import edu.tigers.sumatra.ai.pandora.roles.offense.states.OffensiveRoleRedirectCatchSpecialMovementState;
+import edu.tigers.sumatra.ai.pandora.roles.offense.states.OffensiveRoleSpecialMovementState;
 
 
 /**
@@ -34,7 +28,7 @@ public class RedirectOffensiveTestRole extends OffensiveRole
 	 */
 	public RedirectOffensiveTestRole()
 	{
-		setInitialState(new OffensiveRoleRedirectCatchSpecialMovementState(this));
+		setInitialState(new OffensiveRoleSpecialMovementState(this));
 	}
 	
 	
@@ -44,16 +38,7 @@ public class RedirectOffensiveTestRole extends OffensiveRole
 		if (aiEnabled)
 		{
 			super.changeStateIfNecessary();
-		} else if (getCurrentState() != EOffensiveStrategy.REDIRECT_CATCH_SPECIAL_MOVE)
-		{
-			triggerEvent(EOffensiveStrategy.REDIRECT_CATCH_SPECIAL_MOVE);
 		}
-	}
-	
-	
-	@Override
-	public void beforeFirstUpdate()
-	{
 	}
 	
 	
@@ -64,6 +49,4 @@ public class RedirectOffensiveTestRole extends OffensiveRole
 	{
 		aiEnabled = enabled;
 	}
-	
-	
 }

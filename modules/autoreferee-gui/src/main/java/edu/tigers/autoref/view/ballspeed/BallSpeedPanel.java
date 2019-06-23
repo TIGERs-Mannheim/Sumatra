@@ -8,16 +8,10 @@
  */
 package edu.tigers.autoref.view.ballspeed;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.FlowLayout;
+import java.awt.*;
 import java.util.concurrent.TimeUnit;
 
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JPanel;
-import javax.swing.JSlider;
-import javax.swing.SwingConstants;
+import javax.swing.*;
 
 import org.apache.commons.lang.NotImplementedException;
 
@@ -87,12 +81,8 @@ public class BallSpeedPanel extends BasePanel<IBallSpeedPanelListener> implement
 			informObserver(observer -> observer.stopChartValueChanged(newValue));
 		});
 		
-		pauseButton.addActionListener(e -> {
-			informObserver(observer -> observer.pauseButtonPressed());
-		});
-		resumeButton.addActionListener(e -> {
-			informObserver(observer -> observer.resumeButtonPressed());
-		});
+		pauseButton.addActionListener(e -> informObserver(IBallSpeedPanelListener::pauseButtonPressed));
+		resumeButton.addActionListener(e -> informObserver(IBallSpeedPanelListener::resumeButtonPressed));
 		
 		JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
 		southPanel.setBackground(Color.WHITE);

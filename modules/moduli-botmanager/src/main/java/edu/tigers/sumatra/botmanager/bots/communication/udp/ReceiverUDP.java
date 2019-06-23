@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 01.03.2011
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.bots.communication.udp;
 
@@ -38,27 +33,26 @@ public class ReceiverUDP implements IReceiver
 	// --------------------------------------------------------------------------
 	// Logger
 	private static final Logger					log									= Logger.getLogger(ReceiverUDP.class
-																											.getName());
+			.getName());
 	
 	/** [ms] */
 	private static final int						PORT_UNREACHABLE_RETRY_WAIT	= 1500;
-	
+	private final Statistics						stats									= new Statistics();
+	private final List<IReceiverUDPObserver>	observers							= new ArrayList<>();
 	private DatagramSocket							socket								= null;
 	private Thread										receiverThread						= null;
-	private final Statistics						stats									= new Statistics();
 	private boolean									legacy								= false;
-	
-	private final List<IReceiverUDPObserver>	observers							= new ArrayList<IReceiverUDPObserver>();
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	  * 
-	  */
+	 * Default constructor.
+	 */
 	public ReceiverUDP()
 	{
+		// Default parameters.
 	}
 	
 	
@@ -66,7 +60,7 @@ public class ReceiverUDP implements IReceiver
 	 * @param newSocket
 	 * @throws IOException
 	 */
-	public ReceiverUDP(final DatagramSocket newSocket) throws IOException
+	public ReceiverUDP(final DatagramSocket newSocket)
 	{
 		setSocket(newSocket);
 	}
@@ -100,7 +94,7 @@ public class ReceiverUDP implements IReceiver
 	
 	
 	/**
-	 * 
+	 * Start receiver thread.
 	 */
 	public void start()
 	{
@@ -118,7 +112,7 @@ public class ReceiverUDP implements IReceiver
 	
 	
 	/**
-	 * 
+	 * Stop receiver thread.
 	 */
 	public void stop()
 	{
@@ -133,6 +127,7 @@ public class ReceiverUDP implements IReceiver
 			receiverThread.join(100);
 		} catch (final InterruptedException err)
 		{
+			Thread.currentThread().interrupt();
 		}
 		
 		receiverThread = null;
@@ -157,21 +152,6 @@ public class ReceiverUDP implements IReceiver
 		if (start)
 		{
 			start();
-		}
-	}
-	
-	
-	/**
-	 * @param cmd
-	 */
-	private void notifyNewCommand(final ACommand cmd)
-	{
-		synchronized (observers)
-		{
-			for (final IReceiverUDPObserver observer : observers)
-			{
-				observer.onNewCommand(cmd);
-			}
 		}
 	}
 	
@@ -205,9 +185,45 @@ public class ReceiverUDP implements IReceiver
 		this.legacy = legacy;
 	}
 	
+	
+	@Override
+	public DatagramPacket receive(final DatagramPacket store) throws IOException
+	{
+		byte[] buf;
+		
+		try
+		{
+			buf = new byte[socket.getReceiveBufferSize()];
+		} catch (final SocketException err)
+		{
+			log.error("Could not get receive buffer size", err);
+			return null;
+		}
+		
+		final DatagramPacket packet = new DatagramPacket(buf, buf.length);
+		
+		socket.receive(packet);
+		return packet;
+	}
+	
+	
+	@Override
+	public void cleanup() throws IOException
+	{
+		stop();
+	}
+	
+	
+	@Override
+	public boolean isReady()
+	{
+		return socket.isConnected();
+	}
+	
 	// --------------------------------------------------------------------------
 	// --- Threads --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	@SuppressWarnings("squid:S1166")
 	protected class Receiver implements Runnable
 	{
 		@Override
@@ -221,7 +237,7 @@ public class ReceiverUDP implements IReceiver
 			
 			Thread.currentThread().setName("Receiver UDP " + socket.getInetAddress() + ":" + socket.getPort());
 			
-			byte[] buf = null;
+			byte[] buf;
 			
 			try
 			{
@@ -268,8 +284,8 @@ public class ReceiverUDP implements IReceiver
 					} catch (final InterruptedException err)
 					{
 						log.debug("Interrupted while waiting after ICMP port unreachable.");
+						Thread.currentThread().interrupt();
 					}
-					continue;
 					
 				} catch (final SocketException e)
 				{
@@ -284,40 +300,20 @@ public class ReceiverUDP implements IReceiver
 				}
 			}
 		}
-	}
-	
-	
-	@Override
-	public DatagramPacket receive(final DatagramPacket store) throws IOException
-	{
-		byte[] buf = null;
 		
-		try
+		
+		/**
+		 * @param cmd
+		 */
+		private void notifyNewCommand(final ACommand cmd)
 		{
-			buf = new byte[socket.getReceiveBufferSize()];
-		} catch (final SocketException err)
-		{
-			log.error("Could not get receive buffer size", err);
-			return null;
+			synchronized (observers)
+			{
+				for (final IReceiverUDPObserver observer : observers)
+				{
+					observer.onNewCommand(cmd);
+				}
+			}
 		}
-		
-		final DatagramPacket packet = new DatagramPacket(buf, buf.length);
-		
-		socket.receive(packet);
-		return packet;
-	}
-	
-	
-	@Override
-	public void cleanup() throws IOException
-	{
-		stop();
-	}
-	
-	
-	@Override
-	public boolean isReady()
-	{
-		return socket.isConnected();
 	}
 }

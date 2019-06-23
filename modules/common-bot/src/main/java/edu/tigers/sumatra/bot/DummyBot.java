@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Oct 12, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.bot;
 
 import java.util.HashMap;
@@ -14,9 +10,11 @@ import java.util.Optional;
 
 import com.sleepycat.persist.model.Persistent;
 
+import edu.tigers.sumatra.bot.params.BotParams;
+import edu.tigers.sumatra.bot.params.IBotParams;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.IVector3;
+import edu.tigers.sumatra.math.vector.IVector3;
 
 
 /**
@@ -27,16 +25,20 @@ import edu.tigers.sumatra.math.IVector3;
 @Persistent(version = 1)
 public class DummyBot implements IBot
 {
-	private boolean					avail2Ai				= false;
 	private final BotID				botId;
-	private final MoveConstraints	moveConstraints	= new MoveConstraints();
+	private boolean					avail2Ai				= false;
+	
+	private static final double	KICKER_LEVEL_MAX	= 180;
+	private double						relBattery			= 1;
+	private double						kickerLevel			= 0;
 	
 	
 	/**
+	 * Dummy dummyBot (invalid bot id)
 	 */
 	public DummyBot()
 	{
-		this(BotID.get());
+		this(BotID.noBot());
 	}
 	
 	
@@ -54,8 +56,10 @@ public class DummyBot implements IBot
 	 */
 	public DummyBot(final IBot aBot)
 	{
-		this(aBot.getBotId());
+		botId = aBot.getBotId();
 		avail2Ai = aBot.isAvailableToAi();
+		relBattery = aBot.getBatteryRelative();
+		kickerLevel = aBot.getKickerLevel();
 	}
 	
 	
@@ -78,21 +82,21 @@ public class DummyBot implements IBot
 	@Override
 	public double getBatteryRelative()
 	{
-		return 1;
+		return relBattery;
 	}
 	
 	
 	@Override
 	public double getKickerLevel()
 	{
-		return 0;
+		return kickerLevel;
 	}
 	
 	
 	@Override
 	public double getKickerLevelMax()
 	{
-		return 0;
+		return KICKER_LEVEL_MAX;
 	}
 	
 	
@@ -105,13 +109,6 @@ public class DummyBot implements IBot
 	
 	@Override
 	public int getHardwareId()
-	{
-		return 0;
-	}
-	
-	
-	@Override
-	public long getLastKickTime()
 	{
 		return 0;
 	}
@@ -202,36 +199,22 @@ public class DummyBot implements IBot
 	
 	
 	@Override
-	public double getKickSpeed()
+	public boolean isBarrierInterrupted()
 	{
-		return 0;
+		return false;
 	}
 	
 	
 	@Override
-	public String getDevice()
+	public ERobotMode getRobotMode()
 	{
-		return "";
+		return ERobotMode.READY;
 	}
 	
 	
 	@Override
-	public double getDefaultVelocity()
+	public IBotParams getBotParams()
 	{
-		return 0;
-	}
-	
-	
-	@Override
-	public double getDefaultAcceleration()
-	{
-		return 0;
-	}
-	
-	
-	@Override
-	public MoveConstraints getMoveConstraints()
-	{
-		return moveConstraints;
+		return new BotParams();
 	}
 }

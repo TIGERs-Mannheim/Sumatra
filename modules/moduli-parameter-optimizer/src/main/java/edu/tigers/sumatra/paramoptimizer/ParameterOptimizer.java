@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.paramoptimizer;
 
 import org.apache.commons.configuration.SubnodeConfiguration;
@@ -11,17 +15,7 @@ import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.paramoptimizer.redirect.RedirectDetector;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
-import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
-
-/*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jan 16, 2016
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
- */
 
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
@@ -49,27 +43,16 @@ public class ParameterOptimizer extends AModule implements IWorldFrameObserver
 	
 	
 	@Override
-	public void onNewWorldFrame(final WorldFrameWrapper wFrameWrapper)
-	{
-		// SimpleWorldFrame swf = wFrameWrapper.getSimpleWorldFrame();
-		
-		// Optional<RedirectDataSet> rds = redirectDetector.process(swf);
-		// if (rds.isPresent())
-		{
-			// RedirectParamCalc.forBot(rds.get().getBot()).update(rds.get());
-		}
-	}
-	
-	
-	@Override
 	public void initModule() throws InitModuleException
 	{
+		// empty
 	}
 	
 	
 	@Override
 	public void deinitModule()
 	{
+		// empty
 	}
 	
 	
@@ -79,7 +62,7 @@ public class ParameterOptimizer extends AModule implements IWorldFrameObserver
 		try
 		{
 			AWorldPredictor wp = (AWorldPredictor) SumatraModel.getInstance().getModule(AWorldPredictor.MODULE_ID);
-			wp.addWorldFrameConsumer(this);
+			wp.addObserver(this);
 		} catch (ModuleNotFoundException e)
 		{
 			log.error("Could not find WP module", e);
@@ -93,7 +76,7 @@ public class ParameterOptimizer extends AModule implements IWorldFrameObserver
 		try
 		{
 			AWorldPredictor wp = (AWorldPredictor) SumatraModel.getInstance().getModule(AWorldPredictor.MODULE_ID);
-			wp.removeWorldFrameConsumer(this);
+			wp.removeObserver(this);
 		} catch (ModuleNotFoundException e)
 		{
 			log.error("Could not find WP module", e);

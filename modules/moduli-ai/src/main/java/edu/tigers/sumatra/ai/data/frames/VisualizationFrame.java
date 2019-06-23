@@ -1,29 +1,28 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jul 25, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.data.frames;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.ai.data.BotAiInformation;
-import edu.tigers.sumatra.ai.data.MatchStatistics;
+import edu.tigers.sumatra.ai.data.MatchStats;
 import edu.tigers.sumatra.ai.data.OffensiveStrategy;
-import edu.tigers.sumatra.ai.data.event.GameEvents;
 import edu.tigers.sumatra.ai.lachesis.RoleFinderInfo;
 import edu.tigers.sumatra.ai.metis.offense.data.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.data.OffensiveAnalysedFrame;
+import edu.tigers.sumatra.ai.metis.offense.data.OffensiveStatisticsFrame;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
+import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.referee.RefereeMsg;
-import edu.tigers.sumatra.wp.data.ShapeMap;
+import edu.tigers.sumatra.referee.data.RefereeMsg;
 import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
@@ -32,36 +31,39 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@Persistent(version = 1)
+@Persistent(version = 5)
 public class VisualizationFrame
 {
-	private final ETeamColor							teamColor;
+	@SuppressWarnings("unused") // required for compatibility with older versions
+	private ETeamColor teamColor;
+	private EAiTeam aiTeam;
 	
-	private final boolean								inverted;
+	private final boolean inverted;
 	
-	private final ShapeMap								shapes;
+	private final ShapeMap shapes;
 	
-	private transient WorldFrameWrapper				worldFrameWrapper	= null;
+	private transient WorldFrameWrapper worldFrameWrapper = null;
 	
-	private final MatchStatistics						matchStatistics;
+	private final MatchStats matchStats;
 	
-	private final GameEvents							gameEvents;
-	
-	private final OffensiveStrategy					offensiveStrategy;
-	private final Map<BotID, OffensiveAction>		offensiveActions	= new HashMap<>();
-	private final Map<BotID, BotAiInformation>	aiInfos				= new HashMap<>();
-	private final Map<EPlay, RoleFinderInfo>		roleFinderInfos	= new HashMap<>();
+	private final OffensiveStrategy offensiveStrategy;
+	private final Map<BotID, OffensiveAction> offensiveActions = new HashMap<>();
+	private final Map<BotID, BotAiInformation> aiInfos = new HashMap<>();
+	private final Map<EPlay, RoleFinderInfo> roleFinderInfos = new EnumMap<>(EPlay.class);
+	private final OffensiveAnalysedFrame offensiveStatisticsFrame;
+	private final OffensiveStatisticsFrame offensiveStatisticsFrameRaw;
 	
 	
 	@SuppressWarnings("unused")
 	private VisualizationFrame()
 	{
-		teamColor = null;
+		aiTeam = null;
 		inverted = false;
-		matchStatistics = null;
-		gameEvents = null;
+		matchStats = null;
 		offensiveStrategy = null;
 		shapes = new ShapeMap();
+		offensiveStatisticsFrame = null;
+		offensiveStatisticsFrameRaw = null;
 	}
 	
 	
@@ -72,14 +74,15 @@ public class VisualizationFrame
 	{
 		shapes = new ShapeMap(aiFrame.getTacticalField().getDrawableShapes());
 		worldFrameWrapper = aiFrame.getWorldFrameWrapper();
-		teamColor = aiFrame.getTeamColor();
+		aiTeam = aiFrame.getAiTeam();
 		inverted = aiFrame.getWorldFrame().isInverted();
-		matchStatistics = aiFrame.getTacticalField().getStatistics();
-		gameEvents = aiFrame.getTacticalField().getGameEvents();
+		matchStats = aiFrame.getTacticalField().getMatchStatistics();
 		offensiveStrategy = aiFrame.getTacticalField().getOffensiveStrategy();
 		offensiveActions.putAll(aiFrame.getTacticalField().getOffensiveActions());
-		aiInfos.putAll(aiFrame.getTacticalField().getBotAiInformation());
+		aiInfos.putAll(aiFrame.getAresData().getBotAiInformation());
 		roleFinderInfos.putAll(aiFrame.getTacticalField().getRoleFinderInfos());
+		offensiveStatisticsFrame = aiFrame.getTacticalField().getAnalyzedOffensiveStatisticsFrame();
+		offensiveStatisticsFrameRaw = aiFrame.getTacticalField().getOffensiveStatistics();
 	}
 	
 	
@@ -90,14 +93,15 @@ public class VisualizationFrame
 	{
 		shapes = new ShapeMap(aiFrame.getShapes());
 		worldFrameWrapper = new WorldFrameWrapper(aiFrame.worldFrameWrapper);
-		teamColor = aiFrame.getTeamColor();
+		aiTeam = aiFrame.aiTeam;
 		inverted = aiFrame.getWorldFrame().isInverted();
-		matchStatistics = aiFrame.getMatchStatistics();
-		gameEvents = aiFrame.getGameEvents();
+		matchStats = aiFrame.getMatchStats();
 		offensiveStrategy = aiFrame.getOffensiveStrategy();
 		offensiveActions.putAll(aiFrame.getOffensiveActions());
 		aiInfos.putAll(aiFrame.getAiInfos());
 		roleFinderInfos.putAll(aiFrame.getRoleFinderInfos());
+		offensiveStatisticsFrame = aiFrame.getOffensiveStatisticsFrame();
+		offensiveStatisticsFrameRaw = aiFrame.getOffensiveStatisticsFrameRaw();
 	}
 	
 	
@@ -142,7 +146,21 @@ public class VisualizationFrame
 	 */
 	public final ETeamColor getTeamColor()
 	{
-		return teamColor;
+		return getAiTeam().getTeamColor();
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public EAiTeam getAiTeam()
+	{
+		if (aiTeam == null)
+		{
+			// set aiTeam for old versions of this frame
+			aiTeam = EAiTeam.primary(teamColor);
+		}
+		return aiTeam;
 	}
 	
 	
@@ -158,18 +176,9 @@ public class VisualizationFrame
 	/**
 	 * @return
 	 */
-	public final MatchStatistics getMatchStatistics()
+	public final MatchStats getMatchStats()
 	{
-		return matchStatistics;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public final GameEvents getGameEvents()
-	{
-		return gameEvents;
+		return matchStats;
 	}
 	
 	
@@ -196,7 +205,7 @@ public class VisualizationFrame
 	 */
 	public final WorldFrame getWorldFrame()
 	{
-		return worldFrameWrapper.getWorldFrame(teamColor);
+		return worldFrameWrapper.getWorldFrame(aiTeam);
 	}
 	
 	
@@ -233,5 +242,23 @@ public class VisualizationFrame
 	public final void setWorldFrameWrapper(final WorldFrameWrapper worldFrameWrapper)
 	{
 		this.worldFrameWrapper = worldFrameWrapper;
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public OffensiveAnalysedFrame getOffensiveStatisticsFrame()
+	{
+		return offensiveStatisticsFrame;
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public OffensiveStatisticsFrame getOffensiveStatisticsFrameRaw()
+	{
+		return offensiveStatisticsFrameRaw;
 	}
 }

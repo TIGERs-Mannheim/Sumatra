@@ -19,10 +19,10 @@ import edu.tigers.sumatra.control.motor.InterpolationMotorModel;
 import edu.tigers.sumatra.control.motor.MatrixMotorModel;
 import edu.tigers.sumatra.export.CSVExporter;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.IVector3;
-import edu.tigers.sumatra.math.IVectorN;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.math.Vector3;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.IVectorN;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector3;
 
 
 /**
@@ -44,10 +44,10 @@ public class InterpolationMotorModelTest
 		{
 			for (double speed = 0; speed < 3.0; speed += 0.1)
 			{
-				IVector3 targetVel = new Vector3(new Vector2(angle).scaleTo(speed), 0);
+				IVector3 targetVel = Vector3.from2d(Vector2.fromAngle(angle).scaleTo(speed), 0);
 				IVectorN vecRef = mm.getWheelSpeed(targetVel);
 				IVectorN vec = imm.getWheelSpeed(targetVel);
-				if (!vecRef.equals(vec, 0.01))
+				if (!vecRef.isCloseTo(vec, 0.01))
 				{
 					valid = false;
 					System.out.println("Model check failed for " + targetVel + ": " + vec + " != " + vecRef);
@@ -76,7 +76,7 @@ public class InterpolationMotorModelTest
 		{
 			for (double speed = 0; speed < 2.5; speed += 0.05)
 			{
-				IVector3 targetVel = new Vector3(new Vector2(angle).scaleTo(speed), 0);
+				IVector3 targetVel = Vector3.from2d(Vector2.fromAngle(angle).scaleTo(speed), 0);
 				IVectorN motors_mm = mm.getWheelSpeed(targetVel);
 				IVectorN motors_imm = imm.getWheelSpeed(targetVel);
 				

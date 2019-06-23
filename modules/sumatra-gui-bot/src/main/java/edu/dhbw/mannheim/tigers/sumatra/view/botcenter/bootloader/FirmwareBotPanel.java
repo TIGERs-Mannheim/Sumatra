@@ -21,18 +21,20 @@ import edu.tigers.sumatra.ids.BotID;
 import net.miginfocom.swing.MigLayout;
 
 
-/** */
+/**
+ * Indicates bot firmware update process.
+ */
 public class FirmwareBotPanel extends JPanel
 {
 	/**  */
 	private static final long	serialVersionUID	= 3866974299385225909L;
-																
+	
 	private JLabel					botId					= new JLabel();
 	private final JTextField	processor			= new JTextField();
 	private final JProgressBar	progress				= new JProgressBar(0, 100);
-																
-																
-	/** */
+	
+	
+	/** Constructor */
 	public FirmwareBotPanel()
 	{
 		setLayout(new MigLayout("wrap 4", "[100,fill]10[100,fill]10[200,fill]"));
@@ -53,9 +55,7 @@ public class FirmwareBotPanel extends JPanel
 	 */
 	public void setProcessorId(final EProcessorID id)
 	{
-		EventQueue.invokeLater(() -> {
-			processor.setText(id.toString());
-		});
+		EventQueue.invokeLater(() -> processor.setText(id.toString()));
 	}
 	
 	
@@ -81,7 +81,7 @@ public class FirmwareBotPanel extends JPanel
 	{
 		EventQueue.invokeLater(() -> {
 			botId.setForeground(id.getTeamColor().getColor());
-			botId.setText("" + id.getNumber());
+			botId.setText(Integer.toString(id.getNumber()));
 		});
 	}
 }

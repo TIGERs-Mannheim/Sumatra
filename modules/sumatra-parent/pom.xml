@@ -1,0 +1,621 @@
+<!--
+  ~ Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>edu.tigers.sumatra</groupId>
+    <artifactId>sumatra-parent</artifactId>
+    <version>5.1-SNAPSHOT</version>
+
+    <packaging>pom</packaging>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <moduli.version>1.3</moduli.version>
+        <protobuf.version>2.6.1</protobuf.version>
+    </properties>
+
+    <repositories>
+
+        <repository>
+            <id>tigers_public</id>
+            <url>http://tigers-mannheim.de/nexus/content/groups/public/</url>
+        </repository>
+
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+
+        <repository>
+            <id>oracleReleases</id>
+            <name>Oracle Released Java Packages</name>
+            <url>http://download.oracle.com/maven</url>
+            <layout>default</layout>
+        </repository>
+    </repositories>
+
+
+    <pluginRepositories>
+        <pluginRepository>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>bintray-sergei-ivanov-maven</id>
+            <name>bintray-plugins</name>
+            <url>http://dl.bintray.com/sergei-ivanov/maven</url>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.17</version>
+        </dependency>
+    </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>autoreferee</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>autoreferee-gui</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>autoreferee-main</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>common-bot</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>common-clock</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>common-gui</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>common-gui-config</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>common-math</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>common-model</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-ai</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-aisimulation</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-autoreferee</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-bot-data-sampler</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-botmanager</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-bot-params</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-cam</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-geometry</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-game-notifications</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-gui-notifications</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-parameter-optimizer</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-rcm</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-record</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-referee</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-telegram-notifications</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-testplays</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-timer</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-vision</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-wp</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-wp-bot</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-wp-export</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-wp-kalman2</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-augmented</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-grsim</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-gui-ai</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-gui-bot</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-gui-bot-params</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-gui-log</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-gui-rcm</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-gui-referee</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-gui-replay</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-gui-sim</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-gui-testplays</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-gui-timer</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-gui-visualizer</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-gui-wp</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-main</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-pathfinder</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-pathfinder-traj</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-record-util</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-shared-radio</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-sim</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-skillsystem</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-snapshot</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-cam-logfile</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-gamelog</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-gui-logfile</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-movement-limit-observer</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.g3force</groupId>
+                <artifactId>configurable</artifactId>
+                <version>v2.2</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.assertj</groupId>
+                <artifactId>assertj-core</artifactId>
+                <version>3.5.2</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>2.8.8</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>2.8.8</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>2.8.8</version>
+            </dependency>
+
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.3</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.19.1</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/*PerfTest.java</exclude>
+                        <exclude>**/*IntegrationTest.java</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.4</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.10</version>
+            </plugin>
+        </plugins>
+
+        <!-- optional plugins: -->
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>2.10.3</version>
+                    <executions>
+                        <execution>
+                            <id>attach-javadocs</id>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                            <configuration>
+                                <additionalparam>-Xdoclint:none</additionalparam>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>com.google.protobuf.tools</groupId>
+                    <artifactId>maven-protoc-plugin</artifactId>
+                    <version>0.4.4</version>
+                    <extensions>true</extensions>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>compile</goal>
+                                <goal>test-compile</goal>
+                            </goals>
+                            <configuration>
+                                <protocArtifact>
+                                    com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}
+                                </protocArtifact>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+
+    <profiles>
+        <profile>
+            <id>os-windows</id>
+            <activation>
+                <os>
+                    <family>Windows</family>
+                    <arch>amd64</arch>
+                </os>
+            </activation>
+            <properties>
+                <os.detected.classifier>windows-x86_64</os.detected.classifier>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>os-windows-32-i386</id>
+            <activation>
+                <os>
+                    <family>Windows</family>
+                    <arch>i386</arch>
+                </os>
+            </activation>
+            <properties>
+                <os.detected.classifier>windows-x86_32</os.detected.classifier>
+            </properties>
+        </profile>
+        <profile>
+            <id>os-windows-32-x86</id>
+            <activation>
+                <os>
+                    <family>Windows</family>
+                    <arch>x86</arch>
+                </os>
+            </activation>
+            <properties>
+                <os.detected.classifier>windows-x86_32</os.detected.classifier>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>os-linux</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <arch>amd64</arch>
+                </os>
+            </activation>
+            <properties>
+                <os.detected.classifier>linux-x86_64</os.detected.classifier>
+            </properties>
+        </profile>
+        <profile>
+            <id>os-linux-32</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <arch>i386</arch>
+                </os>
+            </activation>
+            <properties>
+                <os.detected.classifier>linux-x86_32</os.detected.classifier>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>os-mac</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                    <arch>x86_64</arch>
+                </os>
+            </activation>
+            <properties>
+                <os.detected.classifier>osx-x86_64</os.detected.classifier>
+            </properties>
+        </profile>
+        <profile>
+            <id>os-mac-32</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                    <arch>i386</arch>
+                </os>
+            </activation>
+            <properties>
+                <os.detected.classifier>osx-x86_32</os.detected.classifier>
+            </properties>
+        </profile>
+    </profiles>
+</project>

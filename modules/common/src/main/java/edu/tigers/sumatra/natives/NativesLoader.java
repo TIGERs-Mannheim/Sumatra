@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2012, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 10.02.2012
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.natives;
 
@@ -38,12 +33,12 @@ public class NativesLoader
 	// --------------------------------------------------------------------------
 	// Logger
 	private static final Logger							log							= Logger.getLogger(NativesLoader.class
-																											.getName());
+			.getName());
 	
 	private static final String							JAVA_LIBRARY_PATH_KEY	= "java.library.path";
 	
 	/**  */
-	public static final Map<OsIdentifier, String>	DEFAULT_FOLDER_MAP		= new HashMap<OsIdentifier, String>();
+	private static final Map<OsIdentifier, String> DEFAULT_FOLDER_MAP = new HashMap<>();
 	
 	static
 	{
@@ -58,10 +53,10 @@ public class NativesLoader
 		DEFAULT_FOLDER_MAP.put(new OsIdentifier(EOsName.SOLARIS, EOsArch.SPARC), "sparc");
 	}
 	
-	private static final String							DELIMITER					= System.getProperty("file.separator");
+	private static final String					DELIMITER	= System.getProperty("file.separator");
 	
-	private String												basePath;
-	private final Map<OsIdentifier, String>			folderMap					= new HashMap<OsIdentifier, String>();
+	private String										basePath;
+	private final Map<OsIdentifier, String> folderMap = new HashMap<>();
 	
 	
 	// --------------------------------------------------------------------------
@@ -125,7 +120,7 @@ public class NativesLoader
 		if (applyLibraryPathHack)
 		{
 			// Add all paths in the folder map to the library path
-			StringBuffer newPath = new StringBuffer();
+			StringBuilder newPath = new StringBuilder();
 			newPath.append(System.getProperty(JAVA_LIBRARY_PATH_KEY));
 			for (final Entry<OsIdentifier, String> entry : this.folderMap.entrySet())
 			{
@@ -144,36 +139,40 @@ public class NativesLoader
 			try
 			{
 				final Field fieldSysPath = ClassLoader.class.getDeclaredField("sys_paths");
-				AccessController.doPrivileged((PrivilegedAction<Void>)
-						() -> {
-							fieldSysPath.setAccessible(true);
-							try
-							{
-								fieldSysPath.set(null, null);
-							} catch (Exception err)
-							{
-								log.fatal("Unable to perform library-path hack!", err);
-							}
-							fieldSysPath.setAccessible(false);
-							return null; // nothing to return
-					}
-						);
-			} catch (final NoSuchFieldException err)
-			{
-				log.fatal("Unable to perform library-path hack!", err);
-			} catch (final SecurityException err)
-			{
-				log.fatal("Unable to perform library-path hack!", err);
-			} catch (final IllegalArgumentException err)
+				AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
+					nullifySystemPath(fieldSysPath);
+					return null; // nothing to return
+				});
+			} catch (final NoSuchFieldException | SecurityException | IllegalArgumentException err)
 			{
 				log.fatal("Unable to perform library-path hack!", err);
 			}
-			//
-			// } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException err)
-			// {
-			// log.fatal("Unable to perform library-path hack!", err);
-			// }
 		}
+	}
+	
+	
+	private void nullifySystemPath(final Field fieldSysPath)
+	{
+		fieldSysPath.setAccessible(true);
+		
+		try
+		{
+			fieldSysPath.set(null, null);
+		} catch (Exception err)
+		{
+			log.fatal("Unable to perform library-path hack!", err);
+		}
+		
+		fieldSysPath.setAccessible(false);
+	}
+	
+	
+	/**
+	 * @return the default folder map
+	 */
+	public static Map<OsIdentifier, String> getDefaultFolderMap()
+	{
+		return DEFAULT_FOLDER_MAP;
 	}
 	
 	
@@ -267,25 +266,27 @@ public class NativesLoader
 	/**
 	 * @param basePath the basePath to set
 	 */
-	public void setBasePath(String basePath)
+	public void setBasePath(final String basePath)
 	{
-		char c = basePath.charAt(basePath.length() - 1);
+		String basePathCopy = basePath;
+		
+		char c = basePathCopy.charAt(basePathCopy.length() - 1);
 		while ((c == '\\') || (c == '/'))
 		{
 			// Cut trailing delimiter
-			basePath = basePath.substring(0, basePath.length() - 1);
-			c = basePath.charAt(basePath.length() - 1);
+			basePathCopy = basePathCopy.substring(0, basePathCopy.length() - 1);
+			c = basePathCopy.charAt(basePathCopy.length() - 1);
 		}
-		// this.basePath = new File(basePath).getAbsolutePath();
 		
-		this.basePath = basePath;
+		this.basePath = basePathCopy;
 	}
 	
 	/**
+	 * Exception to be thrown if there is an exception in this class
 	 */
 	public static class LoaderException extends Exception
 	{
-		private static final long	serialVersionUID	= 3378774656349136360L;
+		private static final long serialVersionUID = 3378774656349136360L;
 		
 		
 		/**
@@ -299,7 +300,7 @@ public class NativesLoader
 	
 	private static class MyFilenameFilter implements FilenameFilter
 	{
-		String	libName;
+		String libName;
 		
 		
 		/**
@@ -334,7 +335,7 @@ public class NativesLoader
 			{
 				name = name.substring(0, name.length() - 2);
 			}
-			return name.toLowerCase().equals(libName.toLowerCase());
+			return name.equalsIgnoreCase(libName.toLowerCase());
 		}
 	}
 }

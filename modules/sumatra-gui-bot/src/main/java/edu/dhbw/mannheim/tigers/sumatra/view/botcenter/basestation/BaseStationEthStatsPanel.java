@@ -43,7 +43,7 @@ public class BaseStationEthStatsPanel extends JPanel
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/** */
+	/** Default constructor. */
 	public BaseStationEthStatsPanel()
 	{
 		setLayout(new MigLayout("wrap 3", "[100,fill]10[100,fill]10[100,fill]115"));

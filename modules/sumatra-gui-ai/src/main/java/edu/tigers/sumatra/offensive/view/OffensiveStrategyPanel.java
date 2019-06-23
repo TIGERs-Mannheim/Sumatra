@@ -8,17 +8,12 @@
  */
 package edu.tigers.sumatra.offensive.view;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.swing.JMenu;
-import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-
 import edu.tigers.sumatra.views.ISumatraView;
 import net.miginfocom.swing.MigLayout;
+
+import javax.swing.*;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -48,6 +43,7 @@ public class OffensiveStrategyPanel extends JPanel implements ISumatraView
 	// --------------------------------------------------------------------------
 	
 	/**
+	 * Offensive Strategy Panel
 	 */
 	public OffensiveStrategyPanel()
 	{
@@ -60,38 +56,28 @@ public class OffensiveStrategyPanel extends JPanel implements ISumatraView
 		bluePanel = new TeamOffensiveStrategyPanel();
 		
 		yellowRadioButton.setSelected(true);
-		yellowRadioButton.addActionListener(new ActionListener()
-		{
-			@Override
-			public void actionPerformed(final ActionEvent e)
-			{
-				if (blueRadioButton.isSelected())
-				{
-					blueRadioButton.setSelected(false);
-					remove(2);
-					add(yellowPanel, "span");
-					revalidate();
-					repaint();
-				}
-				yellowRadioButton.setSelected(true);
-			}
-		});
-		blueRadioButton.addActionListener(new ActionListener()
-		{
-			@Override
-			public void actionPerformed(final ActionEvent e)
-			{
-				if (yellowRadioButton.isSelected())
-				{
-					yellowRadioButton.setSelected(false);
-					remove(2);
-					add(bluePanel, "span");
-					revalidate();
-					repaint();
-				}
-				blueRadioButton.setSelected(true);
-			}
-		});
+		yellowRadioButton.addActionListener(e -> {
+            if (blueRadioButton.isSelected())
+            {
+                blueRadioButton.setSelected(false);
+                remove(2);
+                add(yellowPanel, "span");
+                revalidate();
+                repaint();
+            }
+            yellowRadioButton.setSelected(true);
+        });
+		blueRadioButton.addActionListener(e -> {
+            if (yellowRadioButton.isSelected())
+            {
+                yellowRadioButton.setSelected(false);
+                remove(2);
+                add(bluePanel, "span");
+                revalidate();
+                repaint();
+            }
+            blueRadioButton.setSelected(true);
+        });
 		
 		add(yellowRadioButton);
 		add(blueRadioButton, "wrap");
@@ -128,7 +114,7 @@ public class OffensiveStrategyPanel extends JPanel implements ISumatraView
 	@Override
 	public List<JMenu> getCustomMenus()
 	{
-		final List<JMenu> menus = new ArrayList<JMenu>();
+		final List<JMenu> menus = new ArrayList<>();
 		return menus;
 	}
 	

@@ -1,15 +1,10 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jan 15, 2013
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.drawable;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
+import java.awt.*;
 
 
 /**
@@ -17,30 +12,31 @@ import java.awt.Graphics2D;
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
+@FunctionalInterface
 public interface IDrawableShape
 {
 	/**
 	 * Paint your shape
 	 * 
-	 * @param g
-	 * @param tool
-	 * @param invert
+	 * @param g handle to graphics object
+	 * @param tool helper tool for drawing
+	 * @param invert needs inversion?
 	 */
 	void paintShape(Graphics2D g, IDrawableTool tool, boolean invert);
-	
-	
-	/**
-	 * @param drawDebug
-	 */
-	default void setDrawDebug(final boolean drawDebug)
-	{
-	}
 	
 	
 	/**
 	 * @param color
 	 */
 	default void setColor(final Color color)
+	{
+	}
+	
+	
+	/**
+	 * @param strokeWidth
+	 */
+	default void setStrokeWidth(double strokeWidth)
 	{
 	}
 }

@@ -1,14 +1,8 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jul 19, 2013
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.aicenter;
 
-import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.views.ASumatraView;
 import edu.tigers.sumatra.views.ESumatraViewType;
 import edu.tigers.sumatra.views.ISumatraViewPresenter;
@@ -19,41 +13,18 @@ import edu.tigers.sumatra.views.ISumatraViewPresenter;
  */
 public class AICenterView extends ASumatraView
 {
-	
-	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	private final ETeamColor	teamColor;
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	/**
-	 * @param color
+	 * Default
 	 */
-	public AICenterView(final ETeamColor color)
+	public AICenterView()
 	{
-		super(color == ETeamColor.YELLOW ? ESumatraViewType.AI_CENTER_YELLOW : ESumatraViewType.AI_CENTER_BLUE);
-		teamColor = color;
+		super(ESumatraViewType.AI_CENTER);
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	
 	@Override
 	public ISumatraViewPresenter createPresenter()
 	{
-		return new AICenterPresenter(teamColor);
+		return new AICenterPresenter();
 	}
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 }

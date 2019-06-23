@@ -136,7 +136,13 @@ public class TreeTableModelAdapter extends AbstractTableModel
 	}
 	
 	
-	protected Object nodeForRow(final int row)
+	/**
+	 * Get the node of a specific row.
+	 * 
+	 * @param row
+	 * @return
+	 */
+	public Object getNodeForRow(final int row)
 	{
 		final TreePath treePath = tree.getPathForRow(row);
 		return treePath.getLastPathComponent();
@@ -146,21 +152,21 @@ public class TreeTableModelAdapter extends AbstractTableModel
 	@Override
 	public Object getValueAt(final int row, final int column)
 	{
-		return treeTableModel.getValueAt(nodeForRow(row), column);
+		return treeTableModel.getValueAt(getNodeForRow(row), column);
 	}
 	
 	
 	@Override
 	public boolean isCellEditable(final int row, final int column)
 	{
-		return treeTableModel.isCellEditable(nodeForRow(row), column);
+		return treeTableModel.isCellEditable(getNodeForRow(row), column);
 	}
 	
 	
 	@Override
 	public void setValueAt(final Object value, final int row, final int column)
 	{
-		treeTableModel.setValueAt(value, nodeForRow(row), column);
+		treeTableModel.setValueAt(value, getNodeForRow(row), column);
 	}
 	
 	

@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jan 26, 2016
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.trajectory;
 
@@ -13,13 +8,13 @@ import com.sleepycat.persist.model.Persistent;
 
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * @param <RETURN_TYPE>
- * @param <TRAJ>
+ * @param <R>
+ * @param <T>
  */
 @Persistent
-public class TrajWTimeImpl<RETURN_TYPE, TRAJ extends ITrajectory<RETURN_TYPE>>
+public class TrajWTimeImpl<R, T extends ITrajectory<R>>
 {
-	private final TRAJ	trajectory;
+	private final T		trajectory;
 	private final long	tStart;
 	
 	
@@ -35,7 +30,7 @@ public class TrajWTimeImpl<RETURN_TYPE, TRAJ extends ITrajectory<RETURN_TYPE>>
 	 * @param trajectory
 	 * @param tStart
 	 */
-	public TrajWTimeImpl(final TRAJ trajectory, final long tStart)
+	public TrajWTimeImpl(final T trajectory, final long tStart)
 	{
 		super();
 		assert trajectory != null;
@@ -47,7 +42,7 @@ public class TrajWTimeImpl<RETURN_TYPE, TRAJ extends ITrajectory<RETURN_TYPE>>
 	/**
 	 * @return the trajectory
 	 */
-	public TRAJ getTrajectory()
+	public T getTrajectory()
 	{
 		return trajectory;
 	}
@@ -86,7 +81,7 @@ public class TrajWTimeImpl<RETURN_TYPE, TRAJ extends ITrajectory<RETURN_TYPE>>
 	 * @param tCur
 	 * @return
 	 */
-	public RETURN_TYPE getPositionMM(final long tCur)
+	public R getPositionMM(final long tCur)
 	{
 		return trajectory.getPositionMM(getTrajectoryTime(tCur));
 	}
@@ -96,7 +91,7 @@ public class TrajWTimeImpl<RETURN_TYPE, TRAJ extends ITrajectory<RETURN_TYPE>>
 	 * @param tCur
 	 * @return
 	 */
-	public RETURN_TYPE getPosition(final long tCur)
+	public R getPosition(final long tCur)
 	{
 		return trajectory.getPosition(getTrajectoryTime(tCur));
 	}
@@ -106,7 +101,7 @@ public class TrajWTimeImpl<RETURN_TYPE, TRAJ extends ITrajectory<RETURN_TYPE>>
 	 * @param tCur
 	 * @return
 	 */
-	public RETURN_TYPE getVelocity(final long tCur)
+	public R getVelocity(final long tCur)
 	{
 		return trajectory.getVelocity(getTrajectoryTime(tCur));
 	}
@@ -116,7 +111,7 @@ public class TrajWTimeImpl<RETURN_TYPE, TRAJ extends ITrajectory<RETURN_TYPE>>
 	 * @param tCur
 	 * @return
 	 */
-	public RETURN_TYPE getAcceleration(final long tCur)
+	public R getAcceleration(final long tCur)
 	{
 		return trajectory.getAcceleration(getTrajectoryTime(tCur));
 	}
@@ -126,7 +121,7 @@ public class TrajWTimeImpl<RETURN_TYPE, TRAJ extends ITrajectory<RETURN_TYPE>>
 	 * @param tCur
 	 * @return
 	 */
-	public RETURN_TYPE getNextDestination(final long tCur)
+	public R getNextDestination(final long tCur)
 	{
 		return trajectory.getNextDestination(getTrajectoryTime(tCur));
 	}
@@ -135,7 +130,7 @@ public class TrajWTimeImpl<RETURN_TYPE, TRAJ extends ITrajectory<RETURN_TYPE>>
 	/**
 	 * @return
 	 */
-	public RETURN_TYPE getFinalDestination()
+	public R getFinalDestination()
 	{
 		return trajectory.getPositionMM(trajectory.getTotalTime());
 	}

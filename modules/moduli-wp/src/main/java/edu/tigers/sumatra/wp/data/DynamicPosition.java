@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jan 14, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.wp.data;
 
 import java.util.ArrayList;
@@ -17,16 +13,17 @@ import org.json.simple.JSONObject;
 import com.github.g3force.s2vconverter.String2ValueConverter;
 import com.sleepycat.persist.model.Persistent;
 
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BallID;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.ids.UninitializedID;
-import edu.tigers.sumatra.math.AVector2;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.wp.fieldPrediction.FieldPredictionInformation;
+import edu.tigers.sumatra.math.botshape.BotShape;
+import edu.tigers.sumatra.math.vector.AVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.model.SumatraModel;
 
 
 /**
@@ -44,14 +41,14 @@ public class DynamicPosition extends AVector2
 	}
 	
 	@SuppressWarnings("unused")
-	private static final Logger						log			= Logger.getLogger(DynamicPosition.class.getName());
-																				
-	private IVector2										pos			= Vector2.ZERO_VECTOR;
-	private AObjectID										trackedId;
-	private double											lookahead	= 0;
-	private transient FieldPredictionInformation	predInfo		= null;
-																				
-																				
+	private static final Logger log = Logger.getLogger(DynamicPosition.class.getName());
+	
+	private IVector2 pos = Vector2.ZERO_VECTOR;
+	private AObjectID trackedId;
+	private double lookahead = 0;
+	private boolean useKickerPos = true;
+	
+	
 	/**
 	 * @param objId
 	 */
@@ -66,7 +63,7 @@ public class DynamicPosition extends AVector2
 	 */
 	public DynamicPosition(final ITrackedObject obj)
 	{
-		trackedId = obj.getBotId();
+		trackedId = obj.getId();
 		pos = obj.getPos();
 	}
 	
@@ -77,7 +74,7 @@ public class DynamicPosition extends AVector2
 	 */
 	public DynamicPosition(final ITrackedObject obj, final double lookahead)
 	{
-		trackedId = obj.getBotId();
+		trackedId = obj.getId();
 		pos = obj.getPos();
 		this.lookahead = lookahead;
 	}
@@ -100,6 +97,13 @@ public class DynamicPosition extends AVector2
 	}
 	
 	
+	@Override
+	public DynamicPosition copy()
+	{
+		return new DynamicPosition(this);
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -113,25 +117,40 @@ public class DynamicPosition extends AVector2
 	{
 		if (trackedId.isBall())
 		{
-			pos = swf.getBall().getPos();
+			if (lookahead > 1e-5)
+			{
+				pos = swf.getBall().getTrajectory().getPosByTime(lookahead);
+			} else
+			{
+				pos = swf.getBall().getPos();
+			}
 		} else if (trackedId.isBot())
 		{
 			ITrackedBot bot = swf.getBot((BotID) trackedId);
-			assert bot != null : "Tracked bot does not exist";
 			if (bot != null)
 			{
 				IVector2 botPos;
 				double botAngle;
-				if ((lookahead > 1e-5f))
+				if (lookahead > 1e-5f)
 				{
 					botPos = bot.getPosByTime(lookahead);
 					botAngle = bot.getAngleByTime(lookahead);
 				} else
 				{
 					botPos = bot.getPos();
-					botAngle = bot.getAngle();
+					botAngle = bot.getOrientation();
 				}
-				pos = GeoMath.getBotKickerPos(botPos, botAngle, bot.getCenter2DribblerDist());
+				if (useKickerPos)
+				{
+					pos = BotShape.getKickerCenterPos(botPos, botAngle,
+							bot.getCenter2DribblerDist() + Geometry.getBallRadius());
+				} else
+				{
+					pos = botPos;
+				}
+			} else if (!SumatraModel.getInstance().isProductive())
+			{
+				log.warn("No tracked bot with id " + trackedId + " found.");
 			}
 		}
 	}
@@ -145,23 +164,6 @@ public class DynamicPosition extends AVector2
 		pos = dyn.pos;
 		trackedId = dyn.trackedId;
 		lookahead = dyn.lookahead;
-		predInfo = dyn.predInfo;
-	}
-	
-	
-	/**
-	 * Get future position, if this a updated tracked object
-	 * 
-	 * @param t
-	 * @return
-	 */
-	public IVector2 getPosAt(final double t)
-	{
-		if (predInfo != null)
-		{
-			return predInfo.getPosAt(t);
-		}
-		return this;
 	}
 	
 	
@@ -227,6 +229,10 @@ public class DynamicPosition extends AVector2
 	 */
 	public static DynamicPosition valueOf(final String value)
 	{
+		if ("-1".equals(value) || "ball".equalsIgnoreCase(value))
+		{
+			return new DynamicPosition(BallID.instance());
+		}
 		try
 		{
 			return new DynamicPosition(AVector2.valueOf(value));
@@ -235,8 +241,38 @@ public class DynamicPosition extends AVector2
 			// This is not a simple position, go on with id detection
 		}
 		
+		List<String> finalValues = parseValues(value);
+		if (finalValues.isEmpty() || (finalValues.size() > 2))
+		{
+			throw new NumberFormatException("Format does not conform to: id[[, ]color]. Values: " + finalValues);
+		}
+		int id = Integer.parseInt(finalValues.get(0));
+		if (finalValues.size() != 2)
+		{
+			throw new NumberFormatException("missing bot id color");
+		}
+		ETeamColor color = getTeamColor(finalValues.get(1));
+		return new DynamicPosition(BotID.createBotId(id, color));
+	}
+	
+	
+	private static ETeamColor getTeamColor(final String str)
+	{
+		if (str.startsWith("Y"))
+		{
+			return ETeamColor.YELLOW;
+		} else if (str.startsWith("B"))
+		{
+			return ETeamColor.BLUE;
+		}
+		throw new NumberFormatException("invalid team color: " + str);
+	}
+	
+	
+	private static List<String> parseValues(final String value)
+	{
 		String[] values = value.replaceAll("[,;]", " ").split("[ ]");
-		List<String> finalValues = new ArrayList<String>(2);
+		List<String> finalValues = new ArrayList<>(2);
 		for (String val : values)
 		{
 			if (!val.trim().isEmpty() && !val.contains(","))
@@ -244,21 +280,7 @@ public class DynamicPosition extends AVector2
 				finalValues.add(val.trim());
 			}
 		}
-		if ((finalValues.size() > 2) || (finalValues.size() < 1))
-		{
-			throw new NumberFormatException("Format does not conform to: id[[, ]color]. Values: " + finalValues);
-		}
-		int id = Integer.valueOf(finalValues.get(0));
-		if (id == -1)
-		{
-			return new DynamicPosition(new BallID());
-		}
-		if (finalValues.size() != 2)
-		{
-			throw new NumberFormatException("missing bot id color");
-		}
-		ETeamColor color = ETeamColor.valueOf(finalValues.get(1));
-		return new DynamicPosition(BotID.createBotId(id, color));
+		return finalValues;
 	}
 	
 	
@@ -304,6 +326,12 @@ public class DynamicPosition extends AVector2
 	@Override
 	public Vector2 getXYVector()
 	{
-		return new Vector2(pos);
+		return Vector2.copy(pos);
+	}
+	
+	
+	public void setUseKickerPos(final boolean useKickerPos)
+	{
+		this.useKickerPos = useKickerPos;
 	}
 }

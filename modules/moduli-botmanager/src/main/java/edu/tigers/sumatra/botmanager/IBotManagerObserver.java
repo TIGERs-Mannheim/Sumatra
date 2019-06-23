@@ -12,7 +12,7 @@ import edu.tigers.sumatra.botmanager.bots.ABot;
 
 
 /**
- *
+ * Bot manager observer.
  */
 public interface IBotManagerObserver
 {

@@ -12,7 +12,7 @@ import com.sleepycat.persist.model.Persistent;
 
 
 /**
- *
+ * Base for all commands.
  */
 @Persistent
 public abstract class ACommand
@@ -284,7 +284,7 @@ public abstract class ACommand
 		} // else +/-0 -> +/-0
 		return Float.intBitsToFloat( // combine all parts
 				((hbits & 0x8000) << 16 // sign << ( 31 - 15 )
-						)
+				)
 						| ((exp | mant) << 13)); // value << ( 23 - 10 )
 	}
 	
@@ -327,7 +327,7 @@ public abstract class ACommand
 		val = (fbits & 0x7fffffff) >>> 23; // tmp exp for subnormal calc
 		return sign | ((((fbits & 0x7fffff) | 0x800000) // add subnormal bit
 				+ (0x800000 >>> (val - 102)) // round depending on cut off
-				) >>> (126 - val)); // div by 2^(1-(exp-127+15)) and >> 13 | exp=0
+		) >>> (126 - val)); // div by 2^(1-(exp-127+15)) and >> 13 | exp=0
 	}
 	
 	
@@ -341,6 +341,7 @@ public abstract class ACommand
 	
 	
 	/**
+	 * Increase number of retransmits.
 	 */
 	public final void incRetransmits()
 	{

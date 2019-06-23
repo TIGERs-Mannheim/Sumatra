@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jan 12, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botoverview;
 
@@ -15,6 +10,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 
 import javax.swing.table.AbstractTableModel;
 
+import edu.tigers.sumatra.ai.data.EBotInformation;
 import edu.tigers.sumatra.botoverview.view.BotOverviewColumn;
 import edu.tigers.sumatra.botoverview.view.BotOverviewPanel;
 import edu.tigers.sumatra.ids.BotID;
@@ -30,16 +26,17 @@ public class BotOverviewTableModel extends AbstractTableModel
 {
 	/**  */
 	private static final long									serialVersionUID	= 4712760313475190867L;
-	private final SortedMap<BotID, BotOverviewColumn>	data					= new ConcurrentSkipListMap<BotID, BotOverviewColumn>(
-																										BotID.getComparator());
+	private final SortedMap<BotID, BotOverviewColumn>	data					= new ConcurrentSkipListMap<>(
+			BotID.getComparator());
 	private BotID[]												sortedBots			= new BotID[0];
 	
 	
 	/**
 	 * @param botId
 	 * @param columnData
+	 * @return the previous item, if present
 	 */
-	public void putBot(final BotID botId, final BotOverviewColumn columnData)
+	public BotOverviewColumn putBot(final BotID botId, final BotOverviewColumn columnData)
 	{
 		BotOverviewColumn col = data.get(botId);
 		if (col == null)
@@ -52,6 +49,7 @@ public class BotOverviewTableModel extends AbstractTableModel
 			data.put(botId, columnData);
 			fireTableDataChanged();
 		}
+		return col;
 	}
 	
 	
@@ -97,29 +95,37 @@ public class BotOverviewTableModel extends AbstractTableModel
 	@Override
 	public int getColumnCount()
 	{
-		return data.size();
+		return data.size() + 1;
 	}
 	
 	
 	@Override
 	public int getRowCount()
 	{
-		return BotOverviewColumn.ROWS;
+		return EBotInformation.values().length;
 	}
 	
 	
 	@Override
 	public String getColumnName(final int col)
 	{
-		return "Bot " + sortedBots[col].getNumber() + " "
-				+ (sortedBots[col].getTeamColor() == ETeamColor.YELLOW ? "Y" : "B");
+		if (col == 0)
+		{
+			return "";
+		}
+		return "Bot " + sortedBots[col - 1].getNumber() + " "
+				+ (sortedBots[col - 1].getTeamColor() == ETeamColor.YELLOW ? "Y" : "B");
 	}
 	
 	
 	@Override
 	public Object getValueAt(final int row, final int col)
 	{
-		return data.get(sortedBots[col]).getData().get(row);
+		if (col == 0)
+		{
+			return EBotInformation.values()[row].getLabel();
+		}
+		return data.get(sortedBots[col - 1]).getData().get(row);
 	}
 	
 	

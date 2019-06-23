@@ -8,7 +8,7 @@
  */
 package edu.tigers.sumatra.sim;
 
-import edu.tigers.sumatra.math.IVector3;
+import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.wp.data.MotionContext;
 
 
@@ -23,9 +23,10 @@ public interface ISimulatedObject
 	 * Update object. This is called less frequently then step.
 	 * 
 	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
-	 * @param dt TODO
+	 * @param dt
+	 * @param timestamp
 	 */
-	default void update(double dt)
+	default void update(double dt, long timestamp)
 	{
 	}
 	
@@ -38,23 +39,10 @@ public interface ISimulatedObject
 	 */
 	void step(double dt, MotionContext context);
 	
-	
-	/**
-	 * @param vel
-	 */
-	void setVel(final IVector3 vel);
-	
-	
 	/**
 	 * @param vector3
 	 */
 	void addVel(final IVector3 vector3);
-	
-	
-	/**
-	 * @param pos
-	 */
-	void setPos(final IVector3 pos);
 	
 	
 	/**
@@ -64,7 +52,18 @@ public interface ISimulatedObject
 	
 	
 	/**
+	 * @param vel
+	 */
+	void setVel(final IVector3 vel);
+	
+	/**
 	 * @return
 	 */
 	IVector3 getPos();
+	
+	
+	/**
+	 * @param pos
+	 */
+	void setPos(final IVector3 pos);
 }

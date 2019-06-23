@@ -11,7 +11,7 @@ package edu.tigers.autoreferee;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -21,6 +21,10 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+
+import edu.tigers.autoreferee.module.AutoRefModule;
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
@@ -35,6 +39,14 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
 public final class AutoRefUtil
 {
 	
+	private static Logger log = LogManager.getLogger(AutoRefUtil.class);
+	
+	
+	private AutoRefUtil()
+	{
+		// Hide constructor
+	}
+	
 	/**
 	 * A Predicate implementation that filters ITrackedBot instances by their color
 	 * 
@@ -42,12 +54,12 @@ public final class AutoRefUtil
 	 */
 	public static class ColorFilter implements Predicate<ITrackedBot>
 	{
-		private static Map<ETeamColor, ColorFilter>	filters;
-		private final ETeamColor							color;
+		private static Map<ETeamColor, ColorFilter> filters;
+		private final ETeamColor color;
 		
 		static
 		{
-			Map<ETeamColor, ColorFilter> tempFilters = new HashMap<>();
+			Map<ETeamColor, ColorFilter> tempFilters = new EnumMap<>(ETeamColor.class);
 			Arrays.stream(ETeamColor.values()).forEach(color -> tempFilters.put(color, new ColorFilter(color)));
 			filters = Collections.unmodifiableMap(tempFilters);
 		}
@@ -86,7 +98,7 @@ public final class AutoRefUtil
 	 */
 	public static class ToBotIDMapper implements Function<ITrackedBot, BotID>
 	{
-		private static final ToBotIDMapper	INSTANCE	= new ToBotIDMapper();
+		private static final ToBotIDMapper INSTANCE = new ToBotIDMapper();
 		
 		
 		@Override
@@ -164,10 +176,11 @@ public final class AutoRefUtil
 	{
 		try
 		{
-			AutoRefModule autoref = (AutoRefModule) SumatraModel.getInstance().getModule(AutoRefModule.MODULE_ID);
-			return Optional.of(autoref);
+			AutoRefModule autoRef = (AutoRefModule) SumatraModel.getInstance().getModule(AutoRefModule.MODULE_ID);
+			return Optional.of(autoRef);
 		} catch (ModuleNotFoundException e)
 		{
+			log.error("Module not found", e);
 		}
 		return Optional.empty();
 	}

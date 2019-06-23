@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 28, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.timer;
 
 /**
@@ -14,25 +10,29 @@ package edu.tigers.sumatra.timer;
 public class DummyTimer implements ITimer
 {
 	@Override
-	public void stop(final ETimable timable, final long id)
+	public void stop(final String timable, final long id)
 	{
+		// nothing to do
 	}
 	
 	
 	@Override
-	public void stop(final ETimable timable, final long id, final int customId)
+	public void stop(final String timable, final long id, final int customId)
 	{
+		// nothing to do
 	}
 	
 	
 	@Override
-	public void start(final ETimable timable, final long id)
+	public void start(final String timable, final long id)
 	{
+		// nothing to do
 	}
 	
 	
 	@Override
-	public void start(final ETimable timable, final long id, final int customId)
+	public void start(final String timable, final long id, final int customId)
 	{
+		// nothing to do
 	}
 }

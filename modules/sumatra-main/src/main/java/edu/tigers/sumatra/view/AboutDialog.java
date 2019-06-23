@@ -56,7 +56,7 @@ public class AboutDialog extends JDialog
 				(int) (screenDimension.getHeight() - getHeight()) / 2);
 		
 		// --- heading ---
-		JLabel heading = new JLabel("Tigers Mannheim - Sumatra", SwingConstants.CENTER);
+		JLabel heading = new JLabel("TIGERs Mannheim - Sumatra", SwingConstants.CENTER);
 		heading.setFont(new Font("Dialog", Font.BOLD, 15));
 		this.add(heading, BorderLayout.NORTH);
 		
@@ -72,7 +72,7 @@ public class AboutDialog extends JDialog
 		
 		// --- text ---
 		JLabel text = new JLabel();
-		text.setText("<html>Version: " + SumatraModel.getVersion() + "<br>" + "Team: Tigers Mannheim<br>"
+		text.setText("<html>Version: " + SumatraModel.getVersion() + "<br>" + "Team: TIGERs Mannheim<br>"
 				+ "University: DHBW Mannheim<br>" + "Date: July 2009 - today" + "</html>");
 		this.add(text, BorderLayout.SOUTH);
 		

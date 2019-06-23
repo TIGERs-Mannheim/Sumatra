@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 08.05.2013
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.rcm;
 
 import org.apache.log4j.Logger;
@@ -19,22 +15,23 @@ import com.github.g3force.instanceables.InstanceableClass.NotCreateableException
 import edu.dhbw.mannheim.tigers.sumatra.proto.BotActionCommandProtos.BotActionCommand;
 import edu.tigers.sumatra.bot.EFeature;
 import edu.tigers.sumatra.bot.EFeatureState;
+import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillLocalVelocity;
 import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillMotorsOff;
 import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillWheelVelocity;
+import edu.tigers.sumatra.botmanager.commands.botskills.data.KickerDribblerCommands;
 import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
 import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
 import edu.tigers.sumatra.control.motor.EMotorModel;
 import edu.tigers.sumatra.control.motor.IMotorModel;
 import edu.tigers.sumatra.control.motor.MatrixMotorModel;
-import edu.tigers.sumatra.math.AVector2;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.IVectorN;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.math.Vector3;
+import edu.tigers.sumatra.math.vector.AVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVectorN;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector3;
 
 
 /**
@@ -44,17 +41,9 @@ import edu.tigers.sumatra.math.Vector3;
  */
 public class CommandInterpreter implements IConfigObserver, ICommandInterpreter
 {
-	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	private static final Logger	log					= Logger.getLogger(CommandInterpreter.class.getName());
 	
-	private boolean					dribblerOn			= false;
-	private final ABot				bot;
-	private long						lastForceKick		= 0;
-	private long						lastArmKick			= 0;
+	private static final double	TRIGGER_THRESHOLD	= 0.001;
 	
 	@Configurable(comment = "Send smoothed velocities based on acceleration")
 	private static boolean			smoothedVel			= true;
@@ -75,15 +64,11 @@ public class CommandInterpreter implements IConfigObserver, ICommandInterpreter
 	private static double			accDef				= 3;
 	@Configurable
 	private static double			accMax				= 10;
-	@Configurable
-	private static double			accMin				= 1;
 	
 	@Configurable
 	private static double			dccDef				= 5;
 	@Configurable
 	private static double			dccMax				= 20;
-	@Configurable
-	private static double			dccMin				= 3;
 	
 	@Configurable
 	private static double			speedDef				= 1.0;
@@ -101,21 +86,25 @@ public class CommandInterpreter implements IConfigObserver, ICommandInterpreter
 	@Configurable
 	private static double			rotateMax			= 10;
 	
-	private double						speedMax				= speedMaxLow;
+	static
+	{
+		ConfigRegistration.registerClass("rcm", CommandInterpreter.class);
+	}
 	
-	private static IMotorModel		mm						= new MatrixMotorModel();
+	private static IMotorModel			mm						= new MatrixMotorModel();
 	
+	private final ABot					bot;
+	private boolean						dribblerOn			= false;
+	private long							lastForceKick		= 0;
+	private long							lastArmKick			= 0;
+	private double							speedMax				= speedMaxLow;
+	private boolean						highSpeedMode		= false;
+	private boolean						paused				= false;
+	private IVector2						lastVel				= Vector2.fromXY(0, 0);
+	private long							lastTimestamp		= System.nanoTime();
+	private double							compassThreshold	= 0;
 	
-	private boolean					highSpeedMode		= false;
-	private boolean					paused				= false;
-	
-	private IVector2					lastVel				= new Vector2(0, 0);
-	private long						lastTimestamp		= System.nanoTime();
-	
-	
-	private double						compassThreshold	= 0;
-	private final double				triggerThreshold	= 0.001;
-	
+	private KickerDribblerCommands	kdOut					= new KickerDribblerCommands();
 	
 	private enum EMovementType
 	{
@@ -124,17 +113,8 @@ public class CommandInterpreter implements IConfigObserver, ICommandInterpreter
 	}
 	
 	
-	static
-	{
-		ConfigRegistration.registerClass("rcm", CommandInterpreter.class);
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
-	 * @param bot
+	 * @param bot to be controlled
 	 */
 	public CommandInterpreter(final ABot bot)
 	{
@@ -144,12 +124,6 @@ public class CommandInterpreter implements IConfigObserver, ICommandInterpreter
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 * @param command
-	 */
 	@Override
 	public void interpret(final BotActionCommand command)
 	{
@@ -165,31 +139,36 @@ public class CommandInterpreter implements IConfigObserver, ICommandInterpreter
 			speedMax = speedMaxLow;
 		}
 		
-		getMove(command);
+		interpretMove(command);
 		
 		if (command.hasDribble() && (command.getDribble() > 0.25))
 		{
 			dribblerOn = true;
 			final int rpm = (int) (command.getDribble() * maxDribbleSpeed);
-			bot.getMatchCtrl().setDribblerSpeed(rpm);
+			kdOut.setDribblerSpeed(rpm);
 		} else if (dribblerOn)
 		{
 			// disable dribbler as soon has there is no dribble signal anymore
 			dribblerOn = false;
-			bot.getMatchCtrl().setDribblerSpeed(0);
+			kdOut.setDribblerSpeed(0);
 		}
 		
+		interpretKick(command);
+		
+	}
+	
+	
+	private void interpretKick(final BotActionCommand command)
+	{
 		if (command.hasKickForce())
 		{
 			lastForceKick = System.nanoTime();
-			bot.getMatchCtrl()
-					.setKick(command.getKickForce() * maxKickSpeed, EKickerDevice.STRAIGHT, EKickerMode.FORCE);
+			kdOut.setKick(command.getKickForce() * maxKickSpeed, EKickerDevice.STRAIGHT, EKickerMode.FORCE);
 		}
-		if ((command.hasChipForce()))
+		if (command.hasChipForce())
 		{
 			lastForceKick = System.nanoTime();
-			bot.getMatchCtrl()
-					.setKick(command.getChipForce() * maxKickSpeed, EKickerDevice.CHIP, EKickerMode.FORCE);
+			kdOut.setKick(command.getChipForce() * maxKickSpeed, EKickerDevice.CHIP, EKickerMode.FORCE);
 		}
 		if (command.hasKickArm())
 		{
@@ -201,28 +180,37 @@ public class CommandInterpreter implements IConfigObserver, ICommandInterpreter
 			{
 				lastForceKick = System.nanoTime();
 			}
-			bot.getMatchCtrl()
-					.setKick(command.getKickArm() * maxKickSpeed, EKickerDevice.STRAIGHT, EKickerMode.ARM);
+			kdOut.setKick(command.getKickArm() * maxKickSpeed, EKickerDevice.STRAIGHT, EKickerMode.ARM);
 		}
-		if ((command.hasChipArm()))
+		if (command.hasChipArm())
 		{
 			lastForceKick = 0;
 			lastArmKick = System.nanoTime();
-			bot.getMatchCtrl()
-					.setKick(command.getChipArm() * maxKickSpeed, EKickerDevice.CHIP, EKickerMode.ARM);
+			kdOut.setKick(command.getChipArm() * maxChipSpeed, EKickerDevice.CHIP, EKickerMode.ARM);
 		}
 		
 		if ((command.hasDisarm() && command.getDisarm())
-				|| ((lastForceKick != 0) && ((System.nanoTime() - lastForceKick) > 2e8))
-				|| ((lastArmKick != 0) && ((System.nanoTime() - lastArmKick) > 15e9)))
+				|| isArmKickTimedOut()
+				|| isForceKickTimedOut())
 		{
-			bot.getMatchCtrl()
-					.setKick(command.getKickForce() * maxKickSpeed, EKickerDevice.STRAIGHT, EKickerMode.DISARM);
+			kdOut.setKick(0, EKickerDevice.STRAIGHT, EKickerMode.DISARM);
 		}
 	}
 	
 	
-	private void getMove(final BotActionCommand command)
+	private boolean isForceKickTimedOut()
+	{
+		return (lastForceKick != 0) && ((System.nanoTime() - lastForceKick) > 5e7);
+	}
+	
+	
+	private boolean isArmKickTimedOut()
+	{
+		return (lastArmKick != 0) && ((System.nanoTime() - lastArmKick) > 15e9);
+	}
+	
+	
+	private void interpretMove(final BotActionCommand command)
 	{
 		double dt = (System.nanoTime() - lastTimestamp) / 1e9;
 		lastTimestamp = System.nanoTime();
@@ -236,7 +224,7 @@ public class CommandInterpreter implements IConfigObserver, ICommandInterpreter
 		/*
 		 * X-Y-Translation
 		 */
-		final Vector2 setVel = new Vector2();
+		final Vector2 setVel = Vector2.zero();
 		
 		setVel.setX(command.getTranslateX());
 		setVel.setY(command.getTranslateY());
@@ -280,20 +268,17 @@ public class CommandInterpreter implements IConfigObserver, ICommandInterpreter
 				- ((speedDef - speedMin) * command.getDecelerate());
 		setVel.multiply(speed);
 		
-		double acc;
-		if (setVel.isZeroVector())
-		{
-			// dcc
-			acc = (dccDef + ((dccMax - dccDef) * command.getDecelerate()));
-		} else if (lastVel.isZeroVector()
-				|| (GeoMath.angleBetweenVectorAndVector(setVel, lastVel) < AngleMath.PI_HALF))
+		final double acc;
+		if (!setVel.isZeroVector() &&
+				(lastVel.isZeroVector()
+						|| (setVel.angleToAbs(lastVel).orElse(0.0) < AngleMath.PI_HALF)))
 		{
 			// acc
-			acc = (accDef + ((accMax - accDef) * command.getAccelerate()));
+			acc = accDef + ((accMax - accDef) * command.getAccelerate());
 		} else
 		{
 			// dcc
-			acc = (dccDef + ((dccMax - dccDef) * command.getDecelerate()));
+			acc = dccDef + ((dccMax - dccDef) * command.getDecelerate());
 		}
 		
 		IVector2 outVel;
@@ -320,7 +305,7 @@ public class CommandInterpreter implements IConfigObserver, ICommandInterpreter
 		 */
 		double rotate = command.getRotate();
 		
-		if ((rotate < triggerThreshold) && (rotate > -triggerThreshold))
+		if ((rotate < TRIGGER_THRESHOLD) && (rotate > -TRIGGER_THRESHOLD))
 		{
 			rotate = 0;
 		}
@@ -328,16 +313,16 @@ public class CommandInterpreter implements IConfigObserver, ICommandInterpreter
 		// substract COMPASS_THRESHOLD to start at 0 value after dead zone
 		if (rotate < 0)
 		{
-			rotate += triggerThreshold;
+			rotate += TRIGGER_THRESHOLD;
 		}
 		
 		if (rotate > 0)
 		{
-			rotate -= triggerThreshold;
+			rotate -= TRIGGER_THRESHOLD;
 		}
 		
 		// scale back to full range (-1.0 - 1.0)
-		rotate *= 1.0 / (1.0f - triggerThreshold);
+		rotate *= 1.0 / (1.0f - TRIGGER_THRESHOLD);
 		
 		double rotateSpeed = (rotateDef + ((rotateMax - rotateDef) * command.getAccelerate()))
 				- ((rotateDef - rotateMin) * command.getDecelerate());
@@ -347,7 +332,8 @@ public class CommandInterpreter implements IConfigObserver, ICommandInterpreter
 		switch (moveType)
 		{
 			case LOCAL_VEL:
-				BotSkillLocalVelocity skill = new BotSkillLocalVelocity(outVel, rotate, bot.getMoveConstraints());
+				final BotSkillLocalVelocity skill = new BotSkillLocalVelocity(outVel, rotate,
+						new MoveConstraints(bot.getBotParams().getMovementLimits()));
 				if (smoothedVel)
 				{
 					skill.setAccMax(acc);
@@ -355,25 +341,34 @@ public class CommandInterpreter implements IConfigObserver, ICommandInterpreter
 				{
 					skill.setAccMax(accMax);
 				}
+				skill.setKickerDribbler(kdOut);
 				bot.getMatchCtrl().setSkill(skill);
 				break;
 			case MOTOR_VEL:
-				if (mm.getType() != motorModelType)
-				{
-					try
-					{
-						mm = (IMotorModel) motorModelType.getInstanceableClass().newDefaultInstance();
-					} catch (NotCreateableException err)
-					{
-						log.error("Could not create motor model", err);
-					}
-				}
+				updateMotorModel();
 				
-				IVectorN motors = mm.getWheelSpeed(new Vector3(outVel, rotate));
-				bot.getMatchCtrl().setSkill(new BotSkillWheelVelocity(motors.toArray()));
+				IVectorN motors = mm.getWheelSpeed(Vector3.from2d(outVel, rotate));
+				final BotSkillWheelVelocity wheelSkill = new BotSkillWheelVelocity(motors.toArray());
+				wheelSkill.setKickerDribbler(kdOut);
+				bot.getMatchCtrl().setSkill(wheelSkill);
 				break;
 			default:
 				break;
+		}
+	}
+	
+	
+	private static void updateMotorModel()
+	{
+		if (mm.getType() != motorModelType)
+		{
+			try
+			{
+				mm = (IMotorModel) motorModelType.getInstanceableClass().newDefaultInstance();
+			} catch (NotCreateableException err)
+			{
+				log.error("Could not create motor model", err);
+			}
 		}
 	}
 	
@@ -384,15 +379,10 @@ public class CommandInterpreter implements IConfigObserver, ICommandInterpreter
 	@Override
 	public void stopAll()
 	{
-		bot.getMatchCtrl().setDribblerSpeed(0);
-		bot.getMatchCtrl().setKick(0, EKickerDevice.STRAIGHT, EKickerMode.DISARM);
 		bot.getMatchCtrl().setSkill(new BotSkillMotorsOff());
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * @return
 	 */

@@ -28,7 +28,7 @@ public interface IBotTreeObserver
 	
 	
 	/**
-	 *
+	 * Add bot.
 	 */
 	void onAddBot();
 	

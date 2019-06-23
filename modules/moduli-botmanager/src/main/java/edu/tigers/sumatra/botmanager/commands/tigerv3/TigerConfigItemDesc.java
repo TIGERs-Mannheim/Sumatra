@@ -39,7 +39,7 @@ public class TigerConfigItemDesc extends ACommand
 	public static final int	CONFIG_ITEM_FILE_NAME	= 0xFF;
 	
 	
-	/** */
+	/** Constructor. */
 	public TigerConfigItemDesc()
 	{
 		super(ECommand.CMD_CONFIG_ITEM_DESC, true);
@@ -98,6 +98,7 @@ public class TigerConfigItemDesc extends ACommand
 	/**
 	 * @return
 	 */
+	@SuppressWarnings("squid:S1166")
 	public String getName()
 	{
 		String text;

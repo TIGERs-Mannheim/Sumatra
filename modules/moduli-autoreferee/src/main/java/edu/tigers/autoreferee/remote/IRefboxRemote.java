@@ -8,7 +8,7 @@
  */
 package edu.tigers.autoreferee.remote;
 
-import edu.tigers.autoreferee.engine.RefCommand;
+import edu.tigers.autoreferee.engine.RefboxRemoteCommand;
 
 
 /**
@@ -21,11 +21,11 @@ public interface IRefboxRemote
 	 * @param command
 	 * @return
 	 */
-	public ICommandResult sendCommand(RefCommand command);
+	ICommandResult sendCommand(RefboxRemoteCommand command);
 	
 	
 	/**
 	 * 
 	 */
-	public void stop();
+	void stop();
 }

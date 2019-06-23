@@ -37,7 +37,7 @@ public class ConfigPresenter implements IBotConfigPanelObserver
 	private final BotConfigPanel				configPanel;
 	private ABot									bot;
 	private ABotManager							botManager	= null;
-	private final Map<Integer, ConfigFile>	files			= new HashMap<Integer, ConfigFile>();
+	private final Map<Integer, ConfigFile>	files			= new HashMap<>();
 	private static final Logger				log			= Logger.getLogger(ConfigPresenter.class.getName());
 	
 	
@@ -80,62 +80,73 @@ public class ConfigPresenter implements IBotConfigPanelObserver
 		switch (cmd.getType())
 		{
 			case CMD_CONFIG_FILE_STRUCTURE:
-			{
-				TigerConfigFileStructure structure = (TigerConfigFileStructure) cmd;
-				
-				if (files.remove(structure.getConfigId()) != null)
-				{
-					configPanel.removeConfigFile(structure.getConfigId());
-				}
-				
-				ConfigFile cfgFile = new ConfigFile(structure);
-				files.put(structure.getConfigId(), cfgFile);
-				
-				bot.execute(cfgFile.getNextRequest());
-			}
+				newCommandConfigFileStructure(cmd);
 				break;
 			case CMD_CONFIG_ITEM_DESC:
-			{
-				TigerConfigItemDesc desc = (TigerConfigItemDesc) cmd;
-				
-				ConfigFile cfgFile = files.get(desc.getConfigId());
-				if (cfgFile == null)
-				{
-					return;
-				}
-				
-				cfgFile.setItemDesc(desc);
-				
-				if (cfgFile.isComplete())
-				{
-					bot.execute(new TigerConfigRead(desc.getConfigId()));
-				}
-				else
-				{
-					bot.execute(cfgFile.getNextRequest());
-				}
-			}
+				newCommandConfigItemDesc(cmd);
 				break;
 			case CMD_CONFIG_READ:
-			{
-				TigerConfigRead read = (TigerConfigRead) cmd;
-				
-				ConfigFile cfgFile = files.get(read.getConfigId());
-				if (cfgFile == null)
-				{
-					return;
-				}
-				
-				cfgFile.setValues(read);
-				
-				log.info("Config complete:" + cfgFile.getName());
-				
-				configPanel.addConfigFile(cfgFile);
-			}
+				newCommandConfigRead(cmd);
 				break;
 			default:
 				break;
 		}
+	}
+	
+	
+	private void newCommandConfigRead(final ACommand cmd)
+	{
+		TigerConfigRead read = (TigerConfigRead) cmd;
+		
+		ConfigFile cfgFile = files.get(read.getConfigId());
+		if (cfgFile == null)
+		{
+			return;
+		}
+		
+		cfgFile.setValues(read);
+		
+		log.info("Config complete:" + cfgFile.getName());
+		
+		configPanel.addConfigFile(cfgFile);
+	}
+	
+	
+	private void newCommandConfigItemDesc(final ACommand cmd)
+	{
+		TigerConfigItemDesc desc = (TigerConfigItemDesc) cmd;
+		
+		ConfigFile cfgFile = files.get(desc.getConfigId());
+		if (cfgFile == null)
+		{
+			return;
+		}
+		
+		cfgFile.setItemDesc(desc);
+		
+		if (cfgFile.isComplete())
+		{
+			bot.execute(new TigerConfigRead(desc.getConfigId()));
+		} else
+		{
+			bot.execute(cfgFile.getNextRequest());
+		}
+	}
+	
+	
+	private void newCommandConfigFileStructure(final ACommand cmd)
+	{
+		TigerConfigFileStructure structure = (TigerConfigFileStructure) cmd;
+		
+		if (files.remove(structure.getConfigId()) != null)
+		{
+			configPanel.removeConfigFile(structure.getConfigId());
+		}
+		
+		ConfigFile cfgFile = new ConfigFile(structure);
+		files.put(structure.getConfigId(), cfgFile);
+		
+		bot.execute(cfgFile.getNextRequest());
 	}
 	
 	
@@ -161,9 +172,9 @@ public class ConfigPresenter implements IBotConfigPanelObserver
 			return;
 		}
 		
-		for (ABot bot : botManager.getAllBots().values())
+		for (ABot abot : botManager.getAllBots().values())
 		{
-			bot.execute(file.getWriteCmd());
+			abot.execute(file.getWriteCmd());
 		}
 	}
 	
@@ -174,13 +185,15 @@ public class ConfigPresenter implements IBotConfigPanelObserver
 		bot.execute(new TigerConfigRead(file.getConfigId()));
 	}
 	
-	/** */
+	/**
+	 * Configuration file.
+	 */
 	public final class ConfigFile
 	{
 		private final TigerConfigFileStructure	structure;
 		private String									name		= null;
-		private final List<String>					names		= new ArrayList<String>();
-		private List<String>							values	= new ArrayList<String>();
+		private final List<String>					names		= new ArrayList<>();
+		private List<String>							values	= new ArrayList<>();
 		
 		
 		/**

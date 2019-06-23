@@ -31,7 +31,7 @@ public class OverviewPanel extends JPanel
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	private static final long			serialVersionUID	= -3183090653608159807L;
-	private final Map<BotID, JPanel>	botPanels			= new TreeMap<BotID, JPanel>(BotID.getComparator());
+	private final Map<BotID, JPanel>	botPanels			= new TreeMap<>(BotID.getComparator());
 	private boolean						active				= false;
 	
 	
@@ -39,6 +39,7 @@ public class OverviewPanel extends JPanel
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
+	 * Constructor.
 	 */
 	public OverviewPanel()
 	{
@@ -92,6 +93,7 @@ public class OverviewPanel extends JPanel
 	
 	
 	/**
+	 * Remove all bot panels.
 	 */
 	public void removeAllBotPanels()
 	{
@@ -115,36 +117,26 @@ public class OverviewPanel extends JPanel
 	
 	private void updatePanels()
 	{
-		final JPanel panel = this;
+		final JPanel thisPanel = this;
 		
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
+		SwingUtilities.invokeLater(() -> {
+			removeAll();
+			
+			synchronized (botPanels)
 			{
-				removeAll();
-				
-				synchronized (botPanels)
+				if (active && !botPanels.isEmpty())
 				{
-					if (active && !botPanels.isEmpty())
-					{
-						for (final JPanel panel : botPanels.values())
-						{
-							if (panel.isEnabled())
-							{
-								add(panel, "wrap, gapbottom 0");
-							}
-						}
-					} else
-					{
-						add(new JLabel("No bots connected."), "wrap");
-					}
+					botPanels.values().stream()
+							.filter(JPanel::isEnabled)
+							.forEach(p -> add(p, "wrap, gapbottom 0"));
+				} else
+				{
+					add(new JLabel("No bots connected."), "wrap");
 				}
-				
-				add(Box.createGlue(), "push");
-				
-				SwingUtilities.updateComponentTreeUI(panel);
 			}
+			
+			add(Box.createGlue(), "push");
+			SwingUtilities.updateComponentTreeUI(thisPanel);
 		});
 	}
 }

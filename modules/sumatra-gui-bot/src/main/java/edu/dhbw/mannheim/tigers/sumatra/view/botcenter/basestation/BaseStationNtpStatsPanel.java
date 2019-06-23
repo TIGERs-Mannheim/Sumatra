@@ -39,7 +39,7 @@ public class BaseStationNtpStatsPanel extends JPanel
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/** */
+	/** Default constructor. */
 	public BaseStationNtpStatsPanel()
 	{
 		setLayout(new MigLayout("wrap 2", "[100,fill]10[100,fill]"));
@@ -66,8 +66,6 @@ public class BaseStationNtpStatsPanel extends JPanel
 	 */
 	public void setStats(final BaseStationEthStats stats)
 	{
-		EventQueue.invokeLater(() -> {
-			primarySync.setSelected(stats.isNtpSync());
-		});
+		EventQueue.invokeLater(() -> primarySync.setSelected(stats.isNtpSync()));
 	}
 }

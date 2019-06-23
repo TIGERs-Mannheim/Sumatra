@@ -1,19 +1,16 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 4, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.bot;
 
 import java.util.Map;
 import java.util.Optional;
 
+import edu.tigers.sumatra.bot.params.IBotParams;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.IVector3;
+import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.trajectory.TrajectoryWithTime;
 
 
@@ -37,7 +34,7 @@ public interface IBot
 	
 	/**
 	 * The absolute maximum kicker level possible for the bot (not the currently set max cap!)
-	 * 
+	 *
 	 * @return [V]
 	 */
 	double getKickerLevelMax();
@@ -51,7 +48,7 @@ public interface IBot
 	
 	/**
 	 * Each bot has its own hardware id that uniquely identifies a robot by hardware (mainboard)
-	 * 
+	 *
 	 * @return
 	 */
 	int getHardwareId();
@@ -61,14 +58,6 @@ public interface IBot
 	 * @return
 	 */
 	boolean isAvailableToAi();
-	
-	
-	/**
-	 * System.nanotime timestamp of last kick
-	 * 
-	 * @return
-	 */
-	long getLastKickTime();
 	
 	
 	/**
@@ -122,7 +111,10 @@ public interface IBot
 	/**
 	 * @return
 	 */
-	double getCenter2DribblerDist();
+	default double getCenter2DribblerDist()
+	{
+		return getBotParams().getDimensions().getCenter2DribblerDist();
+	}
 	
 	
 	/**
@@ -133,18 +125,18 @@ public interface IBot
 	
 	/**
 	 * Get internal position from sensory data
-	 * 
-	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+	 *
 	 * @return
+	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 	 */
 	Optional<IVector3> getSensoryPos();
 	
 	
 	/**
 	 * Get internal velcoity from sensory data
-	 * 
-	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+	 *
 	 * @return
+	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 	 */
 	Optional<IVector3> getSensoryVel();
 	
@@ -161,29 +153,17 @@ public interface IBot
 	/**
 	 * @return
 	 */
-	double getKickSpeed();
+	IBotParams getBotParams();
 	
 	
 	/**
 	 * @return
 	 */
-	String getDevice();
+	boolean isBarrierInterrupted();
 	
 	
 	/**
 	 * @return
 	 */
-	double getDefaultVelocity();
-	
-	
-	/**
-	 * @return
-	 */
-	double getDefaultAcceleration();
-	
-	
-	/**
-	 * @return
-	 */
-	MoveConstraints getMoveConstraints();
+	ERobotMode getRobotMode();
 }

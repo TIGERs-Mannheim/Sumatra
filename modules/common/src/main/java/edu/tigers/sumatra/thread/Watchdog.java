@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 21.08.2010
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.thread;
 
@@ -22,24 +17,10 @@ import java.util.List;
  */
 public class Watchdog
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	private final List<IWatchdogObserver>	observers		= new ArrayList<IWatchdogObserver>();
+	private final List<IWatchdogObserver>	observers		= new ArrayList<>();
 	private boolean								reset				= false;
 	private int										period			= 1000;
 	private Thread									watchdogThread	= null;
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
- * 
- */
-	public Watchdog()
-	{
-	}
 	
 	
 	/**
@@ -108,7 +89,7 @@ public class Watchdog
 	
 	
 	/**
-	 *
+	 * reset the watchdog
 	 */
 	public void reset()
 	{
@@ -117,7 +98,7 @@ public class Watchdog
 	
 	
 	/**
-	 * 
+	 * stop the watchdog
 	 */
 	public void stop()
 	{
@@ -134,7 +115,7 @@ public class Watchdog
 	 */
 	public boolean isActive()
 	{
-		return (watchdogThread != null);
+		return watchdogThread != null;
 	}
 	
 	
@@ -153,6 +134,7 @@ public class Watchdog
 	
 	protected class WatchdogRun implements Runnable
 	{
+		@SuppressWarnings("squid:S2583")
 		@Override
 		public void run()
 		{

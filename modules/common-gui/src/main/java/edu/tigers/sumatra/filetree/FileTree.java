@@ -1,49 +1,13 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 21, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.filetree;
-
-/*
- * Copyright (c) Ian F. Darwin, http://www.darwinsys.com/, 1996-2002.
- * All rights reserved. Software written by Ian F. Darwin and others.
- * $Id: LICENSE,v 1.8 2004/02/09 03:33:38 ian Exp $
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the distribution.
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS''
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS
- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- * Java, the Duke mascot, and all variants of Sun's Java "steaming coffee
- * cup" logo are trademarks of Sun Microsystems. Sun's, and James Gosling's,
- * pioneering role in inventing and promulgating (and standardizing) the Java
- * language and environment is gratefully acknowledged.
- * The pioneering role of Dennis Ritchie and Bjarne Stroustrup, of AT&T, for
- * inventing predecessor languages C and C++ is also gratefully acknowledged.
- */
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -67,14 +31,14 @@ import org.apache.log4j.Logger;
 public class FileTree extends JPanel
 {
 	/**  */
-	private static final long					serialVersionUID	= 6901756711335047357L;
+	private static final long serialVersionUID = 6901756711335047357L;
 	@SuppressWarnings("unused")
-	private static final Logger				log					= Logger.getLogger(FileTree.class.getName());
+	private static final Logger log = Logger.getLogger(FileTree.class.getName());
 	
-	private final List<IFileTreeObserver>	observers			= new CopyOnWriteArrayList<IFileTreeObserver>();
-	private final JTree							tree;
+	private final List<IFileTreeObserver> observers = new CopyOnWriteArrayList<>();
+	private final JTree tree;
 	
-	private final List<String>					selectedPaths		= new ArrayList<>();
+	private final List<String> selectedPaths = new ArrayList<>();
 	
 	
 	/**
@@ -85,6 +49,36 @@ public class FileTree extends JPanel
 	public FileTree(final File dir)
 	{
 		this(dir, null);
+	}
+	
+	
+	/**
+	 * Construct a FileTree
+	 *
+	 * @param dir
+	 * @param preFileTree
+	 */
+	public FileTree(final File dir, final FileTree preFileTree)
+	{
+		setLayout(new BorderLayout());
+		
+		// Make a tree list with all the nodes, and make it a JTree
+		tree = new JTree(addNodes(null, dir));
+		tree.setRootVisible(false);
+		
+		if (preFileTree != null)
+		{
+			setupFromPreFileTree(preFileTree);
+		}
+		
+		// Add a listener
+		tree.addTreeSelectionListener(new FileTreeSelectionListener());
+		
+		// Lastly, put the JTree into a JScrollPane.
+		JScrollPane scrollPane = new JScrollPane();
+		scrollPane.getViewport().add(tree);
+		scrollPane.setPreferredSize(new Dimension(250, 0));
+		add(BorderLayout.CENTER, scrollPane);
 	}
 	
 	
@@ -107,76 +101,28 @@ public class FileTree extends JPanel
 	}
 	
 	
-	/**
-	 * Construct a FileTree
-	 * 
-	 * @param dir
-	 * @param preFileTree
-	 */
-	public FileTree(final File dir, final FileTree preFileTree)
+	@SuppressWarnings("squid:S134")
+	private void setupFromPreFileTree(final FileTree preFileTree)
 	{
-		setLayout(new BorderLayout());
-		
-		// Make a tree list with all the nodes, and make it a JTree
-		tree = new JTree(addNodes(null, dir));
-		tree.setRootVisible(false);
-		
-		if (preFileTree != null)
+		JTree preTree = preFileTree.tree;
+		int nextRow = 0;
+		for (int preRow = 0; preRow < preTree.getRowCount(); preRow++)
 		{
-			JTree preTree = preFileTree.tree;
-			int nextRow = 0;
-			for (int preRow = 0; preRow < preTree.getRowCount(); preRow++)
+			TreePath preTp = preTree.getPathForRow(preRow);
+			for (int row = nextRow; row < tree.getRowCount(); row++)
 			{
-				TreePath preTp = preTree.getPathForRow(preRow);
-				for (int row = nextRow; row < tree.getRowCount(); row++)
+				TreePath tp = tree.getPathForRow(row);
+				if (equalTreePaths(preTp, tp))
 				{
-					TreePath tp = tree.getPathForRow(row);
-					if (equalTreePaths(preTp, tp))
+					if (preTree.isExpanded(preRow))
 					{
-						if (preTree.isExpanded(preRow))
-						{
-							tree.expandPath(tp);
-						}
-						nextRow = row + 1;
-						break;
+						tree.expandPath(tp);
 					}
+					nextRow = row + 1;
+					break;
 				}
 			}
 		}
-		
-		// Add a listener
-		tree.addTreeSelectionListener(new TreeSelectionListener()
-		{
-			@Override
-			public void valueChanged(final TreeSelectionEvent e)
-			{
-				for (TreePath tp : e.getPaths())
-				{
-					DefaultMutableTreeNode node = (DefaultMutableTreeNode) tp.getLastPathComponent();
-					Element el = (Element) node.getUserObject();
-					String filename = el.file.getAbsolutePath();
-					boolean isNew = e.isAddedPath(tp);
-					if (isNew && !selectedPaths.contains(filename))
-					{
-						selectedPaths.add(filename);
-					}
-					if (!isNew)
-					{
-						selectedPaths.remove(filename);
-					}
-				}
-				for (IFileTreeObserver o : observers)
-				{
-					o.onFileSelected(selectedPaths);
-				}
-			}
-		});
-		
-		// Lastly, put the JTree into a JScrollPane.
-		JScrollPane scrollpane = new JScrollPane();
-		scrollpane.getViewport().add(tree);
-		scrollpane.setPreferredSize(new Dimension(250, 0));
-		add(BorderLayout.CENTER, scrollpane);
 	}
 	
 	
@@ -236,26 +182,26 @@ public class FileTree extends JPanel
 			log.error("Directory does not exist: " + dir.getAbsolutePath());
 			return curDir;
 		}
-		for (String element : tmp)
-		{
-			ol.add(element);
-		}
-		Collections.sort(ol, String.CASE_INSENSITIVE_ORDER);
+		
+		ol.addAll(Arrays.asList(tmp));
+		ol.sort(String.CASE_INSENSITIVE_ORDER);
 		File f;
 		List<File> files = new ArrayList<>();
+		
 		// Make two passes, one for Dirs and one for Files. This is #1.
-		for (int i = 0; i < ol.size(); i++)
+		for (String thisObject : ol)
 		{
-			String thisObject = ol.get(i);
 			String newPath;
-			if (curPath.file.getPath().equals("."))
+			if (".".equals(curPath.file.getPath()))
 			{
 				newPath = thisObject;
 			} else
 			{
 				newPath = curPath.file.getPath() + File.separator + thisObject;
 			}
-			if ((f = new File(newPath)).isDirectory())
+			
+			f = new File(newPath);
+			if (f.isDirectory())
 			{
 				addNodes(curDir, f);
 			} else
@@ -263,11 +209,13 @@ public class FileTree extends JPanel
 				files.add(f);
 			}
 		}
+		
 		// Pass two: for files.
-		for (int fnum = 0; fnum < files.size(); fnum++)
+		for (File file : files)
 		{
-			curDir.add(new DefaultMutableTreeNode(new Element(files.get(fnum))));
+			curDir.add(new DefaultMutableTreeNode(new Element(file)));
 		}
+		
 		return curDir;
 	}
 	
@@ -285,7 +233,7 @@ public class FileTree extends JPanel
 	
 	private static class Element
 	{
-		File	file;
+		File file;
 		
 		
 		Element(final File file)
@@ -338,6 +286,33 @@ public class FileTree extends JPanel
 				return false;
 			}
 			return true;
+		}
+	}
+	
+	private class FileTreeSelectionListener implements TreeSelectionListener
+	{
+		@Override
+		public void valueChanged(final TreeSelectionEvent e)
+		{
+			for (TreePath tp : e.getPaths())
+			{
+				DefaultMutableTreeNode node = (DefaultMutableTreeNode) tp.getLastPathComponent();
+				Element el = (Element) node.getUserObject();
+				String filename = el.file.getAbsolutePath();
+				boolean isNew = e.isAddedPath(tp);
+				if (isNew && !selectedPaths.contains(filename))
+				{
+					selectedPaths.add(filename);
+				}
+				if (!isNew)
+				{
+					selectedPaths.remove(filename);
+				}
+			}
+			for (IFileTreeObserver o : observers)
+			{
+				o.onFileSelected(selectedPaths);
+			}
 		}
 	}
 }

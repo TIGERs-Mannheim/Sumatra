@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 25, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.augm;
 
@@ -14,6 +9,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.proto.AugmWrapperProtos.AugmWrapper;
@@ -35,7 +31,7 @@ public class AugmentedDataSender
 	private static final int								LOCAL_PORT	= 42000;
 	private static final int								PORT			= 42001;
 	private static final String							ADDRESS		= "224.5.23.3";
-	private static final int								PERIOD		= 20;
+	private static final long								PERIOD		= 20;
 	
 	private final MulticastUDPTransmitter				transmitter;
 	
@@ -43,14 +39,14 @@ public class AugmentedDataSender
 	
 	private ScheduledExecutorService						service		= null;
 	
-	private final ETeamColor								teamColor	= ETeamColor.BLUE;
+	private static final ETeamColor						TEAM_COLOR	= ETeamColor.BLUE;
 	
 	private final AugmentedDataTransformer				transformer	= new AugmentedDataTransformer();
 	
 	
 	/**
-	  * 
-	  */
+	 * Create new sender
+	 */
 	public AugmentedDataSender()
 	{
 		transmitter = new MulticastUDPTransmitter(LOCAL_PORT, ADDRESS, PORT);
@@ -58,6 +54,7 @@ public class AugmentedDataSender
 	
 	
 	/**
+	 * Start the sender
 	 */
 	public void start()
 	{
@@ -71,6 +68,7 @@ public class AugmentedDataSender
 	
 	
 	/**
+	 * Stop the sender
 	 */
 	public void stop()
 	{
@@ -79,9 +77,11 @@ public class AugmentedDataSender
 			service.shutdown();
 			try
 			{
-				service.awaitTermination(PERIOD * 2, TimeUnit.MILLISECONDS);
+				Validate.isTrue(service.awaitTermination(PERIOD * 2, TimeUnit.MILLISECONDS));
 			} catch (InterruptedException err)
 			{
+				log.error("Interrupted while awaiting termination", err);
+				Thread.currentThread().interrupt();
 			}
 			service = null;
 		}
@@ -93,41 +93,41 @@ public class AugmentedDataSender
 	 */
 	public void addFrame(final VisualizationFrame frame)
 	{
-		if (frame.getTeamColor() == teamColor)
+		if (frame.getTeamColor() == TEAM_COLOR)
 		{
 			frameQueue.pollLast();
 			frameQueue.add(frame);
 		}
 	}
-	
-	
-	/**
-	 * @param frame
-	 */
-	private void sendFrame(final VisualizationFrame frame)
-	{
-		AugmWrapper wrapper = transformer.createAugmWrapper(frame);
-		byte[] data = wrapper.toByteArray();
-		transmitter.send(data);
-		
-		// FileOutputStream fos;
-		// try
-		// {
-		// fos = new FileOutputStream("out/frame_" + frame.getWorldFrame().getSystemTime().getTime() + ".bin");
-		// fos.write(data);
-		// fos.close();
-		// } catch (FileNotFoundException err)
-		// {
-		// err.printStackTrace();
-		// } catch (IOException err)
-		// {
-		// err.printStackTrace();
-		// }
-	}
+
 	
 	
 	private class Sender implements Runnable
 	{
+		
+		/**
+		 * @param frame
+		 */
+		private void sendFrame(final VisualizationFrame frame)
+		{
+			AugmWrapper wrapper = transformer.createAugmWrapper(frame);
+			byte[] data = wrapper.toByteArray();
+			transmitter.send(data);
+			
+			// FileOutputStream fos;
+			// try
+			// {
+			// fos = new FileOutputStream("out/frame_" + frame.getWorldFrame().getSystemTime().getTime() + ".bin");
+			// fos.write(data);
+			// fos.close();
+			// } catch (FileNotFoundException err)
+			// {
+			// err.printStackTrace();
+			// } catch (IOException err)
+			// {
+			// err.printStackTrace();
+			// }
+		}
 		@Override
 		public void run()
 		{
@@ -140,7 +140,8 @@ public class AugmentedDataSender
 				}
 			} catch (InterruptedException err)
 			{
-				log.warn("Interrupted in Sender Thread");
+				log.warn("Interrupted in Sender Thread", err);
+				Thread.currentThread().interrupt();
 			} catch (Exception err)
 			{
 				log.error("Error in AugmSender Thread", err);

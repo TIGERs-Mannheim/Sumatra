@@ -14,7 +14,7 @@ package edu.tigers.sumatra.ids;
  * 
  * @author Gero
  */
-public class NoObjectWithThisIDException extends RuntimeException
+public class NoObjectWithThisIDException extends Exception
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------

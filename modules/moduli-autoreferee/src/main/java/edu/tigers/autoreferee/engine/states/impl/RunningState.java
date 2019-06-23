@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 7, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.states.impl;
 
@@ -13,7 +8,7 @@ import java.util.Optional;
 import org.apache.log4j.Logger;
 
 import edu.tigers.autoreferee.IAutoRefFrame;
-import edu.tigers.autoreferee.engine.RefCommand;
+import edu.tigers.autoreferee.engine.RefboxRemoteCommand;
 import edu.tigers.autoreferee.engine.calc.PossibleGoalCalc.PossibleGoal;
 import edu.tigers.autoreferee.engine.events.EGameEvent;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
@@ -29,19 +24,10 @@ import edu.tigers.sumatra.ids.ETeamColor;
  */
 public class RunningState extends AbstractAutoRefState
 {
-	private static final Logger	log					= Logger.getLogger(RunningState.class);
+	private static final Logger log = Logger.getLogger(RunningState.class);
 	
-	private boolean					goalDetected		= false;
-	private boolean					indirectDetected	= false;
-	
-	
-	/**
-	 *
-	 */
-	public RunningState()
-	{
-		
-	}
+	private boolean goalDetected = false;
+	private boolean indirectDetected = false;
 	
 	
 	@Override
@@ -55,8 +41,8 @@ public class RunningState extends AbstractAutoRefState
 				ETeamColor teamInFavor = gameEvent.getResponsibleTeam();
 				Command goalCmd = teamInFavor == ETeamColor.BLUE ? Command.GOAL_BLUE : Command.GOAL_YELLOW;
 				
-				ctx.sendCommand(new RefCommand(Command.STOP));
-				ctx.sendCommand(new RefCommand(goalCmd));
+				ctx.sendCommand(new RefboxRemoteCommand(Command.STOP));
+				ctx.sendCommand(new RefboxRemoteCommand(goalCmd));
 				ctx.setFollowUpAction(gameEvent.getFollowUpAction());
 				return true;
 			case INDIRECT_GOAL:
@@ -66,7 +52,7 @@ public class RunningState extends AbstractAutoRefState
 				boolean followUpSet = ctx.getFollowUpAction() != null;
 				if (goalDetected || indirectDetected || followUpSet)
 				{
-					log.debug("Dropping " + EGameEvent.BALL_LEFT_FIELD + " violation since a goal has been detected");
+					log.trace("Dropping " + EGameEvent.BALL_LEFT_FIELD + " violation.");
 					return false;
 				}
 				break;
@@ -89,7 +75,7 @@ public class RunningState extends AbstractAutoRefState
 	
 	
 	@Override
-	public void doReset()
+	protected void doReset()
 	{
 		goalDetected = false;
 		indirectDetected = false;

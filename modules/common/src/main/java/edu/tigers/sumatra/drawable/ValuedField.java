@@ -1,23 +1,15 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 1, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.drawable;
 
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.Graphics2D;
+import java.awt.*;
 import java.awt.geom.Rectangle2D;
 
-import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 
 
 /**
@@ -25,27 +17,22 @@ import edu.tigers.sumatra.math.Vector2;
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@Persistent(version = 1)
 public class ValuedField implements IDrawableShape
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	private final double[]				data;
 	private final int						numX;
 	private final int						numY;
 	private final int						offset;
-												
+	
 	private final double					fieldLength;
 	private final double					fieldWidth;
-												
+	
 	private boolean						drawDebug	= false;
-																
+	
 	private transient IColorPicker	colorPicker	= ColorPickerFactory.scaledSingleBlack(0, 0, 0, 1.0, 2);
 	private transient Font				font			= new Font("", Font.PLAIN, 3);
-																
-																
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -123,7 +110,6 @@ public class ValuedField implements IDrawableShape
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
-		// final Composite originalComposite = g.getComposite();
 		double sizeY = tool.getFieldHeight() / (getNumX() - 1.0);
 		double sizeX = tool.getFieldWidth() / (getNumY() - 1.0);
 		
@@ -180,7 +166,6 @@ public class ValuedField implements IDrawableShape
 			}
 			guiY = nextY;
 		}
-		// g.setComposite(originalComposite);
 		tool.turnField(tool.getFieldTurn(), AngleMath.PI_HALF, g);
 	}
 	
@@ -196,7 +181,7 @@ public class ValuedField implements IDrawableShape
 	 */
 	public IVector2 getPointOnField(final int x, final int y)
 	{
-		return new Vector2((((x + 0.5) / numX) * fieldLength)
+		return Vector2.fromXY((((x + 0.5) / numX) * fieldLength)
 				- (fieldLength / 2.0), (((y + 0.5) / numY) * fieldWidth)
 						- (fieldWidth / 2.0));
 	}
@@ -240,16 +225,6 @@ public class ValuedField implements IDrawableShape
 	public final boolean isDrawDebug()
 	{
 		return drawDebug;
-	}
-	
-	
-	/**
-	 * @param drawDebug the drawDebug to set
-	 */
-	@Override
-	public final void setDrawDebug(final boolean drawDebug)
-	{
-		this.drawDebug = drawDebug;
 	}
 	
 	

@@ -19,38 +19,32 @@ public interface IState
 	/**
 	 * Called once on state entrance
 	 */
-	void doEntryActions();
+	default void doEntryActions()
+	{
+	}
 	
 	
 	/**
 	 * Called once on state exit
 	 */
-	void doExitActions();
+	default void doExitActions()
+	{
+	}
 	
 	
 	/**
 	 * Called continuously with each new aiFrame
 	 */
-	void doUpdate();
-	
-	
-	/**
-	 * return a unique identifier for this state
-	 * 
-	 * @return
-	 */
-	Enum<?> getIdentifier();
-	
-	
-	/**
-	 * @return
-	 */
-	default String getName()
+	default void doUpdate()
 	{
-		if (getIdentifier() != null)
-		{
-			return getIdentifier().name();
-		}
-		return "";
+	}
+	
+	
+	/**
+	 * @return an optional identifier for this state, defaults to the class name
+	 */
+	default String getIdentifier()
+	{
+		return this.getClass().getSimpleName();
 	}
 }

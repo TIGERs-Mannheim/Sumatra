@@ -1,34 +1,29 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 22, 2016
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.sharedradio;
 
-import com.github.g3force.configurable.Configurable;
 import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.bot.EBotType;
+import edu.tigers.sumatra.bot.params.BotParams;
+import edu.tigers.sumatra.bot.params.IBotParams;
 import edu.tigers.sumatra.botmanager.bots.ASimBot;
 import edu.tigers.sumatra.ids.BotID;
 
 
 /**
+ * This class is currently BROKEN!
+ * BotSkills are being re-organized.
+ * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 @Persistent
 public class SharedRadioBot extends ASimBot
 {
+	private final SharedRadioBaseStation baseStation;
 	
-	private final SharedRadioBaseStation	baseStation;
-														
-	@Configurable
-	private static double						center2DribblerDist	= 75;
-																					
-																					
+	
 	@SuppressWarnings("unused")
 	private SharedRadioBot()
 	{
@@ -45,6 +40,7 @@ public class SharedRadioBot extends ASimBot
 	{
 		super(EBotType.SHARED_RADIO, botId, baseStation);
 		this.baseStation = baseStation;
+		// setFeedbackDelay(0.17);
 	}
 	
 	
@@ -57,19 +53,16 @@ public class SharedRadioBot extends ASimBot
 	
 	
 	@Override
-	protected double getFeedbackDelay()
+	public double getDribblerSpeed()
 	{
-		return 0.17;
+		return 0;
 	}
 	
 	
-	/**
-	 * @return
-	 */
 	@Override
-	public double getCenter2DribblerDist()
+	public IBotParams getBotParams()
 	{
-		return center2DribblerDist;
+		return new BotParams();
 	}
 	
 }

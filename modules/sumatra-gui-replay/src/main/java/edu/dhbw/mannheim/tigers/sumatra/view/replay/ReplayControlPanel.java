@@ -1,12 +1,10 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jan 27, 2013
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.dhbw.mannheim.tigers.sumatra.view.replay;
+
+import static javax.swing.KeyStroke.getKeyStroke;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -14,9 +12,9 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.beans.PropertyChangeListener;
 import java.text.DecimalFormat;
 import java.util.Dictionary;
 import java.util.Enumeration;
@@ -24,11 +22,13 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
@@ -54,22 +54,21 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 	private static final int								NUM_SPEED_FACTORS		= 4;
 	private static final long								SLIDER_SCALE			= 100_000_000;
 	
-	private final List<IReplayControlPanelObserver>	observers				= new CopyOnWriteArrayList<IReplayControlPanelObserver>();
+	private final List<IReplayControlPanelObserver>	observers				= new CopyOnWriteArrayList<>();
 	
 	private final JSlider									slider;
 	
 	
 	private final JLabel										timeStepLabel			= new JLabel();
-	private final JPanel										timeStepPanel			= createTimeStepPanel();
 	private boolean											settingSliderByHand	= false;
 	
 	private final JButton									btnPlay					= new JButton();
 	
-	private double												speed						= 1;
 	private boolean											playing					= true;
 	
 	
 	/**
+	 * Default
 	 */
 	public ReplayControlPanel()
 	{
@@ -83,60 +82,88 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		
 		JSlider speedSlider = createSpeedSlider();
 		
-		btnPlay.addActionListener(new PlayButtonListener());
+		Action playAction = new PlayAction();
+		btnPlay.addActionListener(playAction);
 		btnPlay.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/pause.png"));
-		btnPlay.setToolTipText("Pause [p]");
+		btnPlay.setToolTipText("Play/Pause");
 		btnPlay.setBorder(BorderFactory.createEmptyBorder());
 		btnPlay.setBackground(new Color(0, 0, 0, 1));
+		registerShortcut(btnPlay, getKeyStroke(KeyEvent.VK_P, KeyEvent.CTRL_DOWN_MASK), playAction);
 		
 		JButton btnSkipFrameFwd = new JButton();
-		btnSkipFrameFwd.addActionListener(new SkipFrameFwdListener());
+		Action skipOneFrameFwdAction = new SkipOneFrameFwdAction();
+		btnSkipFrameFwd.addActionListener(skipOneFrameFwdAction);
 		btnSkipFrameFwd.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/skipFrameForward.png"));
-		btnSkipFrameFwd.setToolTipText("Skip one frame forward [ctrl + right]");
+		btnSkipFrameFwd.setToolTipText("Skip one frame forward");
 		btnSkipFrameFwd.setBorder(BorderFactory.createEmptyBorder());
 		btnSkipFrameFwd.setBackground(new Color(0, 0, 0, 1));
+		registerShortcut(btnSkipFrameFwd, getKeyStroke(KeyEvent.VK_RIGHT, KeyEvent.CTRL_DOWN_MASK),
+				skipOneFrameFwdAction);
 		
 		JButton btnSkipFrameBwd = new JButton();
-		btnSkipFrameBwd.addActionListener(new SkipFrameBwdListener());
+		final Action skipOneFrameBwdAction = new SkipOneFrameBwdAction();
+		btnSkipFrameBwd.addActionListener(skipOneFrameBwdAction);
 		btnSkipFrameBwd.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/skipFrameBackward.png"));
-		btnSkipFrameBwd.setToolTipText("Skip one frame backward [ctrl + left]");
+		btnSkipFrameBwd.setToolTipText("Skip one frame backward");
 		btnSkipFrameBwd.setBorder(BorderFactory.createEmptyBorder());
 		btnSkipFrameBwd.setBackground(new Color(0, 0, 0, 1));
+		registerShortcut(btnSkipFrameBwd, getKeyStroke(KeyEvent.VK_LEFT, KeyEvent.CTRL_DOWN_MASK), skipOneFrameBwdAction);
 		
 		JButton btnSkipFwd = new JButton();
-		btnSkipFwd.addActionListener(new SkipFwdListener());
+		final Action skipFwdAction = new SkipFwdAction();
+		btnSkipFwd.addActionListener(skipFwdAction);
 		btnSkipFwd.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/skipForward.png"));
-		btnSkipFwd.setToolTipText("Skip forward (" + SKIP_TIME + "ms) [right]");
+		btnSkipFwd.setToolTipText("Skip forward (" + SKIP_TIME + "ms)");
 		btnSkipFwd.setBorder(BorderFactory.createEmptyBorder());
 		btnSkipFwd.setBackground(new Color(0, 0, 0, 1));
+		registerShortcut(btnSkipFwd, getKeyStroke(KeyEvent.VK_RIGHT, KeyEvent.SHIFT_DOWN_MASK), skipFwdAction);
 		
 		JButton btnSkipBwd = new JButton();
-		btnSkipBwd.addActionListener(new SkipBwdListener());
+		final SkipBwdAction skipBwdAction = new SkipBwdAction();
+		btnSkipBwd.addActionListener(skipBwdAction);
 		btnSkipBwd.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/skipBackward.png"));
-		btnSkipBwd.setToolTipText("Skip backward (" + SKIP_TIME + "ms) [left]");
+		btnSkipBwd.setToolTipText("Skip backward (" + SKIP_TIME + "ms)");
 		btnSkipBwd.setBorder(BorderFactory.createEmptyBorder());
 		btnSkipBwd.setBackground(new Color(0, 0, 0, 1));
+		registerShortcut(btnSkipBwd, getKeyStroke(KeyEvent.VK_LEFT, KeyEvent.SHIFT_DOWN_MASK), skipBwdAction);
 		
 		JButton btnFastFwd = new JButton();
-		btnFastFwd.addActionListener(new FastFwdListener());
+		final FastFwdAction fastFwdAction = new FastFwdAction();
+		btnFastFwd.addActionListener(fastFwdAction);
 		btnFastFwd.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/fastForward.png"));
-		btnFastFwd.setToolTipText("Fast forward (" + FAST_TIME + "ms) [shift + right]");
+		btnFastFwd.setToolTipText("Fast forward (" + FAST_TIME + "ms)");
 		btnFastFwd.setBorder(BorderFactory.createEmptyBorder());
 		btnFastFwd.setBackground(new Color(0, 0, 0, 1));
+		registerShortcut(btnFastFwd, getKeyStroke(KeyEvent.VK_RIGHT, KeyEvent.CTRL_DOWN_MASK | KeyEvent.SHIFT_DOWN_MASK),
+				fastFwdAction);
 		
 		JButton btnFastBwd = new JButton();
-		btnFastBwd.addActionListener(new FastBwdListener());
+		final Action fastBwdAction = new FastBwdAction();
+		btnFastBwd.addActionListener(fastBwdAction);
 		btnFastBwd.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/fastBackward.png"));
-		btnFastBwd.setToolTipText("Fast backward (" + FAST_TIME + "ms) [shift + left]");
+		btnFastBwd.setToolTipText("Fast backward (" + FAST_TIME + "ms)");
 		btnFastBwd.setBorder(BorderFactory.createEmptyBorder());
 		btnFastBwd.setBackground(new Color(0, 0, 0, 1));
+		registerShortcut(btnFastBwd, getKeyStroke(KeyEvent.VK_LEFT, KeyEvent.CTRL_DOWN_MASK | KeyEvent.SHIFT_DOWN_MASK),
+				fastBwdAction);
 		
 		JButton btnSnap = new JButton();
-		btnSnap.addActionListener(new SnapshotListener());
-		btnSnap.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/snap.png"));
+		final SnapshotAction snapshotAction = new SnapshotAction();
+		btnSnap.addActionListener(snapshotAction);
+		btnSnap.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/save.png"));
 		btnSnap.setToolTipText("Take and store snapshot");
 		btnSnap.setBorder(BorderFactory.createEmptyBorder());
 		btnSnap.setBackground(new Color(0, 0, 0, 1));
+		registerShortcut(btnSnap, getKeyStroke(KeyEvent.VK_S, KeyEvent.CTRL_DOWN_MASK), snapshotAction);
+		
+		JButton btnSnapCopy = new JButton();
+		final Action snapshotCopyAction = new SnapshotCopyAction();
+		btnSnapCopy.addActionListener(snapshotCopyAction);
+		btnSnapCopy.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/copy.png"));
+		btnSnapCopy.setToolTipText("Copy snapshot to clipboard");
+		btnSnapCopy.setBorder(BorderFactory.createEmptyBorder());
+		btnSnapCopy.setBackground(new Color(0, 0, 0, 1));
+		registerShortcut(btnSnapCopy, getKeyStroke(KeyEvent.VK_C, KeyEvent.CTRL_DOWN_MASK), snapshotCopyAction);
 		
 		JButton btnKickoff = new JButton("Kickoff");
 		btnKickoff.setToolTipText("Search for next kickoff");
@@ -150,9 +177,14 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		chkRunCurrentAi.setToolTipText("Run AI over current Worldframe");
 		chkRunCurrentAi.addActionListener(new RunCurrentAIListener());
 		
+		JCheckBox chkRunAutoRef = new JCheckBox("Ref");
+		chkRunAutoRef.setToolTipText("Run AutoRef over current Worldframe");
+		chkRunAutoRef.addActionListener(new RunAutoRefListener());
+		
 		JPanel topPanel = new JPanel();
 		topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.LINE_AXIS));
 		topPanel.add(slider);
+		final JPanel timeStepPanel = createTimeStepPanel();
 		topPanel.add(timeStepPanel);
 		add(topPanel, BorderLayout.NORTH);
 		
@@ -166,27 +198,22 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		bottomPanel.add(btnSkipFwd);
 		bottomPanel.add(btnFastFwd);
 		bottomPanel.add(btnSnap);
+		bottomPanel.add(btnSnapCopy);
 		bottomPanel.add(speedSlider);
 		
 		bottomPanel.add(chkRunCurrentAi);
+		bottomPanel.add(chkRunAutoRef);
 		bottomPanel.add(chkSkipStop);
 		bottomPanel.add(btnKickoff);
 		add(bottomPanel, BorderLayout.CENTER);
-		
-		getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("typed p"), "playpause");
-		getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("ctrl RIGHT"), "skipFrameFwd");
-		getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("ctrl LEFT"), "skipFrameBwd");
-		getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("RIGHT"), "skipFwd");
-		getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("LEFT"), "skipBwd");
-		getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("shift RIGHT"), "fastFwd");
-		getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("shift LEFT"), "fastBwd");
-		getActionMap().put("playpause", new PlayButtonListener());
-		getActionMap().put("skipFrameFwd", new SkipFrameFwdListener());
-		getActionMap().put("skipFrameBwd", new SkipFrameBwdListener());
-		getActionMap().put("skipFwd", new SkipFwdListener());
-		getActionMap().put("skipBwd", new SkipBwdListener());
-		getActionMap().put("fastFwd", new FastFwdListener());
-		getActionMap().put("fastBwd", new FastBwdListener());
+	}
+	
+	
+	private void registerShortcut(JComponent component, KeyStroke keyStroke, Action action)
+	{
+		String actionCommand = action.getClass().getCanonicalName();
+		component.getInputMap(WHEN_IN_FOCUSED_WINDOW).put(keyStroke, actionCommand);
+		component.getActionMap().put(actionCommand, action);
 	}
 	
 	
@@ -204,6 +231,7 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 	}
 	
 	
+	@SuppressWarnings("squid:S1149") // Hashtable -> dictated by swing
 	private JSlider createSpeedSlider()
 	{
 		JSlider speedSlider = new JSlider(SwingConstants.HORIZONTAL, -NUM_SPEED_FACTORS, NUM_SPEED_FACTORS, 0);
@@ -260,13 +288,8 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	private class PlayButtonListener implements Action
+	private class PlayAction extends AbstractAction
 	{
-		
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
@@ -284,44 +307,6 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 			}
 			repaint();
 		}
-		
-		
-		@Override
-		public Object getValue(final String key)
-		{
-			return null;
-		}
-		
-		
-		@Override
-		public void putValue(final String key, final Object value)
-		{
-		}
-		
-		
-		@Override
-		public void setEnabled(final boolean b)
-		{
-		}
-		
-		
-		@Override
-		public boolean isEnabled()
-		{
-			return true;
-		}
-		
-		
-		@Override
-		public void addPropertyChangeListener(final PropertyChangeListener listener)
-		{
-		}
-		
-		
-		@Override
-		public void removePropertyChangeListener(final PropertyChangeListener listener)
-		{
-		}
 	}
 	
 	
@@ -331,8 +316,8 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		@Override
 		public void stateChanged(final ChangeEvent e)
 		{
-			JSlider slider = (JSlider) e.getSource();
-			int value = slider.getValue();
+			JSlider jSlider = (JSlider) e.getSource();
+			int value = jSlider.getValue();
 			double newSpeed = 1;
 			for (int i = 0; i < value; i++)
 			{
@@ -342,10 +327,9 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 			{
 				newSpeed /= 2;
 			}
-			speed = newSpeed;
 			for (IReplayControlPanelObserver o : observers)
 			{
-				o.onSetSpeed(speed);
+				o.onSetSpeed(newSpeed);
 			}
 		}
 		
@@ -373,6 +357,7 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		@Override
 		public void mouseClicked(final MouseEvent e)
 		{
+			// ignored
 		}
 		
 		
@@ -398,12 +383,14 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		@Override
 		public void mouseEntered(final MouseEvent e)
 		{
+			// ignored
 		}
 		
 		
 		@Override
 		public void mouseExited(final MouseEvent e)
 		{
+			// ignored
 		}
 	}
 	
@@ -434,7 +421,20 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		}
 	}
 	
-	private class SkipFrameFwdListener implements Action
+	private class RunAutoRefListener implements ActionListener
+	{
+		@Override
+		public void actionPerformed(final ActionEvent e)
+		{
+			JCheckBox chk = (JCheckBox) e.getSource();
+			for (IReplayControlPanelObserver o : observers)
+			{
+				o.onRunAutoRef(chk.isSelected());
+			}
+		}
+	}
+	
+	private class SkipOneFrameFwdAction extends AbstractAction
 	{
 		@Override
 		public void actionPerformed(final ActionEvent e)
@@ -444,47 +444,9 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 				o.onNextFrame();
 			}
 		}
-		
-		
-		@Override
-		public Object getValue(final String key)
-		{
-			return null;
-		}
-		
-		
-		@Override
-		public void putValue(final String key, final Object value)
-		{
-		}
-		
-		
-		@Override
-		public void setEnabled(final boolean b)
-		{
-		}
-		
-		
-		@Override
-		public boolean isEnabled()
-		{
-			return true;
-		}
-		
-		
-		@Override
-		public void addPropertyChangeListener(final PropertyChangeListener listener)
-		{
-		}
-		
-		
-		@Override
-		public void removePropertyChangeListener(final PropertyChangeListener listener)
-		{
-		}
 	}
 	
-	private class SkipFrameBwdListener implements Action
+	private class SkipOneFrameBwdAction extends AbstractAction
 	{
 		@Override
 		public void actionPerformed(final ActionEvent e)
@@ -494,48 +456,10 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 				o.onPreviousFrame();
 			}
 		}
-		
-		
-		@Override
-		public Object getValue(final String key)
-		{
-			return null;
-		}
-		
-		
-		@Override
-		public void putValue(final String key, final Object value)
-		{
-		}
-		
-		
-		@Override
-		public void setEnabled(final boolean b)
-		{
-		}
-		
-		
-		@Override
-		public boolean isEnabled()
-		{
-			return true;
-		}
-		
-		
-		@Override
-		public void addPropertyChangeListener(final PropertyChangeListener listener)
-		{
-		}
-		
-		
-		@Override
-		public void removePropertyChangeListener(final PropertyChangeListener listener)
-		{
-		}
 	}
 	
 	
-	private class SkipFwdListener implements Action
+	private class SkipFwdAction extends AbstractAction
 	{
 		@Override
 		public void actionPerformed(final ActionEvent e)
@@ -545,47 +469,9 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 				o.onChangeRelativeTime(SKIP_TIME * 1_000_000);
 			}
 		}
-		
-		
-		@Override
-		public Object getValue(final String key)
-		{
-			return null;
-		}
-		
-		
-		@Override
-		public void putValue(final String key, final Object value)
-		{
-		}
-		
-		
-		@Override
-		public void setEnabled(final boolean b)
-		{
-		}
-		
-		
-		@Override
-		public boolean isEnabled()
-		{
-			return true;
-		}
-		
-		
-		@Override
-		public void addPropertyChangeListener(final PropertyChangeListener listener)
-		{
-		}
-		
-		
-		@Override
-		public void removePropertyChangeListener(final PropertyChangeListener listener)
-		{
-		}
 	}
 	
-	private class SkipBwdListener implements Action
+	private class SkipBwdAction extends AbstractAction
 	{
 		@Override
 		public void actionPerformed(final ActionEvent e)
@@ -595,47 +481,9 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 				o.onChangeRelativeTime(-SKIP_TIME * 1_000_000);
 			}
 		}
-		
-		
-		@Override
-		public Object getValue(final String key)
-		{
-			return null;
-		}
-		
-		
-		@Override
-		public void putValue(final String key, final Object value)
-		{
-		}
-		
-		
-		@Override
-		public void setEnabled(final boolean b)
-		{
-		}
-		
-		
-		@Override
-		public boolean isEnabled()
-		{
-			return true;
-		}
-		
-		
-		@Override
-		public void addPropertyChangeListener(final PropertyChangeListener listener)
-		{
-		}
-		
-		
-		@Override
-		public void removePropertyChangeListener(final PropertyChangeListener listener)
-		{
-		}
 	}
 	
-	private class FastFwdListener implements Action
+	private class FastFwdAction extends AbstractAction
 	{
 		@Override
 		public void actionPerformed(final ActionEvent e)
@@ -645,47 +493,9 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 				o.onChangeRelativeTime(FAST_TIME * 1_000_000);
 			}
 		}
-		
-		
-		@Override
-		public Object getValue(final String key)
-		{
-			return null;
-		}
-		
-		
-		@Override
-		public void putValue(final String key, final Object value)
-		{
-		}
-		
-		
-		@Override
-		public void setEnabled(final boolean b)
-		{
-		}
-		
-		
-		@Override
-		public boolean isEnabled()
-		{
-			return true;
-		}
-		
-		
-		@Override
-		public void addPropertyChangeListener(final PropertyChangeListener listener)
-		{
-		}
-		
-		
-		@Override
-		public void removePropertyChangeListener(final PropertyChangeListener listener)
-		{
-		}
 	}
 	
-	private class FastBwdListener implements Action
+	private class FastBwdAction extends AbstractAction
 	{
 		
 		@Override
@@ -696,47 +506,9 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 				o.onChangeRelativeTime(-FAST_TIME * 1_000_000);
 			}
 		}
-		
-		
-		@Override
-		public Object getValue(final String key)
-		{
-			return null;
-		}
-		
-		
-		@Override
-		public void putValue(final String key, final Object value)
-		{
-		}
-		
-		
-		@Override
-		public void setEnabled(final boolean b)
-		{
-		}
-		
-		
-		@Override
-		public boolean isEnabled()
-		{
-			return true;
-		}
-		
-		
-		@Override
-		public void addPropertyChangeListener(final PropertyChangeListener listener)
-		{
-		}
-		
-		
-		@Override
-		public void removePropertyChangeListener(final PropertyChangeListener listener)
-		{
-		}
 	}
 	
-	private class SnapshotListener implements Action
+	private class SnapshotAction extends AbstractAction
 	{
 		
 		@Override
@@ -747,47 +519,22 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 				o.onSnapshot();
 			}
 		}
-		
-		
-		@Override
-		public Object getValue(final String key)
-		{
-			return null;
-		}
-		
+	}
+	
+	private class SnapshotCopyAction extends AbstractAction
+	{
 		
 		@Override
-		public void putValue(final String key, final Object value)
+		public void actionPerformed(final ActionEvent e)
 		{
-		}
-		
-		
-		@Override
-		public void setEnabled(final boolean b)
-		{
-		}
-		
-		
-		@Override
-		public boolean isEnabled()
-		{
-			return true;
-		}
-		
-		
-		@Override
-		public void addPropertyChangeListener(final PropertyChangeListener listener)
-		{
-		}
-		
-		
-		@Override
-		public void removePropertyChangeListener(final PropertyChangeListener listener)
-		{
+			for (IReplayControlPanelObserver o : observers)
+			{
+				o.onCopySnapshot();
+			}
 		}
 	}
 	
-	private class KickoffListener implements ActionListener
+	private class KickoffListener extends AbstractAction
 	{
 		@Override
 		public void actionPerformed(final ActionEvent e)

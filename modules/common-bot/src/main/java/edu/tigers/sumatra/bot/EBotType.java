@@ -1,31 +1,25 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 08.08.2010
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.bot;
 
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.Map;
 
 
 /**
+ * The different available bot types in Sumatra.
+ *
+ * @author AndreR
  */
 public enum EBotType
 {
 	/** */
 	UNKNOWN(0, "Unknown", "Unknown Bot"),
 	/** */
-	TIGER(2, "TigerBot", "Tiger Bot"),
-	/** */
 	GRSIM(1, "grSim", "grSim Bot"),
 	/**  */
-	TIGER_V3(4, "TigerBotV3", "Tiger Bot v2015"),
-	/**  */
-	TIGER_2016(6, "TigerBot2016", "Tiger Bot v2016"),
+	TIGER_V3(4, "TigerBotV3", "Tiger Bot v2013/v2016"),
 	/**  */
 	SUMATRA(5, "sumatra", "SumatraBot"),
 	/**  */
@@ -34,9 +28,9 @@ public enum EBotType
 	private final String	cfgName;
 	private final String	displayName;
 	private final int		versionId;
-								
-								
-	private EBotType(final int versionId, final String cfgName, final String displayName)
+	
+	
+	EBotType(final int versionId, final String cfgName, final String displayName)
 	{
 		this.versionId = versionId;
 		this.cfgName = cfgName;
@@ -51,7 +45,7 @@ public enum EBotType
 	 */
 	public static Map<String, EBotType> getBotTypeMap()
 	{
-		final Map<String, EBotType> types = new Hashtable<String, EBotType>();
+		final Map<String, EBotType> types = new HashMap<>();
 		
 		for (EBotType t : EBotType.values())
 		{
@@ -102,7 +96,7 @@ public enum EBotType
 	
 	/**
 	 * At least same version as given type?
-	 * 
+	 *
 	 * @param type
 	 * @return
 	 */

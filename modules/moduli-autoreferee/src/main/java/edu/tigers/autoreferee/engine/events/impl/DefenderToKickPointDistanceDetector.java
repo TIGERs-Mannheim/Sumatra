@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 17, 2016
- * Author(s): Lukas Magel
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.autoreferee.engine.events.impl;
 
 import java.util.EnumSet;
@@ -29,14 +25,15 @@ import edu.tigers.autoreferee.engine.events.DistanceViolation;
 import edu.tigers.autoreferee.engine.events.EGameEvent;
 import edu.tigers.autoreferee.engine.events.GameEvent;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.ids.IBotIDMap;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.shapes.circle.Circle;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
-import edu.tigers.sumatra.wp.data.Geometry;
+import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.circle.ICircle;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.VectorMath;
+import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
@@ -48,20 +45,23 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class DefenderToKickPointDistanceDetector extends APreparingGameEventDetector
 {
-	private static final int	priority								= 1;
+	private static final int PRIORITY = 1;
 	
 	@Configurable(comment = "If disabled only bots that are on a collision course with the ball will be considered violators")
-	private static boolean		STRICT_MODE							= true;
+	private static boolean strictMode = true;
 	
 	@Configurable(comment = "[ms] The amount of time a bot can be located inside the outer circle (500mm>x>250mm from the kick pos) without logging a violation")
-	private static long			MAX_OUTER_CIRCLE_LINGER_TIME	= 3_000;
+	private static long maxOuterCircleLingerTime = 3_000;
 	
 	@Configurable(comment = "[ms] The amount of time before a violation is reported again for the same bot")
-	private static long			VIOLATOR_COOLDOWN_TIME			= 1_500;
+	private static long violatorCooldownTime = 1_500;
 	
-	private IVector2				ballPos								= null;
-	private Map<BotID, Long>	lastViolators						= new HashMap<>();
-	private Map<BotID, Long>	outerCircleBots					= new HashMap<>();
+	@Configurable(comment = "[mm] Distance tolerance to apply to required distance to ball")
+	private static double distanceTolerance = 50;
+	
+	private IVector2 ballPos = null;
+	private Map<BotID, Long> lastViolators = new HashMap<>();
+	private Map<BotID, Long> outerCircleBots = new HashMap<>();
 	
 	static
 	{
@@ -70,21 +70,19 @@ public class DefenderToKickPointDistanceDetector extends APreparingGameEventDete
 	
 	
 	/**
-	 * 
+	 * Create new instance
 	 */
 	public DefenderToKickPointDistanceDetector()
 	{
 		super(EnumSet.of(
-				EGameStateNeutral.DIRECT_KICK_BLUE, EGameStateNeutral.DIRECT_KICK_YELLOW,
-				EGameStateNeutral.INDIRECT_KICK_BLUE, EGameStateNeutral.INDIRECT_KICK_YELLOW,
-				EGameStateNeutral.KICKOFF_BLUE, EGameStateNeutral.KICKOFF_YELLOW));
+				EGameState.DIRECT_FREE, EGameState.INDIRECT_FREE, EGameState.KICKOFF));
 	}
 	
 	
 	@Override
 	public int getPriority()
 	{
-		return priority;
+		return PRIORITY;
 	}
 	
 	
@@ -114,7 +112,7 @@ public class DefenderToKickPointDistanceDetector extends APreparingGameEventDete
 		while (iter.hasNext())
 		{
 			Map.Entry<BotID, Long> entry = iter.next();
-			if (TimeUnit.NANOSECONDS.toMillis(timestamp - entry.getValue()) > VIOLATOR_COOLDOWN_TIME)
+			if (TimeUnit.NANOSECONDS.toMillis(timestamp - entry.getValue()) > violatorCooldownTime)
 			{
 				iter.remove();
 			}
@@ -142,16 +140,13 @@ public class DefenderToKickPointDistanceDetector extends APreparingGameEventDete
 	
 	private double calcDistance(final IVector2 ballPos, final IVector2 botPos)
 	{
-		Circle circle = new Circle(ballPos, Geometry.getBotToBallDistanceStop());
-		IVector2 nearestPointOutsideCircle = circle.nearestPointOutside(botPos);
-		return GeoMath.distancePP(nearestPointOutsideCircle, botPos);
+		return VectorMath.distancePP(ballPos, botPos) - Geometry.getBotToBallDistanceStop() - Geometry.getBotRadius();
 	}
 	
 	
 	private Set<BotID> getViolators(final IAutoRefFrame frame)
 	{
-		EGameStateNeutral state = frame.getGameState();
-		ETeamColor attackingColor = state.getTeamColor();
+		ETeamColor attackingColor = frame.getGameState().getForTeam();
 		
 		IBotIDMap<ITrackedBot> bots = frame.getWorldFrame().getBots();
 		List<ITrackedBot> defendingBots = AutoRefUtil.filterByColor(bots, attackingColor.opposite());
@@ -162,14 +157,15 @@ public class DefenderToKickPointDistanceDetector extends APreparingGameEventDete
 		/*
 		 * Only consider bots which have fully entered the circle
 		 */
-		Circle outerCircle = new Circle(ballPos, Geometry.getBotToBallDistanceStop() - Geometry.getBotRadius());
-		Circle innerCircle = new Circle(ballPos, Geometry.getBotToBallDistanceStop() / 2);
+		ICircle outerCircle = Circle.createCircle(ballPos,
+				Geometry.getBotToBallDistanceStop() + Geometry.getBotRadius() - distanceTolerance);
 		
-		if (STRICT_MODE == true)
+		if (strictMode)
 		{
 			violators.addAll(botsInCircle(defendingBots, outerCircle));
 		} else
 		{
+			ICircle innerCircle = Circle.createCircle(ballPos, Geometry.getBotToBallDistanceStop() / 2);
 			Set<BotID> innerCircleViolators = botsInCircle(defendingBots, innerCircle);
 			violators.addAll(innerCircleViolators);
 			
@@ -179,10 +175,10 @@ public class DefenderToKickPointDistanceDetector extends APreparingGameEventDete
 			Set<BotID> oldViolators = Sets.difference(outerCircleBots.keySet(), outerCircleViolators).immutableCopy();
 			
 			newViolators.forEach(id -> outerCircleBots.put(id, curTimestamp));
-			oldViolators.forEach(id -> outerCircleBots.remove(id));
+			oldViolators.forEach(outerCircleBots::remove);
 			
 			outerCircleBots.forEach((id, entryTimestamp) -> {
-				if ((curTimestamp - entryTimestamp) > TimeUnit.MILLISECONDS.toNanos(MAX_OUTER_CIRCLE_LINGER_TIME))
+				if ((curTimestamp - entryTimestamp) > TimeUnit.MILLISECONDS.toNanos(maxOuterCircleLingerTime))
 				{
 					violators.add(id);
 				}
@@ -193,7 +189,7 @@ public class DefenderToKickPointDistanceDetector extends APreparingGameEventDete
 	}
 	
 	
-	private Set<BotID> botsInCircle(final List<ITrackedBot> bots, final Circle circle)
+	private Set<BotID> botsInCircle(final List<ITrackedBot> bots, final ICircle circle)
 	{
 		return bots.stream()
 				.filter(bot -> circle.isPointInShape(bot.getPos()))

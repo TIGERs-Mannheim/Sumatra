@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jun 3, 2015
- * Author(s): Mark Geiger <Mark.Geiger@dlr.de>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.learning.lcase;
 
@@ -15,10 +10,10 @@ import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.wp.data.Geometry;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.VectorMath;
 
 
 /**
@@ -35,7 +30,7 @@ public class RobotMovementLearningCase extends ALearningCase
 	private enum EMoveState
 	{
 		FORWARD,
-		BACKWARD;
+		BACKWARD
 	}
 	
 	
@@ -55,8 +50,8 @@ public class RobotMovementLearningCase extends ALearningCase
 		{
 			double length = (Geometry.getFieldLength() / 2.0) - 500;
 			double width = (Geometry.getFieldWidth() / 2.0) - 200;
-			movePositionsA.add(new Vector2(-length + 500 + (i * (length / (6.0))), width));
-			movePositionsB.add(new Vector2(-length + 500 + (i * (length / (6.0))), -width));
+			movePositionsA.add(Vector2.fromXY(-length + 500 + (i * (length / (6.0))), width));
+			movePositionsB.add(Vector2.fromXY(-length + 500 + (i * (length / (6.0))), -width));
 		}
 	}
 	
@@ -105,22 +100,14 @@ public class RobotMovementLearningCase extends ALearningCase
 	@Override
 	public boolean isFinished(final AthenaAiFrame frame)
 	{
-		if (counter > 6)
-		{
-			return true;
-		}
-		return false;
+		return counter > 6;
 	}
 	
 	
 	@Override
 	public boolean isReady(final AthenaAiFrame frame, final List<ARole> roles)
 	{
-		if (roles.size() >= 6)
-		{
-			return true;
-		}
-		return false;
+		return roles.size() >= 6;
 	}
 	
 	
@@ -142,7 +129,7 @@ public class RobotMovementLearningCase extends ALearningCase
 					boolean insidePosition = false;
 					for (int i = 0; i < 6; i++)
 					{
-						if (GeoMath.distancePP(role.getPos(), movePositionsB.get(i)) < 50)
+						if (VectorMath.distancePP(role.getPos(), movePositionsB.get(i)) < 50)
 						{
 							insidePosition = true;
 						}
@@ -159,7 +146,7 @@ public class RobotMovementLearningCase extends ALearningCase
 					boolean insidePosition = false;
 					for (int i = 0; i < 6; i++)
 					{
-						if (GeoMath.distancePP(role.getPos(), movePositionsA.get(i)) < 50)
+						if (VectorMath.distancePP(role.getPos(), movePositionsA.get(i)) < 50)
 						{
 							insidePosition = true;
 						}

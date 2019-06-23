@@ -1,16 +1,11 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 6, 2016
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.wp.ball.collision;
 
 import java.util.Optional;
 
-import edu.tigers.sumatra.wp.ball.IState;
+import edu.tigers.sumatra.wp.ball.dynamics.IState;
 
 
 /**

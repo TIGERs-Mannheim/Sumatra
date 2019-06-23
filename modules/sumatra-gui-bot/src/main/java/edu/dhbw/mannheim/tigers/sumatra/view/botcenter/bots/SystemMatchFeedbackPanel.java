@@ -13,7 +13,7 @@ import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -29,7 +29,7 @@ import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
 
 import edu.tigers.sumatra.bot.EFeature;
-import edu.tigers.sumatra.botmanager.bots.TigerBotV3;
+import edu.tigers.sumatra.bot.ERobotMode;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemMatchFeedback;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerSystemPerformance;
 import info.monitorenter.gui.chart.Chart2D;
@@ -57,22 +57,15 @@ public class SystemMatchFeedbackPanel extends JPanel
 	private final JProgressBar										kickerLevel				= new JProgressBar(0, 200);
 	private final JTextField										dribblerSpeed			= new JTextField();
 	private final JTextField										dribblerTemp			= new JTextField();
-	private final JProgressBar										batteryLevel			= new JProgressBar(
-																												(int) (TigerBotV3.BAT_MIN * 1000),
-																												(int) (TigerBotV3.BAT_MAX * 1000));
+	private final JProgressBar										batteryLevel			= new JProgressBar(0, 1000);
+	private final JTextField										robotMode				= new JTextField();
 	private final JTextField										kickCounter				= new JTextField();
 	private final JTextField										hardwareId				= new JTextField();
 	private final JTextField										velMaxLimits			= new JTextField();
 	private final JCheckBox											barrierInterrupted	= new JCheckBox("Interrupted");
-	private final Map<EFeature, JCheckBox>						features					= new HashMap<EFeature, JCheckBox>();
-	private final JTextField										pos[]						= new JTextField[3];
-	private final JTextField										vel[]						= new JTextField[3];
-	private final JTextField										acc[]						= new JTextField[3];
-	
-	private final Chart2D											posChart					= new Chart2D();
-	private final Chart2D											velChart					= new Chart2D();
-	private final Chart2D											accChart					= new Chart2D();
-	private final List<Chart2D>									chartList				= new ArrayList<Chart2D>(6);
+	private final Map<EFeature, JCheckBox> features = new EnumMap<>(EFeature.class);
+	private final JTextField[]										pos						= new JTextField[3];
+	private final JTextField[]										vel						= new JTextField[3];
 	
 	private static final int										DATA_SIZE				= 400;
 	
@@ -82,36 +75,36 @@ public class SystemMatchFeedbackPanel extends JPanel
 	private final ITrace2D											velXTrace				= new Trace2DLtd(DATA_SIZE);
 	private final ITrace2D											velYTrace				= new Trace2DLtd(DATA_SIZE);
 	private final ITrace2D											velWTrace				= new Trace2DLtd(DATA_SIZE);
-	private final ITrace2D											accXTrace				= new Trace2DLtd(DATA_SIZE);
-	private final ITrace2D											accYTrace				= new Trace2DLtd(DATA_SIZE);
-	private final ITrace2D											accWTrace				= new Trace2DLtd(DATA_SIZE);
 	
 	private long														timeOffset				= 0;
 	
 	private final JToggleButton									btnCapture				= new JToggleButton("Capture");
 	
 	
-	private final List<ISystemMatchFeedbackPanelObserver>	observers				= new CopyOnWriteArrayList<ISystemMatchFeedbackPanelObserver>();
+	private final List<ISystemMatchFeedbackPanelObserver>	observers				= new CopyOnWriteArrayList<>();
 	
 	
 	/**
 	 * Default constructor.
 	 */
+	@SuppressWarnings("squid:S1192")
 	public SystemMatchFeedbackPanel()
 	{
 		setLayout(new MigLayout("wrap 2"));
 		
+		robotMode.setBackground(ERobotMode.IDLE.getColor());
 		kickerLevel.setStringPainted(true);
 		batteryLevel.setStringPainted(true);
 		btnCapture.addActionListener(new CaptureActionListener());
 		
+		final Chart2D posChart = new Chart2D();
+		final List<Chart2D> chartList = new ArrayList<>(6);
 		chartList.add(posChart);
+		final Chart2D velChart = new Chart2D();
 		chartList.add(velChart);
-		chartList.add(accChart);
 		
 		posChart.setName("pos");
 		velChart.setName("vel");
-		accChart.setName("acc");
 		
 		// Chart setup
 		posXTrace.setColor(Color.RED);
@@ -126,16 +119,9 @@ public class SystemMatchFeedbackPanel extends JPanel
 		velYTrace.setName("vY");
 		velWTrace.setColor(Color.BLUE);
 		velWTrace.setName("vW");
-		accXTrace.setColor(Color.RED);
-		accXTrace.setName("aX");
-		accYTrace.setColor(Color.GREEN);
-		accYTrace.setName("aY");
-		accWTrace.setColor(Color.BLUE);
-		accWTrace.setName("aW");
 		
 		for (Chart2D chart : chartList)
 		{
-			// chart.getAxisY().setRangePolicy(new RangePolicyFixedViewport(new Range(-5.0, 5.0)));
 			chart.getAxisY().setRangePolicy(new RangePolicyMinimumViewport(new Range(-1, 1)));
 			chart.getAxisX().setRangePolicy(new RangePolicyHighestValues(20));
 			chart.getAxisX().setMajorTickSpacing(10);
@@ -152,15 +138,10 @@ public class SystemMatchFeedbackPanel extends JPanel
 		velChart.addTrace(velYTrace);
 		velChart.addTrace(velWTrace);
 		
-		accChart.addTrace(accXTrace);
-		accChart.addTrace(accYTrace);
-		accChart.addTrace(accWTrace);
-		
 		for (int i = 0; i < 3; i++)
 		{
 			pos[i] = new JTextField();
 			vel[i] = new JTextField();
-			acc[i] = new JTextField();
 		}
 		
 		final JPanel posPanel = new JPanel(new MigLayout("fill, wrap 2", "[50]10[100,fill]"));
@@ -181,16 +162,9 @@ public class SystemMatchFeedbackPanel extends JPanel
 		velPanel.add(vel[2]);
 		velPanel.setBorder(BorderFactory.createTitledBorder("Velocity"));
 		
-		final JPanel accPanel = new JPanel(new MigLayout("fill, wrap 2", "[50]10[100,fill]"));
-		accPanel.add(new JLabel("X:"));
-		accPanel.add(acc[0]);
-		accPanel.add(new JLabel("Y:"));
-		accPanel.add(acc[1]);
-		accPanel.add(new JLabel("W:"));
-		accPanel.add(acc[2]);
-		accPanel.setBorder(BorderFactory.createTitledBorder("Acceleration"));
-		
 		final JPanel kickerPanel = new JPanel(new MigLayout("fill, wrap 2", "[50]10[100,fill]"));
+		kickerPanel.add(new JLabel("Mode:"));
+		kickerPanel.add(robotMode);
 		kickerPanel.add(new JLabel("Battery:"));
 		kickerPanel.add(batteryLevel);
 		kickerPanel.add(new JLabel("Kicker:"));
@@ -230,14 +204,12 @@ public class SystemMatchFeedbackPanel extends JPanel
 		infoPanel.add(featurePanel);
 		infoPanel.add(posPanel);
 		infoPanel.add(velPanel);
-		infoPanel.add(accPanel);
 		infoPanel.add(chkBoxPanel);
 		infoPanel.add(btnCapture);
 		
 		add(infoPanel, "spany 8, aligny top");
 		add(posChart, "push, grow");
 		add(velChart, "push, grow");
-		add(accChart, "push, grow");
 		
 		timeOffset = System.nanoTime();
 	}
@@ -261,34 +233,20 @@ public class SystemMatchFeedbackPanel extends JPanel
 	}
 	
 	
-	private void notifyCapture(final boolean enabled)
-	{
-		for (ISystemMatchFeedbackPanelObserver observer : observers)
-		{
-			observer.onCapture(enabled);
-		}
-	}
-	
-	
 	private JCheckBox createChartCheckBox(final Chart2D chart)
 	{
 		final JCheckBox chkBox = new JCheckBox(chart.getName(), true);
-		chkBox.addActionListener(new ActionListener()
-		{
-			@Override
-			public void actionPerformed(final ActionEvent e)
+		chkBox.addActionListener(e -> {
+			if (chkBox.isSelected())
 			{
-				if (chkBox.isSelected())
-				{
-					chart.setEnabled(true);
-					add(chart, "push, grow");
-				} else
-				{
-					chart.setEnabled(false);
-					remove(chart);
-				}
-				invalidate();
+				chart.setEnabled(true);
+				add(chart, "push, grow");
+			} else
+			{
+				chart.setEnabled(false);
+				remove(chart);
 			}
+			invalidate();
 		});
 		return chkBox;
 	}
@@ -299,55 +257,50 @@ public class SystemMatchFeedbackPanel extends JPanel
 	 */
 	public void addTigerSystemMatchFeedback(final TigerSystemMatchFeedback status)
 	{
-		SwingUtilities.invokeLater(() -> {
-			batteryLevel.setString(String.format(Locale.ENGLISH, "%.2f V", status.getBatteryLevel()));
-			batteryLevel.setValue((int) (status.getBatteryLevel() * 1000));
-			kickerLevel.setString(String.format(Locale.ENGLISH, "%d V", (int) status.getKickerLevel()));
-			kickerLevel.setValue((int) status.getKickerLevel());
-			dribblerSpeed.setText(String.format(Locale.ENGLISH, "%d RPM", (int) status.getDribblerSpeed()));
-			dribblerTemp.setText(String.format(Locale.ENGLISH, "%.1f�C", status.getDribblerTemp()));
-			kickCounter.setText(String.format("%d", status.getKickCounter()));
-			hardwareId.setText(String.format("%d", status.getHardwareId()));
-			barrierInterrupted.setSelected(status.isBarrierInterrupted());
+		SwingUtilities.invokeLater(() -> doAddTigerSystemMatchFeedback(status));
+	}
+	
+	
+	private void doAddTigerSystemMatchFeedback(final TigerSystemMatchFeedback status)
+	{
+		robotMode.setText(status.getRobotMode().toString());
+		robotMode.setBackground(status.getRobotMode().getColor());
+		batteryLevel.setString(String.format(Locale.ENGLISH, "%.2f V", status.getBatteryLevel()));
+		batteryLevel.setValue((int) (status.getBatteryPercentage() * 1000));
+		kickerLevel.setString(String.format(Locale.ENGLISH, "%d V", (int) status.getKickerLevel()));
+		kickerLevel.setValue((int) status.getKickerLevel());
+		dribblerSpeed.setText(String.format(Locale.ENGLISH, "%d RPM", (int) status.getDribblerSpeed()));
+		dribblerTemp.setText(String.format(Locale.ENGLISH, "%.1f\u2103", status.getDribblerTemp()));
+		kickCounter.setText(String.format("%d", status.getKickCounter()));
+		hardwareId.setText(String.format("%d", status.getHardwareId()));
+		barrierInterrupted.setSelected(status.isBarrierInterrupted());
+		
+		for (EFeature f : EFeature.values())
+		{
+			features.get(f).setSelected(status.isFeatureWorking(f));
+		}
+		
+		if (status.isPositionValid())
+		{
+			pos[0].setText(String.format(Locale.ENGLISH, "%.3f m", status.getPosition().x()));
+			pos[1].setText(String.format(Locale.ENGLISH, "%.3f m", status.getPosition().y()));
+			pos[2].setText(String.format(Locale.ENGLISH, "%.3f rad", status.getOrientation()));
 			
-			for (EFeature f : EFeature.values())
-			{
-				features.get(f).setSelected(status.isFeatureWorking(f));
-			}
+			posXTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getPosition().x());
+			posYTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getPosition().y());
+			posWTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getOrientation());
+		}
+		
+		if (status.isVelocityValid())
+		{
+			vel[0].setText(String.format(Locale.ENGLISH, "%.3f m/s", status.getVelocity().x()));
+			vel[1].setText(String.format(Locale.ENGLISH, "%.3f m/s", status.getVelocity().y()));
+			vel[2].setText(String.format(Locale.ENGLISH, "%.3f rad/s", status.getAngularVelocity()));
 			
-			if (status.isPositionValid())
-			{
-				pos[0].setText(String.format(Locale.ENGLISH, "%.3f m", status.getPosition().x()));
-				pos[1].setText(String.format(Locale.ENGLISH, "%.3f m", status.getPosition().y()));
-				pos[2].setText(String.format(Locale.ENGLISH, "%.3f rad", status.getOrientation()));
-				
-				posXTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getPosition().x());
-				posYTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getPosition().y());
-				posWTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getOrientation());
-			}
-			
-			if (status.isVelocityValid())
-			{
-				vel[0].setText(String.format(Locale.ENGLISH, "%.3f m/s", status.getVelocity().x()));
-				vel[1].setText(String.format(Locale.ENGLISH, "%.3f m/s", status.getVelocity().y()));
-				vel[2].setText(String.format(Locale.ENGLISH, "%.3f rad/s", status.getAngularVelocity()));
-				
-				velXTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getVelocity().x());
-				velYTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getVelocity().y());
-				velWTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getAngularVelocity());
-			}
-			
-			if (status.isAccelerationValid())
-			{
-				acc[0].setText(String.format(Locale.ENGLISH, "%.3f m/s2", status.getAcceleration().x()));
-				acc[1].setText(String.format(Locale.ENGLISH, "%.3f m/s2", status.getAcceleration().y()));
-				acc[2].setText(String.format(Locale.ENGLISH, "%.3f rad/s2", status.getAngularAcceleration()));
-				
-				accXTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getAcceleration().x());
-				accYTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getAcceleration().y());
-				accWTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getAngularAcceleration());
-			}
-		});
+			velXTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getVelocity().x());
+			velYTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getVelocity().y());
+			velWTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getAngularVelocity());
+		}
 	}
 	
 	
@@ -362,18 +315,26 @@ public class SystemMatchFeedbackPanel extends JPanel
 	
 	private class CaptureActionListener implements ActionListener
 	{
-		
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
 			notifyCapture(btnCapture.isSelected());
 		}
 		
+		
+		private void notifyCapture(final boolean enabled)
+		{
+			for (ISystemMatchFeedbackPanelObserver observer : observers)
+			{
+				observer.onCapture(enabled);
+			}
+		}
 	}
 	
 	/**
 	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 	 */
+	@FunctionalInterface
 	public interface ISystemMatchFeedbackPanelObserver
 	{
 		/**

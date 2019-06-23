@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 20.05.2011
- * Author(s): DirkK
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.data.ballpossession;
 
@@ -28,23 +23,37 @@ public class BallPossession implements Serializable
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	/**  */
-	private static final long	serialVersionUID	= -1819701506143270823L;
+	private static final long serialVersionUID = -1819701506143270823L;
 	
-	private EBallPossession		eBallPossession;
-	private BotID					opponentsId;
-	private BotID					tigersId;
+	private EBallPossession eBallPossession;
+	private BotID opponentsId;
+	private BotID tigersId;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
+	 * Default
 	 */
 	public BallPossession()
 	{
-		eBallPossession = EBallPossession.UNKNOWN;
-		opponentsId = BotID.get();
-		tigersId = BotID.get();
+		eBallPossession = EBallPossession.NO_ONE;
+		opponentsId = BotID.noBot();
+		tigersId = BotID.noBot();
+	}
+	
+	
+	/**
+	 * Deep copy constructor.
+	 * 
+	 * @param copy
+	 */
+	public BallPossession(final BallPossession copy)
+	{
+		eBallPossession = copy.eBallPossession;
+		opponentsId = copy.opponentsId;
+		tigersId = copy.tigersId;
 	}
 	
 	
@@ -53,7 +62,7 @@ public class BallPossession implements Serializable
 	// --------------------------------------------------------------------------
 	
 	/**
-	 * Is the ball possessed by a bot from the other sub team?
+	 * Is the ball possessed by a bot from the other subtract team?
 	 * This is only useful for mixed team mode
 	 * 
 	 * @param wFrame
@@ -61,12 +70,8 @@ public class BallPossession implements Serializable
 	 */
 	public boolean isPossessedByOtherSubTeam(final WorldFrame wFrame)
 	{
-		if (tigersId.isBot() && wFrame.tigerBotsVisible.containsKey(tigersId)
-				&& !wFrame.tigerBotsAvailable.containsKey(tigersId))
-		{
-			return true;
-		}
-		return false;
+		return tigersId.isBot() && wFrame.tigerBotsVisible.containsKey(tigersId)
+				&& !wFrame.tigerBotsAvailable.containsKey(tigersId);
 	}
 	
 	

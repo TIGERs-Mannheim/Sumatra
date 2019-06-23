@@ -1,14 +1,11 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 16, 2016
- * Author(s): Lukas Magel
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.autoreferee.engine.events.impl;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,20 +19,19 @@ import edu.tigers.autoreferee.engine.AutoRefMath;
 import edu.tigers.autoreferee.engine.FollowUpAction;
 import edu.tigers.autoreferee.engine.FollowUpAction.EActionType;
 import edu.tigers.autoreferee.engine.NGeometry;
-import edu.tigers.autoreferee.engine.calc.BotPosition;
 import edu.tigers.autoreferee.engine.events.CardPenalty;
 import edu.tigers.autoreferee.engine.events.DistanceViolation;
 import edu.tigers.autoreferee.engine.events.EGameEvent;
 import edu.tigers.autoreferee.engine.events.GameEvent;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
+import edu.tigers.autoreferee.generic.BotPosition;
 import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest.CardInfo.CardType;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.IPenaltyArea;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.referee.TeamConfig;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
-import edu.tigers.sumatra.wp.data.Geometry;
-import edu.tigers.sumatra.wp.data.PenaltyArea;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.referee.data.EGameState;
 
 
 /**
@@ -68,7 +64,7 @@ public class BotInDefenseAreaDetector extends APreparingGameEventDetector
 	 */
 	public BotInDefenseAreaDetector()
 	{
-		super(EGameStateNeutral.RUNNING);
+		super(EGameState.RUNNING);
 	}
 	
 	
@@ -91,33 +87,33 @@ public class BotInDefenseAreaDetector extends APreparingGameEventDetector
 	{
 		BotPosition curKicker = frame.getBotLastTouchedBall();
 		
-		if (curKicker.getTs() < entryTime)
+		if (curKicker.getTimestamp() < entryTime)
 		{
 			/*
 			 * The ball was last touched before the game state changed to RUNNING
 			 */
 			return Optional.empty();
 		}
-		if ((curKicker == null) || curKicker.getId().isUninitializedID())
+		if (curKicker.getBotID().isUninitializedID())
 		{
 			return Optional.empty();
 		}
 		
-		BotID curKickerId = curKicker.getId();
+		BotID curKickerId = curKicker.getBotID();
 		BotPosition lastViolationOfCurKicker = lastViolators.get(curKickerId);
 		
 		if (lastViolationOfCurKicker != null)
 		{
-			if (curKicker.getTs() == lastViolationOfCurKicker.getTs())
+			if (curKicker.getTimestamp() == lastViolationOfCurKicker.getTimestamp())
 			{
 				// The offense has already been reported
 				return Optional.empty();
 			}
 			
-			if (curKicker.getId().equals(lastViolationOfCurKicker.getId()))
+			if (curKicker.getBotID().equals(lastViolationOfCurKicker.getBotID()))
 			{
 				// Wait a certain amount of time before reporting the offense again for the same bot
-				long timeDiff = curKicker.getTs() - lastViolationOfCurKicker.getTs();
+				long timeDiff = curKicker.getTimestamp() - lastViolationOfCurKicker.getTimestamp();
 				if (timeDiff < TimeUnit.MILLISECONDS.toNanos(COOLDOWN_TIME_MS))
 				{
 					return Optional.empty();
@@ -125,19 +121,20 @@ public class BotInDefenseAreaDetector extends APreparingGameEventDetector
 			}
 		}
 		
-		Set<BotID> keeper = TeamConfig.getKeeperIDs();
-		if (keeper.contains(curKickerId))
+		Set<BotID> keepers = new HashSet<>();
+		keepers.add(frame.getRefereeMsg().getKeeperBotID(ETeamColor.BLUE));
+		keepers.add(frame.getRefereeMsg().getKeeperBotID(ETeamColor.YELLOW));
+		if (keepers.contains(curKickerId))
 		{
 			return Optional.empty();
 		}
 		
-		IVector2 curKickerPos = curKicker.getPos();
-		ETeamColor curKickerColor = curKicker.getId().getTeamColor();
+		ETeamColor curKickerColor = curKicker.getBotID().getTeamColor();
 		
-		PenaltyArea opponentPenArea = NGeometry.getPenaltyArea(curKickerColor.opposite());
-		PenaltyArea ownPenArea = NGeometry.getPenaltyArea(curKickerColor);
+		IPenaltyArea opponentPenArea = NGeometry.getPenaltyArea(curKickerColor.opposite());
+		IPenaltyArea ownPenArea = NGeometry.getPenaltyArea(curKickerColor);
 		
-		if (opponentPenArea.isPointInShape(curKickerPos, getPartialTouchMargin()))
+		if (opponentPenArea.isPointInShape(curKicker.getPos(), getPartialTouchMargin()))
 		{
 			/*
 			 * Attacker touched the ball while being located partially/fully inside the opponent's penalty area
@@ -145,15 +142,15 @@ public class BotInDefenseAreaDetector extends APreparingGameEventDetector
 			lastViolators.put(curKickerId, curKicker);
 			
 			double distance = AutoRefMath.distanceToNearestPointOutside(opponentPenArea, Geometry.getBotRadius(),
-					curKickerPos);
+					curKicker.getPos());
 			FollowUpAction followUp = new FollowUpAction(EActionType.INDIRECT_FREE, curKickerColor.opposite(),
-					AutoRefMath.getClosestFreekickPos(curKickerPos, curKickerColor.opposite()));
+					AutoRefMath.getClosestFreekickPos(curKicker.getPos(), curKickerColor.opposite()));
 			
 			GameEvent violation = new DistanceViolation(EGameEvent.ATTACKER_IN_DEFENSE_AREA, frame.getTimestamp(),
 					curKickerId, followUp, distance);
 			
 			return Optional.of(violation);
-		} else if (ownPenArea.isPointInShape(curKickerPos, -Geometry.getBotRadius()))
+		} else if (ownPenArea.isPointInShape(curKicker.getPos(), -Geometry.getBotRadius()))
 		{
 			/*
 			 * Multiple Defender:
@@ -162,14 +159,14 @@ public class BotInDefenseAreaDetector extends APreparingGameEventDetector
 			lastViolators.put(curKickerId, curKicker);
 			
 			double distance = AutoRefMath
-					.distanceToNearestPointOutside(ownPenArea, Geometry.getBotRadius(), curKickerPos);
+					.distanceToNearestPointOutside(ownPenArea, Geometry.getBotRadius(), curKicker.getPos());
 			FollowUpAction followUp = new FollowUpAction(EActionType.PENALTY, curKickerColor.opposite(),
 					NGeometry.getPenaltyMark(curKickerColor));
 			GameEvent violation = new DistanceViolation(EGameEvent.MULTIPLE_DEFENDER, frame.getTimestamp(),
 					curKickerId, followUp, distance);
 			
 			return Optional.of(violation);
-		} else if (ownPenArea.isPointInShape(curKickerPos, getPartialTouchMargin()))
+		} else if (ownPenArea.isPointInShape(curKicker.getPos(), getPartialTouchMargin()))
 		{
 			/*
 			 * Multiple Defender:
@@ -177,9 +174,11 @@ public class BotInDefenseAreaDetector extends APreparingGameEventDetector
 			 */
 			lastViolators.put(curKickerId, curKicker);
 			
-			double distance = AutoRefMath.distanceToNearestPointOutside(ownPenArea, Geometry.getBotRadius(), curKickerPos);
-			IVector2 freekickPos = AutoRefMath.getClosestFreekickPos(curKickerPos, curKickerColor.opposite());
-			FollowUpAction followUp = new FollowUpAction(EActionType.INDIRECT_FREE, curKickerColor.opposite(), freekickPos);
+			double distance = AutoRefMath.distanceToNearestPointOutside(ownPenArea, Geometry.getBotRadius(),
+					curKicker.getPos());
+			IVector2 freekickPos = AutoRefMath.getClosestFreekickPos(curKicker.getPos(), curKickerColor.opposite());
+			FollowUpAction followUp = new FollowUpAction(EActionType.INDIRECT_FREE, curKickerColor.opposite(),
+					freekickPos);
 			CardPenalty cardPenalty = new CardPenalty(CardType.CARD_YELLOW, curKickerColor);
 			GameEvent violation = new DistanceViolation(EGameEvent.MULTIPLE_DEFENDER_PARTIALLY, frame.getTimestamp(),
 					curKickerId, followUp, cardPenalty, distance);

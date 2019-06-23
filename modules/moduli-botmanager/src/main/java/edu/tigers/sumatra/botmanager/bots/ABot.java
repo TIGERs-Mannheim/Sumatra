@@ -1,26 +1,21 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 08.08.2010
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.botmanager.bots;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-import com.github.g3force.configurable.ConfigRegistration;
-import com.github.g3force.configurable.IConfigClient;
 import com.github.g3force.configurable.IConfigObserver;
-import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.bot.EBotType;
 import edu.tigers.sumatra.bot.EFeature;
 import edu.tigers.sumatra.bot.EFeatureState;
+import edu.tigers.sumatra.bot.ERobotMode;
 import edu.tigers.sumatra.bot.IBot;
-import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.basestation.IBaseStation;
 import edu.tigers.sumatra.botmanager.bots.communication.Statistics;
 import edu.tigers.sumatra.botmanager.commands.ACommand;
@@ -28,8 +23,7 @@ import edu.tigers.sumatra.botmanager.commands.CommandFactory;
 import edu.tigers.sumatra.botmanager.commands.MatchCommand;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.AVector3;
-import edu.tigers.sumatra.math.IVector3;
+import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.trajectory.TrajectoryWithTime;
 
 
@@ -38,39 +32,8 @@ import edu.tigers.sumatra.trajectory.TrajectoryWithTime;
  * 
  * @author AndreR
  */
-@Persistent(version = 2)
 public abstract class ABot implements IBot, IConfigObserver
 {
-	/**  */
-	public static final double											BAT_MIN			= 10.5;
-	/**  */
-	public static final double											BAT_MAX			= 12.6;
-	
-	private final BotID													botId;
-	private final EBotType												type;
-	private transient final IBaseStation							baseStation;
-	
-	private double															relBattery		= 1;
-	private double															kickerLevel		= 0;
-	
-	private final Map<EFeature, EFeatureState>					botFeatures;
-	
-	private transient final Statistics								txStats			= new Statistics();
-	private transient final Statistics								rxStats			= new Statistics();
-	private transient final MatchCommand							matchCtrl		= new MatchCommand();
-	private transient final MoveConstraints						moveConstraints;
-	private transient Optional<TrajectoryWithTime<IVector3>>	curTrajectory	= Optional.empty();
-	
-	private transient double											kickerLevelMax	= 180;
-	private transient String											controlledBy	= "";
-	private transient boolean											hideFromAi		= false;
-	private transient boolean											hideFromRcm		= false;
-	private transient long												lastKickTime	= 0;
-	/** [Hz] desired number of package to receive */
-	private transient double											updateRate		= 100;
-	private transient double											minUpdateRate	= 10;
-	
-	
 	private static final String[]										BOT_NAMES		= { "Gandalf", "Alice", "Tigger",
 			"Poller",
 			"Q", "Eichbaum",
@@ -79,6 +42,24 @@ public abstract class ABot implements IBot, IConfigObserver
 			"Trinity", "Neo",
 			"Bob",
 			"Yoda" };
+	
+	private final BotID													botId;
+	private final EBotType												type;
+	private final ERobotMode											robotMode;
+	private final transient IBaseStation							baseStation;
+	private final Map<EFeature, EFeatureState>					botFeatures;
+	private final transient Statistics								txStats			= new Statistics();
+	private final transient Statistics								rxStats			= new Statistics();
+	private final transient MatchCommand							matchCtrl		= new MatchCommand();
+	private final transient List<IABotObserver>					observers		= new CopyOnWriteArrayList<>();
+	private transient Optional<TrajectoryWithTime<IVector3>>	curTrajectory	= Optional.empty();
+	private transient double											kickerLevelMax	= 200;
+	private transient String											controlledBy	= "";
+	private transient boolean											hideFromAi		= false;
+	private transient boolean											hideFromRcm		= false;
+	
+	/** [Hz] desired number of package to receive */
+	private transient double											updateRate		= 100;
 	
 	
 	/**
@@ -90,11 +71,9 @@ public abstract class ABot implements IBot, IConfigObserver
 	{
 		botId = id;
 		this.type = type;
+		robotMode = ERobotMode.IDLE;
 		botFeatures = getDefaultFeatureStates();
 		this.baseStation = baseStation;
-		moveConstraints = new MoveConstraints();
-		ConfigRegistration.applySpezis(moveConstraints, "botmgr", "");
-		ConfigRegistration.applySpezis(moveConstraints, "botmgr", type.name());
 	}
 	
 	
@@ -102,12 +81,10 @@ public abstract class ABot implements IBot, IConfigObserver
 	{
 		botId = aBot.botId;
 		this.type = type;
+		robotMode = aBot.robotMode;
 		botFeatures = aBot.botFeatures;
 		baseStation = aBot.baseStation;
-		relBattery = aBot.relBattery;
-		kickerLevel = aBot.kickerLevel;
 		kickerLevelMax = aBot.kickerLevelMax;
-		moveConstraints = aBot.moveConstraints;
 	}
 	
 	
@@ -115,26 +92,36 @@ public abstract class ABot implements IBot, IConfigObserver
 	{
 		botId = null;
 		type = null;
+		robotMode = null;
 		botFeatures = null;
 		baseStation = null;
-		moveConstraints = null;
-	}
-	
-	
-	@Override
-	public void afterApply(final IConfigClient configClient)
-	{
-		ConfigRegistration.applySpezis(moveConstraints, "botmgr", type.name());
 	}
 	
 	
 	/**
-	 * @return battery level between 0 and 1
+	 * @param observer
 	 */
-	@Override
-	public double getBatteryRelative()
+	public void addObserver(final IABotObserver observer)
 	{
-		return relBattery;
+		observers.add(observer);
+	}
+	
+	
+	/**
+	 * @param observer
+	 */
+	public void removeObserver(final IABotObserver observer)
+	{
+		observers.remove(observer);
+	}
+	
+	
+	protected void notifyIncommingBotCommand(final ACommand cmd)
+	{
+		for (IABotObserver observer : observers)
+		{
+			observer.onIncommingBotCommand(cmd);
+		}
 	}
 	
 	
@@ -146,6 +133,7 @@ public abstract class ABot implements IBot, IConfigObserver
 		result.put(EFeature.STRAIGHT_KICKER, EFeatureState.WORKING);
 		result.put(EFeature.MOVE, EFeatureState.WORKING);
 		result.put(EFeature.BARRIER, EFeatureState.WORKING);
+		result.put(EFeature.CHARGE_CAPS, EFeatureState.WORKING);
 		return result;
 	}
 	
@@ -161,7 +149,7 @@ public abstract class ABot implements IBot, IConfigObserver
 	
 	
 	/**
-	 * 
+	 * This is called when the match command should be sent
 	 */
 	public void sendMatchCommand()
 	{
@@ -169,30 +157,20 @@ public abstract class ABot implements IBot, IConfigObserver
 	
 	
 	/**
-	 * 
+	 * Start bot
 	 */
 	public abstract void start();
 	
 	
 	/**
-	 * 
+	 * Stop bot
 	 */
 	public abstract void stop();
 	
 	
 	/**
-	 * @return
-	 */
-	@Override
-	public double getKickerLevel()
-	{
-		return kickerLevel;
-	}
-	
-	
-	/**
 	 * The absolute maximum kicker level possible for the bot (not the currently set max cap!)
-	 * 
+	 *
 	 * @return [V]
 	 */
 	@Override
@@ -203,30 +181,15 @@ public abstract class ABot implements IBot, IConfigObserver
 	
 	
 	/**
-	 * @return
-	 */
-	@Override
-	public abstract double getDribblerSpeed();
-	
-	
-	/**
-	 * @param id
 	 * @param cmd
 	 */
-	public void onIncommingBotCommand(final BotID id, final ACommand cmd)
+	public void onIncommingBotCommand(final ACommand cmd)
 	{
 		rxStats.packets++;
 		rxStats.payload += CommandFactory.getInstance().getLength(cmd, false);
+		
+		notifyIncommingBotCommand(cmd);
 	}
-	
-	
-	/**
-	 * Each bot has its own hardware id that uniquely identifies a robot by hardware (mainboard)
-	 * 
-	 * @return
-	 */
-	@Override
-	public abstract int getHardwareId();
 	
 	
 	/**
@@ -237,33 +200,6 @@ public abstract class ABot implements IBot, IConfigObserver
 	{
 		return !isBlocked() && !isHideFromAi();
 	}
-	
-	
-	/**
-	 * System.nanotime timestamp of last kick
-	 * 
-	 * @return
-	 */
-	@Override
-	public final long getLastKickTime()
-	{
-		return lastKickTime;
-	}
-	
-	
-	/**
-	 * @param lastKickTime the lastKickTime to set
-	 */
-	protected final void setLastKickTime(final long lastKickTime)
-	{
-		this.lastKickTime = lastKickTime;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public abstract boolean isBarrierInterrupted();
 	
 	
 	/**
@@ -291,6 +227,16 @@ public abstract class ABot implements IBot, IConfigObserver
 	public final EBotType getType()
 	{
 		return type;
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	@Override
+	public ERobotMode getRobotMode()
+	{
+		return robotMode;
 	}
 	
 	
@@ -445,26 +391,6 @@ public abstract class ABot implements IBot, IConfigObserver
 	
 	
 	/**
-	 * Sets cheering flag
-	 * 
-	 * @param cheering
-	 */
-	public void setCheering(final boolean cheering)
-	{
-		getMatchCtrl().setCheering(cheering);
-	}
-	
-	
-	/**
-	 * @param kickerLevel the kickerLevel to set
-	 */
-	protected final void setKickerLevel(final double kickerLevel)
-	{
-		this.kickerLevel = kickerLevel;
-	}
-	
-	
-	/**
 	 * Get internal position from sensory data
 	 * 
 	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
@@ -478,7 +404,7 @@ public abstract class ABot implements IBot, IConfigObserver
 	
 	
 	/**
-	 * Get internal velcoity from sensory data
+	 * Get internal velocity from sensory data
 	 * 
 	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 	 * @return
@@ -494,7 +420,7 @@ public abstract class ABot implements IBot, IConfigObserver
 	 * @return
 	 */
 	@Override
-	public Optional<TrajectoryWithTime<IVector3>> getCurrentTrajectory()
+	public synchronized Optional<TrajectoryWithTime<IVector3>> getCurrentTrajectory()
 	{
 		return curTrajectory;
 	}
@@ -503,86 +429,21 @@ public abstract class ABot implements IBot, IConfigObserver
 	/**
 	 * @param curTrajectory
 	 */
-	public synchronized void setCurrentTrajectory(final Optional<TrajectoryWithTime<IVector3>> curTrajectory)
+	public synchronized void setCurrentTrajectory(final TrajectoryWithTime<IVector3> curTrajectory)
 	{
-		this.curTrajectory = curTrajectory;
+		this.curTrajectory = Optional.ofNullable(curTrajectory);
 	}
 	
 	
-	/**
-	 * @return the minUpdateRate
-	 */
-	public double getMinUpdateRate()
+	/** Common Bot Observer */
+	@FunctionalInterface
+	public interface IABotObserver
 	{
-		return minUpdateRate;
-	}
-	
-	
-	/**
-	 * @param timestamp
-	 * @return
-	 */
-	public IVector3 getGlobalTargetVelocity(final long timestamp)
-	{
-		return AVector3.ZERO_VECTOR;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	@Override
-	public double getKickSpeed()
-	{
-		return getMatchCtrl().getKickSpeed();
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	@Override
-	public String getDevice()
-	{
-		return getMatchCtrl().getDevice().name();
-	}
-	
-	
-	/**
-	 * @param relBattery the relBattery to set
-	 */
-	public void setRelBattery(final double relBattery)
-	{
-		this.relBattery = relBattery;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	@Override
-	public double getDefaultVelocity()
-	{
-		return getMoveConstraints().getVelMax();
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	@Override
-	public double getDefaultAcceleration()
-	{
-		return getMoveConstraints().getAccMax();
-	}
-	
-	
-	/**
-	 * @return the moveConstraints
-	 */
-	@Override
-	public MoveConstraints getMoveConstraints()
-	{
-		return moveConstraints;
+		/**
+		 * Called when a new command from the robot arrives.
+		 * 
+		 * @param cmd
+		 */
+		void onIncommingBotCommand(ACommand cmd);
 	}
 }

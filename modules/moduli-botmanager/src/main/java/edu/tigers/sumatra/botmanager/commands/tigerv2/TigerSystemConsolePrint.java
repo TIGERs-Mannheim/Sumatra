@@ -23,8 +23,8 @@ import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
  */
 public class TigerSystemConsolePrint extends ACommand
 {
-	/** */
-	public static enum ConsolePrintSource
+	/** Console source. */
+	public enum ConsolePrintSource
 	{
 		/** */
 		UNKNOWN(0),
@@ -39,7 +39,7 @@ public class TigerSystemConsolePrint extends ACommand
 		/** */
 		KD(0x10);
 		
-		private final int	id;
+		private final int id;
 		
 		
 		private ConsolePrintSource(final int id)
@@ -91,7 +91,7 @@ public class TigerSystemConsolePrint extends ACommand
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/** */
+	/** Constructor. */
 	public TigerSystemConsolePrint()
 	{
 		super(ECommand.CMD_SYSTEM_CONSOLE_PRINT);
@@ -101,6 +101,7 @@ public class TigerSystemConsolePrint extends ACommand
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
 	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
@@ -126,6 +127,7 @@ public class TigerSystemConsolePrint extends ACommand
 	/**
 	 * @return the text
 	 */
+	@SuppressWarnings("squid:S1166")
 	public String getText()
 	{
 		String text;
@@ -145,6 +147,7 @@ public class TigerSystemConsolePrint extends ACommand
 	/**
 	 * @param text the text to set
 	 */
+	@SuppressWarnings("squid:S1166")
 	public void setText(final String text)
 	{
 		try

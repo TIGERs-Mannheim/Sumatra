@@ -36,20 +36,18 @@ public class BotConfigPanel extends JPanel
 {
 	/**  */
 	private static final long							serialVersionUID	= 7489653214102700549L;
-	private final List<IBotConfigPanelObserver>	observers			= new CopyOnWriteArrayList<IBotConfigPanelObserver>();
-	private final Map<Integer, ConfigFilePanel>	panels				= new HashMap<Integer, ConfigFilePanel>();
+	private final List<IBotConfigPanelObserver>	observers			= new CopyOnWriteArrayList<>();
+	private final Map<Integer, ConfigFilePanel>	panels				= new HashMap<>();
 	private final JTabbedPane							tabs;
 	
 	
-	/** */
+	/** Constructor. */
 	public BotConfigPanel()
 	{
 		setLayout(new BorderLayout());
 		
 		JButton queryButton = new JButton("Query File List");
-		queryButton.addActionListener(ae -> {
-			notifyQueryFileList();
-		});
+		queryButton.addActionListener(ae -> notifyQueryFileList());
 		
 		JPanel btnPanel = new JPanel(new MigLayout("", "[100]10[100]10[100]"));
 		btnPanel.add(queryButton);
@@ -130,46 +128,10 @@ public class BotConfigPanel extends JPanel
 	}
 	
 	
-	private void notifySave(final ConfigFile file)
-	{
-		synchronized (observers)
-		{
-			for (IBotConfigPanelObserver observer : observers)
-			{
-				observer.onSave(file);
-			}
-		}
-	}
-	
-	
-	private void notifySaveToAll(final ConfigFile file)
-	{
-		synchronized (observers)
-		{
-			for (IBotConfigPanelObserver observer : observers)
-			{
-				observer.onSaveToAll(file);
-			}
-		}
-	}
-	
-	
-	private void notifyRefresh(final ConfigFile file)
-	{
-		synchronized (observers)
-		{
-			for (IBotConfigPanelObserver observer : observers)
-			{
-				observer.onRefresh(file);
-			}
-		}
-	}
-	
-	
-	/** */
+	/** Observer interface. */
 	public static interface IBotConfigPanelObserver
 	{
-		/** */
+		/** Query file list. */
 		void onQueryFileList();
 		
 		
@@ -194,7 +156,7 @@ public class BotConfigPanel extends JPanel
 	private class ConfigFilePanel extends JPanel
 	{
 		private static final long			serialVersionUID	= 3052423100929562898L;
-		private final List<JTextField>	fields				= new ArrayList<JTextField>();
+		private final List<JTextField>	fields				= new ArrayList<>();
 		private final ConfigFile			file;
 		
 		
@@ -223,9 +185,7 @@ public class BotConfigPanel extends JPanel
 				notifySaveToAll(file);
 			});
 			
-			refresh.addActionListener(ae -> {
-				notifyRefresh(file);
-			});
+			refresh.addActionListener(ae -> notifyRefresh(file));
 			
 			add(save, "span 2, split 3");
 			add(saveToAll);
@@ -244,7 +204,43 @@ public class BotConfigPanel extends JPanel
 		}
 		
 		
-		public void updateValues(final ConfigFile file)
+		private void notifySave(final ConfigFile file)
+		{
+			synchronized (observers)
+			{
+				for (IBotConfigPanelObserver observer : observers)
+				{
+					observer.onSave(file);
+				}
+			}
+		}
+		
+		
+		private void notifySaveToAll(final ConfigFile file)
+		{
+			synchronized (observers)
+			{
+				for (IBotConfigPanelObserver observer : observers)
+				{
+					observer.onSaveToAll(file);
+				}
+			}
+		}
+		
+		
+		private void notifyRefresh(final ConfigFile file)
+		{
+			synchronized (observers)
+			{
+				for (IBotConfigPanelObserver observer : observers)
+				{
+					observer.onRefresh(file);
+				}
+			}
+		}
+		
+		
+		private void updateValues(final ConfigFile file)
 		{
 			SwingUtilities.invokeLater(() -> {
 				for (int i = 0; i < file.getValues().size(); i++)

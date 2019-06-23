@@ -1,15 +1,10 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Mar 3, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine;
 
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -29,7 +24,8 @@ import edu.tigers.autoreferee.engine.states.impl.StopState;
 import edu.tigers.autoreferee.remote.ICommandResult;
 import edu.tigers.autoreferee.remote.IRefboxRemote;
 import edu.tigers.sumatra.Referee.SSL_Referee.Stage;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
+import edu.tigers.sumatra.referee.data.EGameState;
+import edu.tigers.sumatra.referee.data.GameState;
 
 
 /**
@@ -37,78 +33,12 @@ import edu.tigers.sumatra.wp.data.EGameStateNeutral;
  */
 public class ActiveAutoRefEngine extends AbstractAutoRefEngine
 {
-	private List<IAutoRefEngineObserver>				engineObserver	= new CopyOnWriteArrayList<>();
-	private IAutoRefState									dummyState		= null;
-	private Map<EGameStateNeutral, IAutoRefState>	refStates		= new HashMap<>();
-	
-	private final IRefboxRemote							remote;
-	private FollowUpAction									followUp			= null;
-	private boolean											doProceed		= false;
-	
-	
-	private class RefStateContext implements IAutoRefStateContext
-	{
-		
-		private RefStateContext()
-		{
-			
-		}
-		
-		
-		@Override
-		public ICommandResult sendCommand(final RefCommand cmd)
-		{
-			return ActiveAutoRefEngine.this.sendCommand(cmd);
-		}
-		
-		
-		@Override
-		public FollowUpAction getFollowUpAction()
-		{
-			return followUp;
-		}
-		
-		
-		@Override
-		public void setFollowUpAction(final FollowUpAction action)
-		{
-			setFollowUp(action);
-		}
-		
-		
-		@Override
-		public boolean doProceed()
-		{
-			return doProceed;
-		}
-		
-		
-		@Override
-		public GameLog getGameLog()
-		{
-			return gameLog;
-		}
-		
-	}
-	
-	/**
-	 * @author Lukas Magel
-	 */
-	public interface IAutoRefEngineObserver
-	{
-		
-		/**
-		 * @param proceedPossible
-		 */
-		public void onStateChanged(final boolean proceedPossible);
-		
-		
-		/**
-		 * @param action
-		 */
-		public void onFollowUpChanged(final FollowUpAction action);
-		
-	}
+	private final IRefboxRemote remote;
+	private List<IAutoRefEngineObserver> engineObserver = new CopyOnWriteArrayList<>();
+	private IAutoRefState dummyState = null;
+	private Map<EGameState, IAutoRefState> refStates = new EnumMap<>(EGameState.class);
+	private FollowUpAction followUp = null;
+	private boolean doProceed = false;
 	
 	
 	/**
@@ -123,36 +53,23 @@ public class ActiveAutoRefEngine extends AbstractAutoRefEngine
 	
 	private void setupStates()
 	{
-		RunningState runningState = new RunningState();
-		refStates.put(EGameStateNeutral.RUNNING, runningState);
-		
-		PrepareKickoffState prepKickOffState = new PrepareKickoffState();
-		putForAll(prepKickOffState, Arrays.asList(EGameStateNeutral.PREPARE_KICKOFF_BLUE,
-				EGameStateNeutral.PREPARE_KICKOFF_YELLOW));
-		
-		PreparePenaltyState prepPenaltyState = new PreparePenaltyState();
-		putForAll(prepPenaltyState, Arrays.asList(EGameStateNeutral.PREPARE_PENALTY_BLUE,
-				EGameStateNeutral.PREPARE_PENALTY_YELLOW));
-		
-		PlaceBallState placeBallState = new PlaceBallState();
-		putForAll(placeBallState, Arrays.asList(EGameStateNeutral.BALL_PLACEMENT_BLUE,
-				EGameStateNeutral.BALL_PLACEMENT_YELLOW));
+		refStates.put(EGameState.RUNNING, new RunningState());
+		refStates.put(EGameState.PREPARE_KICKOFF, new PrepareKickoffState());
+		refStates.put(EGameState.PREPARE_PENALTY, new PreparePenaltyState());
+		refStates.put(EGameState.BALL_PLACEMENT, new PlaceBallState());
 		
 		KickState kickState = new KickState();
 		putForAll(kickState, Arrays.asList(
-				EGameStateNeutral.DIRECT_KICK_BLUE, EGameStateNeutral.DIRECT_KICK_YELLOW,
-				EGameStateNeutral.INDIRECT_KICK_BLUE, EGameStateNeutral.INDIRECT_KICK_YELLOW,
-				EGameStateNeutral.KICKOFF_BLUE, EGameStateNeutral.KICKOFF_YELLOW,
-				EGameStateNeutral.PENALTY_BLUE, EGameStateNeutral.PENALTY_YELLOW));
+				EGameState.DIRECT_FREE, EGameState.INDIRECT_FREE,
+				EGameState.KICKOFF, EGameState.PENALTY));
 		
-		StopState stopState = new StopState();
-		refStates.put(EGameStateNeutral.STOPPED, stopState);
+		refStates.put(EGameState.STOP, new StopState());
 		
 		dummyState = new DummyAutoRefState();
 	}
 	
 	
-	private void putForAll(final IAutoRefState refState, final List<EGameStateNeutral> states)
+	private void putForAll(final IAutoRefState refState, final List<EGameState> states)
 	{
 		states.forEach(state -> refStates.put(state, refState));
 	}
@@ -185,7 +102,7 @@ public class ActiveAutoRefEngine extends AbstractAutoRefEngine
 	
 	
 	/**
-	 * 
+	 * proceed
 	 */
 	public synchronized void proceed()
 	{
@@ -202,25 +119,18 @@ public class ActiveAutoRefEngine extends AbstractAutoRefEngine
 	
 	private void resetRefStates()
 	{
-		refStates.values().forEach(state -> state.reset());
+		refStates.values().forEach(IAutoRefState::reset);
 	}
 	
 	
-	private IAutoRefState getActiveState(final EGameStateNeutral gameState)
+	private IAutoRefState getActiveState(final GameState gameState)
 	{
-		IAutoRefState state = refStates.get(gameState);
+		IAutoRefState state = refStates.get(gameState.getState());
 		if (state == null)
 		{
 			return dummyState;
 		}
 		return state;
-	}
-	
-	
-	private ICommandResult sendCommand(final RefCommand cmd)
-	{
-		gameLog.addEntry(cmd);
-		return remote.sendCommand(cmd);
 	}
 	
 	
@@ -240,7 +150,7 @@ public class ActiveAutoRefEngine extends AbstractAutoRefEngine
 		List<IGameEvent> gameEvents = getGameEvents(frame);
 		
 		boolean canProceed = state.canProceed();
-		if (gameEvents.size() > 0)
+		if (!gameEvents.isEmpty())
 		{
 			IGameEvent gameEvent = gameEvents.remove(0);
 			boolean accepted = state.handleGameEvent(gameEvent, ctx);
@@ -261,7 +171,7 @@ public class ActiveAutoRefEngine extends AbstractAutoRefEngine
 	
 	
 	@Override
-	protected void onGameStateChange(final EGameStateNeutral oldGameState, final EGameStateNeutral newGameState)
+	protected void onGameStateChange(final GameState oldGameState, final GameState newGameState)
 	{
 		super.onGameStateChange(oldGameState, newGameState);
 		
@@ -274,7 +184,7 @@ public class ActiveAutoRefEngine extends AbstractAutoRefEngine
 		
 		notifyStateChange(false);
 		
-		if (newGameState == EGameStateNeutral.RUNNING)
+		if (newGameState.getState() == EGameState.RUNNING)
 		{
 			setFollowUp(null);
 		}
@@ -323,5 +233,70 @@ public class ActiveAutoRefEngine extends AbstractAutoRefEngine
 	private void notifyStateChange(final boolean canProceed)
 	{
 		engineObserver.forEach(obs -> obs.onStateChanged(canProceed));
+	}
+	
+	
+	/**
+	 * @author Lukas Magel
+	 */
+	public interface IAutoRefEngineObserver
+	{
+		
+		/**
+		 * @param proceedPossible
+		 */
+		void onStateChanged(final boolean proceedPossible);
+		
+		
+		/**
+		 * @param action
+		 */
+		void onFollowUpChanged(final FollowUpAction action);
+		
+	}
+	
+	private class RefStateContext implements IAutoRefStateContext
+	{
+		
+		private RefStateContext()
+		{
+		}
+		
+		
+		@Override
+		public ICommandResult sendCommand(final RefboxRemoteCommand cmd)
+		{
+			gameLog.addEntry(cmd);
+			return remote.sendCommand(cmd);
+		}
+		
+		
+		@Override
+		public FollowUpAction getFollowUpAction()
+		{
+			return followUp;
+		}
+		
+		
+		@Override
+		public void setFollowUpAction(final FollowUpAction action)
+		{
+			setFollowUp(action);
+		}
+		
+		
+		@Override
+		public boolean doProceed()
+		{
+			return doProceed;
+		}
+		
+		
+		@Override
+		public GameLog getGameLog()
+		{
+			return gameLog;
+		}
+		
 	}
 }

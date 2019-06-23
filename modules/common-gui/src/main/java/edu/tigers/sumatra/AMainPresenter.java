@@ -1,23 +1,14 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Apr 10, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra;
 
-import java.awt.Dimension;
-import java.awt.Frame;
-import java.awt.GraphicsEnvironment;
-import java.awt.HeadlessException;
+import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Properties;
 
-import javax.swing.JFrame;
-import javax.swing.JOptionPane;
+import javax.swing.*;
 
 import org.apache.log4j.Logger;
 
@@ -155,7 +146,7 @@ public abstract class AMainPresenter implements IMainFrameObserver
 		// --- save gui position ---
 		savePosition(mainFrame, appProps);
 		
-		// save current layout to separat file
+		// save current layout to separate file
 		saveCurrentLayout();
 		// save last layout for next usage
 		SumatraModel.getInstance().setUserProperty(getLayoutKey(), getLastLayoutFile());
@@ -184,7 +175,7 @@ public abstract class AMainPresenter implements IMainFrameObserver
 	
 	private void refreshLayoutItems()
 	{
-		final ArrayList<String> filenames = new ArrayList<String>();
+		final ArrayList<String> filenames = new ArrayList<>();
 		
 		// --- read all available layouts from guiLayout-folder ---
 		final File dir = new File(LAYOUT_CONFIG_PATH);
@@ -240,7 +231,7 @@ public abstract class AMainPresenter implements IMainFrameObserver
 		log.trace("Position: " + x + "," + y);
 		
 		final String strMaximized = appProps.getProperty(prefix + ".maximized", "true");
-		final boolean maximized = Boolean.valueOf(strMaximized);
+		final boolean maximized = Boolean.parseBoolean(strMaximized);
 		
 		if (maximized)
 		{
@@ -263,11 +254,11 @@ public abstract class AMainPresenter implements IMainFrameObserver
 	{
 		log.trace("Save position");
 		final String prefix = this.getClass().getName();
-		appProps.setProperty(prefix + ".disyplayCount", "" + getNumberOfDisplays());
-		appProps.setProperty(prefix + ".x", "" + frame.getX());
-		appProps.setProperty(prefix + ".y", "" + frame.getY());
-		appProps.setProperty(prefix + ".w", "" + frame.getWidth());
-		appProps.setProperty(prefix + ".h", "" + frame.getHeight());
+		appProps.setProperty(prefix + ".disyplayCount", Integer.toString(getNumberOfDisplays()));
+		appProps.setProperty(prefix + ".x", Integer.toString(frame.getX()));
+		appProps.setProperty(prefix + ".y", Integer.toString(frame.getY()));
+		appProps.setProperty(prefix + ".w", Integer.toString(frame.getWidth()));
+		appProps.setProperty(prefix + ".h", Integer.toString(frame.getHeight()));
 		appProps.setProperty(prefix + ".maximized",
 				String.valueOf((frame.getExtendedState() & Frame.MAXIMIZED_BOTH) == Frame.MAXIMIZED_BOTH));
 	}

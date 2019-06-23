@@ -1,14 +1,9 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jan 26, 2013
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.visualizer.view;
 
-import edu.tigers.sumatra.wp.data.ShapeMap.IShapeLayer;
+import edu.tigers.sumatra.drawable.ShapeMap.IShapeLayer;
 
 
 /**
@@ -16,6 +11,7 @@ import edu.tigers.sumatra.wp.data.ShapeMap.IShapeLayer;
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
+@SuppressWarnings("squid:S1192") // duplicated string literals
 public enum EVisualizerOptions implements IShapeLayer
 {
 	/**  */
@@ -27,19 +23,23 @@ public enum EVisualizerOptions implements IShapeLayer
 	/**  */
 	PAINT_COORD("Visualizer", "paint coord."),
 	/**  */
-	YELLOW_AI("Visualizer", "Yellow AI"),
+	YELLOW_AI_PRIMARY("Visualizer", "Yellow AI Primary"),
 	/**  */
-	BLUE_AI("Visualizer", "Blue AI"),;
+	BLUE_AI_PRIMARY("Visualizer", "Blue AI Primary"),
+	/**  */
+	YELLOW_AI_SECONDARY("Visualizer", "Yellow AI Secondary"),
+	/**  */
+	BLUE_AI_SECONDARY("Visualizer", "Blue AI Secondary"),;
 	
 	
-	private final String	name;
-	private final String	category;
-								
-								
+	private final String name;
+	private final String category;
+	
+	
 	/**
 	 * @param name this name will be shown to the user
 	 */
-	private EVisualizerOptions(final String category, final String name)
+	EVisualizerOptions(final String category, final String name)
 	{
 		this.name = name;
 		this.category = category;

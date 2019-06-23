@@ -1,33 +1,33 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 26, 2014
- * Author(s): Mark Geiger <Mark.Geiger@dlr.de>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.pandora.roles.offense.states;
 
 import java.awt.Color;
 
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.ai.data.EShapesLayer;
+import edu.tigers.sumatra.ai.data.EAiShapesLayer;
 import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.pandora.roles.offense.AOffensiveRole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.OffensiveRole;
+import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
-import edu.tigers.sumatra.drawable.DrawableText;
 import edu.tigers.sumatra.drawable.DrawableTriangle;
+import edu.tigers.sumatra.drawable.animated.AnimatedCrosshair;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.BotIDMap;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.shapes.circle.Circle;
+import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.circle.ICircle;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.skillsystem.skills.ISkill;
-import edu.tigers.sumatra.wp.data.Geometry;
+import edu.tigers.sumatra.statemachine.IEvent;
+import edu.tigers.sumatra.statemachine.IState;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 
@@ -37,21 +37,11 @@ import edu.tigers.sumatra.wp.data.WorldFrame;
  * 
  * @author Mark Geiger <Mark.Geiger@dlr.de>
  */
-public abstract class AOffensiveRoleState
+public abstract class AOffensiveRoleState implements IState
 {
+	protected static final Logger log = Logger.getLogger(AOffensiveRole.class.getName());
+	private final OffensiveRole parent;
 	
-	// -------------------------------------------------------------------------- //
-	// --- variables and constants ---------------------------------------------- //
-	// -------------------------------------------------------------------------- //
-	
-	private final OffensiveRole	parent;
-	protected static final Logger	log		= Logger.getLogger(AOffensiveRole.class.getName());
-	protected int						animator	= 0;
-	
-	
-	// ----------------------------------------------------------------------- //
-	// -------------------- functions ---------------------------------------- //
-	// ----------------------------------------------------------------------- //
 	
 	/**
 	 * @param role the Offensive Role
@@ -62,49 +52,49 @@ public abstract class AOffensiveRoleState
 	}
 	
 	
-	protected void setNewSkill(final ISkill newSkill)
+	public void setNewSkill(final ISkill newSkill)
 	{
 		parent.setNewSkill(newSkill);
 	}
 	
 	
-	protected void triggerEvent(final Enum<? extends Enum<?>> event)
+	protected void triggerEvent(final IEvent event)
 	{
 		parent.triggerEvent(event);
 	}
 	
 	
-	protected AthenaAiFrame getAiFrame()
+	public AthenaAiFrame getAiFrame()
 	{
 		return parent.getAiFrame();
 	}
 	
 	
-	protected WorldFrame getWFrame()
+	public WorldFrame getWFrame()
 	{
 		return parent.getWFrame();
 	}
 	
 	
-	protected IVector2 getPos()
+	public IVector2 getPos()
 	{
 		return parent.getPos();
 	}
 	
 	
-	protected BotID getBotID()
+	public BotID getBotID()
 	{
 		return parent.getBotID();
 	}
 	
 	
-	protected ITrackedBot getBot()
+	public ITrackedBot getBot()
 	{
 		return parent.getBot();
 	}
 	
 	
-	protected ISkill getCurrentSkill()
+	public ISkill getCurrentSkill()
 	{
 		return parent.getCurrentSkill();
 	}
@@ -112,24 +102,18 @@ public abstract class AOffensiveRoleState
 	
 	protected void visualizeTarget(final IVector2 target)
 	{
-		animator++;
-		Circle targetCircle = new Circle(target, 150 + (int) (Math.sin(animator / 5.0) * 100));
-		Color bigTargetColor = new Color(50, 10, 125, 60);
-		DrawableCircle dtargetCircle = new DrawableCircle(targetCircle, bigTargetColor);
-		dtargetCircle.setFill(true);
-		
-		Circle targetCircle2 = new Circle(target, 50 + (int) (Math.sin(animator / 5.0) * 30));
-		DrawableCircle dtargetCircle2 = new DrawableCircle(targetCircle2, new Color(10, 10, 200, 60));
-		dtargetCircle2.setFill(true);
-		DrawableCircle dtargetCircle3 = new DrawableCircle(targetCircle, bigTargetColor);
-		
-		getAiFrame().getTacticalField().getDrawableShapes().get(EShapesLayer.OFFENSIVE).add(dtargetCircle);
-		getAiFrame().getTacticalField().getDrawableShapes().get(EShapesLayer.OFFENSIVE).add(dtargetCircle2);
-		getAiFrame().getTacticalField().getDrawableShapes().get(EShapesLayer.OFFENSIVE).add(dtargetCircle3);
+		AnimatedCrosshair crosshair = AnimatedCrosshair.aCrazyCrosshair(target, 50, 100, 1.0f, Color.RED,
+				new Color(255, 0, 0, 40), new Color(255, 0, 0, 140));
+		getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.OFFENSIVE).add(crosshair);
 	}
 	
 	
-	final protected boolean calcIsChip(final IVector2 actionTarget, final BotID passTargetID)
+	/**
+	 * @param actionTarget shoot target
+	 * @param passTargetID this bot gets ignored by calculations.
+	 * @return
+	 */
+	protected final boolean calcIsChip(final IVector2 actionTarget, final BotID passTargetID)
 	{
 		IVector2 ballToTarget = actionTarget.subtractNew(getWFrame().getBall().getPos());
 		if (ballToTarget.getLength2() > OffensiveConstants.getChipKickCheckDistance())
@@ -154,7 +138,7 @@ public abstract class AOffensiveRoleState
 		triangle1.setColor(new Color(25, 40, 40, 125));
 		triangle1.setFill(true);
 		triangle2.setFill(true);
-		BotIDMap<ITrackedBot> bots = new BotIDMap<ITrackedBot>(getWFrame().getFoeBots());
+		BotIDMap<ITrackedBot> bots = new BotIDMap<>(getWFrame().getFoeBots());
 		bots.putAll(getWFrame().getTigerBotsVisible());
 		bots.remove(getBotID());
 		if (passTargetID != null)
@@ -166,26 +150,51 @@ public abstract class AOffensiveRoleState
 		boolean chip = false;
 		for (ITrackedBot bot : bots.values())
 		{
-			Circle c1 = new Circle(bot.getPos(), Geometry.getBotRadius());
+			ICircle c1 = Circle.createCircle(bot.getPos(), Geometry.getBotRadius());
 			DrawableCircle dc1 = new DrawableCircle(c1, Color.black);
-			if (triangle1.isPointInShape(bot.getPos()) || triangle2.isPointInShape(bot.getPos()))
+			if (triangle1.getTriangle().isPointInShape(bot.getPos())
+					|| triangle2.getTriangle().isPointInShape(bot.getPos()))
 			{
-				getAiFrame().getTacticalField().getDrawableShapes().get(EShapesLayer.OFFENSIVE_ADDITIONAL)
-						.add(new DrawableText(getPos().addNew(new Vector2(0, -200)),
-								"dist to Target: " + GeoMath.distancePP(getWFrame().getBall().getPos(), actionTarget),
+				getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.OFFENSIVE_ADDITIONAL)
+						.add(new DrawableAnnotation(getPos().addNew(Vector2.fromXY(0, -200)),
+								"dist to Target: " + VectorMath.distancePP(getWFrame().getBall().getPos(), actionTarget),
 								Color.orange));
-				if (GeoMath.distancePP(getWFrame().getBall().getPos(), actionTarget) > OffensiveConstants
+				if (VectorMath.distancePP(getWFrame().getBall().getPos(), actionTarget) > OffensiveConstants
 						.getChipKickMinDistToTarget())
 				{
 					chip = true;
 					break;
 				}
 			}
-			getAiFrame().getTacticalField().getDrawableShapes().get(EShapesLayer.OFFENSIVE).add(dc1);
+			getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.OFFENSIVE).add(dc1);
 		}
 		
-		getAiFrame().getTacticalField().getDrawableShapes().get(EShapesLayer.OFFENSIVE).add(triangle1);
-		getAiFrame().getTacticalField().getDrawableShapes().get(EShapesLayer.OFFENSIVE).add(triangle2);
+		getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.OFFENSIVE).add(triangle1);
+		getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.OFFENSIVE).add(triangle2);
 		return chip;
 	}
+	
+	
+	/**
+	 * @return shootTarget of offensive role, is null when no target is set yet
+	 */
+	public IVector2 getTarget()
+	{
+		return null;
+	}
+	
+	
+	/**
+	 * @return get Parent OffensiveRole of this state
+	 */
+	public OffensiveRole getParent()
+	{
+		return parent;
+	}
+	
+	
+	/**
+	 * @return The current move Position of the offensiveRole
+	 */
+	public abstract IVector2 getMoveDest();
 }

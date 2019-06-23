@@ -1,14 +1,10 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Apr 15, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.cam;
 
-import edu.tigers.sumatra.MessagesRobocupSslDetection.SSL_DetectionFrame;
+import edu.tigers.sumatra.MessagesRobocupSslWrapper.SSL_WrapperPacket;
+import edu.tigers.sumatra.cam.data.CamDetectionFrame;
 import edu.tigers.sumatra.cam.data.CamGeometry;
 
 
@@ -18,16 +14,15 @@ import edu.tigers.sumatra.cam.data.CamGeometry;
 public interface ICamFrameObserver
 {
 	/**
-	 * @param frame
-	 * @param timeSync
+	 * @param camDetectionFrame a detection frame from a single camera
 	 */
-	default void onNewCameraFrame(final SSL_DetectionFrame frame, final TimeSync timeSync)
+	default void onNewCamDetectionFrame(final CamDetectionFrame camDetectionFrame)
 	{
 	}
 	
 	
 	/**
-	 * @param geometry
+	 * @param geometry geometry information received by SSL vision
 	 */
 	default void onNewCameraGeometry(final CamGeometry geometry)
 	{
@@ -35,9 +30,17 @@ public interface ICamFrameObserver
 	
 	
 	/**
-	 * 
+	 * This is called when the vision connection was lost
 	 */
 	default void onClearCamFrame()
+	{
+	}
+	
+	
+	/**
+	 * @param packet Raw SSL Vision packet, unprocessed.
+	 */
+	default void onNewVisionPacket(final SSL_WrapperPacket packet)
 	{
 	}
 }

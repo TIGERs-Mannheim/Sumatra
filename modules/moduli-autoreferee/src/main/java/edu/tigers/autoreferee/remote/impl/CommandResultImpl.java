@@ -37,7 +37,7 @@ public class CommandResultImpl implements ICommandResult
 	@Override
 	public synchronized boolean hasFailed()
 	{
-		return (completed == true) && (successful == false);
+		return completed && !successful;
 	}
 	
 	
@@ -45,7 +45,7 @@ public class CommandResultImpl implements ICommandResult
 	 * @param completed
 	 * @param successful
 	 */
-	public synchronized void setResult(final boolean completed, final boolean successful)
+	private synchronized void setResult(final boolean completed, final boolean successful)
 	{
 		this.completed = completed;
 		this.successful = successful;

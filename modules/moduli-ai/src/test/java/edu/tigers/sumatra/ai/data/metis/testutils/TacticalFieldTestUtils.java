@@ -14,6 +14,9 @@ import edu.tigers.sumatra.ai.data.ballpossession.EBallPossession;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 
 /**
  * @author Phillipp Mevenkamp <phillippmevenkamp@gmail.com>
@@ -26,24 +29,24 @@ public class TacticalFieldTestUtils
 	 * @param eBallPossession The ball Possession that should be initialized
 	 * @return A TacticalField that can be used to handle ball possession events
 	 */
-	public static TacticalField initializeTacticalFieldJustWithBallPossessionForSide(
+	public static TacticalField mockTacticalFieldJustWithBallPossessionForSide(
 			final EBallPossession eBallPossession)
 	{
-		TacticalField newTacticalField = new TacticalField();
+		TacticalField newTacticalField = mock(TacticalField.class);
 		
 		BotID botID = BotID.createBotId(0, ETeamColor.BLUE);
 		
-		BallPossession ballPossession = new BallPossession();
-		ballPossession.setEBallPossession(eBallPossession);
-		ballPossession.setTigersId(botID);
+		BallPossession ballPossession = mock(BallPossession.class);
+		when(ballPossession.getEBallPossession()).thenReturn(eBallPossession);
+		when(ballPossession.getTigersId()).thenReturn(botID);
 		
 		if (eBallPossession == EBallPossession.BOTH)
 		{
 			BotID opponentID = BotID.createBotId(0, ETeamColor.YELLOW);
-			ballPossession.setOpponentsId(opponentID);
+			when(ballPossession.getOpponentsId()).thenReturn(opponentID);
 		}
 		
-		newTacticalField.setBallPossession(ballPossession);
+		when(newTacticalField.getBallPossession()).thenReturn(ballPossession);
 		
 		return newTacticalField;
 	}
@@ -56,16 +59,16 @@ public class TacticalFieldTestUtils
 	 * @param possessingBot The bot that is possessing the ball
 	 * @return A TacticalField for the usage of BallPossession
 	 */
-	public static TacticalField initializeTacticalFieldJustWithPossessingBot(final BotID possessingBot)
+	public static TacticalField mockTacticalFieldJustWithPossessingBot(final BotID possessingBot)
 	{
-		TacticalField newTacticalField = new TacticalField();
+		TacticalField newTacticalField = mock(TacticalField.class);
 		
-		BallPossession ballPossession = new BallPossession();
+		BallPossession ballPossession = mock(BallPossession.class);
 		
-		ballPossession.setTigersId(possessingBot);
-		ballPossession.setEBallPossession(EBallPossession.WE);
+		when(ballPossession.getTigersId()).thenReturn(possessingBot);
+		when(ballPossession.getEBallPossession()).thenReturn(EBallPossession.WE);
 		
-		newTacticalField.setBallPossession(ballPossession);
+		when(newTacticalField.getBallPossession()).thenReturn(ballPossession);
 		
 		return newTacticalField;
 	}

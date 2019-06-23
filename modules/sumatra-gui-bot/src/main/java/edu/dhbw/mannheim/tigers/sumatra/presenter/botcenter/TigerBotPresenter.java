@@ -1,25 +1,15 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Dec 2, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.dhbw.mannheim.tigers.sumatra.presenter.botcenter;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.Arrays;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import javax.swing.Timer;
-
 import org.apache.log4j.Logger;
-
-import com.github.g3force.instanceables.IInstanceableObserver;
 
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.BcBotPingPanel.IBcBotPingPanelObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.BotConfigOverviewPanel;
@@ -27,10 +17,9 @@ import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.bots.ConsolePanel.IConsol
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.bots.ISkillsPanelObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.bots.KickerFirePanel.IKickerFirePanelObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.bots.MotorInputPanel.IMotorInputPanelObserver;
-import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.bots.SelectControllerPanel.ISelectControllerPanelObserver;
-import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.bots.SystemMatchFeedbackPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.bots.SystemMatchFeedbackPanel.ISystemMatchFeedbackPanelObserver;
 import edu.tigers.sumatra.bot.IBot;
+import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.ABotManager;
 import edu.tigers.sumatra.botmanager.BotWatcher;
 import edu.tigers.sumatra.botmanager.PingThread;
@@ -39,30 +28,27 @@ import edu.tigers.sumatra.botmanager.basestation.IBaseStationObserver;
 import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.botmanager.bots.DummyBot;
 import edu.tigers.sumatra.botmanager.bots.PingStats;
-import edu.tigers.sumatra.botmanager.bots.TigerBotV3;
-import edu.tigers.sumatra.botmanager.bots.communication.Statistics;
 import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.botskills.ABotSkill;
+import edu.tigers.sumatra.botmanager.commands.botskills.AMoveBotSkill;
 import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillLocalVelocity;
+import edu.tigers.sumatra.botmanager.commands.botskills.data.KickerDribblerCommands;
 import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
 import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
 import edu.tigers.sumatra.botmanager.commands.tiger.TigerSystemPong;
-import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerCtrlSetControllerType;
-import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerCtrlSetControllerType.EControllerType;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand.ConsoleCommandTarget;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsolePrint;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemMatchFeedback;
-import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemQuery;
-import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemQuery.EQueryType;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerSystemPerformance;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.GenericSkillSystem;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.ASkill;
 import edu.tigers.sumatra.skillsystem.skills.BotSkillWrapperSkill;
-import edu.tigers.sumatra.skillsystem.skills.StraightMoveSkill;
 import edu.tigers.sumatra.thread.NamedThreadFactory;
 
 
@@ -89,20 +75,13 @@ public class TigerBotPresenter implements IBaseStationObserver
 		
 		configPresenter = new ConfigPresenter(botConfigOverviewPanel.getConfigPanel(), bot);
 		
-		botConfigOverviewPanel.getBcBotPingPanel().addObserver(new BcBotPingPanelObserver());
-		botConfigOverviewPanel.getBcBotKickerPanel().getKickerFirePanel().addObserver(new KickerFirePanelObserver());
-		botConfigOverviewPanel.getBcBotControllerCfgPanel().getSelectControllerPanel()
-				.addObserver(new SelectControllerPanelObserver());
-		botConfigOverviewPanel.getMovePanel().getInputPanel().addObserver(new MotorInputPanelObserver());
-		botConfigOverviewPanel.getMovePanel().getEnhancedInputPanel().addObserver(new MotorInputPanelObserver());
+		botConfigOverviewPanel.getManualControlPanel().getPingPanel().addObserver(new BcBotPingPanelObserver());
+		botConfigOverviewPanel.getManualControlPanel().getKickerFirePanel().addObserver(new KickerFirePanelObserver());
+		botConfigOverviewPanel.getManualControlPanel().getInputPanel().addObserver(new MotorInputPanelObserver());
+		botConfigOverviewPanel.getManualControlPanel().getEnhancedInputPanel().addObserver(new MotorInputPanelObserver());
 		botConfigOverviewPanel.getSkillsPanel().addObserver(new SkillsPanelObserver());
 		botConfigOverviewPanel.getConsolePanel().addObserver(new ConsolePanelObserver());
-		botConfigOverviewPanel.getCommandPanel().addObserver(new NewCommandObserver());
 		botConfigOverviewPanel.getSystemStatusPanel().addObserver(new SystemMatchFeedbackObserver());
-		
-		// schedule GUI updates every 1s
-		Timer timer = new Timer(1000, new SwingUpdateTimer());
-		timer.start();
 	}
 	
 	
@@ -146,6 +125,19 @@ public class TigerBotPresenter implements IBaseStationObserver
 	}
 	
 	
+	private void processPong(final TigerSystemPong pong)
+	{
+		if (pingThread != null)
+		{
+			pingThread.pongArrived(pong.getId());
+			if (!pong.payloadValid())
+			{
+				log.warn("Invalid payload received: " + Arrays.toString(pong.getPayload()));
+			}
+		}
+	}
+	
+	
 	/**
 	 * @param cmd
 	 */
@@ -158,37 +150,14 @@ public class TigerBotPresenter implements IBaseStationObserver
 				botConfigOverviewPanel.getConsolePanel().addConsolePrint(print);
 				break;
 			case CMD_SYSTEM_PONG:
-			{
-				final TigerSystemPong pong = (TigerSystemPong) cmd;
-				
-				if (pingThread != null)
-				{
-					pingThread.pongArrived(pong.getId());
-					if (!pong.payloadValid())
-					{
-						log.warn("Invalid payload received: " + Arrays.toString(pong.getPayload()));
-					}
-				}
-			}
+				processPong((TigerSystemPong) cmd);
 				break;
 			case CMD_SYSTEM_MATCH_FEEDBACK:
-			{
-				final TigerSystemMatchFeedback feedback = (TigerSystemMatchFeedback) cmd;
-				SystemMatchFeedbackPanel statusPanel = botConfigOverviewPanel.getSystemStatusPanel();
-				statusPanel.addTigerSystemMatchFeedback(feedback);
-			}
+				procCmdSystemMatchFeedback(cmd);
 				break;
 			case CMD_SYSTEM_PERFORMANCE:
-			{
 				final TigerSystemPerformance perf = (TigerSystemPerformance) cmd;
-				SystemMatchFeedbackPanel statusPanel = botConfigOverviewPanel.getSystemStatusPanel();
-				statusPanel.addPerformance(perf);
-			}
-				break;
-			case CMD_CTRL_SET_CONTROLLER_TYPE:
-				final TigerCtrlSetControllerType ctrlTypeCmd = (TigerCtrlSetControllerType) cmd;
-				botConfigOverviewPanel.getBcBotControllerCfgPanel().getSelectControllerPanel()
-						.setControllerType(ctrlTypeCmd.getControllerType());
+				botConfigOverviewPanel.getSystemStatusPanel().addPerformance(perf);
 				break;
 			case CMD_CONFIG_FILE_STRUCTURE:
 			case CMD_CONFIG_ITEM_DESC:
@@ -198,6 +167,17 @@ public class TigerBotPresenter implements IBaseStationObserver
 			default:
 				break;
 		}
+	}
+	
+	
+	private void procCmdSystemMatchFeedback(final ACommand cmd)
+	{
+		final TigerSystemMatchFeedback feedback = (TigerSystemMatchFeedback) cmd;
+		botConfigOverviewPanel.getSystemStatusPanel().addTigerSystemMatchFeedback(feedback);
+		botConfigOverviewPanel.getManualControlPanel().getEnhancedInputPanel()
+				.setLatestVelocity(feedback.getVelocity());
+		botConfigOverviewPanel.getManualControlPanel().getEnhancedInputPanel()
+				.setLatestAngularVelocity(feedback.getAngularVelocity());
 	}
 	
 	private class BcBotPingPanelObserver implements IBcBotPingPanelObserver
@@ -230,7 +210,7 @@ public class TigerBotPresenter implements IBaseStationObserver
 				pingThread.clearObservers();
 			}
 			
-			pingService.shutdownNow();
+			pingService.shutdown();
 			pingService = null;
 			pingThread = null;
 		}
@@ -241,7 +221,7 @@ public class TigerBotPresenter implements IBaseStationObserver
 		@Override
 		public void onNewPingStats(final PingStats stats)
 		{
-			botConfigOverviewPanel.getBcBotPingPanel().setPingStats(stats);
+			botConfigOverviewPanel.getManualControlPanel().getPingPanel().setPingStats(stats);
 		}
 	}
 	
@@ -264,53 +244,10 @@ public class TigerBotPresenter implements IBaseStationObserver
 			TigerSystemConsoleCommand consoleCmd = new TigerSystemConsoleCommand();
 			consoleCmd.setTarget(target);
 			consoleCmd.setText(cmd);
-			for (ABot bot : botManager.getAllBots().values())
+			for (ABot aBot : botManager.getAllBots().values())
 			{
-				bot.execute(consoleCmd);
+				aBot.execute(consoleCmd);
 			}
-		}
-	}
-	
-	private class SelectControllerPanelObserver implements ISelectControllerPanelObserver
-	{
-		@Override
-		public void onNewControllerSelected(final EControllerType controllerType)
-		{
-			bot.execute(new TigerCtrlSetControllerType(controllerType));
-		}
-		
-		
-		@Override
-		public void onQuery(final EQueryType queryType)
-		{
-			bot.execute(new TigerSystemQuery(queryType));
-		}
-	}
-	
-	/**
-	 * This is called regularly and directly on the Swing event dispatch thread (no new thread created, no invokelater
-	 * needed)
-	 */
-	private class SwingUpdateTimer implements ActionListener
-	{
-		private Statistics	lastTxStats	= new Statistics();
-		private Statistics	lastRxStats	= new Statistics();
-		
-		
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			if (bot == null)
-			{
-				return;
-			}
-			final Statistics txStats = bot.getTxStats();
-			botConfigOverviewPanel.getBcBotNetStatsPanel().setTxStat(txStats.substract(lastTxStats));
-			lastTxStats = new Statistics(txStats);
-			
-			final Statistics rxStats = bot.getRxStats();
-			botConfigOverviewPanel.getBcBotNetStatsPanel().setRxStat(rxStats.substract(lastRxStats));
-			lastRxStats = new Statistics(rxStats);
 		}
 	}
 	
@@ -319,7 +256,11 @@ public class TigerBotPresenter implements IBaseStationObserver
 		@Override
 		public void onSetSpeed(final double x, final double y, final double w)
 		{
-			bot.getMatchCtrl().setSkill(new BotSkillLocalVelocity(new Vector2(x, y), w, getBot().getMoveConstraints()));
+			KickerDribblerCommands basicKickerDribblerOutput = bot.getMatchCtrl().getSkill().getKickerDribbler();
+			AMoveBotSkill skill = new BotSkillLocalVelocity(Vector2.fromXY(x, y), w,
+					new MoveConstraints(getBot().getBotParams().getMovementLimits()));
+			skill.setKickerDribbler(basicKickerDribblerOutput);
+			bot.getMatchCtrl().setSkill(skill);
 			bot.sendMatchCommand();
 		}
 	}
@@ -331,7 +272,7 @@ public class TigerBotPresenter implements IBaseStationObserver
 		public void onMoveToXY(final double x, final double y)
 		{
 			AMoveToSkill skill = AMoveToSkill.createMoveToSkill();
-			skill.getMoveCon().updateDestination(new Vector2(x, y));
+			skill.getMoveCon().updateDestination(Vector2.fromXY(x, y));
 			skillsystem.execute(bot.getBotId(), skill);
 		}
 		
@@ -340,7 +281,7 @@ public class TigerBotPresenter implements IBaseStationObserver
 		public void onRotateAndMoveToXY(final double x, final double y, final double angle)
 		{
 			AMoveToSkill skill = AMoveToSkill.createMoveToSkill();
-			skill.getMoveCon().updateDestination(new Vector2(x, y));
+			skill.getMoveCon().updateDestination(Vector2.fromXY(x, y));
 			skill.getMoveCon().updateTargetAngle(angle);
 			skillsystem.execute(bot.getBotId(), skill);
 		}
@@ -349,7 +290,15 @@ public class TigerBotPresenter implements IBaseStationObserver
 		@Override
 		public void onStraightMove(final int distance, final double angle)
 		{
-			skillsystem.execute(bot.getBotId(), new StraightMoveSkill(distance, angle));
+			if (bot.getSensoryPos().isPresent())
+			{
+				IVector3 pose = bot.getSensoryPos().get();
+				IVector2 dest = pose.getXYVector().addNew(Vector2.fromAngle(pose.z() + angle).scaleTo(distance));
+				onMoveToXY(dest.x(), dest.y());
+			} else
+			{
+				log.error("Not supported without bot feedback anymore.");
+			}
 		}
 		
 		
@@ -365,7 +314,21 @@ public class TigerBotPresenter implements IBaseStationObserver
 		@Override
 		public void onDribble(final int rpm)
 		{
-			bot.getMatchCtrl().setDribblerSpeed(rpm);
+			switch (bot.getMatchCtrl().getSkill().getType())
+			{
+				case GLOBAL_POSITION:
+				case GLOBAL_VELOCITY:
+				case GLOBAL_VEL_XY_POS_W:
+				case LOCAL_VELOCITY:
+				case WHEEL_VELOCITY:
+					AMoveBotSkill mSkill = (AMoveBotSkill) bot.getMatchCtrl().getSkill();
+					mSkill.getKickerDribbler().setDribblerSpeed(rpm);
+					break;
+				case BOT_SKILL_SINE:
+				case MOTORS_OFF:
+				default:
+					break;
+			}
 		}
 		
 		
@@ -384,15 +347,6 @@ public class TigerBotPresenter implements IBaseStationObserver
 		}
 	}
 	
-	private class NewCommandObserver implements IInstanceableObserver
-	{
-		@Override
-		public void onNewInstance(final Object object)
-		{
-			bot.execute((ACommand) object);
-		}
-	}
-	
 	private class SystemMatchFeedbackObserver implements ISystemMatchFeedbackPanelObserver
 	{
 		BotWatcher botWatcher = null;
@@ -407,7 +361,7 @@ public class TigerBotPresenter implements IBaseStationObserver
 				{
 					botWatcher.stop();
 				}
-				botWatcher = new BotWatcher((TigerBotV3) bot);
+				botWatcher = new BotWatcher(bot);
 				botWatcher.start();
 			} else
 			{
@@ -427,7 +381,21 @@ public class TigerBotPresenter implements IBaseStationObserver
 		@Override
 		public void onKickerFire(final double kickSpeed, final EKickerMode mode, final EKickerDevice device)
 		{
-			bot.getMatchCtrl().setKick(kickSpeed, device, mode);
+			switch (bot.getMatchCtrl().getSkill().getType())
+			{
+				case GLOBAL_POSITION:
+				case GLOBAL_VELOCITY:
+				case LOCAL_VELOCITY:
+				case GLOBAL_VEL_XY_POS_W:
+				case WHEEL_VELOCITY:
+					AMoveBotSkill mSkill = (AMoveBotSkill) bot.getMatchCtrl().getSkill();
+					mSkill.getKickerDribbler().setKick(kickSpeed, device, mode);
+					break;
+				case BOT_SKILL_SINE:
+				case MOTORS_OFF:
+				default:
+					break;
+			}
 		}
 	}
 	

@@ -1,18 +1,14 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 18, 2016
- * Author(s): MarkG
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.data;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**
@@ -20,30 +16,10 @@ import edu.tigers.sumatra.math.IVector2;
  */
 public class AutomatedThrowInInfo
 {
-	/**
-	 * 
-	 */
-	public enum EPrepareThrowInAction
-	{
-		/**
-		 * 
-		 */
-		MOVE_BALL_FROM_WALL,
-		/**
-		 * 
-		 */
-		PASS_TO_RECEIVER_DIRECTLY,
-		/**
-		 * 
-		 */
-		FINE_ADJUSTMENT;
-	}
-	
-	private EPrepareThrowInAction	action			= null;
-	private IVector2					pos				= null;
-	private boolean					receiverReady	= false;
-	private boolean					finished			= false;
-	private List<BotID>				desiredBots		= new ArrayList<BotID>();
+	private EPrepareThrowInAction action = null;
+	private IVector2 pos = null;
+	private boolean finished = false;
+	private Set<BotID> desiredBots = new HashSet<>();
 	
 	
 	/**
@@ -83,24 +59,6 @@ public class AutomatedThrowInInfo
 	
 	
 	/**
-	 * @return the receiverReady
-	 */
-	public boolean isReceiverReady()
-	{
-		return receiverReady;
-	}
-	
-	
-	/**
-	 * @param receiverReady the receiverReady to set
-	 */
-	public void setReceiverReady(final boolean receiverReady)
-	{
-		this.receiverReady = receiverReady;
-	}
-	
-	
-	/**
 	 * @return the finished
 	 */
 	public boolean isFinished()
@@ -121,7 +79,7 @@ public class AutomatedThrowInInfo
 	/**
 	 * @return the desiredBots
 	 */
-	public List<BotID> getDesiredBots()
+	public Set<BotID> getDesiredBots()
 	{
 		return desiredBots;
 	}
@@ -130,9 +88,23 @@ public class AutomatedThrowInInfo
 	/**
 	 * @param desiredBots the desiredBots to set
 	 */
-	public void setDesiredBots(final List<BotID> desiredBots)
+	public void setDesiredBots(final Set<BotID> desiredBots)
 	{
 		this.desiredBots = desiredBots;
+	}
+	
+	
+	/**
+	 * actions
+	 */
+	public enum EPrepareThrowInAction
+	{
+		/**	 */
+		MOVE_BALL_FROM_WALL,
+		/**	 */
+		PASS_TO_RECEIVER_DIRECTLY,
+		/**	 */
+		FINE_ADJUSTMENT
 	}
 	
 }

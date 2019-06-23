@@ -17,9 +17,10 @@ import edu.tigers.autoreferee.IAutoRefFrame;
 import edu.tigers.autoreferee.engine.FollowUpAction;
 import edu.tigers.autoreferee.engine.FollowUpAction.EActionType;
 import edu.tigers.autoreferee.engine.states.IAutoRefStateContext;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.VectorMath;
+import edu.tigers.sumatra.referee.data.EGameState;
+import edu.tigers.sumatra.referee.data.GameState;
 
 
 /**
@@ -46,7 +47,7 @@ public class KickState extends AbstractAutoRefState
 	@Override
 	protected void doUpdate(final IAutoRefFrame frame, final IAutoRefStateContext ctx)
 	{
-		EGameStateNeutral gamestate = frame.getGameState();
+		GameState gamestate = frame.getGameState();
 		FollowUpAction originalAction = ctx.getFollowUpAction();
 		
 		IVector2 curBallPos = frame.getWorldFrame().getBall().getPos();
@@ -60,11 +61,11 @@ public class KickState extends AbstractAutoRefState
 	}
 	
 	
-	private boolean gameStateEqualsFollowUpAction(final FollowUpAction action, final EGameStateNeutral gamestate,
+	private boolean gameStateEqualsFollowUpAction(final FollowUpAction action, final GameState gamestate,
 			final IVector2 curBallPos)
 	{
 		if ((action != null) && gamestateEqualsActionType(action.getActionType(), gamestate)
-				&& (action.getTeamInFavor() == gamestate.getTeamColor()))
+				&& (action.getTeamInFavor() == gamestate.getForTeam()))
 		{
 			Optional<IVector2> optActionBallPos = action.getNewBallPosition();
 			return optActionBallPos.map(actionBallPos -> ballisPlaced(actionBallPos, curBallPos)).orElse(false);
@@ -75,48 +76,54 @@ public class KickState extends AbstractAutoRefState
 	
 	private boolean ballisPlaced(final IVector2 a, final IVector2 b)
 	{
-		return GeoMath.distancePP(a, b) < AutoRefConfig.getBallPlacementAccuracy();
+		return VectorMath.distancePP(a, b) < AutoRefConfig.getBallPlacementAccuracy();
 	}
 	
 	
-	private boolean gamestateEqualsActionType(final EActionType type, final EGameStateNeutral state)
+	private boolean gamestateEqualsActionType(final EActionType type, final GameState gameState)
 	{
+		EGameState state = gameState.getState();
+		
 		switch (type)
 		{
 			case DIRECT_FREE:
-				return state.isDirectKick();
+				return state == EGameState.DIRECT_FREE;
 			case INDIRECT_FREE:
-				return state.isIndirectKick();
+				return state == EGameState.INDIRECT_FREE;
 			case KICK_OFF:
-				return state.isKickOff();
+				return state == EGameState.KICKOFF;
 			case PENALTY:
-				return state.isPenalty();
+				return state == EGameState.PENALTY;
 			default:
 				return false;
 		}
 	}
 	
 	
-	private FollowUpAction getActionForState(final EGameStateNeutral state, final IVector2 ballPos)
+	private FollowUpAction getActionForState(final GameState gameState, final IVector2 ballPos)
 	{
-		EActionType type = null;
-		if (state.isIndirectKick())
+		EActionType type;
+		EGameState state = gameState.getState();
+		
+		switch (state)
 		{
-			type = EActionType.INDIRECT_FREE;
-		} else if (state.isDirectKick())
-		{
-			type = EActionType.DIRECT_FREE;
-		} else if (state.isKickOff())
-		{
-			type = EActionType.KICK_OFF;
-		} else if (state.isPenalty())
-		{
-			type = EActionType.PENALTY;
-		} else
-		{
-			return null;
+			case INDIRECT_FREE:
+				type = EActionType.INDIRECT_FREE;
+				break;
+			case DIRECT_FREE:
+				type = EActionType.DIRECT_FREE;
+				break;
+			case KICKOFF:
+				type = EActionType.KICK_OFF;
+				break;
+			case PENALTY:
+				type = EActionType.PENALTY;
+				break;
+			default:
+				return null;
 		}
-		return new FollowUpAction(type, state.getTeamColor(), ballPos);
+		
+		return new FollowUpAction(type, gameState.getForTeam(), ballPos);
 	}
 	
 	

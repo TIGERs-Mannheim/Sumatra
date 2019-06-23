@@ -1,18 +1,15 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Oct 11, 2013
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.data.frames;
 
 import edu.tigers.sumatra.ai.data.AICom;
 import edu.tigers.sumatra.ai.data.MultiTeamMessage;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.referee.RefereeMsgTeamSpec;
+import edu.tigers.sumatra.referee.data.GameState;
+import edu.tigers.sumatra.referee.data.RefereeMsg;
 import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
@@ -25,37 +22,49 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
  */
 public class BaseAiFrame
 {
-	private final WorldFrameWrapper	worldFrameWrapper;
-	private final boolean				newRefereeMsg;
-	private final ETeamColor			teamColor;
-	private final AICom					aiCom;
+	private final WorldFrameWrapper worldFrameWrapper;
+	private final boolean newRefereeMsg;
+	private final EAiTeam aiTeam;
+	private final AICom aiCom;
 	
-	private final WorldFrame			worldFrame;
-	private final RefereeMsgTeamSpec	refereeMsg;
+	private final WorldFrame worldFrame;
+	private final RefereeMsg refereeMsg;
+	private final GameState gamestate;
 	
-	private MultiTeamMessage			multiTeamMessage	= null;
+	private final MultiTeamMessage incomingMultiTeamMessage;
 	
 	/** previous frame */
-	private AIInfoFrame					prevFrame;
+	private AIInfoFrame prevFrame;
 	
 	
 	/**
 	 * @param worldFrameWrapper
 	 * @param newRefereeMsg
 	 * @param prevFrame
-	 * @param teamColor
+	 * @param aiTeam
+	 * @param incomingMultiTeamMessage
 	 */
 	public BaseAiFrame(final WorldFrameWrapper worldFrameWrapper, final boolean newRefereeMsg,
-			final AIInfoFrame prevFrame, final ETeamColor teamColor)
+			final AIInfoFrame prevFrame, final EAiTeam aiTeam, MultiTeamMessage incomingMultiTeamMessage)
 	{
 		this.worldFrameWrapper = worldFrameWrapper;
 		this.prevFrame = prevFrame;
-		this.teamColor = teamColor;
+		this.aiTeam = aiTeam;
 		this.newRefereeMsg = newRefereeMsg;
+		this.incomingMultiTeamMessage = incomingMultiTeamMessage;
 		aiCom = new AICom();
+		if (prevFrame != null)
+		{
+			aiCom.setProtectionInitTime(prevFrame.getAICom().getProtectionInitTime());
+			aiCom.setProtectionPenalty(prevFrame.getAICom().getProtectionPenalty());
+		}
 		
-		worldFrame = worldFrameWrapper.getWorldFrame(teamColor);
-		refereeMsg = new RefereeMsgTeamSpec(worldFrameWrapper.getRefereeMsg(), teamColor);
+		worldFrame = worldFrameWrapper.getWorldFrame(aiTeam);
+		refereeMsg = worldFrameWrapper.getRefereeMsg();
+		gamestate = GameState.Builder.create()
+				.withGameState(worldFrameWrapper.getGameState())
+				.withOurTeam(aiTeam.getTeamColor())
+				.build();
 	}
 	
 	
@@ -66,18 +75,19 @@ public class BaseAiFrame
 	{
 		worldFrameWrapper = original.worldFrameWrapper;
 		prevFrame = original.prevFrame;
-		teamColor = original.teamColor;
+		aiTeam = original.aiTeam;
 		aiCom = original.aiCom;
 		newRefereeMsg = original.newRefereeMsg;
 		
-		worldFrame = worldFrameWrapper.getWorldFrame(teamColor);
+		worldFrame = worldFrameWrapper.getWorldFrame(aiTeam);
 		refereeMsg = original.refereeMsg;
-		
+		gamestate = original.gamestate;
+		incomingMultiTeamMessage = original.incomingMultiTeamMessage;
 	}
 	
 	
 	/**
-	 * 
+	 * clear prevFrame to avoid memory leak
 	 */
 	public void cleanUp()
 	{
@@ -90,7 +100,7 @@ public class BaseAiFrame
 	 */
 	public final BotID getKeeperId()
 	{
-		return BotID.createBotId(refereeMsg.getTeamInfoTigers().getGoalie(), teamColor);
+		return BotID.createBotId(refereeMsg.getTeamInfo(aiTeam.getTeamColor()).getGoalie(), aiTeam.getTeamColor());
 	}
 	
 	
@@ -99,7 +109,8 @@ public class BaseAiFrame
 	 */
 	public final BotID getKeeperFoeId()
 	{
-		return BotID.createBotId(refereeMsg.getTeamInfoThem().getGoalie(), teamColor.opposite());
+		return BotID.createBotId(refereeMsg.getTeamInfo(aiTeam.getTeamColor().opposite()).getGoalie(),
+				aiTeam.getTeamColor().opposite());
 	}
 	
 	
@@ -115,7 +126,7 @@ public class BaseAiFrame
 	/**
 	 * @return the refereeMsg
 	 */
-	public RefereeMsgTeamSpec getRefereeMsg()
+	public RefereeMsg getRefereeMsg()
 	{
 		return refereeMsg;
 	}
@@ -135,7 +146,16 @@ public class BaseAiFrame
 	 */
 	public final ETeamColor getTeamColor()
 	{
-		return teamColor;
+		return aiTeam.getTeamColor();
+	}
+	
+	
+	/**
+	 * @return the source AI
+	 */
+	public EAiTeam getAiTeam()
+	{
+		return aiTeam;
 	}
 	
 	
@@ -160,18 +180,9 @@ public class BaseAiFrame
 	/**
 	 * @return
 	 */
-	public MultiTeamMessage getMultiTeamMessage()
+	public MultiTeamMessage getIncomingMultiTeamMessage()
 	{
-		return multiTeamMessage;
-	}
-	
-	
-	/**
-	 * @param message
-	 */
-	public void setMultiTeamMessage(final MultiTeamMessage message)
-	{
-		multiTeamMessage = message;
+		return incomingMultiTeamMessage;
 	}
 	
 	
@@ -190,5 +201,14 @@ public class BaseAiFrame
 	public final boolean isNewRefereeMsg()
 	{
 		return newRefereeMsg;
+	}
+	
+	
+	/**
+	 * @return the current game state
+	 */
+	public GameState getGamestate()
+	{
+		return gamestate;
 	}
 }

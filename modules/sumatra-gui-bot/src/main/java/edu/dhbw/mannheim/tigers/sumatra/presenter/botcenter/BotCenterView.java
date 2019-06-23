@@ -28,8 +28,8 @@ public class BotCenterView extends ASumatraView
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	  * 
-	  */
+	 * Constructor.
+	 */
 	public BotCenterView()
 	{
 		super(ESumatraViewType.BOT_CENTER);

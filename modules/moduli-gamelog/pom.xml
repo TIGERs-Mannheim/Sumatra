@@ -1,0 +1,27 @@
+<!--
+  ~ Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>moduli-gamelog</artifactId>
+
+    <parent>
+        <groupId>edu.tigers.sumatra</groupId>
+        <artifactId>sumatra-parent</artifactId>
+        <version>5.1-SNAPSHOT</version>
+        <relativePath>../sumatra-parent/pom.xml</relativePath>
+    </parent>
+    
+    <dependencies>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-cam</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-referee</artifactId>
+        </dependency>
+    </dependencies>
+</project>

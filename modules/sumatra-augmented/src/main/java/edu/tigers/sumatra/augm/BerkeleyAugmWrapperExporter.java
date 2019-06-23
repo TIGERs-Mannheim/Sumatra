@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Apr 29, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.augm;
 
 import java.io.BufferedReader;
@@ -28,9 +24,8 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.proto.AugmWrapperProtos.AugmWrapper;
-import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.persistance.RecordBerkeleyPersistence;
+import edu.tigers.sumatra.persistence.LogBerkeleyPersistence;
 
 
 /**
@@ -41,6 +36,8 @@ public class BerkeleyAugmWrapperExporter
 	@SuppressWarnings("unused")
 	private static final Logger log;
 	
+	private static final String FFMPEG = "ffmpeg";
+	
 	
 	static
 	{
@@ -50,12 +47,8 @@ public class BerkeleyAugmWrapperExporter
 	
 	private final String	workingDir;
 	
-	private final String	fileEnding				= "MTS";
-	@SuppressWarnings("unused") // FIXME
-	private String			geometry					= "Lab.xml";
-	private final String	outputVideoFilename	= "out";
-	@SuppressWarnings("unused") // FIXME
-	private ETeamColor	ourTeamColor			= ETeamColor.BLUE;
+	private static final String	FILE_ENDING					= "MTS";
+	private static final String	OUTPUT_VIDEO_FILENAME	= "out";
 	private long			timestampOffset		= 6000;
 	
 	
@@ -116,7 +109,7 @@ public class BerkeleyAugmWrapperExporter
 	
 	private void cutVideo(final String filename, final double tStart, final double duration, final String outFilename)
 	{
-		ProcessBuilder pb = new ProcessBuilder("ffmpeg", "-i", filename, "-ss", String.valueOf(tStart), "-t",
+		ProcessBuilder pb = new ProcessBuilder(FFMPEG, "-i", filename, "-ss", String.valueOf(tStart), "-t",
 				String.valueOf(duration), "-c", "copy", outFilename);
 		executeCommand(pb);
 		log.info("ffmpeg copy done.");
@@ -139,11 +132,11 @@ public class BerkeleyAugmWrapperExporter
 		{
 			Files.write(Paths.get(workingDir, "outFiles.txt"), sb.toString().getBytes());
 			log.info("Starting merging videos");
-			ProcessBuilder pb = new ProcessBuilder("ffmpeg",
+			ProcessBuilder pb = new ProcessBuilder(FFMPEG,
 					"-f", "concat",
 					"-i", workingDir + "/outFiles.txt",
 					"-c", "copy",
-					workingDir + "/" + outputVideoFilename + "." + fileEnding);
+					workingDir + "/" + OUTPUT_VIDEO_FILENAME + "." + FILE_ENDING);
 			executeCommand(pb);
 			log.info("ffmpeg concat done.");
 		} catch (IOException err)
@@ -187,7 +180,7 @@ public class BerkeleyAugmWrapperExporter
 	 */
 	private double getFps(final String fileName)
 	{
-		ProcessBuilder pb = new ProcessBuilder("ffmpeg", "-i", fileName);
+		ProcessBuilder pb = new ProcessBuilder(FFMPEG, "-i", fileName);
 		String out = executeCommand(pb, true);
 		Pattern pattern = Pattern.compile(".*, ([0-9]*) fps.*");
 		Matcher matcher = pattern.matcher(out.replaceAll("\n", " "));
@@ -216,7 +209,7 @@ public class BerkeleyAugmWrapperExporter
 			}
 		} catch (IOException err)
 		{
-			log.error("Could not read command output");
+			log.error("Could not read command output" + err);
 		}
 		return sb.toString();
 	}
@@ -243,6 +236,7 @@ public class BerkeleyAugmWrapperExporter
 		} catch (InterruptedException err)
 		{
 			log.error("Interrupted while waiting for command");
+			Thread.currentThread().interrupt();
 		}
 		return "";
 	}
@@ -263,6 +257,7 @@ public class BerkeleyAugmWrapperExporter
 		} catch (InterruptedException err)
 		{
 			log.error("Interrupted while waiting for command");
+			Thread.currentThread().interrupt();
 		}
 	}
 	
@@ -286,8 +281,8 @@ public class BerkeleyAugmWrapperExporter
 		try
 		{
 			return Files.list(Paths.get(videoDir))
-					.filter(p -> p.toFile().getName().endsWith("." + fileEnding))
-					.filter(p -> !p.toFile().getName().equals(outputVideoFilename + "." + fileEnding))
+					.filter(p -> p.toFile().getName().endsWith("." + FILE_ENDING))
+					.filter(p -> !p.toFile().getName().equals(OUTPUT_VIDEO_FILENAME + "." + FILE_ENDING))
 					.sorted()
 					.map(p -> readFile(p.toFile().getAbsolutePath()))
 					.collect(Collectors.toList());
@@ -316,7 +311,7 @@ public class BerkeleyAugmWrapperExporter
 			tsIdx = findNextGab(tsIdx, aiData);
 			long tEnd = Math.min(tMax, aiData.get(tsIdx).getTimestamp());
 			long dur = tEnd - tStart;
-			if ((dur > 1000))
+			if (dur > 1000)
 			{
 				cuts.add(createVideoCut(videoFile, tStart, dur));
 			}
@@ -330,7 +325,7 @@ public class BerkeleyAugmWrapperExporter
 	{
 		VideoCut cut = new VideoCut();
 		cut.cutStarttime = tStart;
-		cut.cutStart = ((tStart - videoFile.starttime) / 1000.0);
+		cut.cutStart = (tStart - videoFile.starttime) / 1000.0;
 		cut.cutDuration = dur / 1000.0;
 		File f = new File(videoFile.filename);
 		cut.inName = videoFile.filename;
@@ -348,23 +343,8 @@ public class BerkeleyAugmWrapperExporter
 	 */
 	public AiDataBuffer generateAiData(final String recordDbPath, final String outDir) throws IOException
 	{
-		RecordBerkeleyPersistence db = new RecordBerkeleyPersistence(recordDbPath, true);
-		// AugmentedDataTransformer augmTransformer = new AugmentedDataTransformer();
+		LogBerkeleyPersistence db = new LogBerkeleyPersistence(recordDbPath);
 		AiDataBuffer aiData = new AiDataBuffer(outDir);
-		// int dbSize = db.size();
-		// for (int posLower = 0; posLower < dbSize; posLower += BUFFER_SIZE)
-		// {
-		// List<RecordFrame> frames = db.load(posLower, BUFFER_SIZE);
-		// for (RecordFrame recFrame : frames)
-		// {
-		// VisualizationFrame frame = recFrame.getVisFrame(ourTeamColor);
-		// if (frame.getTeamColor() == ourTeamColor)
-		// {
-		// AugmWrapper wrapper = augmTransformer.createAugmWrapper(frame);
-		// aiData.add(wrapper);
-		// }
-		// }
-		// }
 		aiData.flush();
 		log.info("Created AI data for " + aiData.size() + " frames");
 		db.close();
@@ -423,15 +403,13 @@ public class BerkeleyAugmWrapperExporter
 			{
 				AugmWrapper augm = aiDataIn.get(aiDataIdx);
 				long aiStarttime = augm.getTimestamp();
-				if (aiStarttime > startTime)
+				
+				if (aiStarttime > startTime && aiStarttime < endTime)
 				{
-					if (aiStarttime < endTime)
-					{
-						aiDataOut.add(augm);
-					} else
-					{
-						break;
-					}
+					aiDataOut.add(augm);
+				} else if (aiStarttime > endTime)
+				{
+					break;
 				}
 			}
 		}
@@ -569,11 +547,7 @@ public class BerkeleyAugmWrapperExporter
 			{
 				return false;
 			}
-			if (starttime != other.starttime)
-			{
-				return false;
-			}
-			return true;
+			return starttime == other.starttime;
 		}
 	}
 	
@@ -700,9 +674,6 @@ public class BerkeleyAugmWrapperExporter
 		boolean cutVideos = false;
 		
 		BerkeleyAugmWrapperExporter exporter = new BerkeleyAugmWrapperExporter(workingDir);
-		// may want to change some fields before init
-		exporter.geometry = "Lab.xml";
-		exporter.ourTeamColor = ETeamColor.BLUE;
 		exporter.timestampOffset = 6000;
 		
 		AiDataBuffer aiData;

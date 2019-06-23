@@ -7,7 +7,7 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.junit.Test;
 
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.math.vector.Vector3;
 
 
 /*
@@ -31,12 +31,12 @@ public class SnapObjectTest
 	@Test
 	public void testToJSON()
 	{
-		SnapObject obj = new SnapObject(new Vector2(), new Vector2());
-		assertEquals("{\"pos\":[0.0,0.0],\"vel\":[0.0,0.0]}", obj.toJSON().toJSONString());
-		obj = new SnapObject(new Vector2(0, 1), new Vector2());
-		assertEquals("{\"pos\":[0.0,1.0],\"vel\":[0.0,0.0]}", obj.toJSON().toJSONString());
-		obj = new SnapObject(new Vector2(0, 1), new Vector2(3, 4));
-		assertEquals("{\"pos\":[0.0,1.0],\"vel\":[3.0,4.0]}", obj.toJSON().toJSONString());
+		SnapObject obj = new SnapObject(Vector3.zero(), Vector3.zero());
+		assertEquals("{\"pos\":[0.0,0.0,0.0],\"vel\":[0.0,0.0,0.0]}", obj.toJSON().toJSONString());
+		obj = new SnapObject(Vector3.fromXYZ(0, 1, 0), Vector3.zero());
+		assertEquals("{\"pos\":[0.0,1.0,0.0],\"vel\":[0.0,0.0,0.0]}", obj.toJSON().toJSONString());
+		obj = new SnapObject(Vector3.fromXYZ(0, 1, 0), Vector3.fromXYZ(3, 4, 0));
+		assertEquals("{\"pos\":[0.0,1.0,0.0],\"vel\":[3.0,4.0,0.0]}", obj.toJSON().toJSONString());
 	}
 	
 	
@@ -47,15 +47,15 @@ public class SnapObjectTest
 	public void testFromJSON() throws ParseException
 	{
 		JSONParser parser = new JSONParser();
-		SnapObject obj = new SnapObject(new Vector2(), new Vector2());
+		SnapObject obj = new SnapObject(Vector3.zero(), Vector3.zero());
 		assertEquals(obj,
-				SnapObject.fromJSON((JSONObject) parser.parse("{\"pos\":[0.0,0.0],\"vel\":[0.0,0.0]}")));
-		obj = new SnapObject(new Vector2(0, 1), new Vector2());
+				SnapObject.fromJSON((JSONObject) parser.parse("{\"pos\":[0.0,0.0,0.0],\"vel\":[0.0,0.0,0.0]}")));
+		obj = new SnapObject(Vector3.fromXYZ(0, 1, 0), Vector3.zero());
 		assertEquals(obj,
-				SnapObject.fromJSON((JSONObject) parser.parse("{\"pos\":[0.0,1.0],\"vel\":[0.0,0.0]}")));
-		obj = new SnapObject(new Vector2(0, 1), new Vector2(3, 4));
+				SnapObject.fromJSON((JSONObject) parser.parse("{\"pos\":[0.0,1.0,0.0],\"vel\":[0.0,0.0,0.0]}")));
+		obj = new SnapObject(Vector3.fromXYZ(0, 1, 0), Vector3.fromXYZ(3, 4, 0));
 		assertEquals(obj,
-				SnapObject.fromJSON((JSONObject) parser.parse("{\"pos\":[0.0,1.0],\"vel\":[3.0,4.0]}")));
+				SnapObject.fromJSON((JSONObject) parser.parse("{\"pos\":[0.0,1.0,0.0],\"vel\":[3.0,4.0,0.0]}")));
 	}
 	
 }

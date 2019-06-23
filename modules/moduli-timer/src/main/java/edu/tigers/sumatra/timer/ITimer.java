@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 28, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.timer;
 
 
@@ -19,7 +15,7 @@ public interface ITimer
 	 * @param timable
 	 * @param id
 	 */
-	void stop(ETimable timable, long id);
+	void stop(String timable, long id);
 	
 	
 	/**
@@ -27,14 +23,14 @@ public interface ITimer
 	 * @param id
 	 * @param customId
 	 */
-	void stop(ETimable timable, long id, int customId);
+	void stop(String timable, long id, int customId);
 	
 	
 	/**
 	 * @param timable
 	 * @param id
 	 */
-	void start(ETimable timable, long id);
+	void start(String timable, long id);
 	
 	
 	/**
@@ -42,5 +38,5 @@ public interface ITimer
 	 * @param id
 	 * @param customId
 	 */
-	void start(ETimable timable, long id, int customId);
+	void start(String timable, long id, int customId);
 }

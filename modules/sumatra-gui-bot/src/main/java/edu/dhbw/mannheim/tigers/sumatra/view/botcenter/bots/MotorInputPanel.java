@@ -28,7 +28,8 @@ import net.miginfocom.swing.MigLayout;
  */
 public class MotorInputPanel extends JPanel
 {
-	/** */
+	/** Observer interface. */
+	@FunctionalInterface
 	public interface IMotorInputPanelObserver
 	{
 		/**
@@ -48,14 +49,10 @@ public class MotorInputPanel extends JPanel
 	private JTextField									ySpeed				= null;
 	private JTextField									wSpeed				= null;
 	
-	private final List<IMotorInputPanelObserver>	observers			= new ArrayList<IMotorInputPanelObserver>();
+	private final List<IMotorInputPanelObserver>	observers			= new ArrayList<>();
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 */
+	/** Constructor. */
 	public MotorInputPanel()
 	{
 		setLayout(new MigLayout("wrap 2", "[100]10[100,fill]", ""));
@@ -131,16 +128,16 @@ public class MotorInputPanel extends JPanel
 			
 			notifySetSpeed(x, y, w);
 		}
-	}
-	
-	
-	private void notifySetSpeed(final double x, final double y, final double w)
-	{
-		synchronized (observers)
+		
+		
+		private void notifySetSpeed(final double x, final double y, final double w)
 		{
-			for (final IMotorInputPanelObserver observer : observers)
+			synchronized (observers)
 			{
-				observer.onSetSpeed(x, y, w);
+				for (final IMotorInputPanelObserver observer : observers)
+				{
+					observer.onSetSpeed(x, y, w);
+				}
 			}
 		}
 	}

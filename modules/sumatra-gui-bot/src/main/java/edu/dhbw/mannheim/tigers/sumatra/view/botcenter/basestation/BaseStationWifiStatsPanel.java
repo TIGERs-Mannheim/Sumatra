@@ -43,8 +43,7 @@ public class BaseStationWifiStatsPanel extends JPanel
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final Map<BotID, WifiStatsPanel>	wifiPanels			= new TreeMap<BotID, WifiStatsPanel>(
-																							BotID.getComparator());
+	private final Map<BotID, WifiStatsPanel>	wifiPanels			= new TreeMap<>(BotID.getComparator());
 	private final WifiStatsHeaderPanel			headerPanel			= new WifiStatsHeaderPanel();
 	private final JTextField						updateRate			= new JTextField();
 	private final JLabel								updateRateText		= new JLabel("Update Rate:");
@@ -53,7 +52,7 @@ public class BaseStationWifiStatsPanel extends JPanel
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/** */
+	/** Default constructor. */
 	public BaseStationWifiStatsPanel()
 	{
 		setLayout(new MigLayout("wrap 1"));
@@ -69,35 +68,30 @@ public class BaseStationWifiStatsPanel extends JPanel
 	// --------------------------------------------------------------------------
 	private void updatePanels()
 	{
-		final JPanel panel = this;
+		final JPanel thisPanel = this;
 		
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
+		SwingUtilities.invokeLater(() -> {
+			removeAll();
+			
+			add(updateRateText, "split 2");
+			add(updateRate, "width 100");
+			
+			if (!wifiPanels.isEmpty())
 			{
-				removeAll();
+				add(headerPanel);
 				
-				add(updateRateText, "split 2");
-				add(updateRate, "width 100");
-				
-				if (!wifiPanels.isEmpty())
+				for (final JPanel panel : wifiPanels.values())
 				{
-					add(headerPanel);
-					
-					for (final JPanel panel : wifiPanels.values())
-					{
-						add(panel, "wrap, gapbottom 0");
-					}
-				} else
-				{
-					add(new JLabel("No bots connected."), "wrap");
+					add(panel, "wrap, gapbottom 0");
 				}
-				
-				add(Box.createGlue(), "push");
-				
-				SwingUtilities.updateComponentTreeUI(panel);
+			} else
+			{
+				add(new JLabel("No bots connected."), "wrap");
 			}
+			
+			add(Box.createGlue(), "push");
+			
+			SwingUtilities.updateComponentTreeUI(thisPanel);
 		});
 	}
 	
@@ -112,11 +106,9 @@ public class BaseStationWifiStatsPanel extends JPanel
 	{
 		boolean panelsModified = false;
 		
-		EventQueue.invokeLater(() -> {
-			updateRate.setText("" + stats.getUpdateRate() + "Hz");
-		});
+		EventQueue.invokeLater(() -> updateRate.setText(Integer.toString(stats.getUpdateRate()) + "Hz"));
 		
-		for (BotID id : new ArrayList<BotID>(wifiPanels.keySet()))
+		for (BotID id : new ArrayList<>(wifiPanels.keySet()))
 		{
 			if (!stats.isBotConnected(id))
 			{
@@ -151,7 +143,7 @@ public class BaseStationWifiStatsPanel extends JPanel
 	private static class WifiStatsHeaderPanel extends JPanel
 	{
 		/**  */
-		private static final long	serialVersionUID	= -3542692054124461579L;
+		private static final long serialVersionUID = -3542692054124461579L;
 		
 		
 		public WifiStatsHeaderPanel()
@@ -192,7 +184,7 @@ public class BaseStationWifiStatsPanel extends JPanel
 			id.setFont(id.getFont().deriveFont(20.0f));
 			
 			add(id, "span 1 2");
-			add(linkQuality, "span 1 2, height 40px");
+			add(linkQuality, "span 1 2, h 40px");
 			
 			for (int i = 0; i < 4; i++)
 			{
@@ -219,41 +211,51 @@ public class BaseStationWifiStatsPanel extends JPanel
 		}
 		
 		
+		/**
+		 * Set bot statistics.
+		 * 
+		 * @param stats
+		 * @param rate
+		 */
 		public void setStats(final BotStats stats, final int rate)
 		{
-			EventQueue.invokeLater(() -> {
-				nrfStats[0].setValue((int) (stats.nrf.getTxSaturation(rate) * 1000));
-				nrfStats[1].setValue((int) (stats.nrf.getTxLoss() * 1000));
-				nrfStats[2].setValue((int) (stats.nrf.getRxSaturation(rate) * 1000));
-				nrfStats[3].setValue((int) (stats.nrf.getRxLoss() * 1000));
-				
-				nrfStats[0].setString(String.format("%5d / %5d", stats.nrf.txPackets, stats.nrf.txBytes));
-				nrfStats[1].setString(String.format(Locale.ENGLISH, "%5.2f%%", stats.nrf.getTxLoss() * 100));
-				nrfStats[2].setString(String.format("%5d / %5d", stats.nrf.rxPackets, stats.nrf.rxBytes));
-				nrfStats[3].setString(String.format(Locale.ENGLISH, "%5.2f%%", stats.nrf.getRxLoss() * 100));
-				
-				queueStats[0].setValue((int) (stats.queue.getTxLoss() * 1000));
-				queueStats[1].setValue((int) (stats.queue.getRxLoss() * 1000));
-				
-				queueStats[0].setString(String.format(Locale.ENGLISH, "%5.2f%%", stats.queue.getTxLoss() * 100));
-				queueStats[1].setString(String.format(Locale.ENGLISH, "%5.2f%%", stats.queue.getRxLoss() * 100));
-				
-				queueTraffic[0].setText(String.format("%5d / %5d", stats.queue.txPackets, stats.queue.txBytes));
-				queueTraffic[1].setText(String.format("%5d / %5d", stats.queue.rxPackets, stats.queue.rxBytes));
-				
-				linkQuality.setValue((int) (stats.nrf.getLinkQuality() * 1000));
-				linkQuality.setString(String.format(Locale.ENGLISH, "%3.0f%%", stats.nrf.getLinkQuality() * 100));
-				
-				if (stats.getBotId().isBot())
-				{
-					id.setForeground(stats.getBotId().getTeamColor().getColor());
-					id.setText("" + stats.getBotId().getNumber());
-				}
-					else
-					{
-						setVisible(false);
-					}
-				});
+			EventQueue.invokeLater(() -> doSetStats(stats, rate));
+		}
+		
+		
+		@SuppressWarnings("squid:S1192")
+		private void doSetStats(final BotStats stats, final int rate)
+		{
+			nrfStats[0].setValue((int) (stats.nrf.getTxSaturation(rate) * 1000));
+			nrfStats[1].setValue((int) (stats.nrf.getTxLoss() * 1000));
+			nrfStats[2].setValue((int) (stats.nrf.getRxSaturation(rate) * 1000));
+			nrfStats[3].setValue((int) (stats.nrf.getRxLoss() * 1000));
+			
+			nrfStats[0].setString(String.format("%5d / %5d", stats.nrf.txPackets, stats.nrf.txBytes));
+			nrfStats[1].setString(String.format(Locale.ENGLISH, "%5.2f%%", stats.nrf.getTxLoss() * 100));
+			nrfStats[2].setString(String.format("%5d / %5d", stats.nrf.rxPackets, stats.nrf.rxBytes));
+			nrfStats[3].setString(String.format(Locale.ENGLISH, "%5.2f%%", stats.nrf.getRxLoss() * 100));
+			
+			queueStats[0].setValue((int) (stats.queue.getTxLoss() * 1000));
+			queueStats[1].setValue((int) (stats.queue.getRxLoss() * 1000));
+			
+			queueStats[0].setString(String.format(Locale.ENGLISH, "%5.2f%%", stats.queue.getTxLoss() * 100));
+			queueStats[1].setString(String.format(Locale.ENGLISH, "%5.2f%%", stats.queue.getRxLoss() * 100));
+			
+			queueTraffic[0].setText(String.format("%5d / %5d", stats.queue.txPackets, stats.queue.txBytes));
+			queueTraffic[1].setText(String.format("%5d / %5d", stats.queue.rxPackets, stats.queue.rxBytes));
+			
+			linkQuality.setValue((int) (stats.nrf.getLinkQuality() * 1000));
+			linkQuality.setString(String.format(Locale.ENGLISH, "%3.0f%%", stats.nrf.getLinkQuality() * 100));
+			
+			if (stats.getBotId().isBot())
+			{
+				id.setForeground(stats.getBotId().getTeamColor().getColor());
+				id.setText(Integer.toString(stats.getBotId().getNumber()));
+			} else
+			{
+				setVisible(false);
+			}
 		}
 	}
 }

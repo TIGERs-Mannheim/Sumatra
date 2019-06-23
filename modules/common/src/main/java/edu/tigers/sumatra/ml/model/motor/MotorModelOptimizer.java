@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 08.09.2015
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ml.model.motor;
 
@@ -40,10 +35,10 @@ import org.apache.commons.math3.util.Pair;
 import org.apache.log4j.Logger;
 
 import edu.tigers.sumatra.control.motor.MatrixMotorModel;
-import edu.tigers.sumatra.math.IVector3;
-import edu.tigers.sumatra.math.IVectorN;
-import edu.tigers.sumatra.math.Vector3;
-import edu.tigers.sumatra.math.VectorN;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.IVectorN;
+import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.VectorN;
 
 
 /**
@@ -93,7 +88,7 @@ public class MotorModelOptimizer implements MultivariateJacobianFunction, Multiv
 	
 	private Pair<RealVector, RealVector> precompute(final IVector3 target)
 	{
-		RealMatrix XYW = new Array2DRowRealMatrix(target.toDoubleArray());
+		RealMatrix XYW = new Array2DRowRealMatrix(target.toArray());
 		
 		IVectorN wheelSpeed = getWheelSpeed.apply(target);
 		RealVector initialGuess = wheelSpeed.toRealVector();
@@ -354,8 +349,8 @@ public class MotorModelOptimizer implements MultivariateJacobianFunction, Multiv
 		MinimizeRotationResult result = new MinimizeRotationResult();
 		
 		// use the default (mathematical) motor model as basis
-		RealVector wheelX = getWheelSpeed.apply(new Vector3(1, 0, 0)).toRealVector();
-		RealVector wheelY = getWheelSpeed.apply(new Vector3(0, 1, 0)).toRealVector();
+		RealVector wheelX = getWheelSpeed.apply(Vector3.fromXYZ(1, 0, 0)).toRealVector();
+		RealVector wheelY = getWheelSpeed.apply(Vector3.fromXYZ(0, 1, 0)).toRealVector();
 		
 		// gather first sample
 		double lastXFactor = target.x() + 0.2;
@@ -409,7 +404,7 @@ public class MotorModelOptimizer implements MultivariateJacobianFunction, Multiv
 				
 		log.info("Final sample: " + result.sample + " <= " + result.wheels);
 		
-		return (new VectorN(result.wheels)).toArray();
+		return (VectorN.fromReal(result.wheels)).toArray();
 	}
 	
 	

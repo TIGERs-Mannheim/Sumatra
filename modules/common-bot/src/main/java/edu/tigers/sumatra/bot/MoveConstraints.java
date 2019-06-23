@@ -1,16 +1,12 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Apr 21, 2016
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.bot;
 
-import com.github.g3force.configurable.ConfigRegistration;
-import com.github.g3force.configurable.Configurable;
 import com.sleepycat.persist.model.Persistent;
+
+import edu.tigers.sumatra.bot.params.IBotMovementLimits;
 
 
 /**
@@ -19,38 +15,47 @@ import com.sleepycat.persist.model.Persistent;
 @Persistent
 public class MoveConstraints
 {
-	@Configurable(spezis = { "", "v2013" }, defValueSpezis = { "3.5", "3" })
-	private double						velMax	= 3.5;
-	@Configurable(spezis = { "", "v2013" }, defValueSpezis = { "10", "10" })
-	private double						velMaxW	= 10;
-	@Configurable(spezis = { "", "v2013" }, defValueSpezis = { "3", "3" })
-	private double						accMax	= 3;
-	@Configurable(spezis = { "", "v2013" }, defValueSpezis = { "25", "25" })
-	private double						accMaxW	= 25;
-	@Configurable(spezis = { "", "v2013" }, defValueSpezis = { "50", "50" })
-	private double						jerkMax	= 50;
-	@Configurable(spezis = { "", "v2013" }, defValueSpezis = { "500", "500" })
-	private double						jerkMaxW	= 500;
-	
-	private final MoveConstraints	defConstraints;
-	
-	static
-	{
-		ConfigRegistration.registerClass("botmgr", MoveConstraints.class);
-	}
+	private double		velMax		= 0;
+	private double		accMax		= 0;
+	private double		jerkMax		= 0;
+	private double		velMaxW		= 0;
+	private double		accMaxW		= 0;
+	private double		jerkMaxW		= 0;
+	private double		velMaxFast	= 0;
+	private double		accMaxFast	= 0;
+	private boolean	fastMove		= false;
 	
 	
 	/**
-	 * Default constraints
+	 * Create a dummy instance
 	 */
 	public MoveConstraints()
 	{
-		defConstraints = null;
 	}
 	
 	
 	/**
-	 * @param o
+	 * Create move constraints from bot individual movement limits.
+	 * 
+	 * @param moveLimits
+	 */
+	public MoveConstraints(final IBotMovementLimits moveLimits)
+	{
+		velMax = moveLimits.getVelMax();
+		accMax = moveLimits.getAccMax();
+		jerkMax = moveLimits.getJerkMax();
+		velMaxW = moveLimits.getVelMaxW();
+		accMaxW = moveLimits.getAccMaxW();
+		jerkMaxW = moveLimits.getJerkMaxW();
+		velMaxFast = moveLimits.getVelMaxFast();
+		accMaxFast = moveLimits.getAccMaxFast();
+	}
+	
+	
+	/**
+	 * Create a copy
+	 * 
+	 * @param o instance to copy
 	 */
 	public MoveConstraints(final MoveConstraints o)
 	{
@@ -60,7 +65,53 @@ public class MoveConstraints
 		accMaxW = o.accMaxW;
 		jerkMax = o.jerkMax;
 		jerkMaxW = o.jerkMaxW;
-		defConstraints = o;
+		velMaxFast = o.velMaxFast;
+		accMaxFast = o.accMaxFast;
+		fastMove = o.fastMove;
+	}
+	
+	
+	/**
+	 * Apply all non-zero limits to this instance.
+	 * 
+	 * @param o a (partial) set of move constraints
+	 */
+	public void mergeWith(final MoveConstraints o)
+	{
+		velMax = mergeDouble(velMax, o.velMax);
+		velMaxW = mergeDouble(velMaxW, o.velMaxW);
+		accMax = mergeDouble(accMax, o.accMax);
+		accMaxW = mergeDouble(accMaxW, o.accMaxW);
+		jerkMax = mergeDouble(jerkMax, o.jerkMax);
+		jerkMaxW = mergeDouble(jerkMaxW, o.jerkMaxW);
+		accMaxFast = mergeDouble(accMaxFast, o.accMaxFast);
+		fastMove = o.fastMove;
+	}
+	
+	
+	private double mergeDouble(final double current, final double newValue)
+	{
+		if (newValue > 0)
+		{
+			return newValue;
+		}
+		return current;
+	}
+	
+	
+	@Override
+	public String toString()
+	{
+		return "MoveConstraints{" +
+				"velMax=" + velMax +
+				", accMax=" + accMax +
+				", jerkMax=" + jerkMax +
+				", velMaxW=" + velMaxW +
+				", accMaxW=" + accMaxW +
+				", jerkMaxW=" + jerkMaxW +
+				", accMaxFast=" + accMaxFast +
+				", fastMove=" + fastMove +
+				'}';
 	}
 	
 	
@@ -137,58 +188,6 @@ public class MoveConstraints
 	
 	
 	/**
-	 * @return the defConstraints
-	 */
-	public MoveConstraints getDefConstraints()
-	{
-		return defConstraints;
-	}
-	
-	
-	@Override
-	public String toString()
-	{
-		StringBuilder builder = new StringBuilder();
-		builder.append(velMax);
-		builder.append(",");
-		builder.append(velMaxW);
-		builder.append("|");
-		builder.append(accMax);
-		builder.append(",");
-		builder.append(accMaxW);
-		builder.append("|");
-		builder.append(jerkMax);
-		builder.append(",");
-		builder.append(jerkMaxW);
-		return builder.toString();
-	}
-	
-	
-	/**
-	 * 
-	 */
-	public void setDefaultVelLimit()
-	{
-		if (defConstraints != null)
-		{
-			velMax = defConstraints.velMax;
-		}
-	}
-	
-	
-	/**
-	 * 
-	 */
-	public void setDefaultAccLimit()
-	{
-		if (defConstraints != null)
-		{
-			accMax = defConstraints.accMax;
-		}
-	}
-	
-	
-	/**
 	 * @return the jerkMax
 	 */
 	public double getJerkMax()
@@ -221,5 +220,58 @@ public class MoveConstraints
 	public void setJerkMaxW(final double jerkMaxW)
 	{
 		this.jerkMaxW = jerkMaxW;
+	}
+	
+	
+	/**
+	 * Activate the fastPos move skill.<br>
+	 *
+	 * @param fastMove activate fast move skill
+	 */
+	public void setFastMove(final boolean fastMove)
+	{
+		this.fastMove = fastMove;
+	}
+	
+	
+	public boolean isFastMove()
+	{
+		return fastMove;
+	}
+	
+	
+	/**
+	 * @return the velMaxFast
+	 */
+	public double getVelMaxFast()
+	{
+		return velMaxFast;
+	}
+	
+	
+	/**
+	 * @param velMaxFast the velMaxFast to set
+	 */
+	public void setVelMaxFast(final double velMaxFast)
+	{
+		this.velMaxFast = velMaxFast;
+	}
+	
+	
+	/**
+	 * @return the accMaxFast
+	 */
+	public double getAccMaxFast()
+	{
+		return accMaxFast;
+	}
+	
+	
+	/**
+	 * @param accMaxFast the accMaxFast to set
+	 */
+	public void setAccMaxFast(final double accMaxFast)
+	{
+		this.accMaxFast = accMaxFast;
 	}
 }

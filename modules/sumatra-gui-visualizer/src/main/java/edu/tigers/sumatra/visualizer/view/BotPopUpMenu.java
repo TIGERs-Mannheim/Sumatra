@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2012, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Sep 19, 2012
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.visualizer.view;
 
@@ -13,11 +8,15 @@ import java.awt.event.ActionListener;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import javax.swing.ButtonGroup;
+import javax.swing.ButtonModel;
+import javax.swing.DefaultButtonModel;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JPopupMenu;
+import javax.swing.JRadioButtonMenuItem;
 
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.visualizer.BotStatus;
+import edu.tigers.sumatra.ids.EAiType;
 
 
 /**
@@ -28,15 +27,13 @@ import edu.tigers.sumatra.visualizer.BotStatus;
 public class BotPopUpMenu extends JPopupMenu
 {
 	/**  */
-	private static final long						serialVersionUID	= 5547621546041047224L;
-																					
-	private final BotID								botId;
-	private final JCheckBoxMenuItem				hideFromAi			= new JCheckBoxMenuItem("Hide from AI");
-	private final JCheckBoxMenuItem				hideFromRcm			= new JCheckBoxMenuItem("Hide from RCM");
-																					
-	private final List<IBotPopUpMenuObserver>	observers			= new CopyOnWriteArrayList<IBotPopUpMenuObserver>();
-																					
-																					
+	private static final long serialVersionUID = 5547621546041047224L;
+	
+	private final BotID botId;
+	
+	private final List<IBotPopUpMenuObserver> observers = new CopyOnWriteArrayList<>();
+	
+	
 	/**
 	 * @param botId
 	 * @param status
@@ -44,13 +41,29 @@ public class BotPopUpMenu extends JPopupMenu
 	public BotPopUpMenu(final BotID botId, final BotStatus status)
 	{
 		this.botId = botId;
-		add(hideFromAi);
+		final JCheckBoxMenuItem hideFromRcm = new JCheckBoxMenuItem("Hide from RCM");
 		add(hideFromRcm);
 		
-		hideFromAi.setSelected(status.isHideAi());
-		hideFromAi.addActionListener(new HideFromAiActionListener());
 		hideFromRcm.setSelected(status.isHideRcm());
 		hideFromRcm.addActionListener(new HideFromRcmActionListener());
+		
+		ButtonGroup aiButtonGroup = new ButtonGroup();
+		for (EAiType aiAssignment : EAiType.values())
+		{
+			JRadioButtonMenuItem radioButton = new JRadioButtonMenuItem(aiAssignment.name());
+			radioButton.addActionListener(new AiAssignmentChangeListener());
+			radioButton.setActionCommand(aiAssignment.name());
+			add(radioButton);
+			aiButtonGroup.add(radioButton);
+			
+			if (aiAssignment == status.getAiAssignment())
+			{
+				radioButton.setSelected(true);
+			}
+		}
+		
+		final ButtonModel aiButtonModel = new DefaultButtonModel();
+		aiButtonModel.setGroup(aiButtonGroup);
 	}
 	
 	
@@ -71,19 +84,6 @@ public class BotPopUpMenu extends JPopupMenu
 		observers.remove(observer);
 	}
 	
-	private class HideFromAiActionListener implements ActionListener
-	{
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			boolean checked = ((JCheckBoxMenuItem) e.getSource()).isSelected();
-			for (final IBotPopUpMenuObserver observer : observers)
-			{
-				observer.onHideBotFromAiClicked(botId, checked);
-			}
-		}
-	}
-	
 	private class HideFromRcmActionListener implements ActionListener
 	{
 		@Override
@@ -97,8 +97,23 @@ public class BotPopUpMenu extends JPopupMenu
 		}
 	}
 	
+	private class AiAssignmentChangeListener implements ActionListener
+	{
+		@Override
+		public void actionPerformed(final ActionEvent e)
+		{
+			JRadioButtonMenuItem button = (JRadioButtonMenuItem) e.getSource();
+			EAiType aiAssignment = EAiType.valueOf(button.getActionCommand());
+			for (final IBotPopUpMenuObserver observer : observers)
+			{
+				observer.onBotAiAssignmentChanged(botId, aiAssignment);
+			}
+		}
+	}
+	
 	
 	/**
+	 * Default
 	 */
 	public interface IBotPopUpMenuObserver
 	{
@@ -106,16 +121,16 @@ public class BotPopUpMenu extends JPopupMenu
 		 * @param botId
 		 * @param hide
 		 */
-		default void onHideBotFromAiClicked(final BotID botId, final boolean hide)
+		default void onHideBotFromRcmClicked(final BotID botId, final boolean hide)
 		{
 		}
 		
 		
 		/**
-		 * @param botId
-		 * @param hide
+		 * @param botID
+		 * @param aiAssignment
 		 */
-		default void onHideBotFromRcmClicked(final BotID botId, final boolean hide)
+		default void onBotAiAssignmentChanged(final BotID botID, final EAiType aiAssignment)
 		{
 		}
 	}

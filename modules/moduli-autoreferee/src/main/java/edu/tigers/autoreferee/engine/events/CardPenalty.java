@@ -8,7 +8,7 @@
  */
 package edu.tigers.autoreferee.engine.events;
 
-import edu.tigers.autoreferee.engine.RefCommand;
+import edu.tigers.autoreferee.engine.RefboxRemoteCommand;
 import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest.CardInfo.CardType;
 import edu.tigers.sumatra.ids.ETeamColor;
 
@@ -52,12 +52,12 @@ public class CardPenalty
 	
 	
 	/**
-	 * Create a {@link RefCommand} instance that can be sent to the refbox
+	 * Create a {@link RefboxRemoteCommand} instance that can be sent to the refbox
 	 * 
 	 * @return ref command representing this card penalty
 	 */
-	public RefCommand toRefCommand()
+	public RefboxRemoteCommand toRefCommand()
 	{
-		return new RefCommand(type, cardTeam);
+		return new RefboxRemoteCommand(type, cardTeam);
 	}
 }

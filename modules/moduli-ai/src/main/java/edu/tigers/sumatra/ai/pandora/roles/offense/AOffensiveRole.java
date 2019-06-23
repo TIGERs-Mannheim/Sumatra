@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 26, 2014
- * Author(s): Mark Geiger <Mark.Geiger@dlr.de>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.roles.offense;
 
@@ -22,20 +17,13 @@ import edu.tigers.sumatra.ai.pandora.roles.ERole;
  */
 public abstract class AOffensiveRole extends ARole
 {
+	protected static final Logger	log					= Logger.getLogger(AOffensiveRole.class.getName());
 	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
+	protected boolean					activeSwitching	= true;
 	
-	protected static final Logger log = Logger.getLogger(AOffensiveRole.class.getName());
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
-	 * 
+	 * Default
 	 */
 	public AOffensiveRole()
 	{
@@ -50,38 +38,29 @@ public abstract class AOffensiveRole extends ARole
 	@Override
 	protected void beforeUpdate()
 	{
-		changeStateIfNecessary();
+		if (activeSwitching)
+		{
+			changeStateIfNecessary();
+		}
 	}
 	
 	
-	// ----------------------------------------------------------------------- //
-	// -------------------- functions ---------------------------------------- //
-	// ----------------------------------------------------------------------- //
-	
 	/**
-	 * 
+	 * Check if state change necessary and perform switch
 	 */
 	public void changeStateIfNecessary()
 	{
-		if (getAiFrame().getTacticalField() != null)
+		if (getAiFrame().getTacticalField().getOffensiveStrategy() != null
+				&& getAiFrame().getTacticalField().getOffensiveStrategy().getCurrentOffensivePlayConfiguration() != null
+				&& getAiFrame().getTacticalField().getOffensiveStrategy().getCurrentOffensivePlayConfiguration()
+						.containsKey(getBotID())
+				&& !getCurrentState().getIdentifier().equals(getAiFrame().getTacticalField().getOffensiveStrategy()
+						.getCurrentOffensivePlayConfiguration().get(getBotID()).name()))
 		{
-			if (getAiFrame().getTacticalField().getOffensiveStrategy() != null)
-			{
-				if (getAiFrame().getTacticalField().getOffensiveStrategy().getCurrentOffensivePlayConfiguration() != null)
-				{
-					if (getAiFrame().getTacticalField().getOffensiveStrategy()
-							.getCurrentOffensivePlayConfiguration().containsKey(getBotID()))
-					{
-						if (getCurrentState() != getAiFrame().getTacticalField().getOffensiveStrategy()
-								.getCurrentOffensivePlayConfiguration().get(getBotID()))
-						{
-							triggerEvent(getAiFrame().getTacticalField().getOffensiveStrategy()
-									.getCurrentOffensivePlayConfiguration().get(getBotID()));
-						}
-					}
-				}
-			}
+			triggerEvent(getAiFrame().getTacticalField().getOffensiveStrategy()
+					.getCurrentOffensivePlayConfiguration().get(getBotID()));
 		}
+		
 	}
 	
 	

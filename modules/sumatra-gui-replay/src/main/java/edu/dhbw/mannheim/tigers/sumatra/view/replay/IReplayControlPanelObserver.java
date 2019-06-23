@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jan 27, 2013
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.dhbw.mannheim.tigers.sumatra.view.replay;
 
 /**
@@ -40,12 +36,13 @@ public interface IReplayControlPanelObserver
 	
 	
 	/**
+	 * jump to next frame
 	 */
 	void onNextFrame();
 	
 	
 	/**
-	 * 
+	 * jump to prev frame
 	 */
 	void onPreviousFrame();
 	
@@ -69,8 +66,20 @@ public interface IReplayControlPanelObserver
 	
 	
 	/**
-	 * 
+	 * @param selected
+	 */
+	void onRunAutoRef(boolean selected);
+	
+	
+	/**
+	 * save snapshot to file
 	 */
 	void onSnapshot();
+	
+	
+	/**
+	 * Copy snapshot to clipboard
+	 */
+	void onCopySnapshot();
 	
 }

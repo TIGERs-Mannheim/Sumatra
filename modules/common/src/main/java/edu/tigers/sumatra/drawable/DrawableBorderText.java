@@ -14,8 +14,8 @@ import java.awt.Graphics2D;
 
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.math.AVector2;
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.math.vector.AVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**

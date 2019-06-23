@@ -1,20 +1,13 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Sep 1, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.rcm;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -23,36 +16,25 @@ import org.apache.log4j.Logger;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-import com.github.g3force.instanceables.InstanceableClass.NotCreateableException;
 
 import edu.dhbw.mannheim.tigers.sumatra.proto.BotActionCommandProtos.BotActionCommand;
 import edu.dhbw.mannheim.tigers.sumatra.proto.BotColorIdProtos.BotColorId;
 import edu.dhbw.mannheim.tigers.sumatra.proto.BotColorIdProtos.BotColorId.Color;
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
-import edu.tigers.sumatra.ai.AAgent;
-import edu.tigers.sumatra.ai.Agent;
-import edu.tigers.sumatra.ai.data.EAIControlState;
 import edu.tigers.sumatra.botmanager.bots.ABot;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
 import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.persistance.RecordManager;
 import edu.tigers.sumatra.rcm.RcmAction.EActionType;
 import edu.tigers.sumatra.skillsystem.ASkillSystem;
 import edu.tigers.sumatra.skillsystem.ESkill;
 import edu.tigers.sumatra.skillsystem.GenericSkillSystem;
-import edu.tigers.sumatra.skillsystem.VisionSkillWatcher;
 import edu.tigers.sumatra.skillsystem.skills.ISkill;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
-import edu.tigers.sumatra.skillsystem.skills.KickSkill;
-import edu.tigers.sumatra.skillsystem.skills.KickTestSkill;
+import edu.tigers.sumatra.skillsystem.skills.KickNormalSkill;
 import edu.tigers.sumatra.skillsystem.skills.RedirectSkill;
 import edu.tigers.sumatra.thread.NamedThreadFactory;
-import edu.tigers.sumatra.wp.VisionWatcher;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
-import edu.tigers.sumatra.wp.data.Geometry;
 import net.java.games.input.Controller;
 
 
@@ -68,30 +50,27 @@ public class PollingService
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private static final Logger			log							= Logger.getLogger(PollingService.class.getName());
-	private final Controller				controller;
-	private final List<ExtComponent>		components;
-	private final ActionSender				actionSender;
-	private ScheduledExecutorService		execService;
+	private static final Logger log = Logger.getLogger(PollingService.class.getName());
+	private final Controller controller;
+	private final List<ExtComponent> components;
+	private final ActionSender actionSender;
+	private ScheduledExecutorService execService;
 	
-	private static final int				PERIOD						= 20;
-	private static final BotColorId		DUMMY_BOT_ID				= BotColorId.newBuilder().setBotId(0)
+	private static final int PERIOD = 20;
+	private static final BotColorId DUMMY_BOT_ID = BotColorId.newBuilder().setBotId(0)
 			.setColor(Color.UNINITIALIZED).build();
 	
-	private Map<ExtComponent, Double>	lastPressedComponents	= new HashMap<ExtComponent, Double>();
+	private Map<ExtComponent, Double> lastPressedComponents = new HashMap<>();
 	
 	
-	private GenericSkillSystem				skillSystem					= null;
-	private Agent								agentYellow					= null;
-	private Agent								agentBlue					= null;
-	private VisionWatcher					ballWatcher					= null;
+	private GenericSkillSystem skillSystem = null;
 	
 	
-	private long								timeSkillStarted			= System.nanoTime();
-	private long								timeLastInput				= System.nanoTime();
+	private long timeSkillStarted = System.nanoTime();
+	private long timeLastInput = System.nanoTime();
 	
 	@Configurable(comment = "Timeout [s] after controller times out (bot gets unassigned)")
-	private static int						controllerTimeout			= 180;
+	private static int controllerTimeout = 180;
 	
 	
 	static
@@ -99,10 +78,6 @@ public class PollingService
 		ConfigRegistration.registerClass("rcm", PollingService.class);
 	}
 	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 * @param config
@@ -115,10 +90,6 @@ public class PollingService
 		this.actionSender = actionSender;
 	}
 	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 * @param components
@@ -149,6 +120,7 @@ public class PollingService
 	/**
 	 * @param components
 	 */
+	@SuppressWarnings("squid:MethodCyclomaticComplexity")
 	private BotActionCommand translate(final List<ExtComponent> components)
 	{
 		BotActionCommand.Builder cmdBuilder = BotActionCommand.newBuilder();
@@ -164,23 +136,23 @@ public class PollingService
 		
 		ICommandInterpreter interpreter = actionSender.getCmdInterpreter();
 		BotID botId = interpreter.getBot().getBotId();
-		double deadzone = interpreter.getCompassThreshold();
+		double deadZone = interpreter.getCompassThreshold();
 		
-		Map<ExtComponent, Double> pressedComponents = new HashMap<ExtComponent, Double>();
-		List<ExtComponent> dependentComponents = new ArrayList<ExtComponent>();
+		Map<ExtComponent, Double> pressedComponents = new HashMap<>();
+		List<ExtComponent> dependentComponents = new ArrayList<>();
 		for (ExtComponent extComp : components)
 		{
 			double value = extComp.getPollData();
-			double customDeadzone = 0;
+			double customDeadZone = 0;
 			if (extComp.isAnalog())
 			{
-				customDeadzone = deadzone;
+				customDeadZone = deadZone;
 			}
-			if (value > customDeadzone)
+			if (value > customDeadZone)
 			{
 				pressedComponents.put(extComp, value);
 			}
-			if (extComp.getBaseComponent().getPollData() > deadzone)
+			if (extComp.getBaseComponent().getPollData() > deadZone)
 			{
 				ExtComponent extCompDep = extComp.getDependentComp();
 				while (extCompDep != null)
@@ -191,7 +163,7 @@ public class PollingService
 			}
 		}
 		
-		Map<ExtComponent, Double> releasedComponents = new HashMap<ExtComponent, Double>(lastPressedComponents);
+		Map<ExtComponent, Double> releasedComponents = new HashMap<>(lastPressedComponents);
 		pressedComponents.forEach((extComp, value) -> releasedComponents.remove(extComp));
 		lastPressedComponents = pressedComponents;
 		
@@ -206,7 +178,7 @@ public class PollingService
 			}
 		}
 		
-		Map<ExtComponent, Double> components2BeProcessed = new HashMap<ExtComponent, Double>();
+		Map<ExtComponent, Double> components2BeProcessed = new HashMap<>();
 		for (Map.Entry<ExtComponent, Double> entry : releasedComponents.entrySet())
 		{
 			ExtComponent extComp = entry.getKey();
@@ -237,7 +209,7 @@ public class PollingService
 			timeLastInput = System.nanoTime();
 		} else if ((System.nanoTime() - timeLastInput) > (controllerTimeout * 1e9))
 		{
-			actionSender.notifyTimedout();
+			actionSender.notifyTimedOut();
 		}
 		
 		for (Map.Entry<ExtComponent, Double> entry : components2BeProcessed.entrySet())
@@ -249,102 +221,7 @@ public class PollingService
 			switch (actionType)
 			{
 				case EVENT:
-					ERcmEvent event = (ERcmEvent) actionEnum;
-					switch (event)
-					{
-						case SPEED_MODE_DISABLE:
-							actionSender.getCmdInterpreter().setHighSpeedMode(false);
-							break;
-						case SPEED_MODE_ENABLE:
-							actionSender.getCmdInterpreter().setHighSpeedMode(true);
-							break;
-						case SPEED_MODE_TOGGLE:
-							actionSender.getCmdInterpreter().setHighSpeedMode(
-									!actionSender.getCmdInterpreter().isHighSpeedMode());
-							break;
-						case NEXT_BOT:
-							if (botId.isBot())
-							{
-								skillSystem.execute(botId, new IdleSkill());
-							}
-							actionSender.notifyNextBot();
-							break;
-						case PREV_BOT:
-							if (botId.isBot())
-							{
-								skillSystem.execute(botId, new IdleSkill());
-							}
-							actionSender.notifyPrevBot();
-							break;
-						case UNASSIGN_BOT:
-							if (botId.isBot())
-							{
-								skillSystem.execute(botId, new IdleSkill());
-							}
-							actionSender.notifyBotUnassigned();
-							break;
-						case EMERGENCY_MODE:
-							agentYellow.getAthena().changeMode(EAIControlState.EMERGENCY_MODE);
-							agentBlue.getAthena().changeMode(EAIControlState.EMERGENCY_MODE);
-							skillSystem.emergencyStop();
-							break;
-						case MATCH_MODE:
-							agentYellow.getAthena().changeMode(EAIControlState.MATCH_MODE);
-							agentBlue.getAthena().changeMode(EAIControlState.MATCH_MODE);
-							break;
-						case RECORD_START_STOP:
-							RecordManager rm;
-							try
-							{
-								rm = (RecordManager) SumatraModel.getInstance().getModule(RecordManager.MODULE_ID);
-								rm.toggleRecording(true);
-							} catch (ModuleNotFoundException e)
-							{
-								log.error("Could not find record manager", e);
-							}
-							break;
-						case CHARGE_BOT:
-						{
-							ABot bot = actionSender.getCmdInterpreter().getBot();
-							bot.getMatchCtrl().setKickerAutocharge(true);
-						}
-							break;
-						case DISCHARGE_BOT:
-						{
-							ABot bot = actionSender.getCmdInterpreter().getBot();
-							bot.getMatchCtrl().setKickerAutocharge(false);
-						}
-							break;
-						case UNASSIGNED:
-							break;
-						case RECORD_VISION_START:
-						{
-							if (ballWatcher != null)
-							{
-								log.warn("Last ball watcher was not removed?!");
-								ballWatcher.stopExport();
-							}
-							log.info("Start recording.");
-							SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
-							String fileName = "rcm/" + sdf.format(new Date());
-							ballWatcher = new VisionSkillWatcher(fileName);
-							ballWatcher.setStopAutomatically(false);
-							boolean started = ballWatcher.start();
-							if (!started)
-							{
-								ballWatcher = null;
-							}
-						}
-							break;
-						case RECORD_VISION_STOP:
-							if (ballWatcher != null)
-							{
-								ballWatcher.stopExport();
-								log.info("Stopped recording. dataSize: " + ballWatcher.getDataSize());
-								ballWatcher = null;
-							}
-							break;
-					}
+					handleEvent(botId, (ERcmEvent) actionEnum);
 					break;
 				case SIMPLE:
 					if (botId.isBot() && (timeSkillStarted != 0) && ((System.nanoTime() - timeSkillStarted) > 5e8))
@@ -404,72 +281,7 @@ public class PollingService
 					}
 					break;
 				case SKILL:
-					ESkill skill = (ESkill) extComp.getMappedAction().getActionEnum();
-					final Agent agent;
-					if (botId.getTeamColor() == ETeamColor.BLUE)
-					{
-						agent = agentBlue;
-					} else
-					{
-						agent = agentYellow;
-					}
-					
-					try
-					{
-						if (botId.isBot())
-						{
-							DynamicPosition target;
-							if (agent.isActive() && (agent.getLatestAiFrame() != null))
-							{
-								target = new DynamicPosition(agent.getLatestAiFrame().getTacticalField()
-										.getBestDirectShootTarget());
-							} else
-							{
-								target = new DynamicPosition(new Vector2(Geometry.getFieldLength() / 2, 0));
-							}
-							// TODO find a pass receiver
-							// target = new DynamicPosition(new TrackedTigerBot(BotID.createBotId(7, ETeamColor.YELLOW
-							// ), AVector2.ZERO_VECTOR, AVector2.ZERO_VECTOR, AVector2.ZERO_VECTOR, 0, 0, 0, 0, 0,
-							// new DummyBot(), ETeamColor.YELLOW));
-							
-							switch (skill)
-							{
-								case KICK:
-									// target = new DynamicPosition(BotID.createBotId(3, ETeamColor.BLUE));
-									// skillSystem.execute(botId, new KickSkill(target, EKickMode.PASS));
-									skillSystem.execute(botId, new KickSkill(target));
-									break;
-								case KICK_TEST:
-									IVector2 ballPos = agent.getLatestAiFrame().getWorldFrame().getBall().getPos();
-									double speed = (new Random(System.currentTimeMillis()).nextInt(4000) + 2000) / 1000.0;
-									Vector2 dest = new Vector2(Geometry.getFieldLength() / 2, Geometry.getFieldWidth() / 2);
-									if (ballPos.x() > 0)
-									{
-										dest.setX(-dest.x());
-									}
-									if (ballPos.y() > 0)
-									{
-										dest.setY(-dest.y());
-									}
-									skillSystem.execute(botId,
-											new KickTestSkill(new DynamicPosition(dest), speed));
-									break;
-								case REDIRECT:
-									skillSystem.execute(botId, new RedirectSkill(target));
-								default:
-									skillSystem.execute(botId, (ISkill) skill.getInstanceableClass().newDefaultInstance());
-									break;
-							}
-							interpreter.setPaused(true);
-							timeSkillStarted = System.nanoTime();
-						}
-					} catch (NotCreateableException err)
-					{
-						log.error("Could not create skill " + skill, err);
-					} catch (Throwable err)
-					{
-						log.error("Could not create skill " + skill, err);
-					}
+					handleSkill(interpreter, botId, extComp);
 					break;
 			}
 		}
@@ -493,8 +305,113 @@ public class PollingService
 	}
 	
 	
+	private void handleEvent(final BotID botId, final ERcmEvent actionEnum)
+	{
+		ERcmEvent event = actionEnum;
+		switch (event)
+		{
+			case SPEED_MODE_DISABLE:
+				actionSender.getCmdInterpreter().setHighSpeedMode(false);
+				break;
+			case SPEED_MODE_ENABLE:
+				actionSender.getCmdInterpreter().setHighSpeedMode(true);
+				break;
+			case SPEED_MODE_TOGGLE:
+				actionSender.getCmdInterpreter().setHighSpeedMode(
+						!actionSender.getCmdInterpreter().isHighSpeedMode());
+				break;
+			case NEXT_BOT:
+				chooseNextBot(botId);
+				break;
+			case PREV_BOT:
+				choosePrevBot(botId);
+				break;
+			case UNASSIGN_BOT:
+				unassignBot(botId);
+				break;
+			case CHARGE_BOT:
+				chargeBots(true);
+				break;
+			case DISCHARGE_BOT:
+				chargeBots(false);
+				break;
+			case UNASSIGNED:
+				break;
+		}
+	}
+	
+	
+	private void chooseNextBot(final BotID botId)
+	{
+		if (botId.isBot())
+		{
+			skillSystem.execute(botId, new IdleSkill());
+		}
+		actionSender.notifyNextBot();
+	}
+	
+	
+	private void choosePrevBot(final BotID botId)
+	{
+		if (botId.isBot())
+		{
+			skillSystem.execute(botId, new IdleSkill());
+		}
+		actionSender.notifyPrevBot();
+	}
+	
+	
+	private void unassignBot(final BotID botId)
+	{
+		if (botId.isBot())
+		{
+			skillSystem.execute(botId, new IdleSkill());
+		}
+		actionSender.notifyBotUnassigned();
+	}
+	
+	
+	private void chargeBots(final boolean enable)
+	{
+		ABot bot = actionSender.getCmdInterpreter().getBot();
+		bot.getMatchCtrl().setKickerAutocharge(enable);
+	}
+	
+	
+	private void handleSkill(final ICommandInterpreter interpreter, final BotID botId, final ExtComponent extComp)
+	{
+		ESkill skill = (ESkill) extComp.getMappedAction().getActionEnum();
+		
+		try
+		{
+			if (botId.isBot())
+			{
+				DynamicPosition target = new DynamicPosition(Geometry.getGoalTheir().getCenter());
+				
+				switch (skill)
+				{
+					case KICK_NORMAL:
+						skillSystem.execute(botId, new KickNormalSkill(target));
+						break;
+					case REDIRECT:
+						skillSystem.execute(botId, new RedirectSkill(target));
+						break;
+					default:
+						skillSystem.execute(botId, (ISkill) skill.getInstanceableClass().newDefaultInstance());
+						break;
+				}
+				interpreter.setPaused(true);
+				timeSkillStarted = System.nanoTime();
+			}
+		} catch (Throwable err)
+		{
+			log.error("Could not create skill " + skill, err);
+		}
+	}
+	
+	
 	/**
-	 * 
+	 * Start service
 	 */
 	public void start()
 	{
@@ -505,16 +422,7 @@ public class PollingService
 				skillSystem = (GenericSkillSystem) SumatraModel.getInstance().getModule(ASkillSystem.MODULE_ID);
 			} catch (ModuleNotFoundException err)
 			{
-				log.error("Could not get skillSystem.");
-			}
-			
-			try
-			{
-				agentYellow = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_YELLOW);
-				agentBlue = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_BLUE);
-			} catch (ModuleNotFoundException err)
-			{
-				log.error("Could not find agents");
+				log.error("Could not get skillSystem.", err);
 			}
 			
 			execService = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("PollingService_"
@@ -529,7 +437,7 @@ public class PollingService
 	
 	
 	/**
-	 * 
+	 * Stop service
 	 */
 	public void stop()
 	{
@@ -542,10 +450,6 @@ public class PollingService
 		}
 	}
 	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 * @return

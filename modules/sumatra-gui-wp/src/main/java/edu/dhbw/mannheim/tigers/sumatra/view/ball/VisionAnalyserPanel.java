@@ -1,14 +1,10 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 21, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.dhbw.mannheim.tigers.sumatra.view.ball;
 
-import java.awt.BorderLayout;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -18,15 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JToggleButton;
+import javax.swing.*;
 
 import edu.tigers.sumatra.bot.EBotType;
 import edu.tigers.sumatra.filetree.FileTree;
@@ -42,30 +30,29 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 {
 	
 	/**  */
-	private static final long								serialVersionUID	= 2543451767176872886L;
-																							
-	private FileTree											fileTree				= null;
-	private final JPanel										fileTreePanel		= new JPanel();
-	private final JButton									btnSave				= new JButton("Save");
-	private final JButton									btnDelete			= new JButton("Delete");
-	private final JButton									btnPlot				= new JButton("Plot");
-	private final JButton									btnBallModel		= new JButton("Update Ball Model");
-	private final JButton									btnKickModel		= new JButton("Update Kick Model");
-	private final JButton									btnKalman			= new JButton("run kalman");
-	private final JButton									btnBallCorrector	= new JButton("ball corrector");
-	private final JButton									btnCopy				= new JButton("Copy path");
-	private final JToggleButton							btnRecord			= new JToggleButton("Record");
-	private final JTextArea									txtDescription		= new JTextArea("Describe your data", 5, 80);
-	private final JLabel										lblNumSamples		= new JLabel("Num samples: ");
-	private final JCheckBox									chkStopAuto			= new JCheckBox("Stop");
-	private final JPanel										keyValuePanel		= new JPanel(new MigLayout("fillx, wrap 1"));
-	private final JComboBox<EBotType>					cmbBotType			= new JComboBox<EBotType>(EBotType.values());
-																							
-	private List<String>										selectedFiles		= new ArrayList<>();
-																							
-	private final List<IBallAnalyserPanelObserver>	observers			= new CopyOnWriteArrayList<IBallAnalyserPanelObserver>();
-																							
-																							
+	private static final long								serialVersionUID		= 2543451767176872886L;
+	
+	private FileTree											fileTree					= null;
+	private final JPanel										fileTreePanel			= new JPanel();
+	private final JButton									btnSave					= new JButton("Save");
+	private final JButton									btnDelete				= new JButton("Delete");
+	private final JButton									btnPlot					= new JButton("Plot");
+	private final JButton									btnBallModel			= new JButton("Update Ball Model");
+	private final JButton									btnBallAndKickModel	= new JButton("Calc Ball & Kick Model");
+	private final JButton									btnKalman				= new JButton("run kalman");
+	private final JButton									btnCopy					= new JButton("Copy path");
+	private final JToggleButton							btnRecord				= new JToggleButton("Record");
+	private final JTextArea									txtDescription			= new JTextArea("Describe your data", 5, 80);
+	private final JLabel										lblNumSamples			= new JLabel("Num samples: ");
+	private final JCheckBox									chkStopAuto				= new JCheckBox("Stop");
+	private final JPanel										keyValuePanel			= new JPanel(new MigLayout("fillx, wrap 1"));
+	private final JComboBox<EBotType>					cmbBotType				= new JComboBox<EBotType>(EBotType.values());
+	
+	private List<String>										selectedFiles			= new ArrayList<>();
+	
+	private final List<IBallAnalyserPanelObserver>	observers				= new CopyOnWriteArrayList<IBallAnalyserPanelObserver>();
+	
+	
 	/**
 	 * 
 	 */
@@ -82,8 +69,7 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 		rightPanel.add(btnDelete, "growx");
 		rightPanel.add(btnPlot, "growx");
 		rightPanel.add(btnBallModel, "growx");
-		rightPanel.add(btnKickModel, "growx");
-		rightPanel.add(btnBallCorrector, "growx");
+		rightPanel.add(btnBallAndKickModel, "growx");
 		rightPanel.add(btnKalman, "growx");
 		add(rightPanel, BorderLayout.EAST);
 		
@@ -106,8 +92,7 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 		btnDelete.addActionListener(new DeleteAction());
 		btnPlot.addActionListener(new PlotAction());
 		btnBallModel.addActionListener(new BallModelAction());
-		btnKickModel.addActionListener(new KickModelAction());
-		btnBallCorrector.addActionListener(new BallCorrectorAction());
+		btnBallAndKickModel.addActionListener(new BallAndKickModelAction());
 		btnKalman.addActionListener(new KalmanAction());
 		btnCopy.addActionListener(new CopyAction());
 		btnRefresh.addActionListener(new RefreshAction());
@@ -208,9 +193,8 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 	{
 		btnDelete.setEnabled(enabled);
 		btnBallModel.setEnabled(enabled);
-		btnKickModel.setEnabled(enabled);
+		btnBallAndKickModel.setEnabled(enabled);
 		btnPlot.setEnabled(enabled);
-		btnBallCorrector.setEnabled(enabled);
 		btnKalman.setEnabled(enabled);
 		txtDescription.setEditable(enabled);
 		markDirty(false);
@@ -352,14 +336,15 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 		}
 	}
 	
-	private class KickModelAction implements ActionListener
+	
+	private class BallAndKickModelAction implements ActionListener
 	{
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
 			for (IBallAnalyserPanelObserver o : observers)
 			{
-				o.onCreateKickModel(selectedFiles, (EBotType) cmbBotType.getSelectedItem());
+				o.onCreateBallAndKickModel(selectedFiles);
 			}
 		}
 	}
@@ -381,18 +366,6 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 			for (IBallAnalyserPanelObserver o : observers)
 			{
 				o.onKalman(selectedFiles);
-			}
-		}
-	}
-	
-	private class BallCorrectorAction implements ActionListener
-	{
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			for (IBallAnalyserPanelObserver o : observers)
-			{
-				o.onBallCorrector(selectedFiles);
 			}
 		}
 	}

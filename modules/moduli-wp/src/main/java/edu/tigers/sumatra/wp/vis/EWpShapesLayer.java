@@ -1,44 +1,48 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 22, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.wp.vis;
 
-import edu.tigers.sumatra.wp.data.ShapeMap.IShapeLayer;
+import edu.tigers.sumatra.drawable.ShapeMap.IShapeLayer;
 
 
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
+@SuppressWarnings("squid:S1192") // duplicated strings
 public enum EWpShapesLayer implements IShapeLayer
 {
 	/**  */
-	FIELD_BORDERS("Field Borders", "FIELD", true),
+	FIELD_BORDERS("Field Borders", "Field", true),
 	/**  */
-	@Deprecated COORDINATE_SYSTEM("Coordinate System", "FIELD"),
+	REFEREE("Referee", "Field", true, 1000),
 	/**  */
-	REFEREE("Referee", "FIELD", true, 1000),
+	BALL_BUFFER("Ball buffer", "Field"),
 	/**  */
-	CAM_INTERSECTION("Cam intersection", "VISION"),
+	BOT_BUFFER("Bot buffer", "Field"),
+	/**  */
+	BOTS("Bots", "Field", true),
+	/**  */
+	BALL("Ball", "Field", true),
+	/**  */
+	VELOCITY("Velocities", "Field"),
 	
+	/** */
+	@Deprecated
+	BOTS_AVAILABLE("Bots available", "Field"),
 	/**  */
-	VISION("Vision", "VISION"),
+	@Deprecated
+	VISION("Vision", "Field"),
 	/**  */
-	BALL_BUFFER("Ball buffer", "VISION"),
+	@Deprecated
+	CAM_INTERSECTION("Cam intersection", "Field"),
 	/**  */
-	BOT_BUFFER("Bot buffer", "VISION"),
+	@Deprecated
+	COORDINATE_SYSTEM("Coordinate System", "Field"),
 	/**  */
-	BOTS("Bots", "VISION", true),
-	/**  */
-	BALL("Ball", "VISION", true),
-	/**  */
-	VELOCITY("Velocity", "VISION"),
-	/**  */
-	AUTOREFEREE("AutoReferee", "VISION", true);
+	@Deprecated
+	AUTOREFEREE("AutoReferee", "Field", true),;
 	
 	
 	private final String		name;
@@ -50,7 +54,7 @@ public enum EWpShapesLayer implements IShapeLayer
 	/**
 	 * 
 	 */
-	private EWpShapesLayer(final String name, final String category)
+	EWpShapesLayer(final String name, final String category)
 	{
 		this(name, category, false);
 	}
@@ -59,7 +63,7 @@ public enum EWpShapesLayer implements IShapeLayer
 	/**
 	 * 
 	 */
-	private EWpShapesLayer(final String name, final String category, final boolean visible)
+	EWpShapesLayer(final String name, final String category, final boolean visible)
 	{
 		this.name = name;
 		this.category = category;
@@ -71,7 +75,7 @@ public enum EWpShapesLayer implements IShapeLayer
 	/**
 	 * 
 	 */
-	private EWpShapesLayer(final String name, final String category, final boolean visible, final int orderId)
+	EWpShapesLayer(final String name, final String category, final boolean visible, final int orderId)
 	{
 		this.name = name;
 		this.category = category;

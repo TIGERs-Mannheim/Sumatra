@@ -57,13 +57,6 @@ public class BotNumberViolation extends GameEvent
 	
 	
 	@Override
-	public String buildLogString()
-	{
-		return super.buildLogString();
-	}
-	
-	
-	@Override
 	protected String generateLogString()
 	{
 		String superResult = super.generateLogString();

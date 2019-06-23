@@ -1,18 +1,18 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 24.06.2015
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands.botskills;
 
 import edu.tigers.sumatra.bot.MoveConstraints;
+import edu.tigers.sumatra.bot.params.BotMovementLimits;
 import edu.tigers.sumatra.botmanager.commands.EBotSkill;
+import edu.tigers.sumatra.botmanager.commands.botskills.data.DriveLimits;
+import edu.tigers.sumatra.botmanager.commands.botskills.data.KickerDribblerCommands;
+import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
+import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
 import edu.tigers.sumatra.botmanager.serial.SerialData;
 import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**
@@ -20,23 +20,23 @@ import edu.tigers.sumatra.math.IVector2;
  */
 public class BotSkillLocalVelocity extends AMoveBotSkill
 {
-	private static final int	MAX_ACC		= 10;
-	private static final int	MAX_ACC_W	= 100;
-	private static final int	MAX_JERK		= 100;
-	private static final int	MAX_JERK_W	= 1000;
-	
-	
 	@SerialData(type = ESerialDataType.INT16)
-	private final int				vel[]			= new int[3];
+	private final int[]					vel						= new int[3];
 	
 	@SerialData(type = ESerialDataType.UINT8)
-	private int						accMax		= 0;
+	private int								accMax					= 0;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int						accMaxW		= 0;
+	private int								accMaxW					= 0;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int						jerkMax		= 0;
+	private int								jerkMax					= 0;
 	@SerialData(type = ESerialDataType.UINT8)
-	private int						jerkMaxW		= 0;
+	private int								jerkMaxW					= 0;
+	
+	@SerialData(type = ESerialDataType.EMBEDDED)
+	private KickerDribblerCommands	kickerDribbler			= new KickerDribblerCommands();
+	
+	@SerialData(type = ESerialDataType.UINT8)
+	private int								dataAcqusitionMode	= 0;
 	
 	
 	/**
@@ -80,6 +80,7 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 	
 	/**
 	 * Set velocity in bot local frame.
+	 * Used by bot skills panel.
 	 * 
 	 * @param xy
 	 * @param orientation
@@ -87,9 +88,15 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 	 * @param accMaxW
 	 * @param jerkMax
 	 * @param jerkMaxW
+	 * @param dribbleSpeed
+	 * @param kickSpeed
+	 * @param kickDevice
+	 * @param kickMode
 	 */
+	@SuppressWarnings("squid:S00107")
 	public BotSkillLocalVelocity(final IVector2 xy, final double orientation,
-			final double accMax, final double accMaxW, final double jerkMax, final double jerkMaxW)
+			final double accMax, final double accMaxW, final double jerkMax, final double jerkMaxW,
+			final double dribbleSpeed, final double kickSpeed, final EKickerDevice kickDevice, final EKickerMode kickMode)
 	{
 		this();
 		
@@ -101,6 +108,9 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 		setAccMaxW(accMaxW);
 		setJerkMaxW(jerkMaxW);
 		setJerkMax(jerkMax);
+		
+		kickerDribbler.setDribblerSpeed(dribbleSpeed);
+		kickerDribbler.setKick(kickSpeed, kickDevice, kickMode);
 	}
 	
 	
@@ -138,7 +148,7 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 	 */
 	public final void setAccMax(final double val)
 	{
-		accMax = (int) ((val / MAX_ACC) * 255);
+		accMax = DriveLimits.toUInt8(val, DriveLimits.MAX_ACC);
 	}
 	
 	
@@ -149,25 +159,19 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 	 */
 	public final void setAccMaxW(final double val)
 	{
-		accMaxW = (int) ((val / MAX_ACC_W) * 255);
+		accMaxW = DriveLimits.toUInt8(val, DriveLimits.MAX_ACC_W);
 	}
 	
 	
-	/**
-	 * @return
-	 */
 	public double getAccMax()
 	{
-		return (accMax / 255.0) * MAX_ACC;
+		return DriveLimits.toDouble(accMax, DriveLimits.MAX_ACC);
 	}
 	
 	
-	/**
-	 * @return
-	 */
 	public double getAccMaxW()
 	{
-		return (accMaxW / 255.0) * MAX_ACC_W;
+		return DriveLimits.toDouble(accMaxW, DriveLimits.MAX_ACC_W);
 	}
 	
 	
@@ -178,7 +182,7 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 	 */
 	public final void setJerkMax(final double val)
 	{
-		jerkMax = (int) ((val / MAX_JERK) * 255);
+		jerkMax = DriveLimits.toUInt8(val, DriveLimits.MAX_JERK);
 	}
 	
 	
@@ -189,7 +193,7 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 	 */
 	public final void setJerkMaxW(final double val)
 	{
-		jerkMaxW = (int) ((val / MAX_JERK_W) * 255);
+		jerkMaxW = DriveLimits.toUInt8(val, DriveLimits.MAX_JERK_W);
 	}
 	
 	
@@ -198,7 +202,7 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 	 */
 	public double getJerkMax()
 	{
-		return (jerkMax / 255.0) * MAX_JERK;
+		return DriveLimits.toDouble(jerkMax, DriveLimits.MAX_JERK);
 	}
 	
 	
@@ -207,6 +211,59 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 	 */
 	public double getJerkMaxW()
 	{
-		return (jerkMaxW / 255.0) * MAX_JERK_W;
+		return DriveLimits.toDouble(jerkMaxW, DriveLimits.MAX_JERK_W);
+	}
+	
+	
+	@Override
+	public MoveConstraints getMoveConstraints()
+	{
+		MoveConstraints moveCon = new MoveConstraints(new BotMovementLimits());
+		moveCon.setAccMax(getAccMax());
+		moveCon.setAccMaxW(getAccMaxW());
+		moveCon.setJerkMax(getJerkMax());
+		moveCon.setJerkMaxW(getJerkMaxW());
+		
+		return moveCon;
+	}
+	
+	
+	/**
+	 * @return the kickerDribbler
+	 */
+	@Override
+	public KickerDribblerCommands getKickerDribbler()
+	{
+		return kickerDribbler;
+	}
+	
+	
+	/**
+	 * @param kickerDribbler the kickerDribbler to set
+	 */
+	@Override
+	public void setKickerDribbler(final KickerDribblerCommands kickerDribbler)
+	{
+		this.kickerDribbler = kickerDribbler;
+	}
+	
+	
+	/**
+	 * @return the dataAcqusitionMode
+	 */
+	@Override
+	public EDataAcquisitionMode getDataAcquisitionMode()
+	{
+		return EDataAcquisitionMode.getModeConstant(dataAcqusitionMode);
+	}
+	
+	
+	/**
+	 * @param dataAcqusitionMode the dataAcqusitionMode to set
+	 */
+	@Override
+	public void setDataAcquisitionMode(final EDataAcquisitionMode dataAcqusitionMode)
+	{
+		this.dataAcqusitionMode = dataAcqusitionMode.getId();
 	}
 }

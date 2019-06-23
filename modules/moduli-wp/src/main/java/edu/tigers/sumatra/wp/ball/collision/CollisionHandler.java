@@ -1,25 +1,19 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 5, 2016
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.wp.ball.collision;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import edu.tigers.sumatra.math.AVector3;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.IVector3;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.math.Vector3;
-import edu.tigers.sumatra.wp.ball.IState;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.wp.ball.dynamics.IState;
 
 
 /**
@@ -27,29 +21,9 @@ import edu.tigers.sumatra.wp.ball.IState;
  */
 public class CollisionHandler
 {
-	private static final double				BALL_DAMP_KICKER_FACTOR	= 0.66;
+	private static final double BALL_DAMP_FACTOR = -0.5;
 	
-	private final List<ICollisionObject>	collisionObjects			= new ArrayList<>();
-	private final List<IImpulseObject>		impulseObjects				= new ArrayList<>();
-	
-	private boolean								complexCollision			= false;
-	
-	
-	/**
-	 * 
-	 */
-	public CollisionHandler()
-	{
-	}
-	
-	
-	/**
-	 * @param complexCollision
-	 */
-	public CollisionHandler(final boolean complexCollision)
-	{
-		this.complexCollision = complexCollision;
-	}
+	private final List<ICollisionObject>	collisionObjects	= new ArrayList<>();
 	
 	
 	/**
@@ -61,25 +35,13 @@ public class CollisionHandler
 	}
 	
 	
-	/**
-	 * @param object
-	 */
-	public void addImpulseObject(final IImpulseObject object)
-	{
-		impulseObjects.add(object);
-	}
-	
-	
-	/**
-	 * @param prePos
-	 * @param postPos
-	 * @return
-	 */
-	public Optional<ICollision> getFirstCollision(final IVector3 prePos, final IVector3 postPos)
+	private Optional<ICollision> getFirstCollision(final IState preState, final double dt)
 	{
 		for (ICollisionObject object : collisionObjects)
 		{
-			Optional<ICollision> collision = object.getCollision(prePos, postPos);
+			IVector3 vel = preState.getVel().subtractNew(object.getVel());
+			IVector3 postPos = preState.getPos().addNew(vel.multiplyNew(1000 * dt));
+			Optional<ICollision> collision = object.getCollision(preState.getPos(), postPos);
 			if (collision.isPresent())
 			{
 				return collision;
@@ -89,151 +51,122 @@ public class CollisionHandler
 	}
 	
 	
-	private IVector3 getCollisionPos(final ICollisionState state)
+	private Optional<ICollision> getFirstInsideCollision(final IVector3 postPos)
 	{
-		IVector3 ballPos;
-		if (state.getCollision().isPresent())
+		for (ICollisionObject object : collisionObjects)
 		{
-			ballPos = new Vector3(state.getCollision().get().getPos(), state.getPos().z());
-		} else
-		{
-			ballPos = state.getPos();
+			Optional<ICollision> collision = object.getInsideCollision(postPos);
+			if (collision.isPresent())
+			{
+				return collision;
+			}
 		}
-		return ballPos;
-	}
-	
-	
-	/**
-	 * @param state
-	 * @return
-	 */
-	public IVector3 getImpulse(final ICollisionState state)
-	{
-		IVector3 ballPos = getCollisionPos(state);
-		Vector3 impulse = new Vector3();
-		for (IImpulseObject obj : impulseObjects)
-		{
-			impulse.add(obj.getImpulse(ballPos));
-		}
-		return impulse;
-	}
-	
-	
-	/**
-	 * @param state
-	 * @return
-	 */
-	public IVector3 getTorque(final IState state)
-	{
-		Vector3 impulse = new Vector3();
-		for (IImpulseObject obj : impulseObjects)
-		{
-			impulse.add(obj.getTorqueAcc(state));
-		}
-		return impulse;
+		return Optional.empty();
 	}
 	
 	
 	/**
 	 * @param preState
-	 * @param postState
+	 * @param dt
 	 * @return
 	 */
-	public ICollisionState process(final IState preState, final IState postState)
+	public ICollisionState process(final IState preState, final double dt)
 	{
-		BallCollisionState state = new BallCollisionState(postState);
-		Optional<ICollision> collision = getFirstCollision(preState.getPos(), postState.getPos());
+		BallCollisionState state = new BallCollisionState(preState);
+		if (preState.getPos().z() > Geometry.getBallParameters().getMaxInterceptableHeight())
+		{
+			return state;
+		}
+		Optional<ICollision> collision = getFirstCollision(preState, dt);
 		if (collision.isPresent())
 		{
-			state.setCollision(collision);
-			state = reflect(state);
+			state.setCollision(collision.orElse(null));
+			reflect(state);
+		} else
+		{
+			Optional<ICollision> insideCollision = getFirstInsideCollision(preState.getPos());
+			if (insideCollision.isPresent())
+			{
+				state.setCollision(insideCollision.orElse(null));
+				moveOutside(state);
+			}
 		}
+		impulse(state);
 		
 		return state;
 	}
 	
 	
-	private BallCollisionState reflect(final ICollisionState colState)
+	private void impulse(final BallCollisionState state)
 	{
-		BallCollisionState newState = new BallCollisionState(colState);
-		
-		IVector2 curVel = colState.getVel().getXYVector();
-		IVector2 objectVel = colState.getCollision().get().getObjectVel();
-		IVector2 colNormal = colState.getCollision().get().getNormal();
-		
-		IVector2 outVel = ballCollision(curVel, colNormal);
-		
-		if (complexCollision)
+		if (state.getCollision().isPresent())
 		{
-			double hitBallAngle = AngleMath.PI;
-			if (!curVel.isZeroVector())
-			{
-				hitBallAngle = GeoMath.angleBetweenVectorAndVector(curVel, objectVel);
-			}
-			double hitAngle = GeoMath.angleBetweenVectorAndVector(colNormal, objectVel);
-			double relAngle = Math.max(0, (-hitAngle / AngleMath.PI_HALF) + 1);
-			double hitVelAbs = Math.max(0, objectVel.getLength() - curVel.getLength()) * relAngle;
-			IVector2 hitVel = colNormal.scaleToNew(hitVelAbs);
-			if ((hitBallAngle > AngleMath.PI_HALF))
-			{
-				// bot hits ball
-				outVel = outVel.addNew(hitVel);
-			}
-			
-			if ((hitBallAngle < AngleMath.PI_HALF) && (outVel.getLength() < hitVel.getLength()))
-			{
-				// bot touches/pushes ball, scale towards hitvel
-				outVel = outVel.addNew(hitVel).scaleTo(hitVel.getLength());
-			}
+			IVector3 impulse = state.getCollision().get().getObject().getImpulse(state.getPos());
+			state.setVel(state.getVel().addNew(impulse));
 		}
-		
-		if (outVel.isZeroVector())
-		{
-			// move ball slowly outside
-			// do NOT change the position directly! this causes a jump which results in high velocities!
-			IVector2 colPos = colState.getCollision().get().getPos();
-			IVector2 curPos = colState.getPos().getXYVector();
-			IVector2 corDir = colPos.subtractNew(curPos);
-			IVector2 corVel = corDir.scaleToNew((0.2 * Math.min(50, corDir.getLength())) / 50);
-			outVel = outVel.addNew(corVel);
-		}
-		
-		newState.setVel(new Vector3(outVel, newState.getVel().z()));
-		newState.setAcc(AVector3.ZERO_VECTOR);
-		
-		if (complexCollision)
-		{
-			double distOverObs = GeoMath.distancePP(colState.getPos().getXYVector(),
-					colState.getCollision().get().getPos());
-			IVector2 corPos = colState.getCollision().get().getPos().addNew(outVel.scaleToNew(distOverObs));
-			newState.setPos(new Vector3(corPos, colState.getPos().z()));
-		}
-		
-		return newState;
 	}
 	
 	
-	private IVector2 ballCollision(final IVector2 ballVel, final IVector2 collisionNormal)
+	@SuppressWarnings("OptionalGetWithoutIsPresent")
+	private void reflect(final BallCollisionState colState)
+	{
+		IVector2 curVel = colState.getVel().getXYVector();
+		IVector3 objectVel = colState.getCollision().get().getObjectVel();
+		IVector2 colNormal = colState.getCollision().get().getNormal();
+		IVector2 relativeVel = curVel.subtractNew(objectVel);
+		
+		double dampFactor = BALL_DAMP_FACTOR;
+		if (colState.getCollision().get().isSticky())
+		{
+			dampFactor = 1;
+		}
+		IVector2 outVel = ballCollision(relativeVel, colNormal, dampFactor);
+		colState.setVel(Vector3.from2d(outVel, colState.getVel().z()));
+	}
+	
+	
+	@SuppressWarnings("OptionalGetWithoutIsPresent")
+	private void moveOutside(final BallCollisionState colState)
+	{
+		IVector2 objectVel = colState.getCollision().get().getObjectVel().getXYVector();
+		IVector2 normal = colState.getCollision().get().getNormal();
+		boolean sticky = colState.getCollision().get().isSticky();
+		
+		// move ball 1mm outside of obstacle
+		IVector2 newPos = colState.getCollision().get().getPos()
+				.addNew(colState.getCollision().get().getNormal().scaleToNew(sticky ? -1 : 1));
+		colState.setPos(Vector3.from2d(newPos, colState.getPos().z()));
+		
+		// set ball vel to object vel (e.g. robot pushes ball)
+		double newAbsVel = objectVel.getLength2();
+		double colAngle = objectVel.angleToAbs(normal).orElse(0.0);
+		double relVel = colAngle / AngleMath.PI_HALF;
+		newAbsVel *= 1 - Math.min(1, relVel);
+		colState.setVel(Vector3.from2d(normal.scaleToNew(newAbsVel),
+				colState.getVel().z()));
+	}
+	
+	
+	private IVector2 ballCollision(final IVector2 ballVel, final IVector2 collisionNormal, final double dampFactor)
 	{
 		if (ballVel.isZeroVector())
 		{
 			return ballVel;
 		}
-		double angleNormalColl = GeoMath.angleBetweenVectorAndVector(ballVel, collisionNormal);
+		double angleNormalColl = ballVel.angleToAbs(collisionNormal).orElse(0.0);
 		if (angleNormalColl < AngleMath.PI_HALF)
 		{
 			return ballVel;
 		}
 		double relDamp = Math.max(0, (angleNormalColl / AngleMath.PI_HALF) - 1);
-		double damp = relDamp * BALL_DAMP_KICKER_FACTOR;
+		double damp = relDamp * dampFactor;
 		double velInfAngle = ballVel.getAngle();
 		if (angleNormalColl > AngleMath.PI_HALF)
 		{
 			velInfAngle = AngleMath.normalizeAngle(ballVel.getAngle() + AngleMath.PI);
 		}
-		double velAngleDiff = AngleMath.getShortestRotation(velInfAngle, collisionNormal.getAngle());
-		IVector2 outVel = new Vector2(collisionNormal).turn(velAngleDiff).scaleTo(
+		double velAngleDiff = AngleMath.difference(collisionNormal.getAngle(), velInfAngle);
+		return collisionNormal.turnNew(velAngleDiff).scaleTo(
 				ballVel.getLength2() * (1 - damp));
-		return outVel;
 	}
 }

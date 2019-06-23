@@ -31,7 +31,7 @@ public class SerialDescription
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final List<ASerialField>	cmdFields	= new ArrayList<ASerialField>();
+	private final List<ASerialField>	cmdFields	= new ArrayList<>();
 	private final Class<?>				clazz;
 	private final Constructor<?>		ctor;
 	

@@ -1,21 +1,18 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 03.08.2010
- * Author(s):
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import edu.tigers.moduli.AModule;
+import edu.tigers.moduli.exceptions.InitModuleException;
+import edu.tigers.sumatra.ai.data.EAIControlState;
 import edu.tigers.sumatra.ai.data.frames.AIInfoFrame;
 import edu.tigers.sumatra.ai.data.frames.VisualizationFrame;
-import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.wp.IWorldFrameObserver;
+import edu.tigers.sumatra.ids.EAiTeam;
 
 
 /**
@@ -23,38 +20,30 @@ import edu.tigers.sumatra.wp.IWorldFrameObserver;
  * 
  * @author Gero
  */
-public abstract class AAgent extends AModule implements IWorldFrameObserver
+public abstract class AAgent extends AModule
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
 	/** */
-	public static final String								MODULE_TYPE					= "AAgent";
+	public static final String MODULE_TYPE = "AAgent";
 	/** */
-	public static final String								MODULE_ID_YELLOW			= "ai_yellow";
-	/** */
-	public static final String								MODULE_ID_BLUE				= "ai_blue";
-	
-	// --- config ---
-	/** */
-	public static final String								AI_CONFIG_PATH				= "./config/ai/";
+	public static final String MODULE_ID = "ai";
 	
 	
-	// --- geometry ---
-	/** */
-	public static final String								KEY_GEOMETRY_CONFIG		= AAgent.class.getName() + ".geometry";
-	/** */
-	public static final String								GEOMETRY_CONFIG_PATH		= "./config/geometry/";
-	/**  */
-	public static final String								VALUE_GEOMETRY_CONFIG	= "grSim.xml";
+	private final List<IAIObserver> observers = new CopyOnWriteArrayList<>();
+	private final List<IVisualizationFrameObserver> visObservers = new CopyOnWriteArrayList<>();
 	
 	
-	/** */
-	private final List<IAIObserver>						observers					= new CopyOnWriteArrayList<>();
+	@Override
+	public void initModule() throws InitModuleException
+	{
+		// nothing to do
+	}
 	
-	private ETeamColor										teamColor					= ETeamColor.UNINITIALIZED;
 	
-	private final List<IVisualizationFrameObserver>	visObservers				= new CopyOnWriteArrayList<>();
+	@Override
+	public void deinitModule()
+	{
+		// nothing to do
+	}
 	
 	
 	/**
@@ -93,37 +82,52 @@ public abstract class AAgent extends AModule implements IWorldFrameObserver
 	}
 	
 	
-	/**
-	 * @return the observers
-	 */
-	public final List<IAIObserver> getObservers()
+	protected void notifyAiModeChanged(final EAiTeam aiTeam, final EAIControlState mode)
 	{
-		return observers;
+		synchronized (observers)
+		{
+			for (IAIObserver observer : observers)
+			{
+				observer.onAiModeChanged(aiTeam, mode);
+			}
+		}
 	}
 	
 	
 	/**
-	 * @return
-	 */
-	public final ETeamColor getTeamColor()
-	{
-		return teamColor;
-	}
-	
-	
-	/**
-	 * @param color
-	 */
-	protected final void setTeamColor(final ETeamColor color)
-	{
-		teamColor = color;
-	}
-	
-	
-	/**
-	 * 
+	 * Reset agent
 	 */
 	public abstract void reset();
+	
+	
+	/**
+	 * @param aiTeam
+	 * @param mode
+	 */
+	public abstract void changeMode(final EAiTeam aiTeam, final EAIControlState mode);
+	
+	
+	/**
+	 * @param mode
+	 */
+	public abstract void changeMode(final EAIControlState mode);
+	
+	
+	/**
+	 * Get the ai of the give ai team, if it is running
+	 * 
+	 * @param selectedTeam
+	 * @return
+	 */
+	public abstract Optional<Ai> getAi(final EAiTeam selectedTeam);
+	
+	
+	/**
+	 * If true, process all incoming worldFrames, blocking the WP if necessary
+	 * 
+	 * @param processAllWorldFrames
+	 */
+	public abstract void setProcessAllWorldFrames(final boolean processAllWorldFrames);
 	
 	
 	/**
@@ -158,26 +162,11 @@ public abstract class AAgent extends AModule implements IWorldFrameObserver
 	}
 	
 	
-	protected void notifyAIStopped(final ETeamColor teamColor)
+	protected void notifyAIStopped(final EAiTeam aiTeam)
 	{
 		for (final IVisualizationFrameObserver o : visObservers)
 		{
-			o.onClearVisualizationFrame(teamColor);
-		}
-	}
-	
-	
-	/**
-	 * @param ex
-	 * @param frame
-	 * @param prevFrame
-	 */
-	protected void notifyNewAIExceptionVisualize(final Throwable ex, final VisualizationFrame frame,
-			final VisualizationFrame prevFrame)
-	{
-		for (final IVisualizationFrameObserver o : visObservers)
-		{
-			o.onAIException(ex, frame, prevFrame);
+			o.onClearVisualizationFrame(aiTeam);
 		}
 	}
 }

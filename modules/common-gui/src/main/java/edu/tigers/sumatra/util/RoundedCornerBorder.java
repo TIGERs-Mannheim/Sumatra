@@ -1,20 +1,9 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jun 16, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.util;
 
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Insets;
-import java.awt.RenderingHints;
+import java.awt.*;
 import java.awt.geom.Area;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
@@ -102,7 +91,7 @@ public class RoundedCornerBorder implements Border, Serializable
 		double yr = y + posOffset;
 		double wr = width - sizeOffset;
 		double hr = height - sizeOffset;
-		double diameter = radii * 2;
+		double diameter = radii * 2.0;
 		
 		RoundRectangle2D rect = new RoundRectangle2D.Double(xr, yr, wr, hr, diameter, diameter);
 		return new Area(rect);

@@ -25,21 +25,32 @@ import edu.tigers.sumatra.botmanager.commands.tiger.TigerSystemPing;
 public class PingThread implements Runnable
 {
 	private static final long						UPDATE_RATE		= 100000000;
-																				
+	
 	private int											id					= 0;
-																				
+	
 	private long										lastStatTime	= 0;
 	private int											payloadSize		= 0;
-																				
-	private final List<PingDatum>					pings				= new LinkedList<PingDatum>();
-	private final List<PingDatum>					completed		= new LinkedList<PingDatum>();
-																				
+	
+	private final List<PingDatum>					pings				= new LinkedList<>();
+	private final List<PingDatum>					completed		= new LinkedList<>();
+	
 	private final ABot								bot;
-															
-															
-	private final List<IPingThreadObserver>	observers		= new CopyOnWriteArrayList<IPingThreadObserver>();
-																				
-																				
+	
+	
+	private final List<IPingThreadObserver>	observers		= new CopyOnWriteArrayList<>();
+	
+	
+	/**
+	 * @param payloadSize
+	 * @param bot
+	 */
+	public PingThread(final int payloadSize, final ABot bot)
+	{
+		this.payloadSize = payloadSize;
+		this.bot = bot;
+	}
+	
+	
 	/**
 	 * @param observer
 	 */
@@ -64,17 +75,6 @@ public class PingThread implements Runnable
 		{
 			observer.onNewPingStats(pingStats);
 		}
-	}
-	
-	
-	/**
-	 * @param payloadSize
-	 * @param bot
-	 */
-	public PingThread(final int payloadSize, final ABot bot)
-	{
-		this.payloadSize = payloadSize;
-		this.bot = bot;
 	}
 	
 	
@@ -119,7 +119,7 @@ public class PingThread implements Runnable
 	 */
 	public void pongArrived(final int id)
 	{
-		PingDatum dat = null;
+		PingDatum dat;
 		
 		synchronized (pings)
 		{
@@ -205,6 +205,13 @@ public class PingThread implements Runnable
 	
 	private static class PingDatum
 	{
+		private long		startTime;
+		private long		endTime;
+		private double		delay;
+		private int			id;
+		private boolean	lost;
+		
+		
 		public PingDatum(final int id)
 		{
 			this.id = id;
@@ -213,16 +220,12 @@ public class PingThread implements Runnable
 			delay = 0;
 			lost = false;
 		}
-		
-		public long		startTime;
-		public long		endTime;
-		public double	delay;
-		public int		id;
-		public boolean	lost;
 	}
 	
 	/**
+	 * Ping thread observer.
 	 */
+	@FunctionalInterface
 	public static interface IPingThreadObserver
 	{
 		/**
@@ -233,6 +236,7 @@ public class PingThread implements Runnable
 	
 	
 	/**
+	 * Remove all observers.
 	 */
 	public void clearObservers()
 	{

@@ -8,13 +8,13 @@
  */
 package edu.tigers.autoreferee.remote.impl;
 
-import edu.tigers.autoreferee.engine.RefCommand;
+import edu.tigers.autoreferee.engine.RefboxRemoteCommand;
 import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest;
 import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest.CardInfo;
 import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest.CardInfo.CardTeam;
 import edu.tigers.sumatra.Referee.SSL_Referee.Point;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**
@@ -37,7 +37,7 @@ public class RemoteControlProtobufBuilder
 	 * @param cmd
 	 * @return
 	 */
-	public SSL_RefereeRemoteControlRequest buildRequest(final RefCommand cmd)
+	public SSL_RefereeRemoteControlRequest buildRequest(final RefboxRemoteCommand cmd)
 	{
 		SSL_RefereeRemoteControlRequest.Builder reqBuilder = SSL_RefereeRemoteControlRequest.newBuilder();
 		reqBuilder.setMessageId(nextMsgId++);
@@ -55,7 +55,7 @@ public class RemoteControlProtobufBuilder
 	}
 	
 	
-	private void handleCardCommand(final RefCommand cmd, final SSL_RefereeRemoteControlRequest.Builder builder)
+	private void handleCardCommand(final RefboxRemoteCommand cmd, final SSL_RefereeRemoteControlRequest.Builder builder)
 	{
 		CardInfo.Builder cardBuilder = CardInfo.newBuilder();
 		cardBuilder.setType(cmd.getCardType());
@@ -64,7 +64,7 @@ public class RemoteControlProtobufBuilder
 	}
 	
 	
-	private void handleRegularCommand(final RefCommand cmd, final SSL_RefereeRemoteControlRequest.Builder builder)
+	private void handleRegularCommand(final RefboxRemoteCommand cmd, final SSL_RefereeRemoteControlRequest.Builder builder)
 	{
 		builder.setCommand(cmd.getCommand());
 		cmd.getKickPos().ifPresent(point -> setPoint(builder, point));

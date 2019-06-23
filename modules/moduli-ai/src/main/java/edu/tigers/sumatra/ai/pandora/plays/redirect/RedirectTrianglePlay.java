@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 14, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.redirect;
 
@@ -18,9 +13,9 @@ import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.VectorMath;
 
 
 /**
@@ -30,23 +25,23 @@ import edu.tigers.sumatra.math.Vector2;
  */
 public class RedirectTrianglePlay extends ARedirectPlay
 {
-	@Configurable
-	private static double	angleDeg		= 45;
-													
-	@Configurable
-	private static double	distance		= 3000;
-													
-	@Configurable
-	private static IVector2	redirectPos	= new Vector2(2000, 1000);
-													
-	@Configurable
-	private static IVector2	dir			= new Vector2(-4, -1);
-													
-	private AthenaAiFrame	latestFrame	= null;
-													
-													
+	@Configurable(defValue = "70.0")
+	private static double angleDeg = 70;
+	
+	@Configurable(defValue = "3000.0")
+	private static double distance = 3000;
+	
+	@Configurable(defValue = "2000.0;1000.0")
+	private static IVector2 redirectPos = Vector2.fromXY(2000, 1000);
+	
+	@Configurable(defValue = "-4.0;-1.0")
+	private static IVector2 dir = Vector2.fromXY(-4, -1);
+	
+	private AthenaAiFrame latestFrame = null;
+	
+	
 	/**
-	 * 
+	 * Default
 	 */
 	public RedirectTrianglePlay()
 	{
@@ -65,9 +60,9 @@ public class RedirectTrianglePlay extends ARedirectPlay
 	@Override
 	protected List<IVector2> getFormation()
 	{
-		IVector2 destSec1 = redirectPos.addNew(dir.turnNew((angleDeg * AngleMath.DEG_TO_RAD) / 2.0).scaleTo(distance));
-		IVector2 destSec2 = redirectPos.addNew(dir.turnNew((-angleDeg * AngleMath.DEG_TO_RAD) / 2.0).scaleTo(distance));
-		List<IVector2> formation = new ArrayList<IVector2>(3);
+		IVector2 destSec1 = redirectPos.addNew(dir.turnNew(AngleMath.deg2rad(angleDeg) / 2.0).scaleTo(distance));
+		IVector2 destSec2 = redirectPos.addNew(dir.turnNew(AngleMath.deg2rad(-angleDeg) / 2.0).scaleTo(distance));
+		List<IVector2> formation = new ArrayList<>(3);
 		formation.add(redirectPos);
 		formation.add(destSec1);
 		formation.add(destSec2);
@@ -94,12 +89,9 @@ public class RedirectTrianglePlay extends ARedirectPlay
 		{
 			case 0:
 				return getRoleIdxFarerFromBall();
-			case 1:
-				return 0;
-			case 2:
+			default:
 				return 0;
 		}
-		return 0;
 	}
 	
 	
@@ -113,7 +105,8 @@ public class RedirectTrianglePlay extends ARedirectPlay
 		int idx = 0;
 		for (int i = 1; i < getRoles().size(); i++)
 		{
-			double dist = GeoMath.distancePP(latestFrame.getWorldFrame().getBall().getPos(), getRoles().get(i).getPos());
+			double dist = VectorMath.distancePP(latestFrame.getWorldFrame().getBall().getPos(),
+					getRoles().get(i).getPos());
 			if (dist > maxDist)
 			{
 				maxDist = dist;

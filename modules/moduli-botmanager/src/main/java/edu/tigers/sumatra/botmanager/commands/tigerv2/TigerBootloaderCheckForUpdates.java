@@ -28,6 +28,7 @@ public class TigerBootloaderCheckForUpdates extends ACommand
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
+	 * Constructor.
 	 */
 	public TigerBootloaderCheckForUpdates()
 	{

@@ -1,16 +1,11 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Mar 1, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.events;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +19,7 @@ import edu.tigers.autoreferee.IAutoRefFrame;
 import edu.tigers.autoreferee.engine.events.IGameEventDetector.EGameEventDetectorType;
 import edu.tigers.autoreferee.engine.events.impl.AttackerToDefenseAreaDistanceDetector;
 import edu.tigers.autoreferee.engine.events.impl.AttackerTouchKeeperDetector;
+import edu.tigers.autoreferee.engine.events.impl.BallHoldInPenAreaDetector;
 import edu.tigers.autoreferee.engine.events.impl.BallLeftFieldDetector;
 import edu.tigers.autoreferee.engine.events.impl.BallSpeedingDetector;
 import edu.tigers.autoreferee.engine.events.impl.BotCollisionDetector;
@@ -35,7 +31,8 @@ import edu.tigers.autoreferee.engine.events.impl.DoubleTouchDetector;
 import edu.tigers.autoreferee.engine.events.impl.DribblingDetector;
 import edu.tigers.autoreferee.engine.events.impl.GoalDetector;
 import edu.tigers.autoreferee.engine.events.impl.KickTimeoutDetector;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
+import edu.tigers.autoreferee.engine.events.impl.NoProgressDetector;
+import edu.tigers.sumatra.referee.data.GameState;
 
 
 /**
@@ -43,11 +40,11 @@ import edu.tigers.sumatra.wp.data.EGameStateNeutral;
  */
 public class GameEventEngine
 {
-	private Map<EGameEventDetectorType, IGameEventDetector>	detectors	= new HashMap<>();
+	private Map<EGameEventDetectorType, IGameEventDetector> detectors = new EnumMap<>(EGameEventDetectorType.class);
 	
 	
 	/**
-	 * 
+	 * constructor
 	 */
 	public GameEventEngine()
 	{
@@ -64,6 +61,7 @@ public class GameEventEngine
 	}
 	
 	
+	@SuppressWarnings("squid:MethodCyclomaticComplexity")
 	private static IGameEventDetector createDetector(final EGameEventDetectorType type)
 	{
 		switch (type)
@@ -94,6 +92,10 @@ public class GameEventEngine
 				return new GoalDetector();
 			case KICK_TIMEOUT:
 				return new KickTimeoutDetector();
+			case BALL_HOLD_IN_PENAREA:
+				return new BallHoldInPenAreaDetector();
+			case NO_PROGRESS:
+				return new NoProgressDetector();
 			default:
 				throw new IllegalArgumentException("Please add the new type \"" + type + "\" to this switch case clause!");
 		}
@@ -135,11 +137,11 @@ public class GameEventEngine
 	
 	
 	/**
-	 * 
+	 * reset
 	 */
 	public void reset()
 	{
-		detectors.values().forEach(detector -> detector.reset());
+		detectors.values().forEach(IGameEventDetector::reset);
 	}
 	
 	
@@ -149,14 +151,14 @@ public class GameEventEngine
 	 */
 	public List<IGameEvent> update(final IAutoRefFrame frame)
 	{
-		EGameStateNeutral currentState = frame.getGameState();
-		EGameStateNeutral lastState = frame.getPreviousFrame().getGameState();
+		GameState currentState = frame.getGameState();
+		GameState lastState = frame.getPreviousFrame().getGameState();
 		
 		/*
 		 * Retrieve all rules which are active in the current gamestate
 		 */
 		List<IGameEventDetector> activeDetectors = detectors.values().stream()
-				.filter(detector -> detector.isActiveIn(currentState))
+				.filter(detector -> detector.isActiveIn(currentState.getState()))
 				.sorted(IGameEventDetector.GameEventDetectorComparator.INSTANCE)
 				.collect(Collectors.toList());
 		
@@ -164,14 +166,14 @@ public class GameEventEngine
 		 * Reset the detectors which have now become active
 		 */
 		activeDetectors.stream()
-				.filter(detector -> !detector.isActiveIn(lastState))
-				.forEach(detector -> detector.reset());
+				.filter(detector -> !detector.isActiveIn(lastState.getState()))
+				.forEach(IGameEventDetector::reset);
 		
 		List<IGameEvent> gameEvents = new ArrayList<>();
 		for (IGameEventDetector detector : activeDetectors)
 		{
 			Optional<IGameEvent> result = detector.update(frame, gameEvents);
-			result.ifPresent(val -> gameEvents.add(val));
+			result.ifPresent(gameEvents::add);
 		}
 		
 		return gameEvents;

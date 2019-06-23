@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 30, 2014
- * Author(s): Daniel Andres <andreslopez.daniel@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.statistics;
 
@@ -19,7 +14,7 @@ import edu.tigers.sumatra.ai.Agent;
 import edu.tigers.sumatra.ai.IAIObserver;
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
 import edu.tigers.sumatra.ai.data.frames.VisualizationFrame;
-import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.statistics.view.StatisticsPanel;
 import edu.tigers.sumatra.views.ASumatraViewPresenter;
@@ -34,26 +29,23 @@ import edu.tigers.sumatra.views.ISumatraView;
 public class StatisticsPresenter extends ASumatraViewPresenter implements IVisualizationFrameObserver, IAIObserver
 {
 	@SuppressWarnings("unused")
-	private static final Logger	log					= Logger.getLogger(StatisticsPresenter.class.getName());
+	private static final Logger log = Logger.getLogger(StatisticsPresenter.class.getName());
 	
-	private final ETeamColor		teamColor;
+	/** Each x-th frame will be passed to Panel, others will be ignored */
+	private static final int STAT_SHOW_THRESHOLD = 10;
 	
-	private final StatisticsPanel	statisticsPanel;
+	private final StatisticsPanel statisticsPanel;
 	
 	/** Used to limit updates */
-	private int							statShowCounter	= 0;
-	/** Each x-th frame will be passed to Panel, others will be ignored */
-	private final int					statShowTreshold	= 60;
+	private int statShowCounter = 0;
 	
 	
 	/**
-	 * @param teamColor
+	 * Default
 	 */
-	public StatisticsPresenter(final ETeamColor teamColor)
+	public StatisticsPresenter()
 	{
-		this.teamColor = teamColor;
-		
-		statisticsPanel = new StatisticsPanel(teamColor);
+		statisticsPanel = new StatisticsPanel();
 	}
 	
 	
@@ -65,13 +57,11 @@ public class StatisticsPresenter extends ASumatraViewPresenter implements IVisua
 			case ACTIVE:
 				try
 				{
-					Agent agentYellow = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_YELLOW);
-					agentYellow.addVisObserver(this);
-					Agent agentBlue = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_BLUE);
-					agentBlue.addVisObserver(this);
+					Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
+					agent.addVisObserver(this);
 				} catch (ModuleNotFoundException err)
 				{
-					log.error("Could not get agent module");
+					log.error("Could not get agent module", err);
 				}
 				break;
 			case NOT_LOADED:
@@ -79,13 +69,11 @@ public class StatisticsPresenter extends ASumatraViewPresenter implements IVisua
 			case RESOLVED:
 				try
 				{
-					Agent agentYellow = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_YELLOW);
-					agentYellow.removeVisObserver(this);
-					Agent agentBlue = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_BLUE);
-					agentBlue.removeVisObserver(this);
+					Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
+					agent.removeVisObserver(this);
 				} catch (ModuleNotFoundException err)
 				{
-					log.error("Could not get agent module");
+					log.error("Could not get agent module", err);
 				}
 				break;
 		}
@@ -109,15 +97,22 @@ public class StatisticsPresenter extends ASumatraViewPresenter implements IVisua
 	@Override
 	public void onNewVisualizationFrame(final VisualizationFrame frame)
 	{
-		if (frame.getTeamColor() != teamColor)
+		if (frame.getTeamColor() != statisticsPanel.getSelectedTeamColor())
 		{
 			return;
 		}
 		statShowCounter++;
-		if ((statShowCounter % statShowTreshold) == 0)
+		if ((statShowCounter % STAT_SHOW_THRESHOLD) == 0)
 		{
 			statisticsPanel.onNewVisualizationFrame(frame);
 			statShowCounter = 0;
 		}
+	}
+	
+	
+	@Override
+	public void onClearVisualizationFrame(final EAiTeam teamColor)
+	{
+		statisticsPanel.reset();
 	}
 }

@@ -1,20 +1,12 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 12.12.2014
- * Author(s): MarkG
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.metis.offense.data;
 
-import java.util.List;
-
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.ai.metis.support.data.AdvancedPassTarget;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.trajectory.DribblePath;
+import edu.tigers.sumatra.ai.metis.support.IPassTarget;
+import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 
 
@@ -24,7 +16,7 @@ import edu.tigers.sumatra.wp.data.DynamicPosition;
 @Persistent(version = 2)
 public class OffensiveAction
 {
-	
+
 	/**
 	 * defines offensive Actions
 	 */
@@ -45,28 +37,27 @@ public class OffensiveAction
 		/** GOAL_SHOT: Simply shoot on goal, without any steps in between */
 		GOAL_SHOT,
 		/**
-		 * 
+		 *
 		 */
 		@Deprecated
 		MOVING_KICK,
 	}
-	
-	private AdvancedPassTarget		passTarget							= null;
-	
-	private DynamicPosition			directShotAndClearingTarget	= null;
-	
-	private EOffensiveAction		type									= null;
-	
-	private OffensiveMovePosition	movePosition						= null;
-	
-	private List<DribblePath>		dribblePaths						= null;
-	
-	
-	private boolean					kickInsBlauePossible				= false;
-	
-	private IVector2					kickInsBlaueTarget				= null;
-	
-	private boolean					isRoleReadyToKick					= true;
+
+	private OffensiveMoveAndTargetInformation	moveAndTargetInformation		= null;
+
+	private IPassTarget								passTarget							= null;
+
+	private DynamicPosition							directShotAndClearingTarget	= null;
+
+	private EOffensiveAction						type									= null;
+
+	private boolean									kickInsBlauePossible				= false;
+
+	private IVector2									kickInsBlaueTarget				= null;
+
+	private boolean									isRoleReadyToKick					= true;
+
+	private double										viability							= 0;
 	
 	
 	/**
@@ -74,14 +65,14 @@ public class OffensiveAction
 	 */
 	public OffensiveAction()
 	{
-		
+		// nothing to do
 	}
 	
 	
 	/**
 	 * @return the passTarget
 	 */
-	public AdvancedPassTarget getPassTarget()
+	public IPassTarget getPassTarget()
 	{
 		return passTarget;
 	}
@@ -90,7 +81,7 @@ public class OffensiveAction
 	/**
 	 * @param passTarget the passTarget to set
 	 */
-	public void setPassTarget(final AdvancedPassTarget passTarget)
+	public void setPassTarget(final IPassTarget passTarget)
 	{
 		this.passTarget = passTarget;
 	}
@@ -129,42 +120,6 @@ public class OffensiveAction
 	public void setType(final EOffensiveAction type)
 	{
 		this.type = type;
-	}
-	
-	
-	/**
-	 * @return the movePosition
-	 */
-	public OffensiveMovePosition getMovePosition()
-	{
-		return movePosition;
-	}
-	
-	
-	/**
-	 * @param movePosition the movePosition to set
-	 */
-	public void setMovePosition(final OffensiveMovePosition movePosition)
-	{
-		this.movePosition = movePosition;
-	}
-	
-	
-	/**
-	 * @return the dribblePaths
-	 */
-	public List<DribblePath> getDribblePaths()
-	{
-		return dribblePaths;
-	}
-	
-	
-	/**
-	 * @param dribblePaths the dribblePaths to set
-	 */
-	public void setDribblePaths(final List<DribblePath> dribblePaths)
-	{
-		this.dribblePaths = dribblePaths;
 	}
 	
 	
@@ -222,4 +177,32 @@ public class OffensiveAction
 	}
 	
 	
+	/**
+	 * @return viability score [0,1]. 1 is good
+	 */
+	public double getViability()
+	{
+		return viability;
+	}
+	
+	
+	/**
+	 * @param viability set viability
+	 */
+	public void setViability(final double viability)
+	{
+		this.viability = viability;
+	}
+	
+	
+	public OffensiveMoveAndTargetInformation getMoveAndTargetInformation()
+	{
+		return moveAndTargetInformation;
+	}
+	
+	
+	public void setMoveAndTargetInformation(final OffensiveMoveAndTargetInformation moveAndTargetInformation)
+	{
+		this.moveAndTargetInformation = moveAndTargetInformation;
+	}
 }

@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 22.04.2013
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.basestation;
 
@@ -32,13 +27,21 @@ public interface IBaseStation extends IConfigObserver
 	
 	
 	/**
+	 * Send a command to base station.
 	 * 
+	 * @param cmd
+	 */
+	void enqueueCommand(final ACommand cmd);
+	
+	
+	/**
+	 * Connect to BS
 	 */
 	void connect();
 	
 	
 	/**
-	 * 
+	 * Disconnect from BS
 	 */
 	void disconnect();
 	
@@ -73,9 +76,29 @@ public interface IBaseStation extends IConfigObserver
 	
 	
 	/**
-	 * 
+	 * end of ping
 	 */
 	void stopPing();
+	
+	
+	/**
+	 * Add the given bot
+	 * 
+	 * @param botID
+	 */
+	default void addBot(BotID botID)
+	{
+	}
+	
+	
+	/**
+	 * Remove the given bot
+	 * 
+	 * @param botID
+	 */
+	default void removeBot(BotID botID)
+	{
+	}
 	
 	
 	/**

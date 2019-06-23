@@ -1,22 +1,18 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jun 16, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.drawable;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
+import java.awt.*;
 
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector;
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.math.vector.IVector;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.trajectory.ITrajectory;
+import edu.tigers.sumatra.trajectory.StubTrajectory;
 
 
 /**
@@ -26,13 +22,13 @@ import edu.tigers.sumatra.trajectory.ITrajectory;
 public class DrawableTrajectory2D implements IDrawableShape
 {
 	private final ITrajectory<? extends IVector>	trajXY;
-	private final double									colorBlue;
+	private final float									colorBlue;
 	
 	
 	@SuppressWarnings("unused")
 	private DrawableTrajectory2D()
 	{
-		trajXY = null;
+		trajXY = StubTrajectory.vector2Zero();
 		colorBlue = 0;
 	}
 	
@@ -53,7 +49,7 @@ public class DrawableTrajectory2D implements IDrawableShape
 	public DrawableTrajectory2D(final ITrajectory<? extends IVector> trajXY, final double colorBlue)
 	{
 		this.trajXY = trajXY;
-		this.colorBlue = colorBlue;
+		this.colorBlue = (float) colorBlue;
 	}
 	
 	
@@ -81,13 +77,12 @@ public class DrawableTrajectory2D implements IDrawableShape
 				colorGreen = 1 + relVel;
 			}
 			
-			g.setColor(new Color((float) colorRed, (float) colorGreen, (float) colorBlue));
+			g.setColor(new Color((float) colorRed, (float) colorGreen, colorBlue));
 			
 			g.fillOval((int) posTrans.x() - 1, (int) posTrans.y() - 1, 2, 2);
 			
-			if (GeoMath.distancePP(pLast, trajXY.getPosition(t).getXYVector()) > 0.2)
+			if (VectorMath.distancePP(pLast, trajXY.getPosition(t).getXYVector()) > 0.2)
 			{
-				// g.drawString(String.format("%.1f", t), (float) posTrans.x() + 2, (float) posTrans.y() + 0.8f);
 				pLast = trajXY.getPosition(t).getXYVector();
 			}
 			

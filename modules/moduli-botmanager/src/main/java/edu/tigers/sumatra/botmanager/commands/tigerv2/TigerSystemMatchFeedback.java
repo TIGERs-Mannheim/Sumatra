@@ -1,21 +1,19 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 02.12.2014
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands.tigerv2;
 
 import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.bot.EFeature;
+import edu.tigers.sumatra.bot.ERobotMode;
 import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.ECommand;
 import edu.tigers.sumatra.botmanager.serial.SerialData;
 import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.Vector2;
 
 
 /**
@@ -31,11 +29,11 @@ public class TigerSystemMatchFeedback extends ACommand
 	// --------------------------------------------------------------------------
 	/** [mm], [mrad] */
 	@SerialData(type = ESerialDataType.INT16)
-	private final int					curPosition[]							= new int[3];
+	private final int[]				curPosition								= new int[3];
 	
 	/** [mm/s], [mrad/s] */
 	@SerialData(type = ESerialDataType.INT16)
-	private final int					curVelocity[]							= new int[3];
+	private final int[]				curVelocity								= new int[3];
 	
 	/** [V] */
 	@SerialData(type = ESerialDataType.UINT8)
@@ -73,7 +71,7 @@ public class TigerSystemMatchFeedback extends ACommand
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/** */
+	/** Constructor. */
 	public TigerSystemMatchFeedback()
 	{
 		super(ECommand.CMD_SYSTEM_MATCH_FEEDBACK);
@@ -95,7 +93,7 @@ public class TigerSystemMatchFeedback extends ACommand
 	 */
 	public Vector2 getVelocity()
 	{
-		return new Vector2(curVelocity[0] / 1000.0, curVelocity[1] / 1000.0);
+		return Vector2.fromXY(curVelocity[0] / 1000.0, curVelocity[1] / 1000.0);
 	}
 	
 	
@@ -117,18 +115,7 @@ public class TigerSystemMatchFeedback extends ACommand
 	 */
 	public Vector2 getAcceleration()
 	{
-		return new Vector2();
-	}
-	
-	
-	/**
-	 * Get angular acceleration.
-	 * 
-	 * @return acceleration in [rad/s^2]
-	 */
-	public double getAngularAcceleration()
-	{
-		return 0;
+		return Vector2.zero();
 	}
 	
 	
@@ -139,7 +126,7 @@ public class TigerSystemMatchFeedback extends ACommand
 	 */
 	public Vector2 getPosition()
 	{
-		return new Vector2(curPosition[0] / 1000.0, curPosition[1] / 1000.0);
+		return Vector2.fromXY(curPosition[0] / 1000.0, curPosition[1] / 1000.0);
 	}
 	
 	
@@ -159,12 +146,8 @@ public class TigerSystemMatchFeedback extends ACommand
 	 */
 	public boolean isPositionValid()
 	{
-		if (curPosition[0] == UNUSED_FIELD)
-		{
-			return false;
-		}
+		return curPosition[0] != UNUSED_FIELD;
 		
-		return true;
 	}
 	
 	
@@ -173,12 +156,8 @@ public class TigerSystemMatchFeedback extends ACommand
 	 */
 	public boolean isVelocityValid()
 	{
-		if (curVelocity[0] == UNUSED_FIELD)
-		{
-			return false;
-		}
+		return curVelocity[0] != UNUSED_FIELD;
 		
-		return true;
 	}
 	
 	
@@ -240,7 +219,7 @@ public class TigerSystemMatchFeedback extends ACommand
 				return 0.0;
 			}
 			
-			return ((bat - BAT_3S_MIN_VOLTAGE)) / (BAT_3S_MAX_VOLTAGE - BAT_3S_MIN_VOLTAGE);
+			return (bat - BAT_3S_MIN_VOLTAGE) / (BAT_3S_MAX_VOLTAGE - BAT_3S_MIN_VOLTAGE);
 		}
 		
 		// And that's a 4S
@@ -254,7 +233,7 @@ public class TigerSystemMatchFeedback extends ACommand
 			return 0.0;
 		}
 		
-		return ((bat - BAT_4S_MIN_VOLTAGE)) / (BAT_4S_MAX_VOLTAGE - BAT_4S_MIN_VOLTAGE);
+		return (bat - BAT_4S_MIN_VOLTAGE) / (BAT_4S_MAX_VOLTAGE - BAT_4S_MIN_VOLTAGE);
 	}
 	
 	
@@ -263,12 +242,22 @@ public class TigerSystemMatchFeedback extends ACommand
 	 */
 	public boolean isBarrierInterrupted()
 	{
-		if ((barrierKickCounter & 0x80) == 0x80)
+		return (barrierKickCounter & 0x80) == 0x80;
+	}
+	
+	
+	/**
+	 * @param interrupted
+	 */
+	public void setBarrierInterrupted(boolean interrupted)
+	{
+		if (interrupted)
 		{
-			return true;
+			barrierKickCounter |= 0x80;
+		} else
+		{
+			barrierKickCounter &= (0x80 ^ 0xFFFF);
 		}
-		
-		return false;
 	}
 	
 	
@@ -307,12 +296,8 @@ public class TigerSystemMatchFeedback extends ACommand
 	 */
 	public boolean isFeatureWorking(final EFeature feature)
 	{
-		if ((features & feature.getId()) != 0)
-		{
-			return true;
-		}
+		return (features & feature.getId()) != 0;
 		
-		return false;
 	}
 	
 	
@@ -329,5 +314,72 @@ public class TigerSystemMatchFeedback extends ACommand
 		{
 			features &= (feature.getId() ^ 0xFFFF);
 		}
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public ERobotMode getRobotMode()
+	{
+		int mode = features >> 12;
+		
+		return ERobotMode.getRobotModeConstant(mode);
+	}
+	
+	
+	/**
+	 * @param xy [mm]
+	 * @param z [rad]
+	 */
+	public void setCurPosition(final IVector2 xy, final double z)
+	{
+		curPosition[0] = (int) xy.x();
+		curPosition[1] = (int) xy.y();
+		curPosition[2] = (int) (z * 1e3);
+	}
+	
+	
+	/**
+	 * @param vel [m/s]
+	 */
+	public void setCurVelocity(final IVector3 vel)
+	{
+		curVelocity[0] = (int) (vel.x() * 1e3);
+		curVelocity[1] = (int) (vel.y() * 1e3);
+		curVelocity[2] = (int) (vel.z() * 1e3);
+	}
+	
+	
+	public void setKickerLevel(final double kickerLevel)
+	{
+		this.kickerLevel = (int) kickerLevel;
+	}
+	
+	
+	/**
+	 * @param dribblerSpeed [RPM]
+	 */
+	public void setDribblerSpeed(final double dribblerSpeed)
+	{
+		this.dribblerSpeed = (int) dribblerSpeed;
+	}
+	
+	
+	public void setBatteryLevel(final double batteryLevel)
+	{
+		this.batteryLevel = (int) (batteryLevel * 1e3);
+	}
+	
+	
+	public void setHardwareId(final int hardwareId)
+	{
+		this.hardwareId = hardwareId;
+	}
+	
+	
+	public void setDribblerTemp(final double dribblerTemp)
+	{
+		this.dribblerTemp = (int) (dribblerTemp * 2.0);
 	}
 }

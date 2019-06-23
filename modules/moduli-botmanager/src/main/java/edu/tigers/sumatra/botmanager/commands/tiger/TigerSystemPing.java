@@ -36,7 +36,7 @@ public class TigerSystemPing extends ACommand
 	// --------------------------------------------------------------------------
 	
 	/**
-	 * 
+	 * Constructor.
 	 */
 	public TigerSystemPing()
 	{
@@ -73,7 +73,6 @@ public class TigerSystemPing extends ACommand
 		for (int i = 0; i < payloadSize; i++)
 		{
 			byte2ByteArray(payload, i, i == 0 ? 1 : i);
-			// byte2ByteArray(payload, i, (int) ((Math.random() * 254.0) + 1.0));
 		}
 	}
 	

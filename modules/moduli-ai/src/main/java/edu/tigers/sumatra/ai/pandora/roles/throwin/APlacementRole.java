@@ -1,23 +1,15 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jan 31, 2014
- * Author(s): MarkG
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.pandora.roles.throwin;
 
-import java.awt.Color;
-
-import edu.tigers.sumatra.ai.data.EShapesLayer;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
-import edu.tigers.sumatra.drawable.DrawableText;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.wp.data.Geometry;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.pathfinder.MovementCon;
 
 
 /**
@@ -34,52 +26,38 @@ public abstract class APlacementRole extends ARole
 	}
 	
 	
-	protected boolean isBallToCloseToFieldBorder()
+	protected boolean isBallTooCloseToFieldBorder()
 	{
-		float tol = 0;
-		if (getCurrentState().toString().equals("PULL"))
-		{
-			tol += 15;
-		}
-		if (!Geometry.getField().isPointInShape(getWFrame().getBall().getPos(), -tol))
-		{
-			return true;
-		}
-		return false;
+		return !Geometry.getField().isPointInShape(getBall().getPos(), Geometry.getBotRadius())
+				|| Geometry.getGoalOur().isPointInShape(getBall().getPos(), 200)
+				|| Geometry.getGoalTheir().isPointInShape(getBall().getPos(), 200);
 	}
 	
 	
 	protected boolean isBallAtTarget()
 	{
-		if (GeoMath.distancePP(getAiFrame().getWorldFrame().getBall().getPos(),
-				getAiFrame().getTacticalField().getThrowInInfo().getPos()) < (OffensiveConstants
-						.getAutomatedThrowInFinalTolerance() - 3))
-		{
-			return true;
-		}
-		return false;
+		return getBall().getPos().distanceTo(getPlacementPos()) < OffensiveConstants.getAutomatedThrowInFinalTolerance();
 	}
 	
 	
-	@Override
-	protected void afterUpdate()
+	protected void prepareMoveCon(MovementCon moveCon)
 	{
+		moveCon.setPenaltyAreaAllowedTheir(true);
+		moveCon.setPenaltyAreaAllowedOur(true);
+		moveCon.setGoalPostObstacle(true);
+		moveCon.setIgnoreGameStateObstacles(true);
+		moveCon.setDestinationOutsideFieldAllowed(true);
 	}
 	
 	
-	protected void printText(final String message, final double offset)
+	protected IVector2 getPlacementPos()
 	{
-		String header = "";
-		if (getClass().getName().contains("Secondary"))
-		{
-			header = "Secondary: ";
-		} else if (getClass().getName().contains("Primary"))
-		{
-			header = "Primary: ";
-		}
-		getAiFrame().getTacticalField().getDrawableShapes().get(EShapesLayer.AUTOMATED_THROW_IN).add(
-				new DrawableText(getAiFrame().getTacticalField().getThrowInInfo().getPos().addNew(new Vector2(offset, 0)),
-						header + message,
-						Color.CYAN));
+		return getAiFrame().getTacticalField().getThrowInInfo().getPos();
+	}
+	
+	
+	protected boolean isInsidePushRadius()
+	{
+		return getPlacementPos().distanceTo(getBall().getPos()) < OffensiveConstants.getAutomatedThrowInPushDistance();
 	}
 }

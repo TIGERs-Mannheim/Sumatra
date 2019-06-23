@@ -1,34 +1,25 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 18.01.2015
- * Author(s): lukas
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.offensive.view;
 
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
+import java.awt.*;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.JTextField;
+import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 
 import edu.tigers.sumatra.ai.data.OffensiveStrategy.EOffensiveStrategy;
 import edu.tigers.sumatra.ai.data.SpecialMoveCommand;
 import edu.tigers.sumatra.ai.metis.offense.data.OffensiveAction;
-import edu.tigers.sumatra.ai.metis.support.data.AdvancedPassTarget;
+import edu.tigers.sumatra.ai.metis.support.IPassTarget;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 import net.miginfocom.swing.MigLayout;
 
@@ -77,8 +68,8 @@ public class TeamOffensiveStrategyPanel extends JPanel
 	
 	
 	/**
-	  * 
-	  */
+	 * Default
+	 */
 	public TeamOffensiveStrategyPanel()
 	{
 		setLayout(new MigLayout());
@@ -100,9 +91,11 @@ public class TeamOffensiveStrategyPanel extends JPanel
 		numberPanel.add(maxNumberLabel);
 		numberPanel.add(maxNumberText);
 		
+		String botIdHeader = "Bot ID";
+		
 		desiredBotsPanel = new JPanel(new MigLayout());
 		desiredBotsLabel = new JLabel("Desired Bots:");
-		desiredBotsTableModel = new TableModel(new String[] { "Bot ID" });
+		desiredBotsTableModel = new TableModel(new String[] { botIdHeader });
 		desiredBotsTable = new JTable(desiredBotsTableModel);
 		desiredBotsTable.setPreferredScrollableViewportSize(new Dimension(1920, 1080));
 		JScrollPane desiredBotsScrollPane = new JScrollPane(desiredBotsTable);
@@ -111,10 +104,9 @@ public class TeamOffensiveStrategyPanel extends JPanel
 		desiredBotsPanel.add(desiredBotsLabel, "wrap");
 		desiredBotsPanel.add(desiredBotsScrollPane);
 		
-		
 		playConfigurationPanel = new JPanel(new MigLayout());
 		playConfigurationLabel = new JLabel("Current Configuration:");
-		playConfigurationTableModel = new TableModel(new String[] { "Bot ID", "Offensive Strategy" });
+		playConfigurationTableModel = new TableModel(new String[] { botIdHeader, "Offensive Strategy" });
 		playConfigurationTable = new JTable(playConfigurationTableModel);
 		playConfigurationTable.setPreferredScrollableViewportSize(new Dimension(1920, 1080));
 		JScrollPane playConfigurationScrollPane = new JScrollPane(playConfigurationTable);
@@ -148,7 +140,7 @@ public class TeamOffensiveStrategyPanel extends JPanel
 		
 		offensiveActionsPanel = new JPanel(new MigLayout());
 		offensiveActionsLabel = new JLabel("Offensive Actions:");
-		offensiveActionsTableModel = new TableModel(new String[] { "Bot ID", "Pass Target", "Pass Target Bot ID",
+		offensiveActionsTableModel = new TableModel(new String[] { botIdHeader, "Pass Target", "Pass Target Bot ID",
 				"Pass Target Rating", "Direct Shot and Clearing Target", "Action", "Value" });
 		offensiveActionsTable = new JTable(offensiveActionsTableModel);
 		offensiveActionsTable.setPreferredScrollableViewportSize(new Dimension(1920, 1080));
@@ -210,7 +202,7 @@ public class TeamOffensiveStrategyPanel extends JPanel
 		{
 			bots[i][0] = String.valueOf(desiredBots.get(i));
 		}
-		Arrays.sort(bots, (o1, o2) -> (o1[0]).compareTo(o2[0]));
+		Arrays.sort(bots, Comparator.comparing(o -> o[0]));
 		desiredBotsTableModel.setData(bots);
 		desiredBotsTableModel.fireTableDataChanged();
 	}
@@ -229,7 +221,7 @@ public class TeamOffensiveStrategyPanel extends JPanel
 			bots[i][1] = entry.getValue().toString(); // strategy
 			i++;
 		}
-		Arrays.sort(bots, (o1, o2) -> (o1[0]).compareTo(o2[0]));
+		Arrays.sort(bots, Comparator.comparing(o -> o[0]));
 		playConfigurationTableModel.setData(bots);
 		playConfigurationTableModel.fireTableDataChanged();
 	}
@@ -262,16 +254,10 @@ public class TeamOffensiveStrategyPanel extends JPanel
 		for (SpecialMoveCommand command : specialMoveCommands)
 		{
 			commands[i][0] = "";
-			int j = 0;
 			for (IVector2 position : command.getMovePosition())
 			{
-				if (j != 0)
-				{
-					commands[i][0] += ", ";
-				}
 				commands[i][0] += "(" + position.x() + ", " + position.y() + ")";
 			}
-			
 			i++;
 		}
 		specialMoveCommandsTableModel.setData(commands);
@@ -291,13 +277,13 @@ public class TeamOffensiveStrategyPanel extends JPanel
 			OffensiveAction action = entry.getValue();
 			actions[i][0] = entry.getKey().toString();
 			
-			AdvancedPassTarget passTarget = action.getPassTarget();
+			IPassTarget passTarget = action.getPassTarget();
 			if (passTarget != null)
 			{
-				actions[i][1] = "(" + (((int) (passTarget.x() * 100)) / 100.0) + ", "
-						+ (((int) (passTarget.y() * 100)) / 100.0) + ")";
+				actions[i][1] = "(" + (((int) (passTarget.getKickerPos().x() * 100)) / 100.0) + ", "
+						+ (((int) (passTarget.getKickerPos().y() * 100)) / 100.0) + ")";
 				actions[i][2] = passTarget.getBotId().toString();
-				actions[i][3] = Double.toString((((int) (passTarget.getValue() * 1000)) / 1000.0));
+				actions[i][3] = Double.toString((int) (passTarget.getScore() * 1000) / 1000.0);
 			} else
 			{
 				actions[i][1] = null;
@@ -315,10 +301,10 @@ public class TeamOffensiveStrategyPanel extends JPanel
 			}
 			
 			actions[i][5] = action.getType().toString();
-			actions[i][6] = "0";// (((int) (action.getMovePosition().getScoring() * 100)) / 100.0);
+			actions[i][6] = String.valueOf((int) (action.getViability() * 100) / 100.0);
 			i++;
 		}
-		Arrays.sort(actions, (o1, o2) -> ((int) (Double.parseDouble(o2[6]) - Double.parseDouble(o1[6]))));
+		Arrays.sort(actions, (o1, o2) -> (int) (Double.parseDouble(o2[6]) - Double.parseDouble(o1[6])));
 		offensiveActionsTableModel.setData(actions);
 		offensiveActionsTableModel.fireTableDataChanged();
 	}

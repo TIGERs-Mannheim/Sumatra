@@ -61,12 +61,6 @@ public class FirmwareUpdatePresenter implements IFirmwareUpdatePanelObserver, IB
 	@Override
 	public void onSelectFirmwareFolder(final String folderPath)
 	{
-		// File testMain = new File(folderPath + "/release/app/run/main.bin");
-		// if (!testMain.exists())
-		// {
-		// log.warn("Compiled firmware binaries not found: " + folderPath);
-		// }
-		
 		Bootloader.setProgramFolder(folderPath + "/release/app/run");
 		
 		updatePanel.removeAllBotPanels();
@@ -83,6 +77,7 @@ public class FirmwareUpdatePresenter implements IFirmwareUpdatePanelObserver, IB
 			botManager = (ABotManager) SumatraModel.getInstance().getModule(ABotManager.MODULE_ID);
 		} catch (ModuleNotFoundException err)
 		{
+			log.error("ABotManager not found", err);
 			return;
 		}
 		
@@ -126,19 +121,16 @@ public class FirmwareUpdatePresenter implements IFirmwareUpdatePanelObserver, IB
 		switch (state)
 		{
 			case ACTIVE:
-			{
 				baseStation.addObserver(bootloader);
 				updatePanel.addObserver(this);
 				bootloader.addObserver(this);
-				break;
-			}
-			case NOT_LOADED:
 				break;
 			case RESOLVED:
 				baseStation.removeObserver(bootloader);
 				updatePanel.removeObserver(this);
 				bootloader.removeObserver(this);
 				break;
+			case NOT_LOADED:
 			default:
 				break;
 		}

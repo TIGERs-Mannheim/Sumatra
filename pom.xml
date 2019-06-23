@@ -1,137 +1,180 @@
+<!--
+  ~ Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+  -->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<name>sumatra</name>
-	<artifactId>sumatra</artifactId>
-	<groupId>com.dhbw.sumatra</groupId>
-	<version>5.0</version>
-	<packaging>pom</packaging>
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <name>Sumatra</name>
+    <artifactId>sumatra</artifactId>
+    <groupId>com.dhbw.sumatra</groupId>
+    <packaging>pom</packaging>
 
-	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-	</properties>
+    <parent>
+        <groupId>edu.tigers.sumatra</groupId>
+        <artifactId>sumatra-parent</artifactId>
+        <version>5.1-SNAPSHOT</version>
+        <relativePath>modules/sumatra-parent/pom.xml</relativePath>
+    </parent>
 
-	<modules>
-		<module>modules/common</module>
-    	<module>modules/common-bot</module>
-		<module>modules/common-clock</module>
-		<module>modules/common-gpu</module>
-		<module>modules/common-gui</module>
-		<module>modules/common-gui-config</module>
-	    <module>modules/common-model</module>
-	
-	    <module>modules/moduli-ai</module>
-	    <module>modules/moduli-aisimulation</module>
-	    <module>modules/moduli-autoreferee</module>
-	    <module>modules/moduli-autoreferee-legacy</module>
-	    <module>modules/moduli-botmanager</module>
-	    <module>modules/moduli-cam</module>
-	    <module>modules/moduli-rcm</module>
-	    <module>modules/moduli-record</module>
-	    <module>modules/moduli-referee</module>
-	    <module>modules/moduli-timer</module>
-		<module>modules/moduli-wp</module>
-		<module>modules/moduli-wp-kalman</module>
-		<module>modules/moduli-wp-bot</module>
-		<module>modules/moduli-wp-export</module>
-		<module>modules/moduli-parameter-optimizer</module>
-		
-		<module>modules/autoreferee-gui</module>
-		
-	    <module>modules/sumatra-augmented</module>
-	    <module>modules/sumatra-grsim</module>
-	    <module>modules/sumatra-main</module>
-	    <module>modules/sumatra-sim</module>
-	    <module>modules/sumatra-shared-radio</module>
-	    
-	    <module>modules/sumatra-gui-ai</module>
-	    <module>modules/sumatra-gui-bot</module>
-	    <module>modules/sumatra-gui-log</module>
-	    <module>modules/sumatra-gui-rcm</module>
-	    <module>modules/sumatra-gui-referee</module>
-	    <module>modules/sumatra-gui-replay</module>
-	    <module>modules/sumatra-gui-sim</module>
-	    <module>modules/sumatra-gui-timer</module>
-	    <module>modules/sumatra-gui-visualizer</module>
-	    <module>modules/sumatra-gui-wp</module>
-	    <module>modules/sumatra-snapshot</module>
-	</modules>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 
-	<scm>
-		<connection>scm:git:https://tigers-mannheim.de/git/Sumatra.git
-		</connection>
-		<developerConnection>scm:git:https://tigers-mannheim.de/git/Sumatra.git
-		</developerConnection>
-		<url>scm:git:https://tigers-mannheim.de/git/Sumatra.git</url>
-	</scm>
+    <modules>
+        <module>modules/sumatra-parent</module>
 
-	<issueManagement>
-		<system>Trac</system>
-		<url>http://localhost/trac</url>
-	</issueManagement>
+        <module>modules/common-math</module>
+        <module>modules/common</module>
+        <module>modules/common-bot</module>
+        <module>modules/common-clock</module>
+        <module>modules/common-gui</module>
+        <module>modules/common-gui-config</module>
+        <module>modules/common-model</module>
 
-	<build>
-		<pluginManagement>
-			<plugins>
+        <module>modules/moduli-ai</module>
+        <module>modules/moduli-aisimulation</module>
+        <module>modules/moduli-autoreferee</module>
+        <module>modules/moduli-botmanager</module>
+        <module>modules/moduli-bot-params</module>
+        <module>modules/moduli-cam</module>
+        <module>modules/moduli-game-notifications</module>
+        <module>modules/moduli-gui-notifications</module>
+        <module>modules/moduli-rcm</module>
+        <module>modules/moduli-record</module>
+        <module>modules/moduli-referee</module>
+        <module>modules/moduli-timer</module>
+        <module>modules/moduli-wp</module>
+        <module>modules/moduli-wp-bot</module>
+        <module>modules/moduli-wp-export</module>
+        <module>modules/moduli-wp-kalman2</module>
+        <module>modules/moduli-parameter-optimizer</module>
+        <module>modules/moduli-bot-data-sampler</module>
+        <module>modules/moduli-testplays</module>
+        <module>modules/moduli-telegram-notifications</module>
+        <module>modules/moduli-vision</module>
+        <module>modules/moduli-geometry</module>
+        <module>modules/moduli-cam-logfile</module>
+        <module>modules/moduli-gamelog</module>
 
-				<plugin>
-					<groupId>org.codehaus.mojo</groupId>
-					<artifactId>sonar-maven-plugin</artifactId>
-					<version>2.6</version>
-				</plugin>
+        <module>modules/autoreferee-gui</module>
 
-				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-surefire-plugin</artifactId>
-					<version>2.17</version>
-				</plugin>
+        <module>modules/sumatra-augmented</module>
+        <module>modules/sumatra-main</module>
+        <module>modules/sumatra-movement-limit-observer</module>
+        <module>modules/sumatra-sim</module>
+        <module>modules/sumatra-shared-radio</module>
+        <module>modules/sumatra-skillsystem</module>
+        <module>modules/sumatra-pathfinder</module>
+        <module>modules/sumatra-pathfinder-traj</module>
+        <module>modules/sumatra-snapshot</module>
+        <module>modules/sumatra-record-util</module>
+        <module>modules/sumatra-ai-integration-test</module>
 
-				<plugin>
-					<groupId>ch.fortysix</groupId>
-					<artifactId>maven-postman-plugin</artifactId>
-					<executions>
-						<execution>
-							<id>send a mail</id>
-							<phase>package</phase>
-							<goals>
-								<goal>send-mail</goal>
-							</goals>
-							<inherited>false</inherited>
-							<configuration>
-								<skip>false</skip>
-								<from>system@tigers-mannheim.de</from>
-								<failonerror>false</failonerror>
-								<mailhost>localhost</mailhost>
-								<mailuser></mailuser>
-								<mailpassword></mailpassword>
-								<receivers>
-									<receiver>system@tigers-mannheim.de</receiver>
-								</receivers>
-								<surefireReportHtml>${project.build.directory}/site/surefire-report.html</surefireReportHtml>
-								<subject>There are JUnit testcase failures or errors</subject>
-								<groovyCondition>errors > 0 || failures > 0</groovyCondition>
-								<htmlMessageFile>${project.build.directory}/site/surefire-report.html</htmlMessageFile>
-							</configuration>
-						</execution>
-					</executions>
-				</plugin>
-			</plugins>
-		</pluginManagement>
-	</build>
+        <module>modules/sumatra-gui-ai</module>
+        <module>modules/sumatra-gui-bot</module>
+        <module>modules/sumatra-gui-bot-params</module>
+        <module>modules/sumatra-gui-log</module>
+        <module>modules/sumatra-gui-rcm</module>
+        <module>modules/sumatra-gui-referee</module>
+        <module>modules/sumatra-gui-replay</module>
+        <module>modules/sumatra-gui-sim</module>
+        <module>modules/sumatra-gui-testplays</module>
+        <module>modules/sumatra-gui-timer</module>
+        <module>modules/sumatra-gui-visualizer</module>
+        <module>modules/sumatra-gui-wp</module>
+        <module>modules/sumatra-gui-logfile</module>
 
-	<reporting>
-		<outputDirectory>target/site</outputDirectory>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jxr-plugin</artifactId>
-				<version>2.3</version>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-report-plugin</artifactId>
-				<version>2.4.3</version>
-			</plugin>
-		</plugins>
-	</reporting>
+    </modules>
+
+    <scm>
+        <connection>scm:git:https://tigers-mannheim.de/git/Sumatra.git
+        </connection>
+        <developerConnection>scm:git:https://tigers-mannheim.de/git/Sumatra.git
+        </developerConnection>
+        <url>scm:git:https://tigers-mannheim.de/git/Sumatra.git</url>
+    </scm>
+
+    <issueManagement>
+        <system>Trac</system>
+        <url>http://localhost/trac</url>
+    </issueManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>sonar-maven-plugin</artifactId>
+                    <version>2.6</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>2.17</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>ch.fortysix</groupId>
+                    <artifactId>maven-postman-plugin</artifactId>
+                    <version>0.1.8</version>
+                    <executions>
+                        <execution>
+                            <id>send a mail</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>send-mail</goal>
+                            </goals>
+                            <inherited>false</inherited>
+                            <configuration>
+                                <skip>false</skip>
+                                <from>system@tigers-mannheim.de</from>
+                                <failonerror>false</failonerror>
+                                <mailhost>localhost</mailhost>
+                                <receivers>
+                                    <receiver>system@tigers-mannheim.de</receiver>
+                                </receivers>
+                                <surefireReportHtml>${project.build.directory}/site/surefire-report.html
+                                </surefireReportHtml>
+                                <subject>There are JUnit testcase failures or errors</subject>
+                                <groovyCondition>errors &gt; 0 || failures &gt; 0</groovyCondition>
+                                <htmlMessageFile>${project.build.directory}/site/surefire-report.html</htmlMessageFile>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jxr-plugin</artifactId>
+            <version>2.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-report-plugin</artifactId>
+            <version>2.19.1</version>
+        </dependency>
+    </dependencies>
+
+    <reporting>
+        <outputDirectory>target/site</outputDirectory>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jxr-plugin</artifactId>
+                <version>2.5</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-report-plugin</artifactId>
+                <version>2.19.1</version>
+            </plugin>
+        </plugins>
+    </reporting>
 </project>

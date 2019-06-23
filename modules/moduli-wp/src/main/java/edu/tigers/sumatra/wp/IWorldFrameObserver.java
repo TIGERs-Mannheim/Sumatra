@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 25.07.2010
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.wp;
 
@@ -45,7 +40,7 @@ public interface IWorldFrameObserver
 	
 	
 	/**
-	 * 
+	 * Vision lost. Clear your state.
 	 */
 	default void onClearCamDetectionFrame()
 	{

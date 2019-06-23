@@ -1,25 +1,15 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 02.09.2010
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.bots;
 
-import java.awt.Color;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
+import javax.swing.*;
 
 import com.github.g3force.instanceables.IInstanceableObserver;
 import com.github.g3force.instanceables.InstanceablePanel;
@@ -27,7 +17,7 @@ import com.github.g3force.instanceables.InstanceablePanel;
 import edu.tigers.sumatra.botmanager.commands.EBotSkill;
 import edu.tigers.sumatra.botmanager.commands.botskills.ABotSkill;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.skillsystem.ESkill;
 import edu.tigers.sumatra.skillsystem.skills.ASkill;
@@ -46,35 +36,32 @@ public class SkillsPanel extends JPanel implements IInstanceableObserver
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	private static final long						serialVersionUID			= 5399293600256113771L;
-																							
+	
 	private static final String					DEF_SKILL_KEY				= SkillsPanel.class.getCanonicalName()
-																									+ ".defskill";
+			+ ".defskill";
 	private static final String					DEF_BOT_SKILL_KEY			= SkillsPanel.class.getCanonicalName()
-																									+ ".defbotskill";
-																									
+			+ ".defbotskill";
+	
 	private JTextField								moveToX						= null;
 	private JTextField								moveToY						= null;
-																							
+	
 	private JTextField								rotateAndMoveToX			= null;
 	private JTextField								rotateAndMoveToY			= null;
 	private JTextField								rotateAndMoveToXyAngle	= null;
-																							
+	
 	private JTextField								straightMoveDist			= null;
 	private JTextField								straightMoveAngle			= null;
-																							
+	
 	private JTextField								lookX							= null;
 	private JTextField								lookY							= null;
-																							
+	
 	private JTextField								dribbleRPM					= null;
-																							
-	private final List<ISkillsPanelObserver>	observers					= new ArrayList<ISkillsPanelObserver>();
-																							
-																							
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 */
+	
+	private final List<ISkillsPanelObserver>	observers					= new ArrayList<>();
+	
+	
+	/** Constructor. */
+	@SuppressWarnings("squid:S1166")
 	public SkillsPanel()
 	{
 		setLayout(new MigLayout("fill"));
@@ -83,7 +70,7 @@ public class SkillsPanel extends JPanel implements IInstanceableObserver
 				.getUserSettings());
 		skillCustomPanel.addObserver(this);
 		skillCustomPanel.setShowCreate(true);
-		String strDefSkill = SumatraModel.getInstance().getUserProperty(DEF_SKILL_KEY, ESkill.KICK.name());
+		String strDefSkill = SumatraModel.getInstance().getUserProperty(DEF_SKILL_KEY, ESkill.KICK_NORMAL.name());
 		try
 		{
 			ESkill defSkill = ESkill.valueOf(strDefSkill);
@@ -184,7 +171,7 @@ public class SkillsPanel extends JPanel implements IInstanceableObserver
 		// RotateAndMoveToXY
 		final JPanel rotateAndMoveToXYPanel = new JPanel(new MigLayout("fill",
 				"[]10[50,fill]20[]10[50,fill]20[]10[50,fill]20[]"));
-				
+		
 		rotateAndMoveToX = new JTextField("0");
 		rotateAndMoveToY = new JTextField("0");
 		rotateAndMoveToXyAngle = new JTextField("3");
@@ -241,66 +228,6 @@ public class SkillsPanel extends JPanel implements IInstanceableObserver
 		synchronized (observers)
 		{
 			observers.remove(observer);
-		}
-	}
-	
-	
-	private void notifyMoveToXY(final double x, final double y)
-	{
-		synchronized (observers)
-		{
-			for (final ISkillsPanelObserver observer : observers)
-			{
-				observer.onMoveToXY(x, y);
-			}
-		}
-	}
-	
-	
-	private void notifyRotateAndMoveToXY(final double x, final double y, final double angle)
-	{
-		synchronized (observers)
-		{
-			for (final ISkillsPanelObserver observer : observers)
-			{
-				observer.onRotateAndMoveToXY(x, y, angle);
-			}
-		}
-	}
-	
-	
-	private void notifyStraightMove(final int distance, final double angle)
-	{
-		synchronized (observers)
-		{
-			for (final ISkillsPanelObserver observer : observers)
-			{
-				observer.onStraightMove(distance, angle);
-			}
-		}
-	}
-	
-	
-	private void notifyLookAt(final Vector2 lookAtTarget)
-	{
-		synchronized (observers)
-		{
-			for (final ISkillsPanelObserver observer : observers)
-			{
-				observer.onLookAt(lookAtTarget);
-			}
-		}
-	}
-	
-	
-	private void notifyDribble(final int rpm)
-	{
-		synchronized (observers)
-		{
-			for (final ISkillsPanelObserver observer : observers)
-			{
-				observer.onDribble(rpm);
-			}
 		}
 	}
 	
@@ -374,6 +301,18 @@ public class SkillsPanel extends JPanel implements IInstanceableObserver
 			
 			notifyMoveToXY(x, y);
 		}
+		
+		
+		private void notifyMoveToXY(final double x, final double y)
+		{
+			synchronized (observers)
+			{
+				for (final ISkillsPanelObserver observer : observers)
+				{
+					observer.onMoveToXY(x, y);
+				}
+			}
+		}
 	}
 	
 	private class RotateAndMoveToXY implements ActionListener
@@ -395,6 +334,18 @@ public class SkillsPanel extends JPanel implements IInstanceableObserver
 			}
 			
 			notifyRotateAndMoveToXY(x, y, angle);
+		}
+		
+		
+		private void notifyRotateAndMoveToXY(final double x, final double y, final double angle)
+		{
+			synchronized (observers)
+			{
+				for (final ISkillsPanelObserver observer : observers)
+				{
+					observer.onRotateAndMoveToXY(x, y, angle);
+				}
+			}
 		}
 	}
 	
@@ -436,6 +387,18 @@ public class SkillsPanel extends JPanel implements IInstanceableObserver
 			
 			notifyStraightMove(factor * distance, angle);
 		}
+		
+		
+		private void notifyStraightMove(final int distance, final double angle)
+		{
+			synchronized (observers)
+			{
+				for (final ISkillsPanelObserver observer : observers)
+				{
+					observer.onStraightMove(distance, angle);
+				}
+			}
+		}
 	}
 	
 	
@@ -454,7 +417,19 @@ public class SkillsPanel extends JPanel implements IInstanceableObserver
 			{
 				return;
 			}
-			notifyLookAt(new Vector2(x, y));
+			notifyLookAt(Vector2.fromXY(x, y));
+		}
+		
+		
+		private void notifyLookAt(final Vector2 lookAtTarget)
+		{
+			synchronized (observers)
+			{
+				for (final ISkillsPanelObserver observer : observers)
+				{
+					observer.onLookAt(lookAtTarget);
+				}
+			}
 		}
 	}
 	
@@ -475,6 +450,18 @@ public class SkillsPanel extends JPanel implements IInstanceableObserver
 				return;
 			}
 			notifyDribble(rpm);
+		}
+		
+		
+		private void notifyDribble(final int rpm)
+		{
+			synchronized (observers)
+			{
+				for (final ISkillsPanelObserver observer : observers)
+				{
+					observer.onDribble(rpm);
+				}
+			}
 		}
 	}
 	

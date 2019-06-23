@@ -1,30 +1,19 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jun 27, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.view.humanref;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.LinearGradientPaint;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.BorderFactory;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.ScrollPaneConstants;
+import javax.swing.*;
 
-import net.miginfocom.swing.MigLayout;
 import edu.tigers.autoref.view.humanref.components.GameEventPanel;
+import edu.tigers.autoref.view.humanref.driver.IHumanRefViewDriver;
+import edu.tigers.autoref.view.humanref.driver.PassiveHumanRefViewDriver;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
+import net.miginfocom.swing.MigLayout;
 
 
 /**
@@ -39,7 +28,7 @@ public class PassiveHumanRefPanel extends BaseHumanRefPanel
 	
 	
 	/**
-	 * 
+	 * Create new instance
 	 */
 	public PassiveHumanRefPanel()
 	{
@@ -54,6 +43,13 @@ public class PassiveHumanRefPanel extends BaseHumanRefPanel
 		containerPanel.setLayout(new MigLayout("fillx, wrap 1", "[fill]", ""));
 		
 		super.setupGUI();
+	}
+	
+	
+	@Override
+	public IHumanRefViewDriver createDriver()
+	{
+		return new PassiveHumanRefViewDriver(this);
 	}
 	
 	
@@ -133,7 +129,7 @@ public class PassiveHumanRefPanel extends BaseHumanRefPanel
 	{
 		
 		/**  */
-		private static final long	serialVersionUID	= 757531195811568553L;
+		private static final long serialVersionUID = 757531195811568553L;
 		
 		
 		/**
@@ -154,7 +150,7 @@ public class PassiveHumanRefPanel extends BaseHumanRefPanel
 		{
 			super.paint(g);
 			
-			if ((g instanceof Graphics2D))
+			if (g instanceof Graphics2D)
 			{
 				Graphics2D g2 = (Graphics2D) g;
 				
@@ -163,7 +159,6 @@ public class PassiveHumanRefPanel extends BaseHumanRefPanel
 				
 				int containerWidth = getWidth();
 				int containerHeight = getHeight();
-				int width = containerWidth;
 				int height = (int) (containerHeight * 0.2f);
 				int x = 0;
 				int y = containerHeight - height;
@@ -173,7 +168,7 @@ public class PassiveHumanRefPanel extends BaseHumanRefPanel
 					LinearGradientPaint paint = new LinearGradientPaint(x, y, x, y + height, new float[] { 0.0f, 0.7f },
 							new Color[] { transparent, opaque });
 					g2.setPaint(paint);
-					g2.fillRect(x, y, width, height);
+					g2.fillRect(x, y, containerWidth, height);
 				}
 			}
 		}

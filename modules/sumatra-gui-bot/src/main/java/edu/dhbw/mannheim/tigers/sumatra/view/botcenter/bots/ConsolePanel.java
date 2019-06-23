@@ -53,7 +53,7 @@ import net.miginfocom.swing.MigLayout;
  */
 public class ConsolePanel extends JPanel
 {
-	/** */
+	/** Console Panel Observer. */
 	public static interface IConsolePanelObserver
 	{
 		/**
@@ -78,13 +78,13 @@ public class ConsolePanel extends JPanel
 	private final JRadioButton						targetMedia			= new JRadioButton("Media");
 	private final List<String>						history				= new ArrayList<>();
 	private int											histId				= 0;
-																					
-	private final List<IConsolePanelObserver>	observers			= new ArrayList<IConsolePanelObserver>();
-																					
+	
+	private final List<IConsolePanelObserver>	observers			= new ArrayList<>();
+	
 	private long										timingStart			= 0;
-																					
-																					
-	/** */
+	
+	
+	/** Constructor. */
 	@SuppressWarnings("unchecked")
 	public ConsolePanel()
 	{
@@ -161,30 +161,6 @@ public class ConsolePanel extends JPanel
 	}
 	
 	
-	private void notifyConsoleCommand(final String cmd, final ConsoleCommandTarget target)
-	{
-		synchronized (observers)
-		{
-			for (IConsolePanelObserver observer : observers)
-			{
-				observer.onConsoleCommand(cmd, target);
-			}
-		}
-	}
-	
-	
-	private void notifyConsoleCommand2All(final String cmd, final ConsoleCommandTarget target)
-	{
-		synchronized (observers)
-		{
-			for (IConsolePanelObserver observer : observers)
-			{
-				observer.onConsoleCommand2All(cmd, target);
-			}
-		}
-	}
-	
-	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -218,18 +194,13 @@ public class ConsolePanel extends JPanel
 		final StyleContext sc = StyleContext.getDefaultStyleContext();
 		final AttributeSet aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, color);
 		
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
+		SwingUtilities.invokeLater(() -> {
+			textPane.append(print.getText() + "\n", aset);
+			
+			if (print.getText().startsWith("Time run out:"))
 			{
-				textPane.append(print.getText() + "\n", aset);
-				
-				if (print.getText().startsWith("Time run out:"))
-				{
-					double time = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - timingStart) / 1000.0;
-					textPane.append("Real time: " + time + "\n", aset);
-				}
+				double time = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - timingStart) / 1000.0;
+				textPane.append("Real time: " + time + "\n", aset);
 			}
 		});
 	}
@@ -272,7 +243,7 @@ public class ConsolePanel extends JPanel
 			if (history.isEmpty() || !history.get(history.size() - 1).equals(text))
 			{
 				history.add(text);
-				Map<String, Object> jsonMap = new LinkedHashMap<String, Object>();
+				Map<String, Object> jsonMap = new LinkedHashMap<>();
 				jsonMap.put("history", history);
 				SumatraModel.getInstance().setUserProperty(
 						ConsolePanel.class.getCanonicalName(), JSONValue.toJSONString(jsonMap));
@@ -294,6 +265,30 @@ public class ConsolePanel extends JPanel
 				notifyConsoleCommand(text, target);
 			}
 		}
+		
+		
+		private void notifyConsoleCommand(final String cmd, final ConsoleCommandTarget target)
+		{
+			synchronized (observers)
+			{
+				for (IConsolePanelObserver observer : observers)
+				{
+					observer.onConsoleCommand(cmd, target);
+				}
+			}
+		}
+		
+		
+		private void notifyConsoleCommand2All(final String cmd, final ConsoleCommandTarget target)
+		{
+			synchronized (observers)
+			{
+				for (IConsolePanelObserver observer : observers)
+				{
+					observer.onConsoleCommand2All(cmd, target);
+				}
+			}
+		}
 	}
 	
 	
@@ -303,6 +298,7 @@ public class ConsolePanel extends JPanel
 		@Override
 		public void keyTyped(final KeyEvent e)
 		{
+			// not used
 		}
 		
 		
@@ -339,7 +335,7 @@ public class ConsolePanel extends JPanel
 		@Override
 		public void keyReleased(final KeyEvent e)
 		{
+			// not used
 		}
-		
 	}
 }

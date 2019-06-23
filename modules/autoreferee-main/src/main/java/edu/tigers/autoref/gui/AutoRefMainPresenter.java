@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 19, 2015
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.gui;
 
@@ -32,7 +27,7 @@ public class AutoRefMainPresenter extends AMainPresenter
 	
 	
 	/**
-	 *
+	 * Default
 	 */
 	public AutoRefMainPresenter()
 	{
@@ -42,6 +37,8 @@ public class AutoRefMainPresenter extends AMainPresenter
 		startupModuli();
 		
 		mainFrame.activate();
+
+		Runtime.getRuntime().addShutdownHook(new Thread(this::onExit));
 	}
 	
 	
@@ -98,7 +95,6 @@ public class AutoRefMainPresenter extends AMainPresenter
 		
 		shutdownModuli();
 		SumatraModel.getInstance().saveUserProperties();
-		System.exit(0);
 	}
 	
 }

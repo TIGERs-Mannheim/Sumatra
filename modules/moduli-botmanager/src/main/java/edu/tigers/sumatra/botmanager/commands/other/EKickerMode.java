@@ -14,14 +14,14 @@ package edu.tigers.sumatra.botmanager.commands.other;
 public enum EKickerMode
 {
 	/**  */
-	FORCE(0),
+	DISARM(0),
 	/**  */
 	ARM(1),
 	/**  */
-	DISARM(2),
-	/**  */
-	DRIBBLER(3),
-	/**  */
+	FORCE(2),
+	/** */
+	ARM_TIME(3),
+	/** */
 	ARM_AIM(4),
 	/**  */
 	NONE(0x0F);

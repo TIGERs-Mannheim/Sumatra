@@ -8,15 +8,18 @@
  */
 package edu.tigers.autoreferee.remote.impl;
 
-import static edu.tigers.autoreferee.CheckedRunnable.execAndCatchAll;
+import static edu.tigers.autoreferee.generic.CheckedRunnable.execAndCatchAll;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.SocketChannel;
+import java.util.Base64;
+import java.util.Base64.Encoder;
+
+import org.apache.log4j.Logger;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
@@ -29,14 +32,17 @@ import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest;
  */
 public class RefboxRemoteSocket
 {
-	private static final int	INT_FIELD_SIZE	= 4;
+	private static final Logger	log				= Logger.getLogger(RefboxRemoteSocket.class);
+	private static final Encoder	b64Encoder		= Base64.getEncoder();
 	
-	private SocketChannel		socket;
-	private ByteBuffer			intBuffer;
+	private static final int		INT_FIELD_SIZE	= 4;
+	
+	private SocketChannel			socket;
+	private ByteBuffer				intBuffer;
 	
 	
 	/**
-	 * 
+	 * Create new instance
 	 */
 	public RefboxRemoteSocket()
 	{
@@ -60,7 +66,7 @@ public class RefboxRemoteSocket
 	
 	
 	/**
-	 * 
+	 * Close the remote socket
 	 */
 	public synchronized void close()
 	{
@@ -78,14 +84,15 @@ public class RefboxRemoteSocket
 	 *            usually indicates that sender and receiver are out of sync and the connection should be closed and
 	 *            reopened.
 	 */
-	public SSL_RefereeRemoteControlReply sendRequest(final SSL_RefereeRemoteControlRequest request) throws IOException,
-			InterruptedException, InvalidProtocolBufferException
+	@SuppressWarnings("squid:S1166")
+	public SSL_RefereeRemoteControlReply sendRequest(final SSL_RefereeRemoteControlRequest request)
+			throws InterruptedException
 	{
 		try
 		{
 			writeRequest(request);
 			return readReply();
-		} catch (AsynchronousCloseException e)
+		} catch (IOException e)
 		{
 			/*
 			 * We rethrow the AsynchronousCloseException as InterruptedException in order to be able to distinguish an
@@ -103,10 +110,9 @@ public class RefboxRemoteSocket
 		{
 			socket.read(intBuffer);
 		}
-		
 		intBuffer.flip();
 		int msgLength = intBuffer.getInt();
-		
+		log.debug("Attempting to receive remote reply with size: " + msgLength);
 		
 		prepareBuf(msgLength);
 		while (intBuffer.hasRemaining())
@@ -115,12 +121,26 @@ public class RefboxRemoteSocket
 		}
 		intBuffer.flip();
 		
-		return SSL_RefereeRemoteControlReply.parseFrom(intBuffer.array());
+		byte[] binData = intBuffer.array();
+		
+		try
+		{
+			SSL_RefereeRemoteControlReply reply = SSL_RefereeRemoteControlReply.parseFrom(binData);
+			log.debug("Received reply: " + reply.toString());
+			return reply;
+		} catch (Exception e)
+		{
+			log.error("Unable to parse following reply with binary size + " + msgLength + " (Base64): "
+					+ b64Encoder.encodeToString(binData));
+			throw e;
+		}
 	}
 	
 	
 	private void writeRequest(final SSL_RefereeRemoteControlRequest req) throws IOException
 	{
+		log.debug("Sending command with size (" + req.getSerializedSize() + "): " + req.toString());
+		
 		int totalSize = req.getSerializedSize() + INT_FIELD_SIZE;
 		prepareBuf(totalSize);
 		

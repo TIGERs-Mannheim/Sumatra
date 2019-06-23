@@ -16,23 +16,23 @@ public interface IBallSpeedPanelListener
 	/**
 	 * 
 	 */
-	public void pauseButtonPressed();
+	void pauseButtonPressed();
 	
 	
 	/**
 	 * 
 	 */
-	public void resumeButtonPressed();
+	void resumeButtonPressed();
 	
 	
 	/**
 	 * @param value
 	 */
-	public void stopChartValueChanged(boolean value);
+	void stopChartValueChanged(boolean value);
 	
 	
 	/**
 	 * @param value new value in [s]
 	 */
-	public void timeRangeSliderValueChanged(int value);
+	void timeRangeSliderValueChanged(int value);
 }

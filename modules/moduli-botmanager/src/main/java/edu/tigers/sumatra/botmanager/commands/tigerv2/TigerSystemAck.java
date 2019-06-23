@@ -26,13 +26,13 @@ public class TigerSystemAck extends ACommand
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	@SerialData(type = ESerialDataType.UINT16)
-	private int	seq;
+	private int seq;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/** */
+	/** Constructor. */
 	public TigerSystemAck()
 	{
 		super(ECommand.CMD_SYSTEM_ACK);

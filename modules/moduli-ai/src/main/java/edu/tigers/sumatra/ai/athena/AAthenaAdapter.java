@@ -1,16 +1,13 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 8, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.athena;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -84,10 +81,11 @@ public abstract class AAthenaAdapter implements IAthenaAdapterObserver
 	}
 	
 	
-	protected void updatePlays(final Map<EPlay, RoleFinderInfo> roleInfos, final List<APlay> activePlays)
+	protected void updatePlays(final Map<EPlay, RoleFinderInfo> roleInfos, final List<APlay> activePlays,
+			final Set<EPlay> ignoredPlays)
 	{
 		// get a list of ePlays from aPlays
-		Map<EPlay, APlay> activePlaysMap = new HashMap<EPlay, APlay>();
+		Map<EPlay, APlay> activePlaysMap = new EnumMap<>(EPlay.class);
 		for (APlay aPlay : activePlays)
 		{
 			activePlaysMap.put(aPlay.getType(), aPlay);
@@ -111,11 +109,8 @@ public abstract class AAthenaAdapter implements IAthenaAdapterObserver
 		// remove plays that should not be active anymore
 		for (APlay aPlay : activePlaysMap.values())
 		{
-			if (roleInfos.containsKey(aPlay.getType()))
-			{
-				continue;
-			}
-			if (aPlay.getType().equals(EPlay.GUI_TEST))
+			if (roleInfos.containsKey(aPlay.getType())
+					|| ignoredPlays.contains(aPlay.getType()))
 			{
 				continue;
 			}

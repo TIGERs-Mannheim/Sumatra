@@ -82,7 +82,7 @@ public class BotIDMap<T> implements IBotIDMap<T>
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
-	public T get(final BotID id)
+	public T get(final BotID id) throws NoObjectWithThisIDException
 	{
 		final T result = map.get(id);
 		if (result == null)

@@ -34,13 +34,13 @@ public interface ITransmitterUDP
 	
 	
 	/**
-	 *
+	 * Start transmitter.
 	 */
 	void start();
 	
 	
 	/**
-	 *
+	 * Stop transmitter.
 	 */
 	void stop();
 	

@@ -13,13 +13,13 @@ package edu.tigers.sumatra.botmanager.serial;
  * 
  * @author AndreR
  */
-public class SerialException extends Throwable
+public class SerialException extends Exception
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	/**  */
-	private static final long	serialVersionUID	= 1460159527145410276L;
+	private static final long serialVersionUID = 1460159527145410276L;
 	
 	
 	// --------------------------------------------------------------------------

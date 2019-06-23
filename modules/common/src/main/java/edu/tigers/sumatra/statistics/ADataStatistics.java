@@ -13,19 +13,19 @@ import java.util.List;
 
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * @param <ResultType>
- * @param <SampleType>
+ * @param <R> ResultType
+ * @param <S> SampleType
  */
-public abstract class ADataStatistics<ResultType, SampleType>
+public abstract class ADataStatistics<R, S>
 {
-	private final List<SampleType>	samples;
+	private final List<S> samples;
 	
 	
 	/**
 	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 	 * @param samples
 	 */
-	public ADataStatistics(final List<SampleType> samples)
+	public ADataStatistics(final List<S> samples)
 	{
 		this.samples = samples;
 	}
@@ -34,7 +34,7 @@ public abstract class ADataStatistics<ResultType, SampleType>
 	/**
 	 * @return
 	 */
-	public ResultType getAverage()
+	public R getAverage()
 	{
 		return getAverage(samples);
 	}
@@ -43,7 +43,7 @@ public abstract class ADataStatistics<ResultType, SampleType>
 	/**
 	 * @return
 	 */
-	public ResultType getStandardDeviation()
+	public R getStandardDeviation()
 	{
 		return getStandardDeviation(samples);
 	}
@@ -52,7 +52,7 @@ public abstract class ADataStatistics<ResultType, SampleType>
 	/**
 	 * @return
 	 */
-	public ResultType getMaximas()
+	public R getMaximas()
 	{
 		return getMaximas(samples);
 	}
@@ -61,7 +61,7 @@ public abstract class ADataStatistics<ResultType, SampleType>
 	/**
 	 * @return
 	 */
-	public ResultType getMinimas()
+	public R getMinimas()
 	{
 		return getMinimas(samples);
 	}
@@ -70,7 +70,7 @@ public abstract class ADataStatistics<ResultType, SampleType>
 	/**
 	 * @return
 	 */
-	public ResultType getRange()
+	public R getRange()
 	{
 		return getRange(samples);
 	}
@@ -80,33 +80,33 @@ public abstract class ADataStatistics<ResultType, SampleType>
 	 * @param samples
 	 * @return
 	 */
-	protected abstract ResultType getAverage(List<SampleType> samples);
+	protected abstract R getAverage(List<S> samples);
 	
 	
 	/**
 	 * @param samples
 	 * @return
 	 */
-	protected abstract ResultType getStandardDeviation(List<SampleType> samples);
+	protected abstract R getStandardDeviation(List<S> samples);
 	
 	
 	/**
 	 * @param samples
 	 * @return
 	 */
-	protected abstract ResultType getMaximas(List<SampleType> samples);
+	protected abstract R getMaximas(List<S> samples);
 	
 	
 	/**
 	 * @param samples
 	 * @return
 	 */
-	protected abstract ResultType getMinimas(List<SampleType> samples);
+	protected abstract R getMinimas(List<S> samples);
 	
 	
 	/**
 	 * @param samples
 	 * @return
 	 */
-	protected abstract ResultType getRange(List<SampleType> samples);
+	protected abstract R getRange(List<S> samples);
 }

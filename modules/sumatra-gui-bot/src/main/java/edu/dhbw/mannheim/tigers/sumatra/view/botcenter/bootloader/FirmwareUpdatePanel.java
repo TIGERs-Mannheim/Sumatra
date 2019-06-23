@@ -38,7 +38,11 @@ import net.miginfocom.swing.MigLayout;
  */
 public class FirmwareUpdatePanel extends JPanel
 {
-	/** */
+	/**  */
+	private static final String FIRMWARE_FOLDER = ".firmwareFolder";
+
+
+	/** Firmware Update Panel Observer. */
 	public interface IFirmwareUpdatePanelObserver
 	{
 		/**
@@ -47,7 +51,7 @@ public class FirmwareUpdatePanel extends JPanel
 		void onSelectFirmwareFolder(String folderPath);
 		
 		
-		/** */
+		/** Start firmware update. */
 		void onStartFirmwareUpdate();
 	}
 	
@@ -59,26 +63,25 @@ public class FirmwareUpdatePanel extends JPanel
 	
 	private final JPanel											botContainer		= new JPanel();
 	private final JTextField									firmwarePath		= new JTextField();
-	private final Map<BotID, FirmwareBotPanel>			botPanels			= new TreeMap<BotID, FirmwareBotPanel>();
+	private final Map<BotID, FirmwareBotPanel>			botPanels			= new TreeMap<>();
 	private final JFileChooser									fileChooser			= new JFileChooser();
 	
-	private final List<IFirmwareUpdatePanelObserver>	observers			= new ArrayList<IFirmwareUpdatePanelObserver>();
+	private final List<IFirmwareUpdatePanelObserver>	observers			= new ArrayList<>();
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	/** */
+	/** Constructor. */
 	public FirmwareUpdatePanel()
 	{
 		fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-		// fileChooser.setFileFilter(new BinFilter());
 		
 		setBorder(BorderFactory.createTitledBorder("Update Firmware"));
 		
 		String mainCfgPath = SumatraModel.getInstance().getUserProperty(
-				FirmwareUpdatePanel.class.getCanonicalName() + ".firmwareFolder");
+				FirmwareUpdatePanel.class.getCanonicalName() + FIRMWARE_FOLDER);
 		if (mainCfgPath != null)
 		{
 			firmwarePath.setText(mainCfgPath);
@@ -129,27 +132,6 @@ public class FirmwareUpdatePanel extends JPanel
 	}
 	
 	
-	private void notifyStartFirmwareUpdate()
-	{
-		synchronized (observers)
-		{
-			for (IFirmwareUpdatePanelObserver observer : observers)
-			{
-				observer.onStartFirmwareUpdate();
-			}
-		}
-	}
-	
-	
-	private void notifySelectFirmwareFolder(final String folder)
-	{
-		for (IFirmwareUpdatePanelObserver observer : observers)
-		{
-			observer.onSelectFirmwareFolder(folder);
-		}
-	}
-	
-	
 	private void addBotPanel(final FirmwareBotPanel panel)
 	{
 		botContainer.add(panel, "wrap, gapbottom 0");
@@ -158,6 +140,7 @@ public class FirmwareUpdatePanel extends JPanel
 	
 	
 	/**
+	 * Remove all bot panels.
 	 */
 	public void removeAllBotPanels()
 	{
@@ -178,26 +161,29 @@ public class FirmwareUpdatePanel extends JPanel
 	 */
 	protected class ChooseBinFile implements ActionListener
 	{
-		/** */
-		public ChooseBinFile()
-		{
-		}
-		
-		
 		@Override
 		public void actionPerformed(final ActionEvent arg0)
 		{
 			fileChooser.setCurrentDirectory(new File(SumatraModel.getInstance().getUserProperty(
-					FirmwareUpdatePanel.class.getCanonicalName() + ".firmwareFolder"), ""));
+					FirmwareUpdatePanel.class.getCanonicalName() + FIRMWARE_FOLDER), ""));
 			int retVal = fileChooser.showOpenDialog(FirmwareUpdatePanel.this);
 			
 			if (retVal == JFileChooser.APPROVE_OPTION)
 			{
 				firmwarePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
 				SumatraModel.getInstance().setUserProperty(
-						FirmwareUpdatePanel.class.getCanonicalName() + ".firmwareFolder", firmwarePath.getText());
+						FirmwareUpdatePanel.class.getCanonicalName() + FIRMWARE_FOLDER, firmwarePath.getText());
 				
 				notifySelectFirmwareFolder(fileChooser.getSelectedFile().getAbsolutePath());
+			}
+		}
+		
+		
+		private void notifySelectFirmwareFolder(final String folder)
+		{
+			for (IFirmwareUpdatePanelObserver observer : observers)
+			{
+				observer.onSelectFirmwareFolder(folder);
 			}
 		}
 	}
@@ -206,18 +192,23 @@ public class FirmwareUpdatePanel extends JPanel
 	 */
 	protected class StartUpdate implements ActionListener
 	{
-		/** */
-		public StartUpdate()
-		{
-		}
-		
-		
 		@Override
 		public void actionPerformed(final ActionEvent arg0)
 		{
 			notifyStartFirmwareUpdate();
 		}
 		
+		
+		private void notifyStartFirmwareUpdate()
+		{
+			synchronized (observers)
+			{
+				for (IFirmwareUpdatePanelObserver observer : observers)
+				{
+					observer.onStartFirmwareUpdate();
+				}
+			}
+		}
 	}
 	
 	

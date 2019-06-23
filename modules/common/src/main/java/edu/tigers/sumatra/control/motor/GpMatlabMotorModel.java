@@ -10,10 +10,10 @@ package edu.tigers.sumatra.control.motor;
 
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.math.IVector3;
-import edu.tigers.sumatra.math.IVectorN;
-import edu.tigers.sumatra.math.Vector3;
-import edu.tigers.sumatra.math.VectorN;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.IVectorN;
+import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.VectorN;
 import edu.tigers.sumatra.matlab.MatlabConnection;
 import matlabcontrol.MatlabConnectionException;
 import matlabcontrol.MatlabInvocationException;
@@ -57,12 +57,12 @@ public class GpMatlabMotorModel extends AMotorModel
 			sb.append(targetVel.z());
 			sb.append("])");
 			Object[] result = MatlabConnection.getMatlabProxy().returningEval(sb.toString(), 1);
-			return new VectorN((double[]) result[0]);
+			return VectorN.from((double[]) result[0]);
 		} catch (MatlabInvocationException | MatlabConnectionException err)
 		{
 			log.error("Error calling Matlab.", err);
 		}
-		return new VectorN(4);
+		return VectorN.zero(4);
 	}
 	
 	
@@ -73,21 +73,21 @@ public class GpMatlabMotorModel extends AMotorModel
 		{
 			StringBuilder sb = new StringBuilder();
 			sb.append("mm.getXywSpeed([");
-			sb.append(wheelSpeed.x());
+			sb.append(wheelSpeed.get(0));
 			sb.append(',');
-			sb.append(wheelSpeed.y());
+			sb.append(wheelSpeed.get(1));
 			sb.append(',');
-			sb.append(wheelSpeed.z());
+			sb.append(wheelSpeed.get(2));
 			sb.append(',');
-			sb.append(wheelSpeed.w());
+			sb.append(wheelSpeed.get(3));
 			sb.append("])");
 			Object[] result = MatlabConnection.getMatlabProxy().returningEval(sb.toString(), 1);
-			return new Vector3((double[]) result[0]);
+			return Vector3.fromArray((double[]) result[0]);
 		} catch (MatlabInvocationException | MatlabConnectionException err)
 		{
 			log.error("Error calling Matlab.", err);
 		}
-		return new Vector3();
+		return Vector3.zero();
 	}
 	
 	

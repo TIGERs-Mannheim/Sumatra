@@ -12,10 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.IVector3;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.math.Vector3;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector3;
 
 
 /**
@@ -57,14 +57,14 @@ public class VelocityXywContinousSampler implements IVelocityXywSampler
 		{
 			for (double speed : speeds)
 			{
-				IVector2 xyVel = new Vector2(angle).scaleTo(speed);
-				IVector3 vel = new Vector3(xyVel, 0);
+				IVector2 xyVel = Vector2.fromAngle(angle).scaleTo(speed);
+				IVector3 vel = Vector3.from2d(xyVel, 0);
 				velocities.add(vel);
 			}
 		}
 		for (double aVel : aVels)
 		{
-			velocities.add(new Vector3(0, 0, aVel));
+			velocities.add(Vector3.fromXYZ(0, 0, aVel));
 		}
 	}
 	

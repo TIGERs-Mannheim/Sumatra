@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 5, 2016
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.wp.bot;
 
 import java.util.ArrayList;
@@ -16,6 +12,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.SubnodeConfiguration;
+import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
 
 import edu.tigers.moduli.AModule;
@@ -30,7 +27,7 @@ import edu.tigers.sumatra.bot.IBot;
 import edu.tigers.sumatra.botmanager.ABotManager;
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.IVector3;
+import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.network.MulticastUDPTransmitter;
 import edu.tigers.sumatra.thread.NamedThreadFactory;
@@ -108,8 +105,8 @@ public class BotStatus2Vision extends AModule implements Runnable, IWorldFrameOb
 				{
 					SSL_DetectionBall.Builder ball = SSL_DetectionBall.newBuilder();
 					ball.setConfidence(1);
-					ball.setPixelX((float) cBall.getPixelX());
-					ball.setPixelY((float) cBall.getPixelY());
+					ball.setPixelX((float) cBall.getPixel().x());
+					ball.setPixelY((float) cBall.getPixel().y());
 					ball.setX((float) cBall.getPos().x());
 					ball.setY((float) cBall.getPos().y());
 					ball.setZ((float) cBall.getPos().z());
@@ -181,7 +178,7 @@ public class BotStatus2Vision extends AModule implements Runnable, IWorldFrameOb
 		try
 		{
 			AWorldPredictor wp = (AWorldPredictor) SumatraModel.getInstance().getModule(AWorldPredictor.MODULE_ID);
-			wp.addWorldFrameConsumer(this);
+			wp.addObserver(this);
 		} catch (ModuleNotFoundException err)
 		{
 			log.error("Could not find wp", err);
@@ -200,15 +197,16 @@ public class BotStatus2Vision extends AModule implements Runnable, IWorldFrameOb
 		service.shutdown();
 		try
 		{
-			service.awaitTermination(1, TimeUnit.SECONDS);
+			Validate.isTrue(service.awaitTermination(1, TimeUnit.SECONDS));
 		} catch (InterruptedException e)
 		{
-			log.error("BotStatus2Vision executor not stopped!", e);
+			log.error("Interrupted while awaiting termination", e);
+			Thread.currentThread().interrupt();
 		}
 		try
 		{
 			AWorldPredictor wp = (AWorldPredictor) SumatraModel.getInstance().getModule(AWorldPredictor.MODULE_ID);
-			wp.removeWorldFrameConsumer(this);
+			wp.removeObserver(this);
 		} catch (ModuleNotFoundException err)
 		{
 			log.error("Could not find wp", err);

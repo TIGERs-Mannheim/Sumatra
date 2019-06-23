@@ -9,7 +9,7 @@
 package edu.tigers.autoreferee.engine.states;
 
 import edu.tigers.autoreferee.engine.FollowUpAction;
-import edu.tigers.autoreferee.engine.RefCommand;
+import edu.tigers.autoreferee.engine.RefboxRemoteCommand;
 import edu.tigers.autoreferee.engine.log.GameLog;
 import edu.tigers.autoreferee.remote.ICommandResult;
 
@@ -23,30 +23,30 @@ public interface IAutoRefStateContext
 	 * @param cmd
 	 * @return
 	 */
-	public ICommandResult sendCommand(RefCommand cmd);
+	ICommandResult sendCommand(RefboxRemoteCommand cmd);
 	
 	
 	/**
 	 * @return
 	 */
-	public FollowUpAction getFollowUpAction();
+	FollowUpAction getFollowUpAction();
 	
 	
 	/**
 	 * @param action
 	 */
-	public void setFollowUpAction(FollowUpAction action);
+	void setFollowUpAction(FollowUpAction action);
 	
 	
 	/**
 	 * @return
 	 */
-	public boolean doProceed();
+	boolean doProceed();
 	
 	
 	/**
 	 * @return
 	 */
-	public GameLog getGameLog();
+	GameLog getGameLog();
 	
 }

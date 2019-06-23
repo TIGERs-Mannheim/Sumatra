@@ -1,16 +1,12 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Aug 7, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.botcenter;
 
 import java.awt.EventQueue;
 
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.BotCenterPanel;
+import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.basestation.BaseStationBotMgrPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.basestation.BaseStationControlPanel.IBaseStationControlPanelObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.basestation.BaseStationPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.bots.TigerBotV2Summary;
@@ -21,6 +17,7 @@ import edu.tigers.sumatra.botmanager.basestation.IBaseStation;
 import edu.tigers.sumatra.botmanager.basestation.IBaseStationObserver;
 import edu.tigers.sumatra.botmanager.bots.communication.ENetworkState;
 import edu.tigers.sumatra.botmanager.commands.ACommand;
+import edu.tigers.sumatra.botmanager.commands.ECommand;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationEthStats;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStats;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemMatchFeedback;
@@ -31,12 +28,12 @@ import edu.tigers.sumatra.ids.BotID;
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class BaseStationPresenter implements IBaseStationControlPanelObserver, IBaseStationObserver,
-		IModuliStateObserver
+		IModuliStateObserver, BaseStationBotMgrPanel.IBaseStationBotMgrObserver
 {
-	private final IBaseStation					baseStation;
-	private final FirmwareUpdatePresenter	firmwareUpdatePresenter;
-	private final BotCenterPanel				botCenter;
-	private final BaseStationPanel			bsPanel;
+	private final IBaseStation baseStation;
+	private final FirmwareUpdatePresenter firmwareUpdatePresenter;
+	private final BotCenterPanel botCenter;
+	private final BaseStationPanel bsPanel;
 	
 	
 	/**
@@ -49,8 +46,6 @@ public class BaseStationPresenter implements IBaseStationControlPanelObserver, I
 		this.botCenter = botCenter;
 		bsPanel = new BaseStationPanel(baseStation.getName());
 		firmwareUpdatePresenter = new FirmwareUpdatePresenter(bsPanel.getFirmwareUpdatePanel(), baseStation);
-		
-		
 	}
 	
 	
@@ -70,30 +65,25 @@ public class BaseStationPresenter implements IBaseStationControlPanelObserver, I
 	@Override
 	public void onIncommingBotCommand(final BotID id, final ACommand command)
 	{
-		switch (command.getType())
+		if (command.getType() == ECommand.CMD_SYSTEM_MATCH_FEEDBACK)
 		{
-			case CMD_SYSTEM_MATCH_FEEDBACK:
-				final TigerSystemMatchFeedback feedback = (TigerSystemMatchFeedback) command;
-				EventQueue.invokeLater(() -> {
-					TigerBotV2Summary summ = (TigerBotV2Summary) botCenter.getOverviewPanel().getBotPanel(id);
-					if (summ == null)
-					{
-						return;
-					}
-					summ.setBatteryLevel(feedback.getBatteryLevel());
-					summ.setCap(feedback.getKickerLevel());
-				});
-				
-				for (EFeature feature : EFeature.values())
+			final TigerSystemMatchFeedback feedback = (TigerSystemMatchFeedback) command;
+			EventQueue.invokeLater(() -> {
+				TigerBotV2Summary summ = (TigerBotV2Summary) botCenter.getOverviewPanel().getBotPanel(id);
+				if (summ == null)
 				{
-					boolean working = feedback.isFeatureWorking(feature);
-					botCenter.getFeaturePanel().setFeatureState(id, feedback.getHardwareId(), feature, working);
+					return;
 				}
-				botCenter.getFeaturePanel().setHWIdSet(id, feedback.getHardwareId() != 255);
-				botCenter.getFeaturePanel().update();
-				break;
-			default:
-				break;
+				summ.setMatchFeedback(feedback);
+			});
+			
+			for (EFeature feature : EFeature.values())
+			{
+				boolean working = feedback.isFeatureWorking(feature);
+				botCenter.getFeaturePanel().setFeatureState(id, feedback.getHardwareId(), feature, working);
+			}
+			botCenter.getFeaturePanel().setHWIdSet(id, feedback.getHardwareId() != 255);
+			botCenter.getFeaturePanel().update();
 		}
 	}
 	
@@ -101,9 +91,7 @@ public class BaseStationPresenter implements IBaseStationControlPanelObserver, I
 	@Override
 	public void onNewBaseStationWifiStats(final BaseStationWifiStats stats)
 	{
-		EventQueue.invokeLater(() -> {
-			bsPanel.getWifiStatsPanel().setStats(stats);
-		});
+		EventQueue.invokeLater(() -> bsPanel.getWifiStatsPanel().setStats(stats));
 	}
 	
 	
@@ -120,18 +108,14 @@ public class BaseStationPresenter implements IBaseStationControlPanelObserver, I
 	@Override
 	public void onNetworkStateChanged(final ENetworkState netState)
 	{
-		EventQueue.invokeLater(() -> {
-			bsPanel.getControlPanel().setConnectionState(netState);
-		});
+		EventQueue.invokeLater(() -> bsPanel.getControlPanel().setConnectionState(netState));
 	}
 	
 	
 	@Override
 	public void onNewPingDelay(final double delay)
 	{
-		EventQueue.invokeLater(() -> {
-			bsPanel.getControlPanel().setPingDelay(delay);
-		});
+		EventQueue.invokeLater(() -> bsPanel.getControlPanel().setPingDelay(delay));
 	}
 	
 	
@@ -155,26 +139,18 @@ public class BaseStationPresenter implements IBaseStationControlPanelObserver, I
 		switch (state)
 		{
 			case ACTIVE:
-			{
-				EventQueue.invokeLater(() -> {
-					bsPanel.getControlPanel().setConnectionState(baseStation.getNetState());
-				});
+				EventQueue.invokeLater(() -> bsPanel.getControlPanel().setConnectionState(baseStation.getNetState()));
 				baseStation.addObserver(this);
 				bsPanel.getControlPanel().addObserver(this);
-				break;
-			}
-			case NOT_LOADED:
+				bsPanel.getBaseStationBotMgrPanel().addObserver(this);
 				break;
 			case RESOLVED:
-			{
 				baseStation.removeObserver(this);
 				bsPanel.getControlPanel().removeObserver(this);
-				
-				EventQueue.invokeLater(() -> {
-					bsPanel.getControlPanel().setConnectionState(ENetworkState.OFFLINE);
-				});
+				EventQueue.invokeLater(() -> bsPanel.getControlPanel().setConnectionState(ENetworkState.OFFLINE));
+				bsPanel.getBaseStationBotMgrPanel().removeObserver(this);
 				break;
-			}
+			case NOT_LOADED:
 			default:
 				break;
 		}
@@ -188,5 +164,19 @@ public class BaseStationPresenter implements IBaseStationControlPanelObserver, I
 	public final BaseStationPanel getBsPanel()
 	{
 		return bsPanel;
+	}
+	
+	
+	@Override
+	public void onAddBot(final BotID botID)
+	{
+		baseStation.addBot(botID);
+	}
+	
+	
+	@Override
+	public void onRemoveBot(final BotID botID)
+	{
+		baseStation.removeBot(botID);
 	}
 }

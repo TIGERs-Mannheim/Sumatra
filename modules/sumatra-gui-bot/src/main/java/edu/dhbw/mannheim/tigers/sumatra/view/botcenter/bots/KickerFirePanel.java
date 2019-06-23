@@ -34,7 +34,9 @@ import net.miginfocom.swing.MigLayout;
 public class KickerFirePanel extends JPanel
 {
 	/**
+	 * Kicker fire panel observer.
 	 */
+	@FunctionalInterface
 	public interface IKickerFirePanelObserver
 	{
 		/**
@@ -53,19 +55,15 @@ public class KickerFirePanel extends JPanel
 	private final JTextField							txtKickSpeed;
 	private final JRadioButton							modeForce;
 	private final JRadioButton							modeArm;
+	private final JRadioButton							modeArmTime;
 	private final JRadioButton							modeDisarm;
-	private final JRadioButton							modeDribbler;
 	private final JRadioButton							deviceStraight;
 	private final JRadioButton							deviceChip;
 	
-	private final List<IKickerFirePanelObserver>	observers			= new ArrayList<IKickerFirePanelObserver>();
+	private final List<IKickerFirePanelObserver>	observers			= new ArrayList<>();
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 */
+	/** Constructor. */
 	public KickerFirePanel()
 	{
 		setLayout(new MigLayout("fill"));
@@ -73,8 +71,8 @@ public class KickerFirePanel extends JPanel
 		txtKickSpeed = new JTextField("8");
 		modeForce = new JRadioButton("Force");
 		modeArm = new JRadioButton("Arm");
+		modeArmTime = new JRadioButton("ArmTime");
 		modeDisarm = new JRadioButton("Disarm");
-		modeDribbler = new JRadioButton("Dribbler");
 		deviceStraight = new JRadioButton("Straight");
 		deviceChip = new JRadioButton("Chip");
 		
@@ -84,8 +82,8 @@ public class KickerFirePanel extends JPanel
 		final ButtonGroup mode = new ButtonGroup();
 		mode.add(modeForce);
 		mode.add(modeArm);
+		mode.add(modeArmTime);
 		mode.add(modeDisarm);
-		mode.add(modeDribbler);
 		
 		final ButtonGroup device = new ButtonGroup();
 		device.add(deviceStraight);
@@ -94,8 +92,8 @@ public class KickerFirePanel extends JPanel
 		final JPanel modePanel = new JPanel(new MigLayout("fill"));
 		modePanel.add(modeForce, "wrap");
 		modePanel.add(modeArm, "wrap");
+		modePanel.add(modeArmTime, "wrap");
 		modePanel.add(modeDisarm, "wrap");
-		modePanel.add(modeDribbler, "wrap");
 		modePanel.setBorder(BorderFactory.createTitledBorder("Mode"));
 		modeForce.setSelected(true);
 		
@@ -146,21 +144,11 @@ public class KickerFirePanel extends JPanel
 	}
 	
 	
-	private void notifyFire(final double kickSpeed, final EKickerMode mode, final EKickerDevice device)
-	{
-		synchronized (observers)
-		{
-			for (final IKickerFirePanelObserver observer : observers)
-			{
-				observer.onKickerFire(kickSpeed, mode, device);
-			}
-		}
-	}
-	
 	// --------------------------------------------------------------------------
 	// --- actions --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
+	 * Fire kicker action.
 	 */
 	public class Fire implements ActionListener
 	{
@@ -189,14 +177,14 @@ public class KickerFirePanel extends JPanel
 				m = EKickerMode.ARM;
 			}
 			
+			if (modeArmTime.isSelected())
+			{
+				m = EKickerMode.ARM_TIME;
+			}
+			
 			if (modeDisarm.isSelected())
 			{
 				m = EKickerMode.DISARM;
-			}
-			
-			if (modeDribbler.isSelected())
-			{
-				m = EKickerMode.DRIBBLER;
 			}
 			
 			if (deviceStraight.isSelected())
@@ -210,6 +198,18 @@ public class KickerFirePanel extends JPanel
 			}
 			
 			notifyFire(kickSpeed, m, dev);
+		}
+		
+		
+		private void notifyFire(final double kickSpeed, final EKickerMode mode, final EKickerDevice device)
+		{
+			synchronized (observers)
+			{
+				for (final IKickerFirePanelObserver observer : observers)
+				{
+					observer.onKickerFire(kickSpeed, mode, device);
+				}
+			}
 		}
 	}
 }

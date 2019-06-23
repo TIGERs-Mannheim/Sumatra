@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 7, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.aicenter.view;
 
@@ -18,16 +13,19 @@ import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 import javax.swing.DefaultCellEditor;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -36,11 +34,10 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
 
-import edu.tigers.sumatra.ai.IAIObserver;
-import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
-import edu.tigers.sumatra.ai.athena.IAIModeChanged;
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+
 import edu.tigers.sumatra.ai.data.EAIControlState;
-import edu.tigers.sumatra.ai.data.frames.AIInfoFrame;
 import edu.tigers.sumatra.ai.data.frames.VisualizationFrame;
 import edu.tigers.sumatra.ai.lachesis.PlayPrioComparatorInfo;
 import edu.tigers.sumatra.ai.lachesis.RoleFinderInfo;
@@ -55,19 +52,21 @@ import edu.tigers.sumatra.model.SumatraModel;
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class AthenaControlPanel extends JPanel implements IAIModeChanged, IVisualizationFrameObserver, IAIObserver
+public class AthenaControlPanel extends JPanel
 {
-	/**  */
-	private static final long								serialVersionUID	= 8561402774656016979L;
-	private static final int								NUM_ROWS				= 5;
-																							
-	private final List<IAthenaControlPanelObserver>	observers			= new CopyOnWriteArrayList<IAthenaControlPanelObserver>();
-																							
-	private final JTable										table;
-	private ETeamColor										teamColor			= ETeamColor.UNINITIALIZED;
-																							
-	private final List<Component>							components			= new ArrayList<>();
-																							
+	private static final Logger log = Logger.getLogger(AthenaControlPanel.class.getName());
+	private static final long serialVersionUID = 8561402774656016979L;
+	private static final int NUM_ROWS = 7;
+	private static final String REPLACE_PATTERN = "[,; ]";
+	
+	private final transient List<IAthenaControlPanelObserver> observers = new CopyOnWriteArrayList<>();
+	
+	private final JTable table;
+	private ETeamColor teamColor = ETeamColor.UNINITIALIZED;
+	
+	private final List<Component> components = new ArrayList<>();
+	private final JLabel lblAvailableBots;
+	
 	private enum EColumn
 	{
 		PLAY(0, "Play", ""),
@@ -77,14 +76,14 @@ public class AthenaControlPanel extends JPanel implements IAIModeChanged, IVisua
 		NUM_ROLES(4, "numRoles", ""),
 		DESIRED_BOTS(5, "desiredBots", ""),
 		ASSIGNED_BOTS(6, "assignedBots", ""),
-		OVERRIDE(7, "override", true),;
+		AI(7, "use AI", false),;
 		
-		private final int		idx;
-		private final String	title;
-		private final Object	defValue;
-									
-									
-		private EColumn(final int idx, final String title, final Object defValue)
+		private final int idx;
+		private final String title;
+		private final Object defValue;
+		
+		
+		EColumn(final int idx, final String title, final Object defValue)
 		{
 			this.idx = idx;
 			this.title = title;
@@ -94,8 +93,8 @@ public class AthenaControlPanel extends JPanel implements IAIModeChanged, IVisua
 	
 	
 	/**
-	  * 
-	  */
+	 * Default
+	 */
 	public AthenaControlPanel()
 	{
 		setLayout(new BorderLayout());
@@ -112,7 +111,7 @@ public class AthenaControlPanel extends JPanel implements IAIModeChanged, IVisua
 		{
 			playsData[i + 1] = ePlays[i].name();
 		}
-		JComboBox<String> playCombo = new JComboBox<String>(playsData);
+		JComboBox<String> playCombo = new JComboBox<>(playsData);
 		TableColumn playColumn = table.getColumnModel().getColumn(EColumn.PLAY.idx);
 		playColumn.setMinWidth(150);
 		playColumn.setCellEditor(new DefaultCellEditor(playCombo));
@@ -129,6 +128,8 @@ public class AthenaControlPanel extends JPanel implements IAIModeChanged, IVisua
 		add(scrlPane, BorderLayout.CENTER);
 		
 		JPanel buttonPanel = new JPanel();
+		lblAvailableBots = new JLabel("Available bots: ?");
+		buttonPanel.add(lblAvailableBots);
 		buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
 		add(buttonPanel, BorderLayout.NORTH);
 		JButton btnClear = new JButton("Clear Plays");
@@ -184,11 +185,16 @@ public class AthenaControlPanel extends JPanel implements IAIModeChanged, IVisua
 	
 	private int valueOrZero(final String strInt)
 	{
+		if (StringUtils.isBlank(strInt))
+		{
+			return 0;
+		}
 		try
 		{
 			return Integer.valueOf(strInt);
 		} catch (NumberFormatException err)
 		{
+			log.debug("Could not parse string: " + strInt, err);
 		}
 		return 0;
 	}
@@ -206,22 +212,10 @@ public class AthenaControlPanel extends JPanel implements IAIModeChanged, IVisua
 	}
 	
 	
-	private void clearRoles()
-	{
-		for (int j = 0; j < NUM_ROWS; j++)
-		{
-			table.getModel()
-					.setValueAt(EColumn.values()[EColumn.DESIRED_ROLES.idx].defValue, j, EColumn.DESIRED_ROLES.idx);
-			table.getModel().setValueAt(EColumn.values()[EColumn.MIN_ROLES.idx].defValue, j, EColumn.MIN_ROLES.idx);
-			table.getModel().setValueAt(EColumn.values()[EColumn.MAX_ROLES.idx].defValue, j, EColumn.MAX_ROLES.idx);
-		}
-	}
-	
-	
 	private void sendRoleFinderInfos()
 	{
-		Map<EPlay, RoleFinderInfo> infos = new HashMap<EPlay, RoleFinderInfo>();
-		Map<EPlay, Boolean> overrides = new HashMap<EPlay, Boolean>();
+		Map<EPlay, RoleFinderInfo> infos = new EnumMap<>(EPlay.class);
+		Map<EPlay, Boolean> useAiPlays = new EnumMap<>(EPlay.class);
 		for (int row = 0; row < NUM_ROWS; row++)
 		{
 			String strPlay = table.getModel().getValueAt(row, EColumn.PLAY.idx).toString();
@@ -237,32 +231,35 @@ public class AthenaControlPanel extends JPanel implements IAIModeChanged, IVisua
 			String desBots = table.getModel().getValueAt(row, EColumn.DESIRED_BOTS.idx).toString();
 			if (!desBots.isEmpty())
 			{
-				String[] desBotsArr = desBots.split("[,; ]");
+				String[] desBotsArr = desBots.split(REPLACE_PATTERN);
 				for (String strDesBot : desBotsArr)
 				{
 					info.getDesiredBots().add(BotID.createBotId(valueOrZero(strDesBot), teamColor));
 				}
 			}
-			Boolean override = Boolean.valueOf(table.getModel().getValueAt(row, EColumn.OVERRIDE.idx).toString());
+			Boolean override = Boolean.valueOf(table.getModel().getValueAt(row, EColumn.AI.idx).toString());
 			infos.put(ePlay, info);
-			overrides.put(ePlay, override);
+			useAiPlays.put(ePlay, override);
 		}
 		for (IAthenaControlPanelObserver o : observers)
 		{
 			o.onNewRoleFinderInfos(infos);
-			o.onNewRoleFinderOverrides(overrides);
+			o.onNewRoleFinderUseAiFlags(useAiPlays);
 		}
 	}
 	
 	
-	@Override
-	public void onAiModeChanged(final EAIControlState mode)
+	public void setAiControlState(final EAIControlState mode)
 	{
 		switch (mode)
 		{
 			case EMERGENCY_MODE:
 			case MATCH_MODE:
 			case MIXED_TEAM_MODE:
+				table.setEnabled(false);
+				break;
+			case OFF:
+				clear();
 				table.setEnabled(false);
 				break;
 			case TEST_MODE:
@@ -293,74 +290,64 @@ public class AthenaControlPanel extends JPanel implements IAIModeChanged, IVisua
 				i++;
 			} catch (IllegalArgumentException err)
 			{
-				// ignore
+				log.debug("Could not convert to play: " + play, err);
 			}
 		}
 	}
 	
 	
-	@Override
-	public void onNewAIInfoFrame(final AIInfoFrame lastAIInfoframe)
+	/**
+	 * New VisualizationFrame.
+	 * 
+	 * @param lastAIInfoframe
+	 */
+	public void updateVisualizationFrame(final VisualizationFrame lastAIInfoframe)
 	{
-		// if (table.isEnabled())
-		// {
-		// for (int row = 0; row < NUM_ROWS; row++)
-		// {
-		// String strPlay = table.getModel().getValueAt(row, EColumn.PLAY.idx).toString();
-		// if (strPlay.isEmpty())
-		// {
-		// continue;
-		// }
-		// EPlay ePlay = EPlay.valueOf(strPlay);
-		// int numRoles = lastAIInfoframe.getPlayStrategy().getActiveRoles(ePlay).size();
-		// table.getModel().setValueAt(String.valueOf(numRoles), row, EColumn.NUM_ROLES.idx);
-		// }
-		// }
+		EventQueue.invokeLater(() -> updateTable(lastAIInfoframe));
 	}
 	
 	
-	@Override
-	public void onNewVisualizationFrame(final VisualizationFrame lastAIInfoframe)
+	private void updateTable(final VisualizationFrame lastAIInfoframe)
 	{
-		EventQueue.invokeLater(() -> {
-			teamColor = lastAIInfoframe.getTeamColor();
+		teamColor = lastAIInfoframe.getTeamColor();
+		
+		int nAvailable = lastAIInfoframe.getWorldFrame().getTigerBotsAvailable().size();
+		lblAvailableBots.setText("Available Bots: " + nAvailable);
+		
+		int i = 0;
+		Map<EPlay, RoleFinderInfo> newRoleFinderInfo = lastAIInfoframe.getRoleFinderInfos();
+		List<Map.Entry<EPlay, RoleFinderInfo>> infoEntries = new ArrayList<>(
+				newRoleFinderInfo.entrySet());
+		infoEntries.sort(new PlayPrioComparatorInfo());
+		for (Map.Entry<EPlay, RoleFinderInfo> entry : infoEntries)
+		{
+			EPlay ePlay = entry.getKey();
+			RoleFinderInfo info = entry.getValue();
+			table.getModel().setValueAt(ePlay.name(), i, EColumn.PLAY.idx);
+			table.getModel().setValueAt(String.valueOf(info.getMinRoles()), i, EColumn.MIN_ROLES.idx);
+			table.getModel().setValueAt(String.valueOf(info.getDesiredRoles()), i, EColumn.DESIRED_ROLES.idx);
+			table.getModel().setValueAt(String.valueOf(info.getMaxRoles()), i, EColumn.MAX_ROLES.idx);
+			int numRoles = (int) lastAIInfoframe.getAiInfos().values().stream()
+					.filter(aiInfo -> aiInfo.getPlay().equals(ePlay.name())).count();
+			table.getModel().setValueAt(String.valueOf(numRoles), i, EColumn.NUM_ROLES.idx);
 			
-			int i = 0;
-			Map<EPlay, RoleFinderInfo> newRoleFinderInfo = lastAIInfoframe.getRoleFinderInfos();
-			List<Map.Entry<EPlay, RoleFinderInfo>> infoEntries = new ArrayList<Map.Entry<EPlay, RoleFinderInfo>>(
-					newRoleFinderInfo.entrySet());
-			Collections
-					.sort(infoEntries, new PlayPrioComparatorInfo());
-			for (Map.Entry<EPlay, RoleFinderInfo> entry : infoEntries)
+			String desBots = botIds2String(info.getDesiredBots());
+			table.getModel().setValueAt(desBots, i, EColumn.DESIRED_BOTS.idx);
+			
+			List<BotID> assignedIds = lastAIInfoframe.getAiInfos().entrySet().stream()
+					.filter(e -> e.getValue().getPlay().equals(ePlay.name())).map(Map.Entry::getKey)
+					.collect(Collectors.toList());
+			String assignedBots = botIds2String(assignedIds);
+			table.getModel().setValueAt(assignedBots, i, EColumn.ASSIGNED_BOTS.idx);
+			i++;
+		}
+		for (int j = i; j < NUM_ROWS; j++)
+		{
+			for (int colIdx = 0; colIdx < EColumn.values().length; colIdx++)
 			{
-				EPlay ePlay = entry.getKey();
-				RoleFinderInfo info = entry.getValue();
-				table.getModel().setValueAt(ePlay.name(), i, EColumn.PLAY.idx);
-				table.getModel().setValueAt(String.valueOf(info.getMinRoles()), i, EColumn.MIN_ROLES.idx);
-				table.getModel().setValueAt(String.valueOf(info.getDesiredRoles()), i, EColumn.DESIRED_ROLES.idx);
-				table.getModel().setValueAt(String.valueOf(info.getMaxRoles()), i, EColumn.MAX_ROLES.idx);
-				int numRoles = (int) lastAIInfoframe.getAiInfos().values().stream()
-						.filter(aiInfo -> aiInfo.getPlay().equals(ePlay.name())).count();
-				table.getModel().setValueAt(String.valueOf(numRoles), i, EColumn.NUM_ROLES.idx);
-				
-				String desBots = botIds2String(info.getDesiredBots());
-				table.getModel().setValueAt(desBots, i, EColumn.DESIRED_BOTS.idx);
-				
-				List<BotID> assignedIds = lastAIInfoframe.getAiInfos().entrySet().stream()
-						.filter(e -> e.getValue().getPlay().equals(ePlay.name())).map(e -> e.getKey())
-						.collect(Collectors.toList());
-				String assignedBots = botIds2String(assignedIds);
-				table.getModel().setValueAt(assignedBots, i, EColumn.ASSIGNED_BOTS.idx);
-				i++;
+				table.getModel().setValueAt(EColumn.values()[colIdx].defValue, j, colIdx);
 			}
-			for (int j = i; j < NUM_ROWS; j++)
-			{
-				for (int colIdx = 0; colIdx < EColumn.values().length; colIdx++)
-				{
-					table.getModel().setValueAt(EColumn.values()[colIdx].defValue, j, colIdx);
-				}
-			}
-		});
+		}
 	}
 	
 	
@@ -409,11 +396,63 @@ public class AthenaControlPanel extends JPanel implements IAIModeChanged, IVisua
 					val = Math.max(0, Integer.valueOf(curVal) + inc);
 				} catch (NumberFormatException err)
 				{
+					log.debug("Could not parse int: " + curVal, err);
 				}
 				String strVal = String.valueOf(val);
 				table.getModel().setValueAt(strVal, selRowIdx, EColumn.DESIRED_ROLES.idx);
+				
+				updateDesiredRoles(selRowIdx, val);
 			}
 			sendRoleFinderInfos();
+		}
+		
+		
+		private void updateDesiredRoles(final int selRowIdx, final int val)
+		{
+			List<String> desBots = getCurrentDesiredBots(selRowIdx);
+			while (desBots.size() > val)
+			{
+				desBots.remove(desBots.size() - 1);
+			}
+			
+			Set<String> usedBotIds = getUsedBotIds();
+			
+			while (desBots.size() < val)
+			{
+				int botId = 0;
+				while (usedBotIds.contains(String.valueOf(botId)))
+				{
+					botId++;
+				}
+				desBots.add(String.valueOf(botId));
+			}
+			
+			String newValue = StringUtils.join(desBots, ",");
+			table.getModel().setValueAt(newValue, selRowIdx, EColumn.DESIRED_BOTS.idx);
+		}
+		
+		
+		private List<String> getCurrentDesiredBots(final int selRowIdx)
+		{
+			String desBotsStr = table.getModel().getValueAt(selRowIdx, EColumn.DESIRED_BOTS.idx).toString();
+			List<String> desBots = new ArrayList<>(Arrays.asList(desBotsStr.split(REPLACE_PATTERN)));
+			if ("".equals(desBots.get(0)))
+			{
+				desBots.clear();
+			}
+			return desBots;
+		}
+		
+		
+		private Set<String> getUsedBotIds()
+		{
+			Set<String> usedBotIds = new HashSet<>();
+			for (int rowId = 0; rowId < table.getRowCount(); rowId++)
+			{
+				String desiredBotsStr = table.getModel().getValueAt(rowId, EColumn.DESIRED_BOTS.idx).toString();
+				usedBotIds.addAll(Arrays.asList(desiredBotsStr.split(REPLACE_PATTERN)));
+			}
+			return usedBotIds;
 		}
 	}
 	
@@ -465,6 +504,20 @@ public class AthenaControlPanel extends JPanel implements IAIModeChanged, IVisua
 			clearRoles();
 			sendRoleFinderInfos();
 		}
+		
+		
+		private void clearRoles()
+		{
+			for (int j = 0; j < NUM_ROWS; j++)
+			{
+				table.getModel()
+						.setValueAt(EColumn.values()[EColumn.DESIRED_ROLES.idx].defValue, j, EColumn.DESIRED_ROLES.idx);
+				table.getModel().setValueAt(EColumn.values()[EColumn.MIN_ROLES.idx].defValue, j, EColumn.MIN_ROLES.idx);
+				table.getModel().setValueAt(EColumn.values()[EColumn.MAX_ROLES.idx].defValue, j, EColumn.MAX_ROLES.idx);
+				table.getModel().setValueAt(EColumn.values()[EColumn.DESIRED_BOTS.idx].defValue, j,
+						EColumn.DESIRED_BOTS.idx);
+			}
+		}
 	}
 	
 	private static class TableModel extends DefaultTableModel
@@ -482,7 +535,7 @@ public class AthenaControlPanel extends JPanel implements IAIModeChanged, IVisua
 		@Override
 		public Class<?> getColumnClass(final int columnIndex)
 		{
-			if (columnIndex == EColumn.OVERRIDE.idx)
+			if (columnIndex == EColumn.AI.idx)
 			{
 				return Boolean.class;
 			}
@@ -493,11 +546,7 @@ public class AthenaControlPanel extends JPanel implements IAIModeChanged, IVisua
 		@Override
 		public boolean isCellEditable(final int row, final int column)
 		{
-			if (column == EColumn.NUM_ROLES.idx)
-			{
-				return false;
-			}
-			return super.isCellEditable(row, column);
+			return (column != EColumn.NUM_ROLES.idx) && super.isCellEditable(row, column);
 		}
 	}
 	

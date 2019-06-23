@@ -35,7 +35,7 @@ public class NetStateIndicator extends JTextField
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/** */
+	/** Constructor. */
 	public NetStateIndicator()
 	{
 		setEditable(false);
@@ -61,26 +61,23 @@ public class NetStateIndicator extends JTextField
 	{
 		this.state = state;
 		
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
+		SwingUtilities.invokeLater(() -> {
+			switch (state)
 			{
-				switch (state)
-				{
-					case OFFLINE:
-						setText("Offline");
-						setBackground(new Color(255, 128, 128));
-						break;
-					case CONNECTING:
-						setText("Connecting");
-						setBackground(Color.CYAN);
-						break;
-					case ONLINE:
-						setText("Online");
-						setBackground(Color.GREEN);
-						break;
-				}
+				case OFFLINE:
+					setText("Offline");
+					setBackground(new Color(255, 128, 128));
+					break;
+				case CONNECTING:
+					setText("Connecting");
+					setBackground(Color.CYAN);
+					break;
+				case ONLINE:
+					setText("Online");
+					setBackground(Color.GREEN);
+					break;
+				default:
+					break;
 			}
 		});
 	}

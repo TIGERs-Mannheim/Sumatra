@@ -1,13 +1,9 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 8, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.athena;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -27,26 +23,27 @@ import edu.tigers.sumatra.ids.BotID;
  */
 public final class AIControl
 {
-	private final List<APlay>						addPlays					= new LinkedList<APlay>();
-	private final List<APlay>						removePlays				= new LinkedList<APlay>();
-	private final List<ARole>						addRoles					= new LinkedList<ARole>();
-	private final List<ARole>						removeRoles				= new LinkedList<ARole>();
-	private final Map<BotID, ARole>				assignRoles				= new HashMap<BotID, ARole>();
+	private final List<APlay> addPlays = new LinkedList<>();
+	private final List<APlay> removePlays = new LinkedList<>();
+	private final List<ARole> addRoles = new LinkedList<>();
+	private final List<ARole> removeRoles = new LinkedList<>();
+	private final Map<BotID, ARole> assignRoles = new HashMap<>();
 	
-	private final Map<APlay, Integer>			addRoles2Play			= new HashMap<APlay, Integer>();
-	private final Map<APlay, Integer>			removeRolesFromPlay	= new HashMap<APlay, Integer>();
+	private final Map<APlay, Integer> addRoles2Play = new HashMap<>();
+	private final Map<APlay, Integer> removeRolesFromPlay = new HashMap<>();
 	
-	private boolean									changed					= false;
+	private boolean changed = false;
 	
-	private final Map<EPlay, RoleFinderInfo>	roleFinderInfos		= new HashMap<EPlay, RoleFinderInfo>();
-	private final Map<EPlay, Boolean>			roleFinderOverrides	= new HashMap<EPlay, Boolean>();
+	private final Map<EPlay, RoleFinderInfo> roleFinderInfos = new EnumMap<>(EPlay.class);
+	private final Map<EPlay, Boolean> roleFinderOverrides = new EnumMap<>(EPlay.class);
 	
 	
 	/**
-	  * 
-	  */
+	 * Creates a new AIControl
+	 */
 	public AIControl()
 	{
+		// Do nothing
 	}
 	
 	
@@ -127,6 +124,7 @@ public final class AIControl
 	
 	
 	/**
+	 * Resets the AIControl
 	 */
 	public void reset()
 	{
@@ -221,7 +219,7 @@ public final class AIControl
 	/**
 	 * @return the roleFinderOverrides
 	 */
-	public final Map<EPlay, Boolean> getRoleFinderOverrides()
+	public final Map<EPlay, Boolean> getRoleFinderUseAiFlags()
 	{
 		return roleFinderOverrides;
 	}

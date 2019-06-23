@@ -1,23 +1,23 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 03.05.2016
- * Author(s): lukas
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.snapshot;
 
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -32,7 +32,19 @@ import edu.tigers.sumatra.ids.ETeamColor;
  */
 public class Snapshot
 {
-	private Map<BotID, SnapObject> bots;
+	private Map<BotID, SnapObject>	bots;
+	private SnapObject					ball;
+	
+	
+	/**
+	 * @param bots
+	 * @param ball
+	 */
+	public Snapshot(final Map<BotID, SnapObject> bots, final SnapObject ball)
+	{
+		this.bots = bots;
+		this.ball = ball;
+	}
 	
 	
 	/**
@@ -71,68 +83,31 @@ public class Snapshot
 	}
 	
 	
-	private SnapObject ball;
-	
-	
-	/**
-	 * @param bots
-	 * @param ball
-	 */
-	public Snapshot(final Map<BotID, SnapObject> bots, final SnapObject ball)
+	@Override
+	public boolean equals(final Object o)
 	{
-		this.bots = bots;
-		this.ball = ball;
+		if (this == o)
+			return true;
+		
+		if (!(o instanceof Snapshot))
+			return false;
+		
+		final Snapshot snapshot = (Snapshot) o;
+		
+		return new EqualsBuilder()
+				.append(getBots(), snapshot.getBots())
+				.append(getBall(), snapshot.getBall())
+				.isEquals();
 	}
 	
 	
 	@Override
 	public int hashCode()
 	{
-		final int prime = 31;
-		int result = 1;
-		result = (prime * result) + ((ball == null) ? 0 : ball.hashCode());
-		result = (prime * result) + ((bots == null) ? 0 : bots.hashCode());
-		return result;
-	}
-	
-	
-	@Override
-	public boolean equals(final Object obj)
-	{
-		if (this == obj)
-		{
-			return true;
-		}
-		if (obj == null)
-		{
-			return false;
-		}
-		if (getClass() != obj.getClass())
-		{
-			return false;
-		}
-		Snapshot other = (Snapshot) obj;
-		if (ball == null)
-		{
-			if (other.ball != null)
-			{
-				return false;
-			}
-		} else if (!ball.equals(other.ball))
-		{
-			return false;
-		}
-		if (bots == null)
-		{
-			if (other.bots != null)
-			{
-				return false;
-			}
-		} else if (!bots.equals(other.bots))
-		{
-			return false;
-		}
-		return true;
+		return new HashCodeBuilder(17, 37)
+				.append(getBots())
+				.append(getBall())
+				.toHashCode();
 	}
 	
 	
@@ -233,17 +208,60 @@ public class Snapshot
 	
 	
 	/**
-	 * @param path
-	 * @return
-	 * @throws ParseException
-	 * @throws IOException
+	 * @param path to the snapshot file
+	 * @return the loaded snapshot
+	 * @throws IOException on any error
 	 */
-	public static Snapshot load(final String path) throws ParseException, IOException
+	public static Snapshot loadFromFile(final String path) throws IOException
 	{
-		byte[] encoded = Files.readAllBytes(Paths.get(path));
+		return loadFromFile(Paths.get(path));
+	}
+	
+	
+	/**
+	 * @param path to the snapshot file
+	 * @return the loaded snapshot
+	 * @throws IOException on any error
+	 */
+	public static Snapshot loadFromFile(final Path path) throws IOException
+	{
+		byte[] encoded = Files.readAllBytes(path);
 		String json = new String(encoded, StandardCharsets.UTF_8);
 		
-		return Snapshot.fromJSONString(json);
+		try
+		{
+			return Snapshot.fromJSONString(json);
+		} catch (ParseException err)
+		{
+			throw new IOException("Could not parse snapshot.", err);
+		}
+	}
+	
+	
+	/**
+	 * Load a snapshot from a resource file
+	 * 
+	 * @param filename name/path to the file in classpath
+	 * @return the snapshot
+	 * @throws IOException on any error
+	 */
+	public static Snapshot loadFromResources(final String filename)
+			throws IOException
+	{
+		Path path;
+		try
+		{
+			URL url = Snapshot.class.getClassLoader().getResource(filename);
+			if (url == null)
+			{
+				throw new IOException("Resource not found: " + filename);
+			}
+			path = Paths.get(url.toURI());
+		} catch (URISyntaxException e)
+		{
+			throw new IOException("Could not get path to resource file.", e);
+		}
+		return loadFromFile(path);
 	}
 	
 	
@@ -254,10 +272,24 @@ public class Snapshot
 	public void save(final String target) throws IOException
 	{
 		File file = Paths.get("", target).toFile();
+		// noinspection ResultOfMethodCallIgnored
 		file.getParentFile().mkdirs();
-		file.createNewFile();
+		boolean fileCreated = file.createNewFile();
+		if (!fileCreated)
+		{
+			throw new IOException("Could not create snapshot file: " + file.getAbsolutePath());
+		}
 		
 		Files.write(file.toPath(), toJSON().toJSONString().getBytes(StandardCharsets.UTF_8));
 	}
 	
+	
+	@Override
+	public String toString()
+	{
+		return "Snapshot{" +
+				"bots=" + bots +
+				", ball=" + ball +
+				'}';
+	}
 }

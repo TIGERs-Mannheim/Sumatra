@@ -12,7 +12,7 @@ import edu.tigers.sumatra.ai.data.BotDistance;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.skillsystem.skills.InterceptionSkill;
-import edu.tigers.sumatra.statemachine.IRoleState;
+import edu.tigers.sumatra.statemachine.IState;
 
 
 /**
@@ -23,37 +23,18 @@ import edu.tigers.sumatra.statemachine.IRoleState;
  */
 public class InterceptionRole extends ARole
 {
-	
-	
-	protected enum EStateId
-	{
-		BLOCKING
-	}
-	
-	protected enum EEvent
-	{
-		
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
 	/**
 	 */
 	public InterceptionRole()
 	{
 		super(ERole.INTERCEPTION);
 		
-		IRoleState blocker = new BlockerState();
+		IState blocker = new BlockerState();
 		setInitialState(blocker);
 	}
 	
 	
-	private class BlockerState implements IRoleState
-	{
+	private class BlockerState implements IState {
 		InterceptionSkill	skill	= new InterceptionSkill();
 		
 		
@@ -89,12 +70,7 @@ public class InterceptionRole extends ARole
 				skill.setNearestEnemyBotPos(null);
 			}
 		}
-		
-		
-		@Override
-		public Enum<? extends Enum<?>> getIdentifier()
-		{
-			return EStateId.BLOCKING;
-		}
-	}
+
+
+    }
 }

@@ -23,47 +23,47 @@ public interface IGameEvent
 	/**
 	 * @return
 	 */
-	public EGameEvent getType();
+	EGameEvent getType();
 	
 	
 	/**
 	 * @return
 	 */
-	public EEventCategory getCategory();
+	EEventCategory getCategory();
 	
 	
 	/**
 	 * @return
 	 */
-	public long getTimestamp();
+	long getTimestamp();
 	
 	
 	/**
 	 * @return
 	 */
-	public ETeamColor getResponsibleTeam();
+	ETeamColor getResponsibleTeam();
 	
 	
 	/**
 	 * @return
 	 */
-	public Optional<BotID> getResponsibleBot();
+	Optional<BotID> getResponsibleBot();
 	
 	
 	/**
 	 * @return the cardPenalty
 	 */
-	public Optional<CardPenalty> getCardPenalty();
+	Optional<CardPenalty> getCardPenalty();
 	
 	
 	/**
 	 * @return
 	 */
-	public String buildLogString();
+	String buildLogString();
 	
 	
 	/**
 	 * @return
 	 */
-	public FollowUpAction getFollowUpAction();
+	FollowUpAction getFollowUpAction();
 }

@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 7, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.autoreferee.engine.states.impl;
 
 import java.util.Collection;
@@ -15,18 +11,18 @@ import java.util.concurrent.TimeUnit;
 import com.github.g3force.configurable.Configurable;
 
 import edu.tigers.autoreferee.AutoRefUtil;
+import edu.tigers.autoreferee.EAutoRefShapesLayer;
 import edu.tigers.autoreferee.IAutoRefFrame;
-import edu.tigers.autoreferee.engine.RefCommand;
+import edu.tigers.autoreferee.engine.RefboxRemoteCommand;
 import edu.tigers.autoreferee.engine.states.IAutoRefStateContext;
 import edu.tigers.sumatra.Referee.SSL_Referee.Command;
 import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.wp.data.Geometry;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
-import edu.tigers.sumatra.wp.data.TrackedBall;
-import edu.tigers.sumatra.wp.vis.EWpShapesLayer;
 
 
 /**
@@ -43,11 +39,12 @@ public class PrepareKickoffState extends AbstractAutoRefState
 	@Configurable(comment = "[ms] The minimum time to wait before sending the kickoff signal")
 	private static long	READY_WAIT_TIME_MS	= 1_500;
 	
-	private Long			readyWaitTime			= null;
 	static
 	{
 		AbstractAutoRefState.registerClass(PrepareKickoffState.class);
 	}
+	
+	private Long readyWaitTime = null;
 	
 	
 	/**
@@ -67,10 +64,10 @@ public class PrepareKickoffState extends AbstractAutoRefState
 		}
 		setCanProceed(true);
 		
-		ETeamColor shooterTeam = frame.getGameState().getTeamColor();
-		List<IDrawableShape> shapes = frame.getShapes().get(EWpShapesLayer.AUTOREFEREE);
+		ETeamColor shooterTeam = frame.getGameState().getForTeam();
+		List<IDrawableShape> shapes = frame.getShapes().get(EAutoRefShapesLayer.ENGINE);
 		SimpleWorldFrame wFrame = frame.getWorldFrame();
-		TrackedBall ball = wFrame.getBall();
+		ITrackedBall ball = wFrame.getBall();
 		
 		boolean ballIsPlaced = checkBallPlaced(ball, Geometry.getCenter(), shapes);
 		
@@ -95,12 +92,13 @@ public class PrepareKickoffState extends AbstractAutoRefState
 		
 		if (readyWaitTimeOver || ctx.doProceed())
 		{
-			sendCommandIfReady(ctx, new RefCommand(Command.NORMAL_START), ctx.doProceed());
+			sendCommandIfReady(ctx, new RefboxRemoteCommand(Command.NORMAL_START), ctx.doProceed());
 		}
 	}
 	
 	
-	private boolean checkBotDistance(final IAutoRefFrame frame, final ETeamColor color, final List<IDrawableShape> shapes)
+	private boolean checkBotDistance(final IAutoRefFrame frame, final ETeamColor color,
+			final List<IDrawableShape> shapes)
 	{
 		Collection<ITrackedBot> bots = AutoRefUtil.filterByColor(frame.getWorldFrame().getBots(), color);
 		IVector2 ballPos = frame.getWorldFrame().getBall().getPos();

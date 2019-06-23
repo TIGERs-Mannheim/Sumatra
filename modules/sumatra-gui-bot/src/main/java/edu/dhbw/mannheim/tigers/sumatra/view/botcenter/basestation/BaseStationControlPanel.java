@@ -34,7 +34,9 @@ import net.miginfocom.swing.MigLayout;
  */
 public class BaseStationControlPanel extends JPanel
 {
-	/** */
+	/**
+	 * Base Station Control Panel Observer
+	 */
 	public interface IBaseStationControlPanelObserver
 	{
 		/**
@@ -50,7 +52,9 @@ public class BaseStationControlPanel extends JPanel
 		void onStartPing(int numPings, int payload);
 		
 		
-		/** */
+		/**
+		 * Stop ping.
+		 */
 		void onStopPing();
 	}
 	
@@ -69,13 +73,13 @@ public class BaseStationControlPanel extends JPanel
 	private final JButton											startStopPing		= new JButton("Start");
 	private boolean													pingIsActive		= false;
 	
-	private final List<IBaseStationControlPanelObserver>	observers			= new CopyOnWriteArrayList<IBaseStationControlPanelObserver>();
+	private final List<IBaseStationControlPanelObserver>	observers			= new CopyOnWriteArrayList<>();
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/** */
+	/** Constructor. */
 	public BaseStationControlPanel()
 	{
 		setLayout(new MigLayout("wrap 3", "[100,fill]135[80,fill]10[100,fill]"));
@@ -120,39 +124,6 @@ public class BaseStationControlPanel extends JPanel
 	}
 	
 	
-	private void notifyConnectionChange(final boolean connect)
-	{
-		for (IBaseStationControlPanelObserver observer : observers)
-		{
-			observer.onConnectionChange(connect);
-		}
-	}
-	
-	
-	private void notifyStartPing(final int numPings, final int payload)
-	{
-		synchronized (observers)
-		{
-			for (IBaseStationControlPanelObserver observer : observers)
-			{
-				observer.onStartPing(numPings, payload);
-			}
-		}
-	}
-	
-	
-	private void notifyStopPing()
-	{
-		synchronized (observers)
-		{
-			for (IBaseStationControlPanelObserver observer : observers)
-			{
-				observer.onStopPing();
-			}
-		}
-	}
-	
-	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -161,9 +132,7 @@ public class BaseStationControlPanel extends JPanel
 	 */
 	public void setPingDelay(final double delay)
 	{
-		EventQueue.invokeLater(() -> {
-			pingDelay.setText(String.format(Locale.ENGLISH, "%.3fms", delay));
-		});
+		EventQueue.invokeLater(() -> pingDelay.setText(String.format(Locale.ENGLISH, "%.3fms", delay)));
 	}
 	
 	
@@ -174,18 +143,12 @@ public class BaseStationControlPanel extends JPanel
 	{
 		netState.setConnectionState(state);
 		
-		switch (state)
+		if (state == ENetworkState.OFFLINE)
 		{
-			case OFFLINE:
-			{
-				connect.setText("Connect");
-			}
-				break;
-			default:
-			{
-				connect.setText("Disconnect");
-			}
-				break;
+			connect.setText("Connect");
+		} else
+		{
+			connect.setText("Disconnect");
 		}
 	}
 	
@@ -194,18 +157,21 @@ public class BaseStationControlPanel extends JPanel
 		@Override
 		public void actionPerformed(final ActionEvent arg0)
 		{
-			switch (netState.getState())
+			if (netState.getState() == ENetworkState.OFFLINE)
 			{
-				case OFFLINE:
-				{
-					notifyConnectionChange(true);
-				}
-					break;
-				default:
-				{
-					notifyConnectionChange(false);
-				}
-					break;
+				notifyConnectionChange(true);
+			} else
+			{
+				notifyConnectionChange(false);
+			}
+		}
+		
+		
+		private void notifyConnectionChange(final boolean connect)
+		{
+			for (IBaseStationControlPanelObserver observer : observers)
+			{
+				observer.onConnectionChange(connect);
 			}
 		}
 	}
@@ -220,14 +186,7 @@ public class BaseStationControlPanel extends JPanel
 				pingIsActive = false;
 				notifyStopPing();
 				
-				SwingUtilities.invokeLater(new Runnable()
-				{
-					@Override
-					public void run()
-					{
-						startStopPing.setText("Start");
-					}
-				});
+				SwingUtilities.invokeLater(() -> startStopPing.setText("Start"));
 			} else
 			{
 				int np = 0;
@@ -246,14 +205,31 @@ public class BaseStationControlPanel extends JPanel
 				
 				pingIsActive = true;
 				
-				SwingUtilities.invokeLater(new Runnable()
+				SwingUtilities.invokeLater(() -> startStopPing.setText("Stop"));
+			}
+		}
+		
+		
+		private void notifyStartPing(final int numPings, final int payload)
+		{
+			synchronized (observers)
+			{
+				for (IBaseStationControlPanelObserver observer : observers)
 				{
-					@Override
-					public void run()
-					{
-						startStopPing.setText("Stop");
-					}
-				});
+					observer.onStartPing(numPings, payload);
+				}
+			}
+		}
+		
+		
+		private void notifyStopPing()
+		{
+			synchronized (observers)
+			{
+				for (IBaseStationControlPanelObserver observer : observers)
+				{
+					observer.onStopPing();
+				}
 			}
 		}
 	}

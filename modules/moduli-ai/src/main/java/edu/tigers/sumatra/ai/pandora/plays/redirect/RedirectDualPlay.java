@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 12, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.redirect;
 
@@ -16,8 +11,8 @@ import com.github.g3force.configurable.Configurable;
 
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 
 
 /**
@@ -27,10 +22,10 @@ import edu.tigers.sumatra.math.Vector2;
  */
 public class RedirectDualPlay extends ARedirectPlay
 {
-	@Configurable
+	@Configurable(defValue = "3000.0")
 	private static double	distance		= 3000;
 	
-	@Configurable
+	@Configurable(defValue = "true")
 	private static boolean	receiveOnly	= true;
 	
 	
@@ -47,8 +42,8 @@ public class RedirectDualPlay extends ARedirectPlay
 	protected List<IVector2> getFormation()
 	{
 		List<IVector2> dests = new ArrayList<IVector2>(2);
-		dests.add(new Vector2(distance / 2, 1000));
-		dests.add(new Vector2(-distance / 2, 1000));
+		dests.add(Vector2.fromXY(distance / 2, 1000));
+		dests.add(Vector2.fromXY(-distance / 2, 1000));
 		return dests;
 	}
 	

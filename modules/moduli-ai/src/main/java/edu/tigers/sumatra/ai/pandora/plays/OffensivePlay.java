@@ -8,11 +8,14 @@
  */
 package edu.tigers.sumatra.ai.pandora.plays;
 
-import edu.tigers.sumatra.ai.data.EGameStateTeam;
+import java.util.Optional;
+
 import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
 import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.OffensiveRole;
+import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.referee.data.GameState;
 
 
 /**
@@ -30,6 +33,7 @@ public class OffensivePlay extends APlay
 	// --------------------------------------------------------------------------
 	
 	/**
+	 * offensive Play
 	 */
 	public OffensivePlay()
 	{
@@ -66,13 +70,14 @@ public class OffensivePlay extends APlay
 	@Override
 	public void updateBeforeRoles(final AthenaAiFrame frame)
 	{
+		// nothing has be be done here
 	}
 	
 	
 	@Override
-	protected void onGameStateChanged(final EGameStateTeam gameState)
+	protected void onGameStateChanged(final GameState gameState)
 	{
-		
+		// nothing has be be done here
 	}
 	
 	
@@ -83,6 +88,22 @@ public class OffensivePlay extends APlay
 		frame.getAICom().setSpecialMoveCounter(0);
 		frame.getAICom().setUnassignedStateCounter(0);
 		frame.getPrevFrame().getAICom().setUnassignedStateCounter(0);
+		publishPrimaryOffensiveMoveDestination(frame);
+	}
+	
+	
+	private void publishPrimaryOffensiveMoveDestination(final AthenaAiFrame frame)
+	{
+		if (!frame.getTacticalField().getOffensiveStrategy().getDesiredBots().isEmpty())
+		{
+			BotID primaryBot = frame.getTacticalField().getOffensiveStrategy().getDesiredBots().iterator().next();
+			Optional<ARole> role = getRoles().stream().filter(e -> e.getBotID() == primaryBot).findFirst();
+			if (role.isPresent())
+			{
+				OffensiveRole oRole = (OffensiveRole) role.get();
+				frame.getAICom().setPrimaryOffensiveMovePos(oRole.getDestination());
+			}
+		}
 	}
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------

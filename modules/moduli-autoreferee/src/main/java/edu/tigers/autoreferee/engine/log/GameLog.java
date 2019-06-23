@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Mar 23, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.log;
 
@@ -18,10 +13,10 @@ import java.util.function.Consumer;
 import org.apache.log4j.Logger;
 
 import edu.tigers.autoreferee.engine.FollowUpAction;
-import edu.tigers.autoreferee.engine.RefCommand;
+import edu.tigers.autoreferee.engine.RefboxRemoteCommand;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
-import edu.tigers.sumatra.referee.RefereeMsg;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
+import edu.tigers.sumatra.referee.data.GameState;
+import edu.tigers.sumatra.referee.data.RefereeMsg;
 
 
 /**
@@ -29,30 +24,11 @@ import edu.tigers.sumatra.wp.data.EGameStateNeutral;
  */
 public class GameLog implements IGameLog
 {
-	private static final Logger		log					= Logger.getLogger(GameLog.class);
-	
-	private long							startRefTimestamp	= 0;
-	private long							currentTimestamp	= 0;
-	private GameTime						currentGameTime	= GameTime.empty();
-	private List<GameLogEntry>			entries				= new ArrayList<>();
-	private List<IGameLogObserver>	observer				= new CopyOnWriteArrayList<>();
-	
-	
-	/**
-	 * @param timestamp
-	 */
-	public void initialize(final long timestamp)
-	{
-		log.debug("Initialized game log with timestamp: " + timestamp);
-		startRefTimestamp = timestamp;
-		currentTimestamp = timestamp;
-	}
-	
-	
-	private long getTimeSinceStart()
-	{
-		return currentTimestamp - startRefTimestamp;
-	}
+	private static final Logger log = Logger.getLogger(GameLog.class);
+	private final List<GameLogEntry> entries = new ArrayList<>();
+	private long currentTimestamp = 0;
+	private GameTime currentGameTime = GameTime.empty();
+	private List<IGameLogObserver> observer = new CopyOnWriteArrayList<>();
 	
 	
 	private Instant getCurrentInstant()
@@ -102,7 +78,7 @@ public class GameLog implements IGameLog
 			entries.add(entry);
 			id = entries.size() - 1;
 		}
-		log.debug("Added new entry with id " + id + "and type " + entry.getType());
+		log.debug(entry);
 		observer.forEach(obs -> obs.onNewEntry(id, entry));
 	}
 	
@@ -112,7 +88,6 @@ public class GameLog implements IGameLog
 		GameLogEntryBuilder builder = new GameLogEntryBuilder();
 		builder.setTimestamp(currentTimestamp);
 		builder.setGameTime(currentGameTime);
-		builder.setTimeSinceStart(getTimeSinceStart());
 		builder.setInstant(getCurrentInstant());
 		
 		consumer.accept(builder);
@@ -132,7 +107,7 @@ public class GameLog implements IGameLog
 	 * @param gamestate
 	 * @return
 	 */
-	public GameLogEntry addEntry(final EGameStateNeutral gamestate)
+	public GameLogEntry addEntry(final GameState gamestate)
 	{
 		return buildAndAddEntry(builder -> builder.setGamestate(gamestate));
 	}
@@ -183,7 +158,7 @@ public class GameLog implements IGameLog
 	 * @param command
 	 * @return
 	 */
-	public GameLogEntry addEntry(final RefCommand command)
+	public GameLogEntry addEntry(final RefboxRemoteCommand command)
 	{
 		return buildAndAddEntry(builder -> builder.setCommand(command));
 	}
@@ -211,12 +186,13 @@ public class GameLog implements IGameLog
 	/**
 	 * @author "Lukas Magel"
 	 */
+	@FunctionalInterface
 	public interface IGameLogObserver
 	{
 		/**
 		 * @param id
 		 * @param entry
 		 */
-		public void onNewEntry(int id, GameLogEntry entry);
+		void onNewEntry(int id, GameLogEntry entry);
 	}
 }

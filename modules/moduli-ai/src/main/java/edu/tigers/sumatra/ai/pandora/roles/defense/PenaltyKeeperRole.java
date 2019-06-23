@@ -1,20 +1,17 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 18.05.2014
- * Author(s): dirk
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.roles.defense;
 
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.PenaltyKeeperSkill;
-import edu.tigers.sumatra.statemachine.IRoleState;
+import edu.tigers.sumatra.statemachine.IEvent;
+import edu.tigers.sumatra.statemachine.IState;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
-import edu.tigers.sumatra.wp.data.Geometry;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
@@ -26,13 +23,7 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class PenaltyKeeperRole extends ARole
 {
-	private enum EStateId
-	{
-		MOVE_TO_GOAL_CENTER,
-		BLOCK_SHOOTING_LINE
-	}
-	
-	private enum EEvent
+	private enum EEvent implements IEvent
 	{
 		KEEPER_ON_GOAL_CENTER,
 	}
@@ -44,8 +35,9 @@ public class PenaltyKeeperRole extends ARole
 	public PenaltyKeeperRole()
 	{
 		super(ERole.PENALTY_KEEPER);
-		setInitialState(new MoveToGoalCenter());
-		addTransition(EStateId.MOVE_TO_GOAL_CENTER, EEvent.KEEPER_ON_GOAL_CENTER, new BlockShootingLine());
+		IState moveToGoal = new MoveToGoalCenter();
+		setInitialState(moveToGoal);
+		addTransition(moveToGoal, EEvent.KEEPER_ON_GOAL_CENTER, new BlockShootingLine());
 	}
 	
 	
@@ -54,9 +46,8 @@ public class PenaltyKeeperRole extends ARole
 	 * 
 	 * @author Dirk
 	 */
-	private class MoveToGoalCenter implements IRoleState
-	{
-		private AMoveToSkill	skill;
+	private class MoveToGoalCenter implements IState {
+		private AMoveToSkill skill;
 		
 		
 		@Override
@@ -64,7 +55,7 @@ public class PenaltyKeeperRole extends ARole
 		{
 			skill = AMoveToSkill.createMoveToSkill();
 			skill.getMoveCon().setPenaltyAreaAllowedOur(true);
-			skill.getMoveCon().updateDestination(Geometry.getGoalOur().getGoalCenter());
+			skill.getMoveCon().updateDestination(Geometry.getGoalOur().getCenter());
 			setNewSkill(skill);
 		}
 		
@@ -72,7 +63,7 @@ public class PenaltyKeeperRole extends ARole
 		@Override
 		public void doUpdate()
 		{
-			if (skill.isDestinationReached())
+			if (VectorMath.distancePP(getPos(), skill.getMoveCon().getDestination()) < 100)
 			{
 				triggerEvent(EEvent.KEEPER_ON_GOAL_CENTER);
 			}
@@ -83,13 +74,8 @@ public class PenaltyKeeperRole extends ARole
 		public void doExitActions()
 		{
 		}
-		
-		
-		@Override
-		public Enum<? extends Enum<?>> getIdentifier()
-		{
-			return EStateId.MOVE_TO_GOAL_CENTER;
-		}
+
+
 	}
 	
 	
@@ -98,9 +84,8 @@ public class PenaltyKeeperRole extends ARole
 	 * 
 	 * @author Dirk
 	 */
-	private class BlockShootingLine implements IRoleState
-	{
-		private PenaltyKeeperSkill	skill;
+	private class BlockShootingLine implements IState {
+		private PenaltyKeeperSkill skill;
 		
 		
 		@Override
@@ -129,13 +114,8 @@ public class PenaltyKeeperRole extends ARole
 		public void doExitActions()
 		{
 		}
-		
-		
-		@Override
-		public Enum<? extends Enum<?>> getIdentifier()
-		{
-			return EStateId.BLOCK_SHOOTING_LINE;
-		}
+
+
 	}
 	
 	// --------------------------------------------------------------------------

@@ -1,16 +1,9 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 21, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.ball;
 
 import java.util.List;
-
-import edu.tigers.sumatra.bot.EBotType;
 
 
 /**
@@ -51,21 +44,14 @@ public interface IBallAnalyserPanelObserver
 	
 	/**
 	 * @param selectedFiles
-	 * @param eBotType
 	 */
-	void onCreateKickModel(List<String> selectedFiles, EBotType eBotType);
+	void onCreateBallAndKickModel(List<String> selectedFiles);
 	
 	
 	/**
 	 * @param selectedFiles
 	 */
 	void onNewSelectedFile(List<String> selectedFiles);
-	
-	
-	/**
-	 * @param selectedFiles
-	 */
-	void onBallCorrector(List<String> selectedFiles);
 	
 	
 	/**

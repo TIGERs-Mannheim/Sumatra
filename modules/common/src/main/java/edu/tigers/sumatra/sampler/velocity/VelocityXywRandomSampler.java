@@ -11,10 +11,10 @@ package edu.tigers.sumatra.sampler.velocity;
 import java.util.Random;
 
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.IVector3;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.math.Vector3;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector3;
 
 
 /**
@@ -35,9 +35,9 @@ public class VelocityXywRandomSampler implements IVelocityXywSampler
 		i++;
 		double angle = rnd.nextDouble() * AngleMath.PI_TWO;
 		double vel = rnd.nextDouble() * maxXyVel;
-		IVector2 xyVel = new Vector2(angle).scaleTo(vel);
+		IVector2 xyVel = Vector2.fromAngle(angle).scaleTo(vel);
 		double aVel = (rnd.nextGaussian() * maxWVel) / 2.0;
-		IVector3 rndVel = new Vector3(xyVel, aVel);
+		IVector3 rndVel = Vector3.from2d(xyVel, aVel);
 		return rndVel;
 	}
 	

@@ -1,14 +1,10 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jun 29, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.log.appender;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,17 +30,15 @@ import edu.tigers.autoreferee.engine.log.GameTime;
  */
 public class GameLogFileAppender implements IGameLogObserver, Runnable
 {
-	private static final Logger					log			= Logger.getLogger(GameLogFileAppender.class);
+	private static final Logger log = Logger.getLogger(GameLogFileAppender.class);
 	
-	private final Path								targetPath;
-	private Thread										thread;
-	private LinkedBlockingDeque<GameLogEntry>	entryQueue;
-	
-	private BufferedWriter							writer;
-	
-	private final DecimalFormat					msFormat		= new DecimalFormat("000");
-	private final DecimalFormat					sFormat		= new DecimalFormat("00");
-	private final DecimalFormat					minFormat	= new DecimalFormat("00");
+	private final Path targetPath;
+	private final DecimalFormat msFormat = new DecimalFormat("000");
+	private final DecimalFormat sFormat = new DecimalFormat("00");
+	private final DecimalFormat minFormat = new DecimalFormat("00");
+	private Thread thread;
+	private LinkedBlockingDeque<GameLogEntry> entryQueue;
+	private BufferedWriter writer;
 	
 	
 	/**
@@ -67,6 +61,7 @@ public class GameLogFileAppender implements IGameLogObserver, Runnable
 		} catch (InterruptedException e)
 		{
 			log.error("", e);
+			Thread.currentThread().interrupt();
 		}
 	}
 	
@@ -76,13 +71,26 @@ public class GameLogFileAppender implements IGameLogObserver, Runnable
 	 */
 	public void start() throws IOException
 	{
+		Path folder = targetPath.getParent();
+		if (folder != null && !folder.toFile().isDirectory())
+		{
+			File folderFile = folder.toFile();
+			if (!folderFile.exists())
+			{
+				boolean created = folderFile.mkdirs();
+				if (!created)
+				{
+					log.error("Could not create log file folder");
+				}
+			}
+		}
 		writer = Files.newBufferedWriter(targetPath);
 		thread.start();
 	}
 	
 	
 	/**
-	 * 
+	 * Tear down thread and writer
 	 */
 	public void stop()
 	{
@@ -93,6 +101,7 @@ public class GameLogFileAppender implements IGameLogObserver, Runnable
 		} catch (InterruptedException e)
 		{
 			log.error("Error while joining game log writer thread", e);
+			Thread.currentThread().interrupt();
 		}
 		
 		try
@@ -111,24 +120,19 @@ public class GameLogFileAppender implements IGameLogObserver, Runnable
 	@Override
 	public void run()
 	{
-		try (BufferedWriter writer = this.writer)
+		try (BufferedWriter fileWriter = writer)
 		{
 			while (!Thread.interrupted())
 			{
 				GameLogEntry entry = entryQueue.take();
-				String line = "";
-				try
-				{
-					line = formatEntry(entry);
-				} catch (Exception e)
-				{
-					log.warn("Unexpected exception while formatting log entry", e);
-					continue;
-				}
+				String line = formatEntrySafe(entry);
 				
-				writer.write(line);
-				writer.newLine();
-				writer.flush();
+				if (line != null)
+				{
+					fileWriter.write(line);
+					fileWriter.newLine();
+					fileWriter.flush();
+				}
 			}
 		} catch (IOException e)
 		{
@@ -136,6 +140,20 @@ public class GameLogFileAppender implements IGameLogObserver, Runnable
 		} catch (InterruptedException e)
 		{
 			log.debug("GameLogWriteThread interrupted", e);
+			Thread.currentThread().interrupt();
+		}
+	}
+	
+	
+	private String formatEntrySafe(final GameLogEntry entry)
+	{
+		try
+		{
+			return formatEntry(entry);
+		} catch (Exception e)
+		{
+			log.warn("Unexpected exception while formatting log entry", e);
+			return null;
 		}
 	}
 	
@@ -156,26 +174,10 @@ public class GameLogFileAppender implements IGameLogObserver, Runnable
 				builder.append(GameLogFormatter.formatCommand(entry.getCommand()));
 				break;
 			case FOLLOW_UP:
-				FollowUpAction followUp = entry.getFollowUpAction();
-				if (followUp != null)
-				{
-					builder.append("FollowUpAction set to: ");
-					builder.append(GameLogFormatter.formatFollowUp(followUp));
-				} else
-				{
-					builder.append("FollowUpAction reset");
-				}
+				followUp(entry, builder);
 				break;
 			case GAME_EVENT:
-				IGameEvent event = entry.getGameEvent();
-				builder.append("New event: ");
-				builder.append(event.toString());
-				FollowUpAction action = event.getFollowUpAction();
-				if (action != null)
-				{
-					builder.append(" | Next action: ");
-					builder.append(GameLogFormatter.formatFollowUp(action));
-				}
+				gameEvent(entry, builder);
 				break;
 			case GAME_STATE:
 				builder.append("Game state changed to: ");
@@ -186,11 +188,40 @@ public class GameLogFileAppender implements IGameLogObserver, Runnable
 				builder.append(GameLogFormatter.formatRefMsg(entry.getRefereeMsg()));
 				break;
 			default:
-				builder.append("Unknown event type: " + entry.getType());
+				builder.append("Unknown event type: ");
+				builder.append(entry.getType());
 				break;
 		}
 		
 		return builder.toString();
+	}
+	
+	
+	private void gameEvent(final GameLogEntry entry, final StringBuilder builder)
+	{
+		IGameEvent event = entry.getGameEvent();
+		builder.append("New event: ");
+		builder.append(event.toString());
+		FollowUpAction action = event.getFollowUpAction();
+		if (action != null)
+		{
+			builder.append(" | Next action: ");
+			builder.append(GameLogFormatter.formatFollowUp(action));
+		}
+	}
+	
+	
+	private void followUp(final GameLogEntry entry, final StringBuilder builder)
+	{
+		FollowUpAction followUp = entry.getFollowUpAction();
+		if (followUp != null)
+		{
+			builder.append("FollowUpAction set to: ");
+			builder.append(GameLogFormatter.formatFollowUp(followUp));
+		} else
+		{
+			builder.append("FollowUpAction reset");
+		}
 	}
 	
 	
@@ -205,7 +236,7 @@ public class GameLogFileAppender implements IGameLogObserver, Runnable
 		builder.append(":");
 		builder.append(sFormat.format(date.getSecond()));
 		builder.append(":");
-		builder.append(msFormat.format(date.getNano() / 1_000_000));
+		builder.append(msFormat.format((long) date.getNano() / 1_000_000));
 		
 		return builder.toString();
 	}

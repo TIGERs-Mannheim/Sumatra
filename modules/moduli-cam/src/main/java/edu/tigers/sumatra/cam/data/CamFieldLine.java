@@ -8,8 +8,8 @@
  */
 package edu.tigers.sumatra.cam.data;
 
-import edu.tigers.sumatra.math.ILine;
-import edu.tigers.sumatra.math.Line;
+import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.line.Line;
 
 
 /**

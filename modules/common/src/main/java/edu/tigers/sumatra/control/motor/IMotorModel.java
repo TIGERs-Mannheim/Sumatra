@@ -8,8 +8,8 @@
  */
 package edu.tigers.sumatra.control.motor;
 
-import edu.tigers.sumatra.math.IVector3;
-import edu.tigers.sumatra.math.IVectorN;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.IVectorN;
 
 
 /**

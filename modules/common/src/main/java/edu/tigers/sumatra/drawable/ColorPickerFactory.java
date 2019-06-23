@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 7, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.drawable;
 
@@ -195,7 +190,7 @@ public final class ColorPickerFactory
 					double val = (i + 1) * step;
 					if (relValue <= val)
 					{
-						return colors.get(colors.size() - i - 1);
+						return colors.get(i);
 					}
 				}
 				return Color.black;

@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 22.07.2010
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.timer;
 
 import java.util.Map;
@@ -26,19 +22,19 @@ import edu.tigers.sumatra.clock.Dormouse;
  * @author Gero
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class SumatraTimer extends ATimer implements ITimer
+public class SumatraTimer extends ATimer
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	private static final Logger					log			= Logger.getLogger(SumatraTimer.class.getName());
-																			
-																			
+	
+	
 	private Thread										dormouse;
-	private final Map<TimerIdentifier, Long>	startTimes	= new ConcurrentHashMap<TimerIdentifier, Long>();
+	private final Map<TimerIdentifier, Long>	startTimes	= new ConcurrentHashMap<>();
 	private final TimerInfo							timings		= new TimerInfo();
-																			
-																			
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -47,7 +43,7 @@ public class SumatraTimer extends ATimer implements ITimer
 	 */
 	public SumatraTimer(final SubnodeConfiguration subnodeConfiguration)
 	{
-	
+		
 	}
 	
 	
@@ -66,6 +62,7 @@ public class SumatraTimer extends ATimer implements ITimer
 	@Override
 	public void startModule() throws StartModuleException
 	{
+		// nothing to do
 	}
 	
 	
@@ -87,6 +84,7 @@ public class SumatraTimer extends ATimer implements ITimer
 	@Override
 	public void deinitModule()
 	{
+		// nothing to do
 	}
 	
 	
@@ -101,7 +99,7 @@ public class SumatraTimer extends ATimer implements ITimer
 	 * @param id
 	 */
 	@Override
-	public void stop(final ETimable timable, final long id)
+	public void stop(final String timable, final long id)
 	{
 		stop(timable, id, 0);
 	}
@@ -113,7 +111,7 @@ public class SumatraTimer extends ATimer implements ITimer
 	 * @param customId
 	 */
 	@Override
-	public void stop(final ETimable timable, final long id, final int customId)
+	public void stop(final String timable, final long id, final int customId)
 	{
 		long stopTime = System.nanoTime();
 		TimerIdentifier timerId = new TimerIdentifier(timable, id, customId);
@@ -123,7 +121,7 @@ public class SumatraTimer extends ATimer implements ITimer
 			log.error("Asynchron timer: " + timable + " stop called before start or multiple times.");
 			return;
 		}
-		addTiming(timerId, (stopTime - startTime));
+		addTiming(timerId, stopTime - startTime);
 	}
 	
 	
@@ -132,7 +130,7 @@ public class SumatraTimer extends ATimer implements ITimer
 	 * @param id
 	 */
 	@Override
-	public void start(final ETimable timable, final long id)
+	public void start(final String timable, final long id)
 	{
 		start(timable, id, 0);
 	}
@@ -144,7 +142,7 @@ public class SumatraTimer extends ATimer implements ITimer
 	 * @param customId
 	 */
 	@Override
-	public void start(final ETimable timable, final long id, final int customId)
+	public void start(final String timable, final long id, final int customId)
 	{
 		startTimes.put(new TimerIdentifier(timable, id, customId), System.nanoTime());
 	}

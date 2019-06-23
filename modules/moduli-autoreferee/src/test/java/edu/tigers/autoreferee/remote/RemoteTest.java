@@ -5,7 +5,7 @@ import java.io.IOException;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import edu.tigers.autoreferee.engine.RefCommand;
+import edu.tigers.autoreferee.engine.RefboxRemoteCommand;
 import edu.tigers.autoreferee.remote.impl.ThreadedTCPRefboxRemote;
 import edu.tigers.sumatra.Referee.SSL_Referee.Command;
 
@@ -37,9 +37,9 @@ public class RemoteTest
 		remote.start();
 		for (int i = 0; i < 10; i++)
 		{
-			remote.sendCommand(new RefCommand(Command.DIRECT_FREE_BLUE));
+			remote.sendCommand(new RefboxRemoteCommand(Command.DIRECT_FREE_BLUE));
 			Thread.sleep(1000);
-			remote.sendCommand(new RefCommand(Command.STOP));
+			remote.sendCommand(new RefboxRemoteCommand(Command.STOP));
 			Thread.sleep(1000);
 		}
 		remote.stop();

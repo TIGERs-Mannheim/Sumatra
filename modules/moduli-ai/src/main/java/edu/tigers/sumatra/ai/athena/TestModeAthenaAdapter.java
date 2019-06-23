@@ -1,15 +1,11 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 8, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.athena;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -33,35 +29,36 @@ import edu.tigers.sumatra.ids.BotID;
  */
 public class TestModeAthenaAdapter extends AAthenaAdapter
 {
-	private static final Logger	log	= Logger.getLogger(TestModeAthenaAdapter.class.getName());
+	private static final Logger log = Logger.getLogger(TestModeAthenaAdapter.class.getName());
 	
 	
 	@Override
 	public void doProcess(final MetisAiFrame metisAiFrame, final Builder playStrategyBuilder, final AIControl aiControl)
 	{
-		Map<EPlay, RoleFinderInfo> infosCopy = new HashMap<EPlay, RoleFinderInfo>(metisAiFrame.getTacticalField()
-				.getRoleFinderInfos());
-		metisAiFrame.getTacticalField().getRoleFinderInfos().clear();
-		for (Map.Entry<EPlay, RoleFinderInfo> entry : infosCopy.entrySet())
+		Map<EPlay, RoleFinderInfo> newInfos = new EnumMap<>(EPlay.class);
+		Map<EPlay, RoleFinderInfo> guiInfos = getAiControl().getRoleFinderInfos();
+		Map<EPlay, RoleFinderInfo> aiInfos = metisAiFrame.getTacticalField().getRoleFinderInfos();
+		
+		newInfos.putAll(guiInfos);
+		for (EPlay ePlay : guiInfos.keySet())
 		{
-			Boolean override = getAiControl().getRoleFinderOverrides().get(entry.getKey());
-			if ((override != null) && !override)
+			Boolean useAi = getAiControl().getRoleFinderUseAiFlags().get(ePlay);
+			if ((useAi != null) && useAi && aiInfos.containsKey(ePlay))
 			{
-				metisAiFrame.getTacticalField().getRoleFinderInfos().put(entry.getKey(), entry.getValue());
+				newInfos.put(ePlay, aiInfos.get(ePlay));
 			}
 		}
-		for (Map.Entry<EPlay, RoleFinderInfo> entry : getAiControl().getRoleFinderInfos().entrySet())
-		{
-			// only put plays that are not present
-			metisAiFrame.getTacticalField().getRoleFinderInfos().putIfAbsent(entry.getKey(), entry.getValue());
-		}
 		
-		updatePlays(metisAiFrame.getTacticalField().getRoleFinderInfos(), playStrategyBuilder.getActivePlays());
+		aiInfos.clear();
+		aiInfos.putAll(newInfos);
+		
+		updatePlays(aiInfos, playStrategyBuilder.getActivePlays(),
+				Collections.singleton(EPlay.GUI_TEST));
 		
 		GuiTestPlay guiPlay = getGuiTestPlay(playStrategyBuilder.getActivePlays());
 		if (guiPlay != null)
 		{
-			for (ARole role : new ArrayList<ARole>(guiPlay.getRoles()))
+			for (ARole role : new ArrayList<>(guiPlay.getRoles()))
 			{
 				if (role.isCompleted())
 				{
@@ -115,7 +112,7 @@ public class TestModeAthenaAdapter extends AAthenaAdapter
 						}
 					}
 				}
-				entry.getValue().assignBotID(botId, metisAiFrame);
+				entry.getValue().assignBotID(botId);
 			}
 			
 			for (APlay play : aiControl.getAddPlays())
@@ -156,7 +153,7 @@ public class TestModeAthenaAdapter extends AAthenaAdapter
 				}
 			}
 			
-			List<APlay> tobeRemoved = new LinkedList<APlay>();
+			List<APlay> tobeRemoved = new LinkedList<>();
 			for (APlay play : playStrategyBuilder.getActivePlays())
 			{
 				if (roleSum <= metisAiFrame.getWorldFrame().tigerBotsAvailable.size())

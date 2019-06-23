@@ -8,25 +8,24 @@
  */
 package edu.tigers.sumatra.trajectory;
 
-import edu.tigers.sumatra.math.AVector2;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.SumatraMath;
-import edu.tigers.sumatra.math.Vector2;
+import static java.lang.Math.max;
+import static java.lang.Math.pow;
+import static java.lang.Math.sqrt;
+
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.planarcurve.PlanarCurve;
+import edu.tigers.sumatra.planarcurve.PlanarCurveSegment;
 
 
 /**
  * Util class for BangBangTrajectories
- * 
+ *
  * @author ArneS <arne.sachtler@dlr.de>
+ * @author AndreR <andre@ryll.cc>
  */
 public final class BangBangTrajectoryMath
 {
-	private static final double	DT_PRECISE					= 0.01;
-																			
-																			
-	private static final double	BINARY_SEARCH_EPSILON	= 0.01;
-																			
-																			
 	private BangBangTrajectoryMath()
 	{
 	}
@@ -34,7 +33,7 @@ public final class BangBangTrajectoryMath
 	
 	/**
 	 * Calculate brake distance as 2-dimensional vector.
-	 * 
+	 *
 	 * @param initialVel
 	 * @param brkMax
 	 * @return Vector2 containing brake distance
@@ -42,7 +41,7 @@ public final class BangBangTrajectoryMath
 	public static IVector2 brakeDistanceVector(final IVector2 initialVel, final double brkMax)
 	{
 		double absSpeed = initialVel.getLength();
-		double distance = (1.0 / 2.0) * (1.0 / brkMax) * absSpeed * absSpeed;
+		double distance = 0.5 * (1.0 / brkMax) * absSpeed * absSpeed;
 		Vector2 direction = initialVel.normalizeNew();
 		return direction.multiply(distance);
 	}
@@ -50,7 +49,7 @@ public final class BangBangTrajectoryMath
 	
 	/**
 	 * Calculate shortest possible break distance
-	 * 
+	 *
 	 * @param initialVel
 	 * @param brkMax
 	 * @return shortest possible break distance as double
@@ -63,172 +62,153 @@ public final class BangBangTrajectoryMath
 	
 	/**
 	 * Create new BangBangTrajectory2D to brake as fast as possible
-	 * 
+	 *
 	 * @param curPos
 	 * @param initialVel
 	 * @param brkMax
 	 * @return new BangBangTrajectory2D that can be applied to bot in order to brake as fast as possible
 	 */
-	public static ITrajectory<IVector2> createShortestBrakeTrajectory(final IVector2 curPos, final IVector2 initialVel,
+	public static BangBangTrajectory2D createShortestBrakeTrajectory(final IVector2 curPos, final IVector2 initialVel,
 			final double brkMax)
 	{
 		IVector2 brakeVector = brakeDistanceVector(initialVel, brkMax);
-		return new BangBangTrajectory2D(curPos, curPos.addNew(brakeVector), initialVel, 0.0, brkMax,
-				initialVel.getLength());
-				
+		return new BangBangTrajectory2D(curPos, curPos.addNew(brakeVector), initialVel, initialVel.getLength(), brkMax);
 	}
 	
 	
 	/**
-	 * Calculate the time to break as max break Acceleration
-	 * 
+	 * Calculate the time to brake as max brake Acceleration
+	 *
 	 * @param initialVel
 	 * @param brkMax
 	 * @return
 	 */
-	public static double timeToBreak(final IVector2 initialVel, final double brkMax)
+	public static double timeToBrake(final IVector2 initialVel, final double brkMax)
 	{
-		return SumatraMath.sqrt((2.0 * SumatraMath.abs(brakeDistance(initialVel, brkMax))) / SumatraMath.abs(brkMax));
+		return Math.sqrt((2.0 * Math.abs(brakeDistance(initialVel, brkMax))) / Math.abs(brkMax));
 	}
 	
 	
 	/**
 	 * Calculate distance to achieve maximal velocity given. vmax is parallel to initial vel.
-	 * 
+	 *
 	 * @param initialVel
 	 * @param maxVel
 	 * @param maxAcc
-	 * @param maxBrk
 	 * @return distance
 	 */
 	public static double distanceToAchieveMaxVelocity(final IVector2 initialVel, final double maxVel,
-			final double maxAcc, final double maxBrk)
+			final double maxAcc)
 	{
-		return distanceToAchieveMaxVelocity(initialVel.getLength(), maxVel, maxAcc, maxBrk);
+		return distanceToAchieveMaxVelocity(initialVel.getLength(), maxVel, maxAcc);
 	}
 	
 	
 	private static double distanceToAchieveMaxVelocity(final double initialVel, final double maxVel,
-			final double maxAcc,
-			final double maxBrk)
+			final double maxAcc)
 	{
 		double t1 = (maxVel - initialVel) / maxAcc; // acceleration phase
-		double tb = maxVel / maxBrk; // brake phase
-		double s1 = (initialVel * t1) + ((1.0 / 2.0) * maxAcc * t1 * t1); // distance in acceleration phase
-		double sb = (maxVel * tb) - ((1.0 / 2.0) * maxBrk * tb * tb); // distance in brake phase
+		double tb = maxVel / maxAcc; // brake phase
+		double s1 = (initialVel * t1) + (0.5 * maxAcc * t1 * t1); // distance in acceleration phase
+		double sb = (maxVel * tb) - (0.5 * maxAcc * tb * tb); // distance in brake phase
 		return s1 + sb;
 	}
 	
 	
 	/**
 	 * Calculate distance to achieve maximal velocity given. vmax is parallel to initial vel.
-	 * 
+	 *
 	 * @param initialVel
 	 * @param maxVel
 	 * @param maxAcc
-	 * @param maxBrk
 	 * @return distance as vector
 	 */
 	public static IVector2 distanceVectorToAchieveMaxVelocity(final IVector2 initialVel, final double maxVel,
-			final double maxAcc, final double maxBrk)
+			final double maxAcc)
 	{
 		IVector2 direction = initialVel.normalizeNew();
-		return direction.multiplyNew(distanceToAchieveMaxVelocity(initialVel, maxVel, maxAcc, maxBrk));
+		return direction.multiplyNew(distanceToAchieveMaxVelocity(initialVel, maxVel, maxAcc));
 	}
 	
 	
 	/**
-	 * Numerically look for the maximum velocity in trajectory
-	 * 
+	 * Analytically look for the maximum velocity in trajectory
+	 *
 	 * @param traj
 	 * @return vmax
 	 */
-	public static double maxVelocityOfTrajectory(final ITrajectory<IVector2> traj)
+	public static double maxVelocityOfTrajectory(final BangBangTrajectory2D traj)
 	{
-		return maxVelocityOfTrajectory(traj, DT_PRECISE);
+		double vmax = 0;
+		PlanarCurve curve = traj.getPlanarCurve();
+		for (PlanarCurveSegment seg : curve.getSegments())
+		{
+			double vel = seg.getVel().getLength2();
+			if (vel > vmax)
+			{
+				vmax = vel;
+			}
+		}
+		
+		return vmax * 1e-3;
 	}
 	
 	
 	/**
 	 * Get virtual (not necessarily reachable) destination to generate trajectory in order to reach given point at given
 	 * time. Target velocity does not have to be zero
-	 * 
+	 *
 	 * @param curPos
 	 * @param initialVel
 	 * @param desiredPos
 	 * @param maxAcc
-	 * @param maxBrk
 	 * @param maxVel
 	 * @param time
+	 * @param tolerance
 	 * @return
 	 */
 	public static IVector2 getVirtualDestinationToReachPositionInTime(final IVector2 curPos, final IVector2 initialVel,
-			final IVector2 desiredPos, final double maxAcc, final double maxBrk, final double maxVel, final double time)
+			final IVector2 desiredPos, final double maxAcc, final double maxVel, final double time,
+			final double tolerance)
 	{
 		ITrajectory<IVector2> direct = new BangBangTrajectory2D(curPos.multiplyNew(1e-3), desiredPos.multiplyNew(1e-3),
-				initialVel, maxAcc, maxAcc, maxVel);
-				
-		if (direct.getPositionMM(time).equals(desiredPos, 1.0))
-		{
-			return desiredPos; // passt schon so
-		}
+				initialVel, maxVel, maxAcc);
 		
 		IVector2 delta = desiredPos.subtractNew(curPos);
+		if (direct.getPositionMM(time).isCloseTo(desiredPos, tolerance)
+				|| ((time * initialVel.getLength2() * 1e3) > delta.getLength2()) || (time < 0))
+		{
+			return desiredPos;
+		}
 		
-		double t_tovmax = maxVel / maxAcc; // time to accelerate to maximum speed
-		double t_uniform = time - t_tovmax;
+		double projectedVel = initialVel.scalarProduct(delta.multiplyNew(1e-3)) / delta.multiplyNew(1e-3).getLength2();
 		
-		double s_maxdistance = (1000 * ((0.5 * maxAcc * t_tovmax * t_tovmax))) + (maxVel * t_uniform); // longest possible
-																																		// distance
-		// to given time
-		if (s_maxdistance < delta.getLength())
+		double timeToMaxSpeed = (maxVel - projectedVel) / maxAcc; // time to accelerate to maximum speed
+		double uniformVelocityTime = max(time - timeToMaxSpeed, 0);
+		
+		double accelerationTime = Math.min(timeToMaxSpeed, time);
+		
+		double longestPossibleDistance = 1000
+				* ((0.5 * maxAcc * accelerationTime * accelerationTime) + (maxVel * uniformVelocityTime));
+		
+		if (longestPossibleDistance < delta.getLength())
 		{
 			// it won't be possible to reach target in given time slot. Desperate maxvel destination will be given.
-			return curPos.addNew(delta.normalizeNew().multiplyNew(s_maxdistance));
+			return curPos.addNew(delta.normalizeNew().multiplyNew(delta.getLength2() * 10));
 		}
 		
-		double left = 0.0;
-		double right = s_maxdistance;
-		double probe = s_maxdistance / 2.0;
+		double accelerationPhaseTime = ((sqrt(pow(maxVel, 2) +
+				(((-2 * projectedVel) - (2 * maxAcc * time)) * maxVel)
+				+ pow(projectedVel, 2) + (2 * maxAcc * 1e-3 * delta.getLength2()))
+				- maxVel) + projectedVel) / maxAcc;
 		
-		do
-		{
-			IVector2 probeVec = delta.scaleToNew(probe);
-			ITrajectory<IVector2> probeTraj = new BangBangTrajectory2D(AVector2.ZERO_VECTOR, probeVec.multiplyNew(1e-3),
-					initialVel, maxAcc, maxBrk, maxVel);
-			if (probeTraj.getPositionMM(time).getLength() > delta.getLength())
-			{
-				right = probe;
-			} else
-			{
-				left = probe;
-			}
-			probe = ((right - left) / 2) + left;
-		} while ((right - left) > BINARY_SEARCH_EPSILON);
+		double staticVelocityPhaseTime = time - accelerationPhaseTime;
 		
-		IVector2 resultVector = delta.scaleToNew(probe);
-		return resultVector.addNew(curPos);
+		double breakPhaseTime = maxVel / maxAcc;
 		
-	}
-	
-	
-	/**
-	 * Numerically look for the maximum velocity in trajectory
-	 * 
-	 * @param traj
-	 * @param precision
-	 * @return vmax
-	 */
-	public static double maxVelocityOfTrajectory(final ITrajectory<IVector2> traj, final double precision)
-	{
-		double vmax = 0;
-		for (double t = 0; t < traj.getTotalTime(); t += precision)
-		{
-			if (traj.getVelocity(t).getLength() > vmax)
-			{
-				vmax = traj.getVelocity(t).getLength();
-			}
-		}
-		return vmax;
+		double virtualDistance = ((projectedVel * accelerationPhaseTime) + (0.5 * maxAcc * pow(accelerationPhaseTime, 2))
+				+ (maxVel * (staticVelocityPhaseTime + breakPhaseTime))) - (0.5 * maxAcc * pow(breakPhaseTime, 2));
+		virtualDistance *= 1e3;
+		return delta.scaleToNew(virtualDistance).addNew(curPos);
 	}
 }

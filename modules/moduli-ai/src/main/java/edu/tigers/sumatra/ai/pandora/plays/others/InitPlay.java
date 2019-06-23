@@ -1,27 +1,21 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 25.02.2011
- * Author(s): Malte
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.others;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import edu.tigers.sumatra.ai.data.EGameStateTeam;
 import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
 import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
-import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole.EMoveBehavior;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.wp.data.Geometry;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.referee.data.GameState;
 
 
 /**
@@ -66,25 +60,25 @@ public class InitPlay extends APlay
 			{
 				case 0:
 					// keeper pos
-					destination = new Vector2((-l / 2.0) + (l / DIV_3), w / DIV_4);
+					destination = Vector2.fromXY((-l / 2.0) + (l / DIV_3), w / DIV_4);
 					break;
 				case 1:
-					destination = new Vector2(-l / 3, -w / DIV_1);
+					destination = Vector2.fromXY(-l / 3, -w / DIV_1);
 					break;
 				case 2:
-					destination = new Vector2(-l / DIV_5, 0);
+					destination = Vector2.fromXY(-l / DIV_5, 0);
 					break;
 				case 3:
-					destination = new Vector2(-l / DIV_2, w / 4.0);
+					destination = Vector2.fromXY(-l / DIV_2, w / 4.0);
 					break;
 				case 4:
-					destination = new Vector2(-l / DIV_2, -w / 4.0);
+					destination = Vector2.fromXY(-l / DIV_2, -w / 4.0);
 					break;
 				case 5:
-					destination = new Vector2(-l / 4, w / DIV_1);
+					destination = Vector2.fromXY(-l / 4, w / DIV_1);
 					break;
 				case 6:
-					destination = new Vector2(0, 0);
+					destination = Vector2.fromXY(0, 0);
 					break;
 				default:
 					throw new IllegalStateException();
@@ -106,13 +100,12 @@ public class InitPlay extends APlay
 	protected ARole onAddRole(final MetisAiFrame frame)
 	{
 		update = true;
-		MoveRole role = new MoveRole(EMoveBehavior.NORMAL);
-		return (role);
+		return new MoveRole();
 	}
 	
 	
 	@Override
-	protected void onGameStateChanged(final EGameStateTeam gameState)
+	protected void onGameStateChanged(final GameState gameState)
 	{
 	}
 	

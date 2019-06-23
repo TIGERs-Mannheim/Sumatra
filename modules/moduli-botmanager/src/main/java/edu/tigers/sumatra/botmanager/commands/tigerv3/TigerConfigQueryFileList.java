@@ -19,7 +19,7 @@ import edu.tigers.sumatra.botmanager.commands.ECommand;
  */
 public class TigerConfigQueryFileList extends ACommand
 {
-	/** */
+	/** Constructor. */
 	public TigerConfigQueryFileList()
 	{
 		super(ECommand.CMD_CONFIG_QUERY_FILE_LIST, true);

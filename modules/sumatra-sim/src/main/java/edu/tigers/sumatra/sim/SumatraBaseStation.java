@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Aug 2, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.sim;
 
@@ -15,6 +10,7 @@ import edu.tigers.sumatra.bot.EBotType;
 import edu.tigers.sumatra.botmanager.basestation.ABaseStation;
 import edu.tigers.sumatra.botmanager.bots.communication.ENetworkState;
 import edu.tigers.sumatra.botmanager.commands.ACommand;
+import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemMatchFeedback;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 
@@ -35,7 +31,7 @@ public class SumatraBaseStation extends ABaseStation
 	
 	
 	/**
-	 * 
+	 * Default
 	 */
 	public SumatraBaseStation()
 	{
@@ -43,9 +39,31 @@ public class SumatraBaseStation extends ABaseStation
 	}
 	
 	
+	/**
+	 * @param id
+	 * @param feedback
+	 */
+	public void notifyMatchFeedback(final BotID id, final TigerSystemMatchFeedback feedback)
+	{
+		notifyIncommingBotCommand(id, feedback);
+		notifyNewMatchFeedback(id, feedback);
+	}
+	
+	
+	/**
+	 * @param id
+	 * @param cmd
+	 */
+	public void notifyCommand(final BotID id, final ACommand cmd)
+	{
+		notifyIncommingBotCommand(id, cmd);
+	}
+	
+	
 	@Override
 	public void enqueueCommand(final BotID id, final ACommand cmd)
 	{
+		// ignore all commands
 	}
 	
 	
@@ -57,24 +75,12 @@ public class SumatraBaseStation extends ABaseStation
 	
 	
 	@Override
-	public void startPing(final int numPings, final int payload)
-	{
-	}
-	
-	
-	@Override
-	public void stopPing()
-	{
-	}
-	
-	
-	@Override
 	protected void onConnect()
 	{
 		for (int i = 0; i < numBots; i++)
 		{
-			notifyBotOnline(new SumatraBot(BotID.createBotId(i, ETeamColor.YELLOW), this));
-			notifyBotOnline(new SumatraBot(BotID.createBotId(i, ETeamColor.BLUE), this));
+			addBot(BotID.createBotId(i, ETeamColor.YELLOW));
+			addBot(BotID.createBotId(i, ETeamColor.BLUE));
 		}
 	}
 	
@@ -84,9 +90,33 @@ public class SumatraBaseStation extends ABaseStation
 	{
 		for (int i = 0; i < numBots; i++)
 		{
-			notifyBotOffline(BotID.createBotId(i, ETeamColor.YELLOW));
-			notifyBotOffline(BotID.createBotId(i, ETeamColor.BLUE));
+			removeBot(BotID.createBotId(i, ETeamColor.YELLOW));
+			removeBot(BotID.createBotId(i, ETeamColor.BLUE));
 		}
+	}
+	
+	
+	/**
+	 * Add a new bot
+	 *
+	 * @param botID
+	 */
+	@Override
+	public void addBot(final BotID botID)
+	{
+		notifyBotOnline(new SumatraBot(botID, this));
+	}
+	
+	
+	/**
+	 * Remove an existing bot
+	 *
+	 * @param botID
+	 */
+	@Override
+	public void removeBot(final BotID botID)
+	{
+		notifyBotOffline(botID);
 	}
 	
 	

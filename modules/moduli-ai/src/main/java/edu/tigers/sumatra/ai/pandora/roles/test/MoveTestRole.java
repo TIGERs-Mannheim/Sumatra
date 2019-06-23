@@ -1,35 +1,45 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jun 2, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.pandora.roles.test;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.log4j.Logger;
 
+import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
+import edu.tigers.sumatra.botmanager.ABotManager;
+import edu.tigers.sumatra.botmanager.BotWatcher;
 import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.botmanager.commands.EBotSkill;
+import edu.tigers.sumatra.botmanager.commands.botskills.EDataAcquisitionMode;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand.ConsoleCommandTarget;
 import edu.tigers.sumatra.export.CSVExporter;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.LineMath;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.VectorMath;
+import edu.tigers.sumatra.matlab.MatlabConnection;
+import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveBangBangSkill;
-import edu.tigers.sumatra.skillsystem.skills.test.PositionSkill;
-import edu.tigers.sumatra.statemachine.IRoleState;
-import edu.tigers.sumatra.wp.VisionWatcher;
+import edu.tigers.sumatra.skillsystem.skills.PositionSkill;
+import edu.tigers.sumatra.statemachine.IEvent;
+import edu.tigers.sumatra.statemachine.IState;
+import edu.tigers.sumatra.wp.util.VisionWatcher;
+import matlabcontrol.MatlabConnectionException;
+import matlabcontrol.MatlabInvocationException;
+import matlabcontrol.MatlabProxy;
 
 
 /**
@@ -38,26 +48,19 @@ import edu.tigers.sumatra.wp.VisionWatcher;
 public class MoveTestRole extends ARole
 {
 	@SuppressWarnings("unused")
-	private static final Logger		log		= Logger.getLogger(MoveTestRole.class.getName());
+	private static final Logger log = Logger.getLogger(MoveTestRole.class.getName());
 	
-	private final List<MotionResult>	results	= new ArrayList<>();
-	private final String					logFileName;
-	private VisionWatcher				vw			= null;
-	private final EMoveMode				mode;
+	private final List<MotionResult> results = new ArrayList<>();
+	private final String logFileName;
+	private VisionWatcher vw = null;
+	private BotWatcher bw = null;
+	private final EMoveMode mode;
 	
-	private enum EEvent
+	private enum EEvent implements IEvent
 	{
 		DONE,
 	}
 	
-	private enum EStateId
-	{
-		WAIT,
-		MOVE,
-		PREPARE,
-		EVALUATE,
-		INIT
-	}
 	
 	/**
 	 */
@@ -68,7 +71,9 @@ public class MoveTestRole extends ARole
 		/**  */
 		TRAJ_VEL,
 		/**  */
-		TRAJ_POS
+		TRAJ_POS,
+		/** */
+		TRAJ_GLOBAL_VEL
 	}
 	
 	
@@ -97,27 +102,27 @@ public class MoveTestRole extends ARole
 		for (double a = AngleMath.deg2rad(startAngle); a < (AngleMath.deg2rad(stopAngle) - 1e-4); a += AngleMath
 				.deg2rad(angleStepDeg))
 		{
-			IVector2 dir = new Vector2(orientation);
+			IVector2 dir = Vector2.fromAngle(orientation);
 			relTargets.add(new double[] { dir.x(), dir.y(), a, a + AngleMath.deg2rad(angleTurnDeg) });
 		}
 		
-		IRoleState lastState = new InitState();
+		IState lastState = new InitState();
 		setInitialState(lastState);
 		for (int i = 0; i < iterations; i++)
 		{
 			for (double[] target : relTargets)
 			{
-				IVector2 dest = initPos.addNew(new Vector2(target[0], target[1]).scaleToNew(scale));
+				IVector2 dest = initPos.addNew(Vector2.fromXY(target[0], target[1]).scaleToNew(scale));
 				double initOrient = orientation + target[2];
 				double finalOrient = orientation + target[3];
-				IRoleState waitState1 = new WaitState(0);
-				IRoleState prepareState = new PrepareState(initPos, initOrient);
-				IRoleState waitState2 = new WaitState(500);
-				IRoleState moveState = new MoveToState(dest, finalOrient);
-				IRoleState waitState3 = new WaitState(0);
-				IRoleState prepare2State = new PrepareState(dest, finalOrient);
-				IRoleState waitState4 = new WaitState(500);
-				IRoleState moveBackState = new MoveToState(initPos, initOrient);
+				IState waitState1 = new WaitState(0);
+				IState prepareState = new PrepareState(initPos, initOrient);
+				IState waitState2 = new WaitState(500);
+				IState moveState = new MoveToState(dest, finalOrient);
+				IState waitState3 = new WaitState(0);
+				IState prepare2State = new PrepareState(dest, finalOrient);
+				IState waitState4 = new WaitState(500);
+				IState moveBackState = new MoveToState(initPos, initOrient);
 				
 				addTransition(lastState, EEvent.DONE, waitState1);
 				addTransition(waitState1, EEvent.DONE, prepareState);
@@ -129,15 +134,14 @@ public class MoveTestRole extends ARole
 				addTransition(waitState4, EEvent.DONE, moveBackState);
 				lastState = moveBackState;
 			}
-			IRoleState evalState = new EvaluationState();
+			IState evalState = new EvaluationState();
 			addTransition(lastState, EEvent.DONE, evalState);
 			lastState = evalState;
 		}
-		addEndTransition(lastState, EEvent.DONE);
 	}
 	
 	
-	private class InitState implements IRoleState
+	private class InitState implements IState
 	{
 		
 		
@@ -160,16 +164,10 @@ public class MoveTestRole extends ARole
 		}
 		
 		
-		@Override
-		public Enum<? extends Enum<?>> getIdentifier()
-		{
-			return EStateId.INIT;
-		}
-		
 	}
 	
 	
-	private class EvaluationState implements IRoleState
+	private class EvaluationState implements IState
 	{
 		
 		@Override
@@ -189,6 +187,8 @@ public class MoveTestRole extends ARole
 			}
 			triggerEvent(EEvent.DONE);
 			results.clear();
+			
+			identifyFrictionModel(exp.getAbsoluteFileName());
 		}
 		
 		
@@ -204,17 +204,12 @@ public class MoveTestRole extends ARole
 		}
 		
 		
-		@Override
-		public Enum<? extends Enum<?>> getIdentifier()
-		{
-			return EStateId.EVALUATE;
-		}
 	}
 	
-	private class WaitState implements IRoleState
+	private class WaitState implements IState
 	{
-		private long			tStart;
-		private final long	waitNs;
+		private long tStart;
+		private final long waitNs;
 		
 		
 		public WaitState(final long waitMs)
@@ -246,24 +241,17 @@ public class MoveTestRole extends ARole
 		}
 		
 		
-		@Override
-		public Enum<? extends Enum<?>> getIdentifier()
-		{
-			return EStateId.WAIT;
-		}
 	}
 	
-	private class PrepareState implements IRoleState
+	private class PrepareState implements IState
 	{
-		protected IVector2		dest;
-		protected final double	orientation;
-		private long				tLastStill	= 0;
+		protected IVector2 dest;
+		protected final double orientation;
+		private long tLastStill = 0;
 		
-		protected IVector2		lastPos;
-		protected double			lastOrientation;
-		protected IVector2		initPos;
-		protected double			initOrientation;
-		protected double			destOrientation;
+		protected IVector2 initPos;
+		protected double initOrientation;
+		protected double destOrientation;
 		
 		
 		private PrepareState(final IVector2 dest, final double orientation)
@@ -276,46 +264,25 @@ public class MoveTestRole extends ARole
 		@Override
 		public void doEntryActions()
 		{
-			lastPos = getPos();
-			lastOrientation = getBot().getAngle();
 			initPos = getPos();
-			initOrientation = getBot().getAngle();
+			initOrientation = getBot().getOrientation();
 			dest = initPos.addNew(dest.subtractNew(getPos()));
 			destOrientation = orientation;
 			tLastStill = 0;
 			
-			
-			// AMoveToSkill move = AMoveToSkill.createMoveToSkill();
-			// move.getMoveCon().updateDestination(dest);
-			// move.getMoveCon().updateTargetAngle(orientation);
-			// setNewSkill(move);
-			
-			PositionSkill posSkill = new PositionSkill(dest, orientation);
-			setNewSkill(posSkill);
-			
-			// ABotSkill botSkill;
-			// if (getWFrame().isInverted())
-			// {
-			// botSkill = new BotSkillPositionPid(dest.multiplyNew(-1), destOrientation);
-			// } else
-			// {
-			// botSkill = new BotSkillPositionPid(dest, destOrientation);
-			// }
-			// BotSkillWrapperSkill skill = new BotSkillWrapperSkill(botSkill);
-			
-			// MoveBangBangSkill skill = new MoveBangBangSkill(dest, destOrientation);
-			// setNewSkill(skill);
+			AMoveToSkill move = AMoveToSkill.createMoveToSkill();
+			move.getMoveCon().updateDestination(dest);
+			move.getMoveCon().updateTargetAngle(orientation);
+			setNewSkill(move);
 		}
 		
 		
 		@Override
 		public void doUpdate()
 		{
-			double dist = GeoMath.distancePP(lastPos, getPos());
-			double aDiff = Math.abs(AngleMath.difference(lastOrientation, getBot().getAngle()));
-			double dist2Dest = GeoMath.distancePP(dest, getPos());
+			double dist2Dest = VectorMath.distancePP(dest, getPos());
 			
-			if ((dist < 15) && (aDiff < 0.1) && (dist2Dest < 2000))
+			if ((getBot().getVel().getLength2() < 0.2) && (Math.abs(getBot().getAngularVel()) < 0.5) && (dist2Dest < 2000))
 			{
 				if (tLastStill == 0)
 				{
@@ -330,8 +297,6 @@ public class MoveTestRole extends ARole
 			{
 				tLastStill = 0;
 			}
-			lastPos = getPos();
-			lastOrientation = getBot().getAngle();
 		}
 		
 		
@@ -346,11 +311,6 @@ public class MoveTestRole extends ARole
 		}
 		
 		
-		@Override
-		public Enum<? extends Enum<?>> getIdentifier()
-		{
-			return EStateId.PREPARE;
-		}
 	}
 	
 	private class MoveToState extends PrepareState
@@ -373,12 +333,20 @@ public class MoveTestRole extends ARole
 			switch (mode)
 			{
 				case TRAJ_POS:
-					PositionSkill posSkill = new PositionSkill(dest, orientation);
+					PositionSkill posSkill = new PositionSkill();
+					posSkill.getMoveCon().updateDestination(dest);
+					posSkill.getMoveCon().updateTargetAngle(orientation);
 					setNewSkill(posSkill);
 					break;
 				case TRAJ_VEL:
 				{
-					MoveBangBangSkill skill = new MoveBangBangSkill(dest, destOrientation);
+					MoveBangBangSkill skill = new MoveBangBangSkill(dest, destOrientation, EBotSkill.LOCAL_VELOCITY);
+					setNewSkill(skill);
+				}
+					break;
+				case TRAJ_GLOBAL_VEL:
+				{
+					MoveBangBangSkill skill = new MoveBangBangSkill(dest, destOrientation, EBotSkill.GLOBAL_VELOCITY);
 					setNewSkill(skill);
 				}
 					break;
@@ -400,7 +368,7 @@ public class MoveTestRole extends ARole
 		public void doUpdate()
 		{
 			super.doUpdate();
-			double dist2Line = GeoMath.distancePL(getPos(), initPos, dest);
+			double dist2Line = LineMath.distancePL(getPos(), Line.fromPoints(initPos, dest));
 			result.dists2Line.add(dist2Line);
 		}
 		
@@ -411,42 +379,29 @@ public class MoveTestRole extends ARole
 			result.initPos = initPos;
 			result.initOrientation = initOrientation;
 			result.finalPos = getPos();
-			result.finalOrientation = getBot().getAngle();
+			result.finalOrientation = getBot().getOrientation();
 			result.dest = dest;
 			result.destOrientation = destOrientation;
 			results.add(result);
 			log.info(result);
-		}
-		
-		
-		@Override
-		public void doExitActions()
-		{
-		}
-		
-		
-		@Override
-		public Enum<? extends Enum<?>> getIdentifier()
-		{
-			return EStateId.MOVE;
 		}
 	}
 	
 	
 	private static class MotionResult
 	{
-		private IVector2				initPos;
-		private double					initOrientation;
-		private IVector2				finalPos;
-		private double					finalOrientation;
-		private IVector2				dest;
-		private double					destOrientation;
-		private final List<Double>	dists2Line	= new ArrayList<>();
+		private IVector2 initPos;
+		private double initOrientation;
+		private IVector2 finalPos;
+		private double finalOrientation;
+		private IVector2 dest;
+		private double destOrientation;
+		private final List<Double> dists2Line = new ArrayList<>();
 		
 		
 		public List<Number> getNumberList()
 		{
-			double offset = GeoMath.distancePP(finalPos, dest);
+			double offset = VectorMath.distancePP(finalPos, dest);
 			IVector2 diff = finalPos.subtractNew(dest);
 			double avgDist2Line = dists2Line.stream().mapToDouble(a -> a).average().getAsDouble();
 			double aDiff = AngleMath.difference(finalOrientation, destOrientation);
@@ -481,20 +436,42 @@ public class MoveTestRole extends ARole
 	}
 	
 	
+	private ABot getBotMgrBot()
+	{
+		ABot aBot = null;
+		try
+		{
+			ABotManager botManager = (ABotManager) SumatraModel.getInstance().getModule(ABotManager.MODULE_ID);
+			aBot = botManager.getBotTable().get(getBotID());
+		} catch (ModuleNotFoundException e)
+		{
+			log.error("Could not find botManager module", e);
+		}
+		return aBot;
+	}
+	
+	
 	@Override
 	protected void beforeFirstUpdate()
 	{
 		super.beforeFirstUpdate();
 		
-		if (!logFileName.isEmpty() && (getBot().getBot() instanceof ABot))
+		ABot aBot = getBotMgrBot();
+		if (aBot != null)
 		{
-			((ABot) getBot().getBot()).execute(
-					new TigerSystemConsoleCommand(ConsoleCommandTarget.MEDIA, "logfile " + logFileName));
+			aBot.getMatchCtrl().setDataAcquisitionMode(EDataAcquisitionMode.BOT_MODEL);
+			bw = new BotWatcher(aBot, EDataAcquisitionMode.BOT_MODEL);
+			bw.start();
 			
-			vw = new VisionWatcher("moveTest/" + logFileName);
-			vw.setStopAutomatically(false);
-			vw.setTimeout(600);
-			vw.start();
+			if (!logFileName.isEmpty())
+			{
+				aBot.execute(new TigerSystemConsoleCommand(ConsoleCommandTarget.MEDIA, "logfile " + logFileName));
+				
+				vw = new VisionWatcher("moveTest/" + logFileName);
+				vw.setStopAutomatically(false);
+				vw.setTimeout(600);
+				vw.start();
+			}
 		}
 	}
 	
@@ -504,14 +481,110 @@ public class MoveTestRole extends ARole
 	{
 		super.onCompleted();
 		
-		if (!logFileName.isEmpty() && (getBot().getBot() instanceof ABot))
+		ABot aBot = getBotMgrBot();
+		if (aBot != null)
 		{
-			((ABot) getBot().getBot()).execute(
-					new TigerSystemConsoleCommand(ConsoleCommandTarget.MEDIA, "stoplog"));
-			if (vw != null)
+			EDataAcquisitionMode acqMode = aBot.getMatchCtrl().getDataAcquisitionMode();
+			aBot.getMatchCtrl().setDataAcquisitionMode(EDataAcquisitionMode.NONE);
+			
+			if (bw != null)
 			{
-				vw.stopExport();
+				bw.stop();
+				
+				if (bw.isDataReceived())
+				{
+					switch (acqMode)
+					{
+						case MOTOR_MODEL:
+						case BOT_MODEL:
+						case DELAYS:
+							identifyBotModel();
+							break;
+						case NONE:
+						default:
+							break;
+					}
+				}
 			}
+			
+			if (!logFileName.isEmpty())
+			{
+				aBot.execute(new TigerSystemConsoleCommand(ConsoleCommandTarget.MEDIA, "stoplog"));
+				if (vw != null)
+				{
+					vw.stopExport();
+				}
+			}
+		}
+	}
+	
+	
+	@SuppressWarnings("unused")
+	private void identifyBotModel()
+	{
+		MatlabProxy mp;
+		try
+		{
+			mp = MatlabConnection.getMatlabProxy();
+			mp.eval("addpath('identification')");
+			Object[] values = mp.returningFeval("bot", 1, bw.getAbsoluteFileName());
+			double[] params = (double[]) values[0];
+			
+			StringBuilder sb = new StringBuilder();
+			
+			sb.append("Bot Model Identification complete.%n");
+			sb.append(
+					String.format(Locale.ENGLISH, "X   => K: %.4f, T: %.4f, Tv: %.4f%n", params[0], params[1], params[2]));
+			sb.append(
+					String.format(Locale.ENGLISH, "Y   => K: %.4f, T: %.4f, Tv: %.4f%n", params[3], params[4], params[5]));
+			sb.append(
+					String.format(Locale.ENGLISH, "Err => X: %.4f, Y: %.4f, abs: %.4f%n", params[6], params[7], params[8]));
+			sb.append(String.format(Locale.ENGLISH, "Dataloss: %.2f%%%n", params[9] * 100));
+			
+			log.info(sb.toString());
+		} catch (MatlabConnectionException err)
+		{
+			log.error(err.getMessage(), err);
+		} catch (MatlabInvocationException err)
+		{
+			log.error("Error evaluating matlab function: " + err.getMessage(), err);
+		} catch (Exception err)
+		{
+			log.error("An error occurred.", err);
+		}
+	}
+	
+	
+	private void identifyFrictionModel(final String csvFile)
+	{
+		MatlabProxy mp;
+		try
+		{
+			mp = MatlabConnection.getMatlabProxy();
+			mp.eval("addpath('identification')");
+			Object[] values = mp.returningFeval("fric", 1, csvFile);
+			double[] params = (double[]) values[0];
+			
+			StringBuilder sb = new StringBuilder();
+			
+			sb.append("Bot Friction Identification complete. %n");
+			sb.append(
+					String.format(Locale.ENGLISH, "x1: %.6f, x3: %.6f, x5: %.6f%n", params[0], params[1], params[2]));
+			sb.append(
+					String.format(Locale.ENGLISH, "y1: %.6f, y3: %.6f, y5: %.6f%n", params[3], params[4], params[5]));
+			sb.append(
+					String.format(Locale.ENGLISH, "Fit => X: %.2f%%, Y: %.2f%%%n", params[6], params[7]));
+			
+			log.info(sb.toString());
+		} catch (MatlabConnectionException err)
+		{
+			log.error(err.getMessage(), err);
+		} catch (MatlabInvocationException err)
+		{
+			log.error("Error evaluating matlab function: " + err.getMessage(), err);
+		} catch (Exception err)
+		{
+			log.error("An error occurred.", err);
 		}
 	}
 }

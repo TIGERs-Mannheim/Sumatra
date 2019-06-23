@@ -1,98 +1,86 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 27, 2013
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.metis.offense;
 
 import java.awt.Color;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
-import edu.tigers.sumatra.ai.data.EShapesLayer;
+import edu.tigers.sumatra.ai.data.EAiShapesLayer;
 import edu.tigers.sumatra.ai.data.TacticalField;
 import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
+import edu.tigers.sumatra.ai.math.DefenseMath;
+import edu.tigers.sumatra.ai.math.kick.BestDirectShotBallPossessingBot;
 import edu.tigers.sumatra.ai.metis.ACalculator;
-import edu.tigers.sumatra.drawable.ColorPickerFactory;
-import edu.tigers.sumatra.drawable.DrawablePoint;
-import edu.tigers.sumatra.drawable.IColorPicker;
+import edu.tigers.sumatra.drawable.DrawableAnnotation;
+import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.ValuePoint;
+import edu.tigers.sumatra.math.vector.ValuePoint;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 
 
 /**
- * ShooterMemory calculates the best target in the goal for the bot that has the ball atm.
- * 
+ * Calculates the best shot target on the goal for every of our bots.
+ * The result is a target in the opponents goal and a probability a shot to this target will score a goal for every of
+ * our bots,
+ * dependent on their position.
+ * In addition the best shot target for the ball is calculated.
+ * The result will be visualized as cyan annotation to the bots.
+ * The score probability for the ball is visualized in addition by showing the uncovered angles on the opponents goal.
+ * Grey circles show the obstacle rendered by the opponent bots.
+ * The visualizations can be activated and deactivated in the visualizer menu at: AI -> Best shot target
+ *
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * @author Felix Bayer <bayer.fel@googlemail.com>
  */
 public class ShooterCalc extends ACalculator
 {
 	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	private final ShooterMemory					mem;
-	private final Map<BotID, ShooterMemory>	botMemories;
-	private final IColorPicker						cp	= ColorPickerFactory.greenRedGradient();
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	/**
-	  * 
-	  */
-	public ShooterCalc()
-	{
-		mem = new ShooterMemory();
-		botMemories = new HashMap<>();
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	@Override
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
-		WorldFrame wFrame = baseAiFrame.getWorldFrame();
+		WorldFrame wFrame = getWFrame();
+		
+		List<IDrawableShape> directShotShapes = newTacticalField.getDrawableShapes().get(EAiShapesLayer.BEST_DIRECT_SHOT);
+		List<IDrawableShape> tmpShapes = new ArrayList<>();
+
+		List<ITrackedBot> foeBots = new ArrayList<>(wFrame.getFoeBots().values());
 		
 		// Evaluate indirect goal shot targets
-		Map<BotID, ValuePoint> bestShootingTargetsForTigerBots = new HashMap<>();
-		for (Entry<BotID, ITrackedBot> bot : wFrame.getTigerBotsAvailable())
+		Map<BotID, ValuePoint> bestDirectShotTargetsForTigerBots = new HashMap<>();
+		for (Map.Entry<BotID, ITrackedBot> bot : wFrame.getTigerBotsAvailable())
 		{
-			if (!botMemories.containsKey(bot.getKey()))
-			{
-				botMemories.put(bot.getKey(), new ShooterMemory());
-			}
-			botMemories.get(bot.getKey()).update(wFrame, baseAiFrame, bot.getValue().getPos());
-			bestShootingTargetsForTigerBots.put(bot.getKey(), botMemories.get(bot.getKey()).getBestPoint());
+			double tDeflect = DefenseMath.calculateTDeflect(bot.getValue().getPos(), getBall().getPos(),
+					DefenseMath.getBisectionGoal(getBall().getPos()));
+			
+			ValuePoint bestTargetFromBot = BestDirectShotBallPossessingBot
+					.getBestShot(Geometry.getGoalTheir(), bot.getValue().getBotKickerPos(), foeBots, tDeflect)
+					.orElse(new ValuePoint(Geometry.getGoalTheir().getCenter(), 0));
+			
+			tmpShapes
+					.add(new DrawableAnnotation(bot.getValue().getPos(), String.format("%.3f", bestTargetFromBot.getValue()),
+							Color.CYAN).setOffset(Vector2.fromY(-3 * Geometry.getBallRadius() - Geometry.getBotRadius())));
+			
+			bestDirectShotTargetsForTigerBots.put(bot.getKey(), bestTargetFromBot);
 		}
-		newTacticalField.setBestDirectShotTargetsForTigerBots(bestShootingTargetsForTigerBots);
+		newTacticalField.setBestDirectShotTargetsForTigerBots(bestDirectShotTargetsForTigerBots);
 		
-		// Evaluate direct goal shot targets (using ShooterMemory)
-		mem.update(wFrame, baseAiFrame, wFrame.getBall().getPos());
-		ValuePoint bestDirectShotTarget = mem.getBestPoint();
-		newTacticalField.setBestDirectShotTarget(bestDirectShotTarget);
-		List<ValuePoint> goalValuePoints = mem.getGeneratedGoalPoints();
-		newTacticalField.getGoalValuePoints().addAll(goalValuePoints);
+		ValuePoint bestTargetFromBall = BestDirectShotBallPossessingBot
+				.getBestShot(Geometry.getGoalTheir(), getBall().getPos(), foeBots, directShotShapes)
+				.orElse(new ValuePoint(Geometry.getGoalTheir().getCenter(), 0));
 		
-		for (ValuePoint vp : goalValuePoints)
-		{
-			Color color = cp.getColor(vp.getValue());
-			newTacticalField.getDrawableShapes().get(EShapesLayer.GOAL_POINTS).add(new DrawablePoint(vp, color));
-		}
-		newTacticalField.getDrawableShapes().get(EShapesLayer.GOAL_POINTS)
-				.add(new DrawablePoint(bestDirectShotTarget, Color.blue));
+		directShotShapes
+				.add(new DrawableAnnotation(getBall().getPos(), String.format("%.3f", bestTargetFromBall.getValue()),
+						Color.CYAN).setOffset(Vector2.fromY(-3 * Geometry.getBallRadius())));
+		directShotShapes.addAll(tmpShapes);
+
+		newTacticalField.setBestDirectShotTarget(bestTargetFromBall);
 	}
 }

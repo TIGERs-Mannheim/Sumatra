@@ -37,7 +37,7 @@ public class TigerSystemPong extends ACommand
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 *
+	 * Constructor.
 	 */
 	public TigerSystemPong()
 	{

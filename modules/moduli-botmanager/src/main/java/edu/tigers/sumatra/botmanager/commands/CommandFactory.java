@@ -18,28 +18,29 @@ import edu.tigers.sumatra.botmanager.serial.SerialException;
 
 
 /**
+ * Handles bot commands.
  */
 public final class CommandFactory
 {
 	// Logger
 	private static final Logger							log							= Logger.getLogger(CommandFactory.class
-																											.getName());
-																											
+			.getName());
+	
 	private static CommandFactory							instance						= null;
-																									
-	private final Map<Integer, SerialDescription>	commands						= new HashMap<Integer, SerialDescription>();
-																									
+	
+	private final Map<Integer, SerialDescription>	commands						= new HashMap<>();
+	
 	private static final int								HEADER_LENGTH				= 2;
 	private static final int								LEGACY_HEADER_LENGTH		= 4;
 	private static final int								RELIABLE_HEADER_LENGTH	= 4;
-																									
+	
 	/** Reliable commands use an extended header, signaled by 8th bit in section */
 	private static final int								RELIABLE_CMD_MASK			= 0x8000;
-																									
-																									
+	
+	
 	private CommandFactory()
 	{
-	
+		
 	}
 	
 	
@@ -86,7 +87,7 @@ public final class CommandFactory
 				acmd = (ACommand) desc.newInstance();
 			} catch (SerialException err)
 			{
-				log.error("Could not create instance of: " + ecmd);
+				log.error("Could not create instance of: " + ecmd, err);
 				continue;
 			} catch (ClassCastException err)
 			{

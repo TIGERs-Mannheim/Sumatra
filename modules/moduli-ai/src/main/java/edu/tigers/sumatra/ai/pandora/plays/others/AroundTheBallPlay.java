@@ -1,26 +1,20 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 17.10.2010
- * Author(s): Malte
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.others;
 
-import edu.tigers.sumatra.ai.data.EGameStateTeam;
 import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
 import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
-import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole.EMoveBehavior;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.Goal;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.wp.data.Geometry;
-import edu.tigers.sumatra.wp.data.Goal;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.referee.data.GameState;
 
 
 /**
@@ -35,10 +29,10 @@ public class AroundTheBallPlay extends APlay
 	// --------------------------------------------------------------------------
 	
 	private final Goal	goal		= Geometry.getGoalOur();
-											
+	
 	private final double	radius	= Geometry.getBotToBallDistanceStop();
-											
-											
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -56,10 +50,10 @@ public class AroundTheBallPlay extends APlay
 	@Override
 	protected void doUpdate(final AthenaAiFrame currentFrame)
 	{
-		IVector2 ballPos = new Vector2(currentFrame.getWorldFrame().getBall().getPos());
+		IVector2 ballPos = Vector2.copy(currentFrame.getWorldFrame().getBall().getPos());
 		
 		// direction: vector from ball to the middle of the goal!
-		Vector2 direction = goal.getGoalCenter().subtractNew(ballPos);
+		Vector2 direction = goal.getCenter().subtractNew(ballPos);
 		// sets the length of the vector to 'radius'
 		direction.scaleTo(radius);
 		
@@ -73,6 +67,7 @@ public class AroundTheBallPlay extends APlay
 			
 			moveRole.getMoveCon().setPenaltyAreaAllowedOur(true);
 			moveRole.getMoveCon().updateDestination(destination);
+			moveRole.getMoveCon().updateLookAtTarget(currentFrame.getWorldFrame().getBall());
 			turn -= AngleMath.PI / 5.0;
 		}
 	}
@@ -88,12 +83,12 @@ public class AroundTheBallPlay extends APlay
 	@Override
 	protected ARole onAddRole(final MetisAiFrame frame)
 	{
-		return (new MoveRole(EMoveBehavior.LOOK_AT_BALL));
+		return (new MoveRole());
 	}
 	
 	
 	@Override
-	protected void onGameStateChanged(final EGameStateTeam gameState)
+	protected void onGameStateChanged(final GameState gameState)
 	{
 	}
 	

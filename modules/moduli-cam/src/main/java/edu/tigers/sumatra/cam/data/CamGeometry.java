@@ -19,8 +19,8 @@ import java.util.Map;
 public class CamGeometry
 {
 	/** camId -> calibration */
-	private final Map<Integer, CamCalibration>	calibrations;
-	private final CamFieldSize							field;
+	private final Map<Integer, CamCalibration> calibrations;
+	private CamFieldSize field;
 	
 	
 	/**
@@ -50,5 +50,17 @@ public class CamGeometry
 	public final CamFieldSize getField()
 	{
 		return field;
+	}
+	
+	
+	/**
+	 * Update geometry.
+	 * 
+	 * @param update
+	 */
+	public void update(final CamGeometry update)
+	{
+		calibrations.putAll(update.getCalibrations());
+		field = update.getField();
 	}
 }

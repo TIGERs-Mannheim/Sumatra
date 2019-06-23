@@ -23,7 +23,7 @@ public interface IAutoRefEngine
 	/**
 	 * @author "Lukas Magel"
 	 */
-	public enum AutoRefMode
+	enum AutoRefMode
 	{
 		/**  */
 		ACTIVE,
@@ -35,47 +35,47 @@ public interface IAutoRefEngine
 	/**
 	 * 
 	 */
-	public void pause();
+	void pause();
 	
 	
 	/**
 	 * 
 	 */
-	public void resume();
+	void resume();
 	
 	
 	/**
 	 * 
 	 */
-	public void stop();
+	void stop();
 	
 	
 	/**
 	 * 
 	 */
-	public void reset();
+	void reset();
 	
 	
 	/**
 	 * @return
 	 */
-	public AutoRefMode getMode();
+	AutoRefMode getMode();
 	
 	
 	/**
 	 * @return
 	 */
-	public IGameLog getGameLog();
+	IGameLog getGameLog();
 	
 	
 	/**
 	 * @param types
 	 */
-	public void setActiveGameEvents(Set<EGameEventDetectorType> types);
+	void setActiveGameEvents(Set<EGameEventDetectorType> types);
 	
 	
 	/**
 	 * @param frame
 	 */
-	public void process(IAutoRefFrame frame);
+	void process(IAutoRefFrame frame);
 }

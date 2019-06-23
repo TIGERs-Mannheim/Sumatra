@@ -1,14 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 24.09.2011
- * Author(s): osteinbrecher
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ids;
-
-import java.io.Serializable;
 
 import com.sleepycat.persist.model.Persistent;
 
@@ -19,15 +12,8 @@ import com.sleepycat.persist.model.Persistent;
  * @author Oliver Steinbrecher
  */
 @Persistent
-public abstract class AObjectID implements Comparable<AObjectID>, Serializable
+public abstract class AObjectID implements Comparable<AObjectID>
 {
-	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	/**  */
-	private static final long	serialVersionUID	= -1210556807036502590L;
-	
 	/** needs to be 255 thus the bot firmware can perform a deinitialization of the network interface */
 	public static final int		UNINITIALIZED_ID	= 255;
 	
@@ -42,17 +28,11 @@ public abstract class AObjectID implements Comparable<AObjectID>, Serializable
 	public static final int		BOT_ID_MAX_BS		= 23;
 	
 	
-	// --------------------------------------------------------------------------
-	
 	private int						number;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	/**
-	 * Creates an uninitialized {@link AObjectID}.
+	 * Creates an uninitialized id
 	 */
 	public AObjectID()
 	{
@@ -81,11 +61,6 @@ public abstract class AObjectID implements Comparable<AObjectID>, Serializable
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
 	@Override
 	public int compareTo(final AObjectID o)
 	{
@@ -99,10 +74,6 @@ public abstract class AObjectID implements Comparable<AObjectID>, Serializable
 		return "ObjectID[ " + getNumber() + "]";
 	}
 	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 * @return the number
@@ -127,11 +98,7 @@ public abstract class AObjectID implements Comparable<AObjectID>, Serializable
 	 */
 	public boolean isBall()
 	{
-		if (number == BALL_ID)
-		{
-			return true;
-		}
-		return false;
+		return number == BALL_ID;
 	}
 	
 	
@@ -141,11 +108,7 @@ public abstract class AObjectID implements Comparable<AObjectID>, Serializable
 	 */
 	public boolean isBot()
 	{
-		if ((number >= BOT_ID_MIN) && (number <= BOT_ID_MAX))
-		{
-			return true;
-		}
-		return false;
+		return (number >= BOT_ID_MIN) && (number <= BOT_ID_MAX);
 	}
 	
 	
@@ -175,10 +138,6 @@ public abstract class AObjectID implements Comparable<AObjectID>, Serializable
 			return false;
 		}
 		AObjectID other = (AObjectID) obj;
-		if (number != other.number)
-		{
-			return false;
-		}
-		return true;
+		return number == other.number;
 	}
 }

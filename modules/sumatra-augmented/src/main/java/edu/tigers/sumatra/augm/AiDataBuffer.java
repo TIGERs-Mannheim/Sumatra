@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 6, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.augm;
 
@@ -38,25 +33,25 @@ import edu.dhbw.mannheim.tigers.sumatra.proto.AugmWrapperProtos.AugmWrapper;
 public class AiDataBuffer implements List<AugmWrapper>
 {
 	@SuppressWarnings("unused")
-	private static final Logger								log						= Logger.getLogger(AiDataBuffer.class
-																											.getName());
+	private static final Logger log = Logger.getLogger(AiDataBuffer.class
+			.getName());
 	
-	private static final int									DEFAULT_BUFFER_SIZE	= 5000;
-	private static final int									CACHE_SIZE				= 5;
-	private int														bufferSize				= 0;
-	private int														currentChunkIdx		= 0;
-	private AugmWrapperContainer.Builder					currentChunk;
-	private int														currentStartIdx		= 0;
-	private int														size;
-	private boolean												modified					= false;
-	private final LinkedHashMap<Integer, AugmWrapper>	cache						= new LinkedHashMap<>();
+	private static final int DEFAULT_BUFFER_SIZE = 5000;
+	private static final int CACHE_SIZE = 5;
+	private int bufferSize = 0;
+	private int currentChunkIdx = 0;
+	private AugmWrapperContainer.Builder currentChunk;
+	private int currentStartIdx = 0;
+	private int size;
+	private boolean modified = false;
+	private final LinkedHashMap<Integer, AugmWrapper> cache = new LinkedHashMap<>();
 	
 	
-	private final String											filenameBase			= "aiData.bin";
-	private final String											baseDir;
+	private static final String FILENAME_BASE = "aiData.bin";
+	private final String baseDir;
 	
-	private AugmWrapper											firstElement			= null;
-	private AugmWrapper											lastElement				= null;
+	private AugmWrapper firstElement = null;
+	private AugmWrapper lastElement = null;
 	
 	
 	/**
@@ -68,12 +63,9 @@ public class AiDataBuffer implements List<AugmWrapper>
 		log.debug("Creating aiData buffer");
 		baseDir = dir;
 		File bdf = new File(baseDir);
-		if (!bdf.isDirectory())
+		if (!bdf.isDirectory() && !bdf.mkdirs())
 		{
-			if (!bdf.mkdirs())
-			{
-				throw new IOException("Could not access base dir: " + dir);
-			}
+			throw new IOException("Could not access base dir: " + dir);
 		}
 		currentChunk = loadChunk(currentChunkIdx);
 		log.debug("Determining total elements");
@@ -88,14 +80,8 @@ public class AiDataBuffer implements List<AugmWrapper>
 	
 	private int determineSize() throws IOException
 	{
-		// return Files.list(Paths.get(baseDir))
-		// .filter(p -> p.toFile().getName().endsWith(filenameBase))
-		// .parallel()
-		// .map(p -> readWrapper(p))
-		// .mapToInt(container -> container.getWrapperCount())
-		// .sum();
 		int numChunks = (int) Files.list(Paths.get(baseDir))
-				.filter(p -> p.toFile().getName().endsWith(filenameBase))
+				.filter(p -> p.toFile().getName().endsWith(FILENAME_BASE))
 				.count();
 		if (numChunks > 0)
 		{
@@ -130,7 +116,7 @@ public class AiDataBuffer implements List<AugmWrapper>
 	
 	private String getChunkFilename(final int chunkIdx)
 	{
-		return String.format("%s/%05d_%s", baseDir, chunkIdx, filenameBase);
+		return String.format("%s/%05d_%s", baseDir, chunkIdx, FILENAME_BASE);
 	}
 	
 	
@@ -169,11 +155,12 @@ public class AiDataBuffer implements List<AugmWrapper>
 		} catch (InvalidProtocolBufferException err)
 		{
 			log.error("Could not parse ai data", err);
+			throw new IllegalStateException(err);
 		} catch (IOException err)
 		{
 			log.error("Could not read ai data", err);
+			throw new IllegalStateException(err);
 		}
-		return null;
 	}
 	
 	
@@ -187,7 +174,6 @@ public class AiDataBuffer implements List<AugmWrapper>
 			if ((currentStartIdx < 0) || (chunkIdx < 0))
 			{
 				currentStartIdx = 0;
-				chunkIdx = 0;
 				throw new IndexOutOfBoundsException();
 			}
 		}
@@ -223,7 +209,7 @@ public class AiDataBuffer implements List<AugmWrapper>
 	{
 		if ((i < 0) || (i >= size))
 		{
-			throw new IndexOutOfBoundsException("" + i);
+			throw new IndexOutOfBoundsException(Integer.toString(i));
 		}
 		if ((i == (size - 1)) && (lastElement != null))
 		{
@@ -311,7 +297,12 @@ public class AiDataBuffer implements List<AugmWrapper>
 		modified = true;
 		try
 		{
-			Files.list(Paths.get(baseDir)).filter(p -> p.toFile().isFile()).forEach(p -> p.toFile().delete());
+			Files.list(Paths.get(baseDir)).filter(p -> p.toFile().isFile()).forEach(p -> {
+				if (!p.toFile().delete())
+				{
+					log.warn("Not able to delete file: " + p.toString());
+				}
+			});
 		} catch (IOException err)
 		{
 			log.error("Could not delete obsolete files", err);
@@ -436,7 +427,7 @@ public class AiDataBuffer implements List<AugmWrapper>
 	 */
 	public class MyIterator implements Iterator<AugmWrapper>
 	{
-		int	i	= 0;
+		int i = 0;
 		
 		
 		@Override
@@ -451,7 +442,7 @@ public class AiDataBuffer implements List<AugmWrapper>
 		{
 			if (i >= (size - 1))
 			{
-				throw new NoSuchElementException("" + i);
+				throw new NoSuchElementException(Integer.toString(i));
 			}
 			i++;
 			return get(i);

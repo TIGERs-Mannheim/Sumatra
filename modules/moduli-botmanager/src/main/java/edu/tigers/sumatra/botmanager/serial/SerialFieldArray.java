@@ -63,7 +63,7 @@ public class SerialFieldArray extends ASerialField
 	@Override
 	public void decode(final byte[] data, final Object obj) throws SerialException
 	{
-		Object value = null;
+		Object value;
 		
 		int localOffset = offset;
 		Object array = null;
@@ -130,7 +130,7 @@ public class SerialFieldArray extends ASerialField
 	}
 	
 	
-	private void validateRange(final Object array, final int pos) throws IllegalArgumentException
+	private void validateRange(final Object array, final int pos)
 	{
 		switch (type)
 		{
@@ -140,15 +140,21 @@ public class SerialFieldArray extends ASerialField
 			case INT8:
 			case INT16:
 			case INT32:
-				long value = Array.getLong(array, pos);
-				if ((value < type.getMin()) || (value > type.getMax()))
-				{
-					log.warn(type + " " + field.getDeclaringClass().getSimpleName() + "::" + field.getName() + "[" + pos
-							+ "]" + " value is out of bounds (" + value + ")", new IllegalArgumentException());
-				}
+				validateInt(array, pos);
 				break;
 			default:
 				break;
+		}
+	}
+
+
+	private void validateInt(final Object array, final int pos)
+	{
+		long value = Array.getLong(array, pos);
+		if ((value < type.getMin()) || (value > type.getMax()))
+		{
+			log.warn(type + " " + field.getDeclaringClass().getSimpleName() + "::" + field.getName() + "[" + pos
+					+ "]" + " value is out of bounds (" + value + ")", new IllegalArgumentException());
 		}
 	}
 	
@@ -176,20 +182,16 @@ public class SerialFieldArray extends ASerialField
 				
 				switch (type)
 				{
+					case INT8:
 					case UINT8:
 						ACommand.byte2ByteArray(data, localOffset, Array.getInt(array, i));
 						break;
+					case INT16:
 					case UINT16:
 						ACommand.short2ByteArray(data, localOffset, Array.getInt(array, i));
 						break;
 					case UINT32:
 						ACommand.int2ByteArray(data, localOffset, (int) Array.getLong(array, i));
-						break;
-					case INT8:
-						ACommand.byte2ByteArray(data, localOffset, Array.getInt(array, i));
-						break;
-					case INT16:
-						ACommand.short2ByteArray(data, localOffset, Array.getInt(array, i));
 						break;
 					case INT32:
 						ACommand.int2ByteArray(data, localOffset, Array.getInt(array, i));

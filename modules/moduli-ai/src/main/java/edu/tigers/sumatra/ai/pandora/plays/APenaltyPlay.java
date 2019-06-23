@@ -1,26 +1,23 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 8, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.pandora.plays;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.ai.data.EGameStateTeam;
 import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
+import edu.tigers.sumatra.ai.math.AiMath;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.wp.data.Geometry;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.referee.data.GameState;
 
 
 /**
@@ -30,7 +27,7 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public abstract class APenaltyPlay extends APlay
 {
-	@Configurable(comment = "Distance to a-axis on line")
+	@Configurable(comment = "Distance to a-axis on line", defValue = "1000.0")
 	private static double distanceToX = 1000;
 	
 	
@@ -44,52 +41,52 @@ public abstract class APenaltyPlay extends APlay
 	
 	
 	@Override
-	protected void onGameStateChanged(final EGameStateTeam gameState)
+	protected void onGameStateChanged(final GameState gameState)
 	{
 	}
 	
 	
-	protected void updateMoveRoles(final AthenaAiFrame frame, final List<ARole> moveRoles, final int xSign,
+	protected void updateMoveRoles(final AthenaAiFrame frame, final int xSign,
 			final int xOffset)
 	{
-		int offsetStep = (200);
-		double xLine = xOffset + (xSign
-				* ((Geometry.getFieldLength() / 2.0) - Geometry.getDistanceToPenaltyMark()
-						- Geometry.getDistancePenaltyMarkToPenaltyLine() - 100));
+		int offsetStep = 200;
+		double xLine = xOffset + (xSign * (Geometry.getPenaltyMarkTheir().x()
+				- Geometry.getDistancePenaltyMarkToPenaltyLine() - 100));
 		int sign = 1;
-		double yStart = distanceToX;
 		double offset = 0;
-		for (ARole role : moveRoles)
+		
+		
+		List<IVector2> destinations = new ArrayList<>();
+		for (int i = 0; i < getRoles().size(); i++)
 		{
-			MoveRole moveRole = (MoveRole) role;
-			IVector2 destination;
-			boolean blocked = false;
-			do
-			{
-				blocked = false;
-				destination = new Vector2(xLine, sign * (yStart - offset));
-				offset -= offsetStep;
-				if ((yStart - offset) < 0)
-				{
-					xLine -= offsetStep;
-					offset = 0;
-				}
-				for (ITrackedBot bot : frame.getWorldFrame().getBots().values())
-				{
-					if (!bot.getBotId().equals(role.getBotID()))
-					{
-						if (GeoMath
-								.distancePP(destination, bot.getPos()) < ((Geometry.getBotRadius() * 2) + 50))
-						{
-							blocked = true;
-							break;
-						}
-					}
-				}
-			} while (blocked);
-			moveRole.getMoveCon().updateDestination(destination);
+			IVector2 destination = Vector2.fromXY(xLine, sign * (distanceToX - offset));
+			offset -= offsetStep;
+			destinations.add(destination);
 			
 			sign *= -1;
+		}
+		
+		int i = 0;
+		for (ARole role : getRoles())
+		{
+			if (!role.getClass().equals(MoveRole.class))
+			{
+				continue;
+			}
+			MoveRole moveRole = (MoveRole) role;
+			IVector2 destination = destinations.get(i);
+			for (int j = 0; j < 10; j++)
+			{
+				if (AiMath.isShapeFreeOfBots(Circle.createCircle(destination, (Geometry.getBotRadius() * 2) + 50),
+						frame.getWorldFrame().getFoeBots(), role.getBot()))
+				{
+					break;
+				}
+				destination = destination.addNew(Vector2.fromX(xSign * -100.0));
+				
+			}
+			moveRole.getMoveCon().updateDestination(destination);
+			i++;
 		}
 	}
 }

@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 14, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.redirect;
 
@@ -19,8 +14,8 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 
 
 /**
@@ -30,21 +25,21 @@ import edu.tigers.sumatra.math.Vector2;
  */
 public class RedirectCirclePlay extends ARedirectPlay
 {
-	@Configurable(comment = "Controls the moving speed. Higher=slower")
-	private static int							maxCounter	= 1500;
-	private int										counter		= 0;
-	@Configurable(comment = "Drive in a circle")
-	private static boolean						circle		= false;
+	@Configurable(comment = "Controls the moving speed. Higher=slower", defValue = "1500")
+	private static int maxCounter = 1500;
+	private int counter = 0;
+	@Configurable(comment = "Drive in a circle", defValue = "false")
+	private static boolean circle = false;
 	
-	@Configurable(comment = "Center of the circle")
-	private static IVector2						center		= new Vector2(0, 0);
+	@Configurable(comment = "Center of the circle", defValue = "0.0;0.0")
+	private static IVector2 center = Vector2.fromXY(0, 0);
 	
-	@Configurable
-	private static boolean						receive		= false;
+	@Configurable(defValue = "false")
+	private static boolean receive = false;
 	
-	private static Map<Integer, Integer>	map4			= new HashMap<Integer, Integer>();
-	private static Map<Integer, Integer>	map6			= new HashMap<Integer, Integer>();
-	private static Map<Integer, Integer>	map8			= new HashMap<Integer, Integer>();
+	private static Map<Integer, Integer> map4 = new HashMap<Integer, Integer>();
+	private static Map<Integer, Integer> map6 = new HashMap<Integer, Integer>();
+	private static Map<Integer, Integer> map8 = new HashMap<Integer, Integer>();
 	static
 	{
 		map4.put(0, 2);
@@ -96,7 +91,7 @@ public class RedirectCirclePlay extends ARedirectPlay
 		List<IVector2> destinations = new ArrayList<IVector2>();
 		for (int i = 0; i < getRoles().size(); i++)
 		{
-			destinations.add(center.addNew(new Vector2(initialAngle + (angleStep * i)).scaleTo(getDistance())));
+			destinations.add(center.addNew(Vector2.fromAngle(initialAngle + (angleStep * i)).scaleTo(getDistance())));
 		}
 		return destinations;
 	}

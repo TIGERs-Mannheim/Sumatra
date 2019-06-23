@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jun 29, 2016
- * Author(s): Phillipp Mevenkamp <phillippmevenkamp@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.data.metis.testutils;
 
@@ -12,8 +7,7 @@ import org.mockito.Mockito;
 
 import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
 import edu.tigers.sumatra.ids.BotIDMap;
-import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
+import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 
@@ -31,8 +25,8 @@ public class BaseAIFrameTestUtils
 	 */
 	public static BaseAiFrame mockBaseAiFrameForWorldFrameID(final long idToSet)
 	{
-		SimpleWorldFrame simpleWorldFrame = new SimpleWorldFrame(new BotIDMap<ITrackedBot>(), null, idToSet, 0);
-		WorldFrame worldFrame = new WorldFrame(simpleWorldFrame, ETeamColor.BLUE, true);
+		SimpleWorldFrame simpleWorldFrame = new SimpleWorldFrame(new BotIDMap<>(), null, null, idToSet, 0);
+		WorldFrame worldFrame = new WorldFrame(simpleWorldFrame, EAiTeam.BLUE_PRIMARY, true);
 		
 		BaseAiFrame baseAiFrame = Mockito.mock(BaseAiFrame.class);
 		Mockito.when(baseAiFrame.getWorldFrame()).thenReturn(worldFrame);

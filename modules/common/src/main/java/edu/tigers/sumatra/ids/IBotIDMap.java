@@ -29,7 +29,7 @@ public interface IBotIDMap<T> extends Serializable, Iterable<Entry<BotID, T>>
 	 * @throws NoObjectWithThisIDException Thrown if there is no object associated with
 	 *            the given id!
 	 */
-	T get(BotID id);
+	T get(BotID id) throws NoObjectWithThisIDException;
 	
 	
 	/**

@@ -23,7 +23,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface SerialData
 {
-	/** */
+	/**
+	 * Data type specification.
+	 */
 	public enum ESerialDataType
 	{
 		/** */
@@ -88,6 +90,8 @@ public @interface SerialData
 	}
 	
 	
-	/** */
+	/**
+	 * Get the type of this annotation.
+	 */
 	public ESerialDataType type();
 }

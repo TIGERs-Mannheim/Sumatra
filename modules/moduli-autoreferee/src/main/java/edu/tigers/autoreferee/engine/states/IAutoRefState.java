@@ -18,17 +18,10 @@ import edu.tigers.autoreferee.engine.events.IGameEvent;
 public interface IAutoRefState
 {
 	/**
-	 * @param ctx
-	 * @return true if the request can be fulfilled
-	 */
-	public boolean proceed(IAutoRefStateContext ctx);
-	
-	
-	/**
 	 * @param frame
 	 * @param ctx
 	 */
-	public void update(IAutoRefFrame frame, IAutoRefStateContext ctx);
+	void update(IAutoRefFrame frame, IAutoRefStateContext ctx);
 	
 	
 	/**
@@ -36,17 +29,17 @@ public interface IAutoRefState
 	 * @param ctx
 	 * @return Returns true if the event was accepted by the engine
 	 */
-	public boolean handleGameEvent(IGameEvent gameEvent, IAutoRefStateContext ctx);
+	boolean handleGameEvent(IGameEvent gameEvent, IAutoRefStateContext ctx);
 	
 	
 	/**
 	 * @return
 	 */
-	public boolean canProceed();
+	boolean canProceed();
 	
 	
 	/**
 	 * 
 	 */
-	public void reset();
+	void reset();
 }

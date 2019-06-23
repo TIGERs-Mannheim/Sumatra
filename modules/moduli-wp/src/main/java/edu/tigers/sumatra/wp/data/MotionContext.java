@@ -1,19 +1,15 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Sep 17, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.wp.data;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.IVector3;
-import edu.tigers.sumatra.math.Vector3;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.Vector3;
 
 
 /**
@@ -21,7 +17,9 @@ import edu.tigers.sumatra.math.Vector3;
  */
 public class MotionContext
 {
-	private final Map<BotID, BotInfo> bots = new HashMap<>(12);
+	private final Map<BotID, BotInfo>	bots		= new HashMap<>(12);
+	
+	private final BallInfo					ballInfo	= new BallInfo();
 	
 	
 	/**
@@ -34,7 +32,7 @@ public class MotionContext
 		private double				kickSpeed				= 0;
 		private boolean			chip						= false;
 		private double				dribbleRpm				= 0;
-		private double				center2DribblerDist	= Geometry.getCenter2DribblerDistDefault();
+		private double				center2DribblerDist	= 0;
 		private IVector3			vel						= Vector3.ZERO_VECTOR;
 		private boolean			ballContact				= false;
 		
@@ -177,6 +175,26 @@ public class MotionContext
 		}
 	}
 	
+	/**
+	 * Information about the ball
+	 */
+	public static class BallInfo
+	{
+		private IVector3 pos;
+		
+		
+		public IVector3 getPos()
+		{
+			return pos;
+		}
+		
+		
+		public void setPos(final IVector3 pos)
+		{
+			this.pos = pos;
+		}
+	}
+	
 	
 	/**
 	 * @return the bots
@@ -184,5 +202,11 @@ public class MotionContext
 	public final Map<BotID, BotInfo> getBots()
 	{
 		return bots;
+	}
+	
+	
+	public BallInfo getBallInfo()
+	{
+		return ballInfo;
 	}
 }

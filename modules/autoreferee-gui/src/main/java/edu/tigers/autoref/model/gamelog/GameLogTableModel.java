@@ -1,19 +1,14 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Mar 24, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.model.gamelog;
 
-import java.awt.EventQueue;
+import java.awt.*;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import javax.swing.JTable;
+import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
@@ -43,7 +38,7 @@ public class GameLogTableModel extends AbstractTableModel implements IGameLogObs
 	
 	static
 	{
-		columns = Collections.unmodifiableList(Arrays.asList("Time [ms]", "GameTime [ms]", "Type", "Event"));
+		columns = Collections.unmodifiableList(Arrays.asList("Time", "Game Time", "Type", "Event"));
 	}
 	
 	

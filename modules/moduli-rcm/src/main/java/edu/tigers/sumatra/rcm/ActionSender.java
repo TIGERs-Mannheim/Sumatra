@@ -27,11 +27,11 @@ public class ActionSender
 	// --- instance variables ---------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private ICommandInterpreter		cmdInterpreter	= new CommandInterpreterStub();
-	private final String					identifier;
-	private final List<IRCMObserver>	observers		= new CopyOnWriteArrayList<IRCMObserver>();
-																	
-																	
+	private ICommandInterpreter cmdInterpreter = new CommandInterpreterStub();
+	private final String identifier;
+	private final List<IRCMObserver> observers = new CopyOnWriteArrayList<>();
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructor(s) -------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -48,10 +48,11 @@ public class ActionSender
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
+	 * Start sending
 	 */
 	public void startSending()
 	{
-		if ((cmdInterpreter.getBot() != null))
+		if (cmdInterpreter.getBot() != null)
 		{
 			cmdInterpreter.getBot().setControlledBy(identifier);
 		}
@@ -59,6 +60,7 @@ public class ActionSender
 	
 	
 	/**
+	 * Stop sending
 	 */
 	public void stopSending()
 	{
@@ -111,6 +113,7 @@ public class ActionSender
 	
 	
 	/**
+	 * Notify about the next bot
 	 */
 	public void notifyNextBot()
 	{
@@ -124,6 +127,7 @@ public class ActionSender
 	
 	
 	/**
+	 * Notify about the previous bot
 	 */
 	public void notifyPrevBot()
 	{
@@ -137,6 +141,7 @@ public class ActionSender
 	
 	
 	/**
+	 * Notify about unassigned bot
 	 */
 	public void notifyBotUnassigned()
 	{
@@ -152,8 +157,9 @@ public class ActionSender
 	
 	
 	/**
+	 * Notify about timeout
 	 */
-	public void notifyTimedout()
+	public void notifyTimedOut()
 	{
 		if (cmdInterpreter.getBot().getBotId().isBot())
 		{

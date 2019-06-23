@@ -71,7 +71,7 @@ The following guides provide detailed instructions on how to install and run the
 	If Eclipse did not automatically pick up the launch configuration and the drop down menu is empty you can also launch the project by expanding the **autoreferee-main** project, right-clicking on the `AutoReferee.launch` file and selecting `Run as -> AutoReferee`
 
 ### Possible issues:
-- Eclipse will automatically compile the **.proto** files in the **moduli-cam** and **moduli-referee** projects. If you encounter errors in these projects try to refresh the configuration by selecting all projects in the Package Explorer, right clicking and choosing `Maven->Update Project..` Select `OK` in the dialogue that pops up.
+- Eclipse will automatically compile the **.proto** files in the **moduli-cam** and **moduli-referee** projects. If you encounter errors in these projects try to refresh the configuration by selecting all projects in the Package Explorer, right clicking and choosing `Maven->Update Project..` Uncheck the checkbox labeled `Update Project configuration from pom.xml` in the dialogue that pops up (as that would override the Eclipse project configuration) and then select `OK`.
 
 	The Java files which the protobuf compiler generates do not comply with the strict compiler settings for the projects. This is why the classpath folders that contain the generated protobuf files are marked to ignore optional compiler errors. These settings are overriden by Eclipse when updating the projects from the Maven configuration. If Eclipse complains about compile errors in these classpath folders check if the **.classpath** file has been modified and **checkout** possible changes. Refresh the projects afterwards.
 

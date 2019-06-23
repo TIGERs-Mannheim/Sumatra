@@ -1,18 +1,10 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 22.07.2014
- * Author(s): MarkG <Mark,Geiger@dlr.de>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.data;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.ai.metis.support.IPassTarget;
+import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**
@@ -23,71 +15,31 @@ import edu.tigers.sumatra.math.IVector2;
  */
 public class AICom
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
+	private IPassTarget passTarget = null;
 	
-	private IVector2			offensiveRolePassTarget		= null;
+	private int specialMoveCounter = 0;
 	
-	private BotID				offensiveRolePassTargetID	= null;
-	
-	private int					specialMoveCounter			= 0;
-	
-	private int					unassignedStateCounter		= 0;
+	private int unassignedStateCounter = 0;
 	
 	// this is used to send responses from SpecialMoveState to OffensiveStrategy
-	private boolean			responded						= false;
+	private boolean responded = false;
 	
-	private List<IVector2>	delayMoves						= new ArrayList<IVector2>();
+	private double protectionPenalty = 0;
 	
+	private long protectionInitTime = 0;
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
+	private IVector2 primaryOffensiveMovePos = null;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	/**
-	 * @param passTarget
-	 */
-	public void setOffensiveRolePassTargetID(final BotID passTarget)
+	public IPassTarget getPassTarget()
 	{
-		offensiveRolePassTargetID = passTarget;
+		return passTarget;
 	}
 	
 	
-	/**
-	 * @return botID of the bot to wich the offensiveRole will pass
-	 */
-	public BotID getOffensiveRolePassTargetID()
+	public void setPassTarget(final IPassTarget passTarget)
 	{
-		return offensiveRolePassTargetID;
-	}
-	
-	
-	/**
-	 * @param passTarget
-	 */
-	public void setOffensiveRolePassTarget(final IVector2 passTarget)
-	{
-		offensiveRolePassTarget = passTarget;
-	}
-	
-	
-	/**
-	 * @return BotID of the passTarget if offensiveRole is about to Pass, else NULL
-	 */
-	public IVector2 getOffensiveRolePassTarget()
-	{
-		return offensiveRolePassTarget;
+		this.passTarget = passTarget;
 	}
 	
 	
@@ -125,26 +77,7 @@ public class AICom
 	{
 		responded = specialMoveResponse;
 	}
-	
-	
-	/**
-	 * @return the delayMoves
-	 */
-	public List<IVector2> getDelayMoves()
-	{
-		return delayMoves;
-	}
-	
-	
-	/**
-	 * @param delayMoves the delayMoves to set
-	 */
-	public void setDelayMoves(final List<IVector2> delayMoves)
-	{
-		this.delayMoves = delayMoves;
-	}
-	
-	
+
 	/**
 	 * @return the unassignedStateCounter
 	 */
@@ -160,5 +93,41 @@ public class AICom
 	public void setUnassignedStateCounter(final int unassignedStateCounter)
 	{
 		this.unassignedStateCounter = unassignedStateCounter;
+	}
+	
+	
+	public double getProtectionPenalty()
+	{
+		return protectionPenalty;
+	}
+	
+	
+	public void setProtectionPenalty(final double protectionPenalty)
+	{
+		this.protectionPenalty = protectionPenalty;
+	}
+	
+	
+	public long getProtectionInitTime()
+	{
+		return protectionInitTime;
+	}
+	
+	
+	public void setProtectionInitTime(final long protectionInitTime)
+	{
+		this.protectionInitTime = protectionInitTime;
+	}
+	
+	
+	public IVector2 getPrimaryOffensiveMovePos()
+	{
+		return primaryOffensiveMovePos;
+	}
+	
+	
+	public void setPrimaryOffensiveMovePos(final IVector2 primaryOffensiveMovePos)
+	{
+		this.primaryOffensiveMovePos = primaryOffensiveMovePos;
 	}
 }

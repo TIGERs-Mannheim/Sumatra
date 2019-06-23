@@ -10,9 +10,9 @@ package edu.tigers.sumatra.trajectory;
 
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * @param <RETURN_TYPE>
+ * @param <T>
  */
-public interface ITrajectory<RETURN_TYPE>
+public interface ITrajectory<T>
 {
 	/**
 	 * Get position at time t.
@@ -20,7 +20,7 @@ public interface ITrajectory<RETURN_TYPE>
 	 * @param t time
 	 * @return position [mm]
 	 */
-	RETURN_TYPE getPositionMM(double t);
+	T getPositionMM(double t);
 	
 	
 	/**
@@ -29,7 +29,7 @@ public interface ITrajectory<RETURN_TYPE>
 	 * @param t time
 	 * @return position [m]
 	 */
-	RETURN_TYPE getPosition(double t);
+	T getPosition(double t);
 	
 	
 	/**
@@ -38,7 +38,7 @@ public interface ITrajectory<RETURN_TYPE>
 	 * @param t time
 	 * @return velocity
 	 */
-	RETURN_TYPE getVelocity(double t);
+	T getVelocity(double t);
 	
 	
 	/**
@@ -47,7 +47,7 @@ public interface ITrajectory<RETURN_TYPE>
 	 * @param t time
 	 * @return acceleration
 	 */
-	RETURN_TYPE getAcceleration(double t);
+	T getAcceleration(double t);
 	
 	
 	/**
@@ -59,10 +59,19 @@ public interface ITrajectory<RETURN_TYPE>
 	
 	
 	/**
-	 * @param t
-	 * @return
+	 * @param t time [s]
+	 * @return the next destination, if this trajectory is divided into multiple subtract-pathes
 	 */
-	default RETURN_TYPE getNextDestination(final double t)
+	default T getNextDestination(final double t)
+	{
+		return getPositionMM(getTotalTime());
+	}
+	
+	
+	/**
+	 * @return the final position in this trajectory
+	 */
+	default T getFinalDestination()
 	{
 		return getPositionMM(getTotalTime());
 	}

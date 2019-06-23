@@ -11,10 +11,10 @@ package edu.tigers.sumatra.control.motor;
 import org.apache.commons.lang.NotImplementedException;
 
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.IVector3;
-import edu.tigers.sumatra.math.IVectorN;
-import edu.tigers.sumatra.math.Vector3;
-import edu.tigers.sumatra.math.VectorN;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.IVectorN;
+import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.VectorN;
 
 
 /**
@@ -93,7 +93,7 @@ public class CombinationMotorModel extends AMotorModel
 			}
 		}
 		
-		return new VectorN(in);
+		return VectorN.from(in);
 	}
 	
 	

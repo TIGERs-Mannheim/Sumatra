@@ -44,7 +44,7 @@ public class UnicastTransceiverUDP implements ITransceiverUDP, IReceiverUDPObser
 	private final ITransmitterUDP						transmitter	= new TransmitterUDP();
 	private final ReceiverUDP							receiver		= new ReceiverUDP();
 	
-	private final List<ITransceiverUDPObserver>	observers	= new ArrayList<ITransceiverUDPObserver>();
+	private final List<ITransceiverUDPObserver>	observers	= new ArrayList<>();
 	
 	
 	// --------------------------------------------------------------------------
@@ -206,13 +206,14 @@ public class UnicastTransceiverUDP implements ITransceiverUDP, IReceiverUDPObser
 	@Override
 	public void setNetworkInterface(final NetworkInterface network)
 	{
+		// hint not used
 	}
 	
 	
 	@Override
 	public boolean isOpen()
 	{
-		return (socket != null);
+		return socket != null;
 	}
 	
 	
@@ -284,7 +285,7 @@ public class UnicastTransceiverUDP implements ITransceiverUDP, IReceiverUDPObser
 		
 		catch (final UnknownHostException e)
 		{
-			log.error("Unknown host: " + dstAddr);
+			log.error("Unknown host: " + dstAddr, e);
 		}
 		
 		if (start)

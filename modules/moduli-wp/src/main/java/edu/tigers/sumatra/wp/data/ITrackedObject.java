@@ -1,22 +1,19 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 15, 2015
- * Author(s): geforce
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.wp.data;
 
 import edu.tigers.sumatra.ids.AObjectID;
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.math.IMirrorable;
+import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**
- * @author geforce
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public interface ITrackedObject
+public interface ITrackedObject extends IMirrorable<ITrackedObject>
 {
+	
 	
 	/**
 	 * @return the pos
@@ -37,14 +34,15 @@ public interface ITrackedObject
 	
 	
 	/**
-	 * @return id
+	 * @return id of the object
 	 */
-	AObjectID getBotId();
+	AObjectID getId();
 	
 	
 	/**
-	 * @return
+	 * @return timestamp in [ns]
 	 */
 	long getTimestamp();
+	
 	
 }

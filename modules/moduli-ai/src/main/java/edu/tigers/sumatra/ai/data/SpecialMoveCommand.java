@@ -8,12 +8,11 @@
  */
 package edu.tigers.sumatra.ai.data;
 
+import com.sleepycat.persist.model.Persistent;
+import edu.tigers.sumatra.math.vector.IVector2;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import com.sleepycat.persist.model.Persistent;
-
-import edu.tigers.sumatra.math.IVector2;
 
 
 /**
@@ -23,8 +22,8 @@ import edu.tigers.sumatra.math.IVector2;
 public class SpecialMoveCommand
 {
 	
-	private List<IVector2>	movePosition			= new ArrayList<IVector2>();
-	private List<Double>		moveTimes				= new ArrayList<Double>();
+	private List<IVector2>	movePosition			= new ArrayList<>();
+	private List<Double>		moveTimes				= new ArrayList<>();
 	// if response Step == 0, dont send any response
 	private int					responseStep			= 0;
 	private double				forceResponseTime		= 10.0;

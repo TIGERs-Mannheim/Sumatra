@@ -11,8 +11,8 @@ package edu.tigers.sumatra.wp.kalman2.bot;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
 
-import edu.tigers.sumatra.math.IVector3;
-import edu.tigers.sumatra.math.Vector3;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.Vector3;
 
 
 /**
@@ -87,7 +87,7 @@ public class BotKalmanFilterMulti implements IBotFilter
 	@Override
 	public IVector3 getPos()
 	{
-		Vector3 p = new Vector3(filter.getStatePrediction().getSubVector(0, 3).toArray());
+		Vector3 p = Vector3.fromArray(filter.getStatePrediction().getSubVector(0, 3).toArray());
 		return p;
 	}
 	
@@ -95,7 +95,7 @@ public class BotKalmanFilterMulti implements IBotFilter
 	@Override
 	public IVector3 getVel()
 	{
-		Vector3 p = new Vector3(filter.getStatePrediction().getSubVector(3, 3).toArray());
+		Vector3 p = Vector3.fromArray(filter.getStatePrediction().getSubVector(3, 3).toArray());
 		return p;
 	}
 	
@@ -103,7 +103,7 @@ public class BotKalmanFilterMulti implements IBotFilter
 	@Override
 	public IVector3 getAcc()
 	{
-		Vector3 p = new Vector3(filter.getStatePrediction().getSubVector(6, 3).toArray());
+		Vector3 p = Vector3.fromArray(filter.getStatePrediction().getSubVector(6, 3).toArray());
 		return p;
 	}
 	
@@ -111,7 +111,7 @@ public class BotKalmanFilterMulti implements IBotFilter
 	@Override
 	public IVector3 getCurAcc()
 	{
-		Vector3 p = new Vector3(filter.getState().getSubVector(6, 3).toArray());
+		Vector3 p = Vector3.fromArray(filter.getState().getSubVector(6, 3).toArray());
 		return p;
 	}
 	
@@ -119,7 +119,7 @@ public class BotKalmanFilterMulti implements IBotFilter
 	@Override
 	public IVector3 getCurVel()
 	{
-		Vector3 p = new Vector3(filter.getState().getSubVector(3, 3).toArray());
+		Vector3 p = Vector3.fromArray(filter.getState().getSubVector(3, 3).toArray());
 		return p;
 	}
 	
@@ -127,7 +127,7 @@ public class BotKalmanFilterMulti implements IBotFilter
 	@Override
 	public IVector3 getCurPos()
 	{
-		Vector3 p = new Vector3(filter.getState().getSubVector(0, 3).toArray());
+		Vector3 p = Vector3.fromArray(filter.getState().getSubVector(0, 3).toArray());
 		return p;
 	}
 	

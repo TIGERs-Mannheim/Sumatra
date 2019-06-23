@@ -34,7 +34,9 @@ public class BaseStationPing extends ACommand
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/** */
+	/**
+	 * Constructor.
+	 */
 	public BaseStationPing()
 	{
 		super(ECommand.CMD_BASE_PING);

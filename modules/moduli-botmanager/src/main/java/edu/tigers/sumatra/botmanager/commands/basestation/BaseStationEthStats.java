@@ -40,7 +40,9 @@ public class BaseStationEthStats extends ACommand
 	private int		ntpSync;
 	
 	
-	/** */
+	/**
+	 * Constructor.
+	 */
 	public BaseStationEthStats()
 	{
 		super(ECommand.CMD_BASE_ETH_STATS);
@@ -128,6 +130,6 @@ public class BaseStationEthStats extends ACommand
 	 */
 	public boolean isNtpSync()
 	{
-		return ntpSync == 1 ? true : false;
+		return ntpSync == 1;
 	}
 }

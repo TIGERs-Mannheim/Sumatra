@@ -14,7 +14,7 @@ import java.util.Set;
 
 import edu.tigers.autoreferee.IAutoRefFrame;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
+import edu.tigers.sumatra.referee.data.EGameState;
 
 
 /**
@@ -25,13 +25,13 @@ import edu.tigers.sumatra.wp.data.EGameStateNeutral;
 public abstract class APreparingGameEventDetector extends AGameEventDetector
 {
 	
-	private boolean	firstUpdate	= true;
+	private boolean firstUpdate = true;
 	
 	
 	/**
 	 * @param gamestate
 	 */
-	public APreparingGameEventDetector(final EGameStateNeutral gamestate)
+	protected APreparingGameEventDetector(final EGameState gamestate)
 	{
 		super(gamestate);
 	}
@@ -40,7 +40,7 @@ public abstract class APreparingGameEventDetector extends AGameEventDetector
 	/**
 	 * @param gamestates
 	 */
-	public APreparingGameEventDetector(final Set<EGameStateNeutral> gamestates)
+	protected APreparingGameEventDetector(final Set<EGameState> gamestates)
 	{
 		super(gamestates);
 	}

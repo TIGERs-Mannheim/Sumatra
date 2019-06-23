@@ -10,10 +10,11 @@ package edu.tigers.sumatra.ai.pandora.roles.move;
 
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.skillsystem.MovementCon;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.VectorMath;
+import edu.tigers.sumatra.pathfinder.MovementCon;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
-import edu.tigers.sumatra.statemachine.IRoleState;
+import edu.tigers.sumatra.statemachine.IState;
 
 
 /**
@@ -26,126 +27,54 @@ import edu.tigers.sumatra.statemachine.IRoleState;
  */
 public class MoveRole extends ARole
 {
-	/**
-	 */
-	public enum EMoveBehavior
-	{
-		/**  */
-		NORMAL,
-		/**  */
-		LOOK_AT_BALL,
-		/**  */
-		DO_COMPLETE;
-	}
+	private final AMoveToSkill skill;
 	
-	private enum EStateId
-	{
-		MOVING;
-	}
 	
-	private enum EEvent
-	{
-		DONE,
-		DEST_UPDATE
-	}
-	
-	private final EMoveBehavior	behavior;
-	private final AMoveToSkill		skill;
-											
-											
 	/**
 	 * Create a simple move role.
-	 * 
-	 * @param behavior
 	 */
-	public MoveRole(final EMoveBehavior behavior)
+	public MoveRole()
 	{
 		super(ERole.MOVE);
-		IRoleState state = new MovingState();
-		setInitialState(state);
-		addEndTransition(EStateId.MOVING, EEvent.DONE);
-		this.behavior = behavior;
+		setInitialState(new MoveState());
 		skill = AMoveToSkill.createMoveToSkill();
+		setNewSkill(skill);
 	}
 	
 	
 	/**
-	 * @param dest
-	 * @param orientation
+	 * @param dest moving destination
+	 * @param orientation target angle
 	 */
 	public MoveRole(final IVector2 dest, final double orientation)
 	{
-		this(EMoveBehavior.DO_COMPLETE);
+		this();
 		skill.getMoveCon().updateDestination(dest);
 		skill.getMoveCon().updateTargetAngle(orientation);
 	}
 	
 	
 	/**
-	 * Moves the bot
-	 * 
-	 * @author Daniel Andres <andreslopez.daniel@gmail.com>
-	 */
-	private class MovingState implements IRoleState
-	{
-		
-		
-		@Override
-		public void doEntryActions()
-		{
-			
-			setNewSkill(skill);
-			switch (behavior)
-			{
-				case LOOK_AT_BALL:
-					skill.getMoveCon().updateLookAtTarget(getAiFrame().getWorldFrame().getBall());
-					break;
-				default:
-					// nothing to do
-			}
-		}
-		
-		
-		@Override
-		public void doExitActions()
-		{
-		}
-		
-		
-		@Override
-		public void doUpdate()
-		{
-			if (skill.isDestinationReached() && (behavior == EMoveBehavior.DO_COMPLETE))
-			{
-				triggerEvent(EEvent.DONE);
-			}
-		}
-		
-		
-		@Override
-		public EStateId getIdentifier()
-		{
-			return EStateId.MOVING;
-		}
-		
-	}
-	
-	
-	/**
-	 * @return
+	 * @return the moveCon of the underlying skill
 	 */
 	public final MovementCon getMoveCon()
 	{
 		return skill.getMoveCon();
 	}
-	
-	
+
+
 	/**
-	 * @return
+	 * @return of destination is reached
 	 */
+	public final boolean isDestinationReached() {
+		return getMoveCon().getDestination() == null
+				|| VectorMath.distancePP(getPos(), getMoveCon().getDestination()) < 70;
+	}
 	
-	public final boolean isDestinationReached()
+	private class MoveState implements IState
 	{
-		return skill.isDestinationReached();
+		
+		// No code here; just a dummy state
+		
 	}
 }

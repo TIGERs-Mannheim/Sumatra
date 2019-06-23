@@ -48,7 +48,7 @@ public class TigerSystemPerformance extends ACommand
 	private int	velMaxW	= 3000;
 	
 	
-	/** */
+	/** Constructor. */
 	public TigerSystemPerformance()
 	{
 		super(ECommand.CMD_SYSTEM_PERFORMANCE);

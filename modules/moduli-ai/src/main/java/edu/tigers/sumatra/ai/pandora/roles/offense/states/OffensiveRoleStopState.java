@@ -1,26 +1,23 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 26, 2014
- * Author(s): Mark Geiger <Mark.Geiger@dlr.de>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.roles.offense.states;
 
-import edu.tigers.sumatra.ai.data.OffensiveStrategy.EOffensiveStrategy;
+import edu.tigers.sumatra.ai.data.OffensiveStrategy;
+import edu.tigers.sumatra.ai.math.AiMath;
 import edu.tigers.sumatra.ai.pandora.roles.offense.OffensiveRole;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.BotIDMap;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.shapes.circle.Circle;
+import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.circle.CircleMath;
+import edu.tigers.sumatra.math.circle.ICircle;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
-import edu.tigers.sumatra.statemachine.IRoleState;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
-import edu.tigers.sumatra.wp.data.Geometry;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 
@@ -30,16 +27,19 @@ import edu.tigers.sumatra.wp.data.WorldFrame;
  * 
  * @author Mark Geiger <Mark.Geiger@dlr.de>
  */
-public class OffensiveRoleStopState extends AOffensiveRoleState implements IRoleState
+public class OffensiveRoleStopState extends AOffensiveRoleState
 {
 	
 	// -------------------------------------------------------------------------- //
 	// --- variables and constants ---------------------------------------------- //
 	// -------------------------------------------------------------------------- //
 	
+	private AMoveToSkill skill = null;
+	
 	// ----------------------------------------------------------------------- //
 	// -------------------- functions ---------------------------------------- //
 	// ----------------------------------------------------------------------- //
+	
 	
 	/**
 	 * @param role
@@ -49,13 +49,25 @@ public class OffensiveRoleStopState extends AOffensiveRoleState implements IRole
 		super(role);
 	}
 	
-	private AMoveToSkill skill = null;
+	
+	@Override
+	public IVector2 getMoveDest()
+	{
+		return skill.getMoveCon().getDestination();
+	}
+	
+	
+	@Override
+	public String getIdentifier()
+	{
+		return OffensiveStrategy.EOffensiveStrategy.STOP.name();
+	}
 	
 	
 	@Override
 	public void doExitActions()
 	{
-		
+		// not needed here
 	}
 	
 	
@@ -72,6 +84,7 @@ public class OffensiveRoleStopState extends AOffensiveRoleState implements IRole
 	public void doUpdate()
 	{
 		IVector2 moveTarget = calcStopMoveTarget(getWFrame(), getBotID());
+		moveTarget = AiMath.adjustMovePositionWhenItsInvalid(getWFrame(), getBotID(), moveTarget);
 		skill.getMoveCon()
 				.updateDestination(moveTarget);
 	}
@@ -79,25 +92,38 @@ public class OffensiveRoleStopState extends AOffensiveRoleState implements IRole
 	
 	private IVector2 calcStopMoveTarget(final WorldFrame wFrame, final BotID key)
 	{
-		IVector2 moveTarget = null;
 		IVector2 ballPos = wFrame.getBall().getPos();
+		IVector2 moveTarget;
 		double distanceToBall = Geometry.getBotToBallDistanceStop()
 				+ (Geometry.getBotRadius() * 2.0);
-		Circle positionCircle = new Circle(ballPos, distanceToBall);
-		
-		moveTarget = ballPos.subtractNew(new Vector2(Geometry.getBotToBallDistanceStop(), 0));
-		moveTarget = positionCircle.nearestPointOutside(moveTarget);
-		
-		int i = 0;
-		while (!isMoveTargetValid(moveTarget, wFrame, key))
+
+		int safteyCounter = 0;
+		do
 		{
-			moveTarget = GeoMath.stepAlongCircle(moveTarget, ballPos, AngleMath.DEG_TO_RAD * 20);
-			if (i > 18)
+			ICircle positionCircle = Circle.createCircle(ballPos, distanceToBall);
+			moveTarget = ballPos.subtractNew(Vector2.fromXY(Geometry.getBotToBallDistanceStop(), 0));
+			moveTarget = positionCircle.nearestPointOutside(moveTarget);
+
+			if (safteyCounter > 8)
 			{
+				log.warn("Offensive Stop State could not find a valid Position.");
 				break;
 			}
-			i++;
-		}
+
+			// check circle around ball
+			for (int i = 0; i < 18; i++)
+			{
+				moveTarget = CircleMath.stepAlongCircle(moveTarget, ballPos, AngleMath.deg2rad(20));
+				if (isMoveTargetValid(moveTarget, wFrame, key))
+				{
+					break;
+				}
+			}
+
+			// bigger radius for next circle check
+			distanceToBall += Geometry.getBotRadius() * 1.2;
+			safteyCounter++;
+		} while (!isMoveTargetValid(moveTarget, wFrame, key));
 		return moveTarget;
 	}
 	
@@ -117,20 +143,13 @@ public class OffensiveRoleStopState extends AOffensiveRoleState implements IRole
 		{
 			return false;
 		}
-		BotIDMap<ITrackedBot> botMap = new BotIDMap<>();
-		for (BotID id : wFrame.getTigerBotsAvailable().keySet())
-		{
-			botMap.put(id, wFrame.getTigerBotsVisible().get(id));
-		}
-		for (BotID id : wFrame.getFoeBots().keySet())
-		{
-			botMap.put(id, wFrame.getFoeBot(id));
-		}
+		
+		BotIDMap<ITrackedBot> botMap = new BotIDMap<>(wFrame.getBots());
 		botMap.remove(key);
 		
 		for (BotID id : botMap.keySet())
 		{
-			if (GeoMath.distancePP(moveTarget, botMap.get(id).getPos()) < (Geometry.getBotRadius() * 3))
+			if (VectorMath.distancePP(moveTarget, botMap.getWithNull(id).getPos()) < (Geometry.getBotRadius() * 3))
 			{
 				return false;
 			}
@@ -139,9 +158,4 @@ public class OffensiveRoleStopState extends AOffensiveRoleState implements IRole
 	}
 	
 	
-	@Override
-	public Enum<?> getIdentifier()
-	{
-		return EOffensiveStrategy.STOP;
-	}
 }

@@ -1,19 +1,14 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 23.10.2013
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands;
 
 import com.github.g3force.instanceables.IInstanceableEnum;
 import com.github.g3force.instanceables.InstanceableClass;
-import com.github.g3force.instanceables.InstanceableParameter;
 
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationACommand;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationAuth;
+import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationCameraViewport;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationConfigV2;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationEthStats;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationPing;
@@ -22,14 +17,11 @@ import edu.tigers.sumatra.botmanager.commands.tiger.TigerSystemPing;
 import edu.tigers.sumatra.botmanager.commands.tiger.TigerSystemPong;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerBootloaderCheckForUpdates;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerBootloaderData;
-import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerCtrlSetControllerType;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemAck;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsolePrint;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemMatchCtrl;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemMatchFeedback;
-import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemQuery;
-import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemQuery.EQueryType;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerBootloaderCrc;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerBootloaderRequestCrc;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerBootloaderRequestData;
@@ -40,8 +32,10 @@ import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerConfigItemDesc;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerConfigQueryFileList;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerConfigRead;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerConfigWrite;
-import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerStatusFeedbackPid;
-import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerSystemBotSkill;
+import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqBotModel;
+import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqDelays;
+import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqMotorModel;
+import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerDataAcqVelocity;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerSystemPerformance;
 
 
@@ -69,17 +63,10 @@ public enum ECommand implements IInstanceableEnum
 	CMD_SYSTEM_PERFORMANCE(0x000F, new InstanceableClass(TigerSystemPerformance.class)),
 	/** */
 	CMD_SYSTEM_ACK(0x00F0, new InstanceableClass(TigerSystemAck.class)),
-	/**  */
-	CMD_SYSTEM_QUERY(0x0010, new InstanceableClass(TigerSystemQuery.class, new InstanceableParameter(
-			EQueryType.class, "CTRL_PID", "EQueryType"))),
-	/**  */
-	CMD_SYSTEM_BOT_SKILL(0x0012, new InstanceableClass(TigerSystemBotSkill.class)),
 	
 	// ### 04 - KICKER ###
 	
 	// ### 07 - CTRL ###
-	/** */
-	CMD_CTRL_SET_CONTROLLER_TYPE(0x0705, new InstanceableClass(TigerCtrlSetControllerType.class)),
 	
 	// ### 08 - BASE_STATION ###
 	/** */
@@ -94,6 +81,8 @@ public enum ECommand implements IInstanceableEnum
 	CMD_BASE_ETH_STATS(0x0807, new InstanceableClass(BaseStationEthStats.class)),
 	/** */
 	CMD_BASE_CONFIG_V2(0x0808, new InstanceableClass(BaseStationConfigV2.class)),
+	/** */
+	CMD_BASE_CAM_VIEWPORT(0x0809, new InstanceableClass(BaseStationCameraViewport.class)),
 	
 	// ### 09 - BOOTLOADER ###
 	/** */
@@ -124,15 +113,25 @@ public enum ECommand implements IInstanceableEnum
 	CMD_CONFIG_WRITE(0x0B04, new InstanceableClass(TigerConfigWrite.class)),
 	
 	// ### 12 - status feedback ###
+	
+	// ### 13 - data acquisition ###
 	/**  */
-	CMD_STATUS_FEEDBACK_PID(0x0C00, new InstanceableClass(TigerStatusFeedbackPid.class)), ;
+	CMD_DATA_ACQ_MOTOR_MODEL(0x0D00, new InstanceableClass(TigerDataAcqMotorModel.class)),
+	/**  */
+	CMD_DATA_ACQ_BOT_MODEL(0x0D01, new InstanceableClass(TigerDataAcqBotModel.class)),
+	/**  */
+	CMD_DATA_ACQ_DELAYS(0x0D02, new InstanceableClass(TigerDataAcqDelays.class)),
+	/**  */
+	CMD_DATA_ACQ_VELOCITY(0x0D03, new InstanceableClass(TigerDataAcqVelocity.class)),;
+	
+	
 	private final InstanceableClass	clazz;
 	private final int						id;
 	
 	
 	/**
 	 */
-	private ECommand(final int id, final InstanceableClass clazz)
+	ECommand(final int id, final InstanceableClass clazz)
 	{
 		this.clazz = clazz;
 		this.id = id;

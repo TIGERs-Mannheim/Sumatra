@@ -1,24 +1,20 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jan 12, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.timer;
 
 import java.util.Comparator;
 
 
 /**
- * Identifier consisting of {@link ETimable} and frame id
+ * Identifier consisting of {@link String} and frame id
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class TimerIdentifier
 {
-	private final ETimable	timable;
+	private final String	timable;
 	private final long		id;
 	private final int			customId;
 	
@@ -27,7 +23,7 @@ public class TimerIdentifier
 	 * @param timable
 	 * @param id
 	 */
-	public TimerIdentifier(final ETimable timable, final long id)
+	public TimerIdentifier(final String timable, final long id)
 	{
 		this.timable = timable;
 		this.id = id;
@@ -40,7 +36,7 @@ public class TimerIdentifier
 	 * @param id
 	 * @param customId
 	 */
-	public TimerIdentifier(final ETimable timable, final long id, final int customId)
+	public TimerIdentifier(final String timable, final long id, final int customId)
 	{
 		this.timable = timable;
 		this.id = id;
@@ -76,19 +72,7 @@ public class TimerIdentifier
 			return false;
 		}
 		TimerIdentifier other = (TimerIdentifier) obj;
-		if (id != other.id)
-		{
-			return false;
-		}
-		if (timable != other.timable)
-		{
-			return false;
-		}
-		if (customId != other.customId)
-		{
-			return false;
-		}
-		return true;
+		return id == other.id && timable.equals(other.timable) && customId == other.customId;
 	}
 	
 	
@@ -97,19 +81,13 @@ public class TimerIdentifier
 	 */
 	public static Comparator<TimerIdentifier> getComparator()
 	{
-		return new Comparator<TimerIdentifier>()
-		{
-			
-			@Override
-			public int compare(final TimerIdentifier o1, final TimerIdentifier o2)
+		return (o1, o2) -> {
+			int cmpid = Long.compare(o1.id, o2.id);
+			if (cmpid == 0)
 			{
-				int cmpid = Long.compare(o1.id, o2.id);
-				if (cmpid == 0)
-				{
-					return o1.timable.compareTo(o2.timable);
-				}
-				return cmpid;
+				return o1.timable.compareTo(o2.timable);
 			}
+			return cmpid;
 		};
 	}
 	
@@ -117,7 +95,7 @@ public class TimerIdentifier
 	/**
 	 * @return the timable
 	 */
-	public final ETimable getTimable()
+	public final String getTimable()
 	{
 		return timable;
 	}

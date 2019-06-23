@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 10.11.2011
- * Author(s): osteinbrecher
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ids;
 
@@ -15,7 +10,7 @@ import org.junit.Test;
 
 
 /**
- * This is a unit test for {@link AObjectID} and sub classes.
+ * This is a unit test for {@link AObjectID} and subtract classes.
  * 
  * @author Oliver Steinbrecher
  */
@@ -51,7 +46,6 @@ public class ObjectIDTester
 		assertFalse(botId.equals(botId2));
 		
 		assertFalse(botId.equals(null));
-		assertFalse(botId.equals(new BallID()));
 		assertFalse(botId.equals(this));
 	}
 	

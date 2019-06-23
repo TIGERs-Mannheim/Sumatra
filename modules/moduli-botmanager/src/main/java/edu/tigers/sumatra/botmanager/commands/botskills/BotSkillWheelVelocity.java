@@ -9,6 +9,7 @@
 package edu.tigers.sumatra.botmanager.commands.botskills;
 
 import edu.tigers.sumatra.botmanager.commands.EBotSkill;
+import edu.tigers.sumatra.botmanager.commands.botskills.data.KickerDribblerCommands;
 import edu.tigers.sumatra.botmanager.serial.SerialData;
 import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
 
@@ -19,13 +20,19 @@ import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
  * 
  * @author AndreR
  */
-public class BotSkillWheelVelocity extends ABotSkill
+public class BotSkillWheelVelocity extends AMoveBotSkill
 {
 	@SerialData(type = ESerialDataType.INT16)
-	private final int	vel[]	= new int[4];
+	private final int[]						vel						= new int[4];
+	
+	@SerialData(type = ESerialDataType.EMBEDDED)
+	private KickerDribblerCommands	kickerDribbler			= new KickerDribblerCommands();
+	
+	@SerialData(type = ESerialDataType.UINT8)
+	private int									dataAcqusitionMode	= 0;
 	
 	
-	/** */
+	/** Constructor. */
 	public BotSkillWheelVelocity()
 	{
 		super(EBotSkill.WHEEL_VELOCITY);
@@ -104,5 +111,45 @@ public class BotSkillWheelVelocity extends ABotSkill
 		}
 		
 		return result;
+	}
+	
+	
+	/**
+	 * @return the kickerDribbler
+	 */
+	@Override
+	public KickerDribblerCommands getKickerDribbler()
+	{
+		return kickerDribbler;
+	}
+	
+	
+	/**
+	 * @param kickerDribbler the kickerDribbler to set
+	 */
+	@Override
+	public void setKickerDribbler(final KickerDribblerCommands kickerDribbler)
+	{
+		this.kickerDribbler = kickerDribbler;
+	}
+	
+	
+	/**
+	 * @return the dataAcqusitionMode
+	 */
+	@Override
+	public EDataAcquisitionMode getDataAcquisitionMode()
+	{
+		return EDataAcquisitionMode.getModeConstant(dataAcqusitionMode);
+	}
+	
+	
+	/**
+	 * @param dataAcqusitionMode the dataAcqusitionMode to set
+	 */
+	@Override
+	public void setDataAcquisitionMode(final EDataAcquisitionMode dataAcqusitionMode)
+	{
+		this.dataAcqusitionMode = dataAcqusitionMode.getId();
 	}
 }

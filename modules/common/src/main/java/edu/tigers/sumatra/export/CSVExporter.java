@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 19.02.2011
- * Author(s): DanielW
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.export;
 
 import java.io.BufferedWriter;
@@ -15,9 +11,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.lang.reflect.Field;
+import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Queue;
 import java.util.stream.Stream;
 
@@ -62,6 +58,7 @@ public final class CSVExporter
 	private final Queue<String>	header			= new LinkedList<String>();
 	private String						additionalInfo	= "";
 	private File						file;
+	private FileOutputStream		fileOutputStream;
 	private BufferedWriter			fileWriter;
 	private boolean					writeHeader		= false;
 	private static final String	delimiter		= ",";
@@ -85,7 +82,7 @@ public final class CSVExporter
 	
 	
 	/**
-	 * @param fileName sub-dir and name of exported file without .csv ending
+	 * @param fileName subtract-dir and name of exported file without .csv ending
 	 * @param autoIncrement
 	 */
 	public CSVExporter(final String fileName, final boolean autoIncrement)
@@ -128,7 +125,7 @@ public final class CSVExporter
 	 * 
 	 * @param values list of values. note: count of values has to match the header
 	 */
-	public void addValues(final List<Number> values)
+	public void addValues(final Collection<? extends Number> values)
 	{
 		this.values.clear();
 		for (final Object f : values)
@@ -238,8 +235,9 @@ public final class CSVExporter
 					file = new File(fileName + ".csv");
 				}
 				
+				fileOutputStream = new FileOutputStream(file, append);
 				fileWriter = new BufferedWriter(new OutputStreamWriter(
-						new FileOutputStream(file, append), "UTF-8"));
+						fileOutputStream, "UTF-8"));
 				
 				if (writeHeader)
 				{
@@ -304,12 +302,22 @@ public final class CSVExporter
 			try
 			{
 				fileWriter.close();
-				log.debug("Saved csv file to " + file.getAbsolutePath());
 			} catch (final IOException err)
 			{
 				throw new CSVExporterException("io error while closing the file", err);
 			}
 		}
+		if (fileOutputStream != null)
+		{
+			try
+			{
+				fileOutputStream.close();
+			} catch (final IOException err)
+			{
+				throw new CSVExporterException("io error while closing the file", err);
+			}
+		}
+		log.debug("Saved csv file to " + fileName);
 		isClosed = true;
 	}
 	

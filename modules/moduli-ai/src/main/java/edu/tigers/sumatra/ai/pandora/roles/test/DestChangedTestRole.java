@@ -10,11 +10,11 @@ package edu.tigers.sumatra.ai.pandora.roles.test;
 
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
-import edu.tigers.sumatra.math.AVector2;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.math.vector.AVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
-import edu.tigers.sumatra.statemachine.IRoleState;
+import edu.tigers.sumatra.statemachine.IState;
 
 
 /**
@@ -58,14 +58,8 @@ public class DestChangedTestRole extends ARole
 	// --- states ---------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private enum EStateId
-	{
-		MAIN
-	}
-	
-	
-	private class MainState implements IRoleState
-	{
+
+	private class MainState implements IState {
 		private AMoveToSkill	skill	= null;
 		
 		
@@ -84,9 +78,9 @@ public class DestChangedTestRole extends ARole
 		{
 			if ((getWFrame().getTimestamp() - lastTimestamp) > freq)
 			{
-				IVector2 random = new Vector2((Math.random() * diffDest.x()), (Math.random() * diffDest.y()));
+				IVector2 random = Vector2.fromXY((Math.random() * diffDest.x()), (Math.random() * diffDest.y()));
 				skill.getMoveCon().updateDestination(random);
-				IVector2 lookAt = new Vector2(-200 + (Math.random() * diffLookAt.x()), -1500
+				IVector2 lookAt = Vector2.fromXY(-200 + (Math.random() * diffLookAt.x()), -1500
 						+ (Math.random() * diffLookAt.y()));
 				skill.getMoveCon().updateLookAtTarget(lookAt);
 				lastTimestamp = getWFrame().getTimestamp();
@@ -98,12 +92,7 @@ public class DestChangedTestRole extends ARole
 		public void doExitActions()
 		{
 		}
-		
-		
-		@Override
-		public Enum<? extends Enum<?>> getIdentifier()
-		{
-			return EStateId.MAIN;
-		}
+
+
 	}
 }

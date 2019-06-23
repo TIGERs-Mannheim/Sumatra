@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 10.01.2011
- * Author(s): Oliver Steinbrecher <OST1988@aol.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.data;
 
@@ -30,13 +25,13 @@ import edu.tigers.sumatra.ids.BotIDMap;
 public class PlayStrategy implements IPlayStrategy
 {
 	private transient List<APlay>	activePlays;
-											
+	
 	/** Contains all finished plays of the last cycle */
 	private transient List<APlay>	finishedPlays;
-											
+	
 	private EAIControlState			aiControlState;
-											
-											
+	
+	
 	@SuppressWarnings("unused")
 	private PlayStrategy()
 	{
@@ -81,7 +76,7 @@ public class PlayStrategy implements IPlayStrategy
 	@Override
 	public BotIDMap<ARole> getActiveRoles()
 	{
-		BotIDMap<ARole> roles = new BotIDMap<ARole>(6);
+		BotIDMap<ARole> roles = new BotIDMap<>(6);
 		for (APlay play : activePlays)
 		{
 			for (ARole role : play.getRoles())
@@ -102,7 +97,7 @@ public class PlayStrategy implements IPlayStrategy
 	@Override
 	public List<ARole> getActiveRoles(final ERole roleType)
 	{
-		List<ARole> roles = new ArrayList<ARole>();
+		List<ARole> roles = new ArrayList<>();
 		for (APlay play : activePlays)
 		{
 			for (ARole role : play.getRoles())
@@ -126,17 +121,14 @@ public class PlayStrategy implements IPlayStrategy
 	@Override
 	public List<ARole> getActiveRoles(final EPlay playType)
 	{
-		List<ARole> roles = new ArrayList<ARole>();
+		List<ARole> roles = new ArrayList<>();
 		for (APlay play : activePlays)
 		{
 			if (play.getType() != playType)
 			{
 				continue;
 			}
-			for (ARole role : play.getRoles())
-			{
-				roles.add(role);
-			}
+			roles.addAll(play.getRoles());
 		}
 		return roles;
 	}
@@ -186,15 +178,15 @@ public class PlayStrategy implements IPlayStrategy
 		private List<APlay>		activePlays;
 		private List<APlay>		finishedPlays;
 		private EAIControlState	controlState;
-										
-										
+		
+		
 		/**
-		  * 
-		  */
+		 * Default
+		 */
 		public Builder()
 		{
-			activePlays = new ArrayList<APlay>();
-			finishedPlays = new ArrayList<APlay>();
+			activePlays = new ArrayList<>();
+			finishedPlays = new ArrayList<>();
 			controlState = EAIControlState.TEST_MODE;
 		}
 		
@@ -229,29 +221,11 @@ public class PlayStrategy implements IPlayStrategy
 		
 		
 		/**
-		 * @return the finishedPlays
-		 */
-		public final List<APlay> getFinishedPlays()
-		{
-			return finishedPlays;
-		}
-		
-		
-		/**
 		 * @param finishedPlays the finishedPlays to set
 		 */
 		public final void setFinishedPlays(final List<APlay> finishedPlays)
 		{
 			this.finishedPlays = finishedPlays;
-		}
-		
-		
-		/**
-		 * @return Athena's controlState
-		 */
-		public final EAIControlState getAIControlState()
-		{
-			return controlState;
 		}
 		
 		

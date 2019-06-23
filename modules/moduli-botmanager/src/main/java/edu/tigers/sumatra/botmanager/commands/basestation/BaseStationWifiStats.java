@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 11.12.2014
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands.basestation;
 
@@ -23,34 +18,36 @@ import edu.tigers.sumatra.ids.BotID;
 public class BaseStationWifiStats extends ACommand
 {
 	/** */
-	public static final int	NUM_BOTS	= 24;
+	public static final int NUM_BOTS = 24;
 	
-	/** */
+	/**
+	 * Bot network statistics.
+	 */
 	public static class BotStats
 	{
 		/** NRF wifi module IO stats */
 		public static class NRF24IOStats
 		{
-			/** */
+			/** Transmitted packets. */
 			@SerialData(type = ESerialDataType.UINT16)
 			public int	txPackets;
-			/** */
+			/** Transmitted bytes. */
 			@SerialData(type = ESerialDataType.UINT16)
 			public int	txBytes;
-			/** */
+			/** Received packets. */
 			@SerialData(type = ESerialDataType.UINT16)
 			public int	rxPackets;
-			/** */
+			/** Received bytes. */
 			@SerialData(type = ESerialDataType.UINT16)
 			public int	rxBytes;
 			
-			/** */
+			/** Lost packets in reception. */
 			@SerialData(type = ESerialDataType.UINT16)
 			public int	rxPacketsLost;
-			/** */
+			/** Lost packets in transmission. */
 			@SerialData(type = ESerialDataType.UINT16)
 			public int	txPacketsMaxRT;
-			/** */
+			/** Acknowledged transmitted packets. */
 			@SerialData(type = ESerialDataType.UINT16)
 			public int	txPacketsAcked;
 			
@@ -93,10 +90,10 @@ public class BaseStationWifiStats extends ACommand
 			 */
 			public double getLinkQuality()
 			{
-				double allGoodPackets = txPacketsAcked + rxPackets + 1; // +1 to prevent div by zero
-				double allLostPackets = rxPacketsLost + txPacketsMaxRT;
+				int allGoodPackets = txPacketsAcked + rxPackets + 1; // +1 to prevent div by zero
+				int allLostPackets = rxPacketsLost + txPacketsMaxRT;
 				
-				return allGoodPackets / (allGoodPackets + allLostPackets);
+				return (double) allGoodPackets / (allGoodPackets + allLostPackets);
 			}
 			
 			
@@ -107,10 +104,10 @@ public class BaseStationWifiStats extends ACommand
 			 */
 			public double getTxLoss()
 			{
-				double txAll = txPackets + 1;
-				double txBad = txPacketsMaxRT;
+				int txAll = txPackets + 1;
+				int txBad = txPacketsMaxRT;
 				
-				return txBad / txAll;
+				return (double) txBad / txAll;
 			}
 			
 			
@@ -121,10 +118,10 @@ public class BaseStationWifiStats extends ACommand
 			 */
 			public double getRxLoss()
 			{
-				double rxGood = rxPackets + 1;
-				double rxBad = rxPacketsLost;
+				int rxGood = rxPackets + 1;
+				int rxBad = rxPacketsLost;
 				
-				return rxBad / (rxBad + rxGood);
+				return (double) rxBad / (rxBad + rxGood);
 			}
 			
 			
@@ -155,23 +152,23 @@ public class BaseStationWifiStats extends ACommand
 		/** Queue IO stats */
 		public static class QueueIOStats
 		{
-			/** */
+			/** Transmitted packets. */
 			@SerialData(type = ESerialDataType.UINT16)
 			public int	txPackets;
-			/** */
+			/** Transmitted bytes. */
 			@SerialData(type = ESerialDataType.UINT16)
 			public int	txBytes;
-			/** */
+			/** Received packets. */
 			@SerialData(type = ESerialDataType.UINT16)
 			public int	rxPackets;
-			/** */
+			/** Received bytes. */
 			@SerialData(type = ESerialDataType.UINT16)
 			public int	rxBytes;
 			
-			/** */
+			/** Lost transmitted packets. */
 			@SerialData(type = ESerialDataType.UINT16)
 			public int	txPacketsLost;
-			/** */
+			/** Lost received packets. */
 			@SerialData(type = ESerialDataType.UINT16)
 			public int	rxPacketsLost;
 			
@@ -211,10 +208,10 @@ public class BaseStationWifiStats extends ACommand
 			 */
 			public double getTxLoss()
 			{
-				double txGood = txPackets + 1;
-				double txBad = txPacketsLost;
+				int txGood = txPackets + 1;
+				int txBad = txPacketsLost;
 				
-				return txBad / (txGood + txBad);
+				return (double) txBad / (txGood + txBad);
 			}
 			
 			
@@ -225,22 +222,22 @@ public class BaseStationWifiStats extends ACommand
 			 */
 			public double getRxLoss()
 			{
-				double rxGood = rxPackets + 1;
-				double rxBad = rxPacketsLost;
+				int rxGood = rxPackets + 1;
+				int rxBad = rxPacketsLost;
 				
-				return rxBad / (rxGood + rxBad);
+				return (double) rxBad / (rxGood + rxBad);
 			}
 		}
 		
-		/** */
+		/** Bot ID. */
 		@SerialData(type = ESerialDataType.UINT8)
 		private int				botId	= 0xFF;
 		
-		/** */
+		/** NRF24 stats. */
 		@SerialData(type = ESerialDataType.EMBEDDED)
 		public NRF24IOStats	nrf	= new NRF24IOStats();
 		
-		/** */
+		/** Queue stats. */
 		@SerialData(type = ESerialDataType.EMBEDDED)
 		public QueueIOStats	queue	= new QueueIOStats();
 		
@@ -274,13 +271,13 @@ public class BaseStationWifiStats extends ACommand
 	}
 	
 	@SerialData(type = ESerialDataType.EMBEDDED)
-	private final BotStats	bots[]		= new BotStats[NUM_BOTS];
+	private final BotStats[]	bots			= new BotStats[NUM_BOTS];
 	
 	@SerialData(type = ESerialDataType.UINT16)
-	private int					updateRate	= 1;
+	private int						updateRate	= 1;
 	
 	
-	/** */
+	/** Constructor. */
 	public BaseStationWifiStats()
 	{
 		super(ECommand.CMD_BASE_WIFI_STATS);

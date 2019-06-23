@@ -1,14 +1,10 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 1, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.augm;
 
-import java.awt.Color;
+import java.awt.*;
 
 import edu.dhbw.mannheim.tigers.sumatra.proto.AugmWrapperProtos;
 import edu.dhbw.mannheim.tigers.sumatra.proto.AugmWrapperProtos.AugmWrapper;
@@ -19,19 +15,14 @@ import edu.dhbw.mannheim.tigers.sumatra.proto.AugmWrapperProtos.Point;
 import edu.dhbw.mannheim.tigers.sumatra.proto.AugmWrapperProtos.RGB;
 import edu.dhbw.mannheim.tigers.sumatra.proto.AugmWrapperProtos.Referee;
 import edu.dhbw.mannheim.tigers.sumatra.proto.AugmWrapperProtos.RefereeTeam;
-import edu.dhbw.mannheim.tigers.sumatra.proto.AugmWrapperProtos.ShapeCollection;
-import edu.dhbw.mannheim.tigers.sumatra.proto.AugmWrapperProtos.Text;
 import edu.dhbw.mannheim.tigers.sumatra.proto.AugmWrapperProtos.Vector;
-import edu.tigers.sumatra.ai.data.BotAiInformation;
 import edu.tigers.sumatra.ai.data.frames.VisualizationFrame;
 import edu.tigers.sumatra.drawable.DrawablePoint;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.ILine;
-import edu.tigers.sumatra.math.IVector3;
-import edu.tigers.sumatra.math.Vector3;
-import edu.tigers.sumatra.referee.RefereeMsg;
-import edu.tigers.sumatra.shapes.circle.ICircle;
-import edu.tigers.sumatra.wp.data.Geometry;
+import edu.tigers.sumatra.math.circle.ICircle;
+import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.referee.data.RefereeMsg;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
@@ -77,47 +68,12 @@ public class AugmentedDataTransformer
 			posBuilder.setX((float) bot.getPos().x());
 			posBuilder.setY((float) bot.getPos().y());
 			tBotBuilder.setPos(posBuilder);
-			tBotBuilder.setOrient((float) bot.getAngle());
-			tBotBuilder.setColor(convColor(bot.getBot().getColor()));
+			tBotBuilder.setOrient((float) bot.getOrientation());
+			tBotBuilder.setColor(convColor(bot.getBotId().getTeamColor()));
 			tBotBuilder.setId(bot.getBotId().getNumber());
-			BotAiInformation aiInfo = frame.getAiInfos().get(bot.getBotId());
-			if (aiInfo != null)
-			{
-				ShapeCollection.Builder scBuilder = ShapeCollection.newBuilder();
-				scBuilder.setIdentifier(EShapeCollectionIds.ROLE_NAME.name());
-				scBuilder.addTexts(createTextBuilder(new Vector3(bot.getPos(), 200), aiInfo.getRole(), Color.YELLOW));
-				wrapperBuilder.addShapeCollections(scBuilder);
-			}
 			
 			wrapperBuilder.addBots(tBotBuilder);
 		}
-		
-		// all debug shapes (line, circle, point)
-		// for (List<IDrawableShape> entry : frame.getShapes().get(EShapesLayer.BALL_POSSESSION))
-		// {
-		// List<IDrawableShape> shapes = entry.getValue();
-		// EShapesLayer layer = entry.getKey();
-		// ShapeCollection.Builder scBuilder = ShapeCollection.newBuilder();
-		// scBuilder.setIdentifier(layer.name());
-		// for (IDrawableShape shape : shapes)
-		// {
-		// if (shape.getClass().equals(DrawableLine.class))
-		// {
-		// DrawableLine dLine = (DrawableLine) shape;
-		// scBuilder.addLines(createLineBuilder(dLine, dLine.getColor()));
-		// } else if (shape.getClass().equals(DrawableCircle.class))
-		// {
-		// DrawableCircle dCircle = (DrawableCircle) shape;
-		// scBuilder.addCircles(createCircleBuilder(dCircle, dCircle.getColor()));
-		// } else if (shape.getClass().equals(DrawablePoint.class))
-		// {
-		// DrawablePoint dPoint = (DrawablePoint) shape;
-		// scBuilder.addPoints(createPointBuilder(dPoint, dPoint.getColor()));
-		// }
-		// // TODO triangle
-		// }
-		// wrapperBuilder.addShapeCollections(scBuilder);
-		// }
 		
 		// referee messages
 		createRefereeMessage(frame, wrapperBuilder);
@@ -174,25 +130,11 @@ public class AugmentedDataTransformer
 	{
 		Point.Builder point = Point.newBuilder();
 		Vector.Builder vPoint = Vector.newBuilder();
-		vPoint.setX((float) dPoint.x());
-		vPoint.setY((float) dPoint.y());
+		vPoint.setX((float) dPoint.getPoint().x());
+		vPoint.setY((float) dPoint.getPoint().y());
 		point.setVPoint(vPoint);
 		point.setColor(createRGBBuilder(color));
 		return point;
-	}
-	
-	
-	private Text.Builder createTextBuilder(final IVector3 point, final String text, final Color color)
-	{
-		Text.Builder textBuilder = Text.newBuilder();
-		Vector.Builder vPoint = Vector.newBuilder();
-		vPoint.setX((float) point.x());
-		vPoint.setY((float) point.y());
-		vPoint.setZ((float) point.z());
-		textBuilder.setVPoint(vPoint);
-		textBuilder.setColor(createRGBBuilder(color));
-		textBuilder.setText(text);
-		return textBuilder;
 	}
 	
 	

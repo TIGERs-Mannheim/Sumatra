@@ -10,6 +10,7 @@ package edu.tigers.sumatra.cam;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import edu.tigers.sumatra.MessagesRobocupSslGeometry.SSL_GeometryData;
 import edu.tigers.sumatra.cam.data.CamCalibration;
@@ -31,12 +32,12 @@ public class SSLVisionCamGeometryTranslator
 	public CamGeometry translate(final SSL_GeometryData geometryData)
 	{
 		Map<Integer, CamCalibration> calibrations = new HashMap<>();
-		for (int i = 0; i < geometryData.getCalibCount(); i++)
-		{
-			CamCalibration calibration = new CamCalibration(geometryData.getCalib(i));
-			calibrations.put(calibration.getCameraId(), calibration);
-		}
+		geometryData.getCalibList().stream()
+				.filter(c -> c.getDistortion() > 0.1).collect(Collectors.toList())
+				.forEach(calib -> calibrations.put(calib.getCameraId(), new CamCalibration(calib)));
+		
 		CamFieldSize fieldSize = new CamFieldSize(geometryData.getField());
+		
 		return new CamGeometry(calibrations, fieldSize);
 	}
 }

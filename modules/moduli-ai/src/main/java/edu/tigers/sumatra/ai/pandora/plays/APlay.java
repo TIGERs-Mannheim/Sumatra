@@ -1,13 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 04.08.2010
- * Author(s):
- * Oliver Steinbrecher
- * Daniel Waigand
- * Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays;
 
@@ -17,13 +9,12 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.ai.data.EGameStateTeam;
 import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
 import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.VectorMath;
+import edu.tigers.sumatra.referee.data.GameState;
 
 
 /**
@@ -36,30 +27,17 @@ import edu.tigers.sumatra.math.IVector2;
 public abstract class APlay
 {
 	private static final Logger	log	= Logger.getLogger(APlay.class.getName());
-													
-	private EPlayState				state;
+	
 	private final List<ARole>		roles;
 	private final EPlay				type;
-											
-	private enum EPlayState
-	{
-		/** */
-		RUNNING,
-		/** */
-		FINISHED;
-	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getInstance/constructor(s) -------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
-	 * @param type
+	 * @param type of the play
 	 */
 	public APlay(final EPlay type)
 	{
-		roles = new ArrayList<ARole>();
-		state = EPlayState.RUNNING;
+		roles = new ArrayList<>();
 		this.type = type;
 	}
 	
@@ -70,25 +48,16 @@ public abstract class APlay
 	
 	
 	/**
-	 * deletes oldRole from the assignedRoles, gives newRole the botID of the oldRole
-	 * and puts botId/newRole into the assignedRoles-Map
-	 * i.e. A {@link edu.tigers.sumatra.ai.pandora.roles.offense.OffensiveRole} has
-	 * finished its task and shall now shoot a goal, therefore
+	 * Switch oldRole with newRole. OldRole must have a botId assigned.
+	 * Example: The OffenseRole has finished its task and shall now shoot a goal, therefore
 	 * a new ShooterRole is created by the play and the roles are switched by using this function.
 	 * Also, the oldRole's botID is automatically set in the newRole
-	 * 
-	 * @param oldRole
-	 * @param newRole
-	 * @param newBotId
+	 *
+	 * @param oldRole the currently assigned role
+	 * @param newRole the new (not assigned) role
 	 */
-	public final void switchRoles(final ARole oldRole, final ARole newRole, final BotID newBotId)
+	protected final void switchRoles(final ARole oldRole, final ARole newRole)
 	{
-		if (!newBotId.isBot())
-		{
-			log.error("Could not switch roles. New botId is not valid: " + newBotId);
-			return;
-		}
-		
 		if (newRole.isCompleted())
 		{
 			log.error("Role is already completed. Can not switch to new role: " + newRole.getType());
@@ -103,27 +72,15 @@ public abstract class APlay
 		}
 		roles.add(newRole);
 		
-		newRole.assignBotID(newBotId, oldRole.getAiFrame());
+		newRole.assignBotID(oldRole.getBotID());
 		newRole.update(oldRole.getAiFrame());
 	}
 	
 	
 	/**
-	 * Switch oldRole with newRole. OldRole must have a botId assigned.
+	 * Add role to roles
 	 * 
-	 * @param oldRole
-	 * @param newRole
-	 */
-	protected final void switchRoles(final ARole oldRole, final ARole newRole)
-	{
-		switchRoles(oldRole, newRole, oldRole.getBotID());
-	}
-	
-	
-	/**
-	 * Add role to roles, but check if maxNumRoles is already reached
-	 * 
-	 * @param role
+	 * @param role to be added
 	 */
 	private void addRole(final ARole role)
 	{
@@ -134,7 +91,7 @@ public abstract class APlay
 	/**
 	 * Remove a role. Do not call this from your Play!! This is intended for the RoleAssigner only
 	 * 
-	 * @param role
+	 * @param role to be removed
 	 */
 	public final void removeRole(final ARole role)
 	{
@@ -145,52 +102,51 @@ public abstract class APlay
 	
 	
 	/**
-	 * 
+	 * @return the last role in the internal list
 	 */
 	protected final ARole getLastRole()
 	{
-		ARole role = getRoles().get(getRoles().size() - 1);
-		return role;
+		return getRoles().get(getRoles().size() - 1);
 	}
 	
 	
 	/**
 	 * Ask the play to add the specified number of roles
 	 * 
-	 * @param count
-	 * @param frame
+	 * @param count number of roles to add
+	 * @param frame current frame
 	 * @return the added roles
 	 */
 	public final List<ARole> addRoles(final int count, final MetisAiFrame frame)
 	{
-		List<ARole> roles = new ArrayList<ARole>();
+		List<ARole> newRoles = new ArrayList<>();
 		for (int i = 0; i < count; i++)
 		{
 			ARole role = onAddRole(frame);
-			roles.add(role);
+			newRoles.add(role);
 			addRole(role);
 		}
-		return roles;
+		return newRoles;
 	}
 	
 	
 	/**
 	 * Ask the play to remove the specified number of roles
 	 * 
-	 * @param count
-	 * @param frame
-	 * @return
+	 * @param count number of roles to be removed
+	 * @param frame current frame
+	 * @return removed roles
 	 */
 	public final List<ARole> removeRoles(final int count, final MetisAiFrame frame)
 	{
-		List<ARole> roles = new ArrayList<ARole>();
+		List<ARole> removedRoles = new ArrayList<>();
 		for (int i = 0; i < count; i++)
 		{
 			ARole role = onRemoveRole(frame);
-			roles.add(role);
+			removedRoles.add(role);
 			removeRole(role);
 		}
-		return roles;
+		return removedRoles;
 	}
 	
 	
@@ -198,7 +154,7 @@ public abstract class APlay
 	 * Remove one role from this Play.
 	 * Assume that there is at least one role left.
 	 * 
-	 * @param frame
+	 * @param frame current frame
 	 * @return the removed role
 	 */
 	protected abstract ARole onRemoveRole(MetisAiFrame frame);
@@ -209,7 +165,7 @@ public abstract class APlay
 	 * Please assume that the Play will start with zero roles until the play can only run with
 	 * a static number of roles anyway
 	 * 
-	 * @param frame
+	 * @param frame current frame
 	 * @return the added role
 	 */
 	protected abstract ARole onAddRole(MetisAiFrame frame);
@@ -219,7 +175,7 @@ public abstract class APlay
 	 * This is called, when the roleAssigner removed a role from this play.
 	 * This play will possibly get a new role with onAddRole.
 	 * 
-	 * @param role
+	 * @param role that was removed
 	 */
 	protected void onRoleRemoved(final ARole role)
 	{
@@ -235,23 +191,11 @@ public abstract class APlay
 		{
 			role.setCompleted();
 		}
-		state = EPlayState.FINISHED;
 	}
 	
 	
 	/**
-	 * Is the play finished? This should only be the case for standard situation plays.
-	 * 
-	 * @return
-	 */
-	public final boolean isFinished()
-	{
-		return state == EPlayState.FINISHED;
-	}
-	
-	
-	/**
-	 * @param frame
+	 * @param frame current frame
 	 */
 	public void updateBeforeRoles(final AthenaAiFrame frame)
 	{
@@ -259,17 +203,13 @@ public abstract class APlay
 	
 	
 	/**
-	 * @param frame
+	 * @param frame current frame
 	 */
 	public final void update(final AthenaAiFrame frame)
 	{
-		if (frame.getPrevFrame().getTacticalField().getGameState() != frame.getTacticalField().getGameState())
+		if (!frame.getPrevFrame().getTacticalField().getGameState().equals(frame.getTacticalField().getGameState()))
 		{
 			onGameStateChanged(frame.getTacticalField().getGameState());
-			for (ARole role : getRoles())
-			{
-				role.onGameStateChanged(frame.getTacticalField().getGameState());
-			}
 		}
 		doUpdate(frame);
 	}
@@ -279,30 +219,24 @@ public abstract class APlay
 	 * Compatibility method for old plays that require continues update with ai frame.
 	 * It is preferred to only react in new frames in your roles.
 	 * 
-	 * @param frame
+	 * @param frame current frame
 	 */
 	protected void doUpdate(final AthenaAiFrame frame)
 	{
+		// nothing
 	}
 	
 	
 	/**
 	 * This is called, when the game state has changed.
 	 * It is called before {@link APlay#doUpdate(AthenaAiFrame)}.
+	 * Note: You can also get the gameState from the TacticalField
 	 * 
-	 * @param gameState
+	 * @param gameState new gameState
 	 */
-	protected abstract void onGameStateChanged(EGameStateTeam gameState);
-	
-	
-	/**
-	 * Override this, if the role assigner should not "steal" your roles
-	 * 
-	 * @return
-	 */
-	public boolean overrideRoleAssignment()
+	protected void onGameStateChanged(final GameState gameState)
 	{
-		return false;
+		// nothing
 	}
 	
 	
@@ -321,7 +255,7 @@ public abstract class APlay
 	/**
 	 * Return all roles of this play
 	 * 
-	 * @return
+	 * @return a view on the current roles
 	 */
 	public final List<ARole> getRoles()
 	{
@@ -336,12 +270,12 @@ public abstract class APlay
 	 * 
 	 * @param orderedRoles
 	 */
-	public final void setReorderedRoles(final List<ARole> orderedRoles)
+	protected final void setReorderedRoles(final List<ARole> orderedRoles)
 	{
 		if (roles.size() != orderedRoles.size())
 		{
 			throw new IllegalArgumentException("Provided orderedRoles list does not have correct size: "
-					+ orderedRoles.size());
+					+ orderedRoles.size() + " != " + roles.size());
 		}
 		for (ARole role : orderedRoles)
 		{
@@ -357,17 +291,6 @@ public abstract class APlay
 	
 	
 	/**
-	 * Returns the actual play state.
-	 * 
-	 * @return
-	 */
-	public final EPlayState getPlayState()
-	{
-		return state;
-	}
-	
-	
-	/**
 	 * @return the type
 	 */
 	public final EPlay getType()
@@ -377,28 +300,28 @@ public abstract class APlay
 	
 	
 	/**
-	 * Roles will be resorted to that first role in list is nearest to first destination and so on
+	 * Roles will be reordered so that first role in list is nearest to first destination and so on
 	 * 
-	 * @param destinations
+	 * @param destinations list of new desired destinations
 	 */
 	protected void reorderRolesToDestinations(final List<IVector2> destinations)
 	{
-		List<ARole> roles = new ArrayList<ARole>(getRoles());
-		List<ARole> rolesSorted = new ArrayList<ARole>(getRoles().size());
+		List<ARole> currentRoles = new ArrayList<>(getRoles());
+		List<ARole> rolesSorted = new ArrayList<>(getRoles().size());
 		for (IVector2 dest : destinations)
 		{
 			double minDist = Double.MAX_VALUE;
 			ARole theRole = null;
-			for (ARole role : roles)
+			for (ARole role : currentRoles)
 			{
-				double dist = GeoMath.distancePP(dest, role.getPos());
+				double dist = VectorMath.distancePP(dest, role.getPos());
 				if (dist < minDist)
 				{
 					minDist = dist;
 					theRole = role;
 				}
 			}
-			roles.remove(theRole);
+			currentRoles.remove(theRole);
 			rolesSorted.add(theRole);
 		}
 		setReorderedRoles(rolesSorted);

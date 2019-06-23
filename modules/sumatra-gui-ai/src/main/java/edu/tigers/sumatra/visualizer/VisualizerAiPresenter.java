@@ -1,48 +1,48 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 18, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.visualizer;
 
 
 import java.awt.event.MouseEvent;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
+
+import com.github.g3force.configurable.ConfigRegistration;
+import com.github.g3force.configurable.Configurable;
 
 import edu.tigers.autoref.presenter.VisualizerRefPresenter;
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.ai.AAgent;
-import edu.tigers.sumatra.ai.Agent;
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
 import edu.tigers.sumatra.ai.data.frames.VisualizationFrame;
 import edu.tigers.sumatra.bot.IBot;
 import edu.tigers.sumatra.botmanager.ABotManager;
 import edu.tigers.sumatra.botmanager.IBotManagerObserver;
 import edu.tigers.sumatra.botmanager.bots.ABot;
+import edu.tigers.sumatra.drawable.ShapeMap.IShapeLayer;
+import edu.tigers.sumatra.guinotifications.visualizer.IVisualizerObserver;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.ids.IBotIDMap;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.ids.EAiTeam;
+import edu.tigers.sumatra.ids.EAiType;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.pathfinder.MovementCon;
 import edu.tigers.sumatra.referee.TeamConfig;
 import edu.tigers.sumatra.skillsystem.ASkillSystem;
-import edu.tigers.sumatra.skillsystem.MovementCon;
+import edu.tigers.sumatra.skillsystem.skills.AKickSkill.EKickMode;
+import edu.tigers.sumatra.skillsystem.skills.AMoveSkill;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
-import edu.tigers.sumatra.skillsystem.skills.KickSkill;
-import edu.tigers.sumatra.skillsystem.skills.KickSkill.EKickMode;
-import edu.tigers.sumatra.skillsystem.skills.KickSkill.EMoveMode;
+import edu.tigers.sumatra.skillsystem.skills.KickChillSkill;
+import edu.tigers.sumatra.visualizer.view.BotStatus;
 import edu.tigers.sumatra.visualizer.view.field.EShapeLayerSource;
+import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
-import edu.tigers.sumatra.wp.data.ShapeMap.IShapeLayer;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
 
@@ -53,17 +53,26 @@ public class VisualizerAiPresenter extends VisualizerRefPresenter
 		implements IVisualizationFrameObserver, IBotManagerObserver
 {
 	@SuppressWarnings("unused")
-	private static final Logger								log										= Logger
-			.getLogger(
-					VisualizerAiPresenter.class
-							.getName());
+	private static final Logger log = Logger.getLogger(VisualizerAiPresenter.class.getName());
 	
-	private final Map<ETeamColor, VisualizationFrame>	visFrames								= new HashMap<>(2);
-	private MovementCon											moveCon									= new MovementCon();
-	private ASkillSystem											skillsystem								= null;
-	private ABotManager											botManager								= null;
+	@Configurable(comment = "Enter penalty area when moving bot with point'n click")
+	private static boolean moveToPenAreaAllowed = false;
 	
-	private boolean												mouseMoveUpdateDestinationMode	= false;
+	@Configurable(comment = "Use fastPosMove for point'n click", defValue = "false")
+	private static boolean useFastPosMove = false;
+	
+	static
+	{
+		ConfigRegistration.registerClass("gui", VisualizerAiPresenter.class);
+	}
+	
+	private final Map<EAiTeam, VisualizationFrame> visFrames = new EnumMap<>(EAiTeam.class);
+	private MovementCon moveCon = new MovementCon();
+	private ASkillSystem skillsystem = null;
+	private ABotManager botManager = null;
+	private AWorldPredictor wp = null;
+	private IVisualizerObserver visObserver = null;
+	private boolean mouseMoveUpdateDestinationMode = false;
 	
 	
 	@Override
@@ -71,26 +80,10 @@ public class VisualizerAiPresenter extends VisualizerRefPresenter
 	{
 		super.onRobotClick(botId);
 		mouseMoveUpdateDestinationMode = false;
-	}
-	
-	
-	@Override
-	public void onHideBotFromAiClicked(final BotID botId, final boolean hide)
-	{
-		try
+		
+		if (visObserver != null)
 		{
-			ABotManager botManager = (ABotManager) SumatraModel.getInstance().getModule(ABotManager.MODULE_ID);
-			ABot bot = botManager.getBotTable().get(botId);
-			if (bot == null)
-			{
-				log.error("Bot with id " + botId + " does not exist.");
-			} else
-			{
-				bot.setHideFromAi(hide);
-			}
-		} catch (ModuleNotFoundException err)
-		{
-			// ignore
+			visObserver.onRobotClick(botId);
 		}
 	}
 	
@@ -98,21 +91,29 @@ public class VisualizerAiPresenter extends VisualizerRefPresenter
 	@Override
 	public void onHideBotFromRcmClicked(final BotID botId, final boolean hide)
 	{
-		try
+		ABot bot = botManager.getBotTable().get(botId);
+		if (bot == null)
 		{
-			ABotManager botManager = (ABotManager) SumatraModel.getInstance().getModule(ABotManager.MODULE_ID);
-			ABot bot = botManager.getBotTable().get(botId);
-			if (bot == null)
+			log.error("Bot with id " + botId + " does not exist.");
+		} else
+		{
+			bot.setHideFromRcm(hide);
+			if (visObserver != null)
 			{
-				log.error("Bot with id " + botId + " does not exist.");
-			} else
-			{
-				bot.setHideFromRcm(hide);
+				visObserver.onHideFromRcm(botId, hide);
 			}
-		} catch (ModuleNotFoundException err)
-		{
-			// ignore
 		}
+	}
+	
+	
+	@Override
+	public void onBotAiAssignmentChanged(final BotID botID, final EAiType aiAssignment)
+	{
+		if (wp == null)
+		{
+			return;
+		}
+		wp.updateBot2AiAssignment(botID, aiAssignment);
 	}
 	
 	
@@ -123,7 +124,7 @@ public class VisualizerAiPresenter extends VisualizerRefPresenter
 		{
 			if (TeamConfig.getLeftTeam() != getSelectedRobotId().getTeamColor())
 			{
-				moveCon.updateDestination(new Vector2(-pos.x(), -pos.y()));
+				moveCon.updateDestination(Vector2.fromXY(-pos.x(), -pos.y()));
 			} else
 			{
 				moveCon.updateDestination(pos);
@@ -142,18 +143,20 @@ public class VisualizerAiPresenter extends VisualizerRefPresenter
 		
 		if (!selectedRobotId.isUninitializedID())
 		{
-			AMoveToSkill skill = AMoveToSkill.createMoveToSkill();
+			AMoveSkill skill = AMoveToSkill.createMoveToSkill();
 			moveCon = skill.getMoveCon();
-			moveCon.setPenaltyAreaAllowedOur(false);
-			moveCon.setPenaltyAreaAllowedTheir(true);
+			moveCon.setPenaltyAreaAllowedOur(moveToPenAreaAllowed);
+			moveCon.setPenaltyAreaAllowedTheir(moveToPenAreaAllowed);
+			moveCon.setIgnoreGameStateObstacles(true);
+			moveCon.setFastPosMode(useFastPosMove);
 			
 			final IVector2 pos;
 			final IVector2 ballPos;
 			if (TeamConfig.getLeftTeam() != selectedRobotId.getTeamColor())
 			{
-				pos = new Vector2(-posIn.x(), -posIn.y());
+				pos = Vector2.fromXY(-posIn.x(), -posIn.y());
 				IVector2 b = lastWorldFrameWrapper.getSimpleWorldFrame().getBall().getPos();
-				ballPos = new Vector2(-b.x(), -b.y());
+				ballPos = Vector2.fromXY(-b.x(), -b.y());
 			} else
 			{
 				pos = posIn;
@@ -174,16 +177,103 @@ public class VisualizerAiPresenter extends VisualizerRefPresenter
 				skillsystem.execute(selectedRobotId, skill);
 			} else if (shift)
 			{
-				KickSkill kickSkill = new KickSkill(new DynamicPosition(pos));
+				KickChillSkill kickSkill = new KickChillSkill(new DynamicPosition(pos));
 				kickSkill.setKickMode(EKickMode.POINT);
-				kickSkill.setMoveMode(EMoveMode.CHILL);
 				skillsystem.execute(selectedRobotId, kickSkill);
 			} else
 			{
 				moveCon.updateDestination(pos);
 				skillsystem.execute(selectedRobotId, skill);
+				
+				if (visObserver != null)
+				{
+					visObserver.onMoveClick(selectedRobotId, pos);
+				}
 			}
 		}
+	}
+	
+	
+	private void activate()
+	{
+		try
+		{
+			AAgent agent = (AAgent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
+			agent.addVisObserver(this);
+		} catch (ModuleNotFoundException err)
+		{
+			log.error("Could not get agent module", err);
+		}
+		
+		try
+		{
+			botManager = (ABotManager) SumatraModel.getInstance().getModule(ABotManager.MODULE_ID);
+			botManager.addObserver(this);
+			for (ABot bot : botManager.getAllBots().values())
+			{
+				onBotAdded(bot);
+			}
+		} catch (ModuleNotFoundException err)
+		{
+			log.error("Could not get BM module", err);
+		}
+		
+		try
+		{
+			skillsystem = (ASkillSystem) SumatraModel.getInstance().getModule(ASkillSystem.MODULE_ID);
+		} catch (final ModuleNotFoundException err)
+		{
+			log.error("no skillsystem found!!!", err);
+		}
+		
+		try
+		{
+			visObserver = (IVisualizerObserver) SumatraModel.getInstance().getModule("gui_notifications_controller");
+		} catch (ModuleNotFoundException err)
+		{
+			log.warn(
+					"Could not get GuiNotificationController. The visualizer will work as expected but other modules may depend on this controller.",
+					err);
+		}
+		
+		try
+		{
+			wp = (AWorldPredictor) SumatraModel.getInstance().getModule(AWorldPredictor.MODULE_ID);
+		} catch (ModuleNotFoundException err)
+		{
+			log.error("Could not get wp module", err);
+		}
+	}
+	
+	
+	private void deactivate()
+	{
+		try
+		{
+			AAgent agent = (AAgent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
+			agent.removeVisObserver(this);
+		} catch (ModuleNotFoundException err)
+		{
+			log.error("Could not get agent module", err);
+		}
+		
+		try
+		{
+			ABotManager bm = (ABotManager) SumatraModel.getInstance().getModule(ABotManager.MODULE_ID);
+			bm.removeObserver(this);
+		} catch (ModuleNotFoundException err)
+		{
+			log.error("Could not get BM module", err);
+		}
+		if (botManager != null)
+		{
+			botManager.removeObserver(this);
+		}
+		
+		skillsystem = null;
+		botManager = null;
+		visObserver = null;
+		wp = null;
 	}
 	
 	
@@ -194,68 +284,12 @@ public class VisualizerAiPresenter extends VisualizerRefPresenter
 		switch (state)
 		{
 			case ACTIVE:
-				try
-				{
-					Agent agentYellow = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_YELLOW);
-					agentYellow.addVisObserver(this);
-					Agent agentBlue = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_BLUE);
-					agentBlue.addVisObserver(this);
-				} catch (ModuleNotFoundException err)
-				{
-					log.error("Could not get agent module");
-				}
-				
-				try
-				{
-					botManager = (ABotManager) SumatraModel.getInstance().getModule(ABotManager.MODULE_ID);
-					botManager.addObserver(this);
-					for (ABot bot : botManager.getAllBots().values())
-					{
-						onBotAdded(bot);
-					}
-				} catch (ModuleNotFoundException err)
-				{
-					log.error("Could not get BM module");
-				}
-				
-				try
-				{
-					skillsystem = (ASkillSystem) SumatraModel.getInstance().getModule(ASkillSystem.MODULE_ID);
-				} catch (final ModuleNotFoundException err)
-				{
-					log.error("no skillsystem found!!!", err);
-				}
-				break;
-			case NOT_LOADED:
+				activate();
 				break;
 			case RESOLVED:
-				try
-				{
-					Agent agentYellow = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_YELLOW);
-					agentYellow.removeVisObserver(this);
-					Agent agentBlue = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_BLUE);
-					agentBlue.removeVisObserver(this);
-				} catch (ModuleNotFoundException err)
-				{
-					log.error("Could not get agent module");
-				}
-				
-				try
-				{
-					ABotManager bm = (ABotManager) SumatraModel.getInstance().getModule(ABotManager.MODULE_ID);
-					bm.removeObserver(this);
-				} catch (ModuleNotFoundException err)
-				{
-					log.error("Could not get BM module");
-				}
-				if (botManager != null)
-				{
-					botManager.removeObserver(this);
-				}
-				
-				skillsystem = null;
-				botManager = null;
+				deactivate();
 				break;
+			case NOT_LOADED:
 			default:
 				break;
 		}
@@ -271,13 +305,6 @@ public class VisualizerAiPresenter extends VisualizerRefPresenter
 			{
 				onBotAdded(bot);
 			}
-		} else if (getLastWorldFrameWrapper() != null)
-		{
-			IBotIDMap<ITrackedBot> tBotsMap = getLastWorldFrameWrapper().getSimpleWorldFrame().getBots();
-			for (ITrackedBot tBot : tBotsMap.values())
-			{
-				onBotAddedInternal(tBot.getBot());
-			}
 		}
 		super.updateRobotsPanel();
 	}
@@ -287,19 +314,19 @@ public class VisualizerAiPresenter extends VisualizerRefPresenter
 	protected void updateVisFrameShapes()
 	{
 		super.updateVisFrameShapes();
-		for (ETeamColor teamColor : ETeamColor.yellowBlueValues())
+		for (EAiTeam aiTeam : EAiTeam.values())
 		{
-			VisualizationFrame visFrame = visFrames.get(teamColor);
+			VisualizationFrame visFrame = visFrames.get(aiTeam);
 			if (visFrame == null)
 			{
-				getPanel().getFieldPanel().clearField(EShapeLayerSource.forTeamColor(teamColor));
+				getPanel().getFieldPanel().clearField(EShapeLayerSource.forAiTeam(aiTeam));
 			} else
 			{
 				for (IShapeLayer sl : visFrame.getShapes().getAllShapeLayers())
 				{
 					getPanel().getOptionsMenu().addMenuEntry(sl);
 				}
-				getPanel().getFieldPanel().setShapeMap(EShapeLayerSource.forTeamColor(teamColor), visFrame.getShapes(),
+				getPanel().getFieldPanel().setShapeMap(EShapeLayerSource.forAiTeam(aiTeam), visFrame.getShapes(),
 						visFrame.isInverted());
 			}
 		}
@@ -309,12 +336,12 @@ public class VisualizerAiPresenter extends VisualizerRefPresenter
 	@Override
 	public void onNewVisualizationFrame(final VisualizationFrame frame)
 	{
-		visFrames.put(frame.getTeamColor(), frame);
+		visFrames.put(frame.getAiTeam(), frame);
 	}
 	
 	
 	@Override
-	public void onClearVisualizationFrame(final ETeamColor teamColor)
+	public void onClearVisualizationFrame(final EAiTeam team)
 	{
 		visFrames.clear();
 	}
@@ -342,7 +369,15 @@ public class VisualizerAiPresenter extends VisualizerRefPresenter
 		status.setKickerRel(bot.getKickerLevel() / bot.getKickerLevelMax());
 		status.setHideAi(bot.isHideFromAi());
 		status.setHideRcm(bot.isHideFromRcm());
-		getPanel().getRobotsPanel().repaint();
+		status.setBotFeatures(bot.getBotFeatures());
+		status.setRobotMode(bot.getRobotMode());
+		if (wp == null)
+		{
+			status.setAiAssignment(EAiType.NONE);
+		} else
+		{
+			status.setAiAssignment(wp.getBotToAiMap().get(bot.getBotId()));
+		}
 	}
 	
 	
@@ -352,6 +387,5 @@ public class VisualizerAiPresenter extends VisualizerRefPresenter
 		status.setBatRel(0);
 		status.setConnected(false);
 		status.setKickerRel(0);
-		getPanel().getRobotsPanel().repaint();
 	}
 }

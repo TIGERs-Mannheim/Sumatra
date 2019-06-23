@@ -1,13 +1,13 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Apr 10, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra;
 
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
+import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -21,7 +21,9 @@ import java.util.Map.Entry;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+
+import javax.swing.JFileChooser;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.spi.LoggingEvent;
@@ -30,20 +32,30 @@ import edu.dhbw.mannheim.tigers.sumatra.presenter.log.LogPresenter;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.replay.ReplayControlPresenter;
 import edu.dhbw.mannheim.tigers.sumatra.view.replay.IReplayControlPanelObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.replay.IReplayPositionObserver;
+import edu.tigers.autoref.presenter.GameLogPresenter;
+import edu.tigers.autoreferee.AutoRefFramePreprocessor;
+import edu.tigers.autoreferee.IAutoRefFrame;
+import edu.tigers.autoreferee.IAutoRefStateObserver;
+import edu.tigers.autoreferee.engine.PassiveAutoRefEngine;
 import edu.tigers.sumatra.Referee.SSL_Referee.Command;
-import edu.tigers.sumatra.ai.Agent;
+import edu.tigers.sumatra.ai.Ai;
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
+import edu.tigers.sumatra.ai.data.MultiTeamMessage;
 import edu.tigers.sumatra.ai.data.frames.AIInfoFrame;
 import edu.tigers.sumatra.ai.data.frames.VisualizationFrame;
-import edu.tigers.sumatra.bot.DummyBot;
+import edu.tigers.sumatra.aicenter.AICenterPresenter;
 import edu.tigers.sumatra.clock.ThreadUtil;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.persistance.BerkeleyLogEvent;
-import edu.tigers.sumatra.persistance.IRecordPersistence;
-import edu.tigers.sumatra.persistance.RecordCamFrame;
-import edu.tigers.sumatra.persistance.RecordFrame;
-import edu.tigers.sumatra.referee.RefereeMsg;
+import edu.tigers.sumatra.ids.EAiTeam;
+import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.persistence.ABerkeleyPersistence;
+import edu.tigers.sumatra.persistence.AiBerkeleyPersistence;
+import edu.tigers.sumatra.persistence.BerkeleyLogEvent;
+import edu.tigers.sumatra.persistence.RecordCamFrame;
+import edu.tigers.sumatra.persistence.RecordFrame;
+import edu.tigers.sumatra.referee.data.RefereeMsg;
+import edu.tigers.sumatra.skillsystem.ASkillSystem;
+import edu.tigers.sumatra.skillsystem.GenericSkillSystem;
 import edu.tigers.sumatra.snapshot.SnapObject;
 import edu.tigers.sumatra.snapshot.Snapshot;
 import edu.tigers.sumatra.thread.NamedThreadFactory;
@@ -54,11 +66,9 @@ import edu.tigers.sumatra.views.ESumatraViewType;
 import edu.tigers.sumatra.visualizer.VisualizerPresenter;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.ExtendedCamDetectionFrame;
+import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
-import edu.tigers.sumatra.wp.data.ShapeMap;
 import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
-import edu.tigers.sumatra.wp.data.TrackedBall;
-import edu.tigers.sumatra.wp.data.TrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
 
@@ -69,52 +79,61 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
  */
 public class ReplayPresenter extends AMainPresenter implements IReplayControlPanelObserver
 {
-	private static final Logger							log						= Logger.getLogger(ReplayPresenter.class
+	private static final Logger log = Logger.getLogger(ReplayPresenter.class
 			.getName());
 	
-	private static final String							LAST_LAYOUT_FILENAME	= "last_replay.ly";
+	private static final String LAST_LAYOUT_FILENAME = "last_replay.ly";
 	/** */
-	private static final String							LAYOUT_DEFAULT			= "default_replay.ly";
-	protected static final String							KEY_LAYOUT_PROP		= ReplayPresenter.class.getName() + ".layout";
+	private static final String LAYOUT_DEFAULT = "default_replay.ly";
+	protected static final String KEY_LAYOUT_PROP = ReplayPresenter.class.getName()
+			+ ".layout";
 	
-	private static final long								LOG_BUFFER_BEFORE		= 500;
-	private static final long								LOG_BUFFER_AFTER		= 500;
+	private static final long LOG_BUFFER_BEFORE = 500;
+	private static final long LOG_BUFFER_AFTER = 500;
 	
-	private final List<IReplayPositionObserver>		positionObservers		= new CopyOnWriteArrayList<IReplayPositionObserver>();
+	private final List<IReplayPositionObserver> positionObservers = new CopyOnWriteArrayList<>();
 	
-	private IRecordPersistence								persistance				= null;
-	private List<BerkeleyLogEvent>						logEventBuffer			= null;
+	private AiBerkeleyPersistence persistence = null;
+	private List<BerkeleyLogEvent> logEventBuffer = null;
 	
 	
-	private final ScheduledExecutorService				executor					= Executors
+	private final ScheduledExecutorService executor = Executors
 			.newSingleThreadScheduledExecutor(
 					new NamedThreadFactory(
 							"Replay"));
 	
-	private static final double							refreshFps				= 30;
-	private double												speed						= 1;
-	private boolean											skipStoppedGame		= false;
-	private boolean											searchKickoff			= false;
-	private boolean											runCurrentAi			= false;
+	private static final double REFRESH_FPS = 30;
+	private double speed = 1;
+	private boolean skipStoppedGame = false;
+	private boolean searchKickoff = false;
+	private boolean runCurrentAi = false;
+	private boolean runAutoRef = false;
+	private ASkillSystem skillSystem = new GenericSkillSystem();
+	private final Map<EAiTeam, Ai> ais = new EnumMap<>(EAiTeam.class);
 	
-	private final Map<ETeamColor, Agent>				agents					= new EnumMap<>(ETeamColor.class);
+	private final AutoRefFramePreprocessor refPreprocessor = new AutoRefFramePreprocessor();
+	private final PassiveAutoRefEngine autoRefEngine = new PassiveAutoRefEngine();
+	private IAutoRefFrame lastAutoRefFrame = null;
 	
-	private List<LoggingEvent>								lastLogEventsPast		= new LinkedList<LoggingEvent>();
-	private List<LoggingEvent>								lastLogEventsFuture	= new LinkedList<LoggingEvent>();
+	private List<LoggingEvent> lastLogEventsPast = new LinkedList<>();
+	private List<LoggingEvent> lastLogEventsFuture = new LinkedList<>();
 	
-	private final List<IVisualizationFrameObserver>	visFrameObservers		= new CopyOnWriteArrayList<>();
-	private final List<IWorldFrameObserver>			wFrameObservers		= new CopyOnWriteArrayList<>();
+	private final List<IVisualizationFrameObserver> visFrameObservers = new CopyOnWriteArrayList<>();
+	private final List<IWorldFrameObserver> wFrameObservers = new CopyOnWriteArrayList<>();
+	private final List<IAutoRefStateObserver> refObservers = new CopyOnWriteArrayList<>();
 	
-	private WorldFrameWrapper								lastWorldFrame;
+	private WorldFrameWrapper lastWorldFrame;
 	
-	private LogPresenter										logPresenter;
-	private ReplayControlPresenter						replayControlPresenter;
-	private VisualizerPresenter							visualizerPresenter;
+	private LogPresenter logPresenter;
+	private ReplayControlPresenter replayControlPresenter;
+	private VisualizerPresenter visualizerPresenter;
+	private AICenterPresenter aiCenterPresenter;
 	
-	private RefreshThread									refreshThread;
+	private RefreshThread refreshThread;
 	
 	
 	/**
+	 * Default
 	 */
 	public ReplayPresenter()
 	{
@@ -132,6 +151,16 @@ public class ReplayPresenter extends AMainPresenter implements IReplayControlPan
 			{
 				addWFrameObserver((IWorldFrameObserver) view.getPresenter());
 			}
+			if (view.getPresenter() instanceof IAutoRefStateObserver)
+			{
+				IAutoRefStateObserver observer = (IAutoRefStateObserver) view.getPresenter();
+				refObservers.add(observer);
+			}
+			if (view.getType() == ESumatraViewType.AUTOREFEREE_GAME_LOG)
+			{
+				GameLogPresenter gameLogPresenter = (GameLogPresenter) view.getPresenter();
+				gameLogPresenter.setGameLog(autoRefEngine.getGameLog());
+			}
 			if (view.getType() == ESumatraViewType.LOG)
 			{
 				logPresenter = (LogPresenter) view.getPresenter();
@@ -143,6 +172,12 @@ public class ReplayPresenter extends AMainPresenter implements IReplayControlPan
 			if (view.getType() == ESumatraViewType.VISUALIZER)
 			{
 				visualizerPresenter = (VisualizerPresenter) view.getPresenter();
+				visualizerPresenter.getPanel().removeRobotsPanel();
+			}
+			if (view.getType() == ESumatraViewType.AI_CENTER)
+			{
+				aiCenterPresenter = (AICenterPresenter) view.getPresenter();
+				aiCenterPresenter.setActive(true);
 			}
 		}
 		
@@ -197,34 +232,49 @@ public class ReplayPresenter extends AMainPresenter implements IReplayControlPan
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
+	/**
+	 * Activate this window by setting it visible and start refresh thread
+	 *
+	 * @param persistance
+	 */
+	public void start(final ABerkeleyPersistence persistance)
+	{
+		start(persistance, 0);
+	}
 	
 	
 	/**
 	 * Activate this window by setting it visible and start refresh thread
 	 * 
 	 * @param persistance
+	 * @param startTime start time within recording
 	 */
-	public void start(final IRecordPersistence persistance)
+	public void start(final ABerkeleyPersistence persistance, long startTime)
 	{
-		agents.put(ETeamColor.YELLOW, new Agent(ETeamColor.YELLOW));
-		agents.put(ETeamColor.BLUE, new Agent(ETeamColor.BLUE));
+		createAi(EAiTeam.BLUE_PRIMARY);
+		createAi(EAiTeam.YELLOW_PRIMARY);
 		
-		this.persistance = persistance;
-		refreshThread = new RefreshThread();
-		replayControlPresenter.getReplayPanel().getControlPanel()
-				.setTimeMax(refreshThread.recEndTime - refreshThread.recStartTime);
+		this.persistence = (AiBerkeleyPersistence) persistance;
+		refreshThread = new RefreshThread(startTime);
 		visualizerPresenter.start();
 		executor.execute(refreshThread);
 	}
 	
 	
+	private void createAi(EAiTeam aiTeam)
+	{
+		Ai preAi = ais.put(aiTeam, new Ai(aiTeam, skillSystem));
+		if (preAi != null)
+		{
+			preAi.stop();
+		}
+	}
+	
+	
 	/**
-	 * 
+	 * Stop replay
 	 */
-	public void stop()
+	private void stop()
 	{
 		visualizerPresenter.stop();
 		refreshThread.active = false;
@@ -233,31 +283,26 @@ public class ReplayPresenter extends AMainPresenter implements IReplayControlPan
 			log.warn("Tried to close controller multiple times.");
 			return;
 		}
-		executor.shutdownNow();
-		try
+		executor.execute(this::cleanup);
+		executor.shutdown();
+	}
+	
+	
+	private void cleanup()
+	{
+		if (persistence != null)
 		{
-			executor.awaitTermination(5, TimeUnit.SECONDS);
-		} catch (InterruptedException err)
-		{
-			log.error("Interrupted while waiting for refresh executer", err);
-		}
-		if (persistance != null)
-		{
-			persistance.close();
+			persistence.close();
 		}
 		
-		for (Agent agent : agents.values())
-		{
-			agent.deinitModule();
-		}
-		agents.clear();
+		ais.clear();
 	}
 	
 	
 	/**
 	 * @param o
 	 */
-	public final void addPositionObserver(final IReplayPositionObserver o)
+	private void addPositionObserver(final IReplayPositionObserver o)
 	{
 		positionObservers.add(o);
 	}
@@ -272,18 +317,6 @@ public class ReplayPresenter extends AMainPresenter implements IReplayControlPan
 	}
 	
 	
-	private void notifyPositionChanged(final long pos)
-	{
-		for (IReplayPositionObserver o : positionObservers)
-		{
-			o.onPositionChanged(pos);
-		}
-	}
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	/**
 	 * This thread will update the field periodically according to the speed
 	 * 
@@ -291,16 +324,16 @@ public class ReplayPresenter extends AMainPresenter implements IReplayControlPan
 	 */
 	private class RefreshThread implements Runnable
 	{
-		private long			replayLastTime	= System.nanoTime();
-		private long			replayCurTime	= 0;
+		private long replayLastTime = System.nanoTime();
+		private long replayCurTime = 0;
 		
-		private final long	recEndTime;
-		private final long	recStartTime;
+		private long recEndTime;
+		private Long recStartTime;
 		
-		private long			lastKey			= 0;
+		private long lastKey = 0;
 		
-		private boolean		playing			= true;
-		private boolean		active			= true;
+		private boolean playing = true;
+		private boolean active = true;
 		
 		
 		/**
@@ -308,13 +341,35 @@ public class ReplayPresenter extends AMainPresenter implements IReplayControlPan
 		 */
 		public RefreshThread()
 		{
-			recStartTime = persistance.getFirstKey();
-			recEndTime = persistance.getLastKey();
+			recStartTime = persistence.getFirstKey();
+		}
+		
+		
+		/**
+		 * @param recCurTime the start time in this log file
+		 */
+		public RefreshThread(long recCurTime)
+		{
+			this.recStartTime = persistence.getFirstKey();
+			if (recStartTime != null)
+			{
+				this.replayCurTime = recCurTime - recStartTime;
+			}
+		}
+		
+		
+		private void notifyPositionChanged(final long pos)
+		{
+			for (IReplayPositionObserver o : positionObservers)
+			{
+				o.onPositionChanged(pos);
+			}
 		}
 		
 		
 		private void updateReplayTime()
 		{
+			updateEndTime();
 			if (playing)
 			{
 				replayCurTime += ((System.nanoTime() - replayLastTime) * speed);
@@ -327,10 +382,21 @@ public class ReplayPresenter extends AMainPresenter implements IReplayControlPan
 		}
 		
 		
+		private void updateEndTime()
+		{
+			long newRecEndTime = persistence.getLastKey();
+			if (newRecEndTime != recEndTime)
+			{
+				replayControlPresenter.getReplayPanel().getControlPanel()
+						.setTimeMax(newRecEndTime - refreshThread.recStartTime);
+			}
+			recEndTime = newRecEndTime;
+		}
+		
+		
 		private long getCurrentTime()
 		{
-			long curT = recStartTime + replayCurTime;
-			return curT;
+			return recStartTime + replayCurTime;
 		}
 		
 		
@@ -352,15 +418,21 @@ public class ReplayPresenter extends AMainPresenter implements IReplayControlPan
 		}
 		
 		
+		/**
+		 * @param time time increment to jump
+		 */
 		public synchronized void jumpRelativeTime(final long time)
 		{
 			replayCurTime += time;
 		}
 		
 		
+		/**
+		 * next frame
+		 */
 		public void jumpNextFrame()
 		{
-			Long key = persistance.getNextKey(lastKey);
+			Long key = persistence.getNextKey(lastKey);
 			if (key != null)
 			{
 				jumpAbsoluteTime(key);
@@ -368,9 +440,12 @@ public class ReplayPresenter extends AMainPresenter implements IReplayControlPan
 		}
 		
 		
+		/**
+		 * last frame
+		 */
 		public void jumpPreviousFrame()
 		{
-			Long key = persistance.getPreviousKey(lastKey);
+			Long key = persistence.getPreviousKey(lastKey);
 			if (key != null)
 			{
 				jumpAbsoluteTime(key);
@@ -389,11 +464,11 @@ public class ReplayPresenter extends AMainPresenter implements IReplayControlPan
 			long t = getCurrentTime();
 			for (; t < recEndTime; t += 250_000_000)
 			{
-				if (skipStoppedGame && skipFrameStoppedGame(persistance.getRecordFrame(t).getWorldFrameWrapper()))
+				if (skipStoppedGame && skipFrameStoppedGame(persistence.getRecordFrame(t).getWorldFrameWrapper()))
 				{
 					continue;
 				}
-				if (searchKickoff && skipFrameKickoff(persistance.getRecordFrame(t).getWorldFrameWrapper()))
+				if (searchKickoff && skipFrameKickoff(persistence.getRecordFrame(t).getWorldFrameWrapper()))
 				{
 					continue;
 				}
@@ -407,41 +482,29 @@ public class ReplayPresenter extends AMainPresenter implements IReplayControlPan
 		private boolean skipFrameStoppedGame(final WorldFrameWrapper wfw)
 		{
 			RefereeMsg refMsg = wfw.getRefereeMsg();
-			if (refMsg == null)
-			{
-				return false;
-			}
-			switch (wfw.getGameState())
-			{
-				case BREAK:
-				case HALTED:
-				case POST_GAME:
-				case STOPPED:
-				case TIMEOUT_BLUE:
-				case TIMEOUT_YELLOW:
-				case UNKNOWN:
-					return true;
-				default:
-					break;
-			}
+			return refMsg != null && wfw.getGameState().isStoppedGame();
 			
-			return false;
 		}
 		
 		
 		private boolean skipFrameKickoff(final WorldFrameWrapper wfw)
 		{
 			RefereeMsg refMsg = wfw.getRefereeMsg();
-			if (refMsg == null)
-			{
-				return false;
-			}
-			if ((refMsg.getCommand() == Command.PREPARE_KICKOFF_BLUE)
-					|| (refMsg.getCommand() == Command.PREPARE_KICKOFF_YELLOW))
-			{
-				return false;
-			}
-			return true;
+			return (refMsg != null)
+					&& !((refMsg.getCommand() == Command.PREPARE_KICKOFF_BLUE)
+							|| (refMsg.getCommand() == Command.PREPARE_KICKOFF_YELLOW));
+		}
+		
+		
+		/**
+		 * get the current TimeStep
+		 */
+		private void updateTimeStep(final long timestamp)
+		{
+			Date date = new Date(timestamp);
+			SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss,SSS");
+			String txt = sdf.format(date);
+			replayControlPresenter.getReplayPanel().getControlPanel().getTimeStepLabel().setText(txt);
 		}
 		
 		
@@ -453,82 +516,22 @@ public class ReplayPresenter extends AMainPresenter implements IReplayControlPan
 				long t0 = System.nanoTime();
 				try
 				{
-					skipFrames();
-					updateReplayTime();
-					notifyPositionChanged(replayCurTime);
-					
-					long curT = getCurrentTime();
-					
-					lastKey = persistance.getKey(curT);
-					
-					RecordCamFrame camFrame = persistance.getCamFrame(lastKey);
-					if (camFrame != null)
+					if (recStartTime == null)
 					{
-						ExtendedCamDetectionFrame eFrame = camFrame.getCamFrame();
-						for (IWorldFrameObserver vp : wFrameObservers)
-						{
-							vp.onNewCamDetectionFrame(eFrame);
-						}
+						Thread.sleep(1000);
+						recStartTime = persistence.getFirstKey();
+						continue;
 					}
 					
-					RecordFrame frame = persistance.getRecordFrame(lastKey);
-					if (frame != null)
-					{
-						updateTimeStep(frame.getTimestampMs());
-						updateLogPresenter(frame.getTimestampMs());
-						
-						for (IWorldFrameObserver vp : wFrameObservers)
-						{
-							vp.onNewWorldFrame(frame.getWorldFrameWrapper());
-						}
-						if (runCurrentAi)
-						{
-							for (VisualizationFrame vF : frame.getVisFrames())
-							{
-								Agent agent = agents.get(vF.getTeamColor());
-								SimpleWorldFrame swf = vF.getWorldFrameWrapper().getSimpleWorldFrame();
-								for (ITrackedBot bot : swf.getBots().values())
-								{
-									DummyBot dBot = new DummyBot();
-									dBot.setAvail2Ai(true);
-									((TrackedBot) bot).setBot(dBot);
-								}
-								
-								WorldFrameWrapper wfw = new WorldFrameWrapper(
-										vF.getWorldFrameWrapper().getSimpleWorldFrame(),
-										vF.getWorldFrameWrapper().getRefereeMsg(), new ShapeMap());
-								
-								// if (
-								// (agent.getLatestAiFrame() == null)
-								// || (agent.getLatestAiFrame().getWorldFrame().getTimestamp() != wfw.getSimpleWorldFrame()
-								// .getTimestamp())
-								// )
-								{
-									AIInfoFrame aiFrame = agent.processWorldFrame(wfw);
-									if (aiFrame != null)
-									{
-										agent.getSkillSystem().process(wfw);
-										VisualizationFrame visFrame = new VisualizationFrame(aiFrame);
-										updateField(visFrame);
-									}
-								}
-							}
-						} else
-						{
-							for (VisualizationFrame visFrame : frame.getVisFrames())
-							{
-								updateField(visFrame);
-							}
-						}
-					}
+					update();
 				} catch (Throwable err)
 				{
 					log.error("Error in RefreshThread.", err);
 				}
 				long t1 = System.nanoTime();
 				
-				long dt = (long) (1_000_000_000L / refreshFps);
-				long sleep = (dt - (t1 - t0));
+				long dt = (long) (1_000_000_000L / REFRESH_FPS);
+				long sleep = dt - (t1 - t0);
 				if (sleep > 0)
 				{
 					assert sleep < (long) 1e9;
@@ -537,55 +540,166 @@ public class ReplayPresenter extends AMainPresenter implements IReplayControlPan
 			}
 		}
 		
-	}
-	
-	
-	/**
-	 * Get the current image and paint it to the field panel
-	 */
-	private void updateField(final VisualizationFrame visFrame)
-	{
-		for (IVisualizationFrameObserver vp : visFrameObservers)
+		
+		private void update()
 		{
-			vp.onNewVisualizationFrame(visFrame);
+			skipFrames();
+			updateReplayTime();
+			notifyPositionChanged(replayCurTime);
+			
+			long curT = getCurrentTime();
+			
+			lastKey = persistence.getKey(curT);
+			
+			updateCamFrame();
+			updateRecordFrame();
 		}
-	}
-	
-	
-	/**
-	 * 
-	 */
-	private void updateLogPresenter(final long curTime)
-	{
-		if (logEventBuffer == null)
+		
+		
+		private void updateRecordFrame()
 		{
-			if (persistance != null)
+			RecordFrame frame = persistence.getRecordFrame(lastKey);
+			if (frame == null)
 			{
-				logEventBuffer = persistance.loadLogEvents();
+				return;
+			}
+			updateTimeStep(frame.getTimestampMs());
+			updateLogPresenter(frame.getTimestampMs());
+			
+			for (IWorldFrameObserver vp : wFrameObservers)
+			{
+				vp.onNewWorldFrame(frame.getWorldFrameWrapper());
+			}
+			if (runAutoRef)
+			{
+				processAutoReferee(frame);
+			}
+			if (runCurrentAi)
+			{
+				processCurrentAi(frame);
 			} else
 			{
-				logEventBuffer = new ArrayList<BerkeleyLogEvent>(0);
+				for (VisualizationFrame visFrame : frame.getVisFrames())
+				{
+					updateField(visFrame);
+				}
 			}
 		}
 		
-		if (logEventBuffer.isEmpty())
+		
+		private void processCurrentAi(final RecordFrame frame)
 		{
-			return;
+			for (VisualizationFrame vF : frame.getVisFrames())
+			{
+				EAiTeam eAiTeam = EAiTeam.primary(vF.getTeamColor());
+				Ai ai = ais.get(eAiTeam);
+				WorldFrameWrapper wfw = new WorldFrameWrapper(
+						vF.getWorldFrameWrapper().getSimpleWorldFrame(),
+						vF.getWorldFrameWrapper().getRefereeMsg(),
+						vF.getWorldFrameWrapper().getGameState());
+				
+				AIInfoFrame aiFrame = ai.processWorldFrame(wfw, MultiTeamMessage.DEFAULT);
+				if (aiFrame != null)
+				{
+					skillSystem.process(wfw);
+					VisualizationFrame visFrame = new VisualizationFrame(aiFrame);
+					updateField(visFrame);
+				}
+			}
 		}
 		
-		List<LoggingEvent> logEventsPast = new LinkedList<LoggingEvent>();
-		List<LoggingEvent> logEventsFuture = new LinkedList<LoggingEvent>();
-		// long offset = logEventBuffer.get(0).getTimeStamp();
-		// long timeStamp = offset + (long) (curTime / 1e6);
-		long timeStamp = curTime;
-		for (BerkeleyLogEvent event : logEventBuffer)
+		
+		private void processAutoReferee(final RecordFrame frame)
 		{
-			if ((event.getTimeStamp() >= (timeStamp - LOG_BUFFER_BEFORE))
-					&& (event.getTimeStamp() <= (timeStamp + LOG_BUFFER_AFTER)))
+			IAutoRefFrame refFrame;
+			/*
+			 * We only run the ref engine if the current frame is not equal to the last frame. Otherwise we
+			 * simply repaint the last frame.
+			 */
+			if ((lastAutoRefFrame != null) && (lastAutoRefFrame.getTimestamp() == frame.getTimestamp()))
 			{
-				if (logPresenter.checkFilters(event.getLoggingEvent()))
+				refFrame = lastAutoRefFrame;
+			} else
+			{
+				WorldFrameWrapper wFrame = frame.getWorldFrameWrapper();
+				boolean hasLastFrame = refPreprocessor.hasLastFrame();
+				refFrame = refPreprocessor.process(wFrame);
+				
+				if (hasLastFrame)
 				{
-					if ((event.getTimeStamp() >= timeStamp))
+					autoRefEngine.process(refFrame);
+				}
+			}
+			
+			updateRefObserver(refFrame);
+			lastAutoRefFrame = refFrame;
+		}
+		
+		
+		private void updateCamFrame()
+		{
+			RecordCamFrame camFrame = persistence.getCamFrame(lastKey);
+			if (camFrame != null)
+			{
+				ExtendedCamDetectionFrame eFrame = camFrame.getCamFrame();
+				for (IWorldFrameObserver vp : wFrameObservers)
+				{
+					vp.onNewCamDetectionFrame(eFrame);
+				}
+			}
+		}
+		
+		
+		/**
+		 * Get the current image and paint it to the field panel
+		 */
+		private void updateField(final VisualizationFrame visFrame)
+		{
+			for (IVisualizationFrameObserver vp : visFrameObservers)
+			{
+				vp.onNewVisualizationFrame(visFrame);
+			}
+			aiCenterPresenter.update(visFrame);
+		}
+		
+		
+		private void updateRefObserver(final IAutoRefFrame frame)
+		{
+			for (IAutoRefStateObserver observer : refObservers)
+			{
+				observer.onNewAutoRefFrame(frame);
+			}
+		}
+		
+		
+		private void updateLogPresenter(final long curTime)
+		{
+			if (logEventBuffer == null)
+			{
+				if (persistence != null)
+				{
+					logEventBuffer = persistence.loadLogEvents();
+				} else
+				{
+					logEventBuffer = new ArrayList<>(0);
+				}
+			}
+			
+			if (logEventBuffer.isEmpty())
+			{
+				return;
+			}
+			
+			List<LoggingEvent> logEventsPast = new LinkedList<>();
+			List<LoggingEvent> logEventsFuture = new LinkedList<>();
+			long timeStamp = curTime;
+			for (BerkeleyLogEvent event : logEventBuffer)
+			{
+				if ((event.getTimeStamp() >= (timeStamp - LOG_BUFFER_BEFORE))
+						&& (event.getTimeStamp() <= (timeStamp + LOG_BUFFER_AFTER))
+						&& logPresenter.checkFilters(event.getLoggingEvent()))
+				{
+					if (event.getTimeStamp() >= timeStamp)
 					{
 						logEventsFuture.add(event.getLoggingEvent());
 					} else
@@ -594,66 +708,46 @@ public class ReplayPresenter extends AMainPresenter implements IReplayControlPan
 					}
 				}
 			}
-		}
-		boolean reprint = lastLogEventsPast.size() != logEventsPast.size();
-		for (int i = 0; !reprint && (i < lastLogEventsPast.size()); i++)
-		{
-			String str1 = lastLogEventsPast.get(i).getRenderedMessage();
-			String str2 = logEventsPast.get(i).getRenderedMessage();
-			if (!str1.equals(str2))
+			boolean reprint = lastLogEventsPast.size() != logEventsPast.size();
+			for (int i = 0; !reprint && (i < lastLogEventsPast.size()); i++)
 			{
-				reprint = true;
-				break;
+				String str1 = lastLogEventsPast.get(i).getRenderedMessage();
+				String str2 = logEventsPast.get(i).getRenderedMessage();
+				if (!str1.equals(str2))
+				{
+					reprint = true;
+					break;
+				}
 			}
-		}
-		reprint = reprint || (lastLogEventsFuture.size() != logEventsFuture.size());
-		for (int i = 0; !reprint && (i < lastLogEventsFuture.size()); i++)
-		{
-			String str1 = lastLogEventsFuture.get(i).getRenderedMessage();
-			String str2 = logEventsFuture.get(i).getRenderedMessage();
-			if (!str1.equals(str2))
+			reprint = reprint || (lastLogEventsFuture.size() != logEventsFuture.size());
+			for (int i = 0; !reprint && (i < lastLogEventsFuture.size()); i++)
 			{
-				reprint = true;
-				break;
+				String str1 = lastLogEventsFuture.get(i).getRenderedMessage();
+				String str2 = logEventsFuture.get(i).getRenderedMessage();
+				if (!str1.equals(str2))
+				{
+					reprint = true;
+					break;
+				}
 			}
+			
+			if (reprint)
+			{
+				logPresenter.clearEventStorage();
+				for (LoggingEvent event : logEventsPast)
+				{
+					logPresenter.append(event);
+				}
+				logPresenter.appendLine();
+				for (LoggingEvent event : logEventsFuture)
+				{
+					logPresenter.append(event);
+				}
+			}
+			lastLogEventsPast = logEventsPast;
+			lastLogEventsFuture = logEventsFuture;
 		}
 		
-		if (reprint)
-		{
-			logPresenter.clearEventStorage();
-			for (LoggingEvent event : logEventsPast)
-			{
-				logPresenter.append(event);
-			}
-			logPresenter.appendLine();
-			for (LoggingEvent event : logEventsFuture)
-			{
-				logPresenter.append(event);
-			}
-		}
-		lastLogEventsPast = logEventsPast;
-		lastLogEventsFuture = logEventsFuture;
-	}
-	
-	
-	/**
-	 * get the current TimeStep
-	 */
-	private void updateTimeStep(final long timestamp)
-	{
-		Date date = new Date(timestamp);
-		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss,SSS");
-		String txt = sdf.format(date);
-		// long remTime = timestamp;
-		// long minutes = (long) (remTime / 60e9);
-		// remTime -= minutes * 60e9;
-		// long seconds = (long) (remTime / 1e9);
-		// remTime -= seconds * 1e9;
-		// long ms = (long) (remTime / 1e6);
-		//
-		// String txt = String.format("%3d:%02d,%03d", minutes, seconds, ms);
-		
-		replayControlPresenter.getReplayPanel().getControlPanel().getTimeStepLabel().setText(txt);
 	}
 	
 	
@@ -678,13 +772,21 @@ public class ReplayPresenter extends AMainPresenter implements IReplayControlPan
 		
 		if (runCurrentAi)
 		{
-			agents.put(ETeamColor.YELLOW, new Agent(ETeamColor.YELLOW));
-			agents.put(ETeamColor.BLUE, new Agent(ETeamColor.BLUE));
-			// for (Agent agent : agents.values())
-			// {
-			// agent.reset();
-			// agent.getSkillSystem().emergencyStop();
-			// }
+			createAi(EAiTeam.BLUE_PRIMARY);
+			createAi(EAiTeam.YELLOW_PRIMARY);
+		}
+	}
+	
+	
+	@Override
+	public void onRunAutoRef(final boolean selected)
+	{
+		runAutoRef = selected;
+		
+		if (runAutoRef)
+		{
+			refPreprocessor.clear();
+			autoRefEngine.reset();
 		}
 	}
 	
@@ -773,17 +875,47 @@ public class ReplayPresenter extends AMainPresenter implements IReplayControlPan
 	@Override
 	public void onSnapshot()
 	{
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss.SSS");
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
 		
 		SimpleWorldFrame worldFrame = lastWorldFrame.getSimpleWorldFrame();
 		Snapshot snapshot = createSnapshot(worldFrame);
-		try
+		String defaultFilename = "data/snapshots/" + sdf.format(new Date()) + ".snap";
+		
+		JFileChooser fileChooser = new JFileChooser();
+		fileChooser.setCurrentDirectory(new File("data/snapshots"));
+		fileChooser.setSelectedFile(new File(defaultFilename));
+		FileNameExtensionFilter filter = new FileNameExtensionFilter("snapshot files", "snap");
+		fileChooser.setFileFilter(filter);
+		if (fileChooser.showSaveDialog(getMainFrame()) == JFileChooser.APPROVE_OPTION)
 		{
-			snapshot.save("data/snapshots/" + sdf.format(new Date()) + ".snap");
-		} catch (IOException e)
-		{
-			log.error("", e);
+			File file = fileChooser.getSelectedFile();
+			// save to file
+			try
+			{
+				snapshot.save(file.getAbsolutePath());
+			} catch (IOException e)
+			{
+				log.error("Could not save snapshot file", e);
+			}
 		}
+	}
+	
+	
+	@Override
+	public void onCopySnapshot()
+	{
+		if (lastWorldFrame == null)
+		{
+			return;
+		}
+		
+		SimpleWorldFrame worldFrame = lastWorldFrame.getSimpleWorldFrame();
+		Snapshot snapshot = createSnapshot(worldFrame);
+		String snapJson = snapshot.toJSON().toJSONString();
+		
+		Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+		StringSelection stringSelection = new StringSelection(snapJson);
+		clipboard.setContents(stringSelection, null);
 	}
 	
 	
@@ -797,13 +929,14 @@ public class ReplayPresenter extends AMainPresenter implements IReplayControlPan
 		for (Entry<BotID, ITrackedBot> entry : worldFrame.getBots())
 		{
 			ITrackedBot bot = entry.getValue();
-			snapBots.put(entry.getKey(), new SnapObject(bot.getPos(), bot.getVel()));
+			snapBots.put(entry.getKey(),
+					new SnapObject(Vector3.from2d(bot.getPos(), bot.getOrientation()),
+							Vector3.from2d(bot.getVel(), bot.getAngularVel())));
 		}
 		
-		TrackedBall ball = worldFrame.getBall();
-		SnapObject snapBall = new SnapObject(ball.getPos(), ball.getVel());
+		ITrackedBall ball = worldFrame.getBall();
+		SnapObject snapBall = new SnapObject(ball.getPos3(), ball.getVel3());
 		
-		Snapshot snapshot = new Snapshot(snapBots, snapBall);
-		return snapshot;
+		return new Snapshot(snapBots, snapBall);
 	}
 }

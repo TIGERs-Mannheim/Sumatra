@@ -1,15 +1,9 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 04.07.2011
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.metis.general;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import edu.tigers.sumatra.ai.data.BotDistance;
@@ -19,7 +13,7 @@ import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ids.BotIDMapConst;
 import edu.tigers.sumatra.ids.ETeam;
 import edu.tigers.sumatra.ids.IBotIDMap;
-import edu.tigers.sumatra.math.GeoMath;
+import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 
@@ -33,15 +27,9 @@ import edu.tigers.sumatra.wp.data.WorldFrame;
  */
 public class BotToBallDistanceCalc extends ACalculator
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
 	private final ETeam team;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * @param team
 	 */
@@ -52,10 +40,6 @@ public class BotToBallDistanceCalc extends ACalculator
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	@Override
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
@@ -63,14 +47,14 @@ public class BotToBallDistanceCalc extends ACalculator
 		IBotIDMap<? extends ITrackedBot> bots = getBots(wFrame);
 		
 		
-		final List<BotDistance> distances = new ArrayList<BotDistance>(bots.size());
+		final List<BotDistance> distances = new ArrayList<>(bots.size());
 		for (ITrackedBot bot : bots.values())
 		{
-			final double distanceToBall = GeoMath.distancePP(bot.getPos(), wFrame.getBall().getPos());
+			final double distanceToBall = VectorMath.distancePP(bot.getPos(), wFrame.getBall().getPos());
 			distances.add(new BotDistance(bot, distanceToBall));
 		}
 		
-		Collections.sort(distances, BotDistance.ASCENDING);
+		distances.sort(BotDistance.ASCENDING);
 		
 		if (team == ETeam.TIGERS)
 		{
@@ -91,23 +75,4 @@ public class BotToBallDistanceCalc extends ACalculator
 		}
 		return wf.getFoeBots();
 	}
-	
-	
-	@Override
-	public void fallbackCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
-	{
-		final List<BotDistance> distances = new ArrayList<BotDistance>(0);
-		
-		if (team == ETeam.TIGERS)
-		{
-			newTacticalField.setTigersToBallDist(distances);
-		} else
-		{
-			newTacticalField.setEnemiesToBallDist(distances);
-		}
-	}
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 }

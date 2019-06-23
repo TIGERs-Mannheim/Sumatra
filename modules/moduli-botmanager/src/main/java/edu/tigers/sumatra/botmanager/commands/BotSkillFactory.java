@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 24.06.2015
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands;
 
@@ -20,6 +15,9 @@ import edu.tigers.sumatra.botmanager.serial.SerialException;
 
 
 /**
+ * Create bot skills
+ *
+ * @author andre
  */
 public final class BotSkillFactory
 {
@@ -28,7 +26,7 @@ public final class BotSkillFactory
 																				
 	private static BotSkillFactory						instance	= null;
 																				
-	private final Map<Integer, SerialDescription>	skills	= new HashMap<Integer, SerialDescription>();
+	private final Map<Integer, SerialDescription>	skills	= new HashMap<>();
 																				
 																				
 	private BotSkillFactory()
@@ -79,7 +77,7 @@ public final class BotSkillFactory
 				ask = (ABotSkill) desc.newInstance();
 			} catch (SerialException err)
 			{
-				log.error("Could not create instance of: " + esk);
+				log.error("Could not create instance of: " + esk, err);
 				continue;
 			} catch (ClassCastException err)
 			{

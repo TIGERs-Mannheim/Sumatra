@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 14.04.2011
- * Author(s): Malte
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.athena;
 
@@ -18,9 +13,8 @@ import edu.tigers.sumatra.ai.data.EAIControlState;
  */
 public interface IAIModeChanged
 {
-	
 	/**
 	 * @param mode
 	 */
-	void onAiModeChanged(EAIControlState mode);
+	void onAiModeChanged(final EAIControlState mode);
 }

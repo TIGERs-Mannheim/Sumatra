@@ -1,22 +1,17 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jan 15, 2013
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.drawable;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
+import java.awt.*;
 
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.math.AVector2;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.shapes.circle.Circle;
-import edu.tigers.sumatra.shapes.circle.ICircle;
+import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.circle.ICircle;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 
 
 /**
@@ -24,10 +19,10 @@ import edu.tigers.sumatra.shapes.circle.ICircle;
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@Persistent(version = 0)
-public class DrawableCircle extends Circle implements IDrawableShape
+@Persistent
+public class DrawableCircle extends ADrawableWithStroke
 {
-	private Color		color	= Color.red;
+	private ICircle	circle;
 	private boolean	fill	= false;
 	
 	
@@ -37,7 +32,7 @@ public class DrawableCircle extends Circle implements IDrawableShape
 	@SuppressWarnings("unused")
 	private DrawableCircle()
 	{
-		super(new Circle(AVector2.ZERO_VECTOR, 1));
+		circle = Circle.createCircle(Vector2.ZERO_VECTOR, 1);
 	}
 	
 	
@@ -46,7 +41,7 @@ public class DrawableCircle extends Circle implements IDrawableShape
 	 */
 	public DrawableCircle(final ICircle circle)
 	{
-		super(circle);
+		this.circle = circle;
 	}
 	
 	
@@ -56,8 +51,8 @@ public class DrawableCircle extends Circle implements IDrawableShape
 	 */
 	public DrawableCircle(final ICircle circle, final Color color)
 	{
-		super(circle);
-		this.color = color;
+		this.circle = circle;
+		setColor(color);
 	}
 	
 	
@@ -68,49 +63,27 @@ public class DrawableCircle extends Circle implements IDrawableShape
 	 */
 	public DrawableCircle(final IVector2 center, final double radius, final Color color)
 	{
-		super(center, radius);
-		this.color = color;
+		circle = Circle.createCircle(center, radius);
+		setColor(color);
 	}
 	
 	
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
-		// --- from SSLVision-mm to java2d-coordinates ---
-		final IVector2 center = tool.transformToGuiCoordinates(center(), invert);
-		final double radius = tool.scaleXLength(radius());
+		super.paintShape(g, tool, invert);
 		
-		g.setColor(getColor());
-		g.drawOval((int) (center.x() - radius), (int) (center.y() - radius), (int) radius * 2, (int) radius * 2);
+		// --- from SSLVision-mm to java2d-coordinates ---
+		final IVector2 center = tool.transformToGuiCoordinates(circle.center(), invert);
+		final double radius = tool.scaleXLength(circle.radius());
+		
 		if (fill)
 		{
 			g.fillOval((int) (center.x() - radius), (int) (center.y() - radius), (int) radius * 2, (int) radius * 2);
-		}
-	}
-	
-	
-	/**
-	 * @return the color
-	 */
-	public Color getColor()
-	{
-		// this may happen with old databases
-		if (color == null)
+		} else
 		{
-			// standard color
-			return Color.red;
+			g.drawOval((int) (center.x() - radius), (int) (center.y() - radius), (int) radius * 2, (int) radius * 2);
 		}
-		return color;
-	}
-	
-	
-	/**
-	 * @param color the color to set
-	 */
-	@Override
-	public void setColor(final Color color)
-	{
-		this.color = color;
 	}
 	
 	

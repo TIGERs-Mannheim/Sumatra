@@ -14,10 +14,19 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
+@FunctionalInterface
 public interface IWpCalc
 {
 	/**
 	 * @param wfw
 	 */
 	void process(WorldFrameWrapper wfw);
+	
+	
+	/**
+	 * 
+	 */
+	default void reset()
+	{
+	}
 }

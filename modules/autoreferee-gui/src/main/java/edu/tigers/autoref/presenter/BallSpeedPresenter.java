@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Mar 26, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.autoref.presenter;
 
 import java.awt.Component;
@@ -14,6 +10,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.swing.Timer;
 
@@ -30,11 +28,11 @@ import edu.tigers.moduli.IModuliStateObserver;
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.views.ISumatraView;
 import edu.tigers.sumatra.views.ISumatraViewPresenter;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
 
@@ -55,44 +53,31 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 public class BallSpeedPresenter implements ISumatraViewPresenter, IWorldFrameObserver, IModuliStateObserver,
 		IBallSpeedPanelListener, ActionListener
 {
-	private enum PauseState
-	{
-		/** The chart has been paused manually by the user */
-		MANUAL,
-		/** The chart has been paused through the auto pause setting if the gamestate is not running */
-		AUTO,
-		/** The chart is running */
-		RUNNING
-	}
-	
 	/** The period in ms at the end of which the chart is updated */
-	private static final int	chartUpdatePeriod		= 50;
-	
+	private static final int	CHART_UPDATE_PERIOD	= 50;
 	/** The absolute time range displayed in the chart in seconds */
 	private int						timeRange				= 20;
 	private boolean				pauseWhenNotRunning	= false;
 	private boolean				pauseRequested			= false;
 	private boolean				resumeRequested		= false;
 	private PauseState			chartState				= PauseState.RUNNING;
-	
 	private long					curTime					= 0L;
 	private BallSpeedModel		model						= new BallSpeedModel();
-	
 	private Timer					chartTimer;
 	private BallSpeedPanel		panel;
 	
 	
 	/**
-	 * 
+	 * Default constructor
 	 */
 	public BallSpeedPresenter()
 	{
-		panel = new BallSpeedPanel(getTimeRange(), TimeUnit.MILLISECONDS.toNanos(chartUpdatePeriod));
+		panel = new BallSpeedPanel(getTimeRange(), TimeUnit.MILLISECONDS.toNanos(CHART_UPDATE_PERIOD));
 		panel.addObserver(this);
 		panel.setMaxBallVelocityLine(AutoRefConfig.getMaxBallVelocity());
 		
-		chartTimer = new Timer(chartUpdatePeriod, this);
-		chartTimer.setDelay(chartUpdatePeriod);
+		chartTimer = new Timer(CHART_UPDATE_PERIOD, this);
+		chartTimer.setDelay(CHART_UPDATE_PERIOD);
 		
 		ConfigRegistration.registerConfigurableCallback("autoreferee", new IConfigObserver()
 		{
@@ -136,13 +121,13 @@ public class BallSpeedPresenter implements ISumatraViewPresenter, IWorldFrameObs
 		if (state == ModulesState.ACTIVE)
 		{
 			optPredictor.ifPresent(predictor -> {
-				predictor.addWorldFrameConsumer(this);
+				predictor.addObserver(this);
 				chartTimer.start();
 			});
 		} else if (state == ModulesState.RESOLVED)
 		{
 			chartTimer.stop();
-			optPredictor.ifPresent(predictor -> predictor.removeWorldFrameConsumer(this));
+			optPredictor.ifPresent(predictor -> predictor.removeObserver(this));
 		}
 	}
 	
@@ -168,7 +153,7 @@ public class BallSpeedPresenter implements ISumatraViewPresenter, IWorldFrameObs
 		
 		if (chartState == PauseState.RUNNING)
 		{
-			curTime += TimeUnit.MILLISECONDS.toNanos(chartUpdatePeriod);
+			curTime += TimeUnit.MILLISECONDS.toNanos(CHART_UPDATE_PERIOD);
 			panel.addPoint(curTime, model.getLastBallSpeed());
 		}
 	}
@@ -188,7 +173,7 @@ public class BallSpeedPresenter implements ISumatraViewPresenter, IWorldFrameObs
 			 * manually paused state. This means that depending on the current state the chart is either put in auto pause
 			 * or running state
 			 */
-			if (model.getLastState() == EGameStateNeutral.RUNNING)
+			if (model.getLastState().getState() == EGameState.RUNNING)
 			{
 				chartState = PauseState.RUNNING;
 			} else
@@ -226,6 +211,7 @@ public class BallSpeedPresenter implements ISumatraViewPresenter, IWorldFrameObs
 			return Optional.of(predictor);
 		} catch (ModuleNotFoundException e)
 		{
+			Logger.getAnonymousLogger().log(Level.FINE, "WP Module not found.", e);
 		}
 		return Optional.empty();
 	}
@@ -257,7 +243,7 @@ public class BallSpeedPresenter implements ISumatraViewPresenter, IWorldFrameObs
 		 */
 		if (pauseWhenNotRunning)
 		{
-			if ((model.getLastState() != EGameStateNeutral.RUNNING) && (chartState == PauseState.RUNNING))
+			if ((model.getLastState().getState() != EGameState.RUNNING) && (chartState == PauseState.RUNNING))
 			{
 				chartState = PauseState.AUTO;
 			}
@@ -277,6 +263,17 @@ public class BallSpeedPresenter implements ISumatraViewPresenter, IWorldFrameObs
 		timeRange = value;
 		panel.setTimeRange(getTimeRange());
 		curTime = 0;
+	}
+	
+	
+	private enum PauseState
+	{
+		/** The chart has been paused manually by the user */
+		MANUAL,
+		/** The chart has been paused through the auto pause setting if the gamestate is not running */
+		AUTO,
+		/** The chart is running */
+		RUNNING
 	}
 	
 	

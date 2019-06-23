@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Mar 23, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.log;
 
@@ -13,10 +8,10 @@ import java.time.Instant;
 import org.apache.commons.lang.NotImplementedException;
 
 import edu.tigers.autoreferee.engine.FollowUpAction;
-import edu.tigers.autoreferee.engine.RefCommand;
+import edu.tigers.autoreferee.engine.RefboxRemoteCommand;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
-import edu.tigers.sumatra.referee.RefereeMsg;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
+import edu.tigers.sumatra.referee.data.GameState;
+import edu.tigers.sumatra.referee.data.RefereeMsg;
 
 
 /**
@@ -41,28 +36,25 @@ public class GameLogEntry
 		COMMAND
 	}
 	
-	private final ELogEntryType		type;
+	private final ELogEntryType type;
 	/** frame timestamp in nanoseconds */
-	private final long					timestamp;
+	private final long timestamp;
 	/** time of the game this entry was created at */
-	private final GameTime				gameTime;
+	private final GameTime gameTime;
 	/** The time instant this entry was created in */
-	private final Instant				instant;
-	/** in nanoseconds */
-	private final long					timeSinceStart;
+	private final Instant instant;
 	
-	private final EGameStateNeutral	gamestate;
-	private final RefereeMsg			refereeMsg;
-	private final FollowUpAction		followUpAction;
-	private final RefCommand			command;
+	private final GameState gamestate;
+	private final RefereeMsg refereeMsg;
+	private final FollowUpAction followUpAction;
+	private final RefboxRemoteCommand command;
 	
-	private final IGameEvent			gameEvent;
-	private final boolean				acceptedByEngine;
+	private final IGameEvent gameEvent;
+	private final boolean acceptedByEngine;
 	
 	
 	/**
 	 * @param timestamp
-	 * @param timeSinceStart
 	 * @param instant
 	 * @param type
 	 * @param gamestate
@@ -71,13 +63,12 @@ public class GameLogEntry
 	 * @param followUpAction
 	 * @param command
 	 */
-	protected GameLogEntry(final long timestamp, final GameTime gameTime, final long timeSinceStart,
-			final Instant instant, final ELogEntryType type, final EGameStateNeutral gamestate,
-			final IGameEvent gameEvent, final boolean acceptedByEngine, final RefereeMsg refereeMsg,
-			final FollowUpAction followUpAction, final RefCommand command)
+	protected GameLogEntry(final long timestamp, final GameTime gameTime, final Instant instant,
+			final ELogEntryType type, final GameState gamestate, final IGameEvent gameEvent,
+			final boolean acceptedByEngine, final RefereeMsg refereeMsg, final FollowUpAction followUpAction,
+			final RefboxRemoteCommand command)
 	{
 		this.type = type;
-		this.timeSinceStart = timeSinceStart;
 		this.gameTime = gameTime;
 		this.timestamp = timestamp;
 		this.instant = instant;
@@ -122,20 +113,9 @@ public class GameLogEntry
 	
 	
 	/**
-	 * The number of nanoseconds since the autoreferee was started
-	 * 
-	 * @return time since the start in nanoseconds
-	 */
-	public long getTimeSinceStart()
-	{
-		return timeSinceStart;
-	}
-	
-	
-	/**
 	 * @return
 	 */
-	public EGameStateNeutral getGamestate()
+	public GameState getGamestate()
 	{
 		return gamestate;
 	}
@@ -184,7 +164,7 @@ public class GameLogEntry
 	/**
 	 * @return the command
 	 */
-	public RefCommand getCommand()
+	public RefboxRemoteCommand getCommand()
 	{
 		return command;
 	}
@@ -223,4 +203,12 @@ public class GameLogEntry
 		}
 	}
 	
+	
+	@Override
+	public String toString()
+	{
+		return "GameLogEntry{" + type +
+				" -> " + getObject() +
+				'}';
+	}
 }

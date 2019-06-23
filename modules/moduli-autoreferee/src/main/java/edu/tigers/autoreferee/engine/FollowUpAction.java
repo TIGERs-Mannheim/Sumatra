@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 8, 2015
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine;
 
@@ -13,7 +8,7 @@ import java.util.Optional;
 import edu.tigers.autoreferee.engine.states.impl.StopState;
 import edu.tigers.sumatra.Referee.SSL_Referee.Command;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**
@@ -42,9 +37,9 @@ public class FollowUpAction
 		PENALTY
 	}
 	
-	private final ETeamColor	teamInFavor;
-	private final EActionType	actionType;
-	private final IVector2		newBallPos;
+	private final ETeamColor teamInFavor;
+	private final EActionType actionType;
+	private final IVector2 newBallPos;
 	
 	
 	/**
@@ -112,7 +107,8 @@ public class FollowUpAction
 			case KICK_OFF:
 				return teamInFavor == ETeamColor.BLUE ? Command.PREPARE_KICKOFF_BLUE : Command.PREPARE_KICKOFF_YELLOW;
 			default:
-				throw new IllegalArgumentException("Please add the following action type to the switch case: " + actionType);
+				throw new IllegalArgumentException(
+						"Please add the following action type to the switch case: " + actionType);
 		}
 	}
 	
@@ -145,5 +141,16 @@ public class FollowUpAction
 		result = (prime * result) + ((teamInFavor == null) ? 0 : teamInFavor.hashCode());
 		result = (prime * result) + ((newBallPos == null) ? 0 : newBallPos.hashCode());
 		return result;
+	}
+	
+	
+	@Override
+	public String toString()
+	{
+		return "FollowUpAction{" +
+				"actionType=" + actionType +
+				", teamInFavor=" + teamInFavor +
+				", newBallPos=" + newBallPos +
+				'}';
 	}
 }

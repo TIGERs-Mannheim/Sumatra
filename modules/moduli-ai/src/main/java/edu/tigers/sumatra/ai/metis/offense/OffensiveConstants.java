@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Apr 22, 2015
- * Author(s): MarkG <Mark.Geiger@dlr.de>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.metis.offense;
 
 import com.github.g3force.configurable.ConfigRegistration;
@@ -20,129 +16,127 @@ import edu.tigers.sumatra.math.AngleMath;
 public class OffensiveConstants
 {
 	
+	/**  */
+	@Configurable(comment = "time in seconds", defValue = "3.0")
+	private static double cheeringStopTimer = 3.0;
+	
+	@Configurable(comment = "time in seconds", defValue = "-2500.0")
+	private static double minXPosForSupportiveAttacker = -2500;
 	
 	/**  */
-	@Configurable(comment = "time in seconds")
-	private static double	cheeringStopTimer										= 3.0;
+	@Configurable(comment = "time in nanoseconds", defValue = "3.0e9")
+	private static double delayWaitTime = 3.0e9;
+	
+	@Configurable(comment = "if ball is NOT coming towards me, switch redirect to redirect if ball vel bigger this", defValue = "2.0")
+	private static double minBallVelForSwitchToRedirect = 2.0;
 	
 	/**  */
-	@Configurable(comment = "time in nanoseconds")
-	private static double	delayWaitTime											= 3.0e9;
+	@Configurable(comment = "show additional informations in debug log, lots of spamming", defValue = "false")
+	private static boolean showDebugInformations = false;
 	
 	/**  */
-	@Configurable(comment = "show additional informations in debug log, lots of spamming")
-	private static boolean	showDebugInformations								= false;
+	@Configurable(comment = "allow redirector to overtake opponent infront of him", defValue = "false")
+	private static boolean allowRedirectorOvertake = false;
 	
 	/**  */
-	@Configurable(comment = "no directShots when indirectFreeKick is called")
-	private static boolean	forcePassWhenIndirectIsCalled						= true;
+	@Configurable(comment = "no directShots when indirectFreeKick is called", defValue = "true")
+	private static boolean forcePassWhenIndirectIsCalled = true;
 	
 	/**  */
-	@Configurable(comment = "minimal distance to ball for move Positions")
-	private static double	minDistToBall											= 40;
+	@Configurable(comment = "force pass in offensive Action", defValue = "false")
+	private static boolean alwaysForcePass = false;
+	
+	/** */
+	@Configurable(comment = "min score to directly shot at goal", defValue = "0.4")
+	private static double minDirectShotScore = 0.4;
 	
 	/**  */
-	@Configurable(comment = "distance to our Penalty Area")
-	private static double	distanceToPenaltyArea								= 300;
-	
-	
-	/**  */
-	@Configurable(comment = "finalKickStateDistance")
-	private static double	finalKickStateDistance								= 650;
+	@Configurable(comment = "distance to our Penalty Area", defValue = "300.0")
+	private static double distanceToPenaltyArea = 300;
 	
 	/**  */
-	@Configurable(comment = "finalKickStateUpdate")
-	private static double	finalKickStateUpdate									= 300;
-	
+	@Configurable(comment = "finalKickStateDistance", defValue = "650.0")
+	private static double finalKickStateDistance = 650;
 	/**  */
-	@Configurable(comment = "chance to do hard coded plays for indirects in enemy half")
-	private static double	chanceToDoSpecialMove								= 0.7;
+	@Configurable(comment = "enable supportive Attacker", defValue = "true")
+	private static boolean enableSupportiveAttacker = true;
 	
-	/**  */
-	@Configurable(comment = "enable supportive Attacker")
-	private static boolean	enableSupportiveAttacker							= true;
+	@Configurable(comment = "enable protection mode and push around obstacle mode", defValue = "true")
+	private static boolean enableProtectionMode = true;
 	
-	@Configurable(comment = "max dist where ball can be pushed. if dist > this, then shoot")
-	private static double	automatedThrowInPushDinstance						= 750;
+	@Configurable(comment = "max dist where ball can be pushed. if dist > this, then shoot", defValue = "750.0")
+	private static double automatedThrowInPushDistance = 750;
 	
-	@Configurable(comment = "tolerance if ball is at proper position")
-	private static double	automatedThrowInFinalTolerance					= 100;
+	@Configurable(comment = "tolerance if ball is at proper position", defValue = "100.0")
+	private static double automatedThrowInFinalTolerance = 100;
 	
-	@Configurable(comment = "time in ns to wait for free path to target")
-	private static double	automatedThrowInWaitForFreeSightTime			= 3e9;
+	@Configurable(comment = "time in ns to clear from ball when it is placed at target", defValue = "1e9")
+	private static double automatedThrowInClearMoveTime = 1e9;
 	
-	@Configurable(comment = "time in ns to clear from ball when it is placed at target")
-	private static double	automatedThrowInClearMoveTime						= 1e9;
+	@Configurable(comment = "minimum time that a pass should take", defValue = "1.0")
+	private static double minPassTime = 1.0;
 	
-	@Configurable()
-	private static double	interceptionSkillSecurityDist						= 150;
+	@Configurable(comment = "Desired ball velocity at kicker of receiving bot", defValue = "3.5")
+	private static double defaultPassEndVel = 3.5;
 	
-	@Configurable(comment = "Desired ball velocity at kicker of receiving bot")
-	private static double	defaultPassEndVel										= 1.5;
+	@Configurable(comment = "Desired ball velocity at kicker of receiving bot", defValue = "4.5")
+	private static double defaultPassEndVelReceive = 4.5;
 	
-	@Configurable(comment = "Desired ball velocity at kicker of receiving bot")
-	private static double	defaultPassEndVelReceive							= 1.5;
+	@Configurable(comment = "Added time that the pass receiving robot needs to get to his passTarget", defValue = "1.0")
+	private static double neededTimeForPassReceivingBotOffset = 1.0;
 	
-	@Configurable(comment = "Added to kick speed due to ball not rolling after kick")
-	private static double	kickSpeedOffset										= 1.0;
+	@Configurable(defValue = "50.0")
+	private static double maxAngleforPassMaxSpeed = 50;
 	
-	@Configurable(comment = "Added time that the pass receiving robot needs to get to his passTarget")
-	private static double	neededTimeForPassReceivingBotOffset				= 1.0;
+	@Configurable(defValue = "100.0")
+	private static double maxAngleForReducedSpeed = 100;
 	
-	@Configurable()
-	private static double	ballStartSpeedOffsetForPassTimeCalculation	= 1.0;
+	@Configurable(defValue = "1.00")
+	private static double passSpeedReductionForBadAngles = 1.00;
 	
-	@Configurable()
-	private static double	maxAngleforPassMaxSpeed								= 50;
+	@Configurable(comment = "dont move when there is enough time", defValue = "false")
+	private static boolean enableRedirectorStopMove = false;
 	
-	@Configurable()
-	private static double	maxAngleForReducedSpeed								= 100;
+	@Configurable(comment = "The maximum reasonable angle for redirects", defValue = "1.4")
+	private static double maximumReasonableRedirectAngle = AngleMath.deg2rad(90);
 	
-	@Configurable()
-	private static double	passSpeedReductionForBadAngles					= 1.00;
+	@Configurable(defValue = "2000.0")
+	private static double chipKickCheckDistance = 2000;
 	
-	@Configurable(comment = "dont move when there is enough time")
-	private static boolean	enableRedirectorStopMove							= false;
+	@Configurable(defValue = "2000.0")
+	private static double chipKickMinDistToTarget = 2000;
 	
-	@Configurable()
-	private static long		chooseNewStrategyTimer								= 3_000_000_000L;
+	@Configurable(defValue = "true")
+	private static boolean isInterceptorEnabled = true;
 	
-	@Configurable()
-	private static double	acceptBestCatcherBallSpeedTreshold				= 0.8;
+	@Configurable(comment = "Should keeper be allowed to leave the penalty area", defValue = "false")
+	private static boolean enableInsanityMode = false;
 	
-	@Configurable()
-	private static double	desperateShotChipKickLength						= 2000;
+	@Configurable(comment = "warning, this is storing large data in the tactical field!", defValue = "false")
+	private static boolean enableOffensiveStatistics = false;
 	
-	@Configurable(comment = "A passTarget is bad, when its rating is smaller than... this")
-	private static double	classifyPassTargetAsBad								= 0.5;
+	@Configurable(comment = "When score chance greater than this shoot instead of redirect", defValue = "0.18")
+	private static double minScoreChanceShootInsteadRedirect = 0.18;
 	
-	@Configurable(comment = "The maximum reasonable angle for redirects")
-	private static double	maximumReasonableRedirectAngle					= AngleMath.deg2rad(90);
+	@Configurable(comment = "use a (experimental) beta distribution for redirects", defValue = "true")
+	private static boolean useBetaDistributionForRedirects = true;
 	
-	@Configurable()
-	private static double	minDistanceForSpeedAddition						= 3000;
+	@Configurable(defValue = "true")
+	private static boolean isSmartDistanceCalcAllowedForInterceptor = true;
 	
-	@Configurable()
-	private static double	maxDistanceForSpeedAddition						= 9000;
+	@Configurable(defValue = "true")
+	private static boolean enableNoSkirmishSupportiveAttacker = true;
 	
-	@Configurable()
-	private static double	distanceSpeedAddition								= 2;
-	
-	@Configurable()
-	private static double	chipKickCheckDistance								= 2000;
-	
-	@Configurable()
-	private static double	chipKickMinDistToTarget								= 4000;
-	
-	@Configurable()
-	private static boolean	isInterceptorEnabled									= true;
-	
-	@Configurable(comment = "Should keeper be allowed to leave the penalty area")
-	private static boolean	enableInsanityMode									= false;
 	
 	static
 	{
 		ConfigRegistration.registerClass("offensive", OffensiveConstants.class);
+	}
+	
+	
+	private OffensiveConstants()
+	{
+		// hide public constructor
 	}
 	
 	
@@ -152,15 +146,6 @@ public class OffensiveConstants
 	public static boolean isEnableInsanityMode()
 	{
 		return enableInsanityMode;
-	}
-	
-	
-	/**
-	 * @return the automatedThrowInWaitForFreeSightTime
-	 */
-	public static double getAutomatedThrowInWaitForFreeSightTime()
-	{
-		return automatedThrowInWaitForFreeSightTime;
 	}
 	
 	
@@ -192,11 +177,11 @@ public class OffensiveConstants
 	
 	
 	/**
-	 * @return the automatedThrowInPushDinstance
+	 * @return the automatedThrowInPushDistance
 	 */
-	public static double getAutomatedThrowInPushDinstance()
+	public static double getAutomatedThrowInPushDistance()
 	{
-		return automatedThrowInPushDinstance;
+		return automatedThrowInPushDistance;
 	}
 	
 	
@@ -219,15 +204,6 @@ public class OffensiveConstants
 	
 	
 	/**
-	 * @return the minDistToBall
-	 */
-	public static double getMinDistToBall()
-	{
-		return minDistToBall;
-	}
-	
-	
-	/**
 	 * @return the distanceToPenaltyArea
 	 */
 	public static double getDistanceToPenaltyArea()
@@ -242,24 +218,6 @@ public class OffensiveConstants
 	public static double getFinalKickStateDistance()
 	{
 		return finalKickStateDistance;
-	}
-	
-	
-	/**
-	 * @return the finalKickStateUpdate
-	 */
-	public static double getFinalKickStateUpdate()
-	{
-		return finalKickStateUpdate;
-	}
-	
-	
-	/**
-	 * @return the chanceToDoSpecialMove
-	 */
-	public static double getChanceToDoSpecialMove()
-	{
-		return chanceToDoSpecialMove;
 	}
 	
 	
@@ -282,15 +240,6 @@ public class OffensiveConstants
 	
 	
 	/**
-	 * @return the interceptionSkillSecurityDist
-	 */
-	public static double getInterceptionSkillSecurityDist()
-	{
-		return interceptionSkillSecurityDist;
-	}
-	
-	
-	/**
 	 * @return the defaultPassEndVel
 	 */
 	public static double getDefaultPassEndVel()
@@ -300,11 +249,11 @@ public class OffensiveConstants
 	
 	
 	/**
-	 * @return the kickSpeedOffset
+	 * @return the minimum pass time
 	 */
-	public static double getKickSpeedOffset()
+	public static double getMinPassTime()
 	{
-		return kickSpeedOffset;
+		return minPassTime;
 	}
 	
 	
@@ -314,15 +263,6 @@ public class OffensiveConstants
 	public static double getNeededTimeForPassReceivingBotOffset()
 	{
 		return neededTimeForPassReceivingBotOffset;
-	}
-	
-	
-	/**
-	 * @return the ballStartSpeedOffsetForPassTimeCalculation
-	 */
-	public static double getBallStartSpeedOffsetForPassTimeCalculation()
-	{
-		return ballStartSpeedOffsetForPassTimeCalculation;
 	}
 	
 	
@@ -372,69 +312,6 @@ public class OffensiveConstants
 	
 	
 	/**
-	 * @return the minDistanceForSpeedAddition
-	 */
-	public static double getMinDistanceForSpeedAddition()
-	{
-		return minDistanceForSpeedAddition;
-	}
-	
-	
-	/**
-	 * @return the maxDistanceForSpeedAddition
-	 */
-	public static double getMaxDistanceForSpeedAddition()
-	{
-		return maxDistanceForSpeedAddition;
-	}
-	
-	
-	/**
-	 * @return the distanceSpeedAddition
-	 */
-	public static double getDistanceSpeedAddition()
-	{
-		return distanceSpeedAddition;
-	}
-	
-	
-	/**
-	 * @return the chooseNewStrategyTimer
-	 */
-	public static long getChooseNewStrategyTimer()
-	{
-		return chooseNewStrategyTimer;
-	}
-	
-	
-	/**
-	 * @return the acceptBestCatcherBallSpeedTreshold
-	 */
-	public static double getAcceptBestCatcherBallSpeedTreshold()
-	{
-		return acceptBestCatcherBallSpeedTreshold;
-	}
-	
-	
-	/**
-	 * @return the desperateShotChipKickLength
-	 */
-	public static double getDesperateShotChipKickLength()
-	{
-		return desperateShotChipKickLength;
-	}
-	
-	
-	/**
-	 * @return the classifyPassTargetAsBad
-	 */
-	public static double getClassifyPassTargetAsBad()
-	{
-		return classifyPassTargetAsBad;
-	}
-	
-	
-	/**
 	 * @return default end Vel
 	 */
 	public static double getDefaultPassEndVelReceive()
@@ -469,4 +346,75 @@ public class OffensiveConstants
 		return isInterceptorEnabled;
 	}
 	
+	
+	/**
+	 * @return are the statisctics enabled
+	 */
+	public static boolean isEnableOffensiveStatistics()
+	{
+		return enableOffensiveStatistics;
+	}
+	
+	
+	public static boolean isEnableProtectionMode()
+	{
+		return enableProtectionMode;
+	}
+	
+	
+	public static double getMinXPosForSupportiveAttacker()
+	{
+		return minXPosForSupportiveAttacker;
+	}
+	
+	
+	public static boolean isAllowRedirectorOvertake()
+	{
+		return allowRedirectorOvertake;
+	}
+	
+	
+	public static double getMinDirectShotScore()
+	{
+		return minDirectShotScore;
+	}
+	
+	
+	public static double getMinBallVelForSwitchToRedirect()
+	{
+		return minBallVelForSwitchToRedirect;
+	}
+	
+	
+	public static boolean isAlwaysForcePass()
+	{
+		return alwaysForcePass;
+	}
+	
+	
+	public static double getMinScoreChanceShootInsteadRedirect()
+	{
+		return minScoreChanceShootInsteadRedirect;
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public static boolean useBetaDistributionForRedirects()
+	{
+		return useBetaDistributionForRedirects;
+	}
+	
+	
+	public static boolean isIsSmartDistanceCalcAllowedForInterceptor()
+	{
+		return isSmartDistanceCalcAllowedForInterceptor;
+	}
+	
+	
+	public static boolean isEnableNoSkirmishSupportiveAttacker()
+	{
+		return enableNoSkirmishSupportiveAttacker;
+	}
 }

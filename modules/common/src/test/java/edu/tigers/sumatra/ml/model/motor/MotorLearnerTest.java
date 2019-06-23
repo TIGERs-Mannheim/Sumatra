@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 08.09.2015
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ml.model.motor;
 
@@ -26,8 +21,8 @@ import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizer;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import edu.tigers.sumatra.math.IVector3;
-import edu.tigers.sumatra.math.Vector3;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.Vector3;
 
 
 /**
@@ -65,6 +60,42 @@ public class MotorLearnerTest
 		Dinv = new SingularValueDecomposition(D).getSolver().getInverse();
 	}
 	
+	/** */
+	@Test
+	public void simplex()
+	{
+		SimplexOptimizer optimizer = new SimplexOptimizer(0.0001, -1);
+		
+		PointValuePair result = optimizer.optimize(
+				new MaxEval(20000),
+				GoalType.MINIMIZE,
+				new ObjectiveFunction(new MotorFunc(new double[] { 1, 0, 0 })),
+				new InitialGuess(new double[] { -0.5, -0.5, 0.8, 1.6 }),
+				new NelderMeadSimplex(4, 1.0, 1.0, 2.0, 0.5, 0.5)
+		// new MultiDirectionalSimplex(4)
+		);
+		
+		
+		RealVector p = new ArrayRealVector(result.getPoint());
+		System.out.println(optimizer.getEvaluations());
+		System.out.println(p);
+		System.out.println(result.getValue());
+	}
+	
+	/** */
+	@Test
+	public void knownTransform()
+	{
+		// System.out.println(D.toString());
+		// System.out.println(Dinv.toString());
+		
+		IMotorSampler sampler = new Sampler();
+		MotorModelOptimizer optimizer = new MotorModelOptimizer(sampler);
+		
+		optimizer.executeLM(Vector3.fromXYZ(1, 0, 0));
+		
+	}
+	
 	private class Sampler implements IMotorSampler
 	{
 		@Override
@@ -80,7 +111,7 @@ public class MotorLearnerTest
 			// for the real learning this will lead to a sample acquisition with the real bot
 			RealMatrix XYW = Dinv.multiply(M);
 			
-			return new Vector3(XYW.getEntry(0, 0), XYW.getEntry(1, 0), XYW.getEntry(2, 0));
+			return Vector3.fromXYZ(XYW.getEntry(0, 0), XYW.getEntry(1, 0), XYW.getEntry(2, 0));
 		}
 	}
 	
@@ -112,44 +143,5 @@ public class MotorLearnerTest
 			
 			return error + (0.7 * costs);
 		}
-	}
-	
-	
-	/** */
-	@Test
-	public void simplex()
-	{
-		SimplexOptimizer optimizer = new SimplexOptimizer(0.0001, -1);
-		
-		PointValuePair result = optimizer.optimize(
-				new MaxEval(20000),
-				GoalType.MINIMIZE,
-				new ObjectiveFunction(new MotorFunc(new double[] { 1, 0, 0 })),
-				new InitialGuess(new double[] { -0.5, -0.5, 0.8, 1.6 }),
-				new NelderMeadSimplex(4, 1.0, 1.0, 2.0, 0.5, 0.5)
-		// new MultiDirectionalSimplex(4)
-		);
-		
-		
-		RealVector p = new ArrayRealVector(result.getPoint());
-		System.out.println(optimizer.getEvaluations());
-		System.out.println(p);
-		System.out.println(result.getValue());
-	}
-	
-	
-	/** */
-	@Test
-	public void knownTransform()
-	{
-		// System.out.println(D.toString());
-		// System.out.println(Dinv.toString());
-		
-		IMotorSampler sampler = new Sampler();
-		MotorModelOptimizer optimizer = new MotorModelOptimizer(sampler);
-		
-		optimizer.executeLM(new Vector3(1, 0, 0));
-		
-		return;
 	}
 }

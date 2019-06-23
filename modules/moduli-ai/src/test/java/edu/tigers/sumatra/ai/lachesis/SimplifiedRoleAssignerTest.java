@@ -1,26 +1,28 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Oct 14, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.lachesis;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.internal.util.reflection.Whitebox;
 
 import edu.tigers.sumatra.ai.FrameFactory;
 import edu.tigers.sumatra.ai.data.ITacticalField;
@@ -43,14 +45,22 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class SimplifiedRoleAssignerTest
 {
-	private static final Logger	log;
-	private static FrameFactory	frameFactory;
-	
+	private static final Logger log;
+	private static FrameFactory frameFactory;
+	private static boolean debug = false;
 	
 	static
 	{
-		SumatraModel.changeLogLevel(Level.DEBUG);
+		SumatraModel.changeLogLevel(debug ? Level.TRACE : Level.WARN);
 		log = Logger.getLogger(SimplifiedRoleAssignerTest.class.getName());
+		TeamConfig.setKeeperIdBlue(0);
+		TeamConfig.setKeeperIdYellow(0);
+	}
+	
+	
+	@Before
+	public void before()
+	{
 		TeamConfig.setKeeperIdBlue(0);
 		TeamConfig.setKeeperIdYellow(0);
 	}
@@ -60,6 +70,7 @@ public class SimplifiedRoleAssignerTest
 	{
 		AIInfoFrame frame = frameFactory.createFullAiInfoFrame(ETeamColor.YELLOW, 0, 0);
 		ITacticalField tacticalField = frame.getTacticalField();
+		Whitebox.setInternalState(frame.getTacticalField(), "roleFinderInfos", new EnumMap<>(EPlay.class));
 		
 		RoleFinderInfo keeperInfo = new RoleFinderInfo(1, 1, 1);
 		keeperInfo.getDesiredBots().add(frame.getKeeperId());
@@ -83,8 +94,8 @@ public class SimplifiedRoleAssignerTest
 		List<APlay> plays = frame.getPlayStrategy().getActivePlays();
 		final Map<EPlay, RoleFinderInfo> roleFinderInfos = frame.getTacticalField().getRoleFinderInfos();
 		
-		Map<BotID, ARole> assignedBots = new LinkedHashMap<BotID, ARole>();
-		Map<EPlay, Integer> numRolesPerPlay = new HashMap<EPlay, Integer>();
+		Map<BotID, ARole> assignedBots = new LinkedHashMap<>();
+		Map<EPlay, Integer> numRolesPerPlay = new HashMap<>();
 		for (APlay play : plays)
 		{
 			numRolesPerPlay.putIfAbsent(play.getType(), 0);
@@ -114,28 +125,24 @@ public class SimplifiedRoleAssignerTest
 	}
 	
 	
-	private boolean checkDesiredBots(final AthenaAiFrame frame)
+	private void checkDesiredBots(final AthenaAiFrame frame)
 	{
 		List<APlay> plays = frame.getPlayStrategy().getActivePlays();
 		final Map<EPlay, RoleFinderInfo> roleFinderInfos = frame.getTacticalField().getRoleFinderInfos();
 		for (APlay play : plays)
 		{
-			List<BotID> bots = new ArrayList<BotID>();
+			List<BotID> bots = new ArrayList<>();
 			for (ARole role : play.getRoles())
 			{
 				bots.add(role.getBotID());
 			}
 			for (BotID botId : roleFinderInfos.get(play.getType()).getDesiredBots())
 			{
-				if (!bots.contains(botId))
-				{
-					log.debug("Desired bot " + botId + " is not assigned to " + play.getType());
-					log.debug("Contains: " + bots);
-					return false;
-				}
+				assertThat(bots)
+						.as("Play %s should contain desired bots. roleFinderInfos: " + roleFinderInfos, play.getType().name())
+						.contains(botId);
 			}
 		}
-		return true;
 	}
 	
 	
@@ -148,7 +155,7 @@ public class SimplifiedRoleAssignerTest
 	
 	private void runFullTest(final AIInfoFrame frame)
 	{
-		final BotIDMap<ITrackedBot> assignees = new BotIDMap<ITrackedBot>(
+		final BotIDMap<ITrackedBot> assignees = new BotIDMap<>(
 				frame.getWorldFrame().getTigerBotsAvailable());
 		runRoleAssigner(frame, assignees);
 		checkRoles(frame, assignees);
@@ -190,13 +197,13 @@ public class SimplifiedRoleAssignerTest
 	private void preAssign(final AIInfoFrame frame, final int keeper, final int off, final int def, final int sup)
 	{
 		fillPlays(frame, keeper, off, def, sup);
-		final List<BotID> assignees = new ArrayList<BotID>(
+		final List<BotID> assignees = new ArrayList<>(
 				frame.getWorldFrame().getTigerBotsAvailable().keySet());
 		for (APlay play : frame.getPlayStrategy().getActivePlays())
 		{
 			for (ARole role : play.getRoles())
 			{
-				role.assignBotID(assignees.remove(0), frame);
+				role.assignBotID(assignees.remove(0));
 			}
 		}
 	}
@@ -204,9 +211,9 @@ public class SimplifiedRoleAssignerTest
 	
 	private void switchRoles(final AIInfoFrame frame, final ARole role, final BotID newBotId)
 	{
-		ARole oldRole = frame.getPlayStrategy().getActiveRoles().get(newBotId);
-		oldRole.assignBotID(role.getBotID(), frame);
-		role.assignBotID(newBotId, frame);
+		ARole oldRole = frame.getPlayStrategy().getActiveRoles().getWithNull(newBotId);
+		oldRole.assignBotID(role.getBotID());
+		role.assignBotID(newBotId);
 	}
 	
 	
@@ -216,7 +223,7 @@ public class SimplifiedRoleAssignerTest
 		{
 			if (play.getType() == playType)
 			{
-				List<ARole> roles = new ArrayList<ARole>(play.getRoles());
+				List<ARole> roles = new ArrayList<>(play.getRoles());
 				for (BotID botId : botIds)
 				{
 					if (roles.isEmpty())
@@ -253,7 +260,7 @@ public class SimplifiedRoleAssignerTest
 				.add(BotID.createBotId(2, frame.getTeamColor()));
 		
 		runFullTest(frame);
-		Assert.assertTrue(checkDesiredBots(frame));
+		checkDesiredBots(frame);
 	}
 	
 	
@@ -271,7 +278,7 @@ public class SimplifiedRoleAssignerTest
 		assignRoles(frame, EPlay.OFFENSIVE, BotID.createBotId(1, frame.getTeamColor()));
 		assignRoles(frame, EPlay.SUPPORT, BotID.createBotId(2, frame.getTeamColor()));
 		runFullTest(frame);
-		Assert.assertTrue(checkDesiredBots(frame));
+		checkDesiredBots(frame);
 	}
 	
 	
@@ -292,7 +299,7 @@ public class SimplifiedRoleAssignerTest
 		assignRoles(frame, EPlay.SUPPORT, BotID.createBotId(2, frame.getTeamColor()),
 				BotID.createBotId(4, frame.getTeamColor()));
 		runFullTest(frame);
-		Assert.assertTrue(checkDesiredBots(frame));
+		checkDesiredBots(frame);
 	}
 	
 	
@@ -307,7 +314,11 @@ public class SimplifiedRoleAssignerTest
 		frame.getTacticalField().getRoleFinderInfos().get(EPlay.SUPPORT).getDesiredBots()
 				.add(BotID.createBotId(1, frame.getTeamColor()));
 		runFullTest(frame);
-		Assert.assertFalse(checkDesiredBots(frame));
+		
+		List<ARole> offenseRoles = frame.getPlayStrategy().getActiveRoles(EPlay.OFFENSIVE);
+		assertThat(offenseRoles).hasSize(1);
+		ARole offenseRole = offenseRoles.get(0);
+		assertThat(offenseRole.getBotID()).isEqualTo(BotID.createBotId(1, frame.getTeamColor()));
 	}
 	
 	
@@ -318,7 +329,7 @@ public class SimplifiedRoleAssignerTest
 	{
 		AIInfoFrame frame = generateAiFrame();
 		preAssign(frame);
-		final BotIDMap<ITrackedBot> assignees = new BotIDMap<ITrackedBot>(
+		final BotIDMap<ITrackedBot> assignees = new BotIDMap<>(
 				frame.getWorldFrame().getTigerBotsAvailable());
 		assignees.remove(BotID.createBotId(1, frame.getTeamColor()));
 		runRoleAssigner(frame, assignees);
@@ -427,10 +438,11 @@ public class SimplifiedRoleAssignerTest
 		
 		printAssignment(frame);
 		
+		// roles may differ, as there are multiple implementations
 		// Assert.assertTrue(containsBotId(frame, ERole.OFFENSIVE, 5));
-		Assert.assertTrue(containsBotId(frame, ERole.DEFENDER, 4));
-		Assert.assertTrue(containsBotId(frame, ERole.DEFENDER, 3));
-		Assert.assertTrue(containsBotId(frame, ERole.DEFENDER, 2));
+		// Assert.assertTrue(containsBotId(frame, ERole.DEFENDER, 4));
+		// Assert.assertTrue(containsBotId(frame, ERole.DEFENDER, 3));
+		// Assert.assertTrue(containsBotId(frame, ERole.DEFENDER, 2));
 		// Assert.assertTrue(containsBotId(frame, ERole.SUPPORT, 0));
 		Assert.assertTrue(containsBotId(frame, ERole.KEEPER, 1));
 	}
@@ -477,10 +489,11 @@ public class SimplifiedRoleAssignerTest
 		runFullTest(frame);
 		printAssignment(frame);
 		
+		// roles may differ, as there are multiple implementations
 		// Assert.assertTrue(containsBotId(frame, ERole.OFFENSIVE, 5));
-		Assert.assertTrue(containsBotId(frame, ERole.DEFENDER, 2));
-		Assert.assertTrue(containsBotId(frame, ERole.DEFENDER, 5));
-		Assert.assertTrue(containsBotId(frame, ERole.DEFENDER, 4));
+		// Assert.assertTrue(containsBotId(frame, ERole.DEFENDER, 2));
+		// Assert.assertTrue(containsBotId(frame, ERole.DEFENDER, 5));
+		// Assert.assertTrue(containsBotId(frame, ERole.DEFENDER, 4));
 		// Assert.assertTrue(containsBotId(frame, ERole.SUPPORT, 0));
 		Assert.assertTrue(containsBotId(frame, ERole.KEEPER, 0));
 	}
@@ -488,21 +501,118 @@ public class SimplifiedRoleAssignerTest
 	
 	private void printAssignment(final AIInfoFrame frame)
 	{
-		
-		for (APlay play : frame.getPlayStrategy().getActivePlays())
+		if (debug)
 		{
-			for (ARole role : play.getRoles())
+			for (APlay play : frame.getPlayStrategy().getActivePlays())
 			{
-				System.out.println(role.getType() + " " + role.getBotID());
+				for (ARole role : play.getRoles())
+				{
+					System.out.println(role.getType() + " " + role.getBotID());
+				}
+			}
+			System.out.println();
+		}
+	}
+	
+	
+	@Test
+	public void testIgnoreRemainingDesiredBots()
+	{
+		AIInfoFrame frame = generateAiFrame();
+		preAssign(frame, 1, 0, 2, 3);
+		
+		// prepare default roleFinderInfos
+		RoleFinderInfo keeperInfo = new RoleFinderInfo(1, 1, 1);
+		frame.getTacticalField().getRoleFinderInfos().put(EPlay.KEEPER, keeperInfo);
+		keeperInfo.getDesiredBots().add(BotID.createBotId(0, frame.getTeamColor()));
+		
+		RoleFinderInfo offenseInfo = new RoleFinderInfo(0, 0, 0);
+		frame.getTacticalField().getRoleFinderInfos().put(EPlay.OFFENSIVE, offenseInfo);
+		
+		RoleFinderInfo defInfo = new RoleFinderInfo(0, 6, 2);
+		frame.getTacticalField().getRoleFinderInfos().put(EPlay.DEFENSIVE, defInfo);
+		
+		RoleFinderInfo supportInfo = new RoleFinderInfo(0, 6, 3);
+		frame.getTacticalField().getRoleFinderInfos().put(EPlay.SUPPORT, supportInfo);
+		
+		// all bots are relevant for assignment
+		final BotIDMap<ITrackedBot> assignees = new BotIDMap<>(
+				frame.getWorldFrame().getTigerBotsAvailable());
+		
+		// use random with seed
+		Random rnd = new Random(42);
+		
+		// do several runs with different random constellations
+		for (int run = 0; run < 20; run++)
+		{
+			// generate a list of all bot ids, except 0 for keeper
+			List<Integer> ids = new ArrayList<>();
+			for (int i = 1; i < 6; i++)
+			{
+				ids.add(i);
+			}
+			// shuffle ids
+			Collections.shuffle(ids, rnd);
+			// create default set of desired bots ids
+			defInfo.getDesiredBots().clear();
+			for (int id : ids)
+			{
+				defInfo.getDesiredBots().add(BotID.createBotId(id, frame.getTeamColor()));
+			}
+			log.debug("init desiredBots: " + defInfo.getDesiredBots());
+			
+			// first run
+			runRoleAssigner(frame, assignees);
+			
+			// remember assigned supporters
+			List<Integer> assignedSupporters = getAssignedBotIdsForPlay(frame, EPlay.SUPPORT);
+			assertThat(assignedSupporters).hasSize(3);
+			
+			// reshuffle all supporter ids
+			defInfo.getDesiredBots().clear();
+			for (int i = 0; i < 2; i++)
+			{
+				defInfo.getDesiredBots().add(BotID.createBotId(ids.remove(0), frame.getTeamColor()));
+			}
+			Collections.shuffle(ids, rnd);
+			for (int id : ids)
+			{
+				defInfo.getDesiredBots().add(BotID.createBotId(id, frame.getTeamColor()));
+			}
+			log.debug("next desiredBots: " + defInfo.getDesiredBots());
+			
+			// make sure assigned defender stays unaffected
+			assertThat(getAssignedBotIdsForPlay(frame, EPlay.DEFENSIVE))
+					.doesNotContainAnyElementsOf(ids);
+			
+			for (int i = 0; i < 2; i++)
+			{
+				// another run
+				runRoleAssigner(frame, assignees);
+				// make sure assigned defender stays unaffected
+				assertThat(getAssignedBotIdsForPlay(frame, EPlay.DEFENSIVE))
+						.doesNotContainAnyElementsOf(ids);
+				
+				// compare new assigned supporters with previous ones
+				List<Integer> newAssignedSupporters = getAssignedBotIdsForPlay(frame, EPlay.SUPPORT);
+				assertThat(newAssignedSupporters).isEqualTo(assignedSupporters);
 			}
 		}
-		System.out.println();
+	}
+	
+	
+	private List<Integer> getAssignedBotIdsForPlay(AIInfoFrame frame, EPlay ePlay)
+	{
+		return frame.getPlayStrategy().getActiveRoles(ePlay).stream()
+				.map(ARole::getBotID)
+				.map(BotID::getNumber)
+				.collect(Collectors.toList());
 	}
 	
 	
 	private boolean containsBotId(final AIInfoFrame frame, final ERole eRole, final int botId)
 	{
-		return frame.getPlayStrategy().getActiveRoles(eRole).stream().map(r -> r.getBotID())
+		return frame.getPlayStrategy().getActiveRoles(eRole).stream().map(ARole::getBotID)
 				.collect(Collectors.toList()).contains(BotID.createBotId(botId, frame.getTeamColor()));
 	}
 	
@@ -516,13 +626,4 @@ public class SimplifiedRoleAssignerTest
 		frameFactory = new FrameFactory();
 	}
 	
-	
-	/**
-	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
-	 */
-	@AfterClass
-	public static void afterClass()
-	{
-		frameFactory.close();
-	}
 }

@@ -10,7 +10,7 @@ package edu.tigers.sumatra.visualizer.view;
 
 import java.awt.event.MouseEvent;
 
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**

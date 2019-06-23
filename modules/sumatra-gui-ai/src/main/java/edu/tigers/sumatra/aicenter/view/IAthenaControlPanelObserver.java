@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 7, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.aicenter.view;
 
@@ -30,5 +25,5 @@ public interface IAthenaControlPanelObserver
 	/**
 	 * @param overrides
 	 */
-	void onNewRoleFinderOverrides(Map<EPlay, Boolean> overrides);
+	void onNewRoleFinderUseAiFlags(Map<EPlay, Boolean> overrides);
 }

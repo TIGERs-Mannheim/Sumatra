@@ -1,27 +1,20 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 17.10.2010
- * Author(s): DanielAl
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.others;
 
-import edu.tigers.sumatra.ai.data.EGameStateTeam;
 import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
 import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
-import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole.EMoveBehavior;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2f;
-import edu.tigers.sumatra.shapes.rectangle.Rectangle;
-import edu.tigers.sumatra.wp.data.Geometry;
+import edu.tigers.sumatra.math.circle.CircleMath;
+import edu.tigers.sumatra.math.rectangle.IRectangle;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -31,17 +24,14 @@ import edu.tigers.sumatra.wp.data.Geometry;
  */
 public class CheeringPlay extends APlay
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
+	private final IVector2		center				= Geometry.getCenter();
+	private final IRectangle	field					= Geometry.getField();
+	private final double			radius				= Geometry.getCenterCircle().radius();
 	
-	private final IVector2	center				= Geometry.getCenter();
-	private final Rectangle	field					= Geometry.getField();
-	private final double		radius				= Geometry.getBotToBallDistanceStop();
+	private CheeringPhase		state					= CheeringPhase.START;
 	
-	private CheeringPhase	state					= CheeringPhase.START;
+	private int						numRolesLastTime	= 0;
 	
-	private int					numRolesLastTime	= 0;
 	
 	private enum CheeringPhase
 	{
@@ -49,14 +39,15 @@ public class CheeringPlay extends APlay
 		GROW,
 		ROTATE,
 		CENTER,
-		END
+		END,
+		SHRINK,
+		ROTATEAGAIN,
+		BACKTOMID
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
+	 * Default
 	 */
 	public CheeringPlay()
 	{
@@ -64,32 +55,53 @@ public class CheeringPlay extends APlay
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	@Override
 	protected void doUpdate(final AthenaAiFrame currentFrame)
 	{
+		if (getRoles().size() < 3)
+		{
+			return; // minimum bots 3
+		}
+		
 		if (numRolesLastTime != getRoles().size())
 		{
 			updateRoles();
 			numRolesLastTime = getRoles().size();
 		}
 		
-		if (checkConditions(currentFrame))
+		performAction();
+	}
+	
+	
+	private void performAction()
+	{
+		final int direction = 1;
+		if (checkConditions())
 		{
 			switch (state)
 			{
 				case START:
-					grow(0.5f);
-					state = CheeringPhase.GROW;
-					break;
-				case GROW:
-					grow(2.0f);
+					setRadius(1f);
 					state = CheeringPhase.ROTATE;
 					break;
 				case ROTATE:
-					rotate(AngleMath.PI_HALF);
+					rotate((direction * AngleMath.PI_TWO) / getRoles().size());
+					state = CheeringPhase.GROW;
+					break;
+				case GROW:
+					setRadius(1.5f);
+					state = CheeringPhase.BACKTOMID;
+					break;
+				case BACKTOMID:
+					setRadius(2f);
+					state = CheeringPhase.ROTATEAGAIN;
+					break;
+				case ROTATEAGAIN:
+					rotate((direction * AngleMath.PI_TWO) / getRoles().size());
+					state = CheeringPhase.SHRINK;
+					break;
+				case SHRINK:
+					setRadius(0.5f);
 					state = CheeringPhase.END;
 					break;
 				case END:
@@ -102,26 +114,22 @@ public class CheeringPlay extends APlay
 	}
 	
 	
-	private boolean checkConditions(final AthenaAiFrame frame)
+	private boolean checkConditions()
 	{
 		int counterTrue = 0;
 		for (final ARole role : getRoles())
 		{
 			MoveRole moveRole = (MoveRole) role;
-			if (moveRole.isDestinationReached())
+			if (moveRole.getPos().isCloseTo(moveRole.getMoveCon().getDestination(), 100))
 			{
 				counterTrue++;
 			}
 		}
-		if (counterTrue >= (getRoles().size() - 1))
-		{
-			return true;
-		}
-		return false;
+		return counterTrue >= (getRoles().size() - 1);
 	}
 	
 	
-	private void grow(final double factor)
+	private void setRadius(final double factor)
 	{
 		for (final ARole role : getRoles())
 		{
@@ -129,7 +137,8 @@ public class CheeringPlay extends APlay
 			if (field.isPointInShape(moveRole.getPos()))
 			{
 				moveRole.getMoveCon().updateDestination(
-						moveRole.getMoveCon().getDestination().multiplyNew(factor));
+						moveRole.getMoveCon().getDestination()
+								.multiplyNew((factor * radius) / moveRole.getMoveCon().getDestination().getLength()));
 			}
 		}
 	}
@@ -142,7 +151,7 @@ public class CheeringPlay extends APlay
 			final MoveRole moveRole = (MoveRole) role;
 			if (field.isPointInShape(moveRole.getPos()))
 			{
-				IVector2 dest = GeoMath.stepAlongCircle(moveRole.getPos(), center, angle);
+				IVector2 dest = CircleMath.stepAlongCircle(moveRole.getMoveCon().getDestination(), center, angle);
 				moveRole.getMoveCon().updateDestination(dest);
 			}
 		}
@@ -152,45 +161,33 @@ public class CheeringPlay extends APlay
 	@Override
 	protected ARole onRemoveRole(final MetisAiFrame frame)
 	{
-		ARole role = getLastRole();
-		return role;
+		return getLastRole();
 	}
 	
 	
 	@Override
 	protected ARole onAddRole(final MetisAiFrame frame)
 	{
-		MoveRole newRole = new MoveRole(EMoveBehavior.NORMAL);
+		MoveRole newRole = new MoveRole();
 		newRole.getMoveCon().setBallObstacle(false);
-		newRole.getMoveCon().setRefereeStop(true);
 		return newRole;
-	}
-	
-	
-	@Override
-	protected void onGameStateChanged(final EGameStateTeam gameState)
-	{
 	}
 	
 	
 	private void updateRoles()
 	{
 		double angleStep = AngleMath.PI_TWO / getRoles().size();
-		IVector2 startOnCircle = new Vector2f(center.x(), center.y() + radius);
+		IVector2 startOnCircle = Vector2f.fromXY(center.x(), center.y() + radius);
 		int i = 0;
 		for (ARole role : getRoles())
 		{
 			MoveRole moveRole = (MoveRole) role;
-			IVector2 dest = GeoMath.stepAlongCircle(startOnCircle, center, angleStep * i);
+			IVector2 dest = CircleMath.stepAlongCircle(startOnCircle, center, angleStep * i);
 			moveRole.getMoveCon().updateDestination(dest);
+			
 			moveRole.getMoveCon().updateLookAtTarget(center);
 			i++;
 		}
 		state = CheeringPhase.GROW;
 	}
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
 }

@@ -1,16 +1,13 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jul 1, 2016
- * Author(s): Phillipp Mevenkamp <phillippmevenkamp@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.data.statistics;
 
-import junit.framework.Assert;
-
 import org.junit.Test;
+
+import edu.tigers.sumatra.ai.metis.statistics.HeatMap;
+import edu.tigers.sumatra.ai.metis.statistics.PositionData;
+import junit.framework.Assert;
 
 
 /**

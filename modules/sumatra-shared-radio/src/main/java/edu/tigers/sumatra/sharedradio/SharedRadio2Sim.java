@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 30, 2016
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.sharedradio;
 
 import java.io.ByteArrayInputStream;
@@ -23,13 +19,14 @@ import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.moduli.exceptions.StartModuleException;
 import edu.tigers.sumatra.RadioProtocolCommandOuterClass.RadioProtocolCommand;
 import edu.tigers.sumatra.RadioProtocolWrapperOuterClass.RadioProtocolWrapper;
+import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.ABotManager;
 import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.botmanager.commands.botskills.ABotSkill;
 import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillLocalVelocity;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.model.SumatraModel;
 
 
@@ -136,6 +133,7 @@ public class SharedRadio2Sim extends AModule
 			receiverThread.join(100);
 		} catch (final InterruptedException err)
 		{
+			Thread.currentThread().interrupt();
 		}
 		
 		receiverThread = null;
@@ -155,7 +153,7 @@ public class SharedRadio2Sim extends AModule
 			
 			Thread.currentThread().setName("SharedRadioReceiver");
 			
-			byte[] buf = null;
+			byte[] buf;
 			
 			try
 			{
@@ -192,14 +190,15 @@ public class SharedRadio2Sim extends AModule
 					for (RadioProtocolCommand cmd : wrapper.getCommandList())
 					{
 						int id = cmd.getRobotId();
-						IVector2 vel_xy = new Vector2(-cmd.getVelocityY(), cmd.getVelocityX());
+						IVector2 vel_xy = Vector2.fromXY(-cmd.getVelocityY(), cmd.getVelocityX());
 						double vel_w = cmd.getVelocityR();
 						
 						for (ABot sBot : botMgr.getAllBots().values())
 						{
 							if ((sBot.getBotId().getNumber() == id) && (sBot.getBotId().getTeamColor() == teamColor))
 							{
-								ABotSkill skill = new BotSkillLocalVelocity(vel_xy, vel_w, sBot.getMoveConstraints());
+								MoveConstraints mc = new MoveConstraints(sBot.getBotParams().getMovementLimits());
+								ABotSkill skill = new BotSkillLocalVelocity(vel_xy, vel_w, mc);
 								sBot.getMatchCtrl().setSkill(skill);
 								break;
 							}
@@ -209,7 +208,7 @@ public class SharedRadio2Sim extends AModule
 					
 				} catch (final SocketException e)
 				{
-					log.info("UDP transceiver terminating");
+					log.info("UDP transceiver terminating", e);
 					Thread.currentThread().interrupt();
 				} catch (final IOException err)
 				{

@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Mar 6, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.autoreferee.engine.states.impl;
 
 import java.awt.Color;
@@ -18,28 +14,28 @@ import org.apache.log4j.Logger;
 import com.github.g3force.configurable.Configurable;
 
 import edu.tigers.autoreferee.AutoRefUtil.ColorFilter;
+import edu.tigers.autoreferee.EAutoRefShapesLayer;
 import edu.tigers.autoreferee.IAutoRefFrame;
+import edu.tigers.autoreferee.engine.AutoRefMath;
 import edu.tigers.autoreferee.engine.NGeometry;
-import edu.tigers.autoreferee.engine.RefCommand;
+import edu.tigers.autoreferee.engine.RefboxRemoteCommand;
 import edu.tigers.autoreferee.engine.states.IAutoRefStateContext;
 import edu.tigers.sumatra.Referee.SSL_Referee.Command;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableRectangle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.Goal;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.ids.IBotIDMap;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2f;
-import edu.tigers.sumatra.referee.RefereeMsg;
-import edu.tigers.sumatra.shapes.rectangle.Rectangle;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
-import edu.tigers.sumatra.wp.data.Geometry;
-import edu.tigers.sumatra.wp.data.Goal;
+import edu.tigers.sumatra.math.rectangle.Rectangle;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
+import edu.tigers.sumatra.referee.data.GameState;
+import edu.tigers.sumatra.referee.data.RefereeMsg;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
-import edu.tigers.sumatra.wp.data.TrackedBall;
-import edu.tigers.sumatra.wp.vis.EWpShapesLayer;
 
 
 /**
@@ -58,7 +54,6 @@ public class PreparePenaltyState extends AbstractAutoRefState
 	
 	private IVector2					penaltyMark;
 	private Rectangle					keeperArea;
-	private Rectangle					penaltyKickArea;
 	private ETeamColor				shooterTeam;
 	
 	private Long						readyTime				= null;
@@ -67,10 +62,9 @@ public class PreparePenaltyState extends AbstractAutoRefState
 	@Override
 	protected void prepare(final IAutoRefFrame frame)
 	{
-		EGameStateNeutral gamestate = frame.getGameState();
-		shooterTeam = gamestate.getTeamColor();
+		GameState gamestate = frame.getGameState();
+		shooterTeam = gamestate.getForTeam();
 		penaltyMark = NGeometry.getPenaltyMark(shooterTeam.opposite());
-		penaltyKickArea = NGeometry.getPenaltyKickArea(shooterTeam.opposite());
 		keeperArea = calcKeeperArea(shooterTeam.opposite());
 	}
 	
@@ -79,9 +73,8 @@ public class PreparePenaltyState extends AbstractAutoRefState
 	protected void doUpdate(final IAutoRefFrame frame, final IAutoRefStateContext ctx)
 	{
 		SimpleWorldFrame wFrame = frame.getWorldFrame();
-		List<IDrawableShape> shapes = frame.getShapes().get(EWpShapesLayer.AUTOREFEREE);
+		List<IDrawableShape> shapes = frame.getShapes().get(EAutoRefShapesLayer.ENGINE);
 		
-		shapes.add(new DrawableRectangle(penaltyKickArea, AREA_COLOR));
 		shapes.add(new DrawableRectangle(keeperArea, AREA_COLOR));
 		
 		if (!timeElapsedSinceEntry(MIN_WAIT_TIME_MS))
@@ -93,7 +86,7 @@ public class PreparePenaltyState extends AbstractAutoRefState
 		
 		boolean ballPlaced = checkBallPlaced(wFrame.getBall(), penaltyMark, shapes);
 		boolean keeperPosCorrect = checkKeeper(frame.getRefereeMsg(), wFrame.getBots(), shapes);
-		boolean kickingTeamCorrect = checkKickingTeam(wFrame.getBots(), wFrame.getBall(), shapes);
+		boolean kickingTeamCorrect = checkKickingTeam(wFrame.getBots(), shapes);
 		boolean defendingTeamCorrect = checkDefendingTeam(frame.getRefereeMsg(), wFrame.getBots(), shapes);
 		boolean ready = false;
 		
@@ -111,9 +104,9 @@ public class PreparePenaltyState extends AbstractAutoRefState
 			readyTime = null;
 		}
 		
-		if ((ready == true) || ctx.doProceed())
+		if (ready || ctx.doProceed())
 		{
-			RefCommand cmd = new RefCommand(Command.NORMAL_START);
+			RefboxRemoteCommand cmd = new RefboxRemoteCommand(Command.NORMAL_START);
 			sendCommandIfReady(ctx, cmd, ctx.doProceed());
 		}
 	}
@@ -146,15 +139,14 @@ public class PreparePenaltyState extends AbstractAutoRefState
 	}
 	
 	
-	private boolean checkKickingTeam(final IBotIDMap<ITrackedBot> bots, final TrackedBall ball,
-			final List<IDrawableShape> shapes)
+	private boolean checkKickingTeam(final IBotIDMap<ITrackedBot> bots, final List<IDrawableShape> shapes)
 	{
 		List<ITrackedBot> possibleKicker = bots.values().stream()
 				.filter(ColorFilter.get(shooterTeam))
-				.filter(bot -> penaltyKickArea.isPointInShape(bot.getPos(), -Geometry.getBotRadius()))
+				.filter(bot -> botInPenaltyKickArea(bot.getPos()))
 				.collect(Collectors.toList());
 		
-		if ((possibleKicker.size() > 1))
+		if (possibleKicker.size() > 1)
 		{
 			possibleKicker.forEach(bot -> shapes.add(new DrawableCircle(bot.getPos(), Geometry.getBotRadius() * 2,
 					Color.RED)));
@@ -171,21 +163,27 @@ public class PreparePenaltyState extends AbstractAutoRefState
 		BotID keeperID = refMsg.getKeeperBotID(shooterTeam.opposite());
 		List<ITrackedBot> defender = bots.values().stream()
 				.filter(ColorFilter.get(shooterTeam.opposite()))
-				.filter(bot -> penaltyKickArea.isPointInShape(bot.getPos(), -Geometry.getBotRadius()))
+				.filter(bot -> botInPenaltyKickArea(bot.getPos()))
 				.filter(bot -> !bot.getBotId().equals(keeperID))
 				.collect(Collectors.toList());
 		
 		defender.forEach(bot -> shapes.add(new DrawableCircle(bot.getPos(), Geometry.getBotRadius() * 2, Color.RED)));
 		
-		return defender.size() == 0;
+		return defender.isEmpty();
 	}
 	
 	
 	private Rectangle calcKeeperArea(final ETeamColor color)
 	{
 		Goal goal = NGeometry.getGoal(color);
-		IVector2 topLeft = goal.getGoalPostLeft().addNew(new Vector2f(Geometry.getBotRadius(), 0));
-		IVector2 bottomRight = goal.getGoalPostRight().addNew(new Vector2f(-Geometry.getBotRadius(), 0));
-		return new Rectangle(topLeft, bottomRight);
+		IVector2 topLeft = goal.getLeftPost().addNew(Vector2f.fromXY(Geometry.getBotRadius(), 0));
+		IVector2 bottomRight = goal.getRightPost().addNew(Vector2f.fromXY(-Geometry.getBotRadius(), 0));
+		return Rectangle.fromPoints(topLeft, bottomRight);
+	}
+	
+	
+	private boolean botInPenaltyKickArea(final IVector2 pos)
+	{
+		return AutoRefMath.positionInPenaltyKickArea(shooterTeam, pos, Geometry.getBotRadius());
 	}
 }

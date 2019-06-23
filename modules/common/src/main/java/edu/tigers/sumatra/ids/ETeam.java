@@ -23,7 +23,7 @@ public enum ETeam
 	/** */
 	UNKNOWN,
 	/** */
-	EQUAL;
+	BOTH;
 	
 	
 	/**

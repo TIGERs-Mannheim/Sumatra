@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Oct 2, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.control.motor;
 
 import java.io.IOException;
@@ -23,12 +19,12 @@ import org.apache.log4j.Logger;
 
 import edu.tigers.sumatra.export.CSVExporter;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.IVector3;
-import edu.tigers.sumatra.math.IVectorN;
 import edu.tigers.sumatra.math.SumatraMath;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.math.Vector3;
-import edu.tigers.sumatra.math.VectorN;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.IVectorN;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.VectorN;
 
 
 /**
@@ -38,13 +34,13 @@ public class InterpolationMotorModel extends AMotorModel
 {
 	@SuppressWarnings("unused")
 	private static final Logger	log				= Logger.getLogger(InterpolationMotorModel.class.getName());
-																
+	
 	private static final String	FOLDER			= "data/interpolationModel/";
-																
+	
 	private List<Angle>				supportAngles	= new ArrayList<>();
 	private final double[]			in_Z				= new double[] { 3, 3, 3, 3 };
-																
-																
+	
+	
 	/**
 	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 	 */
@@ -80,7 +76,7 @@ public class InterpolationMotorModel extends AMotorModel
 		{
 			for (double speed = 0.0; speed <= (maxSpeed + 1e-4); speed += speedStep)
 			{
-				IVectorN vec = mm.getWheelSpeed(new Vector3(new Vector2(angle).scaleTo(speed), 0));
+				IVectorN vec = mm.getWheelSpeed(Vector3.from2d(Vector2.fromAngle(angle).scaleTo(speed), 0));
 				imm.addSupport(angle, speed, vec.toArray());
 			}
 		}
@@ -224,14 +220,14 @@ public class InterpolationMotorModel extends AMotorModel
 		
 		double[] motors = interpolateAngle(velAngle, sa1.angle, sa2.angle, interpolateSpeed1,
 				interpolateSpeed2);
-				
+		
 		for (int k = 0; k < 4; k++)
 		{
 			in[k] = motors[k]
 					+ (xyw.z() * in_Z[k]);
 		}
 		
-		return new VectorN(in);
+		return VectorN.from(in);
 	}
 	
 	
@@ -325,8 +321,8 @@ public class InterpolationMotorModel extends AMotorModel
 	{
 		final double		angle;
 		final List<Speed>	supSpeeds	= new ArrayList<>();
-												
-												
+		
+		
 		/**
 		 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 		 * @param angle
@@ -352,7 +348,7 @@ public class InterpolationMotorModel extends AMotorModel
 			long temp;
 			temp = Double.doubleToLongBits(angle);
 			result = (prime * result) + (int) (temp ^ (temp >>> 32));
-			result = (prime * result) + ((supSpeeds == null) ? 0 : supSpeeds.hashCode());
+			result = (prime * result) + supSpeeds.hashCode();
 			return result;
 		}
 		
@@ -377,17 +373,7 @@ public class InterpolationMotorModel extends AMotorModel
 			{
 				return false;
 			}
-			if (supSpeeds == null)
-			{
-				if (other.supSpeeds != null)
-				{
-					return false;
-				}
-			} else if (!supSpeeds.equals(other.supSpeeds))
-			{
-				return false;
-			}
-			return true;
+			return supSpeeds.equals(other.supSpeeds);
 		}
 		
 		
@@ -414,8 +400,8 @@ public class InterpolationMotorModel extends AMotorModel
 		final double	speed;
 		final double[]	motors;
 		final double[]	debug;
-							
-							
+		
+		
 		/**
 		 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 		 * @param speed
@@ -470,11 +456,7 @@ public class InterpolationMotorModel extends AMotorModel
 			{
 				return false;
 			}
-			if (Double.doubleToLongBits(speed) != Double.doubleToLongBits(other.speed))
-			{
-				return false;
-			}
-			return true;
+			return Double.doubleToLongBits(speed) == Double.doubleToLongBits(other.speed);
 		}
 		
 		

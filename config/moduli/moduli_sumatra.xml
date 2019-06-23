@@ -1,154 +1,148 @@
 <?xml version="1.0" encoding="ISO-8859-1" ?>
+<!--
+  ~ Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+  -->
+
 <centralSoftware>
-	<moduliPath></moduliPath>
+    <moduliPath>
+    </moduliPath>
 
-	<globalConfiguration>
-		<environment>SUMATRA</environment>
-	</globalConfiguration>
+    <globalConfiguration>
+        <environment>SUMATRA</environment>
+    </globalConfiguration>
 
+    <module id="visionFilter" type="AVisionFilter">
+        <implementation>edu.tigers.sumatra.sim.SumatraSimulator</implementation>
 
-	<module id="cam" type="ACam">
-		<implementation> edu.tigers.sumatra.sim.SumatraCam </implementation>
+        <properties>
+        </properties>
 
-		<properties>
-		</properties>
-	</module>
-
-
-	<module id="worldpredictor" type="AWorldpredictor">
-		<implementation> edu.tigers.sumatra.wp.kalman.ExtKalman
-		</implementation>
-
-		<properties>
-		</properties>
-
-		<dependency>cam</dependency>
-		<dependency>timer</dependency>
-	</module>
+        <dependency>timer</dependency>
+        <dependency>botparams</dependency>
+    </module>
 
 
-	<module id="referee" type="AReferee">
-		<implementation> edu.tigers.sumatra.referee.RefereeHandler
-		</implementation>
+    <module id="worldpredictor" type="AWorldpredictor">
+        <implementation>edu.tigers.sumatra.wp.WorldInfoCollector</implementation>
 
-		<properties>
-		</properties>
-	</module>
+        <properties>
+        </properties>
 
-
-	<module id="autoreferee" type="AReferee">
-		<implementation>
-			edu.tigers.autoreferee.AutoRefModule
-		</implementation>
-
-		<properties>
-		</properties>
-	</module>
+        <dependency>referee</dependency>
+        <dependency>timer</dependency>
+        <dependency>botparams</dependency>
+    </module>
 
 
-	<module id="autoreferee_legacy" type="AReferee">
-		<implementation>
-			edu.tigers.sumatra.autoreferee.AutoReferee
-		</implementation>
+    <module id="referee" type="AReferee">
+        <implementation>edu.tigers.sumatra.referee.Referee
+        </implementation>
 
-		<properties>
-		</properties>
-	</module>
-
-
-	<module id="botmanager" type="ABotManager">
-		<implementation> edu.tigers.sumatra.botmanager.BotManager
-		</implementation>
-
-		<properties>
-			<basestation-impl>edu.tigers.sumatra.sim.SumatraBaseStation
-			</basestation-impl>
-		</properties>
-	</module>
+        <properties>
+        </properties>
+    </module>
 
 
-	<module id="skillsystem" type="ASkillSystem">
-		<implementation>
-			edu.tigers.sumatra.skillsystem.GenericSkillSystem
-		</implementation>
+    <module id="autoreferee" type="AReferee">
+        <implementation>
+            edu.tigers.autoreferee.module.AutoRefModule
+        </implementation>
 
-		<properties>
-		</properties>
-
-		<dependency>botmanager</dependency>
-	</module>
-
-
-	<module id="ai_yellow" type="AAgent">
-		<implementation>
-			edu.tigers.sumatra.ai.Agent
-		</implementation>
-
-		<properties>
-		</properties>
-
-		<dependency>skillsystem</dependency>
-		<dependency>referee</dependency>
-		<dependency>worldpredictor</dependency>
-		<dependency>timer</dependency>
-	</module>
+        <properties>
+            <remoteControlType>LOCAL_MOCK</remoteControlType>
+            <log2file>false</log2file>
+        </properties>
+    </module>
 
 
-	<module id="ai_blue" type="AAgent">
-		<implementation>
-			edu.tigers.sumatra.ai.Agent
-		</implementation>
+    <module id="botmanager" type="ABotManager">
+        <implementation>edu.tigers.sumatra.botmanager.BotManager
+        </implementation>
 
-		<properties>
-		</properties>
+        <properties>
+            <basestation-impl>edu.tigers.sumatra.sim.SumatraBaseStation
+            </basestation-impl>
+        </properties>
 
-		<dependency>skillsystem</dependency>
-		<dependency>referee</dependency>
-		<dependency>worldpredictor</dependency>
-		<dependency>timer</dependency>
-	</module>
+        <dependency>botparams</dependency>
+    </module>
 
 
-	<module id="timer" type="ATimer">
-		<implementation> edu.tigers.sumatra.timer.SumatraTimer
-		</implementation>
+    <module id="skillsystem" type="ASkillSystem">
+        <implementation>
+            edu.tigers.sumatra.skillsystem.GenericSkillSystem
+        </implementation>
 
-		<properties>
-		</properties>
-	</module>
+        <properties>
+        </properties>
 
-	<module id="recorder" type="RecordManager">
-		<implementation> edu.tigers.sumatra.persistance.RecordManager
-		</implementation>
-
-		<properties>
-		</properties>
-	</module>
-
-	<module id="ParameterOptimizer" type="ParameterOptimizer">
-		<implementation> edu.tigers.sumatra.paramoptimizer.ParameterOptimizer
-		</implementation>
-
-		<properties>
-		</properties>
-	</module>
-
-	<!-- <module id="sim" type="Simulation"> -->
-	<!-- <implementation> sim.Simulation </implementation> -->
-	<!-- <properties></properties> -->
-	<!-- <dependency>skillsystem</dependency> -->
-	<!-- <dependency>referee</dependency> -->
-	<!-- <dependency>worldpredictor</dependency> -->
-	<!-- <dependency>ai_blue</dependency> -->
-	<!-- <dependency>ai_yellow</dependency> -->
-	<!-- <dependency>cam</dependency> -->
-	<!-- <dependency>timer</dependency> -->
-	<!-- </module> -->
+        <dependency>botmanager</dependency>
+    </module>
 
 
- 	<module id="multiTeamMessage" type="AMultiTeamMessage">
- 		<implementation> edu.tigers.sumatra.multiteammessage.MultiTeamMessageHandler 
- 		</implementation> 
- 		<properties></properties> 
- 	</module> 
+    <module id="ai" type="AAgent">
+        <implementation>
+            edu.tigers.sumatra.ai.Agent
+        </implementation>
+
+        <properties>
+        </properties>
+
+        <dependency>skillsystem</dependency>
+        <dependency>worldpredictor</dependency>
+        <dependency>timer</dependency>
+    </module>
+
+
+    <module id="timer" type="ATimer">
+        <implementation>edu.tigers.sumatra.timer.SumatraTimer
+        </implementation>
+
+        <properties>
+        </properties>
+    </module>
+
+    <module id="recorder" type="RecordManager">
+        <implementation>edu.tigers.sumatra.persistence.RecordManager
+        </implementation>
+
+        <properties>
+        </properties>
+    </module>
+
+    <module id="gui_notifications_controller" type="GuiNotificationsController">
+        <implementation>edu.tigers.sumatra.guinotifications.GuiNotificationsController
+        </implementation>
+
+        <properties>
+        </properties>
+    </module>
+
+
+    <module id="game_notification_controller" type="GameNotificationController">
+        <implementation>edu.tigers.sumatra.gamenotifications.GameNotificationController
+        </implementation>
+
+        <properties>
+        </properties>
+    </module>
+
+    <module id="telegram_notification_controller" type="ATelegramNotificationController">
+        <implementation>edu.tigers.sumatra.telegram.TelegramNotificationController</implementation>
+
+        <properties>
+        </properties>
+
+        <dependency>referee</dependency>
+        <dependency>game_notification_controller</dependency>
+    </module>
+
+    <module id="botparams" type="BotParams">
+        <implementation>edu.tigers.sumatra.botparams.BotParamsManager
+        </implementation>
+
+        <properties>
+        </properties>
+    </module>
+
 </centralSoftware>

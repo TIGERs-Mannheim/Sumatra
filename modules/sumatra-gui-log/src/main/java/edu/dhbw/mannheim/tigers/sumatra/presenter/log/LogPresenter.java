@@ -8,8 +8,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.log;
 
-import java.awt.Color;
-import java.awt.Component;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -76,27 +75,19 @@ public class LogPresenter extends WriterAppender implements ISumatraViewPresente
 	public static final Color						DEFAULT_COLOR_TRACE	= new Color(0, 0, 0);
 	/** */
 	public static final Color						DEFAULT_COLOR			= new Color(0, 0, 0);
-																						
-	private LogPanel									logPanel					= null;
-																						
 	/** */
 	private static final int						DISPLAY_CAPACITY		= 1000;
-																						
-	private final LogEventBuffer					eventBuffer				= new LogEventBuffer();
-																						
-	private List<String>								allowedClasses			= new ArrayList<String>();
-	private List<String>								allowedStrings			= new ArrayList<String>();
-																						
 	private static final String					LOG_LEVEL_KEY			= LogPresenter.class.getName() + ".loglevel";
+	private final LogEventBuffer					eventBuffer				= new LogEventBuffer();
+	private final Map<Integer, AttributeSet>	attributeSets			= new HashMap<>();
+	private final Object								eventSync				= new Object();
+	private LogPanel									logPanel					= null;
+	private List<String>								allowedClasses			= new ArrayList<>();
+	private List<String>								allowedStrings			= new ArrayList<>();
 	private Level										logLevel;
 	private int											numFatals				= 0;
 	private int											numErrors				= 0;
 	private int											numWarnings				= 0;
-																						
-	private final Map<Integer, AttributeSet>	attributeSets			= new HashMap<Integer, AttributeSet>();
-																						
-	private final Object								eventSync				= new Object();
-																						
 	private boolean									freeze					= false;
 																						
 																						
@@ -292,11 +283,7 @@ public class LogPresenter extends WriterAppender implements ISumatraViewPresente
 	
 	private boolean checkForLogLevel(final LoggingEvent event)
 	{
-		if (event.getLevel().isGreaterOrEqual(logLevel))
-		{
-			return true;
-		}
-		return false;
+		return event.getLevel().isGreaterOrEqual(logLevel);
 	}
 	
 	
@@ -331,11 +318,7 @@ public class LogPresenter extends WriterAppender implements ISumatraViewPresente
 	 */
 	public boolean checkFilters(final LoggingEvent event)
 	{
-		if (!checkStringFilter(event) || !checkClassFilter(event) || !checkForLogLevel(event))
-		{
-			return false;
-		}
-		return true;
+		return !(!checkStringFilter(event) || !checkClassFilter(event) || !checkForLogLevel(event));
 	}
 	
 	

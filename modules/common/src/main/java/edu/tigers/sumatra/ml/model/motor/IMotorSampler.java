@@ -8,7 +8,7 @@
  */
 package edu.tigers.sumatra.ml.model.motor;
 
-import edu.tigers.sumatra.math.IVector3;
+import edu.tigers.sumatra.math.vector.IVector3;
 
 
 /**

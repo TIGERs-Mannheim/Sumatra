@@ -1,14 +1,8 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 30, 2014
- * Author(s): Daniel Andres <andreslopez.daniel@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.statistics;
 
-import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.views.ASumatraView;
 import edu.tigers.sumatra.views.ESumatraViewType;
 import edu.tigers.sumatra.views.ISumatraViewPresenter;
@@ -21,28 +15,18 @@ import edu.tigers.sumatra.views.ISumatraViewPresenter;
  */
 public class StatisticsView extends ASumatraView
 {
-	
-	
-	private final ETeamColor	teamColor;
-	
-	
 	/**
-	 * @param color
+	 * Default
 	 */
-	public StatisticsView(final ETeamColor color)
+	public StatisticsView()
 	{
-		super(color == ETeamColor.YELLOW ? ESumatraViewType.STATISTICS_YELLOW : ESumatraViewType.STATISTICS_BLUE);
-		teamColor = color;
+		super(ESumatraViewType.STATISTICS);
 	}
 	
 	
 	@Override
 	protected ISumatraViewPresenter createPresenter()
 	{
-		return new StatisticsPresenter(teamColor);
+		return new StatisticsPresenter();
 	}
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 }

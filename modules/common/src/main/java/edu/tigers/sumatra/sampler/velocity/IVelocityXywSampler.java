@@ -8,7 +8,7 @@
  */
 package edu.tigers.sumatra.sampler.velocity;
 
-import edu.tigers.sumatra.math.IVector3;
+import edu.tigers.sumatra.math.vector.IVector3;
 
 
 /**

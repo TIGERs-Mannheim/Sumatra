@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 27, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.sim;
 
 import java.util.Optional;
@@ -14,22 +10,30 @@ import org.apache.log4j.Logger;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.bot.EBotType;
+import edu.tigers.sumatra.bot.params.BotParams;
+import edu.tigers.sumatra.bot.params.IBotParams;
 import edu.tigers.sumatra.botmanager.bots.ASimBot;
+import edu.tigers.sumatra.botmanager.commands.ACommand;
+import edu.tigers.sumatra.botmanager.commands.botskills.data.BotSkillInput;
 import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
 import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
-import edu.tigers.sumatra.cam.ACam;
+import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemMatchFeedback;
+import edu.tigers.sumatra.botparams.BotParamsManager;
+import edu.tigers.sumatra.botparams.BotParamsManager.IBotParamsManagerObserver;
+import edu.tigers.sumatra.botparams.EBotParamLabel;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.IVector3;
-import edu.tigers.sumatra.math.Vector3;
+import edu.tigers.sumatra.math.botshape.BotShape;
+import edu.tigers.sumatra.math.botshape.IBotShape;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.sim.util.SimBotDynamics;
+import edu.tigers.sumatra.vision.AVisionFilter;
 import edu.tigers.sumatra.wp.data.MotionContext;
 
 
@@ -38,26 +42,21 @@ import edu.tigers.sumatra.wp.data.MotionContext;
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@Persistent
-public class SumatraBot extends ASimBot implements ISimulatedObject
+public class SumatraBot extends ASimBot implements ISimulatedObject, IBotParamsManagerObserver
 {
-	private static final Logger	log						= Logger.getLogger(SumatraBot.class.getName());
+	private static final Logger log = Logger.getLogger(SumatraBot.class.getName());
+	private static final double NEAR_BARRIER_TOLERANCE = 2;
 	
-	private static final int		ACC_MAX					= 10;
+	@Configurable(defValue = "2.5")
+	private double mass = 2.5f;
+	@Configurable(defValue = "false")
+	private static boolean sendFeedback = false;
 	
-	private transient Vector3		pos						= new Vector3();
-	private transient Vector3		vel						= new Vector3();
+	private boolean barrierInterrupted = false;
 	
-	private transient double		delay						= 0;
-	
-	@Configurable
-	private static double			center2DribblerDist	= 75;
-	
-	@Configurable
-	private double						mass						= 2.5f;
-	
-	@Configurable
-	private static double			maxChipSpeed			= 4;
+	private transient SimBotDynamics dynamics = new SimBotDynamics();
+	private transient long lastFeedbackTime = 0;
+	protected transient IBotParams botParams = new BotParams();
 	
 	
 	static
@@ -84,109 +83,111 @@ public class SumatraBot extends ASimBot implements ISimulatedObject
 	}
 	
 	
+	/**
+	 * @param id
+	 * @param bs
+	 * @param pos
+	 * @param vel
+	 */
+	public SumatraBot(final BotID id, final SumatraBaseStation bs, final IVector3 pos, final IVector3 vel)
+	{
+		super(EBotType.SUMATRA, id, bs);
+		dynamics.setPos(pos);
+		dynamics.setVelGlobal(vel);
+	}
+	
+	
 	private void init()
 	{
-		double y = 1000;
 		double inv = 1;
 		if (getBotId().getTeamColor() == ETeamColor.YELLOW)
 		{
-			y *= -1;
 			inv *= -1;
 		}
-		
-		switch (getBotId().getNumber())
-		{
-			case 0:
-				pos = new Vector3(-3500 * inv, 0, 0);
-				break;
-			case 1:
-				pos = new Vector3(-2500 * inv, -300, 0);
-				break;
-			case 2:
-				pos = new Vector3(-2500 * inv, 300, 0);
-				break;
-			case 3:
-				pos = new Vector3(-500 * inv, -1000, 0);
-				break;
-			case 4:
-				pos = new Vector3(-1000 * inv, 800, 0);
-				break;
-			case 5:
-				pos = new Vector3(-500 * inv, 0, 0);
-				break;
-			default:
-				pos = new Vector3(-1000 + (300 * getBotId().getNumber()), y, 0);
-		}
-		
-		pos = new Vector3(-3800 * inv, -2700 + (getBotId().getNumber() * 200), 0);
-		
-		vel = new Vector3();
+		int id = getBotId().getNumber();
+		double x = inv * (Geometry.getPenaltyMarkOur().x() + 1000);
+		double y = (id % 2 == 0 ? 1 : -1) * 120.0 * (id - id % 2 + 1);
+		dynamics.setPos(Vector3.fromXYZ(x, y, 0));
+		dynamics.setVelLocal(Vector3.zero());
 	}
 	
 	
 	@Override
-	public void update(final double dt)
+	public void update(final double dt, final long timestamp)
 	{
-		delay = 0;
-		IVector3 localVel = executeBotSkill(getMatchCtrl().getSkill(), pos, vel, dt);
-		Vector3 action = new Vector3(localVel);
-		// action = action.multiplyNew(new Vector3(0.9, 0.7, 1));
-		// action.set(2, action.get(2) + (0.5 * localVel.get(1) * localVel.get(1)));
-		IVector2 globVel = GeoMath.convertLocalBotVector2Global(action.getXYVector(), pos.z());
-		IVector3 targetVel = new Vector3(globVel, action.z());
+		BotSkillInput input = new BotSkillInput(getMatchCtrl().getSkill(), dynamics.getPos(), dynamics.getVelLocal(),
+				dynamics.getAccLocal(), timestamp);
 		
-		IVector3 diff = targetVel.subtractNew(vel);
+		botSkillSim.execute(input);
 		
-		// diff = diff.multiplyNew(new Vector3(0.3, 0.3, 1));
+		SumatraBaseStation sbs = (SumatraBaseStation) getBaseStation();
 		
-		IVector3 acc = diff.multiplyNew(1 / dt);
-		IVector2 accxy = acc.getXYVector();
-		if (accxy.getLength() > ACC_MAX)
+		for (ACommand cmd : botSkillSim.getLastBotSkillOutput().getCommands())
 		{
-			accxy = accxy.scaleToNew(ACC_MAX);
+			sbs.notifyCommand(getBotId(), cmd);
 		}
-		IVector3 limAcc = new Vector3(accxy, acc.get(2));
-		vel.add(limAcc.multiplyNew(dt));
+		
+		double dtFeedback = (input.gettNow() - lastFeedbackTime) * 1e-9;
+		if (sendFeedback && (dtFeedback >= (1.0 / getUpdateRate())))
+		{
+			lastFeedbackTime = input.gettNow();
+			
+			TigerSystemMatchFeedback fb = new TigerSystemMatchFeedback();
+			fb.setDribblerTemp(25.0);
+			fb.setBatteryLevel(16.8);
+			fb.setCurPosition(dynamics.getPos().getXYVector(), dynamics.getPos().z());
+			fb.setCurVelocity(dynamics.getVelLocal());
+			fb.setDribblerSpeed(getDribblerSpeed());
+			fb.setHardwareId(42);
+			fb.setKickerLevel(getKickerLevel());
+			fb.setBarrierInterrupted(barrierInterrupted);
+			sbs.notifyMatchFeedback(getBotId(), fb);
+		}
 	}
 	
 	
 	@Override
 	public void step(final double dt, final MotionContext context)
 	{
-		pos.set(0, pos.x() + ((vel.x() * dt) * 1000));
-		pos.set(1, pos.y() + ((vel.y() * dt) * 1000));
-		pos.set(2, AngleMath.normalizeAngle(pos.z() + (vel.z() * dt)));
+		updateBarrier(context);
+		dynamics.step(dt, botSkillSim.getLastBotSkillOutput());
+	}
+	
+	
+	private void updateBarrier(final MotionContext context)
+	{
+		IBotShape botShape = BotShape.fromFullSpecification(getPos().getXYVector(), Geometry.getBotRadius(),
+				getCenter2DribblerDist(), getPos().z());
+		barrierInterrupted = botShape.isPointInKickerZone(context.getBallInfo().getPos().getXYVector(),
+				Geometry.getBallRadius() + NEAR_BARRIER_TOLERANCE);
 	}
 	
 	
 	/**
 	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
-	 * @param timestamp
 	 * @return
 	 */
-	public double getKickSpeed(final long timestamp)
+	public double getKickSpeed()
 	{
-		if ((getMatchCtrl().getMode() == EKickerMode.DISARM))
+		if (botSkillSim.getLastBotSkillOutput().getKickMode() == EKickerMode.DISARM)
 		{
 			return 0;
 		}
 		
-		if ((getMatchCtrl().getMode() == EKickerMode.ARM_AIM) && !isTargetAngleReached())
+		if (botSkillSim.getLastBotSkillOutput().getKickDevice() == EKickerDevice.CHIP)
 		{
-			return 0;
+			double maxChipSpeed = getBotParams().getKickerSpecs().getMaxAbsoluteChipVelocity();
+			return Math.min(botSkillSim.getLastBotSkillOutput().getKickSpeed(), maxChipSpeed);
 		}
-		
-		double timeSinceLastKick = (timestamp - getLastKickTime()) / 1e9;
-		if (timeSinceLastKick > 0.5)
-		{
-			setLastKickTime(timestamp);
-		}
-		
-		if (getMatchCtrl().getDevice() == EKickerDevice.CHIP)
-		{
-			return Math.min(getMatchCtrl().getKickSpeed(), maxChipSpeed);
-		}
-		return getMatchCtrl().getKickSpeed();
+		return botSkillSim.getLastBotSkillOutput().getKickSpeed();
+	}
+	
+	
+	@Override
+	public double getDribblerSpeed()
+	{
+		// Actually, this would also need to come from a dynamics model of the dribbler motor.
+		return botSkillSim.getLastBotSkillOutput().getDribblerRPM();
 	}
 	
 	
@@ -195,15 +196,33 @@ public class SumatraBot extends ASimBot implements ISimulatedObject
 	{
 		try
 		{
-			SumatraCam sc = (SumatraCam) SumatraModel.getInstance().getModule(ACam.MODULE_ID);
-			sc.registerBot(this);
+			SumatraSimulator simulator = (SumatraSimulator) SumatraModel.getInstance().getModule(AVisionFilter.MODULE_ID);
+			simulator.registerBot(this);
 		} catch (ModuleNotFoundException err)
 		{
 			log.error("Could not find module ACam", err);
 		} catch (ClassCastException err)
 		{
-			log.error("You try to use a SumatraBot with wrong moduli");
+			log.error("You try to use a SumatraBot with wrong moduli", err);
 		}
+		
+		try
+		{
+			BotParamsManager botParamsManager = (BotParamsManager) SumatraModel.getInstance()
+					.getModule(BotParamsManager.MODULE_ID);
+			if (getBotId().getTeamColor() == ETeamColor.YELLOW)
+			{
+				botParams = botParamsManager.getBotParams(EBotParamLabel.SIMULATION_YELLOW);
+			} else
+			{
+				botParams = botParamsManager.getBotParams(EBotParamLabel.SIMULATION_BLUE);
+			}
+			botParamsManager.addObserver(this);
+		} catch (ModuleNotFoundException err)
+		{
+			log.error("Could not find BotParamsManager module", err);
+		}
+		
 		super.start();
 	}
 	
@@ -214,14 +233,24 @@ public class SumatraBot extends ASimBot implements ISimulatedObject
 		super.stop();
 		try
 		{
-			SumatraCam sc = (SumatraCam) SumatraModel.getInstance().getModule(ACam.MODULE_ID);
-			sc.unregisterBot(this);
+			SumatraSimulator simulator = (SumatraSimulator) SumatraModel.getInstance().getModule(AVisionFilter.MODULE_ID);
+			simulator.unregisterBot(this);
 		} catch (ModuleNotFoundException err)
 		{
 			log.error("Could not find module ACam", err);
 		} catch (ClassCastException err)
 		{
-			log.error("You try to use a SumatraBot with wrong moduli");
+			log.error("You try to use a SumatraBot with wrong moduli", err);
+		}
+		
+		try
+		{
+			BotParamsManager botParamsManager = (BotParamsManager) SumatraModel.getInstance()
+					.getModule(BotParamsManager.MODULE_ID);
+			botParamsManager.removeObserver(this);
+		} catch (ModuleNotFoundException err)
+		{
+			log.error("Could not find BotParamsManager module", err);
 		}
 	}
 	
@@ -232,7 +261,17 @@ public class SumatraBot extends ASimBot implements ISimulatedObject
 	@Override
 	public IVector3 getPos()
 	{
-		return new Vector3(pos.getXYVector(), AngleMath.normalizeAngle(pos.z()));
+		return dynamics.getPos();
+	}
+	
+	
+	/**
+	 * @param pos the pos to set
+	 */
+	@Override
+	public void setPos(final IVector3 pos)
+	{
+		dynamics.setPos(pos);
 	}
 	
 	
@@ -242,7 +281,17 @@ public class SumatraBot extends ASimBot implements ISimulatedObject
 	@Override
 	public IVector3 getVel()
 	{
-		return new Vector3(vel);
+		return dynamics.getVelGlobal();
+	}
+	
+	
+	/**
+	 * @param vel the vel to set
+	 */
+	@Override
+	public void setVel(final IVector3 vel)
+	{
+		dynamics.setVelGlobal(vel);
 	}
 	
 	
@@ -266,47 +315,10 @@ public class SumatraBot extends ASimBot implements ISimulatedObject
 	}
 	
 	
-	/**
-	 * @param pos the pos to set
-	 */
-	@Override
-	public void setPos(final IVector3 pos)
-	{
-		this.pos = new Vector3(pos);
-	}
-	
-	
-	/**
-	 * @param vel the vel to set
-	 */
-	@Override
-	public void setVel(final IVector3 vel)
-	{
-		this.vel = new Vector3(vel);
-	}
-	
-	
 	@Override
 	public void addVel(final IVector3 vector3)
 	{
-		vel.add(vector3);
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	@Override
-	public double getCenter2DribblerDist()
-	{
-		return center2DribblerDist;
-	}
-	
-	
-	@Override
-	protected double getFeedbackDelay()
-	{
-		return delay;
+		dynamics.setVelGlobal(dynamics.getVelGlobal().addNew(vector3));
 	}
 	
 	
@@ -316,5 +328,30 @@ public class SumatraBot extends ASimBot implements ISimulatedObject
 	public double getMass()
 	{
 		return mass;
+	}
+	
+	
+	@Override
+	public boolean isBarrierInterrupted()
+	{
+		return barrierInterrupted;
+	}
+	
+	
+	@Override
+	public IBotParams getBotParams()
+	{
+		return botParams;
+	}
+	
+	
+	@Override
+	public void onBotParamsUpdated(final EBotParamLabel label, final IBotParams params)
+	{
+		if (((getBotId().getTeamColor() == ETeamColor.YELLOW) && (label == EBotParamLabel.SIMULATION_YELLOW)) ||
+				((getBotId().getTeamColor() == ETeamColor.BLUE) && (label == EBotParamLabel.SIMULATION_BLUE)))
+		{
+			botParams = params;
+		}
 	}
 }

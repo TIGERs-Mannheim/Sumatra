@@ -1,14 +1,8 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Apr 22, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.drawable;
 
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
@@ -17,10 +11,10 @@ import java.awt.geom.Arc2D;
 
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.math.AVector2;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.math.botshape.BotShape;
+import edu.tigers.sumatra.math.vector.AVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**
@@ -36,36 +30,18 @@ public class DrawableBotShape implements IDrawableShape
 	private Color				color			= Color.WHITE;
 	private Color				fontColor	= Color.black;
 	private String				id				= "";
-													
+	
 	private double				center2DribblerDist;
 	private double				radius;
 	private boolean			fill			= true;
-													
-													
+	
+	
 	@SuppressWarnings("unused")
 	private DrawableBotShape()
 	{
 		this(AVector2.ZERO_VECTOR, 0, 0, 0);
 	}
 	
-	
-	// /**
-	// * @param bot
-	// */
-	// public DrawableBotShape(final TrackedBot bot)
-	// {
-	// this(bot.getPos(), bot.getAngle());
-	// if (bot.isVisible())
-	// {
-	// color = bot.getTeamColor() == ETeamColor.YELLOW ? Color.yellow : Color.blue;
-	// } else
-	// {
-	// color = bot.getTeamColor() == ETeamColor.YELLOW ? Color.yellow.darker() : Color.cyan.darker();
-	// }
-	// fontColor = bot.getTeamColor() == ETeamColor.YELLOW ? Color.black : Color.white;
-	// id = String.valueOf(bot.getBotId().getNumber());
-	// }
-	//
 	
 	/**
 	 * @param pos
@@ -88,16 +64,10 @@ public class DrawableBotShape implements IDrawableShape
 	{
 		final int robotRadius = tool.scaleXLength(radius);
 		
-		g.setStroke(new BasicStroke());
-		
-		// --- determinate drawing-position ---
-		int drawingX = 0;
-		int drawingY = 0;
-		
 		// --- from SSLVision-mm to java2d-coordinates ---
 		final IVector2 transBotPos = tool.transformToGuiCoordinates(pos, invert);
-		drawingX = (int) transBotPos.x() - robotRadius;
-		drawingY = (int) transBotPos.y() - robotRadius;
+		int drawingX = (int) transBotPos.x() - robotRadius;
+		int drawingY = (int) transBotPos.y() - robotRadius;
 		
 		
 		g.setColor(color);
@@ -110,7 +80,7 @@ public class DrawableBotShape implements IDrawableShape
 		
 		Shape botShape = new Arc2D.Double(drawingX, drawingY, robotRadius * 2, robotRadius * 2, startAngle,
 				endAngle, Arc2D.CHORD);
-				
+		
 		if (fill)
 		{
 			g.fill(botShape);
@@ -120,9 +90,8 @@ public class DrawableBotShape implements IDrawableShape
 		}
 		
 		g.setColor(Color.RED);
-		g.setStroke(new BasicStroke(2));
 		final IVector2 kickerPos = tool.transformToGuiCoordinates(
-				GeoMath.getBotKickerPos(pos, angle, center2DribblerDist - 20), invert);
+				BotShape.getKickerCenterPos(pos, angle, center2DribblerDist - 20), invert);
 		g.drawLine(drawingX + robotRadius, drawingY + robotRadius, (int) kickerPos.x(), (int) kickerPos.y());
 		
 		// --- check and determinate id-length for margin ---

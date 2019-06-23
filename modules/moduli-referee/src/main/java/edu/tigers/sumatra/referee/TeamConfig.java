@@ -1,20 +1,11 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 26.11.2011
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.referee;
-
-import java.util.HashSet;
-import java.util.Set;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 
 
@@ -26,11 +17,11 @@ import edu.tigers.sumatra.ids.ETeamColor;
 public final class TeamConfig
 {
 	@Configurable
-	private static int			keeperIdBlue	= 0;
+	private static int keeperIdBlue = 0;
 	@Configurable
-	private static int			keeperIdYellow	= 0;
+	private static int keeperIdYellow = 0;
 	@Configurable
-	private static ETeamColor	leftTeam			= ETeamColor.BLUE;
+	private static ETeamColor leftTeam = ETeamColor.BLUE;
 	
 	
 	static
@@ -47,7 +38,7 @@ public final class TeamConfig
 	/**
 	 * @return the keeperIdBlue
 	 */
-	public static final int getKeeperIdBlue()
+	public static int getKeeperIdBlue()
 	{
 		return keeperIdBlue;
 	}
@@ -56,59 +47,24 @@ public final class TeamConfig
 	/**
 	 * @return the keeperIdYellow
 	 */
-	public static final int getKeeperIdYellow()
+	public static int getKeeperIdYellow()
 	{
 		return keeperIdYellow;
 	}
 	
 	
 	/**
-	 * @param tc
-	 * @return
+	 * @param teamColor
+	 * @return the keeper id of given team
 	 */
-	public static final int getKeeperId(final ETeamColor tc)
+	public static int getKeeperId(final ETeamColor teamColor)
 	{
-		if (tc == ETeamColor.BLUE)
-		{
-			return keeperIdBlue;
-		} else if (tc == ETeamColor.YELLOW)
-		{
-			return keeperIdYellow;
-		}
-		throw new IllegalArgumentException();
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public static final BotID getKeeperBotIDBlue()
-	{
-		return BotID.createBotId(keeperIdBlue, ETeamColor.BLUE);
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public static final BotID getKeeperBotIDYellow()
-	{
-		return BotID.createBotId(keeperIdYellow, ETeamColor.YELLOW);
-	}
-	
-	
-	/**
-	 * @param color
-	 * @return
-	 */
-	public static final BotID getKeeperBotID(final ETeamColor color)
-	{
-		switch (color)
+		switch (teamColor)
 		{
 			case BLUE:
-				return getKeeperBotIDBlue();
+				return keeperIdBlue;
 			case YELLOW:
-				return getKeeperBotIDYellow();
+				return keeperIdYellow;
 			default:
 				throw new IllegalArgumentException();
 		}
@@ -116,32 +72,24 @@ public final class TeamConfig
 	
 	
 	/**
-	 * Returns the keeper IDs as set
-	 * 
-	 * @return modifiable set of the keeper ids
+	 * @return the leftTeam
 	 */
-	public static Set<BotID> getKeeperIDs()
+	public static ETeamColor getLeftTeam()
 	{
-		Set<BotID> keeperSet = new HashSet<>();
-		keeperSet.add(getKeeperBotIDBlue());
-		keeperSet.add(getKeeperBotIDYellow());
-		return keeperSet;
+		return leftTeam;
 	}
 	
 	
-	/**
-	 * @return the leftTeam
-	 */
-	public static final ETeamColor getLeftTeam()
+	public static void setLeftTeam(final ETeamColor team)
 	{
-		return leftTeam;
+		leftTeam = team;
 	}
 	
 	
 	/**
 	 * @param keeperIdBlue the keeperIdBlue to set
 	 */
-	public static final void setKeeperIdBlue(final int keeperIdBlue)
+	public static void setKeeperIdBlue(final int keeperIdBlue)
 	{
 		TeamConfig.keeperIdBlue = keeperIdBlue;
 	}
@@ -150,7 +98,7 @@ public final class TeamConfig
 	/**
 	 * @param keeperIdYellow the keeperIdYellow to set
 	 */
-	public static final void setKeeperIdYellow(final int keeperIdYellow)
+	public static void setKeeperIdYellow(final int keeperIdYellow)
 	{
 		TeamConfig.keeperIdYellow = keeperIdYellow;
 	}

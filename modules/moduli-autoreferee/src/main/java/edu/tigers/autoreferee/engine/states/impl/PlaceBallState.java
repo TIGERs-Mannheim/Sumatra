@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 7, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.states.impl;
 
@@ -16,14 +11,15 @@ import java.util.concurrent.TimeUnit;
 import edu.tigers.autoreferee.AutoRefConfig;
 import edu.tigers.autoreferee.IAutoRefFrame;
 import edu.tigers.autoreferee.engine.AutoRefMath;
-import edu.tigers.autoreferee.engine.RefCommand;
+import edu.tigers.autoreferee.engine.RefboxRemoteCommand;
 import edu.tigers.autoreferee.engine.states.IAutoRefStateContext;
 import edu.tigers.sumatra.Referee.SSL_Referee.Command;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.referee.data.EGameState;
+import edu.tigers.sumatra.referee.data.GameState;
+import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
-import edu.tigers.sumatra.wp.data.TrackedBall;
 
 
 /**
@@ -35,15 +31,8 @@ import edu.tigers.sumatra.wp.data.TrackedBall;
  */
 public class PlaceBallState extends AbstractAutoRefState
 {
-	private Long	entryTime;
-	
-	
-	/**
-	 *
-	 */
-	public PlaceBallState()
-	{
-	}
+	private Long entryTime;
+	private boolean stopSend = false;
 	
 	
 	@Override
@@ -61,7 +50,8 @@ public class PlaceBallState extends AbstractAutoRefState
 		if (criteriaAreMet(frame.getWorldFrame(), targetPos))
 		{
 			// The ball has been placed at the kick position. Return to the stopped state to perform the action
-			sendCommandIfReady(ctx, new RefCommand(Command.STOP));
+			sendCommandIfReady(ctx, new RefboxRemoteCommand(Command.STOP), !stopSend);
+			stopSend = true;
 			return;
 		}
 		
@@ -71,8 +61,9 @@ public class PlaceBallState extends AbstractAutoRefState
 			return;
 		}
 		
-		RefCommand cmd = determineNextAction(frame, targetPos);
-		sendCommandIfReady(ctx, cmd);
+		RefboxRemoteCommand cmd = determineNextAction(frame, targetPos);
+		sendCommandIfReady(ctx, cmd, !stopSend);
+		stopSend = cmd.getCommand() == Command.STOP;
 	}
 	
 	
@@ -80,18 +71,18 @@ public class PlaceBallState extends AbstractAutoRefState
 	 * @param frame
 	 * @return
 	 */
-	private RefCommand determineNextAction(final IAutoRefFrame frame, final IVector2 targetPos)
+	private RefboxRemoteCommand determineNextAction(final IAutoRefFrame frame, final IVector2 targetPos)
 	{
 		List<ETeamColor> completedAttempts = determinePlacementAttempts(frame);
 		List<ETeamColor> capableTeams = AutoRefConfig.getBallPlacementTeams();
 		
 		capableTeams.removeAll(completedAttempts);
 		
-		RefCommand cmd = new RefCommand(Command.STOP, null);
+		RefboxRemoteCommand cmd = new RefboxRemoteCommand(Command.STOP, null);
 		
-		if (capableTeams.size() >= 1)
+		if (!capableTeams.isEmpty())
 		{
-			cmd = new RefCommand(capableTeams.get(0) == ETeamColor.BLUE ? Command.BALL_PLACEMENT_BLUE
+			cmd = new RefboxRemoteCommand(capableTeams.get(0) == ETeamColor.BLUE ? Command.BALL_PLACEMENT_BLUE
 					: Command.BALL_PLACEMENT_YELLOW, targetPos);
 		}
 		
@@ -105,13 +96,13 @@ public class PlaceBallState extends AbstractAutoRefState
 		List<ETeamColor> placements = new ArrayList<>();
 		
 		// Add the team which is currently attempting to place the ball
-		placements.add(frame.getGameState().getTeamColor());
+		placements.add(frame.getGameState().getForTeam());
 		
 		// Add the last state if it was also a placement attempt
-		List<EGameStateNeutral> stateHistory = frame.getStateHistory();
-		if ((stateHistory.size() > 1) && stateHistory.get(1).isBallPlacement())
+		List<GameState> stateHistory = frame.getStateHistory();
+		if ((stateHistory.size() > 1) && (stateHistory.get(1).getState() == EGameState.BALL_PLACEMENT))
 		{
-			placements.add(stateHistory.get(1).getTeamColor());
+			placements.add(stateHistory.get(1).getForTeam());
 		}
 		
 		return placements;
@@ -120,7 +111,7 @@ public class PlaceBallState extends AbstractAutoRefState
 	
 	private void updateEntryTime(final IAutoRefFrame frame)
 	{
-		if ((entryTime == null) || (frame.getGameState() != frame.getPreviousFrame().getGameState()))
+		if ((entryTime == null) || !(frame.getGameState().equals(frame.getPreviousFrame().getGameState())))
 		{
 			entryTime = frame.getTimestamp();
 		}
@@ -129,7 +120,7 @@ public class PlaceBallState extends AbstractAutoRefState
 	
 	private boolean criteriaAreMet(final SimpleWorldFrame frame, final IVector2 targetPos)
 	{
-		TrackedBall ball = frame.getBall();
+		ITrackedBall ball = frame.getBall();
 		boolean botDistanceCorrect = AutoRefMath.botStopDistanceIsCorrect(frame);
 		boolean ballPlaced = AutoRefMath.ballIsPlaced(ball, targetPos, AutoRefConfig.getRobotBallPlacementAccuracy());
 		boolean ballStationary = AutoRefMath.ballIsStationary(ball);
@@ -143,6 +134,7 @@ public class PlaceBallState extends AbstractAutoRefState
 	public void doReset()
 	{
 		entryTime = null;
+		stopSend = false;
 	}
 	
 }

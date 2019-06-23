@@ -1,21 +1,18 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 27, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.wp.data;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.referee.RefereeMsg;
-import edu.tigers.sumatra.referee.TeamConfig;
+import edu.tigers.sumatra.drawable.ShapeMap;
+import edu.tigers.sumatra.ids.EAiTeam;
+import edu.tigers.sumatra.referee.data.GameState;
+import edu.tigers.sumatra.referee.data.RefereeMsg;
 
 
 /**
@@ -26,46 +23,46 @@ import edu.tigers.sumatra.referee.TeamConfig;
 @Persistent
 public class WorldFrameWrapper
 {
-	private final SimpleWorldFrame								simpleWorldFrame;
-	private final RefereeMsg										refereeMsg;
-	private final ShapeMap											shapeMap;
-																			
-	private transient final Map<ETeamColor, WorldFrame>	worldFrames	= new HashMap<ETeamColor, WorldFrame>(2);
-	private EGameStateNeutral										gameState	= EGameStateNeutral.UNKNOWN;
-																							
-																							
+	private final SimpleWorldFrame simpleWorldFrame;
+	private final RefereeMsg refereeMsg;
+	private final ShapeMap shapeMap = new ShapeMap();
+	private GameState gameState = GameState.HALT;
+	
+	private final transient Map<EAiTeam, WorldFrame> worldFrames = new EnumMap<>(EAiTeam.class);
+	
+	
 	@SuppressWarnings("unused")
 	private WorldFrameWrapper()
 	{
 		simpleWorldFrame = null;
 		refereeMsg = new RefereeMsg();
-		shapeMap = new ShapeMap();
 	}
 	
 	
 	/**
 	 * @param swf
 	 * @param refereeMsg
-	 * @param shapeMap
+	 * @param gameState
 	 */
-	public WorldFrameWrapper(final SimpleWorldFrame swf, final RefereeMsg refereeMsg, final ShapeMap shapeMap)
+	public WorldFrameWrapper(final SimpleWorldFrame swf, final RefereeMsg refereeMsg,
+			final GameState gameState)
 	{
 		assert refereeMsg != null;
 		assert swf != null;
 		simpleWorldFrame = swf;
 		this.refereeMsg = refereeMsg;
-		this.shapeMap = shapeMap;
+		this.gameState = gameState;
 	}
 	
 	
 	/**
-	 * @param wfw
+	 * @param wfw instance to copy
 	 */
 	public WorldFrameWrapper(final WorldFrameWrapper wfw)
 	{
 		simpleWorldFrame = wfw.simpleWorldFrame;
 		refereeMsg = wfw.refereeMsg;
-		shapeMap = new ShapeMap(wfw.shapeMap);
+		shapeMap.merge(wfw.shapeMap);
 		worldFrames.putAll(wfw.worldFrames);
 		gameState = wfw.gameState;
 	}
@@ -75,21 +72,19 @@ public class WorldFrameWrapper
 	 * Create WF from swf
 	 * 
 	 * @param swf
-	 * @param teamColor
+	 * @param aiTeam
 	 * @return
 	 */
-	private WorldFrame createWorldFrame(final SimpleWorldFrame swf, final RefereeMsg refereeMsg,
-			final ETeamColor teamColor)
+	private WorldFrame createWorldFrame(final SimpleWorldFrame swf, final EAiTeam aiTeam)
 	{
 		final WorldFrame wf;
-		// if (refereeMsg.getLeftTeam() == teamColor)
-		if (TeamConfig.getLeftTeam() == teamColor)
+		if (refereeMsg.getLeftTeam() == aiTeam.getTeamColor())
 		{
-			wf = new WorldFrame(swf, teamColor, false);
+			wf = new WorldFrame(swf, aiTeam, false);
 		} else
 		{
 			// right team will be mirrored
-			wf = new WorldFrame(swf.mirrorNew(), teamColor, true);
+			wf = new WorldFrame(swf.mirrored(), aiTeam, true);
 		}
 		return wf;
 	}
@@ -105,18 +100,12 @@ public class WorldFrameWrapper
 	
 	
 	/**
-	 * @param teamColor
+	 * @param aiTeam
 	 * @return the worldFrames
 	 */
-	public synchronized WorldFrame getWorldFrame(final ETeamColor teamColor)
+	public synchronized WorldFrame getWorldFrame(final EAiTeam aiTeam)
 	{
-		WorldFrame wf = worldFrames.get(teamColor);
-		if (wf == null)
-		{
-			wf = createWorldFrame(simpleWorldFrame, refereeMsg, teamColor);
-			worldFrames.put(teamColor, wf);
-		}
-		return wf;
+		return worldFrames.computeIfAbsent(aiTeam, t -> createWorldFrame(simpleWorldFrame, t));
 	}
 	
 	
@@ -132,7 +121,7 @@ public class WorldFrameWrapper
 	/**
 	 * @return the gameState
 	 */
-	public final EGameStateNeutral getGameState()
+	public final GameState getGameState()
 	{
 		return gameState;
 	}
@@ -144,14 +133,5 @@ public class WorldFrameWrapper
 	public final ShapeMap getShapeMap()
 	{
 		return shapeMap;
-	}
-	
-	
-	/**
-	 * @param gameState the gameState to set
-	 */
-	public final void setGameState(final EGameStateNeutral gameState)
-	{
-		this.gameState = gameState;
 	}
 }

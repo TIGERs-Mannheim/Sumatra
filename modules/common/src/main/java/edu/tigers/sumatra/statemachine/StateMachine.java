@@ -1,54 +1,85 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Apr 29, 2013
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.statemachine;
+
+import org.apache.log4j.Logger;
 
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
-
 
 /**
  * State machine. Primary used for roles
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * @param <STATETYPE>
+ * @param <T>
  */
-public class StateMachine<STATETYPE extends IState> implements IStateMachine<STATETYPE>
+public class StateMachine<T extends IState> implements IStateMachine<T>
 {
-	private static final Logger						log								= Logger.getLogger(StateMachine.class
-																											.getName());
+	private static final Logger					log								= Logger.getLogger(StateMachine.class
+			.getName());
 	
-	private STATETYPE										currentState					= null;
-	private STATETYPE										initialState					= null;
-	private final int										queueSize						= 1;
-	private final Map<EventStatePair, STATETYPE>	transititions					= new HashMap<EventStatePair, STATETYPE>();
-	private final Deque<Enum<? extends Enum<?>>>	eventQueue						= new LinkedList<Enum<? extends Enum<?>>>();
-	private boolean										initialized						= false;
-	private boolean										doEntryActionsFirstState	= true;
+	private T											currentState					= null;
+	private T											initialState					= null;
+	private int											queueSize						= 1;
+	private final Map<IEvent, Map<IState, T>>	transitions						= new HashMap<>();
+	private final Deque<IEvent>					eventQueue						= new LinkedList<>();
+	private boolean									initialized						= false;
+	private boolean									doEntryActionsFirstState	= true;
+	private boolean									extendedLogging				= false;
 	
 	
 	/**
-	 * @param initialState
+	 * @param initialState first to be active
 	 */
-	public StateMachine(final STATETYPE initialState)
+	public StateMachine(final T initialState)
 	{
 		setInitialState(initialState);
 	}
 	
 	
 	/**
+	 * Default
 	 */
 	public StateMachine()
 	{
+		// nothing to do
+	}
+	
+	
+	private T getNextState(IEvent event, IState currentState)
+	{
+		Map<IState, T> subTransitions = transitions.computeIfAbsent(event, k -> new HashMap<>());
+		T nextState = subTransitions.get(currentState);
+		if (nextState == null)
+		{
+			nextState = subTransitions.get(null);
+			if (currentState != null && currentState.equals(nextState))
+			{
+				// ignore wildcard transition to itself
+				return null;
+			}
+		}
+		if (nextState == null)
+		{
+			// no transition for the event
+			String stateName = currentState == null ? "null" : currentState.getIdentifier();
+			extendedLogging(
+					() -> log.warn("No transition found for " + event + " in state " + stateName + ". Keep state"));
+		}
+		return nextState;
+	}
+	
+	
+	private void extendedLogging(Runnable run)
+	{
+		if (extendedLogging)
+		{
+			run.run();
+		}
 	}
 	
 	
@@ -65,27 +96,22 @@ public class StateMachine<STATETYPE extends IState> implements IStateMachine<STA
 		int stateTransitionsLeft = 10;
 		while (!stateChanged && !eventQueue.isEmpty())
 		{
-			Enum<? extends Enum<?>> newEvent = eventQueue.removeLast();
-			STATETYPE newState = transititions
-					.get(new EventStatePair(newEvent, currentState.getIdentifier(), currentState));
-			// if (newState == null)
-			// {
-			// // event for wildcard states
-			// newState = transititions.get(new EventStatePair(newEvent));
-			// }
+			IEvent newEvent = eventQueue.removeLast();
+			T newState = getNextState(newEvent, currentState);
 			if (newState != null)
 			{
-				changeState(newState);
-				// note: changeState may add events to eventQueue again!
-				stateTransitionsLeft--;
-				stateChanged = true;
-			} else
-			{
-				// no transition for the event
-				log.trace("No transition found for " + newEvent + " in state " + currentState.getIdentifier()
-						+ ". Keep state");
+				if (currentState.equals(newState))
+				{
+					extendedLogging(() -> log.warn("Transition to itself. This doesn't sound reasonable?!"));
+				} else
+				{
+					changeState(newState);
+					// note: changeState may add events to eventQueue again!
+					stateTransitionsLeft--;
+					stateChanged = true;
+				}
 			}
-			if ((stateTransitionsLeft <= 0))
+			if (stateTransitionsLeft <= 0)
 			{
 				log.warn("Possible endless loop detected! Too many transitions in one update.");
 				break;
@@ -104,17 +130,17 @@ public class StateMachine<STATETYPE extends IState> implements IStateMachine<STA
 	}
 	
 	
-	private void changeState(final STATETYPE newState)
+	@SuppressWarnings("squid:S2583")
+	private void changeState(final T newState)
 	{
 		currentState.doExitActions();
-		if (newState.getIdentifier() == DoneState.EStateId.DONE)
+		if (newState == null)
 		{
 			// done
 			currentState = null;
 			return;
 		}
-		log.trace("Switch state from " + enumToString(currentState.getIdentifier()) + " to "
-				+ enumToString(newState.getIdentifier()));
+		extendedLogging(() -> log.trace("Switch state from " + currentState + " to " + newState));
 		currentState = newState;
 		currentState.doEntryActions();
 		// currentState may got null, if the role was set to completed... :D
@@ -135,9 +161,6 @@ public class StateMachine<STATETYPE extends IState> implements IStateMachine<STA
 	}
 	
 	
-	/**
-	 * 
-	 */
 	@Override
 	public void stop()
 	{
@@ -149,26 +172,20 @@ public class StateMachine<STATETYPE extends IState> implements IStateMachine<STA
 	}
 	
 	
-	private String enumToString(final Enum<?> e)
-	{
-		if (e == null)
-		{
-			return "null";
-		}
-		String[] canName = e.getClass().getName().split("\\.");
-		return canName[canName.length - 1] + "." + e.name();
-	}
-	
-	
 	@Override
-	public void triggerEvent(final Enum<? extends Enum<?>> event)
+	public void triggerEvent(final IEvent event)
 	{
-		log.trace("Event enqueued: " + enumToString(event));
+		if (event == null)
+		{
+			log.warn("trigger event is null!");
+			return;
+		}
+		extendedLogging(() -> log.trace("Event enqueued: " + event));
 		eventQueue.add(event);
 		while (eventQueue.size() > queueSize)
 		{
-			Enum<?> ev = eventQueue.removeFirst();
-			log.trace("Queue full. Event " + ev + " removed.");
+			IEvent ev = eventQueue.removeFirst();
+			extendedLogging(() -> log.warn("Queue full. Event " + ev + " removed."));
 		}
 	}
 	
@@ -186,36 +203,50 @@ public class StateMachine<STATETYPE extends IState> implements IStateMachine<STA
 	
 	
 	@Override
-	public final STATETYPE getCurrentStateId()
+	public final T getCurrentState()
 	{
 		return currentState;
 	}
 	
 	
-	/**
-	 * @param esp
-	 * @param state
-	 */
 	@Override
-	public final void addTransition(final EventStatePair esp, final STATETYPE state)
+	public final void addTransition(final IState currentState, final IEvent event, final T state)
 	{
-		STATETYPE preState = transititions.put(esp, state);
+		assert event != null;
+		assert state != null;
+		Map<IState, T> subTransitions = transitions.computeIfAbsent(event, k -> new HashMap<>());
+		T preState = subTransitions.put(currentState, state);
 		if (preState != null)
 		{
-			log.warn("Overwriting transition for EventStatePair: " + esp + ". Change state from " + preState + " to "
+			log.warn("Overwriting transition for event: " + event + " and state " + currentState + ". Change state from "
+					+ preState + " to "
 					+ state);
 		}
 	}
 	
 	
 	@Override
-	public final void setInitialState(final STATETYPE currentState)
+	public final void setInitialState(final T currentState)
 	{
 		if (initialized)
 		{
-			throw new IllegalStateException("Alread initialized");
+			throw new IllegalStateException("Already initialized");
 		}
 		this.currentState = currentState;
 		initialState = currentState;
+	}
+	
+	
+	@Override
+	public void setExtendedLogging(final boolean extendedLogging)
+	{
+		this.extendedLogging = extendedLogging;
+	}
+	
+	
+	@Override
+	public void setQueueSize(int queueSize)
+	{
+		this.queueSize = queueSize;
 	}
 }

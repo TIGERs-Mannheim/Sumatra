@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 7, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.events;
 
@@ -13,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 import edu.tigers.autoreferee.IAutoRefFrame;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
+import edu.tigers.sumatra.referee.data.EGameState;
 
 
 /**
@@ -22,9 +17,36 @@ import edu.tigers.sumatra.wp.data.EGameStateNeutral;
 public interface IGameEventDetector
 {
 	/**
+	 * @param state
+	 * @return
+	 */
+	boolean isActiveIn(EGameState state);
+	
+	
+	/**
+	 * @return
+	 */
+	int getPriority();
+	
+	
+	/**
+	 * @param frame
+	 * @param events
+	 * @return
+	 */
+	Optional<IGameEvent> update(IAutoRefFrame frame, List<IGameEvent> events);
+	
+	
+	/**
+	 * Reset
+	 */
+	void reset();
+	
+	
+	/**
 	 * @author "Lukas Magel"
 	 */
-	public enum EGameEventDetectorType
+	enum EGameEventDetectorType
 	{
 		/**  */
 		ATTACKER_TO_DEFENSE_DISTANCE,
@@ -51,18 +73,21 @@ public interface IGameEventDetector
 		/**  */
 		GOAL,
 		/**  */
-		KICK_TIMEOUT
+		KICK_TIMEOUT,
+		/** */
+		BALL_HOLD_IN_PENAREA,
+		/** */
+		NO_PROGRESS
 	}
 	
 	/**
 	 * @author "Lukas Magel"
 	 */
-	public static class GameEventDetectorComparator implements
-			Comparator<IGameEventDetector>
+	class GameEventDetectorComparator implements Comparator<IGameEventDetector>
 	{
 		
 		/**  */
-		public static GameEventDetectorComparator	INSTANCE	= new GameEventDetectorComparator();
+		public static final GameEventDetectorComparator INSTANCE = new GameEventDetectorComparator();
 		
 		
 		@Override
@@ -82,33 +107,6 @@ public interface IGameEventDetector
 			}
 		}
 	}
-	
-	
-	/**
-	 * @param state
-	 * @return
-	 */
-	public boolean isActiveIn(EGameStateNeutral state);
-	
-	
-	/**
-	 * @return
-	 */
-	public int getPriority();
-	
-	
-	/**
-	 * @param frame
-	 * @param events
-	 * @return
-	 */
-	Optional<IGameEvent> update(IAutoRefFrame frame, List<IGameEvent> events);
-	
-	
-	/**
-	 *
-	 */
-	public void reset();
 	
 	
 }

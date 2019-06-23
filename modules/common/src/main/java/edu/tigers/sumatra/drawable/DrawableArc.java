@@ -1,24 +1,19 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jun 16, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.drawable;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Shape;
+import java.awt.*;
 import java.awt.geom.Arc2D;
 
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.math.AVector2;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.shapes.circle.Arc;
+import edu.tigers.sumatra.math.circle.Arc;
+import edu.tigers.sumatra.math.circle.IArc;
+import edu.tigers.sumatra.math.vector.AVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**
@@ -36,7 +31,7 @@ public class DrawableArc extends Arc implements IDrawableShape
 	protected DrawableArc()
 	{
 		super(AVector2.ZERO_VECTOR, 1, 0, 1);
-		color = Color.red;
+		color = Color.black;
 	}
 	
 	
@@ -44,7 +39,7 @@ public class DrawableArc extends Arc implements IDrawableShape
 	 * @param arc
 	 * @param color
 	 */
-	public DrawableArc(final Arc arc, final Color color)
+	public DrawableArc(final IArc arc, final Color color)
 	{
 		super(arc);
 		this.color = color;

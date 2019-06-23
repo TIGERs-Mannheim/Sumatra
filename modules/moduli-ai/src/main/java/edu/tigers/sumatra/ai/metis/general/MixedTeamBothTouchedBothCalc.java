@@ -1,22 +1,18 @@
 /*
- * *********************************************************
- * Copyright (c) 2014 DHBW Mannheim - Tigers Mannheim
- * Project: tigers - artificial intelligence
- * Date: 28.05.2014
- * Authors: Daniel Andres <andreslopez.daniel@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.metis.general;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import edu.tigers.sumatra.ai.data.EGameStateTeam;
 import edu.tigers.sumatra.ai.data.TacticalField;
 import edu.tigers.sumatra.ai.data.frames.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.referee.data.EGameState;
 
 
 /**
@@ -33,22 +29,15 @@ public class MixedTeamBothTouchedBothCalc extends ACalculator
 	
 	/**
 	 */
-	public MixedTeamBothTouchedBothCalc()
-	{
-	}
-	
-	
-	/**
-	 */
 	@Override
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
-		boolean bothTouched = false;
+		boolean bothTouched;
 		// Rule has to be applied in on running stage with no interrupts
-		if (newTacticalField.getGameState() == EGameStateTeam.RUNNING)
+		if (newTacticalField.getGameState().getState() == EGameState.RUNNING)
 		{
 			
-			List<BotID> partnerBots = new ArrayList<BotID>(6);
+			List<BotID> partnerBots = new ArrayList<>(6);
 			Set<BotID> tigerBots = baseAiFrame.getWorldFrame().getTigerBotsAvailable().keySet();
 			
 			for (BotID visBot : baseAiFrame.getWorldFrame().getTigerBotsVisible().keySet())
@@ -74,13 +63,7 @@ public class MixedTeamBothTouchedBothCalc extends ACalculator
 			}
 			
 			// checks if both flags are true
-			if (tigersTouched && partnerTouched)
-			{
-				bothTouched = true;
-			} else
-			{
-				bothTouched = false;
-			}
+			bothTouched = tigersTouched && partnerTouched;
 			
 			
 		} else
@@ -91,12 +74,5 @@ public class MixedTeamBothTouchedBothCalc extends ACalculator
 			bothTouched = false;
 		}
 		newTacticalField.setMixedTeamBothTouchedBall(bothTouched);
-	}
-	
-	
-	@Override
-	public void fallbackCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
-	{
-		newTacticalField.setMixedTeamBothTouchedBall(false);
 	}
 }

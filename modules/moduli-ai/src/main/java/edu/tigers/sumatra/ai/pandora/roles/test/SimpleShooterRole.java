@@ -1,21 +1,16 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jan 31, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.pandora.roles.test;
 
-import edu.tigers.sumatra.ai.data.math.OffensiveMath;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.skillsystem.skills.KickSkill;
-import edu.tigers.sumatra.skillsystem.skills.KickSkill.EKickMode;
-import edu.tigers.sumatra.skillsystem.skills.KickSkill.EMoveMode;
-import edu.tigers.sumatra.statemachine.IRoleState;
+import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
+import edu.tigers.sumatra.skillsystem.skills.AKickSkill;
+import edu.tigers.sumatra.skillsystem.skills.AKickSkill.EKickMode;
+import edu.tigers.sumatra.skillsystem.skills.KickChillSkill;
+import edu.tigers.sumatra.statemachine.IState;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 
 
@@ -26,65 +21,46 @@ import edu.tigers.sumatra.wp.data.DynamicPosition;
  */
 public class SimpleShooterRole extends ARole
 {
-	private DynamicPosition passTarget;
+	private DynamicPosition	passTarget;
+	private EKickerDevice	device;
 	
 	
 	/**
+	 * Pass straight to target
+	 * 
 	 * @param passTarget
 	 */
 	public SimpleShooterRole(final DynamicPosition passTarget)
 	{
+		this(passTarget, EKickerDevice.STRAIGHT);
+	}
+	
+	
+	/**
+	 * @param passTarget
+	 * @param device
+	 */
+	public SimpleShooterRole(final DynamicPosition passTarget, final EKickerDevice device)
+	{
 		super(ERole.SIMPLE_SHOOTER);
+		this.device = device;
 		setPassTarget(passTarget);
 		setInitialState(new ShootState());
 	}
 	
 	
-	private enum EStateId
+	private class ShootState implements IState
 	{
-		PREPARE,
-		SHOOT
-	}
-	
-	
-	private class ShootState implements IRoleState
-	{
-		private KickSkill skill;
+		private AKickSkill skill;
 		
 		
 		@Override
 		public void doEntryActions()
 		{
-			skill = new KickSkill(passTarget);
-			skill.setMoveMode(EMoveMode.CHILL);
-			skill.setKickMode(EKickMode.FIXED_SPEED);
+			skill = new KickChillSkill(passTarget);
+			skill.setKickMode(EKickMode.PASS);
+			skill.setDevice(device);
 			setNewSkill(skill);
-		}
-		
-		
-		@Override
-		public void doUpdate()
-		{
-			skill.setReceiver(passTarget);
-			getAiFrame().getAICom().setOffensiveRolePassTarget(passTarget);
-			getAiFrame().getAICom().setOffensiveRolePassTargetID((BotID) passTarget.getTrackedId());
-			
-			double passVel = OffensiveMath.calcPassSpeedForReceivers(getPos(), passTarget,
-					getAiFrame().getTacticalField().getBestDirectShotTargetsForTigerBots().get(passTarget.getTrackedId()));
-			skill.setKickSpeed(passVel);
-		}
-		
-		
-		@Override
-		public void doExitActions()
-		{
-		}
-		
-		
-		@Override
-		public Enum<? extends Enum<?>> getIdentifier()
-		{
-			return EStateId.SHOOT;
 		}
 	}
 	

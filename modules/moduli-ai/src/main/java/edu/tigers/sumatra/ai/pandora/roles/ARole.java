@@ -1,35 +1,23 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 13.11.2010
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
-package edu.tigers.sumatra.ai.pandora.roles;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+package edu.tigers.sumatra.ai.pandora.roles;
 
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.ai.data.EGameStateTeam;
 import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
-import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
-import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.NoObjectWithThisIDException;
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.skillsystem.ESkill;
 import edu.tigers.sumatra.skillsystem.skills.ISkill;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
-import edu.tigers.sumatra.statemachine.DoneState;
-import edu.tigers.sumatra.statemachine.EventStatePair;
-import edu.tigers.sumatra.statemachine.IRoleState;
+import edu.tigers.sumatra.statemachine.IEvent;
+import edu.tigers.sumatra.statemachine.IState;
 import edu.tigers.sumatra.statemachine.IStateMachine;
 import edu.tigers.sumatra.statemachine.StateMachine;
-import edu.tigers.sumatra.thread.NamedThreadFactory;
+import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrame;
 
@@ -49,42 +37,38 @@ import edu.tigers.sumatra.wp.data.WorldFrame;
  */
 public abstract class ARole
 {
-	/**  */
-	private static final Logger								log				= Logger.getLogger(ARole.class.getName());
-																							
-	private static final IRoleState							DONE_STATE		= new DoneState();
-																							
-	private final ERole											type;
-																		
+	private static final Logger log = Logger.getLogger(ARole.class.getName());
+	
+	private final ERole type;
+	
 	/** uninitialized BotID */
-	private BotID													botID				= BotID.get();
-																							
-	private boolean												firstUpdate		= true;
-																							
+	private BotID botID = BotID.noBot();
+	
+	private boolean firstUpdate = true;
+	
 	/** This flag is used to tell the play which uses this role whether it is completed. */
-	private boolean												isCompleted		= false;
-																							
-	private transient AthenaAiFrame							aiFrame			= null;
-																							
-	private transient ISkill									currentSkill	= new IdleSkill();
-	private transient boolean									newSkill			= true;
-	private final transient IStateMachine<IRoleState>	stateMachine;
-																		
-	private IVector2												lastPos;
-																		
-																		
+	private boolean isCompleted = false;
+	
+	private transient AthenaAiFrame aiFrame = null;
+	
+	private transient ISkill currentSkill = new IdleSkill();
+	private transient boolean newSkill = true;
+	private final transient IStateMachine<IState> stateMachine;
+	
+	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
 	
 	/**
-	 * @param type
+	 * @param type of the role
 	 */
 	public ARole(final ERole type)
 	{
 		this.type = type;
-		stateMachine = new StateMachine<IRoleState>();
+		stateMachine = new StateMachine<>();
+		stateMachine.setExtendedLogging(SumatraModel.getInstance().isTestMode());
 	}
 	
 	
@@ -94,84 +78,47 @@ public abstract class ARole
 	
 	
 	/**
-	 * Add a transition
-	 * 
-	 * @param stateId current state
-	 * @param event event that occurred
-	 * @param state the next state
+	 * Add a transition.
+	 *
+	 * @param currentState the state for which the transition should be triggered, can be null for wildcard
+	 * @param event the event that triggers the transition
+	 * @param nextState the resulting state
 	 */
-	public final void addTransition(final Enum<?> stateId, final Enum<?> event, final IRoleState state)
+	protected final void addTransition(final IState currentState, final IEvent event, final IState nextState)
 	{
-		stateMachine.addTransition(new EventStatePair(event, stateId), state);
+		stateMachine.addTransition(currentState, event, nextState);
 	}
 	
 	
 	/**
 	 * Add a wildcard transition
-	 * 
-	 * @param event event that occurred
-	 * @param state the next state
+	 *
+	 * @param event the event that triggers the transition
+	 * @param nextState the resulting state
 	 */
-	public final void addTransition(final Enum<?> event, final IRoleState state)
+	protected final void addTransition(final IEvent event, final IState nextState)
 	{
-		stateMachine.addTransition(new EventStatePair(event), state);
+		stateMachine.addTransition(null, event, nextState);
 	}
 	
 	
 	/**
-	 * Add a transition
-	 * 
-	 * @param fromState
-	 * @param event event that occurred
-	 * @param toState the next state
+	 * Adds a wildward End Transition.
+	 *
+	 * @param event the event that triggers the transition
 	 */
-	public final void addTransition(final IRoleState fromState, final Enum<?> event, final IRoleState toState)
+	protected final void addEndTransition(final IEvent event)
 	{
-		stateMachine.addTransition(new EventStatePair(event, fromState), toState);
-	}
-	
-	
-	/**
-	 * Adds an End Transition.
-	 * 
-	 * @param stateId current state
-	 * @param event event that have to occurs, that the statemachine ends
-	 */
-	public final void addEndTransition(final Enum<?> stateId, final Enum<?> event)
-	{
-		addTransition(stateId, event, DONE_STATE);
-	}
-	
-	
-	/**
-	 * Adds a wildcard End Transition.
-	 * 
-	 * @param event event that have to occurs, that the statemachine ends
-	 */
-	public final void addEndTransition(final Enum<?> event)
-	{
-		addTransition(event, DONE_STATE);
-	}
-	
-	
-	/**
-	 * Adds an End Transition.
-	 * 
-	 * @param state current state
-	 * @param event event that have to occurs, that the statemachine ends
-	 */
-	public final void addEndTransition(final IRoleState state, final Enum<?> event)
-	{
-		addTransition(state, event, DONE_STATE);
+		stateMachine.addTransition(null, event, null);
 	}
 	
 	
 	/**
 	 * Set the initial state to start with. This is mandatory for all roles!
 	 * 
-	 * @param initialState
+	 * @param initialState first state to set
 	 */
-	public final void setInitialState(final IRoleState initialState)
+	protected final void setInitialState(final IState initialState)
 	{
 		stateMachine.setInitialState(initialState);
 	}
@@ -180,23 +127,20 @@ public abstract class ARole
 	/**
 	 * Go to next state
 	 * 
-	 * @param event
+	 * @param event to be triggered
 	 */
-	public final void triggerEvent(final Enum<? extends Enum<?>> event)
+	public final void triggerEvent(final IEvent event)
 	{
-		if (event != null)
-		{
-			stateMachine.triggerEvent(event);
-		}
+		stateMachine.triggerEvent(event);
 	}
 	
 	
 	/**
 	 * Check if everything is fine for this role
 	 * 
-	 * @return
+	 * @return true, if role is OK
 	 */
-	public final boolean doSelfCheck()
+	final boolean doSelfCheck()
 	{
 		return stateMachine.valid();
 	}
@@ -205,84 +149,45 @@ public abstract class ARole
 	/**
 	 * Identifier of the current state
 	 * 
-	 * @return
+	 * @return the current state - can be null!
 	 */
-	public final Enum<?> getCurrentState()
+	public final IState getCurrentState()
 	{
-		if (stateMachine.getCurrentStateId() == null)
-		{
-			return DoneState.EStateId.DONE;
-		}
-		return stateMachine.getCurrentStateId().getIdentifier();
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- interface ------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	/**
-	 * Needed for Role assigning. If your role is a keeper
-	 * override this method and return true.
-	 * 
-	 * @return keeper?
-	 * @author Malte
-	 */
-	public boolean isKeeper()
-	{
-		return false;
+		return stateMachine.getCurrentState();
 	}
 	
 	
 	/**
 	 * This method should only be called from the RoleAssigner!!!
 	 * 
-	 * @param newBotId
-	 * @param frame
+	 * @param newBotId the new id that should be assigned to this role
 	 */
-	public final void assignBotID(final BotID newBotId, final MetisAiFrame frame)
+	public final void assignBotID(final BotID newBotId)
 	{
 		if (newBotId.isUninitializedID())
 		{
 			throw new IllegalArgumentException("Someone tries to initialize role '" + this
 					+ "' with an UNINITIALIZED BotID!!!");
 		}
-		
-		BotID oldBotId = botID;
 		botID = newBotId;
-		if (!oldBotId.isUninitializedID())
-		{
-			// that does not work well atm...
-			// stateMachine.restart();
-		}
 	}
 	
 	
 	/**
-	 * @param curFrame
+	 * @param curFrame current frame
 	 */
 	public final void updateBefore(final AthenaAiFrame curFrame)
 	{
 		aiFrame = curFrame;
-		lastPos = getPos();
 	}
 	
 	
 	/**
-	 * @param curFrame
+	 * @param curFrame current frame
 	 */
 	public final void update(final AthenaAiFrame curFrame)
 	{
 		updateBefore(curFrame);
-		
-		if (curFrame.getWorldFrame().tigerBotsAvailable.getWithNull(botID) == null)
-		{
-			// bot is not there atm. update would result in exceptions...
-			// in match mode, this should not happen, because the playfinder will
-			// find new plays immediately after one bot was lost
-			return;
-		}
 		
 		try
 		{
@@ -306,7 +211,7 @@ public abstract class ARole
 			
 			beforeUpdate();
 			
-			if (stateMachine.getCurrentStateId() == null)
+			if (stateMachine.getCurrentState() == null)
 			{
 				setCompleted();
 			} else
@@ -314,19 +219,11 @@ public abstract class ARole
 				stateMachine.update();
 			}
 			
-			reduceSpeedOnStop();
-			
 			afterUpdate();
 		} catch (Exception err)
 		{
 			log.error("Exception on role update (" + getType() + ")", err);
 		}
-	}
-	
-	
-	private void reduceSpeedOnStop()
-	{
-		currentSkill.getMoveCon().setRefereeStop(aiFrame.getTacticalField().getGameState() == EGameStateTeam.STOPPED);
 	}
 	
 	
@@ -364,38 +261,7 @@ public abstract class ARole
 	
 	
 	/**
-	 * This is called, when the game state has changed.
-	 * It is called before {@link APlay#doUpdate(AthenaAiFrame)}.
-	 * 
-	 * @param gameState
-	 */
-	public void onGameStateChanged(final EGameStateTeam gameState)
-	{
-	}
-	
-	
-	/**
-	 * Start a timeout after which the role will be set so be completed
-	 * 
-	 * @param timeMs [ms]
-	 */
-	public final void setCompleted(final int timeMs)
-	{
-		ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory(
-				"SetRoleCompleted"));
-		executor.schedule(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				setCompleted();
-			}
-		}, timeMs, TimeUnit.MILLISECONDS);
-	}
-	
-	
-	/**
-	 * @return
+	 * @return type of role
 	 */
 	public final ERole getType()
 	{
@@ -404,7 +270,7 @@ public abstract class ARole
 	
 	
 	/**
-	 * @return
+	 * @return bot id
 	 */
 	public final BotID getBotID()
 	{
@@ -417,38 +283,26 @@ public abstract class ARole
 	 * <strong>WARNING: Use only after role has been assigned!!!</strong> (Makes no sense otherwise...)
 	 * 
 	 * @return position
-	 * @throws IllegalStateException if role has not been initialized yet
 	 */
 	public final IVector2 getPos()
 	{
-		if (botID.isUninitializedID())
-		{
-			throw new IllegalStateException("Role '" + this + "' has not been initialized yet!!!");
-		}
-		try
-		{
-			return getAiFrame().getWorldFrame().getTiger(botID).getPos();
-		} catch (NoObjectWithThisIDException err)
-		{
-			return lastPos;
-		}
+		return getWFrame().getTiger(botID).getPos();
 	}
 	
 	
 	/**
-	 * Get the TrackedTigerBot of this role
+	 * Get the tracked bot of this role
 	 * 
-	 * @return
+	 * @return tracked bot
 	 */
 	public final ITrackedBot getBot()
 	{
-		return getWFrame().tigerBotsVisible.get(getBotID());
+		return getWFrame().getTiger(getBotID());
 	}
 	
 	
 	/**
-	 * @return Whether this role has been assigned to a bot (by
-	 *         {@link edu.tigers.sumatra.ai.lachesis.Lachesis})
+	 * @return Whether this role has been assigned to a real bot
 	 */
 	public final boolean hasBeenAssigned()
 	{
@@ -475,7 +329,7 @@ public abstract class ARole
 			log.trace(this + ": Completed");
 			isCompleted = true;
 			stateMachine.stop();
-			if ((currentSkill.getType() != ESkill.IDLE))
+			if (currentSkill.getType() != ESkill.IDLE)
 			{
 				setNewSkill(new IdleSkill());
 			}
@@ -493,7 +347,6 @@ public abstract class ARole
 	
 	/**
 	 * @return the current ai frame
-	 * @throws NullPointerException if called before {@link #update(AthenaAiFrame)}
 	 */
 	public final AthenaAiFrame getAiFrame()
 	{
@@ -507,6 +360,15 @@ public abstract class ARole
 	public final WorldFrame getWFrame()
 	{
 		return aiFrame.getWorldFrame();
+	}
+	
+	
+	/**
+	 * @return the current ball
+	 */
+	protected final ITrackedBall getBall()
+	{
+		return getWFrame().getBall();
 	}
 	
 	

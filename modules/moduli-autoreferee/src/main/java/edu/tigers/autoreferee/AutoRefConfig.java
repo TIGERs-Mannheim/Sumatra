@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 8, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee;
 
@@ -25,44 +20,59 @@ import edu.tigers.sumatra.ids.ETeamColor;
 public class AutoRefConfig
 {
 	@Configurable(comment = "Enable ball placement calls for the blue teams")
-	private static boolean		ballPlacementBlueEnabled		= false;
+	private static boolean ballPlacementBlueEnabled = false;
 	
 	@Configurable(comment = "Enable ball placement calls for the blue teams")
-	private static boolean		ballPlacementYellowEnabled		= false;
+	private static boolean ballPlacementYellowEnabled = false;
 	
 	@Configurable(comment = "Enable ball placement calls for the blue teams")
-	private static ETeamColor	ballPlacementPreference			= ETeamColor.NEUTRAL;
+	private static ETeamColor ballPlacementPreference = ETeamColor.NEUTRAL;
 	
 	@Configurable(comment = "[mm] The accuracy with which the ball needs to be placed")
-	private static double		ballPlacementAccuracy			= 200;
+	private static double ballPlacementAccuracy = 200;
 	
 	@Configurable(comment = "[mm] The accuracy with which the ball needs to be placed by the robots")
-	private static double		robotBallPlacementAccuracy		= 100;
+	private static double robotBallPlacementAccuracy = 100;
 	
 	@Configurable(comment = "[m/s] The maximum allowed ball velocity ingame")
-	private static double		maxBallVelocity					= 8.5d;
+	private static double maxBallVelocity = 8.5d;
 	
 	@Configurable(comment = "[m/s] The maximum bot velocity during game stoppage")
-	private static double		maxBotStopSpeed					= 1.7d;						// in m/s
-																												
+	private static double maxBotStopSpeed = 1.7d; // in m/s
+	
 	@Configurable(comment = "[m/s] The velocity below which a bot is considered to be stationary")
-	private static double		botStationarySpeedThreshold	= 0.3;
+	private static double botStationarySpeedThreshold = 0.3;
 	
 	@Configurable(comment = "[m/s] The velocity below which the ball is considered to be stationary")
-	private static double		ballStationarySpeedThreshold	= 0.08;
+	private static double ballStationarySpeedThreshold = 0.08;
 	
 	@Configurable(comment = "[ms] The time each team has to place the ball")
-	private static int			ballPlacementWindow				= 15_000;
+	private static int ballPlacementWindow = 15_000;
 	
 	@Configurable(comment = "The hostname/ip address of the refbox")
-	private static String		refboxHostname						= "localhost";
+	private static String refboxHostname = "localhost";
 	
 	@Configurable(comment = "The port which will be used to connect to the refbox")
-	private static int			refboxPort							= 10007;
+	private static int refboxPort = 10007;
 	
 	static
 	{
 		ConfigRegistration.registerClass("autoreferee", AutoRefConfig.class);
+	}
+	
+	
+	private AutoRefConfig()
+	{
+		// hide public constructor
+	}
+	
+	
+	/**
+	 * Init class
+	 */
+	public static void touch()
+	{
+		// only for static initialization
 	}
 	
 	

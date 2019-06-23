@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 19, 2016
- * Author(s): Lukas Magel
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.autoreferee.engine.events.impl;
 
 import java.util.Collection;
@@ -25,12 +21,12 @@ import edu.tigers.autoreferee.engine.events.EGameEvent;
 import edu.tigers.autoreferee.engine.events.GameEvent;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
 import edu.tigers.autoreferee.engine.events.SpeedViolation;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
-import edu.tigers.sumatra.wp.data.Geometry;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.VectorMath;
+import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
@@ -66,7 +62,7 @@ public class BotCollisionDetector extends AGameEventDetector
 	 */
 	public BotCollisionDetector()
 	{
-		super(EGameStateNeutral.RUNNING);
+		super(EGameState.RUNNING);
 	}
 	
 	
@@ -87,20 +83,21 @@ public class BotCollisionDetector extends AGameEventDetector
 		long curTS = frame.getTimestamp();
 		for (ITrackedBot blueBot : blueBots)
 		{
-			if (botStillOnCooldown(blueBot.getBotId(), curTS))
+			if (botStillOnCoolDown(blueBot.getBotId(), curTS))
 			{
 				continue;
 			}
 			lastViolators.remove(blueBot.getBotId());
 			for (ITrackedBot yellowBot : yellowBots)
 			{
-				if (botStillOnCooldown(yellowBot.getBotId(), curTS))
+				if (botStillOnCoolDown(yellowBot.getBotId(), curTS))
 				{
 					continue;
 				}
 				lastViolators.remove(yellowBot.getBotId());
 				
-				if (GeoMath.distancePP(blueBot.getPos(), yellowBot.getPos()) <= (2 * Geometry.getBotRadius() * MIN_DISTANCE_FACTOR))
+				if (VectorMath.distancePP(blueBot.getPos(),
+						yellowBot.getPos()) <= (2 * Geometry.getBotRadius() * MIN_DISTANCE_FACTOR))
 				{
 					IVector2 blueVel = blueBot.getVel();
 					IVector2 yellowVel = yellowBot.getVel();
@@ -108,9 +105,9 @@ public class BotCollisionDetector extends AGameEventDetector
 					double velDiff = blueVel.getLength() - yellowVel.getLength();
 					if ((crashVel > CRASH_VEL_THRESHOLD) && (Math.abs(velDiff) > MIN_SPEED_DIFF))
 					{
-						BotID violatorID = null;
-						double violatorSpeed = 0.0d;
-						IVector2 kickPos = null;
+						BotID violatorID;
+						double violatorSpeed;
+						IVector2 kickPos;
 						if (velDiff > 0)
 						{
 							violatorID = blueBot.getBotId();
@@ -142,7 +139,7 @@ public class BotCollisionDetector extends AGameEventDetector
 	}
 	
 	
-	private boolean botStillOnCooldown(final BotID bot, final long curTS)
+	private boolean botStillOnCoolDown(final BotID bot, final long curTS)
 	{
 		if (lastViolators.containsKey(bot))
 		{
@@ -184,7 +181,7 @@ public class BotCollisionDetector extends AGameEventDetector
 	 */
 	private double calcCrashVelocity(final IVector2 va, final IVector2 vb)
 	{
-		double angle = GeoMath.angleBetweenVectorAndVector(va, vb);
+		double angle = va.angleToAbs(vb).orElse(0.0);
 		double a = va.getLength();
 		double b = vb.getLength();
 		return (Math.sin(angle / 2) * (a + b)) + (Math.cos(angle / 2) * Math.abs(a - b));

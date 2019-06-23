@@ -1,16 +1,12 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 19, 2015
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.gui.view;
 
 import javax.swing.ImageIcon;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
+import javax.swing.WindowConstants;
 
 import net.infonode.docking.RootWindow;
 import net.infonode.docking.properties.RootWindowProperties;
@@ -34,7 +30,7 @@ public class AutoRefMainFrame extends AMainFrame
 	
 	
 	/**
-	 * 
+	 * Default
 	 */
 	public AutoRefMainFrame()
 	{
@@ -50,6 +46,7 @@ public class AutoRefMainFrame extends AMainFrame
 		
 		updateViewMenu();
 		fillMenuBar();
+		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 	}
 	
 	

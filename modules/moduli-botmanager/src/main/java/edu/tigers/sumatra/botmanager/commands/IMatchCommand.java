@@ -9,8 +9,7 @@
 package edu.tigers.sumatra.botmanager.commands;
 
 import edu.tigers.sumatra.botmanager.commands.botskills.ABotSkill;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
+import edu.tigers.sumatra.botmanager.commands.botskills.EDataAcquisitionMode;
 
 
 /**
@@ -23,32 +22,6 @@ public interface IMatchCommand
 	 * @param skill
 	 */
 	void setSkill(ABotSkill skill);
-	
-	
-	/**
-	 * @param speed Dribbler speed in RPM.
-	 * @note Negative values reverse turning direction (push ball away).
-	 */
-	void setDribblerSpeed(double speed);
-	
-	
-	/**
-	 * Set kick details.
-	 * 
-	 * @param kickSpeed [m/s]
-	 * @param device STRAIGHT or CHIP
-	 * @param mode FORCE, ARM or DISARM
-	 */
-	void setKick(double kickSpeed, EKickerDevice device, EKickerMode mode);
-	
-	
-	/**
-	 * Enable the robots super-mega-top-secret and ultra-annoying cheering functionality.
-	 * 
-	 * @param enable
-	 * @note Expect severe joy and enthusiasm in the crowd!
-	 */
-	void setCheering(boolean enable);
 	
 	
 	/**
@@ -70,16 +43,13 @@ public interface IMatchCommand
 	
 	
 	/**
-	 * @param leftRed
-	 * @param leftGreen
-	 * @param rightRed
-	 * @param rightGreen
+	 * @param control
 	 */
-	void setLEDs(final boolean leftRed, final boolean leftGreen, final boolean rightRed, final boolean rightGreen);
+	void setMultimediaControl(final MultimediaControl control);
 	
 	
 	/**
-	 * @param enable
+	 * @param acqMode
 	 */
-	void setSongFinalCountdown(final boolean enable);
+	void setDataAcquisitionMode(final EDataAcquisitionMode acqMode);
 }

@@ -11,8 +11,8 @@ package edu.tigers.sumatra.sampler.velocity;
 import java.util.ArrayList;
 import java.util.List;
 
-import edu.tigers.sumatra.math.IVector3;
-import edu.tigers.sumatra.math.Vector3;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.Vector3;
 
 
 /**
@@ -37,7 +37,7 @@ public class VelocityXywStaticSampler implements IVelocityXywSampler
 		{
 			for (int i = 0; i < 3; i++)
 			{
-				velocities.add(new Vector3(s, 0, 0));
+				velocities.add(Vector3.fromXYZ(s, 0, 0));
 			}
 		}
 		numSamples = velocities.size();

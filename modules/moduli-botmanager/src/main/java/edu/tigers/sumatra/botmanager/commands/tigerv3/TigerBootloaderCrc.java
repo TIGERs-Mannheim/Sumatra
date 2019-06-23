@@ -35,7 +35,8 @@ public class TigerBootloaderCrc extends ACommand
 	
 	
 	/**
-	  */
+	 * Constructor.
+	 */
 	public TigerBootloaderCrc()
 	{
 		super(ECommand.CMD_BOOTLOADER_CRC);

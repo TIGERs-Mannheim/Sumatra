@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 22.04.2013
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands.basestation;
 
@@ -42,7 +37,9 @@ public class BaseStationACommand extends ACommand
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/** */
+	/**
+	 * Constructor.
+	 */
 	public BaseStationACommand()
 	{
 		super(ECommand.CMD_BASE_ACOMMAND);
@@ -130,7 +127,7 @@ public class BaseStationACommand extends ACommand
 	{
 		if (id == AObjectID.UNINITIALIZED_ID)
 		{
-			return BotID.get();
+			return BotID.noBot();
 		}
 		
 		if (id > AObjectID.BOT_ID_MAX)

@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Sep 16, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.rcm;
 
@@ -30,18 +25,7 @@ public enum ERcmEvent
 	/**  */
 	SPEED_MODE_DISABLE,
 	/**  */
-	EMERGENCY_MODE,
-	/**  */
-	MATCH_MODE,
-	/**  */
-	RECORD_START_STOP,
-	/**  */
 	CHARGE_BOT,
 	/**  */
 	DISCHARGE_BOT,
-	
-	/**  */
-	RECORD_VISION_START,
-	/**  */
-	RECORD_VISION_STOP
 }

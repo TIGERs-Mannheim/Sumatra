@@ -8,12 +8,12 @@
  */
 package edu.tigers.autoreferee.engine.calc;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 
 import edu.tigers.autoreferee.AutoRefFrame;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
+import edu.tigers.sumatra.referee.data.GameState;
 
 
 /**
@@ -21,11 +21,11 @@ import edu.tigers.sumatra.wp.data.EGameStateNeutral;
  */
 public class GameStateHistoryCalc implements IRefereeCalc
 {
-	private static int							historySize	= 5;
+	private static final int		HISTORY_SIZE	= 5;
 	
 	// Using the implementation directly is normally considered bad practice, but a LinkedList implements both the List
 	// as well as the Queue interface, which makes it very convenient for internal use
-	private LinkedList<EGameStateNeutral>	stateHistory;
+	private LinkedList<GameState>	stateHistory;
 	
 	
 	/**
@@ -33,25 +33,25 @@ public class GameStateHistoryCalc implements IRefereeCalc
 	 */
 	public GameStateHistoryCalc()
 	{
-		stateHistory = new LinkedList<>(Arrays.asList(EGameStateNeutral.UNKNOWN));
+		stateHistory = new LinkedList<>(Collections.singletonList(GameState.HALT));
 	}
 	
 	
 	@Override
 	public void process(final AutoRefFrame frame)
 	{
-		if (stateHistory.peekFirst() != frame.getGameState())
+		if (!stateHistory.peekFirst().isSameStateAndForTeam(frame.getGameState()))
 		{
 			add(frame.getGameState());
 		}
 		
-		frame.setStateHistory(Collections.unmodifiableList(stateHistory));
+		frame.setStateHistory(new ArrayList<>(stateHistory));
 	}
 	
 	
-	private void add(final EGameStateNeutral state)
+	private void add(final GameState state)
 	{
-		if (stateHistory.size() >= historySize)
+		if (stateHistory.size() >= HISTORY_SIZE)
 		{
 			stateHistory.pollLast();
 		}

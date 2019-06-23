@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 13, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.events.impl;
 
@@ -20,11 +15,11 @@ import edu.tigers.autoreferee.IAutoRefFrame;
 import edu.tigers.autoreferee.engine.events.BotNumberViolation;
 import edu.tigers.autoreferee.engine.events.GameEvent;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.referee.RefereeMsg;
-import edu.tigers.sumatra.referee.TeamInfo;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
-import edu.tigers.sumatra.wp.data.Geometry;
+import edu.tigers.sumatra.referee.data.EGameState;
+import edu.tigers.sumatra.referee.data.RefereeMsg;
+import edu.tigers.sumatra.referee.data.TeamInfo;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
@@ -32,7 +27,7 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  * This rule compares the number of bots that are located inside the field with the maximum allowed number of bots. It
  * also consults the team info sent by the referee box to detect if a team did not decrease their bot number after a
  * yellow card.
- * Currently it only returns a RuleViolation when the game state changes to {@link EGameStateNeutral#RUNNING} but does
+ * Currently it only returns a RuleViolation when the game state changes to {@link EGameState#RUNNING} but does
  * not stop the game.
  * 
  * @author "Lukas Magel"
@@ -53,7 +48,7 @@ public class BotNumberDetector extends AGameEventDetector
 	 */
 	public BotNumberDetector()
 	{
-		super(EGameStateNeutral.RUNNING);
+		super(EGameState.RUNNING);
 	}
 	
 	

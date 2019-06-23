@@ -1,20 +1,19 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 04.06.2015
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.trajectory;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 import java.util.Random;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.trajectory.BangBangTrajectory1D.BBTrajectoryPart;
 
 
 /**
@@ -28,7 +27,7 @@ public class BangBangTrajectory2DTest
 	private static final double	POS_LIMIT			= 10.0;
 	private static final double	POS_TOLERANCE		= 1e-5f;
 	private static final double	VEL_TOLERANCE		= 1e-3f;
-	private final Random				rng					= new Random();
+	private final Random rng = new Random(0);
 	
 	
 	private double getRandomDouble(final double minmax)
@@ -39,16 +38,18 @@ public class BangBangTrajectory2DTest
 	
 	private IVector2 getRandomVector(final double minmax)
 	{
-		return new Vector2(getRandomDouble(minmax), getRandomDouble(minmax));
+		return Vector2.fromXY(getRandomDouble(minmax), getRandomDouble(minmax));
 	}
 	
 	
 	private void checkTimeOrder(final BangBangTrajectory1D traj)
 	{
-		Assert.assertTrue(traj.getPart(0).tEnd >= 0.0);
-		Assert.assertTrue(traj.getPart(1).tEnd >= traj.getPart(0).tEnd);
-		Assert.assertTrue(traj.getPart(2).tEnd >= traj.getPart(1).tEnd);
-		Assert.assertTrue(traj.getPart(3).tEnd >= traj.getPart(2).tEnd);
+		double tLast = 0.0;
+		for (BBTrajectoryPart part : traj.getParts())
+		{
+			Assert.assertTrue(part.tEnd >= tLast);
+			tLast = part.tEnd;
+		}
 	}
 	
 	
@@ -62,7 +63,7 @@ public class BangBangTrajectory2DTest
 			IVector2 finalPos = getRandomVector(POS_LIMIT);
 			IVector2 initVel = getRandomVector(2.0f);
 			
-			BangBangTrajectory2D traj = new BangBangTrajectory2D(initPos, finalPos, initVel, 3.0, 5.0, 2.0);
+			BangBangTrajectory2D traj = new BangBangTrajectory2D(initPos, finalPos, initVel, 2.0, 3.0);
 			
 			Assert.assertTrue(traj.getTotalTime() >= 0.0);
 			
@@ -89,7 +90,7 @@ public class BangBangTrajectory2DTest
 			IVector2 finalPos = getRandomVector(POS_LIMIT);
 			IVector2 initVel = getRandomVector(4.0f);
 			
-			BangBangTrajectory2D traj = new BangBangTrajectory2D(initPos, finalPos, initVel, 3.0, 5.0, 2.0);
+			BangBangTrajectory2D traj = new BangBangTrajectory2D(initPos, finalPos, initVel, 2.0, 3.0);
 			
 			Assert.assertTrue(traj.getTotalTime() >= 0.0);
 			
@@ -103,5 +104,31 @@ public class BangBangTrajectory2DTest
 			Assert.assertEquals(finalPos.x(), traj.getPositionMM(traj.getTotalTime()).x() * 1e-3f, POS_TOLERANCE);
 			Assert.assertEquals(finalPos.y(), traj.getPositionMM(traj.getTotalTime()).y() * 1e-3f, POS_TOLERANCE);
 		}
+	}
+	
+	
+	@Test
+	public void testAccuracy()
+	{
+		IVector2 pos = Vector2.fromXY(-677.6483764648438, 0.011869861744344234);
+		IVector2 dest = Vector2.fromXY(-186.5, -0.0);
+		IVector2 vel1 = Vector2.fromXY(0.09700202941894531, 4.835854306293186E-4);
+		IVector2 vel2 = Vector2.fromXY(0.09700202941894531, 0);
+		
+		BangBangTrajectory2D traj1 = new BangBangTrajectory2D(
+				pos.multiplyNew(1e-3f),
+				dest.multiplyNew(1e-3f),
+				vel1,
+				2.0,
+				2.0);
+		
+		BangBangTrajectory2D traj2 = new BangBangTrajectory2D(
+				pos.multiplyNew(1e-3f),
+				dest.multiplyNew(1e-3f),
+				vel2,
+				2.0,
+				2.0);
+		
+		assertThat(traj1.getTotalTime()).isCloseTo(traj2.getTotalTime(), within(1e-4));
 	}
 }

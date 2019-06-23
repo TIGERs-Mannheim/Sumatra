@@ -63,13 +63,6 @@ public class DistanceViolation extends GameEvent
 	
 	
 	@Override
-	public String buildLogString()
-	{
-		return super.buildLogString();
-	}
-	
-	
-	@Override
 	protected String generateLogString()
 	{
 		DecimalFormat format = new DecimalFormat("####.0");

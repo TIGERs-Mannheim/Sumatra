@@ -33,8 +33,8 @@ public interface ITransceiverUDP extends ITransceiver
 	
 	
 	/**
- *
- */
+	 * Open connection.
+	 */
 	void open();
 	
 	
@@ -46,8 +46,8 @@ public interface ITransceiverUDP extends ITransceiver
 	
 	
 	/**
- *
- */
+	 * Close connection.
+	 */
 	void close();
 	
 	

@@ -8,7 +8,7 @@
  */
 package edu.tigers.sumatra.units;
 
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**

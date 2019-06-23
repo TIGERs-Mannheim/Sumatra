@@ -1,31 +1,24 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 14.01.2011
- * Author(s): Malte
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.dhbw.mannheim.tigers.sumatra.presenter.referee;
 
 import java.awt.Component;
 
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.view.referee.CreateRefereeMsgPanel;
-import edu.dhbw.mannheim.tigers.sumatra.view.referee.ICreateRefereeMsgObserver;
+import edu.dhbw.mannheim.tigers.sumatra.view.referee.IRefBoxRemoteControlRequestObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.referee.RefereePanel;
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.moduli.listenerVariables.ModulesState;
+import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest;
 import edu.tigers.sumatra.Referee.SSL_Referee;
-import edu.tigers.sumatra.Referee.SSL_Referee.Command;
-import edu.tigers.sumatra.math.IVector2;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.referee.AReferee;
 import edu.tigers.sumatra.referee.IRefereeObserver;
-import edu.tigers.sumatra.referee.RefereeMsg;
-import edu.tigers.sumatra.util.GlobalShortcuts;
-import edu.tigers.sumatra.util.GlobalShortcuts.EShortcut;
+import edu.tigers.sumatra.referee.source.ARefereeMessageSource;
+import edu.tigers.sumatra.referee.source.ERefereeMessageSource;
 import edu.tigers.sumatra.views.ASumatraViewPresenter;
 import edu.tigers.sumatra.views.ISumatraView;
 
@@ -35,87 +28,46 @@ import edu.tigers.sumatra.views.ISumatraView;
  * 
  * @author MalteM
  */
-public class RefereePresenter extends ASumatraViewPresenter implements IRefereeObserver,
-		ICreateRefereeMsgObserver
+public class RefereePresenter extends ASumatraViewPresenter
+		implements IRefereeObserver, IRefBoxRemoteControlRequestObserver
 {
 	@SuppressWarnings("unused")
-	private static final Logger	log				= Logger.getLogger(RefereePresenter.class.getName());
-																
-	private final RefereePanel		refereePanel	= new RefereePanel();
-	private AReferee					refereeHandler;
-											
-											
-	/**
-	 */
-	public RefereePresenter()
-	{
-		
-		
-		GlobalShortcuts.register(EShortcut.REFEREE_HALT, new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				refereeHandler.sendOwnRefereeMsg(Command.HALT, 0, 0, (short) 0, System.nanoTime(), null);
-			}
-		});
-		GlobalShortcuts.register(EShortcut.REFEREE_STOP, new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				refereeHandler.sendOwnRefereeMsg(Command.STOP, 0, 0, (short) 0, System.nanoTime(), null);
-			}
-		});
-		GlobalShortcuts.register(EShortcut.REFEREE_START, new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				refereeHandler.sendOwnRefereeMsg(Command.NORMAL_START, 0, 0, (short) 0, System.nanoTime(), null);
-			}
-		});
-	}
+	private static final Logger log = Logger.getLogger(RefereePresenter.class.getName());
+	
+	private final RefereePanel refereePanel = new RefereePanel();
+	private AReferee referee;
 	
 	
 	@Override
 	public void onModuliStateChanged(final ModulesState state)
 	{
 		super.onModuliStateChanged(state);
-		switch (state)
+		if (state == ModulesState.ACTIVE)
 		{
-			case ACTIVE:
+			try
 			{
-				try
-				{
-					refereeHandler = (AReferee) SumatraModel.getInstance().getModule(AReferee.MODULE_ID);
-					refereeHandler.addObserver(this);
-				} catch (final ModuleNotFoundException err)
-				{
-					log.error("referee Module not found");
-				}
-				
-				refereePanel.start();
-				refereePanel.getCreateRefereeMsgPanel().addObserver(this);
-				break;
+				referee = (AReferee) SumatraModel.getInstance().getModule(AReferee.MODULE_ID);
+				referee.addObserver(this);
+			} catch (final ModuleNotFoundException err)
+			{
+				log.error("referee Module not found", err);
 			}
 			
-			
-			case RESOLVED:
+			refereePanel.getCommonCommandsPanel().addObserver(this);
+			refereePanel.getChangeStatePanel().addObserver(this);
+			refereePanel.getTeamsPanel().values().forEach(p -> p.addObserver(this));
+			refereePanel.setEnable(referee.getActiveSource().getType() == ERefereeMessageSource.INTERNAL_REFBOX);
+		} else if (state == ModulesState.RESOLVED)
+		{
+			if (referee != null)
 			{
-				if (refereeHandler != null)
-				{
-					refereeHandler.removeObserver(this);
-					refereeHandler = null;
-				}
-				refereePanel.stop();
-				final CreateRefereeMsgPanel p = refereePanel.getCreateRefereeMsgPanel();
-				p.removeObserver(this);
-				break;
+				referee.removeObserver(this);
+				referee = null;
 			}
-			case NOT_LOADED:
-			default:
-				break;
+			
+			refereePanel.getCommonCommandsPanel().removeObserver(this);
+			refereePanel.getChangeStatePanel().removeObserver(this);
+			refereePanel.getTeamsPanel().values().forEach(p -> p.removeObserver(this));
 		}
 	}
 	
@@ -123,22 +75,15 @@ public class RefereePresenter extends ASumatraViewPresenter implements IRefereeO
 	@Override
 	public void onNewRefereeMsg(final SSL_Referee msg)
 	{
-		refereePanel.getShowRefereeMsgPanel().newRefereeMsg(new RefereeMsg(0, msg));
+		refereePanel.getShowRefereeMsgPanel().update(msg);
+		refereePanel.getTeamsPanel().values().forEach(t -> t.update(msg));
 	}
 	
 	
 	@Override
-	public void onSendOwnRefereeMsg(final Command cmd, final int goalsBlue, final int goalsYellow,
-			final short timeLeft, final long timestamp, final IVector2 placementPos)
+	public void onRefereeMsgSourceChanged(final ARefereeMessageSource src)
 	{
-		refereeHandler.sendOwnRefereeMsg(cmd, goalsBlue, goalsYellow, timeLeft, timestamp, placementPos);
-	}
-	
-	
-	@Override
-	public void onEnableReceive(final boolean receive)
-	{
-		refereeHandler.setReceiveExternalMsg(receive);
+		refereePanel.setEnable(src.getType() == ERefereeMessageSource.INTERNAL_REFBOX);
 	}
 	
 	
@@ -153,5 +98,12 @@ public class RefereePresenter extends ASumatraViewPresenter implements IRefereeO
 	public ISumatraView getSumatraView()
 	{
 		return refereePanel;
+	}
+	
+	
+	@Override
+	public void onNewControlRequest(final SSL_RefereeRemoteControlRequest req)
+	{
+		referee.handleControlRequest(req);
 	}
 }

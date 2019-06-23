@@ -8,15 +8,11 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter;
 
-import java.awt.EventQueue;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
+import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.swing.JLabel;
-import javax.swing.JPanel;
+import javax.swing.*;
 
 import edu.tigers.sumatra.bot.EFeature;
 import edu.tigers.sumatra.ids.BotID;
@@ -40,7 +36,7 @@ public class BcFeaturesPanel extends JPanel
 	
 	
 	/**
-	 * 
+	 * Constructor.
 	 */
 	public BcFeaturesPanel()
 	{
@@ -52,6 +48,7 @@ public class BcFeaturesPanel extends JPanel
 	
 	
 	/**
+	 * Clear all feature states.
 	 */
 	public void clearFeatureStates()
 	{
@@ -92,35 +89,35 @@ public class BcFeaturesPanel extends JPanel
 	
 	
 	/**
+	 * Update panel.
 	 */
 	public void update()
 	{
 		if (dirty)
 		{
+			GridBagConstraints c1 = new GridBagConstraints();
+			c1.gridx = 0;
+			c1.insets = INSETS;
+			c1.anchor = GridBagConstraints.WEST;
+			
 			EventQueue.invokeLater(() -> {
 				featuresPanel.removeAll();
-				GridBagConstraints c1 = new GridBagConstraints();
-				c1.gridx = 0;
-				c1.insets = INSETS;
-				c1.anchor = GridBagConstraints.WEST;
-				for (Map.Entry<State, Boolean> entry : featureStates.entrySet())
-				{
-					State st = entry.getKey();
-					if (!entry.getValue())
-					{
-						String text = "Bot " + st.hwId + " with id " + entry.getKey().botId + " has broken "
-								+ entry.getKey().feature.name();
-						featuresPanel.add(new JLabel(text), c1);
-					}
-				}
-				for (Map.Entry<BotID, Boolean> entry : noHWId.entrySet())
-				{
-					if (!entry.getValue())
-					{
-						String text = "Bot with id " + entry.getKey() + " has no HW id set!";
-						featuresPanel.add(new JLabel(text));
-					}
-				}
+				
+				featureStates.entrySet().stream()
+						.filter(e -> !e.getValue())
+						.forEach(e -> {
+							String text = "Bot " + e.getKey().hwId + " with id " + e.getKey().botId + " has broken "
+									+ e.getKey().feature.name();
+							featuresPanel.add(new JLabel(text), c1);
+						});
+						
+				noHWId.entrySet().stream()
+						.filter(e -> !e.getValue())
+						.forEach(e -> {
+							String text = "Bot with id " + e.getKey() + " has no HW id set!";
+							featuresPanel.add(new JLabel(text));
+						});
+						
 				dirty = false;
 			});
 		}
@@ -185,11 +182,7 @@ public class BcFeaturesPanel extends JPanel
 			{
 				return false;
 			}
-			if (feature != other.feature)
-			{
-				return false;
-			}
-			return true;
+			return feature == other.feature;
 		}
 	}
 }

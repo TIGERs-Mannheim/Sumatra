@@ -26,13 +26,15 @@ public class BaseStationAuth extends ACommand
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	@SerialData(type = ESerialDataType.UINT32)
-	private long	auth	= 0x42424242;
+	private long auth = 0x42424242;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/** */
+	/**
+	 * Constructor.
+	 */
 	public BaseStationAuth()
 	{
 		super(ECommand.CMD_BASE_AUTH);

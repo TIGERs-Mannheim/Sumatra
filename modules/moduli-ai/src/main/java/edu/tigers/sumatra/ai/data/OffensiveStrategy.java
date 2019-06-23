@@ -1,21 +1,20 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 30, 2014
- * Author(s): MarkG <Mark.Geiger@dlr.de>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.data;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.statemachine.IEvent;
 
 
 /**
@@ -26,62 +25,33 @@ import edu.tigers.sumatra.ids.BotID;
 @Persistent(version = 2)
 public class OffensiveStrategy
 {
-	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	/**
 	 * Defines the offensiveStrategy
 	 */
-	public enum EOffensiveStrategy
+	public enum EOffensiveStrategy implements IEvent
 	{
-		/**  */
-		GET,
 		/**  */
 		KICK,
 		/**  */
 		STOP,
 		/**  */
 		INTERCEPT,
-		/**  */
-		REDIRECT_CATCH_SPECIAL_MOVE,
+		/** */
+		SPECIAL_MOVE,
 		/**  */
 		DELAY,
 		/**  */
 		SUPPORTIVE_ATTACKER,
 		/** */
+		FREE_SKIRMISH
 	}
 	
-	private int										minNumberOfBots							= 0;
-	private int										maxNumberOfBots							= 1;
-	private List<BotID>							desiredBots									= new ArrayList<BotID>();
-	private Map<BotID, EOffensiveStrategy>	currentOffensivePlayConfiguration	= new HashMap<BotID, EOffensiveStrategy>();
-	private List<EOffensiveStrategy>			unassignedStrategies						= new ArrayList<EOffensiveStrategy>();
-	private List<SpecialMoveCommand>			specialMoveCommands						= new ArrayList<SpecialMoveCommand>();
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	/**
-	 * Stores lots of Information for offensive strategies
-	 */
-	public OffensiveStrategy()
-	{
-		
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
+	private final Set<BotID> desiredBots = new HashSet<>();
+	private final Map<BotID, EOffensiveStrategy> currentOffensivePlayConfiguration = new HashMap<>();
+	private final List<EOffensiveStrategy> unassignedStrategies = new ArrayList<>();
+	private final List<SpecialMoveCommand> specialMoveCommands = new ArrayList<>();
+	private int minNumberOfBots = 0;
+	private int maxNumberOfBots = 1;
 	
 	
 	/**
@@ -123,18 +93,9 @@ public class OffensiveStrategy
 	/**
 	 * @return the desiredBots
 	 */
-	public List<BotID> getDesiredBots()
+	public Set<BotID> getDesiredBots()
 	{
 		return desiredBots;
-	}
-	
-	
-	/**
-	 * @param desiredBots the desiredBots to set
-	 */
-	public void setDesiredBots(final List<BotID> desiredBots)
-	{
-		this.desiredBots = desiredBots;
 	}
 	
 	
@@ -148,30 +109,11 @@ public class OffensiveStrategy
 	
 	
 	/**
-	 * @param currentOffensivePlayConfiguration the currentOffensivePlayConfiguration to set
-	 */
-	public void setCurrentOffensivePlayConfiguration(
-			final Map<BotID, EOffensiveStrategy> currentOffensivePlayConfiguration)
-	{
-		this.currentOffensivePlayConfiguration = currentOffensivePlayConfiguration;
-	}
-	
-	
-	/**
 	 * @return the helperDestinations
 	 */
 	public List<SpecialMoveCommand> getSpecialMoveCommands()
 	{
 		return specialMoveCommands;
-	}
-	
-	
-	/**
-	 * @param specialMoveCommands the helperDestinations to set
-	 */
-	public void setSpecialMoveCommands(final List<SpecialMoveCommand> specialMoveCommands)
-	{
-		this.specialMoveCommands = specialMoveCommands;
 	}
 	
 	
@@ -182,14 +124,4 @@ public class OffensiveStrategy
 	{
 		return unassignedStrategies;
 	}
-	
-	
-	/**
-	 * @param unassignedStrategies the helperDestinations to set
-	 */
-	public void setUnassignedStrategies(final List<EOffensiveStrategy> unassignedStrategies)
-	{
-		this.unassignedStrategies = unassignedStrategies;
-	}
-	
 }

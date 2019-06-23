@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 31, 2016
- * Author(s): Phillipp Mevenkamp <phillippmevenkamp@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.statistics.view;
 
 import java.util.HashMap;
@@ -15,7 +11,7 @@ import java.util.Set;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 
-import edu.tigers.sumatra.ai.data.statistics.calculators.StatisticData;
+import edu.tigers.sumatra.ai.metis.statistics.StatisticData;
 import edu.tigers.sumatra.ids.BotID;
 
 
@@ -25,21 +21,14 @@ import edu.tigers.sumatra.ids.BotID;
 public class StatisticsTable extends JTable
 {
 	/** The serial Version UID for this kind of table */
-	private static final long				serialVersionUID		= 1L;
+	private static final long serialVersionUID = 1L;
 	
-	private DefaultTableModel				tableModel;
+	private DefaultTableModel tableModel;
 	
 	/** This Map will contain the Entries for the specific table rows */
-	private Map<String, StatisticData>	rowEntries;
+	private Map<String, StatisticData> rowEntries;
 	
-	private Map<BotID, Integer>			columnOfBot				= new HashMap<>();
-	
-	private final int							countGenericColums	= 2;
-	private final int							placeGeneralColumn	= 1;
-	
-	private Map<BotID, Integer>			hardwareIDs				= new HashMap<>();
-	
-	private boolean							isHardwareIDShown		= false;
+	private Map<BotID, Integer> columnOfBot = new HashMap<>();
 	
 	
 	/**
@@ -81,6 +70,7 @@ public class StatisticsTable extends JTable
 	
 	private void createBotHeaders(final Set<BotID> availableBots)
 	{
+		final int countGenericColums = 2;
 		tableModel.setColumnCount(columnOfBot.size() + countGenericColums);
 		
 		for (BotID tempBotID : availableBots)
@@ -101,72 +91,45 @@ public class StatisticsTable extends JTable
 	
 	private int getBotHeaderEntry(final BotID botToGetHeader)
 	{
-		if (isHardwareIDShown)
-		{
-			return hardwareIDs.get(botToGetHeader);
-		}
-		return botToGetHeader.getNumberWithColorOffset();
+		return botToGetHeader.getNumber();
 	}
 	
 	
 	private void updateTable()
 	{
-		if (rowEntries != null)
+		if (rowEntries == null)
 		{
-			tableModel.setRowCount(rowEntries.size() + 1);
+			return;
+		}
+		
+		tableModel.setRowCount(rowEntries.size() + 1);
+		
+		
+		// This two rows are going to fill the table with the header and then with the values
+		int row = 1;
+		
+		for (Map.Entry<String, StatisticData> rowEntry : rowEntries.entrySet())
+		{
+			tableModel.setValueAt(rowEntry, row, 0);
 			
+			String generalStatistic = rowEntry.getValue().getTextualRepresenationOfGeneralStatistic();
 			
-			// This two rows are going to fill the table with the header and then with the values
-			int row = 1;
+			final int placeGeneralColumn = 1;
+			tableModel.setValueAt(generalStatistic, row, placeGeneralColumn);
 			
-			for (String rowDescriptor : rowEntries.keySet())
+			Map<BotID, String> specificStatistics = rowEntry.getValue().getTextualRepresentationOfBotStatistics();
+			
+			for (Map.Entry<BotID, String> statisticEntry : specificStatistics.entrySet())
 			{
-				tableModel.setValueAt(rowDescriptor, row, 0);
+				Integer columnToSet = columnOfBot.get(statisticEntry.getKey());
 				
-				String generalStatistic = rowEntries.get(rowDescriptor).getTextualRepresenationOfGeneralStatistic();
-				
-				tableModel.setValueAt(generalStatistic, row, placeGeneralColumn);
-				
-				Map<BotID, String> specificStatistics = rowEntries.get(rowDescriptor)
-						.getTextualRepresentationOfBotStatistics();
-				
-				for (BotID availableBot : specificStatistics.keySet())
+				if (columnToSet != null)
 				{
-					Integer columnToSet;
-					
-					columnToSet = columnOfBot.get(availableBot);
-					
-					if ((columnToSet != null) && (specificStatistics != null))
-					{
-						tableModel.setValueAt(specificStatistics.get(availableBot), row, columnToSet);
-					}
+					tableModel.setValueAt(statisticEntry.getValue(), row, columnToSet);
 				}
-				
-				row++;
 			}
+			
+			row++;
 		}
 	}
-	
-	
-	/**
-	 * @param hardwareIDs This are the actual hardwareIDs
-	 */
-	public void updateHardwareIDs(final Map<BotID, Integer> hardwareIDs)
-	{
-		for (BotID tempBotID : hardwareIDs.keySet())
-		{
-			this.hardwareIDs.put(tempBotID, hardwareIDs.get(tempBotID));
-		}
-	}
-	
-	
-	/**
-	 * @param isHardwareIDShown the isHardwareIDShown to set
-	 */
-	public void setHardwareIDShown(final boolean isHardwareIDShown)
-	{
-		this.isHardwareIDShown = isHardwareIDShown;
-	}
-	
-	
 }

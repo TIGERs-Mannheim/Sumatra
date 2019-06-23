@@ -16,6 +16,7 @@ import edu.tigers.sumatra.botmanager.commands.ACommand;
  * 
  * @author AndreR
  */
+@FunctionalInterface
 public interface IReceiverUDPObserver
 {
 	/**

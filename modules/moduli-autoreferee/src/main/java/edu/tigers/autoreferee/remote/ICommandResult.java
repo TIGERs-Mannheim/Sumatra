@@ -17,13 +17,13 @@ public interface ICommandResult
 	/**
 	 * @return
 	 */
-	public boolean isCompleted();
+	boolean isCompleted();
 	
 	
 	/**
 	 * @return
 	 */
-	public boolean isSuccessful();
+	boolean isSuccessful();
 	
 	
 	/**
@@ -31,5 +31,5 @@ public interface ICommandResult
 	 * 
 	 * @return
 	 */
-	public boolean hasFailed();
+	boolean hasFailed();
 }

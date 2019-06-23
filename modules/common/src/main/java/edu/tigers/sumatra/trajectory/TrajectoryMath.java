@@ -8,9 +8,9 @@
  */
 package edu.tigers.sumatra.trajectory;
 
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.IVector3;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.VectorMath;
 
 
 /**
@@ -35,7 +35,7 @@ public final class TrajectoryMath
 	 * @param drivenWay [mm]
 	 * @return
 	 */
-	public static double timeAfterDrivenWay(final ITrajectory<IVector3> spline, final double drivenWay)
+	public static double timeAfterDrivenWay(final ITrajectory<IVector2> spline, final double drivenWay)
 	{
 		return timeAfterDrivenWay(spline, drivenWay, DT_PRECISE);
 	}
@@ -47,7 +47,7 @@ public final class TrajectoryMath
 	 * @param dt [s]
 	 * @return
 	 */
-	public static double timeAfterDrivenWay(final ITrajectory<IVector3> spline, final double drivenWay, final double dt)
+	public static double timeAfterDrivenWay(final ITrajectory<IVector2> spline, final double drivenWay, final double dt)
 	{
 		double length = 0;
 		double drivenWayMeters = drivenWay / 1000;
@@ -123,7 +123,7 @@ public final class TrajectoryMath
 		for (double t = 0; t < spline.getTotalTime(); t += dt)
 		{
 			IVector2 p2 = spline.getPositionMM(t).getXYVector();
-			double dist = GeoMath.distancePP(p, p2);
+			double dist = VectorMath.distancePP(p, p2);
 			if (dist < nearestDist)
 			{
 				nearestDist = dist;

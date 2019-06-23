@@ -1,20 +1,17 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jun 26, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.view.humanref;
 
-import javax.swing.JPanel;
+import javax.swing.*;
 
-import net.miginfocom.swing.MigLayout;
 import edu.tigers.autoref.view.humanref.components.FollowUpPanel;
 import edu.tigers.autoref.view.humanref.components.GameEventPanel;
+import edu.tigers.autoref.view.humanref.driver.ActiveHumanRefViewDriver;
+import edu.tigers.autoref.view.humanref.driver.IHumanRefViewDriver;
 import edu.tigers.autoreferee.engine.FollowUpAction;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
+import net.miginfocom.swing.MigLayout;
 
 
 /**
@@ -46,6 +43,13 @@ public class ActiveHumanRefPanel extends BaseHumanRefPanel
 		followUpPanel = new FollowUpPanel(regularFont);
 		
 		super.setupGUI();
+	}
+	
+	
+	@Override
+	public IHumanRefViewDriver createDriver()
+	{
+		return new ActiveHumanRefViewDriver(this);
 	}
 	
 	

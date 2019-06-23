@@ -1,19 +1,16 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 21.07.2010
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.wp.data;
 
 import java.util.Map;
 
-import edu.tigers.sumatra.bot.DummyBot;
+import edu.tigers.sumatra.bot.RobotInfo;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.BotIDMap;
 import edu.tigers.sumatra.ids.BotIDMapConst;
+import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.ids.IBotIDMap;
 
@@ -29,28 +26,29 @@ import edu.tigers.sumatra.ids.IBotIDMap;
 public class WorldFrame extends SimpleWorldFrame
 {
 	/** our enemies visible */
-	public final BotIDMapConst<ITrackedBot>	foeBots;
+	public final BotIDMapConst<ITrackedBot> foeBots;
 	
 	/** tiger bots that were detected by the WorldPredictor */
-	public final BotIDMapConst<ITrackedBot>	tigerBotsVisible;
+	public final BotIDMapConst<ITrackedBot> tigerBotsVisible;
 	/** tiger bots that were detected by the WorldPredictor AND are connected */
-	public final IBotIDMap<ITrackedBot>			tigerBotsAvailable;
+	public final IBotIDMap<ITrackedBot> tigerBotsAvailable;
 	
+	private final IBotIDMap<ITrackedBot> allBots;
 	
-	private final ETeamColor						teamColor;
+	private final ETeamColor teamColor;
 	
-	private final boolean							inverted;
+	private final boolean inverted;
 	
 	
 	/**
 	 * @param simpleWorldFrame
-	 * @param teamColor
+	 * @param team
 	 * @param invert
 	 */
-	public WorldFrame(final SimpleWorldFrame simpleWorldFrame, final ETeamColor teamColor, final boolean invert)
+	public WorldFrame(final SimpleWorldFrame simpleWorldFrame, final EAiTeam team, final boolean invert)
 	{
 		super(simpleWorldFrame);
-		this.teamColor = teamColor;
+		this.teamColor = team.getTeamColor();
 		inverted = invert;
 		
 		BotIDMap<ITrackedBot> foes = new BotIDMap<>();
@@ -64,22 +62,27 @@ public class WorldFrame extends SimpleWorldFrame
 			if (bot.getBotId().getTeamColor() == getTeamColor())
 			{
 				tigersVisible.put(botID, bot);
-				if (bot.isAvailableToAi()
-						&& Geometry.getFieldWReferee()
-								.isPointInShape(bot.getPos(), -Geometry.getBotRadius()))
+				if (bot.getRobotInfo().getAiType() == team.getAiType())
 				{
 					tigersAvailable.put(botID, bot);
 				}
 			} else
 			{
-				TrackedBot nBot = new TrackedBot(bot);
-				nBot.setBot(new DummyBot(botID));
-				foes.put(botID, nBot);
+				RobotInfo robotInfo = RobotInfo.stub(bot.getBotId(), bot.getTimestamp());
+				bot = TrackedBot.newCopyBuilder(bot)
+						.withBotInfo(robotInfo)
+						.build();
+				foes.put(botID, bot);
 			}
 		}
 		foeBots = BotIDMapConst.unmodifiableBotIDMap(foes);
 		tigerBotsAvailable = BotIDMapConst.unmodifiableBotIDMap(tigersAvailable);
 		tigerBotsVisible = BotIDMapConst.unmodifiableBotIDMap(tigersVisible);
+		
+		BotIDMap<ITrackedBot> bots = new BotIDMap<>();
+		bots.putAll(foeBots);
+		bots.putAll(tigersVisible);
+		allBots = BotIDMapConst.unmodifiableBotIDMap(bots);
 	}
 	
 	
@@ -97,6 +100,7 @@ public class WorldFrame extends SimpleWorldFrame
 		foeBots = BotIDMapConst.unmodifiableBotIDMap(original.getFoeBots());
 		tigerBotsAvailable = original.getTigerBotsAvailable();
 		tigerBotsVisible = BotIDMapConst.unmodifiableBotIDMap(original.getTigerBotsVisible());
+		allBots = original.allBots;
 	}
 	
 	
@@ -122,10 +126,24 @@ public class WorldFrame extends SimpleWorldFrame
 	}
 	
 	
+	@Override
+	public IBotIDMap<ITrackedBot> getBots()
+	{
+		return allBots;
+	}
+	
+	
+	@Override
+	public ITrackedBot getBot(final BotID botId)
+	{
+		return allBots.getWithNull(botId);
+	}
+	
+	
 	/**
-	 * Get {@link TrackedBot} from current {@link WorldFrame}.
+	 * Get {@link ITrackedBot}
 	 * 
-	 * @param botId
+	 * @param botId of the bot
 	 * @return tiger {@link TrackedBot}
 	 */
 	public ITrackedBot getTiger(final BotID botId)
@@ -135,9 +153,9 @@ public class WorldFrame extends SimpleWorldFrame
 	
 	
 	/**
-	 * Get foe {@link TrackedBot} from current {@link WorldFrame}.
+	 * Get foe {@link ITrackedBot}
 	 * 
-	 * @param botId
+	 * @param botId of the bot
 	 * @return foe {@link TrackedBot}
 	 */
 	public ITrackedBot getFoeBot(final BotID botId)

@@ -31,7 +31,7 @@ public class TigerConfigWrite extends ACommand
 	private byte[]	data;
 	
 	
-	/** */
+	/** Constructor. */
 	public TigerConfigWrite()
 	{
 		super(ECommand.CMD_CONFIG_WRITE, true);
@@ -99,12 +99,12 @@ public class TigerConfigWrite extends ACommand
 						ACommand.float2ByteArray(data, offset, Float.valueOf(value));
 						break;
 					case UNKNOWN:
-						break;
 					default:
 						break;
 				}
 			} catch (NumberFormatException ex)
 			{
+				// ignore
 			}
 			
 			offset += element.getSize();

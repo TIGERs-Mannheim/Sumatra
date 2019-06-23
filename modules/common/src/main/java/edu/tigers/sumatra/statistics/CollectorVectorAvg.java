@@ -16,8 +16,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 
-import edu.tigers.sumatra.math.IVector;
-import edu.tigers.sumatra.math.VectorN;
+import edu.tigers.sumatra.math.vector.IVector;
+import edu.tigers.sumatra.math.vector.VectorN;
 import edu.tigers.sumatra.statistics.CollectorVectorAvg.Accumulator;
 
 
@@ -71,7 +71,7 @@ public class CollectorVectorAvg implements Collector<IVector, Accumulator, Vecto
 	@Override
 	public Function<Accumulator, VectorN> finisher()
 	{
-		return acc -> acc.count == 0 ? new VectorN(dim) : acc.vector.multiplyNew(1f / acc.count);
+		return acc -> acc.count == 0 ? VectorN.zero(dim) : acc.vector.multiplyNew(1f / acc.count);
 	}
 	
 	
@@ -83,7 +83,7 @@ public class CollectorVectorAvg implements Collector<IVector, Accumulator, Vecto
 	
 	protected class Accumulator
 	{
-		VectorN	vector	= new VectorN(dim);
+		VectorN	vector	= VectorN.zero(dim);
 		int		count		= 0;
 	}
 }

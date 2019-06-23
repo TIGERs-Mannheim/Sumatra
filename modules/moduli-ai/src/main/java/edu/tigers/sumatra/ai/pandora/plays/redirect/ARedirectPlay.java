@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jul 27, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.redirect;
 
@@ -14,17 +9,18 @@ import java.util.Map;
 
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.ai.data.EGameStateTeam;
 import edu.tigers.sumatra.ai.data.frames.AthenaAiFrame;
 import edu.tigers.sumatra.ai.data.frames.MetisAiFrame;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
-import edu.tigers.sumatra.ai.pandora.roles.test.RedirectRole;
-import edu.tigers.sumatra.math.AVector2;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Line;
+import edu.tigers.sumatra.ai.pandora.roles.test.RedirectTestRole;
+import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.LineMath;
+import edu.tigers.sumatra.math.vector.AVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.VectorMath;
+import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.units.DistanceUnit;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
@@ -37,19 +33,19 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public abstract class ARedirectPlay extends APlay
 {
-	@Configurable(comment = "dist to center (radius) [mm]")
-	private static double	distance				= 1500;
+	@Configurable(comment = "dist to center (radius) [mm]", defValue = "3000.0")
+	private static double distance = 3000;
 	
-	private boolean			needReorder			= true;
+	private boolean needReorder = true;
 	
-	@Configurable
-	private static boolean	predictTargetPos	= false;
+	@Configurable(defValue = "false")
+	private static boolean predictTargetPos = false;
 	
-	@Configurable
-	private static boolean	turn180degOnWait	= false;
+	@Configurable(defValue = "false")
+	private static boolean turn180degOnWait = false;
 	
-	@Configurable(comment = "Assumed avg ball speed for calculating lookahead")
-	private static double	avgBallSpeed		= 2.0;
+	@Configurable(comment = "Assumed avg ball speed for calculating lookahead", defValue = "2.0")
+	private static double avgBallSpeed = 2.0;
 	
 	
 	protected enum EReceiveMode
@@ -76,12 +72,12 @@ public abstract class ARedirectPlay extends APlay
 	protected ARole onAddRole(final MetisAiFrame frame)
 	{
 		needReorder = true;
-		return new RedirectRole(new DynamicPosition(AVector2.ZERO_VECTOR));
+		return new RedirectTestRole(new DynamicPosition(AVector2.ZERO_VECTOR));
 	}
 	
 	
 	@Override
-	protected void onGameStateChanged(final EGameStateTeam gameState)
+	protected void onGameStateChanged(final GameState gameState)
 	{
 		
 	}
@@ -112,12 +108,12 @@ public abstract class ARedirectPlay extends APlay
 		int i = 0;
 		for (ARole role : getRoles())
 		{
-			RedirectRole redRole = (RedirectRole) role;
+			RedirectTestRole redRole = (RedirectTestRole) role;
 			redRole.setDesiredDestination(destinations.get(i));
 			// get opposite bot
 			int roleIdx = getReceiverTarget(i);
 			ITrackedBot targetBot = getRoles().get(roleIdx).getBot();
-			double dist2RedRole = GeoMath.distancePP(frame.getWorldFrame().getBall().getPos(), redRole.getPos());
+			double dist2RedRole = VectorMath.distancePP(frame.getWorldFrame().getBall().getPos(), redRole.getPos());
 			double lookahead = 0;
 			if (predictTargetPos)
 			{
@@ -132,7 +128,7 @@ public abstract class ARedirectPlay extends APlay
 			i++;
 		}
 		
-		RedirectRole nearest2BallRole = getNearestRoleToBall(frame);
+		RedirectTestRole nearest2BallRole = getNearestRoleToBall(frame);
 		
 		if (frame.getWorldFrame().getBall().getVel().getLength2() < 1)
 		{
@@ -143,21 +139,21 @@ public abstract class ARedirectPlay extends APlay
 				{
 					continue;
 				}
-				RedirectRole redRole = (RedirectRole) role;
-				if (!redRole.getDesiredDestination().equals(redRole.getPos(), 500))
+				RedirectTestRole redRole = (RedirectTestRole) role;
+				if (!redRole.getDesiredDestination().isCloseTo(redRole.getPos(), 500))
 				{
 					needInit = true;
 				}
 			}
 			
 			// ball is not moving
-			if (!needInit && nobodyPassing() && (nearest2BallRole != null))
+			if (!needInit && (nearest2BallRole != null))
 			{
 				nearest2BallRole.changeToPass();
 			}
 			for (ARole role : getRoles())
 			{
-				RedirectRole redRole = (RedirectRole) role;
+				RedirectTestRole redRole = (RedirectTestRole) role;
 				if (needInit || (redRole != nearest2BallRole))
 				{
 					redRole.changeToWait();
@@ -165,27 +161,30 @@ public abstract class ARedirectPlay extends APlay
 			}
 		} else
 		{
-			for (ARole role : getRoles())
+			updateRoleStates(nearest2BallRole);
+		}
+	}
+	
+	
+	private void updateRoleStates(final RedirectTestRole nearest2BallRole)
+	{
+		for (ARole role : getRoles())
+		{
+			RedirectTestRole redRole = (RedirectTestRole) role;
+			if (role != nearest2BallRole)
 			{
-				RedirectRole redRole = (RedirectRole) role;
-				if ((role != nearest2BallRole))
+				redRole.changeToWait();
+			} else if (!redRole.isReceivingOrRedirecting())
+			{
+				Map<ARole, EReceiveMode> modes = new HashMap<>();
+				getReceiveModes(modes);
+				EReceiveMode mode = modes.get(redRole);
+				if ((mode == null) || (mode == EReceiveMode.REDIRECT))
 				{
-					redRole.changeToWait();
+					redRole.changeToRedirect();
 				} else
 				{
-					if (!redRole.isReceivingOrRedirecting())
-					{
-						Map<ARole, EReceiveMode> modes = new HashMap<>();
-						getReceiveModes(modes);
-						EReceiveMode mode = modes.get(redRole);
-						if ((mode == null) || (mode == EReceiveMode.REDIRECT))
-						{
-							redRole.changeToRedirect();
-						} else
-						{
-							redRole.changeToReceive();
-						}
-					}
+					redRole.changeToReceive();
 				}
 			}
 		}
@@ -201,7 +200,7 @@ public abstract class ARedirectPlay extends APlay
 	protected abstract void getReceiveModes(Map<ARole, EReceiveMode> modes);
 	
 	
-	private RedirectRole getNearestRoleToBall(final AthenaAiFrame frame)
+	private RedirectTestRole getNearestRoleToBall(final AthenaAiFrame frame)
 	{
 		IVector2 ballPos = frame.getWorldFrame().getBall().getPos();
 		IVector2 ballVel = frame.getWorldFrame().getBall().getVel();
@@ -213,17 +212,17 @@ public abstract class ARedirectPlay extends APlay
 			double dist;
 			if (ballMoving)
 			{
-				IVector2 lp = GeoMath.leadPointOnLine(role.getPos(), new Line(ballPos, ballVel));
+				IVector2 lp = LineMath.leadPointOnLine(Line.fromDirection(ballPos, ballVel), role.getPos());
 				IVector2 bot2Lp = lp.subtractNew(ballPos);
 				// is ball moving into direction of lp? x * ballVel = bot2Lp => x should be > 0
 				if ((bot2Lp.x() / (ballVel.x())) < 0)
 				{
 					continue;
 				}
-				dist = GeoMath.distancePP(role.getPos(), lp);
+				dist = VectorMath.distancePP(role.getPos(), lp);
 			} else
 			{
-				dist = GeoMath.distancePP(ballPos, role.getPos());
+				dist = VectorMath.distancePP(ballPos, role.getPos());
 			}
 			if (dist < shortestDist)
 			{
@@ -231,21 +230,7 @@ public abstract class ARedirectPlay extends APlay
 				nearestRole = role;
 			}
 		}
-		return (RedirectRole) nearestRole;
-	}
-	
-	
-	private boolean nobodyPassing()
-	{
-		// for (ARole role : getRoles())
-		// {
-		// RedirectRole redRole = (RedirectRole) role;
-		// if (redRole.isPassing())
-		// {
-		// return false;
-		// }
-		// }
-		return true;
+		return (RedirectTestRole) nearestRole;
 	}
 	
 	

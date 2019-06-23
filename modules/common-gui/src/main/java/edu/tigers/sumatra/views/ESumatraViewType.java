@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jul 19, 2013
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.views;
 
@@ -20,9 +15,10 @@ package edu.tigers.sumatra.views;
 public enum ESumatraViewType
 {
 	/**  */
-	AI_CENTER_YELLOW(0, "AIY"),
-	/**  */
-	AI_CENTER_BLUE(3, "AIB"),
+	AI_CENTER(0, "AI"),
+	/** */
+	@Deprecated
+	AI_CENTER_BLUE_OLD(3, "AIB"),
 	/**  */
 	LOG(1, "Log", true),
 	/**  */
@@ -37,6 +33,8 @@ public enum ESumatraViewType
 	WP_CENTER(7, "WP"),
 	/**  */
 	CONFIG_EDITOR(8, "Cfg"),
+	/** */
+	DUMMY(9, "<unknown>"),
 	/**  */
 	PLAYFINDER_STATS(14, "Play Finder Statistics"),
 	/**  */
@@ -64,24 +62,55 @@ public enum ESumatraViewType
 	/**  */
 	BALL_SPEED(42, "Ball Speed", true),
 	/**  */
-	HUMAN_REF_VIEW(43, "Human Ref View");
+	HUMAN_REF_VIEW(43, "Human Ref View"),
+	/**  */
+	LOGFILE(44, "SSL Logfile"),
+	/**  */
+	TEST_PLAYS(45, "Test plays"),
+	/** */
+	OFFENSIVE_STATISTICS(46, "Offensive Stats"),
+	/** */
+	MATCH_COMMANDS(47, "Match Commands"),
+	/** */
+	BOT_PARAMS(48, "Bot Params"),
+	/** */
+	STATISTICS(49, "Match Stats");
 	
-	private final int			id;
-	private final String		title;
-	private final boolean	forceLoad;
+	private final int id;
+	private final String title;
+	private final boolean forceLoad;
 	
 	
-	private ESumatraViewType(final int id, final String title)
+	ESumatraViewType(final int id, final String title)
 	{
 		this(id, title, false);
 	}
 	
 	
-	private ESumatraViewType(final int id, final String title, final boolean forceLoad)
+	ESumatraViewType(final int id, final String title, final boolean forceLoad)
 	{
 		this.id = id;
 		this.title = title;
 		this.forceLoad = forceLoad;
+	}
+	
+	
+	/**
+	 * Get type by id
+	 * 
+	 * @param id
+	 * @return
+	 */
+	public static ESumatraViewType fromId(final int id)
+	{
+		for (ESumatraViewType type : values())
+		{
+			if (type.id == id)
+			{
+				return type;
+			}
+		}
+		return null;
 	}
 	
 	

@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jan 12, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botoverview;
 
@@ -32,14 +27,14 @@ import edu.tigers.sumatra.views.ISumatraView;
 public class BotOverviewPresenter extends ASumatraViewPresenter implements IVisualizationFrameObserver
 {
 	@SuppressWarnings("unused")
-	private static final Logger		log	= Logger.getLogger(BotOverviewPresenter.class.getName());
-														
-	private final BotOverviewPanel	botOverviewPanel;
-												
-												
+	private static final Logger log = Logger.getLogger(BotOverviewPresenter.class.getName());
+	
+	private final BotOverviewPanel botOverviewPanel;
+	
+	
 	/**
-	  * 
-	  */
+	 * Default
+	 */
 	public BotOverviewPresenter()
 	{
 		botOverviewPanel = new BotOverviewPanel();
@@ -54,13 +49,11 @@ public class BotOverviewPresenter extends ASumatraViewPresenter implements IVisu
 			case ACTIVE:
 				try
 				{
-					Agent agentYellow = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_YELLOW);
+					Agent agentYellow = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
 					agentYellow.addVisObserver(this);
-					Agent agentBlue = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_BLUE);
-					agentBlue.addVisObserver(this);
 				} catch (ModuleNotFoundException err)
 				{
-					log.error("Could not get agent module");
+					log.error("Could not get agent module", err);
 				}
 				break;
 			case NOT_LOADED:
@@ -68,13 +61,11 @@ public class BotOverviewPresenter extends ASumatraViewPresenter implements IVisu
 			case RESOLVED:
 				try
 				{
-					Agent agentYellow = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_YELLOW);
+					Agent agentYellow = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
 					agentYellow.removeVisObserver(this);
-					Agent agentBlue = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_BLUE);
-					agentBlue.removeVisObserver(this);
 				} catch (ModuleNotFoundException err)
 				{
-					log.error("Could not get agent module");
+					log.error("Could not get agent module", err);
 				}
 				break;
 		}

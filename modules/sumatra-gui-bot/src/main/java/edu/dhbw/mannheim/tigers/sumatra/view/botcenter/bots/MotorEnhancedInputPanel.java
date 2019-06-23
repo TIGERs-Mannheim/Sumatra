@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 21.10.2010
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.bots;
 
@@ -25,8 +20,8 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.bots.MotorInputPanel.IMotorInputPanelObserver;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.math.Vector2f;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -43,24 +38,20 @@ public class MotorEnhancedInputPanel extends JPanel
 	
 	private static final int							SIZE					= 400;
 	
-	private Vector2										target				= new Vector2(0, 0);
-	private Vector2										latest				= new Vector2(0, 0);
+	private Vector2										target				= Vector2.fromXY(0, 0);
+	private Vector2										latest				= Vector2.fromXY(0, 0);
 	private double											targetW				= 0.0;
 	private double											latestW				= 0.0;
-	private Vector2f										wpLatest				= new Vector2f(0, 0);
+	private Vector2f										wpLatest				= Vector2f.fromXY(0, 0);
 	private double											wpLatestW			= 0.0;
 	/** [m/s] */
 	private static final double						MAX					= 6.0;
 	private static final double						MAX_W					= 10.0;
 	
-	private final List<IMotorInputPanelObserver>	observers			= new ArrayList<IMotorInputPanelObserver>();
+	private final List<IMotorInputPanelObserver>	observers			= new ArrayList<>();
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 */
+	/** Constructor. */
 	public MotorEnhancedInputPanel()
 	{
 		setMinimumSize(new Dimension(SIZE, SIZE + 55));
@@ -77,12 +68,12 @@ public class MotorEnhancedInputPanel extends JPanel
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
+	@SuppressWarnings("squid:S1192")
 	public void paint(final Graphics g)
 	{
 		super.paint(g);
 		
 		final Graphics2D g2 = (Graphics2D) g;
-		// g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);
 		
 		double red = 0.0;
 		double green = 1.0;
@@ -104,10 +95,7 @@ public class MotorEnhancedInputPanel extends JPanel
 				if (green > 0.0)
 				{
 					green -= 0.1;
-					if (green < 0.0)
-					{
-						green = 0.0;
-					}
+					green = Math.max(green, 0);
 				}
 			}
 		}
@@ -188,18 +176,6 @@ public class MotorEnhancedInputPanel extends JPanel
 	}
 	
 	
-	private void notifyNewVelocity(final Vector2 xy, final double w)
-	{
-		synchronized (observers)
-		{
-			for (final IMotorInputPanelObserver observer : observers)
-			{
-				observer.onSetSpeed(xy.x(), xy.y(), w);
-			}
-		}
-	}
-	
-	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -234,15 +210,7 @@ public class MotorEnhancedInputPanel extends JPanel
 		wpLatest = xy;
 		wpLatestW = w;
 		
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				repaint();
-				
-			}
-		});
+		SwingUtilities.invokeLater(this::repaint);
 	}
 	
 	// --------------------------------------------------------------
@@ -266,12 +234,6 @@ public class MotorEnhancedInputPanel extends JPanel
 		public void mouseEntered(final MouseEvent e)
 		{
 			requestFocusInWindow();
-		}
-		
-		
-		@Override
-		public void mousePressed(final MouseEvent e)
-		{
 		}
 		
 		
@@ -310,7 +272,7 @@ public class MotorEnhancedInputPanel extends JPanel
 				targetW = ((-xf * MAX_W) / MAX) * 2;
 			} else
 			{
-				target = new Vector2(xf, yf);
+				target = Vector2.fromXY(xf, yf);
 			}
 			notifyNewVelocity(target, targetW);
 			
@@ -323,7 +285,7 @@ public class MotorEnhancedInputPanel extends JPanel
 		{
 			if (e.getKeyCode() == KeyEvent.VK_SPACE)
 			{
-				target = new Vector2(0, 0);
+				target = Vector2.fromXY(0, 0);
 				targetW = 0;
 				
 				notifyNewVelocity(target, targetW);
@@ -343,6 +305,18 @@ public class MotorEnhancedInputPanel extends JPanel
 			if (e.getKeyCode() == KeyEvent.VK_ALT)
 			{
 				wModifier = true;
+			}
+		}
+		
+		
+		private void notifyNewVelocity(final Vector2 xy, final double w)
+		{
+			synchronized (observers)
+			{
+				for (final IMotorInputPanelObserver observer : observers)
+				{
+					observer.onSetSpeed(xy.x(), xy.y(), w);
+				}
 			}
 		}
 		
@@ -370,6 +344,7 @@ public class MotorEnhancedInputPanel extends JPanel
 		@Override
 		public void keyTyped(final KeyEvent arg0)
 		{
+			// not used
 		}
 	}
 }

@@ -1,26 +1,18 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 12.03.2013
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.bots;
 
-import java.awt.Color;
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
-import javax.swing.BorderFactory;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JProgressBar;
-import javax.swing.JTextField;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 
-import edu.tigers.sumatra.botmanager.bots.ABot;
-import edu.tigers.sumatra.botmanager.bots.communication.ENetworkState;
+import edu.tigers.sumatra.bot.EFeature;
+import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemMatchFeedback;
+import edu.tigers.sumatra.bot.ERobotMode;
 import edu.tigers.sumatra.ids.BotID;
 import net.miginfocom.swing.MigLayout;
 
@@ -41,42 +33,46 @@ public class TigerBotV2Summary extends JPanel
 	
 	private String					name;
 	private BotID					id;
-	private ENetworkState		netState;
+	private ERobotMode			robotMode;
 	private final JTextField	cap;
+	private JTextField			broken;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
+	 * Constructor.
 	 */
 	public TigerBotV2Summary()
 	{
-		setLayout(new MigLayout("fillx", "[100,fill]20[40]10[60,fill]20[30]10[60,fill]", "0[]0"));
+		setLayout(new MigLayout("fillx", "[80,fill]10[40]10[60,fill]20[30]10[60,fill]10[60,fill]10[200,fill]", "0[]0"));
 		
 		cap = new JTextField();
 		cap.setHorizontalAlignment(SwingConstants.RIGHT);
 		
 		name = "Bob";
-		id = BotID.get();
-		netState = ENetworkState.CONNECTING;
+		id = BotID.noBot();
+		robotMode = ERobotMode.IDLE;
 		
 		status = new JTextField();
 		status.setEditable(false);
-		battery = new JProgressBar((int) (ABot.BAT_MIN * 1000), (int) (ABot.BAT_MAX * 1000));
+		battery = new JProgressBar(0, 1000);
 		battery.setStringPainted(true);
+		broken = new JTextField("N/A");
 		
 		add(status);
 		add(new JLabel("Battery:"));
 		add(battery, "growy");
 		add(new JLabel("Kicker:"));
 		add(cap);
+		add(new JLabel("Broken Features:"));
+		add(broken);
 		
 		setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.BLACK), "Trish (1)"));
 		
-		setNetworkState(ENetworkState.OFFLINE);
-		setBatteryLevel(14.2f);
+		battery.setValue(500);
+		battery.setString("14.2 V");
 	}
 	
 	
@@ -105,32 +101,79 @@ public class TigerBotV2Summary extends JPanel
 	
 	
 	/**
-	 * @param voltage
+	 * @param mode
 	 */
-	public void setBatteryLevel(final double voltage)
+	public void setRobotMode(final ERobotMode mode)
 	{
-		battery.setValue((int) (voltage * 1000));
-		battery.setString(String.format(Locale.ENGLISH, "%1.2f V", voltage));
+		SwingUtilities.invokeLater(() -> {
+			robotMode = mode;
+			updateTitle();
+		});
 	}
 	
 	
 	/**
-	 * @param state
+	 * @param feedback
 	 */
-	public void setNetworkState(final ENetworkState state)
+	public void setMatchFeedback(final TigerSystemMatchFeedback feedback)
 	{
-		netState = state;
+		battery.setValue((int) (feedback.getBatteryPercentage() * 1000));
+		battery.setString(String.format(Locale.ENGLISH, "%1.2f V", feedback.getBatteryLevel()));
+		
+		robotMode = feedback.getRobotMode();
+		
+		setBrokenFeatures(feedback);
+		setCap(feedback.getKickerLevel());
 		updateTitle();
+	}
+	
+	
+	private void setBrokenFeatures(final TigerSystemMatchFeedback feedback)
+	{
+		if (feedback.getRobotMode() != ERobotMode.READY)
+		{
+			broken.setText("N/A");
+			return;
+		}
+		
+		List<String> brokenList = new ArrayList<>();
+		
+		if (!feedback.isFeatureWorking(EFeature.BARRIER))
+		{
+			brokenList.add("Barrier");
+		}
+		if (!feedback.isFeatureWorking(EFeature.STRAIGHT_KICKER))
+		{
+			brokenList.add("Straight");
+		}
+		if (!feedback.isFeatureWorking(EFeature.CHIP_KICKER))
+		{
+			brokenList.add("Chip");
+		}
+		if (!feedback.isFeatureWorking(EFeature.DRIBBLER))
+		{
+			brokenList.add("Dribbler");
+		}
+		if (!feedback.isFeatureWorking(EFeature.MOVE))
+		{
+			brokenList.add("Move");
+		}
+		if (!feedback.isFeatureWorking(EFeature.CHARGE_CAPS))
+		{
+			brokenList.add("Charge");
+		}
+		
+		broken.setText(String.join(", ", brokenList));
 	}
 	
 	
 	/**
 	 * @param f
 	 */
-	public void setCap(final double f)
+	private void setCap(final double f)
 	{
-		double green = 1;
-		double red = 0;
+		double green;
+		double red;
 		
 		// increase red level => yellow
 		if (f < 125)
@@ -163,60 +206,18 @@ public class TigerBotV2Summary extends JPanel
 		final double g = green;
 		final double r = red;
 		
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				cap.setText(String.format(Locale.ENGLISH, "%3.1fV", f));
-				cap.setBackground(new Color((float) r, (float) g, 0));
-			}
-		});
+		cap.setText(String.format(Locale.ENGLISH, "%3.1fV", f));
+		cap.setBackground(new Color((float) r, (float) g, 0));
 	}
 	
 	
 	private void updateTitle()
 	{
 		final String title = String.format("[ %d ] %s", id.getNumber(), name);
-		Color borderColor = null;
-		String stateText = "";
+		Color borderColor = robotMode.getColor();
+		String stateText = robotMode.toString();
 		
-		switch (netState)
-		{
-			case OFFLINE:
-				stateText = "Offline";
-				borderColor = Color.RED;
-				break;
-			case CONNECTING:
-				stateText = "Connecting";
-				borderColor = Color.BLUE;
-				break;
-			case ONLINE:
-				stateText = "Online";
-				borderColor = Color.GREEN;
-				break;
-		}
-		
-		final Color col = borderColor;
-		final String text = stateText;
-		
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(col), title));
-				status.setText(text);
-			}
-		});
-	}
-	
-	
-	/**
-	 * @return the netState
-	 */
-	public final ENetworkState getNetState()
-	{
-		return netState;
+		setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(borderColor), title));
+		status.setText(stateText);
 	}
 }

@@ -1,129 +1,154 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 4, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.wp.data;
+
+import org.apache.commons.lang.Validate;
 
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.bot.DummyBot;
-import edu.tigers.sumatra.bot.IBot;
+import edu.tigers.sumatra.bot.MoveConstraints;
+import edu.tigers.sumatra.bot.RobotInfo;
+import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.AVector2;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.math.botshape.BotShape;
+import edu.tigers.sumatra.math.vector.AVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**
  * Simple data holder describing tracked bots
- * 
- * @see ATrackedObject
+ *
  * @author Gero
  */
 @Persistent(version = 1)
-public class TrackedBot extends ATrackedObject implements ITrackedBot
+public final class TrackedBot implements ITrackedBot
 {
-	private BotID		botId;
-	
-	private IVector2	pos			= AVector2.ZERO_VECTOR;
-	/** m/s */
-	private IVector2	vel			= AVector2.ZERO_VECTOR;
-	/** m/s */
-	private IVector2	acc			= AVector2.ZERO_VECTOR;
-	
-	/** [rad] */
-	private double		angle			= 0;
-	/** rad/s */
-	private double		aVel			= 0;
-	
-	private double		aAcc			= 0;
-	
-	
-	private boolean	ballContact	= false;
-	private boolean	visible		= true;
-	private IBot		bot;
+	private final long		timestamp;
+	private final BotID		botId;
+	private final IVector2	pos;
+	private final IVector2	vel;
+	private final double		orientation;
+	private final double		angularVel;
+	private final boolean	visible;
+	private final RobotInfo	robotInfo;
 	
 	
 	@SuppressWarnings("unused")
-	protected TrackedBot()
+	private TrackedBot()
 	{
-		super();
-		botId = BotID.get();
+		timestamp = 0;
+		botId = BotID.noBot();
 		pos = AVector2.ZERO_VECTOR;
 		vel = AVector2.ZERO_VECTOR;
-		acc = AVector2.ZERO_VECTOR;
-		angle = 0;
-		aVel = 0;
-		bot = new DummyBot();
+		orientation = 0;
+		angularVel = 0;
+		visible = false;
+		robotInfo = null;
 	}
 	
 	
-	/**
-	 * @param timestamp
-	 * @param botId
-	 */
-	public TrackedBot(final long timestamp, final BotID botId)
+	private TrackedBot(final Builder builder)
 	{
-		super(timestamp);
-		this.botId = botId;
-		bot = new DummyBot(botId);
+		timestamp = builder.timestamp;
+		botId = builder.botId;
+		pos = builder.pos;
+		vel = builder.vel;
+		orientation = builder.orientation;
+		angularVel = builder.angularVel;
+		visible = builder.visible;
+		robotInfo = builder.robotInfo;
 	}
 	
 	
 	/**
-	 * Create a deep copy
+	 * @return new builder
+	 */
+	public static Builder newBuilder()
+	{
+		return new Builder();
+	}
+	
+	
+	/**
+	 * @param copy all fields will be initialized with the copy
+	 * @return new builder
+	 */
+	public static Builder newCopyBuilder(final ITrackedBot copy)
+	{
+		Builder builder = new Builder();
+		builder.botId = copy.getBotId();
+		builder.timestamp = copy.getTimestamp();
+		builder.pos = copy.getPos();
+		builder.vel = copy.getVel();
+		builder.orientation = copy.getOrientation();
+		builder.angularVel = copy.getAngularVel();
+		builder.visible = copy.isVisible();
+		builder.robotInfo = copy.getRobotInfo();
+		return builder;
+	}
+	
+	
+	/**
+	 * Create a stub instance with default values
+	 *
+	 * @param botID required
+	 * @param timestamp required
+	 * @return new stub builder
+	 */
+	public static Builder stubBuilder(final BotID botID, final long timestamp)
+	{
+		return newBuilder()
+				.withBotId(botID)
+				.withTimestamp(timestamp)
+				.withPos(AVector2.ZERO_VECTOR)
+				.withOrientation(0)
+				.withVel(AVector2.ZERO_VECTOR)
+				.withAngularVel(0)
+				.withVisible(false)
+				.withBotInfo(RobotInfo.stub(botID, timestamp));
+	}
+	
+	
+	/**
+	 * Create a stub instance with default values
 	 * 
-	 * @param o
+	 * @param botID required
+	 * @param timestamp required
+	 * @return new stub
 	 */
-	public TrackedBot(final ITrackedBot o)
+	public static TrackedBot stub(final BotID botID, final long timestamp)
 	{
-		super(o);
-		botId = o.getBotId();
-		pos = o.getPos();
-		vel = o.getVel();
-		acc = o.getAcc();
-		angle = o.getAngle();
-		aVel = o.getaVel();
-		aAcc = o.getaAcc();
-		ballContact = o.hasBallContact();
-		visible = o.isVisible();
-		bot = o.getBot();
+		return stubBuilder(botID, timestamp).build();
 	}
 	
 	
-	/**
-	 * @return
-	 */
 	@Override
-	public ITrackedBot mirrorNew()
+	public ITrackedBot mirrored()
 	{
-		TrackedBot nBot = new TrackedBot(this);
-		nBot.pos = pos.multiplyNew(-1);
-		nBot.vel = vel.multiplyNew(-1);
-		nBot.acc = acc.multiplyNew(-1);
-		nBot.angle = AngleMath.normalizeAngle(angle + AngleMath.PI);
-		nBot.aVel = aVel;
-		nBot.aAcc = aAcc;
-		return nBot;
+		return newCopyBuilder(this)
+				.withPos(pos.multiplyNew(-1))
+				.withVel(vel.multiplyNew(-1))
+				.withOrientation(AngleMath.normalizeAngle(orientation + AngleMath.PI))
+				.withBotInfo(robotInfo.mirrored())
+				.build();
 	}
 	
 	
-	/**
-	 * Calculates the position of the dribbler/kicker of the given bot.
-	 * Use this position for ball receivers, etc.
-	 * 
-	 * @return
-	 */
+	@Override
+	public long getTimestamp()
+	{
+		return timestamp;
+	}
+	
+	
 	@Override
 	public IVector2 getBotKickerPos()
 	{
-		return GeoMath.getBotKickerPos(getPos(), getAngle(), getCenter2DribblerDist());
+		return BotShape.getKickerCenterPos(getPos(), getOrientation(), getCenter2DribblerDist());
 	}
 	
 	
@@ -131,64 +156,47 @@ public class TrackedBot extends ATrackedObject implements ITrackedBot
 	public IVector2 getBotKickerPosByTime(final double t)
 	{
 		
-		return GeoMath.getBotKickerPos(getPosByTime(t), getAngle(), getCenter2DribblerDist());
+		return BotShape.getKickerCenterPos(getPosByTime(t), getOrientation(), getCenter2DribblerDist());
 	}
 	
 	
-	/**
-	 * @param t
-	 * @return
-	 */
+	@Override
+	public MoveConstraints getMoveConstraints()
+	{
+		return new MoveConstraints(getRobotInfo().getBotParams().getMovementLimits());
+	}
+	
+	
 	@Override
 	public IVector2 getPosByTime(final double t)
 	{
-		synchronized (bot)
+		if (robotInfo.getTrajectory().isPresent())
 		{
-			if (bot.getCurrentTrajectory().isPresent()
-					&& (bot.getCurrentTrajectory().get().getRemainingTrajectoryTime(getTimestamp()) > 0.1))
-			{
-				return bot.getCurrentTrajectory().get().getPositionMM(getTimestamp() + (long) (t * 1e9)).getXYVector();
-			}
-			return getPos().addNew(getVel().multiplyNew(1000 * t));
+			return robotInfo.getTrajectory().get().getPositionMM(t).getXYVector();
 		}
+		return getPos().addNew(getVel().multiplyNew(1000 * t));
 	}
 	
 	
-	/**
-	 * @param t
-	 * @return
-	 */
 	@Override
 	public IVector2 getVelByTime(final double t)
 	{
-		synchronized (bot)
+		if (robotInfo.getTrajectory().isPresent())
 		{
-			if (bot.getCurrentTrajectory().isPresent()
-					&& (bot.getCurrentTrajectory().get().getRemainingTrajectoryTime(getTimestamp()) > 0.1))
-			{
-				return bot.getCurrentTrajectory().get().getVelocity(getTimestamp() + (long) (t * 1e9)).getXYVector();
-			}
-			return getVel();
+			return robotInfo.getTrajectory().get().getVelocity(t).getXYVector();
 		}
+		return getVel();
 	}
 	
 	
-	/**
-	 * @param t
-	 * @return
-	 */
 	@Override
 	public double getAngleByTime(final double t)
 	{
-		synchronized (bot)
+		if (robotInfo.getTrajectory().isPresent())
 		{
-			if (bot.getCurrentTrajectory().isPresent()
-					&& (bot.getCurrentTrajectory().get().getRemainingTrajectoryTime(getTimestamp()) > 0.1))
-			{
-				return bot.getCurrentTrajectory().get().getPosition(getTimestamp() + (long) (t * 1e9)).z();
-			}
-			return AngleMath.normalizeAngle(getAngle() + (getaVel() * t));
+			robotInfo.getTrajectory().get().getPosition(t).z();
 		}
+		return getOrientation();
 	}
 	
 	
@@ -209,7 +217,14 @@ public class TrackedBot extends ATrackedObject implements ITrackedBot
 	@Override
 	public IVector2 getAcc()
 	{
-		return acc;
+		return AVector2.ZERO_VECTOR;
+	}
+	
+	
+	@Override
+	public AObjectID getId()
+	{
+		return botId;
 	}
 	
 	
@@ -220,9 +235,6 @@ public class TrackedBot extends ATrackedObject implements ITrackedBot
 	}
 	
 	
-	/**
-	 * @return
-	 */
 	@Override
 	public ETeamColor getTeamColor()
 	{
@@ -230,49 +242,34 @@ public class TrackedBot extends ATrackedObject implements ITrackedBot
 	}
 	
 	
-	/**
-	 * @return the angle
-	 */
 	@Override
-	public double getAngle()
+	public double getOrientation()
 	{
-		return angle;
+		return orientation;
 	}
 	
 	
-	/**
-	 * @return the aVel
-	 */
 	@Override
-	public double getaVel()
+	public double getAngularVel()
 	{
-		return aVel;
+		return angularVel;
 	}
 	
 	
-	/**
-	 * @return the aVel
-	 */
 	@Override
 	public double getaAcc()
 	{
-		return aAcc;
+		return 0;
 	}
 	
 	
-	/**
-	 * @return the ballContact
-	 */
 	@Override
 	public boolean hasBallContact()
 	{
-		return ballContact;
+		return robotInfo.isBallContact();
 	}
 	
 	
-	/**
-	 * @return the visible
-	 */
 	@Override
 	public boolean isVisible()
 	{
@@ -280,136 +277,180 @@ public class TrackedBot extends ATrackedObject implements ITrackedBot
 	}
 	
 	
-	/**
-	 * @return
-	 */
 	@Override
 	public double getCenter2DribblerDist()
 	{
-		return bot.getCenter2DribblerDist();
+		return robotInfo.getCenter2DribblerDist();
 	}
 	
 	
-	/**
-	 * @return the excludeFromAi
-	 */
 	@Override
-	public boolean isAvailableToAi()
+	public RobotInfo getRobotInfo()
 	{
-		return bot.isAvailableToAi();
-	}
-	
-	
-	/**
-	 * @return the bot
-	 */
-	@Override
-	public final IBot getBot()
-	{
-		return bot;
+		return robotInfo;
 	}
 	
 	
 	@Override
 	public String toString()
 	{
-		StringBuilder builder = new StringBuilder();
-		builder.append("TrackedBot [id=");
-		builder.append(botId);
-		builder.append(", pos=");
-		builder.append(pos);
-		builder.append(", vel=");
-		builder.append(vel);
-		builder.append(", angle=");
-		builder.append(angle);
-		builder.append(", aVel=");
-		builder.append(aVel);
-		builder.append("]");
-		return builder.toString();
+		return "TrackedBot [id=" +
+				botId +
+				", pos=" +
+				pos +
+				", vel=" +
+				vel +
+				", orientation=" +
+				orientation +
+				", angularVel=" +
+				angularVel +
+				"]";
 	}
 	
 	
 	/**
-	 * @param pos the pos to set
+	 * {@code TrackedBot} builder static inner class.
 	 */
-	public void setPos(final IVector2 pos)
+	public static final class Builder
 	{
-		this.pos = pos;
+		private BotID		botId;
+		private Long		timestamp;
+		private IVector2	pos;
+		private IVector2	vel;
+		private Double		orientation;
+		private Double		angularVel;
+		private Boolean	visible;
+		private RobotInfo	robotInfo;
+		
+		
+		private Builder()
+		{
+		}
+		
+		
+		/**
+		 * Sets the {@code botId} and returns a reference to this Builder so that the methods can be chained together.
+		 *
+		 * @param botId the {@code botId} to set
+		 * @return a reference to this Builder
+		 */
+		public Builder withBotId(final BotID botId)
+		{
+			this.botId = botId;
+			return this;
+		}
+		
+		
+		/**
+		 * Sets the {@code timestamp} and returns a reference to this Builder so that the methods can be chained together.
+		 *
+		 * @param timestamp the {@code timestamp} to set
+		 * @return a reference to this Builder
+		 */
+		public Builder withTimestamp(final long timestamp)
+		{
+			this.timestamp = timestamp;
+			return this;
+		}
+		
+		
+		/**
+		 * Sets the {@code pos} and returns a reference to this Builder so that the methods can be chained together.
+		 *
+		 * @param pos the {@code pos} to set
+		 * @return a reference to this Builder
+		 */
+		public Builder withPos(final IVector2 pos)
+		{
+			this.pos = pos;
+			return this;
+		}
+		
+		
+		/**
+		 * Sets the {@code vel} and returns a reference to this Builder so that the methods can be chained together.
+		 *
+		 * @param vel the {@code vel} to set
+		 * @return a reference to this Builder
+		 */
+		public Builder withVel(final IVector2 vel)
+		{
+			this.vel = vel;
+			return this;
+		}
+		
+		
+		/**
+		 * Sets the {@code orientation} and returns a reference to this Builder so that the methods can be chained
+		 * together.
+		 *
+		 * @param orientation the {@code orientation} to set
+		 * @return a reference to this Builder
+		 */
+		public Builder withOrientation(final double orientation)
+		{
+			this.orientation = orientation;
+			return this;
+		}
+		
+		
+		/**
+		 * Sets the {@code angularVel} and returns a reference to this Builder so that the methods can be chained
+		 * together.
+		 *
+		 * @param angularVel the {@code angularVel} to set
+		 * @return a reference to this Builder
+		 */
+		public Builder withAngularVel(final double angularVel)
+		{
+			this.angularVel = angularVel;
+			return this;
+		}
+		
+		
+		/**
+		 * Sets the {@code visible} and returns a reference to this Builder so that the methods can be chained together.
+		 *
+		 * @param visible the {@code visible} to set
+		 * @return a reference to this Builder
+		 */
+		public Builder withVisible(final boolean visible)
+		{
+			this.visible = visible;
+			return this;
+		}
+		
+		
+		/**
+		 * Sets the {@code robotInfo} and returns a reference to this Builder so that the methods can be chained together.
+		 *
+		 * @param robotInfo the {@code robotInfo} to set
+		 * @return a reference to this Builder
+		 */
+		public Builder withBotInfo(final RobotInfo robotInfo)
+		{
+			this.robotInfo = robotInfo;
+			return this;
+		}
+		
+		
+		/**
+		 * Returns a {@code TrackedBot} built from the parameters previously set.
+		 *
+		 * @return a {@code TrackedBot} built with parameters of this {@code TrackedBot.Builder}
+		 */
+		public TrackedBot build()
+		{
+			Validate.notNull(botId);
+			Validate.notNull(timestamp);
+			Validate.notNull(pos);
+			Validate.notNull(vel);
+			Validate.notNull(orientation);
+			Validate.notNull(angularVel);
+			Validate.notNull(visible);
+			Validate.notNull(robotInfo);
+			
+			return new TrackedBot(this);
+		}
 	}
-	
-	
-	/**
-	 * @param vel the vel to set
-	 */
-	public void setVel(final IVector2 vel)
-	{
-		this.vel = vel;
-	}
-	
-	
-	/**
-	 * @param acc the acc to set
-	 */
-	public void setAcc(final IVector2 acc)
-	{
-		this.acc = acc;
-	}
-	
-	
-	/**
-	 * @param angle the angle to set
-	 */
-	public void setAngle(final double angle)
-	{
-		this.angle = angle;
-	}
-	
-	
-	/**
-	 * @param aVel the aVel to set
-	 */
-	public void setaVel(final double aVel)
-	{
-		this.aVel = aVel;
-	}
-	
-	
-	/**
-	 * @param aAcc the aAcc to set
-	 */
-	public void setaAcc(final double aAcc)
-	{
-		this.aAcc = aAcc;
-	}
-	
-	
-	/**
-	 * @param visible the visible to set
-	 */
-	public void setVisible(final boolean visible)
-	{
-		this.visible = visible;
-	}
-	
-	
-	/**
-	 * contact to ball?
-	 * 
-	 * @param ballContact the ballContact to set
-	 */
-	public void setBallContact(final boolean ballContact)
-	{
-		this.ballContact = ballContact;
-	}
-	
-	
-	/**
-	 * @param bot the bot to set
-	 */
-	public final void setBot(final IBot bot)
-	{
-		this.bot = bot;
-	}
-	
-	
 }

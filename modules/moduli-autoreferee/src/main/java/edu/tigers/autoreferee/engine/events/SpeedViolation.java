@@ -50,13 +50,6 @@ public class SpeedViolation extends GameEvent
 	
 	
 	@Override
-	public String buildLogString()
-	{
-		return super.buildLogString();
-	}
-	
-	
-	@Override
 	protected String generateLogString()
 	{
 		DecimalFormat format = new DecimalFormat("#.000");

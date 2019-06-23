@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Dec 3, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.basestation;
 
@@ -20,14 +15,15 @@ import net.miginfocom.swing.MigLayout;
 public class BaseStationPanel extends JPanel
 {
 	/**  */
-	private static final long						serialVersionUID		= -2888008314485655476L;
+	private static final long serialVersionUID = -2888008314485655476L;
 	
-	private final String								name;
-	private final BaseStationControlPanel		controlPanel			= new BaseStationControlPanel();
-	private final BaseStationWifiStatsPanel	wifiStatsPanel			= new BaseStationWifiStatsPanel();
-	private final BaseStationEthStatsPanel		ethStatsPanel			= new BaseStationEthStatsPanel();
-	private final BaseStationNtpStatsPanel		ntpStatsPanel			= new BaseStationNtpStatsPanel();
-	private final FirmwareUpdatePanel			firmwareUpdatePanel	= new FirmwareUpdatePanel();
+	private final String name;
+	private final BaseStationControlPanel controlPanel = new BaseStationControlPanel();
+	private final BaseStationWifiStatsPanel wifiStatsPanel = new BaseStationWifiStatsPanel();
+	private final BaseStationEthStatsPanel ethStatsPanel = new BaseStationEthStatsPanel();
+	private final BaseStationNtpStatsPanel ntpStatsPanel = new BaseStationNtpStatsPanel();
+	private final FirmwareUpdatePanel firmwareUpdatePanel = new FirmwareUpdatePanel();
+	private final BaseStationBotMgrPanel baseStationBotMgrPanel = new BaseStationBotMgrPanel();
 	
 	
 	/**
@@ -43,6 +39,7 @@ public class BaseStationPanel extends JPanel
 		add(ethStatsPanel);
 		add(ntpStatsPanel);
 		add(firmwareUpdatePanel);
+		add(baseStationBotMgrPanel);
 	}
 	
 	
@@ -79,6 +76,12 @@ public class BaseStationPanel extends JPanel
 	public final FirmwareUpdatePanel getFirmwareUpdatePanel()
 	{
 		return firmwareUpdatePanel;
+	}
+	
+	
+	public BaseStationBotMgrPanel getBaseStationBotMgrPanel()
+	{
+		return baseStationBotMgrPanel;
 	}
 	
 	

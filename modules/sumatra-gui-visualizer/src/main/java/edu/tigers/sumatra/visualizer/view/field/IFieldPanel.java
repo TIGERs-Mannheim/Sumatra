@@ -1,17 +1,13 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 23.10.2011
- * Author(s): osteinbrecher
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.visualizer.view.field;
 
+import edu.tigers.sumatra.drawable.EFieldTurn;
 import edu.tigers.sumatra.drawable.IDrawableTool;
+import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.visualizer.view.EVisualizerOptions;
 import edu.tigers.sumatra.visualizer.view.IFieldPanelObserver;
-import edu.tigers.sumatra.wp.data.ShapeMap;
 
 
 /**
@@ -96,4 +92,34 @@ public interface IFieldPanel extends IDrawableTool
 	 * 
 	 */
 	void repaint();
+	
+	
+	/**
+	 * @param fieldTurn
+	 */
+	public void setFieldTurn(EFieldTurn fieldTurn);
+	
+	
+	/**
+	 * @return
+	 */
+	public boolean isFancyPainting();
+	
+	
+	/**
+	 * @param fancy
+	 */
+	public void setFancyPainting(boolean fancy);
+	
+	
+	/**
+	 * @return
+	 */
+	public boolean isPaintCoordinates();
+	
+	
+	/**
+	 * @param paint
+	 */
+	public void setPaintCoordinates(boolean paint);
 }

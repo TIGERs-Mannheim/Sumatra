@@ -8,11 +8,13 @@
  */
 package edu.tigers.sumatra.snapshot;
 
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.Vector3;
 
 
 /**
@@ -20,15 +22,15 @@ import edu.tigers.sumatra.math.Vector2;
  */
 public class SnapObject
 {
-	private IVector2	pos	= new Vector2();
-	private IVector2	vel	= new Vector2();
+	private final IVector3	pos;
+	private final IVector3	vel;
 	
 	
 	/**
 	 * @param pos
 	 * @param vel
 	 */
-	public SnapObject(final IVector2 pos, final IVector2 vel)
+	public SnapObject(final IVector3 pos, final IVector3 vel)
 	{
 		this.pos = pos;
 		this.vel = vel;
@@ -38,87 +40,46 @@ public class SnapObject
 	/**
 	 * @return the pos
 	 */
-	public final IVector2 getPos()
+	public final IVector3 getPos()
 	{
 		return pos;
 	}
 	
 	
 	/**
-	 * @param pos the pos to set
-	 */
-	public final void setPos(final IVector2 pos)
-	{
-		this.pos = pos;
-	}
-	
-	
-	/**
 	 * @return the vel
 	 */
-	public final IVector2 getVel()
+	public final IVector3 getVel()
 	{
 		return vel;
 	}
 	
 	
-	/**
-	 * @param vel the vel to set
-	 */
-	public final void setVel(final IVector2 vel)
+	@Override
+	public boolean equals(final Object o)
 	{
-		this.vel = vel;
+		if (this == o)
+			return true;
+		
+		if (!(o instanceof SnapObject))
+			return false;
+		
+		final SnapObject that = (SnapObject) o;
+		
+		return new EqualsBuilder()
+				.append(getPos(), that.getPos())
+				.append(getVel(), that.getVel())
+				.isEquals();
 	}
 	
 	
 	@Override
 	public int hashCode()
 	{
-		final int prime = 31;
-		int result = 1;
-		result = (prime * result) + ((pos == null) ? 0 : pos.hashCode());
-		result = (prime * result) + ((vel == null) ? 0 : vel.hashCode());
-		return result;
-	}
-	
-	
-	@Override
-	public boolean equals(final Object obj)
-	{
-		if (this == obj)
-		{
-			return true;
-		}
-		if (obj == null)
-		{
-			return false;
-		}
-		if (getClass() != obj.getClass())
-		{
-			return false;
-		}
-		SnapObject other = (SnapObject) obj;
-		if (pos == null)
-		{
-			if (other.pos != null)
-			{
-				return false;
-			}
-		} else if (!pos.equals(other.pos))
-		{
-			return false;
-		}
-		if (vel == null)
-		{
-			if (other.vel != null)
-			{
-				return false;
-			}
-		} else if (!vel.equals(other.vel))
-		{
-			return false;
-		}
-		return true;
+		return new HashCodeBuilder(17, 37)
+				.append(getPos())
+				.append(getVel())
+				.toHashCode();
 	}
 	
 	
@@ -129,43 +90,45 @@ public class SnapObject
 	public JSONObject toJSON()
 	{
 		JSONObject obj = new JSONObject();
-		obj.put("pos", vec2ToJSON(pos));
-		obj.put("vel", vec2ToJSON(vel));
+		obj.put("pos", vec3ToJSON(pos));
+		obj.put("vel", vec3ToJSON(vel));
 		return obj;
 	}
 	
 	
 	/**
-	 * @param obj
-	 * @return
+	 * @param obj to read from
+	 * @return snapObject from json
 	 */
 	public static SnapObject fromJSON(final JSONObject obj)
 	{
-		return new SnapObject(vec2FromJSON((JSONArray) obj.get("pos")), vec2FromJSON((JSONArray) obj.get("vel")));
+		return new SnapObject(vec3FromJSON((JSONArray) obj.get("pos")), vec3FromJSON((JSONArray) obj.get("vel")));
 	}
 	
 	
-	/**
-	 * @param vec
-	 * @return
-	 */
 	@SuppressWarnings("unchecked")
-	private static JSONArray vec2ToJSON(final IVector2 vec)
+	private static JSONArray vec3ToJSON(final IVector3 vec)
 	{
 		JSONArray array = new JSONArray();
 		array.add(vec.x());
 		array.add(vec.y());
+		array.add(vec.z());
 		return array;
 	}
 	
 	
-	/**
-	 * @param jsonArray
-	 * @return
-	 */
-	private static IVector2 vec2FromJSON(final JSONArray jsonArray)
+	private static IVector3 vec3FromJSON(final JSONArray jsonArray)
 	{
-		return new Vector2((double) jsonArray.get(0), (double) jsonArray.get(1));
+		return Vector3.fromXYZ((double) jsonArray.get(0), (double) jsonArray.get(1), (double) jsonArray.get(2));
 	}
 	
+	
+	@Override
+	public String toString()
+	{
+		return "SnapObject{" +
+				"pos=" + pos +
+				", vel=" + vel +
+				'}';
+	}
 }

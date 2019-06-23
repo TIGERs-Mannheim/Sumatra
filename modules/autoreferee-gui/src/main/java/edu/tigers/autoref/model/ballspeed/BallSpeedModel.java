@@ -8,7 +8,7 @@
  */
 package edu.tigers.autoref.model.ballspeed;
 
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
+import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
 
@@ -17,10 +17,10 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
  */
 public class BallSpeedModel
 {
-	private double					lastBallSpeed		= 0.0d;
+	private double		lastBallSpeed		= 0.0d;
 	
-	private EGameStateNeutral	lastState			= EGameStateNeutral.UNKNOWN;
-	private boolean				gameStateChanged	= false;
+	private GameState	lastState			= GameState.HALT;
+	private boolean	gameStateChanged	= false;
 	
 	
 	/**
@@ -36,9 +36,9 @@ public class BallSpeedModel
 	 */
 	public void update(final WorldFrameWrapper wFrameWrapper)
 	{
-		EGameStateNeutral curState = wFrameWrapper.getGameState();
+		GameState curState = wFrameWrapper.getGameState();
 		
-		if (curState != lastState)
+		if (!curState.equals(lastState))
 		{
 			gameStateChanged = true;
 		}
@@ -69,7 +69,7 @@ public class BallSpeedModel
 	/**
 	 * @return
 	 */
-	public EGameStateNeutral getLastState()
+	public GameState getLastState()
 	{
 		return lastState;
 	}

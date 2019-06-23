@@ -1,16 +1,12 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 7, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.events.impl;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
+
+import org.apache.log4j.Logger;
 
 import com.github.g3force.configurable.Configurable;
 
@@ -19,16 +15,17 @@ import edu.tigers.autoreferee.engine.AutoRefMath;
 import edu.tigers.autoreferee.engine.FollowUpAction;
 import edu.tigers.autoreferee.engine.FollowUpAction.EActionType;
 import edu.tigers.autoreferee.engine.NGeometry;
-import edu.tigers.autoreferee.engine.calc.BotPosition;
 import edu.tigers.autoreferee.engine.events.EGameEvent;
 import edu.tigers.autoreferee.engine.events.GameEvent;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
+import edu.tigers.autoreferee.generic.BotPosition;
+import edu.tigers.autoreferee.generic.TimedPosition;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
-import edu.tigers.sumatra.wp.data.Geometry;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.referee.data.EGameState;
 
 
 /**
@@ -38,79 +35,71 @@ import edu.tigers.sumatra.wp.data.Geometry;
  */
 public class BallLeftFieldDetector extends AGameEventDetector
 {
-	private static final int	priority							= 1;
+	private static final Logger	log								= Logger.getLogger(BallLeftFieldDetector.class);
+	
+	private static final int		PRIORITY							= 1;
 	
 	@Configurable(comment = "[mm] The goal line threshold")
-	private static double		goalLineThreshold				= 10;
+	private static double			goalLineThreshold				= 10;
 	
 	@Configurable(comment = "[mm] A goalline off is only considered icing if the bot was located more than this value behind the kickoff line")
-	private static double		icingKickoffLineThreshold	= 200;
-	
-	@Configurable(comment = "[mm] Area behind the goal that is still considered to be part of the goal for better goal detection")
-	private static double		goalDepthMargin				= 100;
-	
-	@Configurable(comment = "[ms] Cooldown before an event is reported again")
-	private static long			cooldownTime					= 2_000;
-	
-	private boolean				ballOutsideField				= false;
-	private long					ballLeftFieldStamp			= 0;
+	private static double			icingKickoffLineThreshold	= 200;
 	
 	static
 	{
 		AGameEventDetector.registerClass(BallLeftFieldDetector.class);
 	}
 	
+	private boolean eventReported = false;
+	
 	
 	/**
-	 * 
+	 * Create new instance of the BallLeftFieldDetector
 	 */
 	public BallLeftFieldDetector()
 	{
-		super(EGameStateNeutral.RUNNING);
+		super(EGameState.RUNNING);
 	}
 	
 	
 	@Override
 	public int getPriority()
 	{
-		return priority;
+		return PRIORITY;
 	}
 	
 	
 	@Override
 	public Optional<IGameEvent> update(final IAutoRefFrame frame, final List<IGameEvent> violations)
 	{
-		long curTimestamp = frame.getTimestamp();
-		IVector2 ballPos = frame.getWorldFrame().getBall().getPos();
-		if (Geometry.getField().isPointInShape(ballPos) || ballInsideGoal(ballPos))
+		if (frame.isBallInsideField())
 		{
 			// The ball is inside the field or inside the goal
-			ballOutsideField = false;
-			return Optional.empty();
-		}
-		
-		boolean cooldownElapsed = (curTimestamp - ballLeftFieldStamp) > TimeUnit.MILLISECONDS.toNanos(cooldownTime);
-		if ((ballOutsideField == false) && cooldownElapsed)
+			eventReported = false;
+		} else if (!eventReported)
 		{
-			ballOutsideField = true;
-			ballLeftFieldStamp = curTimestamp;
+			eventReported = true;
+			TimedPosition leftFieldPos = frame.getBallLeftFieldPos();
 			
-			IVector2 intersection = frame.getBallLeftFieldPos();
-			if (intersection == null)
+			if (leftFieldPos.getPos().isZeroVector())
 			{
 				// Maybe the game was started while the ball was still outside the field
+				log.warn("Ball left the field but no valid exit position present");
 				return Optional.empty();
 			}
+			
 			BotPosition lastTouched = frame.getBotLastTouchedBall();
 			long ts = frame.getTimestamp();
-			boolean exitGoallineInX = ((Geometry.getFieldLength() / 2) - Math.abs(intersection.x())) < goalLineThreshold;
-			boolean exitGoallineInY = ((Geometry.getFieldWidth() / 2) - Math.abs(intersection.y())) > goalLineThreshold;
+			boolean exitGoallineInX = ((Geometry.getFieldLength() / 2)
+					- Math.abs(leftFieldPos.getPos().x())) < goalLineThreshold;
+			boolean exitGoallineInY = ((Geometry.getFieldWidth() / 2)
+					- Math.abs(leftFieldPos.getPos().y())) > goalLineThreshold;
 			if (exitGoallineInX && exitGoallineInY)
 			{
 				// The ball exited the field over the goal line
-				return handleGoalLineOff(intersection, lastTouched, ts);
+				return handleGoalLineOff(leftFieldPos.getPos(), lastTouched, ts);
 			}
-			return handleSideLineOff(intersection, lastTouched, ts);
+			return handleSideLineOff(leftFieldPos.getPos(), lastTouched, ts);
 		}
 		return Optional.empty();
 	}
@@ -120,15 +109,15 @@ public class BallLeftFieldDetector extends AGameEventDetector
 			final BotPosition lastTouched, final long ts)
 	{
 		int ySide = ballPos.y() > 0 ? 1 : -1;
-		IVector2 kickPos = ballPos.addNew(new Vector2(0, -100 * ySide));
-		return Optional.of(buildThrowInResult(lastTouched.getId(), kickPos, ts));
+		IVector2 kickPos = ballPos.addNew(Vector2.fromXY(0, -100.0 * ySide));
+		return Optional.of(buildThrowInResult(lastTouched.getBotID(), kickPos, ts));
 	}
 	
 	
-	protected Optional<IGameEvent> handleGoalLineOff(final IVector2 intersection,
+	private Optional<IGameEvent> handleGoalLineOff(final IVector2 intersection,
 			final BotPosition lastTouched, final long ts)
 	{
-		BotID lastTouchedID = lastTouched.getId();
+		BotID lastTouchedID = lastTouched.getBotID();
 		
 		if (isIcing(lastTouched, intersection))
 		{
@@ -153,17 +142,12 @@ public class BallLeftFieldDetector extends AGameEventDetector
 	private boolean isIcing(final BotPosition lastTouched, final IVector2 intersection)
 	{
 		ETeamColor colorOfGoalLine = NGeometry.getTeamOfClosestGoalLine(intersection);
-		ETeamColor kickerColor = lastTouched.getId().getTeamColor();
+		ETeamColor kickerColor = lastTouched.getBotID().getTeamColor();
 		
-		IVector2 lastTouchedPos = lastTouched.getPos();
-		boolean kickerWasInHisHalf = NGeometry.getFieldSide(kickerColor).isPointInShape(lastTouchedPos)
-				&& (Math.abs(lastTouchedPos.x()) > icingKickoffLineThreshold);
+		boolean kickerWasInHisHalf = NGeometry.getFieldSide(kickerColor).isPointInShape(lastTouched.getPos())
+				&& (Math.abs(lastTouched.getPos().x()) > icingKickoffLineThreshold);
 		boolean crossedOppositeGoalLine = kickerColor != colorOfGoalLine;
-		if (kickerWasInHisHalf && crossedOppositeGoalLine)
-		{
-			return true;
-		}
-		return false;
+		return kickerWasInHisHalf && crossedOppositeGoalLine;
 	}
 	
 	
@@ -171,8 +155,7 @@ public class BallLeftFieldDetector extends AGameEventDetector
 	{
 		FollowUpAction action = new FollowUpAction(EActionType.DIRECT_FREE, lastTouched.getTeamColor().opposite(),
 				kickPos);
-		GameEvent violation = new GameEvent(EGameEvent.BALL_LEFT_FIELD, ts, lastTouched, action);
-		return violation;
+		return new GameEvent(EGameEvent.BALL_LEFT_FIELD, ts, lastTouched, action);
 	}
 	
 	
@@ -180,8 +163,7 @@ public class BallLeftFieldDetector extends AGameEventDetector
 	{
 		FollowUpAction action = new FollowUpAction(EActionType.DIRECT_FREE, lastTouched.getTeamColor().opposite(),
 				kickPos);
-		GameEvent violation = new GameEvent(EGameEvent.BALL_LEFT_FIELD, ts, lastTouched, action);
-		return violation;
+		return new GameEvent(EGameEvent.BALL_LEFT_FIELD, ts, lastTouched, action);
 	}
 	
 	
@@ -190,8 +172,7 @@ public class BallLeftFieldDetector extends AGameEventDetector
 		IVector2 kickPos = AutoRefMath.getClosestFreekickPos(lastTouchedPos, lastTouched.getTeamColor().opposite());
 		FollowUpAction action = new FollowUpAction(EActionType.INDIRECT_FREE, lastTouched.getTeamColor().opposite(),
 				kickPos);
-		GameEvent violation = new GameEvent(EGameEvent.ICING, ts, lastTouched, action);
-		return violation;
+		return new GameEvent(EGameEvent.ICING, ts, lastTouched, action);
 	}
 	
 	
@@ -199,26 +180,13 @@ public class BallLeftFieldDetector extends AGameEventDetector
 	{
 		FollowUpAction action = new FollowUpAction(EActionType.INDIRECT_FREE, lastTouched
 				.getTeamColor().opposite(), kickPos);
-		GameEvent violation = new GameEvent(EGameEvent.BALL_LEFT_FIELD, ts, lastTouched, action);
-		return violation;
+		return new GameEvent(EGameEvent.BALL_LEFT_FIELD, ts, lastTouched, action);
 	}
 	
 	
 	@Override
 	public void reset()
 	{
-		ballOutsideField = false;
-		ballLeftFieldStamp = 0;
-	}
-	
-	
-	private boolean ballInsideGoal(final IVector2 ballPos)
-	{
-		double margin = 0.0d;
-		if (!ballOutsideField)
-		{
-			margin = goalDepthMargin;
-		}
-		return NGeometry.ballInsideGoal(ballPos, margin);
+		eventReported = false;
 	}
 }

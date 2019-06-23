@@ -49,7 +49,7 @@ for i=3:size(bot.pos,1)
   radius(i) = r;
   
   dt(i) = (bot.timestamp(i) - bot.timestamp(1) ) * 1e-9;
-  aVel = util.math.normalizeAngle(bot.pos(i,3) - bot.pos(1,3)) / dt(i);
+  angularVel = util.math.normalizeAngle(bot.pos(i,3) - bot.pos(1,3)) / dt(i);
   angleDiff(i) = util.math.normalizeAngle(bot.pos(i,3) - bot.pos(1,3));
 %   angleDiff(i) = aVelMu * dt(i);
   arcLen(i) = r * angleDiff(i);
@@ -69,7 +69,7 @@ for i=3:size(bot.pos,1)
   
   compVelGlob(i,:) = dir .* 1/(dt(i)*1000);
   velSE(i,1:2) = util.math.convertGlobalBotVector2Local(compVelGlob(i,:), bot.pos(1,3));
-  velSE(i,3) = aVel;
+  velSE(i,3) = angularVel;
   
 %   plotCircle( c,r );
 end

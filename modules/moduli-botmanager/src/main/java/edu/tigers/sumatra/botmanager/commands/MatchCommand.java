@@ -9,9 +9,9 @@
 package edu.tigers.sumatra.botmanager.commands;
 
 import edu.tigers.sumatra.botmanager.commands.botskills.ABotSkill;
+import edu.tigers.sumatra.botmanager.commands.botskills.AMoveBotSkill;
 import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillMotorsOff;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
+import edu.tigers.sumatra.botmanager.commands.botskills.EDataAcquisitionMode;
 
 
 /**
@@ -19,47 +19,31 @@ import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
  */
 public class MatchCommand implements IMatchCommand
 {
-	private ABotSkill			skill							= new BotSkillMotorsOff();
-	private double				dribbleSpeed				= 0;
-	private double				kickSpeed					= 0;
-	private EKickerDevice	device						= EKickerDevice.STRAIGHT;
-	private EKickerMode		mode							= EKickerMode.DISARM;
-	private boolean			cheer							= false;
-	private int					feedbackFreq				= 20;
-	private boolean			autoCharge					= false;
-	
-	private boolean			leftRed, leftGreen, rightRed, rightGreen;
-	private boolean			setSongFinalCountdown	= false;
+	private ABotSkill					skill					= new BotSkillMotorsOff();
+	private int							feedbackFreq		= 20;
+	private boolean					autoCharge			= false;
+	private MultimediaControl		multimediaControl	= new MultimediaControl();
+	private EDataAcquisitionMode	acqMode				= EDataAcquisitionMode.NONE;
 	
 	
 	@Override
 	public void setSkill(final ABotSkill skill)
 	{
+		switch (skill.getType())
+		{
+			case GLOBAL_POSITION:
+			case GLOBAL_VELOCITY:
+			case GLOBAL_VEL_XY_POS_W:
+			case LOCAL_VELOCITY:
+			case WHEEL_VELOCITY:
+				AMoveBotSkill moveSkill = (AMoveBotSkill) skill;
+				moveSkill.setDataAcquisitionMode(acqMode);
+				break;
+			default:
+				break;
+		}
+		
 		this.skill = skill;
-		setLEDs(true, false, true, false);
-	}
-	
-	
-	@Override
-	public void setDribblerSpeed(final double speed)
-	{
-		dribbleSpeed = speed;
-	}
-	
-	
-	@Override
-	public void setKick(final double kickSpeed, final EKickerDevice device, final EKickerMode mode)
-	{
-		this.kickSpeed = kickSpeed;
-		this.device = device;
-		this.mode = mode;
-	}
-	
-	
-	@Override
-	public void setCheering(final boolean enable)
-	{
-		cheer = enable;
 	}
 	
 	
@@ -88,51 +72,6 @@ public class MatchCommand implements IMatchCommand
 	
 	
 	/**
-	 * @return the dribbleSpeed
-	 */
-	public final double getDribbleSpeed()
-	{
-		return dribbleSpeed;
-	}
-	
-	
-	/**
-	 * @return the kickSpeed
-	 */
-	public final double getKickSpeed()
-	{
-		return kickSpeed;
-	}
-	
-	
-	/**
-	 * @return the device
-	 */
-	public final EKickerDevice getDevice()
-	{
-		return device;
-	}
-	
-	
-	/**
-	 * @return the mode
-	 */
-	public final EKickerMode getMode()
-	{
-		return mode;
-	}
-	
-	
-	/**
-	 * @return the cheer
-	 */
-	public final boolean isCheer()
-	{
-		return cheer;
-	}
-	
-	
-	/**
 	 * @return the feedbackFreq
 	 */
 	public final int getFeedbackFreq()
@@ -151,99 +90,33 @@ public class MatchCommand implements IMatchCommand
 	
 	
 	@Override
-	public void setLEDs(final boolean leftRed, final boolean leftGreen, final boolean rightRed, final boolean rightGreen)
+	public void setMultimediaControl(final MultimediaControl control)
 	{
-		this.leftGreen = leftGreen;
-		this.rightGreen = rightGreen;
-		this.leftRed = leftRed;
-		this.rightRed = rightRed;
+		multimediaControl = control;
 	}
 	
 	
 	/**
-	 * @return the leftRed
+	 * @return the multimediaControl
 	 */
-	public boolean isLeftRed()
+	public final MultimediaControl getMultimediaControl()
 	{
-		return leftRed;
-	}
-	
-	
-	/**
-	 * @param leftRed the leftRed to set
-	 */
-	public void setLeftRed(final boolean leftRed)
-	{
-		this.leftRed = leftRed;
-	}
-	
-	
-	/**
-	 * @return the leftGreen
-	 */
-	public boolean isLeftGreen()
-	{
-		return leftGreen;
-	}
-	
-	
-	/**
-	 * @param leftGreen the leftGreen to set
-	 */
-	public void setLeftGreen(final boolean leftGreen)
-	{
-		this.leftGreen = leftGreen;
-	}
-	
-	
-	/**
-	 * @return the rightRed
-	 */
-	public boolean isRightRed()
-	{
-		return rightRed;
-	}
-	
-	
-	/**
-	 * @param rightRed the rightRed to set
-	 */
-	public void setRightRed(final boolean rightRed)
-	{
-		this.rightRed = rightRed;
-	}
-	
-	
-	/**
-	 * @return the rightGreen
-	 */
-	public boolean isRightGreen()
-	{
-		return rightGreen;
-	}
-	
-	
-	/**
-	 * @param rightGreen the rightGreen to set
-	 */
-	public void setRightGreen(final boolean rightGreen)
-	{
-		this.rightGreen = rightGreen;
+		return multimediaControl;
 	}
 	
 	
 	@Override
-	public void setSongFinalCountdown(final boolean enable)
+	public void setDataAcquisitionMode(final EDataAcquisitionMode acqMode)
 	{
-		setSongFinalCountdown = enable;
+		this.acqMode = acqMode;
 	}
 	
 	
 	/**
-	 * @return the setSongFinalCountdown
+	 * @return
 	 */
-	public boolean isSetSongFinalCountdown()
+	public EDataAcquisitionMode getDataAcquisitionMode()
 	{
-		return setSongFinalCountdown;
+		return acqMode;
 	}
 }

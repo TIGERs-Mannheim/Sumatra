@@ -1,61 +1,42 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 17.07.2015
- * Author(s): JulianT
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.data;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import edu.dhbw.mannheim.tigers.sumatra.model.data.multi_team.MultiTeamCommunication.RobotPlan;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.multi_team.MultiTeamCommunication.TeamPlan;
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.ETeamColor;
-
 
 /**
  * @author JulianT
  */
 public class MultiTeamMessage
 {
-	private final TeamPlan	teamPlan;
+	private final MultiTeamPlan teamPlan;
+	private final boolean mixedTeamMode;
+	
+	/** a default instance in case of no mixed team mode */
+	public static final MultiTeamMessage DEFAULT = new MultiTeamMessage(new MultiTeamPlan(), false);
 	
 	
 	/**
 	 * @param teamPlan
+	 * @param mixedTeamMode
 	 */
-	public MultiTeamMessage(final TeamPlan teamPlan)
+	public MultiTeamMessage(final MultiTeamPlan teamPlan, final boolean mixedTeamMode)
 	{
 		this.teamPlan = teamPlan;
+		this.mixedTeamMode = mixedTeamMode;
 	}
 	
 	
 	/**
 	 * @return
 	 */
-	public TeamPlan getTeamPlan()
+	public MultiTeamPlan getTeamPlan()
 	{
 		return teamPlan;
 	}
 	
 	
-	/**
-	 * @param teamColor
-	 * @return
-	 */
-	public Map<BotID, RobotPlan> getRobotPlans(final ETeamColor teamColor)
+	public boolean isMixedTeamMode()
 	{
-		Map<BotID, RobotPlan> robotPlanMap = new HashMap<>();
-		
-		for (RobotPlan robotPlan : teamPlan.getPlansList())
-		{
-			robotPlanMap.put(BotID.createBotId(robotPlan.getRobotId(), teamColor), robotPlan);
-		}
-		
-		return robotPlanMap;
+		return mixedTeamMode;
 	}
 }

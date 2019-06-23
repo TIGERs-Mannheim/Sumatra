@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 21, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.dhbw.mannheim.tigers.sumatra.presenter.ball;
 
 import java.awt.Component;
@@ -20,12 +16,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 import javax.swing.JOptionPane;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.log4j.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -33,19 +31,14 @@ import org.json.simple.parser.ParseException;
 
 import edu.dhbw.mannheim.tigers.sumatra.view.ball.IBallAnalyserPanelObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.ball.VisionAnalyserPanel;
-import edu.tigers.sumatra.ai.data.KickerModel;
-import edu.tigers.sumatra.bot.EBotType;
 import edu.tigers.sumatra.matlab.MatlabConnection;
 import edu.tigers.sumatra.skillsystem.VisionSkillWatcher;
 import edu.tigers.sumatra.views.ASumatraViewPresenter;
 import edu.tigers.sumatra.views.ISumatraView;
-import edu.tigers.sumatra.wp.ExportDataContainer;
-import edu.tigers.sumatra.wp.IBallWatcherObserver;
-import edu.tigers.sumatra.wp.VisionWatcher;
 import edu.tigers.sumatra.wp.data.ExtendedCamDetectionFrame;
-import edu.tigers.sumatra.wp.data.Geometry;
-import edu.tigers.sumatra.wp.kalman.BallCorrector;
-import edu.tigers.sumatra.wp.kalman.RunExtKalmanOnData;
+import edu.tigers.sumatra.wp.util.ExportDataContainer;
+import edu.tigers.sumatra.wp.util.IBallWatcherObserver;
+import edu.tigers.sumatra.wp.util.VisionWatcher;
 import matlabcontrol.MatlabConnectionException;
 import matlabcontrol.MatlabInvocationException;
 import matlabcontrol.MatlabProxy;
@@ -64,7 +57,7 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 	
 	
 	/**
-	 * 
+	 * Default Constructor
 	 */
 	public VisionAnalyserPresenter()
 	{
@@ -88,6 +81,9 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 	
 	private class PanelObserver implements IBallAnalyserPanelObserver, ClipboardOwner
 	{
+		private static final String ERROR_EVALUATING_MATLAB_FUNCTION = "Error evaluating matlab function: ";
+		
+		private static final String DESCRIPTION = "description";
 		
 		@Override
 		public void onSave(final String filename)
@@ -96,13 +92,11 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 			if (infoFile.exists())
 			{
 				JSONParser jp = new JSONParser();
-				FileReader fr = null;
-				try
+				try (FileReader fr = new FileReader(infoFile))
 				{
-					fr = new FileReader(infoFile);
 					@SuppressWarnings("unchecked")
 					Map<String, Object> map = (Map<String, Object>) jp.parse(fr);
-					map.put("description", panel.getDescription());
+					map.put(DESCRIPTION, panel.getDescription());
 					JSONObject jo = new JSONObject(map);
 					Files.write(Paths.get(infoFile.getAbsolutePath()), jo.toJSONString().getBytes());
 				} catch (IOException | ParseException err)
@@ -111,19 +105,6 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				} catch (ClassCastException err)
 				{
 					log.error("Could not cast a type. Wrong format?!", err);
-				} finally
-				
-				{
-					if (fr != null)
-					{
-						try
-						{
-							fr.close();
-						} catch (IOException err)
-						{
-							log.error("Could not close file reader.", err);
-						}
-					}
 				}
 			}
 			panel.markDirty(false);
@@ -175,35 +156,46 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 			{
 				for (String filename : filenames)
 				{
-					File file = new File(filename);
-					if (file.isDirectory())
-					{
-						File[] files = file.listFiles();
-						if (files != null)
-						{
-							for (File f : files)
-							{
-								if (f.isDirectory())
-								{
-									log.warn("Recursive deletion not supported for safety reasons! Skip " + f.getAbsolutePath());
-									continue;
-								}
-								if (!f.delete())
-								{
-									log.warn("Could not delete file: " + file.getAbsolutePath());
-								}
-							}
-						}
-					}
-					if (!file.delete())
-					{
-						log.error("Could not delete file: " + filename);
-					}
+					processYesDeleteAnswerForFile(filename);
 				}
 				panel.updateFiles();
 			}
 		}
 		
+		
+		private void processYesDeleteAnswerForFile(final String filename)
+		{
+			File file = new File(filename);
+			if (file.isDirectory())
+			{
+				File[] files = file.listFiles();
+				deleteFiles(file, files);
+			}
+			if (!file.delete())
+			{
+				log.error("Could not delete file: " + filename);
+			}
+		}
+		
+		
+		private void deleteFiles(final File originalFile, final File[] files)
+		{
+			if (files != null)
+			{
+				for (File f : files)
+				{
+					if (f.isDirectory())
+					{
+						log.warn("Recursive deletion not supported for safety reasons! Skip " + f.getAbsolutePath());
+						continue;
+					}
+					if (!f.delete())
+					{
+						log.warn("Could not delete file: " + originalFile.getAbsolutePath());
+					}
+				}
+			}
+		}
 		
 		@Override
 		public void onPlot(final List<String> filenames)
@@ -240,7 +232,7 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				log.error(err.getMessage(), err);
 			} catch (MatlabInvocationException err)
 			{
-				log.error("Error evaluating matlab function: " + err.getMessage(), err);
+				log.error(ERROR_EVALUATING_MATLAB_FUNCTION + err.getMessage(), err);
 			}
 		}
 		
@@ -261,26 +253,26 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				{
 					params[i] = coeffs[i];
 				}
-				Geometry.getBallModel().applyNewParameters(params);
+				log.info("params: " + Arrays.toString(params));
 			} catch (MatlabConnectionException err)
 			{
 				log.error(err.getMessage(), err);
 			} catch (MatlabInvocationException err)
 			{
-				log.error("Error evaluating matlab function: " + err.getMessage(), err);
+				log.error(ERROR_EVALUATING_MATLAB_FUNCTION + err.getMessage(), err);
 			}
 		}
 		
 		
 		@Override
-		public void onCreateKickModel(final List<String> filenames, final EBotType botType)
+		public void onCreateBallAndKickModel(final List<String> filenames)
 		{
 			MatlabProxy mp;
 			try
 			{
 				mp = MatlabConnection.getMatlabProxy();
 				mp.eval("addpath('learning')");
-				Object[] values = mp.returningFeval("learnKickSpeeds", 1,
+				Object[] values = mp.returningFeval("learnBallAndKickModel", 1,
 						filenames.toArray(new Object[filenames.size()]));
 				double[] coeffs = (double[]) values[0];
 				double[] params = new double[coeffs.length];
@@ -288,16 +280,15 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				{
 					params[i] = coeffs[i];
 				}
-				KickerModel.forBot(botType).applyNewParameters(params);
+				
+				log.info("Ball & Kick params: " + Arrays.toString(params));
+				// TODO: make something with these parameters
 			} catch (MatlabConnectionException err)
 			{
 				log.error(err.getMessage(), err);
 			} catch (MatlabInvocationException err)
 			{
 				log.error("Error evaluating matlab function: " + err.getMessage(), err);
-			} catch (Exception err)
-			{
-				log.error("An error occurred.", err);
 			}
 		}
 		
@@ -315,13 +306,11 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				panel.setValidFileSelected(true);
 				panel.clearKeyValue();
 				JSONParser jp = new JSONParser();
-				FileReader fr = null;
-				try
+				try (FileReader fr = new FileReader(infoFile))
 				{
-					fr = new FileReader(infoFile);
 					@SuppressWarnings("unchecked")
 					Map<String, Object> jo = (Map<String, Object>) jp.parse(fr);
-					String description = (String) jo.get("description");
+					String description = (String) jo.get(DESCRIPTION);
 					Long numSamples = (Long) jo.get("numSamples");
 					if (description != null)
 					{
@@ -338,32 +327,13 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 						panel.setNumSamples(-1);
 					}
 					
-					for (Map.Entry<String, Object> entry : jo.entrySet())
-					{
-						if (entry.getKey().equals("description") || entry.getKey().equals("numSamples"))
-						{
-							continue;
-						}
-						panel.setKeyValue(entry.getKey(), String.valueOf(entry.getValue()));
-					}
+					processJsonbjects(jo);
 				} catch (IOException | ParseException err)
 				{
 					log.error("Could not parse JSON.", err);
 				} catch (ClassCastException err)
 				{
 					log.error("Could not cast a type. Wrong format?!", err);
-				} finally
-				{
-					if (fr != null)
-					{
-						try
-						{
-							fr.close();
-						} catch (IOException err)
-						{
-							log.error("Could not close file reader.", err);
-						}
-					}
 				}
 			} else
 			{
@@ -371,6 +341,19 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				panel.setDescription("");
 				panel.setNumSamples(0);
 				panel.clearKeyValue();
+			}
+		}
+		
+		
+		void processJsonbjects(Map<String, Object> jsonObjects)
+		{
+			for (Map.Entry<String, Object> entry : jsonObjects.entrySet())
+			{
+				if ("description".equals(entry.getKey()) || "numSamples".equals(entry.getKey()))
+				{
+					continue;
+				}
+				panel.setKeyValue(entry.getKey(), String.valueOf(entry.getValue()));
 			}
 		}
 		
@@ -391,22 +374,6 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 		
 		
 		@Override
-		public void onBallCorrector(final List<String> filenames)
-		{
-			for (String selectedFile : filenames)
-			{
-				String basePath = getBaseDir(selectedFile);
-				File f = new File(basePath);
-				if (!f.exists())
-				{
-					return;
-				}
-				BallCorrector.runOnData(basePath);
-			}
-		}
-		
-		
-		@Override
 		public void onKalman(final List<String> filenames)
 		{
 			for (String selectedFile : filenames)
@@ -417,8 +384,7 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				{
 					return;
 				}
-				RunExtKalmanOnData rod = new RunExtKalmanOnData();
-				rod.runOnData(basePath);
+				throw new NotImplementedException();
 			}
 		}
 		
@@ -445,6 +411,9 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 		@Override
 		public void lostOwnership(final Clipboard clipboard, final Transferable contents)
 		{
+			/**
+			 * Has to be overwritten due to interface inheritance
+			 */
 		}
 	}
 	
@@ -462,6 +431,9 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 		@Override
 		public void beforeExport(final Map<String, Object> jsonMapping)
 		{
+			/**
+			 * This has to be implemented due to the interface inheritance
+			 */
 		}
 		
 		

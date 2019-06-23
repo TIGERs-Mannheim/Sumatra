@@ -1,4 +1,4 @@
-The TIGERS Mannheim provide their source code, electrical schematics and board layouts and mechanical CAD drawings free of charge.
+The TIGERs Mannheim provide their source code, electrical schematics and board layouts and mechanical CAD drawings free of charge.
 
 You are allowed to use it for any educational, research or non-commercial purpose, especially for participating at RoboCup itself.
 

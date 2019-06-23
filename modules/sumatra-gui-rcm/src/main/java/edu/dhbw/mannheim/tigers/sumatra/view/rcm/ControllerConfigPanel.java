@@ -10,10 +10,11 @@ package edu.dhbw.mannheim.tigers.sumatra.view.rcm;
 
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Logger;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -37,8 +38,18 @@ public class ControllerConfigPanel extends JPanel
 	
 	/**  */
 	private static final long										serialVersionUID	= -7083335280756862591L;
-	private final Map<ERcmControllerConfig, JTextField>	textFields			= new HashMap<ERcmControllerConfig, JTextField>();
-	private final List<IRCMConfigChangedObserver>			observers			= new CopyOnWriteArrayList<IRCMConfigChangedObserver>();
+	private final Map<ERcmControllerConfig, JTextField> textFields = new EnumMap<>(ERcmControllerConfig.class);
+	private final List<IRCMConfigChangedObserver> observers = new CopyOnWriteArrayList<>();
+	
+	
+	/**
+	 */
+	public ControllerConfigPanel()
+	{
+		/**
+		 * Default config
+		 */
+	}
 	
 	
 	/**
@@ -63,17 +74,10 @@ public class ControllerConfigPanel extends JPanel
 			observers.remove(observer);
 		}
 	}
-	
-	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
-	/**
-	 */
-	public ControllerConfigPanel()
-	{
-	}
+	// --------------------------------------------------------------------------
 	
 	
 	/**
@@ -117,6 +121,9 @@ public class ControllerConfigPanel extends JPanel
 		@Override
 		public void focusGained(final FocusEvent e)
 		{
+			/**
+			 * Necessary interface override
+			 */
 		}
 		
 		
@@ -125,7 +132,7 @@ public class ControllerConfigPanel extends JPanel
 		{
 			try
 			{
-				double value = Double.valueOf(txtField.getText());
+				double value = Double.parseDouble(txtField.getText());
 				synchronized (observers)
 				{
 					for (IRCMConfigChangedObserver o : observers)
@@ -135,6 +142,7 @@ public class ControllerConfigPanel extends JPanel
 				}
 			} catch (NumberFormatException err)
 			{
+				Logger.getAnonymousLogger().warning(err.getMessage());
 			}
 		}
 	}

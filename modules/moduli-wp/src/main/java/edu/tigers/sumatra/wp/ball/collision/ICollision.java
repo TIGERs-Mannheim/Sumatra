@@ -1,14 +1,11 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 5, 2016
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.wp.ball.collision;
 
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVector3;
 
 
 /**
@@ -26,11 +23,23 @@ public interface ICollision
 	/**
 	 * @return
 	 */
-	IVector2 getObjectVel();
+	IVector3 getObjectVel();
 	
 	
 	/**
 	 * @return the normal
 	 */
 	IVector2 getNormal();
+	
+	
+	/**
+	 * @return if the ball should stick at obstacle (dribbler)
+	 */
+	boolean isSticky();
+	
+	
+	/**
+	 * @return the object the ball has collide with
+	 */
+	ICollisionObject getObject();
 }

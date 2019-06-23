@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 10.08.2010
- * Author(s): Bernhard
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.visualizer;
 
 import java.awt.Color;
@@ -21,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.swing.SwingUtilities;
 
+import org.apache.commons.lang.Validate;
 import org.apache.log4j.Logger;
 
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
@@ -31,19 +28,24 @@ import edu.tigers.sumatra.clock.ThreadUtil;
 import edu.tigers.sumatra.drawable.DrawableBotShape;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.drawable.ShapeMap;
+import edu.tigers.sumatra.drawable.ShapeMap.IShapeLayer;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.IBotIDMap;
-import edu.tigers.sumatra.math.AVector2;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector3;
+import edu.tigers.sumatra.math.vector.AVector3;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.referee.AReferee;
 import edu.tigers.sumatra.thread.NamedThreadFactory;
 import edu.tigers.sumatra.util.GlobalShortcuts;
 import edu.tigers.sumatra.util.GlobalShortcuts.EShortcut;
 import edu.tigers.sumatra.views.ASumatraViewPresenter;
 import edu.tigers.sumatra.views.ISumatraView;
+import edu.tigers.sumatra.vision.AVisionFilter;
+import edu.tigers.sumatra.visualizer.view.BotStatus;
 import edu.tigers.sumatra.visualizer.view.EVisualizerOptions;
 import edu.tigers.sumatra.visualizer.view.IFieldPanelObserver;
 import edu.tigers.sumatra.visualizer.view.IRobotsPanelObserver;
@@ -51,11 +53,10 @@ import edu.tigers.sumatra.visualizer.view.VisualizerPanel;
 import edu.tigers.sumatra.visualizer.view.field.EShapeLayerSource;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
+import edu.tigers.sumatra.wp.ball.trajectory.chipped.FixedLossPlusRollingBallTrajectory.FixedLossPlusRollingParameters;
+import edu.tigers.sumatra.wp.ball.trajectory.chipped.FixedLossPlusRollingConsultant;
 import edu.tigers.sumatra.wp.data.ExtendedCamDetectionFrame;
-import edu.tigers.sumatra.wp.data.Geometry;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
-import edu.tigers.sumatra.wp.data.ShapeMap;
-import edu.tigers.sumatra.wp.data.ShapeMap.IShapeLayer;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
 
@@ -86,14 +87,11 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 	private final Map<Integer, ExtendedCamDetectionFrame>	camFrames					= new ConcurrentHashMap<>();
 	
 	
-	private BotID														selectedRobotId			= BotID.get();
-	
-	
-	/**  */
-	public static final String										BLOCKED_BY_SUMATRA		= "Blocked by Sumatra";
+	private BotID														selectedRobotId			= BotID.noBot();
 	
 	
 	/**
+	 * Default
 	 */
 	public VisualizerPresenter()
 	{
@@ -108,14 +106,75 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 		// --- select/deselect item ---
 		if (selectedRobotId.equals(botId))
 		{
-			selectedRobotId = BotID.get();
+			selectedRobotId = BotID.noBot();
 			panel.getRobotsPanel().deselectRobots();
 		} else
 		{
 			selectedRobotId = botId;
 			panel.getRobotsPanel().selectRobot(botId);
 		}
-		panel.repaint();
+	}
+	
+	
+	private IVector3 doChipKick(final IVector2 posIn, final double dist, final int numTouchdown)
+	{
+		double kickSpeed = lastWorldFrameWrapper.getSimpleWorldFrame().getBall().getChipConsultant()
+				.getInitVelForDistAtTouchdown(dist, numTouchdown);
+		IVector2 kickVector = new FixedLossPlusRollingConsultant(new FixedLossPlusRollingParameters())
+				.absoluteKickVelToVector(kickSpeed);
+		IVector2 ballPos = lastWorldFrameWrapper.getSimpleWorldFrame().getBall().getPos();
+		return Vector3.from2d(posIn.subtractNew(ballPos).scaleTo(kickVector.x()), kickVector.y());
+	}
+	
+	
+	private IVector3 doStraightKick(final IVector2 posIn, final double dist, final double passEndVel)
+	{
+		double speed = lastWorldFrameWrapper.getSimpleWorldFrame().getBall().getStraightConsultant().getInitVelForDist(
+				dist,
+				passEndVel);
+		IVector2 ballPos = lastWorldFrameWrapper.getSimpleWorldFrame().getBall().getPos();
+		return Vector3.from2d(posIn.subtractNew(ballPos).scaleTo(speed), 0);
+	}
+	
+	
+	private void handleBall(final IVector2 posIn, final MouseEvent e, final AVisionFilter referee)
+	{
+		IVector2 ballPos = lastWorldFrameWrapper.getSimpleWorldFrame().getBall().getPos();
+		double dist = VectorMath.distancePP(ballPos, posIn);
+		IVector2 pos = ballPos;
+		final IVector3 vel;
+		
+		boolean ctrl = e.isControlDown();
+		boolean shift = e.isShiftDown();
+		boolean alt = e.isAltDown();
+		
+		if (ctrl && shift)
+		{
+			if (alt)
+			{
+				vel = doChipKick(posIn, dist, 2);
+			} else
+			{
+				vel = doStraightKick(posIn, dist, 2);
+			}
+		} else if (ctrl)
+		{
+			vel = Vector3.from2d(posIn.subtractNew(ballPos).scaleTo(8), 0);
+		} else if (shift)
+		{
+			if (alt)
+			{
+				vel = doChipKick(posIn, dist, 0);
+			} else
+			{
+				vel = doStraightKick(posIn, dist, 0);
+			}
+		} else
+		{
+			vel = AVector3.ZERO_VECTOR;
+			pos = posIn;
+		}
+		referee.resetBall(Vector3.from2d(pos, 0), vel);
 	}
 	
 	
@@ -127,65 +186,29 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 		{
 			return;
 		}
+		AVisionFilter visionFilter;
+		try
+		{
+			visionFilter = (AVisionFilter) SumatraModel.getInstance().getModule(AVisionFilter.MODULE_ID);
+		} catch (ModuleNotFoundException err)
+		{
+			log.error("AVisionFilter module not found.", err);
+			return;
+		}
 		
-		boolean ctrl = e.isControlDown();
-		boolean shift = e.isShiftDown();
 		boolean rightClick = SwingUtilities.isRightMouseButton(e);
 		boolean middleClick = SwingUtilities.isMiddleMouseButton(e);
+		
 		if (rightClick)
 		{
-			AReferee referee;
-			try
-			{
-				referee = (AReferee) SumatraModel.getInstance().getModule(AReferee.MODULE_ID);
-				IVector2 ballPos = lastFrame.getSimpleWorldFrame().getBall().getPos();
-				final IVector2 pos, vel;
-				if (ctrl && shift)
-				{
-					double dist = GeoMath.distancePP(ballPos, posIn);
-					double passEndVel = 2;
-					double speed = Geometry.getBallModel().getVelForDist(dist, passEndVel);
-					vel = posIn.subtractNew(ballPos).scaleTo(speed);
-					pos = ballPos;
-				} else if (ctrl)
-				{
-					vel = posIn.subtractNew(ballPos).scaleTo(8);
-					pos = ballPos;
-				} else if (shift)
-				{
-					double dist = GeoMath.distancePP(ballPos, posIn);
-					double passEndVel = 0;
-					double speed = Geometry.getBallModel().getVelForDist(dist, passEndVel);
-					vel = posIn.subtractNew(ballPos).scaleTo(speed);
-					pos = ballPos;
-				} else
-				{
-					vel = AVector2.ZERO_VECTOR;
-					pos = posIn;
-				}
-				referee.replaceBall(new Vector3(pos, 0), new Vector3(vel, 0));
-			} catch (ModuleNotFoundException err)
-			{
-				log.error("Referee module not found.", err);
-			}
-			return;
-		}
-		
-		if (middleClick)
+			handleBall(posIn, e, visionFilter);
+		} else if (middleClick)
 		{
-			AWorldPredictor wp;
-			try
-			{
-				wp = (AWorldPredictor) SumatraModel.getInstance().getModule(AWorldPredictor.MODULE_ID);
-				wp.setLatestBallPosHint(posIn);
-			} catch (ModuleNotFoundException err)
-			{
-				log.error("Could not find WP module!");
-			}
-			return;
+			visionFilter.resetBall(Vector3.from2d(posIn, 0), AVector3.ZERO_VECTOR);
+		} else
+		{
+			onRobotSelected(posIn, e);
 		}
-		
-		onRobotSelected(posIn, e);
 	}
 	
 	
@@ -195,6 +218,7 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 	 */
 	public void onRobotSelected(final IVector2 posIn, final MouseEvent e)
 	{
+		// overwritten by sub-class
 	}
 	
 	
@@ -221,14 +245,13 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 		panel.getFieldPanel().setPanelVisible(true);
 		
 		execService = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("VisualizerUpdater"));
-		// execService.scheduleAtFixedRate(new Updater(), 0, 1000 / VISUALIZATION_FPS, TimeUnit.MILLISECONDS);
 		execService.execute(new UpdaterSelfSchedule());
 		log.trace("Started");
 	}
 	
 	
 	/**
-	 * 
+	 * Remove observers, stop updater clear panels
 	 */
 	public void stop()
 	{
@@ -248,10 +271,11 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 			execService.shutdownNow();
 			try
 			{
-				execService.awaitTermination(100, TimeUnit.MILLISECONDS);
+				Validate.isTrue(execService.awaitTermination(100, TimeUnit.MILLISECONDS));
 			} catch (InterruptedException err)
 			{
-				log.error("Timed out waiting for update thread shutdown...");
+				log.error("Interrupted while awaiting termination", err);
+				Thread.currentThread().interrupt();
 			}
 		}
 		
@@ -268,42 +292,50 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 		switch (state)
 		{
 			case ACTIVE:
-				try
-				{
-					AWorldPredictor predictor = (AWorldPredictor) SumatraModel.getInstance().getModule(
-							AWorldPredictor.MODULE_ID);
-					predictor.addWorldFrameConsumer(this);
-				} catch (ModuleNotFoundException err)
-				{
-					log.error("Could not get WP module");
-				}
-				
-				GlobalShortcuts.register(EShortcut.RESET_FIELD,
-						(() -> panel.getFieldPanel().onOptionChanged(EVisualizerOptions.RESET_FIELD, true)));
-				
+				init();
 				start();
 				break;
-			case NOT_LOADED:
-				break;
 			case RESOLVED:
-				try
-				{
-					AWorldPredictor predictor = (AWorldPredictor) SumatraModel.getInstance().getModule(
-							AWorldPredictor.MODULE_ID);
-					predictor.removeWorldFrameConsumer(this);
-				} catch (ModuleNotFoundException err)
-				{
-					log.error("Could not get WP module");
-				}
-				
-				GlobalShortcuts.unregisterAll(EShortcut.RESET_FIELD);
-				
+				deinit();
 				stop();
 				break;
+			case NOT_LOADED:
 			default:
 				break;
-			
 		}
+	}
+	
+	
+	private void deinit()
+	{
+		try
+		{
+			AWorldPredictor predictor = (AWorldPredictor) SumatraModel.getInstance().getModule(
+					AWorldPredictor.MODULE_ID);
+			predictor.removeObserver(this);
+		} catch (ModuleNotFoundException err)
+		{
+			log.error("Could not get WP module", err);
+		}
+		
+		GlobalShortcuts.unregisterAll(EShortcut.RESET_FIELD);
+	}
+	
+	
+	private void init()
+	{
+		try
+		{
+			AWorldPredictor predictor = (AWorldPredictor) SumatraModel.getInstance().getModule(
+					AWorldPredictor.MODULE_ID);
+			predictor.addObserver(this);
+		} catch (ModuleNotFoundException err)
+		{
+			log.error("Could not get WP module", err);
+		}
+		
+		GlobalShortcuts.register(EShortcut.RESET_FIELD,
+				() -> panel.getFieldPanel().onOptionChanged(EVisualizerOptions.RESET_FIELD, true));
 	}
 	
 	
@@ -336,11 +368,68 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 				panel.getFieldPanel().paintOffline();
 				
 				updateRobotsPanel();
-				panel.getRobotsPanel().repaint();
 			} catch (Throwable e)
 			{
 				log.error("Exception in visualizer updater", e);
 			}
+		}
+		
+		
+		private void updateCamFrameShapes()
+		{
+			List<IDrawableShape> shapes = new ArrayList<>();
+			List<ExtendedCamDetectionFrame> mergedFrames = new ArrayList<>(camFrames.values());
+			mergedFrames.sort((a, b) -> Long.compare(b.getBall().gettCapture(), a.getBall().gettCapture()));
+			for (ExtendedCamDetectionFrame mergedCamFrame : mergedFrames)
+			{
+				assert mergedCamFrame != null;
+				for (CamRobot bot : mergedCamFrame.getRobotsBlue())
+				{
+					DrawableBotShape botShape = new DrawableBotShape(bot.getPos(), bot.getOrientation(),
+							Geometry.getBotRadius(), 75);
+					botShape.setFill(false);
+					botShape.setColor(Color.BLUE);
+					botShape.setFontColor(Color.white);
+					botShape.setId(String.valueOf(bot.getRobotID()));
+					shapes.add(botShape);
+				}
+				
+				for (CamRobot bot : mergedCamFrame.getRobotsYellow())
+				{
+					DrawableBotShape botShape = new DrawableBotShape(bot.getPos(), bot.getOrientation(),
+							Geometry.getBotRadius(), 75);
+					botShape.setFill(false);
+					botShape.setColor(Color.YELLOW);
+					botShape.setId(String.valueOf(bot.getRobotID()));
+					shapes.add(botShape);
+				}
+				
+				Color ballsColor = new Color(50, 100, 20);
+				for (CamBall ball : mergedCamFrame.getBalls())
+				{
+					DrawableCircle ballCircle = new DrawableCircle(ball.getPos().getXYVector(), Geometry
+							.getBallRadius(), ballsColor);
+					ballCircle.setFill(true);
+					shapes.add(ballCircle);
+				}
+			}
+			
+			if (!mergedFrames.isEmpty())
+			{
+				Color ballColor = new Color(50, 100, 200);
+				double age = (mergedFrames.get(0).gettCapture() - mergedFrames.get(0).getBall().gettCapture()) / 1e9;
+				double size = ((Geometry.getBallRadius() - 5) * (1 - Math.min(1, Math.max(0, age / 0.2)))) + 5;
+				DrawableCircle ballCircle = new DrawableCircle(mergedFrames.get(0).getBall().getPos().getXYVector(),
+						size, ballColor);
+				ballCircle.setFill(true);
+				shapes.add(ballCircle);
+			}
+			
+			
+			ShapeMap shapeMap = new ShapeMap();
+			IShapeLayer visionLayer = new VisionLayer();
+			shapeMap.get(visionLayer).addAll(shapes);
+			panel.getFieldPanel().setShapeMap(EShapeLayerSource.CAM, shapeMap, false);
 		}
 	}
 	
@@ -381,63 +470,6 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 	}
 	
 	
-	private void updateCamFrameShapes()
-	{
-		List<IDrawableShape> shapes = new ArrayList<>();
-		List<ExtendedCamDetectionFrame> mergedFrames = new ArrayList<>(camFrames.values());
-		mergedFrames.sort((a, b) -> Long.compare(b.getBall().gettCapture(), a.getBall().gettCapture()));
-		for (ExtendedCamDetectionFrame mergedCamFrame : mergedFrames)
-		{
-			assert mergedCamFrame != null;
-			for (CamRobot bot : mergedCamFrame.getRobotsBlue())
-			{
-				DrawableBotShape botShape = new DrawableBotShape(bot.getPos(), bot.getOrientation(),
-						Geometry.getBotRadius(), Geometry.getCenter2DribblerDistDefault());
-				botShape.setFill(false);
-				botShape.setColor(Color.BLUE);
-				botShape.setId(String.valueOf(bot.getRobotID()));
-				shapes.add(botShape);
-			}
-			
-			for (CamRobot bot : mergedCamFrame.getRobotsYellow())
-			{
-				DrawableBotShape botShape = new DrawableBotShape(bot.getPos(), bot.getOrientation(),
-						Geometry.getBotRadius(), Geometry.getCenter2DribblerDistDefault());
-				botShape.setFill(false);
-				botShape.setColor(Color.YELLOW);
-				botShape.setId(String.valueOf(bot.getRobotID()));
-				shapes.add(botShape);
-			}
-			
-			Color ballsColor = new Color(50, 100, 20);
-			for (CamBall ball : mergedCamFrame.getBalls())
-			{
-				DrawableCircle ballCircle = new DrawableCircle(ball.getPos().getXYVector(), Geometry
-						.getBallRadius(), ballsColor);
-				ballCircle.setFill(true);
-				shapes.add(ballCircle);
-			}
-		}
-		
-		if (!mergedFrames.isEmpty())
-		{
-			Color ballColor = new Color(50, 100, 200);
-			double age = (mergedFrames.get(0).gettCapture() - mergedFrames.get(0).getBall().gettCapture()) / 1e9;
-			double size = ((Geometry.getBallRadius() - 5) * (1 - Math.min(1, Math.max(0, age / 0.2)))) + 5;
-			DrawableCircle ballCircle = new DrawableCircle(mergedFrames.get(0).getBall().getPos().getXYVector(),
-					size, ballColor);
-			ballCircle.setFill(true);
-			shapes.add(ballCircle);
-		}
-		
-		
-		ShapeMap shapeMap = new ShapeMap();
-		IShapeLayer visionLayer = new VisionLayer();
-		shapeMap.get(visionLayer).addAll(shapes);
-		panel.getFieldPanel().setShapeMap(EShapeLayerSource.CAM, shapeMap, false);
-	}
-	
-	
 	protected void updateRobotsPanel()
 	{
 		WorldFrameWrapper lastFrame = lastWorldFrameWrapper;
@@ -449,6 +481,16 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 				BotStatus status = panel.getRobotsPanel().getBotStatus(tBot.getBotId());
 				status.setVisible(tBot.isVisible());
 			}
+			Map<BotID, BotStatus> botStati = panel.getRobotsPanel().getBotStati();
+			// set all bots invisible that are not tracked any longer
+			for (Map.Entry<BotID, BotStatus> status : botStati.entrySet())
+			{
+				if (!tBotsMap.containsKey(status.getKey()))
+				{
+					status.getValue().setVisible(false);
+				}
+			}
+			panel.getRobotsPanel().updateBotStati();
 		}
 	}
 	
@@ -488,7 +530,7 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 		@Override
 		public String getCategory()
 		{
-			return "VISION";
+			return "Field";
 		}
 		
 		
@@ -516,15 +558,7 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 		@Override
 		public boolean equals(final Object obj)
 		{
-			if (obj == null)
-			{
-				return false;
-			}
-			if (obj.getClass().equals(obj.getClass()))
-			{
-				return ((VisionLayer) obj).getId().equals(getId());
-			}
-			return false;
+			return (obj != null) && obj.getClass().equals(this.getClass()) && ((VisionLayer) obj).getId().equals(getId());
 		}
 	}
 	

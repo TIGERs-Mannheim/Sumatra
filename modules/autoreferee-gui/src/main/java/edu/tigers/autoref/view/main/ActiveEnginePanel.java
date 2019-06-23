@@ -1,28 +1,20 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Mar 9, 2016
- * Author(s): Lukas Magel
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.view.main;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JLabel;
+import javax.swing.*;
 
-import net.miginfocom.swing.MigLayout;
-import edu.tigers.autoref.view.main.ActiveEnginePanel.IActiveEnginePanelObserver;
+import edu.tigers.autoref.view.main.IActiveEnginePanel.IActiveEnginePanelObserver;
 import edu.tigers.autoreferee.engine.FollowUpAction;
 import edu.tigers.sumatra.components.BasePanel;
-import edu.tigers.sumatra.math.IVector2;
+import net.miginfocom.swing.MigLayout;
 
 
 /**
  * @author Lukas Magel
  */
-public class ActiveEnginePanel extends BasePanel<IActiveEnginePanelObserver>
+public class ActiveEnginePanel extends BasePanel<IActiveEnginePanelObserver> implements IActiveEnginePanel
 {
 	/**  */
 	private static final long	serialVersionUID	= -8855537755362886421L;
@@ -33,26 +25,9 @@ public class ActiveEnginePanel extends BasePanel<IActiveEnginePanelObserver>
 	private JButton				proceedButton;
 	private JButton				resetButton;
 	
-	/**
-	 * @author Lukas Magel
-	 */
-	public interface IActiveEnginePanelObserver
-	{
-		/**
-		 * 
-		 */
-		public void onResetButtonPressed();
-		
-		
-		/**
-		 * 
-		 */
-		public void onProceedButtonPressed();
-	}
-	
 	
 	/**
-	 * 
+	 * Create new instance
 	 */
 	public ActiveEnginePanel()
 	{
@@ -64,10 +39,10 @@ public class ActiveEnginePanel extends BasePanel<IActiveEnginePanelObserver>
 		positionLabel = new JLabel("");
 		
 		proceedButton = new JButton("Proceed");
-		proceedButton.addActionListener(e -> informObserver(obs -> obs.onProceedButtonPressed()));
+		proceedButton.addActionListener(e -> informObserver(IActiveEnginePanelObserver::onProceedButtonPressed));
 		
 		resetButton = new JButton("Reset");
-		resetButton.addActionListener(e -> informObserver(obs -> obs.onResetButtonPressed()));
+		resetButton.addActionListener(e -> informObserver(IActiveEnginePanelObserver::onResetButtonPressed));
 		
 		add(followUpLabel, "span, wrap");
 		add(teamInFavorLabel, "span, wrap");
@@ -77,9 +52,7 @@ public class ActiveEnginePanel extends BasePanel<IActiveEnginePanelObserver>
 	}
 	
 	
-	/**
-	 * @param action
-	 */
+	@Override
 	public void setNextAction(final FollowUpAction action)
 	{
 		String actionStr = "";
@@ -89,11 +62,7 @@ public class ActiveEnginePanel extends BasePanel<IActiveEnginePanelObserver>
 		{
 			actionStr = action.getActionType().toString();
 			teamStr = action.getTeamInFavor().toString();
-			if (action.getNewBallPosition().isPresent())
-			{
-				IVector2 pos = action.getNewBallPosition().get();
-				posStr = String.format("%.3f | %.3f", pos.x(), pos.y());
-			}
+			posStr = action.getNewBallPosition().map(pos -> String.format("%.3f | %.3f", pos.x(), pos.y())).orElse("");
 		}
 		
 		followUpLabel.setText("Next action: " + actionStr);
@@ -102,9 +71,7 @@ public class ActiveEnginePanel extends BasePanel<IActiveEnginePanelObserver>
 	}
 	
 	
-	/**
-	 * @param enabled
-	 */
+	@Override
 	public void setProceedButtonEnabled(final boolean enabled)
 	{
 		proceedButton.setEnabled(enabled);
@@ -114,7 +81,7 @@ public class ActiveEnginePanel extends BasePanel<IActiveEnginePanelObserver>
 	@Override
 	public void setPanelEnabled(final boolean enabled)
 	{
-		if (enabled == false)
+		if (!enabled)
 		{
 			setNextAction(null);
 		}

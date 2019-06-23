@@ -8,7 +8,7 @@
  */
 package edu.tigers.autoreferee;
 
-import edu.tigers.autoreferee.AutoRefModule.AutoRefState;
+import edu.tigers.autoreferee.module.AutoRefState;
 
 
 /**

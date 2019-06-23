@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edu.tigers.sumatra.cam.CamObjectFilter base="edu.tigers.sumatra.cam.CamObjectFilter">
+    <excludedCameras>1;3</excludedCameras>
+    <exclusionRectP1>0.0;0.0</exclusionRectP1>
+    <exclusionRectP2>0.0;0.0</exclusionRectP2>
+    <filterEnabled>false</filterEnabled>
+</edu.tigers.sumatra.cam.CamObjectFilter>

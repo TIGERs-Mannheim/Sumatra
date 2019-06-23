@@ -1,19 +1,13 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 08.09.2010
- * Author(s): Oliver Steinbrecher <OST1988@aol.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.aicenter;
 
 import java.awt.Component;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.Map;
+import java.util.Optional;
 
-import javax.swing.JCheckBox;
 import javax.swing.SwingUtilities;
 
 import org.apache.log4j.Logger;
@@ -22,26 +16,23 @@ import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.ai.AAgent;
 import edu.tigers.sumatra.ai.Agent;
+import edu.tigers.sumatra.ai.Ai;
 import edu.tigers.sumatra.ai.IAIObserver;
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
-import edu.tigers.sumatra.ai.athena.IAIModeChanged;
 import edu.tigers.sumatra.ai.data.EAIControlState;
 import edu.tigers.sumatra.ai.data.frames.AIInfoFrame;
 import edu.tigers.sumatra.ai.data.frames.VisualizationFrame;
 import edu.tigers.sumatra.ai.lachesis.RoleFinderInfo;
 import edu.tigers.sumatra.ai.metis.ECalculator;
-import edu.tigers.sumatra.ai.metis.support.RedirectPosGPUCalc.EScoringTypes;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.aicenter.view.AICenterPanel;
 import edu.tigers.sumatra.aicenter.view.IAthenaControlPanelObserver;
 import edu.tigers.sumatra.aicenter.view.ICalculatorObserver;
-import edu.tigers.sumatra.aicenter.view.PlayControlPanel;
 import edu.tigers.sumatra.aicenter.view.RoleControlPanel;
-import edu.tigers.sumatra.aicenter.view.SupporterGridPanel.ISupporterGridPanelObserver;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.lookandfeel.ILookAndFeelStateObserver;
 import edu.tigers.sumatra.lookandfeel.LookAndFeelStateAdapter;
 import edu.tigers.sumatra.model.SumatraModel;
@@ -55,75 +46,46 @@ import edu.tigers.sumatra.views.ISumatraView;
  * 
  * @author Oliver Steinbrecher <OST1988@aol.com>, Gero
  */
-public class AICenterPresenter extends ASumatraViewPresenter implements IAIModeChanged, ILookAndFeelStateObserver,
-		IVisualizationFrameObserver, IAIObserver
+public class AICenterPresenter extends ASumatraViewPresenter implements ILookAndFeelStateObserver
 {
+	private static final Logger log = Logger.getLogger(AICenterPresenter.class.getName());
 	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	// Logger
-	private static final Logger	log				= Logger.getLogger(AICenterPresenter.class.getName());
-	
-	// Modules
-	private Agent						aiAgent			= null;
-	
-	private AICenterPanel			aiCenterPanel	= null;
-	
-	private final ETeamColor		team;
+	private Agent agent;
+	private AICenterPanel aiCenterPanel = null;
+	private final AiObserver aiObserver = new AiObserver();
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
-	 * @param team
+	 * New instance
 	 */
-	public AICenterPresenter(final ETeamColor team)
+	public AICenterPresenter()
 	{
-		this.team = team;
 		aiCenterPanel = new AICenterPanel();
-		GuiFeedbackObserver guiFeedbackObserver = new GuiFeedbackObserver();
-		aiCenterPanel.getModulesPanel().getRolePanel().addObserver(guiFeedbackObserver);
-		aiCenterPanel.getModulesPanel().getPlayPanel().addObserver(guiFeedbackObserver);
-		aiCenterPanel.getModulesPanel().addObserver(guiFeedbackObserver);
-		aiCenterPanel.getModulesPanel().getAthenaPanel().addObserver(guiFeedbackObserver);
-		aiCenterPanel.getModulesPanel().getSupporterGridPanel().addObserver(guiFeedbackObserver);
 		
-		aiCenterPanel.getChkAiActive().addActionListener(new ActionListener()
+		
+		for (EAiTeam team : EAiTeam.values())
 		{
-			@Override
-			public void actionPerformed(final ActionEvent e)
-			{
-				JCheckBox chkBox = (JCheckBox) e.getSource();
-				
-				if (aiAgent == null)
-				{
-					chkBox.setSelected(false);
-					return;
-				}
-				aiAgent.setActive(chkBox.isSelected());
-				if (chkBox.isSelected())
-				{
-					aiCenterPanel.getModulesPanel().onStart();
-				} else
-				{
-					aiCenterPanel.getModulesPanel().onStop();
-				}
-			}
-		});
-		
-		aiCenterPanel.getModulesPanel().getMetisCalculatorsPanel().addObserver(guiFeedbackObserver);
+			GuiFeedbackObserver guiFeedbackObserver = new GuiFeedbackObserver(team);
+			
+			aiCenterPanel.getRolePanelForAi(team).addObserver(guiFeedbackObserver);
+			aiCenterPanel.addObserverForAi(guiFeedbackObserver, team);
+			aiCenterPanel.getAthenaPanelForAi(team).addObserver(guiFeedbackObserver);
+			aiCenterPanel.getMetisCalculatorsPanelForAi(team).addObserver(guiFeedbackObserver);
+		}
 		
 		LookAndFeelStateAdapter.getInstance().addObserver(this);
 		
-		aiCenterPanel.clearView();
+		setActive(false);
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
+	/**
+	 * @param active
+	 */
+	public void setActive(boolean active)
+	{
+		aiCenterPanel.setActive(active);
+	}
 	
 	
 	@Override
@@ -132,169 +94,78 @@ public class AICenterPresenter extends ASumatraViewPresenter implements IAIModeC
 		switch (state)
 		{
 			case ACTIVE:
-			{
-				try
-				{
-					Agent agentYellow = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_YELLOW);
-					agentYellow.addVisObserver(this);
-					agentYellow.addObserver(this);
-					Agent agentBlue = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_BLUE);
-					agentBlue.addVisObserver(this);
-					agentBlue.addObserver(this);
-				} catch (ModuleNotFoundException err)
-				{
-					log.error("Could not get agent module");
-				}
-				
-				try
-				{
-					switch (team)
-					{
-						case BLUE:
-							aiAgent = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_BLUE);
-							break;
-						case YELLOW:
-							aiAgent = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_YELLOW);
-							break;
-						default:
-							throw new IllegalStateException();
-							
-					}
-					
-					aiAgent.getAthena().addObserver(this);
-					
-					aiCenterPanel.getChkAiActive().setSelected(aiAgent.isActive());
-					if (aiAgent.isActive())
-					{
-						aiCenterPanel.getModulesPanel().onStart();
-					}
-					aiCenterPanel.getModulesPanel().getMetisCalculatorsPanel().setActive(true);
-					
-				} catch (final ModuleNotFoundException err)
-				{
-					log.fatal("AI Module not found");
-				}
-				
-				aiCenterPanel.getModulesPanel().onStart();
-				onAiModeChanged(EAIControlState.MATCH_MODE);
-				
+				start();
 				break;
-			}
-			
 			case RESOLVED:
-			{
-				try
-				{
-					Agent agentYellow = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_YELLOW);
-					agentYellow.removeVisObserver(this);
-					agentYellow.removeObserver(this);
-					Agent agentBlue = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_BLUE);
-					agentBlue.removeVisObserver(this);
-					agentBlue.removeObserver(this);
-				} catch (ModuleNotFoundException err)
-				{
-					log.error("Could not get agent module");
-				}
-				
-				aiAgent = null;
-				aiCenterPanel.getModulesPanel().getMetisCalculatorsPanel().setActive(false);
-				aiCenterPanel.getModulesPanel().onStop();
-				aiCenterPanel.clearView();
+				stop();
 				break;
-			}
 			case NOT_LOADED:
 			default:
 				break;
 		}
+	}
+	
+	
+	private void stop()
+	{
+		try
+		{
+			agent = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
+			agent.removeVisObserver(aiObserver);
+			agent.removeObserver(aiObserver);
+		} catch (ModuleNotFoundException err)
+		{
+			log.error("Could not get agent module", err);
+		}
 		
+		for (EAiTeam team : EAiTeam.values())
+		{
+			aiCenterPanel.getMetisCalculatorsPanelForAi(team).setActive(false);
+		}
+		
+		aiCenterPanel.setActive(false);
+	}
+	
+	
+	private void start()
+	{
+		try
+		{
+			agent = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
+			agent.addVisObserver(aiObserver);
+			agent.addObserver(aiObserver);
+		} catch (ModuleNotFoundException err)
+		{
+			log.error("Could not get agent module", err);
+		}
+		
+		for (EAiTeam team : EAiTeam.values())
+		{
+			aiCenterPanel.getMetisCalculatorsPanelForAi(team).setActive(true);
+			updateAiControlStateForTeam(team);
+		}
+		
+		aiCenterPanel.setActive(true);
+	}
+	
+	
+	private void updateAiControlStateForTeam(EAiTeam team)
+	{
+		Optional<Ai> ai = agent.getAi(team);
+		if (ai.isPresent())
+		{
+			aiCenterPanel.setAiControlStateForAi(ai.get().getAthena().getControlState(), team);
+		} else
+		{
+			aiCenterPanel.setAiControlStateForAi(EAIControlState.OFF, team);
+		}
 	}
 	
 	
 	@Override
 	public void onLookAndFeelChanged()
 	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				SwingUtilities.updateComponentTreeUI(aiCenterPanel);
-			}
-		});
-	}
-	
-	
-	@Override
-	public void onNewVisualizationFrame(final VisualizationFrame frame)
-	{
-		if (team == frame.getTeamColor())
-		{
-			aiCenterPanel.getModulesPanel().getAthenaPanel().onNewVisualizationFrame(frame);
-		}
-	}
-	
-	
-	@Override
-	public void onNewAIInfoFrame(final AIInfoFrame lastFrame)
-	{
-		if (lastFrame.getTeamColor() != team)
-		{
-			return;
-		}
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				// Update PlayPanel and bot:play
-				final PlayControlPanel playPanel = aiCenterPanel.getModulesPanel().getPlayPanel();
-				final RoleControlPanel rolePanel = aiCenterPanel.getModulesPanel().getRolePanel();
-				
-				playPanel.setBotsWithoutRole(calcFreeBots(lastFrame));
-				
-				playPanel.setActivePlays(lastFrame.getPlayStrategy().getActivePlays());
-				for (APlay play : lastFrame.getPlayStrategy().getActivePlays())
-				{
-					if (play.getType() == EPlay.GUI_TEST)
-					{
-						rolePanel.setActiveRoles(play.getRoles());
-						break;
-					}
-				}
-				
-				aiCenterPanel.getModulesPanel().getAthenaPanel().onNewAIInfoFrame(lastFrame);
-				aiCenterPanel.getModulesPanel().getMetisCalculatorsPanel().onNewAIInfoFrame(lastFrame);
-			}
-		});
-	}
-	
-	
-	private int calcFreeBots(final AIInfoFrame aiFrame)
-	{
-		int counter = aiFrame.getWorldFrame().getTigerBotsAvailable().size();
-		
-		for (final APlay play : aiFrame.getPlayStrategy().getActivePlays())
-		{
-			counter -= play.getRoles().size();
-		}
-		
-		return counter;
-	}
-	
-	
-	@Override
-	public void onAiModeChanged(final EAIControlState mode)
-	{
-		aiCenterPanel.getModulesPanel().onAiModeChanged(mode);
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public ISumatraView getView()
-	{
-		return aiCenterPanel;
+		SwingUtilities.invokeLater(() -> SwingUtilities.updateComponentTreeUI(aiCenterPanel));
 	}
 	
 	
@@ -311,141 +182,153 @@ public class AICenterPresenter extends ASumatraViewPresenter implements IAIModeC
 		return aiCenterPanel;
 	}
 	
-	private class GuiFeedbackObserver implements IAICenterObserver, ICalculatorObserver, IAthenaControlPanelObserver,
-			ISupporterGridPanelObserver
+	private class GuiFeedbackObserver implements IAICenterObserver, ICalculatorObserver, IAthenaControlPanelObserver
 	{
+		private final EAiTeam registeredTeam;
+		
+		
+		GuiFeedbackObserver(EAiTeam team)
+		{
+			registeredTeam = team;
+		}
+		
+		
+		private Optional<Ai> getAI()
+		{
+			if (agent == null)
+			{
+				return Optional.empty();
+			}
+			return agent.getAi(registeredTeam);
+		}
+		
 		
 		@Override
 		public void addPlay(final APlay play)
 		{
-			aiAgent.getAthena().getAthenaAdapter().getAiControl().addPlay(play);
+			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().addPlay(play));
 		}
 		
 		
 		@Override
 		public void removePlay(final APlay play)
 		{
-			aiAgent.getAthena().getAthenaAdapter().getAiControl().removePlay(play);
+			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().removePlay(play));
 		}
 		
 		
 		@Override
 		public void addRoles2Play(final APlay play, final int numRoles)
 		{
-			aiAgent.getAthena().getAthenaAdapter().getAiControl().addRoles2Play(play, numRoles);
+			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().addRoles2Play(play, numRoles));
 		}
 		
 		
 		@Override
 		public void removeRolesFromPlay(final APlay play, final int numRoles)
 		{
-			aiAgent.getAthena().getAthenaAdapter().getAiControl().removeRolesFromPlay(play, numRoles);
+			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().removeRolesFromPlay(play, numRoles));
 		}
 		
 		
 		@Override
 		public void addRole(final ARole role, final BotID botId)
 		{
-			aiAgent.getAthena().getAthenaAdapter().getAiControl().addRole(role, botId);
+			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().addRole(role, botId));
 		}
 		
 		
 		@Override
 		public void removeRole(final ARole role)
 		{
-			aiAgent.getAthena().getAthenaAdapter().getAiControl().removeRole(role);
+			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().removeRole(role));
 		}
 		
 		
 		@Override
 		public void onAiModeChanged(final EAIControlState mode)
 		{
-			aiAgent.getAthena().changeMode(mode);
+			if (agent != null)
+			{
+				agent.changeMode(registeredTeam, mode);
+			}
+			
+			updateAiControlStateForTeam(registeredTeam);
 		}
 		
 		
 		@Override
 		public void onNewRoleFinderInfos(final Map<EPlay, RoleFinderInfo> infos)
 		{
-			aiAgent.getAthena().getAthenaAdapter().getAiControl().getRoleFinderInfos().clear();
-			aiAgent.getAthena().getAthenaAdapter().getAiControl().getRoleFinderInfos().putAll(infos);
+			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().getRoleFinderInfos().clear());
+			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().getRoleFinderInfos().putAll(infos));
 		}
 		
 		
 		@Override
-		public void onNewRoleFinderOverrides(final Map<EPlay, Boolean> overrides)
+		public void onNewRoleFinderUseAiFlags(final Map<EPlay, Boolean> overrides)
 		{
-			aiAgent.getAthena().getAthenaAdapter().getAiControl().getRoleFinderOverrides().clear();
-			aiAgent.getAthena().getAthenaAdapter().getAiControl().getRoleFinderOverrides().putAll(overrides);
+			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().getRoleFinderUseAiFlags().clear());
+			getAI().ifPresent(
+					ai -> ai.getAthena().getAthenaAdapter().getAiControl().getRoleFinderUseAiFlags().putAll(overrides));
 		}
 		
 		
 		@Override
 		public void onCalculatorStateChanged(final ECalculator eCalc, final boolean active)
 		{
-			if (aiAgent != null)
-			{
-				aiAgent.getMetis().setCalculatorActive(eCalc, active);
-			}
+			getAI().ifPresent(ai -> ai.getMetis().setCalculatorActive(eCalc, active));
+		}
+	}
+	
+	
+	/**
+	 * Update with latest frame
+	 * 
+	 * @param frame
+	 */
+	public void update(VisualizationFrame frame)
+	{
+		aiCenterPanel.getAthenaPanelForAi(frame.getAiTeam()).updateVisualizationFrame(frame);
+	}
+	
+	private class AiObserver implements IVisualizationFrameObserver, IAIObserver
+	{
+		@Override
+		public void onNewVisualizationFrame(final VisualizationFrame frame)
+		{
+			update(frame);
 		}
 		
 		
 		@Override
-		public void onWeightChanged(final EScoringTypes type, final double value)
+		public void onNewAIInfoFrame(final AIInfoFrame lastFrame)
 		{
-			if (aiAgent == null)
-			{
-				return;
-			}
-			// RedirectPosGPUCalc calc = (RedirectPosGPUCalc)
-			// aiAgent.getMetis().getCalculator(ECalculator.REDIRECT_POS_GPU);
-			// calc.updateWeight(type, value);
-			// for (Map.Entry<EScoringTypes, Double> entry : calc.getWeights().entrySet())
-			// {
-			// aiCenterPanel.getModulesPanel().getSupporterGridPanel().setWeighting(entry.getKey(), entry.getValue());
-			// }
+			SwingUtilities.invokeLater(() -> updatePanels(lastFrame));
 		}
 		
 		
 		@Override
-		public void onQueryWeights()
+		public void onAiModeChanged(final EAiTeam aiTeam, final EAIControlState mode)
 		{
-			if (aiAgent == null)
-			{
-				return;
-			}
-			// RedirectPosGPUCalc calc = (RedirectPosGPUCalc)
-			// aiAgent.getMetis().getCalculator(ECalculator.REDIRECT_POS_GPU);
-			// for (Map.Entry<EScoringTypes, Double> entry : calc.getWeights().entrySet())
-			// {
-			// aiCenterPanel.getModulesPanel().getSupporterGridPanel().setWeighting(entry.getKey(), entry.getValue());
-			// }
+			aiCenterPanel.setAiControlStateForAi(mode, aiTeam);
 		}
 		
 		
-		@Override
-		public void onSaveWeights(final String name)
+		private void updatePanels(final AIInfoFrame lastFrame)
 		{
-			if (aiAgent == null)
+			final RoleControlPanel rolePanel = aiCenterPanel.getRolePanelForAi(lastFrame.getAiTeam());
+			
+			for (APlay play : lastFrame.getPlayStrategy().getActivePlays())
 			{
-				return;
+				if (play.getType() == EPlay.GUI_TEST)
+				{
+					rolePanel.setActiveRoles(play.getRoles());
+					break;
+				}
 			}
-			// RedirectPosGPUCalc calc = (RedirectPosGPUCalc)
-			// aiAgent.getMetis().getCalculator(ECalculator.REDIRECT_POS_GPU);
-			// calc.saveWeights(name);
-		}
-		
-		
-		@Override
-		public void onLoadWeights(final String name)
-		{
-			if (aiAgent == null)
-			{
-				return;
-			}
-			// RedirectPosGPUCalc calc = (RedirectPosGPUCalc)
-			// aiAgent.getMetis().getCalculator(ECalculator.REDIRECT_POS_GPU);
-			// calc.loadWeights(name);
+			
+			aiCenterPanel.getMetisCalculatorsPanelForAi(lastFrame.getAiTeam()).updateAIInfoFrame(lastFrame);
 		}
 	}
 }

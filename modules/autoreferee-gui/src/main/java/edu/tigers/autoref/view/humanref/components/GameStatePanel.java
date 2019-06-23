@@ -20,8 +20,8 @@ import javax.swing.JPanel;
 import javax.swing.border.Border;
 
 import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.util.RoundedCornerBorder;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
 
 
 /**
@@ -72,11 +72,11 @@ public class GameStatePanel extends JPanel
 	/**
 	 * @param state
 	 */
-	public void setState(final EGameStateNeutral state)
+	public void setState(final GameState state)
 	{
 		stateLabel.setText(getStateText(state));
 		
-		ETeamColor stateTeam = state.getTeamColor();
+		ETeamColor stateTeam = state.getForTeam();
 		if (stateTeam.isNonNeutral())
 		{
 			showTeamLabel(stateTeam);
@@ -100,46 +100,36 @@ public class GameStatePanel extends JPanel
 	}
 	
 	
-	private String getStateText(final EGameStateNeutral state)
+	private String getStateText(final GameState state)
 	{
-		switch (state)
+		switch (state.getState())
 		{
-			case BALL_PLACEMENT_BLUE:
-			case BALL_PLACEMENT_YELLOW:
+			case BALL_PLACEMENT:
 				return "Ball Placement by ";
 			case BREAK:
 				return "Break";
-			case DIRECT_KICK_BLUE:
-			case DIRECT_KICK_YELLOW:
+			case DIRECT_FREE:
 				return "Direct Kick for ";
-			case HALTED:
+			case HALT:
 				return "Game halted";
-			case INDIRECT_KICK_BLUE:
-			case INDIRECT_KICK_YELLOW:
+			case INDIRECT_FREE:
 				return "Indirect Kick for ";
-			case PREPARE_KICKOFF_BLUE:
-			case PREPARE_KICKOFF_YELLOW:
+			case PREPARE_KICKOFF:
 				return "Prep. Kickoff for ";
-			case KICKOFF_BLUE:
-			case KICKOFF_YELLOW:
+			case KICKOFF:
 				return "Kickoff for ";
-			case PENALTY_BLUE:
-			case PENALTY_YELLOW:
+			case PENALTY:
 				return "Penalty Kick for ";
 			case POST_GAME:
 				return "Game over";
-			case PREPARE_PENALTY_BLUE:
-			case PREPARE_PENALTY_YELLOW:
+			case PREPARE_PENALTY:
 				return "Prep. Penalty Kick ";
 			case RUNNING:
 				return "Game running";
-			case STOPPED:
+			case STOP:
 				return "Game stopped";
-			case TIMEOUT_BLUE:
-			case TIMEOUT_YELLOW:
+			case TIMEOUT:
 				return "Timeout for ";
-			case UNKNOWN:
-				return "Game state undetermined";
 			default:
 				return state.toString();
 		}
@@ -148,7 +138,7 @@ public class GameStatePanel extends JPanel
 	private static class InvisibleBorder implements Border
 	{
 		
-		private final Border	delegate;
+		private final Border delegate;
 		
 		
 		public InvisibleBorder(final Border delegate)

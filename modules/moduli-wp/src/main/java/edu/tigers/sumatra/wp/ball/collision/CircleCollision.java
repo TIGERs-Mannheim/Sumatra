@@ -1,22 +1,18 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 5, 2016
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.wp.ball.collision;
 
 import java.util.List;
 import java.util.Optional;
 
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.ILine;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.IVector3;
-import edu.tigers.sumatra.math.Line;
-import edu.tigers.sumatra.shapes.circle.ICircle;
+import edu.tigers.sumatra.math.circle.ICircle;
+import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.Vector2;
 
 
 /**
@@ -25,14 +21,14 @@ import edu.tigers.sumatra.shapes.circle.ICircle;
 public class CircleCollision implements ICollisionObject
 {
 	private final ICircle	circle;
-	private final IVector2	vel;
+	private final IVector3	vel;
 	
 	
 	/**
 	 * @param circle
 	 * @param vel
 	 */
-	public CircleCollision(final ICircle circle, final IVector2 vel)
+	CircleCollision(final ICircle circle, final IVector3 vel)
 	{
 		this.circle = circle;
 		this.vel = vel;
@@ -40,7 +36,7 @@ public class CircleCollision implements ICollisionObject
 	
 	
 	@Override
-	public IVector2 getVel()
+	public IVector3 getVel()
 	{
 		return vel;
 	}
@@ -49,44 +45,41 @@ public class CircleCollision implements ICollisionObject
 	@Override
 	public Optional<ICollision> getCollision(final IVector3 prePos, final IVector3 postPos)
 	{
-		if (!circle.isPointInShape(prePos.getXYVector(), -1) && !circle.isPointInShape(postPos.getXYVector(), -1))
+		ILine stateLine = Line.fromPoints(prePos.getXYVector(), postPos.getXYVector());
+		List<IVector2> points = circle.lineSegmentIntersections(stateLine);
+		if (!points.isEmpty())
 		{
-			return Optional.empty();
+			IVector2 collisionPoint = stateLine.supportVector().nearestTo(points);
+			IVector2 normal = getNormal(collisionPoint);
+			Collision collision = new Collision(collisionPoint, normal, this);
+			return Optional.of(collision);
 		}
-		
-		ILine stateLine = Line.newLine(prePos.getXYVector(), postPos.getXYVector());
-		
-		IVector2 collisionPoint;
-		if (stateLine.directionVector().isZeroVector() && circle.isPointInShape(prePos.getXYVector()))
+		return Optional.empty();
+	}
+	
+	
+	@Override
+	public Optional<ICollision> getInsideCollision(final IVector3 pos)
+	{
+		if (circle.isPointInShape(pos.getXYVector()))
 		{
-			// pre and post pos are identical, but inside circle.
-			collisionPoint = circle.nearestPointOutside(prePos.getXYVector());
-		} else
-		{
-			List<IVector2> intersections = circle.lineIntersections(stateLine);
-			if (intersections.isEmpty())
-			{
-				return Optional.empty();
-			} else if (intersections.size() == 1)
-			{
-				collisionPoint = intersections.get(0);
-			} else
-			{
-				double dist1 = GeoMath.distancePP(stateLine.supportVector(), intersections.get(0));
-				double dist2 = GeoMath.distancePP(stateLine.supportVector(), intersections.get(1));
-				if (dist1 < dist2)
-				{
-					collisionPoint = intersections.get(0);
-				} else
-				{
-					collisionPoint = intersections.get(1);
-				}
-			}
+			IVector2 nearestOutside = circle.nearestPointOutside(pos.getXYVector());
+			IVector2 normal = getNormal(nearestOutside);
+			Collision collision = new Collision(nearestOutside, normal, this);
+			return Optional.of(collision);
 		}
-		
-		IVector2 normal = collisionPoint.subtractNew(circle.center());
-		Collision collision = new Collision(collisionPoint, normal, getVel());
-		return Optional.of(collision);
+		return Optional.empty();
+	}
+	
+	
+	private IVector2 getNormal(IVector2 point)
+	{
+		IVector2 normal = point.subtractNew(circle.center());
+		if (normal.isZeroVector())
+		{
+			normal = Vector2.fromX(1);
+		}
+		return normal;
 	}
 	
 	

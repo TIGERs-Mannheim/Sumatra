@@ -26,6 +26,7 @@ import net.miginfocom.swing.MigLayout;
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
+@SuppressWarnings("squid:S1192")
 public class BcBotPingPanel extends JPanel
 {
 	/**  */
@@ -39,11 +40,11 @@ public class BcBotPingPanel extends JPanel
 	private final JTextField							pingPayload			= new JTextField("0");
 	private final JButton								startStopPing		= new JButton("Start");
 	
-	private final List<IBcBotPingPanelObserver>	observers			= new CopyOnWriteArrayList<IBcBotPingPanelObserver>();
+	private final List<IBcBotPingPanelObserver>	observers			= new CopyOnWriteArrayList<>();
 	
 	
 	/**
-	 * 
+	 * Constructor.
 	 */
 	public BcBotPingPanel()
 	{
@@ -97,29 +98,12 @@ public class BcBotPingPanel extends JPanel
 	}
 	
 	
-	private void notifyStartPing(final int numPings, final int payloadSize)
-	{
-		for (IBcBotPingPanelObserver observer : observers)
-		{
-			observer.onStartPing(numPings, payloadSize);
-		}
-	}
-	
-	
-	private void notifyStopPing()
-	{
-		for (IBcBotPingPanelObserver observer : observers)
-		{
-			observer.onStopPing();
-		}
-	}
-	
 	private class StartStopPing implements ActionListener
 	{
 		@Override
 		public void actionPerformed(final ActionEvent arg0)
 		{
-			if (startStopPing.getText().equals("Start"))
+			if ("Start".equals(startStopPing.getText()))
 			{
 				int num = 0;
 				int payload = 0;
@@ -143,10 +127,29 @@ public class BcBotPingPanel extends JPanel
 				startStopPing.setText("Start");
 			}
 		}
+		
+		
+		private void notifyStartPing(final int numPings, final int payloadSize)
+		{
+			for (IBcBotPingPanelObserver observer : observers)
+			{
+				observer.onStartPing(numPings, payloadSize);
+			}
+		}
+		
+		
+		private void notifyStopPing()
+		{
+			for (IBcBotPingPanelObserver observer : observers)
+			{
+				observer.onStopPing();
+			}
+		}
 	}
 	
 	
 	/**
+	 * Observer interface.
 	 */
 	public static interface IBcBotPingPanelObserver
 	{
@@ -158,6 +161,7 @@ public class BcBotPingPanel extends JPanel
 		
 		
 		/**
+		 * stop ping.
 		 */
 		void onStopPing();
 	}

@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Mar 26, 2013
- * Author(s): Daniel Andres <andreslopez.daniel@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view.toolbar;
 
@@ -17,13 +12,12 @@ import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JToolBar;
 import javax.swing.SwingUtilities;
-
-import net.miginfocom.swing.MigLayout;
 
 import org.apache.log4j.Logger;
 
@@ -31,6 +25,7 @@ import edu.tigers.sumatra.util.GlobalShortcuts;
 import edu.tigers.sumatra.util.GlobalShortcuts.EShortcut;
 import edu.tigers.sumatra.util.ImageScaler;
 import edu.tigers.sumatra.view.FpsPanel;
+import net.miginfocom.swing.MigLayout;
 
 
 /**
@@ -40,30 +35,27 @@ import edu.tigers.sumatra.view.FpsPanel;
  */
 public class ToolBar
 {
+	private static final Logger log = Logger.getLogger(ToolBar.class.getName());
 	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	private static final Logger				log			= Logger.getLogger(ToolBar.class.getName());
-	
-	private final List<IToolbarObserver>	observers	= new ArrayList<IToolbarObserver>();
+	private final List<IToolbarObserver> observers = new ArrayList<>();
 	
 	// --- toolbar ---
-	private final JToolBar						toolBar;
+	private final JToolBar toolBar;
 	
-	private final JButton						btnStartStop;
-	private final JButton						btnEmergency;
-	private final JButton						btnRecSave;
-	
-	private final FpsPanel						fpsPanel		= new FpsPanel();
-	private final JProgressBar					heapBar		= new JProgressBar();
-	private final JLabel							heapLabel	= new JLabel();
+	private final JButton btnStartStop;
+	private final JButton btnEmergency;
+	private final JButton btnRecSave;
+	private final JButton btnSwitchSides;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
+	private JCheckBox telegramMode = new JCheckBox("Telegram");
+	private final FpsPanel fpsPanel = new FpsPanel();
+	private final JProgressBar heapBar = new JProgressBar();
+	private final JLabel heapLabel = new JLabel();
+	
+	
 	/**
+	 * The toolbar
 	 */
 	public ToolBar()
 	{
@@ -91,6 +83,14 @@ public class ToolBar
 		btnRecSave.setBorder(BorderFactory.createEmptyBorder());
 		btnRecSave.setBackground(new Color(0, 0, 0, 1));
 		
+		btnSwitchSides = new JButton();
+		btnSwitchSides.addActionListener(new SwitchSidesButtonListener());
+		btnSwitchSides.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/switch.png"));
+		btnSwitchSides.setToolTipText("Switch sides");
+		btnSwitchSides.setEnabled(false);
+		btnSwitchSides.setBorder(BorderFactory.createEmptyBorder());
+		btnSwitchSides.setBackground(new Color(0, 0, 0, 1));
+		
 		JPanel heapPanel = new JPanel(new BorderLayout());
 		heapPanel.add(heapLabel, BorderLayout.NORTH);
 		heapPanel.add(heapBar, BorderLayout.SOUTH);
@@ -105,41 +105,36 @@ public class ToolBar
 		JPanel toolBarPanel = new JPanel();
 		toolBarPanel.setLayout(new MigLayout("inset 1"));
 		
+		JPanel matchModePanel = new JPanel(new BorderLayout());
+		telegramMode.addActionListener(new ChangeMatchModeListener());
+		matchModePanel.add(telegramMode);
+		
 		// --- add buttons ---
 		toolBarPanel.add(btnStartStop, "left");
 		toolBarPanel.add(btnEmergency, "left");
 		toolBarPanel.add(btnRecSave, "left");
+		toolBarPanel.add(btnSwitchSides, "left");
 		toolBarPanel.add(fpsPanel, "left");
 		toolBarPanel.add(heapPanel, "left");
+		toolBarPanel.add(matchModePanel, "right");
 		toolBar.add(toolBarPanel);
 		
 		// initialize icons
-		log.trace("Loaded button icon " + EStartStopButtonState.LOADING.name());
-		log.trace("Loaded button icon " + EStartStopButtonState.START.name());
-		log.trace("Loaded button icon " + EStartStopButtonState.STOP.name());
-		
-		GlobalShortcuts.register(EShortcut.EMERGENCY_MODE, new Runnable()
+		for (EStartStopButtonState icon : EStartStopButtonState.values())
 		{
-			@Override
-			public void run()
+			log.trace("Load button icon " + icon.name());
+		}
+		
+		GlobalShortcuts.register(EShortcut.EMERGENCY_MODE, () -> {
+			synchronized (observers)
 			{
-				synchronized (observers)
+				for (final IToolbarObserver o : observers)
 				{
-					for (final IToolbarObserver o : observers)
-					{
-						o.onEmergencyStop();
-					}
+					o.onEmergencyStop();
 				}
 			}
 		});
-		GlobalShortcuts.register(EShortcut.START_STOP, new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				startStopModules();
-			}
-		});
+		GlobalShortcuts.register(EShortcut.START_STOP, this::startStopModules);
 	}
 	
 	
@@ -199,28 +194,34 @@ public class ToolBar
 	 */
 	public void setStartStopButtonState(final boolean enable, final EStartStopButtonState state)
 	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
+		SwingUtilities.invokeLater(() -> {
+			btnStartStop.setEnabled(enable);
+			btnStartStop.setIcon(state.getIcon());
+			switch (state)
 			{
-				btnStartStop.setEnabled(enable);
-				btnStartStop.setIcon(state.getIcon());
-				switch (state)
-				{
-					case LOADING:
-						btnStartStop.setDisabledIcon(state.getIcon());
-						break;
-					case START:
-					case STOP:
-						btnStartStop.setDisabledIcon(null);
-						break;
-					default:
-						break;
-				}
-				toolBar.repaint();
+				case LOADING:
+					btnStartStop.setDisabledIcon(state.getIcon());
+					break;
+				case START:
+				case STOP:
+					btnStartStop.setDisabledIcon(null);
+					break;
+				default:
+					break;
 			}
+			toolBar.repaint();
 		});
+	}
+	
+	
+	/**
+	 * Sets the current telegram mode
+	 * 
+	 * @param enabled
+	 */
+	public void setTelegramStatus(boolean enabled)
+	{
+		telegramMode.setSelected(enabled);
 	}
 	
 	
@@ -229,14 +230,10 @@ public class ToolBar
 	 */
 	public void setActive(final boolean enabled)
 	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				btnEmergency.setEnabled(enabled);
-				btnRecSave.setEnabled(enabled);
-			}
+		SwingUtilities.invokeLater(() -> {
+			btnEmergency.setEnabled(enabled);
+			btnRecSave.setEnabled(enabled);
+			btnSwitchSides.setEnabled(enabled);
 		});
 	}
 	
@@ -302,6 +299,31 @@ public class ToolBar
 			for (IToolbarObserver observer : observers)
 			{
 				observer.onToggleRecord();
+			}
+		}
+	}
+	
+	
+	private class SwitchSidesButtonListener implements ActionListener
+	{
+		@Override
+		public void actionPerformed(final ActionEvent e)
+		{
+			for (IToolbarObserver observer : observers)
+			{
+				observer.onSwitchSides();
+			}
+		}
+	}
+	
+	private class ChangeMatchModeListener implements ActionListener
+	{
+		@Override
+		public void actionPerformed(final ActionEvent actionEvent)
+		{
+			for (IToolbarObserver observer : observers)
+			{
+				observer.onChangeTelegramMode(telegramMode.isSelected());
 			}
 		}
 	}

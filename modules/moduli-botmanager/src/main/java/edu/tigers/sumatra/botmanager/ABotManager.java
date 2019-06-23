@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 08.08.2010
- * Author(s): Gero, AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager;
 
@@ -27,24 +22,27 @@ import edu.tigers.sumatra.ids.BotID;
 public abstract class ABotManager extends AModule
 {
 	/** */
-	public static final String			MODULE_TYPE					= "ABotManager";
+	public static final String						MODULE_TYPE					= "ABotManager";
 	/** */
-	public static final String			MODULE_ID					= "botmanager";
-																				
-																				
+	public static final String						MODULE_ID					= "botmanager";
+	
+	
 	/** */
-	public static final String			KEY_BOTMANAGER_CONFIG	= ABotManager.class.getName()
-																						+ ".botmanagerConfig";
+	public static final String						KEY_BOTMANAGER_CONFIG	= ABotManager.class.getName()
+			+ ".botmanagerConfig";
 	/** */
-	public static final String			BOTMANAGER_CONFIG_PATH	= "./config/botmanager/";
+	public static final String						BOTMANAGER_CONFIG_PATH	= "./config/botmanager/";
 	/**  */
-	public static final String			VALUE_BOTMANAGER_CONFIG	= "botmanager_sumatra.xml";
-																				
-																				
-	private final Map<BotID, ABot>	botTable						= new ConcurrentSkipListMap<BotID, ABot>(
-																						BotID.getComparator());
-																						
-																						
+	public static final String						VALUE_BOTMANAGER_CONFIG	= "botmanager_sumatra.xml";
+	
+	
+	private final Map<BotID, ABot>				botTable						= new ConcurrentSkipListMap<>(
+			BotID.getComparator());
+	
+	
+	private final List<IBotManagerObserver>	observers					= new ArrayList<>();
+	
+	
 	/**
 	 * @param id
 	 */
@@ -55,12 +53,6 @@ public abstract class ABotManager extends AModule
 	 * @param baseStation
 	 */
 	public abstract void addBasestation(IBaseStation baseStation);
-	
-	
-	/**
-	 * @param baseStation
-	 */
-	public abstract void removeBasestation(IBaseStation baseStation);
 	
 	
 	/**
@@ -75,16 +67,14 @@ public abstract class ABotManager extends AModule
 	public abstract List<IBaseStation> getBaseStations();
 	
 	
-	private final List<IBotManagerObserver> observers = new ArrayList<IBotManagerObserver>();
-	
-	
 	/**
+	 * Charge kicker of all bots
 	 */
 	public abstract void chargeAll();
 	
 	
 	/**
-	 * 
+	 * Discharge kicker of all bots
 	 */
 	public abstract void dischargeAll();
 	

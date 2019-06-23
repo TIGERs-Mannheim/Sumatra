@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 21.07.2010
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.cam.data;
 
@@ -16,9 +11,9 @@ import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.AVector2;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2f;
+import edu.tigers.sumatra.math.vector.AVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 
 
 /**
@@ -39,15 +34,15 @@ public class CamRobot extends ACamObject
 	private final IVector2	pos;
 	private final double		orientation;
 	private final double		height;
-									
-									
+	
+	
 	/**
 	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 	 */
 	public CamRobot()
 	{
 		super();
-		botId = BotID.get();
+		botId = BotID.noBot();
 		pos = AVector2.ZERO_VECTOR;
 		orientation = 0;
 		height = 0;
@@ -61,33 +56,30 @@ public class CamRobot extends ACamObject
 	 * </p>
 	 * 
 	 * @param confidence
-	 * @param pixelX
-	 * @param pixelY
+	 * @param pixel
 	 * @param tCapture
 	 * @param tSent
 	 * @param camId
 	 * @param frameId
-	 * @param x
-	 * @param y
+	 * @param pos
 	 * @param orientation
 	 * @param height
 	 * @param botId
 	 */
+	@SuppressWarnings("squid:S00107")
 	public CamRobot(final double confidence,
-			final double pixelX,
-			final double pixelY,
+			final IVector2 pixel,
 			final long tCapture,
 			final long tSent,
 			final int camId,
 			final long frameId,
-			final double x,
-			final double y,
+			final IVector2 pos,
 			final double orientation,
 			final double height,
 			final BotID botId)
 	{
-		super(confidence, pixelX, pixelY, tCapture, tSent, camId, frameId);
-		pos = new Vector2f(x, y);
+		super(confidence, pixel, tCapture, tSent, camId, frameId);
+		this.pos = pos.copy();
 		this.orientation = orientation;
 		this.height = height;
 		this.botId = botId;
@@ -118,15 +110,9 @@ public class CamRobot extends ACamObject
 		
 		final long tSent = list.size() <= 12 ? 0 : list.get(12).longValue();
 		
-		return new CamRobot(confidence, pixelX, pixelY, tCapture, tSent, camId, frameId, x, y, orientation, height,
+		return new CamRobot(confidence, Vector2.fromXY(pixelX, pixelY), tCapture, tSent, camId, frameId,
+				Vector2.fromXY(x, y), orientation, height,
 				botId);
-	}
-	
-	
-	@Override
-	public ECamObjectType implementation()
-	{
-		return ECamObjectType.Robot;
 	}
 	
 	
@@ -141,9 +127,9 @@ public class CamRobot extends ACamObject
 		builder.append(", orientation=");
 		builder.append(getOrientation());
 		builder.append(", pixelX=");
-		builder.append(getPixelX());
+		builder.append(getPixel().x());
 		builder.append(", pixelY=");
-		builder.append(getPixelY());
+		builder.append(getPixel().y());
 		builder.append(", robotID=");
 		builder.append(getRobotID());
 		builder.append(", x=");
@@ -184,7 +170,7 @@ public class CamRobot extends ACamObject
 	
 	
 	/**
-	 * @return the height
+	 * @return the yExtent
 	 */
 	public double getHeight()
 	{
@@ -203,8 +189,8 @@ public class CamRobot extends ACamObject
 		numbers.addAll(pos.getNumberList());
 		numbers.add(getOrientation());
 		numbers.add(getFrameId());
-		numbers.add(getPixelX());
-		numbers.add(getPixelY());
+		numbers.add(getPixel().x());
+		numbers.add(getPixel().y());
 		numbers.add(getHeight());
 		numbers.add(getConfidence());
 		numbers.add(gettSent());

@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Oct 19, 2013
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays;
 
@@ -15,20 +10,19 @@ import edu.tigers.sumatra.ai.pandora.plays.defense.DefensePlay;
 import edu.tigers.sumatra.ai.pandora.plays.learning.LearningPlay;
 import edu.tigers.sumatra.ai.pandora.plays.others.AroundTheBallPlay;
 import edu.tigers.sumatra.ai.pandora.plays.others.CheeringPlay;
+import edu.tigers.sumatra.ai.pandora.plays.others.ExchangePositioningPlay;
 import edu.tigers.sumatra.ai.pandora.plays.others.FormationMovingPlay;
 import edu.tigers.sumatra.ai.pandora.plays.others.FormationStaticPlay;
 import edu.tigers.sumatra.ai.pandora.plays.others.GuiTestPlay;
 import edu.tigers.sumatra.ai.pandora.plays.others.InitPlay;
 import edu.tigers.sumatra.ai.pandora.plays.others.MaintenancePlay;
-import edu.tigers.sumatra.ai.pandora.plays.others.MoveTestPlay;
-import edu.tigers.sumatra.ai.pandora.plays.others.PathPlanningTestPlay;
+import edu.tigers.sumatra.ai.pandora.plays.positioning.PositioningPlay;
 import edu.tigers.sumatra.ai.pandora.plays.redirect.PassingPlay;
 import edu.tigers.sumatra.ai.pandora.plays.redirect.RedirectCirclePlay;
 import edu.tigers.sumatra.ai.pandora.plays.redirect.RedirectDualPlay;
 import edu.tigers.sumatra.ai.pandora.plays.redirect.RedirectDynamicTrianglePlay;
 import edu.tigers.sumatra.ai.pandora.plays.redirect.RedirectRectanglePlay;
 import edu.tigers.sumatra.ai.pandora.plays.redirect.RedirectTrianglePlay;
-import edu.tigers.sumatra.ai.pandora.plays.testing.RedirectTestPlay;
 
 
 /**
@@ -39,7 +33,7 @@ public enum EPlay implements IInstanceableEnum
 	/**  */
 	OFFENSIVE(new InstanceableClass(OffensivePlay.class), 20),
 	/**  */
-	AUTOMATED_THROW_IN(new InstanceableClass(AutomatedThrowInPlay.class), 20),
+	AUTOMATED_THROW_IN(new InstanceableClass(AutomatedThrowInPlay.class), 10),
 	/**  */
 	KICKOFF(new InstanceableClass(KickoffPlay.class), 10),
 	/** */
@@ -51,6 +45,10 @@ public enum EPlay implements IInstanceableEnum
 	/**  */
 	LEARNING_PLAY(new InstanceableClass(LearningPlay.class)),
 	/**  */
+	ATTACKER_SHOOTOUT(new InstanceableClass(OneOnOneShootoutPlay.class), 1),
+    /** */
+    KEEPER_SHOOTOUT(new InstanceableClass(KeeperShootoutPlay.class), 1),
+    /**  */
 	PENALTY_THEM(new InstanceableClass(PenaltyThemPlay.class), 5),
 	/**  */
 	PENALTY_WE(new InstanceableClass(PenaltyWePlay.class), 5),
@@ -61,9 +59,9 @@ public enum EPlay implements IInstanceableEnum
 	/**  */
 	MAINTENANCE(new InstanceableClass(MaintenancePlay.class)),
 	/**  */
-	CHEERING(new InstanceableClass(CheeringPlay.class)),
+	EXCHANGE_POSITIONING(new InstanceableClass(ExchangePositioningPlay.class)),
 	/**  */
-	MOVE_TEST(new InstanceableClass(MoveTestPlay.class)),
+	CHEERING(new InstanceableClass(CheeringPlay.class)),
 	/**  */
 	GUI_TEST(new InstanceableClass(GuiTestPlay.class)),
 	/**  */
@@ -83,12 +81,13 @@ public enum EPlay implements IInstanceableEnum
 	FORMATION_STATIC(new InstanceableClass(FormationStaticPlay.class)),
 	/**  */
 	FORMATION_MOVING(new InstanceableClass(FormationMovingPlay.class)),
+
+	/**  */
+	POSITIONING_PLAY(new InstanceableClass(PositioningPlay.class)),
 	
 	/**  */
-	PATH_PLANNING_TEST(new InstanceableClass(PathPlanningTestPlay.class)),
-	
-	/**  */
-	REDIRECT_TEST(new InstanceableClass(RedirectTestPlay.class)),;
+	@Deprecated
+	REDIRECT_TEST(new InstanceableClass(Object.class));
 	
 	private final InstanceableClass	clazz;
 	private int								priority;
@@ -96,13 +95,13 @@ public enum EPlay implements IInstanceableEnum
 	
 	/**
 	 */
-	private EPlay(final InstanceableClass clazz)
+	EPlay(final InstanceableClass clazz)
 	{
 		this(clazz, Integer.MAX_VALUE);
 	}
 	
 	
-	private EPlay(final InstanceableClass clazz, final int priority)
+	EPlay(final InstanceableClass clazz, final int priority)
 	{
 		this.clazz = clazz;
 		this.priority = priority;

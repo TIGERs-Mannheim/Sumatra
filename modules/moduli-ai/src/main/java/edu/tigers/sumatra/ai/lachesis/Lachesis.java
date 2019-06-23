@@ -1,12 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 05.08.2010
- * Author(s):
- * Gero
- * Oliver Steinbrecher
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.lachesis;
 
@@ -23,22 +16,15 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class Lachesis
 {
-	// --------------------------------------------------------------------------
-	// --- instance variables ---------------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	private final IRoleAssigner roleAssigner;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getInstance/constructor(s) -------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
+	 * Default
 	 */
 	public Lachesis()
 	{
-		// roleAssigner = new NewRoleAssigner();
-		roleAssigner = new SimplifiedRoleAssigner();
+		roleAssigner = new SimpleRoleAssigner();
 	}
 	
 	

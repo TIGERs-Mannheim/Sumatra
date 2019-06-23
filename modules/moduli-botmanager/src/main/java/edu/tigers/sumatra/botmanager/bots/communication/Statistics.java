@@ -17,18 +17,29 @@ import com.sleepycat.persist.model.Persistent;
  * @author AndreR
  */
 @Persistent
+@SuppressWarnings("squid:ClassVariableVisibilityCheck")
 public class Statistics
 {
-	/** */
-	public int		payload	= 0;
-	/** */
-	public int		raw		= 0;
-	/** */
-	public int		packets	= 0;
-	private long	lastReset;
-						
-						
 	/**
+	 * Payload bytes.
+	 */
+	public int		payload	= 0;
+	
+	/**
+	 * Raw bytes on wire.
+	 */
+	public int		raw		= 0;
+	
+	/**
+	 * Number of high-level packets.
+	 */
+	public int		packets	= 0;
+	
+	private long	lastReset;
+	
+	
+	/**
+	 * Default constructor.
 	 */
 	public Statistics()
 	{
@@ -49,7 +60,8 @@ public class Statistics
 	
 	
 	/**
-	*/
+	 * Reset statistics to zero.
+	 */
 	public void reset()
 	{
 		payload = 0;
@@ -109,7 +121,7 @@ public class Statistics
 			return 0;
 		}
 		
-		return (1.0f - (((double) payload) / ((double) raw)));
+		return 1.0f - (((double) payload) / ((double) raw));
 	}
 	
 	
@@ -119,12 +131,12 @@ public class Statistics
 	 */
 	public double getLoadPercentage(final double passedTime)
 	{
-		if (passedTime == 0)
+		if (passedTime <= 0)
 		{
 			return 0;
 		}
 		
-		return ((raw) / (28800.0f * passedTime));
+		return (raw) / (28800.0f * passedTime);
 	}
 	
 	

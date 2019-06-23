@@ -27,7 +27,7 @@ public class TigerConfigFileStructure extends ACommand
 	/**
 	 * Element type ID.
 	 */
-	public static enum EElementType
+	public enum EElementType
 	{
 		/** */
 		UINT8(0, 1, 0, 255),
@@ -127,7 +127,7 @@ public class TigerConfigFileStructure extends ACommand
 	private byte[]	structure;
 	
 	
-	/** */
+	/** Constructor. */
 	public TigerConfigFileStructure()
 	{
 		super(ECommand.CMD_CONFIG_FILE_STRUCTURE, true);
@@ -159,7 +159,7 @@ public class TigerConfigFileStructure extends ACommand
 	 */
 	public List<EElementType> getElements()
 	{
-		List<EElementType> elements = new ArrayList<EElementType>();
+		List<EElementType> elements = new ArrayList<>();
 		
 		for (byte item : structure)
 		{

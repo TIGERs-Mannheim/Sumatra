@@ -1,22 +1,22 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jul 24, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.wp.vis;
 
 import java.awt.Color;
 import java.util.List;
 
 import edu.tigers.sumatra.drawable.DrawableCircle;
+import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.shapes.circle.Circle;
-import edu.tigers.sumatra.wp.data.Geometry;
-import edu.tigers.sumatra.wp.data.TrackedBall;
+import edu.tigers.sumatra.drawable.animated.AnimatedCrosshair;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.circle.ICircle;
+import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
 
@@ -25,7 +25,7 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
  */
 public class BallVisCalc implements IWpCalc
 {
-	private static final double BALL_FLY_TOL = 15;
+	private static final double FLYING_BALL_SCALING = 0.01;
 	
 	
 	@Override
@@ -33,24 +33,40 @@ public class BallVisCalc implements IWpCalc
 	{
 		List<IDrawableShape> shapes = wfw.getShapeMap().get(EWpShapesLayer.BALL);
 		
-		TrackedBall ball = wfw.getSimpleWorldFrame().getBall();
+		ITrackedBall ball = wfw.getSimpleWorldFrame().getBall();
 		
-		Color color = ball.getPos3().z() > BALL_FLY_TOL ? Color.magenta : Color.ORANGE;
-		DrawableCircle point = new DrawableCircle(ball.getPos(), Geometry.getBallRadius(), Color.red);
+		double heightFactor = Math.abs(FLYING_BALL_SCALING * ball.getHeight()) + 1;
+		
+		ICircle ballCircle = Circle.createCircle(ball.getPos(), 20 * Geometry.getBallRadius());
+		IDrawableShape crossHair = AnimatedCrosshair.aCrosshairWithContinuousRotation(ballCircle, 1.5f, Color.RED);
+		shapes.add(crossHair);
+		
+		DrawableCircle point = new DrawableCircle(ball.getPos(), heightFactor * Geometry.getBallRadius(), Color.ORANGE);
 		point.setFill(true);
 		shapes.add(point);
 		
-		DrawableCircle circle1 = new DrawableCircle(new Circle(ball.getPos(), 120), Color.red);
-		shapes.add(circle1);
-		DrawableCircle circle2 = new DrawableCircle(new Circle(ball.getPos(), 105), color);
-		shapes.add(circle2);
-		
-		IVector2 ballPos = ball.getPosByVel(0);
-		if (!ballPos.equals(ball.getPos(), 1))
+		for (IVector2 touch : ball.getTrajectory().getTouchdownLocations())
 		{
-			DrawableCircle dCircleStop = new DrawableCircle(ballPos, Geometry.getBallRadius() + 5, Color.red);
-			shapes.add(dCircleStop);
+			DrawableCircle land = new DrawableCircle(touch, 30, Color.GREEN);
+			shapes.add(land);
+		}
+		
+		for (ILine line : ball.getTrajectory().getTravelLinesInterceptable())
+		{
+			if (line.directionVector().getLength2() > 1)
+			{
+				DrawableLine inter = new DrawableLine(line, Color.DARK_GRAY);
+				inter.setStrokeWidth(15);
+				shapes.add(inter);
+			}
+		}
+		
+		ILine rollLine = ball.getTrajectory().getTravelLineRolling();
+		if (rollLine.directionVector().getLength2() > 1)
+		{
+			DrawableLine roll = new DrawableLine(rollLine, Color.orange);
+			roll.setStrokeWidth(5);
+			shapes.add(roll);
 		}
 	}
-	
 }

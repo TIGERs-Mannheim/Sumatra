@@ -1,14 +1,11 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 22.07.2010
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.timer;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,33 +21,13 @@ import java.util.concurrent.ConcurrentSkipListMap;
  */
 public class TimerInfo
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	/** ETimeable -> (frameId -> duration) */
-	private final Map<ETimable, SortedMap<Long, Long>>	timings		= new ConcurrentHashMap<ETimable, SortedMap<Long, Long>>();
+	/** key -> (frameId -> duration) */
+	private final Map<String, SortedMap<Long, Long>>	timings		= new ConcurrentHashMap<>();
 	private static final int									BUFFER_SIZE	= 1000;
 	
 	private final Object											lock			= new Object();
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	/**
-	 *
-	 */
-	public TimerInfo()
-	{
-		
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * @param tId
 	 * @param value
@@ -76,15 +53,18 @@ public class TimerInfo
 	}
 	
 	
-	private SortedMap<Long, Long> getOrCreateTimings(final ETimable timable)
+	/**
+	 * @return a set of all timeables keys
+	 */
+	public Set<String> getAllTimables()
 	{
-		SortedMap<Long, Long> map = timings.get(timable);
-		if (map == null)
-		{
-			map = new ConcurrentSkipListMap<Long, Long>();
-			timings.put(timable, map);
-		}
-		return map;
+		return timings.keySet();
+	}
+	
+	
+	private SortedMap<Long, Long> getOrCreateTimings(final String timable)
+	{
+		return timings.computeIfAbsent(timable, k -> new ConcurrentSkipListMap<>());
 	}
 	
 	
@@ -92,19 +72,20 @@ public class TimerInfo
 	 * @param timable
 	 * @return the timings frameId -> duration
 	 */
-	public SortedMap<Long, Long> getTimings(final ETimable timable)
+	public SortedMap<Long, Long> getTimings(final String timable)
 	{
 		SortedMap<Long, Long> copy;
 		synchronized (lock)
 		{
 			SortedMap<Long, Long> map = getOrCreateTimings(timable);
-			copy = new TreeMap<Long, Long>(map);
+			copy = new TreeMap<>(map);
 		}
 		return copy;
 	}
 	
 	
 	/**
+	 * Clear all timings
 	 */
 	public void clear()
 	{
@@ -123,20 +104,20 @@ public class TimerInfo
 	 * @param tStats
 	 * @return
 	 */
-	public SortedMap<Long, Long> getCombinedTimings(final ETimable timable, final int numFrames,
+	public SortedMap<Long, Long> getCombinedTimings(final String timable, final int numFrames,
 			final ETimerStatistic tStats)
 	{
-		SortedMap<Long, Long> timings = getTimings(timable);
+		SortedMap<Long, Long> sortedTimings = getTimings(timable);
 		if (numFrames <= 1)
 		{
-			return timings;
+			return sortedTimings;
 		}
-		SortedMap<Long, Long> avageres = new TreeMap<Long, Long>();
+		SortedMap<Long, Long> avageres = new TreeMap<>();
 		int counter = 0;
 		long sum = 0;
 		long max = 0;
 		long min = Long.MAX_VALUE;
-		for (Map.Entry<Long, Long> entry : timings.entrySet())
+		for (Map.Entry<Long, Long> entry : sortedTimings.entrySet())
 		{
 			if (counter >= numFrames)
 			{

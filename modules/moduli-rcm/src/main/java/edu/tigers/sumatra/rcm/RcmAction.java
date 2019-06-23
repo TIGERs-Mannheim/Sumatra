@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Sep 16, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.rcm;
 
@@ -28,53 +23,10 @@ import edu.tigers.sumatra.skillsystem.ESkill;
 public class RcmAction
 {
 	private static final List<RcmAction>	ALL_ACTIONS;
-	private final Enum<? extends Enum<?>>	actionEnum;
-	private final EActionType					actionType;
-														
-	/**
-	 */
-	public enum EActionType
-	{
-		/** EControllerAction */
-		SIMPLE(EControllerAction.class, EControllerAction.values()),
-		/** ESkillname */
-		SKILL(ESkill.class, ESkill.KICK, ESkill.INTERCEPTION, ESkill.REDIRECT, ESkill.KICK_TEST),
-		/** ERcmEvent */
-		EVENT(ERcmEvent.class, ERcmEvent.values());
-		
-		private final List<Enum<?>>	enums;
-		private final Class<?>			enumClass;
-												
-												
-		private EActionType(final Class<?> enumClass, final Enum<?>... enums)
-		{
-			this.enums = Arrays.asList(enums);
-			this.enumClass = enumClass;
-		}
-		
-		
-		/**
-		 * @return the enums
-		 */
-		public final List<Enum<?>> getEnums()
-		{
-			return Collections.unmodifiableList(enums);
-		}
-		
-		
-		/**
-		 * @return the enumClass
-		 */
-		public final Class<?> getEnumClass()
-		{
-			return enumClass;
-		}
-	}
-	
 	
 	static
 	{
-		List<RcmAction> actions = new ArrayList<RcmAction>();
+		List<RcmAction> actions = new ArrayList<>();
 		for (EActionType actionType : EActionType.values())
 		{
 			for (Enum<?> e : actionType.getEnums())
@@ -86,6 +38,9 @@ public class RcmAction
 		ALL_ACTIONS = Collections.unmodifiableList(actions);
 	}
 	
+	private final Enum<? extends Enum<?>>	actionEnum;
+	private final EActionType					actionType;
+	
 	
 	/**
 	 * @param actionEnum
@@ -95,6 +50,69 @@ public class RcmAction
 	{
 		this.actionEnum = actionEnum;
 		this.actionType = actionType;
+	}
+	
+	/**
+	 * @return
+	 */
+	public static List<RcmAction> getAllActions()
+	{
+		return ALL_ACTIONS;
+	}
+	
+	/**
+	 * @return
+	 */
+	public static List<RcmAction> getDefaultActions()
+	{
+		List<RcmAction> actions = new ArrayList<>();
+		actions.add(new RcmAction(EControllerAction.FORWARD, EActionType.SIMPLE));
+		actions.add(new RcmAction(EControllerAction.BACKWARD, EActionType.SIMPLE));
+		actions.add(new RcmAction(EControllerAction.LEFT, EActionType.SIMPLE));
+		actions.add(new RcmAction(EControllerAction.RIGHT, EActionType.SIMPLE));
+		actions.add(new RcmAction(EControllerAction.ROTATE_LEFT, EActionType.SIMPLE));
+		actions.add(new RcmAction(EControllerAction.ROTATE_RIGHT, EActionType.SIMPLE));
+		actions.add(new RcmAction(EControllerAction.KICK_ARM, EActionType.SIMPLE));
+		actions.add(new RcmAction(EControllerAction.KICK_FORCE, EActionType.SIMPLE));
+		actions.add(new RcmAction(EControllerAction.CHIP_ARM, EActionType.SIMPLE));
+		actions.add(new RcmAction(EControllerAction.DISARM, EActionType.SIMPLE));
+		actions.add(new RcmAction(EControllerAction.DRIBBLE, EActionType.SIMPLE));
+		actions.add(new RcmAction(ERcmEvent.NEXT_BOT, EActionType.EVENT));
+		actions.add(new RcmAction(ERcmEvent.PREV_BOT, EActionType.EVENT));
+		actions.add(new RcmAction(ERcmEvent.UNASSIGN_BOT, EActionType.EVENT));
+		actions.add(new RcmAction(ERcmEvent.SPEED_MODE_TOGGLE, EActionType.EVENT));
+		actions.add(new RcmAction(ESkill.KICK_NORMAL, EActionType.SKILL));
+		actions.add(new RcmAction(ESkill.INTERCEPTION, EActionType.SKILL));
+		return actions;
+	}
+	
+	
+	/**
+	 * @param jsonAction
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static RcmAction fromJSON(final JSONObject jsonAction)
+	{
+		Map<String, String> map = jsonAction;
+		EActionType actionType = EActionType.valueOf(map.get("actionType"));
+		String strActionEnum = map.get("actionEnum");
+		final Enum<?> actionEnum;
+		switch (actionType)
+		{
+			case EVENT:
+				actionEnum = ERcmEvent.valueOf(strActionEnum);
+				break;
+			case SIMPLE:
+				actionEnum = EControllerAction.valueOf(strActionEnum);
+				break;
+			case SKILL:
+				actionEnum = ESkill.valueOf(strActionEnum);
+				break;
+			default:
+				throw new IllegalStateException();
+		}
+		return new RcmAction(actionEnum, actionType);
 	}
 	
 	
@@ -113,42 +131,6 @@ public class RcmAction
 	public final EActionType getActionType()
 	{
 		return actionType;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public static List<RcmAction> getAllActions()
-	{
-		return ALL_ACTIONS;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public static List<RcmAction> getDefaultActions()
-	{
-		List<RcmAction> actions = new ArrayList<RcmAction>();
-		actions.add(new RcmAction(EControllerAction.FORWARD, EActionType.SIMPLE));
-		actions.add(new RcmAction(EControllerAction.BACKWARD, EActionType.SIMPLE));
-		actions.add(new RcmAction(EControllerAction.LEFT, EActionType.SIMPLE));
-		actions.add(new RcmAction(EControllerAction.RIGHT, EActionType.SIMPLE));
-		actions.add(new RcmAction(EControllerAction.ROTATE_LEFT, EActionType.SIMPLE));
-		actions.add(new RcmAction(EControllerAction.ROTATE_RIGHT, EActionType.SIMPLE));
-		actions.add(new RcmAction(EControllerAction.KICK_ARM, EActionType.SIMPLE));
-		actions.add(new RcmAction(EControllerAction.KICK_FORCE, EActionType.SIMPLE));
-		actions.add(new RcmAction(EControllerAction.CHIP_ARM, EActionType.SIMPLE));
-		actions.add(new RcmAction(EControllerAction.DISARM, EActionType.SIMPLE));
-		actions.add(new RcmAction(EControllerAction.DRIBBLE, EActionType.SIMPLE));
-		actions.add(new RcmAction(ERcmEvent.NEXT_BOT, EActionType.EVENT));
-		actions.add(new RcmAction(ERcmEvent.PREV_BOT, EActionType.EVENT));
-		actions.add(new RcmAction(ERcmEvent.UNASSIGN_BOT, EActionType.EVENT));
-		actions.add(new RcmAction(ERcmEvent.SPEED_MODE_TOGGLE, EActionType.EVENT));
-		actions.add(new RcmAction(ESkill.KICK, EActionType.SKILL));
-		actions.add(new RcmAction(ESkill.INTERCEPTION, EActionType.SKILL));
-		return actions;
 	}
 	
 	
@@ -189,11 +171,7 @@ public class RcmAction
 		{
 			return false;
 		}
-		if (actionType != other.actionType)
-		{
-			return false;
-		}
-		return true;
+		return actionType == other.actionType;
 	}
 	
 	
@@ -209,7 +187,7 @@ public class RcmAction
 	 */
 	public JSONObject toJSON()
 	{
-		Map<String, String> jsonAction = new LinkedHashMap<String, String>(2);
+		Map<String, String> jsonAction = new LinkedHashMap<>(2);
 		jsonAction.put("actionType", getActionType().name());
 		jsonAction.put("actionEnum", getActionEnum().name());
 		return new JSONObject(jsonAction);
@@ -217,30 +195,42 @@ public class RcmAction
 	
 	
 	/**
-	 * @param jsonAction
-	 * @return
 	 */
-	@SuppressWarnings("unchecked")
-	public static RcmAction fromJSON(final JSONObject jsonAction)
+	public enum EActionType
 	{
-		Map<String, String> map = jsonAction;
-		EActionType actionType = EActionType.valueOf(map.get("actionType"));
-		String strActionEnum = map.get("actionEnum");
-		final Enum<?> actionEnum;
-		switch (actionType)
+		/** EControllerAction */
+		SIMPLE(EControllerAction.class, EControllerAction.values()),
+		/** ESkillname */
+		SKILL(ESkill.class, ESkill.KICK_NORMAL, ESkill.INTERCEPTION, ESkill.REDIRECT),
+		/** ERcmEvent */
+		EVENT(ERcmEvent.class, ERcmEvent.values());
+		
+		private final List<Enum<?>>	enums;
+		private final Class<?>			enumClass;
+		
+		
+		EActionType(final Class<?> enumClass, final Enum<?>... enums)
 		{
-			case EVENT:
-				actionEnum = ERcmEvent.valueOf(strActionEnum);
-				break;
-			case SIMPLE:
-				actionEnum = EControllerAction.valueOf(strActionEnum);
-				break;
-			case SKILL:
-				actionEnum = ESkill.valueOf(strActionEnum);
-				break;
-			default:
-				throw new IllegalStateException();
+			this.enums = Arrays.asList(enums);
+			this.enumClass = enumClass;
 		}
-		return new RcmAction(actionEnum, actionType);
+		
+		
+		/**
+		 * @return the enums
+		 */
+		public final List<Enum<?>> getEnums()
+		{
+			return Collections.unmodifiableList(enums);
+		}
+		
+		
+		/**
+		 * @return the enumClass
+		 */
+		public final Class<?> getEnumClass()
+		{
+			return enumClass;
+		}
 	}
 }

@@ -8,7 +8,7 @@
  */
 package edu.tigers.autoref.view.generic;
 
-import javax.swing.JLabel;
+import javax.swing.*;
 
 
 /**
@@ -91,6 +91,6 @@ public class JFormatLabel<T> extends JLabel
 		 * @param value
 		 * @param label
 		 */
-		public void formatLabel(T value, JLabel label);
+		void formatLabel(T value, JLabel label);
 	}
 }

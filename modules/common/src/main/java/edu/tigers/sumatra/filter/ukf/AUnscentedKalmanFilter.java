@@ -24,53 +24,56 @@ import edu.tigers.sumatra.math.AngleMath;
  * 
  * @author AndreR
  */
+// Variables are named like the formula variables
+@SuppressWarnings({ "squid:S1845", "squid:HiddenFieldCheck", "squid:S00116",
+		"squid:S00117" })
 public abstract class AUnscentedKalmanFilter
 {
 	/** Sigma scaling factor */
-	private double						c;
+	private double c;
 	
-	private final int					numStates;
-	private final int					numMeas;
-	private final int					numSigma;
+	private final int numStates;
+	private final int numMeas;
+	private final int numSigma;
 	
 	/** Weights for means (1 x numSigma) */
-	private final Matrix				Wm;
+	private final Matrix Wm;
 	
 	/** Weights for covariance (1 x numSigma) */
-	private final Matrix				Wc;
+	private final Matrix Wc;
 	
 	/** Process noise covariance (numStates x numStates) */
-	private final Matrix				Rv;
+	private final Matrix Rv;
 	
 	/** Measurement noise covariance (numMeas x numMeas) */
-	private final Matrix				Rn;
+	private final Matrix Rn;
 	
 	/** State covariance (numStates x numStates) */
-	private final Matrix				Px;
+	private final Matrix Px;
 	
 	/** Measurement covariance */
-	private final Matrix				Py;
+	private final Matrix Py;
 	
 	/** State-Measurement cross-covariance */
-	private final Matrix				Pxy;
+	private final Matrix Pxy;
 	
 	/** Internal state (1 x numStates) */
-	private final Matrix				x;
+	private final Matrix x;
 	
 	/** Control input (1 x numControl) */
-	private final Matrix				u;
+	private final Matrix u;
 	
 	/** Sensor input (1 x numMeas) */
-	private final Matrix				yk;
+	private final Matrix yk;
 	
 	/** Internal matrix with sigma points from state (numSigma x numStates) */
-	private final Matrix				Xk;
+	private final Matrix Xk;
 	
 	/** Internal matrix with sigma points from measurement (numSigma x numMeas) */
-	private final Matrix				Yk;
+	private final Matrix Yk;
 	
-	protected final List<Integer>	orientationComponentsState	= new ArrayList<Integer>();
-	protected final List<Integer>	orientationComponentsMeas	= new ArrayList<Integer>();
+	protected final List<Integer> orientationComponentsState = new ArrayList<>();
+	protected final List<Integer> orientationComponentsMeas = new ArrayList<>();
 	
 	
 	/**
@@ -139,9 +142,6 @@ public abstract class AUnscentedKalmanFilter
 	private void drawSigmaPoints()
 	{
 		CholeskyDecomposition decomp = Px.chol();
-		// Note: The following assert is commented out on purpose. It may occasionally fail
-		// because the matrix Px is not symmetric due to numerical instabilities, but it is always positive semi-definite
-		// assert (decomp.isSPD());
 		
 		// get cholesky
 		double[][] chol = decomp.getL().getArray();
@@ -231,6 +231,7 @@ public abstract class AUnscentedKalmanFilter
 	 * @param measurement Array of new measurements.
 	 * @return Updated state.
 	 */
+	@SuppressWarnings("squid:MethodCyclomaticComplexity")
 	public double[] update(final double[] measurement)
 	{
 		drawSigmaPoints();

@@ -28,7 +28,7 @@ public class TigerBootloaderSize extends ACommand
 	private long	size;
 	
 	
-	/** */
+	/** Constructor. */
 	public TigerBootloaderSize()
 	{
 		super(ECommand.CMD_BOOTLOADER_SIZE);
@@ -71,7 +71,7 @@ public class TigerBootloaderSize extends ACommand
 	}
 	
 	
-	/**  */
+	/** Set size to maximum. */
 	public void setInvalidSize()
 	{
 		size = 0xFFFFFFFFL;

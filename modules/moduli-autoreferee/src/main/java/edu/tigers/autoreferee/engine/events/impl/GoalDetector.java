@@ -1,32 +1,27 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Mar 2, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.autoreferee.engine.events.impl;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import edu.tigers.autoreferee.IAutoRefFrame;
 import edu.tigers.autoreferee.engine.AutoRefMath;
 import edu.tigers.autoreferee.engine.FollowUpAction;
 import edu.tigers.autoreferee.engine.FollowUpAction.EActionType;
-import edu.tigers.autoreferee.engine.calc.BotPosition;
 import edu.tigers.autoreferee.engine.calc.PossibleGoalCalc.PossibleGoal;
 import edu.tigers.autoreferee.engine.events.EGameEvent;
 import edu.tigers.autoreferee.engine.events.GameEvent;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
+import edu.tigers.autoreferee.generic.BotPosition;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.referee.TeamConfig;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
-import edu.tigers.sumatra.wp.data.Geometry;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.referee.data.EGameState;
+import edu.tigers.sumatra.referee.data.GameState;
 
 
 /**
@@ -34,26 +29,27 @@ import edu.tigers.sumatra.wp.data.Geometry;
  */
 public class GoalDetector extends APreparingGameEventDetector
 {
-	private static final int	priority				= 1;
+	private static final int PRIORITY = 1;
 	
-	private BotPosition			indirectKickPos	= null;
-	private boolean				indirectStillHot	= false;
-	private boolean				goalDetected		= false;
+	private BotPosition indirectKickPos = null;
+	private PossibleGoal lastGoal = null;
+	private boolean indirectStillHot = false;
+	private boolean goalDetected = false;
 	
 	
 	/**
-	 * 
+	 * Create new instance
 	 */
 	public GoalDetector()
 	{
-		super(EGameStateNeutral.RUNNING);
+		super(EGameState.RUNNING);
 	}
 	
 	
 	@Override
 	public int getPriority()
 	{
-		return priority;
+		return PRIORITY;
 	}
 	
 	
@@ -64,12 +60,11 @@ public class GoalDetector extends APreparingGameEventDetector
 		 * Save the position of the kicker in case this RUNNING state was initiated by an INDIRECT freekick.
 		 * This will allow the rule to determine if an indirect goal occured
 		 */
-		List<EGameStateNeutral> stateHistory = frame.getStateHistory();
+		List<GameState> stateHistory = frame.getStateHistory();
 		if (stateHistory.size() > 1)
 		{
-			EGameStateNeutral lastState = stateHistory.get(1);
-			if ((lastState == EGameStateNeutral.INDIRECT_KICK_BLUE)
-					|| (lastState == EGameStateNeutral.INDIRECT_KICK_YELLOW))
+			EGameState lastState = stateHistory.get(1).getState();
+			if (lastState == EGameState.INDIRECT_FREE)
 			{
 				indirectKickPos = frame.getBotLastTouchedBall();
 				indirectStillHot = true;
@@ -81,29 +76,29 @@ public class GoalDetector extends APreparingGameEventDetector
 	@Override
 	protected Optional<IGameEvent> doUpdate(final IAutoRefFrame frame, final List<IGameEvent> violations)
 	{
-		Set<BotID> keeperIDs = TeamConfig.getKeeperIDs();
 		if ((indirectKickPos != null) && indirectStillHot)
 		{
-			BotID kickerId = indirectKickPos.getId();
+			BotID kickerId = indirectKickPos.getBotID();
 			BotPosition lastKickPos = frame.getBotLastTouchedBall();
-			if (!kickerId.equals(lastKickPos.getId()) && (!keeperIDs.contains(lastKickPos.getId())))
+			if (!kickerId.equals(lastKickPos.getBotID()))
 			{
 				indirectStillHot = false;
 			}
 		}
 		
 		Optional<PossibleGoal> optGoalShot = frame.getPossibleGoal();
-		if (optGoalShot.isPresent())
+		if (optGoalShot.isPresent() && !optGoalShot.get().equals(lastGoal))
 		{
 			PossibleGoal goalShot = optGoalShot.get();
+			lastGoal = goalShot;
 			IVector2 ballPos = frame.getWorldFrame().getBall().getPos();
 			
-			if (goalDetected == false)
+			if (!goalDetected)
 			{
 				if ((indirectKickPos != null) && indirectStillHot)
 				{
 					// The ball was kicked from an indirect freekick -> the goal is not valid
-					BotID kicker = indirectKickPos.getId();
+					BotID kicker = indirectKickPos.getBotID();
 					ETeamColor kickerColor = kicker.getTeamColor();
 					
 					indirectStillHot = false;

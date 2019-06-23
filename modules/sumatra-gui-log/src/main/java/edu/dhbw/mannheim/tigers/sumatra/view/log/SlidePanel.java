@@ -11,6 +11,7 @@ package edu.dhbw.mannheim.tigers.sumatra.view.log;
 
 import java.awt.Dimension;
 import java.util.ArrayList;
+import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -36,14 +37,14 @@ import net.miginfocom.swing.MigLayout;
 public class SlidePanel extends JPanel
 {
 	// class variables
-	private static final long			serialVersionUID	= 1L;
+	private static final long serialVersionUID = 1L;
 	
-	List<ISlidePanelObserver>			observers			= new CopyOnWriteArrayList<ISlidePanelObserver>();
+	private List<ISlidePanelObserver> observers = new CopyOnWriteArrayList<>();
 	
 	// object variables
-	private JSlider						slider				= null;
+	private JSlider slider = null;
 	
-	private static final List<Level>	LOG_LEVELS			= new ArrayList<Level>();
+	private static final List<Level> LOG_LEVELS = new ArrayList<>();
 	
 	static
 	{
@@ -59,9 +60,11 @@ public class SlidePanel extends JPanel
 	/**
 	 * @param initialLevel
 	 */
+	// Dictionary needed by JSlider
+	@SuppressWarnings("squid:S1149")
 	public SlidePanel(final Priority initialLevel)
 	{
-		final Hashtable<Integer, JLabel> levelTable = new Hashtable<Integer, JLabel>();
+		final Dictionary<Integer, JLabel> levelTable = new Hashtable<>();
 		
 		setLayout(new MigLayout("fill, inset 0"));
 		
@@ -80,8 +83,6 @@ public class SlidePanel extends JPanel
 		}
 		
 		slider = new JSlider(SwingConstants.HORIZONTAL, 0, LOG_LEVELS.size() - 1, initialLevelId);
-		// slider.setPaintTicks(true);
-		// slider.setPaintLabels(true);
 		slider.setSnapToTicks(true);
 		slider.setMajorTickSpacing(1);
 		slider.setLabelTable(levelTable);

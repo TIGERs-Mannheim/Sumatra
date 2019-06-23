@@ -1,217 +1,178 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 21.07.2010
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.wp.data;
+
+import static edu.tigers.sumatra.wp.data.BallTrajectoryState.aBallState;
+
+import org.apache.commons.lang.Validate;
 
 import com.sleepycat.persist.model.Persistent;
 
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BallID;
-import edu.tigers.sumatra.math.AVector2;
-import edu.tigers.sumatra.math.AVector3;
-import edu.tigers.sumatra.math.GeoMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.IVector3;
-import edu.tigers.sumatra.math.Vector2;
-import edu.tigers.sumatra.math.Vector3;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.vision.data.FilteredVisionBall;
+import edu.tigers.sumatra.wp.AWorldPredictor;
+import edu.tigers.sumatra.wp.ball.prediction.IBallTrajectory;
+import edu.tigers.sumatra.wp.ball.prediction.IChipBallConsultant;
+import edu.tigers.sumatra.wp.ball.prediction.IStraightBallConsultant;
+import edu.tigers.sumatra.wp.ball.trajectory.BallFactory;
 
 
 /**
  * Simple data holder describing balls that are recognized and tracked by the
- * {@link edu.tigers.sumatra.wp.AWorldPredictor}
+ * {@link AWorldPredictor}
  * 
- * @see ATrackedObject
- * @author Gero
+ * @author AndreR <andre@ryll.cc>
  */
 @Persistent
-public class TrackedBall extends ATrackedObject
+public class TrackedBall implements ITrackedBall
 {
-	private final BallID		id				= new BallID();
+	private final long								timestamp;
+	private final BallTrajectoryState			state;
+	private final long								lastVisibleTimestamp;
 	
-	/** mm */
-	private final IVector2	pos;
-	/** m/s */
-	private final IVector2	vel;
-	
-	private final IVector3	acc;
-	
-	private final double		height;
-	private final double		zVel;
-	
-	private double				confidence	= 0;
-	private boolean			onCam			= true;
+	// cache some fields on demand to increase performance
+	private transient IVector2						pos;
+	private transient IVector2						vel;
+	private transient IBallTrajectory			ballTrajectory;
+	private transient IStraightBallConsultant	straightBallConsultant;
+	private transient IChipBallConsultant		chipBallConsultant;
 	
 	
-	@SuppressWarnings("unused")
+	/**
+	 * Create an empty tracked ball.
+	 */
 	private TrackedBall()
 	{
-		super();
-		pos = AVector2.ZERO_VECTOR;
-		vel = AVector2.ZERO_VECTOR;
-		acc = AVector3.ZERO_VECTOR;
-		height = 0;
-		zVel = 0;
+		state = new BallTrajectoryState();
+		lastVisibleTimestamp = 0;
+		timestamp = 0;
 	}
 	
 	
 	/**
-	 * Providing a <strong>hard, deep</strong> copy of original
+	 * @param timestamp
+	 * @param state
+	 * @param lastVisibleTimestamp
+	 */
+	private TrackedBall(final long timestamp, final BallTrajectoryState state, final long lastVisibleTimestamp)
+	{
+		this.timestamp = timestamp;
+		this.state = state;
+		this.lastVisibleTimestamp = lastVisibleTimestamp;
+		
+		Validate.isTrue(Double.isFinite(state.getvSwitchToRoll()) && (state.getvSwitchToRoll() >= 0));
+	}
+	
+	
+	/**
+	 * @return an empty tracked ball
+	 */
+	public static TrackedBall createStub()
+	{
+		return new TrackedBall();
+	}
+	
+	
+	/**
+	 * Create a tracked ball from a BallTrajectoryState.<br>
+	 * The last visible timestamp is set to <code>timestamp</code> and therefore always visible.
 	 * 
-	 * @param original
-	 */
-	public TrackedBall(final TrackedBall original)
-	{
-		super(original);
-		pos = new Vector2(original.pos);
-		vel = new Vector2(original.vel);
-		acc = new Vector3(original.acc);
-		height = original.height;
-		zVel = original.zVel;
-	}
-	
-	
-	/**
-	 * @param pos
-	 * @param height
-	 * @param vel
-	 * @param zVel
-	 * @param acc
-	 */
-	public TrackedBall(final IVector2 pos, final double height, final IVector2 vel, final double zVel,
-			final IVector3 acc)
-	{
-		super();
-		this.pos = pos;
-		this.vel = vel;
-		this.acc = acc;
-		this.height = height;
-		this.zVel = zVel;
-	}
-	
-	
-	/**
-	 * @param pos
-	 * @param vel
-	 * @param acc
-	 */
-	public TrackedBall(final IVector3 pos, final IVector3 vel, final IVector3 acc)
-	{
-		this.pos = pos.getXYVector();
-		this.vel = vel.getXYVector();
-		this.acc = acc;
-		height = pos.z();
-		zVel = vel.z();
-	}
-	
-	
-	/**
+	 * @param timestamp [ns]
+	 * @param state State in milli units.
 	 * @return
 	 */
-	public static TrackedBall defaultInstance()
+	public static TrackedBall fromTrajectoryStateVisible(final long timestamp, final BallTrajectoryState state)
 	{
-		return new TrackedBall(AVector2.ZERO_VECTOR, 0, AVector2.ZERO_VECTOR, 0, AVector3.ZERO_VECTOR);
+		return new TrackedBall(timestamp, state, timestamp);
 	}
 	
 	
 	/**
-	 * Mirror position, velocity and acceleration over x and y axis.
+	 * Create a tracked ball from a BallTrajectoryState.<br>
 	 * 
+	 * @param timestamp [ns]
+	 * @param state State in milli units.
+	 * @param lastVisibleTimestamp timestamp when the ball was last seen [ns]
 	 * @return
 	 */
-	public TrackedBall mirrorNew()
+	public static TrackedBall fromTrajectoryState(final long timestamp, final BallTrajectoryState state,
+			final long lastVisibleTimestamp)
 	{
-		return new TrackedBall(pos.multiplyNew(-1), height, vel.multiplyNew(-1), zVel, new Vector3(acc.getXYVector()
-				.multiplyNew(-1), acc.z()));
+		return new TrackedBall(timestamp, state, lastVisibleTimestamp);
 	}
 	
 	
 	/**
-	 * gets the theoretical position of the ball after a given time
+	 * Create a tracked ball from a FilteredVisionBall.
 	 * 
-	 * @param time [s]
-	 * @return the position
+	 * @param timestamp
+	 * @param ball
+	 * @return
 	 */
-	public IVector2 getPosByTime(final double time)
+	public static TrackedBall fromFilteredVisionBall(final long timestamp, final FilteredVisionBall ball)
 	{
-		return Geometry.getBallModel().getPosByTime(getPos(), getVel(), time);
-	}
-	
-	
-	/**
-	 * gets the theoretical position of the ball when it reaches a given velocity
-	 * 
-	 * @param velocity [m/s]
-	 * @return the position
-	 */
-	public IVector2 getPosByVel(final double velocity)
-	{
-		return Geometry.getBallModel().getPosByVel(getPos(), getVel(), velocity);
-	}
-	
-	
-	/**
-	 * gets the theoretical needed time for the ball to reach pos,
-	 * pos should be on the balls movementPath.
-	 * 
-	 * @param pos
-	 * @return the time [s]
-	 */
-	public double getTimeByPos(final IVector2 pos)
-	{
-		return Geometry.getBallModel().getTimeByDist(getVel().getLength2(), GeoMath.distancePP(pos, getPos()));
-	}
-	
-	
-	/**
-	 * gets the theoretical time where the ball reaches a given velocity
-	 * 
-	 * @param velocity [m/s]
-	 * @return the time [s]
-	 */
-	public double getTimeByVel(final double velocity)
-	{
-		return Geometry.getBallModel().getTimeByVel(getVel().getLength2(), velocity);
-	}
-	
-	
-	/**
-	 * gets the theoretical velocity of the ball at a given position
-	 * 
-	 * @param pos
-	 * @return the velocity [m/s]
-	 */
-	public double getVelByPos(final IVector2 pos)
-	{
-		return Geometry.getBallModel().getVelByDist(getVel().getLength2(), GeoMath.distancePP(pos, getPos()));
-	}
-	
-	
-	/**
-	 * gets the theoretical velocity of the ball after a given time
-	 * 
-	 * @param time [s]
-	 * @return the velocity [m/s]
-	 */
-	public double getVelByTime(final double time)
-	{
-		return Geometry.getBallModel().getVelByTime(getVel().getLength2(), time);
+		BallTrajectoryState state = aBallState()
+				.withPos(ball.getPos()).withVel(ball.getVel()).withAcc(ball.getAcc())
+				.withVSwitchToRoll(ball.getVSwitch()).withChipped(ball.isChipped())
+				.build();
+		return new TrackedBall(timestamp, state, ball.getLastVisibleTimestamp());
 	}
 	
 	
 	@Override
-	public BallID getBotId()
+	public long getTimestamp()
 	{
-		return id;
+		return timestamp;
+	}
+	
+	
+	@Override
+	public IBallTrajectory getTrajectory()
+	{
+		if (ballTrajectory == null)
+		{
+			ballTrajectory = BallFactory.createTrajectory(state);
+		}
+		return ballTrajectory;
+	}
+	
+	
+	@Override
+	public TrackedBall mirrored()
+	{
+		return new TrackedBall(timestamp, state.mirrored(), lastVisibleTimestamp);
+	}
+	
+	
+	@Override
+	public AObjectID getId()
+	{
+		return BallID.instance();
+	}
+	
+	
+	@Override
+	public double getRpm()
+	{
+		// v = r × RPM × 0.10472
+		// RPM = v / (r x 0.10472)
+		return getVel().getLength2() / ((Geometry.getBallRadius() / 1000.0) * 0.10472);
 	}
 	
 	
 	@Override
 	public IVector2 getPos()
 	{
+		if (pos == null)
+		{
+			pos = getPos3().getXYVector();
+		}
 		return pos;
 	}
 	
@@ -219,6 +180,10 @@ public class TrackedBall extends ATrackedObject
 	@Override
 	public IVector2 getVel()
 	{
+		if (vel == null)
+		{
+			vel = getVel3().getXYVector();
+		}
 		return vel;
 	}
 	
@@ -226,69 +191,91 @@ public class TrackedBall extends ATrackedObject
 	@Override
 	public IVector2 getAcc()
 	{
-		return acc.getXYVector();
+		return getAcc3().getXYVector();
 	}
 	
 	
-	/**
-	 * @return
-	 */
+	@Override
 	public IVector3 getPos3()
 	{
-		return new Vector3(pos, height);
+		return state.getPos();
 	}
 	
 	
-	/**
-	 * @return
-	 */
+	@Override
 	public IVector3 getVel3()
 	{
-		return new Vector3(vel, zVel);
+		return state.getVel().multiplyNew(0.001);
 	}
 	
 	
-	/**
-	 * @return
-	 */
+	@Override
 	public IVector3 getAcc3()
 	{
-		return acc;
+		return state.getAcc().multiplyNew(0.001);
 	}
 	
 	
-	/**
-	 * @return the confidence
-	 */
-	public double getConfidence()
-	{
-		return confidence;
-	}
-	
-	
-	/**
-	 * @param confidence the confidence to set
-	 */
-	public void setConfidence(final double confidence)
-	{
-		this.confidence = confidence;
-	}
-	
-	
-	/**
-	 * @return the onCam
-	 */
+	@Override
 	public boolean isOnCam()
 	{
-		return onCam;
+		return lastVisibleTimestamp == 0 || ((getTimestamp() - lastVisibleTimestamp) * 1e-9) < 0.5;
 	}
 	
 	
-	/**
-	 * @param onCam the onCam to set
-	 */
-	public void setOnCam(final boolean onCam)
+	@Override
+	public double getHeight()
 	{
-		this.onCam = onCam;
+		return getPos3().z();
+	}
+	
+	
+	@Override
+	public IStraightBallConsultant getStraightConsultant()
+	{
+		if (straightBallConsultant == null)
+		{
+			straightBallConsultant = BallFactory.createStraightConsultant();
+		}
+		return straightBallConsultant;
+	}
+	
+	
+	@Override
+	public IChipBallConsultant getChipConsultant()
+	{
+		if (chipBallConsultant == null)
+		{
+			chipBallConsultant = BallFactory.createChipConsultant();
+		}
+		return chipBallConsultant;
+	}
+	
+	
+	@Override
+	public long getLastVisibleTimestamp()
+	{
+		return lastVisibleTimestamp;
+	}
+	
+	
+	@Override
+	public double getvSwitchToRoll()
+	{
+		return state.getvSwitchToRoll() * 0.001;
+	}
+	
+	
+	@Override
+	public boolean isChipped()
+	{
+		return state.isChipped();
+	}
+	
+	
+	@Override
+	public BallTrajectoryState getState()
+	{
+		return state;
 	}
 }

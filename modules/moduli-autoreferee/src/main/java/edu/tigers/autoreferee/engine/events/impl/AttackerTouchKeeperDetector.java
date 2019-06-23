@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Feb 18, 2016
- * Author(s): Sion Sander
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.autoreferee.engine.events.impl;
 
 import java.util.HashMap;
@@ -31,16 +27,17 @@ import edu.tigers.autoreferee.engine.NGeometry;
 import edu.tigers.autoreferee.engine.events.EGameEvent;
 import edu.tigers.autoreferee.engine.events.GameEvent;
 import edu.tigers.autoreferee.engine.events.IGameEvent;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.IPenaltyArea;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.ids.IBotIDMap;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.referee.TeamConfig;
-import edu.tigers.sumatra.shapes.circle.Circle;
-import edu.tigers.sumatra.wp.data.EGameStateNeutral;
-import edu.tigers.sumatra.wp.data.Geometry;
+import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.circle.ICircle;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
-import edu.tigers.sumatra.wp.data.PenaltyArea;
 
 
 /**
@@ -66,7 +63,7 @@ public class AttackerTouchKeeperDetector extends AGameEventDetector
 	 */
 	public AttackerTouchKeeperDetector()
 	{
-		super(EGameStateNeutral.RUNNING);
+		super(EGameState.RUNNING);
 	}
 	
 	
@@ -82,7 +79,10 @@ public class AttackerTouchKeeperDetector extends AGameEventDetector
 	{
 		IBotIDMap<ITrackedBot> bots = frame.getWorldFrame().getBots();
 		long timestamp = frame.getTimestamp();
-		Set<BotID> keepers = TeamConfig.getKeeperIDs();
+		
+		Set<BotID> keepers = new HashSet<>();
+		keepers.add(frame.getRefereeMsg().getKeeperBotID(ETeamColor.BLUE));
+		keepers.add(frame.getRefereeMsg().getKeeperBotID(ETeamColor.YELLOW));
 		
 		Set<BotID> violators = new HashSet<>();
 		
@@ -96,10 +96,10 @@ public class AttackerTouchKeeperDetector extends AGameEventDetector
 				 */
 				continue;
 			}
-			ITrackedBot keeper = bots.get(keeperID);
+			ITrackedBot keeper = bots.getWithNull(keeperID);
 			
 			// Only check for violators if the keeper is positioned inside his own penalty area
-			PenaltyArea penArea = NGeometry.getPenaltyArea(keeperID.getTeamColor());
+			IPenaltyArea penArea = NGeometry.getPenaltyArea(keeperID.getTeamColor());
 			if (penArea.isPointInShape(keeper.getPos()))
 			{
 				violators.addAll(getViolators(bots, keeper));
@@ -130,7 +130,7 @@ public class AttackerTouchKeeperDetector extends AGameEventDetector
 		
 		if (violatorID.isPresent() && bots.containsKey(violatorID.get()))
 		{
-			ITrackedBot violator = bots.get(violatorID.get());
+			ITrackedBot violator = bots.getWithNull(violatorID.get());
 			IVector2 violatorPos = violator.getPos();
 			ETeamColor violatorTeamColor = violatorID.get().getTeamColor();
 			
@@ -152,14 +152,30 @@ public class AttackerTouchKeeperDetector extends AGameEventDetector
 	private Set<BotID> getViolators(final IBotIDMap<ITrackedBot> bots, final ITrackedBot target)
 	{
 		ETeamColor targetColor = target.getBotId().getTeamColor();
-		Circle circle = new Circle(target.getPos(), TOUCH_DISTANCE + (Geometry.getBotRadius() * 2));
+		
+		IPenaltyArea penArea = NGeometry.getPenaltyArea(targetColor);
+		ICircle circle = Circle.createCircle(target.getPos(), TOUCH_DISTANCE + (Geometry.getBotRadius() * 2));
 		
 		List<ITrackedBot> attackingBots = AutoRefUtil.filterByColor(bots, targetColor.opposite());
 		
+		/*
+		 * We only consider a contact to be a violation if the contact occurs inside the defense area
+		 */
 		return attackingBots.stream()
 				.filter(bot -> circle.isPointInShape(bot.getPos(), 0))
+				.filter(bot -> {
+					IVector2 contactPoint = calcTwoPointCenter(bot.getPos(), target.getPos());
+					return penArea.isPointInShape(contactPoint);
+				})
 				.map(ToBotIDMapper.get())
 				.collect(Collectors.toSet());
+	}
+	
+	
+	private IVector2 calcTwoPointCenter(final IVector2 a, final IVector2 b)
+	{
+		Vector2 ab = b.subtractNew(a);
+		return ab.multiply(0.5d).add(a);
 	}
 	
 	

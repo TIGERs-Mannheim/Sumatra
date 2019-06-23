@@ -1,35 +1,30 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 26, 2014
- * Author(s): Mark Geiger <Mark.Geiger@dlr.de>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.pandora.roles.offense.states;
 
-import edu.tigers.sumatra.ai.data.OffensiveStrategy.EOffensiveStrategy;
-import edu.tigers.sumatra.ai.data.math.AiMath;
+import edu.tigers.sumatra.ai.data.OffensiveStrategy;
+import edu.tigers.sumatra.ai.math.AiMath;
 import edu.tigers.sumatra.ai.pandora.roles.offense.OffensiveRole;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
-import edu.tigers.sumatra.statemachine.IRoleState;
-import edu.tigers.sumatra.wp.data.Geometry;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
 /**
  * The Offensive role is always ball oriented.
- * 
+ *
  * @author Mark Geiger <Mark.Geiger@dlr.de>
  */
-public class OffensiveRoleSupportiveAttackerState extends AOffensiveRoleState implements IRoleState
+public class OffensiveRoleSupportiveAttackerState extends AOffensiveRoleState
 {
 	
 	// -------------------------------------------------------------------------- //
 	// --- variables and constants ---------------------------------------------- //
 	// -------------------------------------------------------------------------- //
+	
+	private AMoveToSkill skill = null;
+	
 	
 	// ----------------------------------------------------------------------- //
 	// -------------------- functions ---------------------------------------- //
@@ -44,13 +39,24 @@ public class OffensiveRoleSupportiveAttackerState extends AOffensiveRoleState im
 	}
 	
 	
-	private AMoveToSkill skill = null;
+	@Override
+	public IVector2 getMoveDest()
+	{
+		return skill.getMoveCon().getDestination();
+	}
+	
+	
+	@Override
+	public String getIdentifier()
+	{
+		return OffensiveStrategy.EOffensiveStrategy.SUPPORTIVE_ATTACKER.name();
+	}
 	
 	
 	@Override
 	public void doExitActions()
 	{
-		
+		// nothing to do here
 	}
 	
 	
@@ -65,39 +71,23 @@ public class OffensiveRoleSupportiveAttackerState extends AOffensiveRoleState im
 	@Override
 	public void doUpdate()
 	{
-		IVector2 movePos = calcMovePosition();
+		IVector2 movePos;
+		switch (getAiFrame().getTacticalField().getSkirmishInformation().getStrategy())
+		{
+			case FREE_BALL:
+				movePos = calcMovePositionFreeBall();
+				break;
+			default:
+				movePos = getAiFrame().getTacticalField().getSupportiveAttackerMovePos();
+		}
 		movePos = AiMath.adjustMovePositionWhenItsInvalid(getWFrame(), getBotID(), movePos);
+		skill.getMoveCon().updateLookAtTarget(getWFrame().getBall());
 		skill.getMoveCon().updateDestination(movePos);
 	}
 	
 	
-	@Override
-	public Enum<? extends Enum<?>> getIdentifier()
+	private IVector2 calcMovePositionFreeBall()
 	{
-		return EOffensiveStrategy.SUPPORTIVE_ATTACKER;
+		return getAiFrame().getTacticalField().getSkirmishInformation().getSupportiveCircleCatchPos();
 	}
-	
-	
-	private IVector2 calcMovePosition()
-	{
-		IVector2 ballPos = getWFrame().getBall().getPos();
-		IVector2 goal = Geometry.getGoalOur().getGoalCenter();
-		IVector2 dir = goal.subtractNew(ballPos).normalizeNew();
-		if (!getAiFrame().getWorldFrame().getFoeBots().isEmpty())
-		{
-			ITrackedBot bot = AiMath.getNearestBot(getAiFrame().getWorldFrame().getFoeBots(), getWFrame().getBall()
-					.getPos());
-			
-			if ((bot != null) && (bot.getPos().x() > ballPos.x()))
-			{
-				dir = ballPos.subtractNew(bot.getPos()).normalizeNew();
-			}
-			
-			return ballPos.addNew(dir.multiplyNew(Geometry.getBotToBallDistanceStop()
-					+ (Geometry.getBotRadius() * 2)));
-		}
-		return ballPos.addNew(new Vector2(-1, 0).multiplyNew(Geometry.getBotToBallDistanceStop()
-				+ (Geometry.getBotRadius() * 2)));
-	}
-	
 }

@@ -1,17 +1,10 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jul 31, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.drawable;
 
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Stroke;
+import java.awt.*;
 import java.awt.geom.GeneralPath;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,19 +12,16 @@ import java.util.List;
 
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 @Persistent
-public class DrawableWay implements IDrawableShape
+public class DrawableWay extends ADrawableWithStroke
 {
-	private final List<IVector2>	path;
-	private Color						color		= Color.red;
-	
-	private transient Stroke		stroke	= new BasicStroke(3);
+	private final List<IVector2> path;
 	
 	
 	@SuppressWarnings("unused")
@@ -48,7 +38,6 @@ public class DrawableWay implements IDrawableShape
 	{
 		// make sure we have a persistent implementation of List
 		this.path = new ArrayList<>(path);
-		assert !path.isEmpty();
 	}
 	
 	
@@ -59,15 +48,20 @@ public class DrawableWay implements IDrawableShape
 	public DrawableWay(final Collection<IVector2> path, final Color color)
 	{
 		this(path);
-		this.color = color;
+		setColor(color);
 	}
 	
 	
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
-		g.setColor(color);
-		g.setStroke(stroke);
+		super.paintShape(g, tool, invert);
+		
+		if (path.isEmpty())
+		{
+			return;
+		}
+		
 		final GeneralPath drawPath = new GeneralPath();
 		
 		IVector2 startPos = path.get(0);
@@ -79,7 +73,6 @@ public class DrawableWay implements IDrawableShape
 		for (IVector2 point : path)
 		{
 			final IVector2 transPathPoint = tool.transformToGuiCoordinates(point, invert);
-			// g.drawOval((int) transPathPoint.x() - 1, (int) transPathPoint.y() - 1, 3, 3);
 			drawPath.lineTo((int) transPathPoint.x(), (int) transPathPoint.y());
 		}
 		g.draw(drawPath);

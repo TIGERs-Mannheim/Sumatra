@@ -9,7 +9,6 @@
 package edu.tigers.sumatra.botmanager.bots;
 
 import java.io.EOFException;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
@@ -36,7 +35,10 @@ import edu.tigers.sumatra.ids.BotID;
  */
 public class Bootloader implements IBaseStationObserver
 {
-	/** */
+	/**
+	 * Booloader process observer.
+	 */
+	@FunctionalInterface
 	public interface IBootloaderObserver
 	{
 		/**
@@ -48,8 +50,10 @@ public class Bootloader implements IBaseStationObserver
 		void onBootloaderProgress(BotID botId, EProcessorID procId, long bytesRead, long totalSize);
 	}
 	
-	/** */
-	public static enum EProcessorID
+	/**
+	 * Bot processor ID.
+	 */
+	public enum EProcessorID
 	{
 		/** */
 		PROC_ID_MAIN(0, "main.bin"),
@@ -66,14 +70,15 @@ public class Bootloader implements IBaseStationObserver
 		/** */
 		PROC_ID_UNKNOWN(6, "unknown.bin");
 		
+		private String	name;
+		private int		id;
+		
+		
 		private EProcessorID(final int id, final String filename)
 		{
 			name = filename;
 			this.id = id;
 		}
-		
-		private String	name;
-		private int		id;
 		
 		
 		/**
@@ -173,7 +178,7 @@ public class Bootloader implements IBaseStationObserver
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	private RandomAccessFile openFile(final int procId) throws FileNotFoundException, IOException
+	private RandomAccessFile openFile(final int procId) throws IOException
 	{
 		String filename = programFolder + "\\"
 				+ EProcessorID.getProcessorIDConstant(procId).getFilename();
@@ -187,105 +192,113 @@ public class Bootloader implements IBaseStationObserver
 		switch (command.getType())
 		{
 			case CMD_BOOTLOADER_REQUEST_SIZE:
-			{
-				TigerBootloaderRequestSize reqSize = (TigerBootloaderRequestSize) command;
-				
-				TigerBootloaderSize size = new TigerBootloaderSize();
-				size.setProcId(reqSize.getProcId());
-				
-				try
-				{
-					RandomAccessFile file = openFile(reqSize.getProcId());
-					size.setSize(file.length());
-					file.close();
-				} catch (FileNotFoundException err)
-				{
-					size.setInvalidSize();
-				} catch (IOException err)
-				{
-					size.setInvalidSize();
-				}
-				
-				baseStation.enqueueCommand(id, size);
-				
-				notifyBootloaderProgress(id, EProcessorID.getProcessorIDConstant(reqSize.getProcId()), 0, size.getSize());
-			}
+				handleRequestSize(id, command);
 				break;
 			case CMD_BOOTLOADER_REQUEST_CRC:
-			{
-				TigerBootloaderRequestCrc crcReq = (TigerBootloaderRequestCrc) command;
-				TigerBootloaderCrc crcAns = new TigerBootloaderCrc();
-				
-				int readSize = (int) (crcReq.getEndAddr() - crcReq.getStartAddr());
-				
-				byte b[] = new byte[readSize];
-				Arrays.fill(b, (byte) 0xFF);
-				
-				try
-				{
-					RandomAccessFile file = openFile(crcReq.getProcId());
-					file.seek(crcReq.getStartAddr());
-					file.readFully(b);
-					file.close();
-				} catch (FileNotFoundException err)
-				{
-					return;
-				} catch (EOFException err)
-				{
-				} catch (IOException err)
-				{
-					return;
-				}
-				
-				CRC32 crc = new CRC32();
-				crc.reset();
-				crc.update(b);
-				crcAns.setCrc(crc.getValue());
-				crcAns.setProcId(crcReq.getProcId());
-				crcAns.setStartAddr(crcReq.getStartAddr());
-				crcAns.setEndAddr(crcReq.getEndAddr());
-				
-				baseStation.enqueueCommand(id, crcAns);
-			}
+				handleRequestCrc(id, command);
 				break;
 			case CMD_BOOTLOADER_REQUEST_DATA:
-			{
-				long fileLength = 0;
-				TigerBootloaderRequestData reqData = (TigerBootloaderRequestData) command;
-				TigerBootloaderData ansData = new TigerBootloaderData();
-				
-				byte b[] = new byte[(int) reqData.getSize()];
-				Arrays.fill(b, (byte) 0xFF);
-				
-				try
-				{
-					RandomAccessFile file = openFile(reqData.getProcId());
-					file.seek(reqData.getOffset());
-					fileLength = file.length();
-					file.readFully(b);
-					file.close();
-				} catch (FileNotFoundException err)
-				{
-					return;
-				} catch (EOFException err)
-				{
-				} catch (IOException err)
-				{
-					return;
-				}
-				
-				ansData.setProcId(reqData.getProcId());
-				ansData.setOffset(reqData.getOffset());
-				ansData.setPayload(b);
-				
-				baseStation.enqueueCommand(id, ansData);
-				
-				notifyBootloaderProgress(id, EProcessorID.getProcessorIDConstant(reqData.getProcId()), reqData.getOffset()
-						+ reqData.getSize(), fileLength);
-			}
+				handleRequestData(id, command);
 				break;
 			default:
 				break;
 		}
+	}
+	
+	
+	@SuppressWarnings("squid:S1166")
+	private void handleRequestData(final BotID id, final ACommand command)
+	{
+		long fileLength = 0;
+		TigerBootloaderRequestData reqData = (TigerBootloaderRequestData) command;
+		TigerBootloaderData ansData = new TigerBootloaderData();
+		
+		byte[] b = new byte[(int) reqData.getSize()];
+		Arrays.fill(b, (byte) 0xFF);
+		
+		try
+		{
+			RandomAccessFile file = openFile(reqData.getProcId());
+			file.seek(reqData.getOffset());
+			fileLength = file.length();
+			file.readFully(b);
+			file.close();
+		} catch (EOFException err)
+		{
+			// not an error
+		} catch (IOException err)
+		{
+			return;
+		}
+		
+		ansData.setProcId(reqData.getProcId());
+		ansData.setOffset(reqData.getOffset());
+		ansData.setPayload(b);
+		
+		baseStation.enqueueCommand(id, ansData);
+		
+		notifyBootloaderProgress(id, EProcessorID.getProcessorIDConstant(reqData.getProcId()), reqData.getOffset()
+				+ reqData.getSize(), fileLength);
+	}
+	
+	
+	@SuppressWarnings("squid:S1166")
+	private void handleRequestCrc(final BotID id, final ACommand command)
+	{
+		TigerBootloaderRequestCrc crcReq = (TigerBootloaderRequestCrc) command;
+		TigerBootloaderCrc crcAns = new TigerBootloaderCrc();
+		
+		int readSize = (int) (crcReq.getEndAddr() - crcReq.getStartAddr());
+		
+		byte[] b = new byte[readSize];
+		Arrays.fill(b, (byte) 0xFF);
+		
+		try
+		{
+			RandomAccessFile file = openFile(crcReq.getProcId());
+			file.seek(crcReq.getStartAddr());
+			file.readFully(b);
+			file.close();
+		} catch (EOFException err)
+		{
+			// not an error
+		} catch (IOException err)
+		{
+			return;
+		}
+		
+		CRC32 crc = new CRC32();
+		crc.reset();
+		crc.update(b);
+		crcAns.setCrc(crc.getValue());
+		crcAns.setProcId(crcReq.getProcId());
+		crcAns.setStartAddr(crcReq.getStartAddr());
+		crcAns.setEndAddr(crcReq.getEndAddr());
+		
+		baseStation.enqueueCommand(id, crcAns);
+	}
+	
+	
+	@SuppressWarnings("squid:S1166")
+	private void handleRequestSize(final BotID id, final ACommand command)
+	{
+		TigerBootloaderRequestSize reqSize = (TigerBootloaderRequestSize) command;
+		
+		TigerBootloaderSize size = new TigerBootloaderSize();
+		size.setProcId(reqSize.getProcId());
+		
+		try
+		{
+			RandomAccessFile file = openFile(reqSize.getProcId());
+			size.setSize(file.length());
+			file.close();
+		} catch (IOException err)
+		{
+			size.setInvalidSize();
+		}
+		
+		baseStation.enqueueCommand(id, size);
+		
+		notifyBootloaderProgress(id, EProcessorID.getProcessorIDConstant(reqSize.getProcId()), 0, size.getSize());
 	}
 }

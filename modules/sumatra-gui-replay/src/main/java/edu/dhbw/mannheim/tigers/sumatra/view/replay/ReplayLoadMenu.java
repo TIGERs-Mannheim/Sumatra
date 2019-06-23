@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jan 26, 2013
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.replay;
 
@@ -18,6 +13,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.swing.JFileChooser;
 import javax.swing.JMenu;
@@ -28,8 +25,8 @@ import javax.swing.event.MenuListener;
 
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.persistance.IRecordPersistence;
-import edu.tigers.sumatra.persistance.RecordBerkeleyPersistence;
+import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.persistence.ABerkeleyPersistence;
 
 
 /**
@@ -43,26 +40,27 @@ public class ReplayLoadMenu extends JMenu
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	/**  */
-	private static final long							serialVersionUID	= 1L;
-	private static final Logger						log					= Logger
+	private static final long serialVersionUID = 1L;
+	private static final Logger log = Logger
 			.getLogger(
 					ReplayLoadMenu.class.getName());
 	
-	private transient FileFilter						fileFilter;
-	private List<File>									persistanceFiles;
+	private transient FileFilter fileFilter;
+	private List<File> persistanceFiles;
 	
-	private final List<IReplayLoadMenuObserver>	observers			= new CopyOnWriteArrayList<>();
-	
+	private final transient List<IReplayLoadMenuObserver> observers = new CopyOnWriteArrayList<>();
+	private final transient Function<String, ABerkeleyPersistence> persistenceCreator;
 	
 	/**
 	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 	 */
+	@FunctionalInterface
 	public interface IReplayLoadMenuObserver
 	{
 		/**
 		 * @param p
 		 */
-		void onLoadPersistance(IRecordPersistence p);
+		void onLoadPersistance(ABerkeleyPersistence p);
 	}
 	
 	
@@ -71,12 +69,15 @@ public class ReplayLoadMenu extends JMenu
 	// --------------------------------------------------------------------------
 	
 	/**
+	 * Create a reploy load menu
+	 *
+	 * @param persistenceCreator function for creating the persistence class
 	 */
-	public ReplayLoadMenu()
+	public ReplayLoadMenu(Function<String, ABerkeleyPersistence> persistenceCreator)
 	{
 		super("Replay");
-		File persistancePath = new File(
-				RecordBerkeleyPersistence.getDefaultBasePath());
+		this.persistenceCreator = persistenceCreator;
+		File persistancePath = new File(getDefaultBasePath());
 		if (!(persistancePath.isDirectory()))
 		{
 			boolean dirCreated = persistancePath.mkdirs();
@@ -109,6 +110,16 @@ public class ReplayLoadMenu extends JMenu
 	
 	
 	/**
+	 * @return
+	 */
+	public static String getDefaultBasePath()
+	{
+		return SumatraModel.getInstance()
+				.getUserProperty("edu.tigers.sumatra.persistence.basePath", "data/record");
+	}
+	
+	
+	/**
 	 * Update Records in Combobox
 	 */
 	public final void doUpdate()
@@ -119,8 +130,7 @@ public class ReplayLoadMenu extends JMenu
 		mit.addActionListener(new SetDefaultPathListener());
 		add(mit);
 		
-		File persistancePath = new File(
-				RecordBerkeleyPersistence.getDefaultBasePath());
+		File persistancePath = new File(getDefaultBasePath());
 		File[] files = persistancePath.listFiles(fileFilter);
 		if (files == null)
 		{
@@ -132,10 +142,38 @@ public class ReplayLoadMenu extends JMenu
 		Collections.sort(persistanceFiles);
 		for (File file : persistanceFiles)
 		{
-			JMenuItem item = new JMenuItem(file.getName());
-			item.addActionListener(new ComboxListener(file.getAbsolutePath()));
-			add(item);
+			addFileToMenu(file, this);
 		}
+	}
+	
+	
+	private void addFileToMenu(final File file, final JMenu menu)
+	{
+		if (file.isDirectory())
+		{
+			File[] files = file.listFiles(fileFilter);
+			List<File> dirs;
+			if (files == null)
+			{
+				dirs = new ArrayList<>();
+			} else
+			{
+				dirs = Arrays.stream(files).sorted().collect(Collectors.toList());
+			}
+			if (!dirs.isEmpty())
+			{
+				JMenu subMenu = new JMenu(file.getName());
+				menu.add(subMenu);
+				for (File d : dirs)
+				{
+					addFileToMenu(d, subMenu);
+				}
+				return;
+			}
+		}
+		JMenuItem item = new JMenuItem(file.getName());
+		item.addActionListener(new ComboxListener(file.getAbsolutePath()));
+		menu.add(item);
 	}
 	
 	
@@ -144,15 +182,7 @@ public class ReplayLoadMenu extends JMenu
 		@Override
 		public boolean accept(final File pathname)
 		{
-			if (pathname.isDirectory())
-			{
-				return true;
-			}
-			if (pathname.getName().endsWith(".zip"))
-			{
-				return true;
-			}
-			return false;
+			return pathname.isDirectory() || pathname.getName().endsWith(".zip");
 		}
 	}
 	
@@ -168,12 +198,14 @@ public class ReplayLoadMenu extends JMenu
 		@Override
 		public void menuDeselected(final MenuEvent e)
 		{
+			// ignore
 		}
 		
 		
 		@Override
 		public void menuCanceled(final MenuEvent e)
 		{
+			// ignore
 		}
 	}
 	
@@ -203,10 +235,11 @@ public class ReplayLoadMenu extends JMenu
 		@Override
 		public void run()
 		{
-			IRecordPersistence persistance = null;
+			ABerkeleyPersistence persistance = null;
 			try
 			{
-				persistance = new RecordBerkeleyPersistence(fileName, false);
+				persistance = persistenceCreator.apply(fileName);
+				persistance.open();
 				for (IReplayLoadMenuObserver o : observers)
 				{
 					o.onLoadPersistance(persistance);
@@ -236,7 +269,8 @@ public class ReplayLoadMenu extends JMenu
 			int result = fc.showOpenDialog(ReplayLoadMenu.this);
 			if (result == JFileChooser.APPROVE_OPTION)
 			{
-				RecordBerkeleyPersistence.setDefaultBasePath(fc.getSelectedFile().getAbsolutePath());
+				SumatraModel.getInstance().setUserProperty("edu.tigers.sumatra.persistence.basePath",
+						fc.getSelectedFile().getAbsolutePath());
 			}
 		}
 		

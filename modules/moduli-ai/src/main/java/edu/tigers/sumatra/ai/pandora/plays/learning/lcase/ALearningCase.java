@@ -20,8 +20,8 @@ import edu.tigers.sumatra.ai.pandora.roles.ERole;
  */
 public abstract class ALearningCase implements ILearningCase
 {
-	protected List<ERole>	activeRoleTypes	= new ArrayList<ERole>();
-	protected boolean			active				= false;
+	protected List<ERole> activeRoleTypes = new ArrayList<>();
+	protected boolean active = false;
 	
 	
 	@Override

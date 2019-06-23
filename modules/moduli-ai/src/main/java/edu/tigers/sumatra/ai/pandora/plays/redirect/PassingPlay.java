@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jan 8, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.redirect;
 
@@ -17,8 +12,8 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.IVector2;
-import edu.tigers.sumatra.math.Vector2;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 
 
 /**
@@ -28,8 +23,8 @@ import edu.tigers.sumatra.math.Vector2;
  */
 public class PassingPlay extends ARedirectPlay
 {
-	@Configurable(comment = "Center of the circle")
-	private static IVector2	center	= new Vector2(0, 0);
+	@Configurable(comment = "Center of the circle", defValue = "0.0;0.0")
+	private static IVector2 center = Vector2.fromXY(0, 0);
 	
 	
 	/**
@@ -50,7 +45,7 @@ public class PassingPlay extends ARedirectPlay
 		List<IVector2> destinations = new ArrayList<IVector2>();
 		for (int i = 0; i < getRoles().size(); i++)
 		{
-			destinations.add(center.addNew(new Vector2(initialAngle + (angleStep * i)).scaleTo(getDistance())));
+			destinations.add(center.addNew(Vector2.fromAngle(initialAngle + (angleStep * i)).scaleTo(getDistance())));
 		}
 		return destinations;
 	}

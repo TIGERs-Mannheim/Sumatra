@@ -1,29 +1,21 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Apr 19, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.cam.data;
 
-import edu.tigers.sumatra.shapes.circle.Circle;
-import edu.tigers.sumatra.shapes.circle.ICircle;
+import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.circle.ICircle;
 
 
 /**
- * TODO Nicolai Ommer <nicolai.ommer@gmail.com>, add comment!
- * - What should this type do (in one sentence)?
- * - If not intuitive: A simple example how to use this class
- * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class CamFieldArc extends Circle
 {
 	private final String	name;
 	private final double	thickness;
-	private final double	startAngle, endAngle;
+	private final double	startAngle;
+	private final double	endAngle;
 	
 	
 	/**

@@ -8,9 +8,9 @@
  */
 package edu.tigers.autoref.view.humanref.components;
 
-import java.awt.Color;
+import java.awt.*;
 
-import javax.swing.JLabel;
+import javax.swing.*;
 import javax.swing.border.Border;
 
 import edu.tigers.sumatra.ids.BotID;
@@ -25,16 +25,17 @@ public class JTeamLabel extends JLabel
 {
 	
 	/**  */
-	private static final long	serialVersionUID	= 7688950271552459510L;
-	private final Border			teamLabelBorder	= new RoundedCornerBorder(10, 5, Color.BLACK);
+	private static final long serialVersionUID = 7688950271552459510L;
 	
 	
 	/**
-	 * 
+	 * Create new instance
 	 */
 	public JTeamLabel()
 	{
 		setOpaque(true);
+		
+		Border teamLabelBorder = new RoundedCornerBorder(10, 5, Color.BLACK);
 		setBorder(teamLabelBorder);
 	}
 	
@@ -55,9 +56,19 @@ public class JTeamLabel extends JLabel
 	public void setRobot(final BotID id)
 	{
 		ETeamColor color = id.getTeamColor();
-		String text = getTeamText(color) + " " + id.getNumber();
+		String text = getText(id);
 		setColoring(color);
 		setText(text);
+	}
+	
+	
+	private String getText(final BotID id)
+	{
+		if (id.isUninitializedID())
+		{
+			return "Unknown";
+		}
+		return getTeamText(id.getTeamColor()) + " " + id.getNumber();
 	}
 	
 	

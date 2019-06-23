@@ -1,14 +1,10 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: May 30, 2014
- * Author(s): Mark Geiger <Mark.Geiger@dlr.de>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.offensive;
 
 import java.awt.Component;
+import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
 
@@ -35,13 +31,13 @@ import edu.tigers.sumatra.views.ISumatraView;
 public class OffensiveStrategyPresenter extends ASumatraViewPresenter implements IVisualizationFrameObserver
 {
 	@SuppressWarnings("unused")
-	private static final Logger				log	= Logger.getLogger(OffensiveStrategyPresenter.class.getName());
-	private final OffensiveStrategyPanel	offensiveStrategyPanel;
-														
-														
+	private static final Logger log = Logger.getLogger(OffensiveStrategyPresenter.class.getName());
+	private final OffensiveStrategyPanel offensiveStrategyPanel;
+	
+	
 	/**
-	  * 
-	  */
+	 * Default
+	 */
 	public OffensiveStrategyPresenter()
 	{
 		offensiveStrategyPanel = new OffensiveStrategyPanel();
@@ -56,13 +52,11 @@ public class OffensiveStrategyPresenter extends ASumatraViewPresenter implements
 			case ACTIVE:
 				try
 				{
-					Agent agentYellow = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_YELLOW);
-					agentYellow.addVisObserver(this);
-					Agent agentBlue = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_BLUE);
-					agentBlue.addVisObserver(this);
+					Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
+					agent.addVisObserver(this);
 				} catch (ModuleNotFoundException err)
 				{
-					log.error("Could not get agent module");
+					log.error("Could not get agent module", err);
 				}
 				break;
 			case NOT_LOADED:
@@ -70,13 +64,11 @@ public class OffensiveStrategyPresenter extends ASumatraViewPresenter implements
 			case RESOLVED:
 				try
 				{
-					Agent agentYellow = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_YELLOW);
-					agentYellow.removeVisObserver(this);
-					Agent agentBlue = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_BLUE);
-					agentBlue.removeVisObserver(this);
+					Agent agent = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
+					agent.removeVisObserver(this);
 				} catch (ModuleNotFoundException err)
 				{
-					log.error("Could not get agent module");
+					log.error("Could not get agent module", err);
 				}
 				break;
 		}
@@ -115,7 +107,7 @@ public class OffensiveStrategyPresenter extends ASumatraViewPresenter implements
 			
 			strategyPanel.setMinNumberOfBots(offensiveStrategy.getMinNumberOfBots());
 			strategyPanel.setMaxNumberOfBots(offensiveStrategy.getMaxNumberOfBots());
-			strategyPanel.setDesiredBots(offensiveStrategy.getDesiredBots());
+			strategyPanel.setDesiredBots(new ArrayList<>(offensiveStrategy.getDesiredBots()));
 			strategyPanel.setPlayConfiguration(offensiveStrategy.getCurrentOffensivePlayConfiguration());
 			strategyPanel.setUnassignedStrategies(offensiveStrategy.getUnassignedStrategies());
 			strategyPanel.setSpecialMoveCommands(offensiveStrategy.getSpecialMoveCommands());

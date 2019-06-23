@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 22.07.2010
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.cam;
 
@@ -15,8 +10,9 @@ import org.apache.commons.configuration.SubnodeConfiguration;
 
 import edu.tigers.moduli.AModule;
 import edu.tigers.sumatra.MessagesRobocupSslDetection.SSL_DetectionFrame;
+import edu.tigers.sumatra.MessagesRobocupSslWrapper.SSL_WrapperPacket;
+import edu.tigers.sumatra.cam.data.CamDetectionFrame;
 import edu.tigers.sumatra.cam.data.CamGeometry;
-import edu.tigers.sumatra.math.IVector3;
 
 
 /**
@@ -24,18 +20,19 @@ import edu.tigers.sumatra.math.IVector3;
  * 
  * @author Gero
  */
-public abstract class ACam extends AModule implements IBallReplacer
+public abstract class ACam extends AModule
 {
 	/** */
-	public static final String					MODULE_TYPE		= "ACam";
+	public static final String					MODULE_TYPE					= "ACam";
 	/** */
-	public static final String					MODULE_ID		= "cam";
-																			
-	private final List<ICamFrameObserver>	observers		= new CopyOnWriteArrayList<ICamFrameObserver>();
-																			
-	private IBallReplacer						ballReplacer	= this;
-																			
-																			
+	public static final String					MODULE_ID					= "cam";
+	
+	private final List<ICamFrameObserver>	observers					= new CopyOnWriteArrayList<>();
+	
+	private final CamDetectionConverter		camDetectionConverter	= new CamDetectionConverter();
+	private final CamObjectFilter				camObjectFilter			= new CamObjectFilter();
+	
+	
 	protected ACam(final SubnodeConfiguration subnodeConfiguration)
 	{
 	}
@@ -68,9 +65,11 @@ public abstract class ACam extends AModule implements IBallReplacer
 	
 	protected void notifyNewCameraFrame(final SSL_DetectionFrame frame, final TimeSync timeSync)
 	{
+		CamDetectionFrame camDetectionFrame = camDetectionConverter.convertDetectionFrame(frame, timeSync);
+		camDetectionFrame = camObjectFilter.filter(camDetectionFrame);
 		for (ICamFrameObserver observer : observers)
 		{
-			observer.onNewCameraFrame(frame, timeSync);
+			observer.onNewCamDetectionFrame(camDetectionFrame);
 		}
 	}
 	
@@ -80,6 +79,15 @@ public abstract class ACam extends AModule implements IBallReplacer
 		for (ICamFrameObserver observer : observers)
 		{
 			observer.onNewCameraGeometry(geometry);
+		}
+	}
+	
+	
+	protected void notifyNewVisionPacket(final SSL_WrapperPacket packet)
+	{
+		for (ICamFrameObserver observer : observers)
+		{
+			observer.onNewVisionPacket(packet);
 		}
 	}
 	
@@ -96,33 +104,5 @@ public abstract class ACam extends AModule implements IBallReplacer
 	protected void removeAllObservers()
 	{
 		observers.clear();
-	}
-	
-	
-	/**
-	 * @return the ballReplacer
-	 */
-	public final IBallReplacer getBallReplacer()
-	{
-		return ballReplacer;
-	}
-	
-	
-	/**
-	 * @param ballReplacer the ballReplacer to set
-	 */
-	public final void setBallReplacer(final IBallReplacer ballReplacer)
-	{
-		this.ballReplacer = ballReplacer;
-	}
-	
-	
-	@Override
-	public void replaceBall(final IVector3 pos, final IVector3 vel)
-	{
-		if (ballReplacer != this)
-		{
-			ballReplacer.replaceBall(pos, vel);
-		}
 	}
 }

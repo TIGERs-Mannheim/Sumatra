@@ -1,17 +1,14 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 4, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.wp.data;
 
-import edu.tigers.sumatra.bot.IBot;
+import edu.tigers.sumatra.bot.MoveConstraints;
+import edu.tigers.sumatra.bot.RobotInfo;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.IVector2;
+import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**
@@ -19,11 +16,8 @@ import edu.tigers.sumatra.math.IVector2;
  */
 public interface ITrackedBot extends ITrackedObject
 {
-	
-	/**
-	 * @return
-	 */
-	ITrackedBot mirrorNew();
+	@Override
+	ITrackedBot mirrored();
 	
 	
 	/**
@@ -75,9 +69,8 @@ public interface ITrackedBot extends ITrackedObject
 	
 	
 	/**
-	 * @return
+	 * @return id of the bot
 	 */
-	@Override
 	BotID getBotId();
 	
 	
@@ -90,13 +83,13 @@ public interface ITrackedBot extends ITrackedObject
 	/**
 	 * @return the angle
 	 */
-	double getAngle();
+	double getOrientation();
 	
 	
 	/**
 	 * @return the aVel
 	 */
-	double getaVel();
+	double getAngularVel();
 	
 	
 	/**
@@ -108,13 +101,7 @@ public interface ITrackedBot extends ITrackedObject
 	/**
 	 * @return
 	 */
-	boolean isAvailableToAi();
-	
-	
-	/**
-	 * @return
-	 */
-	IBot getBot();
+	RobotInfo getRobotInfo();
 	
 	
 	/**
@@ -122,5 +109,11 @@ public interface ITrackedBot extends ITrackedObject
 	 * @return
 	 */
 	IVector2 getBotKickerPosByTime(double t);
+	
+	
+	/**
+	 * @return
+	 */
+	MoveConstraints getMoveConstraints();
 	
 }

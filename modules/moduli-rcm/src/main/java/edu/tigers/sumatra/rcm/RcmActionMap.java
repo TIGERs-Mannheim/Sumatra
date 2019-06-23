@@ -1,18 +1,11 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Aug 31, 2014
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.rcm;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -51,26 +44,12 @@ public class RcmActionMap
 	private static final String							CONFIG_ENDING	= ".rcc";
 	private static final String							ENCODING			= "UTF-8";
 																						
-	private final List<RcmActionMapping>				actionMappings	= new ArrayList<RcmActionMapping>();
+	private final List<RcmActionMapping>				actionMappings	= new ArrayList<>();
 	private final Controller								controller;
+	private final Map<ERcmControllerConfig, Double>	configValues	= new LinkedHashMap<>();
 	private String												configName		= "default";
 																						
-	private final Map<ERcmControllerConfig, Double>	configValues	= new LinkedHashMap<ERcmControllerConfig, Double>();
 																						
-																						
-	/**
-	 */
-	public enum ERcmControllerConfig
-	{
-		/**  */
-		DEADZONE,;
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	/**
 	 * @param controller
 	 */
@@ -82,12 +61,12 @@ public class RcmActionMap
 	
 	
 	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
+	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
 	/**
 	 * Put a mapping for a skill
-	 * 
+	 *
 	 * @param identifiers
 	 * @param eSkill
 	 */
@@ -98,6 +77,10 @@ public class RcmActionMap
 		actionMappings.add(mapping);
 	}
 	
+	
+	// --------------------------------------------------------------------------
+	// --- methods --------------------------------------------------------------
+	// --------------------------------------------------------------------------
 	
 	/**
 	 * @param identifiers
@@ -110,7 +93,6 @@ public class RcmActionMap
 		actionMappings.add(mapping);
 	}
 	
-	
 	/**
 	 * @param mapping
 	 */
@@ -118,7 +100,6 @@ public class RcmActionMap
 	{
 		actionMappings.add(mapping);
 	}
-	
 	
 	/**
 	 * @param mapping
@@ -128,14 +109,13 @@ public class RcmActionMap
 		actionMappings.remove(mapping);
 	}
 	
-	
 	/**
 	 * @param file
 	 */
 	public void save(final File file)
 	{
-		Map<String, Object> jsonMap = new LinkedHashMap<String, Object>();
-		List<JSONObject> jsonArray = new ArrayList<JSONObject>(actionMappings.size());
+		Map<String, Object> jsonMap = new LinkedHashMap<>();
+		List<JSONObject> jsonArray = new ArrayList<>(actionMappings.size());
 		for (RcmActionMapping mapping : actionMappings)
 		{
 			jsonArray.add(mapping.toJSON());
@@ -147,30 +127,14 @@ public class RcmActionMap
 		jsonMap.put("mapping", jsonArray);
 		
 		String json = JSONValue.toJSONString(jsonMap);
-		BufferedWriter bw = null;
 		try
 		{
-			bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), ENCODING));
-			bw.write(json);
-			
+			Files.write(Paths.get(file.getAbsolutePath()), json.getBytes());
 		} catch (IOException err)
 		{
 			log.error("Could not save config.", err);
-		} finally
-		{
-			if (bw != null)
-			{
-				try
-				{
-					bw.close();
-				} catch (IOException err)
-				{
-					log.error("Could not close config file " + file, err);
-				}
-			}
 		}
 	}
-	
 	
 	/**
 	 * @param file
@@ -216,7 +180,6 @@ public class RcmActionMap
 		return true;
 	}
 	
-	
 	private File getDefaultFile(final Controller controller)
 	{
 		String ctrlName = controller.getName().replaceAll("[ /\\\\]", "_");
@@ -224,19 +187,17 @@ public class RcmActionMap
 		return file;
 	}
 	
-	
 	/**
 	 * @param controller
 	 */
 	public void loadDefault(final Controller controller)
 	{
 		File file = getDefaultFile(controller);
-		if (file.exists() && load(file))
+		if (file.exists())
 		{
-			return;
+			load(file);
 		}
 	}
-	
 	
 	/**
 	 * @param controller
@@ -250,12 +211,12 @@ public class RcmActionMap
 	
 	/**
 	 * Create all used components and adapt them if necessary
-	 * 
+	 *
 	 * @return
 	 */
 	public List<ExtComponent> createComponents()
 	{
-		List<ExtComponent> comps = new LinkedList<ExtComponent>();
+		List<ExtComponent> comps = new LinkedList<>();
 		for (RcmActionMapping mapping : actionMappings)
 		{
 			ExtComponent component = null;
@@ -299,12 +260,6 @@ public class RcmActionMap
 		return comps;
 	}
 	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
 	/**
 	 * @return the configName
 	 */
@@ -314,6 +269,10 @@ public class RcmActionMap
 	}
 	
 	
+	// --------------------------------------------------------------------------
+	// --- getter/setter --------------------------------------------------------
+	// --------------------------------------------------------------------------
+	
 	/**
 	 * @param configName the configName to set
 	 */
@@ -321,7 +280,6 @@ public class RcmActionMap
 	{
 		this.configName = configName;
 	}
-	
 	
 	/**
 	 * @return the controller
@@ -331,7 +289,6 @@ public class RcmActionMap
 		return controller;
 	}
 	
-	
 	/**
 	 * @return the actionMappings
 	 */
@@ -340,12 +297,20 @@ public class RcmActionMap
 		return Collections.unmodifiableList(actionMappings);
 	}
 	
-	
 	/**
 	 * @return the configValues
 	 */
 	public Map<ERcmControllerConfig, Double> getConfigValues()
 	{
 		return configValues;
+	}
+	
+	
+	/**
+	 */
+	public enum ERcmControllerConfig
+	{
+		/**  */
+		DEADZONE,;
 	}
 }

@@ -1,14 +1,9 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Aug 14, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.visualizer.view.field;
 
-import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.ids.EAiTeam;
 
 
 /**
@@ -21,9 +16,13 @@ public enum EShapeLayerSource
 	/**  */
 	WP,
 	/**  */
-	AI_YELLOW,
+	AI_YELLOW_PRIMARY,
 	/**  */
-	AI_BLUE,
+	AI_BLUE_PRIMARY,
+	/** */
+	AI_YELLOW_SECONDARY,
+	/** */
+	AI_BLUE_SECONDARY,
 	/**  */
 	AUTOREFEREE;
 	
@@ -32,15 +31,18 @@ public enum EShapeLayerSource
 	 * @param teamColor
 	 * @return
 	 */
-	public static EShapeLayerSource forTeamColor(final ETeamColor teamColor)
+	public static EShapeLayerSource forAiTeam(final EAiTeam teamColor)
 	{
 		switch (teamColor)
 		{
-			case BLUE:
-				return EShapeLayerSource.AI_BLUE;
-			case YELLOW:
-				return EShapeLayerSource.AI_YELLOW;
-			case UNINITIALIZED:
+			case YELLOW_PRIMARY:
+				return AI_YELLOW_PRIMARY;
+			case BLUE_PRIMARY:
+				return AI_BLUE_PRIMARY;
+			case YELLOW_SECONDARY:
+				return AI_YELLOW_SECONDARY;
+			case BLUE_SECONDARY:
+				return AI_BLUE_SECONDARY;
 			default:
 				throw new IllegalArgumentException();
 		}
