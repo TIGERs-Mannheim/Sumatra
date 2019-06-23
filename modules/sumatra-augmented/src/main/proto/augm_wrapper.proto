@@ -1,0 +1,95 @@
+package tigers;
+
+option java_package = "edu.dhbw.mannheim.tigers.sumatra.proto";
+option java_outer_classname = "AugmWrapperProtos";
+
+message AugmWrapper {
+  required uint64 timestamp = 1;
+	required Field field = 2;	
+	repeated TrackedBot bots = 3;
+	repeated ShapeCollection shapeCollections = 4;
+  optional Referee referee = 5;
+}
+
+message ShapeCollection {
+  required string identifier = 1;
+  repeated Line lines = 2;
+  repeated Circle circles = 3;
+  repeated Point points = 4;
+  repeated Text texts = 5;
+}
+
+message Field {
+	required int32 length = 1;
+	required int32 width = 2;
+	required Color aiColor = 3;
+}
+
+enum Color {
+	YELLOW = 1;
+	BLUE = 2;
+}
+
+message TrackedBot {
+	required Vector pos = 1;
+	required float orient = 2;
+	required Color color = 3;
+	required int32 id = 4;
+}
+
+message Line {
+	required Vector vStart = 1;
+	required Vector vEnd = 2;
+	required RGB color = 3;
+	optional float linewidth = 4 [default = 1];
+}
+
+message Circle {
+	required Vector vCenter = 1;
+	required float radius = 2;
+	required RGB  color = 3;
+  optional float linewidth = 4 [default = 1];
+}
+
+message Point {
+	required Vector vPoint = 1;
+	required RGB color = 2;
+  optional float thickness = 3 [default = 1];
+}
+
+message Text {
+  required Vector vPoint = 1;
+  required RGB color = 2;
+  required string text = 3;
+}
+
+message Vector {
+	required float x = 1;
+	required float y = 2;
+	optional float z = 3;
+}
+
+message RGB {
+	required int32 r = 1;
+	required int32 g = 2;
+	required int32 b = 3;
+}
+
+message RefereeTeam {
+	optional string name = 1 [default = "Unknown"];
+	optional int32 score = 2;
+	optional int32 yellowCards = 3;
+	optional int32 redCards = 4;
+	optional int32 timeouts = 5;
+	optional int32 timeoutTime = 6;
+}
+
+message Referee {
+	required string command = 1;
+	required string gameState = 2;
+	required bool updated = 3;
+	optional int32 timeLeft = 4;
+	optional string stage = 5;
+	optional RefereeTeam teamYellow = 6;
+	optional RefereeTeam teamBlue = 7;
+}

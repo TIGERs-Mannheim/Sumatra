@@ -1,0 +1,24 @@
+package edu.dhbw.mannheim.tigers.sumatra.proto;
+
+option java_package = "edu.dhbw.mannheim.tigers.sumatra.proto";
+option java_outer_classname = "BotActionCommandProtos";
+
+import "android_bot_color_id.proto";
+
+message BotActionCommand {
+	required BotColorId botId = 1;
+	optional float translateX = 2;
+	optional float translateY = 3;
+	optional float rotate = 4;
+	optional float kickForce = 5;
+	optional float chipForce = 6;
+	optional float kickArm = 7;
+	optional float chipArm = 8;
+	optional float dribble = 9;
+	optional bool disarm = 11;
+	optional bool nextBot = 12;
+	optional bool unassignBot = 13;
+	optional float accelerate = 14;
+	optional float decelerate = 15;
+}
+

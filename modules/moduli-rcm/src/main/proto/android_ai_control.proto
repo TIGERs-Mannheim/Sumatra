@@ -1,0 +1,18 @@
+package edu.dhbw.mannheim.tigers.sumatra.proto;
+
+option java_package = "edu.dhbw.mannheim.tigers.sumatra.proto";
+option java_outer_classname = "AiControlProtos";
+
+import "android_bot_color_id.proto";
+import "android_param_instance.proto";
+
+message AiControl {
+	required BotColorId botId = 1;
+	enum Type {
+		SKILL = 1;
+		ROLE = 2;
+		PLAY = 3;
+	}
+	required Type type = 2;
+	required ParamInstance instance = 3;
+}

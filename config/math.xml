@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edu.tigers.sumatra.ai.data.math base="edu.tigers.sumatra.ai.data.math">
+    <AiMath>
+        <distanceScaling>0.2</distanceScaling>
+        <ignoreEnemyBotChipKickDistance>1000.0</ignoreEnemyBotChipKickDistance>
+        <minDirectShootScoreChange>0.3</minDirectShootScoreChange>
+        <minimumDesiredBallVelocity>2.0</minimumDesiredBallVelocity>
+        <redirectAngleMethod>PHY</redirectAngleMethod>
+        <redirectSearchStepDistance>200.0</redirectSearchStepDistance>
+        <shootSpread>0.1</shootSpread>
+    </AiMath>
+    <ProbabilityMath>
+        <distanceScaling>0.2</distanceScaling>
+        <shootSpread>0.1</shootSpread>
+    </ProbabilityMath>
+</edu.tigers.sumatra.ai.data.math>

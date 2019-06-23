@@ -1,0 +1,22 @@
+package edu.dhbw.mannheim.tigers.sumatra.proto;
+
+option java_package = "edu.dhbw.mannheim.tigers.sumatra.proto";
+option java_outer_classname = "RefereeMsgProtos";
+
+message RefereeCommandSimple {
+	enum Command {
+		FORCE_START = 1;
+		STOP = 2;
+		HALT = 3;
+		NORMAL_START = 4;
+		KICKOFF_Y = 5;
+		KICKOFF_B = 6;
+		PENALTY_Y = 7;
+		PENALTY_B = 8;
+		INDIRECT_Y = 9;
+		INDIRECT_B = 10;
+		DIRECT_Y = 11;
+		DIRECT_B = 12;
+	}
+	required Command command = 1;
+}

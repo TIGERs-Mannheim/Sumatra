@@ -34,6 +34,11 @@ function [ D ] = loadAll( folder )
     D.wpBots = data.loadWpBots(file);
   end
   
+  file = strcat(folder, '/wpBotsTest.csv');
+  if exist(file, 'file')
+    D.wpBotsUpdated = data.loadWpBots(file);
+  end
+  
   file = strcat(folder, '/rawBots.csv');
   if exist(file, 'file')
     D.rawBots = data.loadRawBots(file);
@@ -42,6 +47,16 @@ function [ D ] = loadAll( folder )
   file = strcat(folder, '/nearestBot.csv');
   if exist(file, 'file')
     D.nearestBot = data.loadWpBots(file);
+  end
+  
+  file = strcat(folder, '/skillBots.csv');
+  if exist(file, 'file')
+    D.skillBots = data.loadSkillBots(file);
+  end
+  
+  file = strcat(folder, '/isBots.csv');
+  if exist(file, 'file')
+    D.isBots = data.loadWpBots(file);
   end
 end
 

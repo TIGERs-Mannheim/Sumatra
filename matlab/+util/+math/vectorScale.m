@@ -1,7 +1,9 @@
 function [ vOut ] = vectorScale( vIn, length )
-%ANGLESCALE Summary of this function goes here
-%   Detailed explanation goes here
-  vOut = vIn * length / norm(vIn);
+%ANGLESCALE Scale vectors
+%   vIn     Nx2
+%   length  scalar length of new vector(s)
+  assert(size(vIn,2) == 2);
+  vOut = vIn * length / util.math.vectorNorm(vIn);
 
 end
 

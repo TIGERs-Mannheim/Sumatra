@@ -1,0 +1,15 @@
+package edu.dhbw.mannheim.tigers.sumatra.proto;
+
+option java_package = "edu.dhbw.mannheim.tigers.sumatra.proto";
+option java_outer_classname = "BotColorIdProtos";
+
+message BotColorId {
+	required int32 botId = 1 [default=-1];
+	enum Color {
+		YELLOW = 0;
+		BLUE = 1;
+		UNINITIALIZED = 2;
+	}
+	required Color color = 2 [default=UNINITIALIZED]; 
+}
+

@@ -1,0 +1,31 @@
+package edu.tigers.sumatra;
+
+message RadioProtocolCommand {
+  // The unique ID of the robot, as identified by SSL-Vision.
+  required int32 robot_id = 1;
+
+  // Desired forward drive velocity in meters / second.
+  required float velocity_x = 2;
+
+  // Desired sideways left drive velocity in meters / second.
+  required float velocity_y = 3;
+
+  // Desired counter-clockwise angular velocity in radians / second.
+  required float velocity_r = 4;
+
+  // Desired flat kick speed, in meters / second.
+  // If this optional field is missing, then no flat kick command should be
+  // sent.
+  optional float flat_kick = 5;
+
+  // Desired chip kick distance, in meters.
+  // If this optional field is missing, then no flat kick command should be
+  // sent. If this field is present along with the flat_kick field, the
+  // flat_kick command takes precedence.
+  optional float chip_kick = 6;
+
+  // Desired dribbler spin, from -1 to +1, where -1 is the maximum reverse-spin
+  // that can be imparted to the ball, and +1 is the maximum forward-spin
+  // that can be imparted to the ball.
+  optional float dribbler_spin = 7;
+}

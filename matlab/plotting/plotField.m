@@ -37,7 +37,7 @@ function plotField( fieldSize, scale )
   plot(coords(:,1), coords(:,2),'k');
   
   % center circle
-  plotCircle(centerRadius, 'k');
+  plotCircle([0,0], centerRadius, 'k');
   
   % penalty areas
   penX = length/2 - penAreaRadius;

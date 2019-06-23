@@ -1,0 +1,11 @@
+package edu.dhbw.mannheim.tigers.sumatra.proto;
+
+option java_package = "edu.dhbw.mannheim.tigers.sumatra.proto";
+option java_outer_classname = "LifeSignProtos";
+
+import "android_bot_color_id.proto";
+
+message LifeSign {
+	required string name = 1;
+	optional BotColorId activeBot = 2;
+}

@@ -19,7 +19,7 @@ function result = learnBallModel(varargin)
       pos = rawBall.pos;
     end
     velDiff = abs(vel(2:end) - vel(1:end-1));
-    cuts = find(velDiff > 500);
+    cuts = find(velDiff > 400);
     
     for c=1:length(cuts)
       iStart = cuts(c) + 10;
@@ -56,13 +56,13 @@ function result = learnBallModel(varargin)
    
   result = coeffvalues(fitresult);
    
-%   figure( 'Name', 'BallMovementApproximation' );
-%   plot( fitresult, [xData, yData], zData );
-%   title 'BallMovementApproximation'
-%   xlabel 'Velocity [mm / s]'
-%   ylabel 'Time [ms]'
-%   zlabel 'Traveled Distance [mm]'
-%   grid on
+  figure( 'Name', 'BallMovementApproximation' );
+  plot( fitresult, [xData, yData], zData );
+  title 'BallMovementApproximation'
+  xlabel 'Velocity [mm / s]'
+  ylabel 'Time [ms]'
+  zlabel 'Traveled Distance [mm]'
+  grid on
 
   %figure(1)
   %clf;

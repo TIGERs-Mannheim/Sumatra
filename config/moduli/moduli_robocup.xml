@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<centralSoftware>
+	<moduliPath></moduliPath>
+
+	<globalConfiguration>
+		<environment>ROBOCUP</environment>
+	</globalConfiguration>
+
+
+	<module id="cam" type="ACam">
+		<implementation> edu.tigers.sumatra.cam.SSLVisionCam </implementation>
+
+		<properties>
+		</properties>
+	</module>
+
+
+	<module id="worldpredictor" type="AWorldpredictor">
+		<implementation> edu.tigers.sumatra.wp.kalman.ExtKalman
+		</implementation>
+
+		<properties>
+		</properties>
+
+		<dependency>cam</dependency>
+		<dependency>timer</dependency>
+	</module>
+
+
+	<module id="referee" type="AReferee">
+		<implementation> edu.tigers.sumatra.referee.RefereeHandler
+		</implementation>
+
+		<properties>
+		</properties>
+	</module>
+
+
+<!-- 	<module id="autoreferee" type="AReferee"> -->
+<!-- 		<implementation> -->
+<!-- 			edu.tigers.sumatra.autoreferee.AutoReferee -->
+<!-- 		</implementation> -->
+
+<!-- 		<properties> -->
+<!-- 		</properties> -->
+<!-- 	</module> -->
+
+
+	<module id="botmanager" type="ABotManager">
+		<implementation> edu.tigers.sumatra.botmanager.BotManager
+		</implementation>
+
+		<properties>
+			<basestation-impl>edu.tigers.sumatra.botmanager.basestation.TigersBaseStation
+			</basestation-impl>
+		</properties>
+	</module>
+
+
+	<module id="skillsystem" type="ASkillSystem">
+		<implementation>
+			edu.tigers.sumatra.skillsystem.GenericSkillSystem
+		</implementation>
+
+		<properties>
+		</properties>
+
+		<dependency>botmanager</dependency>
+	</module>
+
+
+	<module id="ai_yellow" type="AAgent">
+		<implementation>
+			edu.tigers.sumatra.ai.Agent
+		</implementation>
+
+		<properties>
+		</properties>
+
+		<dependency>skillsystem</dependency>
+		<dependency>referee</dependency>
+		<dependency>worldpredictor</dependency>
+		<dependency>timer</dependency>
+	</module>
+
+
+	<module id="ai_blue" type="AAgent">
+		<implementation>
+			edu.tigers.sumatra.ai.Agent
+		</implementation>
+
+		<properties>
+		</properties>
+
+		<dependency>skillsystem</dependency>
+		<dependency>referee</dependency>
+		<dependency>worldpredictor</dependency>
+		<dependency>timer</dependency>
+	</module>
+
+
+	<module id="timer" type="ATimer">
+		<implementation> edu.tigers.sumatra.timer.SumatraTimer
+		</implementation>
+
+		<properties>
+		</properties>
+	</module>
+
+	<module id="recorder" type="RecordManager">
+		<implementation> edu.tigers.sumatra.persistance.RecordManager
+		</implementation>
+
+		<properties>
+		</properties>
+	</module>
+
+	<module id="ParameterOptimizer" type="ParameterOptimizer">
+		<implementation> edu.tigers.sumatra.paramoptimizer.ParameterOptimizer
+		</implementation>
+
+		<properties>
+		</properties>
+	</module>
+
+<!-- 	<module id="wfexporter" type="WorldFrameSender"> -->
+<!-- 		<implementation> edu.tigers.sumatra.wp.exporter.WorldFrameSender -->
+<!-- 		</implementation> -->
+
+<!-- 		<properties> -->
+<!-- 		</properties> -->
+<!-- 	</module> -->
+
+	<!-- <module id="sim" type="Simulation"> -->
+	<!-- <implementation> sim.Simulation </implementation> -->
+	<!-- <properties></properties> -->
+	<!-- <dependency>skillsystem</dependency> -->
+	<!-- <dependency>referee</dependency> -->
+	<!-- <dependency>worldpredictor</dependency> -->
+	<!-- <dependency>ai_blue</dependency> -->
+	<!-- <dependency>ai_yellow</dependency> -->
+	<!-- <dependency>cam</dependency> -->
+	<!-- <dependency>timer</dependency> -->
+	<!-- </module> -->
+
+
+ 	<module id="multiTeamMessage" type="AMultiTeamMessage">
+ 		<implementation> edu.tigers.sumatra.multiteammessage.MultiTeamMessageHandler
+ 		</implementation> 
+ 		<properties></properties> 
+ 	</module> 
+</centralSoftware>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edu.tigers.sumatra.ai.sisyphus base="edu.tigers.sumatra.ai.sisyphus">
+    <finder>
+        <traj>
+            <obstacles>
+                <ObstacleGenerator>
+                    <defSecDistBall>200.0</defSecDistBall>
+                    <defSecDistBots>0</defSecDistBots>
+                    <minSecDistBots>0</minSecDistBots>
+                    <tHorz>1.0</tHorz>
+                    <tHorzBots>1.0</tHorzBots>
+                </ObstacleGenerator>
+            </obstacles>
+            <TrajPathNode>
+                <collisionStepSize>0.1</collisionStepSize>
+                <plottingStepSize>0.1</plottingStepSize>
+                <showTimes>false</showTimes>
+                <showVel>false</showVel>
+            </TrajPathNode>
+        </traj>
+    </finder>
+    <PathFinderThread>
+        <numberOfThreads>2</numberOfThreads>
+    </PathFinderThread>
+</edu.tigers.sumatra.ai.sisyphus>

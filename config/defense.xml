@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edu.tigers.sumatra.ai.metis.defense.data.DefenseAux base="edu.tigers.sumatra.ai.metis.defense.data.DefenseAux">
+    <crucialDefendersEnabled>true</crucialDefendersEnabled>
+    <forceDoubleDefOnBall>false</forceDoubleDefOnBall>
+    <ignoreEnemyBotsLine>1000.0</ignoreEnemyBotsLine>
+    <innerMan2ManAtPenArea>false</innerMan2ManAtPenArea>
+    <innerPassiveAgressive>true</innerPassiveAgressive>
+    <maxBallControlVel>6.0</maxBallControlVel>
+    <maxDistInnerDefender2goal>6000</maxDistInnerDefender2goal>
+    <maxXBotBlockingDefender>0</maxXBotBlockingDefender>
+    <maxXBotBlockingDefenderKickOff>-635.0</maxXBotBlockingDefenderKickOff>
+    <nearDefPointDist>360.0</nearDefPointDist>
+    <neverBlockStaticDefensive>true</neverBlockStaticDefensive>
+    <noDirecctShotDefRadius>720.0</noDirecctShotDefRadius>
+    <outerDefendersPassiveAgressive>true</outerDefendersPassiveAgressive>
+    <spareDirectShotDefActivated>true</spareDirectShotDefActivated>
+    <useTrajectoriesForPathCosts>false</useTrajectoriesForPathCosts>
+    <yLimitDefenders>2935.0</yLimitDefenders>
+</edu.tigers.sumatra.ai.metis.defense.data.DefenseAux>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edu.tigers.sumatra.wp base="edu.tigers.sumatra.wp">
+    <AWorldPredictor>
+        <correctFlyingBalls>false</correctFlyingBalls>
+        <exclusionRectP1>0;0</exclusionRectP1>
+        <exclusionRectP2>0;0</exclusionRectP2>
+        <ownThread>false</ownThread>
+    </AWorldPredictor>
+    <kalman>
+        <data>
+            <PredictionContext>
+                <maxStepCount>20</maxStepCount>
+                <predictionLookahead>0.0</predictionLookahead>
+                <predictionLookahead:SUMATRA>0</predictionLookahead:SUMATRA>
+                <stepSize>0.01</stepSize>
+            </PredictionContext>
+        </data>
+    </kalman>
+</edu.tigers.sumatra.wp>

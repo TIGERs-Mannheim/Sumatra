@@ -1,0 +1,199 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>edu.tigers.sumatra</groupId>
+  <artifactId>sumatra-main</artifactId>
+  <version>5.0</version>
+  <name>sumatra-main</name>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <repositories>
+
+    <repository>
+      <id>tigers_public</id>
+      <url>http://tigers-mannheim.de/nexus/content/groups/public/
+      </url>
+    </repository>
+
+    <repository>
+      <id>jitpack.io</id>
+      <url>https://jitpack.io</url>
+    </repository>
+
+  </repositories>
+  
+  <dependencies>
+
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>1.2.17</version>
+    </dependency>
+
+    
+    <dependency>
+      <groupId>edu.tigers.sumatra</groupId>
+      <artifactId>common-gui-config</artifactId>
+      <version>1.0</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>edu.tigers.sumatra</groupId>
+      <artifactId>sumatra-gui-ai</artifactId>
+      <version>1.0</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>edu.tigers.sumatra</groupId>
+      <artifactId>sumatra-gui-bot</artifactId>
+      <version>1.0</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>edu.tigers.sumatra</groupId>
+      <artifactId>sumatra-gui-log</artifactId>
+      <version>1.0</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>edu.tigers.sumatra</groupId>
+      <artifactId>sumatra-gui-rcm</artifactId>
+      <version>1.0</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>edu.tigers.sumatra</groupId>
+      <artifactId>sumatra-gui-referee</artifactId>
+      <version>1.0</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>edu.tigers.sumatra</groupId>
+      <artifactId>sumatra-gui-replay</artifactId>
+      <version>1.0</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>edu.tigers.sumatra</groupId>
+      <artifactId>sumatra-gui-sim</artifactId>
+      <version>1.0</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>edu.tigers.sumatra</groupId>
+      <artifactId>sumatra-gui-timer</artifactId>
+      <version>1.0</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>edu.tigers.sumatra</groupId>
+      <artifactId>sumatra-gui-visualizer</artifactId>
+      <version>1.0</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>edu.tigers.sumatra</groupId>
+      <artifactId>sumatra-gui-wp</artifactId>
+      <version>1.0</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>edu.tigers.sumatra</groupId>
+      <artifactId>sumatra-grsim</artifactId>
+      <version>1.0</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>edu.tigers.sumatra</groupId>
+      <artifactId>moduli-wp-export</artifactId>
+      <version>1.0</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>edu.tigers.sumatra</groupId>
+      <artifactId>moduli-parameter-optimizer</artifactId>
+      <version>1.0</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>edu.tigers.sumatra</groupId>
+      <artifactId>sumatra-shared-radio</artifactId>
+      <version>1.0</version>
+    </dependency>
+    
+    <dependency>
+		  <groupId>edu.tigers.sumatra</groupId>
+		  <artifactId>moduli-autoreferee</artifactId>
+		  <version>1.0</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>edu.tigers.sumatra</groupId>
+      <artifactId>autoreferee-gui</artifactId>
+      <version>1.0</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>edu.tigers.sumatra</groupId>
+      <artifactId>sumatra-snapshot</artifactId>
+      <version>1.0</version>
+    </dependency>
+    
+  </dependencies>
+  
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.3</version>
+        <configuration>
+          <source>1.8</source>
+          <target>1.8</target>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>2.4</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.10.3</version>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <configuration>
+                <additionalparam>-Xdoclint:none</additionalparam>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+	    <groupId>org.codehaus.mojo</groupId>
+	    <artifactId>exec-maven-plugin</artifactId>
+	    <version>1.4.0</version>
+	    <configuration>
+	      <mainClass>edu.tigers.sumatra.Sumatra</mainClass>
+		</configuration>
+	  </plugin>
+    </plugins>
+  </build>
+</project>

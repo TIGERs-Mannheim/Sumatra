@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edu.tigers.sumatra.ai.pandora.roles.support.LegalPointChecker base="edu.tigers.sumatra.ai.pandora.roles.support.LegalPointChecker">
+    <distToPenaltyArea>1200.0</distToPenaltyArea>
+</edu.tigers.sumatra.ai.pandora.roles.support.LegalPointChecker>

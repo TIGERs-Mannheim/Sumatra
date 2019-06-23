@@ -8,6 +8,10 @@ function [ wpBall ] = loadWpBall( file )
     end
     if size(T,2) > 10
       wpBall.timestamp = T(:,11);
+      wpBall.time = wpBall.timestamp / 1e9;
+    end
+    if size(T,2) > 11
+      wpBall.confidence = T(:,12);
     end
 end
 

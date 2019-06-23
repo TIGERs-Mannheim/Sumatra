@@ -1,0 +1,12 @@
+package edu.dhbw.mannheim.tigers.sumatra.proto;
+
+option java_package = "edu.dhbw.mannheim.tigers.sumatra.proto";
+option java_outer_classname = "AiControlAvailableProtos";
+
+import "android_param_instance.proto";
+
+message AiControlAvailable {
+	repeated ParamInstance plays = 2;
+	repeated ParamInstance roles = 3;
+	repeated ParamInstance skills = 4;
+}

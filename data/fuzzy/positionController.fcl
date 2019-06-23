@@ -1,0 +1,37 @@
+
+FUNCTION_BLOCK position
+
+VAR_INPUT
+    distance : REAL;
+END_VAR
+
+VAR_OUTPUT
+    speed : REAL;
+END_VAR
+
+FUZZIFY distance
+    TERM far := (190, 0) (2500, 1) (4000, 1);
+    TERM close := (120, 0) (1500, 1) (2500, 0);
+END_FUZZIFY
+
+DEFUZZIFY speed
+    TERM fast := (1.0,0) (1.5,1) (2.0,1);
+    TERM slow := (0,1) (1,1) (2,0);
+    METHOD : COG;
+    DEFAULT := 0;
+END_DEFUZZIFY
+
+RULEBLOCK No1
+    AND : MIN;
+    ACT : MIN;
+    ACCU : MAX;
+
+    RULE 1 : IF distance IS far
+                THEN speed IS fast;
+                
+    RULE 2 : IF distance IS close
+               THEN speed IS slow;
+
+END_RULEBLOCK
+
+END_FUNCTION_BLOCK

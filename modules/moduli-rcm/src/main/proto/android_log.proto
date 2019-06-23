@@ -1,0 +1,17 @@
+package edu.dhbw.mannheim.tigers.sumatra.proto;
+
+option java_package = "edu.dhbw.mannheim.tigers.sumatra.proto";
+option java_outer_classname = "LogMessagesProtos";
+
+message LogMessage {
+	required string message = 1;
+	enum Level {
+		TRACE = 1;
+		DEBUG = 2;
+		INFO = 3;
+		WARN = 4;
+		ERROR = 5;
+		FATAL = 6;
+	}
+	required Level level = 2;
+}

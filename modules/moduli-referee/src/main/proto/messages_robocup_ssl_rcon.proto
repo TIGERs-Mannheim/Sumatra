@@ -1,0 +1,160 @@
+package edu.tigers.sumatra;
+
+option java_outer_classname = "RefboxRemoteControl";
+
+import "messages_robocup_ssl_referee.proto";
+
+// The TCP half-connection from controller to referee box carries a sequence of
+// these messages, sent on demand, each preceded by its length in bytes as a
+// 4-byte big-endian integer.
+//
+// There is no rule on how often requests can be, or need to be, sent. A remote
+// control client connected to the referee box over a reliable link will
+// typically send messages only when a change of game state is needed. However,
+// a remote control client connected over an unreliable link (e.g. wifi) may
+// wish to send a no-op request (a message with only message_id filled in) at a
+// fixed frequency to detect and report connection failures. Such no-op
+// requests cause no change to game state but solicit a reply from the referee
+// box with the OK outcome.
+//
+// Each request may contain at most one action. An action is a stage, a
+// command, or a card. Setting more than one action in a single request results
+// in the request being rejected. This simplifies understanding the order in
+// which actions occur.
+message SSL_RefereeRemoteControlRequest {
+	// The message ID. This number may be selected arbitrarily by the client.
+	// It is never interpreted by the referee box. It is returned unmodified in
+	// the SSL_RefereeRemoteControlReply message to allow correlating replies
+	// to requests.
+	required uint32 message_id = 1;
+
+	// The stage of the game to move to, which should be omitted if the stage
+	// need not change.
+	//
+	// Do not use this field to enter the NORMAL_FIRST_HALF,
+	// NORMAL_SECOND_HALF, EXTRA_FIRST_HALF, or EXTRA_SECOND_HALF stages.
+	// Instead, prepare a kickoff and then issue the NORMAL_START command via
+	// the command field.
+	optional SSL_Referee.Stage stage = 2;
+
+	// The command to be issued, which should be omitted if no command should
+	// be issued at this time (i.e. the command currently in force may continue
+	// to be used, or a stage change is occurring which comes with its own new
+	// command). Sending a request with this field set always increments the
+	// command counter in the broadcast referee box packet, which implies a
+	// “new activity”.
+	//
+	// The TIMEOUT_YELLOW and TIMEOUT_BLUE commands must be used to report
+	// entering timeouts. The timeout counter and clock are updated when those
+	// commands are issued. STOP is used to end the timeout.
+	//
+	// HALT can be issued during a timeout to stop the timeout clock. The
+	// appropriate choice of TIMEOUT_YELLOW or TIMEOUT_BLUE can be issued to
+	// resume the timeout clock, or STOP can be issued to end the timeout.
+	//
+	// The GOAL_YELLOW and GOAL_BLUE commands must be used to report goals
+	// scored. The goal counters in the TeamInfo messages are incremented when
+	// those commands are issued.
+	optional SSL_Referee.Command command = 3;
+
+	// The coordinates of the Designated Position (whose purpose depends on the
+	// current command). This is measured in millimetres and correspond to
+	// SSL-Vision coordinates. this field must be present if and only if the
+	// command field is present and is set to a ball placement command. If the
+	// command field is absent, the designated position does not change. If the
+	// command field is present and the designated position field is absent, no
+	// designated position is included in the new command.
+	optional SSL_Referee.Point designated_position = 4;
+
+	// The card to issue.
+	message CardInfo {
+		// Which type of card to issue.
+		enum CardType {
+			CARD_YELLOW = 0;
+			CARD_RED = 1;
+		}
+		required CardType type = 1;
+
+		// Which team to issue the card to.
+		enum CardTeam {
+			TEAM_YELLOW = 0;
+			TEAM_BLUE = 1;
+		}
+		required CardTeam team = 2;
+	}
+	optional CardInfo card = 5;
+
+	// The command_counter of the most recent multicast referee packet observed
+	// by the remote control. If this does not match the command_counter value
+	// of the current referee packet, the request is rejected.
+	//
+	// The purpose of this field is to avoid race conditions between input from
+	// a human and input from an autonomous software referee using the remote
+	// control protocol. For example, consider the case where the game is in
+	// play (Normal Start) and the human operator presses the Halt button while
+	// the autonomous referee simultaneously sends the Stop command. Without
+	// this field:
+	// 1. The Halt button is pressed, resulting in a new command being started.
+	// 2. The autonomous referee sends the Stop command to the remote control
+	//    port.
+	// 3. The Stop command is accepted and takes precedence due to arriving
+	//    later.
+	// In the worst case, this could result in the operator having to press
+	// Halt multiple times before the field is made safe.
+	//
+	// By including the command_counter field in all requests on the remote
+	// control port, and autonomous referee avoids this problem. Instead, the
+	// situation would develop as follows:
+	// 1. The Halt button is pressed, resulting in a new command being started.
+	// 2. The autonomous referee sends the Stop command, but with the Normal
+	//    Start command’s command_counter.
+	// 3. The referee box rejects the Stop command and remains halted, due to
+	//    the mismatch in command_counter value.
+	// 4. The autonomous referee waits for the next multicast packet from the
+	//    referee box, to get the new command_counter value.
+	// 5. The autonomous referee box observes that the game is halted and
+	//    decides it should not send the Stop command.
+	//
+	// If this field is omitted, the check for a matching counter value is
+	// bypassed and requests are never rejected for this reason. This is
+	// appropriate for remote control software managed by a human operator,
+	// where no race condition is possible.
+	optional uint32 last_command_counter = 6;
+}
+
+// The TCP half-connection from referee box to controller carries a sequence of
+// these messages, sent precisely once per received
+// SSL_RefereeRemoteControlRequest message, each preceded by its length in
+// bytes as as 4-byte big-endian integer.
+message SSL_RefereeRemoteControlReply {
+	// The message ID of the request message to which this reply corresponds.
+	required uint32 message_id = 1;
+
+	// The outcome of the request.
+	enum Outcome {
+		// The request was accepted.
+		OK = 0;
+		// The request was rejected because it contained more than one action.
+		MULTIPLE_ACTIONS = 1;
+		// The request was rejected because the requested stage does not exist,
+		// is not accessible from the current game state, or is a game half
+		// (which must be entered by means of a NORMAL_START command, not a
+		// stage change).
+		BAD_STAGE = 2;
+		// The request was rejected because the requested command does not
+		// exist or is not accessible from the current game state.
+		BAD_COMMAND = 3;
+		// The request was rejected because a designated position was provided
+		// with a command that does not need one or with the command field
+		// absent, or the command field was set to a ball placement command but
+		// a designated position was not provided.
+		BAD_DESIGNATED_POSITION = 4;
+		// The request was rejected because the command_counter field does not
+		// match.
+		BAD_COMMAND_COUNTER = 5;
+		// The request was rejected because a card cannot be issued at this
+		// time.
+		BAD_CARD = 6;
+	}
+	required Outcome outcome = 2;
+};

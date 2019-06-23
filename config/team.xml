@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edu.tigers.sumatra.referee.TeamConfig base="edu.tigers.sumatra.referee.TeamConfig">
+    <keeperIdBlue>0</keeperIdBlue>
+    <keeperIdYellow>0</keeperIdYellow>
+    <leftTeam>BLUE</leftTeam>
+</edu.tigers.sumatra.referee.TeamConfig>

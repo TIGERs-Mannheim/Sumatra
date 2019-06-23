@@ -1,0 +1,37 @@
+package edu.tigers.sumatra.wp.exporter;
+
+message WorldFrame
+{
+	required int64 frameId = 1;
+	required int64 timestamp = 2;
+	repeated Bot bots = 3;
+	optional Ball ball = 4;
+}
+
+message Ball
+{
+	required Vector3 pos = 1;
+	required Vector3 vel = 2;
+	optional Vector3 acc = 3;
+}
+
+message Bot
+{
+	required int32 id = 1;
+	required TeamColor teamColor = 2;
+	required Vector3 pos = 3;
+	required Vector3 vel = 4;
+	optional Vector3 acc = 5;
+}
+
+message Vector3 {
+	required double x = 1;
+	required double y = 2;
+	required double z = 3;
+}
+
+enum TeamColor
+{
+	YELLOW = 1;
+	BLUE = 2;
+}

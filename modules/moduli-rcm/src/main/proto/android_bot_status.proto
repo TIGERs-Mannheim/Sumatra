@@ -1,0 +1,20 @@
+package edu.dhbw.mannheim.tigers.sumatra.proto;
+
+option java_package = "edu.dhbw.mannheim.tigers.sumatra.proto";
+option java_outer_classname = "BotStatusProtos";
+
+import "android_bot_color_id.proto";
+
+message BotStatus {
+	required BotColorId botId = 1;
+	optional bool connected = 2 [default = false];
+	optional bool available = 3 [default = true];
+	optional bool blocked = 4 [default = false];
+	optional int32 battery = 5 [default = 0];
+	optional int32 kicker = 6 [default = 0];
+	optional string controlledBy = 7 [default = ""];
+}
+
+message BotStati {
+	repeated BotStatus stati = 1;
+}

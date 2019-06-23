@@ -1,0 +1,10 @@
+package tigers;
+
+option java_package = "edu.dhbw.mannheim.tigers.sumatra.proto";
+option java_outer_classname = "AugmWrapperContainerProtos";
+
+import "augm_wrapper.proto";
+
+message AugmWrapperContainer {
+  repeated AugmWrapper wrapper = 1;
+}

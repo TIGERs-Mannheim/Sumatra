@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<centralSoftware>
+	<moduliPath></moduliPath>
+
+	<globalConfiguration>
+		<environment>ROBOCUP</environment>
+	</globalConfiguration>
+
+
+	<module id="cam" type="ACam">
+		<implementation> edu.tigers.sumatra.cam.SSLVisionCam </implementation>
+
+		<properties>
+		</properties>
+	</module>
+
+
+	<module id="worldpredictor" type="AWorldpredictor">
+		<implementation> edu.tigers.sumatra.wp.kalman.ExtKalman
+		</implementation>
+
+		<properties>
+		</properties>
+
+		<dependency>cam</dependency>
+		<dependency>timer</dependency>
+	</module>
+
+
+	<module id="referee" type="AReferee">
+		<implementation> edu.tigers.sumatra.referee.RefereeHandler
+		</implementation>
+
+		<properties>
+		</properties>
+	</module>
+
+	<module id="autoreferee" type="AReferee">
+		<implementation>
+			edu.tigers.autoreferee.AutoRefModule
+		</implementation>
+
+		<properties>
+		</properties>
+	</module>
+
+	<module id="timer" type="ATimer">
+		<implementation> edu.tigers.sumatra.timer.SumatraTimer
+		</implementation>
+
+		<properties>
+		</properties>
+	</module>
+
+	<!-- <module id="recorder" type="RecordManager">
+		<implementation> edu.tigers.sumatra.persistance.RecordManager
+		</implementation>
+
+		<properties>
+		</properties>
+	</module> -->
+
+</centralSoftware>

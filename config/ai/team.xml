@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<team base="edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config">
-    <TeamConfig>
-        <keeperIdBlue class="int" comment="">0</keeperIdBlue>
-        <keeperIdYellow class="int" comment="">0</keeperIdYellow>
-        <leftTeam
-            class="edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor" comment="">YELLOW</leftTeam>
-    </TeamConfig>
-</team>

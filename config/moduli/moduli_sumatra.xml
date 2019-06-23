@@ -1,102 +1,88 @@
 <?xml version="1.0" encoding="ISO-8859-1" ?>
-
 <centralSoftware>
-
-	<moduliPath>edu.dhbw.mannheim.tigers.sumatra.model.modules</moduliPath>
+	<moduliPath></moduliPath>
 
 	<globalConfiguration>
+		<environment>SUMATRA</environment>
 	</globalConfiguration>
 
 
 	<module id="cam" type="ACam">
-
-		<implementation> cam.SumatraCam </implementation>
+		<implementation> edu.tigers.sumatra.sim.SumatraCam </implementation>
 
 		<properties>
 		</properties>
-
 	</module>
 
 
 	<module id="worldpredictor" type="AWorldpredictor">
-		<!-- //:::>>> (start reading configuration)(do not delete this line!) -->
-		<implementation> worldpredictor.WPFacade </implementation>
+		<implementation> edu.tigers.sumatra.wp.kalman.ExtKalman
+		</implementation>
 
 		<properties>
-			<camNo>1</camNo>
-			<stepSize>0</stepSize> <!-- in ms -->
-			<stepCount>0</stepCount>
-			<minYellowInWorldFrame>5</minYellowInWorldFrame>
-			<minBlueInWorldFrame>5</minBlueInWorldFrame>
-			<useCam>-1</useCam><!-- use -1 to get frames from all cams -->
 		</properties>
 
 		<dependency>cam</dependency>
-		<!-- //:::<<< (end reading configuration)(do not delete this line!) -->
+		<dependency>timer</dependency>
 	</module>
 
 
 	<module id="referee" type="AReferee">
+		<implementation> edu.tigers.sumatra.referee.RefereeHandler
+		</implementation>
 
-		<implementation> referee.RefereeHandler  </implementation>
-
-		<properties>
-			<interface></interface>		<!-- 127.0.0.0, 192.168.70.0 -->
-			<address> 224.5.23.1 </address>			<!-- 224.5.23.1 -->
-			<port> 10003 </port>					<!-- 10003[real] -->
-			<simId> 127.0.0.1 </simId>
-			<simPort> 20011 </simPort>
-			<ballReplacer>sumatra</ballReplacer>
-		</properties>
-		
-		<dependency>cam</dependency>
-		
-	</module>
-	
-	
-	<module id="multiTeamMessage" type="AMultiTeamMessage">
-		<implementation> multiteammessage.MultiTeamMessageHandler </implementation>
 		<properties>
 		</properties>
 	</module>
 
 
 	<module id="autoreferee" type="AReferee">
-		<implementation> autoreferee.AutoReferee  </implementation>
+		<implementation>
+			edu.tigers.autoreferee.AutoRefModule
+		</implementation>
+
 		<properties>
-			<RefereeMsgStrings>RefereeMsgStrings.properties</RefereeMsgStrings>
+		</properties>
+	</module>
+
+
+	<module id="autoreferee_legacy" type="AReferee">
+		<implementation>
+			edu.tigers.sumatra.autoreferee.AutoReferee
+		</implementation>
+
+		<properties>
 		</properties>
 	</module>
 
 
 	<module id="botmanager" type="ABotManager">
-
-		<implementation> botmanager.GenericManager </implementation>
+		<implementation> edu.tigers.sumatra.botmanager.BotManager
+		</implementation>
 
 		<properties>
-			<autoChargeInitially>true</autoChargeInitially>
-			<maxCap>180</maxCap>
-      <config>botmanager_sumatra.xml</config>
+			<basestation-impl>edu.tigers.sumatra.sim.SumatraBaseStation
+			</basestation-impl>
 		</properties>
-
 	</module>
 
 
 	<module id="skillsystem" type="ASkillSystem">
-
-		<implementation> skillsystem.GenericSkillSystem </implementation>
+		<implementation>
+			edu.tigers.sumatra.skillsystem.GenericSkillSystem
+		</implementation>
 
 		<properties>
-			<!-- [us] -->
-			<minProcessingPeriod>10000</minProcessingPeriod>	<!-- 20000 -->
 		</properties>
 
 		<dependency>botmanager</dependency>
-
 	</module>
+
 
 	<module id="ai_yellow" type="AAgent">
-		<implementation> ai.Agent </implementation>
+		<implementation>
+			edu.tigers.sumatra.ai.Agent
+		</implementation>
 
 		<properties>
 		</properties>
@@ -104,11 +90,14 @@
 		<dependency>skillsystem</dependency>
 		<dependency>referee</dependency>
 		<dependency>worldpredictor</dependency>
-
+		<dependency>timer</dependency>
 	</module>
-	
+
+
 	<module id="ai_blue" type="AAgent">
-		<implementation> ai.Agent </implementation>
+		<implementation>
+			edu.tigers.sumatra.ai.Agent
+		</implementation>
 
 		<properties>
 		</properties>
@@ -116,51 +105,50 @@
 		<dependency>skillsystem</dependency>
 		<dependency>referee</dependency>
 		<dependency>worldpredictor</dependency>
-
+		<dependency>timer</dependency>
 	</module>
 
 
 	<module id="timer" type="ATimer">
-
-		<implementation> timer.SumatraTimer </implementation>
-
-		<properties>
-		</properties>
-
-	</module>
-	
-	
-	<module id="sim" type="Simulation">
-
-		<implementation> sim.Simulation </implementation>
+		<implementation> edu.tigers.sumatra.timer.SumatraTimer
+		</implementation>
 
 		<properties>
 		</properties>
-
-		<dependency>skillsystem</dependency>
-		<dependency>referee</dependency>
-		<dependency>worldpredictor</dependency>
-		<dependency>ai_blue</dependency>
-		<dependency>ai_yellow</dependency>
-		<dependency>cam</dependency>
-		
 	</module>
 
-	<!-- only for CAGE -->
-	<!-- <module id="vis" type="AVisDataConnector"> -->
+	<module id="recorder" type="RecordManager">
+		<implementation> edu.tigers.sumatra.persistance.RecordManager
+		</implementation>
 
-	<!-- <implementation> vis.SimVisDataConnector </implementation> -->
+		<properties>
+		</properties>
+	</module>
 
-	<!-- <properties> -->
-	<!-- <interface>127.0.0.0</interface> 127.0.0.0 -->
-	<!-- <localPort> 10030 </localPort> 10030 -->
-	<!-- <targetPort> 40201 </targetPort> 40201 -->
-	<!-- <address> 224.5.23.2 </address> 224.5.23.2 -->
-	<!-- <sleepFor> 50 </sleepFor> -->
-	<!-- </properties> -->
+	<module id="ParameterOptimizer" type="ParameterOptimizer">
+		<implementation> edu.tigers.sumatra.paramoptimizer.ParameterOptimizer
+		</implementation>
 
+		<properties>
+		</properties>
+	</module>
+
+	<!-- <module id="sim" type="Simulation"> -->
+	<!-- <implementation> sim.Simulation </implementation> -->
+	<!-- <properties></properties> -->
+	<!-- <dependency>skillsystem</dependency> -->
+	<!-- <dependency>referee</dependency> -->
 	<!-- <dependency>worldpredictor</dependency> -->
-
+	<!-- <dependency>ai_blue</dependency> -->
+	<!-- <dependency>ai_yellow</dependency> -->
+	<!-- <dependency>cam</dependency> -->
+	<!-- <dependency>timer</dependency> -->
 	<!-- </module> -->
 
+
+ 	<module id="multiTeamMessage" type="AMultiTeamMessage">
+ 		<implementation> edu.tigers.sumatra.multiteammessage.MultiTeamMessageHandler 
+ 		</implementation> 
+ 		<properties></properties> 
+ 	</module> 
 </centralSoftware>

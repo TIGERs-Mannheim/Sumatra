@@ -1,0 +1,23 @@
+             +-----------+         +-----------+
++----+   No  | Has       |  Yes    | Minimum   | No  +----+
+|Exit| <-----+ follow-up +-------> | wait time +---> |Exit|
++----+       | action?   |         | over?     |     +----+
+             +-----------+         |           |
+                                   +----+------+
+                                        |
+                                        v Yes
+
+      +-------------------+    Yes +---------+  No  +------------+
+      |  Bots stationary? | <------+ Is ball +----> | Placement  |
+      |  Stop distance    |        | placed? |      | attempted? |
+      |  correct?         |        +---------+      ++-------+---+
+      +--+----------+-----+                          |       |
+         |          |                         Yes +--+       +--+ No
+  No  +--+          |Yes                          v             v
+      v             v
+                                               +------+   +------------+
+   +------+    +-------------+                 | Exit |   | Place ball |
+   | Exit |    | Send action |                 +------+   +------------+
+   +------+    | command     |
+               +-------------+
+
