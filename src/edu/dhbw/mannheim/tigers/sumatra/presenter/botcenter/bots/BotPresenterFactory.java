@@ -37,6 +37,10 @@ public final class BotPresenterFactory
 		switch (bot.getType())
 		{
 			case GRSIM:
+			{
+				presenter = new GrSimBotPresenter(bot);
+			}
+				break;
 			case TIGER:
 			{
 				presenter = new TigerBotPresenter(bot);

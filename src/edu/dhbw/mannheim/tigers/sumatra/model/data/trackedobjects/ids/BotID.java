@@ -1,54 +1,66 @@
 /*
  * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
- * Date: 21.09.2011
- * Author(s): osteinbrecher
- * 
+ * Date: Oct 14, 2013
+ * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids;
 
-import javax.persistence.Embeddable;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeam;
+import com.sleepycat.persist.model.Persistent;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 
 
 /**
  * Identifier for {@link edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot}.
  * 
- * @author Oliver Steinbrecher
- * 
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@Embeddable
-public class BotID extends AObjectID
+@Persistent(version = 2)
+public final class BotID extends AObjectID
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long	serialVersionUID	= -6393895441923435492L;
 	
-	private ETeam					team					= ETeam.UNKNOWN;
+	/**  */
+	private static final long						serialVersionUID	= 3900802414469252613L;
+	private final ETeamColor						teamColor;
+	
+	private static final BotID						UNINITIALIZED_ID	= new BotID();
+	private static final Map<Integer, BotID>	YELLOW_BOT_IDS		= new HashMap<Integer, BotID>();
+	private static final Map<Integer, BotID>	BLUE_BOT_IDS		= new HashMap<Integer, BotID>();
+	private static final Map<Integer, BotID>	UNKNOWN_BOT_IDS	= new HashMap<Integer, BotID>();
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
 	/**
-	 * Creates an uninitialized {@link BotID}.
-	 */
-	public BotID()
+	  * 
+	  */
+	private BotID()
 	{
 		super();
+		teamColor = ETeamColor.UNINITIALIZED;
 	}
 	
 	
 	/**
-	 * Creates a tiger {@link BotID} concerning the team color in the moduli configuration file.
+	 * Creates a BotID with a team color of your choice
 	 * 
 	 * @param number id between BOT_ID_MIN and BOT_ID_MAX
+	 * @param color
 	 */
-	public BotID(int number)
+	private BotID(final int number, final ETeamColor color)
 	{
 		super(number);
 		if (!((number >= AObjectID.BOT_ID_MIN) && (number <= AObjectID.BOT_ID_MAX))
@@ -56,35 +68,53 @@ public class BotID extends AObjectID
 		{
 			throw new IllegalArgumentException("You tried to initialize a BotId with an invalid id: " + number);
 		}
-		team = ETeam.TIGERS;
+		teamColor = color;
 	}
 	
 	
 	/**
-	 * Creates a BotID with a team of your choice
-	 * @param number id between BOT_ID_MIN and BOT_ID_MAX
-	 * @param team TIGERS or OPPONENTS
+	 * @return
 	 */
-	public BotID(int number, ETeam team)
+	public static BotID createBotId()
 	{
-		this(number);
-		if ((team == ETeam.TIGERS) || (team == ETeam.OPPONENTS))
+		return UNINITIALIZED_ID;
+	}
+	
+	
+	/**
+	 * @param number
+	 * @param color
+	 * @return
+	 */
+	public static BotID createBotId(final int number, final ETeamColor color)
+	{
+		if (number == -1)
 		{
-			this.team = team;
-		} else
+			return UNINITIALIZED_ID;
+		}
+		switch (color)
 		{
-			throw new IllegalArgumentException("Team must be TIGERS or OPPONENTS!");
+			case BLUE:
+				return createBotId(BLUE_BOT_IDS, number, color);
+			case UNINITIALIZED:
+				return createBotId(UNKNOWN_BOT_IDS, number, color);
+			case YELLOW:
+				return createBotId(YELLOW_BOT_IDS, number, color);
+			default:
+				throw new IllegalStateException();
 		}
 	}
 	
 	
-	/**
-	 * Deep copy
-	 * @param botID
-	 */
-	public BotID(BotID botID)
+	private static BotID createBotId(final Map<Integer, BotID> bots, final int number, final ETeamColor color)
 	{
-		this(botID.getNumber(), botID.team);
+		BotID botId = bots.get(number);
+		if (botId == null)
+		{
+			botId = new BotID(number, color);
+			bots.put(number, botId);
+		}
+		return botId;
 	}
 	
 	
@@ -96,16 +126,43 @@ public class BotID extends AObjectID
 	@Override
 	public String toString()
 	{
-		return "BotID [team=" + team + ", number=" + getNumber() + "]";
+		return "BotID " + getNumber() + " " + teamColor;
+	}
+	
+	
+	// --------------------------------------------------------------------------
+	// --- getter/setter --------------------------------------------------------
+	// --------------------------------------------------------------------------
+	
+	
+	/**
+	 * For Yellow color, ids are normal, for blue color, id + 100 is returned
+	 * 
+	 * @return
+	 */
+	public int getNumberWithColorOffset()
+	{
+		return getNumber() + (teamColor == ETeamColor.YELLOW ? 0 : 100);
 	}
 	
 	
 	/**
-	 * @return the team
+	 * Get number with color offset in basestation format
+	 * 
+	 * @return
 	 */
-	public ETeam getTeam()
+	public int getNumberWithColorOffsetBS()
 	{
-		return team;
+		return getNumber() + (teamColor == ETeamColor.YELLOW ? 0 : AObjectID.BOT_ID_MAX + 1);
+	}
+	
+	
+	/**
+	 * @return the teamColor
+	 */
+	public final ETeamColor getTeamColor()
+	{
+		return teamColor;
 	}
 	
 	
@@ -114,23 +171,94 @@ public class BotID extends AObjectID
 	{
 		final int prime = 31;
 		int result = super.hashCode();
-		result = (prime * result) + ((team == null) ? 0 : team.hashCode());
-		result = (prime * result) + getNumber();
+		result = (prime * result) + ((teamColor == null) ? 0 : teamColor.hashCode());
 		return result;
 	}
 	
 	
 	@Override
-	public boolean equals(Object o)
+	public boolean equals(final Object obj)
 	{
-		if (!(o instanceof BotID))
-		{
-			return false;
-		}
-		if ((getNumber() == ((BotID) o).getNumber()) && (getTeam() == ((BotID) o).getTeam()))
+		if (this == obj)
 		{
 			return true;
 		}
-		return false;
+		if (!super.equals(obj))
+		{
+			return false;
+		}
+		if (getClass() != obj.getClass())
+		{
+			return false;
+		}
+		BotID other = (BotID) obj;
+		if (teamColor != other.teamColor)
+		{
+			return false;
+		}
+		return true;
+	}
+	
+	
+	@Override
+	public int compareTo(final AObjectID o)
+	{
+		if (o.getClass().equals(BotID.class))
+		{
+			return Integer.compare(getNumberWithColorOffset(), ((BotID) o).getNumberWithColorOffset());
+		}
+		return super.compareTo(o);
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public static Comparator<BotID> getComparator()
+	{
+		return new Comparator<BotID>()
+		{
+			
+			@Override
+			public int compare(final BotID o1, final BotID o2)
+			{
+				return Integer.compare(o1.getNumberWithColorOffset(), o2.getNumberWithColorOffset());
+			}
+		};
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public static Collection<BotID> getAllYellow()
+	{
+		return YELLOW_BOT_IDS.values();
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public static Collection<BotID> getAllBlue()
+	{
+		return BLUE_BOT_IDS.values();
+	}
+	
+	
+	/**
+	 * @param color
+	 * @return
+	 */
+	public static Collection<BotID> getAll(final ETeamColor color)
+	{
+		if (color == ETeamColor.BLUE)
+		{
+			return getAllBlue();
+		} else if (color == ETeamColor.YELLOW)
+		{
+			return getAllYellow();
+		}
+		throw new IllegalArgumentException("Only blue or yellow is allowed");
 	}
 }

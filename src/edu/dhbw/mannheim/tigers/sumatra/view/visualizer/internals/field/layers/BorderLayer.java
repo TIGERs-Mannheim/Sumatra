@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 15.10.2011
  * Author(s): osteinbrecher
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers;
@@ -13,8 +12,11 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamConfig;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.FieldPanel;
 
 
@@ -22,7 +24,6 @@ import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.FieldPan
  * Field Border Layer.
  * 
  * @author Oliver Steinbrecher
- * 
  */
 public class BorderLayer extends AFieldLayer
 {
@@ -62,29 +63,77 @@ public class BorderLayer extends AFieldLayer
 	
 	
 	@Override
-	protected void paintLayer(Graphics2D g)
+	protected void paintLayerAif(final Graphics2D g, final IRecordFrame frame)
 	{
 		final Graphics2D g2 = g;
 		
-		final int fieldCircleRadius = FieldPanel.scaleXLength(AIConfig.getGeometry().getCenterCircleRadius());
-		final int fieldGoalWidth = FieldPanel.scaleXLength(AIConfig.getGeometry().getGoalSize());
-		final int fieldGoalHeight = FieldPanel.scaleXLength(FIELD_GOAL_HEIGHT_BASE);
-		final int fieldGoalMarginPenaltyarea = FieldPanel.scaleXLength(AIConfig.getGeometry().getDistanceToPenaltyArea());
-		final int fieldGoalMarginPenlatyline = FieldPanel.scaleXLength(AIConfig.getGeometry()
-				.getLengthOfPenaltyAreaFrontLine());
-		final int fieldGoalPenaltyMark = FieldPanel.scaleXLength(AIConfig.getGeometry().getDistanceToPenaltyMark());
+		getFieldPanel().turnField(getFieldTurn(), -AngleMath.PI_HALF, g);
 		
-		final int fieldTotalWidth = FieldPanel.getFieldTotalWidth();
-		final int fieldTotalHeight = FieldPanel.getFieldTotalHeight();
-		final int fieldRefereeWidth = FieldPanel.scaleXLength(AIConfig.getGeometry().getJudgesBorderWidth());
-		final int fieldRefereeLength = FieldPanel.scaleXLength(AIConfig.getGeometry().getJudgesBorderLength());
+		final int fieldGoalWidth = getFieldPanel().scaleXLength(AIConfig.getGeometry().getGoalSize());
+		final int fieldGoalHeight = getFieldPanel().scaleXLength(FIELD_GOAL_HEIGHT_BASE);
 		
-		// --- paint background ---
-		g2.setColor(FIELD_COLOR_REFEREE);
-		g2.fillRect(-fieldRefereeWidth, -fieldRefereeLength, fieldTotalWidth + (2 * fieldRefereeWidth), fieldTotalHeight
-				+ (2 * fieldRefereeLength));
-		g2.setColor(FIELD_COLOR);
-		g2.fillRect(0, 0, fieldTotalWidth, fieldTotalHeight);
+		final int fieldTotalWidth = getFieldPanel().getFieldTotalWidth();
+		final int fieldTotalHeight = getFieldPanel().getFieldTotalHeight();
+		
+		g.setStroke(new BasicStroke());
+		
+		if ((frame.getWorldFrame().isInverted() && frame.getTeamColor().equals(ETeamColor.YELLOW)) ||
+				(!frame.getWorldFrame().isInverted() && frame.getTeamColor().equals(ETeamColor.BLUE)))
+		{
+			g2.setColor(Color.blue);
+		} else
+		{
+			g2.setColor(Color.yellow);
+		}
+		
+		// --- paint goal at top ---
+		g2.setStroke(new BasicStroke(2));
+		g2.drawLine((fieldTotalWidth - fieldGoalWidth) / 2, FieldPanel.FIELD_MARGIN,
+				(fieldTotalWidth - fieldGoalWidth) / 2, FieldPanel.FIELD_MARGIN - fieldGoalHeight);
+		g2.drawLine((fieldTotalWidth + fieldGoalWidth) / 2, FieldPanel.FIELD_MARGIN,
+				(fieldTotalWidth + fieldGoalWidth) / 2, FieldPanel.FIELD_MARGIN - fieldGoalHeight);
+		g2.drawLine((fieldTotalWidth - fieldGoalWidth) / 2, FieldPanel.FIELD_MARGIN - fieldGoalHeight,
+				(fieldTotalWidth + fieldGoalWidth) / 2, FieldPanel.FIELD_MARGIN - fieldGoalHeight);
+		
+		if (g2.getColor().equals(Color.yellow))
+		{
+			g2.setColor(Color.blue);
+		} else
+		{
+			g2.setColor(Color.yellow);
+		}
+		// --- paint goal at bottom ---
+		g2.setStroke(new BasicStroke(2));
+		g2.drawLine((fieldTotalWidth - fieldGoalWidth) / 2, fieldTotalHeight - FieldPanel.FIELD_MARGIN,
+				(fieldTotalWidth - fieldGoalWidth) / 2, (fieldTotalHeight - FieldPanel.FIELD_MARGIN) + fieldGoalHeight);
+		g2.drawLine((fieldTotalWidth + fieldGoalWidth) / 2, fieldTotalHeight - FieldPanel.FIELD_MARGIN,
+				(fieldTotalWidth + fieldGoalWidth) / 2, (fieldTotalHeight - FieldPanel.FIELD_MARGIN) + fieldGoalHeight);
+		g2.drawLine((fieldTotalWidth - fieldGoalWidth) / 2, (fieldTotalHeight - FieldPanel.FIELD_MARGIN)
+				+ fieldGoalHeight, (fieldTotalWidth + fieldGoalWidth) / 2, (fieldTotalHeight - FieldPanel.FIELD_MARGIN)
+				+ fieldGoalHeight);
+		
+		getFieldPanel().turnField(getFieldTurn(), AngleMath.PI_HALF, g);
+	}
+	
+	
+	@Override
+	protected void paintLayerSwf(final Graphics2D g, final SimpleWorldFrame frame)
+	{
+		final Graphics2D g2 = g;
+		
+		getFieldPanel().turnField(getFieldTurn(), -AngleMath.PI_HALF, g);
+		
+		final int fieldCircleRadius = getFieldPanel().scaleXLength(AIConfig.getGeometry().getCenterCircleRadius());
+		final int fieldGoalMarginPenaltyarea = getFieldPanel().scaleXLength(
+				AIConfig.getGeometry().getDistanceToPenaltyArea());
+		final int fieldGoalMarginPenlatyline = getFieldPanel().scaleXLength(
+				AIConfig.getGeometry().getLengthOfPenaltyAreaFrontLine());
+		final int fieldGoalPenaltyMark = getFieldPanel().scaleXLength(AIConfig.getGeometry().getDistanceToPenaltyMark());
+		
+		final int fieldTotalWidth = getFieldPanel().getFieldTotalWidth();
+		final int fieldTotalHeight = getFieldPanel().getFieldTotalHeight();
+		
+		g.setStroke(new BasicStroke());
 		
 		// --- paint outline ---
 		g2.setColor(Color.white);
@@ -136,52 +185,7 @@ public class BorderLayer extends AFieldLayer
 		g2.setColor(Color.white);
 		g2.drawLine((fieldTotalWidth / 2) - (5 / 2), fieldTotalHeight - FieldPanel.FIELD_MARGIN - fieldGoalPenaltyMark,
 				(fieldTotalWidth / 2) + (5 / 2), fieldTotalHeight - FieldPanel.FIELD_MARGIN - fieldGoalPenaltyMark);
-		
-		// if (TeamConfig.getInstance().getTeam().getPlayLeftToRight())
-		// {
-		if (TeamConfig.getInstance().getTeam().getTigersAreYellow())
-		{
-			g2.setColor(Color.yellow);
-		} else
-		{
-			g2.setColor(Color.blue);
-		}
-		// } else
-		// {
-		// if (TeamConfig.getInstance().getTeam().getTigersAreYellow())
-		// {
-		// g2.setColor(Color.blue);
-		// } else
-		// {
-		// g2.setColor(Color.yellow);
-		// }
-		// }
-		
-		// --- paint goal at top ---
-		g2.setStroke(new BasicStroke(2));
-		g2.drawLine((fieldTotalWidth - fieldGoalWidth) / 2, FieldPanel.FIELD_MARGIN,
-				(fieldTotalWidth - fieldGoalWidth) / 2, FieldPanel.FIELD_MARGIN - fieldGoalHeight);
-		g2.drawLine((fieldTotalWidth + fieldGoalWidth) / 2, FieldPanel.FIELD_MARGIN,
-				(fieldTotalWidth + fieldGoalWidth) / 2, FieldPanel.FIELD_MARGIN - fieldGoalHeight);
-		g2.drawLine((fieldTotalWidth - fieldGoalWidth) / 2, FieldPanel.FIELD_MARGIN - fieldGoalHeight,
-				(fieldTotalWidth + fieldGoalWidth) / 2, FieldPanel.FIELD_MARGIN - fieldGoalHeight);
-		
-		if (g2.getColor().equals(Color.yellow))
-		{
-			g2.setColor(Color.blue);
-		} else
-		{
-			g2.setColor(Color.yellow);
-		}
-		// --- paint goal at bottom ---
-		g2.setStroke(new BasicStroke(2));
-		g2.drawLine((fieldTotalWidth - fieldGoalWidth) / 2, fieldTotalHeight - FieldPanel.FIELD_MARGIN,
-				(fieldTotalWidth - fieldGoalWidth) / 2, (fieldTotalHeight - FieldPanel.FIELD_MARGIN) + fieldGoalHeight);
-		g2.drawLine((fieldTotalWidth + fieldGoalWidth) / 2, fieldTotalHeight - FieldPanel.FIELD_MARGIN,
-				(fieldTotalWidth + fieldGoalWidth) / 2, (fieldTotalHeight - FieldPanel.FIELD_MARGIN) + fieldGoalHeight);
-		g2.drawLine((fieldTotalWidth - fieldGoalWidth) / 2, (fieldTotalHeight - FieldPanel.FIELD_MARGIN)
-				+ fieldGoalHeight, (fieldTotalWidth + fieldGoalWidth) / 2, (fieldTotalHeight - FieldPanel.FIELD_MARGIN)
-				+ fieldGoalHeight);
+		getFieldPanel().turnField(getFieldTurn(), AngleMath.PI_HALF, g);
 	}
 	
 	// --------------------------------------------------------------------------

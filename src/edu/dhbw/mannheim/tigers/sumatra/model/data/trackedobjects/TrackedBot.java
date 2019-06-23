@@ -9,13 +9,19 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects;
 
-import javax.persistence.Embeddable;
+import net.sf.oval.constraint.NotNull;
 
+import com.sleepycat.persist.model.Persistent;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeam;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.AObjectID;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.UninitializedID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.WPConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.data.RobotMotionResult_V2;
 
@@ -32,7 +38,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextk
  * @author Gero
  * 
  */
-@Embeddable
+@Persistent
 public class TrackedBot extends ATrackedObject
 {
 	// --------------------------------------------------------------------------
@@ -43,35 +49,44 @@ public class TrackedBot extends ATrackedObject
 	
 	
 	/** mm */
-	private IVector2				pos;
+	@NotNull
+	private final Vector2		pos;
 	/** m/s */
-	private IVector2				vel;
+	@NotNull
+	private final Vector2		vel;
 	/** m/s^2 */
-	private IVector2				acc;
+	@NotNull
+	private final Vector2		acc;
 	
-	/** mm, not final for ObjectDB */
-	private int						height;
-	/** rad, not final for ObjectDB */
+	/** mm */
+	private final int				height;
+	/** rad not final for mirroring */
 	private float					angle;
-	/** rad/s,not final for ObjectDB */
-	private float					aVel;
-	/** rad/s^2, not final for ObjectDB */
-	private float					aAcc;
-	/** team, the bot belongs to, not final for ObjectDB */
-	private ETeam					team					= ETeam.UNKNOWN;
+	/** rad/s */
+	private final float			aVel;
+	/** rad/s^2 */
+	private final float			aAcc;
+	
+	private final BotID			botId;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructor(s) -------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/**
-	 * Providing a <strong>hard, deep</strong> copy of original
-	 * @param o
-	 */
-	protected TrackedBot(TrackedBot o, ETeam team)
+	
+	
+	@SuppressWarnings("unused")
+	protected TrackedBot()
 	{
-		this(o.id, o.getPos(), o.getVel(), o.getAcc(), o.getHeight(), o.getAngle(), o.getaVel(), o.getaAcc(),
-				o.confidence, team);
+		super(new UninitializedID(), 0);
+		pos = new Vector2();
+		acc = new Vector2();
+		vel = new Vector2();
+		height = 0;
+		angle = 0;
+		aVel = 0;
+		aAcc = 0;
+		botId = BotID.createBotId(id.getNumber(), ETeamColor.YELLOW);
 	}
 	
 	
@@ -89,17 +104,17 @@ public class TrackedBot extends ATrackedObject
 	 * @param team
 	 */
 	protected TrackedBot(AObjectID id, IVector2 pos, IVector2 vel, IVector2 acc, int height, float angle, float aVel,
-			float aAcc, float confidence, ETeam team)
+			float aAcc, float confidence, ETeam team, ETeamColor teamColor)
 	{
 		super(id, confidence);
-		this.pos = pos;
-		this.acc = acc;
-		this.vel = vel;
+		this.pos = new Vector2(pos);
+		this.acc = new Vector2(acc);
+		this.vel = new Vector2(vel);
 		this.height = height;
 		this.angle = angle;
 		this.aVel = aVel;
 		this.aAcc = aAcc;
-		this.team = team;
+		botId = BotID.createBotId(id.getNumber(), teamColor);
 	}
 	
 	
@@ -110,7 +125,8 @@ public class TrackedBot extends ATrackedObject
 	 * @param height
 	 * @return
 	 */
-	protected static TrackedBot motionToTrackedBot(AObjectID id, RobotMotionResult_V2 motion, int height)
+	protected static TrackedBot motionToTrackedBot(AObjectID id, RobotMotionResult_V2 motion, int height,
+			ETeamColor color)
 	{
 		IVector2 pos = new Vector2f((float) (motion.x / WPConfig.FILTER_CONVERT_MM_TO_INTERNAL_UNIT),
 				(float) (motion.y / WPConfig.FILTER_CONVERT_MM_TO_INTERNAL_UNIT));
@@ -126,7 +142,24 @@ public class TrackedBot extends ATrackedObject
 		final float aAcc = 0f;
 		
 		final float confidence = (float) motion.confidence;
-		return new TrackedBot(id, pos, vel, acc, height, angle, aVel, aAcc, confidence, ETeam.OPPONENTS);
+		return new TrackedBot(id, pos, vel, acc, height, angle, aVel, aAcc, confidence, ETeam.UNKNOWN, color);
+	}
+	
+	
+	/**
+	 * Mirror position, velocity and acceleration over x and y axis.
+	 * This instance will be modified!
+	 * Do NEVER call this in the AI!
+	 */
+	public void mirrorBot()
+	{
+		pos.setX(-pos.x);
+		pos.setY(-pos.y);
+		vel.setX(-vel.x);
+		vel.setY(-vel.y);
+		acc.setX(-acc.x);
+		acc.setY(-acc.y);
+		angle = AngleMath.normalizeAngle(angle + AngleMath.PI);
 	}
 	
 	
@@ -138,15 +171,7 @@ public class TrackedBot extends ATrackedObject
 	@Override
 	public BotID getId()
 	{
-		return new BotID(id.getNumber(), team);
-	}
-	
-	
-	@Override
-	public String toString()
-	{
-		return "TrackedBot [height=" + getHeight() + ", angle=" + getAngle() + ", aVel=" + getaVel() + ", aAcc="
-				+ getaAcc() + ", team=" + team + "]";
+		return botId;
 	}
 	
 	
@@ -189,61 +214,6 @@ public class TrackedBot extends ATrackedObject
 	}
 	
 	
-	/**
-	 * This method is not for setting the value. It only prevents eclipse from making the value final. The value has not
-	 * to be final, because it is written and read from a db for the learning play finder.
-	 * @param height the height to set
-	 */
-	protected void setHeight(int height)
-	{
-		this.height = height;
-	}
-	
-	
-	/**
-	 * This method is not for setting the value. It only prevents eclipse from making the value final. The value has not
-	 * to be final, because it is written and read from a db for the learning play finder.
-	 * @param angle the angle to set
-	 */
-	protected void setAngle(float angle)
-	{
-		this.angle = angle;
-	}
-	
-	
-	/**
-	 * This method is not for setting the value. It only prevents eclipse from making the value final. The value has not
-	 * to be final, because it is written and read from a db for the learning play finder.
-	 * @param aVel the aVel to set
-	 */
-	protected void setaVel(float aVel)
-	{
-		this.aVel = aVel;
-	}
-	
-	
-	/**
-	 * This method is not for setting the value. It only prevents eclipse from making the value final. The value has not
-	 * to be final, because it is written and read from a db for the learning play finder.
-	 * @param aAcc the aAcc to set
-	 */
-	protected void setaAcc(float aAcc)
-	{
-		this.aAcc = aAcc;
-	}
-	
-	
-	/**
-	 * This method is not for setting the value. It only prevents eclipse from making the value final. The value has not
-	 * to be final, because it is written and read from a db for the learning play finder.
-	 * @param team the team to set
-	 */
-	protected void setTeam(ETeam team)
-	{
-		this.team = team;
-	}
-	
-	
 	@Override
 	public IVector2 getPos()
 	{
@@ -264,4 +234,35 @@ public class TrackedBot extends ATrackedObject
 		return acc;
 	}
 	
+	
+	/**
+	 * @return the teamColor
+	 */
+	public final ETeamColor getTeamColor()
+	{
+		return botId.getTeamColor();
+	}
+	
+	
+	@Override
+	public String toString()
+	{
+		StringBuilder builder = new StringBuilder();
+		builder.append("TrackedBot [pos=");
+		builder.append(pos);
+		builder.append(", vel=");
+		builder.append(vel);
+		builder.append(", acc=");
+		builder.append(acc);
+		builder.append(", angle=");
+		builder.append(angle);
+		builder.append(", aVel=");
+		builder.append(aVel);
+		builder.append(", aAcc=");
+		builder.append(aAcc);
+		builder.append(", botId=");
+		builder.append(botId);
+		builder.append("]");
+		return builder.toString();
+	}
 }

@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 30.08.2010
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
@@ -12,12 +11,13 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
  * Tiger move command.
- * 
  * - velocities in [mm/s]
  * 
  * @author AndreR
@@ -28,12 +28,16 @@ public class TigerMotorMoveV2 extends ACommand
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	/** x component, [mm/s], int16_t */
+	@SerialData(type = ESerialDataType.UINT16)
 	private int			x;
 	/** y component, [mm/s], int16_t */
+	@SerialData(type = ESerialDataType.UINT16)
 	private int			y;
 	/** non-compensated angular velocity */
+	@SerialData(type = ESerialDataType.UINT16)
 	private int			w;
 	/** compensated angular velocity */
+	@SerialData(type = ESerialDataType.UINT16)
 	private int			v;
 	
 	private boolean	dirUsed	= false;
@@ -49,6 +53,7 @@ public class TigerMotorMoveV2 extends ACommand
 	 */
 	public TigerMotorMoveV2()
 	{
+		super(ECommand.CMD_MOTOR_MOVE_V2);
 	}
 	
 	
@@ -58,8 +63,10 @@ public class TigerMotorMoveV2 extends ACommand
 	 * @param vec Vector [m/s]
 	 * @param turnVelocity Rotation [rad/s]
 	 */
-	public TigerMotorMoveV2(IVector2 vec, float turnVelocity)
+	public TigerMotorMoveV2(final IVector2 vec, final float turnVelocity)
 	{
+		super(ECommand.CMD_MOTOR_MOVE_V2);
+		
 		setX(vec.x());
 		setY(vec.y());
 		setW(turnVelocity);
@@ -67,13 +74,14 @@ public class TigerMotorMoveV2 extends ACommand
 	
 	
 	/**
-	 * 
 	 * @param vec
 	 * @param turnVelocity
 	 * @param compensatedVelocity
 	 */
-	public TigerMotorMoveV2(IVector2 vec, float turnVelocity, float compensatedVelocity)
+	public TigerMotorMoveV2(final IVector2 vec, final float turnVelocity, final float compensatedVelocity)
 	{
+		super(ECommand.CMD_MOTOR_MOVE_V2);
+		
 		setX(vec.x());
 		setY(vec.y());
 		setW(turnVelocity);
@@ -82,22 +90,24 @@ public class TigerMotorMoveV2 extends ACommand
 	
 	
 	/**
-	 * 
 	 * @param vec
 	 */
-	public TigerMotorMoveV2(IVector2 vec)
+	public TigerMotorMoveV2(final IVector2 vec)
 	{
+		super(ECommand.CMD_MOTOR_MOVE_V2);
+		
 		setX(vec.x());
 		setY(vec.y());
 	}
 	
 	
 	/**
-	 * 
 	 * @param turnVelocity
 	 */
-	public TigerMotorMoveV2(float turnVelocity)
+	public TigerMotorMoveV2(final float turnVelocity)
 	{
+		super(ECommand.CMD_MOTOR_MOVE_V2);
+		
 		setW(turnVelocity);
 	}
 	
@@ -105,50 +115,12 @@ public class TigerMotorMoveV2 extends ACommand
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		x = byteArray2Short(data, 0);
-		y = byteArray2Short(data, 2);
-		w = byteArray2Short(data, 4);
-		v = byteArray2Short(data, 6);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		short2ByteArray(data, 0, x);
-		short2ByteArray(data, 2, y);
-		short2ByteArray(data, 4, w);
-		short2ByteArray(data, 6, v);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_MOTOR_MOVE_V2;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 8;
-	}
-	
-	
 	/**
 	 * Set XY vector [m/s]
 	 * 
 	 * @param v vector
 	 */
-	public void setXY(Vector2 v)
+	public void setXY(final Vector2 v)
 	{
 		setX(v.x);
 		setY(v.y);
@@ -187,7 +159,7 @@ public class TigerMotorMoveV2 extends ACommand
 	 * 
 	 * @param x velocity
 	 */
-	public void setX(float x)
+	public void setX(final float x)
 	{
 		this.x = (int) (x * 1000);
 		
@@ -211,7 +183,7 @@ public class TigerMotorMoveV2 extends ACommand
 	 * 
 	 * @param y velocity
 	 */
-	public void setY(float y)
+	public void setY(final float y)
 	{
 		this.y = (int) (y * 1000);
 		
@@ -235,7 +207,7 @@ public class TigerMotorMoveV2 extends ACommand
 	 * 
 	 * @param w turn speed
 	 */
-	public void setW(float w)
+	public void setW(final float w)
 	{
 		this.w = (int) (w * 1000);
 		
@@ -259,7 +231,7 @@ public class TigerMotorMoveV2 extends ACommand
 	 * 
 	 * @param v turn speed
 	 */
-	public void setV(float v)
+	public void setV(final float v)
 	{
 		this.v = (int) (v * 1000);
 		
@@ -268,12 +240,11 @@ public class TigerMotorMoveV2 extends ACommand
 	
 	
 	/**
-	 * 
 	 * @param vec
 	 * @param vw
 	 * @param vv
 	 */
-	public void setUnusedComponents(Vector2 vec, float vw, float vv)
+	public void setUnusedComponents(final Vector2 vec, final float vw, final float vv)
 	{
 		if (!dirUsed)
 		{

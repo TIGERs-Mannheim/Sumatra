@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Jan 15, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes;
@@ -12,20 +11,19 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes;
 import java.awt.Color;
 import java.awt.Graphics2D;
 
-import javax.persistence.Embeddable;
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
-import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.FieldPanel;
+import edu.dhbw.mannheim.tigers.sumatra.presenter.visualizer.IFieldPanel;
 
 
 /**
  * A simple drawable point
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
-@Embeddable
+@Persistent
 public class DrawablePoint extends Vector2f implements IDrawableShape
 {
 	
@@ -35,13 +33,19 @@ public class DrawablePoint extends Vector2f implements IDrawableShape
 	
 	private static final long	serialVersionUID	= 4412181486791350865L;
 	private static int			pointSize			= 4;
-	private Color					color					= Color.red;
+	private ColorWrapper			color					= new ColorWrapper(Color.red);
 	private String					text					= "";
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	@SuppressWarnings("unused")
+	private DrawablePoint()
+	{
+		
+	}
 	
 	
 	/**
@@ -51,7 +55,7 @@ public class DrawablePoint extends Vector2f implements IDrawableShape
 	public DrawablePoint(final IVector2 point, final Color color)
 	{
 		super(point);
-		this.color = color;
+		this.color = new ColorWrapper(color);
 	}
 	
 	
@@ -69,12 +73,12 @@ public class DrawablePoint extends Vector2f implements IDrawableShape
 	// --------------------------------------------------------------------------
 	
 	@Override
-	public void paintShape(Graphics2D g)
+	public void paintShape(final Graphics2D g, final IFieldPanel fieldPanel, final boolean invert)
 	{
 		// --- from SSLVision-mm to java2d-coordinates ---
-		final IVector2 transPoint = FieldPanel.transformToGuiCoordinates(this);
-		final int drawingX = (int) transPoint.x() - pointSize;
-		final int drawingY = (int) transPoint.y() - pointSize;
+		final IVector2 transPoint = fieldPanel.transformToGuiCoordinates(this, invert);
+		final int drawingX = (int) transPoint.x() - (pointSize / 2);
+		final int drawingY = (int) transPoint.y() - (pointSize / 2);
 		
 		g.setColor(getColor());
 		g.fillOval(drawingX, drawingY, pointSize, pointSize);
@@ -91,16 +95,22 @@ public class DrawablePoint extends Vector2f implements IDrawableShape
 	 */
 	public Color getColor()
 	{
-		return color;
+		// this may happen with old databases
+		if (color == null)
+		{
+			// standard color
+			return Color.red;
+		}
+		return color.getColor();
 	}
 	
 	
 	/**
 	 * @param color the color to set
 	 */
-	public void setColor(Color color)
+	public void setColor(final Color color)
 	{
-		this.color = color;
+		this.color = new ColorWrapper(color);
 	}
 	
 	
@@ -116,7 +126,7 @@ public class DrawablePoint extends Vector2f implements IDrawableShape
 	/**
 	 * @param text the text to set
 	 */
-	public final void setText(String text)
+	public final void setText(final String text)
 	{
 		this.text = text;
 	}
@@ -124,9 +134,8 @@ public class DrawablePoint extends Vector2f implements IDrawableShape
 	
 	/**
 	 * @param size of the point
-	 * 
 	 */
-	public void setSize(int size)
+	public void setSize(final int size)
 	{
 		pointSize = size;
 	}

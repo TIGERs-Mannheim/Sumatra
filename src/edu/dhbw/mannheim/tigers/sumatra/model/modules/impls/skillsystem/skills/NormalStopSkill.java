@@ -11,7 +11,6 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills;
 
 import java.util.List;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
 
@@ -33,7 +32,7 @@ public class NormalStopSkill extends AMoveSkill
 	
 	
 	@Override
-	public List<ACommand> doCalcEntryActions(TrackedTigerBot bot, List<ACommand> cmds)
+	public List<ACommand> doCalcEntryActions(List<ACommand> cmds)
 	{
 		getDevices().dribble(cmds, false);
 		getDevices().disarm(cmds);
@@ -45,7 +44,14 @@ public class NormalStopSkill extends AMoveSkill
 	
 	
 	@Override
-	protected void periodicProcess(TrackedTigerBot bot, List<ACommand> cmds)
+	protected void periodicProcess(List<ACommand> cmds)
 	{
+	}
+	
+	
+	@Override
+	public boolean needsVision()
+	{
+		return false;
 	}
 }

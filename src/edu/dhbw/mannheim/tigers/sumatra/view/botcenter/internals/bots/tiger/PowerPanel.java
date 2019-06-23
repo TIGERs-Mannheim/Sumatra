@@ -28,7 +28,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerSystemPowerLog;
@@ -174,33 +173,25 @@ public class PowerPanel extends JPanel
 	 */
 	public void addPowerLog(final TigerSystemPowerLog log)
 	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				iVccTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getiVCC());
-				i5VTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getI5V());
-				i3V3Trace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getI3V3());
-				
-				iVcc.setText(String.format(Locale.ENGLISH, "%1.3f", log.getiVCC()));
-				i5V.setText(String.format(Locale.ENGLISH, "%1.3f", log.getI5V()));
-				i3V3.setText(String.format(Locale.ENGLISH, "%1.3f", log.getI3V3()));
-				
-				uCell1.setString(String.format(Locale.ENGLISH, "%1.3f", log.getU(0)));
-				uCell2.setString(String.format(Locale.ENGLISH, "%1.3f", log.getU(1)));
-				uCell3.setString(String.format(Locale.ENGLISH, "%1.3f", log.getU(2)));
-				uCell4.setString(String.format(Locale.ENGLISH, "%1.3f", log.getU(3)));
-				uPower.setString(String.format(Locale.ENGLISH, "%1.3f",
-						log.getU(0) + log.getU(1) + log.getU(2) + log.getU(3)));
-				
-				uCell1.setValue((int) (log.getU(0) * 1000));
-				uCell2.setValue((int) (log.getU(1) * 1000));
-				uCell3.setValue((int) (log.getU(2) * 1000));
-				uCell4.setValue((int) (log.getU(3) * 1000));
-				uPower.setValue((int) ((log.getU(0) + log.getU(1) + log.getU(2) + log.getU(3)) * 1000));
-			}
-		});
+		iVccTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getiVCC());
+		i5VTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getI5V());
+		i3V3Trace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getI3V3());
+		
+		iVcc.setText(String.format(Locale.ENGLISH, "%1.3f", log.getiVCC()));
+		i5V.setText(String.format(Locale.ENGLISH, "%1.3f", log.getI5V()));
+		i3V3.setText(String.format(Locale.ENGLISH, "%1.3f", log.getI3V3()));
+		
+		uCell1.setString(String.format(Locale.ENGLISH, "%1.3f", log.getU(0)));
+		uCell2.setString(String.format(Locale.ENGLISH, "%1.3f", log.getU(1)));
+		uCell3.setString(String.format(Locale.ENGLISH, "%1.3f", log.getU(2)));
+		uCell4.setString(String.format(Locale.ENGLISH, "%1.3f", log.getU(3)));
+		uPower.setString(String.format(Locale.ENGLISH, "%1.3f", log.getU(0) + log.getU(1) + log.getU(2) + log.getU(3)));
+		
+		uCell1.setValue((int) (log.getU(0) * 1000));
+		uCell2.setValue((int) (log.getU(1) * 1000));
+		uCell3.setValue((int) (log.getU(2) * 1000));
+		uCell4.setValue((int) (log.getU(3) * 1000));
+		uPower.setValue((int) ((log.getU(0) + log.getU(1) + log.getU(2) + log.getU(3)) * 1000));
 	}
 	
 	

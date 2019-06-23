@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<conditions base="edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora">
+    <conditions>
+        <move>
+            <ViewAngleCondition>
+                <rotSpeedTolerance comment="Tol [rad/s] - when below_ rotation is considered to be done">0.1</rotSpeedTolerance>
+                <angleTolerance comment="Tol [rad] - this tolerance value is used to check if the viewing direction of the bot is correct.">0.17</angleTolerance>
+            </ViewAngleCondition>
+            <DestinationFreeCondition>
+                <destFreeTol comment="Dist [mm] - Distance between two bots up to which they are considered to conflict each other in position">180.0</destFreeTol>
+            </DestinationFreeCondition>
+            <DestinationCondition>
+                <posTolerance comment="Dist [mm] - distance between destination and current pos when positioning is considered done.">20.0</posTolerance>
+                <moveSpeedThreshold comment="Vel [m/s] - max velocity of bot when positining is considered done">0.5</moveSpeedThreshold>
+            </DestinationCondition>
+        </move>
+    </conditions>
+</conditions>

@@ -10,7 +10,9 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -25,8 +27,10 @@ public class BaseStationPing extends ACommand
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private long	id					= 0;
-	private int		payloadLength	= 0;
+	@SerialData(type = ESerialDataType.UINT32)
+	private long	id			= 0;
+	@SerialData(type = ESerialDataType.TAIL)
+	private byte[]	payload	= null;
 	
 	
 	// --------------------------------------------------------------------------
@@ -35,6 +39,7 @@ public class BaseStationPing extends ACommand
 	/** */
 	public BaseStationPing()
 	{
+		super(ECommand.CMD_BASE_PING);
 	}
 	
 	
@@ -45,45 +50,16 @@ public class BaseStationPing extends ACommand
 	 */
 	public BaseStationPing(long id, int payloadLength)
 	{
+		super(ECommand.CMD_BASE_PING);
+		
 		this.id = id;
-		this.payloadLength = payloadLength;
+		setPayloadLength(payloadLength);
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		id = byteArray2UInt(data, 0);
-		payloadLength = data.length - 4;
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		int2ByteArray(data, 0, (int) id);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_BASE_PING;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return payloadLength + 4;
-	}
 	
 	
 	// --------------------------------------------------------------------------
@@ -112,7 +88,12 @@ public class BaseStationPing extends ACommand
 	 */
 	public int getPayloadLength()
 	{
-		return payloadLength;
+		if (payload == null)
+		{
+			return 0;
+		}
+		
+		return payload.length;
 	}
 	
 	
@@ -121,6 +102,6 @@ public class BaseStationPing extends ACommand
 	 */
 	public void setPayloadLength(int payloadLength)
 	{
-		this.payloadLength = payloadLength;
+		payload = new byte[payloadLength];
 	}
 }

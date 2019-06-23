@@ -10,12 +10,10 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam;
 
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.FrameID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamProps;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.WPConfig;
 
 
 /**
@@ -59,9 +57,9 @@ public class CamDetectionFrame
 	/** */
 	public final List<CamBall>		balls;
 	/** */
-	public final List<CamRobot>	robotsTigers;
+	public final List<CamRobot>	robotsYellow;
 	/** */
-	public final List<CamRobot>	robotsEnemies;
+	public final List<CamRobot>	robotsBlue;
 	
 	/** */
 	public final TeamProps			teamProps;
@@ -78,12 +76,12 @@ public class CamDetectionFrame
 	 * @param frameNumber
 	 * @param fps
 	 * @param balls
-	 * @param tigers
-	 * @param enemies
+	 * @param yellowBots
+	 * @param blueBots
 	 * @param teamProps
 	 */
 	public CamDetectionFrame(long tCapture, long tSent, long tReceived, int cameraId, long frameNumber, double fps,
-			List<CamBall> balls, List<CamRobot> tigers, List<CamRobot> enemies, TeamProps teamProps)
+			List<CamBall> balls, List<CamRobot> yellowBots, List<CamRobot> blueBots, TeamProps teamProps)
 	{
 		// Fields
 		this.tCapture = tCapture;
@@ -96,25 +94,11 @@ public class CamDetectionFrame
 		id = new FrameID(cameraId, frameNumber);
 		
 		// Collections
-		this.balls = balls; // Collections.unmodifiableList(balls);
-		robotsTigers = Collections.unmodifiableList(tigers);
-		robotsEnemies = Collections.unmodifiableList(enemies);
+		// this.balls = Collections.unmodifiableList(balls);
+		this.balls = balls;
+		robotsYellow = Collections.unmodifiableList(yellowBots);
+		robotsBlue = Collections.unmodifiableList(blueBots);
 		
 		this.teamProps = teamProps;
-	}
-	
-	
-	/**
-	 * Create an empty cam detection frame
-	 * 
-	 * @param frameNumber
-	 * @param teamProps
-	 * @return
-	 */
-	public static CamDetectionFrame createEmpty(long frameNumber, TeamProps teamProps)
-	{
-		final long time = (long) ((System.nanoTime() - WPConfig.getFilterTimeOffset()) * WPConfig.FILTER_CONVERT_NS_TO_INTERNAL_TIME);
-		return new CamDetectionFrame(time, time, time, 0, frameNumber, 0, new LinkedList<CamBall>(),
-				new LinkedList<CamRobot>(), new LinkedList<CamRobot>(), teamProps);
 	}
 }

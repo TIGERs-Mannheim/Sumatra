@@ -11,13 +11,13 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.types;
 
 import java.util.concurrent.CountDownLatch;
 
+import edu.dhbw.mannheim.tigers.moduli.AModule;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.CamDetnObservable;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.CamGeomObservable;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.ICamDetnObservable;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.ICamDetnObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.ICamGeomObservable;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.ICamGeomObserver;
-import edu.moduli.AModule;
 
 
 /**

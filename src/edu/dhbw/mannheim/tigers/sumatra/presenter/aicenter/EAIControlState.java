@@ -17,13 +17,18 @@ package edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter;
 public enum EAIControlState
 {
 	/** */
-	PLAY_TEST_MODE,
-	/** */
-	ROLE_TEST_MODE,
+	TEST_MODE,
 	/** */
 	MATCH_MODE,
 	/** */
 	MIXED_TEAM_MODE,
 	/** */
-	EMERGENCY_MODE;
+	EMERGENCY_MODE,
+	
+	/**  */
+	@Deprecated
+	PLAY_TEST_MODE,
+	/**  */
+	@Deprecated
+	ROLE_TEST_MODE, ;
 }

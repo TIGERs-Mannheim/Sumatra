@@ -9,7 +9,8 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
+import com.sleepycat.persist.model.Persistent;
+
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 
@@ -20,21 +21,30 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
  * @author Malte
  * 
  */
+@Persistent
 public class Circle extends ACircle
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	/** Center of the circle! */
-	private Vector2	center;
+	private final Vector2	center;
 	
 	/** Radius of the circle. Mustn't be negative! */
-	private float		radius;
+	private final float		radius;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	@SuppressWarnings("unused")
+	private Circle()
+	{
+		this(Vector2.ZERO_VECTOR, 1);
+	}
+	
+	
 	/**
 	 * Defines a circle by a radius and a center.
 	 * Radius must not be negative or zero!
@@ -51,7 +61,6 @@ public class Circle extends ACircle
 		}
 		this.center = new Vector2(center);
 		this.radius = radius;
-		
 	}
 	
 	
@@ -62,42 +71,13 @@ public class Circle extends ACircle
 	 */
 	public Circle(ICircle c)
 	{
-		center = new Vector2();
-		set(c);
-	}
-	
-	
-	/**
-	 * @param c
-	 */
-	public void set(ICircle c)
-	{
-		center.set(c.center());
-		radius = c.radius();
+		this(c.center(), c.radius());
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/**
-	 * 
-	 * @param center
-	 */
-	public void setCenter(IVector2 center)
-	{
-		this.center.set(center);
-	}
-	
-	
-	/**
-	 * 
-	 * @param radius
-	 */
-	public void setRadius(float radius)
-	{
-		this.radius = radius;
-	}
 	
 	
 	@Override
@@ -108,12 +88,8 @@ public class Circle extends ACircle
 	
 	
 	@Override
-	public AVector2 center()
+	public IVector2 center()
 	{
-		if (center == null)
-		{
-			center = new Vector2();
-		}
 		return center;
 	}
 }

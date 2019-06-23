@@ -18,12 +18,12 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.rectangle.AIRectangle;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.rectangle.Rectangle;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.rectangle.Rectanglef;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Line;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.fieldanalysis.AIRectangle;
 import edu.dhbw.mannheim.tigers.sumatra.test.junit.model.data.shapes.I2DShapeTest;
 
 
@@ -94,10 +94,10 @@ public class RectangleTest implements I2DShapeTest
 	@Test
 	public void combineTest()
 	{
-		// Vector2 refPointA = new Vector2(20, 35);
+		// IVector2 refPointA = new Vector2(20, 35);
 		// Rectangle rectA = new Rectangle(1, refPointA, 100, 200);
 		//
-		// Vector2 refPointB = new Vector2();
+		// IVector2 refPointB = new Vector2();
 		//
 		// Rectangle rectB = new Rectangle(2, refPointB, 10, 20);
 		//
@@ -109,7 +109,7 @@ public class RectangleTest implements I2DShapeTest
 	@Test
 	public void testIsPointInShape()
 	{
-		final Vector2 ref = new Vector2(0, 0);
+		final IVector2 ref = new Vector2(0, 0);
 		final float h = 1;
 		final float l = 1;
 		final Rectangle r = new Rectangle(ref, h, l);
@@ -127,12 +127,12 @@ public class RectangleTest implements I2DShapeTest
 	@Test
 	public void testIsLineIntersectingShape()
 	{
-		// Vector2 refPoint = new Vector2(0, 0);
+		// IVector2 refPoint = new Vector2(0, 0);
 		// Rectangle rect = new Rectangle(refPoint, 3, 4);
 		//
 		// Line l = new Line(new Vector2(0,0), new Vector2(0,1));
-		// Vector2 rechts = new Vector2(1,0.1f);
-		// Vector2 links = new Vector2(-1,0.1f);
+		// IVector2 rechts = new Vector2(1,0.1f);
+		// IVector2 links = new Vector2(-1,0.1f);
 		//
 		// float f = (links.subtractNew(l.supportVector()).scalarProduct(l.getOrthogonalLine().directionVector()));
 		// System.out.println("links: "+f);
@@ -157,9 +157,9 @@ public class RectangleTest implements I2DShapeTest
 		final Rectangle rect3 = new Rectangle(new Vector2(2, 3), 1, 1);
 		final Rectangle rect4 = new Rectangle(new Vector2(-1.5f, -0.5f), 1, 1);
 		
-		final Vector2 startPoint = new Vector2(0, 0);
-		final Vector2 dir1 = new Vector2(1, 1);
-		final Vector2 dir2 = new Vector2(-1, -1);
+		final IVector2 startPoint = new Vector2(0, 0);
+		final IVector2 dir1 = new Vector2(1, 1);
+		final IVector2 dir2 = new Vector2(-1, -1);
 		
 		assertTrue(rect1.isLineSegmentIntersectingRectangle(startPoint, dir1));
 		assertTrue(rect2.isLineSegmentIntersectingRectangle(startPoint, dir1));
@@ -220,11 +220,11 @@ public class RectangleTest implements I2DShapeTest
 	@Test
 	public void getPointinShape()
 	{
-		Rectanglef testRect = new AIRectangle(55, new Vector2(-10, 0), 100, 100);
+		Rectangle testRect = new AIRectangle(55, new Vector2(-10, 0), 100, 100);
 		
 		for (int i = 0; i <= (testRect.xExtend() * testRect.yExtend()); i++)
 		{
-			final Vector2 point = testRect.getRandomPointInShape();
+			final IVector2 point = testRect.getRandomPointInShape();
 			
 			assertEquals(testRect.topLeft().x(), point.x(), testRect.xExtend());
 			assertEquals(testRect.topLeft().y(), point.y(), testRect.yExtend());
@@ -234,11 +234,11 @@ public class RectangleTest implements I2DShapeTest
 			assertFalse(SumatraMath.hasDigitsAfterDecimalPoint(point.y()));
 		}
 		
-		testRect = new Rectanglef(new Vector2(-25, 31), 430, 230);
+		testRect = new Rectangle(new Vector2(-25, 31), 430, 230);
 		
 		for (int i = 0; i <= (testRect.xExtend() * testRect.yExtend()); i++)
 		{
-			final Vector2 point = testRect.getRandomPointInShape();
+			final IVector2 point = testRect.getRandomPointInShape();
 			
 			assertEquals(testRect.topLeft().x(), point.x(), testRect.xExtend());
 			assertEquals(testRect.topLeft().y(), point.y(), testRect.yExtend());
@@ -248,11 +248,11 @@ public class RectangleTest implements I2DShapeTest
 		}
 		
 		
-		testRect = new Rectanglef(new Vector2(-25, 31), 430.43f, 230.21f);
+		testRect = new Rectangle(new Vector2(-25, 31), 430.43f, 230.21f);
 		
 		for (int i = 0; i <= (testRect.xExtend() * testRect.yExtend()); i++)
 		{
-			final Vector2 point = testRect.getRandomPointInShape();
+			final IVector2 point = testRect.getRandomPointInShape();
 			
 			assertEquals(testRect.topLeft().x(), point.x(), testRect.xExtend());
 			assertEquals(testRect.topLeft().y(), point.y(), testRect.yExtend());

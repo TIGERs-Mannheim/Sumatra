@@ -9,7 +9,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACondition;
 
@@ -49,7 +49,7 @@ public class DummyCondition extends ACondition
 	// --------------------------------------------------------------------------
 	
 	@Override
-	protected EConditionState doCheckCondition(WorldFrame worldFrame, BotID botId)
+	protected EConditionState doCheckCondition(SimpleWorldFrame worldFrame, BotID botId)
 	{
 		return EConditionState.PENDING;
 	}

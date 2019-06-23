@@ -40,8 +40,10 @@ public final class BotFactory
 		
 		switch (type)
 		{
-			case TIGER:
 			case GRSIM:
+				bot = new GrSimBot(config);
+				break;
+			case TIGER:
 				bot = new TigerBot(config);
 				break;
 			case TIGER_V2:
@@ -67,8 +69,10 @@ public final class BotFactory
 		
 		switch (type)
 		{
-			case TIGER:
 			case GRSIM:
+				bot = new GrSimBot(id);
+				break;
+			case TIGER:
 				bot = new TigerBot(id);
 				break;
 			case TIGER_V2:

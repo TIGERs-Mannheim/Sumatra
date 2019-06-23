@@ -10,7 +10,9 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -25,7 +27,9 @@ public class TigerMotorSetManual extends ACommand
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
+	@SerialData(type = ESerialDataType.UINT8)
 	private int	id;
+	@SerialData(type = ESerialDataType.INT16)
 	private int	power;
 	
 	
@@ -37,6 +41,7 @@ public class TigerMotorSetManual extends ACommand
 	 */
 	public TigerMotorSetManual()
 	{
+		super(ECommand.CMD_MOTOR_SET_MANUAL);
 	}
 	
 	
@@ -47,6 +52,8 @@ public class TigerMotorSetManual extends ACommand
 	 */
 	public TigerMotorSetManual(int id, int power)
 	{
+		super(ECommand.CMD_MOTOR_SET_MANUAL);
+		
 		setId(id);
 		setPower(power);
 	}
@@ -60,40 +67,6 @@ public class TigerMotorSetManual extends ACommand
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		id = byteArray2UByte(data, 0);
-		power = byteArray2Short(data, 1);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		byte2ByteArray(data, 0, id);
-		short2ByteArray(data, 1, power);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_MOTOR_SET_MANUAL;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 3;
-	}
-	
-	
 	/**
 	 * @return the id
 	 */

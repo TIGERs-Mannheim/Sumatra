@@ -9,6 +9,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.rcm;
 
+import java.awt.Component;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -17,22 +18,19 @@ import net.java.games.input.Controller;
 
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
+import edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesState;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.RobotControlManager;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.inputDevice.controller.ControllerFactory;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IBotManagerObserver;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ARobotControlManager;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ABotManager;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.ILookAndFeelStateObserver;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.LookAndFeelStateAdapter;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.IModuliStateObserver;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.ModuliStateAdapter;
-import edu.dhbw.mannheim.tigers.sumatra.view.main.ISumatraView;
 import edu.dhbw.mannheim.tigers.sumatra.view.rcm.RobotControlManagerPanel;
-import edu.dhbw.mannheim.tigers.sumatra.view.rcm.ShowRCMMainPanel;
-import edu.moduli.exceptions.ModuleNotFoundException;
-import edu.moduli.listenerVariables.ModulesState;
+import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
 
 
 /**
@@ -51,15 +49,12 @@ public final class RCMPresenter implements ILookAndFeelStateObserver, IModuliSta
 	
 	private static volatile RCMPresenter		instance					= null;
 	
-	// --- modules ---
-	private final SumatraModel						model						= SumatraModel.getInstance();
-	private RobotControlManager					rcmModule				= null;
-	
 	// --- Controllers ---
 	private final List<AControllerPresenter>	controllerPresenterS	= new ArrayList<AControllerPresenter>();
 	
 	// view
 	private final RobotControlManagerPanel		rcmPanel;
+	private ABotManager								botManager				= null;
 	
 	
 	// --------------------------------------------------------------------------
@@ -69,7 +64,6 @@ public final class RCMPresenter implements ILookAndFeelStateObserver, IModuliSta
 	{
 		rcmPanel = new RobotControlManagerPanel();
 		LookAndFeelStateAdapter.getInstance().addObserver(this);
-		ModuliStateAdapter.getInstance().addObserver(this);
 		
 		setUpController();
 	}
@@ -100,11 +94,10 @@ public final class RCMPresenter implements ILookAndFeelStateObserver, IModuliSta
 			{
 				try
 				{
-					rcmModule = (RobotControlManager) model.getModule(ARobotControlManager.MODULE_ID);
-					rcmModule.addObserver(this);
-				} catch (final ModuleNotFoundException err)
+					botManager = (ABotManager) SumatraModel.getInstance().getModule(ABotManager.MODULE_ID);
+				} catch (ModuleNotFoundException err)
 				{
-					log.fatal("RCMModule not found");
+					log.error("Botmanager module not found. Strange...");
 				}
 				
 				rcmPanel.start();
@@ -113,6 +106,7 @@ public final class RCMPresenter implements ILookAndFeelStateObserver, IModuliSta
 			
 			case RESOLVED:
 			{
+				rcmPanel.stop();
 				break;
 			}
 			case NOT_LOADED:
@@ -151,6 +145,7 @@ public final class RCMPresenter implements ILookAndFeelStateObserver, IModuliSta
 	 */
 	public void setUpController()
 	{
+		ControllerFactory.getInstance().updateControllers();
 		final List<Controller> controllers = ControllerFactory.getInstance().getAllControllers();
 		boolean controllerFound = false;
 		
@@ -173,6 +168,7 @@ public final class RCMPresenter implements ILookAndFeelStateObserver, IModuliSta
 		while (controllerPresenterS.size() > controllerCount)
 		{
 			controllerPresenterS.get(controllerCount).stopPolling();
+			controllerPresenterS.remove(controllerCount);
 		}
 		
 		if (!controllerFound)
@@ -247,7 +243,7 @@ public final class RCMPresenter implements ILookAndFeelStateObserver, IModuliSta
 				returnList.add(true);
 				if (!cP.startPolling())
 				{
-					if (new BotID(cP.getBotNumber()).isBot())
+					if (cP.getBotNumber().isBot())
 					{
 						returnList.set(i, false);
 					}
@@ -268,16 +264,6 @@ public final class RCMPresenter implements ILookAndFeelStateObserver, IModuliSta
 	}
 	
 	
-	/**
-	 * starts the androidServer if it is not started
-	 * otherwise stops the androidServer
-	 */
-	public void startStopAndroidServer()
-	{
-		ShowRCMMainPanel.getInstance().getAndroidServerButton().doClick();
-	}
-	
-	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -287,9 +273,9 @@ public final class RCMPresenter implements ILookAndFeelStateObserver, IModuliSta
 	 */
 	public Collection<ABot> getAllBots()
 	{
-		if (rcmModule != null)
+		if (botManager != null)
 		{
-			return rcmModule.getAllBots();
+			return botManager.getAllBots().values();
 		}
 		return new ArrayList<ABot>();
 	}
@@ -300,6 +286,16 @@ public final class RCMPresenter implements ILookAndFeelStateObserver, IModuliSta
 	 * @return
 	 */
 	public ISumatraView getView()
+	{
+		return rcmPanel;
+	}
+	
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public Component getComponent()
 	{
 		return rcmPanel;
 	}

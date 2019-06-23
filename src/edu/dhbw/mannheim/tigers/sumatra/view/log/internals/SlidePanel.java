@@ -11,7 +11,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.log.internals;
 
-import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
@@ -23,6 +23,8 @@ import javax.swing.JSlider;
 import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+
+import net.miginfocom.swing.MigLayout;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Priority;
@@ -65,7 +67,7 @@ public class SlidePanel extends JPanel
 	{
 		final Hashtable<Integer, JLabel> levelTable = new Hashtable<Integer, JLabel>();
 		
-		setLayout(new BorderLayout());
+		setLayout(new MigLayout("fill, inset 0"));
 		
 		int initialLevelId = -1;
 		for (int i = 0; i < LOG_LEVELS.size(); i++)
@@ -82,14 +84,15 @@ public class SlidePanel extends JPanel
 		}
 		
 		slider = new JSlider(SwingConstants.HORIZONTAL, 0, LOG_LEVELS.size() - 1, initialLevelId);
-		slider.setPaintTicks(true);
-		slider.setPaintLabels(true);
+		// slider.setPaintTicks(true);
+		// slider.setPaintLabels(true);
 		slider.setSnapToTicks(true);
 		slider.setMajorTickSpacing(1);
 		slider.setLabelTable(levelTable);
 		slider.addChangeListener(new LevelChanged());
+		slider.setPreferredSize(new Dimension(130, 20));
 		
-		add(slider, BorderLayout.CENTER);
+		add(slider);
 	}
 	
 	

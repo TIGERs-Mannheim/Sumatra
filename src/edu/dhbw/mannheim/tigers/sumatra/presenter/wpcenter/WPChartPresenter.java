@@ -15,8 +15,11 @@ import javax.swing.JPanel;
 
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
+import edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesState;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamBall;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamDetectionFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamRobot;
@@ -33,8 +36,6 @@ import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.IModuliStateObserver;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.ModuliStateAdapter;
 import edu.dhbw.mannheim.tigers.sumatra.view.wpcenter.internals.AnalysisCharts;
 import edu.dhbw.mannheim.tigers.sumatra.view.wpcenter.internals.IAnalysisChartsObserver;
-import edu.moduli.exceptions.ModuleNotFoundException;
-import edu.moduli.listenerVariables.ModulesState;
 
 
 /**
@@ -71,7 +72,7 @@ public class WPChartPresenter implements IModuliStateObserver, IWorldPredictorOb
 	private AnalysisCharts			chart							= null;
 	
 	
-	private BotID						targetId						= new BotID(0);
+	private BotID						targetId						= BotID.createBotId(0, ETeamColor.YELLOW);
 	
 	private AWorldPredictor			wp								= null;
 	private ACam						cam							= null;
@@ -162,7 +163,8 @@ public class WPChartPresenter implements IModuliStateObserver, IWorldPredictorOb
 	@Override
 	public void onSetId(int id)
 	{
-		targetId = new BotID(id);
+		// TODO support for blue bots
+		targetId = BotID.createBotId(id, ETeamColor.YELLOW);
 		frameFirst = 0;
 		frameLast = 0;
 		chart.clearChart();
@@ -236,9 +238,8 @@ public class WPChartPresenter implements IModuliStateObserver, IWorldPredictorOb
 				} catch (final ClassCastException ex)
 				{
 					return;
-				} catch (final Exception ex)
+				} catch (final ArrayIndexOutOfBoundsException ex)
 				{
-					log.warn("Ball Array out of bound", ex);
 					return;
 				}
 			}
@@ -246,7 +247,7 @@ public class WPChartPresenter implements IModuliStateObserver, IWorldPredictorOb
 		} else
 		{
 			CamRobot bot = null;
-			for (final CamRobot tmpBot : df.robotsEnemies)
+			for (final CamRobot tmpBot : df.robotsBlue)
 			{
 				if (tmpBot.robotID == targetId.getNumber())
 				{
@@ -254,7 +255,7 @@ public class WPChartPresenter implements IModuliStateObserver, IWorldPredictorOb
 					break;
 				}
 			}
-			for (final CamRobot tmpBot : df.robotsTigers)
+			for (final CamRobot tmpBot : df.robotsYellow)
 			{
 				if (tmpBot.robotID == targetId.getNumber())
 				{
@@ -311,20 +312,20 @@ public class WPChartPresenter implements IModuliStateObserver, IWorldPredictorOb
 	
 	
 	@Override
-	public void onNewWorldFrame(WorldFrame wf)
+	public void onNewWorldFrame(SimpleWorldFrame wf)
 	{
 		if ((System.nanoTime() - startNewWP) > TimeUnit.MILLISECONDS.toNanos(VISUALIZATION_FREQUENCY))
 		{
 			
 			if (++fpsOutCounter > FPS_INTERVALL)
 			{
-				chart.setFpsOut((FPS_INTERVALL * 1000000000.0f) / (wf.time - fpsOutTmp));
+				chart.setFpsOut((FPS_INTERVALL * 1000000000.0f) / (wf.getTime() - fpsOutTmp));
 				fpsOutCounter = 1;
-				fpsOutTmp = wf.time;
+				fpsOutTmp = wf.getTime();
 			}
 			
 			
-			if (wf.time < frameTimes[frameLast])
+			if (wf.getTime() < frameTimes[frameLast])
 			{
 				return;
 			}
@@ -332,36 +333,32 @@ public class WPChartPresenter implements IModuliStateObserver, IWorldPredictorOb
 			if (targetId.getNumber() == 0)
 			{
 				
-				if (wf.ball != null)
+				if (wf.getBall() != null)
 				{
-					frames[frameLast] = wf.ball;
-					frameTimes[frameLast] = wf.time;
+					frames[frameLast] = wf.getBall();
+					frameTimes[frameLast] = wf.getTime();
 					frameLast = (frameLast + 1) % BUFFER_SIZE;
 					if (frameLast == frameFirst)
 					{
 						frameLast = ((frameLast - 1) + BUFFER_SIZE) % BUFFER_SIZE;
 					}
-					chart.updateWF(wf.time, wf.ball.getPos().x(), wf.ball.getPos().y(), 0.0f);
-					chart.updateBallVel(wf.time, wf.ball.getVel().getLength2());
+					chart.updateWF(wf.getTime(), wf.getBall().getPos().x(), wf.getBall().getPos().y(), 0.0f);
+					chart.updateBallVel(wf.getTime(), wf.getBall().getVel().getLength2());
 				}
 			} else
 			{
 				TrackedBot bot;
-				bot = wf.foeBots.getWithNull(targetId);
-				if (bot == null)
-				{
-					bot = wf.tigerBotsVisible.get(targetId);
-				}
+				bot = wf.getBot(targetId);
 				if (bot != null)
 				{
 					frames[frameLast] = bot;
-					frameTimes[frameLast] = wf.time;
+					frameTimes[frameLast] = wf.getTime();
 					frameLast = (frameLast + 1) % BUFFER_SIZE;
 					if (frameLast == frameFirst)
 					{
 						frameLast = ((frameLast - 1) + BUFFER_SIZE) % BUFFER_SIZE;
 					}
-					chart.updateWF(wf.time, bot.getPos().x(), bot.getPos().y(), bot.getAngle());
+					chart.updateWF(wf.getTime(), bot.getPos().x(), bot.getPos().y(), bot.getAngle());
 					return;
 				}
 			}
@@ -371,7 +368,7 @@ public class WPChartPresenter implements IModuliStateObserver, IWorldPredictorOb
 	
 	
 	@Override
-	public void onVisionSignalLost(WorldFrame emptyWf)
+	public void onVisionSignalLost(SimpleWorldFrame emptyWf)
 	{
 		
 	}
@@ -425,7 +422,7 @@ public class WPChartPresenter implements IModuliStateObserver, IWorldPredictorOb
 				}
 			} else
 			{
-				for (final CamRobot bot : event.robotsEnemies)
+				for (final CamRobot bot : event.robotsBlue)
 				{
 					if (bot.robotID == targetId.getNumber())
 					{
@@ -433,7 +430,7 @@ public class WPChartPresenter implements IModuliStateObserver, IWorldPredictorOb
 						return;
 					}
 				}
-				for (final CamRobot bot : event.robotsTigers)
+				for (final CamRobot bot : event.robotsYellow)
 				{
 					if (bot.robotID == targetId.getNumber())
 					{
@@ -446,5 +443,10 @@ public class WPChartPresenter implements IModuliStateObserver, IWorldPredictorOb
 		}
 	}
 	
+	
+	@Override
+	public void onNewCamDetectionFrame(CamDetectionFrame frame)
+	{
+	}
 	
 }

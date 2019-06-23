@@ -14,7 +14,6 @@ import java.util.List;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
@@ -56,14 +55,14 @@ public class GetBallSkill extends AMoveSkill
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private void calcSpline(TrackedTigerBot bot)
+	private void calcSpline()
 	{
 		List<IVector2> nodes = new LinkedList<IVector2>();
-		IVector2 lookAtTarget = getWorldFrame().ball.getPos().addNew(
-				getWorldFrame().ball.getPos().subtractNew(bot.getPos()));
+		IVector2 lookAtTarget = getWorldFrame().getBall().getPos()
+				.addNew(getWorldFrame().getBall().getPos().subtractNew(getPos()));
 		
 		// addNew(new Vector2(bot.getAngle()).multiply(AIConfig.getGeometry().getBotRadius() * 2));
-		nodes.add((GeoMath.stepAlongLine(getWorldFrame().ball.getPos(), lookAtTarget, -AIConfig.getGeometry()
+		nodes.add((GeoMath.stepAlongLine(getWorldFrame().getBall().getPos(), lookAtTarget, -AIConfig.getGeometry()
 				.getBotRadius() - AIConfig.getGeometry().getBallRadius())));
 		// nodes.add((getWorldFrame().ball.getPos()));
 		// IVector2 lookAtTarget = getWorldFrame().ball.getPos().addNew(
@@ -74,14 +73,14 @@ public class GetBallSkill extends AMoveSkill
 		// .getBotRadius())));
 		// nodes.add((getWorldFrame().ball.getPos()));
 		
-		createSpline(bot, nodes, lookAtTarget);
+		createSpline(nodes, lookAtTarget);
 	}
 	
 	
 	@Override
-	public List<ACommand> doCalcEntryActions(TrackedTigerBot bot, List<ACommand> cmds)
+	public List<ACommand> doCalcEntryActions(List<ACommand> cmds)
 	{
-		calcSpline(bot);
+		calcSpline();
 		getDevices().disarm(cmds);
 		getDevices().dribble(cmds, dribble);
 		
@@ -90,25 +89,25 @@ public class GetBallSkill extends AMoveSkill
 	
 	
 	@Override
-	protected void periodicProcess(TrackedTigerBot bot, List<ACommand> cmds)
+	protected void periodicProcess(List<ACommand> cmds)
 	{
 	}
 	
 	
 	@Override
-	protected boolean isComplete(TrackedTigerBot bot)
+	protected boolean isMoveComplete()
 	{
-		if (bot.hasBallContact())
+		if (hasBallContact())
 		{
 			return true;
 		}
-		boolean trajCompleted = super.isComplete(bot);
+		boolean trajCompleted = super.isMoveComplete();
 		return trajCompleted;
 	}
 	
 	
 	@Override
-	protected List<ACommand> doCalcExitActions(TrackedTigerBot bot, List<ACommand> cmds)
+	protected List<ACommand> doCalcExitActions(List<ACommand> cmds)
 	{
 		stopMove(cmds);
 		return cmds;

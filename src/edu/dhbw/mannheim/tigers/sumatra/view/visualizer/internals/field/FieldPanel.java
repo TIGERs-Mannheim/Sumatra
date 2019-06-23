@@ -4,17 +4,16 @@
  * Project: TIGERS - Sumatra
  * Date: 08.10.2011
  * Author(s): Oliver Steinbrecher
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field;
 
-import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Point;
-import java.awt.event.InputEvent;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
@@ -23,30 +22,37 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import javax.swing.JPanel;
+import javax.swing.Timer;
+import javax.swing.border.EmptyBorder;
 
 import net.miginfocom.swing.MigLayout;
+import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.FieldRasterConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.visualizer.IFieldPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.EVisualizerOptions;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.IFieldPanelObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.AFieldLayer;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.AresLayer;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.BallBotLayer;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.BorderLayer;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.CoordinatesLayer;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.EFieldLayer;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.FieldMarksLayer;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.FieldPredictorLayer;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.GoalPointsLayer;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.MiscLayer;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.MultiFieldLayerUI;
-import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.OffensivePointsLayer;
-import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.PatternLayer;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.RefereeLayer;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.RoleNameLayer;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.ShapeLayer;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.SupportPosLayer;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.TacticsLayer;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.raster.AnalysingRasterLayer;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.raster.PositioningRaster;
 
@@ -55,7 +61,6 @@ import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.r
  * Visualization of the field.
  * 
  * @author Oliver Steinbrecher
- * 
  */
 public class FieldPanel extends JPanel implements IFieldPanel
 {
@@ -64,6 +69,8 @@ public class FieldPanel extends JPanel implements IFieldPanel
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
+	/**  */
+	private static final int						FPS					= 33;
 	// --- repaint ---
 	private static final int						REPAINT_INTERVAL	= 50;
 	private long										lastRepaint			= 0L;
@@ -77,18 +84,14 @@ public class FieldPanel extends JPanel implements IFieldPanel
 	
 	// --- field constants / size of the loaded image in pixel ---
 	/** */
-	public static final int							FIELD_MARGIN		= 25;
+	public static final int							FIELD_MARGIN		= 35;
 	private static final int						SCROLL_SPEED		= 20;
-	private static final int						DEF_FIELD_WIDTH	= 400;
-	private static final int						DEF_FIELD_HEIGHT	= 600;
+	private static final int						DEF_FIELD_WIDTH	= 600;
 	
 	private float										scaleFactor			= 1;
 	
-	private static int								fieldWidth			= DEF_FIELD_WIDTH;
-	/** x */
-	private int											fieldTotalWidth;
-	/** y */
-	private int											fieldTotalHeight;
+	private final int									fieldWidth			= DEF_FIELD_WIDTH;
+	
 	
 	// --- field scrolling ---
 	private float										fieldOriginY		= 0;
@@ -96,8 +99,9 @@ public class FieldPanel extends JPanel implements IFieldPanel
 	
 	
 	private final MultiFieldLayerUI				multiLayer;
-	private final BallBotLayer						botBallLayer;
 	private final CoordinatesLayer				coordinatesLayer;
+	
+	private boolean									firstAiFrame		= true;
 	
 	private EFieldTurn								fieldTurn			= EFieldTurn.NORMAL;
 	
@@ -106,13 +110,30 @@ public class FieldPanel extends JPanel implements IFieldPanel
 	public enum EFieldTurn
 	{
 		/**  */
-		NORMAL,
+		NORMAL(0),
 		/**  */
-		T90,
+		T90(AngleMath.PI_HALF),
 		/**  */
-		T180,
+		T180(AngleMath.PI),
 		/**  */
-		T270;
+		T270(AngleMath.PI + AngleMath.PI_HALF);
+		
+		private final float	angle;
+		
+		
+		private EFieldTurn(final float angle)
+		{
+			this.angle = angle;
+		}
+		
+		
+		/**
+		 * @return the angle
+		 */
+		public final float getAngle()
+		{
+			return angle;
+		}
 	}
 	
 	
@@ -124,31 +145,78 @@ public class FieldPanel extends JPanel implements IFieldPanel
 	 */
 	public FieldPanel()
 	{
-		fieldTotalHeight = DEF_FIELD_HEIGHT + (2 * FIELD_MARGIN);
-		fieldTotalWidth = DEF_FIELD_WIDTH + (2 * FIELD_MARGIN);
+		setBorder(new EmptyBorder(0, 0, 0, 0));
+		setLayout(new MigLayout("inset 0"));
 		multiLayer = new MultiFieldLayerUI();
-		botBallLayer = new BallBotLayer();
 		coordinatesLayer = new CoordinatesLayer();
-		setLayout(new MigLayout("fill, inset 0", "[left]", "[top]"));
-		
-		// --- add listener ---
-		final MouseEvents me = new MouseEvents();
-		addMouseListener(me);
-		addMouseMotionListener(me);
-		addMouseWheelListener(me);
 		
 		// add layers in painting order
-		multiLayer.addLayer(new BorderLayer());
-		multiLayer.addLayer(new FieldMarksLayer());
-		multiLayer.addLayer(new PositioningRaster());
-		multiLayer.addLayer(new AnalysingRasterLayer());
-		multiLayer.addLayer(botBallLayer);
-		multiLayer.addLayer(new GoalPointsLayer());
-		multiLayer.addLayer(new PatternLayer());
-		multiLayer.addLayer(new ShapeLayer());
-		multiLayer.addLayer(coordinatesLayer);
-		multiLayer.addLayer(new RoleNameLayer());
-		multiLayer.addLayer(new OffensivePointsLayer());
+		multiLayer.addAiLayer(new SupportPosLayer(), this);
+		multiLayer.addAiLayer(new AnalysingRasterLayer(), this);
+		AFieldLayer borderLayer = new BorderLayer();
+		multiLayer.addSwfLayer(borderLayer, this);
+		multiLayer.addAiLayer(borderLayer, this);
+		multiLayer.addSwfLayer(new FieldMarksLayer(), this);
+		multiLayer.addSwfLayer(new PositioningRaster(), this);
+		multiLayer.addAiLayer(coordinatesLayer, this);
+		multiLayer.addAiLayer(new RefereeLayer(), this);
+		multiLayer.addAiLayer(new TacticsLayer(), this);
+		multiLayer.addSwfLayer(new BallBotLayer(), this);
+		multiLayer.addAiLayer(new AresLayer(), this);
+		multiLayer.addAiLayer(new GoalPointsLayer(), this);
+		multiLayer.addAiLayer(new ShapeLayer(), this);
+		multiLayer.addAiLayer(new RoleNameLayer(), this);
+		multiLayer.addSwfLayer(new FieldPredictorLayer(), this);
+		AFieldLayer miscLayer = new MiscLayer();
+		multiLayer.addSwfLayer(miscLayer, this);
+		multiLayer.addAiLayer(miscLayer, this);
+		
+		new Timer(FPS, new ActionListener()
+		{
+			@Override
+			public void actionPerformed(final ActionEvent e)
+			{
+				repaint();
+			}
+		}).start();
+		
+		
+		String strFieldTurn = SumatraModel.getInstance().getUserProperty(
+				FieldPanel.class.getCanonicalName() + ".fieldTurn");
+		if (strFieldTurn != null)
+		{
+			try
+			{
+				setFieldTurn(EFieldTurn.valueOf(strFieldTurn));
+			} catch (IllegalArgumentException err)
+			{
+				// ignore
+			}
+		}
+		
+		String strScaleFactor = SumatraModel.getInstance().getUserProperty(
+				FieldPanel.class.getCanonicalName() + ".scaleFactor");
+		if (strScaleFactor != null)
+		{
+			scaleFactor = Float.valueOf(SumatraModel.getInstance().getUserProperty(
+					FieldPanel.class.getCanonicalName() + ".scaleFactor"));
+		}
+		
+		String strFieldOriginX = SumatraModel.getInstance().getUserProperty(
+				FieldPanel.class.getCanonicalName() + ".fieldOriginX");
+		if (strFieldOriginX != null)
+		{
+			fieldOriginX = Float.valueOf(SumatraModel.getInstance().getUserProperty(
+					FieldPanel.class.getCanonicalName() + ".fieldOriginX"));
+		}
+		
+		String strFieldOriginY = SumatraModel.getInstance().getUserProperty(
+				FieldPanel.class.getCanonicalName() + ".fieldOriginY");
+		if (strFieldOriginY != null)
+		{
+			fieldOriginY = Float.valueOf(SumatraModel.getInstance().getUserProperty(
+					FieldPanel.class.getCanonicalName() + ".fieldOriginY"));
+		}
 	}
 	
 	
@@ -157,7 +225,7 @@ public class FieldPanel extends JPanel implements IFieldPanel
 	// --------------------------------------------------------------------------
 	
 	@Override
-	public void paint(Graphics g1)
+	public void paint(final Graphics g1)
 	{
 		if ((offImage == null) || (offImage.getHeight(this) != getHeight()) || (offImage.getWidth(this) != getWidth()))
 		{
@@ -173,16 +241,30 @@ public class FieldPanel extends JPanel implements IFieldPanel
 		lastRepaint = System.nanoTime();
 		
 		final Graphics2D g2 = (Graphics2D) offImage.getGraphics();
-		g2.setColor(getBackground());
+		g2.setColor(BorderLayer.FIELD_COLOR_REFEREE);
 		g2.fillRect(0, 0, getWidth(), getHeight());
+		
 		g2.translate(fieldOriginX, fieldOriginY);
 		g2.scale(scaleFactor, scaleFactor);
 		
-		turnField(fieldTurn, -Math.PI / 2, g2);
+		turnField(getFieldTurn(), -AngleMath.PI_HALF, g2);
+		g2.setColor(BorderLayer.FIELD_COLOR);
+		g2.fillRect(0, 0, getFieldTotalWidth(), getFieldTotalHeight());
+		turnField(getFieldTurn(), AngleMath.PI_HALF, g2);
 		
 		multiLayer.paint(g2);
 		
 		g1.drawImage(offImage, 0, 0, this);
+	}
+	
+	
+	/**
+	 */
+	@Override
+	public void clearField()
+	{
+		multiLayer.clearField();
+		offImage = null;
 	}
 	
 	
@@ -196,15 +278,24 @@ public class FieldPanel extends JPanel implements IFieldPanel
 	// --------------------------------------------------------------------------
 	
 	
-	/**
-	 * Turn the field in desired angle
-	 * 
-	 * @param fieldTurn
-	 * @param angle [rad]
-	 * @param g2
-	 */
-	private static void turnField(EFieldTurn fieldTurn, double angle, Graphics2D g2)
+	@Override
+	public void turnField(final EFieldTurn fieldTurn, final double angle, final Graphics2D g2)
 	{
+		float translateSize = (((float) getFieldHeight() - fieldWidth) / 2);
+		if (angle > 0)
+		{
+			switch (fieldTurn)
+			{
+				case T270:
+					g2.translate(translateSize, translateSize);
+					break;
+				case T90:
+					g2.translate(-translateSize, -translateSize);
+					break;
+				default:
+					break;
+			}
+		}
 		switch (fieldTurn)
 		{
 			case T270:
@@ -216,45 +307,97 @@ public class FieldPanel extends JPanel implements IFieldPanel
 			case NORMAL:
 				break;
 		}
+		if (angle < 0)
+		{
+			switch (fieldTurn)
+			{
+				case T270:
+					g2.translate(-translateSize, -translateSize);
+					break;
+				case T90:
+					g2.translate(translateSize, translateSize);
+					break;
+				default:
+					break;
+			}
+		}
 	}
 	
 	
-	/**
-	 * Transforms a global(field)position into a gui position.
-	 * 
-	 * @param globalPosition
-	 * @return guiPosition
-	 */
-	public static IVector2 transformToGuiCoordinates(IVector2 globalPosition)
+	private IVector2 turnGuiPoint(final EFieldTurn fieldTurn, final IVector2 point)
 	{
-		final float yScaleFactor = fieldWidth / AIConfig.getGeometry().getFieldWidth();
-		final float xScaleFactor = getFieldHeight() / AIConfig.getGeometry().getFieldLength();
+		switch (fieldTurn)
+		{
+			case NORMAL:
+				return point;
+			case T90:
+				return new Vector2(point.y(), getFieldTotalWidth() - point.x());
+			case T180:
+				return new Vector2((-point.x() + getFieldTotalWidth()), (-point.y() + getFieldTotalHeight()));
+			case T270:
+				return new Vector2((-point.y() + getFieldTotalHeight()), point.x());
+		}
+		throw new IllegalStateException();
+	}
+	
+	
+	private IVector2 turnGlobalPoint(final EFieldTurn fieldTurn, final IVector2 point)
+	{
+		switch (fieldTurn)
+		{
+			case NORMAL:
+				return point;
+			case T90:
+				return new Vector2(getFieldTotalWidth() - point.y(), point.x());
+			case T180:
+				return new Vector2(-point.x() + getFieldTotalWidth(), -point.y() + getFieldTotalHeight());
+			case T270:
+				return new Vector2(point.y(), -point.x() + getFieldTotalHeight());
+		}
+		throw new IllegalStateException();
+	}
+	
+	
+	@Override
+	public IVector2 transformToGuiCoordinates(final IVector2 globalPosition)
+	{
+		final double yScaleFactor = fieldWidth / AIConfig.getGeometry().getFieldWidth();
+		final double xScaleFactor = getFieldHeight() / AIConfig.getGeometry().getFieldLength();
 		
-		final IVector2 transPosition = globalPosition.addNew(new Vector2(AIConfig.getGeometry().getFieldLength() / 2,
-				AIConfig.getGeometry().getFieldWidth() / 2));
+		final IVector2 transPosition = globalPosition.addNew(new Vector2(AIConfig.getGeometry().getFieldLength() / 2f,
+				AIConfig.getGeometry().getFieldWidth() / 2f));
 		
-		int x = (int) (transPosition.x() * xScaleFactor);
-		int y = (int) (transPosition.y() * yScaleFactor);
+		double x = (transPosition.x() * xScaleFactor);
+		double y = (transPosition.y() * yScaleFactor);
 		
 		x += FIELD_MARGIN;
 		y += FIELD_MARGIN;
 		
-		return new Vector2(y, x);
+		return turnGuiPoint(fieldTurn, new Vector2(y, x));
 	}
 	
 	
-	/**
-	 * Transforms a gui position into a global(field)position.
-	 * 
-	 * @param guiPosition
-	 * @return globalPosition
-	 */
-	public static IVector2 transformToGlobalCoordinates(IVector2 guiPosition)
+	@Override
+	public IVector2 transformToGuiCoordinates(final IVector2 globalPosition, final boolean invert)
 	{
+		int r = 1;
+		if (invert)
+		{
+			r = -1;
+		}
+		return transformToGuiCoordinates(new Vector2(r * globalPosition.x(), r * globalPosition.y()));
+	}
+	
+	
+	@Override
+	public IVector2 transformToGlobalCoordinates(final IVector2 guiPosition)
+	{
+		IVector2 guiPosTurned = turnGlobalPoint(fieldTurn, guiPosition);
+		
 		final float xScaleFactor = (AIConfig.getGeometry().getFieldWidth() / fieldWidth);
 		final float yScaleFactor = (AIConfig.getGeometry().getFieldLength() / getFieldHeight());
 		
-		final IVector2 transPosition = guiPosition.subtractNew(new Vector2(FIELD_MARGIN, FIELD_MARGIN));
+		final IVector2 transPosition = guiPosTurned.subtractNew(new Vector2(FIELD_MARGIN, FIELD_MARGIN));
 		
 		int x = (int) (transPosition.x() * xScaleFactor);
 		int y = (int) (transPosition.y() * yScaleFactor);
@@ -266,26 +409,28 @@ public class FieldPanel extends JPanel implements IFieldPanel
 	}
 	
 	
-	/**
-	 * Scales a global x length to a gui x length.
-	 * 
-	 * @param length length on field
-	 * @return length in gui
-	 */
-	public static int scaleXLength(float length)
+	@Override
+	public IVector2 transformToGlobalCoordinates(final IVector2 globalPosition, final boolean invert)
+	{
+		int r = 1;
+		if (invert)
+		{
+			r = -1;
+		}
+		return transformToGlobalCoordinates(new Vector2(r * globalPosition.x(), r * globalPosition.y()));
+	}
+	
+	
+	@Override
+	public int scaleXLength(final float length)
 	{
 		final float xScaleFactor = getFieldHeight() / AIConfig.getGeometry().getFieldLength();
 		return (int) (length * xScaleFactor);
 	}
 	
 	
-	/**
-	 * Scales a global y length to a gui y length.
-	 * 
-	 * @param length length on field
-	 * @return length in gui
-	 */
-	public static int scaleYLength(float length)
+	@Override
+	public int scaleYLength(final float length)
 	{
 		final float yScaleFactor = fieldWidth / AIConfig.getGeometry().getFieldWidth();
 		return (int) (length * yScaleFactor);
@@ -297,14 +442,14 @@ public class FieldPanel extends JPanel implements IFieldPanel
 	// --------------------------------------------------------------------------
 	
 	@Override
-	public void addObserver(IFieldPanelObserver o)
+	public void addObserver(final IFieldPanelObserver o)
 	{
 		observers.add(o);
 	}
 	
 	
 	@Override
-	public void removeObserver(IFieldPanelObserver o)
+	public void removeObserver(final IFieldPanelObserver o)
 	{
 		observers.remove(o);
 	}
@@ -321,58 +466,24 @@ public class FieldPanel extends JPanel implements IFieldPanel
 		
 		
 		@Override
-		public void mouseClicked(MouseEvent e)
+		public void mouseClicked(final MouseEvent e)
 		{
 			// take care of fieldOriginY
-			final Vector2 guiPos = new Vector2((e.getX()) - fieldOriginX, (e.getY()) - fieldOriginY);
-			guiPos.multiply(1f / scaleFactor);
-			
-			boolean ctrl = false;
-			boolean alt = false;
-			boolean shift = false;
-			boolean meta = false;
-			
-			int onmask = InputEvent.CTRL_DOWN_MASK;
-			int offmask = InputEvent.ALT_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK;
-			if ((e.getModifiersEx() & (onmask | offmask)) == onmask)
-			{
-				ctrl = true;
-			}
-			
-			onmask = InputEvent.ALT_DOWN_MASK;
-			offmask = InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK;
-			if ((e.getModifiersEx() & (onmask | offmask)) == onmask)
-			{
-				alt = true;
-			}
-			
-			onmask = InputEvent.SHIFT_DOWN_MASK;
-			offmask = InputEvent.CTRL_DOWN_MASK | InputEvent.ALT_DOWN_MASK;
-			if ((e.getModifiersEx() & (onmask | offmask)) == onmask)
-			{
-				shift = true;
-			}
-			
-			onmask = InputEvent.META_DOWN_MASK;
-			offmask = InputEvent.CTRL_DOWN_MASK | InputEvent.ALT_DOWN_MASK;
-			if ((e.getModifiersEx() & (onmask)) == onmask)
-			{
-				meta = true;
-			}
+			IVector2 guiPos = new Vector2((e.getX()) - fieldOriginX, (e.getY()) - fieldOriginY).multiply(1f / scaleFactor);
 			
 			// --- notify observer ---
 			synchronized (observers)
 			{
 				for (final IFieldPanelObserver observer : observers)
 				{
-					observer.onFieldClick(transformToGlobalCoordinates(guiPos), ctrl, alt, shift, meta);
+					observer.onFieldClick(transformToGlobalCoordinates(guiPos), e);
 				}
 			}
 		}
 		
 		
 		@Override
-		public void mousePressed(MouseEvent e)
+		public void mousePressed(final MouseEvent e)
 		{
 			mousePressedY = e.getY();
 			mousePressedX = e.getX();
@@ -380,21 +491,20 @@ public class FieldPanel extends JPanel implements IFieldPanel
 		
 		
 		@Override
-		public void mouseDragged(MouseEvent e)
+		public void mouseDragged(final MouseEvent e)
 		{
 			// --- move the field over the panel ---
 			final int dy = e.getY() - mousePressedY;
 			final int dx = e.getX() - mousePressedX;
-			fieldOriginY = fieldOriginY + dy;
-			fieldOriginX = fieldOriginX + dx;
+			setFieldOriginY(fieldOriginY + dy);
+			setFieldOriginX(fieldOriginX + dx);
 			mousePressedY += dy;
 			mousePressedX += dx;
-			repaint();
 		}
 		
 		
 		@Override
-		public void mouseWheelMoved(MouseWheelEvent e)
+		public void mouseWheelMoved(final MouseWheelEvent e)
 		{
 			final int rot = -e.getWheelRotation();
 			final int scroll = SCROLL_SPEED * rot;
@@ -405,21 +515,20 @@ public class FieldPanel extends JPanel implements IFieldPanel
 			
 			final float oldLenX = (xLen) * scaleFactor;
 			final float oldLenY = (yLen) * scaleFactor;
-			scaleFactor *= 1 + (scroll / SCROLL_FACTOR);
+			setScaleFactor((float) (scaleFactor * (1 + (scroll / SCROLL_FACTOR))));
 			final float newLenX = (xLen) * scaleFactor;
 			final float newLenY = (yLen) * scaleFactor;
-			fieldOriginX -= (newLenX - oldLenX) / 2;
-			fieldOriginY -= (newLenY - oldLenY) / 2;
-			repaint();
+			setFieldOriginX(fieldOriginX - ((newLenX - oldLenX) / 2));
+			setFieldOriginY(fieldOriginY - ((newLenY - oldLenY) / 2));
 		}
 		
 		
 		@Override
-		public void mouseMoved(MouseEvent e)
+		public void mouseMoved(final MouseEvent e)
 		{
 			// take care of fieldOriginY
-			final Vector2 guiPos = new Vector2((e.getX()) - fieldOriginX, (e.getY()) - fieldOriginY);
-			guiPos.multiply(1f / scaleFactor);
+			IVector2 guiPos = new Vector2((e.getX()) - fieldOriginX, (e.getY()) - fieldOriginY).multiply(1f / scaleFactor);
+			
 			coordinatesLayer.updateMouseLocation(transformToGlobalCoordinates(guiPos));
 		}
 	}
@@ -430,7 +539,7 @@ public class FieldPanel extends JPanel implements IFieldPanel
 	// --------------------------------------------------------------------------
 	
 	@Override
-	public void setPanelVisible(boolean visible)
+	public void setPanelVisible(final boolean visible)
 	{
 		setVisible(visible);
 		multiLayer.setInitialVisibility();
@@ -438,44 +547,32 @@ public class FieldPanel extends JPanel implements IFieldPanel
 	
 	
 	@Override
-	public void drawAIFrame(AIInfoFrame aiFrame)
+	public void updateAiFrame(final IRecordFrame frame)
 	{
-		multiLayer.update(aiFrame);
-		repaint();
+		onFirstFrame();
+		multiLayer.update(frame);
 	}
 	
 	
 	@Override
-	public void drawRecordFrame(IRecordFrame recFrame)
+	public void updateWFrame(final SimpleWorldFrame frame)
 	{
-		multiLayer.updateRecord(recFrame);
-		repaint();
+		onFirstFrame();
+		multiLayer.updateWf(frame);
 	}
 	
 	
-	@Override
-	public void setNewFieldRaster(FieldRasterConfig fieldRasterconfig)
+	private void onFirstFrame()
 	{
-		final PositioningRaster layer = (PositioningRaster) multiLayer.getFieldLayer(EFieldLayer.POSITIONING_RASTER);
-		if (layer != null)
+		if (firstAiFrame)
 		{
-			layer.setNewFieldRaster(fieldRasterconfig);
+			// --- add listener ---
+			final MouseEvents me = new MouseEvents();
+			addMouseListener(me);
+			addMouseMotionListener(me);
+			addMouseWheelListener(me);
+			firstAiFrame = false;
 		}
-		
-		final AnalysingRasterLayer layer2 = (AnalysingRasterLayer) multiLayer.getFieldLayer(EFieldLayer.ANALYSING_RASTER);
-		if (layer2 != null)
-		{
-			layer2.setNewFieldRaster(fieldRasterconfig);
-		}
-	}
-	
-	
-	@Override
-	public void setPaths(List<Path> paths)
-	{
-		botBallLayer.setPaths(paths);
-		// little hack to get pathes in replay
-		multiLayer.setPaths(paths);
 	}
 	
 	
@@ -484,7 +581,8 @@ public class FieldPanel extends JPanel implements IFieldPanel
 	 * 
 	 * @return
 	 */
-	public static int getFieldTotalWidth()
+	@Override
+	public int getFieldTotalWidth()
 	{
 		return fieldWidth + (2 * FIELD_MARGIN);
 	}
@@ -495,32 +593,48 @@ public class FieldPanel extends JPanel implements IFieldPanel
 	 * 
 	 * @return
 	 */
-	public static int getFieldTotalHeight()
+	@Override
+	public int getFieldTotalHeight()
 	{
 		return getFieldHeight() + (2 * FIELD_MARGIN);
 	}
 	
 	
-	private static float getFieldRatio()
+	private float getFieldRatio()
 	{
 		if (AIConfig.getGeometry() == null)
 		{
-			return DEF_FIELD_WIDTH / DEF_FIELD_HEIGHT;
+			return 1;
 		}
 		return AIConfig.getGeometry().getFieldLength() / AIConfig.getGeometry().getFieldWidth();
 	}
 	
 	
-	private static int getFieldHeight()
+	/**
+	 * @return
+	 */
+	@Override
+	public final int getFieldHeight()
 	{
-		return (int) (getFieldRatio() * fieldWidth);
+		return Math.round(getFieldRatio() * fieldWidth);
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	@Override
+	public final int getFieldWidth()
+	{
+		return fieldWidth;
 	}
 	
 	
 	@Override
-	public void onOptionChanged(EVisualizerOptions option, boolean isSelected)
+	public void onOptionChanged(final EVisualizerOptions option, final boolean isSelected)
 	{
 		AFieldLayer layer = null;
+		final AresLayer aresLayer = (AresLayer) multiLayer.getFieldLayer(EFieldLayer.ARES);
 		
 		switch (option)
 		{
@@ -537,11 +651,8 @@ public class FieldPanel extends JPanel implements IFieldPanel
 			case COORDINATES:
 				layer = multiLayer.getFieldLayer(EFieldLayer.COORDINATES);
 				break;
-			case DEFENSE_GOAL_POINTS:
-				layer = multiLayer.getFieldLayer(EFieldLayer.DEFENSE_GOAL_POINTS);
-				break;
-			case OFFENSIVE_POINTS:
-				layer = multiLayer.getFieldLayer(EFieldLayer.OFFENSIVE_POINTS);
+			case GOAL_POINTS:
+				layer = multiLayer.getFieldLayer(EFieldLayer.GOAL_POINTS);
 				break;
 			case FANCY:
 				multiLayer.setFancyPainting(isSelected);
@@ -562,28 +673,44 @@ public class FieldPanel extends JPanel implements IFieldPanel
 						setFieldTurn(EFieldTurn.NORMAL);
 						break;
 				}
-				switch (fieldTurn)
+				fieldOriginX = 0;
+				fieldOriginY = 0;
+				break;
+			case RESET_FIELD:
+				if (getWidth() > getHeight())
 				{
-					case NORMAL:
-					case T180:
-						fieldOriginX = 0;
-						fieldOriginY = 0;
-						break;
-					case T90:
-					case T270:
-						fieldOriginX = (int) (((getFieldTotalHeight() * scaleFactor) / 2) - ((getFieldTotalWidth() * scaleFactor) / 2));
-						fieldOriginY = -fieldOriginX;
-						break;
+					setFieldTurn(EFieldTurn.T90);
+					
+					if ((getFieldRatio() * getHeight()) > getWidth())
+					{
+						setScaleFactor((float) getWidth() / getFieldTotalHeight());
+					} else
+					{
+						setScaleFactor((float) getHeight() / getFieldTotalWidth());
+					}
+				} else
+				{
+					setFieldTurn(EFieldTurn.NORMAL);
+					
+					if ((getFieldRatio() * getWidth()) > getHeight())
+					{
+						setScaleFactor((float) getHeight() / getFieldTotalHeight());
+					} else
+					{
+						setScaleFactor((float) getHeight() / getFieldTotalWidth());
+					}
 				}
+				
+				setFieldOriginX(0);
+				setFieldOriginY(0);
 				break;
 			case LAYER_DEBUG_INFOS:
 				multiLayer.setDebugInformationVisible(isSelected);
 				break;
 			case PATHS:
-				final BallBotLayer bblayerP = (BallBotLayer) multiLayer.getFieldLayer(EFieldLayer.BALL_BOTS);
-				if (bblayerP != null)
+				if (aresLayer != null)
 				{
-					bblayerP.showPaths(isSelected);
+					aresLayer.showPaths(isSelected);
 				}
 				break;
 			case PATTERNS:
@@ -596,17 +723,27 @@ public class FieldPanel extends JPanel implements IFieldPanel
 				layer = multiLayer.getFieldLayer(EFieldLayer.SHAPES);
 				break;
 			case SPLINES:
-				final BallBotLayer bblayerS = (BallBotLayer) multiLayer.getFieldLayer(EFieldLayer.BALL_BOTS);
-				if (bblayerS != null)
+				if (aresLayer != null)
 				{
-					bblayerS.showSplines(isSelected);
+					aresLayer.showSplines(isSelected);
+				}
+				break;
+			case POT_PATHS:
+				if (aresLayer != null)
+				{
+					aresLayer.showPotentialPaths(isSelected);
+				}
+				break;
+			case POT_SPLINES:
+				if (aresLayer != null)
+				{
+					aresLayer.showPotentialSplines(isSelected);
 				}
 				break;
 			case ERROR_TREE:
-				final BallBotLayer bblayerET = (BallBotLayer) multiLayer.getFieldLayer(EFieldLayer.BALL_BOTS);
-				if (bblayerET != null)
+				if (aresLayer != null)
 				{
-					bblayerET.showPPErrorTree(isSelected);
+					aresLayer.showPPErrorTree(isSelected);
 				}
 				break;
 			case VELOCITY:
@@ -629,16 +766,48 @@ public class FieldPanel extends JPanel implements IFieldPanel
 			case FIELD_MARKS:
 				layer = multiLayer.getFieldLayer(EFieldLayer.FIELD_MARKS);
 				break;
-			default:
+			case TACTICS:
+				layer = multiLayer.getFieldLayer(EFieldLayer.TACTICS);
 				break;
-		
+			case BLUE_AI:
+				if (isSelected)
+				{
+					multiLayer.addTeamColor(ETeamColor.BLUE);
+				} else
+				{
+					multiLayer.removeTeamColor(ETeamColor.BLUE);
+				}
+				break;
+			case YELLOW_AI:
+				if (isSelected)
+				{
+					multiLayer.addTeamColor(ETeamColor.YELLOW);
+				} else
+				{
+					multiLayer.removeTeamColor(ETeamColor.YELLOW);
+				}
+				break;
+			case BOT_STATUS:
+				layer = multiLayer.getFieldLayer(EFieldLayer.BOT_STATUS);
+				break;
+			case REFEREE:
+				layer = multiLayer.getFieldLayer(EFieldLayer.REFEREE);
+				break;
+			case FIELD_PREDICTION:
+				layer = multiLayer.getFieldLayer(EFieldLayer.FIELD_PREDICTOR);
+				break;
+			case SUPPORT_POS:
+				layer = multiLayer.getFieldLayer(EFieldLayer.SUPPORT_POS);
+				break;
+			case MISC:
+				layer = multiLayer.getFieldLayer(EFieldLayer.MISC);
+				break;
 		}
 		
 		if (layer != null)
 		{
 			layer.setVisible(isSelected);
 		}
-		repaint();
 	}
 	
 	
@@ -652,30 +821,10 @@ public class FieldPanel extends JPanel implements IFieldPanel
 	}
 	
 	
-	@Override
-	public Dimension getMinimumSize()
-	{
-		return new Dimension(fieldTotalWidth, fieldTotalHeight);
-	}
-	
-	
-	@Override
-	public Dimension getPreferredSize()
-	{
-		return new Dimension(fieldTotalWidth, fieldTotalHeight);
-	}
-	
-	
-	@Override
-	public Dimension getMaximumSize()
-	{
-		return new Dimension(fieldTotalWidth, fieldTotalHeight);
-	}
-	
-	
 	/**
 	 * @return the fieldTurn
 	 */
+	@Override
 	public final EFieldTurn getFieldTurn()
 	{
 		return fieldTurn;
@@ -685,9 +834,43 @@ public class FieldPanel extends JPanel implements IFieldPanel
 	/**
 	 * @param fieldTurn the fieldTurn to set
 	 */
-	private final void setFieldTurn(EFieldTurn fieldTurn)
+	private final void setFieldTurn(final EFieldTurn fieldTurn)
 	{
 		this.fieldTurn = fieldTurn;
 		multiLayer.setFieldTurn(fieldTurn);
+		SumatraModel.getInstance().setUserProperty(FieldPanel.class.getCanonicalName() + ".fieldTurn", fieldTurn.name());
+	}
+	
+	
+	/**
+	 * @param scaleFactor the scaleFactor to set
+	 */
+	private void setScaleFactor(final float scaleFactor)
+	{
+		this.scaleFactor = scaleFactor;
+		SumatraModel.getInstance().setUserProperty(FieldPanel.class.getCanonicalName() + ".scaleFactor",
+				String.valueOf(scaleFactor));
+	}
+	
+	
+	/**
+	 * @param fieldOriginY the fieldOriginY to set
+	 */
+	private void setFieldOriginY(final float fieldOriginY)
+	{
+		this.fieldOriginY = fieldOriginY;
+		SumatraModel.getInstance().setUserProperty(FieldPanel.class.getCanonicalName() + ".fieldOriginY",
+				String.valueOf(fieldOriginY));
+	}
+	
+	
+	/**
+	 * @param fieldOriginX the fieldOriginX to set
+	 */
+	private void setFieldOriginX(final float fieldOriginX)
+	{
+		this.fieldOriginX = fieldOriginX;
+		SumatraModel.getInstance().setUserProperty(FieldPanel.class.getCanonicalName() + ".fieldOriginX",
+				String.valueOf(fieldOriginX));
 	}
 }

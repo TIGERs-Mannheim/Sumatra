@@ -16,10 +16,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Embeddable;
-import javax.persistence.FetchType;
-import javax.persistence.OneToMany;
+import net.sf.oval.ConstraintTarget;
+import net.sf.oval.constraint.AssertValid;
+import net.sf.oval.constraint.NotNull;
+import net.sf.oval.constraint.Size;
+
+import com.sleepycat.persist.model.Persistent;
 
 
 /**
@@ -29,7 +31,7 @@ import javax.persistence.OneToMany;
  * @param <T>
  * 
  */
-@Embeddable
+@Persistent
 public final class BotIDMapConst<T> implements IBotIDMap<T>
 {
 	// --------------------------------------------------------------------------
@@ -37,14 +39,22 @@ public final class BotIDMapConst<T> implements IBotIDMap<T>
 	// --------------------------------------------------------------------------
 	private static final long	serialVersionUID	= -6737987790216062346L;
 	
-	/** not final for ObjectDB */
-	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+	/** not final for Database */
+	@NotNull
+	@Size(min = 1)
+	@AssertValid(appliesTo = ConstraintTarget.VALUES)
 	private Map<BotID, T>		map;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	private BotIDMapConst()
+	{
+	}
+	
+	
 	private BotIDMapConst(Map<BotID, T> base)
 	{
 		this.map = base;

@@ -12,7 +12,7 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.ellipse;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.Embeddable;
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
@@ -27,7 +27,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.ILine;
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  * 
  */
-@Embeddable
+@Persistent
 public class Ellipse implements IEllipse
 {
 	
@@ -38,15 +38,21 @@ public class Ellipse implements IEllipse
 	private static final float	MAX_STEP_CURVE			= 5f;
 	private static final float	POINT_ON_CURVE_TOL	= 5f;
 	private static final float	STEP_TOLERANCE			= 0.01f;
-	private final IVector2		center;
-	private final float			radiusX;
-	private final float			radiusY;
-	private final float			turnAngle;
+	private IVector2				center;
+	private float					radiusX;
+	private float					radiusY;
+	private float					turnAngle;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	@SuppressWarnings("unused")
+	private Ellipse()
+	{
+		
+	}
 	
 	
 	/**

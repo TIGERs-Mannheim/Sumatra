@@ -38,7 +38,7 @@ public class ButtonPollingThread extends Thread implements IPollingControll
 	
 	private static final float					THRESHOLD_BTN	= 0.3f;
 	
-	protected final Controller					controller;
+	private final Controller					controller;
 	protected final ControllerInterpreter	interpreter;
 	
 	

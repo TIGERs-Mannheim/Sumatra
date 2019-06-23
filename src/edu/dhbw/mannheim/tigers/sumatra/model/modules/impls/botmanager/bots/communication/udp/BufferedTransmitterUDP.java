@@ -26,6 +26,7 @@ import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.Statistics;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandFactory;
 
 
 /**
@@ -52,6 +53,7 @@ public class BufferedTransmitterUDP implements ITransmitterUDP
 	private final Map<Integer, ACommand>	lateCmds		= new HashMap<Integer, ACommand>();
 	// in [ns]
 	private static final long					minDelay		= 1000000;
+	private boolean								legacy		= false;
 	
 	private final Lock							lock			= new ReentrantLock();
 	private final Condition						wakeup		= lock.newCondition();
@@ -171,6 +173,25 @@ public class BufferedTransmitterUDP implements ITransmitterUDP
 		return stats;
 	}
 	
+	
+	/**
+	 * @return the legacy
+	 */
+	public boolean isLegacy()
+	{
+		return legacy;
+	}
+	
+	
+	/**
+	 * @param legacy the legacy to set
+	 */
+	@Override
+	public void setLegacy(boolean legacy)
+	{
+		this.legacy = legacy;
+	}
+	
 	// --------------------------------------------------------------------------
 	// --- Threads --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -207,7 +228,7 @@ public class BufferedTransmitterUDP implements ITransmitterUDP
 					
 					if (cmd != null)
 					{
-						final int cmdId = cmd.getCommand();
+						final int cmdId = cmd.getType().getId();
 						
 						// check time constraints
 						final Long lastSendTime = buffer.get(cmdId);
@@ -238,7 +259,7 @@ public class BufferedTransmitterUDP implements ITransmitterUDP
 				{
 					final ACommand lateCmd = iter.next();
 					
-					final long lastSendTime = buffer.get(lateCmd.getCommand());
+					final long lastSendTime = buffer.get(lateCmd.getType().getId());
 					
 					// command now waited <minDelay>
 					if (lastSendTime <= (System.nanoTime() - minDelay))
@@ -303,7 +324,7 @@ public class BufferedTransmitterUDP implements ITransmitterUDP
 			// process cmd
 			try
 			{
-				final byte data[] = cmd.getTransferData();
+				final byte data[] = CommandFactory.getInstance().encode(cmd, legacy);
 				
 				final DatagramPacket packet = new DatagramPacket(data, data.length, destination, destPort);
 				socket.send(packet);

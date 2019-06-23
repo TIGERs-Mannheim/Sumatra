@@ -9,10 +9,10 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.types;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
-import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.log4j.Logger;
 
 
@@ -28,9 +28,9 @@ public class ManagedConfig
 	private static final Logger			log			= Logger.getLogger(ManagedConfig.class.getName());
 	
 	private IConfigClient					client;
-	private XMLConfiguration				xmlConfig;
+	private HierarchicalConfiguration	config;
 	
-	private final List<IConfigObserver>	observers	= new LinkedList<IConfigObserver>();
+	private final Set<IConfigObserver>	observers	= new HashSet<IConfigObserver>();
 	
 	
 	// --------------------------------------------------------------------------
@@ -40,10 +40,10 @@ public class ManagedConfig
 	 * @param client
 	 * @param config
 	 */
-	public ManagedConfig(IConfigClient client, XMLConfiguration config)
+	public ManagedConfig(IConfigClient client, HierarchicalConfiguration config)
 	{
 		this.client = client;
-		xmlConfig = config;
+		this.config = config;
 	}
 	
 	
@@ -56,11 +56,11 @@ public class ManagedConfig
 	{
 		try
 		{
-			client.onLoad(xmlConfig);
+			client.onLoad(config);
 			
 			for (final IConfigObserver observer : observers)
 			{
-				observer.onLoad(xmlConfig);
+				observer.onLoad(config);
 			}
 		} catch (final RuntimeException rex)
 		{
@@ -73,11 +73,11 @@ public class ManagedConfig
 	 */
 	public void notifyOnReload()
 	{
-		client.onReload(xmlConfig);
+		client.onReload(config);
 		
 		for (final IConfigObserver observer : observers)
 		{
-			observer.onReload(xmlConfig);
+			observer.onReload(config);
 		}
 	}
 	
@@ -124,17 +124,17 @@ public class ManagedConfig
 	/**
 	 * @return
 	 */
-	public XMLConfiguration getXmlConfig()
+	public HierarchicalConfiguration getConfig()
 	{
-		return xmlConfig;
+		return config;
 	}
 	
 	
 	/**
-	 * @param xmlConfig
+	 * @param config
 	 */
-	public void setXmlConfig(XMLConfiguration xmlConfig)
+	public void setConfig(HierarchicalConfiguration config)
 	{
-		this.xmlConfig = xmlConfig;
+		this.config = config;
 	}
 }

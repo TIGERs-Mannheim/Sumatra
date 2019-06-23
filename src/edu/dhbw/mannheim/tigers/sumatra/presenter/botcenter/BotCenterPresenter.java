@@ -4,14 +4,15 @@
  * Project: TIGERS - Sumatra
  * Date: 10.08.2010
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.botcenter;
 
+import java.awt.Component;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.TimerTask;
 
 import javax.swing.JScrollPane;
@@ -22,18 +23,20 @@ import javax.swing.tree.DefaultTreeModel;
 
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
+import edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesState;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.basestation.BaseStation;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.TigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.Statistics;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.udp.ITransceiverUDP;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerChargeAuto;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerChargeManual;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerKickV2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerKickV2.Device;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerKickV2.Mode;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerKickV2.EKickerMode;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IBotManagerObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ABotManager;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.botcenter.basestation.BaseStationPresenter;
@@ -55,19 +58,18 @@ import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.NewBotPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.OverviewPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.kicker.FastKickerConfigOverview;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.kicker.FastKickerConfigOverview.IFastKickerConfigObserver;
-import edu.dhbw.mannheim.tigers.sumatra.view.main.ISumatraView;
-import edu.moduli.exceptions.ModuleNotFoundException;
-import edu.moduli.listenerVariables.ModulesState;
+import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
+import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraViewPresenter;
 
 
 /**
  * Presenter for the bot center.
  * 
  * @author AndreR
- * 
  */
-public class BotCenterPresenter implements IBotTreeObserver, IModuliStateObserver, IBotCenterPresenter,
-		ILookAndFeelStateObserver, IBotManagerObserver, INetworkSummaryPanelObserver, IFastKickerConfigObserver
+public class BotCenterPresenter implements ISumatraViewPresenter, IBotTreeObserver, IModuliStateObserver,
+		IBotCenterPresenter, ILookAndFeelStateObserver, IBotManagerObserver, INetworkSummaryPanelObserver,
+		IFastKickerConfigObserver
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
@@ -81,7 +83,7 @@ public class BotCenterPresenter implements IBotTreeObserver, IModuliStateObserve
 	private BotCenterTreeNode				rootNode						= null;
 	private BotCenterTreeNode				mcastStatsNode				= null;
 	private BotCenterTreeNode				fastChgNode					= null;
-	private BotCenterTreeNode				baseStationNode			= null;
+	private List<BotCenterTreeNode>		baseStationNode			= new ArrayList<BotCenterTreeNode>();
 	private BotCenterTreeNode				firmwareUpdateNode		= null;
 	
 	/** Guarded by <code>this</code> */
@@ -92,12 +94,12 @@ public class BotCenterPresenter implements IBotTreeObserver, IModuliStateObserve
 	private NetworkSummaryPanel			netSummaryPanel			= null;
 	private TimerTask							netStatsUpdater			= null;
 	private FastKickerConfigOverview		fastChgPanel				= null;
-	private BaseStationPresenter			baseStationPresenter		= null;
+	private List<BaseStationPresenter>	baseStationPresenter		= new ArrayList<BaseStationPresenter>();
 	private FirmwareUpdatePresenter		firmwareUpdatePresenter	= null;
 	
 	private boolean							networkStatsActive		= false;
 	
-	private ModulesState						state							= ModulesState.NOT_LOADED;
+	private ModulesState						currentState				= ModulesState.NOT_LOADED;
 	
 	
 	// --------------------------------------------------------------------------
@@ -112,7 +114,7 @@ public class BotCenterPresenter implements IBotTreeObserver, IModuliStateObserve
 		final JScrollPane pane = new JScrollPane(overviewPanel);
 		pane.setBorder(new EmptyBorder(0, 0, 0, 0));
 		
-		rootNode = new BotCenterTreeNode("Overview", ETreeIconType.ROOT, pane);
+		rootNode = new BotCenterTreeNode("Overview", ETreeIconType.ROOT, pane, true);
 		
 		panel = new BotCenterPanel(rootNode);
 		
@@ -127,7 +129,7 @@ public class BotCenterPresenter implements IBotTreeObserver, IModuliStateObserve
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	private void addBotPresenter(ABot bot)
+	private void addBotPresenter(final ABot bot)
 	{
 		final ABotPresenter presenter = BotPresenterFactory.createBotPresenter(bot);
 		
@@ -154,7 +156,7 @@ public class BotCenterPresenter implements IBotTreeObserver, IModuliStateObserve
 	
 	
 	@Override
-	public void onItemSelected(BotCenterTreeNode node)
+	public void onItemSelected(final BotCenterTreeNode node)
 	{
 		if ((node == null))
 		{
@@ -191,9 +193,9 @@ public class BotCenterPresenter implements IBotTreeObserver, IModuliStateObserve
 	
 	
 	@Override
-	public synchronized void onModuliStateChanged(ModulesState newState)
+	public synchronized void onModuliStateChanged(final ModulesState newState)
 	{
-		if ((state == ModulesState.NOT_LOADED) && (newState == ModulesState.RESOLVED))
+		if ((newState != ModulesState.NOT_LOADED))
 		{
 			// init
 			try
@@ -201,97 +203,114 @@ public class BotCenterPresenter implements IBotTreeObserver, IModuliStateObserve
 				botManager = (ABotManager) SumatraModel.getInstance().getModule("botmanager");
 			} catch (final ModuleNotFoundException err)
 			{
-				log.fatal("Botmanager not found");
+				log.error("Botmanager not found");
+				return;
 			}
 		}
 		
-		if ((state == ModulesState.RESOLVED) && (newState == ModulesState.ACTIVE))
+		switch (newState)
 		{
-			// start
-			
-			baseStationPresenter = new BaseStationPresenter(botManager.getBaseStation());
-			firmwareUpdatePresenter = new FirmwareUpdatePresenter(botManager);
-			
-			netSummaryPanel = new NetworkSummaryPanel();
-			fastChgPanel = new FastKickerConfigOverview();
-			
-			mcastStatsNode = new BotCenterTreeNode("Multicast", ETreeIconType.AP, netSummaryPanel);
-			rootNode.add(mcastStatsNode);
-			
-			fastChgNode = new BotCenterTreeNode("Fast Charge", ETreeIconType.KICK, fastChgPanel);
-			rootNode.add(fastChgNode);
-			
-			baseStationNode = new BotCenterTreeNode("Base Station", ETreeIconType.AP,
-					baseStationPresenter.getBaseStationPanel());
-			rootNode.add(baseStationNode);
-			
-			firmwareUpdateNode = new BotCenterTreeNode("Firmware Update", ETreeIconType.LIGHTNING,
-					firmwareUpdatePresenter.getUpdatePanel());
-			rootNode.add(firmwareUpdateNode);
-			
-			model.reload(rootNode);
-			
-			LookAndFeelStateAdapter.getInstance().addObserver(this);
-			fastChgPanel.addObserver(this);
-			
-			// Get initial state
-			for (final ABot bot : botManager.getAllBots().values())
-			{
-				onBotAdded(bot);
-			}
-			
-			botManager.addObserver(this);
-			netSummaryPanel.addObserver(this);
-			
-			netSummaryPanel.setEnableMulticast(botManager.getUseMulticast());
-			netSummaryPanel.setSleepTime(botManager.getUpdateAllSleepTime());
-			
-			overviewPanel.setActive(true);
-			
-			netStatsUpdater = new NetworkStatisticsUpdater();
-			GeneralPurposeTimer.getInstance().scheduleAtFixedRate(netStatsUpdater, 0, 1000);
-		}
+			case ACTIVE:
+				for (Map.Entry<Integer, BaseStation> entry : botManager.getBaseStations().entrySet())
+				{
+					int key = entry.getKey();
+					BaseStation baseStation = entry.getValue();
+					BaseStationPresenter presenter = new BaseStationPresenter(baseStation);
+					baseStationPresenter.add(presenter);
+					presenter.getTreeNode().setTitle("Base Station (" + key + ")");
+					baseStationNode.add(presenter.getTreeNode());
+					rootNode.add(presenter.getTreeNode());
+				}
+				firmwareUpdatePresenter = new FirmwareUpdatePresenter(botManager);
+				
+				netSummaryPanel = new NetworkSummaryPanel();
+				fastChgPanel = new FastKickerConfigOverview();
+				
+				mcastStatsNode = new BotCenterTreeNode("Multicast", ETreeIconType.AP, netSummaryPanel, true);
+				rootNode.add(mcastStatsNode);
+				
+				fastChgNode = new BotCenterTreeNode("Fast Charge", ETreeIconType.KICK, fastChgPanel, true);
+				rootNode.add(fastChgNode);
+				
+				firmwareUpdateNode = new BotCenterTreeNode("Firmware Update", ETreeIconType.LIGHTNING,
+						firmwareUpdatePresenter.getUpdatePanel(), true);
+				rootNode.add(firmwareUpdateNode);
+				
+				model.reload(rootNode);
+				
+				LookAndFeelStateAdapter.getInstance().addObserver(this);
+				fastChgPanel.addObserver(this);
+				
+				// Get initial state
+				for (final ABot bot : botManager.getAllBots().values())
+				{
+					onBotAdded(bot);
+				}
+				
+				botManager.addObserver(this);
+				botManager.addObserver(firmwareUpdatePresenter);
+				netSummaryPanel.addObserver(this);
+				
+				netSummaryPanel.setEnableMulticast(botManager.getUseMulticast());
+				netSummaryPanel.setSleepTime(botManager.getUpdateAllSleepTime());
+				
+				overviewPanel.setActive(true);
+				
+				netStatsUpdater = new NetworkStatisticsUpdater();
+				GeneralPurposeTimer.getInstance().scheduleAtFixedRate(netStatsUpdater, 0, 1000);
+				break;
+			case RESOLVED:
+				if (currentState != ModulesState.ACTIVE)
+				{
+					break;
+				}
+				LookAndFeelStateAdapter.getInstance().removeObserver(this);
+				
+				botManager.removeObserver(this);
+				botManager.removeObserver(firmwareUpdatePresenter);
+				
+				for (BaseStationPresenter presenter : baseStationPresenter)
+				{
+					presenter.delete();
+				}
+				baseStationPresenter.clear();
+				
+				firmwareUpdatePresenter.delete();
+				firmwareUpdatePresenter = null;
+				
+				netStatsUpdater.cancel();
+				netStatsUpdater = null;
+				
+				netSummaryPanel.removeObserver(this);
+				netSummaryPanel = null;
+				
+				model.removeNodeFromParent(mcastStatsNode);
+				mcastStatsNode = null;
+				model.removeNodeFromParent(fastChgNode);
+				fastChgNode = null;
+				fastChgPanel = null;
+				for (BotCenterTreeNode node : baseStationNode)
+				{
+					model.removeNodeFromParent(node);
+				}
+				baseStationNode.clear();
+				model.removeNodeFromParent(firmwareUpdateNode);
+				firmwareUpdateNode = null;
+				
+				overviewPanel.setActive(false);
+				break;
+			case NOT_LOADED:
+				break;
+			default:
+				break;
 		
-		if ((state == ModulesState.ACTIVE) && (newState == ModulesState.RESOLVED))
-		{
-			// stop
-			LookAndFeelStateAdapter.getInstance().removeObserver(this);
-			
-			botManager.removeAllBots();
-			botManager.removeObserver(this);
-			netSummaryPanel.removeObserver(this);
-			
-			baseStationPresenter.delete();
-			baseStationPresenter = null;
-			
-			firmwareUpdatePresenter.delete();
-			firmwareUpdatePresenter = null;
-			
-			netStatsUpdater.cancel();
-			netStatsUpdater = null;
-			
-			netSummaryPanel.removeObserver(this);
-			netSummaryPanel = null;
-			
-			model.removeNodeFromParent(mcastStatsNode);
-			mcastStatsNode = null;
-			model.removeNodeFromParent(fastChgNode);
-			fastChgNode = null;
-			fastChgPanel = null;
-			model.removeNodeFromParent(baseStationNode);
-			baseStationNode = null;
-			model.removeNodeFromParent(firmwareUpdateNode);
-			firmwareUpdateNode = null;
-			
-			overviewPanel.setActive(false);
 		}
-		
-		state = newState;
+		currentState = newState;
 	}
 	
 	
 	@Override
-	public synchronized void onNodeRightClicked(BotCenterTreeNode node)
+	public synchronized void onNodeRightClicked(final BotCenterTreeNode node)
 	{
 		if (botManager == null)
 		{
@@ -316,10 +335,10 @@ public class BotCenterPresenter implements IBotTreeObserver, IModuliStateObserve
 			@Override
 			public void run()
 			{
-				SwingUtilities.updateComponentTreeUI(panel);
-				SwingUtilities.updateComponentTreeUI(overviewPanel);
-				SwingUtilities.updateComponentTreeUI(netSummaryPanel);
-				SwingUtilities.updateComponentTreeUI(fastChgPanel);
+				// SwingUtilities.updateComponentTreeUI(panel);
+				// SwingUtilities.updateComponentTreeUI(overviewPanel);
+				// SwingUtilities.updateComponentTreeUI(netSummaryPanel);
+				// SwingUtilities.updateComponentTreeUI(fastChgPanel);
 			}
 		});
 	}
@@ -346,7 +365,7 @@ public class BotCenterPresenter implements IBotTreeObserver, IModuliStateObserve
 	
 	
 	@Override
-	public synchronized void onRemoveBot(BotCenterTreeNode node)
+	public synchronized void onRemoveBot(final BotCenterTreeNode node)
 	{
 		if (botManager == null)
 		{
@@ -396,28 +415,28 @@ public class BotCenterPresenter implements IBotTreeObserver, IModuliStateObserve
 			{
 				for (final ABotPresenter presenter : botPresenters)
 				{
-					if (presenter.getBot().getBotID() == bot.getBotID())
+					synchronized (model)
 					{
-						overviewPanel.removeBotPanel(bot.getBotID());
-						if (fastChgPanel != null)
+						if (presenter.getBot().getBotID() == bot.getBotID())
 						{
-							fastChgPanel.removeBotPanel(presenter.getFastChgPanel());
+							overviewPanel.removeBotPanel(bot.getBotID());
+							if (fastChgPanel != null)
+							{
+								fastChgPanel.removeBotPanel(presenter.getFastChgPanel());
+							}
+							
+							presenter.delete();
+							
+							model.removeNodeFromParent(presenter.getTreeNode());
+							
+							botPresenters.remove(presenter);
+							
+							panel.onItemSelected(rootNode);
+							
+							break;
 						}
-						
-						presenter.delete();
-						
-						model.removeNodeFromParent(presenter.getTreeNode());
-						
-						botPresenters.remove(presenter);
-						
-						panel.onItemSelected(rootNode);
-						
-						break;
 					}
-				}
-				
-				synchronized (model)
-				{
+					
 					model.reload(rootNode);
 				}
 			}
@@ -426,56 +445,38 @@ public class BotCenterPresenter implements IBotTreeObserver, IModuliStateObserve
 	
 	
 	@Override
-	public void onBotIdChanged(BotID oldId, BotID newId)
+	public void onBotIdChanged(final BotID oldId, final BotID newId)
 	{
 	}
 	
 	
 	@Override
-	public synchronized void onEnableMulticastChanged(boolean multicast)
+	public synchronized void onEnableMulticastChanged(final boolean multicast)
 	{
 		botManager.setUseMulticast(multicast);
 	}
 	
 	
 	@Override
-	public synchronized void onSleepTimeChanged(long time)
+	public synchronized void onSleepTimeChanged(final long time)
 	{
 		botManager.setUpdateAllSleepTime(time);
 	}
 	
 	
 	@Override
-	public void onSetAutoChg(BotID botId)
+	public void onSetAutoChg(final BotID botId)
 	{
-		synchronized (BotCenterPresenter.this)
-		{
-			for (final ABot bot : botManager.getAllBots().values())
-			{
-				if ((bot.getType() == EBotType.TIGER) || (bot.getType() == EBotType.GRSIM))
-				{
-					if (bot.getBotID() == botId)
-					{
-						bot.execute(new TigerKickerChargeAuto());
-					}
-				}
-			}
-		}
+		// auto charge is always enabled, nothing todo
 	}
 	
 	
 	@Override
-	public void onSetChgAll(int chg)
+	public void onSetChgAll(final int chg)
 	{
 		synchronized (BotCenterPresenter.this)
 		{
-			for (final ABot bot : botManager.getAllBots().values())
-			{
-				// if ((bot.getType() == EBotType.TIGER) || (bot.getType() == EBotType.GRSIM))
-				// {
-				bot.execute(new TigerKickerChargeAuto(chg));
-				// }
-			}
+			botManager.chargeAll(chg);
 		}
 	}
 	
@@ -490,7 +491,7 @@ public class BotCenterPresenter implements IBotTreeObserver, IModuliStateObserve
 				if ((bot.getType() == EBotType.TIGER) || (bot.getType() == EBotType.GRSIM))
 				{
 					bot.execute(new TigerKickerChargeManual(6, 78, 5));
-					bot.execute(new TigerKickerKickV2(Device.STRAIGHT, Mode.FORCE, 25000));
+					bot.execute(new TigerKickerKickV2(Device.STRAIGHT, EKickerMode.FORCE, 25000));
 				}
 			}
 		}
@@ -527,7 +528,7 @@ public class BotCenterPresenter implements IBotTreeObserver, IModuliStateObserve
 			
 			for (final ABot bot : bots)
 			{
-				if ((bot.getType() == EBotType.TIGER) || (bot.getType() == EBotType.GRSIM))
+				if ((bot.getType() == EBotType.TIGER))
 				{
 					final TigerBot tiger = (TigerBot) bot;
 					txStats = txStats.add(tiger.getTransceiver().getTransmitterStats());
@@ -535,7 +536,7 @@ public class BotCenterPresenter implements IBotTreeObserver, IModuliStateObserve
 				}
 			}
 			
-			final ITransceiverUDP mcastTransceiver = localBotManager.getMulticastTransceiver();
+			final ITransceiverUDP mcastTransceiver = localBotManager.getMulticastTransceiver(0);
 			
 			if (mcastTransceiver != null)
 			{
@@ -553,17 +554,27 @@ public class BotCenterPresenter implements IBotTreeObserver, IModuliStateObserve
 	
 	
 	@Override
-	public void onBotConnectionChanged(ABot bot)
+	public void onBotConnectionChanged(final ABot bot)
 	{
 	}
 	
 	
-	/**
-	 * 
-	 * @return
-	 */
-	public ISumatraView getView()
+	@Override
+	public Component getComponent()
 	{
 		return panel;
+	}
+	
+	
+	@Override
+	public ISumatraView getSumatraView()
+	{
+		return panel;
+	}
+	
+	
+	@Override
+	public void onEmergencyStop()
+	{
 	}
 }

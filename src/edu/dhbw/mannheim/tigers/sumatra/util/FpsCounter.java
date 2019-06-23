@@ -9,11 +9,30 @@ package edu.dhbw.mannheim.tigers.sumatra.util;
  */
 public class FpsCounter
 {
-	private static final int	UPDATE_FREQ			= 30;
-	private static final float	MILIS_TO_SECONDS	= 1000f;
-	private long					lastTime				= 0;
-	private float					fps					= 0;
-	private int						counter				= 0;
+	private static final int	UPDATE_FREQ	= 30;
+	private long					lastTime		= 0;
+	private float					fps			= 0;
+	private int						counter		= 0;
+	private int						updateFreq	= UPDATE_FREQ;
+	private long					totalFrames	= 0;
+	
+	
+	/**
+	  * 
+	  */
+	public FpsCounter()
+	{
+		// nothing to do
+	}
+	
+	
+	/**
+	 * @param updateFreq
+	 */
+	public FpsCounter(int updateFreq)
+	{
+		this.updateFreq = updateFreq;
+	}
 	
 	
 	/**
@@ -22,14 +41,15 @@ public class FpsCounter
 	 */
 	public void newFrame()
 	{
-		long curTime = System.currentTimeMillis();
-		if (counter >= UPDATE_FREQ)
+		long curTime = System.nanoTime();
+		if (counter >= updateFreq)
 		{
-			fps = UPDATE_FREQ / ((curTime - lastTime) / MILIS_TO_SECONDS);
+			fps = updateFreq / ((curTime - lastTime) / 1e9f);
 			lastTime = curTime;
 			counter = 0;
 		}
 		counter++;
+		totalFrames++;
 	}
 	
 	
@@ -41,5 +61,14 @@ public class FpsCounter
 	public float getAvgFps()
 	{
 		return fps;
+	}
+	
+	
+	/**
+	 * @return the totalFrames
+	 */
+	public final long getTotalFrames()
+	{
+		return totalFrames;
 	}
 }

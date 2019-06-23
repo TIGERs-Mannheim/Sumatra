@@ -9,8 +9,8 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.observer;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
 
 
 /**
@@ -37,12 +37,5 @@ public interface IAIObserver
 	 * @param frame The frame and ... (can be <code>null</code>!!!)
 	 * @param prevFrame ...the previous frame when the exception occured (can be <code>null</code>!!!)
 	 */
-	void onAIException(Exception ex, AIInfoFrame frame, AIInfoFrame prevFrame);
-	
-	
-	/**
-	 * 
-	 * @param path
-	 */
-	void onNewPath(Path path);
+	void onAIException(Exception ex, IRecordFrame frame, IRecordFrame prevFrame);
 }

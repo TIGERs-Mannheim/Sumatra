@@ -62,6 +62,8 @@ public class BotTreePanel extends JPanel
 	private ImageIcon								motorIcon				= null;
 	private ImageIcon								apIcon					= null;
 	private ImageIcon								consoleIcon				= null;
+	private ImageIcon								gearIcon					= null;
+	private ImageIcon								splineIcon				= null;
 	
 	private final Point							lastMouseRightClick	= new Point();
 	private BotCenterTreeNode					lastSelectedNode		= null;
@@ -85,6 +87,8 @@ public class BotTreePanel extends JPanel
 		motorIcon = new ImageIcon(ClassLoader.getSystemResource("motor.png"));
 		apIcon = new ImageIcon(ClassLoader.getSystemResource("ap.png"));
 		consoleIcon = new ImageIcon(ClassLoader.getSystemResource("console.png"));
+		gearIcon = new ImageIcon(ClassLoader.getSystemResource("gear.png"));
+		splineIcon = new ImageIcon(ClassLoader.getSystemResource("join_spline_icon.jpg"));
 		
 		
 		// make the layout
@@ -245,6 +249,9 @@ public class BotTreePanel extends JPanel
 			
 			final BotCenterTreeNode node = (BotCenterTreeNode) value;
 			
+			setForeground(node.getColor());
+			setText(node.getTitle());
+			
 			switch (node.getIconType())
 			{
 				case ROOT:
@@ -274,8 +281,11 @@ public class BotTreePanel extends JPanel
 				case CONSOLE:
 					setIcon(consoleIcon);
 					break;
-				default:
-					setIcon(null);
+				case GEAR:
+					setIcon(gearIcon);
+					break;
+				case SPLINE:
+					setIcon(splineIcon);
 					break;
 			}
 			

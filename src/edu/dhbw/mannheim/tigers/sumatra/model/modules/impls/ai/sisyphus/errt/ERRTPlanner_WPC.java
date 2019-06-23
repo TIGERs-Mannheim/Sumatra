@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 06.11.2010
  * Author(s): Christian
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt;
@@ -17,6 +16,7 @@ import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
@@ -27,7 +27,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.FieldInf
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.IPathFinder;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.PathFinderInput;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.analyze.ParameterDebugger;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.analyze.TuneableParameter;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.tree.ITree;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.tree.Node;
@@ -37,9 +36,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.way
 
 /**
  * This is part of Sisyphus. It calculates a path to target. It's not dynamic but calculates with static obstacles.
- * 
  * This version has a waypoint cache
- * 
  * For every bot a single ERRTPlanner_WPC is needed
  * 
  * @author DirkK klostermannnn@googlemail.com
@@ -79,17 +76,14 @@ public class ERRTPlanner_WPC implements IPathFinder
 	 */
 	public ERRTPlanner_WPC()
 	{
+		waypoints = new Waypoints();
 		adjustableParams = new TuneableParameter();
-		waypoints = new Waypoints(adjustableParams);
 	}
 	
 	
 	@Override
-	public Path calcPath(PathFinderInput pathFinderInput)
+	public Path calcPath(final PathFinderInput pathFinderInput)
 	{
-		// TODO: DirkK delete this if you want to use the pp test play
-		adjustableParams = new TuneableParameter();
-		
 		List<Path> pathes = new ArrayList<Path>();
 		List<IVector2> intermediates = new ArrayList<IVector2>(pathFinderInput.getMoveCon().getIntermediateStops());
 		intermediates.add(new Vector2f(pathFinderInput.getFieldInfo().getPreprocessedTarget()));
@@ -109,14 +103,15 @@ public class ERRTPlanner_WPC implements IPathFinder
 			{
 				isPathToTarget = true;
 			}
-			pathFinderInput.getFieldInfo().addIgnoredPoitn(intermediate);
+			// pathFinderInput.getFieldInfo().addIgnoredPoitn(intermediate);
 			pathes.add(doCalculation(pathFinderInput, start, intermediate, !isPathToTarget, false));
 		}
-		return merge(pathes);
+		Path finalPath = merge(pathes);
+		return finalPath;
 	}
 	
 	
-	private Path merge(List<Path> pathes)
+	private Path merge(final List<Path> pathes)
 	{
 		int lastVector = 0;
 		Path pathToUse = pathes.get(pathes.size() - 1);
@@ -133,6 +128,7 @@ public class ERRTPlanner_WPC implements IPathFinder
 	
 	/**
 	 * starts calculation in ERRT
+	 * 
 	 * @param pathFinderInput
 	 * @param start
 	 * @param target
@@ -140,8 +136,9 @@ public class ERRTPlanner_WPC implements IPathFinder
 	 * @param isSecondTry
 	 * @return
 	 */
-	public Path doCalculation(PathFinderInput pathFinderInput, IVector2 start, IVector2 target, boolean isIntermediate,
-			boolean isSecondTry)
+	public Path doCalculation(final PathFinderInput pathFinderInput, final IVector2 start, final IVector2 target,
+			final boolean isIntermediate,
+			final boolean isSecondTry)
 	{
 		// if (!pathFinderInput.getFieldInfo().isWayOK(start, start.addNew(new Vector2(0.01, 0.01))))
 		// {
@@ -163,24 +160,17 @@ public class ERRTPlanner_WPC implements IPathFinder
 		
 		// store parameters in local vars
 		BotID botId = pathFinderInput.getBotId();
-		thisBot = pathFinderInput.getwFrame().tigerBotsVisible.get(botId);
+		thisBot = pathFinderInput.getFieldInfo().getwFrame().getBot(botId);
 		goalNode = new Node(target);
 		
 		// all Informations about the field
 		fieldInfo = pathFinderInput.getFieldInfo();
+		fieldInfo.setSecondTry(isSecondTry);
 		
 		// there are always three steps to find a way
 		// 1. search for a way with a normal safety distance
 		// 2. if no way was found, search again with a smaller safety distance
 		// 3. if no way was found, take the direct path (RAMBO)
-		if (isSecondTry)
-		{
-			fieldInfo.setUsedSafetyDistance(adjustableParams.getSecondSafetyDistance());
-		} else
-		{
-			fieldInfo.setUsedSafetyDistance(adjustableParams.getSafetyDistance());
-		}
-		fieldInfo.setSafetyDistanceBall(adjustableParams.getSafetyDistanceBall());
 		
 		// clear WPC? yes if the goal has changed
 		if (!waypoints.equalsGoal(goalNode) && !isIntermediate)
@@ -188,51 +178,44 @@ public class ERRTPlanner_WPC implements IPathFinder
 			waypoints.clear(goalNode);
 		}
 		
-		boolean pathChanged = true;
-		Path oldPath = pathFinderInput.getExistingPathes().get(botId);
-		if ((oldPath != null) && !oldPath.getPath().isEmpty() && checkOldWay(oldPath))
-		{
-			pathChanged = false;
-		}
-		
 		// let the tree grow until the goal is reached
-		final ITree tree = growTree(start);
+		ITree tree = growTree(start);
+		
 		List<IVector2> pathPointList = null;
 		
 		boolean rambo = false;
-		
-		if (tree != null)
+		if (tree == null)
 		{
-			// smoothes the tree
-			smoothTree(tree, pathFinderInput);
-			
-			// transform it to a list
-			pathPointList = transformToPathPointList();
-			
-			// fill the waypoint cache with this tree
-			waypoints.fillWPC(pathPointList, goalNode);
-			
-			
-		} else
+			tree = ramboTree;
+			rambo = true;
+		}
+		
+		// smoothes the tree
+		smoothTree(tree, pathFinderInput);
+		
+		// transform it to a list
+		pathPointList = transformToPathPointList();
+		
+		// fill the waypoint cache with this tree
+		waypoints.fillWPC(pathPointList, goalNode);
+		
+		if (rambo)
 		{
 			if (!isSecondTry)
 			{
 				// boooo :(
 				// no way has been found...lets try a shorter safety distance this time
+				rambo = false;
 				return doCalculation(pathFinderInput, start, target, isIntermediate, true);
 			}
 			// if no way was found for the second time, choose the direct line to goal
 			// this way is as good as every other one and it's the shortest
-			pathPointList = new ArrayList<IVector2>(2);
 			paramDebug.ramboChosen();
-			rambo = true;
-			pathPointList.add(start);
-			pathPointList.add(target);
 		}
 		
 		paramDebug.calculationFinished();
 		
-		Path newPath = new Path(botId, pathPointList, pathFinderInput.getTarget(), pathFinderInput.getDstOrient());
+		Path newPath = new Path(botId, pathPointList, pathFinderInput.getDestination(), pathFinderInput.getDstOrient());
 		
 		// if the start was adjusted because of the ball, add a direct way to the ball
 		if (fieldInfo.isStartAdjustedBecauseOfBall())
@@ -241,9 +224,9 @@ public class ERRTPlanner_WPC implements IPathFinder
 		}
 		// if the target was adjusted because of the ball, add a direct way to the ball
 		if (fieldInfo.isTargetAdjustedBecauseOfBall()
-				&& pathFinderInput.getMoveCon().getVelAtDestination().equals(Vector2.ZERO_VECTOR, 0.01f))
+				&& pathFinderInput.getMoveCon().getVelAtDestination().equals(AVector2.ZERO_VECTOR, 0.01f))
 		{
-			newPath.getPath().add(pathFinderInput.getTarget());
+			newPath.getPath().add(pathFinderInput.getDestination());
 		}
 		
 		// if the bot is currently illegally in the penalty area, kick him out directly
@@ -254,13 +237,12 @@ public class ERRTPlanner_WPC implements IPathFinder
 					new Node(fieldInfo.getNearestNodeOutsidePenArea().addNew(thisBot.getVel().scaleToNew(500))));
 		}
 		
-		
-		newPath.setChanged(pathChanged);
 		newPath.setRambo(rambo);
 		if (rambo)
 		{
 			newPath.setTree(ramboTree);
 		}
+		
 		return newPath;
 	}
 	
@@ -270,34 +252,18 @@ public class ERRTPlanner_WPC implements IPathFinder
 	// --------------------------------------------------------------------------
 	
 	
-	private boolean checkOldWay(Path path)
-	{
-		for (int i = 0; i < (path.getPath().size() - 1); i++)
-		{
-			IVector2 pathPoint = path.getPath().get(i);
-			IVector2 nextPoint = path.getPath().get(i + 1);
-			if (!fieldInfo.isWayOK(pathPoint, nextPoint))
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-	
-	
 	/**
 	 * starts the RRT
 	 * 
 	 * @return nodeStorage, null if no success
 	 */
-	private ITree growTree(IVector2 start)
+	private ITree growTree(final IVector2 start)
 	{
 		// indicates if the pathplanner has reached his final destination
 		boolean isTargetReached = false;
 		
 		// kdTree with currentBotPos as root
 		final ITree tree = new SimpleTree(new Node(start), goalNode);
-		
 		
 		for (int i = 0; (i < adjustableParams.getMaxIterations()) && !isTargetReached; i++)
 		{
@@ -330,10 +296,11 @@ public class ERRTPlanner_WPC implements IPathFinder
 		if (!isTargetReached)
 		{
 			ramboTree = tree;
+			// connect the node nearest to the goal with goal direclty -> RAMBO
+			addSubdividePath(tree, tree.getNearest(goalNode, false), goalNode, false);
 			// so many iterations and still no success
 			return null;
 		}
-		
 		return tree;
 	}
 	
@@ -343,7 +310,7 @@ public class ERRTPlanner_WPC implements IPathFinder
 	 * 
 	 * @return target of next iteration
 	 */
-	private Node chooseTarget(BotID botID)
+	private Node chooseTarget(final BotID botID)
 	{
 		// generate new float-value between 0 and 1
 		Random generator = new Random(System.nanoTime());
@@ -387,7 +354,6 @@ public class ERRTPlanner_WPC implements IPathFinder
 	
 	/**
 	 * transforms the smoothedNodeStorage into a List {@literal <Vector2>}. </br>
-	 * 
 	 * smoothedNodeStorage contains every node, generated by RRT.
 	 * Also, they can only be read from back to front, because of the linked list
 	 * 
@@ -411,12 +377,12 @@ public class ERRTPlanner_WPC implements IPathFinder
 	/**
 	 * smoothes the path from current botPos to goal
 	 * doesn't affect all the other Nodes in nodeStorage
-	 * 
 	 * at the moment: input will be changed
+	 * 
 	 * @param tree
 	 * @param pfi
 	 */
-	public void smoothTree(ITree tree, PathFinderInput pfi)
+	public void smoothTree(final ITree tree, final PathFinderInput pfi)
 	{
 		// set the successors on the path to have a double linked list
 		tree.makeDoubleLinkedList();
@@ -444,6 +410,13 @@ public class ERRTPlanner_WPC implements IPathFinder
 					// make it break
 					start = end;
 					
+					// non-optimal!!!!
+					if (adjustableParams.isFastApprox())
+					{
+						reduceAmountOfPoints(tree);
+						return;
+					}
+					
 					if (Float.isNaN(start.x()) || Float.isNaN(start.x()))
 					{
 						log.fatal("Böse smoothTree NaNs");
@@ -455,6 +428,7 @@ public class ERRTPlanner_WPC implements IPathFinder
 					start = start.getSuccessor();
 				}
 			}
+			
 			end = end.getParent();
 			// start next time with first again (-->current bot pos)
 			start = tree.getRoot();
@@ -471,7 +445,7 @@ public class ERRTPlanner_WPC implements IPathFinder
 	 * 
 	 * @param tree
 	 */
-	public void reduceAmountOfPoints(ITree tree)
+	public void reduceAmountOfPoints(final ITree tree)
 	{
 		Node currentNode = goalNode;
 		
@@ -480,7 +454,8 @@ public class ERRTPlanner_WPC implements IPathFinder
 				&& (currentNode.getParent().getParent() != null))
 		{
 			// check line between current node and his grandfather. if free, let grandpa adopt you
-			if (fieldInfo.isWayOK(currentNode, currentNode.getParent().getParent()))
+			if (fieldInfo.isWayOK(currentNode, currentNode.getParent().getParent(),
+					adjustableParams.getReduceSafetyForPathSmoothing()))
 			{
 				tree.removeBetween(currentNode.getParent().getParent(), currentNode, true);
 			}
@@ -504,7 +479,7 @@ public class ERRTPlanner_WPC implements IPathFinder
 	 * @param end the goal of the new path (will be created, too)
 	 * @param isSuccessor determines if the successor variable should be set, too
 	 */
-	public void addSubdividePath(ITree tree, Node start, Node end, boolean isSuccessor)
+	public void addSubdividePath(final ITree tree, final Node start, final Node end, final boolean isSuccessor)
 	{
 		// precaclulation to get the amount of intermediate points
 		final Node subtractTemp = new Node(new Vector2f(start.x, start.y));
@@ -548,13 +523,14 @@ public class ERRTPlanner_WPC implements IPathFinder
 	
 	/**
 	 * a path is complete and the goal is reached, for the next path other new parameters are taken
+	 * 
 	 * @param adjustableParams
 	 * @param wFrame
 	 */
-	public void goalReached(TuneableParameter adjustableParams, WorldFrame wFrame)
+	public void goalReached(final TuneableParameter adjustableParams, final WorldFrame wFrame)
 	{
 		this.adjustableParams = adjustableParams;
-		waypoints = new Waypoints(adjustableParams);
+		waypoints = new Waypoints();
 		paramDebug.goalReached();
 		paramDebug.changeParameterConfigToTest(adjustableParams);
 	}
@@ -566,6 +542,15 @@ public class ERRTPlanner_WPC implements IPathFinder
 	public void goalReached()
 	{
 		paramDebug.goalReached();
+	}
+	
+	
+	/**
+	 * @param adjustableParams the adjustableParams to set
+	 */
+	public void setAdjustableParams(final TuneableParameter adjustableParams)
+	{
+		this.adjustableParams = adjustableParams;
 	}
 	
 	

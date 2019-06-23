@@ -14,7 +14,7 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.exception
 /**
  * 
  * This exception will be thrown in
- * {@link edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.fieldraster.FieldRasterGenerator} when an error occurs
+ * {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.fieldanalysis.FieldRasterGenerator} when an error occurs
  * loading the field raster
  * configuration.
  * 

@@ -4,35 +4,34 @@
  * Project: TIGERS - Sumatra
  * Date: 30.03.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACondition.EConditionState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move.MovementCon;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.IPathConsumer;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature.EFeatureState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
 
 
 /**
  * This skills asks sysiphus to create a path, makes a spline out of it and then follows the spline.
  * 
  * @author AndreR
- * 
  */
-public class MoveToSkill extends AMoveSkill
+public class MoveToSkill extends AMoveSkill implements IPathConsumer, IMoveToSkill
 {
 	
 	
@@ -40,19 +39,13 @@ public class MoveToSkill extends AMoveSkill
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private static final Logger	log		= Logger.getLogger(MoveToSkill.class.getName());
+	private static final Logger	log					= Logger.getLogger(MoveToSkill.class.getName());
 	private MovementCon				moveCon;
 	
-	private boolean					dribble	= false;
+	private boolean					kickerArmed			= false;
 	
-	private EKickKind					kickKind	= EKickKind.NONE;
-	
-	private enum EKickKind
-	{
-		STRAIGHT,
-		CHIP,
-		NONE;
-	}
+	@Configurable(comment = "Dist [mm] - If bot is nearer than this to destination, pathPlanning will not be used and changes directly applied")
+	private static float				circumventPPTol	= 100;
 	
 	
 	// --------------------------------------------------------------------------
@@ -60,19 +53,18 @@ public class MoveToSkill extends AMoveSkill
 	// --------------------------------------------------------------------------
 	/**
 	 * Move to a target with an orientation as specified in the moveCon.
-	 * 
-	 * @param moveCon Movement condition.
 	 */
-	public MoveToSkill(MovementCon moveCon)
+	public MoveToSkill()
 	{
-		this(ESkillName.MOVE_TO, moveCon);
+		this(ESkillName.MOVE_TO);
 	}
 	
 	
-	protected MoveToSkill(ESkillName skillName, MovementCon moveCon)
+	protected MoveToSkill(final ESkillName skillName)
 	{
 		super(skillName);
-		this.moveCon = moveCon;
+		moveCon = new MovementCon();
+		moveCon.setPenaltyAreaAllowed(false);
 	}
 	
 	
@@ -80,9 +72,9 @@ public class MoveToSkill extends AMoveSkill
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
-	protected boolean isComplete(TrackedTigerBot bot)
+	protected boolean isMoveComplete()
 	{
-		if (checkIsComplete(bot))
+		if (checkIsComplete())
 		{
 			log.trace("completed due to move and rotate conditions fulfilled");
 			return true;
@@ -91,7 +83,7 @@ public class MoveToSkill extends AMoveSkill
 	}
 	
 	
-	private boolean checkIsComplete(TrackedTigerBot bot)
+	private boolean checkIsComplete()
 	{
 		// Check conditions
 		boolean moveComplete = true;
@@ -99,12 +91,12 @@ public class MoveToSkill extends AMoveSkill
 		
 		if (moveCon.getDestCon().isActive())
 		{
-			moveComplete = moveCon.checkCondition(getWorldFrame(), bot.getId()) == EConditionState.FULFILLED;
+			moveComplete = moveCon.checkCondition(getWorldFrame(), getBot().getBotID()) == EConditionState.FULFILLED;
 		}
 		
 		if (moveCon.getAngleCon().isActive())
 		{
-			rotateComplete = moveCon.getAngleCon().checkCondition(getWorldFrame(), bot.getId()) == EConditionState.FULFILLED;
+			rotateComplete = moveCon.getAngleCon().checkCondition(getWorldFrame(), getBot().getBotID()) == EConditionState.FULFILLED;
 		}
 		if (moveComplete && rotateComplete)
 		{
@@ -116,92 +108,73 @@ public class MoveToSkill extends AMoveSkill
 	
 	
 	@Override
-	public List<ACommand> doCalcEntryActions(TrackedTigerBot bot, List<ACommand> cmds)
+	public List<ACommand> doCalcEntryActions(final List<ACommand> cmds)
 	{
-		generateNewTrajectory(bot);
-		
+		moveCon.setSpeed(Math.min(getMaxLinearVelocity(), moveCon.getSpeed()));
+		moveCon.update(getWorldFrame(), getBot().getBotID());
+		getSisyphus().addObserver(getBot().getBotID(), this);
+		getSisyphus().startPathPlanning(getBot().getBotID(), getMoveCon());
 		return cmds;
 	}
 	
 	
 	@Override
-	protected void periodicProcess(TrackedTigerBot bot, List<ACommand> cmds)
+	protected void periodicProcess(final List<ACommand> cmds)
 	{
-		// float chargeDiff = (initialKickerLevel - bot.getBot().getKickerLevel());
-		// if ((chargeDiff) > kickerDisChargedTreshold)
-		// if(bot.getBot().)
-		
-		if (getWorldFrame().ball.getPos().equals(bot.getPos(), 500))
+		if (moveCon.isKickerArmed() && (getBot().getBotFeatures().get(EFeature.BARRIER) != EFeatureState.KAPUT)
+				&& (getBot().getBotFeatures().get(EFeature.STRAIGHT_KICKER) != EFeatureState.KAPUT))
 		{
-			if (!dribble)
+			if (!kickerArmed || (getBot().getKickerLevel() < (getBot().getKickerMaxCap() - 50)))
 			{
-				getDevices().dribble(cmds, true);
-				dribble = true;
+				kickerArmed = true;
+				getDevices().kickMax(cmds);
 			}
-			if (getMoveCon().isShoot())
-			{
-				// check if target is block or not use chip if blocked
-				float tripleBallRadius = 3 * AIConfig.getGeometry().getBallRadius();
-				boolean useStraight = GeoMath.p2pVisibility(getWorldFrame(), getBot().getPos(), getMoveCon()
-						.getLookAtTarget(), tripleBallRadius, new ArrayList<BotID>());
-				
-				if ((kickKind != EKickKind.STRAIGHT) && useStraight)
-				{
-					if (getMoveCon().isPass())
-					{
-						final float kickLength = GeoMath.distancePP(getBot().getPos(), getMoveCon().getLookAtTarget());
-						float ballEndVelocity = AIConfig.getRoles().getPassSenderBallEndVel();
-						getDevices().kick(cmds, kickLength, ballEndVelocity);
-					} else
-					{
-						getDevices().kickMax(cmds);
-					}
-				} else if ((kickKind != EKickKind.CHIP) && !useStraight)
-				{
-					float kickLength = GeoMath.distancePP(getMoveCon().getLookAtTarget(), getMoveCon().getDestCon()
-							.getDestination());
-					getDevices().chipStop(cmds, kickLength, 1);
-				}
-			}
+		} else if (kickerArmed)
+		{
+			kickerArmed = false;
+			getDevices().disarm(cmds);
+		}
+		moveCon.update(getWorldFrame(), getBot().getBotID());
+		
+		IVector2 dest = moveCon.getDestCon().getDestination();
+		if (GeoMath.distancePP(dest, getPos()) < circumventPPTol)
+		{
+			float orient = moveCon.getAngleCon().getTargetAngle();
+			setDestination(dest);
+			setTargetOrientation(orient);
+			setOverridePP(true);
 		} else
 		{
-			if (dribble)
-			{
-				getDevices().dribble(cmds, false);
-				getDevices().disarm(cmds);
-				dribble = false;
-			}
+			setOverridePP(false);
 		}
-		generateNewTrajectory(bot);
 	}
 	
 	
-	private void generateNewTrajectory(TrackedTigerBot bot)
+	@Override
+	protected List<ACommand> doCalcExitActions(final List<ACommand> cmds)
 	{
-		// Process path planning
-		Path path = getSisyphus().calcPath(getWorldFrame(), bot.getId(), getTrajectoryTime(), moveCon);
-		
-		if (path == null)
+		getSisyphus().stopPathPlanning(getBot().getBotID());
+		getSisyphus().removeObserver(getBot().getBotID());
+		getDevices().disarm(cmds);
+		getDevices().dribble(cmds, false);
+		if (moveCon.getVelAtDestination().equals(AVector2.ZERO_VECTOR, 0.1f))
 		{
-			log.error("No path received from calcPath!");
-			return;
+			stopMove(cmds);
 		}
-		
-		if (path.isChanged() || (getPositionTraj() == null) || (super.isComplete(bot) && !checkIsComplete(bot)))
-		{
-			onNewSpline();
-			setNewTrajectory(path.getHermiteSpline(), path.getTimestamp());
-		}
-		
-		
+		return super.doCalcExitActions(cmds);
 	}
 	
 	
-	/**
-	 */
-	protected void onNewSpline()
+	@Override
+	public void onNewPath(final Path path)
 	{
-		log.trace("New spline created");
+		setNewTrajectory(path.getHermiteSpline(), path.getPath());
+	}
+	
+	
+	@Override
+	public void onPotentialNewPath(final Path path)
+	{
 	}
 	
 	
@@ -213,22 +186,9 @@ public class MoveToSkill extends AMoveSkill
 	/**
 	 * @return the moveCon
 	 */
+	@Override
 	public MovementCon getMoveCon()
 	{
 		return moveCon;
-	}
-	
-	
-	@Override
-	protected List<ACommand> doCalcExitActions(TrackedTigerBot bot, List<ACommand> cmds)
-	{
-		getSisyphus().stopPathPlanning(bot.getId());
-		getDevices().disarm(cmds);
-		getDevices().dribble(cmds, false);
-		if (moveCon.getVelAtDestination().equals(Vector2.ZERO_VECTOR, 0.1f))
-		{
-			stopMove(cmds);
-		}
-		return super.doCalcExitActions(bot, cmds);
 	}
 }

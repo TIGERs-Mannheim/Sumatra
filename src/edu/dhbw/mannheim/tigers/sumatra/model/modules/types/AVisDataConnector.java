@@ -9,7 +9,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.types;
 
-import edu.moduli.AModule;
+import edu.dhbw.mannheim.tigers.moduli.AModule;
 
 
 /**

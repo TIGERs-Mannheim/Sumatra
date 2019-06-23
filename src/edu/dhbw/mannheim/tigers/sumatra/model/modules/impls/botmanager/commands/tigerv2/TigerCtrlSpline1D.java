@@ -9,9 +9,13 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2;
 
+import java.util.Arrays;
+
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline.HermiteSpline;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -26,13 +30,13 @@ public class TigerCtrlSpline1D extends ACommand
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	/** Spline coefficients */
-	private float				a;
-	private float				b;
-	private float				c;
-	private float				d;
+	@SerialData(type = ESerialDataType.FLOAT16)
+	private float				a[]						= new float[HermiteSpline.SPLINE_SIZE];
 	/** End time */
+	@SerialData(type = ESerialDataType.FLOAT16)
 	private float				tEnd;
 	/** Options */
+	@SerialData(type = ESerialDataType.UINT8)
 	private int					option;
 	
 	/** Replace spline list with this spline */
@@ -47,55 +51,16 @@ public class TigerCtrlSpline1D extends ACommand
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/** */
+	public TigerCtrlSpline1D()
+	{
+		super(ECommand.CMD_CTRL_SPLINE_1D);
+	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		a = byteArray2HalfFloat(data, 0);
-		b = byteArray2HalfFloat(data, 2);
-		c = byteArray2HalfFloat(data, 4);
-		d = byteArray2HalfFloat(data, 6);
-		
-		tEnd = byteArray2HalfFloat(data, 8);
-		
-		option = byteArray2UByte(data, 10);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		halfFloat2ByteArray(data, 0, a);
-		halfFloat2ByteArray(data, 2, b);
-		halfFloat2ByteArray(data, 4, c);
-		halfFloat2ByteArray(data, 6, d);
-		
-		halfFloat2ByteArray(data, 8, tEnd);
-		
-		byte2ByteArray(data, 10, option);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_CTRL_SPLINE_1D;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 11;
-	}
 	
 	
 	// --------------------------------------------------------------------------
@@ -108,10 +73,7 @@ public class TigerCtrlSpline1D extends ACommand
 	 */
 	public void setSpline(HermiteSpline spline)
 	{
-		a = spline.getA();
-		b = spline.getB();
-		c = spline.getC();
-		d = spline.getD();
+		a = Arrays.copyOf(spline.getA(), spline.getA().length);
 		
 		tEnd = spline.getEndTime();
 	}

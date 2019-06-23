@@ -11,7 +11,7 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai;
 
 import java.io.Serializable;
 
-import javax.persistence.Embeddable;
+import com.sleepycat.persist.model.Persistent;
 
 
 /**
@@ -19,7 +19,7 @@ import javax.persistence.Embeddable;
  * 
  * @author Malte
  */
-@Embeddable
+@Persistent
 public class BotConnection implements Serializable
 {
 	/**  */
@@ -32,6 +32,12 @@ public class BotConnection implements Serializable
 	private boolean				tigerRemoved;
 	private boolean				enemyAdded;
 	private boolean				enemyRemoved;
+	
+	
+	@SuppressWarnings("unused")
+	private BotConnection()
+	{
+	}
 	
 	
 	/**

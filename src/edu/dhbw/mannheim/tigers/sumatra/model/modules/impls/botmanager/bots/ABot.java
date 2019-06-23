@@ -18,6 +18,8 @@ import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.commons.configuration.tree.ConfigurationNode;
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.SplinePair3D;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature.EFeatureState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
@@ -29,7 +31,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.devices.
  * Bot base class.
  * 
  * @author AndreR
- * 
  */
 public abstract class ABot
 {
@@ -43,7 +44,6 @@ public abstract class ABot
 	protected BotID										botId;
 	private EBotType										type				= EBotType.UNKNOWN;
 	protected String										name				= "John Doe";
-	protected boolean										active			= true;
 	private String											controlledBy	= "";
 	
 	private final Map<EFeature, EFeatureState>	botFeatures;
@@ -53,6 +53,12 @@ public abstract class ABot
 	
 	private final TigerDevices							devices;
 	
+	private int												baseStationKey;
+	private int												mcastDelegateKey;
+	
+	/** special treatment, when bot is manual controlled */
+	private transient boolean							manualControl	= false;
+	
 	
 	// --------------------------------------------------------------
 	// --- constructor(s) -------------------------------------------
@@ -60,11 +66,19 @@ public abstract class ABot
 	/**
 	 * @param botConfig bot-database-XML-file
 	 */
-	public ABot(SubnodeConfiguration botConfig)
+	public ABot(final SubnodeConfiguration botConfig)
 	{
 		// --- set default values of botDB ---
-		botId = new BotID(botConfig.getInt("[@id]"));
-		active = botConfig.getBoolean("active", true);
+		String strColor = botConfig.getString("color");
+		final ETeamColor color;
+		if (strColor == null)
+		{
+			color = ETeamColor.YELLOW;
+		} else
+		{
+			color = ETeamColor.valueOf(strColor);
+		}
+		botId = BotID.createBotId(botConfig.getInt("[@id]"), color);
 		
 		botFeatures = getDefaultFeatureStates();
 		readFeatures(botConfig);
@@ -72,25 +86,44 @@ public abstract class ABot
 		type = EBotType.getTypeFromCfgName(botConfig.getString(TYPE));
 		name = botConfig.getString("name");
 		
-		devices = new TigerDevices(type);
+		devices = new TigerDevices();
+		
+		if (botConfig.containsKey("baseStationKey"))
+		{
+			baseStationKey = botConfig.getInt("baseStationKey");
+		} else
+		{
+			baseStationKey = -1;
+		}
+		if (botConfig.containsKey("mcastDelegateKey"))
+		{
+			mcastDelegateKey = botConfig.getInt("mcastDelegateKey");
+		} else
+		{
+			mcastDelegateKey = -1;
+		}
 	}
 	
 	
 	/**
 	 * @param type
 	 * @param id
+	 * @param baseStationKey
+	 * @param mcastDelegateKey
 	 */
-	public ABot(EBotType type, BotID id)
+	public ABot(final EBotType type, final BotID id, final int baseStationKey, final int mcastDelegateKey)
 	{
 		botId = id;
 		this.type = type;
 		botFeatures = getDefaultFeatureStates();
 		
-		devices = new TigerDevices(type);
+		devices = new TigerDevices();
+		this.baseStationKey = baseStationKey;
+		this.mcastDelegateKey = mcastDelegateKey;
 	}
 	
 	
-	private void readFeatures(SubnodeConfiguration botConfig)
+	private void readFeatures(final SubnodeConfiguration botConfig)
 	{
 		final List<?> features = botConfig.configurationsAt("features");
 		for (final Object obj : features)
@@ -130,7 +163,6 @@ public abstract class ABot
 	
 	
 	/**
-	 * 
 	 * @param cmd
 	 */
 	public abstract void execute(ACommand cmd);
@@ -157,7 +189,25 @@ public abstract class ABot
 	/**
 	 * @return [V]
 	 */
+	public abstract float getBatteryLevelMax();
+	
+	
+	/**
+	 * @return [V]
+	 */
+	public abstract float getBatteryLevelMin();
+	
+	
+	/**
+	 * @return [V]
+	 */
 	public abstract float getKickerLevel();
+	
+	
+	/**
+	 * @return [V]
+	 */
+	public abstract float getKickerLevelMax();
 	
 	
 	/**
@@ -170,20 +220,9 @@ public abstract class ABot
 	// --- setter/getter --------------------------------------------
 	// --------------------------------------------------------------
 	/**
-	 * 
-	 * @param active
-	 */
-	public void setActive(boolean active)
-	{
-		this.active = active;
-	}
-	
-	
-	/**
-	 * 
 	 * @param o
 	 */
-	public void addObserver(IBotObserver o)
+	public void addObserver(final IBotObserver o)
 	{
 		synchronized (observers)
 		{
@@ -192,7 +231,7 @@ public abstract class ABot
 	}
 	
 	
-	protected boolean addObserverIfNotPresent(IBotObserver o)
+	protected boolean addObserverIfNotPresent(final IBotObserver o)
 	{
 		synchronized (observers)
 		{
@@ -206,10 +245,9 @@ public abstract class ABot
 	
 	
 	/**
-	 * 
 	 * @param o
 	 */
-	public void removeObserver(IBotObserver o)
+	public void removeObserver(final IBotObserver o)
 	{
 		synchronized (observers)
 		{
@@ -219,10 +257,9 @@ public abstract class ABot
 	
 	
 	/**
-	 * 
 	 * @param newId
 	 */
-	public void internalSetBotId(BotID newId)
+	public void internalSetBotId(final BotID newId)
 	{
 		final BotID oldId = botId;
 		
@@ -233,7 +270,6 @@ public abstract class ABot
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public HierarchicalConfiguration getConfiguration()
@@ -243,7 +279,9 @@ public abstract class ABot
 		config.addProperty("bot[@id]", botId.getNumber());
 		config.addProperty("bot.name", name);
 		config.addProperty("bot.type", type.getCfgName());
-		config.addProperty("bot.active", active);
+		config.addProperty("bot.color", botId.getTeamColor());
+		config.addProperty("bot.mcastDelegateKey", mcastDelegateKey);
+		config.addProperty("bot.baseStationKey", baseStationKey);
 		
 		for (Map.Entry<EFeature, EFeatureState> entry : getBotFeatures().entrySet())
 		{
@@ -255,7 +293,6 @@ public abstract class ABot
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public EBotType getType()
@@ -265,7 +302,6 @@ public abstract class ABot
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public String getName()
@@ -275,10 +311,9 @@ public abstract class ABot
 	
 	
 	/**
-	 * 
 	 * @param name
 	 */
-	public void setName(String name)
+	public void setName(final String name)
 	{
 		this.name = name;
 		
@@ -287,22 +322,11 @@ public abstract class ABot
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public BotID getBotID()
 	{
 		return botId;
-	}
-	
-	
-	/**
-	 * 
-	 * @return
-	 */
-	public boolean isActive()
-	{
-		return active;
 	}
 	
 	
@@ -325,7 +349,7 @@ public abstract class ABot
 	}
 	
 	
-	protected void notifyIdChanged(BotID oldId, BotID newId)
+	protected void notifyIdChanged(final BotID oldId, final BotID newId)
 	{
 		synchronized (observers)
 		{
@@ -337,7 +361,7 @@ public abstract class ABot
 	}
 	
 	
-	protected void notifyNetworkStateChanged(ENetworkState state)
+	protected void notifyNetworkStateChanged(final ENetworkState state)
 	{
 		synchronized (observers)
 		{
@@ -347,6 +371,24 @@ public abstract class ABot
 			}
 		}
 	}
+	
+	
+	protected void notifyNewSplineData(final SplinePair3D spline)
+	{
+		synchronized (observers)
+		{
+			for (final IBotObserver observer : observers)
+			{
+				observer.onNewSplineData(spline);
+			}
+		}
+	}
+	
+	
+	/**
+	 * @param spline
+	 */
+	public abstract void newSpline(SplinePair3D spline);
 	
 	
 	/**
@@ -370,7 +412,7 @@ public abstract class ABot
 	/**
 	 * @param kickerMaxCap the kickerMaxCap to set
 	 */
-	public final void setKickerMaxCap(int kickerMaxCap)
+	public final void setKickerMaxCap(final int kickerMaxCap)
 	{
 		this.kickerMaxCap = kickerMaxCap;
 	}
@@ -385,7 +427,7 @@ public abstract class ABot
 	}
 	
 	
-	protected void notifyBotBlocked(boolean blocked)
+	protected void notifyBotBlocked(final boolean blocked)
 	{
 		synchronized (observers)
 		{
@@ -409,9 +451,72 @@ public abstract class ABot
 	/**
 	 * @param controlledBy the controlledBy to set
 	 */
-	public final void setControlledBy(String controlledBy)
+	public final void setControlledBy(final String controlledBy)
 	{
 		this.controlledBy = controlledBy;
 		notifyBotBlocked(!controlledBy.isEmpty());
+	}
+	
+	
+	/**
+	 * @return the color
+	 */
+	public final ETeamColor getColor()
+	{
+		return botId.getTeamColor();
+	}
+	
+	
+	/**
+	 * @return the manualControl
+	 */
+	public final boolean isManualControl()
+	{
+		return manualControl;
+	}
+	
+	
+	/**
+	 * @param manualControl the manualControl to set
+	 */
+	public final void setManualControl(final boolean manualControl)
+	{
+		this.manualControl = manualControl;
+	}
+	
+	
+	/**
+	 * @return the baseStationKey
+	 */
+	public final int getBaseStationKey()
+	{
+		return baseStationKey;
+	}
+	
+	
+	/**
+	 * @return the mcastDelegateKey
+	 */
+	public final int getMcastDelegateKey()
+	{
+		return mcastDelegateKey;
+	}
+	
+	
+	/**
+	 * @param baseStationKey the baseStationKey to set
+	 */
+	public final void setBaseStationKey(final int baseStationKey)
+	{
+		this.baseStationKey = baseStationKey;
+	}
+	
+	
+	/**
+	 * @param mcastDelegateKey the mcastDelegateKey to set
+	 */
+	public final void setMcastDelegateKey(final int mcastDelegateKey)
+	{
+		this.mcastDelegateKey = mcastDelegateKey;
 	}
 }

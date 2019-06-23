@@ -33,7 +33,7 @@ public class OverviewPanel extends JPanel
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	private static final long			serialVersionUID	= -3183090653608159807L;
-	private final Map<BotID, JPanel>	botPanels			= new TreeMap<BotID, JPanel>();
+	private final Map<BotID, JPanel>	botPanels			= new TreeMap<BotID, JPanel>(BotID.getComparator());
 	private boolean						active				= false;
 	
 	

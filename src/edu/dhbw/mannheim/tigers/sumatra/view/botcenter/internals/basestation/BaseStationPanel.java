@@ -61,11 +61,13 @@ public class BaseStationPanel extends JPanel
 		
 		/**
 		 * 
+		 * @param ch
 		 * @param invertPos
 		 * @param rate
-		 * @param tigersBlue
+		 * @param bots
+		 * @param to
 		 */
-		void onVisionCfgChanged(boolean invertPos, int rate, boolean tigersBlue);
+		void onCfgChanged(int ch, boolean invertPos, int rate, int bots, int to);
 	}
 	
 	// --------------------------------------------------------------------------
@@ -85,8 +87,10 @@ public class BaseStationPanel extends JPanel
 	private boolean											pingIsActive		= false;
 	
 	private final JCheckBox									invertVision		= new JCheckBox("Invert");
-	private final JCheckBox									tigersBlue			= new JCheckBox("Tigers blue");
 	private final JTextField								visionRate			= new JTextField();
+	private final JTextField								maxBots				= new JTextField();
+	private final JTextField								channel				= new JTextField();
+	private final JTextField								timeout				= new JTextField();
 	
 	private BaseStationNetworkPanel						networkPanel		= null;
 	
@@ -135,13 +139,17 @@ public class BaseStationPanel extends JPanel
 		visionPanel.add(invertVision);
 		visionPanel.add(new JLabel("Max. Rate:"));
 		visionPanel.add(visionRate);
-		visionPanel.add(new JLabel("Team:"));
-		visionPanel.add(tigersBlue);
+		visionPanel.add(new JLabel("Max. Bots:"));
+		visionPanel.add(maxBots);
+		visionPanel.add(new JLabel("Channel:"));
+		visionPanel.add(channel);
+		visionPanel.add(new JLabel("Timeout:"));
+		visionPanel.add(timeout);
 		visionPanel.add(saveVisionCfgButton, "span 2");
 		
 		netCfgPanel.setBorder(BorderFactory.createTitledBorder("Network"));
 		pingPanel.setBorder(BorderFactory.createTitledBorder("Ping"));
-		visionPanel.setBorder(BorderFactory.createTitledBorder("Vision Configuration"));
+		visionPanel.setBorder(BorderFactory.createTitledBorder("Vision & Bots"));
 		
 		add(netCfgPanel);
 		add(pingPanel, "wrap");
@@ -172,11 +180,13 @@ public class BaseStationPanel extends JPanel
 	
 	/**
 	 * 
+	 * @param newChannel
 	 * @param invert
 	 * @param rate
-	 * @param blue
+	 * @param bots
+	 * @param to
 	 */
-	public void setVisionConfig(final boolean invert, final int rate, final boolean blue)
+	public void setConfig(final int newChannel, final boolean invert, final int rate, final int bots, final int to)
 	{
 		SwingUtilities.invokeLater(new Runnable()
 		{
@@ -185,7 +195,9 @@ public class BaseStationPanel extends JPanel
 			{
 				invertVision.setSelected(invert);
 				visionRate.setText("" + rate);
-				tigersBlue.setSelected(blue);
+				channel.setText("" + newChannel);
+				maxBots.setText("" + bots);
+				timeout.setText("" + to);
 			}
 		});
 	}
@@ -268,13 +280,13 @@ public class BaseStationPanel extends JPanel
 	}
 	
 	
-	private void notifyVisionCfgChanged(boolean invert, int rate, boolean blue)
+	private void notifyCfgChanged(int ch, boolean invert, int rate, int bots, int to)
 	{
 		synchronized (observers)
 		{
 			for (IBaseStationPanelObserver observer : observers)
 			{
-				observer.onVisionCfgChanged(invert, rate, blue);
+				observer.onCfgChanged(ch, invert, rate, bots, to);
 			}
 		}
 	}
@@ -320,16 +332,22 @@ public class BaseStationPanel extends JPanel
 		public void actionPerformed(ActionEvent arg0)
 		{
 			int rate;
+			int bots;
+			int ch;
+			int to;
 			
 			try
 			{
 				rate = Integer.parseInt(visionRate.getText());
+				bots = Integer.parseInt(maxBots.getText());
+				ch = Integer.parseInt(channel.getText());
+				to = Integer.parseInt(timeout.getText());
 			} catch (NumberFormatException e)
 			{
 				return;
 			}
 			
-			notifyVisionCfgChanged(invertVision.isSelected(), rate, tigersBlue.isSelected());
+			notifyCfgChanged(ch, invertVision.isSelected(), rate, bots, to);
 		}
 	}
 	

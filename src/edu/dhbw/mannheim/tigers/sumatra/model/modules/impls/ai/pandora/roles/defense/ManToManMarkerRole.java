@@ -12,11 +12,10 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.de
 import java.awt.Color;
 import java.util.List;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.DynamicPosition;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.exceptions.MathException;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.Circle;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.Circlef;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.DrawableCircle;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.ICircle;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
@@ -24,14 +23,14 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.DrawableLine;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Line;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Linef;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ATrackedObject;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ASkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveAndStaySkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveToSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleState;
 
 
@@ -40,12 +39,11 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleSt
  * In the second constructor you can pass a value, which defines
  * the maximum height the bot is allowed to go on the field.
  * The vertical line defined by that x-value must not be overrun.<br>
- * Used by: {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.support.ManToManMarkerPlay}
  * 
  * @author Malte
  * 
  */
-public class ManToManMarkerRole extends ADefenseRole
+public class ManToManMarkerRole extends ARole
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
@@ -53,14 +51,14 @@ public class ManToManMarkerRole extends ADefenseRole
 	
 	
 	/** the maximum height the bot is allowed to go */
-	private float		maxLength;
+	private float				maxLength;
 	
 	/** gap between bot and target */
-	private float		gap;
+	private float				gap;
 	/** target foe bot, this role should mark */
-	private IVector2	target;
+	private DynamicPosition	target;
 	/** this role may not enter this forbidden circle */
-	private Circlef	forbiddenCircle;
+	private Circle				forbiddenCircle;
 	
 	
 	// --------------------------------------------------------------------------
@@ -73,16 +71,16 @@ public class ManToManMarkerRole extends ADefenseRole
 	 */
 	public ManToManMarkerRole()
 	{
-		this(Vector2.ZERO_VECTOR);
+		this(new DynamicPosition(Vector2.ZERO_VECTOR));
 	}
 	
 	
 	/**
 	 * @param target
 	 */
-	public ManToManMarkerRole(final IVector2 target)
+	public ManToManMarkerRole(final DynamicPosition target)
 	{
-		super(ERole.MAN_TO_MAN_MARKER, false, true);
+		super(ERole.MAN_TO_MAN_MARKER);
 		
 		// the maximum height the bot is allowed to go
 		maxLength = AIConfig.getGeometry().getCenter().x();
@@ -109,11 +107,16 @@ public class ManToManMarkerRole extends ADefenseRole
 	
 	private class DefendState implements IRoleState
 	{
+		private MoveToSkill	skill	= null;
+		
 		
 		@Override
 		public void doEntryActions()
 		{
-			setNewSkill(new MoveAndStaySkill(getMoveCon()));
+			skill = new MoveAndStaySkill();
+			setNewSkill(skill);
+			skill.getMoveCon().updateDestination(getPos());
+			skill.getMoveCon().updateLookAtTarget(target);
 		}
 		
 		
@@ -122,7 +125,7 @@ public class ManToManMarkerRole extends ADefenseRole
 		{
 			final float fieldWidth = AIConfig.getGeometry().getFieldWidth();
 			// line defined by 2 points: target and our goal middle
-			final Linef shootLine = new Linef(target, AIConfig.getGeometry().getGoalOur().getGoalCenter()
+			final Line shootLine = new Line(target, AIConfig.getGeometry().getGoalOur().getGoalCenter()
 					.subtractNew(target));
 			// bot may not pass this line towards our field half
 			final Line criticalLine = new Line(new Vector2(maxLength, -fieldWidth / 2),
@@ -180,8 +183,7 @@ public class ManToManMarkerRole extends ADefenseRole
 				getAiFrame().addDebugShape(new DrawableCircle(forbiddenCircle));
 			}
 			
-			updateDestination(destination);
-			updateLookAtTarget(target);
+			skill.getMoveCon().updateDestination(destination);
 		}
 		
 		
@@ -192,13 +194,13 @@ public class ManToManMarkerRole extends ADefenseRole
 		
 		
 		@Override
-		public void onSkillStarted(ASkill skill, BotID botID)
+		public void onSkillStarted(ISkill skill, BotID botID)
 		{
 		}
 		
 		
 		@Override
-		public void onSkillCompleted(ASkill skill, BotID botID)
+		public void onSkillCompleted(ISkill skill, BotID botID)
 		{
 		}
 		
@@ -217,87 +219,6 @@ public class ManToManMarkerRole extends ADefenseRole
 	// --------------------------------------------------------------------------
 	
 	
-	/**
-	 * The enemy is set who shall by covered by this role.
-	 * @param target
-	 */
-	public void updateTarget(ATrackedObject target)
-	{
-		updateTarget(target.getPos());
-	}
-	
-	
-	/**
-	 * @param target
-	 */
-	public void updateTarget(IVector2 target)
-	{
-		this.target = target;
-	}
-	
-	
-	@Override
-	protected void updateMoveCon(AIInfoFrame aiFrame)
-	{
-		final float fieldWidth = AIConfig.getGeometry().getFieldWidth();
-		// line defined by 2 points: target and our goal middle
-		final Linef shootLine = new Linef(target, AIConfig.getGeometry().getGoalOur().getGoalCenter().subtractNew(target));
-		// bot may not pass this line towards our field half
-		final Line criticalLine = new Line(new Vector2(maxLength, -fieldWidth / 2),
-				AVector2.Y_AXIS.scaleToNew(fieldWidth));
-		aiFrame.addDebugShape(new DrawableLine(shootLine, Color.blue));
-		aiFrame.addDebugShape(new DrawableLine(criticalLine, Color.red, false));
-		
-		// vector from our goal to the enemy bot.
-		final Vector2 direction = new Vector2(shootLine.directionVector()).multiply(-1);
-		// stand a little bit in front of
-		direction.scaleTo(direction.getLength2() - gap);
-		
-		Vector2 destination = AIConfig.getGeometry().getGoalOur().getGoalCenter().addNew(direction);
-		
-		// if the target is beyond the critical line..
-		if (destination.x > maxLength)
-		{
-			try
-			{
-				destination = GeoMath.intersectionPoint(criticalLine, shootLine);
-			} catch (final MathException err)
-			{
-				destination.x = maxLength;
-			}
-		}
-		
-		// if
-		
-		// Checks if the destination is inside the forbidden circle.
-		if ((forbiddenCircle != null) && forbiddenCircle.isPointInShape(destination))
-		{
-			final IVector2 posOutside;
-			List<IVector2> intersectionPts = GeoMath.lineCircleIntersections(shootLine, forbiddenCircle);
-			if (intersectionPts.isEmpty())
-			{
-				throw new IllegalStateException(
-						"You tell me, destination is in circle, but there is no intersection from dest to goal?!");
-			} else if (intersectionPts.size() == 1)
-			{
-				posOutside = intersectionPts.get(0);
-			} else if (intersectionPts.get(0).x() < intersectionPts.get(1).x())
-			{
-				posOutside = intersectionPts.get(0);
-			} else
-			{
-				posOutside = intersectionPts.get(1);
-			}
-			destination = new Vector2(posOutside);
-			
-			aiFrame.addDebugShape(new DrawableCircle(forbiddenCircle));
-		}
-		
-		updateDestination(destination);
-		updateLookAtTarget(target);
-	}
-	
-	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -310,7 +231,7 @@ public class ManToManMarkerRole extends ADefenseRole
 	{
 		final Circle circle = new Circle(forbiddenCircle.center(), forbiddenCircle.radius()
 				+ AIConfig.getGeometry().getBotRadius());
-		this.forbiddenCircle = new Circlef(circle);
+		this.forbiddenCircle = new Circle(circle);
 	}
 	
 	
@@ -357,5 +278,12 @@ public class ManToManMarkerRole extends ADefenseRole
 	@Override
 	public void fillNeededFeatures(final List<EFeature> features)
 	{
+	}
+	
+	
+	@Override
+	protected void afterUpdate()
+	{
+		super.afterUpdate();
 	}
 }

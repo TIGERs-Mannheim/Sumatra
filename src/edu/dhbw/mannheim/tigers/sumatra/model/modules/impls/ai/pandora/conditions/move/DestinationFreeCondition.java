@@ -4,30 +4,27 @@
  * Project: TIGERS - Sumatra
  * Date: 09.08.2011
  * Author(s): osteinbrecher
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move;
 
 import java.util.Map;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACondition;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.ECondition;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
 
 
 /**
  * Checks, if destination is free of bots
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class DestinationFreeCondition extends ACondition
 {
@@ -38,7 +35,12 @@ public class DestinationFreeCondition extends ACondition
 	private static final float	VELOCITY_TOL		= 0.1f;
 	private final Vector2		destination			= new Vector2();
 	private boolean				considerFoeBots	= true;
-	private float					destFreeTol			= AIConfig.getTolerances(EBotType.UNKNOWN).getDestEqualRadius();
+	
+	@Configurable(comment = "Dist [mm] - Distance between two bots up to which they are considered to conflict each other in position")
+	private static float			destFreeTol			= 180;
+	
+	/** tolerance for this instance */
+	private float					destFreeTolerance	= destFreeTol;
 	
 	
 	// --------------------------------------------------------------------------
@@ -47,19 +49,21 @@ public class DestinationFreeCondition extends ACondition
 	
 	/**
 	 * New inactive condition
+	 * 
+	 * @param botId
 	 */
-	public DestinationFreeCondition()
+	public DestinationFreeCondition(final BotID botId)
 	{
-		this(null, false);
+		this(botId, null, false);
 	}
 	
 	
 	/**
-	 * 
+	 * @param botId
 	 * @param dest
 	 * @param considerFoeBots
 	 */
-	public DestinationFreeCondition(IVector2 dest, boolean considerFoeBots)
+	public DestinationFreeCondition(final BotID botId, final IVector2 dest, final boolean considerFoeBots)
 	{
 		super(ECondition.DEST_FREE);
 		updateDestination(dest);
@@ -79,25 +83,35 @@ public class DestinationFreeCondition extends ACondition
 	 * @return true when bot has reached its destination angle
 	 */
 	@Override
-	protected EConditionState doCheckCondition(WorldFrame worldFrame, BotID botID)
+	protected EConditionState doCheckCondition(final SimpleWorldFrame worldFrame, final BotID botID)
 	{
-		if (!isDestinationFreeOfTigers(worldFrame, botID))
+		for (Map.Entry<BotID, TrackedTigerBot> entry : worldFrame.getBots().entrySet())
 		{
-			setCondition("Not free of tigers");
-			return EConditionState.BLOCKED;
+			TrackedTigerBot bot = entry.getValue();
+			if (entry.getKey().equals(botID))
+			{
+				continue;
+			}
+			if ((bot.getVel().getLength2() < VELOCITY_TOL) && bot.getPos().similar(getDestination(), destFreeTol))
+			{
+				if (bot.getId().getTeamColor().equals(botID.getTeamColor()))
+				{
+					// tiger bot
+					setCondition("Blocking Tigers");
+					return EConditionState.BLOCKED;
+				}
+				setCondition("Blocking Foes");
+				return EConditionState.BLOCKED;
+			}
 		}
-		if (considerFoeBots && !isDestinationFreeOfFoes(worldFrame))
-		{
-			setCondition("Not free of foes");
-			return EConditionState.BLOCKED;
-		}
+		
 		setCondition("Free");
 		return EConditionState.FULFILLED;
 	}
 	
 	
 	@Override
-	protected boolean compareContent(ACondition condition)
+	protected boolean compareContent(final ACondition condition)
 	{
 		DestinationFreeCondition con = (DestinationFreeCondition) condition;
 		
@@ -110,51 +124,6 @@ public class DestinationFreeCondition extends ACondition
 	
 	
 	/**
-	 * Loop over all tiger bots and check if they have pos equal to dest
-	 * 
-	 * @param worldFrame
-	 * @param botId
-	 * @return
-	 */
-	private boolean isDestinationFreeOfTigers(WorldFrame worldFrame, BotID botId)
-	{
-		for (Map.Entry<BotID, TrackedTigerBot> entry : worldFrame.tigerBotsVisible)
-		{
-			TrackedTigerBot bot = entry.getValue();
-			if (entry.getKey().equals(botId))
-			{
-				continue;
-			}
-			if ((bot.getVel().getLength2() < VELOCITY_TOL) && bot.getPos().similar(getDestination(), getDestFreeTol()))
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-	
-	
-	/**
-	 * Loop over all foe bots and check if they have pos equal to dest
-	 * 
-	 * @param worldFrame
-	 * @return
-	 */
-	private boolean isDestinationFreeOfFoes(WorldFrame worldFrame)
-	{
-		for (Map.Entry<BotID, TrackedBot> entry : worldFrame.foeBots)
-		{
-			if ((entry.getValue().getVel().getLength2() < VELOCITY_TOL)
-					&& entry.getValue().getPos().similar(getDestination(), getDestFreeTol()))
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-	
-	
-	/**
 	 * @param dest the destination to set
 	 */
 	public final void updateDestination(final IVector2 dest)
@@ -162,7 +131,7 @@ public class DestinationFreeCondition extends ACondition
 		if (dest == null)
 		{
 			setActive(false);
-			destination.set(Vector2.ZERO_VECTOR);
+			destination.set(AVector2.ZERO_VECTOR);
 		} else
 		{
 			setActive(true);
@@ -214,21 +183,19 @@ public class DestinationFreeCondition extends ACondition
 	
 	
 	/**
-	 * @return the destFreeTol
+	 * @return the destFreeTolerance
 	 */
-	public final float getDestFreeTol()
+	public final float getDestFreeTolerance()
 	{
-		return destFreeTol;
+		return destFreeTolerance;
 	}
 	
 	
 	/**
-	 * @param destFreeTol the destFreeTol to set
+	 * @param destFreeTolerance the destFreeTolerance to set
 	 */
-	public final void setDestFreeTol(float destFreeTol)
+	public final void setDestFreeTolerance(final float destFreeTolerance)
 	{
-		this.destFreeTol = destFreeTol;
+		this.destFreeTolerance = destFreeTolerance;
 	}
-	
-	
 }

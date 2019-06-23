@@ -11,7 +11,9 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -26,51 +28,23 @@ public class TigerCtrlVisionPos extends ACommand
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	/** [mm], [mrad] */
+	@SerialData(type = ESerialDataType.INT16)
 	private int	pos[]	= new int[3];
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/** */
+	public TigerCtrlVisionPos()
+	{
+		super(ECommand.CMD_CTRL_VISION_POS);
+	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		pos[0] = byteArray2Short(data, 0);
-		pos[1] = byteArray2Short(data, 2);
-		pos[2] = byteArray2Short(data, 4);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		short2ByteArray(data, 0, pos[0]);
-		short2ByteArray(data, 2, pos[1]);
-		short2ByteArray(data, 4, pos[2]);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_CTRL_VISION_POS;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 6;
-	}
 	
 	
 	// --------------------------------------------------------------------------

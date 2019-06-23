@@ -11,8 +11,8 @@ package edu.dhbw.mannheim.tigers.sumatra.presenter.laf;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.swing.UIManager;
 
@@ -31,8 +31,8 @@ public final class LookAndFeelStateAdapter implements PropertyChangeListener
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static LookAndFeelStateAdapter				instance		= null;
-	private final List<ILookAndFeelStateObserver>	observers	= new ArrayList<ILookAndFeelStateObserver>();
+	private static LookAndFeelStateAdapter			instance		= null;
+	private final Set<ILookAndFeelStateObserver>	observers	= new HashSet<ILookAndFeelStateObserver>();
 	
 	
 	// --------------------------------------------------------------------------

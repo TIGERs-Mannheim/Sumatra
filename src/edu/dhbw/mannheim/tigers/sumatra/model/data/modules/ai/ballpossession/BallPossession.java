@@ -11,9 +11,7 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ballpossession;
 
 import java.io.Serializable;
 
-import javax.persistence.Embeddable;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
@@ -26,7 +24,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
  * @author DirkK
  * 
  */
-@Embeddable
+@Persistent
 public class BallPossession implements Serializable
 {
 	// --------------------------------------------------------------------------
@@ -35,7 +33,6 @@ public class BallPossession implements Serializable
 	/**  */
 	private static final long	serialVersionUID	= -1819701506143270823L;
 	
-	@Enumerated(EnumType.STRING)
 	private EBallPossession		eBallPossession;
 	private BotID					opponentsId;
 	private BotID					tigersId;
@@ -49,8 +46,8 @@ public class BallPossession implements Serializable
 	public BallPossession()
 	{
 		eBallPossession = EBallPossession.UNKNOWN;
-		opponentsId = new BotID();
-		tigersId = new BotID();
+		opponentsId = BotID.createBotId();
+		tigersId = BotID.createBotId();
 	}
 	
 	

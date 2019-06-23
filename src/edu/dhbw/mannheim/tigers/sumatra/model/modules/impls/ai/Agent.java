@@ -9,9 +9,6 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai;
 
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -19,40 +16,38 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.moduli.exceptions.InitModuleException;
+import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
+import edu.dhbw.mannheim.tigers.moduli.exceptions.StartModuleException;
+import edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesState;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.FrameID;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AthenaAiFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.BaseAiFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.MetisAiFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.AresData;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.PlayStrategy;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.TacticalField;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.referee.RefereeMsg;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.ares.Ares;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena.Athena;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena.control.ApollonControl;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena.control.AthenaControl;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.Metis;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.ECalculator;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.PlayFactory;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.RoleFactory;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.Sisyphus;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.timer.ETimable;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.timer.SumatraTimer;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.Director;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.WorldFrameFactory;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IAIObserver;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IManualBotObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ACam;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AConfigManager;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AReferee;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ASkillSystem;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ATimer;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AWorldPredictor;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IAthenaControlHandler;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ITimer;
 import edu.dhbw.mannheim.tigers.sumatra.util.FpsCounter;
-import edu.dhbw.mannheim.tigers.sumatra.view.statistics.internals.IStatisticsObserver;
-import edu.moduli.exceptions.InitModuleException;
-import edu.moduli.exceptions.ModuleNotFoundException;
-import edu.moduli.exceptions.StartModuleException;
 
 
 /**
@@ -60,78 +55,72 @@ import edu.moduli.exceptions.StartModuleException;
  * the endless battle for fame and glory!
  * 
  * @author Gero
- * 
  */
-public class Agent extends AAgent implements Runnable, IAthenaControlHandler, IManualBotObserver
+public class Agent extends AAgent implements Runnable
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	// Logger
-	private static final Logger					log						= Logger.getLogger(Agent.class.getName());
+	private static final Logger					log					= Logger.getLogger(Agent.class.getName());
 	
-	private static final int						QUEUE_LENGTH			= 1;
+	private static final int						QUEUE_LENGTH		= 1;
 	
-	private static final long						WF_TIMEOUT				= 1000;
+	private static final long						WF_TIMEOUT			= 1000;
 	
 	// Source
-	private final SumatraModel						model						= SumatraModel.getInstance();
-	private AWorldPredictor							predictor				= null;
-	private static ITimer							timer						= null;
-	private ACam										cam						= null;
+	private final SumatraModel						model					= SumatraModel.getInstance();
+	private SumatraTimer								timer					= null;
+	private ACam										cam					= null;
 	
-	private final BlockingDeque<WorldFrame>	freshWorldFrames		= new LinkedBlockingDeque<WorldFrame>(QUEUE_LENGTH);
+	private final BlockingDeque<WorldFrame>	freshWorldFrames	= new LinkedBlockingDeque<WorldFrame>(QUEUE_LENGTH);
 	
 	
 	// AI
 	private Thread										nathan;
 	
-	private AReferee									referee					= null;
+	private AReferee									referee				= null;
 	
-	/**
-	 * Contains all referee-messages sent (Actually, as the Referee-box sends the last messages over and over again,
-	 * these messages will only get here if they differ from the one sent before! See
-	 * {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.referee.RefereeReceiver#isNewMessage(RefereeMsg)})
-	 */
-	private final Deque<RefereeMsg>				refereeMsgQueue		= new LinkedList<RefereeMsg>();
-	private final Object								sync						= new Object();
-	
-	
-	private AIInfoFrame								previousAIFrame		= null;
-	private RefereeMsg								previousRefereeMsg	= null;
-	/** Whether there was a reset before or not */
-	private boolean									resetFlag				= false;
-	
+	private AIInfoFrame								previousAIFrame	= null;
+	private RefereeMsg								latestRefereeMsg	= null;
 	
 	/** {@link Metis} */
 	private Metis										metis;
 	
 	/** {@link Athena} */
-	private Athena										athena;
+	private final Athena								athena				= new Athena();
 	
 	/** {@link Ares} */
 	private Ares										ares;
 	
 	private ASkillSystem								skillSystem;
 	
-	private FpsCounter								fpsCounter				= new FpsCounter();
+	private FpsCounter								fpsCounter			= new FpsCounter();
 	
-	private Sisyphus									sisyphus;
+	/** was the agent activated yet? Can only be activated once */
+	private boolean									activated			= false;
+	private String										activatedKey;
+	/** is the agent active atm? Can also be disabled again */
+	private boolean									active				= false;
+	
+	private ETimable									timableAgent;
+	private ETimable									timableAthena;
+	private ETimable									timableMetis;
+	private ETimable									timableAres;
+	private ETimable									timableNotify;
+	
+	
+	private long										lastRefMsgCounter	= -1;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @param subnodeConfiguration
 	 */
-	public Agent(SubnodeConfiguration subnodeConfiguration)
+	public Agent(final SubnodeConfiguration subnodeConfiguration)
 	{
-		AConfigManager.registerConfigClient(TeamConfig.getInstance());
-		AConfigManager.registerConfigClient(AIConfig.getInstance().getGeomClient());
-		AConfigManager.registerConfigClient(AIConfig.getInstance().getBotClient());
-		AConfigManager.registerConfigClient(AIConfig.getInstance().getAiClient());
 	}
 	
 	
@@ -141,95 +130,86 @@ public class Agent extends AAgent implements Runnable, IAthenaControlHandler, IM
 	@Override
 	public void initModule() throws InitModuleException
 	{
+		if (MODULE_ID_YELLOW.equals(getId()))
+		{
+			timableAgent = ETimable.AGENT_Y;
+			timableAthena = ETimable.ATHENA_Y;
+			timableMetis = ETimable.METIS_Y;
+			timableAres = ETimable.ARES_Y;
+			timableNotify = ETimable.AI_NOTIFY_Y;
+			setTeamColor(ETeamColor.YELLOW);
+		} else if (MODULE_ID_BLUE.equals(getId()))
+		{
+			timableAgent = ETimable.AGENT_B;
+			timableAthena = ETimable.ATHENA_B;
+			timableMetis = ETimable.METIS_B;
+			timableAres = ETimable.ARES_B;
+			timableNotify = ETimable.AI_NOTIFY_B;
+			setTeamColor(ETeamColor.BLUE);
+		}
+		
+		activatedKey = Agent.class.getName() + "-" + getId() + ".activated";
+		active = Boolean.valueOf(SumatraModel.getInstance().getUserProperty(activatedKey));
+		activated = active;
 		try
 		{
 			cam = (ACam) model.getModule(ACam.MODULE_ID);
 			
-			predictor = (AWorldPredictor) model.getModule(AWorldPredictor.MODULE_ID);
-			predictor.setWorldFrameConsumer(this);
+			AWorldPredictor predictor = (AWorldPredictor) model.getModule(AWorldPredictor.MODULE_ID);
+			predictor.addWorldFrameConsumer(this);
 			
 			skillSystem = (ASkillSystem) model.getModule(ASkillSystem.MODULE_ID);
 			
 			referee = (AReferee) model.getModule(AReferee.MODULE_ID);
-			referee.setRefereeMsgConsumer(this);
+			referee.addRefereeMsgConsumer(this);
 		} catch (final ModuleNotFoundException err)
 		{
 			log.error("Unable to find one or more modules!");
 		}
-		
-		log.debug("Initialized.");
 	}
 	
 	
 	@Override
 	public void startModule() throws StartModuleException
 	{
+		lastRefMsgCounter = -1;
+		if (!activated)
+		{
+			return;
+		}
 		try
 		{
-			Agent.setTimer((ATimer) model.getModule(ATimer.MODULE_ID));
+			timer = ((SumatraTimer) model.getModule(ATimer.MODULE_ID));
 		} catch (final ModuleNotFoundException err)
 		{
 			log.debug("No timer found.");
 		}
 		
-		// Instantiate...
 		metis = new Metis();
-		athena = new Athena();
-		
-		sisyphus = new Sisyphus(getObservers());
-		ares = new Ares(sisyphus, skillSystem);
-		
-		// Check PlayFactory for play-creation-problems
-		final PlayFactory factory = PlayFactory.getInstance();
-		final List<EPlay> result = factory.selfCheckPlays();
-		if (result.size() > 0)
-		{
-			final StringBuilder str = new StringBuilder("PlayFactory self-check failed for the following EPlays:\n");
-			for (final EPlay type : result)
-			{
-				str.append("- ").append(type).append("\n");
-			}
-			log.warn(str);
-		}
-		log.debug("PlayFactory check done!");
+		ares = new Ares(skillSystem);
 		
 		RoleFactory.selfCheckRoles();
 		
-		// Run
-		nathan = new Thread(this, "AI_Nathan");
-		// nathan.setPriority(Thread.MAX_PRIORITY); // Use the force, Luke!
+		nathan = new Thread(this, "AI_Nathan_" + getId());
 		nathan.start();
-		
-		
-		log.debug("Started.");
+		log.trace("Nathan started");
 	}
 	
 	
 	/**
-	 * 
-	 * @param name
-	 * @param id
+	 * @param msg The recently received message
+	 * @return Whether this message does really new game-state information
+	 * @author FriederB
 	 */
-	public static void startTimer(String name, FrameID id)
+	private boolean isNewMessage(final RefereeMsg msg)
 	{
-		if (Agent.getTimer() != null)
+		if (msg.getCommandCounter() != lastRefMsgCounter)
 		{
-			Agent.getTimer().start(name, id);
+			lastRefMsgCounter = msg.getCommandCounter();
+			return true;
 		}
-	}
-	
-	
-	/**
-	 * 
-	 * @param name
-	 * @param id
-	 */
-	public static void stopTime(String name, FrameID id)
-	{
-		if (Agent.getTimer() != null)
-		{
-			Agent.getTimer().stop(name, id);
-		}
+		
+		return false;
 	}
 	
 	
@@ -239,9 +219,21 @@ public class Agent extends AAgent implements Runnable, IAthenaControlHandler, IM
 	@Override
 	public void run()
 	{
-		FrameID id = new FrameID(0, 0);
+		long id = 0;
 		while (!Thread.currentThread().isInterrupted())
 		{
+			if (!active)
+			{
+				onVisionSignalLost(WorldFrameFactory.createEmptyWorldFrame(0L));
+				try
+				{
+					Thread.sleep(1000);
+				} catch (InterruptedException err)
+				{
+					// not important
+				}
+				continue;
+			}
 			// ### Get latest worldframe
 			WorldFrame wf;
 			try
@@ -258,121 +250,113 @@ public class Agent extends AAgent implements Runnable, IAthenaControlHandler, IM
 				break;
 			}
 			
-			startTimer("Agent", id);
+			id = wf.getId().getFrameNumber();
+			
+			timer.start(timableAgent, id);
 			
 			// ### Take the first of the referee-messages
-			RefereeMsg refereeMsg = null;
-			synchronized (sync)
+			RefereeMsg refereeMsg = latestRefereeMsg;
+			
+			RefereeMsg newRefereeMsg = null;
+			if ((refereeMsg != null) && isNewMessage(refereeMsg))
 			{
-				refereeMsg = refereeMsgQueue.poll();
+				newRefereeMsg = refereeMsg;
 			}
 			
+			BaseAiFrame baseAiFrame = new BaseAiFrame(wf, newRefereeMsg, refereeMsg, previousAIFrame, getTeamColor());
 			
-			AIInfoFrame frame = new AIInfoFrame(wf, refereeMsg, previousRefereeMsg);
-			frame.setFps(fpsCounter.getAvgFps());
-			fpsCounter.newFrame();
-			
-			previousRefereeMsg = frame.refereeMsgCached;
 			if (previousAIFrame == null)
 			{
 				// Skip first frame
-				previousAIFrame = frame;
+				previousAIFrame = generateAIInfoFrame(baseAiFrame);
 				continue;
 			}
 			
+			previousAIFrame.cleanUp();
 			
 			// ### Process!
 			try
 			{
-				// Check for reset-flag
-				if (resetFlag)
-				{
-					frame.playStrategy.setForceNewDecision();
-					resetFlag = false;
-				}
-				
 				// Analyze
-				startTimer("Metis", id);
-				metis.process(frame, previousAIFrame);
-				stopTime("Metis", id);
+				timer.start(timableMetis, id);
+				MetisAiFrame metisAiFrame = metis.process(baseAiFrame);
+				timer.stop(timableMetis, id);
 				
 				// Choose and calculate behavior
-				startTimer("Athena", id);
-				athena.process(frame, previousAIFrame);
-				stopTime("Athena", id);
+				timer.start(timableAthena, id);
+				AthenaAiFrame athenaAiFrame = athena.process(metisAiFrame);
+				timer.stop(timableAthena, id);
 				
 				// Execute!
-				startTimer("Ares", id);
-				ares.process(frame, previousAIFrame);
-				stopTime("Ares", id);
+				timer.start(timableAres, id);
+				AresData aresData = ares.process(athenaAiFrame);
+				timer.start(timableAres, id);
 				
+				timer.start(timableNotify, id);
 				// ### Populate used AIInfoFrame (for visualization etc)
-				notifyNewAIInfoFrame(frame);
+				AIInfoFrame frame = new AIInfoFrame(athenaAiFrame, aresData, fpsCounter.getAvgFps());
+				fpsCounter.newFrame();
 				
+				notifyNewAIInfoFrame(frame);
+				previousAIFrame = frame;
+				timer.stop(timableNotify, id);
 			} catch (final Exception ex)
 			{
 				// # Notify observers (gui) about errors...
-				notifyNewAIException(ex, frame, previousAIFrame);
+				notifyNewAIException(ex, generateAIInfoFrame(baseAiFrame), previousAIFrame);
 				
 				// # Undo everything we've done this cycle to restore previous state
 				// - RefereeMsg
 				if (refereeMsg != null)
 				{
-					synchronized (sync)
-					{
-						refereeMsgQueue.addFirst(refereeMsg);
-					}
+					lastRefMsgCounter--;
 				}
 				
-				// # Prepare next cycle
-				stopTime("Agent", id);
+				skillSystem.getSisyphus().stopAllPathPlanning();
+				skillSystem.reset(getTeamColor());
 				
-				previousAIFrame = null;
-				resetFlag = true;
+				// # Prepare next cycle
+				timer.stop(timableAgent, id);
+				
+				previousAIFrame.cleanUp();
 				continue;
 			}
 			
 			
 			// ### End cycle
-			stopTime("Agent", id);
-			previousAIFrame = frame;
-			Agent.getTimer().notifyNewTimerInfo(id);
-			id = wf.id;
+			timer.stop(timableAgent, id);
 		}
+	}
+	
+	
+	private AIInfoFrame generateAIInfoFrame(final BaseAiFrame baseAiFrame)
+	{
+		return new AIInfoFrame(new AthenaAiFrame(new MetisAiFrame(baseAiFrame, new TacticalField(
+				baseAiFrame.getWorldFrame())), new PlayStrategy(new PlayStrategy.Builder())), new AresData(), 0);
 	}
 	
 	
 	@Override
 	public void stopModule()
 	{
-		nathan.interrupt();
-		athena.onStop();
-		
-		if (predictor != null)
+		if (!activated)
 		{
-			predictor.setWorldFrameConsumer(null);
+			return;
 		}
-		
-		log.debug("Stopped.");
+		nathan.interrupt();
 	}
 	
 	
 	@Override
 	public void deinitModule()
 	{
-		metis = null;
-		
-		athena = null;
-		
 		if (ares != null)
 		{
-			ares.setSkillSystem(null);
 			ares = null;
 		}
 		
 		if (referee != null)
 		{
-			referee.setRefereeMsgConsumer(null);
 			referee = null;
 		}
 		
@@ -382,10 +366,6 @@ public class Agent extends AAgent implements Runnable, IAthenaControlHandler, IM
 		}
 		
 		previousAIFrame = null;
-		
-		refereeMsgQueue.clear();
-		
-		log.debug("Deinitialized.");
 	}
 	
 	
@@ -393,59 +373,46 @@ public class Agent extends AAgent implements Runnable, IAthenaControlHandler, IM
 	// --- observer methods -----------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
-	public void onNewRefereeMsg(RefereeMsg msg)
+	public void onNewRefereeMsg(final RefereeMsg msg)
 	{
-		synchronized (sync)
+		latestRefereeMsg = msg;
+	}
+	
+	
+	@Override
+	public synchronized void onNewSimpleWorldFrame(final SimpleWorldFrame worldFrame)
+	{
+	}
+	
+	
+	@Override
+	public void onNewWorldFrame(final WorldFrame wFrame)
+	{
+		if (wFrame.getTeamColor() == getTeamColor())
 		{
-			refereeMsgQueue.addLast(msg);
+			freshWorldFrames.pollLast();
+			freshWorldFrames.addFirst(wFrame);
 		}
 	}
 	
 	
 	@Override
-	public synchronized void onNewWorldFrame(WorldFrame worldFrame)
+	public void onVisionSignalLost(final SimpleWorldFrame emptyWf)
 	{
-		freshWorldFrames.pollLast();
-		freshWorldFrames.addFirst(worldFrame);
-	}
-	
-	
-	@Override
-	public void onVisionSignalLost(WorldFrame emptyWf)
-	{
-		AIInfoFrame frame = new AIInfoFrame(emptyWf, previousRefereeMsg, previousRefereeMsg);
+		WorldFrame wf = Director.createWorldFrame(emptyWf, getTeamColor());
+		BaseAiFrame bFrame = new BaseAiFrame(wf, null, latestRefereeMsg, previousAIFrame, getTeamColor());
 		// ### Populate used AIInfoFrame (for visualization etc)
-		notifyNewAIInfoFrame(frame);
-	}
-	
-	
-	@Override
-	public void onNewAthenaControl(AthenaControl newControl)
-	{
-		if (athena != null)
-		{
-			athena.onNewAthenaControl(newControl);
-		}
-	}
-	
-	
-	@Override
-	public void onNewApollonControl(ApollonControl newControl)
-	{
-		athena.onNewApollonControl(newControl);
-	}
-	
-	
-	@Override
-	public void onSaveKnowledgeBase()
-	{
-		athena.onSaveKnowledgeBase();
+		notifyNewAIInfoFrame(generateAIInfoFrame(bFrame));
 	}
 	
 	
 	@Override
 	public void onStop()
 	{
+		if (!activated)
+		{
+			return;
+		}
 		nathan.interrupt();
 	}
 	
@@ -454,11 +421,11 @@ public class Agent extends AAgent implements Runnable, IAthenaControlHandler, IM
 	// --- AI Visualization -----------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * This function is used to notify the last {@link AIInfoFrame} to visualization observers.
+	 * 
 	 * @param lastAIInfoframe
 	 */
-	private void notifyNewAIInfoFrame(AIInfoFrame lastAIInfoframe)
+	private void notifyNewAIInfoFrame(final AIInfoFrame lastAIInfoframe)
 	{
 		synchronized (getObservers())
 		{
@@ -494,88 +461,68 @@ public class Agent extends AAgent implements Runnable, IAthenaControlHandler, IM
 	}
 	
 	
-	@Override
-	public void onManualBotAdded(BotID bot)
-	{
-		metis.onManualBotAdded(bot);
-	}
-	
-	
-	@Override
-	public void onManualBotRemoved(BotID bot)
-	{
-		metis.onManualBotRemoved(bot);
-	}
-	
-	
 	/**
-	 * @return the timer
 	 */
-	protected static synchronized ITimer getTimer()
+	private void setActivated()
 	{
-		return timer;
-	}
-	
-	
-	/**
-	 * @param timer the timer to set
-	 */
-	protected static synchronized void setTimer(ITimer timer)
-	{
-		Agent.timer = timer;
-	}
-	
-	
-	@Override
-	public void setActiveCalculators(List<ECalculator> calculators)
-	{
-		if (metis != null)
+		if (!activated && (SumatraModel.getInstance().getModulesState().get() == ModulesState.ACTIVE))
 		{
-			for (ECalculator calc : ECalculator.values())
+			try
 			{
-				if (calculators.contains(calc))
-				{
-					metis.setCalculatorActive(calc, true);
-				} else
-				{
-					metis.setCalculatorActive(calc, false);
-				}
+				activated = true;
+				startModule();
+			} catch (StartModuleException err)
+			{
+				log.error("Could not start Agent " + getId());
 			}
 		}
+		activated = true;
 	}
 	
 	
 	/**
-	 * @param o
+	 * @return the active
 	 */
-	public void addPlayStatisticsObserver(IStatisticsObserver o)
+	public final boolean isActive()
 	{
-		if (athena != null)
-		{
-			athena.addPlayStatisticsObserver(o);
-		}
+		return active;
 	}
 	
 	
 	/**
-	 * @param o
+	 * @param active the active to set
 	 */
-	public void removePlayStatisticsObserver(IStatisticsObserver o)
+	public final void setActive(final boolean active)
 	{
-		if (athena != null)
-		{
-			athena.removePlayStatisticsObserver(o);
-		}
+		setActivated();
+		this.active = active;
+		SumatraModel.getInstance().setUserProperty(activatedKey, String.valueOf(active));
 	}
 	
 	
 	/**
-	 * @return the sisyphus
+	 * @return the metis
 	 */
-	public Sisyphus getSisyphus()
+	public final Metis getMetis()
 	{
-		return sisyphus;
+		return metis;
 	}
 	
 	
+	/**
+	 * @return the ares
+	 */
+	public final Ares getAres()
+	{
+		return ares;
+	}
+	
+	
+	/**
+	 * @return the athena
+	 */
+	public final Athena getAthena()
+	{
+		return athena;
+	}
 }

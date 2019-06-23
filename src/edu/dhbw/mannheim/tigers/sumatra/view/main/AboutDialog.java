@@ -73,7 +73,7 @@ public class AboutDialog extends JDialog
 		// --- text ---
 		JLabel text = new JLabel();
 		text.setText("<html>Version: " + SumatraModel.getVersion() + "<br>" + "Team: Tigers Mannheim<br>"
-				+ "University: DHBW Mannheim<br>" + "Date: July 2009 - December 2012" + "</html>");
+				+ "University: DHBW Mannheim<br>" + "Date: July 2009 - today" + "</html>");
 		this.add(text, BorderLayout.SOUTH);
 		
 	}

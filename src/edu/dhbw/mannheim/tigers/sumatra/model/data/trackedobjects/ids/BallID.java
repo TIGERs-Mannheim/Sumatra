@@ -10,7 +10,7 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids;
 
 
-import javax.persistence.Embeddable;
+import com.sleepycat.persist.model.Persistent;
 
 
 /**
@@ -19,7 +19,7 @@ import javax.persistence.Embeddable;
  * @author Oliver Steinbrecher
  * 
  */
-@Embeddable
+@Persistent
 public class BallID extends AObjectID
 {
 	// --------------------------------------------------------------------------

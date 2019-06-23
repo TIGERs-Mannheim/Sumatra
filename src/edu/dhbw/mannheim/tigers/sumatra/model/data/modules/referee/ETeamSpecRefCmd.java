@@ -39,5 +39,17 @@ public enum ETeamSpecRefCmd
 	/** */
 	TimeoutEnemies,
 	/**  */
+	GoalTigers,
+	/**  */
+	GoalEnemies,
+	/**  */
+	ForceStart,
+	/**  */
+	NormalStart,
+	/**  */
+	Stop,
+	/**  */
+	Halt,
+	/**  */
 	NoCommand;
 }

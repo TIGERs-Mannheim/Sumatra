@@ -9,19 +9,17 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.replay;
 
-import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.border.TitledBorder;
 
+import net.miginfocom.swing.MigLayout;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.IReplayOptionsPanelObserver;
 
 
@@ -54,20 +52,16 @@ public class ReplayOptionsPanel extends JPanel
 		final TitledBorder border = BorderFactory.createTitledBorder("replay");
 		setBorder(border);
 		
-		setLayout(new FlowLayout());
+		setLayout(new MigLayout());
 		
-		// JToggleButton btnRec = new JToggleButton("Record");
+		JToggleButton btnRec = new JToggleButton("Record");
 		JToggleButton btnRecSave = new JToggleButton("Record&Save");
-		JButton btnUpdate = new JButton("Update Record");
 		
-		// btnRec.addActionListener(new RecordButtonListener());
+		btnRec.addActionListener(new RecordButtonListener());
 		btnRecSave.addActionListener(new RecordSaveButtonListener());
-		btnUpdate.addActionListener(new UpdateButtonListener());
 		
-		// add(btnRec);
+		add(btnRec, "wrap");
 		add(btnRecSave);
-		add(btnUpdate);
-		add(Box.createGlue());
 	}
 	
 	
@@ -98,30 +92,30 @@ public class ReplayOptionsPanel extends JPanel
 	}
 	
 	
-	// private class RecordButtonListener implements ActionListener
-	// {
-	//
-	// @Override
-	// public void actionPerformed(ActionEvent e)
-	// {
-	// for (IReplayOptionsPanelObserver observer : observers)
-	// {
-	// if (e.getSource() instanceof JToggleButton)
-	// {
-	// JToggleButton btn = (JToggleButton) e.getSource();
-	// observer.onRecord(btn.isSelected());
-	// if (btn.isSelected())
-	// {
-	// btn.setText("Recording...");
-	// } else
-	// {
-	// btn.setText("Record");
-	// }
-	// }
-	// }
-	// }
-	//
-	// }
+	private class RecordButtonListener implements ActionListener
+	{
+		
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
+			for (IReplayOptionsPanelObserver observer : observers)
+			{
+				if (e.getSource() instanceof JToggleButton)
+				{
+					JToggleButton btn = (JToggleButton) e.getSource();
+					observer.onRecord(btn.isSelected());
+					if (btn.isSelected())
+					{
+						btn.setText("Recording...");
+					} else
+					{
+						btn.setText("Record");
+					}
+				}
+			}
+		}
+		
+	}
 	
 	private class RecordSaveButtonListener implements ActionListener
 	{
@@ -148,19 +142,4 @@ public class ReplayOptionsPanel extends JPanel
 		}
 	}
 	
-	private class UpdateButtonListener implements ActionListener
-	{
-		
-		@Override
-		public void actionPerformed(ActionEvent e)
-		{
-			for (IReplayOptionsPanelObserver observer : observers)
-			{
-				if (e.getSource() instanceof JButton)
-				{
-					observer.onUpdate();
-				}
-			}
-		}
-	}
 }

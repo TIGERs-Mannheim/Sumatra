@@ -150,7 +150,15 @@ public class TextPane extends JScrollPane
 	public void setAutoscroll(boolean en)
 	{
 		autoscroll = en;
-		textPane.setCaretPosition(doc.getLength() - 1);
+		if (autoscroll)
+		{
+			int pos = doc.getLength() - 1;
+			if (pos < 0)
+			{
+				pos = 0;
+			}
+			textPane.setCaretPosition(pos);
+		}
 	}
 	
 	

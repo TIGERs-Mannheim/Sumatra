@@ -12,7 +12,9 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands
 import java.io.UnsupportedEncodingException;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -76,13 +78,20 @@ public class TigerSystemConsoleCommand extends ACommand
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private ConsoleCommandTarget	target;
-	private String						text;
+	@SerialData(type = ESerialDataType.UINT8)
+	private int		target;
+	@SerialData(type = ESerialDataType.TAIL)
+	private byte[]	textData;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/** */
+	public TigerSystemConsoleCommand()
+	{
+		super(ECommand.CMD_SYSTEM_CONSOLE_COMMAND);
+	}
 	
 	
 	// --------------------------------------------------------------------------
@@ -90,74 +99,24 @@ public class TigerSystemConsoleCommand extends ACommand
 	// --------------------------------------------------------------------------
 	
 	
-	@Override
-	public void setData(byte[] data)
-	{
-		int length = byteArray2UByte(data, 0);
-		target = ConsoleCommandTarget.getTargetConstant(byteArray2UByte(data, 1));
-		
-		try
-		{
-			text = new String(data, 2, length, "US-ASCII");
-		} catch (UnsupportedEncodingException err)
-		{
-			text = "Unsupported Encoding";
-		}
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		byte[] textBytes;
-		try
-		{
-			textBytes = text.getBytes("US-ASCII");
-		} catch (UnsupportedEncodingException err)
-		{
-			textBytes = new byte[1];
-			textBytes[0] = 0;
-		}
-		
-		int length = textBytes.length;
-		if (length > 80)
-		{
-			length = 80;
-		}
-		
-		byte2ByteArray(data, 0, length);
-		byte2ByteArray(data, 1, target.getId());
-		
-		System.arraycopy(textBytes, 0, data, 2, length);
-		
-		return data;
-	}
-	
-	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_SYSTEM_CONSOLE_COMMAND;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 82;
-	}
-	
-	
 	/**
 	 * @return the text
 	 */
 	public String getText()
 	{
+		String text;
+		
+		try
+		{
+			text = new String(textData, 0, textData.length, "US-ASCII");
+		} catch (UnsupportedEncodingException err)
+		{
+			text = "Unsupported Encoding";
+		}
+		
 		return text;
 	}
 	
@@ -167,7 +126,14 @@ public class TigerSystemConsoleCommand extends ACommand
 	 */
 	public void setText(String text)
 	{
-		this.text = text;
+		try
+		{
+			textData = text.getBytes("US-ASCII");
+		} catch (UnsupportedEncodingException err)
+		{
+			textData = new byte[1];
+			textData[0] = 0;
+		}
 	}
 	
 	
@@ -176,7 +142,7 @@ public class TigerSystemConsoleCommand extends ACommand
 	 */
 	public ConsoleCommandTarget getTarget()
 	{
-		return target;
+		return ConsoleCommandTarget.getTargetConstant(target);
 	}
 	
 	
@@ -185,7 +151,7 @@ public class TigerSystemConsoleCommand extends ACommand
 	 */
 	public void setTarget(ConsoleCommandTarget target)
 	{
-		this.target = target;
+		this.target = target.getId();
 	}
 	
 }

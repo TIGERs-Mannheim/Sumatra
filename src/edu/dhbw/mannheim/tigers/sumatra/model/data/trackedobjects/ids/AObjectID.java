@@ -4,14 +4,13 @@
  * Project: TIGERS - Sumatra
  * Date: 24.09.2011
  * Author(s): osteinbrecher
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids;
 
 import java.io.Serializable;
 
-import javax.persistence.Embeddable;
+import com.sleepycat.persist.model.Persistent;
 
 
 /**
@@ -19,7 +18,7 @@ import javax.persistence.Embeddable;
  * 
  * @author Oliver Steinbrecher
  */
-@Embeddable
+@Persistent
 public abstract class AObjectID implements Comparable<AObjectID>, Serializable
 {
 	
@@ -27,26 +26,23 @@ public abstract class AObjectID implements Comparable<AObjectID>, Serializable
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	/**  */
-	private static final long		serialVersionUID	= -1210556807036502590L;
+	private static final long	serialVersionUID	= -1210556807036502590L;
 	
 	/** needs to be 255 thus the bot firmware can perform a deinitialization of the network interface */
-	public static final int			UNINITIALIZED_ID	= 255;
+	public static final int		UNINITIALIZED_ID	= 255;
 	
 	/** */
-	protected static final int		BALL_ID				= -1;
+	protected static final int	BALL_ID				= -1;
 	
 	/** */
-	public static final int			BOT_ID_MIN			= 0;
+	public static final int		BOT_ID_MIN			= 0;
 	/** */
-	public static final int			BOT_ID_MAX			= 13;
-	
-	/**  */
-	public static final AObjectID	UNINITIALIZED_OID	= new UninitializedID();
+	public static final int		BOT_ID_MAX			= 11;
 	
 	
 	// --------------------------------------------------------------------------
 	
-	private int							number;
+	private int						number;
 	
 	
 	// --------------------------------------------------------------------------
@@ -65,7 +61,7 @@ public abstract class AObjectID implements Comparable<AObjectID>, Serializable
 	/**
 	 * @param number
 	 */
-	public AObjectID(int number)
+	public AObjectID(final int number)
 	{
 		if (number == UNINITIALIZED_ID)
 		{
@@ -89,49 +85,9 @@ public abstract class AObjectID implements Comparable<AObjectID>, Serializable
 	
 	
 	@Override
-	public int hashCode()
+	public int compareTo(final AObjectID o)
 	{
-		return number;
-	}
-	
-	
-	@Override
-	public boolean equals(Object obj)
-	{
-		if (this == obj)
-		{
-			return true;
-		}
-		
-		if ((obj == null) || (getClass() != obj.getClass()))
-		{
-			return false;
-		}
-		
-		final AObjectID other = (AObjectID) obj;
-		if (number != other.number)
-		{
-			return false;
-		}
-		return true;
-	}
-	
-	
-	@Override
-	public int compareTo(AObjectID o)
-	{
-		int compareResult = 0;
-		if (getNumber() < o.getNumber())
-		{
-			compareResult = -1;
-		} else
-		{
-			if (getNumber() > o.getNumber())
-			{
-				compareResult = 1;
-			}
-		}
-		return compareResult;
+		return Integer.compare(getNumber(), o.getNumber());
 	}
 	
 	
@@ -188,5 +144,39 @@ public abstract class AObjectID implements Comparable<AObjectID>, Serializable
 			return true;
 		}
 		return false;
+	}
+	
+	
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = 1;
+		result = (prime * result) + number;
+		return result;
+	}
+	
+	
+	@Override
+	public boolean equals(final Object obj)
+	{
+		if (this == obj)
+		{
+			return true;
+		}
+		if (obj == null)
+		{
+			return false;
+		}
+		if (getClass() != obj.getClass())
+		{
+			return false;
+		}
+		AObjectID other = (AObjectID) obj;
+		if (number != other.number)
+		{
+			return false;
+		}
+		return true;
 	}
 }

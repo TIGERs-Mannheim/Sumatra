@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<skills base="edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem">
+    <skills>
+        <MoveToV2Skill>
+            <distTolerance comment="If near than this dist [mm] to next point_ go on to next point.">30.0</distTolerance>
+            <raySizeMin comment="Min Raysize [mm] for p2pVisibility check (when standing)">60.0</raySizeMin>
+            <raySizeMax comment="Max Raysize [mm] for p2pVisibility check (when vel=3.0)">150.0</raySizeMax>
+        </MoveToV2Skill>
+        <TurnAroundBallSplineSkill>
+            <positioningPostAiming comment="Dist [mm] - distance to ball after aiming">70.0</positioningPostAiming>
+        </TurnAroundBallSplineSkill>
+        <PullBackSkill>
+            <pullDistance comment="distance to pull the ball backwards">500.0</pullDistance>
+            <moveSpeedBasic comment="basic / initial moveSpeed">150.0</moveSpeedBasic>
+            <moveSpeedRange comment="speed increase over time">200.0</moveSpeedRange>
+            <dribbleSpeedBasic comment="basic dribble speed">750.0</dribbleSpeedBasic>
+            <dribbleSpeedRange comment="dribble speed at start_ then slowly decreases to the end">12000.0</dribbleSpeedRange>
+            <grabBallDist comment="distance when ball is considered as grabbed">143.0</grabBallDist>
+            <distancToBall comment="distance to ball to move to initially">40.0</distancToBall>
+            <timeout comment="timeout after x ms">3500.0</timeout>
+            <turnCircleVel comment="Vel [rad/s] to turn on circle (1st phase)">50.0</turnCircleVel>
+        </PullBackSkill>
+        <ChipSkill>
+            <maxDist2InitBallPos comment="Dist [mm] - Max distance between current ball pos and initial ball pos before completing this skill">50.0</maxDist2InitBallPos>
+            <enableDribblerTolerance comment="Tol [rpm] - If dribble speed is below this value_ dribbler speed will not be considered for chip kick.">100</enableDribblerTolerance>
+            <dribbleWaitTime comment="Time [ms] - Waiting time for dribbler to be ready. Only used_ if dribbleArm on TigerBot can not be used_ e.g. if barrier broken or for grSim Bots">1500</dribbleWaitTime>
+            <distCorrection comment="Dist [mm] - Correction for distance from bot to ball">0.0</distCorrection>
+        </ChipSkill>
+        <PenaltyShootSkill>
+            <timeToShoot comment="This value adjusts the angle to shoot but to low or to high number will cause the skill to fail_ so be very careful here.">50</timeToShoot>
+            <dribbleSpeed comment="dribbleSpeed">0</dribbleSpeed>
+            <correctionDist comment="correction Distance: distance to ball">-5</correctionDist>
+            <stepTimeForSlowMove comment="speed to move closer to the ball_ big numbers mean slower movement">100</stepTimeForSlowMove>
+            <slowMoveDist comment="">120.0</slowMoveDist>
+        </PenaltyShootSkill>
+        <AMoveSkill>
+            <changeToPosCtrlThreshold comment="Dist [mm] - if using Spline/Pos movement controller_ this is the distance to destination_ when pos ctrl will be activated">100.0</changeToPosCtrlThreshold>
+            <positionMoveLookAhead comment="">0.4</positionMoveLookAhead>
+            <moveToSkill comment="The default MoveToSkill. SPLINE or POS">POS</moveToSkill>
+        </AMoveSkill>
+        <RedirectSkill>
+            <shootSpeed comment="">3.5</shootSpeed>
+        </RedirectSkill>
+        <KickSkill>
+            <passEndVel comment="Vel [m/s] of the ball when hitting pass receiver. Used for calculation of shoot duration when passing.">0.5</passEndVel>
+            <runtimeTimeout comment="Time [ms] after which the skill will time out">8000</runtimeTimeout>
+            <exportMoveData comment="Bool - Export move data to a csv file">false</exportMoveData>
+            <ballToInitPosTol comment="Tol [mm] - Max. distance between initial ball pos and current ball pos before completing skill when ball was stopped">200</ballToInitPosTol>
+            <ballVelHigherTol comment="Tol [m/s] - Offset for initial ball velocity. If current ball vel is higher than the sum_ skill will be completed">0.8</ballVelHigherTol>
+            <workingKickDelay comment="Delay [s] to wait before sending kick command_ starting when kicking is possible">0.0</workingKickDelay>
+            <brokenKickDelay comment="Delay [s] to wait before sending kick command_ starting when kicking is possible">0.7</brokenKickDelay>
+            <driveSpeed4BallSpeed comment="Vel [m/s] that is assumed for driving to ball when calculating future ball pos">0.8</driveSpeed4BallSpeed>
+            <securityDistance2Ball comment="Dist [mm] that the bot should always keep to ball (plus radius)">100</securityDistance2Ball>
+            <securityDistance2Ball:GRSIM comment="Dist [mm] that the bot should always keep to ball (plus radius)">100.0</securityDistance2Ball:GRSIM>
+            <preDistance2Ball comment="Dist [mm] for preposition that the bot should keep to ball (plus radius)">80.0</preDistance2Ball>
+            <preDistance2Ball:GRSIM comment="Dist [mm] for preposition that the bot should keep to ball (plus radius)">120.0</preDistance2Ball:GRSIM>
+            <switchDistanceTol comment="Dist [mm] tolerance when switching from turn to kick mode.">50.0</switchDistanceTol>
+            <switchDistanceTol:GRSIM comment="Dist [mm] tolerance when switching from turn to kick mode.">50.0</switchDistanceTol:GRSIM>
+            <behindBallDistTol comment="If bot is within this distance behind the ball_ it will arm and kick even tough ball is moving in its direction">600.0</behindBallDistTol>
+            <angleBallVelTol comment="Max angle [rad] between velocity vector and ball2Bot vector for switching to kick mode">0.2</angleBallVelTol>
+            <cmdMode comment="Which type of command should be send to the bot?">POS</cmdMode>
+            <cmdMode:GRSIM comment="Which type of command should be send to the bot?">VEL</cmdMode:GRSIM>
+            <distBehindBallHitTarget comment="Dist [mm] that the destination is set behind ball hit point">50</distBehindBallHitTarget>
+        </KickSkill>
+        <MoveToSkill>
+            <circumventPPTol comment="Dist [mm] - If bot is nearer than this to destination_ pathPlanning will not be used and changes directly applied">100.0</circumventPPTol>
+        </MoveToSkill>
+        <TurnAroundBallPosSkill>
+            <turnVel comment="">300</turnVel>
+        </TurnAroundBallPosSkill>
+        <BlockSkill>
+            <blockDecisionVelocity comment="Speed of the ball [m/s] - If the ball is faster the bot will throw himself into the shooting line.">0.1</blockDecisionVelocity>
+            <deaccelerationOfBall comment="Deacceleration of the ball [m/s^2]">0.1</deaccelerationOfBall>
+            <deaccelerationOfBall:GRSIM comment="Deacceleration of the ball [m/s^2]">1.0</deaccelerationOfBall:GRSIM>
+        </BlockSkill>
+        <PositionSkill>
+            <velModeParamPos comment="If in vel mode_ this is multiplied with position error">0.003</velModeParamPos>
+            <velModeParamPos:GRSIM comment="If in vel mode_ this is multiplied with position error">0.004</velModeParamPos:GRSIM>
+            <velModeParamOrient comment="If in vel mode_ this is multiplied with rotation error">3.0</velModeParamOrient>
+            <velModeParamOrient:GRSIM comment="If in vel mode_ this is multiplied with rotation error">2.0</velModeParamOrient:GRSIM>
+            <maxDistanceFast comment="max dist [mm] that destination may differ from bot pos. If greater_ dest is modified.">400.0</maxDistanceFast>
+            <maxDistanceSlow comment="Max dist [mm] in slow mode">200.0</maxDistanceSlow>
+            <defaultCommandMode comment="What kind of command should be send to the bot?">POS</defaultCommandMode>
+            <defaultCommandMode:GRSIM comment="What kind of command should be send to the bot?">VEL</defaultCommandMode:GRSIM>
+        </PositionSkill>
+    </skills>
+    <devices>
+        <TigerDevices>
+            <dribbleDefaultRpm comment="Vel [rpm] - default speed of dribble device for on/off toggle">10000</dribbleDefaultRpm>
+            <dribbleDefaultRpm:GRSIM comment="Vel [rpm] - default speed of dribble device for on/off toggle">10000</dribbleDefaultRpm:GRSIM>
+            <straightKickDefaultDuration comment="Vel [duration] - kicker duration for kickMax (not automatically the highest possible duration!">5000</straightKickDefaultDuration>
+            <straightKickDefaultDuration:GRSIM comment="Vel [duration] - kicker duration for kickMax (not automatically the highest possible duration!">10000</straightKickDefaultDuration:GRSIM>
+            <straightKickMaxDuration comment="Vel [duration] - max kicker duration that should be applied on straight kicker">5000</straightKickMaxDuration>
+            <straightKickMaxDuration:GRSIM comment="Vel [duration] - max kicker duration that should be applied on straight kicker">10000</straightKickMaxDuration:GRSIM>
+            <straightDurationFn comment="Function f s.t. duration = f(dist_endVel)">poly:2500.0</straightDurationFn>
+            <straightDurationFn:GRSIM comment="Function f s.t. duration = f(dist_endVel)">poly2:1467.078261;4329.852913;1430.165181;-537.773895;-619.975306;295.911653</straightDurationFn:GRSIM>
+            <chipDurationFn comment="Function f s.t. duration = f(chipDist_rollDist)">poly:6000.0</chipDurationFn>
+            <chipDurationFn:GRSIM comment="Function f s.t. duration = f(chipDist_rollDist)">poly:6000.0</chipDurationFn:GRSIM>
+            <chipDribbleDurationFn comment="Function f s.t. dribbleSpeed = f(chipDist_rollDist)">poly:6000.0</chipDribbleDurationFn>
+            <chipDribbleDurationFn:GRSIM comment="Function f s.t. dribbleSpeed = f(chipDist_rollDist)">poly:6000.0</chipDribbleDurationFn:GRSIM>
+            <chipFastDurationFn comment="Function f s.t. duration = f(chipDist)">poly:6000.0</chipFastDurationFn>
+            <chipFastDurationFn:GRSIM comment="Function f s.t. duration = f(chipDist)">poly:10000.0</chipFastDurationFn:GRSIM>
+        </TigerDevices>
+    </devices>
+</skills>

@@ -39,7 +39,7 @@ public class ActionCommand implements Serializable
 	/** */
 	public double					kickArm;
 	/** */
-	public double					chipArm;
+	private double					chipArm;
 	/** */
 	public double					dribble;
 	/** */
@@ -92,7 +92,7 @@ public class ActionCommand implements Serializable
 	// --------------------------------------------------------------------------
 	/**
 	 */
-	public final void fillCommandWithNulls()
+	private final void fillCommandWithNulls()
 	{
 		translateY = 0.0;
 		translateX = 0.0;

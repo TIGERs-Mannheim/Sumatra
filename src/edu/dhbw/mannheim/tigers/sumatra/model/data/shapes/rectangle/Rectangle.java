@@ -12,6 +12,8 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.rectangle;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.sleepycat.persist.model.Persistent;
+
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
@@ -24,6 +26,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
  * @author Malte
  * 
  */
+@Persistent
 public class Rectangle extends ARectangle
 {
 	/**  */
@@ -33,17 +36,24 @@ public class Rectangle extends ARectangle
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	/** is always in the top left corner of the rectangle */
-	private IVector2				topLeft;
+	private final IVector2		topLeft;
 	
 	/** x */
-	private float					xExtend;
+	private final float			xExtend;
 	/** y */
-	private float					yExtend;
+	private final float			yExtend;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	@SuppressWarnings("unused")
+	private Rectangle()
+	{
+		this(Vector2.ZERO_VECTOR, new Vector2(1, 1));
+	}
+	
 	
 	/**
 	 * 
@@ -106,63 +116,6 @@ public class Rectangle extends ARectangle
 	// --------------------------------------------------------------------------
 	// --- setter/getter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/**
-	 * 
-	 * Set new rectangle width.
-	 * 
-	 * @param yExtend
-	 * @throws IllegalArgumentException when length or width is negative or zero.
-	 */
-	public void setYExtend(float yExtend)
-	{
-		if (yExtend <= 0)
-		{
-			throw new IllegalArgumentException("Width cannot be negative or zero.");
-		}
-		this.yExtend = yExtend;
-	}
-	
-	
-	/**
-	 * 
-	 * Set new rectangle length.
-	 * 
-	 * @param xExtend
-	 * @throws IllegalArgumentException when length or width is negative or zero.
-	 */
-	public void setxExtend(float xExtend)
-	{
-		if (xExtend <= 0)
-		{
-			throw new IllegalArgumentException("Length cannot be negative or zero.");
-		}
-		this.xExtend = xExtend;
-	}
-	
-	
-	/**
-	 * @param referencePoint
-	 */
-	public void setTopLeft(Vector2 referencePoint)
-	{
-		topLeft = referencePoint;
-	}
-	
-	
-	/**
-	 * @param width
-	 * @param height
-	 * @return
-	 */
-	public Rectangle shrink(float width, float height)
-	{
-		topLeft = new Vector2(topLeft.x() + width, topLeft.y() - height);
-		
-		xExtend -= 2 * width;
-		yExtend -= 2 * height;
-		
-		return this;
-	}
 	
 	
 	@Override

@@ -59,4 +59,10 @@ public interface IBaseStationObserver
 	 * @param delay
 	 */
 	void onNewPingDelay(float delay);
+	
+	
+	/**
+	 * @param id
+	 */
+	void onBotOffline(BotID id);
 }

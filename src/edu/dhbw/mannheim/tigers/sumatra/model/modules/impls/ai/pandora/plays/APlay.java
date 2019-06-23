@@ -12,78 +12,55 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena.playfinder.stats.ESelectionReason;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACriterion;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AthenaAiFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.EGameState;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERoleBehavior;
 
 
 /**
  * This is the abstract play class. all plays inherit from here.<br/>
- * This type already includes a list for contained roles ({@link #roles} and the
- * corresponding update mechanism ({@link #update(AIInfoFrame)}).
+ * This type already includes a list for contained roles ({@link #roles}
  * 
  * @author DanielW, Oliver, Gero
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public abstract class APlay implements Comparable<APlay>
+public abstract class APlay
 {
 	// --------------------------------------------------------------------------
 	// --- instance variables ---------------------------------------------------
 	// --------------------------------------------------------------------------
-	// Logger
-	private static final Logger		log					= Logger.getLogger(APlay.class.getName());
+	private static final Logger	log	= Logger.getLogger(APlay.class.getName());
 	
-	private EPlayState					state;
+	private EPlayState				state;
+	private final List<ARole>		roles;
+	private final EPlay				type;
 	
-	/**
-	 * play type will be set by a setter from {@link PlayFactory}. It must be null here, because {@link EPlay} is too
-	 * complex as we could simple add an NOT_SET constant
-	 */
-	private EPlay							type					= EPlay.UNITIALIZED;
-	private final List<ARole>			roles;
-	
-	private boolean						firstUpdate			= true;
-	
-	private final List<ACriterion>	criteria;
-	
-	// Timing
-	private static final int			TIME_NOT_STARTED	= -1;
-	/** [s] @see {@link #setTimeout(long)} */
-	public static final int				DEFAULT_TIMEOUT	= 10;
-	
-	/** [ns] */
-	private long							timeStart			= TIME_NOT_STARTED;
-	/** [ns] */
-	private long							timeout				= TIME_NOT_STARTED;
-	
-	/** number of roles assigned to this play by PlayFinder */
-	private final int						numAssignedRoles;
-	
-	private ESelectionReason			selectionReason	= ESelectionReason.UNKNOWN;
+	private enum EPlayState
+	{
+		/** */
+		RUNNING,
+		/** */
+		FINISHED;
+	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- getInstance/constructor(s) -------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
-	 * @param aiFrame
-	 * @param numAssignedRoles
+	 * @param type
 	 */
-	public APlay(AIInfoFrame aiFrame, int numAssignedRoles)
+	public APlay(final EPlay type)
 	{
 		roles = new ArrayList<ARole>();
 		state = EPlayState.RUNNING;
-		criteria = new ArrayList<ACriterion>();
-		this.numAssignedRoles = numAssignedRoles;
-		setTimeout(Long.MAX_VALUE);
+		this.type = type;
 	}
 	
 	
@@ -93,44 +70,50 @@ public abstract class APlay implements Comparable<APlay>
 	
 	
 	/**
-	 * Adds the given role with {@link ERoleBehavior#DEFENSIVE} and the given {@link IVector2}.
+	 * deletes oldRole from the assignedRoles, gives newRole the botID of the oldRole
+	 * and puts botId/newRole into the assignedRoles-Map
+	 * i.e. A {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.OffensiveRole} has
+	 * finished its task and shall now shoot a goal, therefore
+	 * a new ShooterRole is created by the play and the roles are switched by using this function.
+	 * Also, the oldRole's botID is automatically set in the newRole
 	 * 
-	 * @param role
-	 * @param initDestination
+	 * @param oldRole
+	 * @param newRole
+	 * @param newBotId
 	 */
-	protected final void addDefensiveRole(ARole role, IVector2 initDestination)
+	public final void switchRoles(final ARole oldRole, final ARole newRole, final BotID newBotId)
 	{
-		role.setBehavior(ERoleBehavior.DEFENSIVE);
-		role.initDestination(initDestination);
-		addRole(role);
+		if (!newBotId.isBot())
+		{
+			log.error("Could not switch roles. New botId is not valid: " + newBotId);
+			return;
+		}
+		
+		boolean removed = roles.remove(oldRole);
+		if (!removed)
+		{
+			log.error("Could not switch roles. Role to switch is not in list. + " + oldRole);
+			return;
+		}
+		roles.add(newRole);
+		
+		newRole.assignBotID(newBotId);
+		newRole.update(oldRole.getAiFrame());
+		
+		oldRole.removeSkillObserver();
+		newRole.putSkillObserver();
 	}
 	
 	
 	/**
-	 * Adds the given role with {@link ERoleBehavior#AGGRESSIVE} and the given {@link IVector2}.
+	 * Switch oldRole with newRole. OldRole must have a botId assigned.
 	 * 
-	 * @param role
-	 * @param initDestination
+	 * @param oldRole
+	 * @param newRole
 	 */
-	protected final void addCreativeRole(ARole role, IVector2 initDestination)
+	protected final void switchRoles(final ARole oldRole, final ARole newRole)
 	{
-		role.setBehavior(ERoleBehavior.CREATIVE);
-		role.initDestination(initDestination);
-		addRole(role);
-	}
-	
-	
-	/**
-	 * Adds the given role with {@link ERoleBehavior#AGGRESSIVE} and the given {@link IVector2}.
-	 * 
-	 * @param role
-	 * @param initDestination
-	 */
-	protected final void addAggressiveRole(ARole role, IVector2 initDestination)
-	{
-		role.setBehavior(ERoleBehavior.AGGRESSIVE);
-		role.initDestination(initDestination);
-		addRole(role);
+		switchRoles(oldRole, newRole, oldRole.getBotID());
 	}
 	
 	
@@ -139,337 +122,180 @@ public abstract class APlay implements Comparable<APlay>
 	 * 
 	 * @param role
 	 */
-	private void addRole(ARole role)
+	private void addRole(final ARole role)
 	{
-		if (roles.size() >= numAssignedRoles)
-		{
-			log.error(this + ": Can not add role " + role + ". Max num roles already reached!");
-		} else
-		{
-			roles.add(role);
-			role.putSkillObserver();
-		}
+		roles.add(role);
+		role.putSkillObserver();
 	}
 	
 	
 	/**
-	 * Checks, if the given Play has a Keeper Role
+	 * Remove a role
+	 * TODO should not be public
 	 * 
-	 * @author MalteM
-	 * @return play has keeper role
+	 * @param role
 	 */
-	public boolean hasKeeperRole()
+	public final void removeRole(final ARole role)
 	{
-		for (final ARole role : roles)
-		{
-			if (role.isKeeper())
-			{
-				return true;
-			}
-		}
-		return false;
+		roles.remove(role);
+		role.setCompleted();
+		onRoleRemoved(role);
 	}
 	
 	
 	/**
-	 * Defines, whether or not the play is ball-carrying.
-	 * Override with return true if your play carries the ball.
 	 * 
-	 * @author GuntherB
+	 */
+	protected final ARole getLastRole()
+	{
+		ARole role = getRoles().get(getRoles().size() - 1);
+		return role;
+	}
+	
+	
+	/**
+	 * Ask the play to add the specified number of roles
+	 * 
+	 * @param count
+	 * @return the added roles
+	 */
+	public final List<ARole> addRoles(final int count)
+	{
+		List<ARole> roles = new ArrayList<ARole>();
+		for (int i = 0; i < count; i++)
+		{
+			ARole role = onAddRole();
+			roles.add(role);
+			addRole(role);
+		}
+		return roles;
+	}
+	
+	
+	/**
+	 * Ask the play to remove the specified number of roles
+	 * 
+	 * @param count
 	 * @return
 	 */
-	public boolean isBallCarrying()
+	public final List<ARole> removeRoles(final int count)
 	{
-		return false;
+		List<ARole> roles = new ArrayList<ARole>();
+		for (int i = 0; i < count; i++)
+		{
+			ARole role = onRemoveRole();
+			roles.add(role);
+			removeRole(role);
+		}
+		return roles;
 	}
 	
 	
 	/**
-	 * deletes oldRole from the assignedRoles, gives newRole the botID of the oldRole
-	 * and puts botId/newRole into the assignedRoles-Map
+	 * Remove one role from this Play.
+	 * Assume that there is at least one role left.
 	 * 
-	 * i.e. A {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.BallGetterRole} has
-	 * finished its task and shall now shoot a goal, therefore
-	 * a new ShooterRole is created by the play and the roles are switched by using this function.
-	 * Also, the oldRole's botID is automatically set in the newRole
-	 * @author GuntherB, GeroL
+	 * @return the removed role
 	 */
-	protected final void switchRoles(ARole oldRole, ARole newRole, AIInfoFrame aIInfoFrame)
+	protected abstract ARole onRemoveRole();
+	
+	
+	/**
+	 * Some upper layer has decided that this play will now play with an additional role.
+	 * Please assume that the Play will start with zero roles until the play can only run with
+	 * a static number of roles anyway
+	 * 
+	 * @return the added role
+	 */
+	protected abstract ARole onAddRole();
+	
+	
+	/**
+	 * This is called, when the roleAssigner removed a role from this play.
+	 * This play will possibly get a new role with onAddRole.
+	 * 
+	 * @param role
+	 */
+	protected void onRoleRemoved(final ARole role)
 	{
-		newRole.assignBotID(oldRole.getBotID());
-		
-		roles.remove(oldRole);
-		roles.add(newRole);
-		
-		oldRole.removeSkillObserver();
-		newRole.putSkillObserver();
-		
-		// Removes the old assignment as the map below associates the old id with the new role
-		aIInfoFrame.putAssignedRole(newRole);
-		
-		// Important: Update role to guarantee that update() has been at least once before calcSkills!!!
-		newRole.update(aIInfoFrame);
-		
-		
-		// Gero: At this point the ERoleBehavior of the assigned roles MAY BE inconsistent. This doesn't bother us as
-		// role-assigning is done. Even if this newRole will be reused in next cycle, it will be assigned properly, but...
-		// it's just not very nice (Gero)
 	}
 	
 	
-	private void onPlayFinished()
+	/**
+	 * Finish the play. This is not useful for the default plays
+	 */
+	public final void changeToFinished()
 	{
-		log.trace(getType() + " finished");
 		for (ARole role : getRoles())
 		{
 			role.setCompleted();
 		}
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- state ----------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	/**
-	 * Changes the play state to finished. For non offensive plays, the result
-	 * is not important. Just say, you are done. If you have a offensive play, than
-	 * use AOffensivePlay#changeToSucceeded() or AOffensivePlay#changeToFailed() if you can
-	 * determine the result. If not, just finish the play.
-	 * e.g. if you tried to score a goal you should not wait for the result in the play ;)
-	 * <b>Do not call this before adding roles!!!</b>
-	 */
-	protected final void changeToFinished()
-	{
 		state = EPlayState.FINISHED;
-		onPlayFinished();
 	}
 	
 	
 	/**
-	 * Cancel play. This method is public so that plays can be removed from Atena.<br>
-	 * Don't call this from a play.
-	 * <b>Do not call this before adding roles!!!</b>
-	 * @see APlay#changeToFinished()
-	 */
-	public final void changeToCanceled()
-	{
-		state = EPlayState.FAILED;
-		onPlayFinished();
-	}
-	
-	
-	/**
-	 * Returns the actual play state.
+	 * Is the play finished? This should only be the case for standard situation plays.
+	 * 
 	 * @return
 	 */
-	public final EPlayState getPlayState()
+	public final boolean isFinished()
 	{
-		return state;
+		return state == EPlayState.FINISHED;
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- update process -------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
-	 * Updates the play in three steps:<br/>
-	 * <ol>
-	 * <li>Set new goals for this play ({@link #beforeUpdate(AIInfoFrame)})</li>
-	 * <li>Updating the roles and their conditions ({@link ARole#update(AIInfoFrame)})</li>
-	 * <li>Defining the state of the play and how to react by checking the roles' conditions (
-	 * {@link #afterUpdate(AIInfoFrame)})</li>
-	 * </ol>
-	 * <p>
-	 * <strong>Note:</strong> Do NOT override, use {@link #beforeUpdate(AIInfoFrame)} and
-	 * {@link #afterUpdate(AIInfoFrame)} instead!
-	 * </p>
-	 * @param currentFrame
+	 * @param frame
+	 */
+	public final void update(final AthenaAiFrame frame)
+	{
+		if (frame.getPrevFrame().getTacticalField().getGameState() != frame.getTacticalField().getGameState())
+		{
+			onGameStateChanged(frame.getTacticalField().getGameState());
+			for (ARole role : getRoles())
+			{
+				role.onGameStateChanged(frame.getTacticalField().getGameState());
+			}
+		}
+		doUpdate(frame);
+	}
+	
+	
+	/**
+	 * Compatibility method for old plays that require continues update with ai frame.
+	 * It is preferred to only react in new frames in your roles.
+	 * 
+	 * @param frame
+	 */
+	protected void doUpdate(final AthenaAiFrame frame)
+	{
+	}
+	
+	
+	/**
+	 * This is called, when the game state has changed.
+	 * It is called before {@link APlay#doUpdate(AthenaAiFrame)}.
+	 * 
+	 * @param gameState
+	 */
+	protected abstract void onGameStateChanged(EGameState gameState);
+	
+	
+	/**
+	 * Override this, if the role assigner should not "steal" your roles
+	 * 
 	 * @return
 	 */
-	public final EPlayState update(AIInfoFrame currentFrame)
+	public boolean overrideRoleAssignment()
 	{
-		if (state != EPlayState.RUNNING)
-		{
-			return state;
-		}
-		
-		// set ai frame in all roles
-		for (ARole role : roles)
-		{
-			role.updateAiInfoFrame(currentFrame);
-		}
-		
-		// Call beforeFirstUpdate(...) once for initialization purposes
-		if (firstUpdate)
-		{
-			timeStart = System.nanoTime();
-			
-			for (final ARole role : roles)
-			{
-				role.update(currentFrame);
-			}
-			beforeFirstUpdate(currentFrame);
-			firstUpdate = false;
-		}
-		
-		// Set targets/goals
-		beforeUpdate(currentFrame);
-		
-		// Update roles and conditions
-		for (ARole role : roles)
-		{
-			role.update(currentFrame);
-		}
-		
-		// Define state and reaction
-		afterUpdate(currentFrame);
-		
-		// Timeout?
-		if (getPlayState() == EPlayState.RUNNING)
-		{
-			final long now = System.nanoTime();
-			if ((now - timeStart) > timeout)
-			{
-				log.debug(this + ": Play timed out");
-				timedOut(currentFrame);
-			}
-		}
-		
-		return state;
-	}
-	
-	
-	/**
-	 * Called when the current play run longer then defined by {@link #setTimeout(long)} (or {@link #DEFAULT_TIMEOUT})
-	 * 
-	 * @param currentFrame
-	 */
-	protected void timedOut(AIInfoFrame currentFrame)
-	{
-		changeToFinished();
-	}
-	
-	
-	/**
-	 * This is only called once (if {@link #firstUpdate} == true). This is useful for initialization-purposes after the
-	 * role-assignment. ({@link #beforeUpdate(AIInfoFrame)} is called afterwards, like every other
-	 * {@link #update(AIInfoFrame)}!)
-	 * 
-	 * @see #update(AIInfoFrame)
-	 * @param frame
-	 */
-	protected void beforeFirstUpdate(AIInfoFrame frame)
-	{
-	}
-	
-	
-	/**
-	 * @see #update(AIInfoFrame)
-	 * @param frame
-	 */
-	protected abstract void beforeUpdate(AIInfoFrame frame);
-	
-	
-	/**
-	 * @see #update(AIInfoFrame)
-	 * @param currentFrame
-	 */
-	protected abstract void afterUpdate(AIInfoFrame currentFrame);
-	
-	
-	/**
-	 * @param timeoutS [s] The timeout for this play. Default value is {@link #DEFAULT_TIMEOUT}
-	 */
-	protected final void setTimeout(long timeoutS)
-	{
-		timeout = TimeUnit.SECONDS.toNanos(timeoutS);
-		resetTimer();
-	}
-	
-	
-	/**
-	 * resets the timeStart to current system time ( timing for timeout will restart)
-	 */
-	protected final void resetTimer()
-	{
-		timeStart = System.nanoTime();
-	}
-	
-	
-	/**
-	 * Adds a criterion that decides about selection of the play during a match
-	 * 
-	 * @param crit
-	 */
-	protected final void addCriterion(ACriterion crit)
-	{
-		criteria.add(crit);
-	}
-	
-	
-	/**
-	 * Calculates the playable score of the given play based on its criteria.
-	 * FYI: It is not allowed to override this anymore, because everything should be done with Criteria
-	 * 
-	 * @param currentFrame
-	 * @return score value (range 0 to 1)
-	 */
-	public final float calcPlayableScore(AIInfoFrame currentFrame)
-	{
-		float result = 1.0f;
-		// Multiply all criteria values
-		for (final ACriterion crit : criteria)
-		{
-			final float score = crit.checkCriterion(currentFrame);
-			log.trace("Playable score for " + getType() + "/" + crit + ": " + score);
-			result *= score;
-		}
-		
-		return result;
-	}
-	
-	
-	@Override
-	public int compareTo(APlay o)
-	{
-		int typeThis = getType().getType().getOrder();
-		int typeO = o.getType().getType().getOrder();
-		if (typeThis < typeO)
-		{
-			return -1;
-		} else if (typeThis == typeO)
-		{
-			return 0;
-		}
-		return 1;
+		return false;
 	}
 	
 	
 	// --------------------------------------------------------------
 	// --- setter/getter --------------------------------------------
 	// --------------------------------------------------------------
-	
-	/**
-	 * Return all roles of this play
-	 * 
-	 * @return
-	 */
-	public final List<ARole> getRoles()
-	{
-		return roles;
-	}
-	
-	
-	/**
-	 * The EPlay-type of this play.
-	 * 
-	 * @return EPlay type
-	 */
-	public final EPlay getType()
-	{
-		return type;
-	}
 	
 	
 	@Override
@@ -480,71 +306,66 @@ public abstract class APlay implements Comparable<APlay>
 	
 	
 	/**
-	 * Number of currently added roles.
+	 * Return all roles of this play
 	 * 
-	 * @return number of roles added to this play
-	 */
-	public final int getRoleCount()
-	{
-		return getRoles().size();
-	}
-	
-	
-	/**
-	 * Number of assigned roles for this play.
-	 * This is NOT the number of actually added roles
-	 * you can define your min and max desired number of roles in EPlay,
-	 * the PlayFinder will then decide how many roles you can use.
-	 * this is a new feature! Use it to avoid duplicated plays ;)
-	 * 
-	 * @see APlay#getRoleCount()
 	 * @return
 	 */
-	public final int getNumAssignedRoles()
+	public final List<ARole> getRoles()
 	{
-		return numAssignedRoles;
+		return Collections.unmodifiableList(roles);
 	}
 	
 	
 	/**
-	 * Do NOT use this. This is only for AOffensivePlay!!
-	 * @param state the state to set
+	 * Returns the actual play state.
+	 * 
+	 * @return
 	 */
-	protected final void setState(EPlayState state)
+	public final EPlayState getPlayState()
 	{
-		this.state = state;
+		return state;
 	}
 	
 	
 	/**
-	 * This setter may only be used by PlayFactory!
-	 * @param type the type to set
-	 * @throws IllegalStateException if you try to set the type a second time
+	 * @return the type
 	 */
-	public final void setType(EPlay type)
+	public final EPlay getType()
 	{
-		if ((this.type != null) && (this.type != EPlay.UNITIALIZED))
+		return type;
+	}
+	
+	
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = 1;
+		result = (prime * result) + ((type == null) ? 0 : type.hashCode());
+		return result;
+	}
+	
+	
+	@Override
+	public boolean equals(final Object obj)
+	{
+		if (this == obj)
 		{
-			throw new IllegalStateException("Play type may not be set twice!");
+			return true;
 		}
-		this.type = type;
-	}
-	
-	
-	/**
-	 * @return the selectionReason
-	 */
-	public final ESelectionReason getSelectionReason()
-	{
-		return selectionReason;
-	}
-	
-	
-	/**
-	 * @param selectionReason the selectionReason to set
-	 */
-	public final void setSelectionReason(ESelectionReason selectionReason)
-	{
-		this.selectionReason = selectionReason;
+		if (obj == null)
+		{
+			return false;
+		}
+		if (getClass() != obj.getClass())
+		{
+			return false;
+		}
+		APlay other = (APlay) obj;
+		if (type != other.type)
+		{
+			return false;
+		}
+		return true;
 	}
 }

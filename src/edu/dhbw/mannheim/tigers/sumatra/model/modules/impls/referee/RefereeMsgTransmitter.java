@@ -76,38 +76,31 @@ public class RefereeMsgTransmitter
 	 * @param timeLeft
 	 * @param newTeamProps
 	 */
-	public void sendOwnRefereeMsg(int id, Command cmd, int goalsBlue, int goalsYellow, short timeLeft,
+	public void sendOwnRefereeMsg(int id, Command cmd, int goalsBlue, int goalsYellow, int timeLeft,
 			TeamProps newTeamProps)
 	{
-		TeamInfo.Builder teamFoeBuilder = TeamInfo.newBuilder();
-		teamFoeBuilder.setGoalie(0);
-		teamFoeBuilder.setName("Foes");
-		teamFoeBuilder.setRedCards(1);
-		teamFoeBuilder.setScore(goalsBlue);
-		teamFoeBuilder.setTimeouts(4);
-		teamFoeBuilder.setTimeoutTime(360);
-		teamFoeBuilder.setYellowCards(3);
+		TeamInfo.Builder teamBlueBuilder = TeamInfo.newBuilder();
+		teamBlueBuilder.setGoalie(newTeamProps.getKeeperIdBlue());
+		teamBlueBuilder.setName("Blue");
+		teamBlueBuilder.setRedCards(1);
+		teamBlueBuilder.setScore(goalsBlue);
+		teamBlueBuilder.setTimeouts(4);
+		teamBlueBuilder.setTimeoutTime(360);
+		teamBlueBuilder.setYellowCards(3);
 		
-		TeamInfo.Builder teamTigersBuilder = TeamInfo.newBuilder();
-		teamTigersBuilder.setGoalie(newTeamProps.getKeeperId().getNumber());
-		teamTigersBuilder.setName("Tigers");
-		teamTigersBuilder.setRedCards(0);
-		teamTigersBuilder.setScore(goalsYellow);
-		teamTigersBuilder.setTimeouts(2);
-		teamTigersBuilder.setTimeoutTime(65);
-		teamTigersBuilder.setYellowCards(1);
+		TeamInfo.Builder teamYellowBuilder = TeamInfo.newBuilder();
+		teamYellowBuilder.setGoalie(newTeamProps.getKeeperIdYellow());
+		teamYellowBuilder.setName("Yellow");
+		teamYellowBuilder.setRedCards(0);
+		teamYellowBuilder.setScore(goalsYellow);
+		teamYellowBuilder.setTimeouts(2);
+		teamYellowBuilder.setTimeoutTime(65);
+		teamYellowBuilder.setYellowCards(1);
 		
 		SSL_Referee.Builder builder = SSL_Referee.newBuilder();
 		builder.setPacketTimestamp(System.currentTimeMillis());
-		if (newTeamProps.getTigersAreYellow())
-		{
-			builder.setBlue(teamFoeBuilder.build());
-			builder.setYellow(teamTigersBuilder.build());
-		} else
-		{
-			builder.setBlue(teamTigersBuilder.build());
-			builder.setYellow(teamFoeBuilder.build());
-		}
+		builder.setBlue(teamBlueBuilder.build());
+		builder.setYellow(teamYellowBuilder.build());
 		builder.setCommand(cmd);
 		builder.setCommandCounter(id);
 		builder.setCommandTimestamp(System.currentTimeMillis());

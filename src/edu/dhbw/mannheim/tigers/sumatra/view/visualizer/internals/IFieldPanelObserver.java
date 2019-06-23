@@ -9,6 +9,8 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals;
 
+import java.awt.event.MouseEvent;
+
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 
 
@@ -23,10 +25,7 @@ public interface IFieldPanelObserver
 	/**
 	 * 
 	 * @param pos
-	 * @param ctrl
-	 * @param alt
-	 * @param shift
-	 * @param meta
+	 * @param e
 	 */
-	void onFieldClick(IVector2 pos, boolean ctrl, boolean alt, boolean shift, boolean meta);
+	void onFieldClick(IVector2 pos, MouseEvent e);
 }

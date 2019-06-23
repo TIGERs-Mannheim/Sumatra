@@ -41,7 +41,8 @@ public class NativesLoader
 	
 	private static final String							JAVA_LIBRARY_PATH_KEY	= "java.library.path";
 	
-	private static final Map<OsIdentifier, String>	DEFAULT_FOLDER_MAP		= new HashMap<OsIdentifier, String>();
+	/**  */
+	public static final Map<OsIdentifier, String>	DEFAULT_FOLDER_MAP		= new HashMap<OsIdentifier, String>();
 	
 	static
 	{
@@ -225,8 +226,9 @@ public class NativesLoader
 			final File[] files = subFolder.listFiles(new FilenameFilter()
 			{
 				@Override
-				public boolean accept(File file, String name)
+				public boolean accept(File file, String filename)
 				{
+					String name = filename;
 					// Omit os-dependent suffixes
 					final String[] nameParts = name.split("\\.(?=[^\\.]+$)");
 					if ((nameParts.length < 1) || nameParts[0].isEmpty())
@@ -240,6 +242,11 @@ public class NativesLoader
 					if (name.startsWith("lib") && (name.length() > 3))
 					{
 						name = name.substring(3);
+					}
+					
+					if (name.endsWith("64"))
+					{
+						name = name.substring(0, name.length() - 2);
 					}
 					return name.toLowerCase().equals(libName.toLowerCase());
 				}

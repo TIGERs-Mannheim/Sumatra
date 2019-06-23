@@ -9,7 +9,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data;
 
-import javax.persistence.Embeddable;
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 
@@ -17,10 +17,13 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 /**
  * collects values associated with a path that the GUI can display
  * 
+ * This class is deprecated but can not be deleted, because BerkeleyDB needs its existence for old record data
+ * 
  * @author DanielW
  * 
  */
-@Embeddable
+@Persistent
+@Deprecated
 public class PathGuiFeatures
 {
 	// --------------------------------------------------------------------------

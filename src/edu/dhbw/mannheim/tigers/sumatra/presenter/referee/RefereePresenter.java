@@ -4,13 +4,16 @@
  * Project: TIGERS - Sumatra
  * Date: 14.01.2011
  * Author(s): Malte
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.referee;
 
+import java.awt.Component;
+
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
+import edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesState;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee.Command;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.referee.RefereeMsg;
@@ -20,22 +23,20 @@ import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.ILookAndFeelStateObserver;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.LookAndFeelStateAdapter;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.IModuliStateObserver;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.ModuliStateAdapter;
-import edu.dhbw.mannheim.tigers.sumatra.view.main.ISumatraView;
 import edu.dhbw.mannheim.tigers.sumatra.view.referee.CreateRefereeMsgPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.referee.ICreateRefereeMsgObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.referee.RefereePanel;
-import edu.moduli.exceptions.ModuleNotFoundException;
-import edu.moduli.listenerVariables.ModulesState;
+import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
+import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraViewPresenter;
 
 
 /**
  * This is the presenter for the referee in sumatra.
  * 
  * @author MalteM
- * 
  */
 public class RefereePresenter implements ILookAndFeelStateObserver, IModuliStateObserver, IRefereeObserver,
-		ICreateRefereeMsgObserver
+		ICreateRefereeMsgObserver, ISumatraViewPresenter
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
@@ -68,7 +69,7 @@ public class RefereePresenter implements ILookAndFeelStateObserver, IModuliState
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
-	public void onModuliStateChanged(ModulesState state)
+	public void onModuliStateChanged(final ModulesState state)
 	{
 		switch (state)
 		{
@@ -114,16 +115,17 @@ public class RefereePresenter implements ILookAndFeelStateObserver, IModuliState
 	
 	
 	@Override
-	public void onNewRefereeMsg(RefereeMsg msg)
+	public void onNewRefereeMsg(final RefereeMsg msg)
 	{
 		refereePanel.getShowRefereeMsgPanel().newRefereeMsg(msg);
 	}
 	
 	
 	@Override
-	public void onSendOwnRefereeMsg(int id, Command cmd, int goalsBlue, int goalsYellow, short timeLeft)
+	public void onSendOwnRefereeMsg(final Command cmd, final int goalsBlue, final int goalsYellow,
+			final short timeLeft)
 	{
-		refereeHandler.sendOwnRefereeMsg(id, cmd, goalsBlue, goalsYellow, timeLeft);
+		refereeHandler.sendOwnRefereeMsg(cmd, goalsBlue, goalsYellow, timeLeft);
 	}
 	
 	
@@ -133,16 +135,35 @@ public class RefereePresenter implements ILookAndFeelStateObserver, IModuliState
 	}
 	
 	
+	@Override
+	public void onEnableReceive(final boolean receive)
+	{
+		refereeHandler.setReceiveExternalMsg(receive);
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	/**
-	 * 
-	 * @return
-	 */
-	public ISumatraView getView()
+	
+	@Override
+	public Component getComponent()
 	{
 		return refereePanel;
 	}
+	
+	
+	@Override
+	public ISumatraView getSumatraView()
+	{
+		return refereePanel;
+	}
+	
+	
+	@Override
+	public void onEmergencyStop()
+	{
+	}
+	
 }

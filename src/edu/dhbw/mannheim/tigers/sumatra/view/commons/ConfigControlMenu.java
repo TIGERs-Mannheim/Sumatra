@@ -22,18 +22,12 @@ import javax.swing.JOptionPane;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.SwingUtilities;
 
-import org.apache.commons.configuration.Configuration;
-import org.apache.log4j.Logger;
+import org.apache.commons.configuration.HierarchicalConfiguration;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AConfigManager;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.config.ConfigManager;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IConfigObserver;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.ILookAndFeelStateObserver;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.LookAndFeelStateAdapter;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.IModuliStateObserver;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.ModuliStateAdapter;
-import edu.moduli.exceptions.ModuleNotFoundException;
-import edu.moduli.listenerVariables.ModulesState;
 
 
 /**
@@ -41,24 +35,14 @@ import edu.moduli.listenerVariables.ModulesState;
  * 
  * @author Gero
  */
-public class ConfigControlMenu implements IModuliStateObserver, IConfigObserver, ILookAndFeelStateObserver
+public class ConfigControlMenu implements IConfigObserver, ILookAndFeelStateObserver
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	// Logger
-	private static final Logger				log						= Logger.getLogger(ConfigControlMenu.class.getName());
-	
 	private final String							configKey;
-	
-	private final SumatraModel					model						= SumatraModel.getInstance();
-	private final ModuliStateAdapter			moduliStateAdapter	= ModuliStateAdapter.getInstance();
-	/** Needed to distinguish between the first call to {@link #onModuliStateChanged(ModulesState)} and later ones */
-	private boolean								alreadyResolved		= false;
-	private AConfigManager						manager;
-	
 	private final JMenu							configMenu;
-	private final Map<String, JMenuItem>	configs					= new LinkedHashMap<String, JMenuItem>();
+	private final Map<String, JMenuItem>	configs	= new LinkedHashMap<String, JMenuItem>();
 	
 	
 	// --------------------------------------------------------------------------
@@ -82,51 +66,16 @@ public class ConfigControlMenu implements IModuliStateObserver, IConfigObserver,
 		configMenu.addSeparator();
 		
 		// Register as observer
-		moduliStateAdapter.addObserver(this);
 		LookAndFeelStateAdapter.getInstance().addObserver(this);
+		ConfigManager.getInstance().registerObserverAt(configKey, this);
+		
+		updateConfigMenu();
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void onModuliStateChanged(ModulesState state)
-	{
-		switch (state)
-		{
-			case RESOLVED:
-				if (!alreadyResolved)
-				{
-					try
-					{
-						manager = (AConfigManager) model.getModule(AConfigManager.MODULE_ID);
-						manager.registerObserverAt(configKey, this);
-					} catch (final ModuleNotFoundException err)
-					{
-						log.error("Unable to get ConfigManager, can't setup config menu: ", err);
-					}
-					
-					alreadyResolved = true;
-				}
-				
-				updateConfigMenu();
-				break;
-			
-			case NOT_LOADED:
-				// If not the first time
-				if (manager != null)
-				{
-					alreadyResolved = false;
-					manager.unregisterObserverAt(configKey, this);
-				}
-				break;
-			case ACTIVE:
-				break;
-			default:
-				break;
-		}
-	}
 	
 	
 	private void updateConfigMenu()
@@ -145,8 +94,8 @@ public class ConfigControlMenu implements IModuliStateObserver, IConfigObserver,
 				
 				
 				// Build menu
-				final List<String> files = manager.getAvailableConfigs(configKey);
-				final String selectedFileName = manager.getLoadedFileName(configKey);
+				final List<String> files = ConfigManager.getInstance().getAvailableConfigs(configKey);
+				final String selectedFileName = ConfigManager.getInstance().getLoadedFileName(configKey);
 				
 				final ButtonGroup group = new ButtonGroup();
 				for (final String name : files)
@@ -177,7 +126,7 @@ public class ConfigControlMenu implements IModuliStateObserver, IConfigObserver,
 		public void actionPerformed(ActionEvent e)
 		{
 			// Ask for filename
-			final String currentFileName = manager.getLoadedFileName(configKey);
+			final String currentFileName = ConfigManager.getInstance().getLoadedFileName(configKey);
 			final Object result = JOptionPane.showInputDialog(null, "Please specify the name of the config file:",
 					currentFileName);
 			if (result == null)
@@ -189,7 +138,7 @@ public class ConfigControlMenu implements IModuliStateObserver, IConfigObserver,
 			final String newFileName = result.toString();
 			
 			// Save...
-			manager.saveConfig(configKey, newFileName);
+			ConfigManager.getInstance().saveConfig(configKey, newFileName);
 			
 			// Update menu if new config available
 			if (!currentFileName.equals(newFileName))
@@ -217,7 +166,7 @@ public class ConfigControlMenu implements IModuliStateObserver, IConfigObserver,
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			manager.loadConfig(configKey, filename);
+			ConfigManager.getInstance().loadConfig(configKey, filename);
 		}
 	}
 	
@@ -226,14 +175,14 @@ public class ConfigControlMenu implements IModuliStateObserver, IConfigObserver,
 	// --- IConfigObserver ------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
-	public void onLoad(Configuration newConfig)
+	public void onLoad(HierarchicalConfiguration newConfig)
 	{
 		updateConfigMenu();
 	}
 	
 	
 	@Override
-	public void onReload(Configuration freshConfig)
+	public void onReload(HierarchicalConfiguration freshConfig)
 	{
 		updateConfigMenu();
 	}

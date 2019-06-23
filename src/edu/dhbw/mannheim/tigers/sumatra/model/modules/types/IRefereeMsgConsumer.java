@@ -9,6 +9,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.types;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.referee.RefereeMsg;
 
 
@@ -24,4 +25,10 @@ public interface IRefereeMsgConsumer
 	 * @param msg
 	 */
 	void onNewRefereeMsg(RefereeMsg msg);
+	
+	
+	/**
+	 * @return
+	 */
+	ETeamColor getTeamColor();
 }

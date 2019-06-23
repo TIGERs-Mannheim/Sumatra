@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Jan 14, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line;
@@ -14,22 +13,22 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
 
-import javax.persistence.Embeddable;
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.ColorWrapper;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.IDrawableShape;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
-import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.FieldPanel;
+import edu.dhbw.mannheim.tigers.sumatra.presenter.visualizer.IFieldPanel;
 
 
 /**
  * This is a Line connected to a color
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
-@Embeddable
+@Persistent
 public class DrawableLine extends Line implements IDrawableShape
 {
 	
@@ -45,7 +44,7 @@ public class DrawableLine extends Line implements IDrawableShape
 	private static final float	ARROW_TEXT_OFFSET_LINE	= 0f;
 	private static final float	ARROW_TEXT_OFFSET_DIST	= 10f;
 	
-	private Color					color							= Color.red;
+	private ColorWrapper			color							= new ColorWrapper(Color.red);
 	private String					text							= "";
 	private ETextLocation		textLocation				= ETextLocation.HEAD;
 	private boolean				drawArrowHead				= true;
@@ -68,6 +67,11 @@ public class DrawableLine extends Line implements IDrawableShape
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	@SuppressWarnings("unused")
+	private DrawableLine()
+	{
+	}
 	
 	
 	/**
@@ -92,7 +96,7 @@ public class DrawableLine extends Line implements IDrawableShape
 	public DrawableLine(final ILine line, final Color color, final boolean drawArrowHead)
 	{
 		super(line);
-		this.color = color;
+		this.color = new ColorWrapper(color);
 		this.drawArrowHead = drawArrowHead;
 	}
 	
@@ -114,14 +118,15 @@ public class DrawableLine extends Line implements IDrawableShape
 	
 	
 	@Override
-	public void paintShape(Graphics2D g)
+	public void paintShape(final Graphics2D g, final IFieldPanel fieldPanel, final boolean invert)
 	{
 		g.setColor(getColor());
 		g.setStroke(getStroke());
 		
 		// draw line
-		final IVector2 lineStart = FieldPanel.transformToGuiCoordinates(supportVector());
-		final IVector2 lineEnd = FieldPanel.transformToGuiCoordinates(directionVector().addNew(supportVector()));
+		final IVector2 lineStart = fieldPanel.transformToGuiCoordinates(supportVector(), invert);
+		final IVector2 lineEnd = fieldPanel.transformToGuiCoordinates(directionVector().addNew(supportVector()),
+				invert);
 		g.drawLine((int) lineStart.x(), (int) lineStart.y(), (int) lineEnd.x(), (int) lineEnd.y());
 		
 		// draw head
@@ -175,16 +180,22 @@ public class DrawableLine extends Line implements IDrawableShape
 	 */
 	public Color getColor()
 	{
-		return color;
+		// this may happen with old databases
+		if (color == null)
+		{
+			// standard color
+			return Color.red;
+		}
+		return color.getColor();
 	}
 	
 	
 	/**
 	 * @param color the color to set
 	 */
-	public void setColor(Color color)
+	public void setColor(final Color color)
 	{
-		this.color = color;
+		this.color = new ColorWrapper(color);
 	}
 	
 	
@@ -200,7 +211,7 @@ public class DrawableLine extends Line implements IDrawableShape
 	/**
 	 * @param text the text to set
 	 */
-	public final void setText(String text)
+	public final void setText(final String text)
 	{
 		this.text = text;
 	}
@@ -218,7 +229,7 @@ public class DrawableLine extends Line implements IDrawableShape
 	/**
 	 * @param textLocation the textLocation to set
 	 */
-	public final void setTextLocation(ETextLocation textLocation)
+	public final void setTextLocation(final ETextLocation textLocation)
 	{
 		this.textLocation = textLocation;
 	}
@@ -236,7 +247,7 @@ public class DrawableLine extends Line implements IDrawableShape
 	/**
 	 * @param drawArrowHead the drawArrowHead to set
 	 */
-	public final void setDrawArrowHead(boolean drawArrowHead)
+	public final void setDrawArrowHead(final boolean drawArrowHead)
 	{
 		this.drawArrowHead = drawArrowHead;
 	}
@@ -258,7 +269,7 @@ public class DrawableLine extends Line implements IDrawableShape
 	/**
 	 * @param stroke the stroke to set
 	 */
-	public final void setStroke(Stroke stroke)
+	public final void setStroke(final Stroke stroke)
 	{
 		this.stroke = stroke;
 	}

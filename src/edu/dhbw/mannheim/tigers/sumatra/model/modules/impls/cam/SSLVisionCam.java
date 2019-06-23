@@ -21,6 +21,8 @@ import java.util.Arrays;
 import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.moduli.exceptions.InitModuleException;
+import edu.dhbw.mannheim.tigers.moduli.exceptions.StartModuleException;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.MessagesRobocupSslWrapper.SSL_WrapperPacket;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamDetectionFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamGeometryFrame;
@@ -35,8 +37,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ACam;
 import edu.dhbw.mannheim.tigers.sumatra.util.network.IReceiver;
 import edu.dhbw.mannheim.tigers.sumatra.util.network.MulticastUDPReceiver;
 import edu.dhbw.mannheim.tigers.sumatra.util.network.NetworkUtility;
-import edu.moduli.exceptions.InitModuleException;
-import edu.moduli.exceptions.StartModuleException;
 
 
 /**
@@ -131,8 +131,6 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiver, ITeamConf
 	public void initModule() throws InitModuleException
 	{
 		resetCountDownLatch();
-		
-		log.debug("Initialized.");
 	}
 	
 	
@@ -172,7 +170,6 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiver, ITeamConf
 		
 		cam = new Thread(this, "SSLVisionCam");
 		cam.start();
-		log.debug("Started.");
 	}
 	
 	
@@ -298,15 +295,6 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiver, ITeamConf
 	}
 	
 	
-	// private void time(CamDetectionFrame frame)
-	// {
-	// if (timer != null)
-	// {
-	// timer.time(frame);
-	// }
-	// }
-	
-	
 	@Override
 	public void onNewTeamConfig(TeamProps teamProps)
 	{
@@ -365,7 +353,6 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiver, ITeamConf
 				log.fatal("IOException", err);
 			}
 		}
-		log.debug("Stopped.");
 	}
 	
 	
@@ -376,8 +363,6 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiver, ITeamConf
 		geometryObservable.removeAllObservers();
 		
 		consumer = null;
-		
-		log.debug("Deinitialized.");
 	}
 	
 	

@@ -4,23 +4,23 @@
  * Project: TIGERS - Sumatra
  * Date: 18.02.2011
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.sumatra.util.InstanceableClass.NotCreateableException;
+import edu.dhbw.mannheim.tigers.sumatra.util.InstanceableParameter;
+
 
 /**
  * Simple factory-class for converting {@link ERole}-types to {@link ARole} instances
  * 
- * @see #createRole(ERole)
+ * @see #createRole(ERole, Object...)
  * @author Gero
  */
 public final class RoleFactory
@@ -51,53 +51,33 @@ public final class RoleFactory
 	// --------------------------------------------------------------------------
 	
 	/**
+	 * @param eRole
+	 * @param args
+	 * @return
+	 * @throws NotCreateableException
+	 */
+	public static ARole createRole(final ERole eRole, final Object... args) throws NotCreateableException
+	{
+		return (ARole) eRole.getInstanceableClass().newInstance(args);
+	}
+	
+	
+	/**
+	 * Create Role with default Parameter values
 	 * 
 	 * @param eRole
 	 * @return
+	 * @throws NotCreateableException
 	 */
-	public static ARole createRole(ERole eRole)
+	public static ARole createDefaultRole(final ERole eRole) throws NotCreateableException
 	{
-		ARole aRole = null;
-		try
+		List<Object> objParams = new ArrayList<Object>(eRole.getInstanceableClass().getParams().size());
+		for (InstanceableParameter param : eRole.getInstanceableClass().getParams())
 		{
-			final Constructor<?> con = eRole.getConstructor();
-			aRole = (ARole) con.newInstance();
-		} catch (final SecurityException err)
-		{
-			throw new RoleNotCreateable("", err);
-		} catch (final InstantiationException err)
-		{
-			throw new RoleNotCreateable("", err);
-		} catch (final IllegalAccessException err)
-		{
-			throw new RoleNotCreateable("", err);
-		} catch (final IllegalArgumentException err)
-		{
-			throw new RoleNotCreateable("", err);
-		} catch (final InvocationTargetException err)
-		{
-			throw new RoleNotCreateable("", err);
-		} catch (final IllegalStateException err)
-		{
-			throw new RoleNotCreateable("", err);
-		} catch (NoSuchMethodException err)
-		{
-			throw new RoleNotCreateable("Role " + eRole + " has no default constructor and can not be generated.", err);
+			Object objParam = param.parseString(param.getDefaultValue());
+			objParams.add(objParam);
 		}
-		
-		return aRole;
-	}
-	
-	private static class RoleNotCreateable extends Error
-	{
-		/**  */
-		private static final long	serialVersionUID	= 89775383135278930L;
-		
-		
-		public RoleNotCreateable(String message, Throwable cause)
-		{
-			super(message, cause);
-		}
+		return createRole(eRole, objParams.toArray());
 	}
 	
 	
@@ -106,22 +86,24 @@ public final class RoleFactory
 	 */
 	public static void selfCheckRoles()
 	{
+		log.trace("Start selfChecking roles");
 		availableRoles.clear();
 		for (ERole role : ERole.values())
 		{
 			try
 			{
-				ARole aRole = createRole(role);
+				ARole aRole = createDefaultRole(role);
 				availableRoles.add(role);
 				if (!aRole.doSelfCheck())
 				{
 					log.warn("StateMachine for role " + aRole + " is not complete!");
 				}
-			} catch (RoleNotCreateable err)
+			} catch (NotCreateableException err)
 			{
 				log.warn("Role type could not be handled by role factory! Role = " + role, err);
 			}
 		}
+		log.trace("Role selfcheck done");
 	}
 	
 	

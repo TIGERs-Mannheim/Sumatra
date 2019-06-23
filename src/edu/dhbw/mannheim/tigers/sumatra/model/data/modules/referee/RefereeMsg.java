@@ -6,93 +6,122 @@
  * Author(s):
  * Bernhard
  * Gunther
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.referee;
 
-import javax.persistence.Embeddable;
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee.Command;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee.Stage;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee.TeamInfo;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamProps;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 
 
 /**
  * Complete referee command
  */
-@Embeddable
+@Persistent
 public class RefereeMsg
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private SSL_Referee		sslRefereeMsg;
-	private TeamProps			teamProps;
-	
+	private ETeamColor		color;
 	private ETeamSpecRefCmd	teamSpecRefCmd;
+	
+	private final Command	command;
+	private final long		cmdTimestamp;
+	private final long		cmdCounter;
+	private final long		packetTimestamp;
+	private final Stage		stage;
+	private final long		stageTimeLeft;
+	private final TeamInfo	teamInfoYellow;
+	private final TeamInfo	teamInfoBlue;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	
-	/**
-	 * @param sslRefereeMsg
-	 * @param teamProps
-	 */
-	public RefereeMsg(SSL_Referee sslRefereeMsg, TeamProps teamProps)
+	@SuppressWarnings("unused")
+	private RefereeMsg()
 	{
-		this.sslRefereeMsg = sslRefereeMsg;
-		this.teamProps = teamProps;
-		teamSpecRefCmd = createTeamSpecRefCmd(sslRefereeMsg, teamProps);
+		command = null;
+		cmdTimestamp = 0;
+		cmdCounter = 0;
+		packetTimestamp = 0;
+		stage = Stage.NORMAL_FIRST_HALF;
+		stageTimeLeft = 0;
+		teamInfoYellow = null;
+		teamInfoBlue = null;
 	}
 	
 	
-	private ETeamSpecRefCmd createTeamSpecRefCmd(SSL_Referee sslRefereeMsg, TeamProps teamProps)
+	/**
+	 * @param sslRefereeMsg
+	 * @param color
+	 */
+	public RefereeMsg(final SSL_Referee sslRefereeMsg, final ETeamColor color)
+	{
+		command = sslRefereeMsg.getCommand();
+		cmdTimestamp = sslRefereeMsg.getCommandTimestamp();
+		cmdCounter = sslRefereeMsg.getCommandCounter();
+		packetTimestamp = sslRefereeMsg.getPacketTimestamp();
+		stage = sslRefereeMsg.getStage();
+		stageTimeLeft = sslRefereeMsg.getStageTimeLeft();
+		
+		teamInfoYellow = new TeamInfo(sslRefereeMsg.getYellow());
+		teamInfoBlue = new TeamInfo(sslRefereeMsg.getBlue());
+		
+		teamSpecRefCmd = createTeamSpecRefCmd(sslRefereeMsg, color);
+		this.color = color;
+	}
+	
+	
+	private ETeamSpecRefCmd createTeamSpecRefCmd(final SSL_Referee sslRefereeMsg, final ETeamColor color)
 	{
 		switch (sslRefereeMsg.getCommand())
 		{
 			case DIRECT_FREE_BLUE:
-				return teamProps.getTigersAreYellow() ? ETeamSpecRefCmd.DirectFreeKickEnemies
+				return color == ETeamColor.YELLOW ? ETeamSpecRefCmd.DirectFreeKickEnemies
 						: ETeamSpecRefCmd.DirectFreeKickTigers;
 			case DIRECT_FREE_YELLOW:
-				return teamProps.getTigersAreYellow() ? ETeamSpecRefCmd.DirectFreeKickTigers
+				return color == ETeamColor.YELLOW ? ETeamSpecRefCmd.DirectFreeKickTigers
 						: ETeamSpecRefCmd.DirectFreeKickEnemies;
 			case INDIRECT_FREE_BLUE:
-				return teamProps.getTigersAreYellow() ? ETeamSpecRefCmd.IndirectFreeKickEnemies
+				return color == ETeamColor.YELLOW ? ETeamSpecRefCmd.IndirectFreeKickEnemies
 						: ETeamSpecRefCmd.IndirectFreeKickTigers;
 			case INDIRECT_FREE_YELLOW:
-				return teamProps.getTigersAreYellow() ? ETeamSpecRefCmd.IndirectFreeKickTigers
+				return color == ETeamColor.YELLOW ? ETeamSpecRefCmd.IndirectFreeKickTigers
 						: ETeamSpecRefCmd.IndirectFreeKickEnemies;
 			case PREPARE_KICKOFF_BLUE:
-				return teamProps.getTigersAreYellow() ? ETeamSpecRefCmd.KickOffEnemies : ETeamSpecRefCmd.KickOffTigers;
+				return color == ETeamColor.YELLOW ? ETeamSpecRefCmd.KickOffEnemies : ETeamSpecRefCmd.KickOffTigers;
 			case PREPARE_KICKOFF_YELLOW:
-				return teamProps.getTigersAreYellow() ? ETeamSpecRefCmd.KickOffTigers : ETeamSpecRefCmd.KickOffEnemies;
+				return color == ETeamColor.YELLOW ? ETeamSpecRefCmd.KickOffTigers : ETeamSpecRefCmd.KickOffEnemies;
 			case PREPARE_PENALTY_BLUE:
-				return teamProps.getTigersAreYellow() ? ETeamSpecRefCmd.PenaltyEnemies : ETeamSpecRefCmd.PenaltyTigers;
+				return color == ETeamColor.YELLOW ? ETeamSpecRefCmd.PenaltyEnemies : ETeamSpecRefCmd.PenaltyTigers;
 			case PREPARE_PENALTY_YELLOW:
-				return teamProps.getTigersAreYellow() ? ETeamSpecRefCmd.PenaltyTigers : ETeamSpecRefCmd.PenaltyEnemies;
+				return color == ETeamColor.YELLOW ? ETeamSpecRefCmd.PenaltyTigers : ETeamSpecRefCmd.PenaltyEnemies;
 			case TIMEOUT_BLUE:
-				return teamProps.getTigersAreYellow() ? ETeamSpecRefCmd.TimeoutEnemies : ETeamSpecRefCmd.TimeoutTigers;
+				return color == ETeamColor.YELLOW ? ETeamSpecRefCmd.TimeoutEnemies : ETeamSpecRefCmd.TimeoutTigers;
 			case TIMEOUT_YELLOW:
-				return teamProps.getTigersAreYellow() ? ETeamSpecRefCmd.TimeoutTigers : ETeamSpecRefCmd.TimeoutEnemies;
-			default:
-				return ETeamSpecRefCmd.NoCommand;
+				return color == ETeamColor.YELLOW ? ETeamSpecRefCmd.TimeoutTigers : ETeamSpecRefCmd.TimeoutEnemies;
+			case GOAL_BLUE:
+				return color == ETeamColor.YELLOW ? ETeamSpecRefCmd.GoalEnemies : ETeamSpecRefCmd.GoalTigers;
+			case GOAL_YELLOW:
+				return color == ETeamColor.YELLOW ? ETeamSpecRefCmd.GoalTigers : ETeamSpecRefCmd.GoalEnemies;
+			case FORCE_START:
+				return ETeamSpecRefCmd.ForceStart;
+			case HALT:
+				return ETeamSpecRefCmd.Halt;
+			case NORMAL_START:
+				return ETeamSpecRefCmd.NormalStart;
+			case STOP:
+				return ETeamSpecRefCmd.Stop;
 		}
-	}
-	
-	
-	/**
-	 * @return the sslRefereeMsg
-	 */
-	public final SSL_Referee getSslRefereeMsg()
-	{
-		return sslRefereeMsg;
+		return ETeamSpecRefCmd.NoCommand;
 	}
 	
 	
@@ -101,7 +130,7 @@ public class RefereeMsg
 	 */
 	public final Command getCommand()
 	{
-		return sslRefereeMsg.getCommand();
+		return command;
 	}
 	
 	
@@ -110,7 +139,7 @@ public class RefereeMsg
 	 */
 	public final long getCommandTimestamp()
 	{
-		return sslRefereeMsg.getCommandTimestamp();
+		return cmdTimestamp;
 	}
 	
 	
@@ -119,7 +148,7 @@ public class RefereeMsg
 	 */
 	public final long getCommandCounter()
 	{
-		return sslRefereeMsg.getCommandCounter();
+		return cmdCounter;
 	}
 	
 	
@@ -128,7 +157,7 @@ public class RefereeMsg
 	 */
 	public final long getPacketTimestamp()
 	{
-		return sslRefereeMsg.getPacketTimestamp();
+		return packetTimestamp;
 	}
 	
 	
@@ -137,7 +166,7 @@ public class RefereeMsg
 	 */
 	public final Stage getStage()
 	{
-		return sslRefereeMsg.getStage();
+		return stage;
 	}
 	
 	
@@ -146,7 +175,7 @@ public class RefereeMsg
 	 */
 	public final long getStageTimeLeft()
 	{
-		return sslRefereeMsg.getStageTimeLeft();
+		return stageTimeLeft;
 	}
 	
 	
@@ -155,7 +184,7 @@ public class RefereeMsg
 	 */
 	public final TeamInfo getTeamInfoBlue()
 	{
-		return sslRefereeMsg.getBlue();
+		return teamInfoBlue;
 	}
 	
 	
@@ -164,7 +193,7 @@ public class RefereeMsg
 	 */
 	public final TeamInfo getTeamInfoYellow()
 	{
-		return sslRefereeMsg.getYellow();
+		return teamInfoYellow;
 	}
 	
 	
@@ -173,11 +202,11 @@ public class RefereeMsg
 	 */
 	public final TeamInfo getTeamInfoTigers()
 	{
-		if (teamProps.getTigersAreYellow())
+		if (color == ETeamColor.YELLOW)
 		{
-			return sslRefereeMsg.getYellow();
+			return teamInfoYellow;
 		}
-		return sslRefereeMsg.getBlue();
+		return teamInfoBlue;
 	}
 	
 	
@@ -186,20 +215,11 @@ public class RefereeMsg
 	 */
 	public final TeamInfo getTeamInfoThem()
 	{
-		if (teamProps.getTigersAreYellow())
+		if (color == ETeamColor.YELLOW)
 		{
-			return sslRefereeMsg.getBlue();
+			return teamInfoBlue;
 		}
-		return sslRefereeMsg.getYellow();
-	}
-	
-	
-	/**
-	 * @return the teamProps
-	 */
-	public final TeamProps getTeamProps()
-	{
-		return teamProps;
+		return teamInfoYellow;
 	}
 	
 	

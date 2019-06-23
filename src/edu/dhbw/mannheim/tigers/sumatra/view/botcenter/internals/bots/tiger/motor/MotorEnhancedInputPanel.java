@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Locale;
 
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
@@ -245,6 +246,16 @@ public class MotorEnhancedInputPanel extends JPanel
 	{
 		wpLatest = xy;
 		wpLatestW = w;
+		
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				repaint();
+				
+			}
+		});
 	}
 	
 	// --------------------------------------------------------------

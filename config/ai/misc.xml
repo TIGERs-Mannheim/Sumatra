@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<misc base="edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal">
+    <WorldFramePacker>
+        <useBotStatus comment="override WP data with status from bot? (pos_vel)">false</useBotStatus>
+    </WorldFramePacker>
+</misc>

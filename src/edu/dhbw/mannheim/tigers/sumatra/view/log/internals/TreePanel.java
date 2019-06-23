@@ -12,6 +12,7 @@ package edu.dhbw.mannheim.tigers.sumatra.view.log.internals;
 import java.awt.BorderLayout;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -28,11 +29,11 @@ import javax.swing.tree.TreePath;
  */
 public class TreePanel extends JPanel
 {
-	private static final long							serialVersionUID	= 1L;
+	private static final long					serialVersionUID	= 1L;
 	
-	private final ArrayList<ITreePanelObserver>	observers			= new ArrayList<ITreePanelObserver>();
+	private final List<ITreePanelObserver>	observers			= new ArrayList<ITreePanelObserver>();
 	
-	private JTree											tree					= null;
+	private JTree									tree					= null;
 	
 	
 	/**
@@ -75,7 +76,7 @@ public class TreePanel extends JPanel
 	 * create a List of all Classes in this Node
 	 * @param treeNode
 	 */
-	private void createClassList(FileSystemTree treeNode, ArrayList<String> list)
+	private void createClassList(FileSystemTree treeNode, List<String> list)
 	{
 		if (treeNode.isLeaf())
 		{
@@ -99,7 +100,7 @@ public class TreePanel extends JPanel
 				return;
 			}
 			
-			final ArrayList<String> classList = new ArrayList<String>();
+			final List<String> classList = new ArrayList<String>();
 			
 			final TreePath[] pathes = tree.getSelectionPaths();
 			

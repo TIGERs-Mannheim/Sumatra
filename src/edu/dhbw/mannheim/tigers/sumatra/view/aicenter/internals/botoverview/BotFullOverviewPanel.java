@@ -31,14 +31,14 @@ public class BotFullOverviewPanel extends JPanel
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long							serialVersionUID	= 4990265633846449163L;
+	private static final long								serialVersionUID	= 4990265633846449163L;
 	
-	private static final String						TITLE					= "Full bot overview";
+	private static final String							TITLE					= "Full bot overview";
 	
 	
 	private final Map<BotID, BotOverviewPanel>	botOverviews		= new TreeMap<BotID, BotOverviewPanel>();
 	
-	private JLabel											statuslabel			= null;
+	private JLabel												statuslabel			= null;
 	
 	
 	// --------------------------------------------------------------------------

@@ -9,6 +9,15 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.basestation;
 
+import info.monitorenter.gui.chart.Chart2D;
+import info.monitorenter.gui.chart.IAxis.AxisTitle;
+import info.monitorenter.gui.chart.ITrace2D;
+import info.monitorenter.gui.chart.rangepolicies.RangePolicyFixedViewport;
+import info.monitorenter.gui.chart.traces.Trace2DLtdReplacing;
+import info.monitorenter.gui.chart.traces.painters.TracePainterVerticalBar;
+import info.monitorenter.util.Range;
+
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -23,7 +32,7 @@ import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationStats;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationStats.EthStats;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.NetStateIndicator;
 
 
@@ -51,13 +60,14 @@ public class BaseStationNetworkPanel extends JPanel
 	/**  */
 	private static final long							serialVersionUID	= -3730726072203478050L;
 	
-	private JTextField									wifiPackets[]		= new JTextField[2];
-	private JTextField									wifiBytes[]			= new JTextField[2];
-	private JTextField									wifiRetransmit		= null;
-	private JTextField									ethFrames[]			= new JTextField[2];
-	private JTextField									ethBytes[]			= new JTextField[2];
 	private JButton										connect				= null;
 	private NetStateIndicator							netState				= null;
+	private JLabel											txStat;
+	private JLabel											rxStat;
+	private JTextField									updateRate;
+	
+	private final Chart2D								barChart				= new Chart2D();
+	private final ITrace2D[]							barTraces			= new Trace2DLtdReplacing[3];
 	
 	private final List<IBaseStationNetworkPanel>	observers			= new ArrayList<IBaseStationNetworkPanel>();
 	
@@ -68,52 +78,63 @@ public class BaseStationNetworkPanel extends JPanel
 	/** */
 	public BaseStationNetworkPanel()
 	{
+		setLayout(new MigLayout("wrap 2", "[fill]10[200, fill]"));
+		
 		connect = new JButton("Connect");
 		connect.addActionListener(new Connect());
 		
 		netState = new NetStateIndicator();
 		
-		wifiRetransmit = new JTextField();
+		txStat = new JLabel("-");
+		rxStat = new JLabel("-");
+		updateRate = new JTextField("Rate: 0Hz");
 		
-		for (int i = 0; i < 2; i++)
+		for (int i = 0; i < 3; i++)
 		{
-			wifiPackets[i] = new JTextField();
-			wifiBytes[i] = new JTextField();
-			ethFrames[i] = new JTextField();
-			ethBytes[i] = new JTextField();
+			barTraces[i] = new Trace2DLtdReplacing(1);
 		}
 		
-		setLayout(new MigLayout("wrap 2", "[fill]10[fill]"));
+		barChart.getAxisY().setRangePolicy(new RangePolicyFixedViewport(new Range(0.0, 100.0)));
+		barChart.getAxisX().setRangePolicy(new RangePolicyFixedViewport(new Range(0.0, 4.0)));
+		barChart.getAxisY().setMajorTickSpacing(10);
+		barChart.getAxisY().setMinorTickSpacing(2.5);
+		barChart.getAxisY().setPaintGrid(true);
+		barChart.getAxisY().setAxisTitle(new AxisTitle("%"));
+		barChart.getAxisX().setPaintScale(false);
+		barChart.getAxisX().setAxisTitle(new AxisTitle(""));
+		barChart.setBackground(getBackground());
+		barChart.setGridColor(Color.LIGHT_GRAY);
 		
-		JPanel wifiStatsPanel = new JPanel(new MigLayout("wrap 4", "[80]10[50,fill]10[50,fill]10[50,fill]"));
-		wifiStatsPanel.add(new JLabel("Wifi"));
-		wifiStatsPanel.add(new JLabel("Packets"));
-		wifiStatsPanel.add(new JLabel("Bytes"));
-		wifiStatsPanel.add(new JLabel("Retransmit"));
-		wifiStatsPanel.add(new JLabel("Rx"));
-		wifiStatsPanel.add(wifiPackets[0]);
-		wifiStatsPanel.add(wifiBytes[0]);
-		wifiStatsPanel.add(new JLabel(""));
-		wifiStatsPanel.add(new JLabel("Tx"));
-		wifiStatsPanel.add(wifiPackets[1]);
-		wifiStatsPanel.add(wifiBytes[1]);
-		wifiStatsPanel.add(wifiRetransmit);
+		barTraces[0].setColor(Color.RED);
+		barTraces[0].setName("rxLvl");
+		barTraces[0].setTracePainter(new TracePainterVerticalBar(4, barChart));
+		barTraces[1].setColor(Color.GREEN);
+		barTraces[1].setName("txLvl");
+		barTraces[1].setTracePainter(new TracePainterVerticalBar(4, barChart));
+		barTraces[2].setColor(Color.BLUE);
+		barTraces[2].setName("rxLoss");
+		barTraces[2].setTracePainter(new TracePainterVerticalBar(4, barChart));
 		
-		JPanel ethStatsPanel = new JPanel(new MigLayout("wrap 3", "[80]10[50,fill]10[50,fill]10[50,fill]"));
-		ethStatsPanel.add(new JLabel("Eth"));
-		ethStatsPanel.add(new JLabel("Frames"));
-		ethStatsPanel.add(new JLabel("Bytes"));
-		ethStatsPanel.add(new JLabel("Rx"));
-		ethStatsPanel.add(ethFrames[0]);
-		ethStatsPanel.add(ethBytes[0]);
-		ethStatsPanel.add(new JLabel("Tx"));
-		ethStatsPanel.add(ethFrames[1]);
-		ethStatsPanel.add(ethBytes[1]);
+		barChart.addTrace(barTraces[0]);
+		barChart.addTrace(barTraces[1]);
+		barChart.addTrace(barTraces[2]);
+		
+		JPanel ethStatePanel = new JPanel(new MigLayout("wrap 2", "[30]10[80,fill]"));
+		ethStatePanel.add(new JLabel("Frames / Bytes"), "skip 1");
+		ethStatePanel.add(new JLabel("RX:"));
+		ethStatePanel.add(rxStat);
+		ethStatePanel.add(new JLabel("TX:"));
+		ethStatePanel.add(txStat);
 		
 		add(netState);
+		add(barChart, "spany 4, grow, h 200");
 		add(connect);
-		add(wifiStatsPanel);
-		add(ethStatsPanel);
+		add(updateRate);
+		add(ethStatePanel, "aligny bottom");
+		
+		barTraces[0].addPoint(1.0, 0.5);
+		barTraces[1].addPoint(2.0, 100.0);
+		barTraces[2].addPoint(3.0, 55.0);
 		
 		setBorder(BorderFactory.createTitledBorder("Network"));
 	}
@@ -198,31 +219,19 @@ public class BaseStationNetworkPanel extends JPanel
 	 * 
 	 * @param stats
 	 */
-	public void setStats(final BaseStationStats stats)
+	public void setStats(final EthStats stats)
 	{
 		SwingUtilities.invokeLater(new Runnable()
 		{
 			@Override
 			public void run()
 			{
-				wifiPackets[0].setText(String.format("%d/%d", stats.getWifiStats().rxPacketsRecv,
-						stats.getWifiStats().rxPacketsLost));
-				wifiPackets[1].setText(String.format("%d/%d", stats.getWifiStats().txPacketsSent,
-						stats.getWifiStats().txPacketsLost));
-				
-				wifiBytes[0].setText(String.format("%d/%d", stats.getWifiStats().rxBytesRecv,
-						stats.getWifiStats().rxBytesLost));
-				wifiBytes[1].setText(String.format("%d/%d", stats.getWifiStats().txBytesSent,
-						stats.getWifiStats().txBytesLost));
-				
-				wifiRetransmit.setText("" + stats.getWifiStats().retransmissions);
-				
-				ethFrames[0].setText(String.format("%d/%d", stats.getEthStats().rxFramesRecv,
-						stats.getEthStats().rxFramesLost));
-				ethFrames[1].setText("" + stats.getEthStats().txFramesSent);
-				
-				ethBytes[0].setText(String.format("%d/%d", stats.getEthStats().rxBytesRecv, stats.getEthStats().rxBytesLost));
-				ethBytes[1].setText("" + stats.getEthStats().txBytesSent);
+				updateRate.setText(String.format("Rate: %dHz", stats.getUpdateRate()));
+				rxStat.setText(String.format("%4d / %6d", stats.getRxFramesRecv(), stats.getRxBytesRecv()));
+				txStat.setText(String.format("%4d / %6d", stats.getTxFramesSent(), stats.getTxBytesSent()));
+				barTraces[0].addPoint(1.0, stats.getRxLevel());
+				barTraces[1].addPoint(2.0, stats.getTxLevel());
+				barTraces[2].addPoint(3.0, stats.getRxLoss());
 			}
 		});
 	}

@@ -12,9 +12,11 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.tr
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.persistence.Embeddable;
+import net.sf.oval.constraint.NotNull;
 
 import org.apache.log4j.Logger;
+
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
@@ -29,7 +31,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.tre
  * @author dirk
  * 
  */
-@Embeddable
+@Persistent
 public class SimpleTree implements ITree
 {
 	// --------------------------------------------------------------------------
@@ -38,8 +40,9 @@ public class SimpleTree implements ITree
 	// Logger
 	private static final Logger	log	= Logger.getLogger(SimpleTree.class.getName());
 	
-	
+	@NotNull
 	private Node						root;
+	@NotNull
 	private Node						goalNode;
 	
 	// lists all nodes
@@ -50,6 +53,13 @@ public class SimpleTree implements ITree
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	@SuppressWarnings("unused")
+	private SimpleTree()
+	{
+	}
+	
+	
 	/**
 	 * @param root
 	 * @param goal

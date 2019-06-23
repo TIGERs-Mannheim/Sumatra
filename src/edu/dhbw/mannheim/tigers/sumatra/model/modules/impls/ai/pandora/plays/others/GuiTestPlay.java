@@ -4,40 +4,38 @@
  * Project: TIGERS - Sumatra
  * Date: 10.11.2010
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.others;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.EGameState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.RoleFactory;
+import edu.dhbw.mannheim.tigers.sumatra.util.InstanceableClass.NotCreateableException;
 
 
 /**
  * This play is the role-container for any {@link ARole} selected by the GUI
  * 
  * @author Gero
- * 
  */
 public class GuiTestPlay extends APlay
 {
-	private static final Logger	log	= Logger.getLogger(GuiTestPlay.class.getName());
-	
-	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	private static final Logger	log					= Logger.getLogger(GuiTestPlay.class.getName());
+	
+	private ARole						roleToBeRemoved	= null;
+	private ARole						roleToBeAdded		= null;
+	
+	private ERole						lastAddedRoleType	= ERole.MOVE;
 	
 	
 	// --------------------------------------------------------------------------
@@ -45,28 +43,10 @@ public class GuiTestPlay extends APlay
 	// --------------------------------------------------------------------------
 	
 	/**
-	 * allowed because this is a Pseudo-Play
-	 * @param aiFrame
-	 * @param rolesAndInitPos
 	 */
-	public GuiTestPlay(AIInfoFrame aiFrame, Map<ERole, IVector2> rolesAndInitPos)
+	public GuiTestPlay()
 	{
-		super(aiFrame, rolesAndInitPos.size());
-		setType(EPlay.GUI_TEST_PLAY);
-		
-		setTimeout(Long.MAX_VALUE);
-		
-		for (Map.Entry<ERole, IVector2> entry : rolesAndInitPos.entrySet())
-		{
-			try
-			{
-				final ARole genRole = RoleFactory.createRole(entry.getKey());
-				addAggressiveRole(genRole, entry.getValue());
-			} catch (final IllegalArgumentException iae)
-			{
-				log.warn(iae.getMessage());
-			}
-		}
+		super(EPlay.GUI_TEST);
 	}
 	
 	
@@ -76,32 +56,74 @@ public class GuiTestPlay extends APlay
 	
 	
 	@Override
-	protected void afterUpdate(AIInfoFrame currentFrame)
+	protected ARole onRemoveRole()
 	{
-		List<ARole> completedRoles = new ArrayList<ARole>();
-		for (final ARole role : getRoles())
+		if (roleToBeRemoved != null)
 		{
-			if (role.isCompleted())
-			{
-				completedRoles.add(role);
-			}
+			ARole role = roleToBeRemoved;
+			roleToBeRemoved = null;
+			return role;
 		}
-		for (final ARole role : completedRoles)
-		{
-			getRoles().remove(role);
-			currentFrame.removeAssignedRole(role.getBotID());
-		}
+		return getLastRole();
 	}
 	
+	
+	@Override
+	protected ARole onAddRole()
+	{
+		if (roleToBeAdded != null)
+		{
+			ARole role = roleToBeAdded;
+			roleToBeAdded = null;
+			lastAddedRoleType = role.getType();
+			return role;
+		}
+		try
+		{
+			return RoleFactory.createDefaultRole(lastAddedRoleType);
+		} catch (NotCreateableException err)
+		{
+			log.error("Could not create role " + lastAddedRoleType, err);
+		}
+		return null;
+	}
+	
+	
+	@Override
+	protected void onGameStateChanged(final EGameState gameState)
+	{
+	}
+	
+	
+	/**
+	 * Little bit hacky... do not ask
+	 * 
+	 * @param role
+	 */
+	public void setRoleToBeRemoved(final ARole role)
+	{
+		roleToBeRemoved = role;
+	}
+	
+	
+	/**
+	 * Little bit hacky... do not ask
+	 * 
+	 * @param role
+	 */
+	public void setRoleToBeAdded(final ARole role)
+	{
+		roleToBeAdded = role;
+	}
+	
+	
+	@Override
+	public boolean overrideRoleAssignment()
+	{
+		return true;
+	}
 	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	
-	@Override
-	protected void beforeUpdate(AIInfoFrame frame)
-	{
-		// nothing todo
-	}
 }

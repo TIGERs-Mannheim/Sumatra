@@ -12,7 +12,7 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.tr
 import java.util.LinkedList;
 import java.util.List;
 
-import javax.persistence.Embeddable;
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
@@ -23,7 +23,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
  * 
  * @author Christian K�nig, DirkK
  */
-@Embeddable
+@Persistent
 public class Node extends Vector2
 {
 	// ------------------------------------------------------------------------
@@ -45,6 +45,13 @@ public class Node extends Vector2
 	// ------------------------------------------------------------------------
 	// --- constructor(s) -----------------------------------------------------
 	// ------------------------------------------------------------------------
+	
+	@SuppressWarnings("unused")
+	private Node()
+	{
+	}
+	
+	
 	/**
 	 * @param x
 	 * @param y

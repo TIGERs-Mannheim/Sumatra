@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 16.11.2010
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.kicker;
@@ -27,7 +26,6 @@ import net.miginfocom.swing.MigLayout;
  * Kicker autoload panel.
  * 
  * @author AndreR
- * 
  */
 public class KickerAutoloadPanel extends JPanel
 {
@@ -60,7 +58,7 @@ public class KickerAutoloadPanel extends JPanel
 	{
 		setLayout(new MigLayout("fill, wrap 2", "[80]10[50,fill]"));
 		
-		maxCap = new JTextField("180");
+		maxCap = new JTextField("150");
 		
 		final JButton save = new JButton("Set");
 		save.addActionListener(new Set());
@@ -79,7 +77,7 @@ public class KickerAutoloadPanel extends JPanel
 	/**
 	 * @param observer
 	 */
-	public void addObserver(IKickerAutoloadPanelObserver observer)
+	public void addObserver(final IKickerAutoloadPanelObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -91,7 +89,7 @@ public class KickerAutoloadPanel extends JPanel
 	/**
 	 * @param observer
 	 */
-	public void removeObserver(IKickerAutoloadPanelObserver observer)
+	public void removeObserver(final IKickerAutoloadPanelObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -100,7 +98,7 @@ public class KickerAutoloadPanel extends JPanel
 	}
 	
 	
-	private void notifyKickerSetAutoload(int max)
+	private void notifyKickerSetAutoload(final int max)
 	{
 		synchronized (observers)
 		{
@@ -118,7 +116,7 @@ public class KickerAutoloadPanel extends JPanel
 	private class Set implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent evt)
+		public void actionPerformed(final ActionEvent evt)
 		{
 			int max = 0;
 			

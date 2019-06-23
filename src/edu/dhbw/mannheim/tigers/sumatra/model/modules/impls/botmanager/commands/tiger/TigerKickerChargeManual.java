@@ -10,7 +10,9 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -26,10 +28,13 @@ public class TigerKickerChargeManual extends ACommand
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	/** PWM cycles (@6Mhz) */
+	@SerialData(type = ESerialDataType.UINT16)
 	private int	onTicks;
 	/** PWM cycles (@6Mhz) */
+	@SerialData(type = ESerialDataType.UINT16)
 	private int	offTicks;
 	/** ms (limited to 6s) */
+	@SerialData(type = ESerialDataType.UINT16)
 	private int	duration;
 	
 	
@@ -41,6 +46,8 @@ public class TigerKickerChargeManual extends ACommand
 	 */
 	public TigerKickerChargeManual()
 	{
+		super(ECommand.CMD_KICKER_CHARGE_MANUAL);
+		
 		onTicks = 0;
 		offTicks = 100;
 		duration = 0;
@@ -55,6 +62,8 @@ public class TigerKickerChargeManual extends ACommand
 	 */
 	public TigerKickerChargeManual(int on, int off, int duration)
 	{
+		super(ECommand.CMD_KICKER_CHARGE_MANUAL);
+		
 		onTicks = on;
 		offTicks = off;
 		this.duration = duration * 10;
@@ -64,38 +73,4 @@ public class TigerKickerChargeManual extends ACommand
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		onTicks = byteArray2UShort(data, 0);
-		offTicks = byteArray2UShort(data, 2);
-		duration = byteArray2UShort(data, 4);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		short2ByteArray(data, 0, onTicks);
-		short2ByteArray(data, 2, offTicks);
-		short2ByteArray(data, 4, duration);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_KICKER_CHARGE_MANUAL;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 6;
-	}
 }

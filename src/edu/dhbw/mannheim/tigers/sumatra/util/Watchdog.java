@@ -110,7 +110,7 @@ public class Watchdog
 		
 		addObserver(o);
 		
-		watchdogThread = new Thread(new WatchdogRun(), "Watchdog");
+		watchdogThread = new Thread(new WatchdogRun(), "Watchdog " + o.getName());
 		watchdogThread.start();
 	}
 	
@@ -165,8 +165,6 @@ public class Watchdog
 		@Override
 		public void run()
 		{
-			Thread.currentThread().setName("Watchdog");
-			
 			while (!Thread.currentThread().isInterrupted())
 			{
 				reset = false;

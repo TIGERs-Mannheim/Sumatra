@@ -9,7 +9,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.observer;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
 
 
 /**
@@ -26,13 +26,13 @@ public interface IWorldPredictorObservable
 	 * Notifies observers with new Wf
 	 * @param wFrame
 	 */
-	void notifyNewWorldFrame(WorldFrame wFrame);
+	void notifyNewWorldFrame(SimpleWorldFrame wFrame);
 	
 	
 	/**
 	 * Notifies about Vision signal Lost
 	 * @param emptyWf emptyWorldFrame
 	 */
-	void notifyVisionSignalLost(WorldFrame emptyWf);
+	void notifyVisionSignalLost(SimpleWorldFrame emptyWf);
 	
 }

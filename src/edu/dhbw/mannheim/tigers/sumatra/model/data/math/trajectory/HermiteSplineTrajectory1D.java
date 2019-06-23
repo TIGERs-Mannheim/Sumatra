@@ -12,7 +12,7 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.Embeddable;
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline.HermiteSpline;
 
@@ -23,12 +23,12 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline.HermiteSpline;
  * @author AndreR
  * 
  */
-@Embeddable
+@Persistent
 public class HermiteSplineTrajectory1D implements ITrajectory1D
 {
 	/**
 	 */
-	@Embeddable
+	@Persistent
 	public static class HermiteSplineTrajectoryPart1D
 	{
 		/** */
@@ -37,6 +37,12 @@ public class HermiteSplineTrajectory1D implements ITrajectory1D
 		public float			end;
 		/** */
 		public HermiteSpline	spline;
+		
+		
+		@SuppressWarnings("unused")
+		private HermiteSplineTrajectoryPart1D()
+		{
+		}
 		
 		
 		/**
@@ -51,6 +57,17 @@ public class HermiteSplineTrajectory1D implements ITrajectory1D
 			end = e;
 			spline = p;
 		}
+		
+		
+		/**
+		 * @param part
+		 */
+		public HermiteSplineTrajectoryPart1D(HermiteSplineTrajectoryPart1D part)
+		{
+			start = part.start;
+			end = part.end;
+			spline = new HermiteSpline(part.spline);
+		}
 	}
 	
 	// --------------------------------------------------------------------------
@@ -63,6 +80,14 @@ public class HermiteSplineTrajectory1D implements ITrajectory1D
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	
+	@SuppressWarnings("unused")
+	private HermiteSplineTrajectory1D()
+	{
+	}
+	
+	
 	/**
 	 * Create a hermite spline trajectory.
 	 * 
@@ -91,6 +116,19 @@ public class HermiteSplineTrajectory1D implements ITrajectory1D
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	/**
+	 * @param rotation
+	 */
+	public HermiteSplineTrajectory1D(HermiteSplineTrajectory1D rotation)
+	{
+		for (HermiteSplineTrajectoryPart1D part : rotation.parts)
+		{
+			parts.add(new HermiteSplineTrajectoryPart1D(part));
+		}
+		totalTime = rotation.totalTime;
+	}
+	
 	
 	private void init(List<HermiteSpline> splines)
 	{
@@ -225,5 +263,16 @@ public class HermiteSplineTrajectory1D implements ITrajectory1D
 	public HermiteSpline getSpline(int part)
 	{
 		return parts.get(part).spline;
+	}
+	
+	
+	/**
+	 */
+	public void mirror()
+	{
+		for (HermiteSplineTrajectoryPart1D part : parts)
+		{
+			part.spline.mirrorRotation();
+		}
 	}
 }

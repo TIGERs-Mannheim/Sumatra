@@ -73,7 +73,7 @@ public class TigerBotSummary extends JPanel
 	private final JButton								connect;
 	
 	private String											name;
-	private BotID											id;
+	private BotID									id;
 	private ENetworkState								netState;
 	
 	private final List<ITigerBotSummaryObserver>	observers			= new ArrayList<ITigerBotSummaryObserver>();
@@ -90,7 +90,7 @@ public class TigerBotSummary extends JPanel
 		setLayout(new MigLayout("fill", "[100,fill]10[100,fill]30[60]10[60]10[60]30[40]5[60]", "0[]0"));
 		
 		name = "Bob";
-		id = new BotID();
+		id = BotID.createBotId();
 		netState = ENetworkState.CONNECTING;
 		
 		status = new JTextField();

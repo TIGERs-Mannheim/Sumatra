@@ -14,12 +14,14 @@ import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerCtrlSetControllerType.ControllerType;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECtrlMoveType;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerCtrlSetControllerType.EControllerType;
 
 
 /**
@@ -34,10 +36,22 @@ public class SelectControllerPanel extends JPanel
 	public interface ISelectControllerPanelObserver
 	{
 		/**
-		 * 
 		 * @param type
 		 */
-		void onNewControllerSelected(ControllerType type);
+		void onNewControllerSelected(EControllerType type);
+		
+		
+		/**
+		 * @param type
+		 */
+		void onNewCtrlMoveSelected(ECtrlMoveType type);
+		
+		
+		/**
+		 * @param ctrlType
+		 * @param ctrlMoveType
+		 */
+		void onApplyControllerToAll(EControllerType ctrlType, ECtrlMoveType ctrlMoveType);
 	}
 	
 	// --------------------------------------------------------------------------
@@ -46,8 +60,8 @@ public class SelectControllerPanel extends JPanel
 	/**  */
 	private static final long									serialVersionUID	= -1550931078238006617L;
 	
-	private JComboBox<ControllerType>						controller			= null;
-	private SaveControllerType									listener				= new SaveControllerType();
+	private JComboBox<EControllerType>						controller			= null;
+	private JComboBox<ECtrlMoveType>							ctrlMove				= null;
 	
 	private final List<ISelectControllerPanelObserver>	observers			= new ArrayList<ISelectControllerPanelObserver>();
 	
@@ -62,10 +76,18 @@ public class SelectControllerPanel extends JPanel
 	{
 		setLayout(new MigLayout("", "", ""));
 		
-		controller = new JComboBox<ControllerType>(ControllerType.values());
-		controller.addActionListener(listener);
+		controller = new JComboBox<EControllerType>(EControllerType.values());
+		controller.addActionListener(new SaveControllerType());
+		
+		ctrlMove = new JComboBox<ECtrlMoveType>(ECtrlMoveType.values());
+		ctrlMove.addActionListener(new SaveCtrlMoveType());
+		
+		JButton btnApplyToAll = new JButton("Apply to all");
+		btnApplyToAll.addActionListener(new ApplyToAllActionListener());
 		
 		add(controller);
+		add(ctrlMove);
+		add(btnApplyToAll);
 	}
 	
 	
@@ -98,7 +120,7 @@ public class SelectControllerPanel extends JPanel
 	}
 	
 	
-	private void notifyNewControllerSelected(ControllerType type)
+	private void notifyNewControllerSelected(EControllerType type)
 	{
 		synchronized (observers)
 		{
@@ -110,13 +132,37 @@ public class SelectControllerPanel extends JPanel
 	}
 	
 	
+	private void notifyNewCtrlMoveSelected(ECtrlMoveType type)
+	{
+		synchronized (observers)
+		{
+			for (ISelectControllerPanelObserver observer : observers)
+			{
+				observer.onNewCtrlMoveSelected(type);
+			}
+		}
+	}
+	
+	
+	private void notifyApplyControllerToAll(EControllerType ctrlType, ECtrlMoveType ctrlMoveType)
+	{
+		synchronized (observers)
+		{
+			for (ISelectControllerPanelObserver observer : observers)
+			{
+				observer.onApplyControllerToAll(ctrlType, ctrlMoveType);
+			}
+		}
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
 	 * @param t
 	 */
-	public void setControllerType(final ControllerType t)
+	public void setControllerType(final EControllerType t)
 	{
 		SwingUtilities.invokeLater(new Runnable()
 		{
@@ -131,12 +177,50 @@ public class SelectControllerPanel extends JPanel
 		});
 	}
 	
+	
+	/**
+	 * @param t
+	 */
+	public void setCtrlMoveType(final ECtrlMoveType t)
+	{
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				if (!ctrlMove.getSelectedItem().equals(t))
+				{
+					ctrlMove.setSelectedItem(t);
+				}
+			}
+		});
+	}
+	
 	private class SaveControllerType implements ActionListener
 	{
 		@Override
 		public void actionPerformed(ActionEvent e)
 		{
-			notifyNewControllerSelected((ControllerType) controller.getSelectedItem());
+			notifyNewControllerSelected((EControllerType) controller.getSelectedItem());
+		}
+	}
+	
+	private class SaveCtrlMoveType implements ActionListener
+	{
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
+			notifyNewCtrlMoveSelected((ECtrlMoveType) ctrlMove.getSelectedItem());
+		}
+	}
+	
+	private class ApplyToAllActionListener implements ActionListener
+	{
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
+			notifyApplyControllerToAll((EControllerType) controller.getSelectedItem(),
+					(ECtrlMoveType) ctrlMove.getSelectedItem());
 		}
 	}
 }

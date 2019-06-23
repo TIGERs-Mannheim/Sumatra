@@ -4,35 +4,28 @@
  * Project: TIGERS - Sumatra
  * Date: Feb 27, 2013
  * Author(s): Dirk Klostermann <klostermannn@googlemail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.FrameID;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.SplinePair3D;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.SplineTrajectoryGenerator;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.Skills;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Collision;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.ERRTPlanner_WPC;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.updateSplineDecision.UpdateSplineDecisionMakerFactory;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.updatespline.UpdateSplineDecisionMakerFactory;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.timer.ETimable;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.timer.SumatraTimer;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ATimer;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ITimer;
-import edu.dhbw.mannheim.tigers.sumatra.util.units.DistanceUnit;
-import edu.moduli.exceptions.ModuleNotFoundException;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AWorldPredictor;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IWorldFrameConsumer;
 
 
 /**
@@ -40,46 +33,29 @@ import edu.moduli.exceptions.ModuleNotFoundException;
  * it is triggered in a certain interval to refresh the path used by the bot
  * 
  * @author Dirk Klostermann <klostermannn@googlemail.com>
- * 
  */
-public class PathFinderThread implements Runnable
+public class PathFinderThread implements Runnable, IWorldFrameConsumer
 {
-	
-	
-	private static final Logger					log								= Logger.getLogger(PathFinderThread.class
-																										.getName());
-	
-	/**  */
-	private static final int						STOPPING_PP_THREAD_DELAY	= 2000;
-	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private IPathFinder								pathFinder;
 	
-	private UpdateSplineDecisionMakerFactory	updateSplineDecision;
+	private static final Logger							log					= Logger.getLogger(PathFinderThread.class
+																									.getName());
+	private final IPathFinder								pathFinder;
+	private final Sisyphus									sisyphus;
+	private final BotID										botId;
+	private final UpdateSplineDecisionMakerFactory	updateSplineDecision;
+	private final SumatraTimer								timer;
 	
-	private Sisyphus									sisyphus;
+	private boolean											active				= true;
+	private WorldFrame										wFrame				= null;
+	private PathFinderInput									pathFinderInput	= null;
+	private Path												currentPath			= null;
+	private boolean											wasLastRambo		= false;
 	
-	private BotID										botId;
-	
-	private Path										oldPath;
-	
-	private PathFinderInput							pathFinderInput;
-	
-	private boolean									wasLastRambo					= false;
-	
-	private int											avoidedCollisions				= 0;
-	
-	private boolean									active							= true;
-	private CountDownLatch							countDownLatch					= new CountDownLatch(1);
-	
-	private final SplineTrajectoryGenerator	trajGeneratorMove				= new SplineTrajectoryGenerator();
-	
-	private ITimer										timer								= null;
-	
-	@SuppressWarnings("unused")
-	private Collision									collision						= null;
+	private final Object										syncRun				= new Object();
+	private CountDownLatch									latchStartStop		= new CountDownLatch(0);
 	
 	
 	// --------------------------------------------------------------------------
@@ -87,24 +63,34 @@ public class PathFinderThread implements Runnable
 	// --------------------------------------------------------------------------
 	
 	/**
-	 * @param sisyphus Sisyphus reference
+	 * @param sisyphus this is typically Sisyphus
 	 * @param botId the bot which is handled by this thread
-	 * @param currentPath
 	 */
-	public PathFinderThread(Sisyphus sisyphus, BotID botId, Path currentPath)
+	public PathFinderThread(final Sisyphus sisyphus, final BotID botId)
 	{
 		this.sisyphus = sisyphus;
 		this.botId = botId;
-		oldPath = currentPath;
 		pathFinder = new ERRTPlanner_WPC();
 		updateSplineDecision = new UpdateSplineDecisionMakerFactory();
 		
+		SumatraTimer timer = null;
 		try
 		{
-			timer = (ITimer) SumatraModel.getInstance().getModule(ATimer.MODULE_ID);
+			timer = (SumatraTimer) SumatraModel.getInstance().getModule(ATimer.MODULE_ID);
 		} catch (final ModuleNotFoundException err)
 		{
 			log.error("No timer found.");
+		}
+		this.timer = timer;
+		
+		AWorldPredictor predictor;
+		try
+		{
+			predictor = (AWorldPredictor) SumatraModel.getInstance().getModule(AWorldPredictor.MODULE_ID);
+			predictor.addWorldFrameConsumer(this);
+		} catch (ModuleNotFoundException err)
+		{
+			log.error("WP Modul not found", err);
 		}
 	}
 	
@@ -112,226 +98,232 @@ public class PathFinderThread implements Runnable
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	
+	/**
+	 * Must be called on termination
+	 */
+	public void onTermination()
+	{
+		AWorldPredictor predictor;
+		try
+		{
+			predictor = (AWorldPredictor) SumatraModel.getInstance().getModule(AWorldPredictor.MODULE_ID);
+			predictor.removeWorldFrameConsumer(this);
+		} catch (ModuleNotFoundException err)
+		{
+			log.error("WP Modul not found", err);
+		}
+	}
+	
+	
+	@Override
+	public void onNewSimpleWorldFrame(final SimpleWorldFrame worldFrame)
+	{
+	}
+	
+	
+	@Override
+	public void onNewWorldFrame(final WorldFrame wFrame)
+	{
+		if (wFrame.getTeamColor() == botId.getTeamColor())
+		{
+			this.wFrame = wFrame;
+		}
+	}
+	
+	
+	@Override
+	public void onStop()
+	{
+	}
+	
+	
+	@Override
+	public void onVisionSignalLost(final SimpleWorldFrame emptyWf)
+	{
+		wFrame = null;
+	}
+	
+	
+	/**
+	 * @param pathFinderInput
+	 */
+	public void start(final PathFinderInput pathFinderInput)
+	{
+		synchronized (syncRun)
+		{
+			this.pathFinderInput = pathFinderInput;
+			active = true;
+		}
+		awaitRoundFinished();
+	}
+	
+	
+	/**
+	 */
+	public void stop()
+	{
+		synchronized (syncRun)
+		{
+			active = false;
+			pathFinderInput = null;
+			currentPath = null;
+		}
+		awaitRoundFinished();
+	}
+	
+	
+	private void awaitRoundFinished()
+	{
+		latchStartStop = new CountDownLatch(1);
+		try
+		{
+			if (!latchStartStop.await(1, TimeUnit.SECONDS))
+			{
+				log.warn("PathFinderThread did not run correctly! Might be due to AI exceptions");
+			}
+		} catch (InterruptedException err)
+		{
+			log.error("Interupted while waiting for thread start", err);
+		}
+	}
+	
+	
 	@Override
 	public void run()
 	{
-		try
+		synchronized (syncRun)
 		{
-			if (pathFinderInput == null)
+			// get local copies to assure that we are using the same object throughout this method
+			final WorldFrame worldFrame = wFrame;
+			final PathFinderInput localPathFinderInput = pathFinderInput;
+			
+			if ((worldFrame == null) || (localPathFinderInput == null) || !active
+					|| (worldFrame.getTigerBotsAvailable().getWithNull(botId) == null))
 			{
-				log.error("No pathFinderInput!");
+				// nothing to do atm
+				latchStartStop.countDown();
 				return;
 			}
-			PathFinderInput localPathFinderInput = pathFinderInput;
-			startTime(localPathFinderInput.getwFrame().id);
+			
+			final long frameId = worldFrame.getId().getFrameNumber();
+			startTime(frameId);
+			
 			try
 			{
-				if (!isPathPlanningNeeded(localPathFinderInput))
-				{
-					if (active)
-					{
-						Path existingPath = localPathFinderInput.getExistingPathes().get(botId);
-						existingPath.setOld(true);
-						sisyphus.onNewPath(botId, existingPath, localPathFinderInput);
-						active = false;
-					}
-					stopTime(localPathFinderInput.getwFrame().id);
-					return;
-				}
-				active = true;
-				
-				if (oldPath.isOld())
-				{
-					oldPath.setTree(null);
-					wasLastRambo = false;
-					avoidedCollisions = 0;
-					collision = null;
-				}
-				
-				localPathFinderInput.setAvoidedCollisionsSeries(avoidedCollisions);
-				// if ((collision != null) && !localPathFinderInput.getFieldInfo().isPointOK(collision.getPosition()))
-				// {
-				// localPathFinderInput.setObstacleFoundByLastSpline(collision.getPosition());
-				// }
-				Path newPath = pathFinder.calcPath(localPathFinderInput);
-				if (!newPath.isRambo())
-				{
-					wasLastRambo = false;
-				}
-				addAHermiteSpline(newPath, localPathFinderInput);
-				oldPath.setChanged(false);
-				
+				localPathFinderInput.update(worldFrame);
+				Path newPath = generatePath(localPathFinderInput, worldFrame);
 				setNewPathIfNecessary(newPath, localPathFinderInput);
-				
-				sisyphus.onNewPath(botId, oldPath, localPathFinderInput);
-				countDownLatch.countDown();
-				stopTime(localPathFinderInput.getwFrame().id);
-			} catch (RuntimeException err)
+			} catch (Exception e)
 			{
-				log.fatal("Exception in PathFinderThread.", err);
-			}
-			stopTime(localPathFinderInput.getwFrame().id);
-		} catch (Exception e)
-		{
-			log.error("Error in pathfinder thread", e);
-		}
-	}
-	
-	
-	private boolean isPathPlanningNeeded(PathFinderInput localPathFinderInput)
-	{
-		if ((localPathFinderInput == null)
-				|| (!localPathFinderInput.isActive())
-				|| ((System.nanoTime() - localPathFinderInput.getTimestamp()) > (TimeUnit.MILLISECONDS
-						.toNanos(STOPPING_PP_THREAD_DELAY)))
-				|| (!localPathFinderInput.getwFrame().tigerBotsAvailable.containsKey(botId)))
-		{
-			return false;
-		}
-		return true;
-	}
-	
-	
-	private void setNewPathIfNecessary(Path newPath, PathFinderInput localPathFinderInput)
-	{
-		if (!oldPath.isOld())
-		{
-			switch (updateSplineDecision.check(localPathFinderInput, oldPath, newPath))
+				log.error("Exception in pathfinder thread", e);
+			} finally
 			{
-				case ENFORCE:
-					setNewPath(newPath);
-					break;
-				case COLLISION_AHEAD:
-					collision = oldPath.getFirstCollisionAt();
-				case OPTIMIZATION_FOUND:
-					if (!pathFinderInput.getMoveCon().isOptimizationWanted())
-					{
-						break;
-					}
-				case VIOLATION:
-					if (newPath.isRambo() && !wasLastRambo)
-					{
-						wasLastRambo = true;
-						setNewPath(newPath);
-					} else if (!newPath.isRambo())
-					{
-						setNewPath(newPath);
-					}
-					break;
-				
-				case NO_VIOLATION:
-					break;
+				stopTime(frameId);
 			}
-		} else
-		{
-			log.trace("New Spline - path 'isOld'");
-			setNewPath(newPath);
+			// we release the latch here, although there may have been an Exception.
+			latchStartStop.countDown();
 		}
-		avoidedCollisions = localPathFinderInput.getAvoidedCollisionsSeries();
-	}
-	
-	
-	private void setNewPath(Path newPath)
-	{
-		if ((oldPath.getTree() != null) && (newPath.getTree() == null))
-		{
-			newPath.setTree(oldPath.getTree());
-		}
-		oldPath = newPath;
-		oldPath.setChanged(true);
 	}
 	
 	
 	/**
-	 * wait until a new path was created
+	 * Generate a path including spline
+	 * 
+	 * @param localPathFinderInput
+	 * @param wFrame
+	 * @return
 	 */
-	public void waitForPath()
+	public Path generatePath(final PathFinderInput localPathFinderInput, final SimpleWorldFrame wFrame)
 	{
-		if ((pathFinderInput != null) && (pathFinderInput.getwFrame() != null))
+		Path newPath = pathFinder.calcPath(localPathFinderInput);
+		sisyphus.addAHermiteSpline(wFrame, newPath, localPathFinderInput);
+		sisyphus.onPotentialNewPath(newPath);
+		return newPath;
+	}
+	
+	
+	private void setNewPathIfNecessary(final Path newPath, final PathFinderInput localPathFinderInput)
+	{
+		if (currentPath == null)
 		{
-			if (!pathFinderInput.getwFrame().tigerBotsAvailable.containsKey(botId))
-			{
-				log.warn("waitForPath() was called for a disconnected bot!");
-				return;
-			}
-		} else
-		{
-			log.error("PathFinderInput or its containing worldframe == null at waitForPath()!");
+			setNewPath(newPath);
 			return;
 		}
-		while ((oldPath != null) && oldPath.isOld())
+		switch (updateSplineDecision.check(localPathFinderInput, currentPath, newPath))
 		{
-			countDownLatch = new CountDownLatch(1);
-			try
-			{
-				if (!countDownLatch.await(2, TimeUnit.SECONDS))
+			case ENFORCE:
+				setNewPath(newPath);
+				break;
+			case OPTIMIZATION_FOUND:
+				if (!pathFinderInput.getMoveCon().isOptimizationWanted())
 				{
-					log.warn("Timed out waiting for path", new Exception());
+					break;
 				}
-			} catch (InterruptedException err)
+			case COLLISION_AHEAD:
+			case VIOLATION:
+				if (newPath.isRambo() && !wasLastRambo)
+				{
+					wasLastRambo = true;
+					setNewPath(newPath);
+				} else if (!newPath.isRambo())
+				{
+					setNewPath(newPath);
+				}
+				break;
+			
+			case NO_VIOLATION:
+				break;
+		}
+	}
+	
+	
+	private void setNewPath(final Path newPath)
+	{
+		currentPath = newPath;
+		sisyphus.onNewPath(newPath);
+		if (!newPath.isRambo())
+		{
+			wasLastRambo = false;
+		}
+	}
+	
+	
+	private void startTime(final long id)
+	{
+		if (timer != null)
+		{
+			switch (botId.getTeamColor())
 			{
-				log.info("Count down latch of sisyphus interrupted");
+				case YELLOW:
+					timer.start(ETimable.PP_Y, id, botId.getNumberWithColorOffset());
+					break;
+				case BLUE:
+					timer.start(ETimable.PP_B, id, botId.getNumberWithColorOffset());
+					break;
+				default:
+					throw new IllegalStateException();
 			}
 		}
 	}
 	
 	
-	/**
-	 * add a spline to a path
-	 * 
-	 * @param path
-	 * @param pfi
-	 */
-	public void addAHermiteSpline(Path path, PathFinderInput pfi)
-	{
-		TrackedTigerBot bot = pfi.getwFrame().getTiger(pfi.getBotId());
-		float dstOrient = pfi.getDstOrient();
-		List<IVector2> mPath = new ArrayList<IVector2>();
-		mPath.add(DistanceUnit.MILLIMETERS.toMeters(bot.getPos()));
-		
-		for (IVector2 p : path.getPath())
-		{
-			mPath.add(DistanceUnit.MILLIMETERS.toMeters(p));
-		}
-		
-		Skills skillConfig = AIConfig.getSkills(bot.getBotType());
-		if (pfi.getMoveCon().getSpeed() > 0)
-		{
-			trajGeneratorMove.setPositionTrajParams(pfi.getMoveCon().getSpeed(), skillConfig.getMaxLinearAcceleration());
-		} else
-		{
-			trajGeneratorMove.setPositionTrajParams(skillConfig.getMaxLinearVelocity(),
-					skillConfig.getMaxLinearAcceleration());
-		}
-		trajGeneratorMove.setRotationTrajParams(skillConfig.getMaxRotateVelocity(),
-				skillConfig.getMaxRotateAcceleration());
-		trajGeneratorMove.setSplineParams(skillConfig.getNormalAngleToSpeed());
-		trajGeneratorMove.setReducePathScore(AIConfig.getOptimization().getPathReductionScore());
-		
-		// if (mPath.size() > 0)
-		// {
-		// mPath.remove(mPath.size() - 1);
-		// }
-		SplinePair3D trajectories = trajGeneratorMove.create(mPath, bot.getVel(), pfi.getMoveCon().getVelAtDestination(),
-				bot.getAngle(), dstOrient, bot.getaVel(), 0);
-		path.setHermiteSpline(trajectories);
-	}
-	
-	
-	private void startTime(FrameID frameId)
+	private void stopTime(final long id)
 	{
 		if (timer != null)
 		{
-			timer.start("PP", frameId);
-		}
-	}
-	
-	
-	private void stopTime(FrameID frameId)
-	{
-		if (timer != null)
-		{
-			timer.stop("PP", frameId);
+			switch (botId.getTeamColor())
+			{
+				case YELLOW:
+					timer.stop(ETimable.PP_Y, id, botId.getNumberWithColorOffset());
+					break;
+				case BLUE:
+					timer.stop(ETimable.PP_B, id, botId.getNumberWithColorOffset());
+					break;
+				default:
+					throw new IllegalStateException();
+			}
 		}
 	}
 	
@@ -339,60 +331,4 @@ public class PathFinderThread implements Runnable
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	
-	/**
-	 * @return the pathFinder
-	 */
-	public final IPathFinder getPathFinder()
-	{
-		return pathFinder;
-	}
-	
-	
-	/**
-	 * @param pathFinder the pathFinder to set
-	 */
-	public final void setPathFinder(IPathFinder pathFinder)
-	{
-		this.pathFinder = pathFinder;
-	}
-	
-	
-	/**
-	 * @return the pathFinderInput
-	 */
-	public PathFinderInput getPathFinderInput()
-	{
-		return pathFinderInput;
-	}
-	
-	
-	/**
-	 * @param pathFinderInput the pathFinderInput to set
-	 */
-	public void setPathFinderInput(PathFinderInput pathFinderInput)
-	{
-		this.pathFinderInput = pathFinderInput;
-	}
-	
-	
-	/**
-	 * @return the path
-	 */
-	public Path getPath()
-	{
-		return oldPath;
-	}
-	
-	
-	/**
-	 * @param path the path to set
-	 */
-	public void setPath(Path path)
-	{
-		oldPath = path;
-	}
-	
-	
 }

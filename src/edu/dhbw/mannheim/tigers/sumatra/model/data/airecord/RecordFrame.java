@@ -4,89 +4,110 @@
  * Project: TIGERS - Sumatra
  * Date: Jun 23, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.airecord;
 
-import java.util.ArrayList;
-import java.util.List;
+import net.sf.oval.constraint.AssertValid;
+import net.sf.oval.constraint.NotNull;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.OneToMany;
+import com.sleepycat.persist.model.Entity;
+import com.sleepycat.persist.model.PrimaryKey;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee.Command;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.PlayStrategy;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.TacticalField;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMap;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMapConst;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.AresData;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.IPlayStrategy;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ITacticalField;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.referee.RefereeMsg;
 
 
 /**
  * Frame with data for recording and visualization
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
-@Entity
+@Entity(version = 4)
 public class RecordFrame implements IRecordFrame
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	/** */
-	private IRecordWfFrame			recordFrame;
-	/** only contains new referee messages (for one frame) */
-	private Command					refereeCmd;
-	/** stores all tactical information added by metis' calculators. */
-	private TacticalField			tacticalInfo;
-	/** */
-	private PlayStrategy				playStrategy;
-	/** Represents the mapping between a BotID (int), and the {@link ARole} the bot had been assigned to */
-	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-	private BotIDMapConst<ERole>	assigendRoles;
+	@PrimaryKey
+	private int							id			= 0;
+	private static int				nextId	= 1;
 	
-	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-	private List<Path>				paths	= new ArrayList<Path>();
+	/** */
+	@NotNull
+	@AssertValid
+	private final IRecordWfFrame	recordFrame;
+	
+	/** only contains new referee messages (for one frame) */
+	private final RefereeMsg		refereeMsg;
+	
+	/** stores all tactical information added by metis' calculators. */
+	@NotNull
+	@AssertValid
+	private final ITacticalField	tacticalInfo;
+	
+	/** */
+	@NotNull
+	@AssertValid
+	private final IPlayStrategy	playStrategy;
+	
+	@NotNull
+	@AssertValid
+	private final AresData			aresData;
+	
+	@NotNull
+	private final ETeamColor		teamColor;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
+	@SuppressWarnings("unused")
+	private RecordFrame()
+	{
+		recordFrame = null;
+		tacticalInfo = null;
+		playStrategy = null;
+		aresData = new AresData();
+		refereeMsg = null;
+		teamColor = null;
+	}
+	
+	
 	/**
 	 * @param aiFrame
 	 */
-	public RecordFrame(AIInfoFrame aiFrame)
+	public RecordFrame(final IRecordFrame aiFrame)
 	{
-		recordFrame = new RecordWfFrame(aiFrame.worldFrame);
-		tacticalInfo = aiFrame.tacticalInfo;
-		playStrategy = aiFrame.playStrategy;
-		BotIDMap<ERole> roles = new BotIDMap<ERole>();
-		for (ARole role : aiFrame.getAssigendRoles().values())
-		{
-			roles.put(role.getBotID(), role.getType());
-		}
-		assigendRoles = BotIDMapConst.unmodifiableBotIDMap(roles);
+		setId();
+		recordFrame = new RecordWfFrame(aiFrame.getWorldFrame());
+		tacticalInfo = aiFrame.getTacticalField();
+		playStrategy = aiFrame.getPlayStrategy();
 		
-		if (aiFrame.refereeMsg != null)
-		{
-			refereeCmd = aiFrame.refereeMsg.getCommand();
-		}
+		aresData = new AresData(aiFrame.getAresData());
+		refereeMsg = aiFrame.getLatestRefereeMsg();
+		teamColor = aiFrame.getTeamColor();
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	/**
+	 * This will be called internally, so normally there is no use to call this.
+	 * This is only available for database tasks
+	 */
+	public final synchronized void setId()
+	{
+		id = nextId;
+		nextId++;
+	}
 	
 	
 	// --------------------------------------------------------------------------
@@ -98,18 +119,9 @@ public class RecordFrame implements IRecordFrame
 	 * @return the worldFrame
 	 */
 	@Override
-	public final IRecordWfFrame getRecordWfFrame()
+	public final IRecordWfFrame getWorldFrame()
 	{
 		return recordFrame;
-	}
-	
-	
-	/**
-	 * @param worldFrame the worldFrame to set
-	 */
-	public final void setWorldFrame(WorldFrame worldFrame)
-	{
-		recordFrame = worldFrame;
 	}
 	
 	
@@ -117,18 +129,9 @@ public class RecordFrame implements IRecordFrame
 	 * @return the refereeMsg
 	 */
 	@Override
-	public final Command getRefereeCmd()
+	public final RefereeMsg getLatestRefereeMsg()
 	{
-		return refereeCmd;
-	}
-	
-	
-	/**
-	 * @param refereeCmd the refereeMsg to set
-	 */
-	public final void setRefereeCmd(Command refereeCmd)
-	{
-		this.refereeCmd = refereeCmd;
+		return refereeMsg;
 	}
 	
 	
@@ -136,18 +139,9 @@ public class RecordFrame implements IRecordFrame
 	 * @return the tacticalInfo
 	 */
 	@Override
-	public final TacticalField getTacticalInfo()
+	public final ITacticalField getTacticalField()
 	{
 		return tacticalInfo;
-	}
-	
-	
-	/**
-	 * @param tacticalInfo the tacticalInfo to set
-	 */
-	public final void setTacticalInfo(TacticalField tacticalInfo)
-	{
-		this.tacticalInfo = tacticalInfo;
 	}
 	
 	
@@ -155,53 +149,37 @@ public class RecordFrame implements IRecordFrame
 	 * @return the playStrategy
 	 */
 	@Override
-	public final PlayStrategy getPlayStrategy()
+	public final IPlayStrategy getPlayStrategy()
 	{
 		return playStrategy;
 	}
 	
 	
-	/**
-	 * @param playStrategy the playStrategy to set
-	 */
-	public final void setPlayStrategy(PlayStrategy playStrategy)
-	{
-		this.playStrategy = playStrategy;
-	}
-	
-	
-	/**
-	 * @return the assigendRolesConst
-	 */
 	@Override
-	public final BotIDMapConst<ERole> getAssigendERoles()
+	public AresData getAresData()
 	{
-		return assigendRoles;
-	}
-	
-	
-	/**
-	 * @param assigendRoles the assigendRoles to set
-	 */
-	public final void setAssigendRolesConst(BotIDMapConst<ERole> assigendRoles)
-	{
-		this.assigendRoles = assigendRoles;
-	}
-	
-	
-	/**
-	 * @return the paths
-	 */
-	@Override
-	public final List<Path> getPaths()
-	{
-		return paths;
+		return aresData;
 	}
 	
 	
 	@Override
-	public void setPaths(List<Path> paths)
+	public boolean isPersistable()
 	{
-		this.paths = paths;
+		return true;
+	}
+	
+	
+	@Override
+	public final ETeamColor getTeamColor()
+	{
+		return teamColor;
+	}
+	
+	
+	@Override
+	public void cleanUp()
+	{
+		// remove ValuedFields as they are too big atm
+		tacticalInfo.getSupportValues().clear();
 	}
 }

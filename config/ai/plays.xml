@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plays base="edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays">
+    <others>
+        <MaintenancePlay>
+            <startingPos comment="first maintenance position">-3100.000000;-1800.000000</startingPos>
+            <direction comment="Direction from startingPos with length">0.000000;200.000000</direction>
+            <orientation comment="Orientation of bots">0.0</orientation>
+        </MaintenancePlay>
+    </others>
+    <DefensePlay>
+        <DISTANCE_FACTOR comment="Multiplicator for Distance between Defense Bots (default=2 for double BotRadius)">2</DISTANCE_FACTOR>
+        <spaceBeforeKeeper comment="vertical gap between defender and keeper_ only important for backup">300.0</spaceBeforeKeeper>
+        <spaceBesidesKeeper comment="horizontal gap between defender and keeper_ only important for backup">200.0</spaceBesidesKeeper>
+        <blockRadius comment="">400.0</blockRadius>
+        <ballSpeed comment="">1.0</ballSpeed>
+        <secureDistanceStoppedMode comment="Distance should stay away from ball if EGameState=STOPPED">500.0</secureDistanceStoppedMode>
+    </DefensePlay>
+</plays>

@@ -64,8 +64,9 @@ public class FusionCtrlPanel extends JPanel
 		 * @param pos
 		 * @param vel
 		 * @param acc
+		 * @param motor
 		 */
-		void onNewControllerParams(PIDParametersXYW pos, PIDParametersXYW vel, PIDParametersXYW acc);
+		void onNewControllerParams(PIDParametersXYW pos, PIDParametersXYW vel, PIDParametersXYW acc, PIDParameters motor);
 		
 		
 		/** */
@@ -85,12 +86,13 @@ public class FusionCtrlPanel extends JPanel
 	private JTextField[]									sensorAccGyro		= new JTextField[2];
 	private JTextField[]									sensorMotor			= new JTextField[2];
 	
-	private JTextField[]									ctrlPosXY			= new JTextField[3];
-	private JTextField[]									ctrlPosW				= new JTextField[3];
+	private JTextField[]									ctrlSplineXY		= new JTextField[3];
+	private JTextField[]									ctrlSplineW			= new JTextField[3];
 	private JTextField[]									ctrlVelXY			= new JTextField[3];
 	private JTextField[]									ctrlVelW				= new JTextField[3];
-	private JTextField[]									ctrlAccXY			= new JTextField[3];
-	private JTextField[]									ctrlAccW				= new JTextField[3];
+	private JTextField[]									ctrlPosXY			= new JTextField[3];
+	private JTextField[]									ctrlPosW				= new JTextField[3];
+	private JTextField[]									ctrlMotor			= new JTextField[3];
 	
 	
 	private final List<IFusionCtrlPanelObserver>	observers			= new ArrayList<IFusionCtrlPanelObserver>();
@@ -120,8 +122,9 @@ public class FusionCtrlPanel extends JPanel
 			ctrlPosW[i] = new JTextField();
 			ctrlVelXY[i] = new JTextField();
 			ctrlVelW[i] = new JTextField();
-			ctrlAccXY[i] = new JTextField();
-			ctrlAccW[i] = new JTextField();
+			ctrlSplineXY[i] = new JTextField();
+			ctrlSplineW[i] = new JTextField();
+			ctrlMotor[i] = new JTextField();
 		}
 		
 		JButton saveStateButton = new JButton("Save");
@@ -182,13 +185,14 @@ public class FusionCtrlPanel extends JPanel
 		JButton savePIDButton = new JButton("Save");
 		savePIDButton.addActionListener(new SaveControl());
 		
-		final JPanel ctrlPanel = new JPanel(new MigLayout("fill, wrap 7",
-				"[50]10[30,fill]10[30,fill]20[30,fill]10[30,fill]20[30,fill]10[30,fill]"));
+		final JPanel ctrlPanel = new JPanel(new MigLayout("fill, wrap 8",
+				"[15]5[35,fill]5[35,fill]10[35,fill]5[35,fill]10[35,fill]5[35,fill]10[35,fill]"));
 		
 		ctrlPanel.add(new JLabel(""));
-		ctrlPanel.add(new JLabel("Position"), "span 2");
+		ctrlPanel.add(new JLabel("Spline"), "span 2");
 		ctrlPanel.add(new JLabel("Velocity"), "span 2");
-		ctrlPanel.add(new JLabel("Acceleration"), "span 2");
+		ctrlPanel.add(new JLabel("Position"), "span 2");
+		ctrlPanel.add(new JLabel("Motor"), "");
 		
 		ctrlPanel.add(new JLabel(""));
 		ctrlPanel.add(new JLabel("XY"));
@@ -197,38 +201,42 @@ public class FusionCtrlPanel extends JPanel
 		ctrlPanel.add(new JLabel("W"));
 		ctrlPanel.add(new JLabel("XY"));
 		ctrlPanel.add(new JLabel("W"));
+		ctrlPanel.add(new JLabel("All"));
 		
 		ctrlPanel.add(new JLabel("P"));
-		ctrlPanel.add(ctrlPosXY[0]);
-		ctrlPanel.add(ctrlPosW[0]);
+		ctrlPanel.add(ctrlSplineXY[0]);
+		ctrlPanel.add(ctrlSplineW[0]);
 		ctrlPanel.add(ctrlVelXY[0]);
 		ctrlPanel.add(ctrlVelW[0]);
-		ctrlPanel.add(ctrlAccXY[0]);
-		ctrlPanel.add(ctrlAccW[0]);
+		ctrlPanel.add(ctrlPosXY[0]);
+		ctrlPanel.add(ctrlPosW[0]);
+		ctrlPanel.add(ctrlMotor[0]);
 		
 		ctrlPanel.add(new JLabel("I"));
-		ctrlPanel.add(ctrlPosXY[1]);
-		ctrlPanel.add(ctrlPosW[1]);
+		ctrlPanel.add(ctrlSplineXY[1]);
+		ctrlPanel.add(ctrlSplineW[1]);
 		ctrlPanel.add(ctrlVelXY[1]);
 		ctrlPanel.add(ctrlVelW[1]);
-		ctrlPanel.add(ctrlAccXY[1]);
-		ctrlPanel.add(ctrlAccW[1]);
+		ctrlPanel.add(ctrlPosXY[1]);
+		ctrlPanel.add(ctrlPosW[1]);
+		ctrlPanel.add(ctrlMotor[1]);
 		
 		ctrlPanel.add(new JLabel("D"));
-		ctrlPanel.add(ctrlPosXY[2]);
-		ctrlPanel.add(ctrlPosW[2]);
+		ctrlPanel.add(ctrlSplineXY[2]);
+		ctrlPanel.add(ctrlSplineW[2]);
 		ctrlPanel.add(ctrlVelXY[2]);
 		ctrlPanel.add(ctrlVelW[2]);
-		ctrlPanel.add(ctrlAccXY[2]);
-		ctrlPanel.add(ctrlAccW[2]);
+		ctrlPanel.add(ctrlPosXY[2]);
+		ctrlPanel.add(ctrlPosW[2]);
+		ctrlPanel.add(ctrlMotor[2]);
 		
-		ctrlPanel.add(savePIDButton, "span 7");
+		ctrlPanel.add(savePIDButton, "span 8");
 		
 		ctrlPanel.setBorder(BorderFactory.createTitledBorder("Controller"));
 		
+		add(ctrlPanel);
 		add(statePanel);
 		add(sensorPanel);
-		add(ctrlPanel);
 		add(copyToAll);
 	}
 	
@@ -284,13 +292,14 @@ public class FusionCtrlPanel extends JPanel
 	}
 	
 	
-	private void notifyNewControllerParams(PIDParametersXYW pos, PIDParametersXYW vel, PIDParametersXYW acc)
+	private void notifyNewControllerParams(PIDParametersXYW pos, PIDParametersXYW vel, PIDParametersXYW acc,
+			PIDParameters motor)
 	{
 		synchronized (observers)
 		{
 			for (IFusionCtrlPanelObserver observer : observers)
 			{
-				observer.onNewControllerParams(pos, vel, acc);
+				observer.onNewControllerParams(pos, vel, acc, motor);
 			}
 		}
 	}
@@ -368,12 +377,16 @@ public class FusionCtrlPanel extends JPanel
 				ctrlVelW[1].setText(Float.toString(params.getVel().getW().getKi()));
 				ctrlVelW[2].setText(Float.toString(params.getVel().getW().getKd()));
 				
-				ctrlAccXY[0].setText(Float.toString(params.getAcc().getX().getKp()));
-				ctrlAccXY[1].setText(Float.toString(params.getAcc().getX().getKi()));
-				ctrlAccXY[2].setText(Float.toString(params.getAcc().getX().getKd()));
-				ctrlAccW[0].setText(Float.toString(params.getAcc().getW().getKp()));
-				ctrlAccW[1].setText(Float.toString(params.getAcc().getW().getKi()));
-				ctrlAccW[2].setText(Float.toString(params.getAcc().getW().getKd()));
+				ctrlSplineXY[0].setText(Float.toString(params.getSpline().getX().getKp()));
+				ctrlSplineXY[1].setText(Float.toString(params.getSpline().getX().getKi()));
+				ctrlSplineXY[2].setText(Float.toString(params.getSpline().getX().getKd()));
+				ctrlSplineW[0].setText(Float.toString(params.getSpline().getW().getKp()));
+				ctrlSplineW[1].setText(Float.toString(params.getSpline().getW().getKi()));
+				ctrlSplineW[2].setText(Float.toString(params.getSpline().getW().getKd()));
+				
+				ctrlMotor[0].setText(Float.toString(params.getMotor().getKp()));
+				ctrlMotor[1].setText(Float.toString(params.getMotor().getKi()));
+				ctrlMotor[2].setText(Float.toString(params.getMotor().getKd()));
 			}
 		});
 	}
@@ -444,9 +457,10 @@ public class FusionCtrlPanel extends JPanel
 			float xy[] = new float[3]; // P, I, D
 			float w[] = new float[3]; // P, I, D
 			
-			PIDParametersXYW pos = new PIDParametersXYW();
+			PIDParametersXYW spline = new PIDParametersXYW();
 			PIDParametersXYW vel = new PIDParametersXYW();
-			PIDParametersXYW acc = new PIDParametersXYW();
+			PIDParametersXYW pos = new PIDParametersXYW();
+			PIDParameters motor = new PIDParameters();
 			
 			try
 			{
@@ -482,18 +496,30 @@ public class FusionCtrlPanel extends JPanel
 			{
 				for (int i = 0; i < 3; i++)
 				{
-					xy[i] = Float.parseFloat(ctrlAccXY[i].getText());
-					w[i] = Float.parseFloat(ctrlAccW[i].getText());
+					xy[i] = Float.parseFloat(ctrlSplineXY[i].getText());
+					w[i] = Float.parseFloat(ctrlSplineW[i].getText());
 				}
 				
-				acc.setX(new PIDParameters(xy[0], xy[1], xy[2]));
-				acc.setY(new PIDParameters(xy[0], xy[1], xy[2]));
-				acc.setW(new PIDParameters(w[0], w[1], w[2]));
+				spline.setX(new PIDParameters(xy[0], xy[1], xy[2]));
+				spline.setY(new PIDParameters(xy[0], xy[1], xy[2]));
+				spline.setW(new PIDParameters(w[0], w[1], w[2]));
 			} catch (NumberFormatException ex)
 			{
 			}
 			
-			notifyNewControllerParams(pos, vel, acc);
+			try
+			{
+				for (int i = 0; i < 3; i++)
+				{
+					xy[i] = Float.parseFloat(ctrlMotor[i].getText());
+				}
+				
+				motor = new PIDParameters(xy[0], xy[1], xy[2]);
+			} catch (NumberFormatException ex)
+			{
+			}
+			
+			notifyNewControllerParams(pos, vel, spline, motor);
 		}
 	}
 	

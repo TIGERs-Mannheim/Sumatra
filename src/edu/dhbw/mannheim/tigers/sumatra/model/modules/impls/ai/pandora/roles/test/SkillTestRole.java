@@ -16,7 +16,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARo
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ASkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleState;
 
 
@@ -102,13 +102,13 @@ public class SkillTestRole extends ARole
 		
 		
 		@Override
-		public void onSkillStarted(ASkill skill, BotID botID)
+		public void onSkillStarted(ISkill skill, BotID botID)
 		{
 		}
 		
 		
 		@Override
-		public void onSkillCompleted(ASkill skill, BotID botID)
+		public void onSkillCompleted(ISkill skill, BotID botID)
 		{
 			nextState(EEvent.DONE);
 		}

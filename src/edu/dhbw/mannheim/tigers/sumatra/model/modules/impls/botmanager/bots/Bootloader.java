@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 04.06.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots;
@@ -22,10 +21,9 @@ import java.util.TimerTask;
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerBootloaderCommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerBootloaderCommand.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerBootloaderCommand.EBootCommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerBootloaderData;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerBootloaderResponse;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerBootloaderResponse.EResponse;
 import edu.dhbw.mannheim.tigers.sumatra.util.GeneralPurposeTimer;
 
 
@@ -33,7 +31,6 @@ import edu.dhbw.mannheim.tigers.sumatra.util.GeneralPurposeTimer;
  * Bootloader logic.
  * 
  * @author AndreR
- * 
  */
 public class Bootloader
 {
@@ -41,14 +38,12 @@ public class Bootloader
 	public interface IBootloaderObserver
 	{
 		/**
-		 * 
 		 * @param state
 		 */
 		void onStateChanged(EBootloaderState state);
 		
 		
 		/**
-		 * 
 		 * @param current
 		 * @param total
 		 */
@@ -71,32 +66,32 @@ public class Bootloader
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private RandomAccessFile			file						= null;
-	private long							filesize					= 0;
-	private Map<Integer, TimerTask>	activeChunks			= new HashMap<Integer, TimerTask>();
-	private TigerBotV2					bot						= null;
-	private int								nextOffset				= 0;
-	private EBootloaderState			state						= EBootloaderState.IDLE;
-	private final Logger					log						= Logger.getLogger(getClass());
-	private CommandTimeout				lastCommandTimeout	= null;
-	private boolean						targetMain				= true;
+	private RandomAccessFile						file							= null;
+	private long										filesize						= 0;
+	private Map<Integer, TimerTask>				activeChunks				= new HashMap<Integer, TimerTask>();
+	private TigerBotV2								bot							= null;
+	private int											nextOffset					= 0;
+	private EBootloaderState						state							= EBootloaderState.IDLE;
+	private final Logger								log							= Logger.getLogger(getClass());
+	private CommandTimeout							lastCommandTimeout		= null;
+	private int											target						= 0;
 	
-	private final List<IBootloaderObserver>	observers				= new ArrayList<IBootloaderObserver>();
+	private final List<IBootloaderObserver>	observers					= new ArrayList<IBootloaderObserver>();
 	
 	
-	private final static int			CHUNK_TIMEOUT			= 500;
-	private final static int			COMMAND_TIMEOUT		= 500;
-	private final static int			ERASE_TIMEOUT			= 12000;
+	private static final int						CHUNK_TIMEOUT				= 500;
+	private static final int						COMMAND_TIMEOUT			= 500;
+	private static final int						ERASE_TIMEOUT				= 12000;
+	private static final int						NUM_PACKETS_IN_FLIGHT	= 1;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @param bot
 	 */
-	public Bootloader(TigerBotV2 bot)
+	public Bootloader(final TigerBotV2 bot)
 	{
 		this.bot = bot;
 	}
@@ -106,10 +101,9 @@ public class Bootloader
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @param observer
 	 */
-	public void addObserver(IBootloaderObserver observer)
+	public void addObserver(final IBootloaderObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -119,10 +113,9 @@ public class Bootloader
 	
 	
 	/**
-	 * 
 	 * @param observer
 	 */
-	public void removeObserver(IBootloaderObserver observer)
+	public void removeObserver(final IBootloaderObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -131,7 +124,7 @@ public class Bootloader
 	}
 	
 	
-	private void notifyStateChanged(EBootloaderState state)
+	private void notifyStateChanged(final EBootloaderState state)
 	{
 		synchronized (observers)
 		{
@@ -143,7 +136,7 @@ public class Bootloader
 	}
 	
 	
-	private void notifyProgressUpdate(long current, long total)
+	private void notifyProgressUpdate(final long current, final long total)
 	{
 		synchronized (observers)
 		{
@@ -156,14 +149,13 @@ public class Bootloader
 	
 	
 	/**
-	 * 
 	 * @param binFile
-	 * @param targetMain
+	 * @param target
 	 * @return
 	 */
-	public boolean start(String binFile, boolean targetMain)
+	public boolean start(final String binFile, final int target)
 	{
-		this.targetMain = targetMain;
+		this.target = target;
 		
 		try
 		{
@@ -186,7 +178,7 @@ public class Bootloader
 		state = EBootloaderState.MODE_QUERY;
 		notifyStateChanged(state);
 		
-		sendCommand(new TigerBootloaderCommand(ECommand.MODE_QUERY));
+		sendCommand(new TigerBootloaderCommand(EBootCommand.MODE_QUERY));
 		
 		return true;
 	}
@@ -219,12 +211,12 @@ public class Bootloader
 	}
 	
 	
-	private void sendCommand(TigerBootloaderCommand cmd)
+	private void sendCommand(final TigerBootloaderCommand cmd)
 	{
 		CommandTimeout timeout = new CommandTimeout(cmd);
 		lastCommandTimeout = timeout;
 		
-		switch (cmd.getType())
+		switch (cmd.getCommand())
 		{
 			case ERASE_MAIN:
 			case ERASE_MEDIA:
@@ -251,10 +243,9 @@ public class Bootloader
 	
 	
 	/**
-	 * 
 	 * @param response
 	 */
-	public void response(TigerBootloaderResponse response)
+	public void response(final TigerBootloaderResponse response)
 	{
 		if (lastCommandTimeout != null)
 		{
@@ -265,26 +256,21 @@ public class Bootloader
 		{
 			case MODE_QUERY:
 			{
-				switch (response.getType())
+				switch (response.getResponse())
 				{
 					case MODE_NORMAL:
 					{
 						GeneralPurposeTimer.getInstance().schedule(new DelayToBoot(), 1000);
 						
-						sendCommand(new TigerBootloaderCommand(ECommand.ENTER));
+						sendCommand(new TigerBootloaderCommand(EBootCommand.ENTER));
 					}
 						break;
 					case MODE_BOOTLOADER:
 					{
 						state = EBootloaderState.ERASING;
 						
-						if (targetMain)
-						{
-							sendCommand(new TigerBootloaderCommand(ECommand.ERASE_MAIN));
-						} else
-						{
-							sendCommand(new TigerBootloaderCommand(ECommand.ERASE_MEDIA));
-						}
+						sendCommand(new TigerBootloaderCommand(EBootCommand.getCommandConstant(EBootCommand.ERASE_MAIN
+								.getId() + target)));
 					}
 						break;
 					default:
@@ -292,24 +278,22 @@ public class Bootloader
 						log.warn("Invalid response in state MODE_QUERY: " + response.getType());
 					}
 				}
-				if (response.getType() == EResponse.MODE_NORMAL)
-				{
-				}
-				
 			}
 				break;
 			case ERASING:
 			{
-				switch (response.getType())
+				switch (response.getResponse())
 				{
 					case ACK:
 					{
 						state = EBootloaderState.PROGRAMMING;
 						
-						sendChunk(nextOffset);
-						nextOffset += TigerBootloaderData.BOOTLOADER_DATA_SIZE;
-						sendChunk(nextOffset);
-						nextOffset += TigerBootloaderData.BOOTLOADER_DATA_SIZE;
+						for (int i = 0; i < NUM_PACKETS_IN_FLIGHT; i++)
+						{
+							sendChunk(nextOffset);
+							nextOffset += TigerBootloaderData.BOOTLOADER_DATA_SIZE;
+						}
+						
 						notifyProgressUpdate(nextOffset, filesize);
 					}
 						break;
@@ -323,7 +307,7 @@ public class Bootloader
 				break;
 			case PROGRAMMING:
 			{
-				switch (response.getType())
+				switch (response.getResponse())
 				{
 					case NACK:
 					{
@@ -352,7 +336,7 @@ public class Bootloader
 						{
 							state = EBootloaderState.IDLE;
 							
-							sendCommand(new TigerBootloaderCommand(ECommand.EXIT));
+							sendCommand(new TigerBootloaderCommand(EBootCommand.EXIT));
 							
 							try
 							{
@@ -379,7 +363,7 @@ public class Bootloader
 	}
 	
 	
-	private void timeout(int offset)
+	private void timeout(final int offset)
 	{
 		if (state != EBootloaderState.PROGRAMMING)
 		{
@@ -394,7 +378,7 @@ public class Bootloader
 	}
 	
 	
-	private void timeout(TigerBootloaderCommand cmd)
+	private void timeout(final TigerBootloaderCommand cmd)
 	{
 		lastCommandTimeout = null;
 		
@@ -404,18 +388,13 @@ public class Bootloader
 		{
 			case MODE_QUERY:
 			{
-				sendCommand(new TigerBootloaderCommand(ECommand.MODE_QUERY));
+				sendCommand(new TigerBootloaderCommand(EBootCommand.MODE_QUERY));
 			}
 				break;
 			case ERASING:
 			{
-				if (targetMain)
-				{
-					sendCommand(new TigerBootloaderCommand(ECommand.ERASE_MAIN));
-				} else
-				{
-					sendCommand(new TigerBootloaderCommand(ECommand.ERASE_MEDIA));
-				}
+				sendCommand(new TigerBootloaderCommand(EBootCommand.getCommandConstant(EBootCommand.ERASE_MAIN.getId()
+						+ target)));
 			}
 				break;
 			case PROGRAMMING:
@@ -432,11 +411,11 @@ public class Bootloader
 	{
 		log.debug("Boot delay finished");
 		
-		sendCommand(new TigerBootloaderCommand(ECommand.MODE_QUERY));
+		sendCommand(new TigerBootloaderCommand(EBootCommand.MODE_QUERY));
 	}
 	
 	
-	private void sendChunk(int offset)
+	private void sendChunk(final int offset)
 	{
 		byte[] data = new byte[TigerBootloaderData.BOOTLOADER_DATA_SIZE];
 		
@@ -478,7 +457,10 @@ public class Bootloader
 		private final int	offset;
 		
 		
-		public DataTimeout(int o)
+		/**
+		 * @param o
+		 */
+		public DataTimeout(final int o)
 		{
 			offset = o;
 		}
@@ -496,7 +478,10 @@ public class Bootloader
 		private final TigerBootloaderCommand	cmd;
 		
 		
-		public CommandTimeout(TigerBootloaderCommand cmd)
+		/**
+		 * @param cmd
+		 */
+		public CommandTimeout(final TigerBootloaderCommand cmd)
 		{
 			this.cmd = cmd;
 		}
@@ -516,5 +501,24 @@ public class Bootloader
 		{
 			delayToBoot();
 		}
+	}
+	
+	
+	/**
+	 * @return the state
+	 */
+	public final EBootloaderState getState()
+	{
+		return state;
+	}
+	
+	
+	/**
+	 * @param state the state to set
+	 */
+	public final void setState(final EBootloaderState state)
+	{
+		this.state = state;
+		notifyStateChanged(state);
 	}
 }

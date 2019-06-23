@@ -63,6 +63,7 @@
 			<releases>
 			</releases>
 		</repository>
+
 		<repository>
 			<id>preon-repository</id>
 			<url>http://snapshots.repository.codehaus.org</url>
@@ -74,8 +75,12 @@
 			</releases>
 		</repository>
 
-		<!-- <repository> <id>objectdb</id> <name>ObjectDB Repository</name> <url>http://m2.objectdb.com</url> 
-			</repository> -->
+		<repository>
+			<id>oracleReleases</id>
+			<name>Oracle Released Java Packages</name>
+			<url>http://download.oracle.com/maven</url>
+			<layout>default</layout>
+		</repository>
 	</repositories>
 
 	<pluginRepositories>
@@ -96,16 +101,34 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>com.thoughtworks.xstream</groupId>
-			<artifactId>xstream</artifactId>
-			<version>1.4.4</version>
+			<groupId>com.google.code.matlabcontrol</groupId>
+			<artifactId>matlabcontrol</artifactId>
+			<version>4.1.0</version>
 		</dependency>
 
+		<dependency>
+			<groupId>com.sleepycat</groupId>
+			<artifactId>je</artifactId>
+			<version>5.0.73</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.carrotsearch</groupId>
+			<artifactId>junit-benchmarks</artifactId>
+			<version>0.7.0</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>net.sf.oval</groupId>
+			<artifactId>oval</artifactId>
+			<version>1.82</version>
+		</dependency>
 
 		<dependency>
 			<groupId>edu.dhbw.mannheim.tigers.sumatra</groupId>
 			<artifactId>messaging</artifactId>
-			<version>1.0</version>
+			<version>1.2</version>
 		</dependency>
 
 		<dependency>
@@ -142,14 +165,31 @@
 		<dependency>
 			<groupId>protobufMessages</groupId>
 			<artifactId>protobufMessages</artifactId>
-			<version>2.4.1-1</version>
+			<version>2.4.1-5</version>
 		</dependency>
 
+		<dependency>
+			<groupId>tigers</groupId>
+			<artifactId>btpb_core</artifactId>
+			<version>0.8</version>
+		</dependency>
+
+		<dependency>
+			<groupId>tigers</groupId>
+			<artifactId>btpb_java</artifactId>
+			<version>0.8</version>
+		</dependency>
 
 		<dependency>
 			<groupId>uncommons-maths</groupId>
 			<artifactId>uncommons-maths</artifactId>
 			<version>1.2.3</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-math3</artifactId>
+			<version>3.0</version>
 		</dependency>
 
 		<dependency>
@@ -174,7 +214,7 @@
 		<dependency>
 			<groupId>jinput</groupId>
 			<artifactId>jinput</artifactId>
-			<version>1.0</version>
+			<version>1.1</version>
 		</dependency>
 
 		<dependency>
@@ -184,21 +224,21 @@
 		</dependency>
 
 		<dependency>
-			<groupId>TIGERS_util.network</groupId>
-			<artifactId>TIGERS_util.network</artifactId>
-			<version>1.1</version>
-		</dependency>
-
-		<dependency>
-			<groupId>moduli</groupId>
-			<artifactId>moduli</artifactId>
-			<version>1.2.1</version>
-		</dependency>
-
-		<dependency>
 			<groupId>commons-configuration</groupId>
 			<artifactId>commons-configuration</artifactId>
-			<version>1.9</version>
+			<version>1.10</version>
+		</dependency>
+
+		<dependency>
+			<groupId>commons-collections</groupId>
+			<artifactId>commons-collections</artifactId>
+			<version>3.2.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>commons-lang</groupId>
+			<artifactId>commons-lang</artifactId>
+			<version>2.6</version>
 		</dependency>
 
 		<dependency>
@@ -220,21 +260,9 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.objectdb</groupId>
-			<artifactId>objectdb</artifactId>
-			<version>2.4.4_12</version>
-		</dependency>
-
-		<dependency>
 			<groupId>org.ecplise.paho.mqtt</groupId>
 			<artifactId>mqttv3</artifactId>
 			<version>3</version>
-		</dependency>
-
-		<dependency>
-			<groupId>commons-collections</groupId>
-			<artifactId>commons-collections</artifactId>
-			<version>3.2.1</version>
 		</dependency>
 
 		<dependency>
@@ -244,10 +272,15 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.hamcrest</groupId>
-			<artifactId>hamcrest-all</artifactId>
-			<version>1.1</version>
-			<scope>test</scope>
+			<groupId>org.swinglabs.swingx</groupId>
+			<artifactId>swingx-all</artifactId>
+			<version>1.6.4</version>
+		</dependency>
+
+		<dependency>
+			<groupId>net.sf.bluecove</groupId>
+			<artifactId>bluecove</artifactId>
+			<version>2.1.0</version>
 		</dependency>
 	</dependencies>
 
@@ -284,7 +317,27 @@
 						</includes>
 						<excludes>
 							<exclude>**/*Helper.java</exclude>
+							<exclude>**/*Perf.java</exclude>
 						</excludes>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>ch.fortysix</groupId>
+					<artifactId>maven-postman-plugin</artifactId>
+					<configuration>
+						<skip>false</skip>
+						<from>system@tigers-mannheim.de</from>
+						<failonerror>false</failonerror>
+						<mailhost>localhost</mailhost>
+						<mailuser></mailuser>
+						<mailpassword></mailpassword>
+						<receivers>
+							<receiver>system@tigers-mannheim.de</receiver>
+						</receivers>
+						<surefireReportHtml>${project.build.directory}/site/surefire-report.html</surefireReportHtml>
+						<subject>There are JUnit testcase failures or errors</subject>
+						<groovyCondition>errors > 0 || failures > 0</groovyCondition>
+						<htmlMessageFile>${project.build.directory}/site/surefire-report.html</htmlMessageFile>
 					</configuration>
 				</plugin>
 			</plugins>
@@ -294,6 +347,18 @@
 
 	<reporting>
 		<outputDirectory>target/site</outputDirectory>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jxr-plugin</artifactId>
+				<version>2.3</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-report-plugin</artifactId>
+				<version>2.4.3</version>
+			</plugin>
+		</plugins>
 	</reporting>
 
 	<profiles>

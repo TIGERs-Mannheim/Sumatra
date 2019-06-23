@@ -12,7 +12,9 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands
 import java.io.UnsupportedEncodingException;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -76,89 +78,35 @@ public class TigerSystemConsolePrint extends ACommand
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private ConsolePrintSource	source;
-	private String					text;
+	@SerialData(type = ESerialDataType.UINT8)
+	private int		source;
+	@SerialData(type = ESerialDataType.TAIL)
+	private byte[]	textData;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/** */
+	public TigerSystemConsolePrint()
+	{
+		super(ECommand.CMD_SYSTEM_CONSOLE_PRINT);
+	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	
-	@Override
-	public void setData(byte[] data)
-	{
-		int length = byteArray2UByte(data, 0);
-		source = ConsolePrintSource.getSourceConstant(byteArray2UByte(data, 1));
-		
-		try
-		{
-			text = new String(data, 2, length, "US-ASCII");
-		} catch (UnsupportedEncodingException err)
-		{
-			text = "Unsupported Encoding";
-		}
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		byte[] textBytes;
-		try
-		{
-			textBytes = text.getBytes("US-ASCII");
-		} catch (UnsupportedEncodingException err)
-		{
-			textBytes = new byte[1];
-			textBytes[0] = 0;
-		}
-		
-		int length = textBytes.length;
-		if (length > 80)
-		{
-			length = 80;
-		}
-		
-		byte2ByteArray(data, 0, length);
-		byte2ByteArray(data, 1, source.getId());
-		
-		System.arraycopy(textBytes, 0, data, 2, length);
-		
-		return data;
-	}
-	
-	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_SYSTEM_CONSOLE_PRINT;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 82;
-	}
-	
-	
 	/**
 	 * @return the source
 	 */
 	public ConsolePrintSource getSource()
 	{
-		return source;
+		return ConsolePrintSource.getSourceConstant(source);
 	}
 	
 	
@@ -167,7 +115,7 @@ public class TigerSystemConsolePrint extends ACommand
 	 */
 	public void setSource(ConsolePrintSource source)
 	{
-		this.source = source;
+		this.source = source.getId();
 	}
 	
 	
@@ -176,6 +124,16 @@ public class TigerSystemConsolePrint extends ACommand
 	 */
 	public String getText()
 	{
+		String text;
+		
+		try
+		{
+			text = new String(textData, 0, textData.length, "US-ASCII");
+		} catch (UnsupportedEncodingException err)
+		{
+			text = "Unsupported Encoding";
+		}
+		
 		return text;
 	}
 	
@@ -185,7 +143,13 @@ public class TigerSystemConsolePrint extends ACommand
 	 */
 	public void setText(String text)
 	{
-		this.text = text;
+		try
+		{
+			textData = text.getBytes("US-ASCII");
+		} catch (UnsupportedEncodingException err)
+		{
+			textData = new byte[1];
+			textData[0] = 0;
+		}
 	}
-	
 }

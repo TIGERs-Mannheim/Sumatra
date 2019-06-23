@@ -9,7 +9,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data;
 
-import javax.persistence.Embeddable;
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 
@@ -20,7 +20,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
  * @author Dirk Klostermann <klostermannn@googlemail.com>
  * 
  */
-@Embeddable
+@Persistent
 public class Collision
 {
 	// --------------------------------------------------------------------------
@@ -33,6 +33,13 @@ public class Collision
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	@SuppressWarnings("unused")
+	private Collision()
+	{
+	}
+	
+	
 	/**
 	 * @param time
 	 * @param position

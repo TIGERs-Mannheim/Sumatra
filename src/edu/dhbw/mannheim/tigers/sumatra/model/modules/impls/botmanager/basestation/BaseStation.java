@@ -10,16 +10,17 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.basestation;
 
 import java.net.NetworkInterface;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimerTask;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
+import org.apache.commons.configuration.HierarchicalConfiguration.Node;
 import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
@@ -28,12 +29,12 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.comm
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.udp.ITransceiverUDPObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.udp.UnicastTransceiverUDP;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationAuth;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationPing;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationStats;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationVisionConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationStats.WifiStats;
 import edu.dhbw.mannheim.tigers.sumatra.util.GeneralPurposeTimer;
 import edu.dhbw.mannheim.tigers.sumatra.util.IWatchdogObserver;
 import edu.dhbw.mannheim.tigers.sumatra.util.NamedThreadFactory;
@@ -54,8 +55,8 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private final List<IBaseStationObserver>	observers		= new ArrayList<IBaseStationObserver>();
-	private final UnicastTransceiverUDP			transceiver		= new UnicastTransceiverUDP();
+	private final Set<IBaseStationObserver>	observers		= new HashSet<IBaseStationObserver>();
+	private final UnicastTransceiverUDP			transceiver		= new UnicastTransceiverUDP(false);
 	private final Logger								log				= Logger.getLogger(getClass());
 	
 	private int											localPort		= 10200;
@@ -63,8 +64,10 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 	private int											dstPort			= 10201;
 	
 	private boolean									invertPosition	= false;
+	private int											channel			= 100;
 	private int											visionRate		= 30;
-	private boolean									tigersBlue		= false;
+	private int											maxBots			= 6;
+	private int											timeout			= 1000;
 	
 	private ScheduledExecutorService				pingService		= null;
 	private PingThread								pingThread		= null;
@@ -74,6 +77,9 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 	private final Watchdog							watchdog			= new Watchdog(TIMEOUT);
 	private ENetworkState							netState			= ENetworkState.OFFLINE;
 	private boolean									active			= false;
+	private BaseStationStats						latestStats		= null;
+	
+	private final int									key;
 	
 	
 	// --------------------------------------------------------------------------
@@ -83,6 +89,7 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 	public BaseStation()
 	{
 		init();
+		key = 0;
 	}
 	
 	
@@ -98,8 +105,10 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 		active = config.getBoolean("active", false);
 		invertPosition = config.getBoolean("invertPos", false);
 		visionRate = config.getInt("visionRate", 30);
-		tigersBlue = config.getBoolean("tigersBlue", false);
-		
+		maxBots = config.getInt("maxBots", 6);
+		channel = config.getInt("channel", 100);
+		timeout = config.getInt("timeout", 1000);
+		key = config.getInt("[@id]");
 		init();
 	}
 	
@@ -185,9 +194,9 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 			changeNetworkState(ENetworkState.ONLINE);
 		}
 		
-		switch (cmd.getCommand())
+		switch (cmd.getType())
 		{
-			case CommandConstants.CMD_BASE_ACOMMAND:
+			case CMD_BASE_ACOMMAND:
 			{
 				BaseStationACommand baseCmd = (BaseStationACommand) cmd;
 				
@@ -200,7 +209,7 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 				notifyIncommingBotCommand(baseCmd.getId(), baseCmd.getChild());
 			}
 				break;
-			case CommandConstants.CMD_BASE_PING:
+			case CMD_BASE_PING:
 			{
 				BaseStationPing ping = (BaseStationPing) cmd;
 				
@@ -210,14 +219,24 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 				}
 			}
 				break;
-			case CommandConstants.CMD_BASE_STATS:
+			case CMD_BASE_STATS:
 			{
 				BaseStationStats stats = (BaseStationStats) cmd;
+				
+				latestStats = stats;
+				
+				for (WifiStats wifiStats : stats.getWifiStats())
+				{
+					if (wifiStats.getLinkQuality() == 0.0f)
+					{
+						notifyBotOffline(wifiStats.getBotId());
+					}
+				}
 				
 				notifyNewBaseStationStats(stats);
 			}
 				break;
-			case CommandConstants.CMD_BASE_AUTH:
+			case CMD_BASE_AUTH:
 			{
 				notifyIncommingBaseStationCommand(cmd);
 			}
@@ -312,17 +331,21 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 	
 	/**
 	 * 
+	 * @param channel
 	 * @param invert
+	 * @param maxBots
 	 * @param rate
-	 * @param tigersBlue
+	 * @param timeout
 	 */
-	public void setVisionConfig(boolean invert, int rate, boolean tigersBlue)
+	public void setConfig(int channel, boolean invert, int maxBots, int rate, int timeout)
 	{
-		enqueueCommand(new BaseStationVisionConfig(invert, rate, tigersBlue));
+		enqueueCommand(new BaseStationConfig(channel, invert, maxBots, rate, timeout));
 		
+		this.channel = channel;
 		invertPosition = invert;
+		this.maxBots = maxBots;
 		visionRate = rate;
-		this.tigersBlue = tigersBlue;
+		this.timeout = timeout;
 	}
 	
 	
@@ -343,16 +366,6 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 	public int getVisionRate()
 	{
 		return visionRate;
-	}
-	
-	
-	/**
-	 * 
-	 * @return
-	 */
-	public boolean isTigersBlue()
-	{
-		return tigersBlue;
 	}
 	
 	
@@ -406,7 +419,7 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 				connectTimer.cancel();
 			}
 			
-			setVisionConfig(invertPosition, visionRate, tigersBlue);
+			setConfig(channel, invertPosition, maxBots, visionRate, timeout);
 			
 			// start watchdog
 			watchdog.start(this);
@@ -421,6 +434,11 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 		
 		if ((netState == ENetworkState.ONLINE) && (newState == ENetworkState.CONNECTING))
 		{
+			for (WifiStats wifiStats : latestStats.getWifiStats())
+			{
+				notifyBotOffline(wifiStats.getBotId());
+			}
+			
 			// stop watchdog
 			watchdog.stop();
 			
@@ -437,6 +455,11 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 		
 		if ((netState == ENetworkState.ONLINE) && (newState == ENetworkState.OFFLINE))
 		{
+			for (WifiStats wifiStats : latestStats.getWifiStats())
+			{
+				notifyBotOffline(wifiStats.getBotId());
+			}
+			
 			// stop watchdog
 			watchdog.stop();
 			
@@ -525,6 +548,18 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 	}
 	
 	
+	private void notifyBotOffline(BotID id)
+	{
+		synchronized (observers)
+		{
+			for (IBaseStationObserver observer : observers)
+			{
+				observer.onBotOffline(id);
+			}
+		}
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -534,14 +569,18 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 	public HierarchicalConfiguration getConfig()
 	{
 		final HierarchicalConfiguration config = new HierarchicalConfiguration();
-		
+		Node node = new Node("baseStation");
+		node.addAttribute(new Node("id", key));
+		config.setRoot(node);
 		config.addProperty("ip", host);
 		config.addProperty("localPort", localPort);
 		config.addProperty("remotePort", dstPort);
 		config.addProperty("active", active);
 		config.addProperty("invertPos", invertPosition);
 		config.addProperty("visionRate", visionRate);
-		config.addProperty("tigersBlue", tigersBlue);
+		config.addProperty("channel", channel);
+		config.addProperty("maxBots", maxBots);
+		config.addProperty("timeout", 1000);
 		
 		return config;
 	}
@@ -670,5 +709,39 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 		{
 			enqueueCommand(new BaseStationAuth());
 		}
+	}
+	
+	
+	@Override
+	public String getName()
+	{
+		return "BaseStation " + key;
+	}
+	
+	
+	/**
+	 * @return the channel
+	 */
+	public int getChannel()
+	{
+		return channel;
+	}
+	
+	
+	/**
+	 * @return the maxBots
+	 */
+	public int getMaxBots()
+	{
+		return maxBots;
+	}
+	
+	
+	/**
+	 * @return the timeout
+	 */
+	public int getTimeout()
+	{
+		return timeout;
 	}
 }

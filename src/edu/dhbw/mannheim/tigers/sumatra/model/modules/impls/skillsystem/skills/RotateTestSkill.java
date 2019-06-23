@@ -8,21 +8,23 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.HermiteSplineTrajectory1D;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.SplinePair3D;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.SplineTrajectoryGenerator;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline.HermiteSpline;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
 
 
 /**
- * Simple straight move that times out after a specified time.
- * Mainly for testing purposes.
+ * Rotate with angle. Multiples of 2*PI are possible.
  * 
- * @author AndreR
- * 
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class RotateTestSkill extends AMoveSkill
 {
@@ -31,10 +33,9 @@ public class RotateTestSkill extends AMoveSkill
 	
 	
 	/**
-	 * 
 	 * @param angle [rad]
 	 */
-	public RotateTestSkill(float angle)
+	public RotateTestSkill(final float angle)
 	{
 		super(ESkillName.ROTATE);
 		
@@ -43,24 +44,41 @@ public class RotateTestSkill extends AMoveSkill
 	
 	
 	@Override
-	public List<ACommand> doCalcEntryActions(TrackedTigerBot bot, List<ACommand> cmds)
+	public List<ACommand> doCalcEntryActions(final List<ACommand> cmds)
 	{
 		List<IVector2> path = new LinkedList<IVector2>();
-		path.add(bot.getPos());
-		createSpline(bot, path, angle);
+		path.add(getPos());
+		
+		SplineTrajectoryGenerator gen = createDefaultGenerator(getBotType());
+		SplinePair3D result = createSplineWithoutDrivingIt(path, getAngle(), gen);
+		
+		HermiteSpline rotateSpline = gen.generateSpline(getAngle(), getAngle() + angle, 0, 0, 0.1f, false);
+		List<HermiteSpline> rotateParts = new ArrayList<HermiteSpline>();
+		rotateParts.add(rotateSpline);
+		
+		result.setRotationTrajectory(new HermiteSplineTrajectory1D(rotateParts));
+		setNewTrajectory(result, path);
+		
 		return cmds;
 	}
 	
 	
 	@Override
-	protected void periodicProcess(TrackedTigerBot bot, List<ACommand> cmds)
+	protected void periodicProcess(final List<ACommand> cmds)
 	{
 	}
 	
 	
 	@Override
-	protected boolean isComplete(TrackedTigerBot bot)
+	protected boolean isMoveComplete()
 	{
-		return super.isComplete(bot);
+		return super.isMoveComplete();
+	}
+	
+	
+	@Override
+	public boolean needsVision()
+	{
+		return false;
 	}
 }

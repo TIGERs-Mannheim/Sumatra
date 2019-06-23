@@ -10,7 +10,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.visible;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
@@ -45,9 +45,9 @@ public class TargetVisibleCon extends AVisibleCon
 	// --------------------------------------------------------------------------
 	
 	@Override
-	public EConditionState doCheckCondition(WorldFrame worldFrame, BotID botID)
+	public EConditionState doCheckCondition(SimpleWorldFrame worldFrame, BotID botID)
 	{
-		final TrackedTigerBot bot = worldFrame.tigerBotsVisible.get(botID);
+		final TrackedTigerBot bot = worldFrame.getBot(botID);
 		updateStart(new Vector2(bot.getPos()));
 		addToIgnore(botID);
 		

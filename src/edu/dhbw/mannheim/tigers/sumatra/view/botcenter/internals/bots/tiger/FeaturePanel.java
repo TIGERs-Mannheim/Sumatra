@@ -9,20 +9,25 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger;
 
-import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+
+import net.miginfocom.swing.MigLayout;
 
 import org.apache.log4j.Logger;
 
@@ -49,6 +54,8 @@ public class FeaturePanel extends JPanel
 	
 	private final List<IFeatureChangedObserver>	observers			= new ArrayList<IFeatureChangedObserver>();
 	
+	private Map<EFeature, EFeatureState>			features				= new HashMap<EFeature, EFeatureState>();
+	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
@@ -58,10 +65,14 @@ public class FeaturePanel extends JPanel
 	  */
 	public FeaturePanel()
 	{
-		setLayout(new FlowLayout(FlowLayout.LEFT));
+		setLayout(new MigLayout());
 		featuresPanel = new JPanel(new GridBagLayout());
 		featuresPanel.setBorder(BorderFactory.createTitledBorder("Features"));
 		add(featuresPanel, "wrap");
+		
+		JButton btnApplyToAll = new JButton("Apply to all");
+		btnApplyToAll.addActionListener(new ApplyToAllActionListener());
+		add(btnApplyToAll, "wrap");
 	}
 	
 	
@@ -80,6 +91,7 @@ public class FeaturePanel extends JPanel
 	 */
 	public void setFeatures(final Map<EFeature, EFeatureState> features)
 	{
+		this.features = features;
 		SwingUtilities.invokeLater(new Runnable()
 		{
 			@Override
@@ -127,6 +139,7 @@ public class FeaturePanel extends JPanel
 			}
 			EFeatureState state = (EFeatureState) e.getItem();
 			notifyFeatureChanged(feature, state);
+			features.put(feature, state);
 		}
 	}
 	
@@ -162,6 +175,22 @@ public class FeaturePanel extends JPanel
 			for (IFeatureChangedObserver observer : observers)
 			{
 				observer.onFeatureChanged(feature, state);
+			}
+		}
+	}
+	
+	private class ApplyToAllActionListener implements ActionListener
+	{
+		
+		@Override
+		public void actionPerformed(ActionEvent e)
+		{
+			synchronized (observers)
+			{
+				for (IFeatureChangedObserver observer : observers)
+				{
+					observer.onApplyFeaturesToAll(features);
+				}
 			}
 		}
 	}

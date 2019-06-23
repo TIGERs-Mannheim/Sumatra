@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 29.06.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.botcenter.bootloader;
@@ -22,7 +21,6 @@ import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bootloader.Firm
  * Firmware update presenter.
  * 
  * @author AndreR
- * 
  */
 public class FirmwareBotPresenter implements IBootloaderObserver
 {
@@ -48,7 +46,7 @@ public class FirmwareBotPresenter implements IBootloaderObserver
 	/**
 	 * @param bot
 	 */
-	public FirmwareBotPresenter(TigerBotV2 bot)
+	public FirmwareBotPresenter(final TigerBotV2 bot)
 	{
 		this.bot = bot;
 		
@@ -69,21 +67,19 @@ public class FirmwareBotPresenter implements IBootloaderObserver
 	
 	
 	/**
-	 * 
 	 * @param filePath
-	 * @param main
+	 * @param target
 	 */
-	public void start(String filePath, boolean main)
+	public void start(final String filePath, final int target)
 	{
-		bot.getBootloader().start(filePath, main);
+		bot.getBootloader().start(filePath, target);
 	}
 	
 	
 	/**
-	 * 
 	 * @param observer
 	 */
-	public void addObserver(IFirmwareBotPresenterObserver observer)
+	public void addObserver(final IFirmwareBotPresenterObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -93,10 +89,9 @@ public class FirmwareBotPresenter implements IBootloaderObserver
 	
 	
 	/**
-	 * 
 	 * @param observer
 	 */
-	public void removeObserver(IFirmwareBotPresenterObserver observer)
+	public void removeObserver(final IFirmwareBotPresenterObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -118,7 +113,7 @@ public class FirmwareBotPresenter implements IBootloaderObserver
 	
 	
 	@Override
-	public void onStateChanged(EBootloaderState state)
+	public void onStateChanged(final EBootloaderState state)
 	{
 		botPanel.setState(state);
 		
@@ -130,7 +125,7 @@ public class FirmwareBotPresenter implements IBootloaderObserver
 	
 	
 	@Override
-	public void onProgressUpdate(long current, long total)
+	public void onProgressUpdate(final long current, final long total)
 	{
 		botPanel.setProgress(current, total);
 	}
@@ -144,6 +139,13 @@ public class FirmwareBotPresenter implements IBootloaderObserver
 		return botPanel;
 	}
 	
+	
+	/**
+	 */
+	public void cancel()
+	{
+		bot.getBootloader().cancel();
+	}
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------

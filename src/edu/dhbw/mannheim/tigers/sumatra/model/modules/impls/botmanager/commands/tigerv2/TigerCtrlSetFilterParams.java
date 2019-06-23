@@ -12,7 +12,9 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector3;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -85,8 +87,10 @@ public class TigerCtrlSetFilterParams extends ACommand
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
+	@SerialData(type = ESerialDataType.FLOAT32)
 	private float[]	params	= new float[3];
-	private ParamType	type;
+	@SerialData(type = ESerialDataType.UINT8)
+	private int			type;
 	
 	
 	// --------------------------------------------------------------------------
@@ -95,7 +99,9 @@ public class TigerCtrlSetFilterParams extends ACommand
 	/** */
 	public TigerCtrlSetFilterParams()
 	{
-		type = ParamType.UNKNOWN;
+		super(ECommand.CMD_CTRL_SET_FILTER_PARAMS);
+		
+		type = ParamType.UNKNOWN.getValue();
 	}
 	
 	
@@ -105,7 +111,9 @@ public class TigerCtrlSetFilterParams extends ACommand
 	 */
 	public TigerCtrlSetFilterParams(ParamType type, float params[])
 	{
-		this.type = type;
+		super(ECommand.CMD_CTRL_SET_FILTER_PARAMS);
+		
+		this.type = type.getValue();
 		
 		if (params.length < 3)
 		{
@@ -124,7 +132,9 @@ public class TigerCtrlSetFilterParams extends ACommand
 	 */
 	public TigerCtrlSetFilterParams(ParamType type, Vector3 params)
 	{
-		this.type = type;
+		super(ECommand.CMD_CTRL_SET_FILTER_PARAMS);
+		
+		this.type = type.getValue();
 		
 		this.params[0] = params.x();
 		this.params[1] = params.y();
@@ -138,7 +148,9 @@ public class TigerCtrlSetFilterParams extends ACommand
 	 */
 	public TigerCtrlSetFilterParams(ParamType type, Vector2 params)
 	{
-		this.type = type;
+		super(ECommand.CMD_CTRL_SET_FILTER_PARAMS);
+		
+		this.type = type.getValue();
 		
 		this.params[0] = params.x();
 		this.params[1] = params.y();
@@ -148,43 +160,6 @@ public class TigerCtrlSetFilterParams extends ACommand
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		params[0] = byteArray2Float(data, 0);
-		params[1] = byteArray2Float(data, 4);
-		params[2] = byteArray2Float(data, 8);
-		
-		type = ParamType.getParamTypeConstant(byteArray2UByte(data, 12));
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		float2ByteArray(data, 0, params[0]);
-		float2ByteArray(data, 4, params[1]);
-		float2ByteArray(data, 8, params[2]);
-		byte2ByteArray(data, 12, type.getValue());
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_CTRL_SET_FILTER_PARAMS;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 13;
-	}
 	
 	
 	// --------------------------------------------------------------------------
@@ -235,17 +210,17 @@ public class TigerCtrlSetFilterParams extends ACommand
 	/**
 	 * @return the type
 	 */
-	public ParamType getType()
+	public ParamType getParamType()
 	{
-		return type;
+		return ParamType.getParamTypeConstant(type);
 	}
 	
 	
 	/**
 	 * @param type the type to set
 	 */
-	public void setType(ParamType type)
+	public void setParamType(ParamType type)
 	{
-		this.type = type;
+		this.type = type.getValue();
 	}
 }

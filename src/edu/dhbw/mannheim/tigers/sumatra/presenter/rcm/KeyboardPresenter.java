@@ -14,7 +14,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.inputDevice.cont
 
 /**
  */
-public class KeyboardPresenter extends AControllerPresenter
+class KeyboardPresenter extends AControllerPresenter
 {
 	// --------------------------------------------------------------------------
 	// --- class variables ------------------------------------------------------
@@ -26,7 +26,7 @@ public class KeyboardPresenter extends AControllerPresenter
 	/**
 	 * @param newController
 	 */
-	public KeyboardPresenter(Controller newController)
+	KeyboardPresenter(Controller newController)
 	{
 		super(newController);
 	}

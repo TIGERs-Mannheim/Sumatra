@@ -10,7 +10,7 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.visible;
 
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.ECondition;
@@ -63,7 +63,7 @@ public class VisibleCon extends AVisibleCon
 	// --------------------------------------------------------------------------
 	
 	@Override
-	public EConditionState doCheckCondition(WorldFrame worldFrame, BotID botID)
+	public EConditionState doCheckCondition(SimpleWorldFrame worldFrame, BotID botID)
 	{
 		addToIgnore(botID);
 		return checkVisibility(worldFrame) ? EConditionState.FULFILLED : EConditionState.BLOCKED;

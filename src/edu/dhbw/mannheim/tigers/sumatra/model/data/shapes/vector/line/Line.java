@@ -11,11 +11,12 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line;
 
 import java.io.Serializable;
 
-import org.apache.log4j.Logger;
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
 
 
 /**
@@ -24,23 +25,22 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
  * @author Malte
  * 
  */
+@Persistent(version = 1)
 public class Line extends ALine implements Serializable
 {
 	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	// Logger
-	private static final Logger	log					= Logger.getLogger(Line.class.getName());
 	
 	/**  */
-	private static final long		serialVersionUID	= 1921865867557739325L;
+	private static final long	serialVersionUID	= 1921865867557739325L;
 	
 	/** ("Stuetzvektor") */
-	private Vector2					supportVector;
+	private final IVector2		supportVector;
 	
 	/** ("Richtungsvektor" */
-	private Vector2					directionVector;
+	private final IVector2		directionVector;
 	
 	
 	// --------------------------------------------------------------------------
@@ -102,12 +102,9 @@ public class Line extends ALine implements Serializable
 		supportVector = new Vector2(sV);
 		if (dV.isZeroVector())
 		{
-			log.error("Tried to create a line with a zero-direction vector.", new Exception());
-			directionVector = new Vector2(1, 0);
-		} else
-		{
-			directionVector = new Vector2(dV);
+			throw new IllegalArgumentException("Tried to create a line with a zero-direction vector.");
 		}
+		directionVector = new Vector2(dV);
 	}
 	
 	
@@ -115,106 +112,23 @@ public class Line extends ALine implements Serializable
 	 * @param p1
 	 * @param p2
 	 * @return
+	 * @throws IllegalArgumentException if points are equal
 	 */
 	public static Line newLine(IVector2 p1, IVector2 p2)
 	{
-		final Line line = new Line();
-		line.setPoints(p1, p2);
-		return line;
+		IVector2 supportVector = new Vector2f(p1);
+		if (p1.equals(p2))
+		{
+			throw new IllegalArgumentException("Points may not be equal: " + p1);
+		}
+		IVector2 directionVector = p2.subtractNew(p1);
+		return new Line(supportVector, directionVector);
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/**
-	 * @param sV
-	 * @param dV
-	 */
-	public void set(IVector2 sV, IVector2 dV)
-	{
-		setSupportVector(sV);
-		setDirectionVector(sV);
-	}
-	
-	
-	/**
-	 * @param line
-	 */
-	public void set(Line line)
-	{
-		setSupportVector(line.supportVector());
-		setDirectionVector(line.directionVector());
-	}
-	
-	
-	/**
-	 * @param sV
-	 */
-	public void setSupportVector(IVector2 sV)
-	{
-		supportVector.x = sV.x();
-		supportVector.y = sV.y();
-	}
-	
-	
-	/**
-	 * @param sV
-	 */
-	public void setDirectionVector(IVector2 sV)
-	{
-		if (sV.isZeroVector())
-		{
-			throw new IllegalArgumentException("Directionvector may not be a Zero-Vector!");
-		}
-		directionVector.x = sV.x();
-		directionVector.y = sV.y();
-	}
-	
-	
-	/**
-	 * The Line is now defined by 2 points: the given one (p) and the support vector.<b>
-	 * The directionvector of the line
-	 * leads from supportVector to p.<br>
-	 * If both points are equal: p.x = p.x + 0.001; p.y = p.y + 0.001;
-	 * 
-	 * @param p
-	 */
-	public void setPoint(IVector2 p)
-	{
-		if (p.equals(supportVector()))
-		{
-			log.warn("You tried to create a line with two equal points!");
-		} else
-		{
-			setDirectionVector(p.subtractNew(supportVector()));
-		}
-		
-	}
-	
-	
-	/**
-	 * Re-Defines 'this'. The two Points are element of the line.<br>
-	 * Can be used as a constructor. The directionvector of the new line
-	 * leads from p1 to p2.<br>
-	 * If both points are equal: <code>line = new Line(initVector, initVector);</code>
-	 * 
-	 * @param p1
-	 * @param p2
-	 */
-	public void setPoints(IVector2 p1, IVector2 p2)
-	{
-		setSupportVector(p1);
-		if (p1.equals(p2))
-		{
-			log.warn("Points may not be equal: " + p1, new IllegalArgumentException());
-			setDirectionVector(new Vector2(1, 0).subtract(p1));
-		} else
-		{
-			setDirectionVector(p2.subtractNew(p1));
-		}
-		
-	}
 	
 	
 	// --------------------------------------------------------------------------
@@ -223,25 +137,15 @@ public class Line extends ALine implements Serializable
 	
 	
 	@Override
-	public Vector2 supportVector()
+	public IVector2 supportVector()
 	{
-		if (supportVector == null)
-		{
-			supportVector = new Vector2();
-		}
 		return supportVector;
 	}
 	
 	
 	@Override
-	public Vector2 directionVector()
+	public IVector2 directionVector()
 	{
-		if (directionVector == null)
-		{
-			directionVector = new Vector2();
-		}
 		return directionVector;
 	}
-	
-	
 }

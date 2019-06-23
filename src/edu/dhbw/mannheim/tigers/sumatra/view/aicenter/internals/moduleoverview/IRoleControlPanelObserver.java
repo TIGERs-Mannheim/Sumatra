@@ -11,7 +11,7 @@
 package edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 
 
 /**
@@ -22,33 +22,14 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERo
 public interface IRoleControlPanelObserver
 {
 	/**
-	 * The given {@link ERole} should be executed
-	 * 
 	 * @param role
+	 * @param botId botId to be assigned or uninitialized botId, if auto assign
 	 */
-	void addRole(ERole role);
+	void addRole(ARole role, BotID botId);
 	
 	
 	/**
-	 * The given {@link ERole} should be executed on the bot identified by the given id
-	 * 
-	 * @param role
-	 * @param botId
-	 */
-	void addRole(ERole role, BotID botId);
-	
-	
-	/**
-	 * Remove the specified role
-	 * TODO Gero: Undefined behavior, as one should use the BOTID as identifier instead of ERole (Gero)
-	 * 
 	 * @param role
 	 */
-	void removeRole(ERole role);
-	
-	
-	/**
-	 * Removes all roles
-	 */
-	void clearRoles();
+	void removeRole(ARole role);
 }

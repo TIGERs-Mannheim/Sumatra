@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Jan 27, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.replay;
@@ -13,7 +12,6 @@ package edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.replay;
  * Observer for {@link ReplayControlPanel}
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public interface IReplayControlPanelObserver
 {
@@ -28,6 +26,12 @@ public interface IReplayControlPanelObserver
 	
 	
 	/**
+	 * @param speed
+	 */
+	void onSetSpeed(int speed);
+	
+	
+	/**
 	 * @param playing true if playing, false if paused
 	 */
 	void onPlayStateChanged(boolean playing);
@@ -37,4 +41,10 @@ public interface IReplayControlPanelObserver
 	 * @param position position within graphicsStore
 	 */
 	void onPositionChanged(int position);
+	
+	
+	/**
+	 * @param relPos
+	 */
+	void onChangeRelPos(int relPos);
 }

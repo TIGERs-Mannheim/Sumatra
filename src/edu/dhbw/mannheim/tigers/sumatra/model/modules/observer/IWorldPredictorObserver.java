@@ -9,7 +9,8 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.observer;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamDetectionFrame;
 
 
 /**
@@ -23,12 +24,19 @@ public interface IWorldPredictorObserver
 	 * 
 	 * @param wf
 	 */
-	void onNewWorldFrame(WorldFrame wf);
+	void onNewWorldFrame(SimpleWorldFrame wf);
 	
 	
 	/**
 	 * Called when there is no vision signal.
 	 * @param emptyWf
 	 */
-	void onVisionSignalLost(WorldFrame emptyWf);
+	void onVisionSignalLost(SimpleWorldFrame emptyWf);
+	
+	
+	/**
+	 * New unfiltered detection frame
+	 * @param frame
+	 */
+	void onNewCamDetectionFrame(CamDetectionFrame frame);
 }

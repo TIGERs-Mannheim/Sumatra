@@ -12,7 +12,6 @@ package edu.dhbw.mannheim.tigers.sumatra.view.main;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.Frame;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.event.ActionEvent;
@@ -32,7 +31,6 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
-import javax.swing.AbstractAction;
 import javax.swing.Box;
 import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
@@ -40,7 +38,6 @@ import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -51,19 +48,23 @@ import net.infonode.docking.DockingWindow;
 import net.infonode.docking.DockingWindowAdapter;
 import net.infonode.docking.RootWindow;
 import net.infonode.docking.View;
+import net.infonode.docking.ViewSerializer;
 import net.infonode.docking.properties.RootWindowProperties;
-import net.infonode.docking.theme.DockingWindowsTheme;
 import net.infonode.docking.theme.ShapedGradientDockingTheme;
-import net.infonode.docking.util.DeveloperUtil;
 import net.infonode.docking.util.DockingUtil;
+import net.infonode.docking.util.MixedViewHandler;
 import net.infonode.docking.util.ViewMap;
 import net.infonode.util.Direction;
 
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.Sumatra;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ABotManager;
+import edu.dhbw.mannheim.tigers.sumatra.view.commons.ConfigControlMenu;
 import edu.dhbw.mannheim.tigers.sumatra.view.main.toolbar.ToolBar;
+import edu.dhbw.mannheim.tigers.sumatra.views.ASumatraView;
+import edu.dhbw.mannheim.tigers.sumatra.views.ESumatraViewType;
 
 
 /**
@@ -76,15 +77,15 @@ public class MainFrame extends JFrame implements IMainFrame
 	// ---------------------------------------------------------------
 	
 	// Logger
-	private static final Logger						log					= Logger.getLogger(MainFrame.class.getName());
+	private static final Logger						log						= Logger.getLogger(MainFrame.class.getName());
 	
 	/**  */
-	private static final long							serialVersionUID	= -6858464942004450029L;
+	private static final long							serialVersionUID		= -6858464942004450029L;
 	
 	
-	private final List<IMainFrameObserver>			observers			= new ArrayList<IMainFrameObserver>();
+	private final List<IMainFrameObserver>			observers				= new ArrayList<IMainFrameObserver>();
 	
-	private final List<JRadioButtonMenuItem>		layoutItems			= new ArrayList<JRadioButtonMenuItem>();
+	private final List<JRadioButtonMenuItem>		layoutItems				= new ArrayList<JRadioButtonMenuItem>();
 	
 	
 	// --- infonode-framework variables ---
@@ -93,32 +94,19 @@ public class MainFrame extends JFrame implements IMainFrame
 	 */
 	private RootWindow									rootWindow;
 	
-	/**
-	 * Contains all the static views
-	 */
-	private final ViewMap								viewMap				= new ViewMap();
-	
-	/**
-	 * The currently applied docking windows theme
-	 */
-	private final transient DockingWindowsTheme	currentTheme		= new ShapedGradientDockingTheme();
-	
-	/**
-	 * In this properties object the modified property values for close buttons etc. are stored. This object is cleared
-	 * when the theme is changed.
-	 */
-	private final RootWindowProperties				properties			= new RootWindowProperties();
-	
 	// --- menu stuff ---
-	private JMenuBar										menuBar				= null;
-	private JMenu											viewsMenu			= null;
-	private JMenu											layoutMenu			= null;
-	private JMenu											moduliMenu			= null;
-	private JMenu											lookAndFeelMenu	= null;
-	private JMenu											helpMenu				= null;
+	private JMenuBar										menuBar					= null;
+	private JMenu											viewsMenu				= null;
+	private JMenu											layoutMenu				= null;
+	private JMenu											moduliMenu				= null;
+	private JMenu											lookAndFeelMenu		= null;
+	private final ConfigControlMenu					botManagerConfigMenu	= new ConfigControlMenu("Botmanager",
+																									ABotManager.KEY_BOTMANAGER_CONFIG);
+	private final ConfigControlMenu					geomConfigMenu			= new ConfigControlMenu("Geometry",
+																									AAgent.KEY_GEOMETRY_CONFIG);
 	
-	private final List<ISumatraView>					views					= new ArrayList<ISumatraView>();
-	private final Map<ISumatraView, List<JMenu>>	customMenuMap		= new Hashtable<ISumatraView, List<JMenu>>();
+	private final List<ASumatraView>					views						= new ArrayList<ASumatraView>();
+	private final Map<ASumatraView, List<JMenu>>	customMenuMap			= new Hashtable<ASumatraView, List<JMenu>>();
 	
 	private ToolBar										toolBar;
 	
@@ -132,11 +120,14 @@ public class MainFrame extends JFrame implements IMainFrame
 	 */
 	public MainFrame()
 	{
+		log.trace("creating");
 		// --- create the main window with the default layout (file: default.ly) ---
 		createRootWindow();
+		log.trace("root window created");
 		
 		// --- usual Swing initialization of the view ---
 		showFrame();
+		log.trace("created");
 	}
 	
 	
@@ -145,7 +136,7 @@ public class MainFrame extends JFrame implements IMainFrame
 	// ---------------------------------------------------------------
 	
 	@Override
-	public void addObserver(IMainFrameObserver o)
+	public void addObserver(final IMainFrameObserver o)
 	{
 		synchronized (observers)
 		{
@@ -155,7 +146,7 @@ public class MainFrame extends JFrame implements IMainFrame
 	
 	
 	@Override
-	public void removeObserver(IMainFrameObserver o)
+	public void removeObserver(final IMainFrameObserver o)
 	{
 		synchronized (observers)
 		{
@@ -174,11 +165,12 @@ public class MainFrame extends JFrame implements IMainFrame
 			{
 				final File f = new File(path);
 				final String filename = f.getName();
+				log.trace("Loading layout file " + filename);
 				
 				try
 				{
 					// --- Load the layout ---
-					final ObjectInputStream in1 = new ObjectInputStream(new FileInputStream(path));
+					final ObjectInputStream in1 = new ObjectInputStream(new FileInputStream(f));
 					
 					try
 					{
@@ -208,7 +200,7 @@ public class MainFrame extends JFrame implements IMainFrame
 	
 	
 	@Override
-	public void saveLayout(String filename)
+	public void saveLayout(final String filename)
 	{
 		// --- save layout to file ---
 		ObjectOutputStream out = null;
@@ -298,6 +290,34 @@ public class MainFrame extends JFrame implements IMainFrame
 	}
 	
 	
+	/**
+	 * @param enabled
+	 */
+	public void setModuliMenuEnabled(final boolean enabled)
+	{
+		for (int i = 0; i < moduliMenu.getItemCount(); i++)
+		{
+			moduliMenu.getItem(i).setEnabled(enabled);
+		}
+		for (int i = 0; i < botManagerConfigMenu.getConfigMenu().getItemCount(); i++)
+		{
+			JMenuItem item = botManagerConfigMenu.getConfigMenu().getItem(i);
+			if (item != null)
+			{
+				item.setEnabled(enabled);
+			}
+		}
+		for (int i = 0; i < geomConfigMenu.getConfigMenu().getItemCount(); i++)
+		{
+			JMenuItem item = geomConfigMenu.getConfigMenu().getItem(i);
+			if (item != null)
+			{
+				item.setEnabled(enabled);
+			}
+		}
+	}
+	
+	
 	@Override
 	public void selectModuliItem(final String name)
 	{
@@ -306,14 +326,11 @@ public class MainFrame extends JFrame implements IMainFrame
 			@Override
 			public void run()
 			{
-				final File f = new File(name);
-				final String filename = f.getName();
-				
 				// select RadioButton in moduliMenu
 				for (int i = 0; i < moduliMenu.getItemCount(); i++)
 				{
 					final JRadioButtonMenuItem item = (JRadioButtonMenuItem) moduliMenu.getItem(i);
-					if (item.getText().equals(filename))
+					if (item.getText().equals(name))
 					{
 						item.setSelected(true);
 					}
@@ -331,12 +348,32 @@ public class MainFrame extends JFrame implements IMainFrame
 			@Override
 			public void run()
 			{
-				final File f = new File(name);
-				final String filename = f.getName();
-				
 				for (final JRadioButtonMenuItem item : layoutItems)
 				{
-					if (item.getText().equals(filename))
+					if (item.getText().equals(name))
+					{
+						item.setSelected(true);
+					}
+				}
+			}
+		});
+	}
+	
+	
+	/**
+	 * @param name
+	 */
+	public void selectLookAndFeelItem(final String name)
+	{
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				for (int i = 0; i < lookAndFeelMenu.getItemCount(); i++)
+				{
+					final JRadioButtonMenuItem item = (JRadioButtonMenuItem) lookAndFeelMenu.getItem(i);
+					if (item.getText().equals(name))
 					{
 						item.setSelected(true);
 					}
@@ -347,13 +384,9 @@ public class MainFrame extends JFrame implements IMainFrame
 	
 	
 	@Override
-	public void addView(ISumatraView view)
+	public void addView(final ASumatraView view)
 	{
-		viewMap.addView(view.getId(), new View(view.getTitle(), Icons.VIEW_ICON, view.getViewComponent()));
-		
 		views.add(view);
-		
-		updateViewMenu();
 	}
 	
 	
@@ -383,9 +416,12 @@ public class MainFrame extends JFrame implements IMainFrame
 				}
 				
 				// update all views (including non-visible)
-				for (final ISumatraView view : views)
+				for (final ASumatraView view : views)
 				{
-					SwingUtilities.updateComponentTreeUI(view.getViewComponent());
+					if (view.isInitialized())
+					{
+						SwingUtilities.updateComponentTreeUI(view.getComponent());
+					}
 				}
 			}
 		});
@@ -393,7 +429,6 @@ public class MainFrame extends JFrame implements IMainFrame
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public ToolBar getToolbar()
@@ -420,20 +455,28 @@ public class MainFrame extends JFrame implements IMainFrame
 	}
 	
 	
-	private void addToCustomMenu(final List<JMenu> menus)
+	private void addToCustomMenu(final List<JMenu> menus, final ASumatraView view)
 	{
-		SwingUtilities.invokeLater(new Runnable()
+		if (menus != null)
 		{
-			@Override
-			public void run()
+			if (customMenuMap.containsKey(view))
 			{
-				for (final JMenu menu : menus)
-				{
-					menuBar.add(menu);
-				}
+				removeFromCustomMenu(customMenuMap.get(view));
 			}
-		});
-		
+			
+			customMenuMap.put(view, menus);
+			SwingUtilities.invokeLater(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					for (final JMenu menu : menus)
+					{
+						menuBar.add(menu);
+					}
+				}
+			});
+		}
 	}
 	
 	
@@ -447,7 +490,7 @@ public class MainFrame extends JFrame implements IMainFrame
 		
 		// --- some adjustments ---
 		setLayout(new BorderLayout());
-		this.setLocation(0, 0);
+		// this.setLocation(0, 0);
 		this.setSize(new Dimension(800, 600));
 		setTitle("Tigers Mannheim - Sumatra V " + SumatraModel.getVersion());
 		URL kralleUrl = ClassLoader.getSystemResource("kralle-icon.png");
@@ -465,10 +508,10 @@ public class MainFrame extends JFrame implements IMainFrame
 		setJMenuBar(createMenuBar());
 		
 		// --- maximize ---
-		setExtendedState(getExtendedState() | Frame.MAXIMIZED_BOTH);
+		// setExtendedState(getExtendedState() | Frame.MAXIMIZED_BOTH);
 		
 		// --- set visible ---
-		setVisible(true);
+		// setVisible(true);
 	}
 	
 	
@@ -481,15 +524,58 @@ public class MainFrame extends JFrame implements IMainFrame
 	 */
 	private void createRootWindow()
 	{
-		// --- create the RootWindow without MixedHandler ---
-		rootWindow = DockingUtil.createRootWindow(viewMap, true);
+		ViewMap viewMap = new ViewMap();
+		// The mixed view map makes it easy to mix static and dynamic views inside the same root window
+		MixedViewHandler handler = new MixedViewHandler(viewMap, new ViewSerializer()
+		{
+			@Override
+			public void writeView(final View view, final ObjectOutputStream out) throws IOException
+			{
+				String title = view.getTitle();
+				for (ESumatraViewType viewType : ESumatraViewType.values())
+				{
+					if (viewType.getTitle().equals(title))
+					{
+						out.writeInt(viewType.getId());
+						return;
+					}
+				}
+			}
+			
+			
+			@Override
+			public View readView(final ObjectInputStream in) throws IOException
+			{
+				int id = in.readInt();
+				
+				for (ASumatraView sumatraView : views)
+				{
+					if (sumatraView.getType().getId() == id)
+					{
+						return sumatraView.getView();
+					}
+				}
+				log.error("There is no view with id " + id + ". Can not load.");
+				return null;
+			}
+		});
+		
+		// --- create the RootWindow with MixedHandler ---
+		rootWindow = DockingUtil.createRootWindow(viewMap, handler, true);
 		
 		// --- add a listener which updates the menus when a window is closing or closed.
 		rootWindow.addListener(new ViewUpdater());
 		
+		/*
+		 * In this properties object the modified property values for close buttons etc. are stored. This object is
+		 * cleared
+		 * when the theme is changed.
+		 */
+		RootWindowProperties properties = new RootWindowProperties();
+		
 		// --- set gradient theme. The theme properties object is the super object of our properties object, which
 		// means our property value settings will override the theme values ---
-		properties.addSuperObject(currentTheme.getRootWindowProperties());
+		properties.addSuperObject(new ShapedGradientDockingTheme().getRootWindowProperties());
 		
 		// --- our properties object is the super object of the root window properties object, so all property values of
 		// the
@@ -512,14 +598,11 @@ public class MainFrame extends JFrame implements IMainFrame
 		viewsMenu = new JMenu("Views");
 		
 		// File Menu
-		JMenu fileMenu = new JMenu("File");
+		JMenu sumatraMenu = new JMenu("Sumatra");
 		
 		JMenuItem aboutMenuItem;
 		JMenuItem exitMenuItem;
 		
-		aboutMenuItem = new JMenuItem("About");
-		aboutMenuItem.addActionListener(new AboutBox());
-		aboutMenuItem.setToolTipText("Information about Sumatra");
 		exitMenuItem = new JMenuItem("Exit");
 		exitMenuItem.addActionListener(new Exit());
 		exitMenuItem.setToolTipText("Exits the application");
@@ -540,9 +623,17 @@ public class MainFrame extends JFrame implements IMainFrame
 		windowMode.addActionListener(new SetFullscreen(null));
 		fsMenu.add(windowMode);
 		
-		fileMenu.add(fsMenu);
-		fileMenu.add(aboutMenuItem);
-		fileMenu.add(exitMenuItem);
+		final JMenuItem shortcutMenuItem = new JMenuItem("Shortcuts");
+		shortcutMenuItem.addActionListener(new ShortcutActionListener());
+		
+		aboutMenuItem = new JMenuItem("About");
+		aboutMenuItem.addActionListener(new AboutBox());
+		aboutMenuItem.setToolTipText("Information about Sumatra");
+		
+		sumatraMenu.add(fsMenu);
+		sumatraMenu.add(shortcutMenuItem);
+		sumatraMenu.add(aboutMenuItem);
+		sumatraMenu.add(exitMenuItem);
 		
 		
 		// layout menu
@@ -566,8 +657,6 @@ public class MainFrame extends JFrame implements IMainFrame
 		
 		layoutMenu.add(new JMenuItem("Refresh layouts")).addActionListener(new RefreshLayoutItems());
 		
-		layoutMenu.add("Show Window Layout Frame").addActionListener(new ShowWindowLayout());
-		
 		// moduli menu
 		moduliMenu = new JMenu("Moduli");
 		
@@ -587,24 +676,35 @@ public class MainFrame extends JFrame implements IMainFrame
 			}
 		}
 		
-		helpMenu = new JMenu("Help");
-		helpMenu.add(new JMenuItem(new HelpMenuAction()));
-		
 		menuBar = new JMenuBar();
-		menuBar.add(fileMenu);
+		menuBar.add(sumatraMenu);
 		menuBar.add(moduliMenu);
 		menuBar.add(layoutMenu);
 		menuBar.add(viewsMenu);
 		menuBar.add(lookAndFeelMenu);
-		menuBar.add(helpMenu);
 		menuBar.add(Box.createHorizontalStrut(50));
+		menuBar.add(botManagerConfigMenu.getConfigMenu());
+		menuBar.add(geomConfigMenu.getConfigMenu());
 		
 		return menuBar;
 	}
 	
 	
-	private void updateViewMenu()
+	/**
+	 * Must be called after adding views
+	 */
+	public void updateViewMenu()
 	{
+		for (ASumatraView view : views)
+		{
+			if (!view.isInitialized())
+			{
+				continue;
+			}
+			final List<JMenu> menu = view.getSumatraView().getCustomMenus();
+			addToCustomMenu(menu, view);
+		}
+		
 		SwingUtilities.invokeLater(new Runnable()
 		{
 			@Override
@@ -621,19 +721,22 @@ public class MainFrame extends JFrame implements IMainFrame
 				
 				viewsMenu.removeAll();
 				
-				for (int i = 0; i < viewMap.getViewCount(); i++)
+				for (ASumatraView sumatraView : views)
 				{
-					final View view = viewMap.getViewAtIndex(i);
+					final JMenuItem item = new JMenuItem(sumatraView.getType().getTitle());
 					
-					final JMenuItem item = new JMenuItem(view.getTitle());
-					item.setEnabled(view.getRootWindow() == null);
-					item.addActionListener(new RestoreView(view));
+					item.addActionListener(new RestoreView(sumatraView));
+					
+					if (sumatraView.isInitialized())
+					{
+						View view = sumatraView.getView();
+						item.setEnabled(view.getRootWindow() == null);
+					}
 					viewsMenu.add(item);
 				}
 			}
 		});
 	}
-	
 	
 	// -------------------------
 	// --- ActionListener ------
@@ -643,7 +746,7 @@ public class MainFrame extends JFrame implements IMainFrame
 	protected class SaveLayout implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			synchronized (observers)
 			{
@@ -658,7 +761,7 @@ public class MainFrame extends JFrame implements IMainFrame
 	protected class DeleteLayout implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			synchronized (observers)
 			{
@@ -678,14 +781,14 @@ public class MainFrame extends JFrame implements IMainFrame
 		/**
 		 * @param name
 		 */
-		public LoadLayout(String name)
+		public LoadLayout(final String name)
 		{
 			layoutName = name;
 		}
 		
 		
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			synchronized (observers)
 			{
@@ -700,7 +803,7 @@ public class MainFrame extends JFrame implements IMainFrame
 	protected class AboutBox implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			synchronized (observers)
 			{
@@ -712,37 +815,28 @@ public class MainFrame extends JFrame implements IMainFrame
 		}
 	}
 	
-	protected class ShowWindowLayout implements ActionListener
-	{
-		@Override
-		public void actionPerformed(ActionEvent e)
-		{
-			DeveloperUtil.createWindowLayoutFrame("Root Window Layout as Java-like Pseudo-Code", rootWindow).setVisible(
-					true);
-		}
-	}
-	
 	protected class RestoreView implements ActionListener
 	{
-		private final View	view;
+		private final ASumatraView	sumatraView;
 		
 		
 		/**
 		 * @param v
 		 */
-		public RestoreView(View v)
+		public RestoreView(final ASumatraView v)
 		{
-			view = v;
+			sumatraView = v;
 		}
 		
 		
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			final JMenuItem item = (JMenuItem) e.getSource();
 			
-			view.restoreFocus();
-			DockingUtil.addWindow(view, rootWindow);
+			sumatraView.ensureInitialized();
+			sumatraView.getView().restoreFocus();
+			DockingUtil.addWindow(sumatraView.getView(), rootWindow);
 			item.setEnabled(false);
 		}
 	}
@@ -755,29 +849,23 @@ public class MainFrame extends JFrame implements IMainFrame
 		/**
 		 * @param c
 		 */
-		public LoadConfig(String c)
+		public LoadConfig(final String c)
 		{
 			configName = c;
 		}
 		
 		
 		@Override
-		public void actionPerformed(ActionEvent arg0)
+		public void actionPerformed(final ActionEvent arg0)
 		{
-			synchronized (observers)
-			{
-				for (final IMainFrameObserver o : observers)
-				{
-					o.onLoadModuliConfig(configName);
-				}
-			}
+			SumatraModel.getInstance().setCurrentModuliConfig(configName);
 		}
 	}
 	
 	protected class RefreshLayoutItems implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			synchronized (observers)
 			{
@@ -797,14 +885,14 @@ public class MainFrame extends JFrame implements IMainFrame
 		/**
 		 * @param i
 		 */
-		public SetLookAndFeel(LookAndFeelInfo i)
+		public SetLookAndFeel(final LookAndFeelInfo i)
 		{
 			info = i;
 		}
 		
 		
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			synchronized (observers)
 			{
@@ -824,14 +912,14 @@ public class MainFrame extends JFrame implements IMainFrame
 		/**
 		 * @param gd
 		 */
-		public SetFullscreen(GraphicsDevice gd)
+		public SetFullscreen(final GraphicsDevice gd)
 		{
 			this.gd = gd;
 		}
 		
 		
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			synchronized (observers)
 			{
@@ -843,17 +931,26 @@ public class MainFrame extends JFrame implements IMainFrame
 		}
 	}
 	
+	private static class ShortcutActionListener implements ActionListener
+	{
+		@Override
+		public void actionPerformed(final ActionEvent e)
+		{
+			new ShortcutsDialog().setVisible(true);
+		}
+	}
+	
 	protected class Exit extends WindowAdapter implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			exit();
 		}
 		
 		
 		@Override
-		public void windowClosing(WindowEvent w)
+		public void windowClosing(final WindowEvent w)
 		{
 			exit();
 		}
@@ -871,21 +968,21 @@ public class MainFrame extends JFrame implements IMainFrame
 	protected class ViewUpdater extends DockingWindowAdapter
 	{
 		@Override
-		public void windowAdded(DockingWindow addedToWindow, DockingWindow addedWindow)
+		public void windowAdded(final DockingWindow addedToWindow, final DockingWindow addedWindow)
 		{
 			updateViewMenu();
 		}
 		
 		
 		@Override
-		public void windowRemoved(DockingWindow removedFromWindow, DockingWindow removedWindow)
+		public void windowRemoved(final DockingWindow removedFromWindow, final DockingWindow removedWindow)
 		{
 			updateViewMenu();
 		}
 		
 		
 		@Override
-		public void windowShown(DockingWindow window)
+		public void windowShown(final DockingWindow window)
 		{
 			/*
 			 * It is a completely undocumented feature(?) that the
@@ -893,40 +990,31 @@ public class MainFrame extends JFrame implements IMainFrame
 			 * windows get shown at once. This usually happens when loading
 			 * a layout.
 			 */
-			for (final ISumatraView view : views)
+			for (final ASumatraView view : views)
 			{
+				if (!view.isInitialized())
 				{
-					final List<JMenu> menu = view.getCustomMenus();
-					
-					if (menu != null)
-					{
-						if (customMenuMap.containsKey(view))
-						{
-							removeFromCustomMenu(customMenuMap.get(view));
-						}
-						
-						customMenuMap.put(view, menu);
-						
-						addToCustomMenu(menu);
-					}
-					
-					view.onShown();
+					continue;
 				}
+				final List<JMenu> menu = view.getSumatraView().getCustomMenus();
+				addToCustomMenu(menu, view);
+				
+				view.getSumatraView().onShown();
 			}
 		}
 		
 		
 		@Override
-		public void windowHidden(DockingWindow window)
+		public void windowHidden(final DockingWindow window)
 		{
 			final String titles[] = window.getTitle().split(",");
 			for (String title : titles)
 			{
 				title = title.trim();
 				
-				for (final ISumatraView view : views)
+				for (final ASumatraView view : views)
 				{
-					if (view.getTitle().equals(title))
+					if (view.getType().getTitle().equals(title))
 					{
 						final List<JMenu> menu = customMenuMap.remove(view);
 						if (menu != null)
@@ -934,7 +1022,7 @@ public class MainFrame extends JFrame implements IMainFrame
 							removeFromCustomMenu(menu);
 						}
 						
-						view.onHidden();
+						view.getSumatraView().onHidden();
 					}
 				}
 			}
@@ -942,26 +1030,26 @@ public class MainFrame extends JFrame implements IMainFrame
 		
 		
 		@Override
-		public void viewFocusChanged(View previous, View focused)
+		public void viewFocusChanged(final View previous, final View focused)
 		{
 			if (previous != null)
 			{
-				for (final ISumatraView view : views)
+				for (final ASumatraView view : views)
 				{
-					if (view.getTitle().equals(previous.getTitle()))
+					if (view.getType().getTitle().equals(previous.getTitle()))
 					{
-						view.onFocusLost();
+						view.getSumatraView().onFocusLost();
 					}
 				}
 			}
 			
 			if (focused != null)
 			{
-				for (final ISumatraView view : views)
+				for (final ASumatraView view : views)
 				{
-					if (view.getTitle().equals(focused.getTitle()))
+					if (view.getType().getTitle().equals(focused.getTitle()))
 					{
-						view.onFocused();
+						view.getSumatraView().onFocused();
 					}
 				}
 			}
@@ -969,22 +1057,13 @@ public class MainFrame extends JFrame implements IMainFrame
 		
 	}
 	
-	private class HelpMenuAction extends AbstractAction
+	
+	/**
+	 * @return the views
+	 */
+	public final List<ASumatraView> getViews()
 	{
-		private static final long	serialVersionUID	= -4270999808508994109L;
-		
-		
-		public HelpMenuAction()
-		{
-			super("Match Checklist");
-		}
-		
-		
-		@Override
-		public void actionPerformed(ActionEvent e)
-		{
-			JOptionPane.showMessageDialog(rootPane, Sumatra.MATCH_CHECKLIST, "Match Checklist", JOptionPane.PLAIN_MESSAGE);
-		}
+		return views;
 	}
 	
 }

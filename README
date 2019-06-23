@@ -1,0 +1,33 @@
+/*
+ * *********************************************************
+ * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
+ * Project: TIGERS - Sumatra
+ * Date: Jul 06, 2014
+ * *********************************************************
+ */
+
+Homepage: http://www.tigers-mannheim.de
+Mail: management@tigers-mannheim.de
+
+This is the central AI software of Tigers Mannheim called Sumatra.
+In order to build and run it, it is recommended to use Eclipse. 
+However, it "should" also be possible to build it with Maven.
+
+System Requirements
+ * Java JDK 7 (or JDK 8 with Eclipse Luna)
+ * no limitations on OS known
+ * recommended: opencl drivers and a GPU (there are fall-back algorithm though)
+
+Running Sumatra with Eclipse is as easy as importing it to your workspace and simply press Run.
+It should automatically use the shared launch config. 
+The main class containing the main-method is called "Sumatra.java".
+You can find it using Ctrl+Shift+T.
+
+We also provide a modified version of grSim (original: https://github.com/mani-monaj/grSim).
+It is published in the same way as Sumatra.
+You should be able to run AI against AI within one Sumatra instance.
+Make sure you configure "moduli_sim", "botmanager_sim" and "RoboCup_2014" in the menu bar.
+You might need to change some network parameters. 
+For this, stop Sumatra and modify /Sumatra/config/moduli/moduli_sim.xml
+and /Sumatra/config/botmanager/botmanager_sim.xml.
+

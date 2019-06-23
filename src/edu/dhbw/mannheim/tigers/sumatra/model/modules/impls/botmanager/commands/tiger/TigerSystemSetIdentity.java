@@ -15,7 +15,9 @@ import java.net.UnknownHostException;
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -32,11 +34,17 @@ public class TigerSystemSetIdentity extends ACommand
 	// Logger
 	private static final Logger	log			= Logger.getLogger(TigerSystemSetIdentity.class.getName());
 	
+	@SerialData(type = ESerialDataType.UINT32)
 	private final long				cpuId[]		= new long[3];
+	@SerialData(type = ESerialDataType.UINT8)
 	private final int					mac[]			= new int[6];
+	@SerialData(type = ESerialDataType.UINT8)
 	private final int					ip[]			= new int[4];
+	@SerialData(type = ESerialDataType.UINT16)
 	private int							port			= 0;
+	@SerialData(type = ESerialDataType.UINT16)
 	private int							serverPort	= 0;
+	@SerialData(type = ESerialDataType.UINT8)
 	private int							botId			= 0;
 	
 	
@@ -48,6 +56,7 @@ public class TigerSystemSetIdentity extends ACommand
 	 */
 	public TigerSystemSetIdentity()
 	{
+		super(ECommand.CMD_SYSTEM_SET_IDENTITY);
 	}
 	
 	
@@ -250,75 +259,5 @@ public class TigerSystemSetIdentity extends ACommand
 	public int getBotId()
 	{
 		return botId;
-	}
-	
-	
-	@Override
-	public void setData(byte[] data)
-	{
-		cpuId[0] = byteArray2UInt(data, 0);
-		cpuId[1] = byteArray2UInt(data, 4);
-		cpuId[2] = byteArray2UInt(data, 8);
-		
-		mac[0] = byteArray2UByte(data, 12);
-		mac[1] = byteArray2UByte(data, 13);
-		mac[2] = byteArray2UByte(data, 14);
-		mac[3] = byteArray2UByte(data, 15);
-		mac[4] = byteArray2UByte(data, 16);
-		mac[5] = byteArray2UByte(data, 17);
-		
-		ip[0] = byteArray2UByte(data, 18);
-		ip[1] = byteArray2UByte(data, 19);
-		ip[2] = byteArray2UByte(data, 20);
-		ip[3] = byteArray2UByte(data, 21);
-		
-		port = byteArray2UShort(data, 22);
-		serverPort = byteArray2UShort(data, 24);
-		
-		botId = byteArray2UByte(data, 26);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		int2ByteArray(data, 0, (int) cpuId[0]);
-		int2ByteArray(data, 4, (int) cpuId[1]);
-		int2ByteArray(data, 8, (int) cpuId[2]);
-		
-		byte2ByteArray(data, 12, mac[0]);
-		byte2ByteArray(data, 13, mac[1]);
-		byte2ByteArray(data, 14, mac[2]);
-		byte2ByteArray(data, 15, mac[3]);
-		byte2ByteArray(data, 16, mac[4]);
-		byte2ByteArray(data, 17, mac[5]);
-		
-		byte2ByteArray(data, 18, ip[0]);
-		byte2ByteArray(data, 19, ip[1]);
-		byte2ByteArray(data, 20, ip[2]);
-		byte2ByteArray(data, 21, ip[3]);
-		
-		short2ByteArray(data, 22, port);
-		short2ByteArray(data, 24, serverPort);
-		
-		byte2ByteArray(data, 26, botId);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_SYSTEM_SET_IDENTITY;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 27;
 	}
 }

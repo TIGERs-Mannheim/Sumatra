@@ -1,6 +1,0 @@
-#!/bin/bash
-java -jar explorer.jar
-
-
-# This script starts the explorer for the db. select the proper db file and you can browse. 
-# Note only one instance can access the db, so either Sumatra our you!

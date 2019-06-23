@@ -10,7 +10,6 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory;
 
 
-
 /**
  * Trajectory base class to get velocity at any time
  * 
@@ -25,7 +24,7 @@ public interface ITrajectory1D
 	 * @param t time
 	 * @return position
 	 */
-	public float getPosition(float t);
+	float getPosition(float t);
 	
 	
 	/**
@@ -34,7 +33,7 @@ public interface ITrajectory1D
 	 * @param t time
 	 * @return velocity
 	 */
-	public float getVelocity(float t);
+	float getVelocity(float t);
 	
 	
 	/**
@@ -43,7 +42,7 @@ public interface ITrajectory1D
 	 * @param t time
 	 * @return acceleration
 	 */
-	public float getAcceleration(float t);
+	float getAcceleration(float t);
 	
 	
 	/**
@@ -51,5 +50,5 @@ public interface ITrajectory1D
 	 * 
 	 * @return total time for trajectory
 	 */
-	public float getTotalTime();
+	float getTotalTime();
 }

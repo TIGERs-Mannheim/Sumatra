@@ -9,8 +9,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector;
 
-import org.apache.commons.configuration.HierarchicalConfiguration;
-import org.apache.log4j.Logger;
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
@@ -26,11 +25,9 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
  * @author Gero
  * 
  */
+@Persistent
 public abstract class AVector2 implements IVector2
 {
-	// Logger
-	private static final Logger	log			= Logger.getLogger(AVector2.class.getName());
-	
 	/** Vector2f(1,0) */
 	public static final IVector2	X_AXIS		= new Vector2f(1, 0);
 	/** Vector2f(0,1) */
@@ -87,7 +84,7 @@ public abstract class AVector2 implements IVector2
 			result.y = y() + vector.y();
 		} else
 		{
-			log.error("addNew: vector is null!", new IllegalArgumentException());
+			throw new NullPointerException("Input vector is null!");
 		}
 		
 		return result;
@@ -104,7 +101,7 @@ public abstract class AVector2 implements IVector2
 			result.y = y() - vector.y();
 		} else
 		{
-			log.error("subtractNew: vector is null!", new IllegalArgumentException());
+			throw new NullPointerException("Input vector is null!");
 		}
 		
 		return result;
@@ -314,18 +311,7 @@ public abstract class AVector2 implements IVector2
 	@Override
 	public String getSaveableString()
 	{
-		return x() + ";" + y();
+		return x() + "," + y();
 	}
 	
-	
-	@Override
-	public HierarchicalConfiguration getConfiguration()
-	{
-		final HierarchicalConfiguration config = new HierarchicalConfiguration();
-		
-		config.addProperty("x", x());
-		config.addProperty("y", y());
-		
-		return config;
-	}
 }

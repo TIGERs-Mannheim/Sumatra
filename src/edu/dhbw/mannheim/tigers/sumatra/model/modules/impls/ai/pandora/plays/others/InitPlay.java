@@ -9,17 +9,22 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.others;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import java.util.ArrayList;
+import java.util.List;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.EGameState;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense.KeeperSoloRole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense.PassiveDefenderRole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.move.MoveRole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.move.MoveRole.EMoveBehavior;
 
 
 /**
- * Simple play, that handles 6 {@link PassiveDefenderRole}, which don't do anything.
+ * Simple play, that handles 6 {@link MoveRole}, which don't do anything.
  * 
  * @author Malte
  * 
@@ -32,30 +37,27 @@ public class InitPlay extends APlay
 	// --------------------------------------------------------------------------
 	
 	/** sry, no use for a name... */
-	private static final int	DIV_1	= 20;
-	private static final int	DIV_2	= 25;
-	private static final int	DIV_3	= 24;
-	private static final int	DIV_4	= 14;
-	private static final int	DIV_5	= 9;
+	private static final int		DIV_1				= 20;
+	private static final int		DIV_2				= 25;
+	private static final int		DIV_3				= 24;
+	private static final int		DIV_4				= 14;
+	private static final int		DIV_5				= 9;
+	
+	private final List<IVector2>	destinations	= new ArrayList<IVector2>(7);
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * @param aiFrame
-	 * @param numAssignedRoles
 	 */
-	public InitPlay(AIInfoFrame aiFrame, int numAssignedRoles)
+	public InitPlay()
 	{
-		super(aiFrame, numAssignedRoles);
+		super(EPlay.INIT);
 		final float l = AIConfig.getGeometry().getFieldLength();
 		final float w = AIConfig.getGeometry().getFieldWidth();
 		
-		// Intitial positions of the bots
-		final Vector2 target = new Vector2(AIConfig.getGeometry().getCenter());
-		
-		for (int botNum = 0; botNum < numAssignedRoles; botNum++)
+		for (int botNum = 0; botNum < 6; botNum++)
 		{
 			final Vector2 destination;
 			switch (botNum)
@@ -81,41 +83,46 @@ public class InitPlay extends APlay
 					break;
 				case 6:
 					destination = new Vector2(0, 0);
+					break;
 				default:
 					throw new IllegalStateException();
 			}
-			
-			if (botNum == 0)
-			{
-				// First role is a keeper
-				ARole role = new KeeperSoloRole();
-				addDefensiveRole(role, destination);
-			} else
-			{
-				ARole role = new PassiveDefenderRole(destination, target);
-				addDefensiveRole(role, destination);
-			}
+			destinations.add(destination);
 		}
+	}
+	
+	
+	@Override
+	protected ARole onRemoveRole()
+	{
+		return getLastRole();
+	}
+	
+	
+	@Override
+	protected ARole onAddRole()
+	{
+		MoveRole role = new MoveRole(EMoveBehavior.NORMAL);
+		if (getRoles().isEmpty())
+		{
+			// keeper
+			role.getMoveCon().setPenaltyAreaAllowed(true);
+		}
+		role.getMoveCon().updateDestination(destinations.get(getRoles().size()));
+		role.getMoveCon().updateTargetAngle(0);
+		return (role);
+	}
+	
+	
+	@Override
+	protected void onGameStateChanged(EGameState gameState)
+	{
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	
-	@Override
-	protected void afterUpdate(AIInfoFrame currentFrame)
-	{
-		// nothing todo
-	}
-	
-	
-	@Override
-	protected void beforeUpdate(AIInfoFrame frame)
-	{
-		// nothing todo
-	}
 	
 	
 	// --------------------------------------------------------------------------

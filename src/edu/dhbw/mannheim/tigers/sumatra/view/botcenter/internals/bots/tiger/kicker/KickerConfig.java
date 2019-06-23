@@ -4,11 +4,11 @@
  * Project: TIGERS - Sumatra
  * Date: 07.07.2011
  * Author(s): osteinbrecher
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.kicker;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 
 import javax.swing.BorderFactory;
@@ -17,8 +17,10 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.border.Border;
 
 import net.miginfocom.swing.MigLayout;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 
 
@@ -26,7 +28,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
  * Fast kicker configuration panel
  * 
  * @author Oliver Steinbrecher
- * 
  */
 public class KickerConfig extends JPanel
 {
@@ -50,14 +51,22 @@ public class KickerConfig extends JPanel
 	/**
 	 * @param botId
 	 */
-	public KickerConfig(BotID botId)
+	public KickerConfig(final BotID botId)
 	{
 		this.botId = botId;
 		
 		setLayout(new MigLayout("fill", "[80]10[50,fill]"));
-		setBorder(BorderFactory.createTitledBorder("Bot " + botId));
+		Color color = Color.yellow;
+		if (botId.getTeamColor() == ETeamColor.BLUE)
+		{
+			color = Color.blue;
+		}
+		Border coloredBorder = BorderFactory.createStrokeBorder(new BasicStroke(), color);
+		setBorder(BorderFactory
+				.createTitledBorder(coloredBorder, "Bot " + botId.getNumber() + " " + botId.getTeamColor()));
 		
 		cbAutoload = new JCheckBox();
+		cbAutoload.setSelected(true);
 		actualCap = new JTextField();
 		
 		setChargeLvL(0);

@@ -14,6 +14,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.AObjectID;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BallID;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
@@ -45,23 +46,20 @@ public class ObjectIDTester
 	@Test
 	public void testID()
 	{
-		final BotID botId = new BotID(1);
+		final BotID botId = BotID.createBotId(1, ETeamColor.YELLOW);
 		
 		BotID botId2 = botId;
 		assertTrue(botId.equals(botId2));
 		
-		botId2 = new BotID(1);
+		botId2 = BotID.createBotId(1, ETeamColor.YELLOW);
 		assertTrue(botId.equals(botId2));
 		
-		botId2 = new BotID(2);
+		botId2 = BotID.createBotId(2, ETeamColor.YELLOW);
 		assertFalse(botId.equals(botId2));
 		
 		assertFalse(botId.equals(null));
 		assertFalse(botId.equals(new BallID()));
 		assertFalse(botId.equals(this));
-		
-		// System.out.println(botId);
-		// System.out.println(new BallID());
 	}
 	
 	// --------------------------------------------------------------------------

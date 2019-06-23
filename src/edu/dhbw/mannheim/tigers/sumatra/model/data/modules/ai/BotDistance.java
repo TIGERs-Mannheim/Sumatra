@@ -12,7 +12,7 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai;
 import java.io.Serializable;
 import java.util.Comparator;
 
-import javax.persistence.Embeddable;
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
 
@@ -22,7 +22,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
  * 
  * @author Gero
  */
-@Embeddable
+@Persistent
 public class BotDistance implements Serializable
 {
 	/**
@@ -63,6 +63,12 @@ public class BotDistance implements Serializable
 	private TrackedBot									bot;
 	/** */
 	private float											dist;
+	
+	
+	@SuppressWarnings("unused")
+	private BotDistance()
+	{
+	}
 	
 	
 	/**

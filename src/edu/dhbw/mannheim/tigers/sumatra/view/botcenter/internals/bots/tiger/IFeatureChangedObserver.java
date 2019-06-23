@@ -9,6 +9,8 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger;
 
+import java.util.Map;
+
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature.EFeatureState;
 
@@ -28,4 +30,12 @@ public interface IFeatureChangedObserver
 	 * @param state
 	 */
 	void onFeatureChanged(EFeature feature, EFeatureState state);
+	
+	
+	/**
+	 * Apply all features to all bots
+	 * 
+	 * @param features
+	 */
+	void onApplyFeaturesToAll(Map<EFeature, EFeatureState> features);
 }

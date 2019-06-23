@@ -12,6 +12,8 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.sleepycat.persist.model.Persistent;
+
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
@@ -25,6 +27,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.ILine;
  * @author Malte
  * 
  */
+@Persistent
 public abstract class ACircle implements ICircle
 {
 	// --------------------------------------------------------------------------
@@ -176,6 +179,18 @@ public abstract class ACircle implements ICircle
 			return direction;
 		}
 		return new Vector2(point);
+	}
+	
+	
+	@Override
+	public IVector2 nearestPointOnCircle(IVector2 point)
+	{
+		final Vector2 direction = point.subtractNew(center());
+		final float factor = radius() / direction.getLength2();
+		
+		direction.multiply(factor);
+		direction.add(center());
+		return direction;
 	}
 	
 	

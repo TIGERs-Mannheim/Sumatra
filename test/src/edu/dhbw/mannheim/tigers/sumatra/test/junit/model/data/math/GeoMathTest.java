@@ -4,13 +4,14 @@
  * Project: TIGERS - Sumatra
  * Date: 14.09.2011
  * Author(s): stei_ol
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.test.junit.model.data.math;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
+import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -26,19 +27,14 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Line;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.Agent;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.config.ConfigManager;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AConfigManager;
 
 
 /**
  * Geometry math problems testing.
  * 
  * @author stei_ol
- * 
  */
 public class GeoMathTest
 {
@@ -58,10 +54,8 @@ public class GeoMathTest
 	{
 		// Load configuration
 		Sumatra.touch();
-		SumatraModel.getInstance().setUserProperty(AAgent.KEY_AI_CONFIG, Agent.VALUE_AI_CONFIG);
-		SumatraModel.getInstance().setUserProperty(AAgent.KEY_BOT_CONFIG, Agent.VALUE_BOT_CONFIG);
-		AConfigManager.registerConfigClient(AIConfig.getInstance().getAiClient());
-		AConfigManager.registerConfigClient(AIConfig.getInstance().getBotClient());
+		SumatraModel.getInstance().setUserProperty(AAgent.KEY_AI_CONFIG, AAgent.VALUE_AI_CONFIG);
+		SumatraModel.getInstance().setUserProperty(AAgent.KEY_BOT_CONFIG, AAgent.VALUE_BOT_CONFIG);
 		new ConfigManager(); // Loads all registered configs (accessed via singleton)
 	}
 	
@@ -181,6 +175,7 @@ public class GeoMathTest
 	
 	/**
 	 * Test method for {@link GeoMath#isLineInterceptingCircle}
+	 * 
 	 * @author Malte
 	 */
 	@Test
@@ -217,6 +212,7 @@ public class GeoMathTest
 	
 	/**
 	 * Test method for {@link GeoMath#yInterceptOfLine}
+	 * 
 	 * @author Malte
 	 */
 	@Test
@@ -233,8 +229,8 @@ public class GeoMathTest
 	
 	
 	/**
-	 * 
 	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath#distancePL}
+	 * 
 	 * @author Malte
 	 */
 	@Test
@@ -262,10 +258,9 @@ public class GeoMathTest
 	
 	
 	/**
-	 * 
 	 * Test method for {@link Circle#isPointInShape(IVector2)}
-	 * @author Steffen
 	 * 
+	 * @author Steffen
 	 */
 	@Test
 	public void testIsPointInCircle()
@@ -280,8 +275,8 @@ public class GeoMathTest
 	
 	
 	/**
-	 * 
 	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath#leadPointOnLine}
+	 * 
 	 * @author Malte
 	 */
 	@Test
@@ -337,7 +332,6 @@ public class GeoMathTest
 	
 	/**
 	 * Test method for {@link GeoMath#stepAlongCircle(IVector2, IVector2, float)}
-	 * 
 	 */
 	@Test
 	public void testGetNextPointOnCircle()
@@ -357,9 +351,7 @@ public class GeoMathTest
 	
 	
 	/**
-	 * 
 	 * Test method for {@link edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath#distancePP}
-	 * 
 	 */
 	@Test
 	public void testDistancePP()
@@ -416,23 +408,6 @@ public class GeoMathTest
 	/**
 	 */
 	@Test
-	public void testApproxOrientationBallDamp()
-	{
-		IVector2 shootVel = new Vector2(AngleMath.PI - 1).scaleTo(8);
-		IVector2 incomingVec = new Vector2(AngleMath.PI_QUART).scaleTo(5);
-		IVector2 targetVec = GeoMath.ballDamp(shootVel, incomingVec, EBotType.TIGER);
-		System.out.println("shootVel: " + shootVel.getAngle());
-		System.out.println("incomingVec: " + incomingVec.getAngle());
-		System.out.println("target angle: " + targetVec.getAngle());
-		float targetOrientation = GeoMath.approxOrientationBallDamp(8, incomingVec, EBotType.TIGER,
-				AngleMath.PI_HALF + 0.1f, targetVec.getAngle());
-		Assert.assertEquals(AngleMath.PI - 1, targetOrientation, 0.1f);
-	}
-	
-	
-	/**
-	 */
-	@Test
 	public void testQuadrantCheck()
 	{
 		// Normal TEst
@@ -462,7 +437,148 @@ public class GeoMathTest
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
+	/**
+	 */
+	@Test
+	public void testDistancePPCircle()
+	{
+		IVector2 center = new Vector2(1, 2);
+		IVector2 p1 = new Vector2(1, 3);
+		IVector2 p2 = new Vector2(2, 2);
+		// u = 2*PI*r
+		float uDesired = (2 * AngleMath.PI * 1) / 4;
+		float uIs = GeoMath.distancePPCircle(center, p1, p2);
+		assertEquals(uDesired, uIs, 0.0001f);
+	}
+	
+	
+	/**
+	 */
+	@Test
+	public void testisPointOnLine()
+	{
+		IVector2 A = new Vector2(2f, 5f);
+		IVector2 B = new Vector2(2f, 10f);
+		IVector2 C = new Vector2(2f, 7f);
+		
+		IVector2 D = new Vector2(2f, 15f);
+		
+		
+		Line Line1 = Line.newLine(A, B);
+		
+		boolean uIs1 = GeoMath.isPointOnLine(Line1, C);
+		boolean uIs2 = GeoMath.isPointOnLine(Line1, D);
+		
+		assertEquals(true, uIs1);
+		assertEquals(false, uIs2);
+		
+		
+	}
+	
+	
+	/**
+	 */
+	@Test
+	public void testintersectionPointOnLine()
+	{
+		IVector2 A = new Vector2(13.04f, -10.34f);
+		IVector2 B = new Vector2(-2.88f, 3.18f);
+		
+		IVector2 C = new Vector2(5.47f, 3.56f);
+		IVector2 D = new Vector2(3.36f, -9.13f);
+		
+		IVector2 E = new Vector2(4.14f, 8.12f);
+		IVector2 F = new Vector2(23.22f, -24.7f);
+		
+		
+		Line LineAB = Line.newLine(A, B);
+		Line LineCD = Line.newLine(C, D);
+		Line LineEF = Line.newLine(E, F);
+		
+		IVector2 uIs1 = GeoMath.INIT_VECTOR;
+		IVector2 uDesired1 = new Vector2(1000, -1000);
+		
+		try
+		{
+			GeoMath.intersectionPointOnLine(LineAB, LineEF);
+			fail();
+		} catch (MathException err)
+		{
+		}
+		
+		try
+		{
+			uIs1 = GeoMath.intersectionPointOnLine(LineAB, LineCD);
+			uDesired1 = new Vector2(4.38f, -2.99);
+			
+		} catch (MathException err)
+		{
+			err.printStackTrace();
+		}
+		
+		assertEquals(uDesired1.x(), uIs1.x(), 0.01f);
+		assertEquals(uDesired1.y(), uIs1.y(), 0.01f);
+	}
+	
+	
+	/**
+	 * @author dirk
+	 * @throws MathException
+	 */
+	@Test
+	public void testDistanceBetweenLineSegments() throws MathException
+	{
+		IVector2 goalPostRight = new Vector2(-4050, 500);
+		IVector2 goalPostLeft = new Vector2(-4050, -500);
+		IVector2 from = new Vector2(-4000, 0);
+		IVector2 to = new Vector2(-4100, 0);
+		assertEquals(0.0f, GeoMath.distanceBetweenLineSegments(goalPostRight, goalPostLeft, from, to), 0.01f);
+		
+		from = new Vector2(-4000, 100);
+		to = new Vector2(-4100, 1100);
+		assertEquals(100.0f, GeoMath.distanceBetweenLineSegments(goalPostRight, goalPostLeft, from, to), 0.01f);
+	}
+	
+	
+	/**
+	 * @author dirk
+	 */
+	@Test
+	public void testRatio()
+	{
+		IVector2 root = new Vector2(-4045, 500);
+		IVector2 point1 = new Vector2(-4045, 0);
+		IVector2 point2 = new Vector2(-4045, -500);
+		assertEquals(GeoMath.ratio(root, point1, point2), 0.5f, 0.01f);
+		
+		root = new Vector2(-4045, 500);
+		point1 = new Vector2(-4045, 1000);
+		point2 = new Vector2(-4045, -500);
+		assertEquals(GeoMath.ratio(root, point1, point2), 0.5f, 0.01f);
+		
+		root = new Vector2(-4045, -500);
+		point1 = new Vector2(-4045, 1000);
+		point2 = new Vector2(-4045, 500);
+		assertEquals(GeoMath.ratio(root, point1, point2), 1.5f, 0.01f);
+	}
+	
+	
+	/**
+	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+	 */
+	@Test
+	public void testTangentialIntersections()
+	{
+		Circle circle = new Circle(new Vector2(5, 7), 6);
+		IVector2 externalPoint = new Vector2(1, 1);
+		List<IVector2> res = GeoMath.tangentialIntersections(circle, externalPoint);
+		for (IVector2 p : res)
+		{
+			if (p.equals(new Vector2(5, 1), ACCURACY))
+			{
+				return;
+			}
+		}
+		Assert.fail();
+	}
 }

@@ -12,7 +12,9 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -31,6 +33,7 @@ public class TigerSystemAnnouncement extends ACommand
 	// Logger
 	private static final Logger	log		= Logger.getLogger(TigerSystemAnnouncement.class.getName());
 	
+	@SerialData(type = ESerialDataType.INT32)
 	private final int					cpuId[]	= new int[3];
 	
 	
@@ -42,6 +45,7 @@ public class TigerSystemAnnouncement extends ACommand
 	 */
 	public TigerSystemAnnouncement()
 	{
+		super(ECommand.CMD_SYSTEM_ANNOUNCEMENT);
 	}
 	
 	
@@ -94,41 +98,5 @@ public class TigerSystemAnnouncement extends ACommand
 		id += String.format("%08X", cpuId[0]);
 		
 		return id;
-	}
-	
-	
-	@Override
-	public void setData(byte[] data)
-	{
-		cpuId[0] = byteArray2Int(data, 0);
-		cpuId[1] = byteArray2Int(data, 4);
-		cpuId[2] = byteArray2Int(data, 8);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		int2ByteArray(data, 0, cpuId[0]);
-		int2ByteArray(data, 4, cpuId[1]);
-		int2ByteArray(data, 8, cpuId[2]);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_SYSTEM_ANNOUNCEMENT;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 12;
 	}
 }

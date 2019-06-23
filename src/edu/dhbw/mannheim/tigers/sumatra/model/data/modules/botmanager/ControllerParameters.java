@@ -28,11 +28,13 @@ public class ControllerParameters
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	/** */
-	private PIDParametersXYW	pos		= new PIDParametersXYW();
+	private PIDParametersXYW	spline	= new PIDParametersXYW();
 	/** */
 	private PIDParametersXYW	vel		= new PIDParametersXYW();
 	/** */
-	private PIDParametersXYW	acc		= new PIDParametersXYW();
+	private PIDParametersXYW	pos		= new PIDParametersXYW();
+	/** */
+	private PIDParameters		motor		= new PIDParameters();
 	/** */
 	private PIDParameters		dribbler	= new PIDParameters();
 	
@@ -54,10 +56,24 @@ public class ControllerParameters
 	 */
 	public ControllerParameters(SubnodeConfiguration config)
 	{
-		pos.setConfiguration(config.configurationAt("pos"));
+		spline.setConfiguration(config.configurationAt("spline"));
 		vel.setConfiguration(config.configurationAt("vel"));
-		acc.setConfiguration(config.configurationAt("acc"));
+		pos.setConfiguration(config.configurationAt("pos"));
+		motor.setConfiguration(config.configurationAt("motor"));
 		dribbler.setConfiguration(config.configurationAt("dribbler"));
+	}
+	
+	
+	/**
+	 * @param params
+	 */
+	public ControllerParameters(ControllerParameters params)
+	{
+		spline = new PIDParametersXYW(params.spline);
+		vel = new PIDParametersXYW(params.vel);
+		pos = new PIDParametersXYW(params.pos);
+		motor = new PIDParameters(params.motor);
+		dribbler = new PIDParameters(params.dribbler);
 	}
 	
 	
@@ -71,7 +87,7 @@ public class ControllerParameters
 	 */
 	public void updateWithCommand(TigerCtrlSetPIDParams params)
 	{
-		switch (params.getType())
+		switch (params.getParamType())
 		{
 			case POS_X:
 				pos.setX(params.getParams());
@@ -91,18 +107,22 @@ public class ControllerParameters
 			case VEL_W:
 				vel.setW(params.getParams());
 				break;
-			case ACC_X:
-				acc.setX(params.getParams());
+			case SPLINE_X:
+				spline.setX(params.getParams());
 				break;
-			case ACC_Y:
-				acc.setY(params.getParams());
+			case SPLINE_Y:
+				spline.setY(params.getParams());
 				break;
-			case ACC_W:
-				acc.setW(params.getParams());
+			case SPLINE_W:
+				spline.setW(params.getParams());
 				break;
 			case DRIBBLER:
 				dribbler = params.getParams();
-			default:
+				break;
+			case MOTOR:
+				motor = params.getParams();
+				break;
+			case UNKNOWN:
 				break;
 		}
 	}
@@ -120,9 +140,10 @@ public class ControllerParameters
 	{
 		final CombinedConfiguration config = new CombinedConfiguration();
 		
-		config.addConfiguration(pos.getConfiguration(), "pos", "pos");
+		config.addConfiguration(spline.getConfiguration(), "spline", "spline");
 		config.addConfiguration(vel.getConfiguration(), "vel", "vel");
-		config.addConfiguration(acc.getConfiguration(), "acc", "acc");
+		config.addConfiguration(pos.getConfiguration(), "pos", "pos");
+		config.addConfiguration(motor.getConfiguration(), "motor", "motor");
 		config.addConfiguration(dribbler.getConfiguration(), "dribbler", "dribbler");
 		
 		return config;
@@ -166,24 +187,6 @@ public class ControllerParameters
 	
 	
 	/**
-	 * @return the acc
-	 */
-	public PIDParametersXYW getAcc()
-	{
-		return acc;
-	}
-	
-	
-	/**
-	 * @param acc the acc to set
-	 */
-	public void setAcc(PIDParametersXYW acc)
-	{
-		this.acc = acc;
-	}
-	
-	
-	/**
 	 * @return the dribbler
 	 */
 	public PIDParameters getDribbler()
@@ -198,5 +201,41 @@ public class ControllerParameters
 	public void setDribbler(PIDParameters dribbler)
 	{
 		this.dribbler = dribbler;
+	}
+	
+	
+	/**
+	 * @return the spline
+	 */
+	public final PIDParametersXYW getSpline()
+	{
+		return spline;
+	}
+	
+	
+	/**
+	 * @param spline the spline to set
+	 */
+	public final void setSpline(PIDParametersXYW spline)
+	{
+		this.spline = spline;
+	}
+	
+	
+	/**
+	 * @return the motor
+	 */
+	public final PIDParameters getMotor()
+	{
+		return motor;
+	}
+	
+	
+	/**
+	 * @param motor the motor to set
+	 */
+	public final void setMotor(PIDParameters motor)
+	{
+		this.motor = motor;
 	}
 }

@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Aug 21, 2010
  * Author(s): bernhard
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals;
@@ -24,6 +23,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
 
@@ -32,7 +32,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
  * Visualizes all available robots.
  * 
  * @author bernhard
- * 
  */
 public class OptionsPanel extends JPanel
 {
@@ -44,6 +43,7 @@ public class OptionsPanel extends JPanel
 	private final List<IOptionsPanelObserver>	observers			= new CopyOnWriteArrayList<IOptionsPanelObserver>();
 	private Map<String, JCheckBox>				checkBoxes			= null;
 	private CheckboxListener						checkboxListener;
+	private JTabbedPane								tabs					= new JTabbedPane(JTabbedPane.RIGHT);
 	
 	
 	// --------------------------------------------------------------------------
@@ -56,6 +56,8 @@ public class OptionsPanel extends JPanel
 		// --- configure panel ---
 		setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
 		
+		// tabs.setMinimumSize(new Dimension(0, 200));
+		
 		// --- checkbox-listener ---
 		checkboxListener = new CheckboxListener();
 		
@@ -64,43 +66,53 @@ public class OptionsPanel extends JPanel
 		
 		JButton btnTurn = new JButton("Turn field");
 		btnTurn.addActionListener(new TurnFieldListener());
+		JButton btnReset = new JButton("Reset field");
+		btnReset.addActionListener(new ResetFieldListener());
 		JPanel pActions = createOptionsPanel("actions");
 		pActions.add(btnTurn);
+		pActions.add(btnReset);
 		
 		// --- add checkboxes ---
 		JPanel pLayers = createOptionsPanel("layers");
-		// createCheckBox(EVisualizerOptions.LAYER_DEBUG_INFOS, pLayers);
+		createCheckBox(EVisualizerOptions.LAYER_DEBUG_INFOS, pLayers);
 		createCheckBox(EVisualizerOptions.FANCY, pLayers);
 		createCheckBox(EVisualizerOptions.COORDINATES, pLayers);
 		createCheckBox(EVisualizerOptions.FIELD_MARKS, pLayers);
 		createCheckBox(EVisualizerOptions.BALL_BUFFER, pLayers);
-		createCheckBox(EVisualizerOptions.SHAPES, pLayers);
+		createCheckBox(EVisualizerOptions.REFEREE, pLayers);
+		createCheckBox(EVisualizerOptions.FIELD_PREDICTION, pLayers);
+		createCheckBox(EVisualizerOptions.POSITION_GRID, pLayers);
+		createCheckBox(EVisualizerOptions.MISC, pLayers);
 		
-		JPanel pGrid = createOptionsPanel("grid");
-		createCheckBox(EVisualizerOptions.POSITION_GRID, pGrid);
-		createCheckBox(EVisualizerOptions.ANALYSIS_GRID, pGrid);
-		
-		JPanel pPathPlanning = createOptionsPanel("path planning");
+		JPanel pPathPlanning = createOptionsPanel("path plan.");
 		createCheckBox(EVisualizerOptions.VELOCITY, pPathPlanning);
 		createCheckBox(EVisualizerOptions.ACCELERATION, pPathPlanning);
 		createCheckBox(EVisualizerOptions.PATHS, pPathPlanning);
 		createCheckBox(EVisualizerOptions.SPLINES, pPathPlanning);
 		createCheckBox(EVisualizerOptions.ERROR_TREE, pPathPlanning);
+		createCheckBox(EVisualizerOptions.POT_PATHS, pPathPlanning);
+		createCheckBox(EVisualizerOptions.POT_SPLINES, pPathPlanning);
 		
 		JPanel pAI = createOptionsPanel("AI");
+		createCheckBox(EVisualizerOptions.YELLOW_AI, pAI);
+		createCheckBox(EVisualizerOptions.BLUE_AI, pAI);
+		createCheckBox(EVisualizerOptions.SHAPES, pAI);
 		createCheckBox(EVisualizerOptions.PATTERNS, pAI);
-		createCheckBox(EVisualizerOptions.DEFENSE_GOAL_POINTS, pAI);
-		createCheckBox(EVisualizerOptions.OFFENSIVE_POINTS, pAI);
+		createCheckBox(EVisualizerOptions.GOAL_POINTS, pAI);
 		createCheckBox(EVisualizerOptions.ROLE_NAME, pAI);
+		createCheckBox(EVisualizerOptions.TACTICS, pAI);
+		createCheckBox(EVisualizerOptions.ANALYSIS_GRID, pAI);
+		createCheckBox(EVisualizerOptions.SUPPORT_POS, pAI);
 		
 		JPanel pShortcuts = createOptionsPanel("shortcuts");
-		JLabel lblShortcutCtrl = new JLabel("ctrl: Look at Ball");
-		JLabel lblShortcutAlt = new JLabel("shift: Kick to");
-		pShortcuts.add(lblShortcutCtrl, "wrap");
-		pShortcuts.add(lblShortcutAlt, "wrap");
+		pShortcuts.add(new JLabel("ctrl:"), "wrap");
+		pShortcuts.add(new JLabel("  Look at Ball"), "wrap");
+		pShortcuts.add(new JLabel("shift:"), "wrap");
+		pShortcuts.add(new JLabel("  Kick to"), "wrap");
+		pShortcuts.add(new JLabel("rightClick:"), "wrap");
+		pShortcuts.add(new JLabel("  Place ball"), "wrap");
 		
-		// fill the rest of the space
-		this.add(Box.createVerticalGlue());
+		this.add(tabs);
 	}
 	
 	
@@ -108,18 +120,18 @@ public class OptionsPanel extends JPanel
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private JPanel createOptionsPanel(String name)
+	private JPanel createOptionsPanel(final String name)
 	{
 		JPanel panel = new JPanel();
 		panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
 		panel.setBorder(BorderFactory.createTitledBorder(name));
 		panel.add(Box.createHorizontalGlue());
-		add(panel);
+		tabs.add(name, panel);
 		return panel;
 	}
 	
 	
-	private JCheckBox createCheckBox(EVisualizerOptions option, JPanel parent)
+	private JCheckBox createCheckBox(final EVisualizerOptions option, final JPanel parent)
 	{
 		JCheckBox checkbox = new JCheckBox(option.getName());
 		checkbox.addActionListener(checkboxListener);
@@ -151,7 +163,7 @@ public class OptionsPanel extends JPanel
 	/**
 	 * @param enable
 	 */
-	public void setButtonsEnabled(boolean enable)
+	public void setButtonsEnabled(final boolean enable)
 	{
 		for (JCheckBox cb : checkBoxes.values())
 		{
@@ -179,7 +191,7 @@ public class OptionsPanel extends JPanel
 	/**
 	 * @param o
 	 */
-	public void addObserver(IOptionsPanelObserver o)
+	public void addObserver(final IOptionsPanelObserver o)
 	{
 		observers.add(o);
 	}
@@ -188,7 +200,7 @@ public class OptionsPanel extends JPanel
 	/**
 	 * @param o
 	 */
-	public void removeObserver(IOptionsPanelObserver o)
+	public void removeObserver(final IOptionsPanelObserver o)
 	{
 		observers.remove(o);
 	}
@@ -210,7 +222,7 @@ public class OptionsPanel extends JPanel
 	{
 		
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			for (final IOptionsPanelObserver o : observers)
 			{
@@ -224,11 +236,25 @@ public class OptionsPanel extends JPanel
 	{
 		
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			for (final IOptionsPanelObserver o : observers)
 			{
-				o.onTurnField();
+				o.onActionFired(EVisualizerOptions.TURN_NEXT, true);
+			}
+		}
+		
+	}
+	
+	protected class ResetFieldListener implements ActionListener
+	{
+		
+		@Override
+		public void actionPerformed(final ActionEvent e)
+		{
+			for (final IOptionsPanelObserver o : observers)
+			{
+				o.onActionFired(EVisualizerOptions.RESET_FIELD, true);
 			}
 		}
 		

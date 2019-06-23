@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 25.11.2011
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.config;
@@ -19,22 +18,28 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.SubnodeConfiguration;
+import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesState;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.GenericManager;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AConfigManager;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IConfigClient;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IConfigObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ManagedConfig;
-import edu.moduli.exceptions.InitModuleException;
-import edu.moduli.exceptions.StartModuleException;
+import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.IModuliStateObserver;
+import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.ModuliStateAdapter;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.ConfigAnnotationProcessor;
 
 
 /**
@@ -42,9 +47,8 @@ import edu.moduli.exceptions.StartModuleException;
  * the clients which had registered themselves.
  * 
  * @author Gero
- * 
  */
-public class ConfigManager extends AConfigManager
+public class ConfigManager extends AConfigManager implements IModuliStateObserver
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
@@ -52,13 +56,14 @@ public class ConfigManager extends AConfigManager
 	// Logger
 	private static final Logger								log						= Logger.getLogger(ConfigManager.class
 																											.getName());
+	private static final ConfigManager						INSTANCE					= new ConfigManager();
 	
 	/** or "ISO-8859-1" */
 	private static final String								XML_ENCODING			= "UTF-8";
 	
 	private final SumatraModel									model						= SumatraModel.getInstance();
 	
-	private final Map<String, ManagedConfig>				configMap				= new HashMap<String, ManagedConfig>();
+	private final Map<String, ManagedConfig>				configMap				= new LinkedHashMap<String, ManagedConfig>();
 	private final Map<String, List<IConfigObserver>>	waitingObserversMap	= new HashMap<String, List<IConfigObserver>>();
 	
 	
@@ -67,51 +72,28 @@ public class ConfigManager extends AConfigManager
 	// --------------------------------------------------------------------------
 	
 	/**
-	 * Create new config Manager. This is usually rather a workaround for testing
+	 * Create new config Manager. This is only for testing
 	 */
 	public ConfigManager()
 	{
-		this(null);
+		AConfigManager.registerConfigClient(TeamConfig.getInstance());
+		AConfigManager.registerConfigClient(GenericManager.getBotManagerConfigClient());
+		List<IConfigClient> clients = AIConfig.getConfigClients();
+		for (IConfigClient client : clients)
+		{
+			AConfigManager.registerConfigClient(client);
+		}
+		initModule();
+		ModuliStateAdapter.getInstance().addObserver(this);
 	}
 	
 	
 	/**
-	 * @param subNode
+	 * @return
 	 */
-	public ConfigManager(SubnodeConfiguration subNode)
+	public static ConfigManager getInstance()
 	{
-		super();
-		
-		for (final IConfigClient client : REGISTERED_CLIENTS)
-		{
-			// Load config initially
-			final String fileName = model.getUserProperty(client.getConfigKey());
-			final XMLConfiguration xmlConfig = doLoadConfig(client, fileName);
-			if (xmlConfig == null)
-			{
-				// doLoadConfig already error'd
-				return;
-			}
-			
-			// Initially create it!
-			final ManagedConfig config = new ManagedConfig(client, xmlConfig);
-			configMap.put(client.getConfigKey(), config);
-			
-			// Any observers already waiting? If yes, remove and add to config
-			final List<IConfigObserver> waitingObservers = waitingObserversMap.remove(client.getConfigKey());
-			if (waitingObservers != null)
-			{
-				for (final IConfigObserver observer : waitingObservers)
-				{
-					config.registerObserver(observer);
-				}
-			}
-			
-			// Notify
-			config.notifyOnLoad();
-			// IConfigManagerObserver
-			notifyConfigAdded(config);
-		}
+		return INSTANCE;
 	}
 	
 	
@@ -126,58 +108,77 @@ public class ConfigManager extends AConfigManager
 	
 	
 	@Override
-	protected void onStartup()
+	protected void onNewClient(final IConfigClient client)
 	{
 	}
 	
 	
-	@Override
-	protected void onNewClient(IConfigClient client)
+	/**
+	 */
+	private void initModule()
 	{
-	}
-	
-	
-	@Override
-	protected void onStop()
-	{
-		configMap.clear();
-	}
-	
-	
-	@Override
-	public void initModule() throws InitModuleException
-	{
-		/** nothing to do here */
-	}
-	
-	
-	@Override
-	public void startModule() throws StartModuleException
-	{
-		/** nothing to do here */
-	}
-	
-	
-	@Override
-	public void stopModule()
-	{
-		/** nothing to do here */
-	}
-	
-	
-	@Override
-	public void deinitModule()
-	{
-		for (final ManagedConfig config : configMap.values())
+		for (final IConfigClient client : registered_clients)
 		{
-			// Save
-			doSaveConfig(config);
+			log.trace("Registered config client: " + client.getName());
+			// Load config initially
+			String fileName = model.getUserProperty(client.getConfigKey());
+			if (fileName == null)
+			{
+				fileName = client.getDefaultValue();
+				model.setUserProperty(client.getConfigKey(), fileName);
+			}
+			final HierarchicalConfiguration loadedConfig = doLoadConfig(client, fileName);
+			final HierarchicalConfiguration config;
+			final HierarchicalConfiguration defConfig = client.getDefaultConfig();
+			if ((loadedConfig == null) && (defConfig == null))
+			{
+				log.error("Could not load config for " + fileName + ". No default.");
+				continue;
+			}
+			if (loadedConfig == null)
+			{
+				config = defConfig;
+			} else if (defConfig == null)
+			{
+				config = loadedConfig;
+			} else
+			{
+				ConfigAnnotationProcessor.merge(defConfig, loadedConfig);
+				config = defConfig;
+			}
+			
+			// Initially create it!
+			final ManagedConfig mgdConfig = new ManagedConfig(client, config);
+			configMap.put(client.getConfigKey(), mgdConfig);
+			
+			log.trace("ManagedConfig created");
+			
+			// Any observers already waiting? If yes, remove and add to config
+			final List<IConfigObserver> waitingObservers = waitingObserversMap.remove(client.getConfigKey());
+			if (waitingObservers != null)
+			{
+				for (final IConfigObserver observer : waitingObservers)
+				{
+					mgdConfig.registerObserver(observer);
+				}
+			}
+			
+			log.trace("Observers processed");
+			
+			
+			// Notify
+			mgdConfig.notifyOnLoad();
+			log.trace("Config loaded");
+			// IConfigManagerObserver
+			notifyConfigAdded(mgdConfig);
+			
+			log.trace("Config added: " + fileName);
 		}
 	}
 	
 	
 	@Override
-	public void notifyConfigEdited(String configKey)
+	public void notifyConfigEdited(final String configKey)
 	{
 		ManagedConfig changedConfig = configMap.get(configKey);
 		if (changedConfig == null)
@@ -211,7 +212,7 @@ public class ConfigManager extends AConfigManager
 	// --- load -----------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
-	public boolean loadConfig(String configKey, String newFileName)
+	public boolean loadConfig(final String configKey, final String newFileName)
 	{
 		// Save old
 		final ManagedConfig config = configMap.get(configKey);
@@ -230,14 +231,10 @@ public class ConfigManager extends AConfigManager
 			log.error("Could not load config from '" + newFileName + "'.");
 			return false;
 		}
-		
-		// Actually save old
-		// Ignore the fact that the old config has not been stored
-		doSaveConfig(config);
-		
+		log.debug("Loaded config for '" + client.getName() + "': " + newFileName);
 		
 		// Set new config
-		config.setXmlConfig(newXmlConfig);
+		config.setConfig(newXmlConfig);
 		// In case the name changed
 		model.setUserProperty(configKey, newFileName);
 		
@@ -250,7 +247,7 @@ public class ConfigManager extends AConfigManager
 	
 	
 	@Override
-	public boolean reloadConfig(String configKey)
+	public boolean reloadConfig(final String configKey)
 	{
 		// Reload from same file
 		final ManagedConfig config = configMap.get(configKey);
@@ -269,9 +266,10 @@ public class ConfigManager extends AConfigManager
 			log.error("Unable to reload from '" + fileName + "'.");
 			return false;
 		}
+		log.debug("Reloaded config for '" + client.getName() + "': " + fileName);
 		
 		// Set new config
-		config.setXmlConfig(newXmlConfig);
+		config.setConfig(newXmlConfig);
 		
 		// Notify client
 		config.notifyOnReload();
@@ -281,7 +279,7 @@ public class ConfigManager extends AConfigManager
 	}
 	
 	
-	private XMLConfiguration doLoadConfig(IConfigClient client, String fileName)
+	private XMLConfiguration doLoadConfig(final IConfigClient client, final String fileName)
 	{
 		final String filePath = client.getConfigPath() + fileName;
 		final XMLConfiguration xmlConfig = new XMLConfiguration();
@@ -290,8 +288,6 @@ public class ConfigManager extends AConfigManager
 			xmlConfig.setDelimiterParsingDisabled(true);
 			xmlConfig.load(filePath);
 			xmlConfig.setFileName(fileName);
-			
-			log.debug("Loaded config for '" + client.getName() + "': " + fileName);
 		} catch (final ConfigurationException err)
 		{
 			log.error("Unable to load '" + client.getConfigKey() + "' from '" + filePath + "':", err);
@@ -306,12 +302,12 @@ public class ConfigManager extends AConfigManager
 	// --- save -----------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
-	public boolean saveConfig(String configKey, String newFileName)
+	public boolean saveConfig(final String configKey, String newFileName)
 	{
 		final ManagedConfig config = configMap.get(configKey);
 		if (config == null)
 		{
-			log.error("Unable to save config, there is no config for this key: '" + configKey + "'.");
+			log.error("Save: Unable to save config, there is no config for this key: '" + configKey + "'.");
 			return false;
 		}
 		
@@ -325,30 +321,31 @@ public class ConfigManager extends AConfigManager
 	
 	
 	@Override
-	public boolean saveConfig(String configKey)
+	public boolean saveConfig(final String configKey)
 	{
 		final ManagedConfig config = configMap.get(configKey);
 		return doSaveConfig(config);
 	}
 	
 	
-	private boolean doSaveConfig(ManagedConfig config)
+	private boolean doSaveConfig(final ManagedConfig config)
 	{
 		final String fileName = model.getUserProperty(config.getClient().getConfigKey());
 		return doSaveConfig(config, fileName);
 	}
 	
 	
-	private boolean doSaveConfig(ManagedConfig config, String newFileName)
+	private boolean doSaveConfig(final ManagedConfig config, final String newFileName)
 	{
 		final IConfigClient client = config.getClient();
 		
 		// Let the client prepare
-		final XMLConfiguration xmlConfig = client.prepareConfigForSaving(config.getXmlConfig());
+		final HierarchicalConfiguration hConfig = client.prepareConfigForSaving(config.getConfig());
+		final XMLConfiguration xmlConfig = new XMLConfiguration(hConfig);
 		xmlConfig.setFileName(newFileName);
 		
 		// Not same object?
-		if (xmlConfig != config.getXmlConfig())
+		if (hConfig != config.getConfig())
 		{
 			// Basically allowed. But problematic...
 			// :
@@ -360,7 +357,7 @@ public class ConfigManager extends AConfigManager
 			}
 			
 			// Update ManagedConfig
-			config.setXmlConfig(xmlConfig);
+			config.setConfig(xmlConfig);
 		}
 		
 		
@@ -394,12 +391,12 @@ public class ConfigManager extends AConfigManager
 	// --- manage configs -------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
-	public List<String> getAvailableConfigs(String configKey)
+	public List<String> getAvailableConfigs(final String configKey)
 	{
 		final ManagedConfig config = configMap.get(configKey);
 		if (config == null)
 		{
-			log.error("There is no config for the given key: '" + configKey + "'!");
+			log.error("Get configs: There is no config for the given key: '" + configKey + "'!");
 			return Collections.emptyList();
 		}
 		
@@ -420,14 +417,14 @@ public class ConfigManager extends AConfigManager
 	
 	
 	@Override
-	public String getLoadedFileName(String configKey)
+	public String getLoadedFileName(final String configKey)
 	{
 		return model.getUserProperty(configKey);
 	}
 	
 	
 	@Override
-	public void registerObserverAt(String configKey, IConfigObserver newObserver)
+	public void registerObserverAt(final String configKey, final IConfigObserver newObserver)
 	{
 		final ManagedConfig config = configMap.get(configKey);
 		if (config == null)
@@ -441,7 +438,7 @@ public class ConfigManager extends AConfigManager
 	}
 	
 	
-	private List<IConfigObserver> getWaitingObservers(String key)
+	private List<IConfigObserver> getWaitingObservers(final String key)
 	{
 		List<IConfigObserver> result = waitingObserversMap.get(key);
 		if (result == null)
@@ -454,7 +451,7 @@ public class ConfigManager extends AConfigManager
 	
 	
 	@Override
-	public boolean unregisterObserverAt(String configKey, IConfigObserver oldObserver)
+	public boolean unregisterObserverAt(final String configKey, final IConfigObserver oldObserver)
 	{
 		final List<IConfigObserver> observers = waitingObserversMap.get(configKey);
 		if (observers != null)
@@ -477,9 +474,15 @@ public class ConfigManager extends AConfigManager
 	private static class ConfigNameFilter implements FilenameFilter
 	{
 		@Override
-		public boolean accept(File dir, String name)
+		public boolean accept(final File dir, final String name)
 		{
 			return !name.startsWith(".");
 		}
+	}
+	
+	
+	@Override
+	public void onModuliStateChanged(final ModulesState state)
+	{
 	}
 }

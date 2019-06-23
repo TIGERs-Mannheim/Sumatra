@@ -9,13 +9,13 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.log;
 
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.BorderFactory;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JPanel;
@@ -29,7 +29,7 @@ import edu.dhbw.mannheim.tigers.sumatra.view.log.internals.FilterPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.log.internals.SlidePanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.log.internals.TextPane;
 import edu.dhbw.mannheim.tigers.sumatra.view.log.internals.TreePanel;
-import edu.dhbw.mannheim.tigers.sumatra.view.main.ISumatraView;
+import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
 
 
 /**
@@ -40,17 +40,16 @@ import edu.dhbw.mannheim.tigers.sumatra.view.main.ISumatraView;
  */
 public class LogPanel extends JPanel implements ISumatraView
 {
-	private static final long		serialVersionUID	= 1L;
+	private static final long	serialVersionUID	= 1L;
 	
-	private static final int		ID						= 1;
-	private static final String	TITLE					= "Log";
-	private static final int		INIT_DIVIDER_LOC	= 150;
+	private static final int	INIT_DIVIDER_LOC	= 150;
 	
 	
-	private final TextPane			textPane;
-	private final FilterPanel		filterPanel;
-	private final SlidePanel		slidePanel;
-	private final TreePanel			treePanel;
+	private final TextPane		textPane;
+	private final FilterPanel	filterPanel;
+	private final TreePanel		treePanel;
+	
+	private final JMenu			logMenu;
 	
 	
 	/**
@@ -59,16 +58,21 @@ public class LogPanel extends JPanel implements ISumatraView
 	 */
 	public LogPanel(int maxCapacity, Priority initialLevel)
 	{
+		setLayout(new MigLayout("fill, inset 0", "", ""));
+		
 		textPane = new TextPane(maxCapacity);
-		filterPanel = new FilterPanel();
-		slidePanel = new SlidePanel(initialLevel);
+		filterPanel = new FilterPanel(initialLevel);
 		treePanel = new TreePanel();
 		
-		setLayout(new MigLayout("fill", "", ""));
+		logMenu = new JMenu("Log");
+		final JCheckBoxMenuItem item = new JCheckBoxMenuItem("Autoscrolling");
+		item.setSelected(true);
+		item.addActionListener(new ChangeAutoscrolling());
+		logMenu.add(item);
+		
 		
 		final JPanel filter = new JPanel(new MigLayout("fill", "", ""));
 		filter.add(treePanel, "push, grow, wrap");
-		filter.add(slidePanel, "growx");
 		filter.setMinimumSize(new Dimension(0, 0));
 		
 		final JPanel display = new JPanel(new MigLayout("fill", "", ""));
@@ -76,7 +80,10 @@ public class LogPanel extends JPanel implements ISumatraView
 		display.add(filterPanel, "growx");
 		
 		final JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, filter, display);
-		splitPane.setDividerLocation(INIT_DIVIDER_LOC);
+		splitPane.setOneTouchExpandable(true);
+		splitPane.setDividerLocation(0);
+		splitPane.setLastDividerLocation(INIT_DIVIDER_LOC);
+		splitPane.setBorder(BorderFactory.createEmptyBorder());
 		
 		add(splitPane, "grow");
 	}
@@ -105,7 +112,7 @@ public class LogPanel extends JPanel implements ISumatraView
 	 */
 	public SlidePanel getSlidePanel()
 	{
-		return slidePanel;
+		return filterPanel.getSlidePanel();
 	}
 	
 	
@@ -119,39 +126,10 @@ public class LogPanel extends JPanel implements ISumatraView
 	
 	
 	@Override
-	public int getId()
-	{
-		return ID;
-	}
-	
-	
-	@Override
-	public String getTitle()
-	{
-		return TITLE;
-	}
-	
-	
-	@Override
-	public Component getViewComponent()
-	{
-		return this;
-	}
-	
-	
-	@Override
 	public List<JMenu> getCustomMenus()
 	{
 		final ArrayList<JMenu> customMenu = new ArrayList<JMenu>();
-		
-		final JMenu logMenu = new JMenu("Log");
-		final JCheckBoxMenuItem item = new JCheckBoxMenuItem("Autoscrolling");
-		item.setSelected(true);
-		item.addActionListener(new ChangeAutoscrolling());
-		
-		logMenu.add(item);
 		customMenu.add(logMenu);
-		
 		return customMenu;
 	}
 	
@@ -189,7 +167,16 @@ public class LogPanel extends JPanel implements ISumatraView
 		public void actionPerformed(ActionEvent e)
 		{
 			final JCheckBoxMenuItem item = (JCheckBoxMenuItem) e.getSource();
-			textPane.setAutoscroll(item.isSelected());
+			setAutoScrolling(item.isSelected());
 		}
+	}
+	
+	
+	/**
+	 * @param active
+	 */
+	public void setAutoScrolling(boolean active)
+	{
+		textPane.setAutoscroll(active);
 	}
 }

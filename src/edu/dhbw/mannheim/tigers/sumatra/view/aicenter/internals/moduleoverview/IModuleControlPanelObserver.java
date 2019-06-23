@@ -18,15 +18,9 @@ package edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview;
 public interface IModuleControlPanelObserver
 {
 	/**
-	 * Change to {@link edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter.EAIControlState#PLAY_TEST_MODE}
+	 * Change to {@link edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter.EAIControlState#TEST_MODE}
 	 */
-	void onPlayTestMode();
-	
-	
-	/**
-	 * Change to {@link edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter.EAIControlState#ROLE_TEST_MODE}
-	 */
-	void onRoleTestMode();
+	void onTestMode();
 	
 	
 	/**

@@ -14,7 +14,6 @@ import java.util.List;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.exceptions.MathException;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.I2DShape;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.ILine;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Line;
 
@@ -123,7 +122,7 @@ public interface IRectangle extends I2DShape
 	 * @return Points of intersection. List is empty if no intersections exist.
 	 * @throws MathException Thrown if the line is equal to an edge.
 	 */
-	List<Vector2> getIntersectionPoints(ILine line) throws MathException;
+	List<IVector2> getIntersectionPoints(ILine line) throws MathException;
 	
 	
 	/**
@@ -133,7 +132,7 @@ public interface IRectangle extends I2DShape
 	 * @return The distant intersection point
 	 * @throws MathException Thrown if the line does not intersect or if the line is equal to an edge.
 	 */
-	Vector2 getDistantIntersectionPoint(ILine line) throws MathException;
+	IVector2 getDistantIntersectionPoint(ILine line) throws MathException;
 	
 	
 	/**
@@ -143,5 +142,5 @@ public interface IRectangle extends I2DShape
 	 * @return The distant intersection point
 	 * @throws MathException Thrown if the line does not intersect or if the line is equal to an edge.
 	 */
-	Vector2 getNearIntersectionPoint(ILine line) throws MathException;
+	IVector2 getNearIntersectionPoint(ILine line) throws MathException;
 }

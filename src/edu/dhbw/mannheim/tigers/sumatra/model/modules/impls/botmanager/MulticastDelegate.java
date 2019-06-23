@@ -11,10 +11,10 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager;
 
 import java.net.NetworkInterface;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -32,7 +32,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.comm
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.udp.ITransceiverUDPObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.udp.MulticastTransceiverUDP;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerDribble;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerKickV2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerMotorMoveV2;
@@ -58,15 +58,15 @@ public class MulticastDelegate implements IMulticastDelegate
 	// Logger
 	private static final Logger						log					= Logger.getLogger(MulticastDelegate.class.getName());
 	
-	private final Map<BotID, TigerMotorMoveV2>	allMoves				= new HashMap<BotID, TigerMotorMoveV2>();
-	private final Map<BotID, TigerKickerKickV2>	allKicks				= new HashMap<BotID, TigerKickerKickV2>();
-	private final Map<BotID, TigerDribble>			allDribbles			= new HashMap<BotID, TigerDribble>();
+	private final Map<BotID, TigerMotorMoveV2>	allMoves				= new ConcurrentHashMap<BotID, TigerMotorMoveV2>();
+	private final Map<BotID, TigerKickerKickV2>	allKicks				= new ConcurrentHashMap<BotID, TigerKickerKickV2>();
+	private final Map<BotID, TigerDribble>			allDribbles			= new ConcurrentHashMap<BotID, TigerDribble>();
 	
 	/** [ms] */
 	private long											updateAllSleep		= 20;
 	private UpdateAllThread								updateAllThread	= null;
 	
-	private final MulticastTransceiverUDP			mcastTransceiver	= new MulticastTransceiverUDP();
+	private final MulticastTransceiverUDP			mcastTransceiver	= new MulticastTransceiverUDP(true);
 	
 	private final List<BotID>							activeBots			= new ArrayList<BotID>();
 	// fair lock
@@ -84,6 +84,8 @@ public class MulticastDelegate implements IMulticastDelegate
 	
 	private static final int							MAX_BOTS				= 6;
 	
+	private final int										id;
+	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
@@ -96,6 +98,7 @@ public class MulticastDelegate implements IMulticastDelegate
 	{
 		this.botmanager = botmanager;
 		config = subnodeConfiguration;
+		id = subnodeConfiguration.getInt("[@id]");
 		
 		final String group = subnodeConfiguration.getString("group", "225.42.42.42");
 		final int local = subnodeConfiguration.getInt("localPort", 10040);
@@ -116,6 +119,8 @@ public class MulticastDelegate implements IMulticastDelegate
 		mcastTransceiver.setNetworkInterface(nif);
 		mcastTransceiver.setDestination(group, remote);
 		mcastTransceiver.setLocalPort(local);
+		
+		updateAllSleep = (subnodeConfiguration.getLong("updateAll.sleep", 20));
 	}
 	
 	
@@ -179,24 +184,6 @@ public class MulticastDelegate implements IMulticastDelegate
 	public boolean isEnabled()
 	{
 		return updateAllThread != null;
-	}
-	
-	
-	/**
-	 * @param time
-	 */
-	public void setUpdateAllSleepTime(long time)
-	{
-		updateAllSleep = time;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public long getUpdateAllSleepTime()
-	{
-		return updateAllSleep;
 	}
 	
 	
@@ -322,8 +309,7 @@ public class MulticastDelegate implements IMulticastDelegate
 		 */
 		public UpdateAllThread()
 		{
-			setName("UpdateAll Multicast");
-			setPriority(Thread.MAX_PRIORITY);
+			setName("UpdateAll Multicast " + id);
 		}
 		
 		
@@ -432,11 +418,11 @@ public class MulticastDelegate implements IMulticastDelegate
 				
 				final long stopTime = System.nanoTime();
 				final long duration = stopTime - startTime;
-				final long sleepTotal = (updateAllSleep * 1000000) - duration;
+				final long sleepTotal = TimeUnit.MILLISECONDS.toNanos(updateAllSleep) - duration;
 				
 				if (sleepTotal < 0)
 				{
-					log.warn("MCast-Delegate needed more then 200ms!");
+					log.warn("MCast-Delegate needed more then 200ms! (+" + TimeUnit.NANOSECONDS.toMillis(-sleepTotal) + ")");
 				} else
 				{
 					ThreadUtil.parkNanosSafe(sleepTotal);
@@ -467,7 +453,7 @@ public class MulticastDelegate implements IMulticastDelegate
 		@Override
 		public void onIncommingCommand(ACommand cmd)
 		{
-			if (cmd.getCommand() == CommandConstants.CMD_SYSTEM_ANNOUNCEMENT)
+			if (cmd.getType() == ECommand.CMD_SYSTEM_ANNOUNCEMENT)
 			{
 				final TigerSystemAnnouncement announce = (TigerSystemAnnouncement) cmd;
 				
@@ -504,5 +490,24 @@ public class MulticastDelegate implements IMulticastDelegate
 		public void onOutgoingCommand(ACommand cmd)
 		{
 		}
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public long getUpdateAllSleepTime()
+	{
+		return updateAllSleep;
+	}
+	
+	
+	/**
+	 * @param time
+	 */
+	public void setUpdateAllSleepTime(long time)
+	{
+		updateAllSleep = time;
+		config.setProperty("updateAll.sleep", time);
 	}
 }

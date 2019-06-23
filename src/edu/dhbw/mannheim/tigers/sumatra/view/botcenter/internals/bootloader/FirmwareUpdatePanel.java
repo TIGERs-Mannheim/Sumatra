@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 29.06.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bootloader;
@@ -35,7 +34,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
  * Mass update all firmwares.
  * 
  * @author AndreR
- * 
  */
 public class FirmwareUpdatePanel extends JPanel
 {
@@ -43,11 +41,15 @@ public class FirmwareUpdatePanel extends JPanel
 	public interface IFirmwareUpdatePanelObserver
 	{
 		/**
-		 * 
 		 * @param filePath
-		 * @param main
+		 * @param target
 		 */
-		void onStartFirmwareUpdate(String filePath, boolean main);
+		void onStartFirmwareUpdate(String filePath, int target);
+		
+		
+		/**
+		 */
+		void onCancel();
 	}
 	
 	// --------------------------------------------------------------------------
@@ -59,29 +61,60 @@ public class FirmwareUpdatePanel extends JPanel
 	private final JPanel											botContainer		= new JPanel();
 	private final JTextField									mainFirmwarePath	= new JTextField();
 	private final JTextField									mediaFirmwarePath	= new JTextField();
-	private final Map<BotID, JPanel>							botPanels			= new TreeMap<BotID, JPanel>();
+	private final JTextField									kdFirmwarePath		= new JTextField();
+	private final JTextField									leftFirmwarePath	= new JTextField();
+	private final JTextField									rightFirmwarePath	= new JTextField();
+	private final Map<BotID, FirmwareBotPanel>			botPanels			= new TreeMap<BotID, FirmwareBotPanel>();
 	private final JFileChooser									fileChooser			= new JFileChooser();
 	
 	private final List<IFirmwareUpdatePanelObserver>	observers			= new ArrayList<IFirmwareUpdatePanelObserver>();
+	
+	private final JButton										btnCancel			= new JButton("Cancel");
+	private final JButton										startMainButton	= new JButton("Start");
+	private final JButton										startMediaButton	= new JButton("Start");
+	private final JButton										startKdButton		= new JButton("Start");
+	private final JButton										startLeftButton	= new JButton("Start");
+	private final JButton										startRightButton	= new JButton("Start");
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
 	/** */
 	public FirmwareUpdatePanel()
 	{
 		fileChooser.setFileFilter(new BinFilter());
 		
-		String mainCfgPath = SumatraModel.getInstance().getUserProperty("mainFirmwareFile");
+		String mainCfgPath = SumatraModel.getInstance().getUserProperty(
+				FirmwareUpdatePanel.class.getCanonicalName() + ".mainFirmwareFile");
 		if (mainCfgPath != null)
 		{
 			mainFirmwarePath.setText(mainCfgPath);
 		}
-		String mediaCfgPath = SumatraModel.getInstance().getUserProperty("mediaFirmwareFile");
+		String mediaCfgPath = SumatraModel.getInstance().getUserProperty(
+				FirmwareUpdatePanel.class.getCanonicalName() + ".mediaFirmwareFile");
 		if (mediaCfgPath != null)
 		{
 			mediaFirmwarePath.setText(mediaCfgPath);
+		}
+		String kdCfgPath = SumatraModel.getInstance().getUserProperty(
+				FirmwareUpdatePanel.class.getCanonicalName() + ".kdFirmwareFile");
+		if (kdCfgPath != null)
+		{
+			kdFirmwarePath.setText(kdCfgPath);
+		}
+		String leftCfgPath = SumatraModel.getInstance().getUserProperty(
+				FirmwareUpdatePanel.class.getCanonicalName() + ".leftFirmwareFile");
+		if (leftCfgPath != null)
+		{
+			leftFirmwarePath.setText(leftCfgPath);
+		}
+		String rightCfgPath = SumatraModel.getInstance().getUserProperty(
+				FirmwareUpdatePanel.class.getCanonicalName() + ".rightFirmwareFile");
+		if (rightCfgPath != null)
+		{
+			rightFirmwarePath.setText(rightCfgPath);
 		}
 		
 		setLayout(new MigLayout("wrap 4", "[60]10[250,fill]10[50]10[50]"));
@@ -89,13 +122,20 @@ public class FirmwareUpdatePanel extends JPanel
 		botContainer.setLayout(new MigLayout(""));
 		
 		JButton selectMainButton = new JButton("Select");
-		selectMainButton.addActionListener(new ChooseBinFile(true));
+		selectMainButton.addActionListener(new ChooseBinFile(0));
 		JButton selectMediaButton = new JButton("Select");
-		selectMediaButton.addActionListener(new ChooseBinFile(false));
-		JButton startMainButton = new JButton("Start");
-		startMainButton.addActionListener(new StartUpdate(true));
-		JButton startMediaButton = new JButton("Start");
-		startMediaButton.addActionListener(new StartUpdate(false));
+		selectMediaButton.addActionListener(new ChooseBinFile(1));
+		JButton selectKdButton = new JButton("Select");
+		selectKdButton.addActionListener(new ChooseBinFile(2));
+		JButton selectLeftButton = new JButton("Select");
+		selectLeftButton.addActionListener(new ChooseBinFile(3));
+		JButton selectRightButton = new JButton("Select");
+		selectRightButton.addActionListener(new ChooseBinFile(4));
+		startMainButton.addActionListener(new StartUpdate(0));
+		startMediaButton.addActionListener(new StartUpdate(1));
+		startKdButton.addActionListener(new StartUpdate(2));
+		startLeftButton.addActionListener(new StartUpdate(3));
+		startRightButton.addActionListener(new StartUpdate(4));
 		
 		add(new JLabel("Main:"));
 		add(mainFirmwarePath);
@@ -105,8 +145,24 @@ public class FirmwareUpdatePanel extends JPanel
 		add(mediaFirmwarePath);
 		add(selectMediaButton);
 		add(startMediaButton);
+		add(new JLabel("KD:"));
+		add(kdFirmwarePath);
+		add(selectKdButton);
+		add(startKdButton);
+		add(new JLabel("Left:"));
+		add(leftFirmwarePath);
+		add(selectLeftButton);
+		add(startLeftButton);
+		add(new JLabel("Right:"));
+		add(rightFirmwarePath);
+		add(selectRightButton);
+		add(startRightButton);
 		
 		add(botContainer, "span 4");
+		
+		btnCancel.addActionListener(new CancelAction());
+		btnCancel.setEnabled(false);
+		add(btnCancel);
 	}
 	
 	
@@ -114,10 +170,9 @@ public class FirmwareUpdatePanel extends JPanel
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @param observer
 	 */
-	public void addObserver(IFirmwareUpdatePanelObserver observer)
+	public void addObserver(final IFirmwareUpdatePanelObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -127,10 +182,9 @@ public class FirmwareUpdatePanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @param observer
 	 */
-	public void removeObserver(IFirmwareUpdatePanelObserver observer)
+	public void removeObserver(final IFirmwareUpdatePanelObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -139,38 +193,61 @@ public class FirmwareUpdatePanel extends JPanel
 	}
 	
 	
-	private void notifyStartFirmwareUpdate(String filePath, boolean main)
+	private void notifyStartFirmwareUpdate(final String filePath, final int target)
 	{
 		synchronized (observers)
 		{
 			for (IFirmwareUpdatePanelObserver observer : observers)
 			{
-				observer.onStartFirmwareUpdate(filePath, main);
+				observer.onStartFirmwareUpdate(filePath, target);
+			}
+		}
+	}
+	
+	
+	private void notifyCancel()
+	{
+		synchronized (observers)
+		{
+			for (IFirmwareUpdatePanelObserver observer : observers)
+			{
+				observer.onCancel();
 			}
 		}
 	}
 	
 	
 	/**
-	 * @param botID
 	 * @param panel
 	 */
-	public void addBotPanel(BotID botID, JPanel panel)
+	public void addBotPanel(final FirmwareBotPanel panel)
 	{
-		botPanels.put(botID, panel);
-		
-		updatePanels();
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				botContainer.add(panel, "wrap, gapbottom 0");
+				SwingUtilities.updateComponentTreeUI(FirmwareUpdatePanel.this);
+			}
+		});
 	}
 	
 	
 	/**
-	 * @param botID
+	 * @param panel
 	 */
-	public void removeBotPanel(BotID botID)
+	public void removeBotPanel(final JPanel panel)
 	{
-		botPanels.remove(botID);
-		
-		updatePanels();
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				botContainer.remove(panel);
+				SwingUtilities.updateComponentTreeUI(FirmwareUpdatePanel.this);
+			}
+		});
 	}
 	
 	
@@ -178,91 +255,138 @@ public class FirmwareUpdatePanel extends JPanel
 	 */
 	public void removeAllBotPanels()
 	{
-		botPanels.clear();
-		
-		updatePanels();
-	}
-	
-	
-	private void updatePanels()
-	{
-		final JPanel panel = this;
-		
 		SwingUtilities.invokeLater(new Runnable()
 		{
 			@Override
 			public void run()
 			{
 				botContainer.removeAll();
-				
-				for (final JPanel panel : botPanels.values())
-				{
-					botContainer.add(panel, "wrap, gapbottom 0");
-				}
-				
 				botContainer.add(Box.createGlue(), "push");
-				
-				SwingUtilities.updateComponentTreeUI(panel);
+				SwingUtilities.updateComponentTreeUI(FirmwareUpdatePanel.this);
 			}
 		});
 	}
+	
 	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
+	private class CancelAction implements ActionListener
+	{
+		@Override
+		public void actionPerformed(final ActionEvent e)
+		{
+			notifyCancel();
+		}
+	}
+	
+	/**
+	 */
 	protected class ChooseBinFile implements ActionListener
 	{
-		private final boolean	main;
+		private final int	target;
 		
 		
-		public ChooseBinFile(boolean main)
+		/**
+		 * @param target
+		 */
+		public ChooseBinFile(final int target)
 		{
-			this.main = main;
+			this.target = target;
 		}
 		
 		
 		@Override
-		public void actionPerformed(ActionEvent arg0)
+		public void actionPerformed(final ActionEvent arg0)
 		{
 			int retVal = fileChooser.showOpenDialog(FirmwareUpdatePanel.this);
 			
 			if (retVal == JFileChooser.APPROVE_OPTION)
 			{
-				if (main)
+				switch (target)
 				{
-					mainFirmwarePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
-					SumatraModel.getInstance().setUserProperty("mainFirmwareFile", mainFirmwarePath.getText());
-				} else
-				{
-					mediaFirmwarePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
-					SumatraModel.getInstance().setUserProperty("mediaFirmwareFile", mediaFirmwarePath.getText());
+					case 0:
+					{
+						mainFirmwarePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
+						SumatraModel.getInstance().setUserProperty(
+								FirmwareUpdatePanel.class.getCanonicalName() + ".mainFirmwareFile", mainFirmwarePath.getText());
+						
+					}
+						break;
+					case 1:
+					{
+						mediaFirmwarePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
+						SumatraModel.getInstance().setUserProperty(
+								FirmwareUpdatePanel.class.getCanonicalName() + ".mediaFirmwareFile",
+								mediaFirmwarePath.getText());
+					}
+						break;
+					case 2:
+					{
+						kdFirmwarePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
+						SumatraModel.getInstance().setUserProperty(
+								FirmwareUpdatePanel.class.getCanonicalName() + ".kdFirmwareFile", kdFirmwarePath.getText());
+					}
+						break;
+					case 3:
+					{
+						leftFirmwarePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
+						SumatraModel.getInstance().setUserProperty(
+								FirmwareUpdatePanel.class.getCanonicalName() + ".leftFirmwareFile", leftFirmwarePath.getText());
+					}
+						break;
+					case 4:
+					{
+						rightFirmwarePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
+						SumatraModel.getInstance().setUserProperty(
+								FirmwareUpdatePanel.class.getCanonicalName() + ".rightFirmwareFile",
+								rightFirmwarePath.getText());
+					}
+						break;
 				}
 			}
 		}
 	}
 	
+	/**
+	 */
 	protected class StartUpdate implements ActionListener
 	{
-		private final boolean	main;
+		private final int	target;
 		
 		
-		public StartUpdate(boolean main)
+		/**
+		 * @param target
+		 */
+		public StartUpdate(final int target)
 		{
-			this.main = main;
+			this.target = target;
 		}
 		
 		
 		@Override
-		public void actionPerformed(ActionEvent arg0)
+		public void actionPerformed(final ActionEvent arg0)
 		{
-			if (main)
+			switch (target)
 			{
-				notifyStartFirmwareUpdate(mainFirmwarePath.getText(), true);
-			} else
-			{
-				notifyStartFirmwareUpdate(mediaFirmwarePath.getText(), false);
+				case 0:
+					notifyStartFirmwareUpdate(mainFirmwarePath.getText(), 0);
+					break;
+				case 1:
+					notifyStartFirmwareUpdate(mediaFirmwarePath.getText(), 1);
+					break;
+				case 2:
+					notifyStartFirmwareUpdate(kdFirmwarePath.getText(), 2);
+					break;
+				case 3:
+					notifyStartFirmwareUpdate(leftFirmwarePath.getText(), 3);
+					break;
+				case 4:
+					notifyStartFirmwareUpdate(rightFirmwarePath.getText(), 4);
+					break;
 			}
+			
 		}
 		
 	}
@@ -271,16 +395,11 @@ public class FirmwareUpdatePanel extends JPanel
 	{
 		
 		@Override
-		public boolean accept(File file)
+		public boolean accept(final File file)
 		{
 			if (file.isDirectory())
 			{
 				return true;
-			}
-			
-			if (!file.getName().contains("main") && !file.getName().contains("media"))
-			{
-				return false;
 			}
 			
 			if (!file.getName().contains(".bin"))
@@ -292,11 +411,36 @@ public class FirmwareUpdatePanel extends JPanel
 		}
 		
 		
+		/**
+		 */
 		@Override
 		public String getDescription()
 		{
 			return "Binary Files";
 		}
+	}
+	
+	
+	/**
+	 * @return the botPanels
+	 */
+	public final Map<BotID, FirmwareBotPanel> getBotPanels()
+	{
+		return botPanels;
+	}
+	
+	
+	/**
+	 * @param flashing
+	 */
+	public final void setFlashing(final boolean flashing)
+	{
+		startMainButton.setEnabled(!flashing);
+		startMediaButton.setEnabled(!flashing);
+		startKdButton.setEnabled(!flashing);
+		startLeftButton.setEnabled(!flashing);
+		startRightButton.setEnabled(!flashing);
+		btnCancel.setEnabled(flashing);
 	}
 	
 }

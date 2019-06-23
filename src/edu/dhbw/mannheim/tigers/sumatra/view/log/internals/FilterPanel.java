@@ -9,17 +9,25 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.log.internals;
 
+import java.awt.Font;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
+
+import org.apache.log4j.Priority;
+
+import edu.dhbw.mannheim.tigers.sumatra.presenter.log.LogPresenter;
 
 
 /**
@@ -38,34 +46,66 @@ public class FilterPanel extends JPanel
 	// --------------------------------------------------------------------------
 	private final ArrayList<IFilterPanelObserver>	observers			= new ArrayList<IFilterPanelObserver>();
 	
-	private JTextField										text					= null;
-	private JButton											reset					= null;
+	private final SlidePanel								slidePanel;
+	private final JTextField								text;
+	private final JButton									reset;
+	private final JLabel										lblNumFatals;
+	private final JLabel										lblNumErrors;
+	private final JLabel										lblNumWarnings;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
+	 * @param initialLevel
 	 */
-	public FilterPanel()
+	public FilterPanel(Priority initialLevel)
 	{
-		setLayout(new MigLayout("fill", "[][][]", ""));
+		setLayout(new MigLayout("fill, inset 0", "[][][]", ""));
+		setBorder(BorderFactory.createEmptyBorder());
+		
+		slidePanel = new SlidePanel(initialLevel);
 		
 		text = new JTextField();
 		text.addActionListener(new TextChange());
 		
 		reset = new JButton("Reset");
 		reset.addActionListener(new Reset());
+		reset.setFont(new Font("", Font.PLAIN, 10));
+		reset.setMargin(new Insets(0, 5, 0, 5));
 		
+		lblNumFatals = new JLabel("0");
+		lblNumFatals.setForeground(LogPresenter.DEFAULT_COLOR_FATAL);
+		lblNumErrors = new JLabel("0");
+		lblNumErrors.setForeground(LogPresenter.DEFAULT_COLOR_ERROR);
+		lblNumWarnings = new JLabel("0");
+		lblNumWarnings.setForeground(LogPresenter.DEFAULT_COLOR_WARN);
+		
+		add(slidePanel);
 		add(new JLabel("Filter: "));
-		add(text, "growx, push, gapright 50");
-		add(reset);
+		add(text, "growx, push, gapright 5");
+		add(reset, "gapright 5");
+		add(lblNumWarnings, "gapright 5");
+		add(lblNumErrors, "gapright 5");
+		add(lblNumFatals);
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	
+	/**
+	 * @return
+	 */
+	public SlidePanel getSlidePanel()
+	{
+		return slidePanel;
+	}
+	
+	
 	/**
 	 * @param o
 	 */
@@ -81,6 +121,54 @@ public class FilterPanel extends JPanel
 	public void removeObserver(IFilterPanelObserver o)
 	{
 		observers.remove(o);
+	}
+	
+	
+	/**
+	 * @param num
+	 */
+	public void setNumFatals(final int num)
+	{
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				lblNumFatals.setText(String.valueOf(num));
+			}
+		});
+	}
+	
+	
+	/**
+	 * @param num
+	 */
+	public void setNumErrors(final int num)
+	{
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				lblNumErrors.setText(String.valueOf(num));
+			}
+		});
+	}
+	
+	
+	/**
+	 * @param num
+	 */
+	public void setNumWarnings(final int num)
+	{
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				lblNumWarnings.setText(String.valueOf(num));
+			}
+		});
 	}
 	
 	// --------------------------------------------------------------------------

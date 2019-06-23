@@ -4,28 +4,24 @@
  * Project: TIGERS - Sumatra
  * Date: 21.07.2010
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.frames;
 
-import java.io.Serializable;
-import java.util.Date;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.persistence.Entity;
-
 import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordWfFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBall;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMap;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMapConst;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.IBotIDMap;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamProps;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.fieldPrediction.WorldFramePrediction;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.WPConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
 
 
 /**
@@ -35,99 +31,85 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.WPCon
  * <p>
  * <i>(Being aware of EJ-SE Items 13, 14 and 55: members are public to reduce noise)</i>
  * </p>
- * @author Gero
  * 
+ * @author Gero
  */
-@Entity
-public class WorldFrame implements Serializable, IRecordWfFrame
+public class WorldFrame extends SimpleWorldFrame implements IRecordWfFrame
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	/**  */
-	private static final long							serialVersionUID	= 6550048556640958060L;
-	
-	
 	/** our enemies visible */
-	public final BotIDMapConst<TrackedBot>			foeBots;
+	public final BotIDMapConst<TrackedTigerBot>	foeBots;
 	
 	/** tiger bots that were detected by the WorldPredictor */
 	public final BotIDMapConst<TrackedTigerBot>	tigerBotsVisible;
 	/** tiger bots that were detected by the WorldPredictor AND are connected */
 	public final IBotIDMap<TrackedTigerBot>		tigerBotsAvailable;
 	
-	/**  */
-	public final TrackedBall							ball;
 	
-	/**  */
-	public final long										time;
+	private final ETeamColor							teamColor;
 	
-	/**  */
-	public final Date										sytemTime;
-	
-	/**  */
-	public final TeamProps								teamProps;
-	
-	/**  */
-	public final FrameID									id;
-	
-	private float											wfFps					= 0;
-	private float											camFps				= 0;
-	
-	private WorldFramePrediction						worldFramePrediction;
+	private final boolean								inverted;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
-	 * @param foeBots
-	 * @param tigerBotsAvailable
-	 * @param tigerBotsVisible
-	 * @param ball
-	 * @param time
-	 * @param frameNumber
-	 * @param teamProps
-	 * @param cameraId
+	 * @param simpleWorldFrame
+	 * @param teamColor
+	 * @param invert
 	 */
-	public WorldFrame(IBotIDMap<TrackedBot> foeBots, IBotIDMap<TrackedTigerBot> tigerBotsAvailable,
-			IBotIDMap<TrackedTigerBot> tigerBotsVisible, TrackedBall ball, double time, long frameNumber,
-			TeamProps teamProps, int cameraId)
+	public WorldFrame(final SimpleWorldFrame simpleWorldFrame, final ETeamColor teamColor, final boolean invert)
 	{
-		this.ball = ball;
-		this.time = ((long) (time / WPConfig.FILTER_CONVERT_NS_TO_INTERNAL_TIME)) + WPConfig.getFilterTimeOffset();
-		sytemTime = new Date();
-		this.teamProps = teamProps;
-		id = new FrameID(cameraId, frameNumber);
+		super(simpleWorldFrame);
+		this.teamColor = teamColor;
+		inverted = invert;
 		
-		this.foeBots = BotIDMapConst.unmodifiableBotIDMap(foeBots);
-		
-		this.tigerBotsAvailable = tigerBotsAvailable;
-		this.tigerBotsVisible = BotIDMapConst.unmodifiableBotIDMap(tigerBotsVisible);
+		BotIDMap<TrackedTigerBot> foes = new BotIDMap<TrackedTigerBot>();
+		BotIDMap<TrackedTigerBot> tigersVisible = new BotIDMap<TrackedTigerBot>();
+		BotIDMap<TrackedTigerBot> tigersAvailable = new BotIDMap<TrackedTigerBot>();
+		for (Map.Entry<BotID, TrackedTigerBot> entry : simpleWorldFrame.getBots().entrySet())
+		{
+			final BotID botID = entry.getKey();
+			TrackedTigerBot bot = entry.getValue();
+			
+			if (bot.getTeamColor() == getTeamColor())
+			{
+				tigersVisible.put(botID, bot);
+				if ((bot.getBot() != null) && (bot.getBot().getNetworkState() == ENetworkState.ONLINE)
+						&& !bot.getBot().isManualControl()
+						&& AIConfig.getGeometry().getFieldWBorders().isPointInShape(bot.getPos())
+						&& bot.isVisible())
+				{
+					tigersAvailable.put(botID, bot);
+				}
+			}
+			else
+			{
+				foes.put(botID, bot);
+			}
+		}
+		foeBots = BotIDMapConst.unmodifiableBotIDMap(foes);
+		tigerBotsAvailable = BotIDMapConst.unmodifiableBotIDMap(tigersAvailable);
+		tigerBotsVisible = BotIDMapConst.unmodifiableBotIDMap(tigersVisible);
 	}
 	
 	
 	/**
 	 * Providing a <strong>shallow</strong> copy of original (Thus new collections are created, but filled with the same
 	 * values
+	 * 
 	 * @param original
 	 */
-	public WorldFrame(WorldFrame original)
+	public WorldFrame(final WorldFrame original)
 	{
-		// Fields
-		ball = original.ball;
-		time = original.time;
-		sytemTime = original.sytemTime;
-		teamProps = original.teamProps;
-		id = original.id;
-		wfFps = original.wfFps;
-		worldFramePrediction = original.worldFramePrediction;
-		
-		
+		super(original);
+		teamColor = original.teamColor;
+		inverted = original.inverted;
 		foeBots = BotIDMapConst.unmodifiableBotIDMap(original.foeBots);
-		
 		tigerBotsAvailable = original.tigerBotsAvailable;
 		tigerBotsVisible = BotIDMapConst.unmodifiableBotIDMap(original.tigerBotsVisible);
 	}
@@ -137,8 +119,8 @@ public class WorldFrame implements Serializable, IRecordWfFrame
 	public String toString()
 	{
 		final StringBuilder b = new StringBuilder();
-		b.append("[WorldFrame, id = ").append(id).append("|\n");
-		b.append("Ball: ").append(ball.getPos()).append("|\n");
+		b.append("[WorldFrame, id = ").append(getId()).append("|\n");
+		b.append("Ball: ").append(getBall().getPos()).append("|\n");
 		b.append("Tigers: ");
 		for (final TrackedBot tiger : tigerBotsVisible.values())
 		{
@@ -166,7 +148,7 @@ public class WorldFrame implements Serializable, IRecordWfFrame
 	 * @param botId
 	 * @return tiger {@link TrackedTigerBot}
 	 */
-	public TrackedTigerBot getTiger(BotID botId)
+	public TrackedTigerBot getTiger(final BotID botId)
 	{
 		return tigerBotsVisible.get(botId);
 	}
@@ -178,7 +160,7 @@ public class WorldFrame implements Serializable, IRecordWfFrame
 	 * @param botId
 	 * @return foe {@link TrackedBot}
 	 */
-	public TrackedBot getFoeBot(BotID botId)
+	public TrackedBot getFoeBot(final BotID botId)
 	{
 		return foeBots.get(botId);
 	}
@@ -187,7 +169,7 @@ public class WorldFrame implements Serializable, IRecordWfFrame
 	/**
 	 * @return {@link Iterator} for foe bots map
 	 */
-	public Iterator<Entry<BotID, TrackedBot>> getFoeBotMapIterator()
+	public Iterator<Entry<BotID, TrackedTigerBot>> getFoeBotMapIterator()
 	{
 		return foeBots.entrySet().iterator();
 	}
@@ -197,62 +179,9 @@ public class WorldFrame implements Serializable, IRecordWfFrame
 	// --- modifier -------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	/**
-	 * Set fps
-	 * 
-	 * @param fps
-	 */
-	public void setWfFps(float fps)
-	{
-		wfFps = fps;
-	}
-	
-	
-	/**
-	 * @return the fps
-	 */
-	public float getWfFps()
-	{
-		return wfFps;
-	}
-	
 	
 	@Override
-	public WorldFramePrediction getWorldFramePrediction()
-	{
-		return worldFramePrediction;
-	}
-	
-	
-	/**
-	 * @param worldFramePrediction the worldFramePrediction to set
-	 */
-	public void setWorldFramePrediction(WorldFramePrediction worldFramePrediction)
-	{
-		this.worldFramePrediction = worldFramePrediction;
-	}
-	
-	
-	/**
-	 * @return the camFps
-	 */
-	public final float getCamFps()
-	{
-		return camFps;
-	}
-	
-	
-	/**
-	 * @param camFps the camFps to set
-	 */
-	public final void setCamFps(float camFps)
-	{
-		this.camFps = camFps;
-	}
-	
-	
-	@Override
-	public BotIDMapConst<TrackedBot> getFoeBots()
+	public BotIDMapConst<TrackedTigerBot> getFoeBots()
 	{
 		return foeBots;
 	}
@@ -273,29 +202,19 @@ public class WorldFrame implements Serializable, IRecordWfFrame
 	
 	
 	@Override
-	public TrackedBall getBall()
+	public final ETeamColor getTeamColor()
 	{
-		return ball;
+		return teamColor;
 	}
 	
 	
+	/**
+	 * @return the inverted
+	 */
 	@Override
-	public long getTime()
+	public final boolean isInverted()
 	{
-		return time;
+		return inverted;
 	}
 	
-	
-	@Override
-	public TeamProps getTeamProps()
-	{
-		return teamProps;
-	}
-	
-	
-	@Override
-	public Date getSystemTime()
-	{
-		return sytemTime;
-	}
 }

@@ -12,24 +12,17 @@ package edu.dhbw.mannheim.tigers.sumatra.test.junit.model.data.shapes.field;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.XMLConfiguration;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import edu.dhbw.mannheim.tigers.sumatra.Sumatra;
-import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.area.PenaltyArea;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeam;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.field.PenaltyArea;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.config.ConfigManager;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AConfigManager;
 import edu.dhbw.mannheim.tigers.sumatra.test.junit.model.data.shapes.I2DShapeTest;
+import edu.dhbw.mannheim.tigers.sumatra.util.SumatraSetupHelper;
 
 
 /**
@@ -49,40 +42,7 @@ public class PenaltyAreaTest implements I2DShapeTest
 	@Before
 	public void init()
 	{
-		Sumatra.touch();
-		SumatraModel.getInstance().setUserProperty(AAgent.KEY_GEOMETRY_CONFIG, "RoboCup_2012.xml");
-		AConfigManager.registerConfigClient(AIConfig.getInstance().getGeomClient());
-		new ConfigManager(); // Loads all registered configs (accessed via singleton)
-	}
-	
-	
-	/**
-	 * 
-	 * Since AIConfig can't be used in this test, the config file needs to be read separately.
-	 * Change file name in this method if the path changes.
-	 * 
-	 * @param owner
-	 * @return
-	 */
-	public PenaltyArea initiatePenaltyArea(ETeam owner)
-	{
-		
-		final String filePath = "./config/geometry/RoboCup_2012.xml";
-		final XMLConfiguration xmlConfig = new XMLConfiguration();
-		try
-		{
-			xmlConfig.setDelimiterParsingDisabled(true);
-			xmlConfig.load(filePath);
-			xmlConfig.setFileName(filePath);
-			
-		} catch (final ConfigurationException err)
-		{
-			System.out.println("Unable to load '" + filePath);
-			return null;
-		}
-		
-		
-		return new PenaltyArea(owner, xmlConfig);
+		SumatraSetupHelper.setupSumatra();
 	}
 	
 	
@@ -91,11 +51,10 @@ public class PenaltyAreaTest implements I2DShapeTest
 	 * Since PenaltyArea has no real getter, only PenaltyMark can be tested.
 	 * 
 	 */
-	@Test
 	public void testIsPenaltyAreaCorrect()
 	{
-		final PenaltyArea tigersArea = initiatePenaltyArea(ETeam.TIGERS);
-		final PenaltyArea opponentsArea = initiatePenaltyArea(ETeam.OPPONENTS);
+		final PenaltyArea tigersArea = AIConfig.getGeometry().getPenaltyAreaOur();
+		final PenaltyArea opponentsArea = AIConfig.getGeometry().getPenaltyAreaTheir();
 		
 		
 		assertTrue(tigersArea.getPenaltyMark().equals(new Vector2(-2275, 0)));
@@ -104,11 +63,10 @@ public class PenaltyAreaTest implements I2DShapeTest
 	
 	
 	@Override
-	@Test
 	public void testIsPointInShape()
 	{
-		final PenaltyArea tigersArea = initiatePenaltyArea(ETeam.TIGERS);
-		final PenaltyArea opponentsArea = initiatePenaltyArea(ETeam.OPPONENTS);
+		final PenaltyArea tigersArea = AIConfig.getGeometry().getPenaltyAreaOur();
+		final PenaltyArea opponentsArea = AIConfig.getGeometry().getPenaltyAreaTheir();
 		
 		// inside our Area
 		final Vector2 testPoint1 = new Vector2(-3024, 974);
@@ -181,11 +139,10 @@ public class PenaltyAreaTest implements I2DShapeTest
 	
 	
 	@Override
-	@Test
 	public void testNearestPointOutside()
 	{
-		final PenaltyArea tigersArea = initiatePenaltyArea(ETeam.TIGERS);
-		final PenaltyArea opponentsArea = initiatePenaltyArea(ETeam.OPPONENTS);
+		final PenaltyArea tigersArea = AIConfig.getGeometry().getPenaltyAreaOur();
+		final PenaltyArea opponentsArea = AIConfig.getGeometry().getPenaltyAreaTheir();
 		
 		// inside our Area
 		final Vector2 testPoint1 = new Vector2(-3000, 100);
@@ -234,8 +191,8 @@ public class PenaltyAreaTest implements I2DShapeTest
 	@Test
 	public void testStepAlongPenArea()
 	{
-		doTestStepAlongPenArea(initiatePenaltyArea(ETeam.OPPONENTS));
-		doTestStepAlongPenArea(initiatePenaltyArea(ETeam.TIGERS));
+		doTestStepAlongPenArea(AIConfig.getGeometry().getPenaltyAreaOur());
+		doTestStepAlongPenArea(AIConfig.getGeometry().getPenaltyAreaOur());
 	}
 	
 	
@@ -262,11 +219,10 @@ public class PenaltyAreaTest implements I2DShapeTest
 	
 	/**
 	 */
-	@Test
 	public void testNearestPointOutsideWithLine()
 	{
-		final PenaltyArea tigersArea = initiatePenaltyArea(ETeam.TIGERS);
-		final PenaltyArea opponentsArea = initiatePenaltyArea(ETeam.OPPONENTS);
+		final PenaltyArea tigersArea = AIConfig.getGeometry().getPenaltyAreaOur();
+		final PenaltyArea opponentsArea = AIConfig.getGeometry().getPenaltyAreaTheir();
 		
 		// inside our Area
 		// points 11: insidePoint in rectancle, intersection on edge from rectangle and pos. circle

@@ -9,6 +9,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.SplinePair3D;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
 
@@ -48,4 +49,10 @@ public interface IBotObserver
 	 * @param blocked
 	 */
 	void onBlocked(boolean blocked);
+	
+	
+	/**
+	 * @param spline
+	 */
+	void onNewSplineData(SplinePair3D spline);
 }

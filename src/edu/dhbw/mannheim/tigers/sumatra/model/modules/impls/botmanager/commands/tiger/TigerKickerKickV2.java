@@ -11,7 +11,9 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -29,30 +31,50 @@ public class TigerKickerKickV2 extends ACommand
 		public static final int	CHIP		= 1;
 	}
 	
+	
 	/**
 	 */
-	public static class Mode
+	public static enum EKickerMode
 	{
-		/** */
-		public static final int	FORCE		= 0;
-		/** */
-		public static final int	ARM		= 1;
-		/** */
-		public static final int	DISARM	= 2;
-		/** */
-		public static final int	DRIBBLER	= 3;
-		/** */
-		public static final int	NONE		= 0xFF;
+		/**  */
+		FORCE(0),
+		/**  */
+		ARM(1),
+		/**  */
+		DISARM(2),
+		/**  */
+		DRIBBLER(3),
+		/**  */
+		NONE(0xFF);
+		private final int	id;
+		
+		
+		private EKickerMode(int id)
+		{
+			this.id = id;
+		}
+		
+		
+		/**
+		 * @return the id
+		 */
+		public final int getId()
+		{
+			return id;
+		}
 	}
 	
 	// Logger
 	private static final Logger	log				= Logger.getLogger(TigerKickerKickV2.class.getName());
 	
 	// straight, chip, force, arm, disarm
+	@SerialData(type = ESerialDataType.UINT8)
 	private int							deviceAndMode;
 	// 0 - 240
+	@SerialData(type = ESerialDataType.UINT8)
 	private int							level;
 	// Fixed point 14:2 [s*e-7]
+	@SerialData(type = ESerialDataType.UINT16)
 	private int							firingDuration;
 	
 	/** */
@@ -69,8 +91,10 @@ public class TigerKickerKickV2 extends ACommand
 	 */
 	public TigerKickerKickV2()
 	{
+		super(ECommand.CMD_KICKER_KICKV2);
+		
 		setDevice(Device.STRAIGHT);
-		setMode(Mode.NONE);
+		setMode(EKickerMode.NONE);
 		setFiringDuration(0);
 		setLevel(MAX_LEVEL);
 	}
@@ -81,8 +105,10 @@ public class TigerKickerKickV2 extends ACommand
 	 * @param firingDuration
 	 * @param mode
 	 */
-	public TigerKickerKickV2(float firingDuration, int mode)
+	public TigerKickerKickV2(float firingDuration, EKickerMode mode)
 	{
+		super(ECommand.CMD_KICKER_KICKV2);
+		
 		setDevice(Device.STRAIGHT);
 		setMode(mode);
 		setFiringDuration(firingDuration);
@@ -96,8 +122,10 @@ public class TigerKickerKickV2 extends ACommand
 	 * @param mode
 	 * @param firingDuration
 	 */
-	public TigerKickerKickV2(int device, int mode, float firingDuration)
+	public TigerKickerKickV2(int device, EKickerMode mode, float firingDuration)
 	{
+		super(ECommand.CMD_KICKER_KICKV2);
+		
 		setDevice(device);
 		setMode(mode);
 		setFiringDuration(firingDuration);
@@ -112,48 +140,14 @@ public class TigerKickerKickV2 extends ACommand
 	 * @param firingDuration
 	 * @param level
 	 */
-	public TigerKickerKickV2(int device, int mode, float firingDuration, int level)
+	public TigerKickerKickV2(int device, EKickerMode mode, float firingDuration, int level)
 	{
+		super(ECommand.CMD_KICKER_KICKV2);
+		
 		setDevice(device);
 		setMode(mode);
 		setFiringDuration(firingDuration);
 		setLevel(level);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		byte2ByteArray(data, 0, deviceAndMode);
-		byte2ByteArray(data, 1, level);
-		short2ByteArray(data, 2, firingDuration);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public void setData(byte[] data)
-	{
-		deviceAndMode = byteArray2UByte(data, 0);
-		level = byteArray2UByte(data, 1);
-		firingDuration = byteArray2UShort(data, 2);
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_KICKER_KICKV2;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 4;
 	}
 	
 	
@@ -190,10 +184,10 @@ public class TigerKickerKickV2 extends ACommand
 	/**
 	 * @param mode
 	 */
-	public void setMode(int mode)
+	public void setMode(EKickerMode mode)
 	{
 		deviceAndMode &= 0x0F;
-		deviceAndMode |= mode << 4;
+		deviceAndMode |= mode.getId() << 4;
 	}
 	
 	
@@ -273,5 +267,13 @@ public class TigerKickerKickV2 extends ACommand
 			log.warn("Level 0 is not permitted, set to 1");
 			this.level = 1;
 		}
+	}
+	
+	
+	@Override
+	public String toString()
+	{
+		return "TigerKickerKickV2 [deviceAndMode=" + deviceAndMode + ", level=" + level + ", firingDuration="
+				+ firingDuration + "]";
 	}
 }

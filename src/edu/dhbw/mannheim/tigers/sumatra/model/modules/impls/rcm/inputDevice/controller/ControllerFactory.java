@@ -17,6 +17,9 @@ import net.java.games.input.ControllerEnvironment;
 
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.sumatra.util.NativesLoader;
+import edu.dhbw.mannheim.tigers.sumatra.util.OsDetector;
+
 
 /**
  * 
@@ -37,6 +40,16 @@ public final class ControllerFactory
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	static
+	{
+		// set library path for jinput
+		final String curDir = System.getProperty("user.dir");
+		System.setProperty("net.java.games.input.librarypath",
+				curDir + "/lib/native/" + NativesLoader.DEFAULT_FOLDER_MAP.get(OsDetector.detectOs()));
+	}
+	
+	
 	private ControllerFactory()
 	{
 		updateControllers();

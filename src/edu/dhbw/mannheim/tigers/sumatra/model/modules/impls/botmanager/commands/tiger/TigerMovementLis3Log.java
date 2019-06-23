@@ -10,7 +10,9 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -24,11 +26,17 @@ public class TigerMovementLis3Log extends ACommand
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
+	@SerialData(type = ESerialDataType.INT32)
 	private int	innerAx;
+	@SerialData(type = ESerialDataType.INT32)
 	private int	innerAy;
+	@SerialData(type = ESerialDataType.INT32)
 	private int	innerAz;
+	@SerialData(type = ESerialDataType.INT32)
 	private int	outerAx;
+	@SerialData(type = ESerialDataType.INT32)
 	private int	outerAy;
+	@SerialData(type = ESerialDataType.INT32)
 	private int	outerAz;
 	
 	
@@ -40,52 +48,13 @@ public class TigerMovementLis3Log extends ACommand
 	 */
 	public TigerMovementLis3Log()
 	{
+		super(ECommand.CMD_MOVEMENT_LIS3_LOG);
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		innerAx = byteArray2Int(data, 0);
-		innerAy = byteArray2Int(data, 4);
-		innerAz = byteArray2Int(data, 8);
-		outerAx = byteArray2Int(data, 12);
-		outerAy = byteArray2Int(data, 16);
-		outerAz = byteArray2Int(data, 20);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte[] data = new byte[getDataLength()];
-		
-		int2ByteArray(data, 0, innerAx);
-		int2ByteArray(data, 4, innerAy);
-		int2ByteArray(data, 8, innerAz);
-		int2ByteArray(data, 12, outerAx);
-		int2ByteArray(data, 16, outerAy);
-		int2ByteArray(data, 20, outerAz);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_MOVEMENT_LIS3_LOG;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 24;
-	}
 	
 	
 	// --------------------------------------------------------------------------

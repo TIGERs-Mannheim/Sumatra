@@ -4,21 +4,15 @@
  * Project: TIGERS - Sumatra
  * Date: 25.11.2011
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.types;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-
-import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.IModuliStateObserver;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.ModuliStateAdapter;
-import edu.moduli.AModule;
-import edu.moduli.listenerVariables.ModulesState;
 
 
 /**
@@ -28,23 +22,15 @@ import edu.moduli.listenerVariables.ModulesState;
  * {@link IConfigManagerObserver} he will get notified when new configs are added.
  * 
  * @author Gero
- * 
  */
-public abstract class AConfigManager extends AModule implements IModuliStateObserver
+public abstract class AConfigManager
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	/** */
-	public static final String							MODULE_TYPE				= "AConfigEditor";
-	/** */
-	public static final String							MODULE_ID				= "config";
+	protected static final Set<IConfigClient>	registered_clients	= new LinkedHashSet<IConfigClient>();
 	
-	protected static final Set<IConfigClient>		REGISTERED_CLIENTS	= new HashSet<IConfigClient>();
-	
-	private boolean										alreadyResolved		= false;
-	
-	private final List<IConfigManagerObserver>	observers				= new LinkedList<IConfigManagerObserver>();
+	private final Set<IConfigManagerObserver>	observers				= new HashSet<IConfigManagerObserver>();
 	
 	
 	// --------------------------------------------------------------------------
@@ -55,7 +41,6 @@ public abstract class AConfigManager extends AModule implements IModuliStateObse
 	 */
 	public AConfigManager()
 	{
-		ModuliStateAdapter.getInstance().addObserver(this);
 	}
 	
 	
@@ -67,35 +52,9 @@ public abstract class AConfigManager extends AModule implements IModuliStateObse
 	 * 
 	 * @param newClient
 	 */
-	public static void registerConfigClient(IConfigClient newClient)
+	public static void registerConfigClient(final IConfigClient newClient)
 	{
-		REGISTERED_CLIENTS.add(newClient);
-	}
-	
-	
-	@Override
-	public void onModuliStateChanged(ModulesState state)
-	{
-		switch (state)
-		{
-			case RESOLVED:
-				if (!alreadyResolved)
-				{
-					onStartup();
-					alreadyResolved = true;
-				}
-				break;
-			
-			case NOT_LOADED:
-				// Clear if moduli-config is reloaded
-				REGISTERED_CLIENTS.clear();
-				onStop();
-				break;
-			case ACTIVE:
-				break;
-			default:
-				break;
-		}
+		registered_clients.add(newClient);
 	}
 	
 	
@@ -103,10 +62,9 @@ public abstract class AConfigManager extends AModule implements IModuliStateObse
 	// --- observable -----------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @param newObserver
 	 */
-	public void addObserver(IConfigManagerObserver newObserver)
+	public void addObserver(final IConfigManagerObserver newObserver)
 	{
 		synchronized (observers)
 		{
@@ -116,11 +74,10 @@ public abstract class AConfigManager extends AModule implements IModuliStateObse
 	
 	
 	/**
-	 * 
 	 * @param oldObserver
 	 * @return
 	 */
-	public boolean removeObserver(IConfigManagerObserver oldObserver)
+	public boolean removeObserver(final IConfigManagerObserver oldObserver)
 	{
 		synchronized (observers)
 		{
@@ -129,7 +86,7 @@ public abstract class AConfigManager extends AModule implements IModuliStateObse
 	}
 	
 	
-	protected void notifyConfigAdded(ManagedConfig newConfig)
+	protected void notifyConfigAdded(final ManagedConfig newConfig)
 	{
 		synchronized (observers)
 		{
@@ -141,7 +98,7 @@ public abstract class AConfigManager extends AModule implements IModuliStateObse
 	}
 	
 	
-	protected void notifyConfigReloaded(ManagedConfig config)
+	protected void notifyConfigReloaded(final ManagedConfig config)
 	{
 		synchronized (observers)
 		{
@@ -160,18 +117,6 @@ public abstract class AConfigManager extends AModule implements IModuliStateObse
 	 * @return All {@link ManagedConfig} that are currently loaded
 	 */
 	public abstract Collection<ManagedConfig> getLoadedConfigs();
-	
-	
-	/**
-	 * Called once when all modules has been loaded the first time
-	 */
-	protected abstract void onStartup();
-	
-	
-	/**
-	 * Called whenever moduli is going to be reloaded (first step in new process)
-	 */
-	protected abstract void onStop();
 	
 	
 	/**

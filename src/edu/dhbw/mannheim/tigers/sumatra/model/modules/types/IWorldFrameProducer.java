@@ -21,5 +21,12 @@ public interface IWorldFrameProducer
 	 * 
 	 * @param consumer
 	 */
-	void setWorldFrameConsumer(IWorldFrameConsumer consumer);
+	void addWorldFrameConsumer(IWorldFrameConsumer consumer);
+	
+	
+	/**
+	 * 
+	 * @param consumer
+	 */
+	void removeWorldFrameConsumer(IWorldFrameConsumer consumer);
 }

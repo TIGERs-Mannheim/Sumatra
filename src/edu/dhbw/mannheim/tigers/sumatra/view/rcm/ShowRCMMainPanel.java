@@ -21,17 +21,16 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
+import javax.swing.JToggleButton;
 
 import net.java.games.input.Controller;
 import net.miginfocom.swing.MigLayout;
 
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.inputDevice.controller.ControllerFactory;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.rcm.AControllerPresenter;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.rcm.RCMPresenter;
 import edu.dhbw.mannheim.tigers.sumatra.util.OsDetector;
-import edu.dhbw.mannheim.tigers.sumatra.view.rcm.actions.AndroidServerAction;
 
 
 /**
@@ -56,7 +55,6 @@ public final class ShowRCMMainPanel extends JPanel
 	// --- GUI components ---
 	private JButton							startStopButton;
 	private JButton							refreshConnetionButton;
-	private JButton							startAndroidServer;
 	private JButton							refreshControllersButton;
 	// private JButton exitButton;
 	// private JButton clearLoggingButton;
@@ -66,8 +64,8 @@ public final class ShowRCMMainPanel extends JPanel
 	private JPanel								mainPanel;
 	// public JTextArea loggingTextArea;
 	// private JScrollPane loggingScrollPane;
-	private JButton							startStopMQTTButton;
-	private JButton							startStopMessagingButton;
+	private JToggleButton					startStopMQTTButton;
+	private JToggleButton					startStopMessagingButton;
 	
 	
 	// --- list with all ControllerPanels
@@ -91,23 +89,17 @@ public final class ShowRCMMainPanel extends JPanel
 	// --------------------------------------------------------------------------
 	private ShowRCMMainPanel()
 	{
-		
 		{
 			// --- MainPanel with all Components ---
 			mainPanel = new JPanel();
 			final MigLayout mainPanelLayout = new MigLayout();
-			mainPanelLayout.setColumnConstraints("[600.0]");
-			mainPanelLayout.setRowConstraints("[86.0][242.0]2.0[210.0]");
 			mainPanel.setLayout(mainPanelLayout);
 			{
 				// --- Panel with Programm Control Buttons ---
 				programRunPanel = new JPanel();
 				final MigLayout programRunPanelLayout = new MigLayout();
-				programRunPanelLayout.setRowConstraints("[45.0]");
-				programRunPanelLayout.setColumnConstraints("[fill][][][]");
 				programRunPanel.setLayout(programRunPanelLayout);
 				mainPanel.add(programRunPanel, "cell 0 0");
-				programRunPanel.setPreferredSize(new java.awt.Dimension(525, 64));
 				{
 					// --- Start-/StopButton ---
 					startStopButton = new JButton();
@@ -118,41 +110,32 @@ public final class ShowRCMMainPanel extends JPanel
 				}
 				{
 					// --- Restart Button ---
-					refreshConnetionButton = new JButton("reconnect");
+					refreshConnetionButton = new JButton();
 					programRunPanel.add(refreshConnetionButton, "cell 1 0");
 					refreshConnetionButton.setIcon(new ImageIcon(ClassLoader.getSystemResource("reload2.png")));
 					refreshConnetionButton.addActionListener(new RestartAction());
 					refreshConnetionButton.setToolTipText("Reconnect to Bots");
 				}
 				{
-					// --- reset LoggingTextArea ---
-					startAndroidServer = new JButton();
-					programRunPanel.add(startAndroidServer, "cell 2 0");
-					startAndroidServer.setIcon(new ImageIcon(ClassLoader.getSystemResource("android.png")));
-					startAndroidServer.addActionListener(new AndroidServerAction());
-					startAndroidServer.setToolTipText("Start Server for Android App");
-					startAndroidServer.setEnabled(false);
-				}
-				{
-					refreshControllersButton = new JButton("reload controller");
+					refreshControllersButton = new JButton();
 					programRunPanel.add(refreshControllersButton, "cell 3 0");
-					refreshControllersButton.setIcon(new ImageIcon(ClassLoader.getSystemResource("reload2.png")));
+					refreshControllersButton.setIcon(new ImageIcon(ClassLoader.getSystemResource("xboxController.png")));
 					refreshControllersButton.addActionListener(new UpdateControllerAction());
 					refreshControllersButton.setToolTipText("Refresh Controllers");
 				}
 				{
 					// --- Start-/StopButton for MQTT Broker on Windows---
-					startStopMQTTButton = new JButton("Start MQTT broker");
+					startStopMQTTButton = new JToggleButton();
 					programRunPanel.add(startStopMQTTButton, "cell 4 0");
-					startStopMQTTButton.setIcon(new ImageIcon(ClassLoader.getSystemResource("start.png")));
+					startStopMQTTButton.setIcon(new ImageIcon(ClassLoader.getSystemResource("mqtt_logo.png")));
 					startStopMQTTButton.addActionListener(new StartStopMQTTAction());
 					startStopMQTTButton.setToolTipText("Start MQTT broker for Windows");
 				}
 				{
 					// --- Start-/StopButton for Messaging system---
-					startStopMessagingButton = new JButton("Start Messaging");
+					startStopMessagingButton = new JToggleButton();
 					programRunPanel.add(startStopMessagingButton, "cell 4 0");
-					startStopMessagingButton.setIcon(new ImageIcon(ClassLoader.getSystemResource("start.png")));
+					startStopMessagingButton.setIcon(new ImageIcon(ClassLoader.getSystemResource("bluetooth.png")));
 					startStopMessagingButton.addActionListener(new StartStopMessagingAction());
 					startStopMessagingButton.setToolTipText("Start Messaging system");
 				}
@@ -163,9 +146,11 @@ public final class ShowRCMMainPanel extends JPanel
 				// --- one Tab for each Controller - set below ---
 				controllerTabbedPane = new JTabbedPane();
 				mainPanel.add(controllerTabbedPane, "cell 0 1");
-				controllerTabbedPane.setPreferredSize(new java.awt.Dimension(524, 61));
+				// controllerTabbedPane.setPreferredSize(new java.awt.Dimension(524, 61));
 			}
 		}
+		
+		stop();
 		
 		this.add(mainPanel);
 	}
@@ -230,8 +215,25 @@ public final class ShowRCMMainPanel extends JPanel
 	
 	/**
 	 */
-	public void start()
+	public final void start()
 	{
+		startStopButton.setEnabled(true);
+		startStopMessagingButton.setEnabled(true);
+		startStopMQTTButton.setEnabled(true);
+		refreshConnetionButton.setEnabled(true);
+		refreshControllersButton.setEnabled(true);
+	}
+	
+	
+	/**
+	 */
+	public final void stop()
+	{
+		startStopButton.setEnabled(false);
+		startStopMessagingButton.setEnabled(false);
+		startStopMQTTButton.setEnabled(false);
+		refreshConnetionButton.setEnabled(false);
+		refreshControllersButton.setEnabled(false);
 	}
 	
 	/**
@@ -287,18 +289,14 @@ public final class ShowRCMMainPanel extends JPanel
 			// --- start button shown ---
 			if (startMessagingButton)
 			{
-				startStopMessagingButton.setIcon(new ImageIcon(ClassLoader.getSystemResource("stop.png")));
 				startMessagingButton = false;
 				notifyMessaging(true);
 			} else
 			{
-				startStopMessagingButton.setIcon(new ImageIcon(ClassLoader.getSystemResource("start.png")));
 				startMessagingButton = true;
 				notifyMessaging(false);
 			}
 		}
-		
-		
 	}
 	
 	
@@ -380,7 +378,6 @@ public final class ShowRCMMainPanel extends JPanel
 					log.debug("MQTT broker is only on Windows");
 					return;
 				}
-				startStopMQTTButton.setIcon(new ImageIcon(ClassLoader.getSystemResource("stop.png")));
 				startMQTTButton = false;
 			} else
 			{
@@ -389,7 +386,6 @@ public final class ShowRCMMainPanel extends JPanel
 					p.destroy();
 					log.info("MQTT broker stopped");
 				}
-				startStopMQTTButton.setIcon(new ImageIcon(ClassLoader.getSystemResource("start.png")));
 				startMQTTButton = true;
 			}
 		}
@@ -454,7 +450,6 @@ public final class ShowRCMMainPanel extends JPanel
 		public void actionPerformed(ActionEvent e)
 		{
 			xboxControllerCount = 0;
-			ControllerFactory.getInstance().updateControllers();
 			RCMPresenter.getInstance().setUpController();
 		}
 	}
@@ -463,11 +458,4 @@ public final class ShowRCMMainPanel extends JPanel
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/**
-	 * @return
-	 */
-	public JButton getAndroidServerButton()
-	{
-		return startAndroidServer;
-	}
 }

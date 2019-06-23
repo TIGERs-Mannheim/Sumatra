@@ -12,8 +12,6 @@ package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tigerv2;
 import javax.swing.JPanel;
 
 import net.miginfocom.swing.MigLayout;
-import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.motor.MotorEnhancedInputPanel;
-import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.motor.MotorInputPanel;
 
 
 /**
@@ -29,12 +27,11 @@ public class ControllerPanel extends JPanel
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	/**  */
-	private static final long			serialVersionUID	= -1285004577489986788L;
+	private static final long		serialVersionUID	= -1285004577489986788L;
 	
-	private FusionCtrlPanel				fusion				= null;
-	private SelectControllerPanel		select				= null;
-	private MotorInputPanel				input					= null;
-	private MotorEnhancedInputPanel	enhanced				= null;
+	private FusionCtrlPanel			fusion				= null;
+	private SelectControllerPanel	select				= null;
+	private StructurePanel			structure			= null;
 	
 	
 	// --------------------------------------------------------------------------
@@ -49,13 +46,11 @@ public class ControllerPanel extends JPanel
 		
 		fusion = new FusionCtrlPanel();
 		select = new SelectControllerPanel();
-		input = new MotorInputPanel(false);
-		enhanced = new MotorEnhancedInputPanel();
+		structure = new StructurePanel();
 		
-		add(fusion, "spany 3, aligny top");
-		add(select, "wrap, aligny top");
-		add(input, "wrap");
-		add(enhanced);
+		add(select, "wrap");
+		add(structure, "wrap");
+		add(fusion, "wrap");
 	}
 	
 	
@@ -81,20 +76,11 @@ public class ControllerPanel extends JPanel
 	
 	
 	/**
-	 * @return the input
+	 * @return the structure
 	 */
-	public MotorInputPanel getInputPanel()
+	public final StructurePanel getStructurePanel()
 	{
-		return input;
-	}
-	
-	
-	/**
-	 * @return the enhanced
-	 */
-	public MotorEnhancedInputPanel getEnhancedInputPanel()
-	{
-		return enhanced;
+		return structure;
 	}
 	
 	

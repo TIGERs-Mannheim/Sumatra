@@ -9,13 +9,12 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.rcm;
 
-import java.awt.Component;
 import java.util.List;
 
 import javax.swing.JMenu;
 import javax.swing.JPanel;
 
-import edu.dhbw.mannheim.tigers.sumatra.view.main.ISumatraView;
+import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
 
 
 /**
@@ -33,10 +32,6 @@ public class RobotControlManagerPanel extends JPanel implements ISumatraView
 	private static final long					serialVersionUID	= 3125761918996725026L;
 	
 	private static final ShowRCMMainPanel	RCM_MAIN_PANEL		= ShowRCMMainPanel.getInstance();
-	
-	// constants
-	private static final String				TITLE					= "Robot Control Manager";
-	private static final int					ID						= 31;
 	
 	
 	// --------------------------------------------------------------------------
@@ -65,28 +60,7 @@ public class RobotControlManagerPanel extends JPanel implements ISumatraView
 	 */
 	public void stop()
 	{
-		removeAll();
-	}
-	
-	
-	@Override
-	public int getId()
-	{
-		return ID;
-	}
-	
-	
-	@Override
-	public String getTitle()
-	{
-		return TITLE;
-	}
-	
-	
-	@Override
-	public Component getViewComponent()
-	{
-		return this;
+		RCM_MAIN_PANEL.stop();
 	}
 	
 	

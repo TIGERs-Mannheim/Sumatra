@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Aug 21, 2010
  * Author(s): bernhard
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals;
@@ -13,6 +12,7 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
@@ -25,15 +25,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
-import javax.swing.BorderFactory;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JPanel;
-import javax.swing.border.TitledBorder;
 
 import net.miginfocom.swing.MigLayout;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.AObjectID;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMap;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.IBotIDMap;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.TigerBotV2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IManualBotObserver;
 
@@ -42,7 +47,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IManualBotObserve
  * Visualizes all available robots.
  * 
  * @author bernhard
- * 
  */
 public class RobotsPanel extends JPanel
 {
@@ -53,11 +57,12 @@ public class RobotsPanel extends JPanel
 	
 	// --- constants ---
 	private static final int						SIGN_WIDTH					= 40;
-	private static final int						SIGN_HEIGHT					= 20;
-	private static final int						SIGN_MARGIN					= 10;
+	private static final int						SIGN_HEIGHT					= 15;
+	private static final int						SIGN_MARGIN					= 5;
 	private static final int						SIGN_STRIP_WIDTH			= 5;
-	private static final int						Y_START_MARGIN				= 25;
-	private static final int						PANEL_WIDTH					= 65;
+	private static final int						Y_START_MARGIN				= 5;
+	private static final int						PANEL_WIDTH					= 42;
+	private int											signHeight					= SIGN_HEIGHT;
 	
 	// --- observer ---
 	private final List<IRobotsPanelObserver>	observers					= new ArrayList<IRobotsPanelObserver>();
@@ -68,18 +73,10 @@ public class RobotsPanel extends JPanel
 	private int											markerPosition				= NO_BOT_MARKED;
 	
 	// --- connection arrays ---
-	
-	/** Thread-safe guarded by <code>this</code> */
-	private final Map<BotID, Boolean>			tigersWpDetected			= new HashMap<BotID, Boolean>();
-	
-	/** Thread-safe guarded by <code>this</code> */
-	private final Map<BotID, Boolean>			foesWpDetected				= new HashMap<BotID, Boolean>();
-	
-	/** Thread-safe guarded by <code>this</code> */
-	private final Map<BotID, ENetworkState>	botConnection				= new HashMap<BotID, ENetworkState>();
+	private Map<BotID, ABot>						bots							= new HashMap<BotID, ABot>(0);
+	private IBotIDMap<TrackedTigerBot>			tBots							= new BotIDMap<TrackedTigerBot>();
 	
 	// --- color ---
-	private static final Color						UNKNOWN_TEAM				= Color.black;
 	private static final Color						SELECTED_COLOR				= Color.black;
 	
 	private static final Color						TRUE_COLOR					= Color.green;
@@ -87,10 +84,19 @@ public class RobotsPanel extends JPanel
 	private static final Color						CONNECTING_COLOR			= Color.cyan;
 	private static final Color						MANUAL_COLOR				= Color.red;
 	
-	private Color										tigersColor					= UNKNOWN_TEAM;
-	private Color										tigersContrastColor		= UNKNOWN_TEAM;
+	private static final Color						YELLOW_BOT_COLOR			= Color.yellow;
+	private static final Color						BLUE_BOT_COLOR				= Color.blue;
+	
+	private static final Color						YELLOW_CONTRAST_COLOR	= Color.black;
+	private static final Color						BLUE_CONTRAST_COLOR		= Color.white;
+	
 	
 	private final Set<BotID>						manualControlledTigers	= new HashSet<BotID>();
+	
+	private final List<Color>						colors						= new ArrayList<Color>();
+	
+	private long										flashLastTime				= System.nanoTime();
+	private boolean									flashState					= false;
 	
 	
 	// --------------------------------------------------------------------------
@@ -100,35 +106,19 @@ public class RobotsPanel extends JPanel
 	 */
 	public RobotsPanel()
 	{
+		colors.add(new Color(0xE52F00));
+		colors.add(new Color(0xDB9000));
+		colors.add(new Color(0xBAD200));
+		colors.add(new Color(0x58C800));
+		colors.add(new Color(0x00BF02));
+		
 		// --- configure panel ---
 		setLayout(new MigLayout("fill", "[" + (PANEL_WIDTH - (2 * SIGN_MARGIN)) + "!]", "[top]"));
-		setPreferredSize(new Dimension(70, ((SIGN_HEIGHT + SIGN_MARGIN + SIGN_STRIP_WIDTH) * 13)));
-		
-		// --- border ---
-		final TitledBorder border = BorderFactory.createTitledBorder("robots");
-		border.setTitleJustification(TitledBorder.CENTER);
-		setBorder(border);
+		setPreferredSize(new Dimension(PANEL_WIDTH, 2000));
 		
 		// --- add listener ---
 		final MouseEvents me = new MouseEvents();
 		addMouseListener(me);
-	}
-	
-	
-	/**
-	 * @param tigersAreYellow
-	 */
-	public void setTigersAreYellow(boolean tigersAreYellow)
-	{
-		if (tigersAreYellow)
-		{
-			tigersColor = Color.yellow;
-			tigersContrastColor = Color.black;
-		} else
-		{
-			tigersColor = Color.blue;
-			tigersContrastColor = Color.white;
-		}
 	}
 	
 	
@@ -139,7 +129,7 @@ public class RobotsPanel extends JPanel
 	/**
 	 * @param o
 	 */
-	public void addObserver(IRobotsPanelObserver o)
+	public void addObserver(final IRobotsPanelObserver o)
 	{
 		observers.add(o);
 	}
@@ -148,7 +138,7 @@ public class RobotsPanel extends JPanel
 	/**
 	 * @param o
 	 */
-	public void removeObserver(IRobotsPanelObserver o)
+	public void removeObserver(final IRobotsPanelObserver o)
 	{
 		observers.remove(o);
 	}
@@ -157,7 +147,7 @@ public class RobotsPanel extends JPanel
 	/**
 	 * @param o
 	 */
-	public void addObserver(IManualBotObserver o)
+	public void addObserver(final IManualBotObserver o)
 	{
 		manualBotObservers.add(o);
 	}
@@ -166,7 +156,7 @@ public class RobotsPanel extends JPanel
 	/**
 	 * @param o
 	 */
-	public void removeObserver(IManualBotObserver o)
+	public void removeObserver(final IManualBotObserver o)
 	{
 		manualBotObservers.remove(o);
 	}
@@ -176,17 +166,25 @@ public class RobotsPanel extends JPanel
 	// --- select methods -------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * @param i
+	 * @param botId
 	 */
-	public synchronized void selectRobot(int i)
+	public void selectRobot(final BotID botId)
 	{
-		markerPosition = i;
+		int marker = 0;
+		for (BotID id : bots.keySet())
+		{
+			if (id.equals(botId))
+			{
+				markerPosition = marker;
+			}
+			marker++;
+		}
 	}
 	
 	
 	/**
 	 */
-	public synchronized void deselectRobots()
+	public void deselectRobots()
 	{
 		markerPosition = NO_BOT_MARKED;
 	}
@@ -197,11 +195,27 @@ public class RobotsPanel extends JPanel
 	// --------------------------------------------------------------------------
 	
 	@Override
-	protected void paintComponent(Graphics g1)
+	protected void paintComponent(final Graphics g1)
 	{
+		float fixedHeight = Y_START_MARGIN + (bots.size() * SIGN_MARGIN) + SIGN_MARGIN;
+		float availHeight = getHeight();
+		if (bots.isEmpty())
+		{
+			signHeight = (int) (availHeight - fixedHeight);
+		} else
+		{
+			signHeight = (int) (availHeight - fixedHeight) / bots.size();
+		}
+		
 		// --- init work ---
 		super.paintComponent(g1);
 		final Graphics2D g = (Graphics2D) g1;
+		
+		if (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - flashLastTime) > 100)
+		{
+			flashLastTime = System.nanoTime();
+			flashState = !flashState;
+		}
 		
 		// --- drawRobots ---
 		drawRobots(g);
@@ -217,34 +231,34 @@ public class RobotsPanel extends JPanel
 	protected class MouseEvents extends MouseAdapter
 	{
 		@Override
-		public void mouseClicked(MouseEvent e)
+		public void mouseClicked(final MouseEvent e)
 		{
 			final int clickX = (e.getX());
-			final int clickY = (e.getY() - 25);
+			final int clickY = (e.getY() - Y_START_MARGIN);
 			
 			// --- calculate BotId ---
-			int botId = NO_BOT_MARKED;
+			int id = NO_BOT_MARKED;
 			final int startcoordinateX = (PANEL_WIDTH - SIGN_WIDTH) / 2;
 			
 			// --- check x-coordinate ---
 			if ((clickX <= (startcoordinateX + SIGN_WIDTH)) && (clickX >= startcoordinateX))
 			{
 				// --- determinate y-coordinate ---
-				botId = clickY / (SIGN_HEIGHT + SIGN_MARGIN);
-				// log.info("clicked botId: " + botId);
+				id = clickY / (signHeight + SIGN_MARGIN);
+				if (id >= bots.size())
+				{
+					return;
+				}
+				final BotID botId = bots.keySet().toArray(new BotID[bots.size()])[id];
 				
 				// --- check if click is within a rect + botId is between 1 and 12 ---
-				if ((botId >= AObjectID.BOT_ID_MIN) && (botId <= AObjectID.BOT_ID_MAX)
-						&& (clickY >= ((SIGN_HEIGHT + SIGN_MARGIN) * (botId)))
-						&& (clickY <= (((SIGN_HEIGHT + SIGN_MARGIN) * (botId)) + SIGN_HEIGHT)))
+				if ((clickY >= ((signHeight + SIGN_MARGIN) * (id)))
+						&& (clickY <= (((signHeight + SIGN_MARGIN) * (id)) + signHeight)))
 				{
-					// log.debug("clicked: " + clickX + "," + clickY + " - " + botId);
-					
 					if (e.getButton() == MouseEvent.BUTTON3)
 					{
-						final int finalBotId = botId;
 						final BotPopUpMenu botPopUpMenu = new BotPopUpMenu();
-						if (manualControlledTigers.contains(new BotID(finalBotId)))
+						if (manualControlledTigers.contains(botId))
 						{
 							botPopUpMenu.iManual.setSelected(true);
 						}
@@ -252,24 +266,24 @@ public class RobotsPanel extends JPanel
 						{
 							
 							@Override
-							public void actionPerformed(ActionEvent e)
+							public void actionPerformed(final ActionEvent e)
 							{
 								// --- notify observer ---
 								synchronized (manualBotObservers)
 								{
 									if (((JCheckBoxMenuItem) e.getSource()).isSelected())
 									{
-										manualControlledTigers.add(new BotID(finalBotId));
+										manualControlledTigers.add(botId);
 										for (final IManualBotObserver observer : manualBotObservers)
 										{
-											observer.onManualBotAdded(new BotID(finalBotId));
+											observer.onManualBotAdded(botId);
 										}
 									} else
 									{
-										manualControlledTigers.remove(new BotID(finalBotId));
+										manualControlledTigers.remove(botId);
 										for (final IManualBotObserver observer : manualBotObservers)
 										{
-											observer.onManualBotRemoved(new BotID(finalBotId));
+											observer.onManualBotRemoved(botId);
 										}
 									}
 								}
@@ -283,14 +297,12 @@ public class RobotsPanel extends JPanel
 						{
 							for (final IRobotsPanelObserver observer : observers)
 							{
-								observer.onRobotClick(new BotID(botId));
+								observer.onRobotClick(botId);
 							}
 						}
 					}
 				}
-				
 			}
-			
 		}
 	}
 	
@@ -299,38 +311,44 @@ public class RobotsPanel extends JPanel
 	// --- draw methods ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private synchronized void drawMarker(Graphics2D g)
+	private void drawMarker(final Graphics2D g)
 	{
 		final int marker = markerPosition;
 		if (marker != NO_BOT_MARKED)
 		{
 			g.setColor(SELECTED_COLOR);
 			g.setStroke(new BasicStroke(3));
-			g.drawRect((PANEL_WIDTH - SIGN_WIDTH) / 2, (marker * (SIGN_HEIGHT + SIGN_MARGIN)) + Y_START_MARGIN,
-					SIGN_WIDTH + 1, SIGN_HEIGHT + 1);
+			g.drawRect((PANEL_WIDTH - SIGN_WIDTH) / 2, (marker * (signHeight + SIGN_MARGIN)) + Y_START_MARGIN,
+					SIGN_WIDTH + 1, signHeight + 1);
 			g.setStroke(new BasicStroke(1));
 		}
 	}
 	
 	
-	private synchronized void drawRobots(Graphics2D g)
+	private void drawRobots(final Graphics2D g)
 	{
-		for (int i = AObjectID.BOT_ID_MIN; i <= AObjectID.BOT_ID_MAX; i++)
+		int offset = 0;
+		int i = 0;
+		
+		for (Map.Entry<BotID, ABot> entry : bots.entrySet())
 		{
-			Color fontColor = null;
+			final BotID botId = entry.getKey();
+			final ABot bot = entry.getValue();
+			ENetworkState networkState = bot.getNetworkState();
+			ETeamColor color = botId.getTeamColor();
+			int id = botId.getNumber();
 			
-			final BotID botId = new BotID(i);
-			
-			// Bot-color
-			if (is(tigersWpDetected.get(botId)))
+			Color fontColor;
+			if (color == ETeamColor.YELLOW)
 			{
-				g.setColor(tigersColor);
-				fontColor = tigersContrastColor;
+				g.setColor(YELLOW_BOT_COLOR);
+				fontColor = YELLOW_CONTRAST_COLOR;
 			} else
 			{
-				g.setColor(UNKNOWN_TEAM);
-				fontColor = Color.white;
+				g.setColor(BLUE_BOT_COLOR);
+				fontColor = BLUE_CONTRAST_COLOR;
 			}
+			
 			// if manual controlled, reset color
 			if (manualControlledTigers.contains(botId))
 			{
@@ -338,41 +356,106 @@ public class RobotsPanel extends JPanel
 			}
 			
 			// Draw bot-panel
-			g.fillRect((PANEL_WIDTH - SIGN_WIDTH) / 2, (i * (SIGN_HEIGHT + SIGN_MARGIN)) + Y_START_MARGIN, SIGN_WIDTH,
-					SIGN_HEIGHT);
+			g.fillRect((PANEL_WIDTH - SIGN_WIDTH) / 2, ((i + offset) * (signHeight + SIGN_MARGIN)) + Y_START_MARGIN,
+					SIGN_WIDTH, signHeight);
 			
 			// ???Border???
 			g.setColor(Color.black);
-			g.drawRect((PANEL_WIDTH - SIGN_WIDTH) / 2, (i * (SIGN_HEIGHT + SIGN_MARGIN)) + Y_START_MARGIN, SIGN_WIDTH,
-					SIGN_HEIGHT);
+			g.drawRect((PANEL_WIDTH - SIGN_WIDTH) / 2, ((i + offset) * (signHeight + SIGN_MARGIN)) + Y_START_MARGIN,
+					SIGN_WIDTH, signHeight);
 			
 			// Detected by WP?
-			setColor(tigersWpDetected.get(botId), g);
-			g.fillRect(((PANEL_WIDTH - SIGN_WIDTH) / 2) + 1, (i * (SIGN_HEIGHT + SIGN_MARGIN)) + 1 + Y_START_MARGIN,
-					SIGN_WIDTH / 6, SIGN_HEIGHT - 1);
+			setColor(tBots.containsKey(botId), g);
+			g.fillRect(((PANEL_WIDTH - SIGN_WIDTH) / 2) + 1, ((i + offset) * (signHeight + SIGN_MARGIN)) + 1
+					+ Y_START_MARGIN, SIGN_WIDTH / 6, signHeight - 1);
 			
 			// Connected?
-			setConnectionColor(botConnection.get(botId), g);
+			setConnectionColor(networkState, g);
 			g.fillRect((((PANEL_WIDTH - SIGN_WIDTH) / 2) + SIGN_WIDTH) - SIGN_STRIP_WIDTH - 1,
-					(i * (SIGN_HEIGHT + SIGN_MARGIN)) + 1 + Y_START_MARGIN, SIGN_WIDTH / 6, SIGN_HEIGHT - 1);
+					((i + offset) * (signHeight + SIGN_MARGIN)) + 1 + Y_START_MARGIN, SIGN_WIDTH / 6, signHeight - 1);
+			
+			if (networkState == ENetworkState.ONLINE)
+			{
+				float battery = bot.getBatteryLevel();
+				float batMin = bot.getBatteryLevelMin();
+				float batMax = bot.getBatteryLevelMax();
+				
+				if (bot.getType() == EBotType.TIGER_V2)
+				{
+					TigerBotV2 botV2 = (TigerBotV2) bot;
+					if (botV2.getPowerLog().getU(1) <= 1e-6)
+					{
+						batMin = 10.5f;
+						batMax = 12.6f;
+					}
+				}
+				float kicker = bot.getKickerLevel();
+				float batRel = Math.max(0, (battery - batMin) / (batMax - batMin));
+				float kickerRel = (kicker / bot.getKickerLevelMax());
+				
+				int barWidth = SIGN_WIDTH - ((2 * SIGN_WIDTH) / 6);
+				int barHeight = signHeight / 6;
+				int barX = ((PANEL_WIDTH - SIGN_WIDTH) / 2) + 1 + (SIGN_WIDTH / 6);
+				int barY = ((i + offset) * (signHeight + SIGN_MARGIN)) + 1 + Y_START_MARGIN;
+				int barY2 = (barY + signHeight) - (signHeight / 6) - 1;
+				
+				// background
+				g.setColor(Color.red);
+				g.fillRect(barX, barY, barWidth, barHeight);
+				g.fillRect(barX, barY2, barWidth, barHeight);
+				
+				// battery
+				if (batRel < 0.2f)
+				{
+					if (flashState)
+					{
+						g.setColor(Color.red);
+					} else
+					{
+						g.setColor(Color.black);
+					}
+					g.fillRect(barX, barY, (barWidth), barHeight);
+				} else
+				{
+					g.setColor(getColor(batRel));
+					g.fillRect(barX, barY, (int) (barWidth * batRel), barHeight);
+				}
+				
+				// kicker
+				if (kickerRel < .2f)
+				{
+					if (flashState)
+					{
+						g.setColor(Color.red);
+					} else
+					{
+						g.setColor(Color.black);
+					}
+					g.fillRect(barX, barY2, (barWidth), barHeight);
+				} else
+				{
+					g.setColor(getColor(kickerRel));
+					g.fillRect(barX, barY2, (int) (barWidth * kickerRel), barHeight);
+				}
+			}
 			
 			// Write id
-			g.setFont(new Font("Courier", Font.BOLD, 16));
+			int fontSize = (int) (signHeight / 1.5f);
+			g.setFont(new Font("Courier", Font.BOLD, fontSize));
+			FontMetrics fontMetrics = g.getFontMetrics();
+			int textWidth = fontMetrics.stringWidth(String.valueOf(id));
+			int textHeight = fontMetrics.getMaxAscent();
 			g.setColor(fontColor);
-			if (String.valueOf(i).length() == 1)
-			{
-				g.drawString(String.valueOf(i), ((PANEL_WIDTH - SIGN_WIDTH) / 2) + 15, (i * (SIGN_HEIGHT + SIGN_MARGIN))
-						+ 17 + Y_START_MARGIN);
-			} else if (String.valueOf(i).length() == 2)
-			{
-				g.drawString(String.valueOf(i), ((PANEL_WIDTH - SIGN_WIDTH) / 2) + 10, (i * (SIGN_HEIGHT + SIGN_MARGIN))
-						+ 17 + Y_START_MARGIN);
-			}
+			g.drawString(
+					String.valueOf(id),
+					((PANEL_WIDTH - textWidth) / 2),
+					(Y_START_MARGIN + ((((i + offset) * (signHeight + SIGN_MARGIN)) + signHeight) - ((signHeight - textHeight) / 2))) - 2);
+			i++;
 		}
 	}
 	
 	
-	private void setColor(Boolean on, Graphics2D g)
+	private void setColor(final Boolean on, final Graphics2D g)
 	{
 		if (is(on))
 		{
@@ -384,11 +467,11 @@ public class RobotsPanel extends JPanel
 	}
 	
 	
-	private void setConnectionColor(ENetworkState state, Graphics2D g)
+	private void setConnectionColor(final ENetworkState state, final Graphics2D g)
 	{
 		if (state == null)
 		{
-			g.setColor(FALSE_COLOR);
+			g.setColor(Color.black);
 			return;
 		}
 		
@@ -409,98 +492,56 @@ public class RobotsPanel extends JPanel
 	}
 	
 	
-	private boolean is(Boolean on)
+	private boolean is(final Boolean on)
 	{
 		return (on != null) && on;
+	}
+	
+	
+	private Color getColor(final float relValue)
+	{
+		float step = 1f / colors.size();
+		for (int i = 0; i < colors.size(); i++)
+		{
+			float val = (i + 1) * step;
+			if (relValue <= val)
+			{
+				return colors.get(i);
+			}
+		}
+		return Color.magenta;
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- getter/setter methods ------------------------------------------------
 	// --------------------------------------------------------------------------
-	/**
-	 * @param id
-	 * @param state
-	 */
-	public synchronized void setBotConnected(BotID id, ENetworkState state)
-	{
-		botConnection.put(id, state);
-	}
-	
-	
-	/**
-	 * @param id
-	 * @param detected
-	 */
-	public synchronized void setTigerDetected(BotID id, boolean detected)
-	{
-		tigersWpDetected.put(id, detected);
-	}
-	
-	
-	/**
-	 * @param id
-	 * @param detected
-	 */
-	public synchronized void setFoeDetected(BotID id, boolean detected)
-	{
-		foesWpDetected.put(id, detected);
-	}
-	
-	
-	/**
-	 * @param id
-	 * @return
-	 */
-	public synchronized boolean isFoeDetected(BotID id)
-	{
-		return is(foesWpDetected.get(id));
-	}
-	
-	
-	/**
-	 * @param id
-	 * @return
-	 */
-	public synchronized boolean isTigerDetected(BotID id)
-	{
-		return is(tigersWpDetected.get(id));
-	}
 	
 	
 	/**
 	 */
-	public synchronized void clearDetections()
+	public void clearView()
 	{
-		tigersWpDetected.clear();
-		foesWpDetected.clear();
-	}
-	
-	
-	/**
-	 * @param id
-	 * @return
-	 */
-	public synchronized boolean isBotConnected(BotID id)
-	{
-		return botConnection.get(id) == ENetworkState.ONLINE;
-	}
-	
-	
-	/**
-	 */
-	public synchronized void clearConnections()
-	{
-		botConnection.clear();
-	}
-	
-	
-	/**
-	 */
-	public synchronized void clearView()
-	{
-		clearConnections();
-		clearDetections();
 		deselectRobots();
+		bots.clear();
+		tBots = new BotIDMap<TrackedTigerBot>();
+	}
+	
+	
+	/**
+	 * @param bots the bots to set
+	 */
+	public void setBots(final Map<BotID, ABot> bots)
+	{
+		this.bots = bots;
+	}
+	
+	
+	/**
+	 * @param tBots the tBots to set
+	 */
+	public void settBots(final IBotIDMap<TrackedTigerBot> tBots)
+	{
+		this.tBots = tBots;
 	}
 }

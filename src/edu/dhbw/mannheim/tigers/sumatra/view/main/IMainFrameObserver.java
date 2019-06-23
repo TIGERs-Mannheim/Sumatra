@@ -57,13 +57,6 @@ public interface IMainFrameObserver extends IToolbarObserver
 	
 	
 	/**
-	 * 
-	 * @param filename
-	 */
-	void onLoadModuliConfig(String filename);
-	
-	
-	/**
  *
  */
 	void onRefreshLayoutItems();

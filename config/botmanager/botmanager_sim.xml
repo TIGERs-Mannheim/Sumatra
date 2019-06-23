@@ -1,29 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <botmanager>
-    <multicast>
-        <interface>127.0.0.1</interface>
-        <group>225.42.42.42</group>
-        <localPort>10040</localPort>
-        <remotePort>10041</remotePort>
-    </multicast>
-    <baseStation>
-        <ip>127.0.0.1</ip>
-        <localPort>11000</localPort>
-        <remotePort>10000</remotePort>
-        <active>false</active>
-        <invertPos>true</invertPos>
-        <visionRate>30</visionRate>
-        <tigersBlue>false</tigersBlue>
-    </baseStation>
     <updateAll>
-        <useMulticast>true</useMulticast>
-        <sleep>20</sleep>
+        <useMulticast>false</useMulticast>
     </updateAll>
+    <grSimNetwork id="0">
+        <ip>127.0.0.1</ip>
+        <port>20011</port>
+        <teamYellow>true</teamYellow>
+    </grSimNetwork>
+    <grSimNetwork id="1">
+        <ip>127.0.0.1</ip>
+        <port>20011</port>
+        <teamYellow>false</teamYellow>
+    </grSimNetwork>
     <bots>
         <bot id="0">
             <name>Marvin</name>
             <type>grSim</type>
-            <active>true</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>0</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
             <features>
                 <CHIP_KICKER>WORKING</CHIP_KICKER>
                 <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
@@ -31,62 +27,14 @@
                 <MOVE>WORKING</MOVE>
                 <BARRIER>LIMITED</BARRIER>
             </features>
-            <ip>127.0.0.1</ip>
-            <port>10020</port>
-            <mac>02-00-00-00-00-00</mac>
-            <serverport>10050</serverport>
-            <cpuid>000000000000000000000000</cpuid>
-            <useUpdateAll>true</useUpdateAll>
-            <oofcheck>false</oofcheck>
-            <motorMode>2</motorMode>
-            <logs>
-                <movement>false</movement>
-                <kicker>false</kicker>
-                <accel>false</accel>
-                <ir>false</ir>
-            </logs>
-            <pid>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-            </pid>
+            <networkState>ONLINE</networkState>
         </bot>
         <bot id="1">
             <name>Eddie</name>
             <type>grSim</type>
-            <active>true</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>0</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
             <features>
                 <CHIP_KICKER>WORKING</CHIP_KICKER>
                 <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
@@ -94,62 +42,14 @@
                 <MOVE>WORKING</MOVE>
                 <BARRIER>LIMITED</BARRIER>
             </features>
-            <ip>127.0.0.1</ip>
-            <port>10021</port>
-            <mac>02-00-00-00-00-00</mac>
-            <serverport>10051</serverport>
-            <cpuid>000000000000000000000001</cpuid>
-            <useUpdateAll>true</useUpdateAll>
-            <oofcheck>true</oofcheck>
-            <motorMode>2</motorMode>
-            <logs>
-                <movement>false</movement>
-                <kicker>false</kicker>
-                <accel>false</accel>
-                <ir>false</ir>
-            </logs>
-            <pid>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-            </pid>
+            <networkState>ONLINE</networkState>
         </bot>
         <bot id="2">
             <name>Arthur</name>
             <type>grSim</type>
-            <active>true</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>0</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
             <features>
                 <CHIP_KICKER>WORKING</CHIP_KICKER>
                 <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
@@ -157,62 +57,14 @@
                 <MOVE>WORKING</MOVE>
                 <BARRIER>LIMITED</BARRIER>
             </features>
-            <ip>127.0.0.1</ip>
-            <port>10022</port>
-            <mac>02-00-00-00-00-00</mac>
-            <serverport>10052</serverport>
-            <cpuid>000000000000000000000002</cpuid>
-            <useUpdateAll>true</useUpdateAll>
-            <oofcheck>true</oofcheck>
-            <motorMode>2</motorMode>
-            <logs>
-                <movement>false</movement>
-                <kicker>false</kicker>
-                <accel>false</accel>
-                <ir>false</ir>
-            </logs>
-            <pid>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-            </pid>
+            <networkState>ONLINE</networkState>
         </bot>
         <bot id="3">
             <name>Baze</name>
             <type>grSim</type>
-            <active>true</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>0</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
             <features>
                 <CHIP_KICKER>WORKING</CHIP_KICKER>
                 <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
@@ -220,62 +72,14 @@
                 <MOVE>WORKING</MOVE>
                 <BARRIER>LIMITED</BARRIER>
             </features>
-            <ip>127.0.0.1</ip>
-            <port>10023</port>
-            <mac>02-00-00-00-00-00</mac>
-            <serverport>10053</serverport>
-            <cpuid>000000000000000000000003</cpuid>
-            <useUpdateAll>true</useUpdateAll>
-            <oofcheck>true</oofcheck>
-            <motorMode>2</motorMode>
-            <logs>
-                <movement>false</movement>
-                <kicker>false</kicker>
-                <accel>false</accel>
-                <ir>false</ir>
-            </logs>
-            <pid>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-            </pid>
+            <networkState>ONLINE</networkState>
         </bot>
         <bot id="4">
             <name>R2D2</name>
             <type>grSim</type>
-            <active>true</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>0</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
             <features>
                 <CHIP_KICKER>WORKING</CHIP_KICKER>
                 <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
@@ -283,62 +87,14 @@
                 <MOVE>WORKING</MOVE>
                 <BARRIER>LIMITED</BARRIER>
             </features>
-            <ip>127.0.0.1</ip>
-            <port>10024</port>
-            <mac>02-00-00-00-00-00</mac>
-            <serverport>10054</serverport>
-            <cpuid>000000000000000000000004</cpuid>
-            <useUpdateAll>true</useUpdateAll>
-            <oofcheck>true</oofcheck>
-            <motorMode>2</motorMode>
-            <logs>
-                <movement>false</movement>
-                <kicker>false</kicker>
-                <accel>false</accel>
-                <ir>false</ir>
-            </logs>
-            <pid>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-            </pid>
+            <networkState>ONLINE</networkState>
         </bot>
         <bot id="5">
             <name>WallE</name>
             <type>grSim</type>
-            <active>true</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>0</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
             <features>
                 <CHIP_KICKER>WORKING</CHIP_KICKER>
                 <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
@@ -346,62 +102,14 @@
                 <MOVE>WORKING</MOVE>
                 <BARRIER>LIMITED</BARRIER>
             </features>
-            <ip>127.0.0.1</ip>
-            <port>10025</port>
-            <mac>02-00-00-00-00-00</mac>
-            <serverport>10055</serverport>
-            <cpuid>000000000000000000000005</cpuid>
-            <useUpdateAll>true</useUpdateAll>
-            <oofcheck>true</oofcheck>
-            <motorMode>2</motorMode>
-            <logs>
-                <movement>false</movement>
-                <kicker>false</kicker>
-                <accel>false</accel>
-                <ir>false</ir>
-            </logs>
-            <pid>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-            </pid>
+            <networkState>ONLINE</networkState>
         </bot>
         <bot id="6">
             <name>Slartibartfast</name>
             <type>grSim</type>
-            <active>false</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>0</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
             <features>
                 <CHIP_KICKER>WORKING</CHIP_KICKER>
                 <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
@@ -409,62 +117,14 @@
                 <MOVE>WORKING</MOVE>
                 <BARRIER>LIMITED</BARRIER>
             </features>
-            <ip>127.0.0.1</ip>
-            <port>10026</port>
-            <mac>02-00-00-00-00-00</mac>
-            <serverport>10056</serverport>
-            <cpuid>000000000000000000000006</cpuid>
-            <useUpdateAll>false</useUpdateAll>
-            <oofcheck>false</oofcheck>
-            <motorMode>2</motorMode>
-            <logs>
-                <movement>false</movement>
-                <kicker>false</kicker>
-                <accel>false</accel>
-                <ir>false</ir>
-            </logs>
-            <pid>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-            </pid>
+            <networkState>OFFLINE</networkState>
         </bot>
         <bot id="7">
             <name>Gandalf</name>
             <type>grSim</type>
-            <active>false</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>0</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
             <features>
                 <CHIP_KICKER>WORKING</CHIP_KICKER>
                 <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
@@ -472,57 +132,127 @@
                 <MOVE>WORKING</MOVE>
                 <BARRIER>LIMITED</BARRIER>
             </features>
-            <ip>127.0.0.1</ip>
-            <port>10027</port>
-            <mac>02-00-00-00-00-00</mac>
-            <serverport>10057</serverport>
-            <cpuid>000000000000000000000007</cpuid>
-            <useUpdateAll>false</useUpdateAll>
-            <oofcheck>true</oofcheck>
-            <motorMode>2</motorMode>
-            <logs>
-                <movement>false</movement>
-                <kicker>false</kicker>
-                <accel>false</accel>
-                <ir>false</ir>
-            </logs>
-            <pid>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-                <motor>
-                    <kp>1.2</kp>
-                    <ki>0.5</ki>
-                    <kd>0.0</kd>
-                    <slewMax>1300</slewMax>
-                    <log>false</log>
-                </motor>
-            </pid>
+            <networkState>OFFLINE</networkState>
+        </bot>
+        <bot id="0">
+            <name>Gandalf</name>
+            <type>grSim</type>
+            <color>BLUE</color>
+            <mcastDelegateKey>1</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
+            <features>
+                <CHIP_KICKER>WORKING</CHIP_KICKER>
+                <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
+                <DRIBBLER>WORKING</DRIBBLER>
+                <MOVE>WORKING</MOVE>
+                <BARRIER>LIMITED</BARRIER>
+            </features>
+            <networkState>ONLINE</networkState>
+        </bot>
+        <bot id="1">
+            <name>Achilles</name>
+            <type>grSim</type>
+            <color>BLUE</color>
+            <mcastDelegateKey>1</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
+            <features>
+                <CHIP_KICKER>WORKING</CHIP_KICKER>
+                <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
+                <DRIBBLER>WORKING</DRIBBLER>
+                <MOVE>WORKING</MOVE>
+                <BARRIER>LIMITED</BARRIER>
+            </features>
+            <networkState>ONLINE</networkState>
+        </bot>
+        <bot id="2">
+            <name>Eichbaum</name>
+            <type>grSim</type>
+            <color>BLUE</color>
+            <mcastDelegateKey>1</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
+            <features>
+                <CHIP_KICKER>WORKING</CHIP_KICKER>
+                <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
+                <DRIBBLER>WORKING</DRIBBLER>
+                <MOVE>WORKING</MOVE>
+                <BARRIER>LIMITED</BARRIER>
+            </features>
+            <networkState>ONLINE</networkState>
+        </bot>
+        <bot id="3">
+            <name>Tigger</name>
+            <type>grSim</type>
+            <color>BLUE</color>
+            <mcastDelegateKey>1</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
+            <features>
+                <CHIP_KICKER>WORKING</CHIP_KICKER>
+                <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
+                <DRIBBLER>WORKING</DRIBBLER>
+                <MOVE>WORKING</MOVE>
+                <BARRIER>LIMITED</BARRIER>
+            </features>
+            <networkState>ONLINE</networkState>
+        </bot>
+        <bot id="4">
+            <name>Optimus Prime</name>
+            <type>grSim</type>
+            <color>BLUE</color>
+            <mcastDelegateKey>1</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
+            <features>
+                <CHIP_KICKER>WORKING</CHIP_KICKER>
+                <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
+                <DRIBBLER>WORKING</DRIBBLER>
+                <MOVE>WORKING</MOVE>
+                <BARRIER>LIMITED</BARRIER>
+            </features>
+            <networkState>ONLINE</networkState>
+        </bot>
+        <bot id="5">
+            <name>Odysseus</name>
+            <type>grSim</type>
+            <color>BLUE</color>
+            <mcastDelegateKey>1</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
+            <features>
+                <CHIP_KICKER>WORKING</CHIP_KICKER>
+                <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
+                <DRIBBLER>WORKING</DRIBBLER>
+                <MOVE>WORKING</MOVE>
+                <BARRIER>LIMITED</BARRIER>
+            </features>
+            <networkState>ONLINE</networkState>
+        </bot>
+        <bot id="6">
+            <name>Eichbaum</name>
+            <type>grSim</type>
+            <color>BLUE</color>
+            <mcastDelegateKey>1</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
+            <features>
+                <CHIP_KICKER>WORKING</CHIP_KICKER>
+                <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
+                <DRIBBLER>WORKING</DRIBBLER>
+                <MOVE>WORKING</MOVE>
+                <BARRIER>LIMITED</BARRIER>
+            </features>
+            <networkState>OFFLINE</networkState>
+        </bot>
+        <bot id="7">
+            <name>Tigger</name>
+            <type>grSim</type>
+            <color>BLUE</color>
+            <mcastDelegateKey>1</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
+            <features>
+                <CHIP_KICKER>WORKING</CHIP_KICKER>
+                <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
+                <DRIBBLER>WORKING</DRIBBLER>
+                <MOVE>WORKING</MOVE>
+                <BARRIER>LIMITED</BARRIER>
+            </features>
+            <networkState>OFFLINE</networkState>
         </bot>
     </bots>
 </botmanager>

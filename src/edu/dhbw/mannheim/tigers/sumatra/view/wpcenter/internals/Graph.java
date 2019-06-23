@@ -14,6 +14,7 @@ import info.monitorenter.gui.chart.Chart2D;
 import info.monitorenter.gui.chart.IAxis.AxisTitle;
 import info.monitorenter.gui.chart.ITrace2D;
 import info.monitorenter.gui.chart.rangepolicies.RangePolicyFixedViewport;
+import info.monitorenter.gui.chart.rangepolicies.RangePolicyHighestValues;
 import info.monitorenter.gui.chart.traces.Trace2DLtd;
 import info.monitorenter.util.Range;
 
@@ -66,6 +67,7 @@ public class Graph extends JPanel
 		chart.setDoubleBuffered(true);
 		
 		chart.getAxisY().setRangePolicy(new RangePolicyFixedViewport(new Range(yMin, yMax)));
+		chart.getAxisX().setRangePolicy(new RangePolicyHighestValues(1000));
 		chart.getAxisY().setAxisTitle(new AxisTitle(yTitle));
 		chart.getAxisX().setAxisTitle(new AxisTitle("t [ms]"));
 		

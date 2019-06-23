@@ -10,7 +10,7 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ASkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
 
 
 /**
@@ -56,13 +56,13 @@ public class DoneState implements IState, IRoleState
 	
 	
 	@Override
-	public void onSkillStarted(ASkill skill, BotID botID)
+	public void onSkillStarted(ISkill skill, BotID botID)
 	{
 	}
 	
 	
 	@Override
-	public void onSkillCompleted(ASkill skill, BotID botID)
+	public void onSkillCompleted(ISkill skill, BotID botID)
 	{
 	}
 }

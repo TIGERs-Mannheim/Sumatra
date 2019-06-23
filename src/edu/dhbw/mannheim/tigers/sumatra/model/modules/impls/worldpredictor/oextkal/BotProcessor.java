@@ -14,6 +14,7 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oext
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamRobot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.WPConfig;
@@ -50,101 +51,81 @@ public class BotProcessor
 	
 	
 	/**
-	 * @param camTigers
-	 * @param camEnemies
+	 * @param camYellowBots
+	 * @param camBlueBots
 	 */
-	public void process(List<CamRobot> camTigers, List<CamRobot> camEnemies)
+	public void process(List<CamRobot> camYellowBots, List<CamRobot> camBlueBots)
 	{
 		// ---Check oldTigers list and update each founded element
 		// ---if incoming CamRobos not known, check list of newTigers
 		// ---if found in newTigers refresh element
 		// ---if not found add to list
 		final double timestamp = context.getLatestCaptureTimestamp();
-		for (final CamRobot visionBotCam : camTigers)
+		
+		for (final CamRobot visionBotCam : camYellowBots)
 		{
 			final WPCamBot visionBot = new WPCamBot(visionBotCam);
-			final int botID = visionBot.id + WPConfig.TIGER_ID_OFFSET;
+			final int botID = visionBot.id + WPConfig.YELLOW_ID_OFFSET;
 			
-			final IFilter existingBot = context.tigers.get(botID);
-			if (existingBot != null)
-			{
-				// ---For benchmarking purpose
-				if (count < 10)
-				{
-					count++;
-				} else
-				{
-					for (int i = 0; i <= context.stepCount; i++)
-					{
-						Precision.getInstance().addBot(existingBot.getLookaheadTimestamp(i),
-								(RobotMotionResult_V2) existingBot.getLookahead(i), botID);
-					}
-					Precision.getInstance().addCamBot(timestamp, visionBot, botID);
-				}
-				existingBot.observation(timestamp, visionBot);
-				continue;
-			}
-			
-			UnregisteredBot newBot = context.newTigers.get(botID);
-			if (newBot != null)
-			{
-				newBot.addBot(timestamp, visionBot);
-			} else
-			{
-				newBot = new UnregisteredBot(timestamp, visionBot);
-				context.newTigers.put(botID, newBot);
-			}
+			final IFilter existingBot = context.yellowBots.get(botID);
+			processBot(visionBotCam, botID, existingBot, timestamp, context.newYellowBots);
 		}
 		
-		// --- same for food ~~~~
-		for (final CamRobot visionBotCam : camEnemies)
+		// --- same for blue ~~~~
+		for (final CamRobot visionBotCam : camBlueBots)
 		{
 			final WPCamBot visionBot = new WPCamBot(visionBotCam);
-			final int botID = visionBot.id + WPConfig.FOOD_ID_OFFSET;
+			final int botID = visionBot.id + WPConfig.BLUE_ID_OFFSET;
 			
-			final IFilter existingBot = context.food.get(botID);
-			
-			if (existingBot != null)
+			final IFilter existingBot = context.blueBots.get(botID);
+			processBot(visionBotCam, botID, existingBot, timestamp, context.newBlueBots);
+		}
+	}
+	
+	
+	private void processBot(CamRobot visionBotCam, int botID, IFilter existingBot, double timestamp,
+			Map<Integer, UnregisteredBot> contextNewBots)
+	{
+		final WPCamBot visionBot = new WPCamBot(visionBotCam);
+		if (existingBot != null)
+		{
+			// ---For benchmarking purpose
+			if (count < 10)
 			{
-				
-				// ---For benchmarking purpose
-				if (count < 10)
-				{
-					count++;
-				} else
-				{
-					for (int i = 0; i <= context.stepCount; i++)
-					{
-						Precision.getInstance().addBot(existingBot.getLookaheadTimestamp(i),
-								(RobotMotionResult_V2) existingBot.getLookahead(i), botID);
-					}
-					Precision.getInstance().addCamBot(timestamp, visionBot, botID);
-				}
-				
-				// drop doubled observation if bot is in overlap area of cameras
-				final double dt = timestamp - existingBot.getTimestamp();
-				if (dt <= WPConfig.MIN_CAMFRAME_DELAY_TIME)
-				{
-					continue;
-				}
-				
-				final RobotMotionResult_V2 oldState = (RobotMotionResult_V2) existingBot.getLookahead(0);
-				
-				existingBot.observation(timestamp, visionBot);
-				
-				estimateControl(oldState, existingBot, dt);
-				continue;
-			}
-			
-			UnregisteredBot newBot = context.newFood.get(botID);
-			if (newBot != null)
-			{
-				newBot.addBot(timestamp, visionBot);
+				count++;
 			} else
 			{
-				newBot = new UnregisteredBot(timestamp, visionBot);
-				context.newFood.put(botID, newBot);
+				for (int i = 0; i <= context.stepCount; i++)
+				{
+					Precision.getInstance().addBot(existingBot.getLookaheadTimestamp(i),
+							(RobotMotionResult_V2) existingBot.getLookahead(i), botID);
+				}
+				Precision.getInstance().addCamBot(timestamp, visionBot, botID);
 			}
+			
+			// drop doubled observation if bot is in overlap area of cameras
+			final double dt = timestamp - existingBot.getTimestamp();
+			if (dt <= WPConfig.MIN_CAMFRAME_DELAY_TIME)
+			{
+				return;
+			}
+			
+			final RobotMotionResult_V2 oldState = (RobotMotionResult_V2) existingBot.getLookahead(0);
+			
+			existingBot.observation(timestamp, visionBot);
+			
+			estimateControl(oldState, existingBot, dt);
+			return;
+		}
+		
+		UnregisteredBot newBot = contextNewBots.get(botID);
+		if (newBot != null)
+		{
+			newBot.addBot(timestamp, visionBot);
+		} else
+		{
+			newBot = new UnregisteredBot(timestamp, visionBot);
+			contextNewBots.put(botID, newBot);
 		}
 	}
 	
@@ -155,14 +136,14 @@ public class BotProcessor
 	{
 		final double nowTime = context.getLatestCaptureTimestamp();
 		
-		final Iterator<IFilter> foodIt = context.food.values().iterator();
+		final Iterator<IFilter> foodIt = context.blueBots.values().iterator();
 		while (foodIt.hasNext())
 		{
 			final IFilter food = foodIt.next();
 			food.updateOffset(nowTime);
 		}
 		
-		final Iterator<IFilter> tigerIt = context.tigers.values().iterator();
+		final Iterator<IFilter> tigerIt = context.yellowBots.values().iterator();
 		while (tigerIt.hasNext())
 		{
 			final IFilter tiger = tigerIt.next();
@@ -177,14 +158,14 @@ public class BotProcessor
 	{
 		for (int i = 1; i <= context.stepCount; i++)
 		{
-			final Iterator<IFilter> foodIt = context.food.values().iterator();
+			final Iterator<IFilter> foodIt = context.blueBots.values().iterator();
 			while (foodIt.hasNext())
 			{
 				final IFilter food = foodIt.next();
 				food.performLookahead(i);
 			}
 			
-			final Iterator<IFilter> tigerIt = context.tigers.values().iterator();
+			final Iterator<IFilter> tigerIt = context.yellowBots.values().iterator();
 			while (tigerIt.hasNext())
 			{
 				final IFilter tiger = tigerIt.next();

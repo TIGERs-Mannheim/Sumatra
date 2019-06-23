@@ -4,28 +4,27 @@
  * Project: TIGERS - Sumatra
  * Date: 23.10.2011
  * Author(s): Oliver Steinbrecher
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers;
 
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.RecordFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.record.RecordPersistance;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
+import edu.dhbw.mannheim.tigers.sumatra.presenter.visualizer.IFieldPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.FieldPanel.EFieldTurn;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.replay.Recorder;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.replay.Recorder.ERecordMode;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.replay.ReplayWindow;
 
 
@@ -34,7 +33,6 @@ import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.replay.R
  * Layers will be painted in the order they have been added.
  * 
  * @author Oliver Steinbrecher
- * 
  */
 public class MultiFieldLayerUI
 {
@@ -42,20 +40,47 @@ public class MultiFieldLayerUI
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private static final Logger					log				= Logger.getLogger(MultiFieldLayerUI.class.getName());
-	
 	/**  */
-	private final transient List<AFieldLayer>	layerList		= new CopyOnWriteArrayList<AFieldLayer>();
+	private final transient List<AFieldLayer>	aiLayerList			= new CopyOnWriteArrayList<AFieldLayer>();
+	private final transient List<AFieldLayer>	swfLayerList		= new CopyOnWriteArrayList<AFieldLayer>();
+	private final transient List<AFieldLayer>	allLayerList		= new CopyOnWriteArrayList<AFieldLayer>();
+	
+	private final List<Layer>						layers				= new LinkedList<Layer>();
+	
+	private boolean									fancyPainting		= false;
+	
+	private boolean									recording			= false;
+	private static final int						MAX_FRAMES			= 3600;
+	private static final int						FRAME_BUFFER_SIZE	= 1000;
+	private Recorder									recorder				= null;
+	
+	private SimpleWorldFrame						wFrame				= null;
+	
+	private IRecordFrame								aiFrameYellow		= null;
+	private IRecordFrame								aiFrameBlue			= null;
+	private Set<ETeamColor>							displayColors		= new HashSet<ETeamColor>();
 	
 	
-	private boolean									fancyPainting	= false;
-	
-	private boolean									recording		= false;
-	private static final int						MAX_FRAMES		= 7200;
-	private List<IRecordFrame>						aiFrameBuffer	= new ArrayList<IRecordFrame>(MAX_FRAMES);
-	private RecordPersistance						persistance;
-	
-	private List<Path>								paths				= new ArrayList<Path>();
+	private static class Layer
+	{
+		private final AFieldLayer	layer;
+		private final boolean		paintSwf;
+		private final boolean		paintAif;
+		
+		
+		/**
+		 * @param layer
+		 * @param paintSwf
+		 * @param paintAif
+		 */
+		public Layer(final AFieldLayer layer, final boolean paintSwf, final boolean paintAif)
+		{
+			super();
+			this.layer = layer;
+			this.paintSwf = paintSwf;
+			this.paintAif = paintAif;
+		}
+	}
 	
 	
 	// --------------------------------------------------------------------------
@@ -75,36 +100,19 @@ public class MultiFieldLayerUI
 	/**
 	 * @param aiFrame
 	 */
-	public void update(AIInfoFrame aiFrame)
+	public void update(final IRecordFrame aiFrame)
 	{
-		for (final AFieldLayer layer : layerList)
+		if (aiFrame.getTeamColor() == ETeamColor.YELLOW)
 		{
-			layer.update(aiFrame);
+			aiFrameYellow = aiFrame;
+		} else
+		{
+			aiFrameBlue = aiFrame;
 		}
 		if (recording)
 		{
-			List<Path> pathsCopy = new ArrayList<Path>();
-			for (Path path : paths)
-			{
-				if (path == null)
-				{
-					pathsCopy.add(null);
-				} else
-				{
-					pathsCopy.add(path.copyLight());
-				}
-			}
 			RecordFrame recFrame = new RecordFrame(aiFrame);
-			recFrame.setPaths(pathsCopy);
-			aiFrame.setPaths(pathsCopy);
-			
-			if (aiFrameBuffer.size() >= MAX_FRAMES)
-			{
-				aiFrameBuffer.remove(0);
-			}
-			aiFrameBuffer.add(aiFrame);
-			// TODO conditionally persist
-			persistance.addRecordFrame(recFrame);
+			recorder.addRecordFrame(recFrame);
 		}
 	}
 	
@@ -112,33 +120,50 @@ public class MultiFieldLayerUI
 	/**
 	 * Updates all layers with the actual {@link AIInfoFrame}.
 	 * 
-	 * @param recFrame
+	 * @param frame
 	 */
-	public void updateRecord(IRecordFrame recFrame)
+	public void updateWf(final SimpleWorldFrame frame)
 	{
-		for (final AFieldLayer layer : layerList)
-		{
-			layer.update(recFrame);
-		}
+		wFrame = frame;
 	}
 	
 	
 	/**
 	 * Paint layers
 	 * 
-	 * @param g2
+	 * @param g
 	 */
-	public void paint(Graphics2D g2)
+	public void paint(final Graphics2D g)
 	{
 		if (fancyPainting)
 		{
-			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-			g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 		}
 		
-		for (final AFieldLayer layer : layerList)
+		for (Layer layer : layers)
 		{
-			layer.paint(g2);
+			if (layer.paintSwf)
+			{
+				layer.layer.paintSimpleWorldFrame(wFrame, g);
+			}
+			if (layer.paintAif)
+			{
+				for (ETeamColor color : displayColors)
+				{
+					switch (color)
+					{
+						case YELLOW:
+							layer.layer.paintAiFrame(aiFrameYellow, g);
+							break;
+						case BLUE:
+							layer.layer.paintAiFrame(aiFrameBlue, g);
+							break;
+						default:
+							throw new IllegalArgumentException("The color " + color + " is not valid");
+					}
+				}
+			}
 		}
 	}
 	
@@ -146,11 +171,50 @@ public class MultiFieldLayerUI
 	/**
 	 * Add Layer to paint.
 	 * <strong>ATTENTION:</strong> Add layers in painting order! First in first paint.
+	 * 
 	 * @param layer LayerUI to add
+	 * @param fieldPanel
 	 */
-	public void addLayer(AFieldLayer layer)
+	public void addSwfLayer(final AFieldLayer layer, final IFieldPanel fieldPanel)
 	{
-		layerList.add(layer);
+		layer.setFieldPanel(fieldPanel);
+		swfLayerList.add(layer);
+		allLayerList.add(layer);
+		layers.add(new Layer(layer, true, false));
+	}
+	
+	
+	/**
+	 * Add Layer to paint.
+	 * <strong>ATTENTION:</strong> Add layers in painting order! First in first paint.
+	 * 
+	 * @param layer LayerUI to add
+	 * @param fieldPanel
+	 */
+	public void addAiLayer(final AFieldLayer layer, final IFieldPanel fieldPanel)
+	{
+		layer.setFieldPanel(fieldPanel);
+		aiLayerList.add(layer);
+		allLayerList.add(layer);
+		layers.add(new Layer(layer, false, true));
+	}
+	
+	
+	/**
+	 * @param color
+	 */
+	public void addTeamColor(final ETeamColor color)
+	{
+		displayColors.add(color);
+	}
+	
+	
+	/**
+	 * @param color
+	 */
+	public void removeTeamColor(final ETeamColor color)
+	{
+		displayColors.remove(color);
 	}
 	
 	
@@ -164,13 +228,13 @@ public class MultiFieldLayerUI
 	 * @param name the layer
 	 * @param visible
 	 */
-	public void setVisibility(EFieldLayer name, boolean visible)
+	public void setVisibility(final EFieldLayer name, final boolean visible)
 	{
-		for (final AFieldLayer layer : layerList)
+		for (final Layer layer : layers)
 		{
-			if (layer.getType() == name)
+			if (layer.layer.getType() == name)
 			{
-				layer.setVisible(visible);
+				layer.layer.setVisible(visible);
 				return;
 			}
 		}
@@ -182,9 +246,9 @@ public class MultiFieldLayerUI
 	 */
 	public void setInitialVisibility()
 	{
-		for (final AFieldLayer layer : layerList)
+		for (final Layer layer : layers)
 		{
-			layer.setInitialVisibility();
+			layer.layer.setInitialVisibility();
 		}
 	}
 	
@@ -194,11 +258,11 @@ public class MultiFieldLayerUI
 	 * 
 	 * @param debugInformationVisible
 	 */
-	public void setDebugInformationVisible(boolean debugInformationVisible)
+	public void setDebugInformationVisible(final boolean debugInformationVisible)
 	{
-		for (final AFieldLayer layer : layerList)
+		for (final Layer layer : layers)
 		{
-			layer.setDebugInformationVisible(debugInformationVisible);
+			layer.layer.setDebugInformationVisible(debugInformationVisible);
 		}
 	}
 	
@@ -209,13 +273,13 @@ public class MultiFieldLayerUI
 	 * @param name
 	 * @return layer or null when layer cannot be found.
 	 */
-	public AFieldLayer getFieldLayer(EFieldLayer name)
+	public AFieldLayer getFieldLayer(final EFieldLayer name)
 	{
-		for (final AFieldLayer layer : layerList)
+		for (final Layer layer : layers)
 		{
-			if (layer.getType() == name)
+			if (layer.layer.getType() == name)
 			{
-				return layer;
+				return layer.layer;
 			}
 		}
 		return null;
@@ -234,7 +298,7 @@ public class MultiFieldLayerUI
 	/**
 	 * @param fancyPainting the fancyPainting to set
 	 */
-	public void setFancyPainting(boolean fancyPainting)
+	public void setFancyPainting(final boolean fancyPainting)
 	{
 		this.fancyPainting = fancyPainting;
 	}
@@ -253,48 +317,29 @@ public class MultiFieldLayerUI
 	 * @param record the record to set
 	 * @param saving the saving to set
 	 */
-	public final void setRecording(boolean record, boolean saving)
+	public final void setRecording(final boolean record, final boolean saving)
 	{
 		// if we are currently recording, but stop is requested, we stop and show new window with recording result
-		if (recording && !record && (aiFrameBuffer.size() > 0))
+		if (recording && !record && (recorder.getRecordFrames().size() > 0))
 		{
-			ReplayWindow replaceWindow = new ReplayWindow(aiFrameBuffer);
-			replaceWindow.activate();
-			// create a new list, because the old one will be used by the replayWindow
-			aiFrameBuffer = new LinkedList<IRecordFrame>();
-			if (saving)
+			recorder.close();
+			if (!saving)
 			{
-				savePersistance();
+				ReplayWindow replaceWindow = new ReplayWindow(recorder.getRecordFrames(), recorder.getLogEvents());
+				replaceWindow.activate();
 			}
 			
 		} else if (!recording && record)
 		{
-			SimpleDateFormat dt = new SimpleDateFormat("yyyy-MM-dd_HH-mm");
-			String dbname = dt.format(new Date());
-			persistance = new RecordPersistance("record_" + dbname);
+			if (saving)
+			{
+				recorder = new Recorder(ERecordMode.DATABASE, FRAME_BUFFER_SIZE);
+			} else
+			{
+				recorder = new Recorder(ERecordMode.LIMITED_BUFFER, MAX_FRAMES);
+			}
 		}
 		recording = record;
-	}
-	
-	
-	/**
-	 * saving Persistance
-	 */
-	public void savePersistance()
-	{
-		log.trace("Start: Last Persistance Save");
-		persistance.save();
-		log.trace("End: Last Persistance Save");
-		
-	}
-	
-	
-	/**
-	 * @param paths
-	 */
-	public void setPaths(List<Path> paths)
-	{
-		this.paths = paths;
 	}
 	
 	
@@ -303,11 +348,21 @@ public class MultiFieldLayerUI
 	 * 
 	 * @param fieldTurn
 	 */
-	public void setFieldTurn(EFieldTurn fieldTurn)
+	public void setFieldTurn(final EFieldTurn fieldTurn)
 	{
-		for (AFieldLayer layer : layerList)
+		for (final Layer layer : layers)
 		{
-			layer.setFieldTurn(fieldTurn);
+			layer.layer.setFieldTurn(fieldTurn);
 		}
+	}
+	
+	
+	/**
+	 */
+	public void clearField()
+	{
+		wFrame = null;
+		aiFrameBlue = null;
+		aiFrameYellow = null;
 	}
 }

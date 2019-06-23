@@ -12,20 +12,26 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal;
 
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.FrameID;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamDetectionFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.timer.ETimable;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.timer.SumatraTimer;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.WPConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.data.PredictionContext;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.data.SyncedCamFrameBuffer;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IWorldPredictorObservable;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ITimer;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IWorldFrameConsumer;
 import edu.dhbw.mannheim.tigers.sumatra.util.FpsCounter;
 
@@ -45,14 +51,14 @@ public class Director implements Runnable
 	private static final long						WAIT_ON_FIRST_FRAME	= 100;
 	
 	
-	private static final int						WAIT_CAM_TIMEOUT		= 1000;
+	private static final int						WAIT_CAM_TIMEOUT		= 5000;
 	
 	
 	private Thread										processingThread;
 	
 	private final SyncedCamFrameBuffer			camBuffer;
 	private final PredictionContext				context;
-	private IWorldFrameConsumer					consumer					= null;
+	private List<IWorldFrameConsumer>			consumers				= new CopyOnWriteArrayList<IWorldFrameConsumer>();
 	
 	private final TrackingManager					trackingManager;
 	private double										trackingFrames;
@@ -66,7 +72,7 @@ public class Director implements Runnable
 	private final BallCorrector					ballCorrector;
 	
 	
-	private ITimer										timer						= null;
+	private SumatraTimer								timer						= null;
 	
 	private boolean									correctBallData		= true;
 	
@@ -74,13 +80,13 @@ public class Director implements Runnable
 	private FpsCounter								fpsCounterWF			= new FpsCounter();
 	
 	private boolean									warnNoVision;
-	private WorldFrame								lastwFrame				= null;
+	private SimpleWorldFrame						lastwFrame				= null;
 	
 	private Timer										scheduledNotifier		= null;
 	
 	private CamDetectionFrame						lastCompletedFrame	= null;
 	
-	private long										nextFrameNumber		= 0;
+	private volatile long							nextFrameNumber		= 0;
 	
 	
 	// --------------------------------------------------------------------------
@@ -120,7 +126,7 @@ public class Director implements Runnable
 					synchronized (packer)
 					{
 						// Prediction and packaging
-						WorldFrame wFrame = null;
+						SimpleWorldFrame wFrame = null;
 						if (lastCompletedFrame != null)
 						{
 							FrameID frameID = new FrameID(lastCompletedFrame.cameraId, nextFrameNumber);
@@ -129,10 +135,13 @@ public class Director implements Runnable
 							wFrame.setCamFps(fpsCounterCam.getAvgFps());
 							wFrame.setWfFps(fpsCounterWF.getAvgFps());
 							fpsCounterWF.newFrame();
+							
 							// Push!
-							if (consumer != null)
+							for (IWorldFrameConsumer consumer : consumers)
 							{
-								consumer.onNewWorldFrame(wFrame);
+								consumer.onNewSimpleWorldFrame(wFrame);
+								consumer.onNewWorldFrame(createWorldFrame(wFrame, ETeamColor.YELLOW));
+								consumer.onNewWorldFrame(createWorldFrame(wFrame, ETeamColor.BLUE));
 							}
 							
 							observable.notifyNewWorldFrame(wFrame);
@@ -140,9 +149,8 @@ public class Director implements Runnable
 							nextFrameNumber++;
 						} else if (lastwFrame != null)
 						{
-							wFrame = WorldFrameFactory.createEmptyWorldFrame(lastwFrame.id.getFrameNumber(),
-									lastwFrame.teamProps);
-							if (consumer != null)
+							wFrame = WorldFrameFactory.createEmptyWorldFrame(lastwFrame.getId().getFrameNumber());
+							for (IWorldFrameConsumer consumer : consumers)
 							{
 								consumer.onVisionSignalLost(wFrame);
 							}
@@ -157,24 +165,44 @@ public class Director implements Runnable
 				}
 			}
 		};
-		scheduledNotifier = new Timer();
+		scheduledNotifier = new Timer("WP_Scheduler");
 		scheduledNotifier.schedule(action, 0, context.worldframesPublishIntervalMS);
 	}
 	
 	
 	/**
-	 * @param consumer
+	 * Create WF from swf
+	 * @param swf
+	 * @param teamColor
+	 * @return
 	 */
-	public void setConsumer(IWorldFrameConsumer consumer)
+	public static WorldFrame createWorldFrame(SimpleWorldFrame swf, ETeamColor teamColor)
 	{
-		this.consumer = consumer;
+		final WorldFrame wf;
+		if (TeamConfig.getInstance().getTeamProps().getLeftTeam() != teamColor)
+		{
+			wf = new WorldFrame(swf.mirrorNew(), teamColor, true);
+		} else
+		{
+			wf = new WorldFrame(swf, teamColor, false);
+		}
+		return wf;
+	}
+	
+	
+	/**
+	 * @param consumers
+	 */
+	public void setConsumers(List<IWorldFrameConsumer> consumers)
+	{
+		this.consumers = consumers;
 	}
 	
 	
 	/**
 	 * @param timer
 	 */
-	public void setTimer(ITimer timer)
+	public void setTimer(SumatraTimer timer)
 	{
 		this.timer = timer;
 	}
@@ -249,9 +277,11 @@ public class Director implements Runnable
 					{
 						correctBallData = false;
 						log.error("Turned off the WP-Ballcorrector, because there was an intern exception!", err);
+						break;
 					}
 					if (newFrame == null)
 					{
+						log.error("WP got null frame from ballCorrector");
 						break;
 					}
 				}
@@ -263,7 +293,7 @@ public class Director implements Runnable
 					context.setLatestTeamProps(newFrame.teamProps);
 					
 					// Processing // see \/
-					botProcessor.process(newFrame.robotsTigers, newFrame.robotsEnemies);
+					botProcessor.process(newFrame.robotsYellow, newFrame.robotsBlue);
 					// updates ball filter, uses position information form argument and time-stamp from context
 					ballProcessor.process(newFrame.balls);
 				}
@@ -300,7 +330,7 @@ public class Director implements Runnable
 	{
 		if (timer != null)
 		{
-			timer.start("WP", frameId);
+			timer.start(ETimable.WP, frameId.getFrameNumber());
 		}
 	}
 	
@@ -309,7 +339,7 @@ public class Director implements Runnable
 	{
 		if (timer != null)
 		{
-			timer.stop("WP", frameId);
+			timer.stop(ETimable.WP, frameId.getFrameNumber());
 		}
 	}
 	
@@ -318,9 +348,13 @@ public class Director implements Runnable
 	 */
 	public void end()
 	{
-		consumer.onStop();
+		for (IWorldFrameConsumer consumer : consumers)
+		{
+			consumer.onStop();
+		}
 		processingThread.interrupt();
 		scheduledNotifier.cancel();
+		lastwFrame = null;
 	}
 	
 }

@@ -12,8 +12,8 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.types;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import edu.dhbw.mannheim.tigers.moduli.AModule;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.ITimerObserver;
-import edu.moduli.AModule;
 
 
 /**
@@ -24,7 +24,7 @@ import edu.moduli.AModule;
  * @author Gero
  * 
  */
-public abstract class ATimer extends AModule implements ITimer
+public abstract class ATimer extends AModule
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------

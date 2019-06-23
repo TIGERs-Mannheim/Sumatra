@@ -59,7 +59,7 @@ public final class FilterSelector
 	 */
 	public static IFilter getFoodFilter()
 	{
-		return getFilter(WPConfig.FOOD_MODULE);
+		return getFilter(WPConfig.BLUE_MODULE);
 	}
 	
 	
@@ -69,7 +69,7 @@ public final class FilterSelector
 	public static IFilter getTigerFilter()
 	{
 		
-		return getFilter(WPConfig.TIGER_MODULE);
+		return getFilter(WPConfig.YELLOW_MODULE);
 	}
 	
 }

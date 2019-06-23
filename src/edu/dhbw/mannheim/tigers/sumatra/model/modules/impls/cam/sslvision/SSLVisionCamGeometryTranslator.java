@@ -42,7 +42,7 @@ public class SSLVisionCamGeometryTranslator
 	 */
 	public CamGeometryFrame translate(SSL_GeometryData geometryFrame, TeamProps teamProps)
 	{
-		final boolean haveToTurn = teamProps.getPlayLeftToRight();
+		final boolean haveToTurn = false;
 		
 		// --- check if detectionFrame != null ---
 		if (geometryFrame == null)

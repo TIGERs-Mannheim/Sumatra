@@ -89,9 +89,9 @@ public final class WPConfig
 	 * 
 	 * tiger_id_offset have to be smaller than food_id_offset
 	 */
-	public static final int			TIGER_ID_OFFSET										= 100;
+	public static final int			YELLOW_ID_OFFSET										= 100;
 	/** */
-	public static final int			FOOD_ID_OFFSET											= 200;
+	public static final int			BLUE_ID_OFFSET											= 200;
 	
 	/** */
 	public static final boolean	DEBUG														= false;
@@ -124,9 +124,9 @@ public final class WPConfig
 	/** */
 	public static final int			BALL_MODULE												= 0;
 	/** */
-	public static final int			FOOD_MODULE												= 0;
+	public static final int			BLUE_MODULE												= 0;
 	/** */
-	public static final int			TIGER_MODULE											= 0;
+	public static final int			YELLOW_MODULE											= 0;
 	// :::<<<
 	
 	// enable BallCorrector Module

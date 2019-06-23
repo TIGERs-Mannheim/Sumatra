@@ -9,8 +9,8 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.csvexporter.CSVExporter;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
+import edu.dhbw.mannheim.tigers.sumatra.util.csvexporter.CSVExporter;
 
 
 /**

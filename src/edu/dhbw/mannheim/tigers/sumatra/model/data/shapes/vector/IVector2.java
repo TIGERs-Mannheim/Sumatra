@@ -9,8 +9,6 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector;
 
-import org.apache.commons.configuration.HierarchicalConfiguration;
-
 
 /**
  * This interface allows transparent access to {@link Vector2} and {@link Vector2f}
@@ -230,13 +228,4 @@ public interface IVector2
 	 * @return
 	 */
 	boolean similar(IVector2 vec, float treshold);
-	
-	
-	/**
-	 * Get a configuration node for this vector.
-	 * Node consists of x and y.
-	 * 
-	 * @return
-	 */
-	HierarchicalConfiguration getConfiguration();
 }

@@ -4,63 +4,68 @@
  * Project: TIGERS - Sumatra
  * Date: 10.08.2010
  * Author(s): Bernhard
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.visualizer;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.awt.Component;
+import java.awt.event.MouseEvent;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javax.swing.JCheckBox;
+import javax.swing.SwingUtilities;
 
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
+import edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesState;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.DynamicPosition;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamDetectionFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.FieldRasterConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.IAIConfigObserver;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMap;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.IBotIDMap;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.Agent;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move.MovementCon;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.IBotObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ASkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.KickAutoSkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveBallToSkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveToSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill.EMoveToMode;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.IMoveToSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.KickSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.KickSkill.EKickMode;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IAIObserver;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IBotManagerObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.ISkillSystemObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IWorldPredictorObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ABotManager;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AReferee;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ASkillSystem;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AWorldPredictor;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.IModuliStateObserver;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.ModuliStateAdapter;
-import edu.dhbw.mannheim.tigers.sumatra.view.main.ISumatraView;
+import edu.dhbw.mannheim.tigers.sumatra.util.NamedThreadFactory;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.VisualizerPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.IFieldPanelObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.IReplayOptionsPanelObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.IRobotsPanelObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.RobotsPanel;
-import edu.moduli.exceptions.ModuleNotFoundException;
-import edu.moduli.listenerVariables.ModulesState;
+import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
+import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraViewPresenter;
 
 
 /**
@@ -72,31 +77,30 @@ import edu.moduli.listenerVariables.ModulesState;
  * 
  * @author Bernhard, (Gero)
  */
-public class VisualizerPresenter implements IRobotsPanelObserver, IFieldPanelObserver, IModuliStateObserver,
-		IAIConfigObserver, IReplayOptionsPanelObserver
+public class VisualizerPresenter implements ISumatraViewPresenter, IRobotsPanelObserver, IFieldPanelObserver,
+		IModuliStateObserver, IReplayOptionsPanelObserver
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	// Logger
-	private static final Logger				log							= Logger.getLogger(VisualizerPresenter.class
-																								.getName());
+	private static final Logger				log					= Logger.getLogger(VisualizerPresenter.class
+																						.getName());
 	
 	private final VisualizerPanel				panel;
-	/** in milliseconds */
-	private static final long					VISUALIZATION_FREQUENCY	= 1;
+	private BotID									selectedRobotId	= BotID.createBotId();
 	
-	private BotID									selectedRobotId			= new BotID();
+	private ASkillSystem							skillsystem			= null;
+	private ABotManager							botManager			= null;
 	
-	private ASkillSystem							skillsystem					= null;
+	private final AgentVisualizerListener	agentListener		= new AgentVisualizerListener();
+	private final WPVisualizerListener		wpListener			= new WPVisualizerListener();
 	
-	private final BotConnectionListener		connectionListener		= new BotConnectionListener();
-	private final AgentVisualizerListener	agentListener				= new AgentVisualizerListener();
-	private final WPVisualizerListener		wpListener					= new WPVisualizerListener();
-	
-	private final List<Path>					paths							= new ArrayList<Path>(AIConfig.MAX_NUM_BOTS);
+	private final IBotIDMap<Path>				paths					= new BotIDMap<Path>();
 	
 	private final OptionsPanelPresenter		optionsPanelPresenter;
+	
+	private ScheduledExecutorService			execService;
 	
 	
 	// --------------------------------------------------------------------------
@@ -116,8 +120,6 @@ public class VisualizerPresenter implements IRobotsPanelObserver, IFieldPanelObs
 		// --- register on fieldpanel as observer ---
 		panel.getFieldPanel().addObserver(this);
 		
-		AIConfig.getInstance().addObserver(this);
-		
 		// --- register on optionspanel as observer ---
 		panel.getOptionsPanel().addObserver(optionsPanelPresenter);
 		
@@ -126,44 +128,29 @@ public class VisualizerPresenter implements IRobotsPanelObserver, IFieldPanelObs
 		
 		// --- register on moduli ---
 		ModuliStateAdapter.getInstance().addObserver(this);
-		
-		// --- init path-list ---
-		for (int i = 0; i < AIConfig.MAX_NUM_BOTS; i++)
-		{
-			paths.add(null);
-		}
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/**
-	 * 
-	 * @return
-	 */
-	public ISumatraView getView()
-	{
-		return panel;
-	}
-	
 	
 	// --------------------------------------------------------------------------
 	// --- observer-methods -----------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
-	public void onRobotClick(BotID botId)
+	public void onRobotClick(final BotID botId)
 	{
 		// --- select/deselect item ---
 		if (selectedRobotId.equals(botId))
 		{
-			selectedRobotId = new BotID();
+			selectedRobotId = BotID.createBotId();
 			panel.getRobotsPanel().deselectRobots();
 			
 		} else
 		{
 			selectedRobotId = botId;
-			panel.getRobotsPanel().selectRobot(botId.getNumber());
+			panel.getRobotsPanel().selectRobot(botId);
 		}
 		
 		panel.repaint();
@@ -172,29 +159,56 @@ public class VisualizerPresenter implements IRobotsPanelObserver, IFieldPanelObs
 	
 	
 	@Override
-	public void onFieldClick(final IVector2 pos, boolean ctrl, boolean alt, boolean shift, boolean meta)
+	public void onFieldClick(final IVector2 posIn, final MouseEvent e)
 	{
+		boolean ctrl = e.isControlDown();
+		boolean shift = e.isShiftDown();
+		boolean rightClick = SwingUtilities.isRightMouseButton(e);
+		
+		if (rightClick)
+		{
+			AReferee referee;
+			try
+			{
+				referee = (AReferee) SumatraModel.getInstance().getModule(AReferee.MODULE_ID);
+				referee.replaceBall(posIn);
+			} catch (ModuleNotFoundException err)
+			{
+				log.error("Referee module not found.", err);
+			}
+			return;
+		}
+		
 		if (!selectedRobotId.isUninitializedID() && robotAvailable(selectedRobotId))
 		{
-			final MovementCon moveCon = new MovementCon();
+			IMoveToSkill skill = AMoveSkill.createMoveToSkill(EMoveToMode.DO_COMPLETE);
+			final MovementCon moveCon = skill.getMoveCon();
+			moveCon.setPenaltyAreaAllowed(true);
 			
-			if (meta)
+			final IVector2 pos;
+			final IVector2 ballPos;
+			if (TeamConfig.getInstance().getTeamProps().getLeftTeam() != selectedRobotId.getTeamColor())
 			{
-				skillsystem.execute(selectedRobotId, new MoveBallToSkill(pos));
-			} else if (ctrl)
+				pos = new Vector2(-posIn.x(), -posIn.y());
+				IVector2 b = wpListener.getLastWorldFrame().getBall().getPos();
+				ballPos = new Vector2(-b.x(), -b.y());
+			} else
+			{
+				pos = posIn;
+				ballPos = wpListener.getLastWorldFrame().getBall().getPos();
+			}
+			
+			if (ctrl)
 			{
 				// move there and look at the ball
 				moveCon.updateDestination(pos);
-				moveCon.updateLookAtTarget(wpListener.getLastWorldFrame().ball.getPos());
-				skillsystem.execute(selectedRobotId, new MoveToSkill(moveCon));
+				moveCon.updateLookAtTarget(ballPos);
+				skillsystem.execute(selectedRobotId, skill);
 			} else if (shift)
 			{
-				final EBotType botType = wpListener.getLastWorldFrame().tigerBotsAvailable.get(selectedRobotId)
-						.getBotType();
-				float stepSize = AIConfig.getGeneral(botType).getPositioningPreAiming();
-				IVector2 dest = GeoMath.stepAlongLine(wpListener.getLastWorldFrame().ball.getPos(), pos, -stepSize);
+				IVector2 dest = GeoMath.stepAlongLine(ballPos, pos, -150);
 				moveCon.updateDestination(dest);
-				moveCon.updateLookAtTarget(wpListener.getLastWorldFrame().ball.getPos());
+				moveCon.updateLookAtTarget(ballPos);
 				
 				skillsystem.addObserver(new ISkillSystemObserver()
 				{
@@ -202,16 +216,15 @@ public class VisualizerPresenter implements IRobotsPanelObserver, IFieldPanelObs
 					
 					
 					@Override
-					public void onSkillStarted(ASkill skill, BotID botID)
+					public void onSkillStarted(final ISkill skill, final BotID botID)
 					{
 					}
 					
 					
 					@Override
-					public void onSkillCompleted(ASkill skill, BotID botID)
+					public void onSkillCompleted(final ISkill skill, final BotID botID)
 					{
-						float dist = GeoMath.distancePP(pos, wpListener.getLastWorldFrame().ball.getPos());
-						skillsystem.execute(selectedRobotId, new KickAutoSkill(dist));
+						skillsystem.execute(selectedRobotId, new KickSkill(new DynamicPosition(pos), EKickMode.POINT));
 						new Thread(new Runnable()
 						{
 							
@@ -226,11 +239,11 @@ public class VisualizerPresenter implements IRobotsPanelObserver, IFieldPanelObs
 					}
 				});
 				
-				skillsystem.execute(selectedRobotId, new MoveToSkill(moveCon));
+				skillsystem.execute(selectedRobotId, skill);
 			} else
 			{
 				moveCon.updateDestination(pos);
-				skillsystem.execute(selectedRobotId, new MoveToSkill(moveCon));
+				skillsystem.execute(selectedRobotId, skill);
 			}
 		}
 	}
@@ -241,66 +254,94 @@ public class VisualizerPresenter implements IRobotsPanelObserver, IFieldPanelObs
 	 * 
 	 * @return true;false
 	 */
-	private boolean robotAvailable(BotID id)
+	private boolean robotAvailable(final BotID id)
 	{
-		final RobotsPanel robotsPanel = panel.getRobotsPanel();
-		
-		// --- check arrays ---
-		if (!robotsPanel.isBotConnected(id))
+		ABot bot = botManager.getAllBots().get(id);
+		if ((bot != null) && (bot.getNetworkState() == ENetworkState.ONLINE))
 		{
-			return false;
-		} else if (!robotsPanel.isTigerDetected(id))
-		{
-			log.warn("no tracking data available to robot " + id);
-			return false;
+			return true;
 		}
-		
-		return true;
+		return false;
 	}
 	
 	
 	@Override
-	public void onModuliStateChanged(ModulesState state)
+	public void onModuliStateChanged(final ModulesState state)
 	{
-		if (state == ModulesState.RESOLVED)
+		switch (state)
 		{
-			// --- get worldpredictor ---
-			try
-			{
-				final SumatraModel model = SumatraModel.getInstance();
+			case ACTIVE:
 				
-				ABotManager botmanager = (ABotManager) model.getModule(ABotManager.MODULE_ID);
-				botmanager.addObserver(connectionListener);
+				panel.getRobotsPanel().clearView();
+				panel.getOptionsPanel().setInitialButtonState();
+				panel.getOptionsPanel().setButtonsEnabled(true);
+				panel.getFieldPanel().setPanelVisible(true);
 				
-				AAgent agent = (AAgent) model.getModule(AAgent.MODULE_ID);
-				agent.addObserver(agentListener);
-				panel.getRobotsPanel().addObserver(agent);
+				// --- get worldpredictor ---
+				try
+				{
+					final SumatraModel model = SumatraModel.getInstance();
+					
+					botManager = (ABotManager) SumatraModel.getInstance().getModule(ABotManager.MODULE_ID);
+					
+					panel.getRobotsPanel().addObserver(botManager);
+					
+					Agent agent = (Agent) model.getModule(AAgent.MODULE_ID_YELLOW);
+					agent.addObserver(agentListener);
+					agent = (Agent) model.getModule(AAgent.MODULE_ID_BLUE);
+					agent.addObserver(agentListener);
+					
+					AWorldPredictor worldPredictor = (AWorldPredictor) model.getModule(AWorldPredictor.MODULE_ID);
+					worldPredictor.addObserver(wpListener);
+					
+					skillsystem = (ASkillSystem) model.getModule(ASkillSystem.MODULE_ID);
+				} catch (final ModuleNotFoundException err)
+				{
+					log.error("no worldpredictor or botmanager or skillsystem or botManager found!!!", err);
+				}
 				
-				AWorldPredictor worldPredictor = (AWorldPredictor) model.getModule(AWorldPredictor.MODULE_ID);
-				worldPredictor.addObserver(wpListener);
+				execService = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("UpdateRobotsPanel"));
+				execService.scheduleAtFixedRate(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						panel.getRobotsPanel().setBots(botManager.getAllBots());
+						checkPaths();
+						panel.getRobotsPanel().repaint();
+					}
+				}, 100, 100, TimeUnit.MILLISECONDS);
 				
+				for (JCheckBox cb : panel.getOptionsPanel().getCheckBoxes().values())
+				{
+					optionsPanelPresenter.reactOnActionCommand(cb.getActionCommand(), cb.isSelected());
+				}
 				
-				skillsystem = (ASkillSystem) model.getModule("skillsystem");
-			} catch (final ModuleNotFoundException err)
-			{
-				log.error("no worldpredictor or botmanager or skillsystem found!!!");
-			}
-			
-			// --- clear connection-arrays ---
-			panel.getRobotsPanel().clearView();
-			panel.getRobotsPanel().repaint();
-			panel.getOptionsPanel().setInitialButtonState();
-			panel.getFieldPanel().setPanelVisible(false);
-			
-		} else if (state == ModulesState.ACTIVE)
-		{
-			panel.getOptionsPanel().setButtonsEnabled(true);
-			panel.getFieldPanel().setPanelVisible(true);
-			
-			for (JCheckBox cb : panel.getOptionsPanel().getCheckBoxes().values())
-			{
-				optionsPanelPresenter.reactOnActionCommand(cb.getActionCommand(), cb.isSelected());
-			}
+				break;
+			case NOT_LOADED:
+				break;
+			case RESOLVED:
+				// --- clear connection-arrays ---
+				if (execService != null)
+				{
+					execService.shutdown();
+					try
+					{
+						execService.awaitTermination(2, TimeUnit.SECONDS);
+					} catch (InterruptedException err)
+					{
+						log.error("Error waiting for termination.", err);
+					}
+				}
+				panel.getRobotsPanel().clearView();
+				panel.getRobotsPanel().repaint();
+				panel.getOptionsPanel().setInitialButtonState();
+				panel.getFieldPanel().setPanelVisible(false);
+				panel.getFieldPanel().clearField();
+				break;
+			default:
+				break;
+		
 		}
 	}
 	
@@ -310,95 +351,56 @@ public class VisualizerPresenter implements IRobotsPanelObserver, IFieldPanelObs
 	
 	protected class AgentVisualizerListener implements IAIObserver
 	{
-		private long	start	= System.nanoTime();
 		
 		
 		@Override
-		public void onNewAIInfoFrame(AIInfoFrame lastAIInfoframe)
+		public void onNewAIInfoFrame(final AIInfoFrame lastAIInfoframe)
 		{
-			long curTime = System.nanoTime();
-			if ((curTime - start) > TimeUnit.MILLISECONDS.toNanos(VISUALIZATION_FREQUENCY))
-			{
-				panel.getFieldPanel().drawAIFrame(lastAIInfoframe);
-				start = curTime;
-			}
+			panel.getFieldPanel().updateAiFrame(lastAIInfoframe);
 		}
 		
 		
 		@Override
-		public void onNewPath(Path path)
-		{
-			// --- path for that robot already in list? ---
-			// This is possible because the observable already made a path.lightCopy() for us! =)
-			paths.set(path.getBotID().getNumber(), path);
-			panel.getFieldPanel().setPaths(paths);
-		}
-		
-		
-		@Override
-		public void onAIException(Exception ex, AIInfoFrame frame, AIInfoFrame prevFrame)
+		public void onAIException(final Exception ex, final IRecordFrame frame, final IRecordFrame prevFrame)
 		{
 		}
-	}
-	
-	
-	@Override
-	public void onNewFieldRaster(FieldRasterConfig newFieldRasterConfig)
-	{
-		panel.getFieldPanel().setNewFieldRaster(newFieldRasterConfig);
 	}
 	
 	
 	protected class WPVisualizerListener implements IWorldPredictorObserver
 	{
-		private long			start				= System.nanoTime();
-		private WorldFrame	lastWorldFrame	= null;
+		private SimpleWorldFrame	lastWorldFrame	= null;
 		
 		
 		@Override
-		public void onNewWorldFrame(WorldFrame wf)
+		public void onNewWorldFrame(final SimpleWorldFrame wf)
 		{
 			setLastWorldFrame(wf);
-			if ((System.nanoTime() - start) > TimeUnit.MILLISECONDS.toNanos(VISUALIZATION_FREQUENCY))
-			{
-				final RobotsPanel robotsPanel = panel.getRobotsPanel();
-				robotsPanel.clearDetections();
-				
-				for (Map.Entry<BotID, TrackedTigerBot> entry : wf.tigerBotsVisible)
-				{
-					robotsPanel.setTigerDetected(entry.getKey(), true);
-				}
-				
-				final Iterator<Entry<BotID, TrackedBot>> foeIter = wf.getFoeBotMapIterator();
-				
-				while (foeIter.hasNext())
-				{
-					robotsPanel.setFoeDetected(foeIter.next().getKey(), true);
-				}
-				
-				// --- show robots and ball on field ---
-				panel.setTigersAreYellow(wf.teamProps.getTigersAreYellow());
-				panel.getRobotsPanel().repaint();
-				start = System.nanoTime();
-			}
+			final RobotsPanel robotsPanel = panel.getRobotsPanel();
+			robotsPanel.settBots(wf.getBots());
+			panel.getFieldPanel().updateWFrame(wf);
 		}
 		
 		
 		@Override
-		public void onVisionSignalLost(WorldFrame emptyWf)
+		public void onVisionSignalLost(final SimpleWorldFrame emptyWf)
 		{
 			setLastWorldFrame(emptyWf);
-			final RobotsPanel robotsPanel = panel.getRobotsPanel();
-			robotsPanel.clearDetections();
-			panel.setTigersAreYellow(getLastWorldFrame().teamProps.getTigersAreYellow());
-			panel.getRobotsPanel().repaint();
+			panel.getRobotsPanel().settBots(new BotIDMap<TrackedTigerBot>());
+			panel.getFieldPanel().updateWFrame(emptyWf);
+		}
+		
+		
+		@Override
+		public void onNewCamDetectionFrame(final CamDetectionFrame frame)
+		{
 		}
 		
 		
 		/**
 		 * @return the lastWorldFrame
 		 */
-		public WorldFrame getLastWorldFrame()
+		public SimpleWorldFrame getLastWorldFrame()
 		{
 			return lastWorldFrame;
 		}
@@ -407,119 +409,9 @@ public class VisualizerPresenter implements IRobotsPanelObserver, IFieldPanelObs
 		/**
 		 * @param lastWorldFrame the lastWorldFrame to set
 		 */
-		public void setLastWorldFrame(WorldFrame lastWorldFrame)
+		public void setLastWorldFrame(final SimpleWorldFrame lastWorldFrame)
 		{
 			this.lastWorldFrame = lastWorldFrame;
-		}
-	}
-	
-	
-	/**
-	 * Handles BotConnection-infos.
-	 * @author bernhard
-	 * 
-	 */
-	protected class BotConnectionListener implements IBotManagerObserver
-	{
-		private final Map<BotID, BotTransceiverListener>	botTransceivers	= new HashMap<BotID, BotTransceiverListener>();
-		
-		
-		@Override
-		public void onBotAdded(ABot bot)
-		{
-			final BotTransceiverListener l = new BotTransceiverListener(bot.getBotID());
-			bot.addObserver(l);
-			botTransceivers.put(l.getId(), l);
-		}
-		
-		
-		@Override
-		public void onBotRemoved(ABot bot)
-		{
-			final BotTransceiverListener l = botTransceivers.get(bot.getBotID());
-			if (l != null)
-			{
-				bot.removeObserver(l);
-			}
-			checkPaths();
-		}
-		
-		
-		@Override
-		public void onBotIdChanged(BotID oldId, BotID newId)
-		{
-			// Change handled internally in BotTranceiverListener; just change entry in map here!
-			final BotTransceiverListener l = botTransceivers.remove(oldId);
-			if (l != null)
-			{
-				botTransceivers.put(newId, l);
-			}
-			checkPaths();
-		}
-		
-		
-		@Override
-		public void onBotConnectionChanged(ABot bot)
-		{
-		}
-	}
-	
-	
-	/**
-	 * Handles BotTransceiver-infos.
-	 * @author bernhard
-	 * 
-	 */
-	protected class BotTransceiverListener implements IBotObserver
-	{
-		private BotID	id;
-		
-		
-		/**
-		 * @param id
-		 */
-		public BotTransceiverListener(BotID id)
-		{
-			this.id = id;
-		}
-		
-		
-		/**
-		 * @return the id
-		 */
-		public BotID getId()
-		{
-			return id;
-		}
-		
-		
-		@Override
-		public void onNameChanged(String name)
-		{
-		}
-		
-		
-		@Override
-		public void onIdChanged(BotID oldId, BotID newId)
-		{
-			id = newId;
-		}
-		
-		
-		@Override
-		public void onNetworkStateChanged(ENetworkState state)
-		{
-			final RobotsPanel robotsPanel = panel.getRobotsPanel();
-			robotsPanel.setBotConnected(id, state);
-			
-			robotsPanel.repaint();
-		}
-		
-		
-		@Override
-		public void onBlocked(boolean blocked)
-		{
-			
 		}
 	}
 	
@@ -534,39 +426,54 @@ public class VisualizerPresenter implements IRobotsPanelObserver, IFieldPanelObs
 	private void checkPaths()
 	{
 		final List<Path> delete = new LinkedList<Path>();
-		for (final Path path : paths)
+		for (final Path path : paths.values())
 		{
-			if ((path != null) && !robotAvailable(path.getBotID()))
+			if (!robotAvailable(path.getBotID()))
 			{
 				delete.add(path);
 			}
 		}
 		for (final Path path : delete)
 		{
-			paths.set(path.getBotID().getNumber(), null);
+			paths.remove(path.getBotID());
 		}
 	}
 	
 	
 	@Override
-	public void onRecord(boolean active)
+	public void onRecord(final boolean active)
 	{
 		panel.getFieldPanel().getMultiLayer().setRecording(active, false);
+		panel.getReplayLoadPanel().doUpdate();
 	}
 	
 	
 	@Override
-	public void onSave(boolean active)
+	public void onSave(final boolean active)
 	{
 		panel.getFieldPanel().getMultiLayer().setRecording(active, true);
+		panel.getReplayLoadPanel().doUpdate();
 		
 	}
 	
 	
 	@Override
-	public void onUpdate()
+	public Component getComponent()
 	{
-		panel.getReplayLoadPanel().doUpdate();
+		return panel;
+	}
+	
+	
+	@Override
+	public ISumatraView getSumatraView()
+	{
+		return panel;
+	}
+	
+	
+	@Override
+	public void onEmergencyStop()
+	{
 	}
 	
 }

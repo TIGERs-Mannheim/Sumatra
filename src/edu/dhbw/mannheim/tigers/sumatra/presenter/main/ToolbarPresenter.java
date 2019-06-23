@@ -9,29 +9,32 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.main;
 
-import java.util.concurrent.TimeUnit;
-
-import javax.swing.ImageIcon;
 import javax.swing.SwingUtilities;
 
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.moduli.exceptions.DependencyException;
+import edu.dhbw.mannheim.tigers.moduli.exceptions.InitModuleException;
+import edu.dhbw.mannheim.tigers.moduli.exceptions.LoadModulesException;
+import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
+import edu.dhbw.mannheim.tigers.moduli.exceptions.StartModuleException;
+import edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesState;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamDetectionFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IAIObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IWorldPredictorObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AWorldPredictor;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.IModuliStateObserver;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.ModuliStateAdapter;
+import edu.dhbw.mannheim.tigers.sumatra.view.main.toolbar.EStartStopButtonState;
 import edu.dhbw.mannheim.tigers.sumatra.view.main.toolbar.IToolbarObserver;
+import edu.dhbw.mannheim.tigers.sumatra.view.main.toolbar.InformationPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.main.toolbar.ToolBar;
-import edu.moduli.exceptions.InitModuleException;
-import edu.moduli.exceptions.ModuleNotFoundException;
-import edu.moduli.exceptions.StartModuleException;
-import edu.moduli.listenerVariables.ModulesState;
 
 
 /**
@@ -44,18 +47,9 @@ public class ToolbarPresenter implements IWorldPredictorObserver, IAIObserver, I
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	// Logger
-	private static final Logger		log							= Logger.getLogger(ToolbarPresenter.class.getName());
+	private static final Logger	log	= Logger.getLogger(ToolbarPresenter.class.getName());
 	
-	private static final ImageIcon	loadingIcon					= new ImageIcon(
-																						ClassLoader.getSystemResource("Loading.gif"));
-	
-	/** in milliseconds */
-	private static final long			VISUALIZATION_FREQUENCY	= 1;
-	
-	private long							startAi						= System.nanoTime();
-	private long							startWf						= System.nanoTime();
-	
-	private ToolBar						toolbar;
+	private ToolBar					toolbar;
 	
 	
 	// --------------------------------------------------------------------------
@@ -67,7 +61,7 @@ public class ToolbarPresenter implements IWorldPredictorObserver, IAIObserver, I
 	public ToolbarPresenter(ToolBar toolbar)
 	{
 		this.toolbar = toolbar;
-		toolbar.setStartStopButtonState(false, new ImageIcon(ClassLoader.getSystemResource("start.png")));
+		toolbar.setStartStopButtonState(true, EStartStopButtonState.START);
 		
 		ModuliStateAdapter.getInstance().addObserver(this);
 	}
@@ -79,58 +73,70 @@ public class ToolbarPresenter implements IWorldPredictorObserver, IAIObserver, I
 	@Override
 	public void onNewAIInfoFrame(final AIInfoFrame lastAIInfoframe)
 	{
-		long curTime = System.nanoTime();
-		if ((curTime - startAi) > TimeUnit.MILLISECONDS.toNanos(VISUALIZATION_FREQUENCY))
+		SwingUtilities.invokeLater(new Runnable()
 		{
-			SwingUtilities.invokeLater(new Runnable()
+			@Override
+			public void run()
 			{
-				@Override
-				public void run()
-				{
-					toolbar.getFpsPanel().setFpsAIF(lastAIInfoframe.getFps());
-				}
-			});
-			startAi = curTime;
+				toolbar.getFpsPanel().setFpsAIF(lastAIInfoframe.getFps(), lastAIInfoframe.getTeamColor());
+			}
+		});
+	}
+	
+	
+	/**
+	 * @param filename
+	 */
+	public void onLoadModuliConfig(String filename)
+	{
+		// --- set new config-file and load it ---
+		SumatraModel.getInstance().setCurrentModuliConfig(filename);
+		
+		// --- load modules into Sumatra ---
+		// --- module-handle ---
+		try
+		{
+			// --- get modules from configuration-file ---
+			SumatraModel.getInstance().loadModules(
+					SumatraModel.MODULI_CONFIG_PATH + SumatraModel.getInstance().getCurrentModuliConfig());
+			log.debug("Loaded config: " + filename);
+		} catch (final LoadModulesException e)
+		{
+			log.error(e.getMessage() + " (moduleConfigFile: '" + SumatraModel.getInstance().getCurrentModuliConfig()
+					+ "') ");
+		} catch (final DependencyException e)
+		{
+			log.error(e.getMessage() + " (moduleConfigFile: '" + SumatraModel.getInstance().getCurrentModuliConfig()
+					+ "') ");
 		}
 	}
 	
 	
 	@Override
-	public void onAIException(Exception ex, AIInfoFrame frame, AIInfoFrame prevFrame)
+	public void onAIException(Exception ex, IRecordFrame frame, IRecordFrame prevFrame)
 	{
-		// nothing to do
+		final InformationPanel informationPanel = toolbar.getInformationPanel();
+		informationPanel.setAIException(ex);
 	}
 	
 	
 	@Override
-	public void onNewPath(Path path)
+	public void onNewWorldFrame(final SimpleWorldFrame wf)
 	{
-		// nothing to do
-	}
-	
-	
-	@Override
-	public void onNewWorldFrame(final WorldFrame wf)
-	{
-		long curTime = System.nanoTime();
-		if ((curTime - startWf) > TimeUnit.MILLISECONDS.toNanos(VISUALIZATION_FREQUENCY))
+		SwingUtilities.invokeLater(new Runnable()
 		{
-			SwingUtilities.invokeLater(new Runnable()
+			@Override
+			public void run()
 			{
-				@Override
-				public void run()
-				{
-					toolbar.getFpsPanel().setFpsCam(wf.getCamFps());
-					toolbar.getFpsPanel().setFpsWF(wf.getWfFps());
-				}
-			});
-			startWf = curTime;
-		}
+				toolbar.getFpsPanel().setFpsCam(wf.getCamFps());
+				toolbar.getFpsPanel().setFpsWF(wf.getWfFps());
+			}
+		});
 	}
 	
 	
 	@Override
-	public void onVisionSignalLost(WorldFrame emptyWf)
+	public void onVisionSignalLost(SimpleWorldFrame emptyWf)
 	{
 		SwingUtilities.invokeLater(new Runnable()
 		{
@@ -139,9 +145,16 @@ public class ToolbarPresenter implements IWorldPredictorObserver, IAIObserver, I
 			{
 				toolbar.getFpsPanel().setFpsCam(0);
 				toolbar.getFpsPanel().setFpsWF(0);
-				toolbar.getFpsPanel().setFpsAIF(0);
+				toolbar.getFpsPanel().setFpsAIF(0, ETeamColor.YELLOW);
+				toolbar.getFpsPanel().setFpsAIF(0, ETeamColor.BLUE);
 			}
 		});
+	}
+	
+	
+	@Override
+	public void onNewCamDetectionFrame(CamDetectionFrame frame)
+	{
 	}
 	
 	
@@ -154,11 +167,19 @@ public class ToolbarPresenter implements IWorldPredictorObserver, IAIObserver, I
 				toolbar.setEmergencyStopButtonEnabled(true);
 				try
 				{
-					AAgent agent = (AAgent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID);
+					AAgent agent = (AAgent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_YELLOW);
 					agent.addObserver(this);
 				} catch (ModuleNotFoundException err)
 				{
-					log.error("Agent not found for adding IAIObserver", err);
+					log.error("Agent yellow not found for adding IAIObserver", err);
+				}
+				try
+				{
+					AAgent agent = (AAgent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_BLUE);
+					agent.addObserver(this);
+				} catch (ModuleNotFoundException err)
+				{
+					log.error("Agent blue not found for adding IAIObserver", err);
 				}
 				
 				try
@@ -177,11 +198,11 @@ public class ToolbarPresenter implements IWorldPredictorObserver, IAIObserver, I
 					@Override
 					public void run()
 					{
-						toolbar.getFpsPanel().setFpsAIF(0.0f);
+						toolbar.getFpsPanel().setFpsAIF(0.0f, ETeamColor.YELLOW);
+						toolbar.getFpsPanel().setFpsAIF(0.0f, ETeamColor.BLUE);
 						toolbar.getFpsPanel().setFpsCam(0.0f);
 						toolbar.getFpsPanel().setFpsWF(0.0f);
 						toolbar.setEmergencyStopButtonEnabled(false);
-						toolbar.setStartStopButtonState(true);
 					}
 				});
 				break;
@@ -199,21 +220,25 @@ public class ToolbarPresenter implements IWorldPredictorObserver, IAIObserver, I
 	}
 	
 	
+	@Override
+	public void onEmergencyStop()
+	{
+		// nothing to do
+	}
+	
+	
 	private void onModuliStateChangeDone(ModulesState state)
 	{
 		// --- set control modules, graphical buttons, etc. ---
 		switch (state)
 		{
 			case NOT_LOADED:
-				toolbar.setStartStopButtonState(false);
-				break;
-			
 			case RESOLVED:
-				toolbar.setStartStopButtonState(true, new ImageIcon(ClassLoader.getSystemResource("start.png")));
+				toolbar.setStartStopButtonState(true, EStartStopButtonState.START);
 				break;
 			
 			case ACTIVE:
-				toolbar.setStartStopButtonState(true, new ImageIcon(ClassLoader.getSystemResource("stop.png")));
+				toolbar.setStartStopButtonState(true, EStartStopButtonState.STOP);
 				break;
 		}
 	}
@@ -221,14 +246,8 @@ public class ToolbarPresenter implements IWorldPredictorObserver, IAIObserver, I
 	
 	private void onModuliStateChangeStarted()
 	{
-		toolbar.setStartStopButtonState(false, loadingIcon);
-	}
-	
-	
-	@Override
-	public void onEmergencyStop()
-	{
-		// this is done in MainPresenter
+		toolbar.setEmergencyStopButtonEnabled(false);
+		toolbar.setStartStopButtonState(false, EStartStopButtonState.LOADING);
 	}
 	
 	
@@ -242,29 +261,33 @@ public class ToolbarPresenter implements IWorldPredictorObserver, IAIObserver, I
 		public void run()
 		{
 			log.trace("Start StartStopThread");
+			String moduliConfig = SumatraModel.getInstance().getCurrentModuliConfig();
 			switch (SumatraModel.getInstance().getModulesState().get())
 			{
+				case NOT_LOADED:
 				case RESOLVED:
+					onLoadModuliConfig(moduliConfig);
 					try
 					{
 						log.trace("Start modules");
 						SumatraModel.getInstance().startModules();
 						log.trace("Finished start modules");
+						SumatraModel.getInstance().getModulesState().set(ModulesState.ACTIVE);
 					} catch (final InitModuleException err)
 					{
-						log.error("Cannot init modules: " + err.getMessage());
+						log.error("Cannot init modules: ", err);
+						SumatraModel.getInstance().getModulesState().set(ModulesState.RESOLVED);
 					} catch (final StartModuleException err)
 					{
-						log.error("Cannot start modules: " + err.getMessage());
+						log.error("Cannot start modules.", err);
+						SumatraModel.getInstance().getModulesState().set(ModulesState.RESOLVED);
 					}
-					SumatraModel.getInstance().getModulesState().set(ModulesState.ACTIVE);
 					break;
 				case ACTIVE:
 					log.trace("Start stopping modules");
 					SumatraModel.getInstance().stopModules();
 					log.trace("Finished stopping modules");
 					break;
-				case NOT_LOADED:
 				default:
 					break;
 			}

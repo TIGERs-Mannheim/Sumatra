@@ -4,158 +4,106 @@
  * Project: TIGERS - Sumatra
  * Date: Oct 10, 2012
  * Author(s): dirk
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.log4j.Logger;
-
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.area.Goal;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.area.PenaltyArea;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.field.Goal;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.field.PenaltyArea;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.fieldPrediction.FieldPredictionInformation;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.fieldPrediction.WorldFramePrediction;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move.MovementCon;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.tree.Node;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.fieldPrediction.FieldPredictionInformation;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.fieldPrediction.WorldFramePrediction;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
 
 
 /**
  * data holder class
  * 
  * @author DirkK
- * 
  */
 public final class FieldInformation
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
+	private static final float		GOALPOST_RADIUS					= 10f;
+	
+	/** Config values */
 	private final float				botRadius							= AIConfig.getGeometry().getBotRadius();
 	private final float				ballRadius							= AIConfig.getGeometry().getBallRadius();
 	private final Goal				goalTheir							= AIConfig.getGeometry().getGoalTheir();
 	private final Goal				goalOur								= AIConfig.getGeometry().getGoalOur();
-	private final float				centerCircleRadius				= AIConfig.getGeometry().getCenterCircleRadius();
-	
-	private static final float		GOALPOST_RADIUS					= 10f;
-	/** shall the ball be considered? */
-	private final boolean			considerBall;
-	private final boolean			considerBots;
-	private final boolean			considerGoalPosts;
-	private boolean					prohibitCenterCircle				= false;
-	// private boolean prohibitOpponentPenArea = false; //!!! NOT PROHIBITED BY THE RULES !!!
-	private boolean					prohibitTigersPenArea			= true;
-	private boolean					isFreekick							= false;
-	private float						usedSafetyDistance				= AIConfig.getErrt().getSafetyDistance();
-	private float						safetyDistanceBall;
-	
-	/** it's kickoff so the centercircle and the opponents half are prohibited */
-	private boolean					prohibitOpponentsHalf			= false;
-	
-	/** ball */
-	private final Vector2f			ballPos;
-	
-	private final IVector2			centerPoint							= new Vector2f(0, 0);
-	
-	/** distance bot<->ball while opponent has freekick */
-	private final float				distanceAtFreekick				= AIConfig.getGeometry().getBotToBallDistanceStop();
-	
 	private final PenaltyArea		penaltyAreaOur						= AIConfig.getGeometry().getPenaltyAreaOur();
+	// safety distance
+	@Configurable(comment = "min. distance to obstacles [mm]", defValue = "100")
+	private float						safetyDistance						= 100;
+	@Configurable(comment = "min. distance to obstacles in 2nd round [mm]", defValue = "40")
+	private float						secondSafetyDistance				= 40;
+	@Configurable(comment = "min. distance to the ball", defValue = "50")
+	private float						safetyDistanceBall				= 50;
+	@Configurable(comment = "puffer between end of safety distance and possible start / target positions for the ERRT", defValue = "10")
+	private float						pufferSafetyEndToDest			= 10;
+	@Configurable(comment = "time in seconds which are predicted for the path planning", defValue = "10")
+	private float						predictionIterationsMaximum	= 10f;
+	@Configurable(comment = "time in seconds for the prediction step size", defValue = "0.1")
+	private float						predictionStepSize				= 0.1f;
 	
-	/** list, all bots except thisBot are stored in */
-	private List<IVector2>			botPosList							= new ArrayList<IVector2>();
+	/** set by the ERRT algorithm (can change dynamically) */
+	private boolean					isSecondTry							= false;
 	
-	private final WorldFrame		wFrame;
-	
+	/** initialization values */
+	private final MovementCon		moveCon;
+	private SimpleWorldFrame		wFrame								= null;
 	private final BotID				botId;
 	
-	// modifiable parameters
+	/** fields used in this class */
+	private boolean					prohibitTigersPenArea			= true;
+	private float						safetyDistanceBot					= safetyDistance;
+	
 	private boolean					targetAdjustedBecauseOfBall	= false;
 	private boolean					startAdjustedBecauseOfBall		= false;
-	private IVector2					preprocessedDestination;
-	private IVector2					preprocessedStart;
-	private int							avoidedCollisons					= 0;
+	private IVector2					preprocessedDestination			= null;
+	private IVector2					preprocessedStart					= null;
 	
-	private boolean					penAreaAllowed						= false;
-	
-	private final List<IVector2>	additionalObstacles				= new ArrayList<IVector2>();
 	private final List<IVector2>	ignoredPoints						= new ArrayList<IVector2>();
-	private List<TrackedBot>		ignoredBots							= new ArrayList<TrackedBot>();
+	private final List<BotID>		ignoredBotsForCollDetect		= new ArrayList<BotID>();
 	
-	
-	/**
-	 * @return the ignoredBots
-	 */
-	public List<TrackedBot> getIgnoredBots()
-	{
-		return ignoredBots;
-	}
-	
+	/** for the bot at the position of the IVector2 a special safety distance should be used **/
+	private Map<BotID, Float>		specialSafetyDistances			= new HashMap<BotID, Float>();
 	
 	/**
-	 * @param ignoredBots the ignoredBots to set
+	 * list, all bots except thisBot are stored in, IVector2 instead of TrackedTigerBot is used
+	 * because it can also be the position of the bots in the future
 	 */
-	public void setIgnoredBots(List<TrackedBot> ignoredBots)
-	{
-		this.ignoredBots = ignoredBots;
-	}
-	
-	
-	private static final Logger	log	= Logger.getLogger(FieldInformation.class.getName());
+	private List<FutureBot>			botPosList							= new ArrayList<FutureBot>();
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * @param wFrame
 	 * @param botId
-	 * @param considerBall
-	 * @param considerBots
-	 * @param considerGoalPosts
-	 * @param penAreaAllowed
-	 * @param destination
+	 * @param moveCon
 	 */
-	public FieldInformation(WorldFrame wFrame, BotID botId, boolean considerBall, boolean considerBots,
-			boolean considerGoalPosts, boolean penAreaAllowed, Vector2f destination)
+	public FieldInformation(final BotID botId, final MovementCon moveCon)
 	{
-		preprocessedStart = wFrame.getTiger(botId).getPos();
-		preprocessedDestination = destination;
-		if (AIConfig.getGeometry().getPenaltyAreaOur().isPointInShape(preprocessedDestination) && !penAreaAllowed)
-		{
-			preprocessedDestination = AIConfig.getGeometry().getPenaltyAreaOur()
-					.nearestPointOutside(preprocessedDestination);
-		}
-		this.wFrame = wFrame;
 		this.botId = botId;
-		this.considerBall = considerBall;
-		this.considerBots = considerBots;
-		this.considerGoalPosts = considerGoalPosts;
-		this.penAreaAllowed = penAreaAllowed;
-		
-		ballPos = new Vector2f(wFrame.ball.getPos());
-		
-		handleProhibitPenaltyArea();
-		
-		adjustStartIfBallOrBotIsAtStart();
-		adjustTargetIfBallIsTarget();
-		
-		// ignoredPoints.add(preprocessedStart);
-		ignoredPoints.add(preprocessedDestination);
-		// all bots except thisBot in botPosList
-		putBotsInList();
+		this.moveCon = moveCon;
 	}
 	
 	
@@ -164,51 +112,43 @@ public final class FieldInformation
 	// --------------------------------------------------------------------------
 	
 	/**
-	 * @return the preprocessedStart
+	 * @param wFrame
 	 */
-	public IVector2 getPreprocessedStart()
+	public void updateWorldFrame(final SimpleWorldFrame wFrame)
 	{
-		return preprocessedStart;
+		if (wFrame.getBot(botId) == null)
+		{
+			// do not update this time
+			return;
+		}
+		this.wFrame = wFrame;
+		moveCon.update(wFrame, botId);
+		updateInternalFields();
 	}
 	
 	
-	/**
-	 * @param preprocessedStart the preprocessedStart to set
-	 */
-	public void setPreprocessedStart(IVector2 preprocessedStart)
+	private void updateInternalFields()
 	{
-		this.preprocessedStart = preprocessedStart;
-	}
-	
-	
-	/**
-	 * changes the bots list which is used for collisions to a time in the future (or present if 0)
-	 * be careful, unprecious
-	 * @param time [s] in the future
-	 */
-	public void changeBotsInListToTimeInFuture(float time)
-	{
-		List<IVector2> newBotPosList = new LinkedList<IVector2>();
-		WorldFramePrediction wfp = wFrame.getWorldFramePrediction();
-		for (FieldPredictionInformation fpi : wfp.getFoes().values())
+		if (isSecondTry)
 		{
-			newBotPosList.add(fpi.getPosAt(time));
+			safetyDistanceBot = secondSafetyDistance;
 		}
-		for (Entry<BotID, FieldPredictionInformation> fpi : wfp.getTigers().entrySet())
-		{
-			if (!botId.equals(fpi.getKey()))
-			{
-				newBotPosList.add(fpi.getValue().getPosAt(time));
-			}
-		}
-		newBotPosList.add(wfp.getBall().getPosAt(time));
-		botPosList = newBotPosList;
+		preprocessedStart = wFrame.getBot(botId).getPos();
+		preprocessedDestination = moveCon.getDestCon().getDestination();
+		handleProhibitPenaltyArea();
+		
+		// ORDER IMPORTANT
+		adjustTargetIfInPenArea();
+		adjustStartIfBallOrBotIsAtStart();
+		adjustTargetIfBallIsTarget();
+		adjustTargetIfBotIsTarget();
+		fillBotPosList(0);
 	}
 	
 	
 	private void handleProhibitPenaltyArea()
 	{
-		if (penAreaAllowed || penaltyAreaOur.isPointInShape(wFrame.getTiger(botId).getPos())
+		if (moveCon.isPenaltyAreaAllowed() || penaltyAreaOur.isPointInShape(wFrame.getBot(botId).getPos())
 				|| penaltyAreaOur.isPointInShape(preprocessedDestination))
 		{
 			prohibitTigersPenArea = false;
@@ -216,32 +156,296 @@ public final class FieldInformation
 	}
 	
 	
+	/************************************************************************************
+	 ****************************** Fill the bot list ***********************************
+	 ************************************************************************************/
+	
+	
 	/**
-	 * checks if the bot drives into the penalty area despite he is not allowed to do this
+	 * fills the botPosList with the position of all bots except me to the given time
 	 * 
-	 * @return
+	 * @param time
 	 */
-	public boolean isBotIllegallyInPenaltyArea()
+	public void fillBotPosList(final float time)
 	{
-		return (!penAreaAllowed && penaltyAreaOur.isPointInShape(wFrame.getTiger(botId).getPos()));
+		botPosList.clear();
+		
+		botPosList.addAll(getAllBotsExceptMe(time));
+		
+		// if bot blocks anything, don't consider it
+		for (IVector2 obstacle : ignoredPoints)
+		{
+			removeBotsNearPoint(obstacle);
+		}
+	}
+	
+	
+	private List<FutureBot> getAllBotsExceptMe(final float time)
+	{
+		
+		List<FutureBot> newBotPosList = new ArrayList<FutureBot>(13);
+		WorldFramePrediction wfp = wFrame.getWorldFramePrediction();
+		for (Entry<BotID, FieldPredictionInformation> fpi : wfp.getBots().entrySet())
+		{
+			if (!botId.equals(fpi.getKey()))
+			{
+				newBotPosList.add(new FutureBot(fpi.getKey(), fpi.getValue().getPosAt(time)));
+			}
+		}
+		return newBotPosList;
+		
 	}
 	
 	
 	/**
-	 * gets the nearest point outside of the penalty area for the bot (the bot needs to be in the pen area)<br>
+	 * remove all bots which are nearer to the given point than safetyDistanceBot to the time 0 of the spline
 	 * 
-	 * it is not the point on the penarea line but in a distance of botRadius outside of the penalty area
+	 * @param point
 	 * @return
 	 */
-	public IVector2 getNearestNodeOutsidePenArea()
+	private List<IVector2> removeBotsNearPoint(final IVector2 point)
 	{
-		IVector2 tigerPos = wFrame.getTiger(botId).getPos();
-		IVector2 pointOnLine = penaltyAreaOur.nearestPointOutside(tigerPos);
-		IVector2 directionVectorToOutside = pointOnLine.subtractNew(tigerPos);
-		directionVectorToOutside = directionVectorToOutside.scaleToNew(0);
-		return pointOnLine.addNew(directionVectorToOutside);
+		final List<IVector2> botsAtPoint = new ArrayList<IVector2>();
+		for (final IVector2 bot : getAllBotsExceptMe(0))
+		{
+			if (isBotNearPoint(bot, point, safetyDistanceBot, botRadius))
+			{
+				botsAtPoint.add(bot);
+			}
+		}
+		for (final IVector2 bot : botsAtPoint)
+		{
+			botPosList.remove(bot);
+		}
+		return botsAtPoint;
 	}
 	
+	
+	/**
+	 * @param bot
+	 * @param point
+	 * @param safetyDistance
+	 * @param obstacleRadius
+	 * @return
+	 */
+	private boolean isBotNearPoint(final IVector2 bot, final IVector2 point, final float safetyDistance,
+			final float obstacleRadius)
+	{
+		return GeoMath.distancePP(bot, point) < (safetyDistance + botRadius + obstacleRadius);
+	}
+	
+	
+	/************************************************************************************
+	 ************************* Adjust Start behavior and target *************************
+	 ************************************************************************************/
+	/**
+	 * Idea: if the destination is in the penalty area, stop outside of the penalty area
+	 */
+	private void adjustTargetIfInPenArea()
+	{
+		if (penaltyAreaOur.isPointInShape(preprocessedDestination) && prohibitTigersPenArea)
+		{
+			preprocessedDestination = AIConfig.getGeometry().getPenaltyAreaOur()
+					.nearestPointOutside(preprocessedDestination);
+		}
+	}
+	
+	
+	/**
+	 * Idea: first drive away from the obstacle and than start path planning
+	 */
+	private void adjustStartIfBallOrBotIsAtStart()
+	{
+		IVector2 possiblePreprocessedStart = null;
+		startAdjustedBecauseOfBall = false;
+		if (moveCon.isBotsObstacle())
+		{
+			List<FutureBot> obstacles = obstaclesAtPoint(preprocessedStart);
+			for (FutureBot obstacle : obstacles)
+			{
+				possiblePreprocessedStart = preprocessStartForObstacle(obstacle, false);
+				ignoredBotsForCollDetect.add(obstacle.getBot());
+				startAdjustedBecauseOfBall = true;
+			}
+		}
+		if (moveCon.isBallObstacle())
+		{
+			if (isBotNearPoint(wFrame.getBall().getPos(), preprocessedStart, safetyDistanceBall, ballRadius))
+			{
+				possiblePreprocessedStart = preprocessStartForObstacle(wFrame.getBall().getPos(), true);
+				startAdjustedBecauseOfBall = true;
+			}
+		}
+		if (startAdjustedBecauseOfBall)
+		{
+			if (possiblePreprocessedStart == null)
+			{
+				if (isSecondTry)
+				{
+					// log.warn("There was no point found for the bot to drive securely to its destination.");
+				}
+			} else
+			{
+				preprocessedStart = possiblePreprocessedStart;
+			}
+		}
+	}
+	
+	
+	/**
+	 * Idea: first drive in a curve behind the ball and then approach the ball
+	 */
+	private void adjustTargetIfBallIsTarget()
+	{
+		if (moveCon.isBallObstacle())
+		{
+			if (isBallAtTarget())
+			{
+				preprocessedDestination = botToObstacleLeadPoint(wFrame.getBot(botId), preprocessedDestination, wFrame
+						.getBall().getPos(), getNeededDistanceFromBallToStartPathPlanning());
+				targetAdjustedBecauseOfBall = true;
+			}
+		}
+	}
+	
+	
+	/**
+	 * Idea: if there is a bot at the target reduce the safety distance for this bot,
+	 * we will perhaps ram slowly into this bot but that is ok. Don't play defensive!!!
+	 */
+	private void adjustTargetIfBotIsTarget()
+	{
+		List<FutureBot> botsAtTarget = obstaclesAtPoint(preprocessedDestination);
+		for (FutureBot bot : botsAtTarget)
+		{
+			float distBotToDest = bot.subtractNew(preprocessedDestination).getLength2();
+			if (distBotToDest > pufferSafetyEndToDest)
+			{
+				specialSafetyDistances.put(bot.getBot(), distBotToDest - pufferSafetyEndToDest - (botRadius * 2));
+			} else
+			{
+				ignoredPoints.add(bot);
+			}
+		}
+		
+	}
+	
+	
+	private IVector2 botToObstacleLeadPoint(final TrackedTigerBot bot, final IVector2 destination,
+			final IVector2 obstacle, final float distance)
+	{
+		IVector2 obstacleToDestination = destination.subtractNew(obstacle);
+		IVector2 earlierStoppingDirection = null;
+		if (obstacleToDestination.isZeroVector())
+		{
+			IVector2 obstacleToBot = bot.getPos().subtractNew(obstacle);
+			earlierStoppingDirection = obstacleToBot;
+		} else
+		{
+			earlierStoppingDirection = obstacleToDestination;
+		}
+		IVector2 obstacleToDestinationScaled = earlierStoppingDirection.scaleToNew(distance);
+		return obstacle.addNew(obstacleToDestinationScaled);
+	}
+	
+	
+	private List<FutureBot> obstaclesAtPoint(final IVector2 point)
+	{
+		return botAtPoint(point, safetyDistanceBot);
+	}
+	
+	
+	private List<FutureBot> botAtPoint(final IVector2 point, final float safetyDist)
+	{
+		List<FutureBot> obstacles = new ArrayList<FutureBot>();
+		for (final FutureBot bot : getAllBotsExceptMe(0))
+		{
+			if (isBotNearPoint(bot, point, safetyDist, botRadius))
+			{
+				obstacles.add(bot);
+			}
+		}
+		return obstacles;
+	}
+	
+	
+	/**
+	 * if the bot is currently to close to an obstacle (closer than security distance), find a point near the start,
+	 * where the bot could drive first
+	 * 
+	 * @param obstacle obstacle which is in way
+	 * @param isBall
+	 * @return null if no point found, otherwise the point
+	 */
+	private IVector2 preprocessStartForObstacle(final IVector2 obstacle, final boolean isBall)
+	{
+		IVector2 possiblePreprocessedStart = null;
+		IVector2 obstacleToStart = preprocessedStart.subtractNew(obstacle);
+		if (obstacleToStart.isZeroVector())
+		{
+			// log.info("A bot has the same position than an obstacle (bot or ball).");
+			return preprocessedStart;
+		}
+		float radius = botRadius;
+		float safety = safetyDistanceBot;
+		if (isBall)
+		{
+			radius = ballRadius;
+			safety = safetyDistanceBall;
+		}
+		// Idea of the following code:
+		// If the bot is too close to an obstacle first drive away form the obstacle in the most direct way and then
+		// continue with path planning
+		float neededDistance = radius + safety + botRadius;
+		double distanceOrthogonalMovementSqare = ((neededDistance * neededDistance) - (obstacleToStart.getLength2() * obstacleToStart
+				.getLength2()));
+		float distanceOrthogonalMovement = (float) Math.sqrt(distanceOrthogonalMovementSqare);
+		IVector2 orthogonalToObstacleToStart = obstacleToStart.getNormalVector();
+		IVector2 startOnCircle = preprocessedStart.addNew(orthogonalToObstacleToStart
+				.scaleToNew(distanceOrthogonalMovement));
+		IVector2 obstacleToStartOnCircle = startOnCircle.subtractNew(obstacle);
+		float angleToRotate = AngleMath.difference(obstacleToStart.getAngle(), obstacleToStartOnCircle.getAngle());
+		float distanceToRealTarget = Float.MAX_VALUE;
+		
+		float endAngle = angleToRotate * 2;
+		// log.warn("circle around: " + obstacle + "(" + preprocessedStart + ") " + angleToRotate);
+		for (float currentAngle = 0; currentAngle < endAngle; currentAngle += 0.1)
+		{
+			IVector2 possibleStart = GeoMath.stepAlongCircle(startOnCircle, obstacle, currentAngle);
+			// log.warn("possibleStart: " + possibleStart);
+			if (isPointOK(possibleStart))
+			{
+				float distance = possibleStart.subtractNew(preprocessedDestination).getLength2();
+				if (distance < distanceToRealTarget)
+				{
+					distanceToRealTarget = distance;
+					possiblePreprocessedStart = possibleStart;
+				}
+			}
+		}
+		return possiblePreprocessedStart;
+	}
+	
+	
+	private boolean isBallAtTarget()
+	{
+		return wFrame.getBall().getPos().equals(preprocessedDestination, getNeededDistanceFromBallToStartPathPlanning());
+	}
+	
+	
+	private float getNeededDistanceFromBallToStartPathPlanning()
+	{
+		return botRadius + ballRadius + (safetyDistanceBall * 2);
+	}
+	
+	
+	/************************************************************************************
+	 ****************************** Collision Checks ************************************
+	 ************************************************************************************/
+	/**
+	 * the ...InWay methods are used by the ERRT
+	 * the test... methods are used by finding an optimal start and by the collision detection
+	 */
 	
 	/**
 	 * checks direct connection between given point a (e.g. botPosition) and point b (e.g. target)
@@ -250,19 +454,31 @@ public final class FieldInformation
 	 * @param b end point
 	 * @return true if connection is FREE
 	 */
-	public boolean isWayOK(IVector2 a, IVector2 b)
+	public boolean isWayOK(final IVector2 a, final IVector2 b)
 	{
-		if (considerBots)
+		return isWayOK(a, b, 1.0f);
+	}
+	
+	
+	/**
+	 * @param a
+	 * @param b
+	 * @param safetyFactor
+	 * @return
+	 */
+	public boolean isWayOK(final IVector2 a, final IVector2 b, final float safetyFactor)
+	{
+		if (moveCon.isBotsObstacle())
 		{
-			if (isBotInWay(a, b, usedSafetyDistance + avoidedCollisons))
+			if (isBotInWay(a, b, safetyDistanceBot * safetyFactor))
 			{
 				return false;
 			}
 		}
 		
-		if (considerGoalPosts)
+		if (moveCon.isGoalPostObstacle())
 		{
-			if (isGoalPostInWay(a, b, usedSafetyDistance + avoidedCollisons))
+			if (isGoalPostInWay(a, b, safetyDistanceBot * safetyFactor))
 			{
 				return false;
 			}
@@ -273,9 +489,9 @@ public final class FieldInformation
 			return false;
 		}
 		
-		if (considerBall)
+		if (moveCon.isBallObstacle())
 		{
-			if (isBallInWay(a, b, safetyDistanceBall + avoidedCollisons))
+			if (isBallInWay(a, b, safetyDistanceBall * safetyFactor))
 			{
 				return false;
 			}
@@ -292,25 +508,31 @@ public final class FieldInformation
 	 * @param point Point to test.
 	 * @return true if point is ok.
 	 */
-	public boolean isPointOK(IVector2 point)
+	public boolean isPointOK(final IVector2 point)
 	{
-		float divSafetyDistance = 10.0f;
-		float maxiumModifier = 3.0f;
-		
-		// Usage of divSafetyDistance with avoidedCollisions, so we get a >=1.0f number.
-		float calcSafetyDistance = usedSafetyDistance / ((avoidedCollisons + divSafetyDistance) / divSafetyDistance);
-		if (calcSafetyDistance < (usedSafetyDistance / maxiumModifier))
-		{
-			calcSafetyDistance = usedSafetyDistance / maxiumModifier;
-		}
-		if (considerBots)
+		return isPointOK(point, safetyDistanceBot, false);
+	}
+	
+	
+	/**
+	 * Checks if a position is allowed and not obstructed.
+	 * 
+	 * @param point Point to test
+	 * @param calcSafetyDistance safety distance around the point
+	 * @param forceConsiderBall overwrite the global considerBall with true, false keeps the value of the global
+	 *           considerBall
+	 * @return
+	 */
+	public boolean isPointOK(final IVector2 point, final float calcSafetyDistance, final boolean forceConsiderBall)
+	{
+		if (moveCon.isBotsObstacle())
 		{
 			if (testBot(point, calcSafetyDistance))
 			{
 				return false;
 			}
 		}
-		if (considerGoalPosts)
+		if (moveCon.isGoalPostObstacle())
 		{
 			if (testGoalPost(point, calcSafetyDistance))
 			{
@@ -323,15 +545,24 @@ public final class FieldInformation
 			return false;
 		}
 		
-		if (considerBall)
+		if (moveCon.isBallObstacle() && !forceConsiderBall)
 		{
-			if (testBall(point, safetyDistanceBall))
+			if (testBall(point, calcSafetyDistance))
 			{
 				return false;
 			}
 		}
 		
 		return true;
+	}
+	
+	
+	/**
+	 * @return the moveCon
+	 */
+	public MovementCon getMoveCon()
+	{
+		return moveCon;
 	}
 	
 	
@@ -343,19 +574,23 @@ public final class FieldInformation
 	 * @param nodeB
 	 * @return
 	 */
-	private boolean isBallInWay(IVector2 nodeA, IVector2 nodeB, float safetyDistance)
+	private boolean isBallInWay(final IVector2 nodeA, final IVector2 nodeB, final float safetyDistance)
 	{
-		if (isElementInWay(nodeA, nodeB, ballPos, ballRadius, safetyDistance))
+		for (float i = 0; (i <= (predictionIterationsMaximum * predictionStepSize)) && (!isSecondTry || (i == 0)); i += predictionStepSize)
 		{
-			return true;
+			IVector2 ballPos = wFrame.getWorldFramePrediction().getBall().getPosAt(i);
+			if (isElementInWay(nodeA, nodeB, ballPos, ballRadius, safetyDistance))
+			{
+				return true;
+			}
 		}
 		return false;
 	}
 	
 	
-	private boolean testBall(IVector2 node, float safetyDistance)
+	private boolean testBall(final IVector2 node, final float safetyDistance)
 	{
-		if (testElement(node, ballPos, ballRadius, safetyDistance))
+		if (testElement(node, wFrame.getBall().getPos(), ballRadius, safetyDistance))
 		{
 			return true;
 		}
@@ -371,58 +606,53 @@ public final class FieldInformation
 	 * @param nodeB
 	 * @return
 	 */
-	private boolean isGoalPostInWay(IVector2 nodeA, IVector2 nodeB, float safetyDistance)
+	private boolean isGoalPostInWay(final IVector2 nodeA, final IVector2 nodeB, final float safetyDistance)
 	{
-		if (isElementInWay(nodeA, nodeB, goalOur.getGoalPostLeft(), GOALPOST_RADIUS, safetyDistance))
+		float safety = safetyDistance + GOALPOST_RADIUS + botRadius;
+		if ((nodeA.x() < (goalOur.getGoalCenter().x() + safety)) || (nodeB.x() < (goalOur.getGoalCenter().x() + safety)))
 		{
-			return true;
-		} else if (isElementInWay(nodeA, nodeB, goalOur.getGoalPostRight(), GOALPOST_RADIUS, safetyDistance))
-		{
-			return true;
-		} else if (isElementInWay(nodeA, nodeB, goalTheir.getGoalPostLeft(), GOALPOST_RADIUS, safetyDistance))
-		{
-			return true;
-		} else if (isElementInWay(nodeA, nodeB, goalTheir.getGoalPostRight(), GOALPOST_RADIUS, safetyDistance))
-		{
-			return true;
+			if (goalOur.isLineCrossingGoal(nodeA, nodeB, safety))
+			{
+				return true;
+			}
 		}
-		return false;
-	}
-	
-	
-	private boolean testGoalPost(IVector2 node, float safetyDistance)
-	{
-		if (testElement(node, goalOur.getGoalPostLeft(), GOALPOST_RADIUS, safetyDistance))
+		if ((nodeA.x() > (goalTheir.getGoalCenter().x() - safety))
+				|| (nodeB.x() > (goalTheir.getGoalCenter().x() - safety)))
 		{
-			return true;
-		} else if (testElement(node, goalOur.getGoalPostRight(), GOALPOST_RADIUS, safetyDistance))
-		{
-			return true;
-		} else if (testElement(node, goalTheir.getGoalPostLeft(), GOALPOST_RADIUS, safetyDistance))
-		{
-			return true;
-		} else if (testElement(node, goalTheir.getGoalPostRight(), GOALPOST_RADIUS, safetyDistance))
-		{
-			return true;
-		}
-		return false;
-	}
-	
-	
-	private boolean isProhibitedFieldAreaInWay(IVector2 nodeA, IVector2 nodeB)
-	{
-		// if there is more than one prohibited area, this check needs to be done for each element
-		if (prohibitCenterCircle)
-		{
-			// no safety needed
-			if (isElementInWay(nodeA, nodeB, centerPoint, centerCircleRadius, 0))
+			if (goalTheir.isLineCrossingGoal(nodeA, nodeB, safety))
 			{
 				return true;
 			}
 		}
 		
-		// // opponents penalty area !!! NOT PROHIBITED BY THE RULES !!!
-		
+		return false;
+	}
+	
+	
+	private boolean testGoalPost(final IVector2 node, final float safetyDistance)
+	{
+		float safety = safetyDistance + GOALPOST_RADIUS + botRadius;
+		if ((node.x() < (goalOur.getGoalCenter().x() + safety)))
+		{
+			// this function is called very often, so we check first
+			if (goalOur.isLineCrossingGoal(node, node, safety))
+			{
+				return true;
+			}
+		}
+		if ((node.x() > (goalTheir.getGoalCenter().x() - safety)))
+		{
+			if (goalTheir.isLineCrossingGoal(node, node, safety))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	
+	private boolean isProhibitedFieldAreaInWay(final IVector2 nodeA, final IVector2 nodeB)
+	{
 		if (prohibitTigersPenArea)
 		{
 			if (isPenaltyAreaInWay(nodeA, nodeB))
@@ -431,33 +661,12 @@ public final class FieldInformation
 			}
 		}
 		
-		if (isFreekick)
-		{
-			// no safety needed
-			if (isElementInWay(nodeA, nodeB, ballPos, distanceAtFreekick, 0))
-			{
-				return true;
-			}
-		}
-		
 		return false;
 	}
 	
 	
-	private boolean testProhibitedFieldArea(IVector2 node)
+	private boolean testProhibitedFieldArea(final IVector2 node)
 	{
-		// if there is more than one prohibited area, this check needs to be done for each element
-		if (prohibitCenterCircle)
-		{
-			// no safety needed
-			if (testElement(node, centerPoint, centerCircleRadius, 0))
-			{
-				return true;
-			}
-		}
-		
-		// // opponents penalty area !!! NOT PROHIBITED BY THE RULES !!!
-		
 		if (prohibitTigersPenArea)
 		{
 			// no safety needed
@@ -467,77 +676,11 @@ public final class FieldInformation
 			}
 		}
 		
-		if (isFreekick)
-		{
-			// no safety needed
-			if (testElement(node, ballPos, distanceAtFreekick, 0))
-			{
-				return true;
-			}
-		}
-		
 		return false;
 	}
 	
 	
-	/**
-	 * checks if element would be hit by driving
-	 * algorithm: http://local.wasp.uwa.edu.au/~pbourke/geometry/pointline/
-	 * 
-	 * @param nodeA
-	 * @param nodeB
-	 * @return
-	 */
-	private boolean isElementInWay(IVector2 nodeA, IVector2 nodeB, IVector2 elementPos, float elementRadius,
-			float safetyDistance)
-	{
-		if (nodeA.equals(nodeB))
-		{
-			return false;
-		}
-		
-		final float distanceX = nodeB.x() - nodeA.x();
-		final float distanceY = nodeB.y() - nodeA.y();
-		IVector2 nearest = null;
-		
-		final float u = (Math.abs((elementPos.x() - nodeA.x()) * distanceX) + Math.abs((elementPos.y() - nodeA.y())
-				* distanceY))
-				/ ((distanceX * distanceX) + (distanceY * distanceY));
-		
-		if (u < 0)
-		{
-			nearest = nodeA;
-		} else if (u > 1)
-		{
-			nearest = nodeB;
-		} else
-		{
-			// nearest point on line is between nodeA and nodeB
-			nearest = new Node(nodeA.x() + (int) (u * distanceX), nodeA.y() + (int) (u * distanceY));
-		}
-		
-		
-		if (nearest.equals(elementPos, (botRadius + elementRadius + safetyDistance)))
-		{
-			return true;
-		}
-		
-		return false;
-	}
-	
-	
-	private boolean testElement(IVector2 node, IVector2 elementPos, float elementRadius, float safetyDistance)
-	{
-		if (GeoMath.distancePP(node, elementPos) < (botRadius + elementRadius + safetyDistance))
-		{
-			return true;
-		}
-		
-		return false;
-	}
-	
-	
-	private boolean isPenaltyAreaInWay(IVector2 nodeA, IVector2 nodeB)
+	private boolean isPenaltyAreaInWay(final IVector2 nodeA, final IVector2 nodeB)
 	{
 		if (nodeA.equals(nodeB))
 		{
@@ -574,7 +717,7 @@ public final class FieldInformation
 	}
 	
 	
-	private boolean testPenaltyArea(IVector2 node)
+	private boolean testPenaltyArea(final IVector2 node)
 	{
 		return penaltyAreaOur.isPointInShape(node);
 	}
@@ -583,11 +726,30 @@ public final class FieldInformation
 	/**
 	 * checks if the direct link between two points is free. returns true if a collision happens
 	 */
-	private boolean isBotInWay(IVector2 a, IVector2 b, float safetyDistance)
+	private boolean isBotInWay(final IVector2 a, final IVector2 b, final float safetyDistance)
 	{
-		for (final IVector2 pos : botPosList)
+		for (final FutureBot bot : botPosList)
 		{
-			if (isElementInWay(a, b, pos, botRadius, safetyDistance))
+			for (float i = 0; (i <= (predictionIterationsMaximum * predictionStepSize)) && (!isSecondTry || (i == 0)); i += predictionStepSize)
+			{
+				IVector2 testPos = wFrame.getWorldFramePrediction().getBot(bot.getBot()).getPosAt(i);
+				if (isElementInWay(a, b, testPos, botRadius, safetyDistanceForBot(bot, safetyDistance)))
+				{
+					return true;
+				}
+			}
+		}
+		
+		return false;
+	}
+	
+	
+	private boolean testBot(final IVector2 point, final float safetyDistance)
+	{
+		for (final FutureBot bot : botPosList)
+		{
+			if (!ignoredBotsForCollDetect.contains(bot.getBot())
+					&& testElement(point, bot, botRadius, safetyDistanceForBot(bot, safetyDistance)))
 			{
 				return true;
 			}
@@ -597,293 +759,109 @@ public final class FieldInformation
 	}
 	
 	
-	private boolean testBot(IVector2 point, float safetyDistance)
+	private float safetyDistanceForBot(final FutureBot bot, float defaultSafetyDistance)
 	{
-		for (final IVector2 pos : botPosList)
+		if (specialSafetyDistances.containsKey(bot.getBot()))
 		{
-			if (testElement(point, pos, botRadius, safetyDistance))
-			{
-				return true;
-			}
+			defaultSafetyDistance = Math.min(specialSafetyDistances.get(bot.getBot()), defaultSafetyDistance);
+		}
+		return defaultSafetyDistance;
+	}
+	
+	
+	/**
+	 * checks if element would be hit by driving
+	 * algorithm: http://local.wasp.uwa.edu.au/~pbourke/geometry/pointline/
+	 * 
+	 * @param nodeA
+	 * @param nodeB
+	 * @return
+	 */
+	private boolean isElementInWay(final IVector2 nodeA, final IVector2 nodeB, final IVector2 elementPos,
+			final float elementRadius,
+			final float safetyDistance)
+	{
+		if (nodeA.equals(nodeB))
+		{
+			return false;
+		}
+		
+		final float distanceX = nodeB.x() - nodeA.x();
+		final float distanceY = nodeB.y() - nodeA.y();
+		IVector2 nearest = null;
+		
+		final float u = (Math.abs((elementPos.x() - nodeA.x()) * distanceX) + Math.abs((elementPos.y() - nodeA.y())
+				* distanceY))
+				/ ((distanceX * distanceX) + (distanceY * distanceY));
+		
+		if (u < 0)
+		{
+			nearest = nodeA;
+		} else if (u > 1)
+		{
+			nearest = nodeB;
+		} else
+		{
+			// nearest point on line is between nodeA and nodeB
+			nearest = new Node(nodeA.x() + (int) (u * distanceX), nodeA.y() + (int) (u * distanceY));
+		}
+		
+		
+		if (nearest.equals(elementPos, (botRadius + elementRadius + safetyDistance)))
+		{
+			return true;
 		}
 		
 		return false;
 	}
 	
 	
-	private void putBotsInList()
+	private boolean testElement(final IVector2 node, final IVector2 elementPos, final float elementRadius,
+			final float safetyDistance)
 	{
-		// clear botPosList from last run-cycle
-		botPosList.clear();
-		
-		botPosList.addAll(getAllBotsExceptMe());
-		
-		for (TrackedBot bot : ignoredBots)
+		if (GeoMath.distancePP(node, elementPos) < (botRadius + elementRadius + safetyDistance))
 		{
-			botPosList.remove(bot.getPos());
+			return true;
 		}
 		
-		for (IVector2 obstacle : additionalObstacles)
-		{
-			botPosList.add(new Node(obstacle));
-		}
-		
-		// if bot blocks anything, don't consider it
-		for (IVector2 obstacle : ignoredPoints)
-		{
-			removeBotsNearPoint(obstacle);
-		}
+		return false;
 	}
 	
 	
-	private List<IVector2> getAllBotsExceptMe()
-	{
-		List<IVector2> botList = new ArrayList<IVector2>(13);
-		// store tigers
-		for (final TrackedTigerBot bot : wFrame.tigerBotsVisible.values())
-		{
-			// the bot itself is no obstacle
-			if (!bot.getId().equals(botId))
-			{
-				
-				botList.add(new Node(bot.getPos()));
-			}
-		}
-		// store opponents
-		for (final TrackedBot bot : wFrame.foeBots.values())
-		{
-			// if bot blocks goal, don't consider it
-			botList.add(new Node(bot.getPos()));
-		}
-		return botList;
-	}
-	
+	/************************************************************************************
+	 ****************** Handling if the bot is in the penalty area **********************
+	 ************************************************************************************/
 	
 	/**
-	 * @param point
+	 * checks if the bot drives into the penalty area despite he is not allowed to do this
+	 * 
 	 * @return
 	 */
-	private List<IVector2> removeBotsNearPoint(IVector2 point)
+	public boolean isBotIllegallyInPenaltyArea()
 	{
-		final List<IVector2> botsAtPoint = new ArrayList<IVector2>();
-		for (final IVector2 bot : botPosList)
-		{
-			if (isBotNearPoint(bot, point, usedSafetyDistance, botRadius))
-			{
-				botsAtPoint.add(bot);
-			}
-		}
-		for (final IVector2 bot : botsAtPoint)
-		{
-			botPosList.remove(bot);
-		}
-		return botsAtPoint;
+		return (!moveCon.isPenaltyAreaAllowed() && penaltyAreaOur.isPointInShape(wFrame.getBot(botId).getPos()));
 	}
 	
 	
 	/**
-	 * @param bot
-	 * @param point
-	 * @param safetyDistance
-	 * @param obstacleRadius
+	 * gets the nearest point outside of the penalty area for the bot (the bot needs to be in the pen area)<br>
+	 * it is not the point on the penarea line but in a distance of botRadius outside of the penalty area
+	 * 
 	 * @return
 	 */
-	public boolean isBotNearPoint(IVector2 bot, IVector2 point, float safetyDistance, float obstacleRadius)
+	public IVector2 getNearestNodeOutsidePenArea()
 	{
-		return GeoMath.distancePP(bot, point) < (safetyDistance + botRadius + obstacleRadius);
-	}
-	
-	
-	/**
-	 * puts all bots (except bot, this path is for) in list, so i can iterate over them more easily
-	 * @param specialObstacle
-	 * 
-	 */
-	public void putBotsInList(IVector2 specialObstacle)
-	{
-		additionalObstacles.add(specialObstacle);
-		putBotsInList();
-	}
-	
-	
-	/**
-	 * bots ad the points added here will be ignored as obstacles
-	 * 
-	 * @param ignore
-	 */
-	public void addIgnoredPoitn(IVector2 ignore)
-	{
-		ignoredPoints.add(ignore);
-		putBotsInList();
-	}
-	
-	
-	private void adjustTargetIfBallIsTarget()
-	{
-		if (considerBall)
-		{
-			if (isBallAtTarget()
-					&& (wFrame.getTiger(botId).getPos().subtractNew(preprocessedDestination).getLength2() > getNeededDistanceFromBallToStartPathPlanning()))
-			{
-				IVector2 ballToGoal = preprocessedDestination.subtractNew(ballPos);
-				if (ballToGoal.isZeroVector())
-				{
-					log.warn("Do not use the ball position as target.", new Exception());
-				} else
-				{
-					IVector2 ballToGoalScaled = ballToGoal.scaleToNew(getNeededDistanceFromBallToStartPathPlanning());
-					preprocessedDestination = ballPos.addNew(ballToGoalScaled);
-				}
-				targetAdjustedBecauseOfBall = true;
-			}
-		}
-	}
-	
-	
-	private void adjustStartIfBallOrBotIsAtStart()
-	{
-		IVector2 possiblePreprocessedStart = null;
-		List<IVector2> obstacles = obstaclesAtPoint(preprocessedStart);
-		if (considerBots)
-		{
-			for (IVector2 obstacle : obstacles)
-			{
-				possiblePreprocessedStart = preprocessStartForObstacle(obstacle, possiblePreprocessedStart, false);
-				startAdjustedBecauseOfBall = true;
-			}
-		}
-		if (considerBall)
-		{
-			if (isBotNearPoint(wFrame.ball.getPos(), preprocessedStart, safetyDistanceBall, ballRadius))
-			{
-				possiblePreprocessedStart = preprocessStartForObstacle(wFrame.ball.getPos(), possiblePreprocessedStart,
-						true);
-				startAdjustedBecauseOfBall = true;
-			}
-		}
-		if (startAdjustedBecauseOfBall)
-		{
-			if (possiblePreprocessedStart == null)
-			{
-				log.warn("There was no point found for the bot to drive securely to its destination.");
-			} else
-			{
-				preprocessedStart = possiblePreprocessedStart;
-			}
-		}
-	}
-	
-	
-	private List<IVector2> obstaclesAtPoint(IVector2 point)
-	{
-		List<IVector2> obstacles = new ArrayList<IVector2>();
-		for (final IVector2 bot : getAllBotsExceptMe())
-		{
-			if (isBotNearPoint(bot, point, usedSafetyDistance, botRadius))
-			{
-				obstacles.add(bot);
-			}
-		}
-		return obstacles;
-	}
-	
-	
-	/**
-	 * find a point near the goal, where the bot could drive
-	 * 
-	 * @param obstacle
-	 * @param isBall
-	 * @return null if no point found, otherwise the point
-	 */
-	private IVector2 preprocessStartForObstacle(IVector2 obstacle, IVector2 possiblePreprocessedStart, boolean isBall)
-	{
-		IVector2 obstacleToStart = preprocessedStart.subtractNew(obstacle);
-		float radius = botRadius;
-		float safety = usedSafetyDistance;
-		if (isBall)
-		{
-			radius = ballRadius;
-			safety = safetyDistanceBall;
-		}
-		float neededDistance = radius + safety + botRadius;
-		double distanceOrthogonalMovementSqare = ((neededDistance * neededDistance) - (obstacleToStart.getLength2() * obstacleToStart
-				.getLength2()));
-		float distanceOrthogonalMovement = (float) Math.sqrt(distanceOrthogonalMovementSqare);
-		IVector2 orthogonalToObstacleToStart = obstacleToStart.getNormalVector();
-		IVector2 startOnCircle = preprocessedStart.addNew(orthogonalToObstacleToStart
-				.scaleToNew(distanceOrthogonalMovement));
-		IVector2 obstacleToStartOnCircle = startOnCircle.subtractNew(obstacle);
-		float angleToRotate = AngleMath.difference(obstacleToStart.getAngle(), obstacleToStartOnCircle.getAngle());
-		float distanceToRealTarget = Float.MAX_VALUE;
-		if (possiblePreprocessedStart != null)
-		{
-			distanceToRealTarget = possiblePreprocessedStart.subtractNew(preprocessedDestination).getLength2();
-		}
-		float endAngle = angleToRotate * 2;
-		float currentAngle = 0;
-		// log.warn("circle around: " + obstacle + "(" + preprocessedStart + ") " + angleToRotate);
-		for (@SuppressWarnings("unused")
-		int i = 0; currentAngle < endAngle; i++)
-		{
-			currentAngle += 0.1;
-			IVector2 possibleStart = GeoMath.stepAlongCircle(startOnCircle, obstacle, currentAngle);
-			// log.warn("possibleStart: " + possibleStart);
-			if (isPointOK(possibleStart))
-			{
-				float distance = possibleStart.subtractNew(preprocessedDestination).getLength2();
-				if (distance < distanceToRealTarget)
-				{
-					distanceToRealTarget = distance;
-					possiblePreprocessedStart = possibleStart;
-				}
-			}
-		}
-		return possiblePreprocessedStart;
-	}
-	
-	
-	private boolean isBallAtTarget()
-	{
-		return wFrame.ball.getPos().equals(preprocessedDestination, getNeededDistanceFromBallToStartPathPlanning());
-	}
-	
-	
-	private float getNeededDistanceFromBallToStartPathPlanning()
-	{
-		return botRadius + ballRadius + (AIConfig.getErrt().getSafetyDistanceBall() * 2);
+		IVector2 tigerPos = wFrame.getBot(botId).getPos();
+		IVector2 pointOnLine = penaltyAreaOur.nearestPointOutside(tigerPos);
+		IVector2 directionVectorToOutside = pointOnLine.subtractNew(tigerPos);
+		directionVectorToOutside = directionVectorToOutside.scaleToNew(0);
+		return pointOnLine.addNew(directionVectorToOutside);
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/**
-	 * @param usedSafetyDistance
-	 */
-	public void setUsedSafetyDistance(float usedSafetyDistance)
-	{
-		this.usedSafetyDistance = usedSafetyDistance;
-		putBotsInList();
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public boolean isProhibitOpponentsHalf()
-	{
-		return prohibitOpponentsHalf;
-	}
-	
-	
-	/**
-	 * @return the botPosList
-	 */
-	public List<IVector2> getBotPosList()
-	{
-		return botPosList;
-	}
-	
 	
 	/**
 	 * @return the goal
@@ -906,7 +884,7 @@ public final class FieldInformation
 	/**
 	 * @param safetyDistanceBall the safetyDistanceBall to set
 	 */
-	public void setSafetyDistanceBall(float safetyDistanceBall)
+	public void setSafetyDistanceBall(final float safetyDistanceBall)
 	{
 		this.safetyDistanceBall = safetyDistanceBall;
 	}
@@ -931,20 +909,73 @@ public final class FieldInformation
 	
 	
 	/**
-	 * @return the avoidedCollisons
+	 * @return the wFrame
 	 */
-	public int getAvoidedCollisons()
+	public SimpleWorldFrame getwFrame()
 	{
-		return avoidedCollisons;
+		return wFrame;
 	}
 	
 	
 	/**
-	 * @param avoidedCollisons the avoidedCollisons to set
+	 * @return the isSecondTry
 	 */
-	public void setAvoidedCollisons(int avoidedCollisons)
+	public boolean isSecondTry()
 	{
-		this.avoidedCollisons = avoidedCollisons;
+		return isSecondTry;
+	}
+	
+	
+	/**
+	 * @param isSecondTry the isSecondTry to set
+	 */
+	public void setSecondTry(final boolean isSecondTry)
+	{
+		this.isSecondTry = isSecondTry;
+		updateInternalFields();
+	}
+	
+	
+	/**
+	 * @return the preprocessedStart
+	 */
+	public IVector2 getPreprocessedStart()
+	{
+		return preprocessedStart;
+	}
+	
+	
+	/**
+	 * @param preprocessedStart the preprocessedStart to set
+	 */
+	public void setPreprocessedStart(final IVector2 preprocessedStart)
+	{
+		this.preprocessedStart = preprocessedStart;
+	}
+	
+	private class FutureBot extends Vector2
+	{
+		/**  */
+		private static final long	serialVersionUID	= 1L;
+		private final BotID			bot;
+		
+		
+		private FutureBot(final BotID botID, final IVector2 pos)
+		{
+			super(pos);
+			bot = botID;
+		}
+		
+		
+		/**
+		 * @return the bot
+		 */
+		public BotID getBot()
+		{
+			return bot;
+		}
+		
+		
 	}
 	
 	

@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 12.09.2010
  * Author(s): Oliver Steinbrecher <OST1988@aol.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview;
@@ -12,10 +11,9 @@ package edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.ButtonModel;
 import javax.swing.DefaultButtonModel;
@@ -25,37 +23,34 @@ import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
+import edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter.EAIControlState;
 
 
 /**
  * This panel controls the ai sub-modules.
  * 
  * @author Oliver, Malte
- * 
  */
-public class ModuleControlPanel extends JPanel implements IChangeGUIMode
+public class ModuleControlPanel extends JPanel implements IAIModeChanged
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long								serialVersionUID	= -2509991904665753934L;
-	private static final String							TITLE					= "Sub-Module Controller";
+	private static final long						serialVersionUID	= -2509991904665753934L;
 	
-	private final JRadioButton								matchControl;
-	private final JRadioButton								mixedTeamControl;
-	private final JRadioButton								athenaControl;
-	private final JRadioButton								lachesisControl;
-	private final JRadioButton								emergencyControl;
+	private final JRadioButton						matchControl;
+	private final JRadioButton						mixedTeamControl;
+	private final JRadioButton						athenaControl;
+	private final JRadioButton						emergencyControl;
 	
-	private final JTabbedPane								tabbedPane;
-	private final PlayControlPanel						playPanel;
-	private final RoleControlPanel						rolePanel;
-	private final TacticalFieldControlPanel			tacticalFieldPanel;
-	private final MetisCalculatorsPanel					metisCalculatorsPanel;
-	private final ApollonControlPanel					learningPanel;
-	private final ButtonGroup								modeGroup;
+	private final JTabbedPane						tabbedPane;
+	private final PlayControlPanel				playPanel;
+	private final RoleControlPanel				rolePanel;
+	private final TacticalFieldControlPanel	tacticalFieldPanel;
+	private final MetisCalculatorsPanel			metisCalculatorsPanel;
+	private final ButtonGroup						modeGroup;
 	
-	private final List<IModuleControlPanelObserver>	observers			= new LinkedList<IModuleControlPanelObserver>();
+	private final List<IAIModeChanged>			observers			= new CopyOnWriteArrayList<IAIModeChanged>();
 	
 	
 	// --------------------------------------------------------------------------
@@ -65,62 +60,52 @@ public class ModuleControlPanel extends JPanel implements IChangeGUIMode
 	 */
 	public ModuleControlPanel()
 	{
-		setLayout(new MigLayout("fill"));
-		setBorder(BorderFactory.createTitledBorder(TITLE));
+		setLayout(new MigLayout("insets 0 0 0 0"));
 		
-		
-		final JPanel controlPanel = new JPanel(new MigLayout("fill", ""));
-		matchControl = new JRadioButton("Match Mode");
+		final JPanel controlPanel = new JPanel(new MigLayout("insets 0 0 0 0", "", ""));
+		matchControl = new JRadioButton("Match");
 		matchControl.addActionListener(new MatchModeControlListener());
 		controlPanel.add(matchControl);
 		
-		mixedTeamControl = new JRadioButton("Mixed Team Mode");
+		mixedTeamControl = new JRadioButton("Mixed Team");
 		mixedTeamControl.addActionListener(new MixedTeamControlListener());
 		controlPanel.add(mixedTeamControl);
 		
-		athenaControl = new JRadioButton("Play Test Mode");
+		athenaControl = new JRadioButton("Test");
 		athenaControl.addActionListener(new AthenaControlListener());
 		controlPanel.add(athenaControl);
 		
-		lachesisControl = new JRadioButton("Role Test Mode");
-		lachesisControl.addActionListener(new LachesisControlListener());
-		controlPanel.add(lachesisControl);
-		
-		emergencyControl = new JRadioButton("Emergency Mode");
+		emergencyControl = new JRadioButton("Emergency");
 		emergencyControl.addActionListener(new EmergencyControlListener());
 		controlPanel.add(emergencyControl);
 		
 		modeGroup = new ButtonGroup();
 		modeGroup.add(matchControl);
 		modeGroup.add(mixedTeamControl);
-		modeGroup.add(lachesisControl);
 		modeGroup.add(athenaControl);
 		modeGroup.add(emergencyControl);
 		final ButtonModel btnModel = new DefaultButtonModel();
 		btnModel.setGroup(modeGroup);
-		// modeGroup.setSelected(btnModel, true);
-		athenaControl.setSelected(true);
+		matchControl.setSelected(true);
 		
 		
-		final JPanel moduleStates = new JPanel(new MigLayout("fill"));
+		final JPanel moduleStates = new JPanel(new MigLayout(""));
 		moduleStates.add(controlPanel);
 		
 		playPanel = new PlayControlPanel();
 		rolePanel = new RoleControlPanel();
 		tacticalFieldPanel = new TacticalFieldControlPanel();
 		metisCalculatorsPanel = new MetisCalculatorsPanel();
-		learningPanel = new ApollonControlPanel();
 		
 		final JPanel lachesisPanel = new JPanel(new MigLayout("fill"));
 		lachesisPanel.add(rolePanel);
 		
 		
 		tabbedPane = new JTabbedPane();
-		tabbedPane.addTab("Athena", playPanel);
-		tabbedPane.addTab("Lachesis", rolePanel);
+		tabbedPane.addTab("Plays", playPanel);
+		tabbedPane.addTab("Roles", rolePanel);
 		tabbedPane.addTab("Metis", tacticalFieldPanel);
 		tabbedPane.addTab("Metis Calcs", metisCalculatorsPanel);
-		tabbedPane.addTab("Apollon", learningPanel);
 		
 		
 		add(moduleStates, "wrap");
@@ -132,13 +117,10 @@ public class ModuleControlPanel extends JPanel implements IChangeGUIMode
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * @param observer
 	 */
-	public void addObserver(IModuleControlPanelObserver observer)
+	public void addObserver(final IAIModeChanged observer)
 	{
 		synchronized (observers)
 		{
@@ -148,15 +130,20 @@ public class ModuleControlPanel extends JPanel implements IChangeGUIMode
 	
 	
 	/**
-	 * @param oddObserver
+	 * @param observer
 	 */
-	public void removeObserver(IModuleControlPanelObserver oddObserver)
+	public void removeObserver(final IAIModeChanged observer)
 	{
 		synchronized (observers)
 		{
-			observers.remove(oddObserver);
+			observers.remove(observer);
 		}
 	}
+	
+	
+	// --------------------------------------------------------------------------
+	// --- methods --------------------------------------------------------------
+	// --------------------------------------------------------------------------
 	
 	
 	/**
@@ -186,86 +173,43 @@ public class ModuleControlPanel extends JPanel implements IChangeGUIMode
 	}
 	
 	
+	@Override
+	public void onAiModeChanged(final EAIControlState mode)
+	{
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				switch (mode)
+				{
+					case EMERGENCY_MODE:
+						emergencyControl.setSelected(true);
+						break;
+					case MATCH_MODE:
+						tabbedPane.setSelectedComponent(playPanel);
+						matchControl.setSelected(true);
+						break;
+					case MIXED_TEAM_MODE:
+						tabbedPane.setSelectedComponent(playPanel);
+						mixedTeamControl.setSelected(true);
+						break;
+					case TEST_MODE:
+						athenaControl.setSelected(true);
+						break;
+					default:
+						break;
+				
+				}
+				playPanel.onAiModeChanged(mode);
+				rolePanel.onAiModeChanged(mode);
+			}
+		});
+	}
+	
+	
 	/**
-	 * @return
 	 */
-	public ApollonControlPanel getApollonControlPanel()
-	{
-		return learningPanel;
-	}
-	
-	
-	@Override
-	public void setPlayTestMode()
-	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				tabbedPane.setSelectedComponent(playPanel);
-				
-				playPanel.setPlayTestMode();
-				rolePanel.setPlayTestMode();
-			}
-		});
-	}
-	
-	
-	@Override
-	public void setRoleTestMode()
-	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				tabbedPane.setSelectedComponent(rolePanel);
-				
-				playPanel.setRoleTestMode();
-				rolePanel.setRoleTestMode();
-			}
-		});
-	}
-	
-	
-	@Override
-	public void setMatchMode()
-	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				tabbedPane.setSelectedComponent(playPanel);
-				
-				playPanel.setMatchMode();
-				rolePanel.setMatchMode();
-			}
-		});
-	}
-	
-	
-	@Override
-	public void setEmergencyMode()
-	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				tabbedPane.setSelectedComponent(playPanel);
-				
-				emergencyControl.setSelected(true);
-				
-				playPanel.setEmergencyMode();
-				rolePanel.setEmergencyMode();
-			}
-		});
-	}
-	
-	
-	@Override
 	public void onStart()
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -278,19 +222,15 @@ public class ModuleControlPanel extends JPanel implements IChangeGUIMode
 				matchControl.setEnabled(true);
 				mixedTeamControl.setEnabled(true);
 				athenaControl.setEnabled(true);
-				lachesisControl.setEnabled(true);
 				emergencyControl.setEnabled(true);
-				
-				playPanel.onStop();
-				rolePanel.onStop();
-				
-				setPlayTestMode();
+				// onAiModeChanged(EAIControlState.TEST_MODE);
 			}
 		});
 	}
 	
 	
-	@Override
+	/**
+	 */
 	public void onStop()
 	{
 		SwingUtilities.invokeLater(new Runnable()
@@ -299,15 +239,11 @@ public class ModuleControlPanel extends JPanel implements IChangeGUIMode
 			public void run()
 			{
 				setEnabled(false);
-				
 				matchControl.setEnabled(false);
 				mixedTeamControl.setEnabled(false);
 				athenaControl.setEnabled(false);
-				lachesisControl.setEnabled(false);
 				emergencyControl.setEnabled(false);
-				
-				playPanel.onStop();
-				rolePanel.onStop();
+				// onAiModeChanged(EAIControlState.EMERGENCY_MODE);
 			}
 		});
 	}
@@ -316,14 +252,11 @@ public class ModuleControlPanel extends JPanel implements IChangeGUIMode
 	private class AthenaControlListener implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
-			synchronized (observers)
+			for (IAIModeChanged o : observers)
 			{
-				for (final IModuleControlPanelObserver o : observers)
-				{
-					o.onPlayTestMode();
-				}
+				o.onAiModeChanged(EAIControlState.TEST_MODE);
 			}
 		}
 	}
@@ -331,14 +264,11 @@ public class ModuleControlPanel extends JPanel implements IChangeGUIMode
 	private class MatchModeControlListener implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
-			synchronized (observers)
+			for (IAIModeChanged o : observers)
 			{
-				for (final IModuleControlPanelObserver o : observers)
-				{
-					o.onMatchMode();
-				}
+				o.onAiModeChanged(EAIControlState.MATCH_MODE);
 			}
 		}
 	}
@@ -346,45 +276,24 @@ public class ModuleControlPanel extends JPanel implements IChangeGUIMode
 	private class MixedTeamControlListener implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
-			synchronized (observers)
+			for (IAIModeChanged o : observers)
 			{
-				for (final IModuleControlPanelObserver o : observers)
-				{
-					o.onMixedTeamMode();
-				}
+				o.onAiModeChanged(EAIControlState.MIXED_TEAM_MODE);
 			}
 		}
 	}
 	
-	
-	private class LachesisControlListener implements ActionListener
-	{
-		@Override
-		public void actionPerformed(ActionEvent arg0)
-		{
-			synchronized (observers)
-			{
-				for (final IModuleControlPanelObserver o : observers)
-				{
-					o.onRoleTestMode();
-				}
-			}
-		}
-	}
 	
 	private class EmergencyControlListener implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent arg0)
+		public void actionPerformed(final ActionEvent arg0)
 		{
-			synchronized (observers)
+			for (IAIModeChanged o : observers)
 			{
-				for (final IModuleControlPanelObserver o : observers)
-				{
-					o.onEmergencyMode();
-				}
+				o.onAiModeChanged(EAIControlState.EMERGENCY_MODE);
 			}
 		}
 	}

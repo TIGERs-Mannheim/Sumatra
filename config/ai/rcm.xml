@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rcm base="edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.inputDevice.sendAction">
+    <TigerV2Interpreter>
+        <compassThreshold comment="">0.2</compassThreshold>
+        <maxDribbleSpeed comment="Maximum speed for dribble roll [rotations per minute]">8000.0</maxDribbleSpeed>
+        <maxDribbleSpeed:GRSIM comment="Maximum speed for dribble roll [rotations per minute]">8000.0</maxDribbleSpeed:GRSIM>
+        <maxKickSpeed comment="Maximum discharge time for kick: 10000 [us]">10000</maxKickSpeed>
+        <maxChipSpeed comment="Maximum discharge time for chip: 10000 [us]">10000</maxChipSpeed>
+        <speedHigh comment="">3.0</speedHigh>
+        <speedHigh:GRSIM comment="">3.0</speedHigh:GRSIM>
+        <speedLow comment="">1.0</speedLow>
+        <speedLow:GRSIM comment="">1.0</speedLow:GRSIM>
+        <speedRotateHigh comment="">10.0</speedRotateHigh>
+        <speedRotateHigh:GRSIM comment="">10.0</speedRotateHigh:GRSIM>
+        <speedRotateLow comment="">5.0</speedRotateLow>
+        <speedRotateLow:GRSIM comment="">5.0</speedRotateLow:GRSIM>
+    </TigerV2Interpreter>
+</rcm>

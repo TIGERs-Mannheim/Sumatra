@@ -17,15 +17,17 @@ import java.util.List;
 import javax.swing.JLabel;
 import javax.swing.JTable;
 
+import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.HierarchicalConfiguration.Node;
 import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.commons.configuration.tree.ConfigurationNode;
 
 import edu.dhbw.mannheim.tigers.sumatra.view.commons.treetable.ATreeTableModel;
 import edu.dhbw.mannheim.tigers.sumatra.view.commons.treetable.ITreeTableModel;
 
 
 /**
- * An {@link ATreeTableModel} implementation based on a {@link XMLConfiguration}.
+ * An {@link ATreeTableModel} implementation based on a {@link HierarchicalConfiguration}.
  * 
  * @author Gero
  */
@@ -34,11 +36,12 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final String[]		COLUMNS	= new String[] { "Node", "Value", "Comment" };
-	private static final Class<?>[]	CLASSES	= new Class<?>[] { ITreeTableModel.class, String.class, String.class };
+	private static final String[]					COLUMNS	= new String[] { "Node", "Value", "Comment" };
+	private static final Class<?>[]				CLASSES	= new Class<?>[] { ITreeTableModel.class, String.class,
+			String.class											};
 	
 	
-	private final XMLConfiguration	xml;
+	private final HierarchicalConfiguration	config;
 	
 	
 	// --------------------------------------------------------------------------
@@ -47,11 +50,11 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 	/**
 	 * @param xml
 	 */
-	public ConfigXMLTreeTableModel(XMLConfiguration xml)
+	public ConfigXMLTreeTableModel(HierarchicalConfiguration xml)
 	{
 		// Hopefully there is no comment as first element... :-P
 		super(xml.getRoot());
-		this.xml = xml;
+		config = xml;
 	}
 	
 	
@@ -77,10 +80,15 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 				break;
 			
 			case 2:
+				for (ConfigurationNode attr : node.getAttributes("comment"))
+				{
+					result = attr.getValue().toString();
+					break;
+				}
 				final org.w3c.dom.Node comment = getComment(node);
 				if (comment != null)
 				{
-					result = comment.getTextContent();
+					result += " " + comment.getTextContent();
 				}
 				break;
 		}
@@ -249,7 +257,10 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 	{
 		final Node xmlNode = (Node) obj;
 		final org.w3c.dom.Node node = (org.w3c.dom.Node) xmlNode.getReference();
-		
+		if (node == null)
+		{
+			return null;
+		}
 		org.w3c.dom.Node prevSibl = node.getPreviousSibling();
 		while (prevSibl != null)
 		{
@@ -296,8 +307,8 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 	/**
 	 * @return The {@link org.w3c.dom.Document} the model is based on
 	 */
-	public XMLConfiguration getXMLConfiguration()
+	public HierarchicalConfiguration getConfiguration()
 	{
-		return xml;
+		return config;
 	}
 }

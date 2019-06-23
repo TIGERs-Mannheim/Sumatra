@@ -17,18 +17,16 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AthenaAiFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.MetisAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.PermutationGenerator;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.score.AScore;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.score.BehaviourScore;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.score.EScore;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.score.FeatureScore;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.score.PenaltyScore;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.score.RoleToBallScore;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.score.RoleToBotScore;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 
 
@@ -38,7 +36,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARo
  * reaching every given roles target position and then chooses the possibility with the lowest 'cost'.
  * </p>
  * <p>
- * The term 'cost' is defined by the function {@link #calcCost(TrackedTigerBot, ARole, AIInfoFrame)}.
+ * The term 'cost' is defined by the function {@link #calcCost(ARole, IVector2, AthenaAiFrame)}.
  * </p>
  * 
  * Other things then distances between current and target position which are worth considering:
@@ -49,7 +47,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARo
  * <li>(...)</li>
  * </ul>
  * 
- * @see OptimizedRoleAssigner#assignRoles(Collection, List, AIInfoFrame)
+ * @see OptimizedRoleAssigner#assignRoles(Collection, List, MetisAiFrame)
  * 
  * @author Gero, Oliver Steinbrecher
  * 
@@ -99,10 +97,9 @@ public class OptimizedRoleAssigner implements IRoleAssigner
 		scores = new HashMap<EScore, AScore>();
 		
 		scores.put(EScore.PENALTY, new PenaltyScore());
-		scores.put(EScore.BOT_ROLE_DISTANCE, new RoleToBotScore());
-		scores.put(EScore.BALL_ROLE_DISTANCE, new RoleToBallScore());
+		// scores.put(EScore.BOT_ROLE_DISTANCE, new RoleToBotScore());
+		// scores.put(EScore.BALL_ROLE_DISTANCE, new RoleToBallScore());
 		scores.put(EScore.FEATURES, new FeatureScore());
-		scores.put(EScore.BEHAVIOUR, new BehaviourScore());
 	}
 	
 	
@@ -156,9 +153,9 @@ public class OptimizedRoleAssigner implements IRoleAssigner
 	 * </p>
 	 */
 	@Override
-	public void assignRoles(Collection<TrackedTigerBot> assignees, List<ARole> rolesToAssign, AIInfoFrame frame)
+	public void assignRoles(Collection<TrackedTigerBot> assignees, List<ARole> rolesToAssign, MetisAiFrame frame)
 	{
-		initPaths(frame.worldFrame.tigerBotsAvailable.size());
+		initPaths(frame.getWorldFrame().tigerBotsAvailable.size());
 		
 		// ##### Check for easy cases
 		final int numTigers = assignees.size();
@@ -178,7 +175,7 @@ public class OptimizedRoleAssigner implements IRoleAssigner
 				log.warn("More roles then bots in this assignment!");
 				// Anyway, take first role in rolesToAssign
 			}
-			assigner.assign(bot, assignees, rolesToAssign.get(0), frame);
+			assigner.assign(bot, assignees, rolesToAssign.get(0));
 			// That was easy!
 			return;
 		}
@@ -272,7 +269,7 @@ public class OptimizedRoleAssigner implements IRoleAssigner
 			}
 			
 			final ARole role = rolesToAssign.get(roleI);
-			assigner.assign(tBot, it, role, frame);
+			assigner.assign(tBot, it, role);
 			
 			tiger++;
 		}
@@ -291,10 +288,10 @@ public class OptimizedRoleAssigner implements IRoleAssigner
 	 * @param frame
 	 * @return The cost this tiger would have to effort to take this role
 	 */
-	private int calcCost(TrackedTigerBot tiger, ARole role, AIInfoFrame frame)
+	private int calcCost(TrackedTigerBot tiger, ARole role, MetisAiFrame frame)
 	{
 		// use this method to deactivate a score. there is not yet a gui interface TODO unassigned create gui
-		scores.get(EScore.BALL_ROLE_DISTANCE).setActive(true);
+		// scores.get(EScore.BALL_ROLE_DISTANCE).setActive(true);
 		int score = 0;
 		for (AScore method : scores.values())
 		{
@@ -315,7 +312,7 @@ public class OptimizedRoleAssigner implements IRoleAssigner
 	 * @param frame
 	 * @return
 	 */
-	public Map<ARole, IVector2> assign(List<ARole> roles, List<IVector2> positions, AIInfoFrame frame)
+	public Map<ARole, IVector2> assign(List<ARole> roles, List<IVector2> positions, AthenaAiFrame frame)
 	{
 		Map<ARole, IVector2> resultMap = new HashMap<ARole, IVector2>();
 		initPaths(roles.size());
@@ -410,7 +407,7 @@ public class OptimizedRoleAssigner implements IRoleAssigner
 	 * @param frame
 	 * @return The cost this tiger would have to effort to take this role
 	 */
-	private int calcCost(final ARole role, final IVector2 position, final AIInfoFrame frame)
+	private int calcCost(final ARole role, final IVector2 position, final AthenaAiFrame frame)
 	{
 		AScore distScore = scores.get(EScore.BOT_ROLE_DISTANCE);
 		return distScore.calcScoreOnPos(position, role, frame);

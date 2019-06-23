@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 15.01.2011
  * Author(s): Malte
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.referee;
@@ -24,6 +23,7 @@ import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
 
 import net.miginfocom.swing.MigLayout;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee.Command;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.referee.RefereeMsg;
 import edu.dhbw.mannheim.tigers.sumatra.view.log.internals.TextPane;
 
@@ -32,7 +32,6 @@ import edu.dhbw.mannheim.tigers.sumatra.view.log.internals.TextPane;
  * Incoming referee messages are displayed here.
  * 
  * @author DionH
- * 
  */
 public class ShowRefereeMsgPanel extends JPanel
 {
@@ -42,13 +41,13 @@ public class ShowRefereeMsgPanel extends JPanel
 	private static final long		serialVersionUID	= -508393753936993622L;
 	
 	private final TextPane			commandsList;
+	private Command					lastCmd				= null;
 	private final JLabel				time;
 	private final JLabel				timeout;
 	private final JLabel				goals;
 	
-	private long						oldId;
 	private final DecimalFormat	df2					= new DecimalFormat("00");
-	Color									color					= new Color(0, 0, 0);
+	private final Color				color					= new Color(0, 0, 0);
 	
 	
 	// --------------------------------------------------------------------------
@@ -59,8 +58,6 @@ public class ShowRefereeMsgPanel extends JPanel
 	public ShowRefereeMsgPanel()
 	{
 		setLayout(new MigLayout());
-		
-		oldId = -1;
 		
 		// Goals
 		this.add(new JLabel("Goals:"));
@@ -90,6 +87,8 @@ public class ShowRefereeMsgPanel extends JPanel
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	
 	/**
 	 * @param msg
 	 */
@@ -101,23 +100,30 @@ public class ShowRefereeMsgPanel extends JPanel
 			public void run()
 			{
 				// Goals
-				// int a = msg.goalsTigers & 0x80;
-				goals.setText(msg.getTeamInfoTigers().getScore() + " (T) : (E) " + msg.getTeamInfoThem().getScore());
+				goals.setText(msg.getTeamInfoYellow().getScore() + " (Y) : (B) " + msg.getTeamInfoBlue().getScore());
 				
 				// Time
 				final long min = TimeUnit.MICROSECONDS.toMinutes(msg.getStageTimeLeft());
 				final long sec = TimeUnit.MICROSECONDS.toSeconds(msg.getStageTimeLeft()) - (60 * min);
 				time.setText(df2.format(min) + ":" + df2.format(sec) + " (" + msg.getStage().name() + ")");
 				
-				// Timeouts
-				final long minTo = TimeUnit.MICROSECONDS.toMinutes(msg.getTeamInfoTigers().getTimeoutTime());
-				final long secTo = TimeUnit.MICROSECONDS.toSeconds(msg.getTeamInfoTigers().getTimeoutTime()) - (60 * minTo);
-				timeout.setText(msg.getTeamInfoTigers().getTimeouts() + " (" + df2.format(minTo) + ":" + df2.format(secTo)
+				// Timeouts yellow
+				long minTo = TimeUnit.MICROSECONDS.toMinutes(msg.getTeamInfoYellow().getTimeoutTime());
+				long secTo = TimeUnit.MICROSECONDS.toSeconds(msg.getTeamInfoYellow().getTimeoutTime()) - (60 * minTo);
+				timeout.setText("Y:" + msg.getTeamInfoYellow().getTimeouts() + " (" + df2.format(minTo) + ":"
+						+ df2.format(secTo)
 						+ ")");
 				
-				// Command
-				if (msg.getCommandCounter() != oldId)
+				// Timeouts blue
+				minTo = TimeUnit.MICROSECONDS.toMinutes(msg.getTeamInfoBlue().getTimeoutTime());
+				secTo = TimeUnit.MICROSECONDS.toSeconds(msg.getTeamInfoBlue().getTimeoutTime()) - (60 * minTo);
+				timeout.setText(timeout.getText() + " B:" + msg.getTeamInfoBlue().getTimeouts() + " (" + df2.format(minTo)
+						+ ":"
+						+ df2.format(secTo) + ")");
+				
+				if (!msg.getCommand().equals(lastCmd))
 				{
+					// Command
 					final StyleContext sc = StyleContext.getDefaultStyleContext();
 					final AttributeSet aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, color);
 					String msgString = "";
@@ -127,7 +133,7 @@ public class ShowRefereeMsgPanel extends JPanel
 					}
 					msgString = msgString + msg.getCommand().toString();
 					commandsList.append(msgString, aset);
-					oldId = msg.getCommandCounter();
+					lastCmd = msg.getCommand();
 				}
 			}
 		});
@@ -138,9 +144,9 @@ public class ShowRefereeMsgPanel extends JPanel
 	 */
 	public void init()
 	{
-		goals.setText("0 (T) : (E) 0");
+		goals.setText("0 (Y) : (B) 0");
 		time.setText("00:00");
-		timeout.setText("4 (05:00)");
+		timeout.setText("Y:4 (05:00) B:4 (05:00)");
 		commandsList.clear();
 	}
 	

@@ -36,24 +36,6 @@ public class Observable<S extends IObservable<S, O, E>, O extends IObserver<S, O
 	private E					lastEvent;
 	
 	
-	/*
-	 * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	 * Constructors
-	 */
-	/**
-	 * Adds the given observer to registeredObservers
-	 * @param initEvent
-	 * @param observers The {@link AObserver} that should listen to this observable.
-	 */
-	@SafeVarargs
-	public Observable(E initEvent, O... observers)
-	{
-		this(initEvent);
-		
-		addObservers(observers);
-	}
-	
-	
 	/**
 	 * @param initEvent
 	 */

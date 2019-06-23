@@ -82,9 +82,9 @@ public class OptionsPanelPresenter implements IOptionsPanelObserver
 	
 	
 	@Override
-	public void onTurnField()
+	public void onActionFired(EVisualizerOptions option, boolean state)
 	{
-		fieldPanel.onOptionChanged(EVisualizerOptions.TURN_NEXT, true);
+		fieldPanel.onOptionChanged(option, state);
 	}
 	
 	

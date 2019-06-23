@@ -16,7 +16,6 @@ import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
 
@@ -108,15 +107,8 @@ public class KickerStatusPanelV2 extends JPanel
 		final float g = green;
 		final float r = red;
 		
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				cap.setText(Float.toString(f));
-				cap.setBackground(new Color(r, g, 0));
-			}
-		});
+		cap.setText(Float.toString(f));
+		cap.setBackground(new Color(r, g, 0));
 	}
 	
 	
@@ -125,14 +117,7 @@ public class KickerStatusPanelV2 extends JPanel
 	 */
 	public void setIrLevel(final float irLvl)
 	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				ir.setText(String.format(Locale.ENGLISH, "%.3f", irLvl));
-			}
-		});
+		ir.setText(String.format(Locale.ENGLISH, "%.3f", irLvl));
 	}
 	
 	
@@ -141,13 +126,6 @@ public class KickerStatusPanelV2 extends JPanel
 	 */
 	public void setChg(final float f)
 	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				chg.setText(Float.toString(f));
-			}
-		});
+		chg.setText(Float.toString(f));
 	}
 }

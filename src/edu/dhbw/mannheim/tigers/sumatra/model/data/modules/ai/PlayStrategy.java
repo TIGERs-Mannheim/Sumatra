@@ -4,105 +4,72 @@
  * Project: TIGERS - Sumatra
  * Date: 10.01.2011
  * Author(s): Oliver Steinbrecher <OST1988@aol.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai;
 
-import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import javax.persistence.Entity;
+import net.sf.oval.constraint.NotNull;
+import net.sf.oval.constraint.Size;
 
-import org.apache.log4j.Logger;
+import com.sleepycat.persist.model.Persistent;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.IDrawableShape;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMap;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EMatchBehavior;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
+import edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter.EAIControlState;
 
 
 /**
  * This stores all tactical information.
  * 
  * @author Oliver Steinbrecher <OST1988@aol.com>
- * 
  */
-@Entity
-public class PlayStrategy implements Serializable
+@Persistent(version = 3)
+public class PlayStrategy implements IPlayStrategy
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	// Logger
-	private static final Logger	log					= Logger.getLogger(PlayStrategy.class.getName());
-	
-	/**  */
-	private static final long		serialVersionUID	= 3929719828068763160L;
 	
 	private transient List<APlay>	activePlays;
 	
 	/** Contains all finished plays of the last cycle */
 	private transient List<APlay>	finishedPlays;
 	
-	private boolean					changedPlay;
-	/** Still allowed to write {@link #changedPlay}? ({@link #setChangedPlay()}) */
-	private boolean					changedPlayLock;
-	
-	private EMatchBehavior			matchBehavior;
-	/** Still allowed to write {@link #matchBehavior}? ({@link #setMatchBehavior(EMatchBehavior)}) */
-	private boolean					matchBehaviorLock;
-	
-	
-	private boolean					forceNewDecision;
-	
-	private boolean					stateChanged;
-	
+	@NotNull
 	private BotConnection			botConnection;
+	
+	@Size(min = 4, profiles = { "compatibility" })
+	private List<IDrawableShape>	debugShapes;
+	
+	private EAIControlState			aiControlState;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/**
-	  * 
-	  */
-	public PlayStrategy()
+	
+	@SuppressWarnings("unused")
+	private PlayStrategy()
 	{
-		activePlays = new ArrayList<APlay>();
-		finishedPlays = new ArrayList<APlay>();
-		
-		changedPlay = false;
-		changedPlayLock = true;
-		
-		forceNewDecision = false;
-		setStateChanged(false);
-		
-		matchBehavior = EMatchBehavior.NOT_DEFINED;
-		matchBehaviorLock = true;
-		
-		botConnection = new BotConnection(false, false, false, false, false, false);
 	}
 	
 	
 	/**
-	 * Providing a <strong>shallow</strong> copy of original (Thus collections are created, but filled with the same
-	 * values
-	 * @param original
+	 * @param builder
 	 */
-	public PlayStrategy(PlayStrategy original)
+	public PlayStrategy(final Builder builder)
 	{
-		activePlays = new ArrayList<APlay>(original.activePlays);
-		finishedPlays = new ArrayList<APlay>(original.finishedPlays);
-		
-		changedPlay = original.changedPlay;
-		changedPlayLock = original.changedPlayLock;
-		
-		forceNewDecision = original.forceNewDecision;
-		
-		matchBehavior = original.matchBehavior;
-		matchBehaviorLock = original.matchBehaviorLock;
-		
-		botConnection = original.botConnection;
+		activePlays = Collections.unmodifiableList(builder.activePlays);
+		finishedPlays = Collections.unmodifiableList(builder.finishedPlays);
+		botConnection = builder.botConnection;
+		debugShapes = new ArrayList<IDrawableShape>();
+		aiControlState = builder.controlState;
 	}
 	
 	
@@ -111,21 +78,49 @@ public class PlayStrategy implements Serializable
 	// --------------------------------------------------------------------------
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
-	 * @param b
+	 * Get the number of roles (calculates the sum of roles of all plays)
+	 * 
+	 * @return
 	 */
-	public void setBotConnection(BotConnection b)
+	@Override
+	public int getNumRoles()
 	{
-		botConnection = b;
+		int sum = 0;
+		for (APlay play : activePlays)
+		{
+			sum += play.getRoles().size();
+		}
+		return sum;
 	}
 	
 	
 	/**
 	 * @return
 	 */
+	@Override
+	public BotIDMap<ARole> getActiveRoles()
+	{
+		BotIDMap<ARole> roles = new BotIDMap<ARole>(6);
+		for (APlay play : activePlays)
+		{
+			for (ARole role : play.getRoles())
+			{
+				roles.put(role.getBotID(), role);
+			}
+		}
+		return roles;
+	}
+	
+	
+	// --------------------------------------------------------------------------
+	// --- getter/setter --------------------------------------------------------
+	// --------------------------------------------------------------------------
+	
+	/**
+	 * @return
+	 */
+	@Override
 	public List<APlay> getActivePlays()
 	{
 		return activePlays;
@@ -133,68 +128,9 @@ public class PlayStrategy implements Serializable
 	
 	
 	/**
-	 * @return if play has changed
-	 */
-	public boolean hasPlayChanged()
-	{
-		return changedPlay;
-	}
-	
-	
-	/**
-	 * Sets the indicator for a change in the selected plays.
-	 * By calling this indicator is set to true. <strong>Default:</strong> false.
-	 * <p>
-	 * <strong>NOTE:</strong> Only first call of this method has an effect!!!
-	 * </p>
-	 */
-	public void setChangedPlay()
-	{
-		if (changedPlayLock)
-		{
-			changedPlay = true;
-			changedPlayLock = false;
-		} else
-		{
-			log.debug("setChangedPlay called more then once!");
-		}
-	}
-	
-	
-	/**
-	 * 
-	 * Set play behavior for this frame. <strong>Default:</strong> NOT_DEFINED.
-	 * <p>
-	 * <strong>NOTE:</strong> Only first call of this method has an effect!!!
-	 * </p>
-	 * 
-	 * @param matchBehavior the matchBehavior to set
-	 */
-	public void setMatchBehavior(EMatchBehavior matchBehavior)
-	{
-		if (matchBehaviorLock)
-		{
-			this.matchBehavior = matchBehavior;
-			matchBehaviorLock = false;
-		} else
-		{
-			log.warn("Change of match-behavior in AIInfoFrame " + this + " denied!");
-		}
-	}
-	
-	
-	/**
 	 * @return
 	 */
-	public EMatchBehavior getMatchBehavior()
-	{
-		return matchBehavior;
-	}
-	
-	
-	/**
-	 * @return
-	 */
+	@Override
 	public List<APlay> getFinishedPlays()
 	{
 		return finishedPlays;
@@ -202,47 +138,141 @@ public class PlayStrategy implements Serializable
 	
 	
 	/**
-	 * Sets a flag which causes a new play-decision.
-	 * By calling this indicator is set to true
-	 */
-	public void setForceNewDecision()
-	{
-		forceNewDecision = true;
-	}
-	
-	
-	/**
 	 * @return
 	 */
-	public boolean isForceNewDecision()
-	{
-		return forceNewDecision;
-	}
-	
-	
-	/**
-	 * @param stateChanged the stateChanged to set
-	 */
-	public void setStateChanged(boolean stateChanged)
-	{
-		this.stateChanged = stateChanged;
-	}
-	
-	
-	/**
-	 * @return the stateChanged
-	 */
-	public boolean isStateChanged()
-	{
-		return stateChanged;
-	}
-	
-	
-	/**
-	 * @return
-	 */
+	@Override
 	public BotConnection getBotConnection()
 	{
 		return botConnection;
+	}
+	
+	
+	/**
+	 * @return the debugShapes
+	 */
+	@Override
+	public List<IDrawableShape> getDebugShapes()
+	{
+		return debugShapes;
+	}
+	
+	
+	/**
+	 * @return the controlState
+	 */
+	@Override
+	public EAIControlState getAIControlState()
+	{
+		return aiControlState;
+	}
+	
+	
+	/**
+	 * Use this builder to create a {@link PlayStrategy}
+	 * 
+	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+	 */
+	public static class Builder
+	{
+		private List<APlay>		activePlays;
+		private List<APlay>		finishedPlays;
+		private BotConnection	botConnection;
+		private EAIControlState	controlState;
+		
+		
+		/**
+		  * 
+		  */
+		public Builder()
+		{
+			activePlays = new ArrayList<APlay>();
+			finishedPlays = new ArrayList<APlay>();
+			botConnection = new BotConnection(false, false, false, false, false, false);
+			controlState = EAIControlState.TEST_MODE;
+		}
+		
+		
+		/**
+		 * Create a new {@link PlayStrategy} with the data in this Builder
+		 * 
+		 * @return
+		 */
+		public IPlayStrategy build()
+		{
+			return new PlayStrategy(this);
+		}
+		
+		
+		/**
+		 * @return the activePlays
+		 */
+		public final List<APlay> getActivePlays()
+		{
+			return activePlays;
+		}
+		
+		
+		/**
+		 * @param activePlays the activePlays to set
+		 */
+		public final void setActivePlays(final List<APlay> activePlays)
+		{
+			this.activePlays = activePlays;
+		}
+		
+		
+		/**
+		 * @return the finishedPlays
+		 */
+		public final List<APlay> getFinishedPlays()
+		{
+			return finishedPlays;
+		}
+		
+		
+		/**
+		 * @param finishedPlays the finishedPlays to set
+		 */
+		public final void setFinishedPlays(final List<APlay> finishedPlays)
+		{
+			this.finishedPlays = finishedPlays;
+		}
+		
+		
+		/**
+		 * @return the botConnection
+		 */
+		public final BotConnection getBotConnection()
+		{
+			return botConnection;
+		}
+		
+		
+		/**
+		 * @param botConnection the botConnection to set
+		 */
+		public final void setBotConnection(final BotConnection botConnection)
+		{
+			this.botConnection = botConnection;
+		}
+		
+		
+		/**
+		 * @return Athena's controlState
+		 */
+		public final EAIControlState getAIControlState()
+		{
+			return controlState;
+		}
+		
+		
+		/**
+		 * @param controlState the controlState to set
+		 */
+		public final void setAIControlState(final EAIControlState controlState)
+		{
+			this.controlState = controlState;
+		}
+		
 	}
 }

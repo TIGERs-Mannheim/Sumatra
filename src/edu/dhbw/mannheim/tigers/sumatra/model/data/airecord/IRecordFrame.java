@@ -4,26 +4,21 @@
  * Project: TIGERS - Sumatra
  * Date: Jun 23, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.airecord;
 
-import java.util.List;
-
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee.Command;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.PlayStrategy;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.TacticalField;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMapConst;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.AresData;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.IPlayStrategy;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ITacticalField;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.referee.RefereeMsg;
 
 
 /**
  * Interface for a record frame
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public interface IRecordFrame
 {
@@ -31,42 +26,51 @@ public interface IRecordFrame
 	/**
 	 * @return the worldFrame
 	 */
-	IRecordWfFrame getRecordWfFrame();
+	IRecordWfFrame getWorldFrame();
 	
 	
 	/**
 	 * @return the refereeMsg
 	 */
-	Command getRefereeCmd();
+	RefereeMsg getLatestRefereeMsg();
 	
 	
 	/**
 	 * @return the tacticalInfo
 	 */
-	TacticalField getTacticalInfo();
+	ITacticalField getTacticalField();
 	
 	
 	/**
 	 * @return the playStrategy
 	 */
-	PlayStrategy getPlayStrategy();
-	
-	
-	/**
-	 * @return the assigendRolesConst
-	 */
-	BotIDMapConst<ERole> getAssigendERoles();
-	
-	
-	/**
-	 * @param paths
-	 */
-	void setPaths(List<Path> paths);
+	IPlayStrategy getPlayStrategy();
 	
 	
 	/**
 	 * @return
 	 */
-	List<Path> getPaths();
+	AresData getAresData();
 	
+	
+	/**
+	 * Can this implementation be stored in a file?
+	 * 
+	 * @return
+	 */
+	boolean isPersistable();
+	
+	
+	/**
+	 * Color of the Tigers bots
+	 * 
+	 * @return
+	 */
+	ETeamColor getTeamColor();
+	
+	
+	/**
+	 * 
+	 */
+	void cleanUp();
 }

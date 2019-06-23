@@ -12,11 +12,16 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditio
 import java.util.ArrayList;
 import java.util.List;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import org.apache.log4j.Logger;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.DynamicPosition;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.area.PenaltyArea;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ATrackedObject;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACondition;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.ECondition;
 
@@ -34,35 +39,29 @@ public class MovementCon extends ACondition
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final ViewAngleCondition			angleCon;
-	private final DestinationCondition		destCon;
-	private final DestinationFreeCondition	destFreeCon;
-	/** save lookAtTarget, as it is not available anywhere else */
-	private IVector2								lookAtTarget;
 	
-	private boolean								activateDestFreeCon	= false;
+	private static final Logger			log						= Logger.getLogger(MovementCon.class.getName());
+	private final ViewAngleCondition		angleCon;
+	private final DestinationCondition	destCon;
 	
 	/** role allowed to enter penalty area? Normally its not allowed! */
-	private boolean								penaltyAreaAllowed	= false;
-	private boolean								isBallObstacle			= true;
-	private boolean								isBotsObstacle			= true;
-	private boolean								isGoalPostObstacle	= true;
+	private boolean							penaltyAreaAllowed	= false;
+	private boolean							isBallObstacle			= true;
+	private boolean							isBotsObstacle			= true;
+	private boolean							isGoalPostObstacle	= true;
+	private boolean							armKicker				= false;
 	
 	
-	private float									speed						= 0;
+	private float								speed						= 0;
 	/** velocity at the destination in m/s */
-	private IVector2								velAtDestination		= new Vector2(0, 0);
+	private IVector2							velAtDestination		= new Vector2(0, 0);
 	
-	private List<IVector2>						intermediateStops		= new ArrayList<IVector2>();
 	
-	private List<TrackedBot>					ignoredBots				= new ArrayList<TrackedBot>();
+	private List<IVector2>					intermediateStops		= new ArrayList<IVector2>();
 	
-	private boolean								isOptimizationWanted	= true;
+	private boolean							isOptimizationWanted	= true;
 	
-	private boolean								forceNewSpline			= false;
-	
-	private boolean								shoot						= false;
-	private boolean								pass						= false;
+	private boolean							forceNewSpline			= false;
 	
 	
 	/**
@@ -112,7 +111,6 @@ public class MovementCon extends ACondition
 		
 		angleCon = new ViewAngleCondition();
 		destCon = new DestinationCondition();
-		destFreeCon = new DestinationFreeCondition();
 	}
 	
 	
@@ -121,17 +119,17 @@ public class MovementCon extends ACondition
 	// --------------------------------------------------------------------------
 	
 	@Override
-	public EConditionState doCheckCondition(WorldFrame worldFrame, BotID botID)
+	public EConditionState doCheckCondition(SimpleWorldFrame worldFrame, BotID botId)
 	{
+		update(worldFrame, botId);
+		
 		// do the check first
-		final EConditionState angleConCheck = angleCon.checkCondition(worldFrame, botID);
-		final EConditionState destConCheck = destCon.checkCondition(worldFrame, botID);
-		final EConditionState destFreeConCheck = destFreeCon.checkCondition(worldFrame, botID);
+		final EConditionState angleConCheck = angleCon.checkCondition(worldFrame, botId);
+		final EConditionState destConCheck = destCon.checkCondition(worldFrame, botId);
 		
 		List<EConditionState> cons = new ArrayList<EConditionState>(3);
 		cons.add(angleConCheck);
 		cons.add(destConCheck);
-		cons.add(destFreeConCheck);
 		
 		// after the check, the condition strings are current
 		StringBuilder strBuilder = new StringBuilder();
@@ -139,8 +137,6 @@ public class MovementCon extends ACondition
 		strBuilder.append(destCon.getCondition());
 		strBuilder.append("\nangle:\n");
 		strBuilder.append(angleCon.getCondition());
-		strBuilder.append("\ndestFree:\n");
-		strBuilder.append(destFreeCon.getCondition());
 		
 		setCondition(strBuilder.toString());
 		
@@ -169,7 +165,6 @@ public class MovementCon extends ACondition
 		super.resetCache();
 		destCon.resetCache();
 		angleCon.resetCache();
-		destFreeCon.resetCache();
 	}
 	
 	
@@ -177,8 +172,105 @@ public class MovementCon extends ACondition
 	protected boolean compareContent(ACondition condition)
 	{
 		final MovementCon con = (MovementCon) condition;
-		return destCon.compare(con.getDestCon()) && angleCon.compare(con.getAngleCon())
-				&& destFreeCon.compare(con.getDestFreeCon());
+		return destCon.compare(con.getDestCon()) && angleCon.compare(con.getAngleCon());
+	}
+	
+	
+	/**
+	 * Update dynamic targets/positions in this {@link MovementCon}
+	 * 
+	 * @param swf
+	 */
+	@Override
+	public final void update(SimpleWorldFrame swf, BotID botId)
+	{
+		super.update(swf, botId);
+		destCon.update(swf, botId);
+		angleCon.update(swf, botId);
+		angleCon.update(destCon.getDestination(), swf);
+		resetCache();
+		checkConstraints(swf, botId);
+	}
+	
+	
+	/**
+	 * Check if all necessary constraints are fulfilled.
+	 * - not in penalty area
+	 * - distance to ball on referee cmd
+	 * - not outside field
+	 * - not equal to other bot position
+	 * @param wframe
+	 * @param botId
+	 */
+	public final void checkConstraints(SimpleWorldFrame wframe, BotID botId)
+	{
+		// 1. Penalty Area
+		PenaltyArea penArea = AIConfig.getGeometry().getPenaltyAreaOur();
+		if (!penaltyAreaAllowed && penArea.isPointInShape(destCon.getDestination()))
+		{
+			log.warn("Destination is inside PenaltyArea. Changing it to nearest Point outside");
+			IVector2 botPos = wframe.getBot(botId).getPos();
+			// behind penArea?
+			if (botPos.x() <= (-AIConfig.getGeometry().getFieldLength() / 2))
+			{
+				// this will result in an acceptable new destination
+				botPos = Vector2.ZERO_VECTOR;
+			}
+			IVector2 nearestPointOutside = penArea.nearestPointOutside(destCon.getDestination(), botPos);
+			destCon.updateDestination(nearestPointOutside);
+		}
+		
+		// 2. STOP radius
+		// switch (frame.getTacticalField().getGameState())
+		// {
+		// case CORNER_KICK_THEY:
+		// case GOAL_KICK_THEY:
+		// case PREPARE_KICKOFF_THEY:
+		// case PREPARE_PENALTY_THEY:
+		// case STOPPED:
+		// case THROW_IN_THEY:
+		// float dist = GeoMath.distancePP(destCon.getDestination(), frame.getWorldFrame().getBall().getPos());
+		// float should = AIConfig.getGeometry().getBotToBallDistanceStop() + AIConfig.getGeometry().getBotRadius();
+		// if (dist < should)
+		// {
+		// log.warn("Destination is too near to ball: " + dist + "<" + should);
+		// IVector2 newDest = GeoMath.stepAlongLine(frame.getWorldFrame().getBall().getPos(),
+		// destCon.getDestination(), should);
+		// destCon.updateDestination(newDest);
+		// }
+		// break;
+		// default:
+		// // nothing to check
+		// }
+		
+		// 3. outside field
+		if (!AIConfig.getGeometry().getFieldWBorders().isPointInShape(destCon.getDestination()))
+		{
+			log.warn("Destination is outside of field!");
+			IVector2 newDest = AIConfig.getGeometry().getFieldWBorders().nearestPointInside(destCon.getDestination());
+			destCon.updateDestination(newDest);
+		}
+		
+		// 4. equal to others own bot pos
+		// float speedTolerance = 0.2f;
+		// for (TrackedTigerBot bot : wframe.getBots().values())
+		// {
+		// if (bot.getId().getTeamColor() != botId.getTeamColor())
+		// {
+		// continue;
+		// }
+		// if (!bot.getId().equals(botId) && (bot.getVel().getLength2() < speedTolerance))
+		// {
+		// float tolerance = (AIConfig.getGeometry().getBotRadius() * 2) - 20;
+		// if (bot.getPos().equals(destCon.getDestination(), tolerance))
+		// {
+		// log.warn("Destination equals position of bot " + bot.getId().getNumber()
+		// + " which is stopped or moves slowly!");
+		// IVector2 newDest = GeoMath.stepAlongLine(bot.getPos(), destCon.getDestination(), tolerance + 20);
+		// destCon.updateDestination(newDest);
+		// }
+		// }
+		// }
 	}
 	
 	
@@ -187,12 +279,8 @@ public class MovementCon extends ACondition
 	 */
 	public void updateDestination(IVector2 destination)
 	{
-		destCon.updateDestination(destination);
-		if (destFreeCon.isActive() || activateDestFreeCon)
-		{
-			destFreeCon.updateDestination(destination);
-			activateDestFreeCon = false;
-		}
+		IVector2 dest = destination;
+		destCon.updateDestination(dest);
 		resetCache();
 	}
 	
@@ -208,65 +296,34 @@ public class MovementCon extends ACondition
 	
 	
 	/**
-	 * Active or deactivate destination free condition
+	 * Updates the angle the bot should look at.
 	 * 
-	 * @param destFreeMode
+	 * @param lookAtTarget
 	 */
-	public void updateDestinationFree(final EDestFreeMode destFreeMode)
+	public void updateLookAtTarget(DynamicPosition lookAtTarget)
 	{
-		switch (destFreeMode)
-		{
-			case FREE_OF_BOTS:
-				destFreeCon.setConsiderFoeBots(true);
-				if (destCon.isActive())
-				{
-					destFreeCon.updateDestination(destCon.getDestination());
-				} else
-				{
-					activateDestFreeCon = true;
-				}
-				break;
-			case FREE_OF_TIGERS:
-				destFreeCon.setConsiderFoeBots(false);
-				if (destCon.isActive())
-				{
-					destFreeCon.updateDestination(destCon.getDestination());
-				} else
-				{
-					activateDestFreeCon = true;
-				}
-				break;
-			case IGNORE:
-			default:
-				destFreeCon.updateDestination(null);
-				break;
-		}
-		resetCache();
+		angleCon.updateLookAtTarget(lookAtTarget);
+	}
+	
+	
+	/**
+	 * 
+	 * @param object
+	 */
+	public void updateLookAtTarget(ATrackedObject object)
+	{
+		updateLookAtTarget(new DynamicPosition(object));
 	}
 	
 	
 	/**
 	 * Updates the angle the bot should look at.
 	 * 
-	 * @param target
+	 * @param lookAtTarget
 	 */
-	public void updateLookAtTarget(IVector2 target)
+	public void updateLookAtTarget(IVector2 lookAtTarget)
 	{
-		if (!getDestCon().isActive())
-		{
-			throw new IllegalStateException(
-					"updateLookAtTarget depends on an active destination condition. Call updateDestination before updateLookAtTarget!");
-		}
-		final IVector2 tmp = target.subtractNew(getDestCon().getDestination());
-		if (!tmp.isZeroVector())
-		{
-			final float angle = tmp.getAngle();
-			updateTargetAngle(angle);
-			resetCache();
-		}
-		lookAtTarget = target;
-		// lookAtTarget and destination are equal => can not calc angle.
-		// as this happens quite frequently, just keep the old angle and do not complain
+		angleCon.updateLookAtTarget(new DynamicPosition(lookAtTarget));
 	}
 	
 	
@@ -285,24 +342,6 @@ public class MovementCon extends ACondition
 	public DestinationCondition getDestCon()
 	{
 		return destCon;
-	}
-	
-	
-	/**
-	 * @return the destFreeCon
-	 */
-	public DestinationFreeCondition getDestFreeCon()
-	{
-		return destFreeCon;
-	}
-	
-	
-	/**
-	 * @return the lookAtTarget
-	 */
-	public final IVector2 getLookAtTarget()
-	{
-		return lookAtTarget;
 	}
 	
 	
@@ -415,20 +454,21 @@ public class MovementCon extends ACondition
 	
 	
 	/**
-	 * @return the ignoredBots
+	 * 
+	 * @param armKicker should bot arm kicker.
 	 */
-	public List<TrackedBot> getIgnoredBots()
+	public void setArmKicker(boolean armKicker)
 	{
-		return ignoredBots;
+		this.armKicker = armKicker;
 	}
 	
 	
 	/**
-	 * @param ignoredBots the ignoredBots to set
+	 * @return is kicker armed.
 	 */
-	public void setIgnoredBots(List<TrackedBot> ignoredBots)
+	public boolean isKickerArmed()
 	{
-		this.ignoredBots = ignoredBots;
+		return armKicker;
 	}
 	
 	
@@ -466,41 +506,4 @@ public class MovementCon extends ACondition
 	{
 		this.velAtDestination = velAtDestination;
 	}
-	
-	
-	/**
-	 * @return the shoot
-	 */
-	public final boolean isShoot()
-	{
-		return shoot;
-	}
-	
-	
-	/**
-	 * @param shoot the shoot to set
-	 */
-	public final void setShoot(boolean shoot)
-	{
-		this.shoot = shoot;
-	}
-	
-	
-	/**
-	 * @return the pass
-	 */
-	public final boolean isPass()
-	{
-		return pass;
-	}
-	
-	
-	/**
-	 * @param pass the pass to set
-	 */
-	public final void setPass(boolean pass)
-	{
-		this.pass = pass;
-	}
-	
 }

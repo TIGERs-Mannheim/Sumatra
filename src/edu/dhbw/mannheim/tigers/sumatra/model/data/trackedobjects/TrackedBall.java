@@ -9,15 +9,17 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects;
 
-import javax.persistence.Embeddable;
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector3;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector3;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector3f;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BallID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.WPConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.data.BallMotionResult;
+import edu.dhbw.mannheim.tigers.sumatra.util.units.DistanceUnit;
 
 
 /**
@@ -31,7 +33,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextk
  * @author Gero
  * 
  */
-@Embeddable
+@Persistent
 public class TrackedBall extends ATrackedObject
 {
 	// --------------------------------------------------------------------------
@@ -42,11 +44,11 @@ public class TrackedBall extends ATrackedObject
 	private static final long	serialVersionUID	= -4610674696000287580L;
 	
 	/** mm */
-	private IVector3				pos;
+	private Vector3				pos;
 	/** m/s */
-	private IVector3				vel;
+	private Vector3				vel;
 	/** m/s^2 */
-	private IVector3				acc;
+	private Vector3				acc;
 	
 	/** not final for ObjectDB */
 	private boolean				onCam;
@@ -55,6 +57,15 @@ public class TrackedBall extends ATrackedObject
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// -------------------------------------------------------------------------
+	
+	
+	@SuppressWarnings("unused")
+	private TrackedBall()
+	{
+		super(new BallID(), 0);
+	}
+	
+	
 	/**
 	 * Providing a <strong>hard, deep</strong> copy of original
 	 * @param original
@@ -63,9 +74,9 @@ public class TrackedBall extends ATrackedObject
 	{
 		super(original);
 		onCam = original.onCam;
-		pos = original.pos;
-		vel = original.vel;
-		acc = original.acc;
+		pos = new Vector3(original.pos);
+		vel = new Vector3(original.vel);
+		acc = new Vector3(original.acc);
 	}
 	
 	
@@ -80,9 +91,9 @@ public class TrackedBall extends ATrackedObject
 	public TrackedBall(IVector3 pos, IVector3 vel, IVector3 acc, float confidence, boolean onCam)
 	{
 		super(new BallID(), confidence);
-		this.pos = pos;
-		this.vel = vel;
-		this.acc = acc;
+		this.pos = new Vector3(pos);
+		this.vel = new Vector3(vel);
+		this.acc = new Vector3(acc);
 		this.onCam = onCam;
 	}
 	
@@ -110,6 +121,37 @@ public class TrackedBall extends ATrackedObject
 		IVector3 vel = new Vector3f(xVel, yVel, zVel);
 		IVector3 acc = new Vector3f(xAcc, yAcc, zAcc);
 		return new TrackedBall(pos, vel, acc, confidence, isOnCam);
+	}
+	
+	
+	/**
+	 * Mirror position, velocity and acceleration over x and y axis.
+	 * Do NEVER call this in the AI!
+	 */
+	public void mirror()
+	{
+		pos.set(new Vector3(-pos.x(), -pos.y(), pos.z()));
+		vel.set(new Vector3(-vel.x(), -vel.y(), vel.z()));
+		acc.set(new Vector3(-acc.x(), -acc.y(), acc.z()));
+	}
+	
+	
+	/**
+	 * gets the theoretical position of the ball after a given time
+	 * 
+	 * @param time [s]
+	 * @return
+	 */
+	public IVector2 getPosAt(float time)
+	{
+		/*
+		 * f(x) = ballVel / ( x + 1 )
+		 * F(x) = ballVel * log( x + 1 )
+		 * Integrate from 0 to time, to get moved distance.
+		 */
+		double distance = (getVel().getLength2() * Math.log(time + 1)) - (getVel().getLength2() * Math.log(1));
+		float distanceF = (float) distance;
+		return getPos().addNew(getVel().normalizeNew().multiplyNew(DistanceUnit.METERS.toMillimeters(distanceF)));
 	}
 	
 	
@@ -183,4 +225,5 @@ public class TrackedBall extends ATrackedObject
 	{
 		return acc;
 	}
+	
 }

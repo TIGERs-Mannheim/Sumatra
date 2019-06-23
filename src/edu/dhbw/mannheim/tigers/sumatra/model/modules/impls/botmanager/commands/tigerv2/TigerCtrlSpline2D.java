@@ -9,9 +9,14 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2;
 
+import java.util.Arrays;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline.HermiteSpline;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline.HermiteSpline2D;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -26,96 +31,48 @@ public class TigerCtrlSpline2D extends ACommand
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	/** Spline coefficients */
-	private float[]			a							= new float[2];
-	private float[]			b							= new float[2];
-	private float[]			c							= new float[2];
-	private float[]			d							= new float[2];
+	private static class Spline2DParams
+	{
+		/** */
+		@SerialData(type = ESerialDataType.FLOAT16)
+		public float[]	a	= new float[HermiteSpline.SPLINE_SIZE];
+	}
+	
+	@SerialData(type = ESerialDataType.EMBEDDED)
+	private Spline2DParams[]	params					= new Spline2DParams[2];
+	
 	/** End time */
-	private float				tEnd;
+	@SerialData(type = ESerialDataType.FLOAT16)
+	private float					tEnd;
 	/** Options */
-	private int					option;
+	@SerialData(type = ESerialDataType.UINT8)
+	private int						option;
 	
 	/** Replace spline list with this spline */
-	public static final int	OPTION_CLEAR			= 0x02;
+	public static final int		OPTION_CLEAR			= 0x02;
 	/** Append spline to current list */
-	public static final int	OPTION_APPEND			= 0x01;
+	public static final int		OPTION_APPEND			= 0x01;
 	
 	/** Maximum spline list size on TigerBotV2 */
-	public static final int	MAX_SPLINE_CAPACITY	= 10;
+	public static final int		MAX_SPLINE_CAPACITY	= 10;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/** */
+	public TigerCtrlSpline2D()
+	{
+		super(ECommand.CMD_CTRL_SPLINE_2D);
+		
+		params[0] = new Spline2DParams();
+		params[1] = new Spline2DParams();
+	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		int offset = 0;
-		
-		for (int i = 0; i < 2; i++)
-		{
-			a[i] = byteArray2HalfFloat(data, offset);
-			offset += 2;
-			b[i] = byteArray2HalfFloat(data, offset);
-			offset += 2;
-			c[i] = byteArray2HalfFloat(data, offset);
-			offset += 2;
-			d[i] = byteArray2HalfFloat(data, offset);
-			offset += 2;
-		}
-		
-		tEnd = byteArray2HalfFloat(data, offset);
-		offset += 2;
-		
-		option = byteArray2UByte(data, offset);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		int offset = 0;
-		
-		for (int i = 0; i < 2; i++)
-		{
-			halfFloat2ByteArray(data, offset, a[i]);
-			offset += 2;
-			halfFloat2ByteArray(data, offset, b[i]);
-			offset += 2;
-			halfFloat2ByteArray(data, offset, c[i]);
-			offset += 2;
-			halfFloat2ByteArray(data, offset, d[i]);
-			offset += 2;
-		}
-		
-		halfFloat2ByteArray(data, offset, tEnd);
-		offset += 2;
-		
-		byte2ByteArray(data, offset, option);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_CTRL_SPLINE_2D;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 19;
-	}
 	
 	
 	// --------------------------------------------------------------------------
@@ -128,14 +85,8 @@ public class TigerCtrlSpline2D extends ACommand
 	 */
 	public void setSpline(HermiteSpline2D spline)
 	{
-		a[0] = spline.getXSpline().getA();
-		b[0] = spline.getXSpline().getB();
-		c[0] = spline.getXSpline().getC();
-		d[0] = spline.getXSpline().getD();
-		a[1] = spline.getYSpline().getA();
-		b[1] = spline.getYSpline().getB();
-		c[1] = spline.getYSpline().getC();
-		d[1] = spline.getYSpline().getD();
+		params[0].a = Arrays.copyOf(spline.getXSpline().getA(), spline.getXSpline().getA().length);
+		params[1].a = Arrays.copyOf(spline.getYSpline().getA(), spline.getYSpline().getA().length);
 		
 		tEnd = spline.getEndTime();
 	}

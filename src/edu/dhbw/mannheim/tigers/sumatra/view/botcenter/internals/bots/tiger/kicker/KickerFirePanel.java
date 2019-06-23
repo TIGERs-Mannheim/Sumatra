@@ -24,6 +24,7 @@ import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerKickV2;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerKickV2.EKickerMode;
 
 
 /**
@@ -44,7 +45,7 @@ public class KickerFirePanel extends JPanel
 		 * @param mode
 		 * @param device
 		 */
-		void onKickerFire(int level, float duration, int mode, int device);
+		void onKickerFire(int level, float duration, EKickerMode mode, int device);
 	}
 	
 	// --------------------------------------------------------------------------
@@ -148,7 +149,7 @@ public class KickerFirePanel extends JPanel
 	}
 	
 	
-	private void notifyFire(int level, float duration, int mode, int device)
+	private void notifyFire(int level, float duration, EKickerMode mode, int device)
 	{
 		synchronized (observers)
 		{
@@ -170,7 +171,7 @@ public class KickerFirePanel extends JPanel
 		public void actionPerformed(ActionEvent arg0)
 		{
 			float dur = 0;
-			int m = 0;
+			EKickerMode m = EKickerMode.FORCE;
 			int dev = 0;
 			int lvl = 0;
 			
@@ -185,17 +186,17 @@ public class KickerFirePanel extends JPanel
 			
 			if (modeForce.isSelected())
 			{
-				m = TigerKickerKickV2.Mode.FORCE;
+				m = EKickerMode.FORCE;
 			}
 			
 			if (modeArm.isSelected())
 			{
-				m = TigerKickerKickV2.Mode.ARM;
+				m = EKickerMode.ARM;
 			}
 			
 			if (modeDisarm.isSelected())
 			{
-				m = TigerKickerKickV2.Mode.DISARM;
+				m = EKickerMode.DISARM;
 			}
 			
 			if (deviceStraight.isSelected())

@@ -41,7 +41,7 @@ public class ControllerInterpreter
 	/**
 	 * @param inputDevice
 	 */
-	public ControllerInterpreter(AInputDevice inputDevice)
+	ControllerInterpreter(AInputDevice inputDevice)
 	{
 		translator = new ActionTranslator(inputDevice);
 	}

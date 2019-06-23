@@ -26,7 +26,7 @@ public interface ITrajectory2D
 	 * @param t time
 	 * @return position
 	 */
-	public Vector2 getPosition(float t);
+	Vector2 getPosition(float t);
 	
 	
 	/**
@@ -35,7 +35,7 @@ public interface ITrajectory2D
 	 * @param t time
 	 * @return velocity
 	 */
-	public Vector2 getVelocity(float t);
+	Vector2 getVelocity(float t);
 	
 	
 	/**
@@ -44,7 +44,7 @@ public interface ITrajectory2D
 	 * @param t time
 	 * @return acceleration
 	 */
-	public Vector2 getAcceleration(float t);
+	Vector2 getAcceleration(float t);
 	
 	
 	/**
@@ -52,5 +52,5 @@ public interface ITrajectory2D
 	 * 
 	 * @return total time for trajectory
 	 */
-	public float getTotalTime();
+	float getTotalTime();
 }

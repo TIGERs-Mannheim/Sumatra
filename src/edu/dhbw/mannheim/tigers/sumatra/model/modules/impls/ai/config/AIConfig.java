@@ -4,36 +4,56 @@
  * Project: TIGERS - Sumatra
  * Date: 03.08.2010
  * Author(s): Malte
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config;
 
-import java.lang.reflect.Array;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.configuration.Configuration;
-import org.apache.log4j.Logger;
+import org.apache.commons.configuration.HierarchicalConfiguration;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.exceptions.LoadConfigException;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.Assigner;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.Lachesis;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.NewRoleAssigner;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.RoleFinder;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.score.FeatureScore;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.score.PenaltyScore;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.ECalculator;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move.DestinationCondition;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move.DestinationFreeCondition;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move.MovementCon;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move.ViewAngleCondition;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.visible.TargetVisibleCon;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.visible.VisibleCon;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.FieldInformation;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.Sisyphus;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.TuneableParameter;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.updatespline.BotNotOnSplineDecisionMaker;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.updatespline.CollisionDetectionDecisionMaker;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.updatespline.DestinationChangedDecisionMaker;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.updatespline.NewPathShorterDecisionMaker;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.updatespline.SplineEndGoalNotReachedDecisionMaker;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.config.AConfigClient;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.inputDevice.sendAction.TigerV2Interpreter;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.devices.TigerDevices;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.WorldFramePacker;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IConfigClient;
+import edu.dhbw.mannheim.tigers.sumatra.util.IInstanceableEnum;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.ConfigAnnotationProcessor;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.SupportPosLayer;
 
 
 /**
  * This holds some static variables to parameterize the AI
  * hard choices - null == usual procedures in classes
+ * 
  * @author Oliver Steinbrecher <OST1988@aol.com>, Malte
  */
 public final class AIConfig
@@ -41,33 +61,23 @@ public final class AIConfig
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	// Logger
-	private static final Logger				log				= Logger.getLogger(AIConfig.class.getName());
-	
-	/** max number of bots that are in one team */
-	public static final int						MAX_NUM_BOTS	= 13;
-	
-	// Observers
-	private final List<IAIConfigObserver>	observers		= new LinkedList<IAIConfigObserver>();
-	
-	// AIConfig
-	private final IConfigClient				aiClient			= new AIConfigClient();
-	private Errt									errt				= null;
-	private OptimizationConfig					optimization	= null;
-	private FieldRasterConfig					fieldRaster		= null;
-	private MetisCalculators					calculators		= null;
-	private Tactics								tactics			= null;
-	private Roles									roles				= null;
-	private Plays									plays				= null;
 	
 	// Geometry
-	private final IConfigClient				geomClient		= new GeometryConfigClient();
-	private volatile Geometry					geometry;
+	private final IConfigClient	geomClient	= new GeometryConfigClient();
+	private volatile Geometry		geometry;
 	
-	// BotConfig
-	private IConfigClient						botClient		= new BotConfigClient();
-	private BotConfig								defaultBotConfig;
-	private Map<EBotType, BotConfig>			botConfig		= new HashMap<EBotType, BotConfig>();
+	private final AiConfigClient	skillsClient;
+	private final AiConfigClient	playsClient	= new AiConfigClient("plays", getAllClasses(EPlay.class));
+	private final AiConfigClient	rolesClient	= new AiConfigClient("roles", getAllClasses(ERole.class));
+	private final AiConfigClient	conditionsClient;
+	private final AiConfigClient	sisyphusClient;
+	private final AiConfigClient	metisClient	= new AiConfigClient("metis", getAllClasses(ECalculator.class));
+	private final AiConfigClient	rcmClient;
+	private final AiConfigClient	lachesisClient;
+	private final AiConfigClient	layerClient;
+	private final AiConfigClient	miscClient;
+	
+	private String						botSpezi		= "";
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
@@ -80,11 +90,54 @@ public final class AIConfig
 	
 	private AIConfig()
 	{
+		Set<Class<?>> skillsClasses = getAllClasses(ESkillName.class);
+		skillsClasses.add(TigerDevices.class);
+		skillsClient = new AiConfigClient("skills", skillsClasses);
+		
+		Set<Class<?>> conditionClasses = new LinkedHashSet<Class<?>>();
+		conditionClasses.add(DestinationCondition.class);
+		conditionClasses.add(DestinationFreeCondition.class);
+		conditionClasses.add(MovementCon.class);
+		conditionClasses.add(ViewAngleCondition.class);
+		conditionClasses.add(TargetVisibleCon.class);
+		conditionClasses.add(VisibleCon.class);
+		conditionsClient = new AiConfigClient("conditions", conditionClasses);
+		
+		Set<Class<?>> sisyphusClasses = new LinkedHashSet<Class<?>>();
+		sisyphusClasses.add(Sisyphus.class);
+		sisyphusClasses.add(TuneableParameter.class);
+		sisyphusClasses.add(DestinationChangedDecisionMaker.class);
+		sisyphusClasses.add(BotNotOnSplineDecisionMaker.class);
+		sisyphusClasses.add(NewPathShorterDecisionMaker.class);
+		sisyphusClasses.add(SplineEndGoalNotReachedDecisionMaker.class);
+		sisyphusClasses.add(CollisionDetectionDecisionMaker.class);
+		sisyphusClasses.add(FieldInformation.class);
+		sisyphusClient = new AiConfigClient("sisyphus", sisyphusClasses);
+		
+		Set<Class<?>> rcmClasses = new LinkedHashSet<Class<?>>();
+		rcmClasses.add(TigerV2Interpreter.class);
+		rcmClient = new AiConfigClient("rcm", rcmClasses);
+		
+		Set<Class<?>> lachesisClasses = new LinkedHashSet<Class<?>>();
+		lachesisClasses.add(NewRoleAssigner.class);
+		lachesisClasses.add(RoleFinder.class);
+		lachesisClasses.add(Assigner.class);
+		lachesisClasses.add(Lachesis.class);
+		lachesisClasses.add(PenaltyScore.class);
+		lachesisClasses.add(FeatureScore.class);
+		lachesisClient = new AiConfigClient("lachesis", lachesisClasses);
+		
+		Set<Class<?>> layerClasses = new LinkedHashSet<Class<?>>();
+		layerClasses.add(SupportPosLayer.class);
+		layerClient = new AiConfigClient("layer", layerClasses);
+		
+		Set<Class<?>> miscClasses = new LinkedHashSet<Class<?>>();
+		miscClasses.add(WorldFramePacker.class);
+		miscClient = new AiConfigClient("misc", miscClasses);
 	}
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public static AIConfig getInstance()
@@ -93,217 +146,131 @@ public final class AIConfig
 	}
 	
 	
+	/**
+	 * @return
+	 */
+	public static List<IConfigClient> getConfigClients()
+	{
+		List<IConfigClient> clients = new ArrayList<IConfigClient>();
+		clients.add(getInstance().geomClient);
+		clients.add(getInstance().skillsClient);
+		clients.add(getInstance().rolesClient);
+		clients.add(getInstance().playsClient);
+		clients.add(getInstance().conditionsClient);
+		clients.add(getInstance().sisyphusClient);
+		clients.add(getInstance().metisClient);
+		clients.add(getInstance().rcmClient);
+		clients.add(getInstance().lachesisClient);
+		clients.add(getInstance().layerClient);
+		clients.add(getInstance().miscClient);
+		return clients;
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- IConfigClients -------------------------------------------------------
 	// --------------------------------------------------------------------------
-	private final class AIConfigClient extends AConfigClient
-	{
-		private AIConfigClient()
-		{
-			super("AI Config", AAgent.AI_CONFIG_PATH, AAgent.KEY_AI_CONFIG, AAgent.VALUE_AI_CONFIG, true);
-		}
-		
-		
-		@Override
-		public void onLoad(Configuration newConfig)
-		{
-			errt = new Errt(newConfig);
-			optimization = new OptimizationConfig(newConfig);
-			try
-			{
-				fieldRaster = new FieldRasterConfig(newConfig);
-			} catch (final LoadConfigException err)
-			{
-				log.error("Error while parsing FieldRaster-Config: ", err);
-			}
-			calculators = new MetisCalculators(newConfig);
-			tactics = new Tactics(newConfig);
-			roles = new Roles(newConfig);
-			plays = new Plays(newConfig);
-			
-			notifyNewFieldRaster();
-		}
-	}
-	
-	
-	/**
-	 * 
-	 * @return
-	 */
-	public IConfigClient getAiClient()
-	{
-		return aiClient;
-	}
 	
 	
 	private final class GeometryConfigClient extends AConfigClient
 	{
 		private GeometryConfigClient()
 		{
-			super("Geometry", AAgent.GEOMETRY_CONFIG_PATH, AAgent.KEY_GEOMETRY_CONFIG, AAgent.VALUE_GEOMETRY_CONFIG, true);
+			super("geometry", AAgent.GEOMETRY_CONFIG_PATH, AAgent.KEY_GEOMETRY_CONFIG, AAgent.VALUE_GEOMETRY_CONFIG, false);
 		}
 		
 		
 		@Override
-		public void onLoad(Configuration config)
+		public void onLoad(final HierarchicalConfiguration config)
 		{
 			geometry = new Geometry(config);
 		}
 	}
 	
-	private final class BotConfigClient extends AConfigClient
+	
+	/**
+	 * This general ai config client serves as creator for configs based on {@link ConfigAnnotationProcessor}
+	 * 
+	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+	 */
+	public static class AiConfigClient extends AConfigClient
 	{
-		private BotConfigClient()
+		private final ConfigAnnotationProcessor	cap	= new ConfigAnnotationProcessor();
+		private final String								name;
+		private final Set<Class<?>>					classes;
+		
+		
+		private AiConfigClient(final String name, final Set<Class<?>> classes)
 		{
-			super("Bot Config", AAgent.BOT_CONFIG_PATH, AAgent.KEY_BOT_CONFIG, AAgent.VALUE_BOT_CONFIG, true);
+			super(name, AAgent.AI_CONFIG_PATH, AIConfig.class.getName() + "." + name, name + ".xml", true);
+			this.name = name;
+			this.classes = classes;
 		}
 		
 		
 		@Override
-		public void onLoad(Configuration newConfig)
+		public void onLoad(final HierarchicalConfiguration newConfig)
 		{
-			Iterator<String> it = newConfig.getKeys();
-			Set<String> keys = new HashSet<String>();
-			while (it.hasNext())
-			{
-				keys.add((String) Array.get(it.next().split("\\."), 0));
-			}
-			keys.remove("default");
-			defaultBotConfig = new BotConfig(newConfig.subset("default"));
-			botConfig.put(EBotType.UNKNOWN, defaultBotConfig);
-			for (String key : keys)
-			{
-				Configuration conf = newConfig.subset(key);
-				try
-				{
-					EBotType botType = EBotType.valueOf(key.toUpperCase(Locale.ENGLISH));
-					botConfig.put(botType, new BotConfig(conf, defaultBotConfig));
-				} catch (IllegalArgumentException e)
-				{
-					log.error("Could not load bot specific parameters from " + getConfigPath() + getDefaultValue()
-							+ " for bot type " + key);
-				}
-			}
+			cap.loadConfiguration(newConfig);
+			cap.apply();
+			applySpezis();
+		}
+		
+		
+		@Override
+		public HierarchicalConfiguration getDefaultConfig()
+		{
+			return cap.getDefaultConfig(classes, name);
+		}
+		
+		
+		/**
+		 * Apply all config values with given spezi. If spezi=="", apply default values.
+		 * 
+		 * @param obj The instance where all fields should be set.
+		 * @param spezi
+		 */
+		public void applyConfigToObject(final Object obj, final String spezi)
+		{
+			cap.apply(obj, spezi);
+		}
+		
+		
+		/**
+		 * Apply all know spezis
+		 */
+		public void applySpezis()
+		{
+			cap.apply(AIConfig.getBotSpezi());
 		}
 	}
 	
 	
-	/**
-	 * 
-	 * @return
-	 */
-	public IConfigClient getGeomClient()
+	private Set<Class<?>> getAllClasses(final Class<? extends Enum<? extends IInstanceableEnum>> enumClazz)
 	{
-		return geomClient;
-	}
-	
-	
-	/**
-	 * 
-	 * @return
-	 */
-	public IConfigClient getBotClient()
-	{
-		return botClient;
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- observable -----------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 * 
-	 * @param newObserver
-	 */
-	public void addObserver(IAIConfigObserver newObserver)
-	{
-		synchronized (observers)
+		Set<Class<?>> classes = new LinkedHashSet<Class<?>>();
+		Enum<? extends IInstanceableEnum> values[] = enumClazz.getEnumConstants();
+		IInstanceableEnum valInstancable[] = (IInstanceableEnum[]) values;
+		for (IInstanceableEnum en : valInstancable)
 		{
-			observers.add(newObserver);
-			
-			newObserver.onNewFieldRaster(fieldRaster);
+			classes.add(en.getInstanceableClass().getImpl());
 		}
-	}
-	
-	
-	/**
-	 * 
-	 * @param oldObserver
-	 */
-	public void removeObserver(IAIConfigObserver oldObserver)
-	{
-		synchronized (observers)
+		Set<Class<?>> superClasses = new LinkedHashSet<Class<?>>();
+		for (Class<?> clazz : classes)
 		{
-			observers.remove(oldObserver);
-		}
-	}
-	
-	
-	/**
-	 * 
-	 * This function is used to visualize the positioning field raster in sumatra field view.
-	 * Thus field raster will only be loaded once at startup this method is private and will
-	 * be called with AI-Module start.
-	 * 
-	 */
-	private void notifyNewFieldRaster()
-	{
-		synchronized (observers)
-		{
-			for (final IAIConfigObserver o : observers)
+			if (clazz.getSuperclass() != null)
 			{
-				o.onNewFieldRaster(fieldRaster);
+				superClasses.add(clazz.getSuperclass());
 			}
 		}
+		classes.addAll(superClasses);
+		return classes;
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- accessors ------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	
-	/**
-	 * @return the errt configuration
-	 */
-	public static Errt getErrt()
-	{
-		return AIConfig.getInstance().errt;
-	}
-	
-	
-	/**
-	 * Do not call this method in {@link ARole#update(AIInfoFrame)} or similar
-	 * frequently called methods. Rather store this value locally (but not static!!)
-	 * 
-	 * @param botType
-	 * @return the botConfig configuration
-	 */
-	public static BotConfig getBotConfig(EBotType botType)
-	{
-		BotConfig botConfig = AIConfig.getInstance().botConfig.get(botType);
-		if (botConfig == null)
-		{
-			log.warn("You requested a botConfig for a botType (" + botType + ") that has no specialized config.");
-			log.warn("Maybe you called this before the botType is known. (botType will be unknown then)");
-			log.warn(
-					"The default config will be loaded, but you should make sure you grap the configs later in your code!",
-					new Exception());
-			return AIConfig.getInstance().defaultBotConfig;
-		}
-		return botConfig;
-	}
-	
-	
-	/**
-	 * Use this only, if you do not care about bot specific config params.
-	 * 
-	 * @return the defaultBotConfig
-	 */
-	public static BotConfig getDefaultBotConfig()
-	{
-		return AIConfig.getInstance().defaultBotConfig;
-	}
 	
 	
 	/**
@@ -320,97 +287,85 @@ public final class AIConfig
 	
 	
 	/**
-	 * @return the field raster configuration
+	 * @return the skillsClient
 	 */
-	public static FieldRasterConfig getFieldRaster()
+	public static AiConfigClient getSkillsClient()
 	{
-		return AIConfig.getInstance().fieldRaster;
+		return getInstance().skillsClient;
 	}
 	
 	
 	/**
-	 * @return the role configuration
+	 * @return the playsClient
 	 */
-	public static Roles getRoles()
+	public static AiConfigClient getPlaysClient()
 	{
-		return AIConfig.getInstance().roles;
+		return getInstance().playsClient;
 	}
 	
 	
 	/**
-	 * @return the role configuration
+	 * @return the rolesClient
 	 */
-	public static Plays getPlays()
+	public static AiConfigClient getRolesClient()
 	{
-		return AIConfig.getInstance().plays;
+		return getInstance().rolesClient;
 	}
 	
 	
 	/**
-	 * @return the calculators configuration
+	 * @return the conditionsClient
 	 */
-	public static MetisCalculators getMetisCalculators()
+	public static AiConfigClient getConditionsClient()
 	{
-		return AIConfig.getInstance().calculators;
+		return getInstance().conditionsClient;
 	}
 	
 	
 	/**
-	 * 
-	 * @return
+	 * @return the sisyphusClient
 	 */
-	public static Tactics getTactics()
+	public static AiConfigClient getSisyphusClient()
 	{
-		return AIConfig.getInstance().tactics;
+		return getInstance().sisyphusClient;
 	}
 	
 	
 	/**
-	 * Do not call this method in {@link ARole#update(AIInfoFrame)} or similar
-	 * frequently called methods. Rather store this value locally (but not static!!)
-	 * 
-	 * @param botType
-	 * @return the general
+	 * @return the metisClient
 	 */
-	public static General getGeneral(EBotType botType)
+	public static AiConfigClient getMetisClient()
 	{
-		return AIConfig.getBotConfig(botType).getGeneral();
+		return getInstance().metisClient;
 	}
 	
 	
 	/**
-	 * Do not call this method in {@link ARole#update(AIInfoFrame)} or similar
-	 * frequently called methods. Rather store this value locally (but not static!!)
-	 * 
-	 * @param botType
-	 * @return the tolerances
+	 * @return the layerClient
 	 */
-	public static Tolerances getTolerances(EBotType botType)
+	public static AiConfigClient getLayerClient()
 	{
-		return AIConfig.getBotConfig(botType).getTolerances();
+		return getInstance().layerClient;
 	}
 	
 	
 	/**
-	 * Do not call this method in {@link ARole#update(AIInfoFrame)} or similar
-	 * frequently called methods. Rather store this value locally (but not static!!)
-	 * 
-	 * @param botType
-	 * @return the skills
+	 * @return the botSpezi
 	 */
-	public static Skills getSkills(EBotType botType)
+	public static String getBotSpezi()
 	{
-		return AIConfig.getBotConfig(botType).getSkills();
+		return getInstance().botSpezi;
 	}
 	
 	
 	/**
-	 * @return the optimization
+	 * @param botSpezi the botSpezi to set
 	 */
-	public static OptimizationConfig getOptimization()
+	public static void setBotSpezi(final String botSpezi)
 	{
-		return AIConfig.getInstance().optimization;
+		getInstance().botSpezi = botSpezi;
+		getSkillsClient().applySpezis();
+		getSisyphusClient().applySpezis();
+		getInstance().rcmClient.applySpezis();
 	}
-	
-	
 }

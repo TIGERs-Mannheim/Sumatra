@@ -35,7 +35,7 @@ public interface IBaseStation
 	 * 
 	 * @param observer
 	 */
-	public void addObserver(IBaseStationObserver observer);
+	void addObserver(IBaseStationObserver observer);
 	
 	
 	/**
@@ -43,5 +43,5 @@ public interface IBaseStation
 	 * 
 	 * @param observer
 	 */
-	public void removeObserver(IBaseStationObserver observer);
+	void removeObserver(IBaseStationObserver observer);
 }

@@ -9,12 +9,14 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation;
 
-import org.apache.log4j.Logger;
-
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.AObjectID;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandFactory;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -29,10 +31,14 @@ public class BaseStationACommand extends ACommand
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private ACommand		child	= null;
-	private BotID			id		= new BotID();
+	// Cached variables
+	private ACommand	child	= null;
+	private BotID		id		= null;
 	
-	private final Logger	log	= Logger.getLogger(getClass());
+	@SerialData(type = ESerialDataType.UINT8)
+	private int			idData;
+	@SerialData(type = ESerialDataType.TAIL)
+	private byte[]		childData;
 	
 	
 	// --------------------------------------------------------------------------
@@ -41,6 +47,7 @@ public class BaseStationACommand extends ACommand
 	/** */
 	public BaseStationACommand()
 	{
+		super(ECommand.CMD_BASE_ACOMMAND);
 	}
 	
 	
@@ -51,8 +58,10 @@ public class BaseStationACommand extends ACommand
 	 */
 	public BaseStationACommand(BotID id, ACommand command)
 	{
-		this.id = id;
-		child = command;
+		super(ECommand.CMD_BASE_ACOMMAND);
+		
+		setId(id);
+		setChild(command);
 	}
 	
 	
@@ -64,77 +73,16 @@ public class BaseStationACommand extends ACommand
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		if (data.length < (CommandConstants.HEADER_SIZE + 1))
-		{
-			log.warn("Child data to small (" + data.length + " Byte)");
-			return;
-		}
-		
-		id = new BotID(byteArray2UByte(data, 0));
-		
-		final byte header[] = new byte[CommandConstants.HEADER_SIZE];
-		System.arraycopy(data, 1, header, 0, CommandConstants.HEADER_SIZE);
-		child = CommandFactory.createEmptyPacket(header);
-		if (child == null)
-		{
-			log.warn("Unknown command with header: " + header);
-			return;
-		}
-		if ((data.length - CommandConstants.HEADER_SIZE - 1) < child.getDataLength())
-		{
-			log.warn("Not enough data, got " + (data.length - CommandConstants.HEADER_SIZE - 1) + ", expected: "
-					+ child.getDataLength());
-			// TODO AndreR: Report failures and discard commands which are invalid
-			return;
-		}
-		
-		final byte childData[] = new byte[child.getDataLength()];
-		System.arraycopy(data, 1 + CommandConstants.HEADER_SIZE, childData, 0, child.getDataLength());
-		child.setData(childData);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		byte2ByteArray(data, 0, id.getNumber());
-		
-		final byte transferData[] = child.getTransferData();
-		System.arraycopy(transferData, 0, data, 1, transferData.length);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_BASE_ACOMMAND;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		if (child != null)
-		{
-			return child.getDataLength() + CommandConstants.HEADER_SIZE + 1;
-		}
-		
-		return 0;
-	}
-	
-	
 	/**
 	 * @return the child
 	 */
 	public ACommand getChild()
 	{
+		if (child == null)
+		{
+			child = CommandFactory.getInstance().decode(childData, false);
+		}
+		
 		return child;
 	}
 	
@@ -144,6 +92,7 @@ public class BaseStationACommand extends ACommand
 	 */
 	public void setChild(ACommand child)
 	{
+		childData = CommandFactory.getInstance().encode(child, false);
 		this.child = child;
 	}
 	
@@ -153,6 +102,11 @@ public class BaseStationACommand extends ACommand
 	 */
 	public BotID getId()
 	{
+		if (id == null)
+		{
+			id = getBotIdFromBaseStationId(idData);
+		}
+		
 		return id;
 	}
 	
@@ -162,6 +116,53 @@ public class BaseStationACommand extends ACommand
 	 */
 	public void setId(BotID id)
 	{
+		idData = getBaseStationIdFromBotId(id);
 		this.id = id;
+	}
+	
+	
+	/**
+	 * Transform a botID in base station format to Sumatra BotID.
+	 * Base station used id 0-11 for yellow and 12-23 for blue.
+	 * ID 255 is an unused slot in base station.
+	 * 
+	 * @param id
+	 * @return
+	 */
+	public static BotID getBotIdFromBaseStationId(int id)
+	{
+		if (id == AObjectID.UNINITIALIZED_ID)
+		{
+			return BotID.createBotId();
+		}
+		
+		if (id > AObjectID.BOT_ID_MAX)
+		{
+			return BotID.createBotId(id - (AObjectID.BOT_ID_MAX + 1), ETeamColor.BLUE);
+		}
+		
+		return BotID.createBotId(id, ETeamColor.YELLOW);
+	}
+	
+	
+	/**
+	 * Transform a Sumatra BotID to base station format.
+	 * 
+	 * @param id
+	 * @return
+	 */
+	public static int getBaseStationIdFromBotId(BotID id)
+	{
+		if (id.getNumber() == AObjectID.UNINITIALIZED_ID)
+		{
+			return 255;
+		}
+		
+		if (id.getTeamColor() == ETeamColor.BLUE)
+		{
+			return id.getNumber() + AObjectID.BOT_ID_MAX + 1;
+		}
+		
+		return id.getNumber();
 	}
 }

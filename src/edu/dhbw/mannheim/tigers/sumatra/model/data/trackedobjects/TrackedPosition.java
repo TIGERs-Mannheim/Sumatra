@@ -88,7 +88,7 @@ public class TrackedPosition
 	 */
 	public void update(AIInfoFrame aiFrame)
 	{
-		update(aiFrame.worldFrame);
+		update(aiFrame.getWorldFrame());
 	}
 	
 	

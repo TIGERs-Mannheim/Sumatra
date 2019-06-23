@@ -12,6 +12,9 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.botmanager;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
 
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
+
 
 /**
  * Dataholder for PID parameters with config read/write support.
@@ -24,8 +27,11 @@ public class PIDParameters
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
+	@SerialData(type = ESerialDataType.FLOAT32)
 	private float	Kp	= 0.0f;
+	@SerialData(type = ESerialDataType.FLOAT32)
 	private float	Ki	= 0.0f;
+	@SerialData(type = ESerialDataType.FLOAT32)
 	private float	Kd	= 0.0f;
 	
 	
@@ -59,6 +65,18 @@ public class PIDParameters
 	public PIDParameters(SubnodeConfiguration config)
 	{
 		setConfiguration(config);
+	}
+	
+	
+	/**
+	 * 
+	 * @param params
+	 */
+	public PIDParameters(PIDParameters params)
+	{
+		Kp = params.Kp;
+		Kd = params.Kd;
+		Ki = params.Ki;
 	}
 	
 	

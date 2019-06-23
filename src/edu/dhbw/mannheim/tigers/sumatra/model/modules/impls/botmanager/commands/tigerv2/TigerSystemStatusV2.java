@@ -8,9 +8,14 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -20,16 +25,27 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.
 public class TigerSystemStatusV2 extends ACommand
 {
 	/** [Ve-1] */
+	@SerialData(type = ESerialDataType.UINT16)
 	private int	kickerLevel;
+	
 	/** 1 or 0 */
+	@SerialData(type = ESerialDataType.UINT8)
 	private int	barrierInterrupted;
+	
 	/** pos, vel, acc */
+	@SerialData(type = ESerialDataType.UINT8)
 	private int	stateUpdated;
+	
 	/** [mm] */
+	@SerialData(type = ESerialDataType.INT16)
 	private int	pos[]	= new int[3];
+	
 	/** [mm/s] */
+	@SerialData(type = ESerialDataType.INT16)
 	private int	vel[]	= new int[3];
-	/** [mm/s�] */
+	
+	/** [mm/s^2] */
+	@SerialData(type = ESerialDataType.INT16)
 	private int	acc[]	= new int[3];
 	
 	
@@ -38,66 +54,36 @@ public class TigerSystemStatusV2 extends ACommand
 	 */
 	public TigerSystemStatusV2()
 	{
+		super(ECommand.CMD_SYSTEM_STATUS_V2);
 	}
 	
 	
-	@Override
-	public void setData(byte[] data)
+	/**
+	 * 
+	 * @param cmd
+	 */
+	protected TigerSystemStatusV2(ECommand cmd)
 	{
-		kickerLevel = byteArray2UShort(data, 0);
-		barrierInterrupted = byteArray2UByte(data, 2);
-		stateUpdated = byteArray2UByte(data, 3);
-		
-		pos[0] = byteArray2Short(data, 4);
-		pos[1] = byteArray2Short(data, 6);
-		pos[2] = byteArray2Short(data, 8);
-		
-		vel[0] = byteArray2Short(data, 10);
-		vel[1] = byteArray2Short(data, 12);
-		vel[2] = byteArray2Short(data, 14);
-		
-		acc[0] = byteArray2Short(data, 16);
-		acc[1] = byteArray2Short(data, 18);
-		acc[2] = byteArray2Short(data, 20);
+		super(cmd);
 	}
 	
 	
-	@Override
-	public byte[] getData()
+	/**
+	 * @return
+	 */
+	public List<Float> getAllValues()
 	{
-		final byte data[] = new byte[getDataLength()];
-		
-		short2ByteArray(data, 0, kickerLevel);
-		byte2ByteArray(data, 2, barrierInterrupted);
-		byte2ByteArray(data, 3, stateUpdated);
-		
-		short2ByteArray(data, 4, pos[0]);
-		short2ByteArray(data, 6, pos[1]);
-		short2ByteArray(data, 8, pos[2]);
-		
-		short2ByteArray(data, 10, vel[0]);
-		short2ByteArray(data, 12, vel[1]);
-		short2ByteArray(data, 14, vel[2]);
-		
-		short2ByteArray(data, 16, acc[0]);
-		short2ByteArray(data, 18, acc[1]);
-		short2ByteArray(data, 20, acc[2]);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_SYSTEM_STATUS_V2;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 22;
+		List<Float> values = new ArrayList<Float>(18);
+		values.add(getPosition().x);
+		values.add(getPosition().y);
+		values.add(getOrientation());
+		values.add(getVelocity().x);
+		values.add(getVelocity().y);
+		values.add(getAngularVelocity());
+		values.add(getAcceleration().x);
+		values.add(getAcceleration().y);
+		values.add(getAngularAcceleration());
+		return values;
 	}
 	
 	

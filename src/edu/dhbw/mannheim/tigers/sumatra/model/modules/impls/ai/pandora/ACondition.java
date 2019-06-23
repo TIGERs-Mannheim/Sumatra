@@ -12,13 +12,10 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora;
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.FrameID;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.BotConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.ECondition;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
 
 
 /**
@@ -29,9 +26,9 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBot
  * By instantiating a Condition in a Role, you give it a state which can then be tried to achieved and worked with.
  * </p>
  * <p>
- * Conditions must implement a {@link #doCheckCondition(WorldFrame, BotID)} method, which will determine the state of
- * the condition and is only accessible by the {@link #checkCondition(WorldFrame, BotID)}-Method, which will cache the
- * state of the Condition for the next calls with the same frame-id.
+ * Conditions must implement a {@link #doCheckCondition(SimpleWorldFrame, BotID)} method, which will determine the state
+ * of the condition and is only accessible by the {@link #checkCondition(SimpleWorldFrame, BotID)}-Method, which will
+ * cache the state of the Condition for the next calls with the same frame-id.
  * </p>
  * 
  * @author GuntherB, Gero
@@ -47,7 +44,7 @@ public abstract class ACondition
 	
 	private ECondition							type;
 	
-	/** @see #checkCondition(WorldFrame, BotID) */
+	/** @see #checkCondition(SimpleWorldFrame, BotID) */
 	private static final EConditionState	UNDEFINED_RESULT	= EConditionState.NOT_CHECKED;
 	
 	private FrameID								lastId;
@@ -61,9 +58,6 @@ public abstract class ACondition
 	/** check this condition? */
 	private boolean								active				= true;
 	
-	private EBotType								botType				= EBotType.UNKNOWN;
-	
-	private BotConfig								botConfig			= null;
 	
 	/**
 	 * What is the state of this condition? This enum is used to have more than binary states
@@ -127,7 +121,7 @@ public abstract class ACondition
 	 * @param botId
 	 * @return condition state (cached, if worldFrame.id equals the one from last call!)
 	 */
-	public EConditionState checkCondition(WorldFrame worldFrame, BotID botId)
+	public EConditionState checkCondition(SimpleWorldFrame worldFrame, BotID botId)
 	{
 		if (!active)
 		{
@@ -135,22 +129,14 @@ public abstract class ACondition
 			// return true if not active
 			return EConditionState.DISABLED;
 		}
-		if (stateChanged || (lastId == null) || !lastId.equals(worldFrame.id))
+		if (stateChanged || (lastId == null) || !lastId.equals(worldFrame.getId()))
 		{
-			lastId = worldFrame.id;
+			lastId = worldFrame.getId();
 			
 			// Check for valid botIds...
-			final TrackedTigerBot bot = worldFrame.tigerBotsVisible.getWithNull(botId);
+			final TrackedTigerBot bot = worldFrame.getBot(botId);
 			if (bot != null)
 			{
-				if (botConfig == null)
-				{
-					botConfig = AIConfig.getBotConfig(bot.getBotType());
-				}
-				if (botType == EBotType.UNKNOWN)
-				{
-					botType = bot.getBotType();
-				}
 				lastResult = doCheckCondition(worldFrame, botId);
 				stateChanged = false;
 			} else
@@ -165,33 +151,7 @@ public abstract class ACondition
 	
 	
 	/**
-	 * Do not call this on field initialization or in the constructor. At least one
-	 * call to doCheckCondition has to be processed!
-	 * 
-	 * @return the botConfig
-	 */
-	public final BotConfig getBotConfig()
-	{
-		if (botConfig == null)
-		{
-			throw new IllegalStateException(
-					"botConfig is still null. Only call after at least one doCalculation was processed!");
-		}
-		return botConfig;
-	}
-	
-	
-	/**
-	 * @return the botType
-	 */
-	public final EBotType getBotType()
-	{
-		return botType;
-	}
-	
-	
-	/**
-	 * @return The last result calculated by {@link #checkCondition(WorldFrame,BotID)}
+	 * @return The last result calculated by {@link #checkCondition(SimpleWorldFrame,BotID)}
 	 */
 	public EConditionState getLastConditionResult()
 	{
@@ -201,7 +161,7 @@ public abstract class ACondition
 	
 	/**
 	 * Resets the internal cache and ensures that a new calculation is performed on
-	 * {@link #checkCondition(WorldFrame, BotID)}!
+	 * {@link #checkCondition(SimpleWorldFrame, BotID)}!
 	 */
 	public void resetCache()
 	{
@@ -224,7 +184,18 @@ public abstract class ACondition
 	 * @param botId
 	 * @return condition state
 	 */
-	protected abstract EConditionState doCheckCondition(WorldFrame worldFrame, BotID botId);
+	protected abstract EConditionState doCheckCondition(SimpleWorldFrame worldFrame, BotID botId);
+	
+	
+	/**
+	 * Update this condition with the worldframe
+	 * 
+	 * @param swf
+	 * @param botId
+	 */
+	public void update(SimpleWorldFrame swf, BotID botId)
+	{
+	}
 	
 	
 	/**
@@ -313,6 +284,4 @@ public abstract class ACondition
 	{
 		return stateChanged;
 	}
-	
-	
 }

@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamBall;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamCalibration;
@@ -29,7 +30,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextk
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.ICamGeomObservable;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.ICamGeomObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ACam;
-import edu.moduli.exceptions.ModuleNotFoundException;
 
 
 /**

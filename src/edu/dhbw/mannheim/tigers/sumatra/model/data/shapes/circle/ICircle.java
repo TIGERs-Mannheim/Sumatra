@@ -54,4 +54,13 @@ public interface ICircle extends I2DShape
 	 * @return
 	 */
 	boolean isPointInShape(IVector2 point, float margin);
+	
+	
+	/**
+	 * Nearest point on circle which is the intersection point between center and given point
+	 * 
+	 * @param point
+	 * @return
+	 */
+	IVector2 nearestPointOnCircle(IVector2 point);
 }

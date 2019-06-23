@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 07.07.2011
  * Author(s): osteinbrecher
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.kicker;
@@ -32,7 +31,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
  * Overview for fast kicker configuration.
  * 
  * @author Oliver Steinbrecher
- * 
  */
 public class FastKickerConfigOverview extends JPanel
 {
@@ -63,7 +61,7 @@ public class FastKickerConfigOverview extends JPanel
 	
 	private static final long								serialVersionUID	= -43699869205865027L;
 	
-	private final Map<BotID, JPanel>						botPanels			= new TreeMap<BotID, JPanel>();
+	private final Map<BotID, JPanel>						botPanels			= new TreeMap<BotID, JPanel>(BotID.getComparator());
 	
 	private JButton											setChg				= null;
 	private JButton											dischargeAll		= null;
@@ -91,7 +89,7 @@ public class FastKickerConfigOverview extends JPanel
 	 * @param botId
 	 * @param panel
 	 */
-	public void addBotPanel(BotID botId, JPanel panel)
+	public void addBotPanel(final BotID botId, final JPanel panel)
 	{
 		botPanels.put(botId, panel);
 		
@@ -102,7 +100,7 @@ public class FastKickerConfigOverview extends JPanel
 	/**
 	 * @param panel
 	 */
-	public void removeBotPanel(JPanel panel)
+	public void removeBotPanel(final JPanel panel)
 	{
 		for (Map.Entry<BotID, JPanel> entry : botPanels.entrySet())
 		{
@@ -156,27 +154,25 @@ public class FastKickerConfigOverview extends JPanel
 			{
 				removeAll();
 				
-				for (final Entry<BotID, JPanel> pair : botPanels.entrySet())
-				{
-					add(pair.getValue(), "wrap, gapbottom 0");
-				}
-				
 				setChg = new JButton("set");
 				setChg.addActionListener(new SetChgAll());
 				dischargeAll = new JButton("discharge all");
 				dischargeAll.addActionListener(new DischargeAll());
 				
-				maxCap = new JTextField("180");
+				maxCap = new JTextField("150");
 				
 				final JPanel maxPanel = new JPanel(new MigLayout("fill", "[100!, fill]"));
-				
 				maxPanel.add(new JLabel("maxCap"));
 				maxPanel.add(maxCap);
 				
-				add(maxPanel, "wrap");
-				
+				add(maxPanel);
 				add(setChg);
-				add(dischargeAll);
+				add(dischargeAll, "wrap, push");
+				
+				for (final Entry<BotID, JPanel> pair : botPanels.entrySet())
+				{
+					add(pair.getValue(), "wrap, gapbottom 0");
+				}
 				
 				add(Box.createGlue(), "push");
 				
@@ -189,7 +185,7 @@ public class FastKickerConfigOverview extends JPanel
 	/**
 	 * @param observer
 	 */
-	public void addObserver(IFastKickerConfigObserver observer)
+	public void addObserver(final IFastKickerConfigObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -201,7 +197,7 @@ public class FastKickerConfigOverview extends JPanel
 	/**
 	 * @param observer
 	 */
-	public void removeObserver(IFastKickerConfigObserver observer)
+	public void removeObserver(final IFastKickerConfigObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -236,7 +232,7 @@ public class FastKickerConfigOverview extends JPanel
 	}
 	
 	
-	private void notifySetChgAll(int chg)
+	private void notifySetChgAll(final int chg)
 	{
 		synchronized (observers)
 		{
@@ -267,7 +263,7 @@ public class FastKickerConfigOverview extends JPanel
 	private class SetChgAll implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent evt)
+		public void actionPerformed(final ActionEvent evt)
 		{
 			try
 			{
@@ -283,7 +279,7 @@ public class FastKickerConfigOverview extends JPanel
 	private class DischargeAll implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent evt)
+		public void actionPerformed(final ActionEvent evt)
 		{
 			notifyDischargeAll();
 		}

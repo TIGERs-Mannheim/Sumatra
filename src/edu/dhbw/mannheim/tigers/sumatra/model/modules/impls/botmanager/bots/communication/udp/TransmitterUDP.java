@@ -20,6 +20,7 @@ import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.Statistics;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandFactory;
 
 
 /**
@@ -42,6 +43,7 @@ public class TransmitterUDP implements ITransmitterUDP
 	private final BlockingQueue<ACommand>	sendQueue		= new LinkedBlockingQueue<ACommand>();
 	private Thread									sendingThread	= null;
 	private final Statistics					stats				= new Statistics();
+	private boolean								legacy			= false;
 	
 	
 	// --------------------------------------------------------------------------
@@ -149,6 +151,25 @@ public class TransmitterUDP implements ITransmitterUDP
 		return stats;
 	}
 	
+	
+	/**
+	 * @return the legacy
+	 */
+	public boolean isLegacy()
+	{
+		return legacy;
+	}
+	
+	
+	/**
+	 * @param legacy the legacy to set
+	 */
+	@Override
+	public void setLegacy(boolean legacy)
+	{
+		this.legacy = legacy;
+	}
+	
 	// --------------------------------------------------------------------------
 	// --- Threads --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -179,7 +200,7 @@ public class TransmitterUDP implements ITransmitterUDP
 				
 				try
 				{
-					byte data[] = cmd.getTransferData();
+					byte data[] = CommandFactory.getInstance().encode(cmd, legacy);
 					
 					DatagramPacket packet = new DatagramPacket(data, data.length, destination, destPort);
 					socket.send(packet);

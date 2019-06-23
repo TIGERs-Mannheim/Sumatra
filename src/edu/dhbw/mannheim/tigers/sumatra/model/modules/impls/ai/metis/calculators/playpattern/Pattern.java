@@ -4,18 +4,20 @@
  * Project: TIGERS - Sumatra
  * Date: 19.04.2012
  * Author(s): Paul
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.playpattern;
 
 import java.io.Serializable;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import com.sleepycat.persist.model.Persistent;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AiMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMap;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.IBotIDMap;
@@ -24,10 +26,12 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
 
 /**
  * This represents a detected play pattern of the enemy. The actual situation can be compared with this pattern.
+ * DO NOT DELETE this class. It is needed by Berkeley DB
  * 
  * @author PaulB , OliverS
- * 
  */
+@Persistent
+@Deprecated
 public class Pattern implements Serializable, Comparable<Pattern>
 {
 	// --------------------------------------------------------------------------
@@ -73,6 +77,18 @@ public class Pattern implements Serializable, Comparable<Pattern>
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
+	
+	@SuppressWarnings("unused")
+	private Pattern()
+	{
+		isPersisted = false;
+		patternPasserAngle = 0;
+		patternPasserPos = AVector2.ZERO_VECTOR;
+		patternReceiverAngle = 0;
+		patternRecieverPos = AVector2.ZERO_VECTOR;
+	}
+	
+	
 	/**
 	 * @param passerPosition
 	 * @param recieverPosition
@@ -81,8 +97,9 @@ public class Pattern implements Serializable, Comparable<Pattern>
 	 * @param isPersisted true when pattern was loaded from log
 	 * @throws IllegalArgumentException
 	 */
-	public Pattern(IVector2 passerPosition, IVector2 recieverPosition, float passerAngle, float receiverAngle,
-			boolean isPersisted)
+	public Pattern(final IVector2 passerPosition, final IVector2 recieverPosition, final float passerAngle,
+			final float receiverAngle,
+			final boolean isPersisted)
 	{
 		if ((passerPosition == null) || (recieverPosition == null))
 		{
@@ -104,7 +121,8 @@ public class Pattern implements Serializable, Comparable<Pattern>
 	 * @param receiverAngle
 	 * @throws IllegalArgumentException
 	 */
-	public Pattern(IVector2 passerPosition, IVector2 recieverPosition, float passerAngle, float receiverAngle)
+	public Pattern(final IVector2 passerPosition, final IVector2 recieverPosition, final float passerAngle,
+			final float receiverAngle)
 	{
 		this(passerPosition, recieverPosition, passerAngle, receiverAngle, false);
 	}
@@ -116,7 +134,7 @@ public class Pattern implements Serializable, Comparable<Pattern>
 	 * 
 	 * @param pattern
 	 */
-	public Pattern(Pattern pattern)
+	public Pattern(final Pattern pattern)
 	{
 		this(pattern.getPasser(), pattern.getReciever(), pattern.getPasserAngle(), pattern.getReceiverAngle(), true);
 		initializeIndex();
@@ -130,16 +148,16 @@ public class Pattern implements Serializable, Comparable<Pattern>
 	/**
 	 * Compares the actual frame with this pattern. {@link #matchingScore} will be refreshed.
 	 * 
-	 * @param aiFrame
+	 * @param wFrame
 	 */
-	public void compare(AIInfoFrame aiFrame)
+	public void compare(final WorldFrame wFrame)
 	{
-		final TrackedBot actualPasser = getPasser(aiFrame);
+		final TrackedTigerBot actualPasser = getPasser(wFrame);
 		if (actualPasser == null)
 		{
 			return;
 		}
-		final TrackedBot actualReceiver = getReciever(aiFrame, actualPasser.getId());
+		final TrackedTigerBot actualReceiver = getReciever(wFrame, actualPasser.getId());
 		if (actualReceiver == null)
 		{
 			return;
@@ -151,8 +169,7 @@ public class Pattern implements Serializable, Comparable<Pattern>
 						actualReceiver.getPos(), patternRecieverPos));
 		
 		// score which checks if the ball is near the passer position of this pattern
-		final double ballScore = SCALE_MATCHING_SCORE
-				* calcPositionDifference(aiFrame.worldFrame.ball.getPos(), patternPasserPos);
+		final double ballScore = SCALE_MATCHING_SCORE * calcPositionDifference(wFrame.ball.getPos(), patternPasserPos);
 		
 		
 		final double angleScore = SCALE_MATCHING_SCORE
@@ -177,7 +194,7 @@ public class Pattern implements Serializable, Comparable<Pattern>
 	 * @param position2
 	 * @return
 	 */
-	private double calcPositionDifference(IVector2 position1, IVector2 position2)
+	private double calcPositionDifference(final IVector2 position1, final IVector2 position2)
 	{
 		final double distanceX = Math.pow((getNormalX(position2.x()) - getNormalX(position1.x())), 2);
 		final double distanceY = Math.pow((getNormalY(position2.y()) - getNormalY(position1.y())), 2);
@@ -192,7 +209,7 @@ public class Pattern implements Serializable, Comparable<Pattern>
 	 * @param angle
 	 * @return
 	 */
-	private float calcAngleDistance(float patternAngle, float angle)
+	private float calcAngleDistance(final float patternAngle, final float angle)
 	{
 		final float normalPatternAngle = getNormalAngle(patternAngle);
 		final float normalAngle = getNormalAngle(angle);
@@ -210,26 +227,26 @@ public class Pattern implements Serializable, Comparable<Pattern>
 	/**
 	 * Estimates the passer in the actual frame.
 	 * 
-	 * @param aiFrame
+	 * @param wFrame
 	 * @return passer
 	 */
-	public TrackedBot getPasser(AIInfoFrame aiFrame)
+	public TrackedTigerBot getPasser(final WorldFrame wFrame)
 	{
-		return AiMath.getNearestBot(aiFrame.worldFrame.foeBots, patternPasserPos);
+		return AiMath.getNearestBot(wFrame.foeBots, patternPasserPos);
 	}
 	
 	
 	/**
 	 * Estimates the receiver in the actual frame.
 	 * 
-	 * @param aiFrame
+	 * @param wFrame
 	 * @param passerID
 	 * @return passer
 	 */
-	private TrackedBot getReciever(AIInfoFrame aiFrame, BotID passerID)
+	private TrackedTigerBot getReciever(final WorldFrame wFrame, final BotID passerID)
 	{
 		// remove passer from foeBot map
-		final IBotIDMap<TrackedBot> receiverCandidates = new BotIDMap<TrackedBot>(aiFrame.worldFrame.foeBots);
+		final IBotIDMap<TrackedTigerBot> receiverCandidates = new BotIDMap<TrackedTigerBot>(wFrame.foeBots);
 		receiverCandidates.remove(passerID);
 		
 		return AiMath.getNearestBot(receiverCandidates, patternRecieverPos);
@@ -244,7 +261,7 @@ public class Pattern implements Serializable, Comparable<Pattern>
 	
 	
 	@Override
-	public int compareTo(Pattern pattern)
+	public int compareTo(final Pattern pattern)
 	{
 		// sort descending
 		if (getMatchingScore() > pattern.getMatchingScore())
@@ -296,7 +313,6 @@ public class Pattern implements Serializable, Comparable<Pattern>
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @return
 	 */
 	public IVector2 getPasser()
@@ -306,7 +322,6 @@ public class Pattern implements Serializable, Comparable<Pattern>
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public IVector2 getReciever()
@@ -362,7 +377,7 @@ public class Pattern implements Serializable, Comparable<Pattern>
 	 * @param x
 	 * @return normalized x
 	 */
-	private float getNormalX(float x)
+	private float getNormalX(final float x)
 	{
 		return (x - minX) / (maxX - minX);
 	}
@@ -374,7 +389,7 @@ public class Pattern implements Serializable, Comparable<Pattern>
 	 * @param y
 	 * @return normalized y
 	 */
-	private float getNormalY(float y)
+	private float getNormalY(final float y)
 	{
 		return (y - minY) / (maxY - minY);
 	}
@@ -386,7 +401,7 @@ public class Pattern implements Serializable, Comparable<Pattern>
 	 * @param angle
 	 * @return normalized angle
 	 */
-	private float getNormalAngle(float angle)
+	private float getNormalAngle(final float angle)
 	{
 		return (angle - ANGLE_MIN) / (ANGLE_MAX - ANGLE_MIN);
 	}
@@ -405,7 +420,7 @@ public class Pattern implements Serializable, Comparable<Pattern>
 	 * @param pat
 	 * @return if pattern is like an already found pattern
 	 */
-	public boolean isSameAs(Pattern pat)
+	public boolean isSameAs(final Pattern pat)
 	{
 		if ((patternPasserPos.subtractNew(pat.patternPasserPos).getLength2() < (AIConfig.getGeometry().getBotRadius() * 3))
 				&& (patternRecieverPos.subtractNew(pat.patternRecieverPos).getLength2() < (AIConfig.getGeometry()
@@ -432,7 +447,7 @@ public class Pattern implements Serializable, Comparable<Pattern>
 	
 	
 	@Override
-	public boolean equals(Object obj)
+	public boolean equals(final Object obj)
 	{
 		if (this == obj)
 		{

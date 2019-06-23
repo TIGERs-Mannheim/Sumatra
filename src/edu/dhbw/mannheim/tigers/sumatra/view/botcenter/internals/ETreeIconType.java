@@ -35,4 +35,8 @@ public enum ETreeIconType
 	AP,
 	/** */
 	CONSOLE,
+	/**  */
+	GEAR,
+	/**  */
+	SPLINE,
 }

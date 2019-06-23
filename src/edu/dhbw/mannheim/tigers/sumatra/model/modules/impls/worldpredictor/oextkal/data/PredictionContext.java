@@ -32,17 +32,17 @@ public class PredictionContext
 {
 	/** used for prediction and updates */
 	/** The currently detected TIGER-bots */
-	public final Map<Integer, IFilter>				tigers;
+	public final Map<Integer, IFilter>				yellowBots;
 	/** The currently detected foe-bots */
-	public final Map<Integer, IFilter>				food;
+	public final Map<Integer, IFilter>				blueBots;
 	/** The currently detected balls */
 	public IFilter											ball;
 	
 	/** used for tracking-manager */
 	/** The new detected TIGER-bots */
-	public final Map<Integer, UnregisteredBot>	newTigers;
+	public final Map<Integer, UnregisteredBot>	newYellowBots;
 	/** The new detected foe-bots */
-	public final Map<Integer, UnregisteredBot>	newFood;
+	public final Map<Integer, UnregisteredBot>	newBlueBots;
 	/** The new detected balls */
 	public UnregisteredBall								newBall;
 	
@@ -62,9 +62,9 @@ public class PredictionContext
 	public final int										numberCams;
 	
 	/** */
-	public final int										minTigersInWorldFrame;
+	public final int										minYellowInWorldFrame;
 	/** */
-	public final int										minFoodInWorldFrame;
+	public final int										minBlueInWorldFrame;
 	
 	/** */
 	public final int										worldframesPublishIntervalMS;
@@ -83,12 +83,12 @@ public class PredictionContext
 	public PredictionContext(SubnodeConfiguration properties)
 	{
 		// maps an id (integer) to a ObjectData, maximum 10 elements, 100% load
-		tigers = new ConcurrentHashMap<Integer, IFilter>(10, 1);
-		food = new ConcurrentHashMap<Integer, IFilter>(10, 1);
+		yellowBots = new ConcurrentHashMap<Integer, IFilter>(10, 1);
+		blueBots = new ConcurrentHashMap<Integer, IFilter>(10, 1);
 		ball = null;
 		
-		newTigers = new HashMap<Integer, UnregisteredBot>(10, 1);
-		newFood = new HashMap<Integer, UnregisteredBot>(10, 1);
+		newYellowBots = new HashMap<Integer, UnregisteredBot>(10, 1);
+		newBlueBots = new HashMap<Integer, UnregisteredBot>(10, 1);
 		newBall = null;
 		
 		// convert from ms to ns
@@ -101,8 +101,8 @@ public class PredictionContext
 		
 		numberCams = properties.getInt("camNo", 2);
 		
-		minTigersInWorldFrame = properties.getInt("minTigersInWorldFrame", 5);
-		minFoodInWorldFrame = properties.getInt("minFoesInWorldFrame", 5);
+		minYellowInWorldFrame = properties.getInt("minYellowInWorldFrame", 5);
+		minBlueInWorldFrame = properties.getInt("minBlueInWorldFrame", 5);
 		
 		worldframesPublishIntervalMS = properties.getInt("worldframePublishIntervalMS", 16);
 		reset();
@@ -114,11 +114,11 @@ public class PredictionContext
 	 */
 	public void reset()
 	{
-		tigers.clear();
-		food.clear();
+		yellowBots.clear();
+		blueBots.clear();
 		ball = null;
-		newTigers.clear();
-		newFood.clear();
+		newYellowBots.clear();
+		newBlueBots.clear();
 		newBall = null;
 		
 		latestCaptureTimestamp = -1.0 * Double.MAX_VALUE;

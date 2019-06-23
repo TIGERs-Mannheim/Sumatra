@@ -13,7 +13,6 @@ import java.util.List;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
 
@@ -48,24 +47,31 @@ public class StraightMoveSkill extends AMoveSkill
 	
 	
 	@Override
-	public List<ACommand> doCalcEntryActions(TrackedTigerBot bot, List<ACommand> cmds)
+	public List<ACommand> doCalcEntryActions(List<ACommand> cmds)
 	{
 		List<IVector2> path = new LinkedList<IVector2>();
-		path.add(bot.getPos().addNew(new Vector2(bot.getAngle() + angle).multiply(distance)));
-		createSpline(bot, path, bot.getAngle());
+		path.add(getPos().addNew(new Vector2(getAngle() + angle).multiply(distance)));
+		createSpline(path, getAngle());
 		return cmds;
 	}
 	
 	
 	@Override
-	protected void periodicProcess(TrackedTigerBot bot, List<ACommand> cmds)
+	protected void periodicProcess(List<ACommand> cmds)
 	{
 	}
 	
 	
 	@Override
-	protected boolean isComplete(TrackedTigerBot bot)
+	protected boolean isMoveComplete()
 	{
-		return super.isComplete(bot);
+		return super.isMoveComplete();
+	}
+	
+	
+	@Override
+	public boolean needsVision()
+	{
+		return false;
 	}
 }

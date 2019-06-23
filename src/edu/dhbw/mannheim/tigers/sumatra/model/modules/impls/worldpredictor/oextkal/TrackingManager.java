@@ -13,6 +13,7 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal;
 
 import java.util.Iterator;
+import java.util.Map;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.WPConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.data.PredictionContext;
@@ -21,16 +22,16 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextk
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.filter.FilterSelector;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.filter.IFilter;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.motionModels.BallMotionModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.motionModels.FoodMotionModel;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.motionModels.IMotionModel;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.motionModels.TigersMotionModel;
 
 
 /**
  * This class is responsible for the actuality of all objects in the {@link PredictionContext} (
- * {@link PredictionContext#ball}, {@link PredictionContext#food} and {@link PredictionContext#tigers}), and handles
- * new objects on the field ({@link PredictionContext#newBall}, {@link PredictionContext#newFood} and
- * {@link PredictionContext#newTigers})
+ * {@link PredictionContext#ball}, {@link PredictionContext#blueBots} and {@link PredictionContext#yellowBots}), and
+ * handles
+ * new objects on the field ({@link PredictionContext#newBall}, {@link PredictionContext#newBlueBots} and
+ * {@link PredictionContext#newYellowBots})
  */
 public class TrackingManager
 {
@@ -69,130 +70,67 @@ public class TrackingManager
 		latestCaptureTimestamp = context.getLatestCaptureTimestamp();
 		
 		// --- 1. new objects on the field? ---
-		checkNewTigers();
-		// if (i == 1)
-		checkNewFood();
-		// if (i == 2 )
+		checkNewBots(context.newYellowBots, context.yellowBots, WPConfig.YELLOW_ID_OFFSET);
+		checkNewBots(context.newBlueBots, context.blueBots, WPConfig.BLUE_ID_OFFSET);
 		checkNewBalls();
 		
 		// --- 2. objects disappeared from field? ---
-		// if (i == 3)
-		checkTigers();
-		// if (i == 4)
-		checkFood();
-		// if (i == 5)
+		checkBots();
 		checkBall();
-		// if (++i == 6)
-		// i = 0;
 	}
 	
 	
-	private void checkNewTigers()
+	/**
+	 * @param contextNewRobot
+	 * @param contextRobots
+	 * @param offsetId WPConfig.YELLOW_ID_OFFSET
+	 */
+	private void checkNewBots(Map<Integer, UnregisteredBot> contextNewRobot, Map<Integer, IFilter> contextRobots,
+			int offsetId)
 	{
-		// log.debug("Checking new tigers");
-		// synchronized (context.newTigers)
-		// {
-		// --- check, if there are any new tigerbot detections at all ---
-		// --- in general, there should be no change of the tigerbots on the field ---
-		if (context.newTigers.isEmpty())
+		// --- check, if there are any new bots detections at all ---
+		// --- in general, there should be no change of the bots on the field ---
+		if (contextNewRobot.isEmpty())
 		{
-			// --- if there are no new tigerbots, we're done here ---
 			return;
 		}
 		
-		// --- there are possible new tigerbots on the field ---
-		// --- iterate through all detections of possible new tigerbots ---
+		// --- there are possible new bots on the field ---
+		// --- iterate through all detections of possible new bots ---
 		// --- we use Iterator to safely remove data from the Map if neccessary ---
-		final Iterator<UnregisteredBot> it = context.newTigers.values().iterator();
+		final Iterator<UnregisteredBot> it = contextNewRobot.values().iterator();
 		while (it.hasNext())
 		{
-			final UnregisteredBot newTiger = it.next();
-			// --- consistent detection of tigerbot? ---
+			final UnregisteredBot newBot = it.next();
+			// --- consistent detection of bots? ---
 			// --- is the oldest required detection/sighting of the bot newer than the allowed maximum time? ---
 			// --- in general, we should have enough detections ---
-			if ((newTiger.oldTimestamp <= (latestCaptureTimestamp - WPConfig.ADD_MAX_TIME_BOT))
-					&& (newTiger.count >= WPConfig.ADD_MIN_FRAMES_BOTS))
+			if ((newBot.oldTimestamp <= (latestCaptureTimestamp - WPConfig.ADD_MAX_TIME_BOT))
+					&& (newBot.count >= WPConfig.ADD_MIN_FRAMES_BOTS))
 			{
-				// --- new tigerbot with sufficient certainty detected ---
+				// --- new bots with sufficient certainty detected ---
 				// --- add him to tigers-list of the context and remove it form newTigers-list ---
-				// --- after that, continue with next new tigerbot ---
-				// NOTE Changed newTiger.get(0) to position
+				// --- after that, continue with next new bots ---
 				
-				final IFilter tiger = FilterSelector.getTigerFilter();
+				final IFilter bot = FilterSelector.getTigerFilter();
 				final IMotionModel motionModel = new TigersMotionModel();
-				tiger.init(motionModel, context, newTiger.newTimestamp, newTiger.visionBot);
-				synchronized (context.tigers)
-				{
-					context.tigers.put(newTiger.visionBot.id + WPConfig.TIGER_ID_OFFSET, tiger);
-				}
+				bot.init(motionModel, context, newBot.newTimestamp, newBot.visionBot);
+				contextRobots.put(newBot.visionBot.id + offsetId, bot);
 				
 				it.remove();
-				// log.debug("Tiger " + new_tiger.get(0).id + " added.");
 				continue;
 			}
 			
-			// --- false detection of tigerbot? ---
+			// --- false detection of bot? ---
 			// --- is the last detection/sighting of the bot older than the allowed maximum time? ---
 			
-			if (newTiger.newTimestamp < (latestCaptureTimestamp - WPConfig.ADD_MAX_TIME_BOT))
+			if (newBot.newTimestamp < (latestCaptureTimestamp - WPConfig.ADD_MAX_TIME_BOT))
 			{
 				// --- the detection could not be verified ---
 				// --- remove this thing from our newTigers-list ---
 				it.remove();
 			}
 		}// --- end iteration on new tigerbots on the field ---
-			// }// --- end synchronize context.newTigers ---
-	}
-	
-	
-	private void checkNewFood()
-	{
-		// --- check, if there are any new foodbot detections at all ---
-		// --- in general, there should be no change of the foodbots on the field ---
-		if (context.newFood.isEmpty())
-		{
-			// --- if there are no new foodbots, we're done here ---
-			return;
-		}
-		
-		// --- there are possible new foodbots on the field ---
-		// --- iterate through all detections of possible new foodbots ---
-		// --- we use Iterator to safely remove data from the Map if neccessary ---
-		final Iterator<UnregisteredBot> it = context.newFood.values().iterator();
-		while (it.hasNext())
-		{
-			final UnregisteredBot newFood = it.next();
-			// --- consistent detection of foodbot? ---
-			// --- is the oldest required detection/sighting of the bot newer than the allowed maximum time? ---
-			// --- in general, we should have enough detections ---
-			if ((newFood.oldTimestamp <= (latestCaptureTimestamp - WPConfig.ADD_MAX_TIME_BOT))
-					&& (newFood.count >= WPConfig.ADD_MIN_FRAMES_BOTS))
-			{
-				// --- new foodbot with sufficient certainty detected ---
-				// --- add him to food-list of the context and remove it form newFood-list ---
-				// --- after that, continue with next new foodbot ---
-				final IFilter food = FilterSelector.getFoodFilter();
-				final IMotionModel motionModel = new FoodMotionModel();
-				food.init(motionModel, context, newFood.newTimestamp, newFood.visionBot);
-				synchronized (context.food)
-				{
-					context.food.put(newFood.visionBot.id + WPConfig.FOOD_ID_OFFSET, food);
-				}
-				
-				it.remove();
-				continue;
-			}
-			
-			// --- false detection of foodbot? ---
-			// --- is the last detection/sighting of the bot older than the allowed maximum time? ---
-			if (newFood.newTimestamp < (latestCaptureTimestamp - WPConfig.ADD_MAX_TIME_BOT))
-			{
-				// --- the detection could not be verified ---
-				// --- remove this thing from our newFood-list ---
-				it.remove();
-			}
-		}// --- end iteration on new foodbots on the field ---
-			// }// --- end synchronize context.newFood ---
 	}
 	
 	
@@ -255,56 +193,27 @@ public class TrackingManager
 	}
 	
 	
-	private void checkTigers()
+	private void checkBots()
 	{
-		// log.debug("Checking tigers");
-		// synchronized (context.tigers)
-		// {
-		// --- in general there are tigerbots on the field ---
-		// --- so iterate through all tigerbots ---
-		// --- we use Iterator to safely remove data from the Map if neccessary ---
-		final Iterator<IFilter> it = context.tigers.values().iterator();
+		checkBots(context.yellowBots.values().iterator());
+		checkBots(context.blueBots.values().iterator());
+	}
+	
+	
+	private void checkBots(Iterator<IFilter> it)
+	{
 		while (it.hasNext())
 		{
-			final IFilter tiger = it.next();
+			final IFilter filterBot = it.next();
 			// --- no consistent detection of tigerbot anymore? ---
 			// --- is the last detection of the bot older than the allowed maximum time? ---
-			if (tiger.getTimestamp() <= (latestCaptureTimestamp - WPConfig.REM_MAX_TIME_BOT))
+			if (filterBot.getTimestamp() <= (latestCaptureTimestamp - WPConfig.REM_MAX_TIME_BOT))
 			{
 				// --- the bot was removed from the field ---
 				// --- so remove this bot from our tigers-list ---
 				it.remove();
-				// log.debug("Tiger " + tiger.id + " removed.");
 			}
 		}
-		// }
-	}
-	
-	
-	private void checkFood()
-	{
-		// log.debug("Checking food");
-		// synchronized (context.food)
-		// {
-		// --- in general there are foodbots on the field ---
-		// --- so iterate through all foodbots ---
-		// --- we use Iterator to safely remove data from the Map if neccessary ---
-		final Iterator<IFilter> it = context.food.values().iterator();
-		while (it.hasNext())
-		{
-			final IFilter food = it.next();
-			// --- no consistent detection of foodbot anymore? ---
-			// --- is the last detection of the bot older than the allowed maximum time? ---
-			if (food.getTimestamp() <= (latestCaptureTimestamp - WPConfig.REM_MAX_TIME_BOT))
-			{
-				// --- the bot was removed from the field ---
-				// --- so remove this bot from our food-list ---
-				it.remove();
-				// log.debug("Food " + food.id + " removed.");
-			}
-		}
-		
-		// }
 	}
 	
 	

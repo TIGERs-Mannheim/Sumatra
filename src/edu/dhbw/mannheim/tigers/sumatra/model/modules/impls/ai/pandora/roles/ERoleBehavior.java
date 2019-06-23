@@ -17,6 +17,7 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles;
  * @author Gero, Oliver
  * 
  */
+@Deprecated
 public enum ERoleBehavior
 {
 	/** Means that the role want to get somewhere near the goal */

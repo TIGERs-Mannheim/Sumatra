@@ -23,7 +23,6 @@ import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.Statistics;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandFactory;
 
 
@@ -48,6 +47,7 @@ public class ReceiverUDP
 	private DatagramSocket							socket								= null;
 	private Thread										receiverThread						= null;
 	private final Statistics						stats									= new Statistics();
+	private boolean									legacy								= false;
 	
 	private final List<IReceiverUDPObserver>	observers							= new ArrayList<IReceiverUDPObserver>();
 	
@@ -193,6 +193,24 @@ public class ReceiverUDP
 		return stats;
 	}
 	
+	
+	/**
+	 * @return the legacy
+	 */
+	public boolean isLegacy()
+	{
+		return legacy;
+	}
+	
+	
+	/**
+	 * @param legacy the legacy to set
+	 */
+	public void setLegacy(boolean legacy)
+	{
+		this.legacy = legacy;
+	}
+	
 	// --------------------------------------------------------------------------
 	// --- Threads --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -230,35 +248,24 @@ public class ReceiverUDP
 				{
 					socket.receive(packet);
 					
-					final byte[] packetData = packet.getData();
-					final int dataLength = packet.getLength() - CommandConstants.HEADER_SIZE;
+					final byte[] packetData = Arrays.copyOfRange(packet.getData(), 0, packet.getLength());
 					
-					final byte[] header = new byte[CommandConstants.HEADER_SIZE];
-					
-					System.arraycopy(packetData, 0, header, 0, CommandConstants.HEADER_SIZE);
-					
-					final ACommand cmd = CommandFactory.createEmptyPacket(header);
+					final ACommand cmd = CommandFactory.getInstance().decode(packetData, legacy);
 					if (cmd == null)
 					{
-						log.debug("Error while parsing header, message dropped. " + Arrays.toString(header));
+						log.warn("Error decoding command.");
 						continue;
 					}
 					
-					final byte[] data = new byte[dataLength];
-					
-					System.arraycopy(packetData, CommandConstants.HEADER_SIZE, data, 0, dataLength);
-					
-					cmd.setData(data);
-					
 					stats.packets++;
-					stats.payload += data.length;
-					stats.raw += data.length + 54;
+					stats.payload += packetData.length;
+					stats.raw += packetData.length + 54;
 					
 					notifyNewCommand(cmd);
 				} catch (final PortUnreachableException e)
 				{
 					final long waits = TimeUnit.MILLISECONDS.toSeconds(PORT_UNREACHABLE_RETRY_WAIT);
-					log.debug(socket.getLocalPort() + "->" + socket.getPort() + ": ICMP port unreachable, retry in " + waits
+					log.info(socket.getLocalPort() + "->" + socket.getPort() + ": ICMP port unreachable, retry in " + waits
 							+ "s.");
 					
 					try
@@ -277,6 +284,9 @@ public class ReceiverUDP
 				} catch (final IOException err)
 				{
 					log.error("Some IOException", err);
+				} catch (final Exception err)
+				{
+					log.error("Could not decode message, probably out-of-date command description", err);
 				}
 			}
 		}

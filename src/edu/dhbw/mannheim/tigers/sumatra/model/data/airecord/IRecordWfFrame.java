@@ -11,19 +11,17 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.airecord;
 
 import java.util.Date;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBall;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMapConst;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.IBotIDMap;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamProps;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.fieldPrediction.WorldFramePrediction;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.fieldPrediction.WorldFramePrediction;
 
 
 /**
- * TODO Nicolai Ommer <nicolai.ommer@gmail.com>, add comment!
- * - What should this type do (in one sentence)?
- * - If not intuitive: A simple example how to use this class
+ * Interface for worldframe
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  * 
@@ -34,48 +32,60 @@ public interface IRecordWfFrame
 	/**
 	 * @return the foeBots
 	 */
-	public abstract BotIDMapConst<TrackedBot> getFoeBots();
+	BotIDMapConst<TrackedTigerBot> getFoeBots();
 	
 	
 	/**
 	 * @return the tigerBotsVisible
 	 */
-	public abstract BotIDMapConst<TrackedTigerBot> getTigerBotsVisible();
+	BotIDMapConst<TrackedTigerBot> getTigerBotsVisible();
 	
 	
 	/**
 	 * @return the tigerBotsAvailable
 	 */
-	public abstract IBotIDMap<TrackedTigerBot> getTigerBotsAvailable();
+	IBotIDMap<TrackedTigerBot> getTigerBotsAvailable();
+	
+	
+	/**
+	 * @return the blueBots
+	 */
+	IBotIDMap<TrackedTigerBot> getBots();
+	
+	
+	/**
+	 * @param botId
+	 * @return the blueBots
+	 */
+	TrackedTigerBot getBot(BotID botId);
 	
 	
 	/**
 	 * @return the ball
 	 */
-	public abstract TrackedBall getBall();
-	
-	
-	/**
-	 * @return the time
-	 */
-	public abstract long getTime();
+	TrackedBall getBall();
 	
 	
 	/**
 	 * @return the SystemTime
 	 */
-	public abstract Date getSystemTime();
+	Date getSystemTime();
 	
 	
 	/**
-	 * @return the teamProps
+	 * @return
 	 */
-	public abstract TeamProps getTeamProps();
+	ETeamColor getTeamColor();
 	
 	
 	/**
-	 * @return the worldFramePrediction
+	 * @return
 	 */
-	public WorldFramePrediction getWorldFramePrediction();
+	boolean isInverted();
 	
+	
+	/**
+	 * @return
+	 */
+	WorldFramePrediction getWorldFramePrediction();
 }

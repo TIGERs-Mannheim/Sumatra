@@ -1,9 +1,0 @@
-#Wed Feb 27 12:12:44 CET 2013
-analyseLocally=false
-eclipse.preferences.version=1
-projectArtifactId=Sumatra
-projectBranch=
-projectGroupId=com.dhbw.sumatra
-projectKey=edu.dhbw.mannheim.tigers.sumatra:messaging:ClientServerGUI
-serverUrl=http\://tigers-mannheim.de\:8080/sonar
-version=2

@@ -10,7 +10,9 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -25,7 +27,9 @@ public class TigerMotorSetPidSp extends ACommand
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
+	@SerialData(type = ESerialDataType.UINT8)
 	private int	id;
+	@SerialData(type = ESerialDataType.INT32)
 	private int	setpoint;
 	
 	
@@ -37,6 +41,7 @@ public class TigerMotorSetPidSp extends ACommand
 	 */
 	public TigerMotorSetPidSp()
 	{
+		super(ECommand.CMD_MOTOR_SET_PID_SP);
 	}
 	
 	
@@ -46,6 +51,8 @@ public class TigerMotorSetPidSp extends ACommand
 	 */
 	public TigerMotorSetPidSp(int id, int setpoint)
 	{
+		super(ECommand.CMD_MOTOR_SET_PID_SP);
+		
 		setId(id);
 		setSetpoint(setpoint);
 	}
@@ -59,40 +66,6 @@ public class TigerMotorSetPidSp extends ACommand
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		id = byteArray2UByte(data, 0);
-		setpoint = byteArray2Int(data, 1);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		byte2ByteArray(data, 0, id);
-		int2ByteArray(data, 1, setpoint);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_MOTOR_SET_PID_SP;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 5;
-	}
-	
-	
 	/**
 	 * @return the id
 	 */

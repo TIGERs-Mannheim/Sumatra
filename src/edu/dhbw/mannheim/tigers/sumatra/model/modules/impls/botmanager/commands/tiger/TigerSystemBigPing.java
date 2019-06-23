@@ -10,7 +10,9 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -25,7 +27,10 @@ public class TigerSystemBigPing extends ACommand
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	/** ping identification (for roundtrip measurements) */
-	private int	id;
+	@SerialData(type = ESerialDataType.INT32)
+	private int		id;
+	@SerialData(type = ESerialDataType.TAIL)
+	private byte[]	payload	= new byte[196];
 	
 	
 	// --------------------------------------------------------------------------
@@ -36,6 +41,8 @@ public class TigerSystemBigPing extends ACommand
 	 */
 	public TigerSystemBigPing()
 	{
+		super(ECommand.CMD_SYSTEM_BIG_PING);
+		
 		id = 0;
 	}
 	
@@ -46,6 +53,8 @@ public class TigerSystemBigPing extends ACommand
 	 */
 	public TigerSystemBigPing(int id)
 	{
+		super(ECommand.CMD_SYSTEM_BIG_PING);
+		
 		this.id = id;
 	}
 	
@@ -58,38 +67,6 @@ public class TigerSystemBigPing extends ACommand
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		id = byteArray2Int(data, 0);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		int2ByteArray(data, 0, id);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_SYSTEM_BIG_PING;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 200;
-	}
-	
-	
 	/**
 	 * @return the id
 	 */

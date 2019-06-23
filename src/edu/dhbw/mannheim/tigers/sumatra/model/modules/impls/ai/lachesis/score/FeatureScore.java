@@ -14,7 +14,8 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AthenaAiFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.MetisAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
@@ -54,7 +55,7 @@ public class FeatureScore extends AScore
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
-	protected int doCalcScore(TrackedTigerBot tiger, ARole role, AIInfoFrame frame)
+	protected int doCalcScore(TrackedTigerBot tiger, ARole role, MetisAiFrame frame)
 	{
 		int featureScore = 0;
 		List<EFeature> features = role.getNeededFeatures();
@@ -87,7 +88,7 @@ public class FeatureScore extends AScore
 	
 	
 	@Override
-	protected int doCalcScoreOnPos(IVector2 position, ARole role, AIInfoFrame frame)
+	protected int doCalcScoreOnPos(IVector2 position, ARole role, AthenaAiFrame frame)
 	{
 		return 0;
 	}

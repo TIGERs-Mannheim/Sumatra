@@ -10,7 +10,6 @@
 package edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
 
 
 /**
@@ -21,22 +20,31 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPl
 public interface IPlayControlPanelObserver
 {
 	/**
-	 * 
 	 * @param play
-	 * @param numRolesToAssign
 	 */
-	void addNewPlay(EPlay play, int numRolesToAssign);
+	void addPlay(APlay play);
 	
 	
 	/**
-	 * 
 	 * @param play
 	 */
 	void removePlay(APlay play);
 	
 	
 	/**
-	 *
+	 * Add numRoles roles to play
+	 * 
+	 * @param play
+	 * @param numRoles
 	 */
-	void forceNewDecision();
+	void addRoles2Play(APlay play, int numRoles);
+	
+	
+	/**
+	 * Remove numRoles from play
+	 * 
+	 * @param play
+	 * @param numRoles
+	 */
+	void removeRolesFromPlay(APlay play, int numRoles);
 }

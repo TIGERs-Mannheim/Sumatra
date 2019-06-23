@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 30.08.2010
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger;
@@ -19,21 +18,22 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
 
 
 /**
  * Main panel for the tiger bot.
- * 
+ *
  * @author AndreR
- * 
  */
 public class TigerBotMainPanel extends JPanel
 {
@@ -53,8 +53,11 @@ public class TigerBotMainPanel extends JPanel
 	private final JCheckBox									useUpdateAll		= new JCheckBox();
 	private final JCheckBox									logMovement			= new JCheckBox();
 	private final JCheckBox									logKicker			= new JCheckBox();
+	private final JCheckBox									logPower				= new JCheckBox();
 	private final JCheckBox									logIr					= new JCheckBox();
 	private final JButton									connect				= new JButton("Connect");
+	private final JComboBox<ETeamColor>					color					= new JComboBox<ETeamColor>(new ETeamColor[] {
+			ETeamColor.YELLOW, ETeamColor.BLUE });
 	
 	private final List<ITigerBotMainPanelObserver>	observers			= new ArrayList<ITigerBotMainPanelObserver>();
 	
@@ -63,7 +66,7 @@ public class TigerBotMainPanel extends JPanel
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
+	 *
 	 */
 	public TigerBotMainPanel()
 	{
@@ -100,6 +103,8 @@ public class TigerBotMainPanel extends JPanel
 		general.add(port, "wrap");
 		general.add(new JLabel("Server Port:"));
 		general.add(serverPort, "wrap");
+		general.add(new JLabel("Color:"));
+		general.add(color, "wrap");
 		general.add(new JLabel("Use UpdateAll:"));
 		general.add(useUpdateAll, "wrap");
 		general.add(saveGeneral);
@@ -112,6 +117,8 @@ public class TigerBotMainPanel extends JPanel
 		logs.add(logMovement, "wrap");
 		logs.add(new JLabel("Kicker:"));
 		logs.add(logKicker, "wrap");
+		logs.add(new JLabel("Power:"));
+		logs.add(logPower, "wrap");
 		logs.add(new JLabel("IR:"));
 		logs.add(logIr, "wrap");
 		logs.add(saveLogs, "span 2");
@@ -127,10 +134,9 @@ public class TigerBotMainPanel extends JPanel
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @param observer
 	 */
-	public void addObserver(ITigerBotMainPanelObserver observer)
+	public void addObserver(final ITigerBotMainPanelObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -140,10 +146,9 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @param observer
 	 */
-	public void removeObserver(ITigerBotMainPanelObserver observer)
+	public void removeObserver(final ITigerBotMainPanelObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -153,7 +158,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @param idVal
 	 */
 	public void setId(final BotID idVal)
@@ -170,7 +174,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @return
 	 * @throws NumberFormatException
 	 */
@@ -181,7 +184,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @param nameVal
 	 */
 	public void setBotName(final String nameVal)
@@ -198,7 +200,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public String getBotName()
@@ -208,7 +209,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @param ipVal
 	 */
 	public void setIp(final String ipVal)
@@ -225,7 +225,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public String getIp()
@@ -235,7 +234,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @param portVal
 	 */
 	public void setPort(final int portVal)
@@ -252,7 +250,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @return
 	 * @throws NumberFormatException
 	 */
@@ -263,7 +260,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @param state
 	 */
 	public void setConnectionState(final ENetworkState state)
@@ -297,7 +293,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @param id
 	 */
 	public void setCpuId(final String id)
@@ -314,7 +309,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public String getCpuId()
@@ -324,7 +318,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @param newMac
 	 */
 	public void setMac(final String newMac)
@@ -341,7 +334,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public String getMac()
@@ -351,7 +343,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @param portVal
 	 */
 	public void setServerPort(final int portVal)
@@ -368,7 +359,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @return
 	 * @throws NumberFormatException
 	 */
@@ -379,7 +369,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @param enable
 	 */
 	public void setUseUpdateAll(final boolean enable)
@@ -396,7 +385,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public boolean getUseUpdateAll()
@@ -406,7 +394,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public boolean getLogMovement()
@@ -416,7 +403,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @param enable
 	 */
 	public void setLogMovement(final boolean enable)
@@ -433,7 +419,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public boolean getLogKicker()
@@ -443,7 +428,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @param enable
 	 */
 	public void setLogKicker(final boolean enable)
@@ -460,7 +444,31 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
+	 * @return
+	 */
+	public boolean getLogPower()
+	{
+		return logPower.isSelected();
+	}
+	
+	
+	/**
+	 * @param enable
+	 */
+	public void setLogPower(final boolean enable)
+	{
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				logPower.setSelected(enable);
+			}
+		});
+	}
+	
+	
+	/**
 	 * @return
 	 */
 	public boolean getLogIr()
@@ -470,7 +478,6 @@ public class TigerBotMainPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @param enable
 	 */
 	public void setLogIr(final boolean enable)
@@ -483,6 +490,24 @@ public class TigerBotMainPanel extends JPanel
 				logIr.setSelected(enable);
 			}
 		});
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public ETeamColor getColor()
+	{
+		return (ETeamColor) color.getSelectedItem();
+	}
+	
+	
+	/**
+	 * @param c
+	 */
+	public void setColor(final ETeamColor c)
+	{
+		color.setSelectedItem(c);
 	}
 	
 	
@@ -527,7 +552,7 @@ public class TigerBotMainPanel extends JPanel
 	protected class SaveGeneral implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent arg0)
+		public void actionPerformed(final ActionEvent arg0)
 		{
 			notifySaveGeneral();
 		}
@@ -536,7 +561,7 @@ public class TigerBotMainPanel extends JPanel
 	protected class ConnectionChange implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			notifyConnectionChange();
 		}
@@ -545,7 +570,7 @@ public class TigerBotMainPanel extends JPanel
 	protected class SaveLogs implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			notifySaveLogs();
 		}

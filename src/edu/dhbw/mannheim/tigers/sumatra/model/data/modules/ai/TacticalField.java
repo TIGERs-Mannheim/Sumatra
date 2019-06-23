@@ -4,36 +4,33 @@
  * Project: TIGERS - Sumatra
  * Date: 02.01.2011
  * Author(s): Oliver Steinbrecher <OST1988@aol.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai;
 
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.OneToMany;
+import net.sf.oval.constraint.NotNull;
+import net.sf.oval.constraint.Size;
 
+import com.sleepycat.persist.model.Persistent;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.ValuedField;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ballpossession.BallPossession;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.fieldraster.EnhancedFieldAnalyser;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.rectangle.AIRectangleVector;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.valueobjects.DefensePoint;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.valueobjects.ValueBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.valueobjects.ValuePoint;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.IDrawableShape;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.ECalculator;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.playpattern.Pattern;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.fieldanalysis.AIRectangleVector;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.fieldanalysis.EnhancedFieldAnalyser;
 
 
 /**
@@ -41,97 +38,76 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators
  * calculated by {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.Metis} and its calculators.
  * 
  * @author Oliver Steinbrecher <OST1988@aol.com>
- * 
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@Entity
-public class TacticalField implements Serializable
+@Persistent(version = 9)
+public class TacticalField implements ITacticalField
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	/**  */
-	private static final long						serialVersionUID					= -2739518925641905536L;
-	
-	
-	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
-	private List<ECalculator>						activeCalculators;
-	
 	// goal points
+	@NotNull
+	@Size(min = 1, profiles = { "fullAiFrame" })
 	private List<DefensePoint>						defGoalPoints;
+	@NotNull
+	@Size(min = 1, profiles = { "fullAiFrame" })
 	private List<ValuePoint>						goalValuePoints;
-	private IVector2									bestDirectShootTarget			= null;
-	private Float										valueOfBestDirectShootTarget	= null;
-	
-	// DEBUG
-	private List<IDrawableShape>					debugShapes;
+	private ValuePoint								bestDirectShotTarget				= new ValuePoint(Vector2.ZERO_VECTOR);
+	private Map<BotID, ValuePoint>				bestDirectShotTargetBots		= new HashMap<BotID, ValuePoint>();
+	private Map<BotID, List<ValueBot>>			shooterReceiverStraightLines	= new HashMap<BotID, List<ValueBot>>();
+	private Map<BotID, ValueBot>					ballReceiverStraightLines		= new HashMap<BotID, ValueBot>();
 	
 	// offense
-	private List<ValuePoint>						offCarrierPoints;
-	private List<ValuePoint>						offLeftReceiverPoints;
-	private List<ValuePoint>						offRightReceiverPoints;
-	
+	@NotNull
 	private Map<BotID, BotDistance>				tigersToBallDist;
-	private BotDistance								tigerClosestToBall				= BotDistance.NULL_BOT_DISTANCE;
+	
+	@NotNull
 	private Map<BotID, BotDistance>				enemiesToBallDist;
-	private BotDistance								enemyClosestToBall				= BotDistance.NULL_BOT_DISTANCE;
 	
 	/** Which bot (opponent and Tigers) has the ball? */
+	@NotNull
 	private BallPossession							ballPossession;
 	
-	/** Was ther possibly a goal? */
+	/** Was there possibly a goal? */
+	@NotNull
 	private EPossibleGoal							possibleGoal;
 	
-	/** we can shoot on the goal immediately */
-	private boolean									tigersScoringChance;
-	/** our opponents can shoot on the goal immediately */
-	private boolean									opponentScoringChance;
-	/** we can shoot on the goal after getting and/or aiming the ball */
-	private boolean									tigersApproximateScoringChance;
-	/** our opponents can shoot on the goal after getting and/or aiming the ball */
-	private boolean									opponentApproximateScoringChance;
-	
-	private boolean									ballInOurPenArea;
-	
-	private ETeam										teamClosestToBall;
-	private List<TrackedBot>						dangerousOpponents;
-	private TrackedBot								opponentBallGetter;
-	private TrackedBot								opponentPassReceiver;
-	private TrackedBot								opponentKeeper;
-	
 	private transient EnhancedFieldAnalyser	dynamicFieldAnalyser;
-	// descending patterns
-	private List<Pattern>							playPattern;
 	
-	/**
-	 * Id of bot that kicked the ball and is not allowed to touch it another time until another bot touched it. May
-	 * be null!
-	 */
-	private BotID										botNotAllowedToTouchBall;
 	private BotID										botLastTouchedBall;
 	
-	private boolean									otherMixedTeamTouchedBall;
+	private Map<BotID, IVector2>					supportPositions;
+	private Map<BotID, IVector2>					supportTargets;
+	private List<IVector2>							supportIntersections;
+	private Map<BotID, IVector2>					supportRedirectPositions;
+	private transient Map<BotID, ValuedField>	supportValues;
 	
-	private boolean									forceStartAfterKickoffEnemies;
+	private Map<BotID, BotAiInformation>		botAiInformation;
+	
+	private EGameState								gameState							= EGameState.UNKNOWN;
+	
+	private IVector2									ballLeftFieldPos					= null;
+	
+	private Map<BotID, ValuePoint>				offenseMovePositions;
+	
+	private ValueBot									bestPassTarget;
+	
+	/** Statistics object */
+	private Statistics								statistics;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/**
-	 * @param worldFrame
-	 */
-	public TacticalField(WorldFrame worldFrame)
+	
+	
+	@SuppressWarnings("unused")
+	private TacticalField()
 	{
-		activeCalculators = new ArrayList<ECalculator>(ECalculator.values().length);
-		
 		defGoalPoints = new ArrayList<DefensePoint>();
 		goalValuePoints = new ArrayList<ValuePoint>();
-		debugShapes = new ArrayList<IDrawableShape>();
-		
-		offCarrierPoints = new ArrayList<ValuePoint>();
-		offLeftReceiverPoints = new ArrayList<ValuePoint>();
-		offRightReceiverPoints = new ArrayList<ValuePoint>();
 		
 		ballPossession = new BallPossession();
 		possibleGoal = EPossibleGoal.NO_ONE;
@@ -139,72 +115,65 @@ public class TacticalField implements Serializable
 		tigersToBallDist = new LinkedHashMap<BotID, BotDistance>();
 		enemiesToBallDist = new LinkedHashMap<BotID, BotDistance>();
 		
-		tigersScoringChance = false;
-		opponentScoringChance = false;
-		tigersApproximateScoringChance = false;
-		opponentApproximateScoringChance = false;
-		teamClosestToBall = ETeam.UNKNOWN;
-		ballInOurPenArea = false;
-		dangerousOpponents = new ArrayList<TrackedBot>();
-		opponentBallGetter = null;
-		opponentPassReceiver = null;
-		opponentKeeper = null;
+		botLastTouchedBall = BotID.createBotId();
 		
-		playPattern = new ArrayList<Pattern>();
+		supportPositions = new HashMap<BotID, IVector2>();
+		supportTargets = new HashMap<BotID, IVector2>();
+		supportIntersections = new ArrayList<IVector2>();
+		supportRedirectPositions = new HashMap<BotID, IVector2>();
+		supportValues = new HashMap<BotID, ValuedField>();
+		offenseMovePositions = new HashMap<BotID, ValuePoint>();
+		botAiInformation = new HashMap<BotID, BotAiInformation>();
 		
-		botNotAllowedToTouchBall = new BotID();
-		botLastTouchedBall = new BotID();
+		bestPassTarget = null;
 		
-		otherMixedTeamTouchedBall = false;
-		
-		forceStartAfterKickoffEnemies = false;
-		
+		statistics = null;
+	}
+	
+	
+	/**
+	 * @param worldFrame
+	 */
+	public TacticalField(final WorldFrame worldFrame)
+	{
+		this();
 	}
 	
 	
 	/**
 	 * Providing a <strong>shallow</strong> copy of original (Thus collections are created, but filled with the same
 	 * values
+	 * 
 	 * @param original
 	 */
-	public TacticalField(TacticalField original)
+	public TacticalField(final TacticalField original)
 	{
-		activeCalculators = original.activeCalculators;
-		
 		defGoalPoints = new ArrayList<DefensePoint>(original.defGoalPoints);
 		goalValuePoints = new ArrayList<ValuePoint>(original.goalValuePoints);
-		bestDirectShootTarget = original.bestDirectShootTarget;
-		debugShapes = new ArrayList<IDrawableShape>(original.getDebugShapes());
-		
-		offCarrierPoints = new ArrayList<ValuePoint>(original.offCarrierPoints);
-		offLeftReceiverPoints = new ArrayList<ValuePoint>(original.offLeftReceiverPoints);
-		offRightReceiverPoints = new ArrayList<ValuePoint>(original.offRightReceiverPoints);
+		bestDirectShotTarget = original.bestDirectShotTarget;
 		
 		ballPossession = original.ballPossession;
 		possibleGoal = original.possibleGoal;
 		
 		tigersToBallDist = new LinkedHashMap<BotID, BotDistance>(original.tigersToBallDist);
-		tigerClosestToBall = original.tigerClosestToBall;
 		enemiesToBallDist = new LinkedHashMap<BotID, BotDistance>(original.enemiesToBallDist);
-		enemyClosestToBall = original.enemyClosestToBall;
-		
-		tigersScoringChance = original.tigersScoringChance;
-		opponentScoringChance = original.opponentScoringChance;
-		tigersApproximateScoringChance = original.tigersApproximateScoringChance;
-		opponentApproximateScoringChance = original.opponentApproximateScoringChance;
-		teamClosestToBall = original.teamClosestToBall;
-		ballInOurPenArea = original.ballInOurPenArea;
-		dangerousOpponents = new ArrayList<TrackedBot>(original.dangerousOpponents);
-		opponentBallGetter = original.opponentBallGetter;
-		opponentPassReceiver = original.opponentPassReceiver;
-		opponentKeeper = original.opponentKeeper;
 		
 		dynamicFieldAnalyser = original.dynamicFieldAnalyser;
 		
-		playPattern = new ArrayList<Pattern>(original.playPattern);
-		
-		botNotAllowedToTouchBall = original.botNotAllowedToTouchBall;
 		botLastTouchedBall = original.botLastTouchedBall;
+		
+		supportPositions = new HashMap<BotID, IVector2>(original.supportPositions);
+		supportTargets = new HashMap<BotID, IVector2>(original.supportTargets);
+		supportIntersections = new ArrayList<IVector2>(original.supportIntersections);
+		supportRedirectPositions = new HashMap<BotID, IVector2>(original.supportRedirectPositions);
+		supportValues = new HashMap<BotID, ValuedField>(original.supportValues);
+		offenseMovePositions = new HashMap<BotID, ValuePoint>(original.offenseMovePositions);
+		botAiInformation = new HashMap<BotID, BotAiInformation>(original.botAiInformation);
+		
+		gameState = original.gameState;
+		ballLeftFieldPos = original.ballLeftFieldPos;
+		
+		bestPassTarget = original.getBestPassTarget();
 		
 	}
 	
@@ -213,31 +182,6 @@ public class TacticalField implements Serializable
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	/**
-	 * 
-	 * Calculates the number of enemies on our subfield.
-	 * @param worldFrame
-	 * 
-	 * @return
-	 */
-	public int getEnemiesOnOwnSubfield(WorldFrame worldFrame)
-	{
-		int counter = 0;
-		TrackedBot bot;
-		final Iterator<Entry<BotID, TrackedBot>> foeIterator = worldFrame.getFoeBotMapIterator();
-		
-		while (foeIterator.hasNext())
-		{
-			bot = foeIterator.next().getValue();
-			if (bot.getPos().x() <= 0)
-			{
-				counter++;
-			}
-		}
-		return counter;
-	}
-	
-	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -245,101 +189,26 @@ public class TacticalField implements Serializable
 	/**
 	 * @return
 	 */
-	public List<ECalculator> getActiveCalculators()
-	{
-		return activeCalculators;
-	}
-	
-	
-	/**
-	 * @param newCalculators
-	 */
-	public void setActiveCalculators(List<ECalculator> newCalculators)
-	{
-		activeCalculators.clear();
-		activeCalculators.addAll(newCalculators);
-	}
-	
-	
-	/**
-	 * @return
-	 */
+	@Override
 	public List<DefensePoint> getDefGoalPoints()
 	{
-		return defGoalPoints;
+		return Collections.unmodifiableList(defGoalPoints);
 	}
 	
 	
 	/**
 	 * @param newDefGoalPoints
 	 */
-	public void setDefGoalPoints(List<DefensePoint> newDefGoalPoints)
+	public void setDefGoalPoints(final List<DefensePoint> newDefGoalPoints)
 	{
-		defGoalPoints.clear();
-		defGoalPoints.addAll(newDefGoalPoints);
+		defGoalPoints = newDefGoalPoints;
 	}
 	
 	
 	/**
 	 * @return
 	 */
-	public List<ValuePoint> getOffLeftReceiverPoints()
-	{
-		return offLeftReceiverPoints;
-	}
-	
-	
-	/**
-	 * @param newOffLeftReceiverPoints
-	 */
-	public void setOffLeftReceiverPoints(List<ValuePoint> newOffLeftReceiverPoints)
-	{
-		offLeftReceiverPoints.clear();
-		offLeftReceiverPoints.addAll(newOffLeftReceiverPoints);
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public List<ValuePoint> getOffRightReceiverPoints()
-	{
-		return offRightReceiverPoints;
-	}
-	
-	
-	/**
-	 * @param newOffRightReceiverPoints
-	 */
-	public void setOffRightReceiverPoints(List<ValuePoint> newOffRightReceiverPoints)
-	{
-		offRightReceiverPoints.clear();
-		offRightReceiverPoints.addAll(newOffRightReceiverPoints);
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public List<ValuePoint> getOffCarrierPoints()
-	{
-		return offCarrierPoints;
-	}
-	
-	
-	/**
-	 * @param newOffCarrierPoints
-	 */
-	public void setOffCarrierPoints(List<ValuePoint> newOffCarrierPoints)
-	{
-		offCarrierPoints.clear();
-		offCarrierPoints.addAll(newOffCarrierPoints);
-	}
-	
-	
-	/**
-	 * @return
-	 */
+	@Override
 	public BallPossession getBallPossession()
 	{
 		return ballPossession;
@@ -347,96 +216,24 @@ public class TacticalField implements Serializable
 	
 	
 	/**
-	 * @param newBallPossesion
+	 * @param newBallPossession
 	 */
-	public void setBallPossesion(BallPossession newBallPossesion)
+	public void setBallPossession(final BallPossession newBallPossession)
 	{
-		if (newBallPossesion == null)
+		if (newBallPossession == null)
 		{
 			ballPossession = new BallPossession();
 		} else
 		{
-			ballPossession = newBallPossesion;
+			ballPossession = newBallPossession;
 		}
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public boolean getTigersScoringChance()
-	{
-		return tigersScoringChance;
-	}
-	
-	
-	/**
-	 * @param tigersScoringChance
-	 */
-	public void setTigersScoringChance(boolean tigersScoringChance)
-	{
-		this.tigersScoringChance = tigersScoringChance;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public boolean getOpponentScoringChance()
-	{
-		return opponentScoringChance;
-	}
-	
-	
-	/**
-	 * @param opponentScoringChance
-	 */
-	public void setOpponentScoringChance(boolean opponentScoringChance)
-	{
-		this.opponentScoringChance = opponentScoringChance;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public boolean getTigersApproximateScoringChance()
-	{
-		return tigersApproximateScoringChance;
-	}
-	
-	
-	/**
-	 * @param tigersApproximateScoringChance
-	 */
-	public void setTigersApproximateScoringChance(boolean tigersApproximateScoringChance)
-	{
-		this.tigersApproximateScoringChance = tigersApproximateScoringChance;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public boolean getOpponentApproximateScoringChance()
-	{
-		return opponentApproximateScoringChance;
-	}
-	
-	
-	/**
-	 * @param opponentApproximateScoringChance
-	 */
-	public void setOpponentApproximateScoringChance(boolean opponentApproximateScoringChance)
-	{
-		this.opponentApproximateScoringChance = opponentApproximateScoringChance;
 	}
 	
 	
 	/**
 	 * @param newTigersToBallDist
 	 */
-	public void setTigersToBallDist(List<BotDistance> newTigersToBallDist)
+	public void setTigersToBallDist(final List<BotDistance> newTigersToBallDist)
 	{
 		tigersToBallDist.clear();
 		for (final BotDistance bDist : newTigersToBallDist)
@@ -450,34 +247,32 @@ public class TacticalField implements Serializable
 	 * @return A {@link LinkedHashMap} with all Tiger bots sorted by their distance to the ball (
 	 *         {@link BotDistance#ASCENDING}).
 	 */
+	@Override
 	public Map<BotID, BotDistance> getTigersToBallDist()
 	{
-		return tigersToBallDist;
+		return Collections.unmodifiableMap(tigersToBallDist);
 	}
 	
 	
 	/**
-	 * Implemented lazy. If {@link #tigersToBallDist} is empty (tests!?) a {@link java.util.NoSuchElementException} would
-	 * be
-	 * thrown.
-	 * 
 	 * @return The {@link BotDistance} closest to the ball (or {@link BotDistance#NULL_BOT_DISTANCE} if there are no
 	 *         Tiger bots!!!)
 	 */
+	@Override
 	public BotDistance getTigerClosestToBall()
 	{
-		if ((tigerClosestToBall == BotDistance.NULL_BOT_DISTANCE) && (tigersToBallDist.values().size() > 0))
+		if (!getTigersToBallDist().values().isEmpty())
 		{
-			tigerClosestToBall = tigersToBallDist.values().iterator().next();
+			return getTigersToBallDist().values().iterator().next();
 		}
-		return tigerClosestToBall;
+		return BotDistance.NULL_BOT_DISTANCE;
 	}
 	
 	
 	/**
 	 * @param newEnemiesToBallDist
 	 */
-	public void setEnemiesToBallDist(List<BotDistance> newEnemiesToBallDist)
+	public void setEnemiesToBallDist(final List<BotDistance> newEnemiesToBallDist)
 	{
 		enemiesToBallDist.clear();
 		for (final BotDistance bDist : newEnemiesToBallDist)
@@ -491,186 +286,32 @@ public class TacticalField implements Serializable
 	 * @return A {@link LinkedHashMap} with all enemy bots sorted by their distance to the ball (
 	 *         {@link BotDistance#ASCENDING}).
 	 */
+	@Override
 	public Map<BotID, BotDistance> getEnemiesToBallDist()
 	{
-		return enemiesToBallDist;
+		return Collections.unmodifiableMap(enemiesToBallDist);
 	}
 	
 	
 	/**
-	 * Implemented lazy. If {@link #enemiesToBallDist} is empty (tests!?) a {@link java.util.NoSuchElementException}
-	 * would be
-	 * thrown.
-	 * 
 	 * @return The enemy {@link BotDistance} closest to the ball (or {@link BotDistance#NULL_BOT_DISTANCE} if there are
-	 *         no
-	 *         enemy bots!!!)
+	 *         no enemy bots!!!)
 	 */
+	@Override
 	public BotDistance getEnemyClosestToBall()
 	{
-		if ((enemyClosestToBall == BotDistance.NULL_BOT_DISTANCE) && (enemiesToBallDist.values().size() > 0))
+		if (enemiesToBallDist.values().size() > 0)
 		{
-			enemyClosestToBall = enemiesToBallDist.values().iterator().next();
+			return enemiesToBallDist.values().iterator().next();
 		}
-		return enemyClosestToBall;
+		return BotDistance.NULL_BOT_DISTANCE;
 	}
 	
 	
 	/**
 	 * @return
 	 */
-	public ETeam getTeamClosestToBall()
-	{
-		return teamClosestToBall;
-	}
-	
-	
-	/**
-	 * @param newTeamClosestToBall
-	 */
-	public void setTeamClosestToBall(ETeam newTeamClosestToBall)
-	{
-		if (newTeamClosestToBall == null)
-		{
-			teamClosestToBall = ETeam.UNKNOWN;
-		} else
-		{
-			teamClosestToBall = newTeamClosestToBall;
-		}
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public boolean isBallInOurPenArea()
-	{
-		return ballInOurPenArea;
-	}
-	
-	
-	/**
-	 * @param ballInOurPenArea
-	 */
-	public void setBallInOurPenArea(boolean ballInOurPenArea)
-	{
-		this.ballInOurPenArea = ballInOurPenArea;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public List<TrackedBot> getDangerousOpponents()
-	{
-		return dangerousOpponents;
-	}
-	
-	
-	/**
-	 * @param newDangerousOpponents
-	 */
-	public void setDangerousOpponents(List<TrackedBot> newDangerousOpponents)
-	{
-		dangerousOpponents.clear();
-		dangerousOpponents.addAll(newDangerousOpponents);
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public TrackedBot getOpponentBallGetter()
-	{
-		return opponentBallGetter;
-	}
-	
-	
-	/**
-	 * @param opponentBallGetter
-	 */
-	public void setOpponentBallGetter(TrackedBot opponentBallGetter)
-	{
-		this.opponentBallGetter = opponentBallGetter;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public TrackedBot getOpponentPassReceiver()
-	{
-		return opponentPassReceiver;
-	}
-	
-	
-	/**
-	 * @param opponentPassReceiver
-	 */
-	public void setOpponentPassReceiver(TrackedBot opponentPassReceiver)
-	{
-		this.opponentPassReceiver = opponentPassReceiver;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public TrackedBot getOpponentKeeper()
-	{
-		return opponentKeeper;
-	}
-	
-	
-	/**
-	 * @param opponentKeeper
-	 */
-	public void setOpponentKeeper(TrackedBot opponentKeeper)
-	{
-		this.opponentKeeper = opponentKeeper;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public List<Pattern> getPlayPattern()
-	{
-		return playPattern;
-	}
-	
-	
-	/**
-	 * @param pattern
-	 */
-	public void setPlayPattern(List<Pattern> pattern)
-	{
-		playPattern.clear();
-		playPattern.addAll(pattern);
-	}
-	
-	
-	/**
-	 * @return the botNotAllowedToTouchBall
-	 */
-	public BotID getBotNotAllowedToTouchBall()
-	{
-		return botNotAllowedToTouchBall;
-	}
-	
-	
-	/**
-	 * @param botNotAllowedToTouchBall the {@link TacticalField#botNotAllowedToTouchBall} to set
-	 */
-	public void setBotNotAllowedToTouchBall(BotID botNotAllowedToTouchBall)
-	{
-		this.botNotAllowedToTouchBall = botNotAllowedToTouchBall;
-	}
-	
-	
-	/**
-	 * @return
-	 */
+	@Override
 	public EPossibleGoal getPossibleGoal()
 	{
 		return possibleGoal;
@@ -680,7 +321,7 @@ public class TacticalField implements Serializable
 	/**
 	 * @param possibleGoal
 	 */
-	public void setPossibleGoal(EPossibleGoal possibleGoal)
+	public void setPossibleGoal(final EPossibleGoal possibleGoal)
 	{
 		this.possibleGoal = possibleGoal;
 	}
@@ -689,6 +330,7 @@ public class TacticalField implements Serializable
 	/**
 	 * @return the botLastTouchedBall
 	 */
+	@Override
 	public BotID getBotLastTouchedBall()
 	{
 		return botLastTouchedBall;
@@ -698,18 +340,9 @@ public class TacticalField implements Serializable
 	/**
 	 * @param botLastTouchedBall the botLastTouchedBall to set
 	 */
-	public void setBotLastTouchedBall(BotID botLastTouchedBall)
+	public void setBotLastTouchedBall(final BotID botLastTouchedBall)
 	{
 		this.botLastTouchedBall = botLastTouchedBall;
-	}
-	
-	
-	/**
-	 * @return the debugShapes
-	 */
-	public List<IDrawableShape> getDebugShapes()
-	{
-		return debugShapes;
 	}
 	
 	
@@ -717,7 +350,7 @@ public class TacticalField implements Serializable
 	 * @param dynamicFieldAnalyser - a analyser witch allowed to find some specific points with the help of
 	 *           {@link AIRectangleVector}
 	 */
-	public void setEnhancedFieldAnalyser(EnhancedFieldAnalyser dynamicFieldAnalyser)
+	public void setEnhancedFieldAnalyser(final EnhancedFieldAnalyser dynamicFieldAnalyser)
 	{
 		this.dynamicFieldAnalyser = dynamicFieldAnalyser;
 		
@@ -728,6 +361,7 @@ public class TacticalField implements Serializable
 	 * @return dynamicFieldAnalyser - a analyser witch allowed to find some specific points with the help of
 	 *         {@link AIRectangleVector}
 	 */
+	@Override
 	public EnhancedFieldAnalyser getEnhancedFieldAnalyser()
 	{
 		return dynamicFieldAnalyser;
@@ -735,85 +369,304 @@ public class TacticalField implements Serializable
 	
 	
 	/**
-	 * @return the otherMixedTeamTouchedBall
-	 */
-	public final boolean isOtherMixedTeamTouchedBall()
-	{
-		return otherMixedTeamTouchedBall;
-	}
-	
-	
-	/**
-	 * @param otherMixedTeamTouchedBall the otherMixedTeamTouchedBall to set
-	 */
-	public final void setOtherMixedTeamTouchedBall(boolean otherMixedTeamTouchedBall)
-	{
-		this.otherMixedTeamTouchedBall = otherMixedTeamTouchedBall;
-	}
-	
-	
-	/**
 	 * @return the goalValuePoints
 	 */
+	@Override
 	public final List<ValuePoint> getGoalValuePoints()
 	{
-		return goalValuePoints;
+		return Collections.unmodifiableList(goalValuePoints);
+	}
+	
+	
+	/**
+	 * @param goalValuePoints
+	 */
+	public final void setGoalValuePoints(final List<ValuePoint> goalValuePoints)
+	{
+		this.goalValuePoints = goalValuePoints;
 	}
 	
 	
 	/**
 	 * @return the bestDirectShootTarget
 	 */
-	public final IVector2 getBestDirectShootTarget()
+	@Override
+	public final ValuePoint getBestDirectShootTarget()
 	{
-		return bestDirectShootTarget;
-	}
-	
-	
-	/**
-	 * 
-	 * @return Float scala for a good (0) or bad (1) shoot target [0..1]
-	 */
-	public final Float getValueOfBestDirectShootTarget()
-	{
-		return valueOfBestDirectShootTarget;
+		return bestDirectShotTarget;
 	}
 	
 	
 	/**
 	 * @param bestDirectShootTarget the bestDirectShootTarget to set
 	 */
-	public final void setBestDirectShootTarget(IVector2 bestDirectShootTarget)
+	public final void setBestDirectShotTarget(final ValuePoint bestDirectShootTarget)
 	{
-		this.bestDirectShootTarget = bestDirectShootTarget;
+		bestDirectShotTarget = bestDirectShootTarget;
 	}
 	
 	
 	/**
-	 * 
-	 * @param value Value of the best point for a direct shoot
+	 * @return the bestDirectShotTargetBots
 	 */
-	public final void setValueOfBestDirectShootTarget(Float value)
+	@Override
+	public final Map<BotID, ValuePoint> getBestDirectShotTargetBots()
 	{
-		valueOfBestDirectShootTarget = value;
+		return Collections.unmodifiableMap(bestDirectShotTargetBots);
 	}
 	
 	
 	/**
-	 * true if a force start occurs after kickoff
+	 * @param bestDirectShotTargetBots the bestDirectShotTargetBots to set
+	 */
+	public final void setBestDirectShotTargetBots(final Map<BotID, ValuePoint> bestDirectShotTargetBots)
+	{
+		this.bestDirectShotTargetBots = bestDirectShotTargetBots;
+	}
+	
+	
+	/**
+	 * @return the shooterReceiverStraightLines
+	 */
+	@Override
+	public final Map<BotID, List<ValueBot>> getShooterReceiverStraightLines()
+	{
+		if (shooterReceiverStraightLines == null)
+		{
+			shooterReceiverStraightLines = new HashMap<BotID, List<ValueBot>>();
+		}
+		return Collections.unmodifiableMap(shooterReceiverStraightLines);
+	}
+	
+	
+	/**
+	 * @param shooterReceiverStraightLines the shooterReceiverStraightLines to set
+	 */
+	public final void setShooterReceiverStraightLines(final Map<BotID, List<ValueBot>> shooterReceiverStraightLines)
+	{
+		this.shooterReceiverStraightLines = shooterReceiverStraightLines;
+	}
+	
+	
+	/**
+	 * @return the ballReceiverStraightLines
+	 */
+	@Override
+	public final Map<BotID, ValueBot> getBallReceiverStraightLines()
+	{
+		if (ballReceiverStraightLines == null)
+		{
+			ballReceiverStraightLines = new HashMap<BotID, ValueBot>();
+		}
+		return Collections.unmodifiableMap(ballReceiverStraightLines);
+	}
+	
+	
+	/**
+	 * @param ballReceiverStraightLines the ballReceiverStraightLines to set
+	 */
+	public final void setBallReceiverStraightLines(final Map<BotID, ValueBot> ballReceiverStraightLines)
+	{
+		this.ballReceiverStraightLines = ballReceiverStraightLines;
+	}
+	
+	
+	/**
+	 * @return Move Positions OffenseRole
+	 */
+	@Override
+	public final Map<BotID, ValuePoint> getOffenseMovePositions()
+	{
+		return offenseMovePositions;
+	}
+	
+	
+	/**
+	 * @param offenseMovePositions Positions for the offenserole to set
+	 */
+	public final void setOffenseMovePositions(final Map<BotID, ValuePoint> offenseMovePositions)
+	{
+		this.offenseMovePositions = offenseMovePositions;
+	}
+	
+	
+	/**
+	 * @return Positions for the SupportRole
+	 */
+	@Override
+	public final Map<BotID, IVector2> getSupportPositions()
+	{
+		return supportPositions;
+	}
+	
+	
+	/**
+	 * @param supportPositions Positions for the SupportRole to set
+	 */
+	public final void setSupportPositions(final Map<BotID, IVector2> supportPositions)
+	{
+		this.supportPositions = supportPositions;
+	}
+	
+	
+	/**
+	 * @return Targets for the SupportRole
+	 */
+	@Override
+	public final Map<BotID, IVector2> getSupportTargets()
+	{
+		return supportTargets;
+	}
+	
+	
+	/**
+	 * @param supportTargets Targets for the SupportRole to set
+	 */
+	public final void setSupportTargets(final Map<BotID, IVector2> supportTargets)
+	{
+		this.supportTargets = supportTargets;
+	}
+	
+	
+	/**
+	 * @return the botAiInformation
+	 */
+	@Override
+	public final Map<BotID, BotAiInformation> getBotAiInformation()
+	{
+		return botAiInformation;
+	}
+	
+	
+	/**
+	 * @param botAiInformation the botAiInformation to set
+	 */
+	public final void setBotAiInformation(final Map<BotID, BotAiInformation> botAiInformation)
+	{
+		this.botAiInformation = botAiInformation;
+	}
+	
+	
+	/**
+	 * @return the gameState
+	 */
+	@Override
+	public final EGameState getGameState()
+	{
+		return gameState;
+	}
+	
+	
+	/**
+	 * @param gameState the gameState to set
+	 */
+	public final void setGameState(final EGameState gameState)
+	{
+		this.gameState = gameState;
+	}
+	
+	
+	/**
+	 * @return the ballLeftFieldPos
+	 */
+	@Override
+	public final IVector2 getBallLeftFieldPos()
+	{
+		return ballLeftFieldPos;
+	}
+	
+	
+	/**
+	 * @param ballLeftFieldPos the ballLeftFieldPos to set
+	 */
+	public final void setBallLeftFieldPos(final IVector2 ballLeftFieldPos)
+	{
+		this.ballLeftFieldPos = ballLeftFieldPos;
+	}
+	
+	
+	/**
 	 * @return
 	 */
-	public boolean isForceStartAfterKickoffEnemies()
+	@Override
+	public ValueBot getBestPassTarget()
 	{
-		return forceStartAfterKickoffEnemies;
+		return bestPassTarget;
 	}
 	
 	
 	/**
-	 * @param forceStartAfterKickoffEnemies the forceStartAfterKickoffEnemies to set
+	 * @param newBestPassTarget
 	 */
-	public void setForceStartAfterKickoffEnemies(boolean forceStartAfterKickoffEnemies)
+	public void setBestPassTarget(final ValueBot newBestPassTarget)
 	{
-		this.forceStartAfterKickoffEnemies = forceStartAfterKickoffEnemies;
+		bestPassTarget = newBestPassTarget;
+	}
+	
+	
+	/**
+	 * @return the supportIntersections
+	 */
+	@Override
+	public final List<IVector2> getSupportIntersections()
+	{
+		return supportIntersections;
+	}
+	
+	
+	/**
+	 * @param supportIntersections the supportIntersections to set
+	 */
+	public final void setSupportIntersections(final List<IVector2> supportIntersections)
+	{
+		this.supportIntersections = supportIntersections;
+	}
+	
+	
+	/**
+	 * @return the supportRedirectPositions
+	 */
+	@Override
+	public final Map<BotID, IVector2> getSupportRedirectPositions()
+	{
+		return supportRedirectPositions;
+	}
+	
+	
+	/**
+	 * @param supportRedirectPositions the supportRedirectPositions to set
+	 */
+	public final void setSupportRedirectPositions(final Map<BotID, IVector2> supportRedirectPositions)
+	{
+		this.supportRedirectPositions = supportRedirectPositions;
+	}
+	
+	
+	/**
+	 * @return the supportValues
+	 */
+	@Override
+	public final Map<BotID, ValuedField> getSupportValues()
+	{
+		return supportValues;
+	}
+	
+	
+	/**
+	 * @param stats the stats to set
+	 */
+	public void setStatistics(final Statistics stats)
+	{
+		statistics = stats;
+	}
+	
+	
+	/**
+	 * @return the Statistics
+	 */
+	@Override
+	public Statistics getStatistics()
+	{
+		return statistics;
 	}
 }

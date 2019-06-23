@@ -11,7 +11,7 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector;
 
 import java.io.Serializable;
 
-import javax.persistence.Embeddable;
+import com.sleepycat.persist.model.Persistent;
 
 
 /**
@@ -20,21 +20,16 @@ import javax.persistence.Embeddable;
  * @author Gero
  * 
  */
-@Embeddable
+@Persistent
 public class Vector2f extends AVector2 implements Serializable
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long		serialVersionUID	= 5154123852292742379L;
+	private static final long	serialVersionUID	= 5154123852292742379L;
 	
-	/** */
-	public static final Vector2f	ZERO					= new Vector2f(0, 0);
-	
-	/** not final for ObjectDB */
-	private float						x;
-	/** not final for ObjectDB */
-	private float						y;
+	private final float			x;
+	private final float			y;
 	
 	
 	// --------------------------------------------------------------------------
@@ -96,29 +91,5 @@ public class Vector2f extends AVector2 implements Serializable
 	public float y()
 	{
 		return y;
-	}
-	
-	
-	/**
-	 * This method is not for setting the value. It only prevents eclipse from making the value final. The value has not
-	 * to be final, because it is written and read from a db for the learning play finder.
-	 * @param x the x to set
-	 */
-	@Deprecated
-	protected void setX(float x)
-	{
-		this.x = x;
-	}
-	
-	
-	/**
-	 * This method is not for setting the value. It only prevents eclipse from making the value final. The value has not
-	 * to be final, because it is written and read from a db for the learning play finder.
-	 * @param y the y to set
-	 */
-	@Deprecated
-	protected void setY(float y)
-	{
-		this.y = y;
 	}
 }

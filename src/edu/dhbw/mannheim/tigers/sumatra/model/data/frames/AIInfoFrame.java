@@ -10,221 +10,63 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.frames;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map.Entry;
-
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee.Command;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.PlayStrategy;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.TacticalField;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.referee.RefereeMsg;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.IDrawableShape;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMap;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMapConst;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.IBotIDMap;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.exceptions.RoleHasNotBeenAssignedException;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter.EAIControlState;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.AresData;
 
 
 /**
  * This class is a simple container for all information the AI gathers during its processes for one {@link WorldFrame}
  * 
- * @author Oliver Steinbrecher, Daniel Waigand
- * 
+ * @author Oliver Steinbrecher, Daniel Waigand, Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class AIInfoFrame implements Serializable, IRecordFrame
+public class AIInfoFrame extends AthenaAiFrame implements IRecordFrame
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private static final long				serialVersionUID	= 1035987436338077764L;
+	/** frames per second (based on last frames) */
+	private final float		fps;
 	
-	// general data
-	/** */
-	public final WorldFrame					worldFrame;
-	/** only contains new referee messages (for one frame) */
-	public final RefereeMsg					refereeMsg;
-	/** always contains last referee message */
-	public final RefereeMsg					refereeMsgCached;
-	
-	// from Metis
-	/** stores all tactical information added by metis' calculators. */
-	public final TacticalField				tacticalInfo;
-	
-	// from Athena
-	/** */
-	public final PlayStrategy				playStrategy;
-	
-	
-	// from Lachesis
-	/** Represents the mapping between a BotID (int), and the {@link ARole} the bot had been assigned to */
-	private final BotIDMap<ARole>			assignedRoles;
-	private final BotIDMapConst<ARole>	assigendRolesConst;
-	
-	/** frames per second */
-	private float								fps					= 0;
-	
-	private EAIControlState					controlState		= null;
-	
-	private List<Path>						paths					= new ArrayList<Path>();
+	/** Paths for bots */
+	private final AresData	aresData;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
 	/**
-	 * @param worldFrame
-	 * @param refereeMsg
-	 * @param preRefereeMsg
+	 * @param athenaAiFrame
+	 * @param aresData
+	 * @param fps
 	 */
-	public AIInfoFrame(WorldFrame worldFrame, RefereeMsg refereeMsg, RefereeMsg preRefereeMsg)
+	public AIInfoFrame(final AthenaAiFrame athenaAiFrame, final AresData aresData, final float fps)
 	{
-		this.worldFrame = worldFrame;
-		this.refereeMsg = refereeMsg;
-		if (refereeMsg != null)
-		{
-			refereeMsgCached = refereeMsg;
-		} else
-		{
-			refereeMsgCached = preRefereeMsg;
-		}
-		
-		assignedRoles = new BotIDMap<ARole>();
-		assigendRolesConst = BotIDMapConst.unmodifiableBotIDMap(assignedRoles);
-		
-		tacticalInfo = new TacticalField(worldFrame);
-		playStrategy = new PlayStrategy();
+		super(athenaAiFrame, athenaAiFrame.getPlayStrategy());
+		this.aresData = aresData;
+		this.fps = fps;
 	}
 	
 	
 	/**
 	 * Providing a <strong>shallow</strong> copy of original (Thus collections are created, but filled with the same
 	 * values (instead of copying these values, too))
+	 * 
 	 * @param original
 	 */
-	public AIInfoFrame(AIInfoFrame original)
+	public AIInfoFrame(final AIInfoFrame original)
 	{
-		worldFrame = new WorldFrame(original.worldFrame);
-		refereeMsg = original.refereeMsg;
-		refereeMsgCached = original.refereeMsgCached;
-		
-		assignedRoles = new BotIDMap<ARole>();
-		assignedRoles.putAll(original.assignedRoles);
-		assigendRolesConst = BotIDMapConst.unmodifiableBotIDMap(assignedRoles);
-		
-		tacticalInfo = new TacticalField(original.tacticalInfo);
-		playStrategy = new PlayStrategy(original.playStrategy);
+		super(original, original.getPlayStrategy());
 		fps = original.fps;
+		aresData = original.aresData;
 	}
 	
 	
-	/**
-	 * @return the assigendRolesConst
-	 */
 	@Override
-	public BotIDMapConst<ERole> getAssigendERoles()
+	public void cleanUp()
 	{
-		BotIDMap<ERole> roles = new BotIDMap<ERole>();
-		for (ARole role : getAssigendRoles().values())
-		{
-			roles.put(role.getBotID(), role.getType());
-		}
-		return BotIDMapConst.unmodifiableBotIDMap(roles);
-	}
-	
-	
-	/**
-	 * @return the assigendRolesConst
-	 */
-	public BotIDMapConst<ARole> getAssigendRoles()
-	{
-		return assigendRolesConst;
-	}
-	
-	
-	/**
-	 * 
-	 * @param role
-	 */
-	public void putAssignedRole(ARole role)
-	{
-		if (!role.hasBeenAssigned())
-		{
-			throw new RoleHasNotBeenAssignedException("The following role has not been assgined yet: '" + role + "' !!!");
-		}
-		assignedRoles.put(role.getBotID(), role);
-	}
-	
-	
-	/**
-	 * Remove all assigned roles
-	 */
-	public void clearAssignedRoles()
-	{
-		assignedRoles.clear();
-	}
-	
-	
-	/**
-	 * Remove a bot that was already assigned.
-	 * Carefully! You should know, what you are doing!
-	 * 
-	 * @param botID
-	 */
-	public void removeAssignedRole(final BotID botID)
-	{
-		assignedRoles.remove(botID);
-	}
-	
-	
-	/**
-	 * Convenience method
-	 * 
-	 * @param roles
-	 */
-	public void putAllAssignedRoles(Collection<ARole> roles)
-	{
-		for (final ARole role : roles)
-		{
-			putAssignedRole(role);
-		}
-	}
-	
-	
-	/**
-	 * Convenience method
-	 * 
-	 * @param assignments
-	 */
-	public void putAllAssignedRoles(IBotIDMap<ARole> assignments)
-	{
-		for (final Entry<BotID, ARole> entry : assignments)
-		{
-			putAssignedRole(entry.getValue());
-		}
-	}
-	
-	
-	/**
-	 * Add a drawableShape to the field. Use this, to draw your vectors,
-	 * points and other shapes to the field to
-	 * visualize your plays actions
-	 * 
-	 * @see IDrawableShape
-	 * 
-	 * @param drawableShape
-	 */
-	public void addDebugShape(IDrawableShape drawableShape)
-	{
-		tacticalInfo.getDebugShapes().add(drawableShape);
+		super.cleanUp();
 	}
 	
 	
@@ -238,71 +80,18 @@ public class AIInfoFrame implements Serializable, IRecordFrame
 	
 	
 	/**
-	 * @param fps the fps to set
+	 * @return the aresData
 	 */
-	public void setFps(float fps)
+	@Override
+	public AresData getAresData()
 	{
-		this.fps = fps;
-	}
-	
-	
-	/**
-	 * @return the controlState
-	 */
-	public final EAIControlState getControlState()
-	{
-		return controlState;
-	}
-	
-	
-	/**
-	 * @param controlState the controlState to set
-	 */
-	public final void setControlState(EAIControlState controlState)
-	{
-		this.controlState = controlState;
+		return aresData;
 	}
 	
 	
 	@Override
-	public WorldFrame getRecordWfFrame()
+	public boolean isPersistable()
 	{
-		return worldFrame;
+		return false;
 	}
-	
-	
-	@Override
-	public Command getRefereeCmd()
-	{
-		return refereeMsgCached.getCommand();
-	}
-	
-	
-	@Override
-	public TacticalField getTacticalInfo()
-	{
-		return tacticalInfo;
-	}
-	
-	
-	@Override
-	public PlayStrategy getPlayStrategy()
-	{
-		return playStrategy;
-	}
-	
-	
-	@Override
-	public void setPaths(List<Path> paths)
-	{
-		this.paths = paths;
-	}
-	
-	
-	@Override
-	public List<Path> getPaths()
-	{
-		return paths;
-	}
-	
 }

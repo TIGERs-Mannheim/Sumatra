@@ -4,25 +4,25 @@
  * Project: TIGERS - Sumatra
  * Date: 04.06.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
  * A bootloader command :)
  * 
  * @author AndreR
- * 
  */
 public class TigerBootloaderCommand extends ACommand
 {
 	/** */
-	public static enum ECommand
+	public static enum EBootCommand
 	{
 		/** */
 		NONE(0xFF),
@@ -35,19 +35,24 @@ public class TigerBootloaderCommand extends ACommand
 		/** */
 		ERASE_MAIN(0x03),
 		/** */
-		ERASE_MEDIA(0x04);
+		ERASE_MEDIA(0x04),
+		/** */
+		ERASE_KD(0x05),
+		/** */
+		ERASE_LEFT(0x06),
+		/** */
+		ERASE_RIGHT(0x07);
 		
 		private int	id;
 		
 		
-		private ECommand(int i)
+		private EBootCommand(final int i)
 		{
 			id = i;
 		}
 		
 		
 		/**
-		 * 
 		 * @return
 		 */
 		public int getId()
@@ -57,13 +62,12 @@ public class TigerBootloaderCommand extends ACommand
 		
 		
 		/**
-		 * 
 		 * @param type
 		 * @return
 		 */
-		public static ECommand getCommandConstant(int type)
+		public static EBootCommand getCommandConstant(final int type)
 		{
-			for (ECommand t : values())
+			for (EBootCommand t : values())
 			{
 				if (t.getId() == type)
 				{
@@ -79,8 +83,8 @@ public class TigerBootloaderCommand extends ACommand
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	private ECommand	type	= ECommand.NONE;
+	@SerialData(type = ESerialDataType.UINT8)
+	private int	type	= EBootCommand.NONE.getId();
 	
 	
 	// --------------------------------------------------------------------------
@@ -90,52 +94,24 @@ public class TigerBootloaderCommand extends ACommand
 	 */
 	public TigerBootloaderCommand()
 	{
+		super(ECommand.CMD_BOOTLOADER_COMMAND);
 	}
 	
 	
 	/**
-	 * 
 	 * @param t
 	 */
-	public TigerBootloaderCommand(ECommand t)
+	public TigerBootloaderCommand(final EBootCommand t)
 	{
-		type = t;
+		super(ECommand.CMD_BOOTLOADER_COMMAND);
+		
+		type = t.getId();
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		type = ECommand.getCommandConstant(byteArray2UByte(data, 0));
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		byte2ByteArray(data, 0, type.getId());
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_BOOTLOADER_COMMAND;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 1;
-	}
 	
 	
 	// --------------------------------------------------------------------------
@@ -144,17 +120,17 @@ public class TigerBootloaderCommand extends ACommand
 	/**
 	 * @return the type
 	 */
-	public ECommand getType()
+	public EBootCommand getCommand()
 	{
-		return type;
+		return EBootCommand.getCommandConstant(type);
 	}
 	
 	
 	/**
 	 * @param type the type to set
 	 */
-	public void setType(ECommand type)
+	public void setCommand(final EBootCommand type)
 	{
-		this.type = type;
+		this.type = type.getId();
 	}
 }

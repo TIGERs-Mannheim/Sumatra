@@ -4,20 +4,20 @@
  * Project: TIGERS - Sumatra
  * Date: 28.10.2010
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
  * Tiger power supply information.
  * 
  * @author AndreR
- * 
  */
 public class TigerSystemPowerLog extends ACommand
 {
@@ -25,12 +25,16 @@ public class TigerSystemPowerLog extends ACommand
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	/** [mA] */
+	@SerialData(type = ESerialDataType.UINT16)
 	private int			iVCC;
 	/** [mA] */
+	@SerialData(type = ESerialDataType.UINT16)
 	private int			i5V;
 	/** [mA] */
+	@SerialData(type = ESerialDataType.UINT16)
 	private int			i3V3;
 	/** [mV] */
+	@SerialData(type = ESerialDataType.UINT16)
 	private final int	u[]	= new int[4];
 	
 	
@@ -42,55 +46,13 @@ public class TigerSystemPowerLog extends ACommand
 	 */
 	public TigerSystemPowerLog()
 	{
+		super(ECommand.CMD_SYSTEM_POWER_LOG);
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	@Override
-	public void setData(byte[] data)
-	{
-		iVCC = byteArray2UShort(data, 0);
-		i5V = byteArray2UShort(data, 2);
-		i3V3 = byteArray2UShort(data, 4);
-		u[0] = byteArray2UShort(data, 6);
-		u[1] = byteArray2UShort(data, 8);
-		u[2] = byteArray2UShort(data, 10);
-		u[3] = byteArray2UShort(data, 12);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		short2ByteArray(data, 0, iVCC);
-		short2ByteArray(data, 2, i5V);
-		short2ByteArray(data, 4, i3V3);
-		short2ByteArray(data, 6, u[0]);
-		short2ByteArray(data, 8, u[1]);
-		short2ByteArray(data, 10, u[2]);
-		short2ByteArray(data, 12, u[3]);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_SYSTEM_POWER_LOG;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 14;
-	}
 	
 	
 	// --------------------------------------------------------------------------
@@ -127,7 +89,7 @@ public class TigerSystemPowerLog extends ACommand
 	 * @param index
 	 * @return the u
 	 */
-	public float getU(int index)
+	public float getU(final int index)
 	{
 		if ((index >= 4) || (index < 0))
 		{
@@ -139,13 +101,16 @@ public class TigerSystemPowerLog extends ACommand
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public float getBatLevel()
 	{
 		float bat = 0;
 		
+		if (getU(1) <= 1e-6)
+		{
+			return getU(0);
+		}
 		for (int i = 0; i < 4; i++)
 		{
 			bat += getU(i);

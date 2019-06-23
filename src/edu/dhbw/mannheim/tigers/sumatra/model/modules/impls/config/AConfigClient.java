@@ -4,15 +4,17 @@
  * Project: TIGERS - Sumatra
  * Date: 28.11.2011
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.config;
 
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.XMLConfiguration;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import org.apache.commons.configuration.HierarchicalConfiguration;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IConfigClient;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IConfigObserver;
 
 
 /**
@@ -25,11 +27,12 @@ public abstract class AConfigClient implements IConfigClient
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final String		name;
-	private final String		configPath;
-	private final String		configKey;
-	private final String		defaultValue;
-	private final boolean	editable;
+	private final String						name;
+	private final String						configPath;
+	private final String						configKey;
+	private final String						defaultValue;
+	private final boolean					editable;
+	private final List<IConfigObserver>	observers	= new CopyOnWriteArrayList<IConfigObserver>();
 	
 	
 	// --------------------------------------------------------------------------
@@ -42,7 +45,8 @@ public abstract class AConfigClient implements IConfigClient
 	 * @param defaultValue
 	 * @param editable
 	 */
-	public AConfigClient(String name, String configPath, String configKey, String defaultValue, boolean editable)
+	public AConfigClient(final String name, final String configPath, final String configKey, final String defaultValue,
+			final boolean editable)
 	{
 		super();
 		this.name = name;
@@ -57,16 +61,55 @@ public abstract class AConfigClient implements IConfigClient
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
-	public void onReload(Configuration freshConfig)
+	public void onReload(final HierarchicalConfiguration freshConfig)
 	{
 		onLoad(freshConfig);
+		
+		for (IConfigObserver observer : observers)
+		{
+			observer.onReload(freshConfig);
+		}
 	}
 	
 	
 	@Override
-	public XMLConfiguration prepareConfigForSaving(XMLConfiguration loadedConfig)
+	public HierarchicalConfiguration prepareConfigForSaving(final HierarchicalConfiguration loadedConfig)
 	{
 		return loadedConfig;
+	}
+	
+	
+	@Override
+	public HierarchicalConfiguration getDefaultConfig()
+	{
+		return null;
+	}
+	
+	
+	/**
+	 * @param observer
+	 */
+	public void addObserver(final IConfigObserver observer)
+	{
+		observers.add(observer);
+	}
+	
+	
+	/**
+	 * @param observer
+	 */
+	public void removeObserver(final IConfigObserver observer)
+	{
+		observers.remove(observer);
+	}
+	
+	
+	/**
+	 */
+	@Override
+	public void clearObservers()
+	{
+		observers.clear();
 	}
 	
 	

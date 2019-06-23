@@ -1,26 +1,37 @@
-<?xml version="1.0" encoding="ISO-8859-1"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <botmanager>
-    <multicast>
-        <useMulticast>true</useMulticast>
-        <interface>172.31.10.0</interface>
+    <multicast id="0">
+        <interface>192.168.70.0</interface>
         <group>225.42.42.42</group>
         <localPort>10040</localPort>
         <remotePort>10041</remotePort>
     </multicast>
-    <baseStation>
-        <ip>172.31.10.210</ip>
-        <localPort>10200</localPort>
-        <remotePort>10201</remotePort>
-    </baseStation>
+    <multicast id="1">
+        <interface>127.0.0.1</interface>
+        <group>225.42.42.43</group>
+        <localPort>10140</localPort>
+        <remotePort>10141</remotePort>
+    </multicast>
     <updateAll>
         <useMulticast>true</useMulticast>
-        <sleep>20</sleep>
     </updateAll>
+    <grSimNetwork id="0">
+        <ip>127.0.0.1</ip>
+        <port>20011</port>
+        <teamYellow>true</teamYellow>
+    </grSimNetwork>
+    <grSimNetwork id="1">
+        <ip>127.0.0.1</ip>
+        <port>20011</port>
+        <teamYellow>false</teamYellow>
+    </grSimNetwork>
     <bots>
         <bot id="0">
             <name>Zaphot</name>
             <type>TigerBot</type>
-            <active>false</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>0</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
             <features>
                 <CHIP_KICKER>KAPUT</CHIP_KICKER>
                 <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
@@ -28,18 +39,19 @@
                 <MOVE>WORKING</MOVE>
                 <BARRIER>LIMITED</BARRIER>
             </features>
-            <ip>172.31.20.10</ip>
+            <ip>192.168.70.10</ip>
             <port>10003</port>
-
             <mac>02-00-00-00-00-06</mac>
             <serverport>10055</serverport>
             <cpuid>431255523932423105D7FF38</cpuid>
             <useUpdateAll>true</useUpdateAll>
             <oofcheck>true</oofcheck>
+            <active>false</active>
             <motorMode>2</motorMode>
             <logs>
                 <movement>false</movement>
                 <kicker>true</kicker>
+                <power>true</power>
                 <accel>false</accel>
                 <ir>false</ir>
             </logs>
@@ -84,7 +96,9 @@
         <bot id="1">
             <name>Trish</name>
             <type>TigerBot</type>
-            <active>false</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>0</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
             <features>
                 <CHIP_KICKER>KAPUT</CHIP_KICKER>
                 <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
@@ -92,18 +106,19 @@
                 <MOVE>WORKING</MOVE>
                 <BARRIER>LIMITED</BARRIER>
             </features>
-            <ip>172.31.20.11</ip>
+            <ip>192.168.70.11</ip>
             <port>10009</port>
-
             <mac>02-00-00-00-00-05</mac>
             <serverport>10054</serverport>
             <cpuid>431258533932423105D2FF38</cpuid>
             <useUpdateAll>true</useUpdateAll>
             <oofcheck>true</oofcheck>
+            <active>true</active>
             <motorMode>2</motorMode>
             <logs>
                 <movement>false</movement>
                 <kicker>true</kicker>
+                <power>true</power>
                 <accel>false</accel>
                 <ir>false</ir>
             </logs>
@@ -148,7 +163,9 @@
         <bot id="2">
             <name>Chuck Norris</name>
             <type>TigerBot</type>
-            <active>false</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>0</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
             <features>
                 <CHIP_KICKER>KAPUT</CHIP_KICKER>
                 <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
@@ -156,17 +173,19 @@
                 <MOVE>WORKING</MOVE>
                 <BARRIER>LIMITED</BARRIER>
             </features>
-            <ip>172.31.20.12</ip>
+            <ip>192.168.70.12</ip>
             <port>10008</port>
             <mac>02-00-00-00-00-04</mac>
             <serverport>10053</serverport>
             <cpuid>430759533932423105D5FF38</cpuid>
             <useUpdateAll>true</useUpdateAll>
             <oofcheck>true</oofcheck>
+            <active>false</active>
             <motorMode>2</motorMode>
             <logs>
                 <movement>false</movement>
                 <kicker>true</kicker>
+                <power>true</power>
                 <accel>false</accel>
                 <ir>false</ir>
             </logs>
@@ -211,7 +230,9 @@
         <bot id="3">
             <name>Eddie</name>
             <type>TigerBot</type>
-            <active>false</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>0</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
             <features>
                 <CHIP_KICKER>KAPUT</CHIP_KICKER>
                 <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
@@ -219,17 +240,19 @@
                 <MOVE>WORKING</MOVE>
                 <BARRIER>LIMITED</BARRIER>
             </features>
-            <ip>172.31.20.13</ip>
+            <ip>192.168.70.13</ip>
             <port>10007</port>
             <mac>02-00-00-00-00-03</mac>
             <serverport>10052</serverport>
             <cpuid>431238533932423105D4FF38</cpuid>
             <useUpdateAll>true</useUpdateAll>
             <oofcheck>true</oofcheck>
+            <active>false</active>
             <motorMode>2</motorMode>
             <logs>
                 <movement>false</movement>
                 <kicker>true</kicker>
+                <power>true</power>
                 <accel>false</accel>
                 <ir>false</ir>
             </logs>
@@ -274,7 +297,9 @@
         <bot id="4">
             <name>Arthur</name>
             <type>TigerBot</type>
-            <active>false</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>0</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
             <features>
                 <CHIP_KICKER>KAPUT</CHIP_KICKER>
                 <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
@@ -282,17 +307,19 @@
                 <MOVE>WORKING</MOVE>
                 <BARRIER>LIMITED</BARRIER>
             </features>
-            <ip>172.31.20.14</ip>
+            <ip>192.168.70.14</ip>
             <port>10006</port>
             <mac>02-00-00-00-00-02</mac>
             <serverport>10051</serverport>
             <cpuid>431257533932423105D3FF38</cpuid>
             <useUpdateAll>false</useUpdateAll>
             <oofcheck>true</oofcheck>
+            <active>false</active>
             <motorMode>2</motorMode>
             <logs>
                 <movement>false</movement>
                 <kicker>true</kicker>
+                <power>true</power>
                 <accel>false</accel>
                 <ir>false</ir>
             </logs>
@@ -337,7 +364,9 @@
         <bot id="5">
             <name>Marvin</name>
             <type>TigerBot</type>
-            <active>false</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>0</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
             <features>
                 <CHIP_KICKER>WORKING</CHIP_KICKER>
                 <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
@@ -345,17 +374,19 @@
                 <MOVE>WORKING</MOVE>
                 <BARRIER>LIMITED</BARRIER>
             </features>
-            <ip>172.31.20.15</ip>
+            <ip>192.168.70.15</ip>
             <port>10005</port>
             <mac>02-00-00-00-00-2A</mac>
             <serverport>10060</serverport>
             <cpuid>431240523932423105D4FF38</cpuid>
             <useUpdateAll>true</useUpdateAll>
             <oofcheck>false</oofcheck>
+            <active>false</active>
             <motorMode>2</motorMode>
             <logs>
                 <movement>false</movement>
                 <kicker>true</kicker>
+                <power>true</power>
                 <accel>false</accel>
                 <ir>false</ir>
             </logs>
@@ -400,7 +431,9 @@
         <bot id="6">
             <name>WallE</name>
             <type>TigerBot</type>
-            <active>false</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>0</mcastDelegateKey>
+            <baseStationKey>-1</baseStationKey>
             <features>
                 <CHIP_KICKER>KAPUT</CHIP_KICKER>
                 <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
@@ -408,17 +441,19 @@
                 <MOVE>WORKING</MOVE>
                 <BARRIER>LIMITED</BARRIER>
             </features>
-            <ip>172.31.20.16</ip>
+            <ip>192.168.70.16</ip>
             <port>10004</port>
             <mac>02-00-00-00-00-07</mac>
             <serverport>10056</serverport>
             <cpuid>431252533932423105D9FF38</cpuid>
             <useUpdateAll>true</useUpdateAll>
             <oofcheck>true</oofcheck>
+            <active>false</active>
             <motorMode>2</motorMode>
             <logs>
                 <movement>false</movement>
                 <kicker>true</kicker>
+                <power>true</power>
                 <accel>false</accel>
                 <ir>false</ir>
             </logs>

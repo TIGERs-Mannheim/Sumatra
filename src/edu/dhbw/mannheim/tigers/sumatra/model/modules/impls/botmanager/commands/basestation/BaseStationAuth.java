@@ -10,7 +10,9 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -25,46 +27,23 @@ public class BaseStationAuth extends ACommand
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private int	auth	= 0x42424242;
+	@SerialData(type = ESerialDataType.UINT32)
+	private long	auth	= 0x42424242;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/** */
+	public BaseStationAuth()
+	{
+		super(ECommand.CMD_BASE_AUTH);
+	}
+	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		auth = (int) byteArray2UInt(data, 0);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		int2ByteArray(data, 0, auth);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_BASE_AUTH;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 4;
-	}
 	
 	
 	// --------------------------------------------------------------------------
@@ -73,7 +52,7 @@ public class BaseStationAuth extends ACommand
 	/**
 	 * @return the auth
 	 */
-	public int getAuth()
+	public long getAuth()
 	{
 		return auth;
 	}
@@ -82,7 +61,7 @@ public class BaseStationAuth extends ACommand
 	/**
 	 * @param auth the auth to set
 	 */
-	public void setAuth(int auth)
+	public void setAuth(long auth)
 	{
 		this.auth = auth;
 	}

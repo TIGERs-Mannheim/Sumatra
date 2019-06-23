@@ -28,6 +28,7 @@ import net.miginfocom.swing.MigLayout;
 
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.rcm.AControllerPresenter;
@@ -91,7 +92,7 @@ public class ControllerPanel extends JPanel
 	private JLabel									rightLabel;
 	private JLabel									botNumberLabel;
 	/** */
-	public JComboBox<String>					botComboBox;
+	private JComboBox<String>					botComboBox;
 	
 	/**
 	 * HashMap with all TextFields
@@ -167,7 +168,7 @@ public class ControllerPanel extends JPanel
 							
 							for (final ABot bot : RCMPresenter.getInstance().getAllBots())
 							{
-								final String bn = bot.getBotID().getNumber() + " - " + bot.getType();
+								final String bn = bot.getBotID().getNumber() + " - " + bot.getColor();
 								botComboBox.addItem(bn);
 							}
 						}
@@ -522,21 +523,23 @@ public class ControllerPanel extends JPanel
 	 * returns bot number
 	 * @return bot number
 	 */
-	public int getBotNumber()
+	public BotID getBotNumber()
 	{
 		if (botComboBox.getSelectedItem() != null)
 		{
 			final String tempStore = botComboBox.getSelectedItem().toString();
 			try
 			{
-				return Integer.parseInt(tempStore.substring(0, 2).trim());
+				int id = Integer.parseInt(tempStore.substring(0, 2).trim());
+				ETeamColor color = ETeamColor.valueOf(tempStore.substring(4).trim());
+				return BotID.createBotId(id, color);
 			} catch (final NumberFormatException e)
 			{
 				log.warn("Could not read bot id: " + tempStore);
-				return BotID.UNINITIALIZED_ID;
+				return BotID.createBotId();
 			}
 		}
-		return BotID.UNINITIALIZED_ID;
+		return BotID.createBotId();
 		
 	}
 }

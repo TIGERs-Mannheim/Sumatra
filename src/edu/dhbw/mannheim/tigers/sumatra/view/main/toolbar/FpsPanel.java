@@ -9,14 +9,14 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.main.toolbar;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.border.TitledBorder;
+
+import net.miginfocom.swing.MigLayout;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 
 
 /**
@@ -32,15 +32,13 @@ public class FpsPanel extends JPanel
 	// --------------------------------------------------------------------------
 	
 	private static final long	serialVersionUID	= -4915659461230793676L;
-	private static final int	H_GAP					= 10;
-	private static final int	V_GAP					= 0;
-	private static final int	MAX_WIDTH			= 180;
-	private static final int	MAX_HEIGHT			= 100;
 	private final JLabel			lblFpsCamWF			= new JLabel();
-	private final JLabel			lblFpsAIF			= new JLabel();
+	private final JLabel			lblFpsAIFYellow	= new JLabel();
+	private final JLabel			lblFpsAIFBlue		= new JLabel();
 	private final JLabel			lblFpsWF				= new JLabel();
 	
-	private Float					lastFpsAIF			= -1f;
+	private Float					lastFpsAIFYellow	= -1f;
+	private Float					lastFpsAIFBlue		= -1f;
 	private Float					lastFpsCam			= -1f;
 	private Float					lastFpsWF			= -1f;
 	
@@ -57,14 +55,15 @@ public class FpsPanel extends JPanel
 		// --- border ---
 		final TitledBorder border = BorderFactory.createTitledBorder("fps");
 		setBorder(border);
-		setMaximumSize(new Dimension(MAX_WIDTH, MAX_HEIGHT));
 		
-		setLayout(new BorderLayout(H_GAP, V_GAP));
-		this.add(lblFpsCamWF, BorderLayout.WEST);
-		this.add(lblFpsWF, BorderLayout.CENTER);
-		this.add(lblFpsAIF, BorderLayout.EAST);
+		setLayout(new MigLayout("fill, inset 0", "[]5[]5[]5[]"));
+		this.add(lblFpsCamWF);
+		this.add(lblFpsWF);
+		this.add(lblFpsAIFYellow);
+		this.add(lblFpsAIFBlue);
 		setFpsCam(0f);
-		setFpsAIF(0f);
+		setFpsAIF(0f, ETeamColor.YELLOW);
+		setFpsAIF(0f, ETeamColor.BLUE);
 		setFpsWF(0f);
 	}
 	
@@ -137,23 +136,25 @@ public class FpsPanel extends JPanel
 	 * Set the AIInfoFrame fps
 	 * 
 	 * @param fps
+	 * @param teamColor
 	 */
-	public final void setFpsAIF(final float fps)
+	public final void setFpsAIF(final float fps, ETeamColor teamColor)
 	{
+		Float lastFpsAIF = teamColor == ETeamColor.YELLOW ? lastFpsAIFYellow : lastFpsAIFBlue;
+		final JLabel lblFpsAIF = teamColor == ETeamColor.YELLOW ? lblFpsAIFYellow : lblFpsAIFBlue;
+		final String colorLetter = teamColor == ETeamColor.YELLOW ? "Y" : "B";
 		if (!lastFpsAIF.equals(fps))
 		{
-			lastFpsAIF = fps;
 			SwingUtilities.invokeLater(new Runnable()
 			{
 				@Override
 				public void run()
 				{
-					lblFpsAIF.setText(String.format("AIF:%3.0f", fps));
+					lblFpsAIF.setText(String.format("AIF" + colorLetter + ":%3.0f", fps));
 				}
 			});
 		}
 	}
-	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------

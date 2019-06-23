@@ -9,14 +9,13 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.wpcenter;
 
-import java.awt.Component;
 import java.util.List;
 
 import javax.swing.JMenu;
 import javax.swing.JPanel;
 
 import net.miginfocom.swing.MigLayout;
-import edu.dhbw.mannheim.tigers.sumatra.view.main.ISumatraView;
+import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
 
 
 // import edu.dhbw.mannheim.tigers.sumatra.view.wpcenter.internals.ABCPanel;
@@ -34,13 +33,9 @@ public class WPCenterPanel extends JPanel implements ISumatraView
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private static final long		serialVersionUID	= 8132550010453691515L;
+	private static final long	serialVersionUID	= 8132550010453691515L;
 	
-	private static final int		ID						= 7;
-	private static final String	TITLE					= "WP Center";
-	
-	// private ABCPanel abcPanel = null;
-	private JPanel						mainPanel			= null;
+	private JPanel					mainPanel			= null;
 	
 	
 	// --------------------------------------------------------------------------
@@ -54,12 +49,10 @@ public class WPCenterPanel extends JPanel implements ISumatraView
 		setLayout(new MigLayout("fill, insets 0", "[]", ""));
 		
 		
-		// abcPanel = new ABCPanel();
 		mainPanel = new JPanel();
 		mainPanel.setLayout(new MigLayout("fill"));
 		mainPanel.add(new JPanel());
 		
-		// add(abcPanel, "");
 		add(mainPanel, "grow 200");
 		
 	}
@@ -69,12 +62,6 @@ public class WPCenterPanel extends JPanel implements ISumatraView
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	// public ABCPanel getABCPanel()
-	// {
-	// return abcPanel;
-	// }
-	
-	
 	/**
 	 * Removes the current JPanel and adds the paramter.
 	 * @param chart
@@ -83,27 +70,6 @@ public class WPCenterPanel extends JPanel implements ISumatraView
 	{
 		mainPanel.remove(0);
 		mainPanel.add(chart, "grow");
-	}
-	
-	
-	@Override
-	public int getId()
-	{
-		return ID;
-	}
-	
-	
-	@Override
-	public String getTitle()
-	{
-		return TITLE;
-	}
-	
-	
-	@Override
-	public Component getViewComponent()
-	{
-		return this;
 	}
 	
 	

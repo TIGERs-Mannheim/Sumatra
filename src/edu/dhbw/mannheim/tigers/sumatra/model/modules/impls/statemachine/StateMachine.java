@@ -23,27 +23,26 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.EventSt
  * State machine. Primary used for roles
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * @param <STATE_TYPE>
+ * @param <STATETYPE>
  * 
  */
-public class StateMachine<STATE_TYPE extends IState> implements IStateMachine<STATE_TYPE>
+public class StateMachine<STATETYPE extends IState> implements IStateMachine<STATETYPE>
 {
 	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private static final Logger					log								= Logger
-																										.getLogger(StateMachine.class.getName());
-	private static final int						MAX_STATE_TRANSITIONS		= 50000;
+	private static final Logger				log								= Logger.getLogger(StateMachine.class.getName());
+	private static final int					MAX_STATE_TRANSITIONS		= 50000;
 	
 	/** count transitions to avoid endless transitions */
-	private int											stateTransitionsLeft			= MAX_STATE_TRANSITIONS;
-	private STATE_TYPE								currentState					= null;
-	private Map<EventStatePair, STATE_TYPE>	transititions					= new HashMap<EventStatePair, STATE_TYPE>();
-	private Queue<Enum<? extends Enum<?>>>		eventQueue						= new LinkedBlockingQueue<Enum<? extends Enum<?>>>();
-	private boolean									initialized						= true;
-	private boolean									doEntryActionsFirstState	= true;
+	private int										stateTransitionsLeft			= MAX_STATE_TRANSITIONS;
+	private STATETYPE								currentState					= null;
+	private Map<EventStatePair, STATETYPE>	transititions					= new HashMap<EventStatePair, STATETYPE>();
+	private Queue<Enum<? extends Enum<?>>>	eventQueue						= new LinkedBlockingQueue<Enum<? extends Enum<?>>>();
+	private boolean								initialized						= true;
+	private boolean								doEntryActionsFirstState	= true;
 	
 	
 	// --------------------------------------------------------------------------
@@ -53,7 +52,7 @@ public class StateMachine<STATE_TYPE extends IState> implements IStateMachine<ST
 	/**
 	 * @param initialState
 	 */
-	public StateMachine(STATE_TYPE initialState)
+	public StateMachine(STATETYPE initialState)
 	{
 		if (initialState == null)
 		{
@@ -101,7 +100,7 @@ public class StateMachine<STATE_TYPE extends IState> implements IStateMachine<ST
 			currentState.doUpdate();
 		} else
 		{
-			STATE_TYPE newState = transititions.get(new EventStatePair(newEvent, currentState.getIdentifier()));
+			STATETYPE newState = transititions.get(new EventStatePair(newEvent, currentState.getIdentifier()));
 			if (newState != null)
 			{
 				currentState.doExitActions();
@@ -146,7 +145,7 @@ public class StateMachine<STATE_TYPE extends IState> implements IStateMachine<ST
 	@Override
 	public boolean valid()
 	{
-		for (Map.Entry<EventStatePair, STATE_TYPE> entry : transititions.entrySet())
+		for (Map.Entry<EventStatePair, STATETYPE> entry : transititions.entrySet())
 		{
 			entry.getKey().setValid(EValid.UNKNOWN);
 		}
@@ -159,7 +158,7 @@ public class StateMachine<STATE_TYPE extends IState> implements IStateMachine<ST
 	}
 	
 	
-	private boolean valid(STATE_TYPE state)
+	private boolean valid(STATETYPE state)
 	{
 		if (state == null)
 		{
@@ -171,7 +170,7 @@ public class StateMachine<STATE_TYPE extends IState> implements IStateMachine<ST
 			return true;
 		}
 		log.trace("Checking " + state.getIdentifier() + " for validaty");
-		for (Map.Entry<EventStatePair, STATE_TYPE> entry : transititions.entrySet())
+		for (Map.Entry<EventStatePair, STATETYPE> entry : transititions.entrySet())
 		{
 			if ((entry.getKey().getState() == state.getIdentifier()))
 			{
@@ -210,21 +209,21 @@ public class StateMachine<STATE_TYPE extends IState> implements IStateMachine<ST
 	
 	
 	@Override
-	public final STATE_TYPE getCurrentState()
+	public final STATETYPE getCurrentState()
 	{
 		return currentState;
 	}
 	
 	
 	@Override
-	public final Map<EventStatePair, STATE_TYPE> getTransititions()
+	public final Map<EventStatePair, STATETYPE> getTransititions()
 	{
 		return transititions;
 	}
 	
 	
 	@Override
-	public final void setInitialState(STATE_TYPE currentState)
+	public final void setInitialState(STATETYPE currentState)
 	{
 		if (initialized)
 		{

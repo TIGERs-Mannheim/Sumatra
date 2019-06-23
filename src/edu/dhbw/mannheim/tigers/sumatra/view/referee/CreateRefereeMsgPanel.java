@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 15.01.2011
  * Author(s): Malte
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.referee;
@@ -15,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -40,11 +40,11 @@ public class CreateRefereeMsgPanel extends JPanel
 	private final JButton									sendButton;
 	private final JButton									start;
 	private final JButton									stop;
+	private final JButton									halt;
 	private final JTextField								goalsYellow;
 	private final JTextField								goalsBlue;
 	private final JComboBox<Command>						commandBox;
-	
-	private int													id;
+	private final JCheckBox									chkReceive;
 	
 	private final List<ICreateRefereeMsgObserver>	observers			= new ArrayList<ICreateRefereeMsgObserver>();
 	
@@ -67,7 +67,7 @@ public class CreateRefereeMsgPanel extends JPanel
 		sendButton.addActionListener(new ActionListener()
 		{
 			@Override
-			public void actionPerformed(ActionEvent e)
+			public void actionPerformed(final ActionEvent e)
 			{
 				CreateRefereeMsgPanel.this.sendOwnRefereeMsg();
 			}
@@ -77,10 +77,9 @@ public class CreateRefereeMsgPanel extends JPanel
 		start.addActionListener(new ActionListener()
 		{
 			@Override
-			public void actionPerformed(ActionEvent e)
+			public void actionPerformed(final ActionEvent e)
 			{
-				commandBox.setSelectedItem(Command.NORMAL_START);
-				CreateRefereeMsgPanel.this.sendOwnRefereeMsg();
+				CreateRefereeMsgPanel.this.sendOwnRefereeMsg(Command.NORMAL_START);
 			}
 		});
 		
@@ -89,27 +88,48 @@ public class CreateRefereeMsgPanel extends JPanel
 		stop.addActionListener(new ActionListener()
 		{
 			@Override
-			public void actionPerformed(ActionEvent e)
+			public void actionPerformed(final ActionEvent e)
 			{
-				commandBox.setSelectedItem(Command.STOP);
-				CreateRefereeMsgPanel.this.sendOwnRefereeMsg();
+				CreateRefereeMsgPanel.this.sendOwnRefereeMsg(Command.STOP);
 			}
 		});
 		
 		
-		this.add(new JLabel("Goals Blue"), "cell 0 0");
-		this.add(goalsBlue, "cell 0 1");
+		halt = new JButton("halt");
+		halt.addActionListener(new ActionListener()
+		{
+			@Override
+			public void actionPerformed(final ActionEvent e)
+			{
+				CreateRefereeMsgPanel.this.sendOwnRefereeMsg(Command.HALT);
+			}
+		});
 		
-		this.add(new JLabel("Goals Yellow"), "cell 1 0");
-		this.add(goalsYellow, "cell 1 1");
+		chkReceive = new JCheckBox("Recv ext");
+		chkReceive.setSelected(true);
+		chkReceive.addActionListener(new ActionListener()
+		{
+			
+			@Override
+			public void actionPerformed(final ActionEvent e)
+			{
+				notifyEnableReceive(chkReceive.isSelected());
+			}
+		});
+		this.add(chkReceive, "cell 0 1");
 		
-		this.add(new JLabel("Command"), "cell 2 0");
-		this.add(commandBox, "cell 2 1");
+		this.add(commandBox, "cell 0 0, span 3 0");
+		this.add(sendButton, "cell 1 1, grow x");
 		
-		this.add(sendButton, "cell 3 0, span 0 2, grow y");
+		this.add(halt, "cell 2 1, grow x");
+		this.add(start, "cell 3 0, grow x");
+		this.add(stop, "cell 3 1, grow x");
 		
-		this.add(start, "cell 4 0, grow x");
-		this.add(stop, "cell 4 1, grow x");
+		this.add(new JLabel("Blue"), "cell 4 0");
+		this.add(goalsBlue, "cell 4 1");
+		
+		this.add(new JLabel("Yellow"), "cell 5 0");
+		this.add(goalsYellow, "cell 5 1");
 		
 		goalsBlue.setPreferredSize(sendButton.getMaximumSize());
 		goalsYellow.setPreferredSize(sendButton.getMaximumSize());
@@ -119,13 +139,16 @@ public class CreateRefereeMsgPanel extends JPanel
 		commandBox.setEnabled(false);
 		start.setEnabled(false);
 		stop.setEnabled(false);
+		halt.setEnabled(false);
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	private void sendOwnRefereeMsg()
+	
+	
+	private void sendOwnRefereeMsg(final Command cmd)
 	{
 		// check whether input goals are numbers
 		int gBlue;
@@ -140,30 +163,48 @@ public class CreateRefereeMsgPanel extends JPanel
 			goalsYellow.setText("Number!");
 			return;
 		}
-		
+		// send Message
+		notifySendOwnRefereeMsg(cmd, gBlue, gYellow, (short) 899);
+	}
+	
+	
+	private void sendOwnRefereeMsg()
+	{
 		// create Message
 		final Command cmd = (Command) commandBox.getSelectedItem();
-		
-		// send Message
-		notifySendOwnRefereeMsg(id, cmd, gBlue, gYellow, (short) 899);
-		id++;
+		sendOwnRefereeMsg(cmd);
 	}
 	
 	
 	/**
-	 * @param id
 	 * @param cmd
 	 * @param goalsBlue
 	 * @param goalsYellow
 	 * @param timeLeft
 	 */
-	public void notifySendOwnRefereeMsg(int id, Command cmd, int goalsBlue, int goalsYellow, short timeLeft)
+	public void notifySendOwnRefereeMsg(final Command cmd, final int goalsBlue, final int goalsYellow,
+			final short timeLeft)
 	{
 		synchronized (observers)
 		{
 			for (final ICreateRefereeMsgObserver observer : observers)
 			{
-				observer.onSendOwnRefereeMsg(id, cmd, goalsBlue, goalsYellow, timeLeft);
+				observer.onSendOwnRefereeMsg(cmd, goalsBlue, goalsYellow, timeLeft);
+			}
+		}
+	}
+	
+	
+	/**
+	 * @param receive
+	 */
+	public void notifyEnableReceive(final boolean receive)
+	{
+		synchronized (observers)
+		{
+			for (final ICreateRefereeMsgObserver observer : observers)
+			{
+				observer.onEnableReceive(receive);
 			}
 		}
 	}
@@ -179,7 +220,7 @@ public class CreateRefereeMsgPanel extends JPanel
 		commandBox.setEnabled(true);
 		start.setEnabled(true);
 		stop.setEnabled(true);
-		id = 0;
+		halt.setEnabled(true);
 	}
 	
 	
@@ -193,7 +234,7 @@ public class CreateRefereeMsgPanel extends JPanel
 		commandBox.setEnabled(false);
 		start.setEnabled(false);
 		stop.setEnabled(false);
-		id = 0;
+		halt.setEnabled(false);
 	}
 	
 	
@@ -203,7 +244,7 @@ public class CreateRefereeMsgPanel extends JPanel
 	/**
 	 * @param obs
 	 */
-	public void addObserver(ICreateRefereeMsgObserver obs)
+	public void addObserver(final ICreateRefereeMsgObserver obs)
 	{
 		synchronized (observers)
 		{
@@ -215,7 +256,7 @@ public class CreateRefereeMsgPanel extends JPanel
 	/**
 	 * @param obs
 	 */
-	public void removeObserver(ICreateRefereeMsgObserver obs)
+	public void removeObserver(final ICreateRefereeMsgObserver obs)
 	{
 		synchronized (observers)
 		{

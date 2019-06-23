@@ -13,13 +13,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Properties;
 
 import org.apache.log4j.Logger;
 
-import edu.moduli.Moduli;
+import edu.dhbw.mannheim.tigers.moduli.Moduli;
 
 
 /**
@@ -46,7 +44,7 @@ public final class SumatraModel extends Moduli
 	// Logger - End
 	
 	// --- version ---
-	private static final String	VERSION							= "2.0";
+	private static final String	VERSION							= "3.0";
 	
 	// --- singleton ---
 	private static SumatraModel	instance							= new SumatraModel();
@@ -177,17 +175,8 @@ public final class SumatraModel extends Moduli
 	 */
 	public File getUserPropertiesFile()
 	{
-		String pcName = "";
-		try
-		{
-			pcName = InetAddress.getLocalHost().getHostName();
-		} catch (final UnknownHostException err)
-		{
-			log.warn("Could not resolve local PC name, loading default configs");
-		}
-		
 		final String userName = System.getProperty("user.name");
-		final String filename = CONFIG_SETTINGS_PATH + pcName + "_" + userName + ".props";
+		final String filename = CONFIG_SETTINGS_PATH + userName + ".props";
 		
 		return new File(filename);
 	}

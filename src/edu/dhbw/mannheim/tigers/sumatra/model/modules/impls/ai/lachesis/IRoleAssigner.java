@@ -15,6 +15,7 @@ import java.util.Collection;
 import java.util.List;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.MetisAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 
@@ -32,5 +33,5 @@ public interface IRoleAssigner
 	 * @param rolesToAssign The {@link ARole}s which have to be assigned
 	 * @param frame The {@link AIInfoFrame} of the current AI-cycle
 	 */
-	void assignRoles(Collection<TrackedTigerBot> assignees, List<ARole> rolesToAssign, AIInfoFrame frame);
+	void assignRoles(Collection<TrackedTigerBot> assignees, List<ARole> rolesToAssign, MetisAiFrame frame);
 }

@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 16.11.2010
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
@@ -12,14 +11,15 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
  * Set maximum auto-load cap level.
  * 
  * @author AndreR
- * 
  */
 public class TigerKickerChargeAuto extends ACommand
 {
@@ -29,9 +29,10 @@ public class TigerKickerChargeAuto extends ACommand
 	// Logger
 	private static final Logger	log			= Logger.getLogger(TigerKickerChargeAuto.class.getName());
 	
+	@SerialData(type = ESerialDataType.UINT16)
 	private int							max;
 	/** */
-	public static final int			MAX_LEVEL	= 180;
+	public static final int			MAX_LEVEL	= 200;
 	
 	
 	// --------------------------------------------------------------------------
@@ -42,15 +43,17 @@ public class TigerKickerChargeAuto extends ACommand
 	 */
 	public TigerKickerChargeAuto()
 	{
+		super(ECommand.CMD_KICKER_CHARGE_AUTO);
 	}
 	
 	
 	/**
-	 * 
 	 * @param max
 	 */
-	public TigerKickerChargeAuto(int max)
+	public TigerKickerChargeAuto(final int max)
 	{
+		super(ECommand.CMD_KICKER_CHARGE_AUTO);
+		
 		setMax(max);
 	}
 	
@@ -58,36 +61,6 @@ public class TigerKickerChargeAuto extends ACommand
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		max = byteArray2UShort(data, 0);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte[] data = new byte[getDataLength()];
-		
-		short2ByteArray(data, 0, max);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_KICKER_CHARGE_AUTO;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 2;
-	}
 	
 	
 	// --------------------------------------------------------------------------
@@ -105,14 +78,14 @@ public class TigerKickerChargeAuto extends ACommand
 	/**
 	 * @param max the max to set
 	 */
-	public void setMax(int max)
+	public void setMax(final int max)
 	{
 		this.max = max * 10;
 		
-		if (max > 350)
+		if (max > MAX_LEVEL)
 		{
 			log.warn("Level above " + MAX_LEVEL + ", cut off");
-			this.max = 350 * 10;
+			this.max = MAX_LEVEL * 10;
 		}
 	}
 }

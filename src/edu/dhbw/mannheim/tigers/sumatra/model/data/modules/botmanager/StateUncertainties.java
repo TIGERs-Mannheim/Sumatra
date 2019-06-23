@@ -14,6 +14,7 @@ import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector3;
+import edu.dhbw.mannheim.tigers.sumatra.util.VectorUtil;
 
 
 /** */
@@ -34,6 +35,17 @@ public class StateUncertainties
 	
 	
 	/**
+	 * @param orig
+	 */
+	public StateUncertainties(StateUncertainties orig)
+	{
+		pos = new Vector3(orig.pos);
+		vel = new Vector3(orig.vel);
+		acc = new Vector3(orig.acc);
+	}
+	
+	
+	/**
 	 * 
 	 * @param config
 	 */
@@ -49,9 +61,9 @@ public class StateUncertainties
 	 */
 	public void setConfiguration(SubnodeConfiguration config)
 	{
-		pos.setConfiguration(config.configurationAt("pos"));
-		vel.setConfiguration(config.configurationAt("vel"));
-		acc.setConfiguration(config.configurationAt("acc"));
+		pos.set(VectorUtil.configToVector3(config.configurationAt("pos")));
+		vel.set(VectorUtil.configToVector3(config.configurationAt("vel")));
+		acc.set(VectorUtil.configToVector3(config.configurationAt("acc")));
 	}
 	
 	
@@ -63,9 +75,9 @@ public class StateUncertainties
 	{
 		final CombinedConfiguration config = new CombinedConfiguration();
 		
-		config.addConfiguration(pos.getConfiguration(), "pos", "pos");
-		config.addConfiguration(vel.getConfiguration(), "vel", "vel");
-		config.addConfiguration(acc.getConfiguration(), "acc", "acc");
+		config.addConfiguration(VectorUtil.vector3ToConfig(pos), "pos", "pos");
+		config.addConfiguration(VectorUtil.vector3ToConfig(vel), "vel", "vel");
+		config.addConfiguration(VectorUtil.vector3ToConfig(acc), "acc", "acc");
 		
 		return config;
 	}

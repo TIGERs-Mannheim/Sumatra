@@ -18,7 +18,17 @@ import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
 import Jama.Matrix;
+import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
+import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AiMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.SplinePair3D;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.IMulticastDelegate;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature.EFeatureState;
@@ -28,7 +38,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.comm
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.udp.ITransceiverUDPObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.udp.UnicastTransceiverUDP;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerDribble;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerIrLog;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerKickV2;
@@ -42,23 +51,27 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerSystemPowerLog;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerSystemSetLogs;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerSystemStatusMovement;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerSkillPositioningCommand;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AWorldPredictor;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IWorldFrameConsumer;
 import edu.dhbw.mannheim.tigers.sumatra.util.IWatchdogObserver;
 import edu.dhbw.mannheim.tigers.sumatra.util.Watchdog;
 
 
 /**
  * The old tiger
- * 
+ *
  * @author AndreR
- * 
  */
-public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdogObserver
+public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdogObserver, IWorldFrameConsumer
 {
 	// Logger
 	private static final Logger				log							= Logger.getLogger(TigerBot.class.getName());
 	
+	private static final float					BAT_MIN						= 12;
+	private static final float					BAT_MAX						= 16.8f;
 	private static final int					TIMEOUT						= 2000;
-	private final ITransceiverUDP				transceiver					= new UnicastTransceiverUDP();
+	private final ITransceiverUDP				transceiver					= new UnicastTransceiverUDP(true);
 	private final Watchdog						watchdog						= new Watchdog(TIMEOUT);
 	
 	private final List<ITigerBotObserver>	observers					= new ArrayList<ITigerBotObserver>();
@@ -66,6 +79,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	private IMulticastDelegate					mcastDelegate				= null;
 	
 	private ENetworkState						netState						= ENetworkState.OFFLINE;
+	private boolean								active						= false;
 	
 	private Vector2								lastDirection				= new Vector2();
 	private float									lastAngularVelocity		= 0.0f;
@@ -95,12 +109,14 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	private TigerKickerStatusV2				kickerStatus				= new TigerKickerStatusV2();
 	
 	
+	private SimpleWorldFrame					latestWorldFrame			= null;
+	
+	
 	/**
-	 * 
 	 * @param botConfig
 	 * @throws BotInitException
 	 */
-	public TigerBot(SubnodeConfiguration botConfig) throws BotInitException
+	public TigerBot(final SubnodeConfiguration botConfig) throws BotInitException
 	{
 		super(botConfig);
 		
@@ -111,6 +127,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 			cpuId = botConfig.getString("cpuid");
 			useUpdateAll = botConfig.getBoolean("useUpdateAll", false);
 			oofCheck = botConfig.getBoolean("oofcheck", false);
+			active = botConfig.getBoolean("active", true);
 			ip = botConfig.getString("ip");
 			port = botConfig.getInt("port");
 			
@@ -118,6 +135,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 			
 			setLogs.setMovement(botConfig.getBoolean("logs.movement", true));
 			setLogs.setKicker(botConfig.getBoolean("logs.kicker", true));
+			setLogs.setPower(botConfig.getBoolean("logs.power", true));
 			setLogs.setAccel(botConfig.getBoolean("logs.accel", false));
 			setLogs.setIr(botConfig.getBoolean("logs.ir", false));
 		} catch (final NoSuchElementException nse)
@@ -137,6 +155,11 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 			
 			i++;
 		}
+		
+		if (getMcastDelegateKey() == -1)
+		{
+			setMcastDelegateKey(botId.getTeamColor() == ETeamColor.YELLOW ? 0 : 1);
+		}
 	}
 	
 	
@@ -154,21 +177,20 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @param id
 	 */
-	public TigerBot(BotID id)
+	public TigerBot(final BotID id)
 	{
-		super(EBotType.TIGER, id);
+		super(EBotType.TIGER, id, -1, id.getTeamColor() == ETeamColor.YELLOW ? 0 : 1);
 	}
 	
 	
 	@Override
-	public void execute(ACommand cmd)
+	public void execute(final ACommand cmd)
 	{
-		switch (cmd.getCommand())
+		switch (cmd.getType())
 		{
-			case CommandConstants.CMD_MOTOR_MOVE_V2:
+			case CMD_MOTOR_MOVE_V2:
 			{
 				final TigerMotorMoveV2 move = (TigerMotorMoveV2) cmd;
 				
@@ -203,7 +225,43 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 				}
 			}
 				break;
-			case CommandConstants.CMD_KICKER_KICKV2:
+			case CMD_SKILL_POSITIONING:
+				final TigerMotorMoveV2 move = new TigerMotorMoveV2();
+				TigerSkillPositioningCommand posCmd = (TigerSkillPositioningCommand) cmd;
+				IVector2 dest = posCmd.getDestination();
+				float orient = posCmd.getOrientation();
+				
+				if (latestWorldFrame != null)
+				{
+					TrackedTigerBot bot = latestWorldFrame.getBot(getBotID());
+					if (bot == null)
+					{
+						log.warn("No bot with id " + getBotID());
+						return;
+					}
+					IVector2 error = dest.subtractNew(bot.getPos()).multiply(0.003f);
+					IVector2 localVel = AiMath.convertGlobalBotVector2Local(error, bot.getAngle());
+					move.setX(localVel.x());
+					move.setY(localVel.y());
+					
+					float errorW = orient - bot.getAngle();
+					move.setW(AngleMath.normalizeAngle(errorW) * 2);
+				} else
+				{
+					move.setX(0);
+					move.setY(0);
+					move.setW(0);
+				}
+				
+				if (useUpdateAll && (mcastDelegate != null))
+				{
+					mcastDelegate.setGroupedMove(botId, move);
+				} else
+				{
+					transceiver.enqueueCommand(move);
+				}
+				break;
+			case CMD_KICKER_KICKV2:
 			{
 				final TigerKickerKickV2 kick = (TigerKickerKickV2) cmd;
 				
@@ -216,7 +274,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 				}
 			}
 				break;
-			case CommandConstants.CMD_MOTOR_DRIBBLE:
+			case CMD_MOTOR_DRIBBLE:
 			{
 				final TigerDribble dribble = (TigerDribble) cmd;
 				
@@ -229,7 +287,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 				}
 			}
 				break;
-			case CommandConstants.CMD_MOTOR_SET_PARAMS:
+			case CMD_MOTOR_SET_PARAMS:
 			{
 				final TigerMotorSetParams params = (TigerMotorSetParams) cmd;
 				
@@ -240,7 +298,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 				notifyMotorParamsChanged(params);
 			}
 				break;
-			case CommandConstants.CMD_SYSTEM_SET_LOGS:
+			case CMD_SYSTEM_SET_LOGS:
 			{
 				final TigerSystemSetLogs logs = (TigerSystemSetLogs) cmd;
 				
@@ -257,6 +315,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 			}
 				break;
 		}
+		notifyOutGoingCommand(cmd);
 	}
 	
 	
@@ -269,12 +328,21 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 		}
 		
 		setUseUpdateAll(useUpdateAll);
-		setActive(active);
 		setOofCheck(oofCheck);
 		
 		if (netState == ENetworkState.OFFLINE)
 		{
 			changeNetworkState(ENetworkState.CONNECTING);
+		}
+		
+		AWorldPredictor wp;
+		try
+		{
+			wp = (AWorldPredictor) SumatraModel.getInstance().getModule(AWorldPredictor.MODULE_ID);
+			wp.addWorldFrameConsumer(this);
+		} catch (ModuleNotFoundException err)
+		{
+			log.error("Could not find WP module", err);
 		}
 	}
 	
@@ -292,7 +360,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	@Override
-	public void onIncommingCommand(ACommand cmd)
+	public void onIncommingCommand(final ACommand cmd)
 	{
 		if (watchdog.isActive())
 		{
@@ -302,9 +370,9 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 			changeNetworkState(ENetworkState.ONLINE);
 		}
 		
-		switch (cmd.getCommand())
+		switch (cmd.getType())
 		{
-			case CommandConstants.CMD_KICKER_STATUSV2:
+			case CMD_KICKER_STATUSV2:
 			{
 				final TigerKickerStatusV2 stats = (TigerKickerStatusV2) cmd;
 				
@@ -313,66 +381,66 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 				notifyNewKickerStatusV2(stats);
 			}
 				break;
-			case CommandConstants.CMD_MOTOR_PID_LOG:
+			case CMD_MOTOR_PID_LOG:
 			{
 				final TigerMotorPidLog motorLog = (TigerMotorPidLog) cmd;
 				
 				notifyNewMotorPidLog(motorLog);
 			}
 				break;
-			case CommandConstants.CMD_SYSTEM_STATUS_MOVEMENT:
+			case CMD_SYSTEM_STATUS_MOVEMENT:
 			{
 				final TigerSystemStatusMovement status = (TigerSystemStatusMovement) cmd;
 				
 				notifyNewSystemStatusMovement(status);
 			}
 				break;
-			case CommandConstants.CMD_SYSTEM_POWER_LOG:
+			case CMD_SYSTEM_POWER_LOG:
 			{
 				final TigerSystemPowerLog powerLog = (TigerSystemPowerLog) cmd;
 				
 				notifyNewSystemPowerLog(powerLog);
 			}
 				break;
-			case CommandConstants.CMD_SYSTEM_PONG:
+			case CMD_SYSTEM_PONG:
 			{
 				final TigerSystemPong pong = (TigerSystemPong) cmd;
 				
 				notifyNewSystemPong(pong);
 			}
 				break;
-			case CommandConstants.CMD_KICKER_IR_LOG:
+			case CMD_KICKER_IR_LOG:
 			{
 				final TigerKickerIrLog kickerLog = (TigerKickerIrLog) cmd;
 				
 				notifyNewKickerIrLog(kickerLog);
 			}
 				break;
+			default:
+				break;
 		}
 	}
 	
 	
 	@Override
-	public void onOutgoingCommand(ACommand cmd)
+	public void onOutgoingCommand(final ACommand cmd)
 	{
 	}
 	
 	
 	/**
-	 * 
 	 * @param delegate
 	 */
-	public void setMulticastDelegate(IMulticastDelegate delegate)
+	public void setMulticastDelegate(final IMulticastDelegate delegate)
 	{
 		mcastDelegate = delegate;
 	}
 	
 	
 	/**
-	 * 
 	 * @param o
 	 */
-	public void addObserver(ITigerBotObserver o)
+	public void addObserver(final ITigerBotObserver o)
 	{
 		synchronized (observers)
 		{
@@ -386,10 +454,9 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @param o
 	 */
-	public void removeObserver(ITigerBotObserver o)
+	public void removeObserver(final ITigerBotObserver o)
 	{
 		synchronized (observers)
 		{
@@ -402,7 +469,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	}
 	
 	
-	private void changeNetworkState(ENetworkState newState)
+	private void changeNetworkState(final ENetworkState newState)
 	{
 		if (netState == newState)
 		{
@@ -501,7 +568,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 			final BotID saveId = botId;
 			
 			// bot will deinitialize network interface --> botId must be 255
-			botId = new BotID();
+			botId = BotID.createBotId();
 			if (mcastDelegate != null)
 			{
 				mcastDelegate.setIdentity(this);
@@ -521,8 +588,14 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	}
 	
 	
+	@Override
+	public void newSpline(final SplinePair3D spline)
+	{
+		notifyNewSplineData(spline);
+	}
+	
+	
 	/**
-	 * 
 	 * @return
 	 */
 	public TigerKickerStatusV2 getLastKickerStatus()
@@ -532,11 +605,10 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @param x
 	 * @param y
 	 */
-	public void setCorrectionMatrices(Matrix x, Matrix y)
+	public void setCorrectionMatrices(final Matrix x, final Matrix y)
 	{
 		xEpsilon = x;
 		yEpsilon = y;
@@ -544,14 +616,13 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @param motorId
 	 * @param kp
 	 * @param ki
 	 * @param kd
 	 * @param slew
 	 */
-	public void setPid(int motorId, float kp, float ki, float kd, int slew)
+	public void setPid(final int motorId, final float kp, final float ki, final float kd, final int slew)
 	{
 		motorParams.setPidParams(motorId, kp, ki, kd, slew);
 		
@@ -560,51 +631,46 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @param motorId
 	 * @return
 	 */
-	public float getKp(int motorId)
+	public float getKp(final int motorId)
 	{
 		return motorParams.getKp(motorId);
 	}
 	
 	
 	/**
-	 * 
 	 * @param motorId
 	 * @return
 	 */
-	public float getKi(int motorId)
+	public float getKi(final int motorId)
 	{
 		return motorParams.getKi(motorId);
 	}
 	
 	
 	/**
-	 * 
 	 * @param motorId
 	 * @return
 	 */
-	public float getKd(int motorId)
+	public float getKd(final int motorId)
 	{
 		return motorParams.getKd(motorId);
 	}
 	
 	
 	/**
-	 * 
 	 * @param motorId
 	 * @return
 	 */
-	public int getSlewMax(int motorId)
+	public int getSlewMax(final int motorId)
 	{
 		return motorParams.getSlewMax(motorId);
 	}
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public TigerMotorSetParams getMotorParams()
@@ -614,11 +680,10 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @param motorId
 	 * @param enable
 	 */
-	public void setPidLogging(int motorId, boolean enable)
+	public void setPidLogging(final int motorId, final boolean enable)
 	{
 		setLogs.setMotor(motorId, enable);
 		
@@ -627,21 +692,19 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @param motorId
 	 * @return
 	 */
-	public boolean getPidLogging(int motorId)
+	public boolean getPidLogging(final int motorId)
 	{
 		return setLogs.getMotor(motorId);
 	}
 	
 	
 	/**
-	 * 
 	 * @param mode
 	 */
-	public void setMode(MotorMode mode)
+	public void setMode(final MotorMode mode)
 	{
 		motorParams.setMode(mode);
 		
@@ -650,7 +713,6 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public MotorMode getMode()
@@ -660,10 +722,9 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @param enable
 	 */
-	public void setLogMovement(boolean enable)
+	public void setLogMovement(final boolean enable)
 	{
 		setLogs.setMovement(enable);
 		
@@ -672,7 +733,6 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public boolean getLogMovement()
@@ -682,10 +742,9 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @param enable
 	 */
-	public void setLogKicker(boolean enable)
+	public void setLogKicker(final boolean enable)
 	{
 		setLogs.setKicker(enable);
 		
@@ -694,7 +753,6 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public boolean getLogKicker()
@@ -704,10 +762,9 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @param enable
 	 */
-	public void setLogAccel(boolean enable)
+	public void setLogAccel(final boolean enable)
 	{
 		setLogs.setAccel(enable);
 		
@@ -716,7 +773,6 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public boolean getLogAccel()
@@ -726,10 +782,9 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @param enable
 	 */
-	public void setLogIr(boolean enable)
+	public void setLogIr(final boolean enable)
 	{
 		setLogs.setIr(enable);
 		
@@ -738,7 +793,6 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public boolean getLogIr()
@@ -748,7 +802,6 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public TigerSystemSetLogs getLogs()
@@ -757,7 +810,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	}
 	
 	
-	private void notifyNewKickerStatusV2(TigerKickerStatusV2 status)
+	private void notifyNewKickerStatusV2(final TigerKickerStatusV2 status)
 	{
 		kickerStatus = status;
 		synchronized (observers)
@@ -770,7 +823,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	}
 	
 	
-	private void notifyNewMotorPidLog(TigerMotorPidLog log)
+	private void notifyNewMotorPidLog(final TigerMotorPidLog log)
 	{
 		synchronized (observers)
 		{
@@ -782,7 +835,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	}
 	
 	
-	private void notifyNewSystemStatusMovement(TigerSystemStatusMovement status)
+	private void notifyNewSystemStatusMovement(final TigerSystemStatusMovement status)
 	{
 		synchronized (observers)
 		{
@@ -794,7 +847,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	}
 	
 	
-	private void notifyNewSystemPowerLog(TigerSystemPowerLog log)
+	private void notifyNewSystemPowerLog(final TigerSystemPowerLog log)
 	{
 		powerLog = log;
 		synchronized (observers)
@@ -807,7 +860,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	}
 	
 	
-	private void notifyNewSystemPong(TigerSystemPong pong)
+	private void notifyNewSystemPong(final TigerSystemPong pong)
 	{
 		synchronized (observers)
 		{
@@ -819,7 +872,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	}
 	
 	
-	private void notifyLogsChanged(TigerSystemSetLogs logs)
+	private void notifyLogsChanged(final TigerSystemSetLogs logs)
 	{
 		synchronized (observers)
 		{
@@ -831,7 +884,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	}
 	
 	
-	private void notifyMotorParamsChanged(TigerMotorSetParams params)
+	private void notifyMotorParamsChanged(final TigerMotorSetParams params)
 	{
 		synchronized (observers)
 		{
@@ -843,7 +896,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	}
 	
 	
-	private void notifyNewKickerIrLog(TigerKickerIrLog log)
+	private void notifyNewKickerIrLog(final TigerKickerIrLog log)
 	{
 		synchronized (observers)
 		{
@@ -875,7 +928,6 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public String getMac()
@@ -885,10 +937,9 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @param mac
 	 */
-	public void setMac(String mac)
+	public void setMac(final String mac)
 	{
 		this.mac = mac;
 		
@@ -897,7 +948,6 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public int getServerPort()
@@ -907,10 +957,9 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @param serverPort
 	 */
-	public void setServerPort(int serverPort)
+	public void setServerPort(final int serverPort)
 	{
 		this.serverPort = serverPort;
 		
@@ -919,7 +968,6 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public String getCpuId()
@@ -929,10 +977,9 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @param cpuId
 	 */
-	public void setCpuId(String cpuId)
+	public void setCpuId(final String cpuId)
 	{
 		this.cpuId = cpuId;
 		
@@ -941,10 +988,9 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @param enable
 	 */
-	public void setUseUpdateAll(boolean enable)
+	public void setUseUpdateAll(final boolean enable)
 	{
 		if (mcastDelegate == null)
 		{
@@ -964,7 +1010,6 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public boolean getUseUpdateAll()
@@ -974,10 +1019,9 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @param enable
 	 */
-	public void setOofCheck(boolean enable)
+	public void setOofCheck(final boolean enable)
 	{
 		oofCheck = enable;
 		
@@ -986,7 +1030,6 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public boolean getOofCheck()
@@ -996,7 +1039,6 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	@Override
@@ -1032,10 +1074,12 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 		config.addProperty("bot.cpuid", cpuId);
 		config.addProperty("bot.useUpdateAll", useUpdateAll);
 		config.addProperty("bot.oofcheck", oofCheck);
+		config.addProperty("bot.active", active);
 		config.addProperty("bot.motorMode", motorParams.getMode().ordinal());
 		
 		config.addProperty("bot.logs.movement", setLogs.getMovement());
 		config.addProperty("bot.logs.kicker", setLogs.getKicker());
+		config.addProperty("bot.logs.power", setLogs.getPower());
 		config.addProperty("bot.logs.accel", setLogs.getAccel());
 		config.addProperty("bot.logs.ir", setLogs.getIr());
 		
@@ -1053,7 +1097,6 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public String getIp()
@@ -1063,10 +1106,9 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @param ip
 	 */
-	public void setIP(String ip)
+	public void setIP(final String ip)
 	{
 		this.ip = ip;
 		
@@ -1075,7 +1117,6 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public int getPort()
@@ -1085,10 +1126,9 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	
 	
 	/**
-	 * 
 	 * @param port
 	 */
-	public void setPort(int port)
+	public void setPort(final int port)
 	{
 		this.port = port;
 		
@@ -1120,7 +1160,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	}
 	
 	
-	private void notifyUseUpdateAllChanged(boolean useUpdateAll)
+	private void notifyUseUpdateAllChanged(final boolean useUpdateAll)
 	{
 		synchronized (observers)
 		{
@@ -1132,7 +1172,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	}
 	
 	
-	private void notifyMacChanged(String mac)
+	private void notifyMacChanged(final String mac)
 	{
 		synchronized (observers)
 		{
@@ -1144,7 +1184,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	}
 	
 	
-	private void notifyServerPortChanged(int port)
+	private void notifyServerPortChanged(final int port)
 	{
 		synchronized (observers)
 		{
@@ -1156,7 +1196,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	}
 	
 	
-	private void notifyCpuIdChanged(String cpuId)
+	private void notifyCpuIdChanged(final String cpuId)
 	{
 		synchronized (observers)
 		{
@@ -1168,7 +1208,7 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	}
 	
 	
-	private void notifyOofCheckChanged(boolean enable)
+	private void notifyOofCheckChanged(final boolean enable)
 	{
 		synchronized (observers)
 		{
@@ -1180,9 +1220,21 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	}
 	
 	
+	private void notifyOutGoingCommand(final ACommand cmd)
+	{
+		synchronized (observers)
+		{
+			for (final ITigerBotObserver observer : observers)
+			{
+				observer.onOutgoingCommand(cmd);
+			}
+		}
+	}
+	
+	
 	/**
 	 * This is psi
-	 * 
+	 *
 	 * @return
 	 */
 	public static final Matrix getCmdToMotorMatrix()
@@ -1212,13 +1264,80 @@ public class TigerBot extends ABot implements ITransceiverUDPObserver, IWatchdog
 	}
 	
 	
+	@Override
+	public void onNewSimpleWorldFrame(final SimpleWorldFrame worldFrame)
+	{
+		latestWorldFrame = worldFrame;
+	}
+	
+	
+	@Override
+	public void onNewWorldFrame(final WorldFrame wFrame)
+	{
+	}
+	
+	
+	@Override
+	public void onStop()
+	{
+	}
+	
+	
+	@Override
+	public void onVisionSignalLost(final SimpleWorldFrame emptyWf)
+	{
+		latestWorldFrame = null;
+	}
+	
+	
 	/**
 	 * This is psi_inv
-	 * 
+	 *
 	 * @return
 	 */
 	public static final Matrix getMotorToCmdMatrix()
 	{
 		return getCmdToMotorMatrix().inverse();
+	}
+	
+	
+	@Override
+	public float getBatteryLevelMax()
+	{
+		return BAT_MAX;
+	}
+	
+	
+	@Override
+	public float getBatteryLevelMin()
+	{
+		return BAT_MIN;
+	}
+	
+	
+	/**
+	 * Shall this bot connect on start?
+	 *
+	 * @param active
+	 */
+	public void setActive(final boolean active)
+	{
+		this.active = active;
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public boolean isActive()
+	{
+		return active;
+	}
+	
+	
+	@Override
+	public float getKickerLevelMax()
+	{
+		return 350f;
 	}
 }

@@ -12,6 +12,8 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.analyze
 import java.util.LinkedList;
 import java.util.List;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.TuneableParameter;
+
 
 /**
  * a debugger integrated in the path planner, several methods have to be called from the path planner:

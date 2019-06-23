@@ -9,13 +9,16 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline;
 
-import javax.persistence.Embeddable;
+import java.util.Arrays;
 
+import com.sleepycat.persist.model.Persistent;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
 
 
 /**
- * Hermite Cubic Spline.
+ * Hermite Cubic or quintic Spline.
  * This class only takes two points. For more complex splines with more points combine multiple HermiteSplines.
  * 
  * This implementation always references values on a t-axis from 0 to tEnd.
@@ -23,24 +26,32 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
  * @author AndreR
  * 
  */
-@Embeddable
-public class HermiteSpline
+@Persistent(version = 1)
+public class HermiteSpline implements IHermiteSpline
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	// package visibility of a,b,c,d,tEnd is intended! Used by HermiteSpline2D.
-	float	a;
-	float	b;
-	float	c;
-	float	d;
-	float	tEnd;
+	/** cubic (4) or quintic (6) - change with care! check toString() */
+	public static final int	SPLINE_SIZE	= 6;
+	
+	// package visibility of a,tEnd is intended! Used by HermiteSpline2D.
+	float[]						a				= new float[SPLINE_SIZE];
+	float							tEnd;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	
+	@SuppressWarnings("unused")
+	private HermiteSpline()
+	{
+	}
+	
+	
 	/**
 	 * Construct a hermite cubic spline.
 	 * Uses tEnd = 1.0.
@@ -52,10 +63,10 @@ public class HermiteSpline
 	 */
 	public HermiteSpline(float p0, float p1, float m0, float m1)
 	{
-		a = ((2 * p0) - (2 * p1)) + m0 + m1;
-		b = ((-3 * p0) + (3 * p1)) - (2 * m0) - m1;
-		c = m0;
-		d = p0;
+		a[3] = ((2 * p0) - (2 * p1)) + m0 + m1;
+		a[2] = ((-3 * p0) + (3 * p1)) - (2 * m0) - m1;
+		a[1] = m0;
+		a[0] = p0;
 		tEnd = 1.0f;
 	}
 	
@@ -73,10 +84,10 @@ public class HermiteSpline
 	{
 		final float t2 = tEnd * tEnd;
 		final float t3 = t2 * tEnd;
-		a = (((2 * p0) / t3) - ((2 * p1) / t3)) + (m0 / t2) + (m1 / t2);
-		b = ((3 * p1) / t2) - ((3 * p0) / t2) - ((2 * m0) / tEnd) - (m1 / tEnd);
-		c = m0;
-		d = p0;
+		a[3] = (((2 * p0) / t3) - ((2 * p1) / t3)) + (m0 / t2) + (m1 / t2);
+		a[2] = ((3 * p1) / t2) - ((3 * p0) / t2) - ((2 * m0) / tEnd) - (m1 / tEnd);
+		a[1] = m0;
+		a[0] = p0;
 		this.tEnd = tEnd;
 	}
 	
@@ -84,12 +95,45 @@ public class HermiteSpline
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	/**
+	 * @param spline
+	 */
+	public HermiteSpline(IHermiteSpline spline)
+	{
+		a = Arrays.copyOf(spline.getA(), spline.getA().length);
+		tEnd = spline.getEndTime();
+	}
+	
+	
+	/**
+	 */
+	@Override
+	public void mirrorPosition()
+	{
+		for (int i = 0; i < a.length; i++)
+		{
+			a[i] *= -1;
+		}
+	}
+	
+	
+	/**
+	 */
+	@Override
+	public void mirrorRotation()
+	{
+		a[0] = AngleMath.normalizeAngle(a[0] + AngleMath.PI);
+	}
+	
+	
 	/**
 	 * Get a spline value.
 	 * 
 	 * @param t "Time" in range 0-tEnd
 	 * @return value at t
 	 */
+	@Override
 	public float value(float t)
 	{
 		if (t < 0)
@@ -101,7 +145,8 @@ public class HermiteSpline
 			t = tEnd;
 		}
 		
-		return (a * t * t * t) + (b * t * t) + (c * t) + d;
+		return (a[5] * t * t * t * t * t) + (a[4] * t * t * t * t) + (a[3] * t * t * t) + (a[2] * t * t) + (a[1] * t)
+				+ a[0];
 	}
 	
 	
@@ -111,6 +156,7 @@ public class HermiteSpline
 	 * @param t "Time" in range 0-tEnd
 	 * @return first derivative (slope) at t
 	 */
+	@Override
 	public float firstDerivative(float t)
 	{
 		if (t < 0)
@@ -122,7 +168,7 @@ public class HermiteSpline
 			t = tEnd;
 		}
 		
-		return (a * 3 * t * t) + (b * 2 * t) + c;
+		return (a[5] * 5 * t * t * t * t) + (a[4] * 4 * t * t * t) + (a[3] * 3 * t * t) + (a[2] * 2 * t) + a[1];
 	}
 	
 	
@@ -132,6 +178,7 @@ public class HermiteSpline
 	 * @param t "Time" in range 0-tEnd
 	 * @return second derivative at t
 	 */
+	@Override
 	public float secondDerivative(float t)
 	{
 		if (t < 0)
@@ -143,7 +190,7 @@ public class HermiteSpline
 			t = tEnd;
 		}
 		
-		return (a * 6 * t) + (b * 2);
+		return (a[5] * 20 * t * t * t) + (a[4] * 12 * t * t) + (a[3] * 6 * t) + (a[2] * 2);
 	}
 	
 	
@@ -153,15 +200,16 @@ public class HermiteSpline
 	 * 
 	 * @return max
 	 */
+	@Override
 	public float getMaxFirstDerivative()
 	{
 		float p = Math.abs(firstDerivative(0));
 		float q = 0.0f;
 		float r = Math.abs(firstDerivative(tEnd));
 		
-		if (a != 0.0f) // maximum existent?
+		if (a[3] != 0.0f) // maximum existent?
 		{
-			float t = -(b * 2) / (a * 6); // time at maximum
+			float t = -(a[2] * 2) / (a[3] * 6); // time at maximum
 			if ((t > 0) && (t < tEnd))
 			{
 				q = Math.abs(firstDerivative(t));
@@ -178,6 +226,7 @@ public class HermiteSpline
 	 * 
 	 * @return max
 	 */
+	@Override
 	public float getMaxSecondDerivative()
 	{
 		// maximum of second derivative is at begin or end
@@ -194,9 +243,10 @@ public class HermiteSpline
 	 * 
 	 * @return third derivative
 	 */
+	@Override
 	public float thirdDerivative()
 	{
-		return a * 6;
+		return a[3] * 6;
 	}
 	
 	
@@ -205,80 +255,9 @@ public class HermiteSpline
 	// --------------------------------------------------------------------------
 	
 	/**
-	 * @return the a
-	 */
-	public float getA()
-	{
-		return a;
-	}
-	
-	
-	/**
-	 * @param a the a to set
-	 */
-	public void setA(float a)
-	{
-		this.a = a;
-	}
-	
-	
-	/**
-	 * @return the b
-	 */
-	public float getB()
-	{
-		return b;
-	}
-	
-	
-	/**
-	 * @param b the b to set
-	 */
-	public void setB(float b)
-	{
-		this.b = b;
-	}
-	
-	
-	/**
-	 * @return the c
-	 */
-	public float getC()
-	{
-		return c;
-	}
-	
-	
-	/**
-	 * @param c the c to set
-	 */
-	public void setC(float c)
-	{
-		this.c = c;
-	}
-	
-	
-	/**
-	 * @return the d
-	 */
-	public float getD()
-	{
-		return d;
-	}
-	
-	
-	/**
-	 * @param d the d to set
-	 */
-	public void setD(float d)
-	{
-		this.d = d;
-	}
-	
-	
-	/**
 	 * @return the tEnd
 	 */
+	@Override
 	public float getEndTime()
 	{
 		return tEnd;
@@ -288,8 +267,27 @@ public class HermiteSpline
 	/**
 	 * @param tEnd the tEnd to set
 	 */
+	@Override
 	public void setEndTime(float tEnd)
 	{
 		this.tEnd = tEnd;
+	}
+	
+	
+	/**
+	 * @return the a
+	 */
+	@Override
+	public final float[] getA()
+	{
+		return a;
+	}
+	
+	
+	@Override
+	public String toString()
+	{
+		return String.format("[%.3fx^5+%.3fx^4+%.3fx^3+%.3fx^2+%.3fx+%.3f, tEnd=%.3f]", a[0], a[1], a[2], a[3], a[4],
+				a[5], tEnd);
 	}
 }

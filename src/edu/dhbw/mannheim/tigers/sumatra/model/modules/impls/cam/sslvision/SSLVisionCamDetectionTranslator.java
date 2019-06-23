@@ -63,8 +63,7 @@ public class SSLVisionCamDetectionTranslator
 	public CamDetectionFrame translate(SSL_DetectionFrame detectionFrame, double timeOffsetMillis, long timeOffsetNanos,
 			long receivedTimeStamp, long packetCount, TeamProps teamProps)
 	{
-		final boolean haveToTurn = teamProps.getPlayLeftToRight();
-		final boolean weAreYellow = teamProps.getTigersAreYellow();
+		final boolean haveToTurn = false;
 		
 		
 		// --- check if detectionFrame != null ---
@@ -130,15 +129,8 @@ public class SSLVisionCamDetectionTranslator
 		CamDetectionFrame frame;
 		
 		// --- team-colour assignment ---
-		if (weAreYellow)
-		{
-			frame = new CamDetectionFrame(tCapture, tSent, receivedTimeStamp, detectionFrame.getCameraId(),
-					detectionFrame.getFrameNumber(), fps, balls, yellows, blues, new TeamProps(teamProps));
-		} else
-		{
-			frame = new CamDetectionFrame(tCapture, tSent, receivedTimeStamp, detectionFrame.getCameraId(),
-					detectionFrame.getFrameNumber(), fps, balls, blues, yellows, new TeamProps(teamProps));
-		}
+		frame = new CamDetectionFrame(tCapture, tSent, receivedTimeStamp, detectionFrame.getCameraId(),
+				detectionFrame.getFrameNumber(), fps, balls, yellows, blues, new TeamProps(teamProps));
 		return frame;
 	}
 	

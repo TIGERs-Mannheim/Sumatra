@@ -45,6 +45,16 @@ public class SensorFusionParameters
 	
 	
 	/**
+	 * @param params
+	 */
+	public SensorFusionParameters(SensorFusionParameters params)
+	{
+		ex = new StateUncertainties(params.ex);
+		ez = new SensorUncertainties(params.ez);
+	}
+	
+	
+	/**
 	 * Construct from config.
 	 * @param config
 	 */
@@ -65,7 +75,7 @@ public class SensorFusionParameters
 	 */
 	public void updateWithCommand(TigerCtrlSetFilterParams params)
 	{
-		switch (params.getType())
+		switch (params.getParamType())
 		{
 			case EX_POS:
 			{

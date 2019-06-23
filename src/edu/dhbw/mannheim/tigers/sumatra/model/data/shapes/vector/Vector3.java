@@ -4,14 +4,14 @@
  * Project: TIGERS - Sumatra
  * Date: 09.08.2012
  * Author(s): Gero, AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector;
 
-import javax.persistence.Embeddable;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.apache.commons.configuration.SubnodeConfiguration;
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
@@ -19,16 +19,14 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
 
 /**
  * Simple data holder for position data
- * 
  * <p>
  * <i>(Being aware of EJ-SE Items 13, 14 and 55: members are public to reduce noise)</i>
  * </p>
  * 
  * @see Vector2
  * @author Gero, AndreR
- * 
  */
-@Embeddable
+@Persistent
 public class Vector3 extends AVector3
 {
 	// --------------------------------------------------------------------------
@@ -61,7 +59,7 @@ public class Vector3 extends AVector3
 	 * @param y
 	 * @param z
 	 */
-	public Vector3(float x, float y, float z)
+	public Vector3(final float x, final float y, final float z)
 	{
 		this.x = x;
 		this.y = y;
@@ -71,10 +69,11 @@ public class Vector3 extends AVector3
 	
 	/**
 	 * Providing a <strong>hard, deep</strong> copy of original
+	 * 
 	 * @param xy
 	 * @param z
 	 */
-	public Vector3(IVector2 xy, float z)
+	public Vector3(final IVector2 xy, final float z)
 	{
 		set(xy, z);
 	}
@@ -82,9 +81,10 @@ public class Vector3 extends AVector3
 	
 	/**
 	 * Providing a <strong>hard, deep</strong> copy of original
+	 * 
 	 * @param original
 	 */
-	public Vector3(IVector3 original)
+	public Vector3(final IVector3 original)
 	{
 		set(original);
 	}
@@ -96,11 +96,10 @@ public class Vector3 extends AVector3
 	
 	
 	/**
-	 * 
 	 * @param original
 	 * @param z
 	 */
-	public void set(IVector2 original, float z)
+	public void set(final IVector2 original, final float z)
 	{
 		x = original.x();
 		y = original.y();
@@ -109,10 +108,9 @@ public class Vector3 extends AVector3
 	
 	
 	/**
-	 * 
 	 * @param original
 	 */
-	public void set(IVector3 original)
+	public void set(final IVector3 original)
 	{
 		x = original.x();
 		y = original.y();
@@ -121,7 +119,6 @@ public class Vector3 extends AVector3
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	@Override
@@ -137,7 +134,7 @@ public class Vector3 extends AVector3
 	 * @param vector
 	 * @return Added vector.
 	 */
-	public Vector3 add(IVector3 vector)
+	public Vector3 add(final IVector3 vector)
 	{
 		x += vector.x();
 		y += vector.y();
@@ -152,7 +149,7 @@ public class Vector3 extends AVector3
 	 * @param vector
 	 * @return Subtracted vector.
 	 */
-	public Vector3 subtract(IVector3 vector)
+	public Vector3 subtract(final IVector3 vector)
 	{
 		x -= vector.x();
 		y -= vector.y();
@@ -167,7 +164,7 @@ public class Vector3 extends AVector3
 	 * @param f factor
 	 * @return this
 	 */
-	public Vector3 mutiply(float f)
+	public Vector3 mutiply(final float f)
 	{
 		x *= f;
 		y *= f;
@@ -185,7 +182,7 @@ public class Vector3 extends AVector3
 	 * @return Turned vector.
 	 * @author AndreR
 	 */
-	public Vector3 turnAroundZ(float angle)
+	public Vector3 turnAroundZ(final float angle)
 	{
 		final float cosA = AngleMath.cos(angle);
 		final float sinA = AngleMath.sin(angle);
@@ -229,14 +226,27 @@ public class Vector3 extends AVector3
 	
 	
 	/**
-	 * Set a vector from a config.
-	 * 
-	 * @param config
+	 * @param value
+	 * @return
 	 */
-	public void setConfiguration(SubnodeConfiguration config)
+	public static Object valueOf(final String value)
 	{
-		x = config.getFloat("x", 0.0f);
-		y = config.getFloat("y", 0.0f);
-		z = config.getFloat("z", 0.0f);
+		String[] values = value.replaceAll("[,;]", " ").split("[ ]");
+		List<String> finalValues = new ArrayList<String>(3);
+		for (String val : values)
+		{
+			if (!val.trim().isEmpty() && !val.contains(","))
+			{
+				finalValues.add(val.trim());
+			}
+		}
+		if (finalValues.size() != 3)
+		{
+			throw new NumberFormatException(
+					"The String must contain exactly one character of [ ,] between x and y coordinate. Values: "
+							+ finalValues);
+		}
+		return new Vector3(Float.valueOf(finalValues.get(0)), Float.valueOf(finalValues.get(1)),
+				Float.valueOf(finalValues.get(2)));
 	}
 }

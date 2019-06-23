@@ -10,7 +10,9 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -77,9 +79,10 @@ public class TigerBootloaderResponse extends ACommand
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	private EResponse	type		= EResponse.NONE;
-	private long		offset	= 0;
+	@SerialData(type = ESerialDataType.UINT8)
+	private int		type		= EResponse.NONE.getId();
+	@SerialData(type = ESerialDataType.UINT32)
+	private long	offset	= 0;
 	
 	
 	// --------------------------------------------------------------------------
@@ -89,6 +92,7 @@ public class TigerBootloaderResponse extends ACommand
 	 */
 	public TigerBootloaderResponse()
 	{
+		super(ECommand.CMD_BOOTLOADER_RESPONSE);
 	}
 	
 	
@@ -98,45 +102,15 @@ public class TigerBootloaderResponse extends ACommand
 	 */
 	public TigerBootloaderResponse(EResponse t)
 	{
-		type = t;
+		super(ECommand.CMD_BOOTLOADER_RESPONSE);
+		
+		type = t.getId();
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		type = EResponse.getResponseConstant(byteArray2UByte(data, 0));
-		offset = byteArray2UInt(data, 1);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		byte2ByteArray(data, 0, type.getId());
-		int2ByteArray(data, 1, (int) offset);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_BOOTLOADER_RESPONSE;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 5;
-	}
 	
 	
 	// --------------------------------------------------------------------------
@@ -145,18 +119,18 @@ public class TigerBootloaderResponse extends ACommand
 	/**
 	 * @return the type
 	 */
-	public EResponse getType()
+	public EResponse getResponse()
 	{
-		return type;
+		return EResponse.getResponseConstant(type);
 	}
 	
 	
 	/**
 	 * @param type the type to set
 	 */
-	public void setType(EResponse type)
+	public void setResponse(EResponse type)
 	{
-		this.type = type;
+		this.type = type.getId();
 	}
 	
 	

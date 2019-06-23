@@ -4,33 +4,30 @@
  * Project: TIGERS - Sumatra
  * Date: 21.07.2010
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
-import javax.persistence.Embeddable;
-
-import org.apache.commons.configuration.SubnodeConfiguration;
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 
 
 /**
  * Simple data holder for position data. Containing a X- and a Y-Coordinate.
- * 
  * <p>
  * <i>(Being aware of EJ-SE Items 13, 14 and 55: members are public to reduce noise)</i>
  * </p>
  * 
  * @see Vector3
  * @author Gero
- * 
  */
-@Embeddable
+@Persistent
 public class Vector2 extends AVector2 implements Serializable
 {
 	// --------------------------------------------------------------------------
@@ -67,7 +64,7 @@ public class Vector2 extends AVector2 implements Serializable
 	 * @param y
 	 * @see Vector2
 	 */
-	public Vector2(float x, float y)
+	public Vector2(final float x, final float y)
 	{
 		this.x = x;
 		this.y = y;
@@ -82,7 +79,7 @@ public class Vector2 extends AVector2 implements Serializable
 	 * @param y
 	 * @see Vector2
 	 */
-	public Vector2(double x, double y)
+	public Vector2(final double x, final double y)
 	{
 		this.x = (float) x;
 		this.y = (float) y;
@@ -91,9 +88,10 @@ public class Vector2 extends AVector2 implements Serializable
 	
 	/**
 	 * Creates a normalized vector that has the given angle, referring to the x-axis.
+	 * 
 	 * @param angle
 	 */
-	public Vector2(float angle)
+	public Vector2(final float angle)
 	{
 		x = 1;
 		y = 0;
@@ -103,9 +101,10 @@ public class Vector2 extends AVector2 implements Serializable
 	
 	/**
 	 * Providing a <strong>hard, deep</strong> copy of original
+	 * 
 	 * @param original
 	 */
-	public Vector2(IVector2 original)
+	public Vector2(final IVector2 original)
 	{
 		set(original);
 	}
@@ -120,7 +119,7 @@ public class Vector2 extends AVector2 implements Serializable
 	 * @param original
 	 * @return
 	 */
-	public Vector2 set(IVector2 original)
+	public Vector2 set(final IVector2 original)
 	{
 		x = original.x();
 		y = original.y();
@@ -129,11 +128,10 @@ public class Vector2 extends AVector2 implements Serializable
 	
 	
 	/**
-	 * 
 	 * @param x
 	 * @return
 	 */
-	public Vector2 setX(float x)
+	public Vector2 setX(final float x)
 	{
 		this.x = x;
 		return this;
@@ -141,11 +139,10 @@ public class Vector2 extends AVector2 implements Serializable
 	
 	
 	/**
-	 * 
 	 * @param y
 	 * @return
 	 */
-	public Vector2 setY(float y)
+	public Vector2 setY(final float y)
 	{
 		this.y = y;
 		return this;
@@ -173,7 +170,7 @@ public class Vector2 extends AVector2 implements Serializable
 	 * @param x
 	 * @return
 	 */
-	public Vector2 addX(float x)
+	public Vector2 addX(final float x)
 	{
 		this.x += x;
 		return this;
@@ -183,10 +180,11 @@ public class Vector2 extends AVector2 implements Serializable
 	/**
 	 * Adds a given value to the y-value of the current vector.
 	 * Returns the manipulated vector!
+	 * 
 	 * @param y
 	 * @return
 	 */
-	public Vector2 addY(float y)
+	public Vector2 addY(final float y)
 	{
 		this.y += y;
 		return this;
@@ -200,7 +198,7 @@ public class Vector2 extends AVector2 implements Serializable
 	 * @param x
 	 * @return
 	 */
-	public Vector2 subX(float x)
+	public Vector2 subX(final float x)
 	{
 		this.x -= x;
 		return this;
@@ -210,10 +208,11 @@ public class Vector2 extends AVector2 implements Serializable
 	/**
 	 * Subtracts the given value from the y-value of the current vector.
 	 * Returns the manipulated vector!
+	 * 
 	 * @param y
 	 * @return
 	 */
-	public Vector2 subY(float y)
+	public Vector2 subY(final float y)
 	{
 		this.y -= y;
 		return this;
@@ -223,10 +222,11 @@ public class Vector2 extends AVector2 implements Serializable
 	/**
 	 * Multiplys the given value with the x-value of the current vector.
 	 * Returns the manipulated vector!
+	 * 
 	 * @param xFactor
 	 * @return
 	 */
-	public Vector2 multX(float xFactor)
+	public Vector2 multX(final float xFactor)
 	{
 		x *= xFactor;
 		return this;
@@ -236,10 +236,11 @@ public class Vector2 extends AVector2 implements Serializable
 	/**
 	 * Multiplys the given value with the y-value of the current vector.
 	 * Returns the manipulated vector!
+	 * 
 	 * @param yFactor
 	 * @return
 	 */
-	public Vector2 multY(float yFactor)
+	public Vector2 multY(final float yFactor)
 	{
 		y *= yFactor;
 		return this;
@@ -249,7 +250,7 @@ public class Vector2 extends AVector2 implements Serializable
 	@Override
 	public String toString()
 	{
-		return "Vector2 (" + x + "," + y + ")";
+		return String.format("(%.1f, %.1f)", x, y);
 	}
 	
 	
@@ -262,7 +263,7 @@ public class Vector2 extends AVector2 implements Serializable
 	 * @param vector
 	 * @return
 	 */
-	public Vector2 add(IVector2 vector)
+	public Vector2 add(final IVector2 vector)
 	{
 		x += vector.x();
 		y += vector.y();
@@ -276,7 +277,7 @@ public class Vector2 extends AVector2 implements Serializable
 	 * @param vector
 	 * @return
 	 */
-	public Vector2 subtract(IVector2 vector)
+	public Vector2 subtract(final IVector2 vector)
 	{
 		x -= vector.x();
 		y -= vector.y();
@@ -290,7 +291,7 @@ public class Vector2 extends AVector2 implements Serializable
 	 * @param factor
 	 * @return
 	 */
-	public Vector2 multiply(float factor)
+	public Vector2 multiply(final float factor)
 	{
 		x *= factor;
 		y *= factor;
@@ -303,7 +304,7 @@ public class Vector2 extends AVector2 implements Serializable
 	 * If 'this' is a zero vector, it stays always unaffected.
 	 * 
 	 * <pre>
-	 *   l      
+	 *   l
 	 * ----  *   v
 	 * | v |
 	 * 
@@ -313,7 +314,7 @@ public class Vector2 extends AVector2 implements Serializable
 	 * @author Malte
 	 * @return
 	 */
-	public Vector2 scaleTo(float newLength)
+	public Vector2 scaleTo(final float newLength)
 	{
 		final float oldLength = getLength2();
 		if (oldLength != 0)
@@ -333,7 +334,7 @@ public class Vector2 extends AVector2 implements Serializable
 	 * @author Malte
 	 * @return
 	 */
-	public Vector2 turn(float angle)
+	public Vector2 turn(final float angle)
 	{
 		final float cosA = AngleMath.cos(angle);
 		final float sinA = AngleMath.sin(angle);
@@ -356,7 +357,7 @@ public class Vector2 extends AVector2 implements Serializable
 	 * @author Malte
 	 * @return
 	 */
-	public Vector2 turnTo(float angle)
+	public Vector2 turnTo(final float angle)
 	{
 		final float len = getLength2();
 		y = AngleMath.sin(angle) * len;
@@ -384,7 +385,7 @@ public class Vector2 extends AVector2 implements Serializable
 	 * @see IVector2#roundNew(int)
 	 * @author Gero
 	 */
-	public Vector2 round(int digits)
+	public Vector2 round(final int digits)
 	{
 		if (digits == 0)
 		{
@@ -402,10 +403,9 @@ public class Vector2 extends AVector2 implements Serializable
 	
 	
 	/**
-	 * 
 	 * @param savedString
 	 */
-	public void setSavedString(String savedString)
+	public void setSavedString(final String savedString)
 	{
 		String splitChar = ";";
 		
@@ -426,7 +426,7 @@ public class Vector2 extends AVector2 implements Serializable
 	
 	
 	@Override
-	public boolean similar(IVector2 vec, float treshold)
+	public boolean similar(final IVector2 vec, final float treshold)
 	{
 		final IVector2 newVec = subtractNew(vec);
 		return (Math.abs(newVec.x()) < treshold) && (Math.abs(newVec.y()) < treshold);
@@ -434,13 +434,30 @@ public class Vector2 extends AVector2 implements Serializable
 	
 	
 	/**
-	 * Set a vector from a config.
+	 * The String must be a pair of comma or space separated float values.
+	 * Additional spaces are considered
 	 * 
-	 * @param config
+	 * @param value
+	 * @return
+	 * @throws NumberFormatException
 	 */
-	public void setConfiguration(SubnodeConfiguration config)
+	public static Vector2 valueOf(final String value)
 	{
-		x = config.getFloat("x", 0.0f);
-		y = config.getFloat("y", 0.0f);
+		String[] values = value.replaceAll("[,;]", " ").split("[ ]");
+		List<String> finalValues = new ArrayList<String>(2);
+		for (String val : values)
+		{
+			if (!val.trim().isEmpty() && !val.contains(","))
+			{
+				finalValues.add(val.trim());
+			}
+		}
+		if (finalValues.size() != 2)
+		{
+			throw new NumberFormatException(
+					"The String must contain exactly one character of [ ,;] between x and y coordinate. Values: "
+							+ finalValues);
+		}
+		return new Vector2(Float.valueOf(finalValues.get(0)), Float.valueOf(finalValues.get(1)));
 	}
 }

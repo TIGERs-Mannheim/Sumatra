@@ -20,7 +20,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.ActionCommand;
  * @author Manuel
  * 
  */
-public class SendThread extends Thread
+class SendThread extends Thread
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
@@ -41,7 +41,7 @@ public class SendThread extends Thread
 	 * 
 	 * @param cmdInterpreter
 	 */
-	public SendThread(ARCCommandInterpreter cmdInterpreter)
+	SendThread(ARCCommandInterpreter cmdInterpreter)
 	{
 		this.cmdInterpreter = cmdInterpreter;
 	}
@@ -78,7 +78,7 @@ public class SendThread extends Thread
 	/**
 	 * Let the thread begin
 	 */
-	public void startRunning()
+	void startRunning()
 	{
 		running = true;
 		start();
@@ -88,7 +88,7 @@ public class SendThread extends Thread
 	/**
 	 * Stop the thread and send bot a stop cmd
 	 */
-	public void stopRunning()
+	void stopRunning()
 	{
 		running = false;
 		cmd = null;

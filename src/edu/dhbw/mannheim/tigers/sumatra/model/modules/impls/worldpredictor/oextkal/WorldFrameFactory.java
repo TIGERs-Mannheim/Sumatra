@@ -15,26 +15,21 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeam;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.fieldraster.FieldRasterGenerator;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.fieldraster.FieldRasterGenerator.EGeneratorTyp;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector3;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBall;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedFoeBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMap;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.FieldRasterConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamProps;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.playpattern.Pattern;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.IBotIDMap;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.fieldanalysis.FieldRasterGenerator;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.WPConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.fieldPrediction.FieldPredictor;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.fieldPrediction.WorldFramePrediction;
 
 
 /**
@@ -50,7 +45,6 @@ public class WorldFrameFactory
 	// --------------------------------------------------------------------------
 	
 	private final Set<Integer>			selectionList;
-	private final FieldRasterConfig	fieldRasterConfig;
 	
 	private int								runningIterator	= 0;
 	
@@ -69,8 +63,7 @@ public class WorldFrameFactory
 		selectionList = new HashSet<Integer>();
 		wFrames = new ArrayList<WorldFrame>();
 		
-		fieldRasterConfig = AIConfig.getFieldRaster();
-		raster = new FieldRasterGenerator(EGeneratorTyp.PLAYFINDER);
+		raster = new FieldRasterGenerator();
 		createSelectionList();
 	}
 	
@@ -88,9 +81,9 @@ public class WorldFrameFactory
 	{
 		final Random randomGenerator = new Random(System.nanoTime());
 		
-		while (selectionList.size() != fieldRasterConfig.getNumberOfAnalysingFields())
+		while (selectionList.size() != FieldRasterGenerator.getNumberOfAnalysingFields())
 		{
-			final int randomField = randomGenerator.nextInt(fieldRasterConfig.getNumberOfAnalysingFields()) + 1;
+			final int randomField = randomGenerator.nextInt(FieldRasterGenerator.getNumberOfAnalysingFields()) + 1;
 			if (!selectionList.contains(randomField))
 			{
 				selectionList.add(randomField);
@@ -114,29 +107,44 @@ public class WorldFrameFactory
 	
 	
 	/**
+	 * @param frameNumber
+	 * @return
+	 */
+	public WorldFrame createWorldFrame(long frameNumber)
+	{
+		return new WorldFrame(createSimpleWorldFrame(frameNumber), ETeamColor.YELLOW, false);
+	}
+	
+	
+	/**
 	 * Creates a new WorldFrame with random positioned bots.
 	 * 
 	 * @param frameNumber the id of the {@link WorldFrame}.
 	 * @return
 	 */
-	private WorldFrame createWorldFrame(long frameNumber)
+	public SimpleWorldFrame createSimpleWorldFrame(long frameNumber)
 	{
-		final BotIDMap<TrackedBot> foeBots = new BotIDMap<TrackedBot>();
-		final BotIDMap<TrackedTigerBot> tigerBots = new BotIDMap<TrackedTigerBot>();
+		final IBotIDMap<TrackedTigerBot> bots = new BotIDMap<TrackedTigerBot>();
 		
-		for (int i = 0; i < 5; i++)
+		for (int i = 0; i < 6; i++)
 		{
-			BotID idF = new BotID(i, ETeam.OPPONENTS);
-			foeBots.put(idF, createBot(idF));
+			BotID idF = BotID.createBotId(i, ETeamColor.BLUE);
+			bots.put(idF, createBot(idF, ETeamColor.BLUE));
 			
-			BotID idT = new BotID(i);
-			tigerBots.put(idT, createTigerBot(idT));
+			BotID idT = BotID.createBotId(i, ETeamColor.YELLOW);
+			bots.put(idT, createBot(idT, ETeamColor.YELLOW));
 		}
 		
 		final TrackedBall ball = new TrackedBall(AVector3.ZERO_VECTOR, AVector3.ZERO_VECTOR, AVector3.ZERO_VECTOR, 0,
 				true);
+		final double time = (System.nanoTime() - WPConfig.getFilterTimeOffset())
+				* WPConfig.FILTER_CONVERT_NS_TO_INTERNAL_TIME;
 		
-		return new WorldFrame(foeBots, tigerBots, new BotIDMap<TrackedTigerBot>(tigerBots), ball, 0, frameNumber, null, 0);
+		WorldFramePrediction wfp = new FieldPredictor(bots.values(), ball).create();
+		SimpleWorldFrame swf = new SimpleWorldFrame(bots, ball, time, frameNumber, 0, wfp);
+		swf.setCamFps(210);
+		swf.setWfFps(60);
+		return swf;
 	}
 	
 	
@@ -144,85 +152,43 @@ public class WorldFrameFactory
 	 * Creates a new WorldFrame with random positioned bots.
 	 * 
 	 * @param frameNumber the id of the {@link WorldFrame}.
-	 * @param teamProps
 	 * @return
 	 */
-	public static WorldFrame createEmptyWorldFrame(long frameNumber, TeamProps teamProps)
+	public static SimpleWorldFrame createEmptyWorldFrame(long frameNumber)
 	{
-		final BotIDMap<TrackedBot> foeBots = new BotIDMap<TrackedBot>();
-		final BotIDMap<TrackedTigerBot> tigerBots = new BotIDMap<TrackedTigerBot>();
+		final IBotIDMap<TrackedTigerBot> bots = new BotIDMap<TrackedTigerBot>();
+		
 		final TrackedBall ball = new TrackedBall(AVector3.ZERO_VECTOR, AVector3.ZERO_VECTOR, AVector3.ZERO_VECTOR, 0,
-				false);
+				true);
 		final double time = (System.nanoTime() - WPConfig.getFilterTimeOffset())
 				* WPConfig.FILTER_CONVERT_NS_TO_INTERNAL_TIME;
-		WorldFrame wf = new WorldFrame(foeBots, tigerBots, new BotIDMap<TrackedTigerBot>(tigerBots), ball, time,
-				frameNumber, teamProps, 0);
-		wf.setWfFps(0);
-		return wf;
+		
+		WorldFramePrediction wfp = new FieldPredictor(bots.values(), ball).create();
+		SimpleWorldFrame swf = new SimpleWorldFrame(bots, ball, time, frameNumber, 0, wfp);
+		swf.setCamFps(210);
+		swf.setWfFps(60);
+		return swf;
 	}
 	
 	
 	/**
-	 * Creates a foe bot within a random analysing rectangle
+	 * Creates a bot within a random analysing rectangle
 	 * created by the {@link FieldRasterGenerator}.
 	 * 
 	 * @param id
-	 * @return foeBot
+	 * @param color
+	 * @return bot
 	 */
-	public TrackedBot createBot(BotID id)
+	public TrackedTigerBot createBot(BotID id, ETeamColor color)
 	{
-		if (runningIterator == fieldRasterConfig.getNumberOfAnalysingFields())
+		if (runningIterator == FieldRasterGenerator.getNumberOfAnalysingFields())
 		{
 			runningIterator = 0;
 		}
 		
 		final IVector2 pos = raster.getAnalysisFieldRectangle(runningIterator + 1).getRandomPointInShape();
 		
-		return new TrackedFoeBot(id, pos, AVector2.ZERO_VECTOR, AVector2.ZERO_VECTOR, 0, 0, 0, 0, 0);
-	}
-	
-	
-	/**
-	 * Creates a tiger bot within a random analysing rectangle
-	 * created by the {@link FieldRasterGenerator}.
-	 * 
-	 * @param id
-	 * @return foeBot
-	 */
-	public TrackedTigerBot createTigerBot(BotID id)
-	{
-		if (runningIterator == fieldRasterConfig.getNumberOfAnalysingFields())
-		{
-			runningIterator = 0;
-		}
-		
-		final IVector2 pos = raster.getAnalysisFieldRectangle(runningIterator + 1).getRandomPointInShape();
-		
-		return new TrackedTigerBot(id, pos, AVector2.ZERO_VECTOR, AVector2.ZERO_VECTOR, 0, 0, 0, 0, 0, null);
-	}
-	
-	
-	/**
-	 * <b>WARNING:</b> Only for debugging/test purpose!!!
-	 * @return A instance of {@link WorldFrame} which is filled with everything to at least initialize fake-plays
-	 */
-	public AIInfoFrame createFakeAIInfoFrame()
-	{
-		final WorldFrame wf = createWorldFrame(0);
-		final AIInfoFrame frame = new AIInfoFrame(wf, null, null);
-		
-		final TrackedBot fakeBot = new TrackedTigerBot(new BotID(), new Vector2(0, 0), new Vector2(0, 0), new Vector2(0,
-				0), 15, 0.0f, 0.0f, 0.0f, 0.0f, null);
-		
-		// needed for testing StopMarkerPlay
-		frame.tacticalInfo.setOpponentPassReceiver(fakeBot);
-		
-		// needed for PatternBlockPlay
-		final List<Pattern> patternList = new ArrayList<Pattern>();
-		patternList.add(new Pattern(new Vector2(0, 0), new Vector2(5, 5), 0, 0));
-		frame.tacticalInfo.setPlayPattern(patternList);
-		
-		return frame;
+		return new TrackedTigerBot(id, pos, AVector2.ZERO_VECTOR, AVector2.ZERO_VECTOR, 0, 0, 0, 0, 0, null, color);
 	}
 	
 	

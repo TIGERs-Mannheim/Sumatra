@@ -10,7 +10,9 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -32,12 +34,16 @@ public class TigerKickerStatusV2 extends ACommand
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	/** [mA], uint16_t */
+	@SerialData(type = ESerialDataType.UINT16)
 	private int			chargeCurrent;
 	/** [V*e-1], uint16_t */
+	@SerialData(type = ESerialDataType.UINT16)
 	private int			capLevel;
-	// ï¿½Ce-1
+	// °Ce-1
+	@SerialData(type = ESerialDataType.UINT16)
 	private final int	TDiode[]	= new int[2];
-	// ï¿½Ce-1
+	// °Ce-1
+	@SerialData(type = ESerialDataType.UINT16)
 	private final int	TIGBT[]	= new int[2];
 	
 	
@@ -51,54 +57,13 @@ public class TigerKickerStatusV2 extends ACommand
 	 */
 	public TigerKickerStatusV2()
 	{
+		super(ECommand.CMD_KICKER_STATUSV2);
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		chargeCurrent = byteArray2UShort(data, 0);
-		capLevel = byteArray2UShort(data, 2);
-		TDiode[0] = byteArray2UShort(data, 4);
-		TDiode[1] = byteArray2UShort(data, 6);
-		TIGBT[0] = byteArray2UShort(data, 8);
-		TIGBT[1] = byteArray2UShort(data, 10);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		short2ByteArray(data, 0, chargeCurrent);
-		short2ByteArray(data, 2, capLevel);
-		short2ByteArray(data, 4, TDiode[0]);
-		short2ByteArray(data, 6, TDiode[1]);
-		short2ByteArray(data, 8, TIGBT[0]);
-		short2ByteArray(data, 10, TIGBT[1]);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_KICKER_STATUSV2;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 12;
-	}
-	
-	
 	/**
 	 * 
 	 * @return

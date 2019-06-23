@@ -14,7 +14,6 @@ import java.util.List;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
 
@@ -53,28 +52,35 @@ public class EightSkill extends AMoveSkill
 	// --------------------------------------------------------------------------
 	
 	@Override
-	protected void periodicProcess(TrackedTigerBot bot, List<ACommand> cmds)
+	protected void periodicProcess(List<ACommand> cmds)
 	{
 		
 	}
 	
 	
 	@Override
-	protected List<ACommand> doCalcEntryActions(TrackedTigerBot bot, List<ACommand> cmds)
+	protected List<ACommand> doCalcEntryActions(List<ACommand> cmds)
 	{
 		List<IVector2> nodes = new ArrayList<IVector2>(10);
-		nodes.add(bot.getPos());
-		nodes.add(bot.getPos().addNew(new Vector2(size / 2, size / 2)));
-		nodes.add(bot.getPos().addNew(new Vector2(size, 0)));
-		nodes.add(bot.getPos().addNew(new Vector2(size / 2, -size / 2)));
-		nodes.add(bot.getPos());
-		nodes.add(bot.getPos().addNew(new Vector2(-size / 2, size / 2)));
-		nodes.add(bot.getPos().addNew(new Vector2(-size, 0)));
-		nodes.add(bot.getPos().addNew(new Vector2(-size / 2, -size / 2)));
-		nodes.add(bot.getPos());
-		createSpline(bot, nodes, 0);
+		nodes.add(getPos());
+		nodes.add(getPos().addNew(new Vector2(size / 2, size / 2)));
+		nodes.add(getPos().addNew(new Vector2(size, 0)));
+		nodes.add(getPos().addNew(new Vector2(size / 2, -size / 2)));
+		nodes.add(getPos());
+		nodes.add(getPos().addNew(new Vector2(-size / 2, size / 2)));
+		nodes.add(getPos().addNew(new Vector2(-size, 0)));
+		nodes.add(getPos().addNew(new Vector2(-size / 2, -size / 2)));
+		nodes.add(getPos());
+		createSpline(nodes, 0);
 		
 		return cmds;
+	}
+	
+	
+	@Override
+	public boolean needsVision()
+	{
+		return false;
 	}
 	
 	// --------------------------------------------------------------------------

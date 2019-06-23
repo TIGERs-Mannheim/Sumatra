@@ -53,10 +53,12 @@ public class UnicastTransceiverUDP implements ITransceiverUDP, IReceiverUDPObser
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
+	 * @param legacy
 	 */
-	public UnicastTransceiverUDP()
+	public UnicastTransceiverUDP(boolean legacy)
 	{
+		transmitter.setLegacy(legacy);
+		receiver.setLegacy(legacy);
 	}
 	
 	
@@ -313,6 +315,7 @@ public class UnicastTransceiverUDP implements ITransceiverUDP, IReceiverUDPObser
 			open();
 		}
 	}
+	
 	
 	// --------------------------------------------------------------------------
 	// --- Threads --------------------------------------------------------

@@ -12,7 +12,7 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.Embeddable;
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline.HermiteSpline2D;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline.ISpline;
@@ -27,12 +27,20 @@ import edu.dhbw.mannheim.tigers.sumatra.util.units.DistanceUnit;
  * @author AndreR
  * 
  */
-@Embeddable
+@Persistent
 public class HermiteSplineTrajectory2D implements ITrajectory2D, ISpline
 {
+	
+	// --------------------------------------------------------------------------
+	// --- variables and constants ----------------------------------------------
+	// --------------------------------------------------------------------------
+	private List<HermiteSplineTrajectoryPart2D>	parts			= new ArrayList<HermiteSplineTrajectoryPart2D>();
+	private float											totalTime	= 0;
+	private float											totalLength	= 0;
+	
 	/**
 	 */
-	@Embeddable
+	@Persistent
 	public static class HermiteSplineTrajectoryPart2D
 	{
 		/** */
@@ -45,6 +53,12 @@ public class HermiteSplineTrajectory2D implements ITrajectory2D, ISpline
 		public float				endWay;
 		/** */
 		public HermiteSpline2D	spline;
+		
+		
+		@SuppressWarnings("unused")
+		private HermiteSplineTrajectoryPart2D()
+		{
+		}
 		
 		
 		/**
@@ -63,19 +77,32 @@ public class HermiteSplineTrajectory2D implements ITrajectory2D, ISpline
 			endWay = eW;
 			spline = p;
 		}
+		
+		
+		/**
+		 * @param part
+		 */
+		public HermiteSplineTrajectoryPart2D(HermiteSplineTrajectoryPart2D part)
+		{
+			startTime = part.startTime;
+			endTime = part.endTime;
+			startWay = part.startWay;
+			endWay = part.endWay;
+			spline = new HermiteSpline2D(part.spline);
+		}
 	}
-	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	private List<HermiteSplineTrajectoryPart2D>	parts			= new ArrayList<HermiteSplineTrajectoryPart2D>();
-	private float											totalTime	= 0;
-	private float											totalLength	= 0;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	@SuppressWarnings("unused")
+	private HermiteSplineTrajectory2D()
+	{
+	}
+	
+	
 	/**
 	 * Create a hermite spline trajectory.
 	 * 
@@ -101,9 +128,24 @@ public class HermiteSplineTrajectory2D implements ITrajectory2D, ISpline
 	}
 	
 	
+	/**
+	 * @param position
+	 */
+	public HermiteSplineTrajectory2D(HermiteSplineTrajectory2D position)
+	{
+		for (HermiteSplineTrajectoryPart2D part : position.parts)
+		{
+			parts.add(new HermiteSplineTrajectoryPart2D(part));
+		}
+		totalLength = position.totalLength;
+		totalTime = position.totalTime;
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
 	
 	private void init(List<HermiteSpline2D> splines)
 	{
@@ -118,6 +160,17 @@ public class HermiteSplineTrajectory2D implements ITrajectory2D, ISpline
 			
 			totalLength += p.getLength();
 			totalTime += p.getEndTime();
+		}
+	}
+	
+	
+	/**
+	 */
+	public void mirror()
+	{
+		for (HermiteSplineTrajectoryPart2D part : parts)
+		{
+			part.spline.mirror();
 		}
 	}
 	
@@ -223,6 +276,14 @@ public class HermiteSplineTrajectory2D implements ITrajectory2D, ISpline
 	
 	
 	@Override
+	public IVector2 getAccelerationByTime(float t)
+	{
+		HermiteSplineTrajectoryPart2D part = parts.get(findPart(t));
+		return part.spline.firstDerivative(t - part.startTime);
+	}
+	
+	
+	@Override
 	public float getTotalTime()
 	{
 		return totalTime;
@@ -304,14 +365,6 @@ public class HermiteSplineTrajectory2D implements ITrajectory2D, ISpline
 		HermiteSplineTrajectoryPart2D part = parts.get(findPart(t));
 		return part.spline.value(t - part.startTime);
 		
-	}
-	
-	
-	@Override
-	public IVector2 getAccelerationByTime(float t)
-	{
-		HermiteSplineTrajectoryPart2D part = parts.get(findPart(t));
-		return part.spline.firstDerivative(t - part.startTime);
 	}
 	
 }

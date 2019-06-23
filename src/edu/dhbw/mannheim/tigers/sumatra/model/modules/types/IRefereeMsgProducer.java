@@ -18,5 +18,5 @@ public interface IRefereeMsgProducer
 	 * 
 	 * @param consumer
 	 */
-	void setRefereeMsgConsumer(IRefereeMsgConsumer consumer);
+	void addRefereeMsgConsumer(IRefereeMsgConsumer consumer);
 }

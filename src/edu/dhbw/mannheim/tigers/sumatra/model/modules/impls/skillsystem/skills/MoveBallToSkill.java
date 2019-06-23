@@ -18,8 +18,8 @@ import org.apache.log4j.Logger;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.SplineTrajectoryGenerator;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.Sisyphus;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
 
@@ -68,7 +68,7 @@ public class MoveBallToSkill extends AMoveSkill
 	
 	
 	@Override
-	protected void periodicProcess(TrackedTigerBot bot, List<ACommand> cmds)
+	protected void periodicProcess(List<ACommand> cmds)
 	{
 		if (switchToWait)
 		{
@@ -80,7 +80,7 @@ public class MoveBallToSkill extends AMoveSkill
 	
 	
 	@Override
-	protected boolean isComplete(TrackedTigerBot bot)
+	protected boolean isMoveComplete()
 	{
 		if (timeWaitBeforeComplete != 0)
 		{
@@ -90,7 +90,7 @@ public class MoveBallToSkill extends AMoveSkill
 			}
 			return false;
 		}
-		if (!bot.hasBallContact())
+		if (!hasBallContact())
 		{
 			if (timeLostBallContact == 0)
 			{
@@ -104,7 +104,7 @@ public class MoveBallToSkill extends AMoveSkill
 		{
 			timeLostBallContact = 0;
 		}
-		boolean trajCompleted = super.isComplete(bot);
+		boolean trajCompleted = super.isMoveComplete();
 		if (trajCompleted)
 		{
 			log.debug("Completed due to spline done");
@@ -128,26 +128,25 @@ public class MoveBallToSkill extends AMoveSkill
 	
 	
 	@Override
-	public List<ACommand> doCalcEntryActions(TrackedTigerBot bot, List<ACommand> cmds)
+	public List<ACommand> doCalcEntryActions(List<ACommand> cmds)
 	{
-		getDevices().dribble(cmds, true);
+		getDevices().dribble(cmds, false);
 		getDevices().disarm(cmds);
 		
 		SplineTrajectoryGenerator gen = new SplineTrajectoryGenerator();
 		gen.setPositionTrajParams(2.0f, 0.5f);
 		gen.setReducePathScore(0.0f);
-		gen.setRotationTrajParams(AIConfig.getSkills(bot.getBotType()).getMaxRotateVelocity(),
-				AIConfig.getSkills(bot.getBotType()).getMaxRotateAcceleration());
+		gen.setRotationTrajParams(Sisyphus.maxRotateVelocity, Sisyphus.maxRotateAcceleration);
 		List<IVector2> nodes = new LinkedList<IVector2>();
-		nodes.add(GeoMath.stepAlongLine(ballTarget, bot.getPos(), AIConfig.getGeometry().getBotRadius()));
+		nodes.add(GeoMath.stepAlongLine(ballTarget, getPos(), AIConfig.getGeometry().getBotRadius()));
 		
-		createSpline(bot, nodes, ballTarget, gen);
+		createSpline(nodes, ballTarget, gen);
 		return cmds;
 	}
 	
 	
 	@Override
-	protected List<ACommand> doCalcExitActions(TrackedTigerBot bot, List<ACommand> cmds)
+	protected List<ACommand> doCalcExitActions(List<ACommand> cmds)
 	{
 		getDevices().dribble(cmds, false);
 		return cmds;

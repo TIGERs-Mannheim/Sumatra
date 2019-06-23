@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Apr 14, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.move;
@@ -12,26 +11,26 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.mo
 import java.awt.Color;
 import java.util.List;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.DrawablePoint;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.DrawableLine;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Line;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACondition.EConditionState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ASkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill.EMoveToMode;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.GetBallSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.IMoveToSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveBallToSkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveToSkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.TurnAroundBallSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.TurnAroundBallSplineSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleState;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
 
 
 /**
@@ -45,9 +44,12 @@ public class MoveBallToRole extends ARole
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final float	BALL_REACHED_TARGET_TOL	= 80;
+	private static final float	BALL_REACHED_TARGET_TOL	= 100;
 	
 	private final IVector2		target;
+	
+	@Configurable(comment = "Dist [mm] - distance to ball before aiming")
+	private static float			positioningPreAiming		= 150;
 	
 	// --------------------------------------------------------------------------
 	// --- states ---------------------------------------------------------------
@@ -82,14 +84,14 @@ public class MoveBallToRole extends ARole
 	 */
 	public MoveBallToRole()
 	{
-		this(Vector2.ZERO_VECTOR);
+		this(AVector2.ZERO_VECTOR);
 	}
 	
 	
 	/**
 	 * @param target
 	 */
-	public MoveBallToRole(IVector2 target)
+	public MoveBallToRole(final IVector2 target)
 	{
 		super(ERole.MOVE_BALL_TO);
 		this.target = target;
@@ -124,20 +126,26 @@ public class MoveBallToRole extends ARole
 	
 	private class GetBeforeState implements IRoleState
 	{
+		private IMoveToSkill	skill	= null;
+		
 		
 		@Override
 		public void doEntryActions()
 		{
-			updateDestination(GeoMath.stepAlongLine(getAiFrame().worldFrame.ball.getPos(), target,
-					-AIConfig.getGeneral(getBotType()).getPositioningPreAiming() - 100));
-			updateLookAtTarget(target);
-			setNewSkill(new MoveToSkill(getMoveCon()));
+			skill = AMoveSkill.createMoveToSkill(EMoveToMode.DO_COMPLETE);
+			skill.getMoveCon().updateDestination(
+					GeoMath.stepAlongLine(getAiFrame().getWorldFrame().ball.getPos(), target, -positioningPreAiming - 100));
+			skill.getMoveCon().updateLookAtTarget(target);
+			skill.getMoveCon().setPenaltyAreaAllowed(true);
+			setNewSkill(skill);
 		}
 		
 		
 		@Override
 		public void doUpdate()
 		{
+			skill.getMoveCon().updateDestination(
+					GeoMath.stepAlongLine(getAiFrame().getWorldFrame().ball.getPos(), target, -positioningPreAiming - 100));
 		}
 		
 		
@@ -148,13 +156,13 @@ public class MoveBallToRole extends ARole
 		
 		
 		@Override
-		public void onSkillStarted(ASkill skill, BotID botID)
+		public void onSkillStarted(final ISkill skill, final BotID botID)
 		{
 		}
 		
 		
 		@Override
-		public void onSkillCompleted(ASkill skill, BotID botID)
+		public void onSkillCompleted(final ISkill skill, final BotID botID)
 		{
 			nextState(EEvent.PREPARED);
 		}
@@ -173,7 +181,7 @@ public class MoveBallToRole extends ARole
 		@Override
 		public void doEntryActions()
 		{
-			setNewSkill(new TurnAroundBallSkill(target));
+			setNewSkill(new TurnAroundBallSplineSkill(target));
 		}
 		
 		
@@ -190,21 +198,15 @@ public class MoveBallToRole extends ARole
 		
 		
 		@Override
-		public void onSkillStarted(ASkill skill, BotID botID)
+		public void onSkillStarted(final ISkill skill, final BotID botID)
 		{
 		}
 		
 		
 		@Override
-		public void onSkillCompleted(ASkill skill, BotID botID)
+		public void onSkillCompleted(final ISkill skill, final BotID botID)
 		{
-			if (getMoveCon().getAngleCon().checkCondition(getAiFrame().worldFrame, getBotID()) == EConditionState.FULFILLED)
-			{
-				nextState(EEvent.AIMED);
-			} else
-			{
-				doEntryActions();
-			}
+			nextState(EEvent.AIMED);
 		}
 		
 		
@@ -239,13 +241,13 @@ public class MoveBallToRole extends ARole
 		
 		
 		@Override
-		public void onSkillStarted(ASkill skill, BotID botID)
+		public void onSkillStarted(final ISkill skill, final BotID botID)
 		{
 		}
 		
 		
 		@Override
-		public void onSkillCompleted(ASkill skill, BotID botID)
+		public void onSkillCompleted(final ISkill skill, final BotID botID)
 		{
 			nextState(EEvent.BALL_GOT);
 		}
@@ -271,6 +273,14 @@ public class MoveBallToRole extends ARole
 		@Override
 		public void doUpdate()
 		{
+			WorldFrame wFrame = getAiFrame().getWorldFrame();
+			if (wFrame.ball.getPos().equals(target, BALL_REACHED_TARGET_TOL))
+			{
+				nextState(EEvent.BALL_POSITIONED);
+			} else
+			{
+				nextState(EEvent.BALL_LOST);
+			}
 		}
 		
 		
@@ -281,26 +291,14 @@ public class MoveBallToRole extends ARole
 		
 		
 		@Override
-		public void onSkillStarted(ASkill skill, BotID botID)
+		public void onSkillStarted(final ISkill skill, final BotID botID)
 		{
 		}
 		
 		
 		@Override
-		public void onSkillCompleted(ASkill skill, BotID botID)
+		public void onSkillCompleted(final ISkill skill, final BotID botID)
 		{
-			WorldFrame wFrame = getAiFrame().worldFrame;
-			if (wFrame == null)
-			{
-				return;
-			}
-			if (wFrame.ball.getPos().equals(target, BALL_REACHED_TARGET_TOL))
-			{
-				nextState(EEvent.BALL_POSITIONED);
-			} else
-			{
-				nextState(EEvent.BALL_LOST);
-			}
 		}
 		
 		
@@ -313,16 +311,14 @@ public class MoveBallToRole extends ARole
 	
 	
 	@Override
-	protected void afterUpdate(AIInfoFrame currentFrame)
+	protected void afterUpdate()
 	{
-		updateDestination(GeoMath.stepAlongLine(getAiFrame().worldFrame.ball.getPos(), target,
-				-AIConfig.getGeneral(getBotType()).getPositioningPreAiming() - 100));
-		
 		if (getCurrentState() != EStateId.GET_BEFORE)
 		{
-			currentFrame.addDebugShape(new DrawableLine(new Line(currentFrame.worldFrame.ball.getPos(), target
-					.subtractNew(currentFrame.worldFrame.ball.getPos())), Color.blue, true));
-			currentFrame.addDebugShape(new DrawablePoint(target, Color.yellow));
+			getAiFrame().addDebugShape(
+					new DrawableLine(new Line(getWFrame().ball.getPos(), target.subtractNew(getWFrame().ball.getPos())),
+							Color.blue, true));
+			getAiFrame().addDebugShape(new DrawablePoint(target, Color.yellow));
 		}
 	}
 }

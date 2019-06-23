@@ -20,9 +20,12 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationStats;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.ILookAndFeelStateObserver;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.LookAndFeelStateAdapter;
+import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.BotCenterTreeNode;
+import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.ETreeIconType;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.basestation.BaseStationNetworkPanel.IBaseStationNetworkPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.basestation.BaseStationPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.basestation.BaseStationPanel.IBaseStationPanelObserver;
+import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.basestation.BaseStationStatsPanel;
 
 
 /**
@@ -37,8 +40,10 @@ public class BaseStationPresenter implements IBaseStationPanelObserver, IBaseSta
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private BaseStationPanel	baseStationPanel	= null;
-	private final BaseStation	baseStation;
+	private BaseStationPanel		baseStationPanel	= null;
+	private final BaseStation		baseStation;
+	private BotCenterTreeNode		treeNode				= null;
+	private BaseStationStatsPanel	statsPanel			= null;
 	
 	
 	// --------------------------------------------------------------------------
@@ -50,18 +55,23 @@ public class BaseStationPresenter implements IBaseStationPanelObserver, IBaseSta
 	public BaseStationPresenter(BaseStation station)
 	{
 		baseStationPanel = new BaseStationPanel();
+		statsPanel = new BaseStationStatsPanel();
 		
 		baseStation = station;
 		
 		baseStationPanel.setNetCfg(baseStation.getHost(), baseStation.getDstPort(), baseStation.getLocalPort());
-		baseStationPanel.setVisionConfig(baseStation.isPositionInverted(), baseStation.getVisionRate(),
-				baseStation.isTigersBlue());
+		baseStationPanel.setConfig(baseStation.getChannel(), baseStation.isPositionInverted(),
+				baseStation.getVisionRate(), baseStation.getMaxBots(), baseStation.getTimeout());
 		baseStationPanel.getNetworkPanel().setConnectionState(baseStation.getNetState());
 		
 		baseStation.addObserver(this);
 		baseStationPanel.addObserver(this);
 		baseStationPanel.getNetworkPanel().addObserver(this);
 		LookAndFeelStateAdapter.getInstance().addObserver(this);
+		
+		treeNode = new BotCenterTreeNode("Base Station", ETreeIconType.AP, baseStationPanel, true);
+		treeNode.add(new BotCenterTreeNode("Status", ETreeIconType.GRAPH, statsPanel, true));
+		
 	}
 	
 	
@@ -124,7 +134,8 @@ public class BaseStationPresenter implements IBaseStationPanelObserver, IBaseSta
 	@Override
 	public void onNewBaseStationStats(BaseStationStats stats)
 	{
-		baseStationPanel.getNetworkPanel().setStats(stats);
+		statsPanel.setStats(stats);
+		baseStationPanel.getNetworkPanel().setStats(stats.getEthStats());
 	}
 	
 	
@@ -172,9 +183,24 @@ public class BaseStationPresenter implements IBaseStationPanelObserver, IBaseSta
 	
 	
 	@Override
-	public void onVisionCfgChanged(boolean invertPos, int rate, boolean tigersBlue)
+	public void onCfgChanged(int ch, boolean invertPos, int rate, int bots, int to)
 	{
-		baseStation.setVisionConfig(invertPos, rate, tigersBlue);
+		baseStation.setConfig(ch, invertPos, bots, rate, to);
+	}
+	
+	
+	@Override
+	public void onBotOffline(BotID id)
+	{
+	}
+	
+	
+	/**
+	 * @return the treeNode
+	 */
+	public BotCenterTreeNode getTreeNode()
+	{
+		return treeNode;
 	}
 	
 	// --------------------------------------------------------------------------

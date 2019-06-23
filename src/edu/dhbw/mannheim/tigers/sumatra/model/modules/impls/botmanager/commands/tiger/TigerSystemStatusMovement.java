@@ -10,7 +10,9 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -18,10 +20,13 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.
 public class TigerSystemStatusMovement extends ACommand
 {
 	/** [mm/s] */
+	@SerialData(type = ESerialDataType.INT32)
 	private int	vx;
 	/** [mm/s] */
+	@SerialData(type = ESerialDataType.INT32)
 	private int	vy;
 	/** [mm/s] */
+	@SerialData(type = ESerialDataType.INT32)
 	private int	vw;
 	
 	
@@ -30,6 +35,7 @@ public class TigerSystemStatusMovement extends ACommand
 	 */
 	public TigerSystemStatusMovement()
 	{
+		super(ECommand.CMD_SYSTEM_STATUS_MOVEMENT);
 	}
 	
 	
@@ -46,42 +52,6 @@ public class TigerSystemStatusMovement extends ACommand
 		setVx(vx);
 		setVy(vy);
 		setVw(vw);
-	}
-	
-	
-	@Override
-	public void setData(byte[] data)
-	{
-		vx = byteArray2Int(data, 0);
-		vy = byteArray2Int(data, 4);
-		vw = byteArray2Int(data, 8);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		int2ByteArray(data, 0, vx);
-		int2ByteArray(data, 4, vy);
-		int2ByteArray(data, 8, vw);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_SYSTEM_STATUS_MOVEMENT;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 12;
 	}
 	
 	

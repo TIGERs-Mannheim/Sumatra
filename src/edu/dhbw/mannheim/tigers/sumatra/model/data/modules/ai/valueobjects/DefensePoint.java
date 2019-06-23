@@ -4,12 +4,16 @@
  * Project: TIGERS - Sumatra
  * Date: 13.04.2013
  * Author(s): Philipp
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.valueobjects;
 
-import javax.persistence.Embeddable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
@@ -19,68 +23,86 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
  * Represented a DefenePoint with his target to protect and the kind of shot.
  * 
  * @see ValuePoint
- * 
  * @author PhilippP
- * 
  */
-@Embeddable
+@Persistent(version = 1)
 public class DefensePoint extends ValuePoint
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	/**  */
-	private static final long	serialVersionUID	= -3397056222207062545L;
+	private static final long			serialVersionUID		= -3397056222207062545L;
 	/**  */
-	private TrackedBot			protectAgainst;
+	private TrackedBot					protectAgainst;
+	// Threat value direct from the calculators
+	private Map<EThreatKind, Float>	threatList				= new HashMap<EThreatKind, Float>();
+	// Normalized and Quantifiyd values of the threat
+	private Map<EThreatKind, Float>	threatListQuantifyd	= new HashMap<EThreatKind, Float>();
 	/**  */
-	public EShootKind				kindOfshoot			= EShootKind.DEFAULT;
+	private List<EThreatKind>			threatKinds				= new ArrayList<EThreatKind>();
 	
 	
 	/**
-	 * To clasify the kind of shoot.
-	 * Direct or Indirect
+	 * Describes simple all kinds of threats this point is affectedF
 	 * 
-	 * @author PhilippP {ph.posovszky@gmail.com}
-	 * 
+	 * @author PhilppP
 	 */
-	public enum EShootKind
+	public enum EThreatKind
 	{
-		
 		/** for indirect shoots */
 		INDIRECT,
 		/** for direct shoots */
 		DIRECT,
-		/** for default points */
-		DEFAULT,
+		/** for critcal angels */
+		CRITICAL_ANGLE,
+		/** no specific threat kind */
+		DEFAULT
+	}
+	
+	/**
+	 * compatibility for Berkeley DB
+	 */
+	@Deprecated
+	public enum EShootKind
+	{
+		/** for indirect shoots */
+		INDIRECT,
+		/** for direct shoots */
+		DIRECT,
 		/**  */
-		BALL;
-		
+		BALL,
+		/** no specific threat kind */
+		DEFAULT;
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	@SuppressWarnings("unused")
+	private DefensePoint()
+	{
+		super(0, 0);
+	}
+	
 	
 	/**
-	 * 
 	 * @param x
 	 * @param y
 	 */
-	public DefensePoint(float x, float y)
+	public DefensePoint(final float x, final float y)
 	{
 		super(x, y);
 	}
 	
 	
 	/**
-	 * 
 	 * @param vec
 	 * @param value
 	 * @param passingBot
 	 */
-	public DefensePoint(IVector2 vec, float value, TrackedBot passingBot)
+	public DefensePoint(final IVector2 vec, final float value, final TrackedBot passingBot)
 	{
 		super(vec, value);
 		setProtectAgainst(passingBot);
@@ -88,79 +110,103 @@ public class DefensePoint extends ValuePoint
 	
 	
 	/**
-	 * 
-	 * @param vec
-	 * @param value
-	 * @param passingBot
-	 * @param kind - 0 for indirect, 1 for direct
-	 */
-	public DefensePoint(IVector2 vec, float value, TrackedBot passingBot, EShootKind kind)
-	{
-		super(vec, value);
-		setProtectAgainst(passingBot);
-		setKindOfshoot(kind);
-	}
-	
-	
-	/**
-	 * 
 	 * @param vec
 	 */
-	public DefensePoint(IVector2 vec)
+	public DefensePoint(final IVector2 vec)
 	{
 		super(vec);
 	}
 	
 	
 	/**
-	 * 
+	 * @param vec
+	 * @param value
+	 */
+	public DefensePoint(final IVector2 vec, final float value)
+	{
+		super(vec);
+		this.value = value;
+	}
+	
+	
+	/**
 	 * @param x
 	 * @param y
 	 * @param value
 	 */
-	public DefensePoint(float x, float y, float value)
+	public DefensePoint(final float x, final float y, final float value)
 	{
 		super(x, y, value);
 	}
 	
 	
 	/**
-	 * 
 	 * @param copy
 	 */
-	public DefensePoint(DefensePoint copy)
+	public DefensePoint(final DefensePoint copy)
 	{
 		super(copy);
 		setProtectAgainst(copy.getProtectAgainst());
-		setKindOfshoot(copy.getKindOfshoot());
+		for (EThreatKind kind : copy.getKindOfThreats())
+		{
+			threatKinds.add(kind);
+		}
+		
+		// TODO Copy hashMap
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/**
+	 * @return a copy of the {@link EThreatKind} list
+	 */
+	public List<EThreatKind> getKindOfThreats()
+	{
+		List<EThreatKind> tempList = new ArrayList<>();
+		
+		for (EThreatKind kind : threatKinds)
+		{
+			tempList.add(kind);
+		}
+		
+		return tempList;
+	}
 	
 	
 	@Override
 	public String toString()
 	{
-		return "Vector2 (" + x + "," + y + ") Value (" + value + ") ShootKind(" + getKindOfshoot()
+		return "Vector2 (" + x + "," + y + ") Value (" + value + ") Threatkind(" + getThreadKindsAsString()
 				+ ") ProtectAgainsBotID(" + (getProtectAgainst() == null ? "null" : getProtectAgainst().getId()) + ")";
+	}
+	
+	
+	/**
+	 * @return the list of threads with , as separator
+	 *         E.g. Threat1, Threat2...
+	 */
+	private String getThreadKindsAsString()
+	{
+		StringBuilder temp = new StringBuilder();
+		for (int i = 0, size = threatKinds.size(); i < size; i++)
+		{
+			if (i < size)
+			{
+				temp.append(threatKinds.get(i) + ",");
+			} else
+			{
+				temp.append(threatKinds.get(i));
+			}
+		}
+		return temp.toString();
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	/**
-	 * @param kind to seth kindOfShoot
-	 */
-	public void setKindOfshoot(EShootKind kind)
-	{
-		kindOfshoot = kind;
-	}
-	
 	
 	/**
 	 * @return the protectAgainst
@@ -174,17 +220,107 @@ public class DefensePoint extends ValuePoint
 	/**
 	 * @param protectAgainst the protectAgainst to set
 	 */
-	public void setProtectAgainst(TrackedBot protectAgainst)
+	public void setProtectAgainst(final TrackedBot protectAgainst)
 	{
 		this.protectAgainst = protectAgainst;
 	}
 	
 	
 	/**
-	 * @return the kindOfshoot
+	 * Check if a {@link EThreatKind} is contained in the list
+	 * 
+	 * @param kindToCheck - {@link EThreatKind} to check
+	 * @return if the threat is contains in the list
 	 */
-	public EShootKind getKindOfshoot()
+	public boolean containsThreat(final EThreatKind kindToCheck)
 	{
-		return kindOfshoot;
+		for (EThreatKind kind : threatKinds)
+		{
+			if (kind == kindToCheck)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	
+	/**
+	 * Check if a {@link EThreatKind} is not contained in the list
+	 * 
+	 * @param kindToCheck - {@link EThreatKind} to check
+	 * @return if the threat is contains in the list
+	 */
+	public boolean notContainsThreat(final EThreatKind kindToCheck)
+	{
+		boolean contains = true;
+		for (EThreatKind kind : threatKinds)
+		{
+			if (kind == kindToCheck)
+			{
+				contains = false;
+			}
+		}
+		return contains;
+	}
+	
+	
+	@Override
+	/**
+	 * Calls add value!
+	 */
+	public void setValue(final float value)
+	{
+		this.value = value;
+	}
+	
+	
+	/**
+	 * Adds a value with a special threat kind to the defense point.
+	 * 
+	 * @param value
+	 * @param kindOfThreat
+	 */
+	public void addThreatKind(final EThreatKind kindOfThreat, final float value)
+	{
+		threatList.put(kindOfThreat, value);
+		threatKinds.add(kindOfThreat);
+	}
+	
+	
+	/**
+	 * Adds a value with a special threat kind to the defense point.
+	 * 
+	 * @param value
+	 * @param kindOfThreat
+	 */
+	public void addThreatKindQuantifyd(final EThreatKind kindOfThreat, final float value)
+	{
+		threatListQuantifyd.put(kindOfThreat, value);
+	}
+	
+	
+	/**
+	 * Returns the value of a specific threat
+	 * 
+	 * @param kindOfThreat
+	 * @return
+	 */
+	public float getValueOfThreat(final EThreatKind kindOfThreat)
+	{
+		return threatList.get(kindOfThreat);
+	}
+	
+	
+	/**
+	 * Calculate the final the final threat value
+	 */
+	public void calcualteFinalThreat()
+	{
+		for (EThreatKind kind : threatKinds)
+		{
+			value += threatListQuantifyd.get(kind);
+		}
+		
 	}
 }

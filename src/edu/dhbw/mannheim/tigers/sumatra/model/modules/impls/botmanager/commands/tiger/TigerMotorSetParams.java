@@ -10,7 +10,9 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -39,10 +41,15 @@ public class TigerMotorSetParams extends ACommand
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
+	@SerialData(type = ESerialDataType.UINT8)
 	private int			mode			= 0;
+	@SerialData(type = ESerialDataType.INT32)
 	private final int	kP[]			= new int[5];
+	@SerialData(type = ESerialDataType.INT32)
 	private final int	kI[]			= new int[5];
+	@SerialData(type = ESerialDataType.INT32)
 	private final int	kD[]			= new int[5];
+	@SerialData(type = ESerialDataType.INT32)
 	private final int	slewMax[]	= new int[5];
 	
 	
@@ -54,6 +61,8 @@ public class TigerMotorSetParams extends ACommand
 	 */
 	public TigerMotorSetParams()
 	{
+		super(ECommand.CMD_MOTOR_SET_PARAMS);
+		
 		mode = MotorMode.MANUAL.ordinal();
 		
 		for (int i = 0; i < 5; i++)
@@ -69,53 +78,6 @@ public class TigerMotorSetParams extends ACommand
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		mode = byteArray2UByte(data, 0);
-		
-		for (int i = 0; i < 5; i++)
-		{
-			kP[i] = byteArray2Int(data, 1 + 0 + (i * 4));
-			kI[i] = byteArray2Int(data, 1 + 20 + (i * 4));
-			kD[i] = byteArray2Int(data, 1 + 40 + (i * 4));
-			slewMax[i] = byteArray2Int(data, 1 + 60 + (i * 4));
-		}
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		byte2ByteArray(data, 0, mode);
-		
-		for (int i = 0; i < 5; i++)
-		{
-			int2ByteArray(data, 1 + 0 + (i * 4), kP[i]);
-			int2ByteArray(data, 1 + 20 + (i * 4), kI[i]);
-			int2ByteArray(data, 1 + 40 + (i * 4), kD[i]);
-			int2ByteArray(data, 1 + 60 + (i * 4), slewMax[i]);
-		}
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_MOTOR_SET_PARAMS;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 81;
-	}
-	
 	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------

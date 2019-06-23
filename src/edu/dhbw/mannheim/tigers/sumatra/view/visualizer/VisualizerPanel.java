@@ -4,13 +4,12 @@
  * Project: TIGERS - Sumatra
  * Date: 10.08.2010
  * Author(s): BernhardP
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.visualizer;
 
-import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -18,17 +17,16 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JMenu;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
-import javax.swing.border.TitledBorder;
+import javax.swing.JSplitPane;
 
 import net.miginfocom.swing.MigLayout;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.visualizer.IFieldPanel;
-import edu.dhbw.mannheim.tigers.sumatra.view.main.ISumatraView;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.OptionsPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.RobotsPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.FieldPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.replay.ReplayLoadPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.replay.ReplayOptionsPanel;
+import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
 
 
 /**
@@ -36,27 +34,20 @@ import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.replay.R
  * It also allows the user to set a robot at a determined position.
  * 
  * @author BernhardP, OliverS
- * 
  */
 public class VisualizerPanel extends JPanel implements ISumatraView
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long			serialVersionUID		= 2686191777355388548L;
-	
-	private static final int			ID							= 4;
-	private static final String		TITLE						= "Visualizer";
+	private static final long			serialVersionUID	= 2686191777355388548L;
 	
 	private final FieldPanel			fieldPanel;
 	
-	private final JTextField			teamColor;
 	private final RobotsPanel			robotsPanel;
 	private final OptionsPanel			optionsPanel;
 	private final ReplayOptionsPanel	replayOptionsPanel;
 	private final ReplayLoadPanel		replayLoadPanel;
-	
-	private Boolean						lastTigersAreYellow	= null;
 	
 	
 	// --------------------------------------------------------------------------
@@ -68,27 +59,11 @@ public class VisualizerPanel extends JPanel implements ISumatraView
 	public VisualizerPanel()
 	{
 		// --- set layout ---
-		setLayout(new MigLayout("fill, inset 0", "[min!][left][]", "[top]"));
+		setLayout(new MigLayout("fill, inset 0", "[min!][max][right]", "[top]"));
 		
-		// --- left panel ---
-		final JPanel leftPanel = new JPanel();
-		leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.PAGE_AXIS));
 		// --- right panel ---
 		final JPanel rightPanel = new JPanel();
 		rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.PAGE_AXIS));
-		
-		
-		// team color panel
-		teamColor = new JTextField();
-		teamColor.setEditable(false);
-		teamColor.setBackground(Color.WHITE);
-		final JPanel teamColorPanel = new JPanel(new MigLayout("fill", "[fill]", "[fill]"));
-		
-		final TitledBorder border = BorderFactory.createTitledBorder("Team");
-		border.setTitleJustification(TitledBorder.CENTER);
-		teamColorPanel.setBorder(border);
-		teamColorPanel.add(teamColor);
-		
 		
 		// --- init panels ---
 		robotsPanel = new RobotsPanel();
@@ -102,44 +77,25 @@ public class VisualizerPanel extends JPanel implements ISumatraView
 		replayLoadPanel.setAlignmentX(LEFT_ALIGNMENT);
 		
 		// --- set panels ---
-		leftPanel.add(teamColorPanel, "grow, top, wrap");
-		leftPanel.add(robotsPanel, "grow, top");
-		leftPanel.add(Box.createVerticalGlue());
 		rightPanel.add(optionsPanel);
 		rightPanel.add(replayOptionsPanel);
 		rightPanel.add(replayLoadPanel);
 		rightPanel.add(Box.createVerticalGlue());
+		rightPanel.setMinimumSize(new Dimension(0, 0));
 		
-		add(leftPanel);
-		add(fieldPanel, "grow, top");
-		add(rightPanel);
+		final JSplitPane splitPane = new CustomSplitPane(JSplitPane.HORIZONTAL_SPLIT, fieldPanel, rightPanel);
+		splitPane.setOneTouchExpandable(true);
+		splitPane.setEnabled(true);
+		splitPane.setBorder(BorderFactory.createEmptyBorder());
 		
+		add(robotsPanel);
+		add(splitPane, "grow, top");
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- ISumatraView ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	@Override
-	public int getId()
-	{
-		return ID;
-	}
-	
-	
-	@Override
-	public String getTitle()
-	{
-		return TITLE;
-	}
-	
-	
-	@Override
-	public Component getViewComponent()
-	{
-		return this;
-	}
 	
 	
 	@Override
@@ -178,7 +134,6 @@ public class VisualizerPanel extends JPanel implements ISumatraView
 	// --------------------------------------------------------------------------
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public IFieldPanel getFieldPanel()
@@ -188,7 +143,6 @@ public class VisualizerPanel extends JPanel implements ISumatraView
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public RobotsPanel getRobotsPanel()
@@ -198,38 +152,11 @@ public class VisualizerPanel extends JPanel implements ISumatraView
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public OptionsPanel getOptionsPanel()
 	{
 		return optionsPanel;
-	}
-	
-	
-	/**
-	 * 
-	 * @param tigersAreYellow
-	 */
-	public void setTigersAreYellow(boolean tigersAreYellow)
-	{
-		if ((lastTigersAreYellow == null) || (lastTigersAreYellow != tigersAreYellow))
-		{
-			if (tigersAreYellow)
-			{
-				teamColor.setText("YELLOW");
-				teamColor.setBackground(Color.YELLOW);
-			} else
-			{
-				teamColor.setText("BLUE");
-				teamColor.setBackground(Color.BLUE);
-			}
-			
-			// Sub-panels
-			getRobotsPanel().setTigersAreYellow(tigersAreYellow);
-			
-			lastTigersAreYellow = tigersAreYellow;
-		}
 	}
 	
 	
@@ -248,5 +175,37 @@ public class VisualizerPanel extends JPanel implements ISumatraView
 	public final ReplayLoadPanel getReplayLoadPanel()
 	{
 		return replayLoadPanel;
+	}
+	
+	private static class CustomSplitPane extends JSplitPane
+	{
+		/** */
+		private static final long	serialVersionUID	= -8505574271276379357L;
+		
+		
+		/**
+		 * @param newOrientation
+		 * @param newLeftComponent
+		 * @param newRightComponent
+		 */
+		public CustomSplitPane(final int newOrientation, final Component newLeftComponent,
+				final Component newRightComponent)
+		{
+			super(newOrientation, newLeftComponent, newRightComponent);
+		}
+		
+		
+		@Override
+		public int getDividerLocation()
+		{
+			return Math.max(super.getDividerLocation(), getWidth() - getRightComponent().getPreferredSize().width);
+		}
+		
+		
+		@Override
+		public int getLastDividerLocation()
+		{
+			return getDividerLocation();
+		}
 	}
 }

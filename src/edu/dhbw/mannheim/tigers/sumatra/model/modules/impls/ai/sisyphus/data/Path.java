@@ -12,7 +12,11 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.Entity;
+import net.sf.oval.constraint.AssertValid;
+import net.sf.oval.constraint.NotNull;
+
+import com.sleepycat.persist.model.Persistent;
+import com.sleepycat.persist.model.PrimaryKey;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.SplinePair3D;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline.ISpline;
@@ -27,36 +31,48 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.tre
  * 
  * @author Christian K�nig
  */
-@Entity
+@Persistent(version = 1)
 public class Path
 {
 	// ------------------------------------------------------------------------
 	// --- variables ----------------------------------------------------------
 	// ------------------------------------------------------------------------
+	
+	@PrimaryKey
+	private int					id;
+	
 	/** path has changed since last iteration? */
-	private boolean			changed				= true;
+	private boolean			changed			= true;
 	/** */
+	@NotNull
 	private BotID				botID;
 	
 	/** Contains all points that define the path, except the starting-point! */
+	@NotNull
+	@AssertValid
 	private List<IVector2>	path;
 	
+	@NotNull
+	@AssertValid
 	private SplinePair3D		hermiteSpline;
 	
-	private boolean			old					= false;
+	private boolean			old				= false;
 	
-	private long				timestamp;
+	private boolean			rambo				= false;
 	
-	private PathGuiFeatures	pathGuiFeatures	= new PathGuiFeatures();
-	
-	private boolean			rambo					= false;
-	
-	private IVector2			target;
+	@NotNull
+	private IVector2			destination;
 	private float				destOrient;
 	
-	private Collision			firstCollision		= null;
+	private Collision			firstCollision	= null;
 	
-	private ITree				tree					= null;
+	private ITree				tree				= null;
+	
+	
+	@SuppressWarnings("unused")
+	private Path()
+	{
+	}
 	
 	
 	/**
@@ -64,30 +80,27 @@ public class Path
 	 * @param target
 	 * @param destOrient
 	 */
-	public Path(BotID botID, IVector2 target, float destOrient)
+	public Path(final BotID botID, final IVector2 target, final float destOrient)
 	{
 		this.botID = botID;
-		this.target = target;
+		destination = target;
 		this.destOrient = destOrient;
 		path = new ArrayList<IVector2>();
-		timestamp = System.nanoTime();
 	}
 	
 	
 	/**
-	 * 
 	 * @param botID
 	 * @param nodes
 	 * @param target
 	 * @param destOrient
 	 */
-	public Path(BotID botID, List<IVector2> nodes, IVector2 target, float destOrient)
+	public Path(final BotID botID, final List<IVector2> nodes, final IVector2 target, final float destOrient)
 	{
 		this.botID = botID;
-		this.target = target;
+		destination = target;
 		this.destOrient = destOrient;
 		path = nodes;
-		timestamp = System.nanoTime();
 	}
 	
 	
@@ -99,9 +112,8 @@ public class Path
 		final List<IVector2> newNodes = new ArrayList<IVector2>();
 		newNodes.addAll(getPath());
 		
-		final Path result = new Path(getBotID(), newNodes, target, destOrient);
+		final Path result = new Path(getBotID(), newNodes, destination, destOrient);
 		result.changed = changed;
-		result.pathGuiFeatures = pathGuiFeatures;
 		result.rambo = rambo;
 		result.firstCollision = firstCollision;
 		result.tree = tree;
@@ -117,7 +129,7 @@ public class Path
 	 * @param node PathPoint to be added
 	 * @return added?
 	 */
-	public boolean add(Vector2 node)
+	public boolean add(final Vector2 node)
 	{
 		return getPath().add(node);
 	}
@@ -180,7 +192,7 @@ public class Path
 	 * @return the distance [mm]
 	 * @author DanielW
 	 */
-	private float getLength(IVector2 currentPosition)
+	private float getLength(final IVector2 currentPosition)
 	{
 		return getLength(currentPosition, getPath().size() - 1);
 	}
@@ -194,7 +206,7 @@ public class Path
 	 * @return the distance [mm]
 	 * @author DanielW
 	 */
-	private float getLength(IVector2 currentPosition, int index)
+	private float getLength(final IVector2 currentPosition, final int index)
 	{
 		// safety check
 		if ((getPath().size() < 1) || (index > (getPath().size() - 1)) || (index < 0))
@@ -223,8 +235,6 @@ public class Path
 		sb.append(old);
 		sb.append(", changed: ");
 		sb.append(changed);
-		sb.append(", timestamp: ");
-		sb.append(timestamp);
 		sb.append("): \n");
 		for (IVector2 pathPoint : getPath())
 		{
@@ -240,7 +250,7 @@ public class Path
 	 * @param tolerance
 	 * @return
 	 */
-	public boolean isGoalReached(IVector2 currentPosition, float tolerance)
+	public boolean isGoalReached(final IVector2 currentPosition, final float tolerance)
 	{
 		return getLength(currentPosition) < tolerance;
 	}
@@ -261,33 +271,6 @@ public class Path
 	
 	
 	/**
-	 * @return the pathGuiFeatures
-	 */
-	public PathGuiFeatures getPathGuiFeatures()
-	{
-		return pathGuiFeatures;
-	}
-	
-	
-	/**
-	 * @param pathGuiFeatures the pathGuiFeatures to set
-	 */
-	public void setPathGuiFeatures(PathGuiFeatures pathGuiFeatures)
-	{
-		this.pathGuiFeatures = pathGuiFeatures;
-	}
-	
-	
-	/**
-	 * @return the timestamp
-	 */
-	public final long getTimestamp()
-	{
-		return timestamp;
-	}
-	
-	
-	/**
 	 * @return the rambo
 	 */
 	public final boolean isRambo()
@@ -297,47 +280,11 @@ public class Path
 	
 	
 	/**
-	 * @return the old
-	 */
-	public boolean isOld()
-	{
-		return old;
-	}
-	
-	
-	/**
 	 * @param rambo the rambo to set
 	 */
-	public final void setRambo(boolean rambo)
+	public final void setRambo(final boolean rambo)
 	{
 		this.rambo = rambo;
-	}
-	
-	
-	/**
-	 * @param old the old to set
-	 */
-	public void setOld(boolean old)
-	{
-		this.old = old;
-	}
-	
-	
-	/**
-	 * @return the changed
-	 */
-	public boolean isChanged()
-	{
-		return changed;
-	}
-	
-	
-	/**
-	 * @param changed the changed to set
-	 */
-	public void setChanged(boolean changed)
-	{
-		this.changed = changed;
 	}
 	
 	
@@ -353,18 +300,18 @@ public class Path
 	/**
 	 * @param hermiteSpline the hermiteSpline to set
 	 */
-	public void setHermiteSpline(SplinePair3D hermiteSpline)
+	public void setHermiteSpline(final SplinePair3D hermiteSpline)
 	{
 		this.hermiteSpline = hermiteSpline;
 	}
 	
 	
 	/**
-	 * @return the target
+	 * @return the target [mm]
 	 */
-	public IVector2 getTarget()
+	public IVector2 getDestination()
 	{
-		return target;
+		return destination;
 	}
 	
 	
@@ -398,13 +345,15 @@ public class Path
 	/**
 	 * @param firstCollisionAt the firstCollisionAt to set
 	 */
-	public void setFirstCollisionAt(Collision firstCollisionAt)
+	public void setFirstCollisionAt(final Collision firstCollisionAt)
 	{
 		firstCollision = firstCollisionAt;
 	}
 	
 	
 	/**
+	 * Pathplanning tree (useful for rambo cases)
+	 * 
 	 * @return the tree
 	 */
 	public ITree getTree()
@@ -416,7 +365,7 @@ public class Path
 	/**
 	 * @param tree the tree to set
 	 */
-	public void setTree(ITree tree)
+	public void setTree(final ITree tree)
 	{
 		this.tree = tree;
 	}

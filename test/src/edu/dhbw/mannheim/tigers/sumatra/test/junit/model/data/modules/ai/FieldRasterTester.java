@@ -14,17 +14,11 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
-import edu.dhbw.mannheim.tigers.sumatra.Sumatra;
-import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.fieldraster.FieldRasterGenerator;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.fieldraster.FieldRasterGenerator.EGeneratorTyp;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.rectangle.Rectanglef;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.rectangle.Rectangle;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.FieldRasterConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.config.ConfigManager;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AConfigManager;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.fieldanalysis.FieldRasterGenerator;
+import edu.dhbw.mannheim.tigers.sumatra.util.SumatraSetupHelper;
 
 
 /**
@@ -38,7 +32,6 @@ public class FieldRasterTester
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private FieldRasterConfig		rasterConfig	= null;
 	private FieldRasterGenerator	raster;
 	
 	
@@ -51,18 +44,9 @@ public class FieldRasterTester
 	 */
 	public FieldRasterTester()
 	{
+		SumatraSetupHelper.setupSumatra();
 		
-		// Load configuration
-		Sumatra.touch();
-		SumatraModel.getInstance().setUserProperty(AAgent.KEY_AI_CONFIG, "ai_default.xml");
-		SumatraModel.getInstance().setUserProperty(AAgent.KEY_GEOMETRY_CONFIG, "RoboCup_2012.xml");
-		AConfigManager.registerConfigClient(AIConfig.getInstance().getAiClient());
-		AConfigManager.registerConfigClient(AIConfig.getInstance().getGeomClient());
-		new ConfigManager(); // Loads all registered configs (accessed via singleton)
-		
-		
-		rasterConfig = AIConfig.getFieldRaster();
-		raster = new FieldRasterGenerator(EGeneratorTyp.MAIN);
+		raster = new FieldRasterGenerator();
 		
 	}
 	
@@ -86,7 +70,7 @@ public class FieldRasterTester
 	public void testGetPositioningRectangleLarge()
 	{
 		// check if function can handle larger parameters
-		final int fieldNumber = (rasterConfig.getNumberOfColumns() * rasterConfig.getNumberOfRows()) + 1;
+		final int fieldNumber = (FieldRasterGenerator.getNumberOfColumns() * FieldRasterGenerator.getNumberOfRows()) + 1;
 		raster.getPosFieldRectangle(fieldNumber);
 	}
 	
@@ -96,7 +80,7 @@ public class FieldRasterTester
 	@Test
 	public void testGetPositionRectFromPosition()
 	{
-		final Rectanglef field = AIConfig.getGeometry().getField();
+		final Rectangle field = AIConfig.getGeometry().getField();
 		
 		// test corners
 		raster.getPositionRectFromPosition(new Vector2(field.topLeft()));

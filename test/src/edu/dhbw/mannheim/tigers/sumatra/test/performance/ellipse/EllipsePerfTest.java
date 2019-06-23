@@ -65,7 +65,7 @@ public class EllipsePerfTest
 	
 	private int getInt()
 	{
-		return rnd.nextInt(6000);
+		return rnd.nextInt(6000) + 1;
 	}
 	
 	

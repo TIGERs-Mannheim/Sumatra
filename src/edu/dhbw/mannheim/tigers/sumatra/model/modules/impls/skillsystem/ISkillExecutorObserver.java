@@ -10,7 +10,7 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
 
 
 /**
@@ -32,12 +32,12 @@ public interface ISkillExecutorObserver
 	 * 
 	 * @param skill
 	 */
-	void onSkillStarted(AMoveSkill skill);
+	void onSkillStarted(ISkill skill);
 	
 	
 	/**
 	 * 
 	 * @param skill
 	 */
-	void onSkillCompleted(AMoveSkill skill);
+	void onSkillCompleted(ISkill skill);
 }

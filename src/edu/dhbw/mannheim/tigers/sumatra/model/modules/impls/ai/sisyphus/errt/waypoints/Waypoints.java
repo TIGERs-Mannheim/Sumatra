@@ -13,8 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.analyze.TuneableParameter;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.tree.Node;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
 
 
 /**
@@ -28,12 +28,14 @@ public class Waypoints
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	/** size of waypointcache */
-	private final int					wpcSize;
-	// /** how much target can differ from target of last cycle to use WPC */
-	private final float				tollerableTargetShift;
+	// WPC
+	@Configurable(comment = "size of waypointcache", defValue = "100")
+	private int							wpcSize						= 100;
+	@Configurable(comment = "how much target can differ from target of last cycle to use WPC [mm]", defValue = "100")
+	private float						tollerableTargetShift	= 100;
+	
 	/** waypoint cache */
-	private final List<IVector2>	waypoints	= new ArrayList<IVector2>();
+	private final List<IVector2>	waypoints					= new ArrayList<IVector2>();
 	/** the path which were extracted from the waypoints during the last frame */
 	private Node						goal;
 	
@@ -42,14 +44,10 @@ public class Waypoints
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * @param tuneParams
 	 */
-	public Waypoints(TuneableParameter tuneParams)
+	public Waypoints()
 	{
 		goal = null;
-		
-		wpcSize = tuneParams.getWpcSize();
-		tollerableTargetShift = tuneParams.getTollerableTargetShift();
 	}
 	
 	

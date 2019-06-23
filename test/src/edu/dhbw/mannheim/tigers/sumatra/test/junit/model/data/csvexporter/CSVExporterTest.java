@@ -11,7 +11,7 @@ package edu.dhbw.mannheim.tigers.sumatra.test.junit.model.data.csvexporter;
 
 import org.junit.Test;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.csvexporter.CSVExporter;
+import edu.dhbw.mannheim.tigers.sumatra.util.csvexporter.CSVExporter;
 
 
 /**

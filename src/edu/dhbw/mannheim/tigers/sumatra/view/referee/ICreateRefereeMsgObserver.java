@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 07.12.2011
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.referee;
@@ -22,11 +21,18 @@ public interface ICreateRefereeMsgObserver
 	/**
 	 * Called by the gui when the "send" btn is pressed
 	 * 
-	 * @param id
 	 * @param cmd
 	 * @param goalsBlue
 	 * @param goalsYellow
 	 * @param timeLeft
 	 */
-	void onSendOwnRefereeMsg(int id, Command cmd, int goalsBlue, int goalsYellow, short timeLeft);
+	void onSendOwnRefereeMsg(Command cmd, int goalsBlue, int goalsYellow, short timeLeft);
+	
+	
+	/**
+	 * Should we receive external referee cmds?
+	 * 
+	 * @param receive
+	 */
+	void onEnableReceive(boolean receive);
 }

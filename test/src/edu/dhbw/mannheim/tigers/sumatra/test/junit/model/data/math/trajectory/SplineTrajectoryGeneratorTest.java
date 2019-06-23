@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 22.03.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.test.junit.model.data.math.trajectory;
@@ -16,28 +15,23 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
-import edu.dhbw.mannheim.tigers.sumatra.Sumatra;
-import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.csvexporter.CSVExporter;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.math.functions.Function1DLinear;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.functions.Function1dPoly;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.ITrajectory2D;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.SplinePair3D;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.SplineTrajectoryGenerator;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.config.ConfigManager;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AConfigManager;
+import edu.dhbw.mannheim.tigers.sumatra.util.SumatraSetupHelper;
+import edu.dhbw.mannheim.tigers.sumatra.util.csvexporter.CSVExporter;
 
 
 /**
  * Tests the SplineTrajectoryGenerator.
  * 
  * @author AndreR
- * 
  */
 public class SplineTrajectoryGeneratorTest
 {
@@ -55,10 +49,7 @@ public class SplineTrajectoryGeneratorTest
 	@Before
 	public void init()
 	{
-		Sumatra.touch();
-		SumatraModel.getInstance().setUserProperty(AAgent.KEY_AI_CONFIG, "ai_default.xml");
-		AConfigManager.registerConfigClient(AIConfig.getInstance().getAiClient());
-		new ConfigManager(); // Loads all registered configs (accessed via singleton)
+		SumatraSetupHelper.setupSumatra();
 	}
 	
 	
@@ -80,7 +71,7 @@ public class SplineTrajectoryGeneratorTest
 		
 		SplineTrajectoryGenerator gen = new SplineTrajectoryGenerator();
 		gen.setPositionTrajParams(2.0f, 3.0f);
-		gen.setSplineParams(new Function1DLinear(2, 0));
+		gen.setSplineParams(Function1dPoly.linear(0, 2));
 		
 		SplinePair3D pair = gen.create(path, initVel, endVel, 0, 0, 0, 0);
 		
@@ -109,7 +100,7 @@ public class SplineTrajectoryGeneratorTest
 		
 		SplineTrajectoryGenerator gen = new SplineTrajectoryGenerator();
 		gen.setPositionTrajParams(2.0f, 3.0f);
-		gen.setSplineParams(new Function1DLinear(2, 0));
+		gen.setSplineParams(Function1dPoly.linear(0, 2));
 		
 		SplinePair3D pair = gen.create(path, initVel, endVel, 0, 0, 0, 0);
 		
@@ -139,13 +130,13 @@ public class SplineTrajectoryGeneratorTest
 		nodes.add(p1);
 		nodes.add(p2);
 		
-		IVector2 inBetweenVel = Vector2.ZERO_VECTOR; // p2.subtractNew(p1).scaleTo(0.3f);
-		SplinePair3D pair = gen.create(nodes, Vector2.ZERO_VECTOR, inBetweenVel, angleP1, angleP2, 0, 0f);
+		IVector2 inBetweenVel = AVector2.ZERO_VECTOR; // p2.subtractNew(p1).scaleTo(0.3f);
+		SplinePair3D pair = gen.create(nodes, AVector2.ZERO_VECTOR, inBetweenVel, angleP1, angleP2, 0, 0f);
 		
 		List<IVector2> nodes2 = new LinkedList<IVector2>();
 		nodes2.add(p2);
 		nodes2.add(p3);
-		SplinePair3D pair2 = gen.create(nodes2, inBetweenVel, Vector2.ZERO_VECTOR, angleP2, angleP3, 0, 0f);
+		SplinePair3D pair2 = gen.create(nodes2, inBetweenVel, AVector2.ZERO_VECTOR, angleP2, angleP3, 0, 0f);
 		
 		exportSpline(pair, "splineTrajAppendPair1");
 		exportSpline(pair2, "splineTrajAppendPair2");
@@ -156,7 +147,7 @@ public class SplineTrajectoryGeneratorTest
 	}
 	
 	
-	private void exportSpline(SplinePair3D pair, String idAndName)
+	private void exportSpline(final SplinePair3D pair, final String idAndName)
 	{
 		CSVExporter.createInstance(idAndName, idAndName, false);
 		CSVExporter exporter = CSVExporter.getInstance(idAndName);

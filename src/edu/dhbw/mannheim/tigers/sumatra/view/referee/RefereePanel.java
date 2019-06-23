@@ -9,7 +9,6 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.referee;
 
-import java.awt.Component;
 import java.util.List;
 
 import javax.swing.JMenu;
@@ -17,7 +16,7 @@ import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 
 import net.miginfocom.swing.MigLayout;
-import edu.dhbw.mannheim.tigers.sumatra.view.main.ISumatraView;
+import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
 
 
 /**
@@ -33,12 +32,9 @@ public class RefereePanel extends JPanel implements ISumatraView
 	// --------------------------------------------------------------------------
 	private static final long				serialVersionUID	= 5362158568331526086L;
 	
-	// constants
-	private static final String			TITLE					= "Referee";
-	private static final int				ID						= 6;
-	
 	private final ShowRefereeMsgPanel	showRefereeMsgPanel;
 	private final CreateRefereeMsgPanel	createRefereeMsgPanel;
+	private final AutoRefereePanel		autoRefereePanel;
 	
 	
 	// --------------------------------------------------------------------------
@@ -52,8 +48,10 @@ public class RefereePanel extends JPanel implements ISumatraView
 		JTabbedPane tabs = new JTabbedPane();
 		showRefereeMsgPanel = new ShowRefereeMsgPanel();
 		createRefereeMsgPanel = new CreateRefereeMsgPanel();
+		autoRefereePanel = new AutoRefereePanel();
 		tabs.addTab("Messages", showRefereeMsgPanel);
 		tabs.addTab("Create own", createRefereeMsgPanel);
+		tabs.addTab("Auto Referee", autoRefereePanel);
 		this.add(tabs);
 	}
 	
@@ -67,6 +65,7 @@ public class RefereePanel extends JPanel implements ISumatraView
 	{
 		showRefereeMsgPanel.init();
 		createRefereeMsgPanel.init();
+		autoRefereePanel.init();
 	}
 	
 	
@@ -76,6 +75,7 @@ public class RefereePanel extends JPanel implements ISumatraView
 	{
 		showRefereeMsgPanel.deinit();
 		createRefereeMsgPanel.deinit();
+		autoRefereePanel.deinit();
 	}
 	
 	
@@ -97,27 +97,6 @@ public class RefereePanel extends JPanel implements ISumatraView
 	public CreateRefereeMsgPanel getCreateRefereeMsgPanel()
 	{
 		return createRefereeMsgPanel;
-	}
-	
-	
-	@Override
-	public int getId()
-	{
-		return ID;
-	}
-	
-	
-	@Override
-	public String getTitle()
-	{
-		return TITLE;
-	}
-	
-	
-	@Override
-	public Component getViewComponent()
-	{
-		return this;
 	}
 	
 	

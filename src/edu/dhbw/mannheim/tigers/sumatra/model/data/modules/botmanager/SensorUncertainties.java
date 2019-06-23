@@ -15,6 +15,7 @@ import org.apache.commons.configuration.SubnodeConfiguration;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector3;
+import edu.dhbw.mannheim.tigers.sumatra.util.VectorUtil;
 
 
 /** */
@@ -39,6 +40,19 @@ public class SensorUncertainties
 	
 	
 	/**
+	 * @param orig
+	 */
+	public SensorUncertainties(SensorUncertainties orig)
+	{
+		vision = new Vector3(orig.vision);
+		encoder = new Vector3(orig.encoder);
+		accelerometer = new Vector2(orig.accelerometer);
+		gyroscope = orig.gyroscope;
+		motor = new Vector3(orig.motor);
+	}
+	
+	
+	/**
 	 * 
 	 * @param config
 	 */
@@ -54,11 +68,11 @@ public class SensorUncertainties
 	 */
 	public void setConfiguration(SubnodeConfiguration config)
 	{
-		vision.setConfiguration(config.configurationAt("vision"));
-		encoder.setConfiguration(config.configurationAt("encoder"));
-		accelerometer.setConfiguration(config.configurationAt("accelerometer"));
+		vision.set(VectorUtil.configToVector3(config.configurationAt("vision")));
+		encoder.set(VectorUtil.configToVector3(config.configurationAt("encoder")));
+		accelerometer.set(VectorUtil.configToVector2(config.configurationAt("accelerometer")));
 		gyroscope = config.getFloat("gyroscope", 1.0f);
-		motor.setConfiguration(config.configurationAt("motor"));
+		motor.set(VectorUtil.configToVector3(config.configurationAt("motor")));
 	}
 	
 	
@@ -73,11 +87,11 @@ public class SensorUncertainties
 		final HierarchicalConfiguration gyroCfg = new HierarchicalConfiguration();
 		gyroCfg.addProperty("gyroscope", gyroscope);
 		
-		config.addConfiguration(vision.getConfiguration(), "vision", "vision");
-		config.addConfiguration(encoder.getConfiguration(), "encoder", "encoder");
-		config.addConfiguration(accelerometer.getConfiguration(), "accelerometer", "accelerometer");
+		config.addConfiguration(VectorUtil.vector3ToConfig(vision), "vision", "vision");
+		config.addConfiguration(VectorUtil.vector3ToConfig(encoder), "encoder", "encoder");
+		config.addConfiguration(VectorUtil.vector2ToConfig(accelerometer), "accelerometer", "accelerometer");
 		config.addConfiguration(gyroCfg);
-		config.addConfiguration(motor.getConfiguration(), "motor", "motor");
+		config.addConfiguration(VectorUtil.vector3ToConfig(motor), "motor", "motor");
 		
 		return config;
 	}

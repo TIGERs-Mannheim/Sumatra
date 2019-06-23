@@ -10,7 +10,9 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -25,7 +27,10 @@ public class TigerSystemPing extends ACommand
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	/** ping identification (for roundtrip measurements) */
-	private int	id;
+	@SerialData(type = ESerialDataType.INT32)
+	private int		id;
+	@SerialData(type = ESerialDataType.TAIL)
+	private byte[]	payload;
 	
 	
 	// --------------------------------------------------------------------------
@@ -37,6 +42,8 @@ public class TigerSystemPing extends ACommand
 	 */
 	public TigerSystemPing()
 	{
+		super(ECommand.CMD_SYSTEM_PING);
+		
 		id = 0;
 	}
 	
@@ -47,7 +54,30 @@ public class TigerSystemPing extends ACommand
 	 */
 	public TigerSystemPing(int id)
 	{
+		super(ECommand.CMD_SYSTEM_PING);
+		
 		this.id = id;
+	}
+	
+	
+	/**
+	 * Send ping with random payload of specified size
+	 * 
+	 * @param id
+	 * @param payloadSize
+	 */
+	public TigerSystemPing(int id, int payloadSize)
+	{
+		super(ECommand.CMD_SYSTEM_PING);
+		
+		this.id = id;
+		
+		payload = new byte[payloadSize];
+		for (int i = 0; i < payloadSize; i++)
+		{
+			byte2ByteArray(payload, i, i == 0 ? 1 : i);
+			// byte2ByteArray(payload, i, (int) ((Math.random() * 254.0) + 1.0));
+		}
 	}
 	
 	
@@ -59,38 +89,6 @@ public class TigerSystemPing extends ACommand
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		id = byteArray2Int(data, 0);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		int2ByteArray(data, 0, id);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_SYSTEM_PING;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 4;
-	}
-	
-	
 	/**
 	 * @return the id
 	 */

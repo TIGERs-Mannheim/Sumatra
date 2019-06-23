@@ -12,7 +12,9 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands
 import java.util.zip.CRC32;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -30,8 +32,11 @@ public class TigerBootloaderData extends ACommand
 	/** */
 	public static final int	BOOTLOADER_DATA_SIZE	= 256;
 	
+	@SerialData(type = ESerialDataType.UINT32)
 	private long				offset					= 0;
+	@SerialData(type = ESerialDataType.INT8)
 	private byte[]				payload					= new byte[BOOTLOADER_DATA_SIZE];
+	@SerialData(type = ESerialDataType.UINT32)
 	private long				crc						= 0;
 	
 	
@@ -42,6 +47,7 @@ public class TigerBootloaderData extends ACommand
 	 */
 	public TigerBootloaderData()
 	{
+		super(ECommand.CMD_BOOTLOADER_DATA);
 	}
 	
 	
@@ -53,11 +59,19 @@ public class TigerBootloaderData extends ACommand
 	 */
 	public TigerBootloaderData(byte[] srcData, int length, int dstOffset)
 	{
+		super(ECommand.CMD_BOOTLOADER_DATA);
+		
 		if (length > BOOTLOADER_DATA_SIZE)
 		{
 			length = BOOTLOADER_DATA_SIZE;
 		}
 		System.arraycopy(srcData, 0, payload, 0, length);
+		
+		CRC32 crc32 = new CRC32();
+		
+		crc32.reset();
+		crc32.update(payload);
+		crc = crc32.getValue();
 		
 		offset = dstOffset;
 	}
@@ -66,46 +80,6 @@ public class TigerBootloaderData extends ACommand
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		offset = byteArray2UInt(data, 0);
-		System.arraycopy(data, 4, payload, 0, BOOTLOADER_DATA_SIZE);
-		crc = byteArray2UInt(data, BOOTLOADER_DATA_SIZE + 4);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		CRC32 crc32 = new CRC32();
-		
-		crc32.reset();
-		crc32.update(payload);
-		crc = crc32.getValue();
-		
-		int2ByteArray(data, 0, (int) offset);
-		System.arraycopy(payload, 0, data, 4, BOOTLOADER_DATA_SIZE);
-		int2ByteArray(data, BOOTLOADER_DATA_SIZE + 4, (int) crc);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_BOOTLOADER_DATA;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return BOOTLOADER_DATA_SIZE + 8;
-	}
 	
 	
 	// --------------------------------------------------------------------------
@@ -127,5 +101,29 @@ public class TigerBootloaderData extends ACommand
 	public void setOffset(long offset)
 	{
 		this.offset = offset;
+	}
+	
+	
+	/**
+	 * @return the payload
+	 */
+	public byte[] getPayload()
+	{
+		return payload;
+	}
+	
+	
+	/**
+	 * @param payload the payload to set
+	 */
+	public void setPayload(byte[] payload)
+	{
+		CRC32 crc32 = new CRC32();
+		
+		crc32.reset();
+		crc32.update(payload);
+		crc = crc32.getValue();
+		
+		this.payload = payload;
 	}
 }

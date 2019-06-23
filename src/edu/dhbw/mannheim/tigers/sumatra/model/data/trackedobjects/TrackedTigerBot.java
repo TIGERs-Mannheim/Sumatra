@@ -4,17 +4,16 @@
  * Project: TIGERS - Sumatra
  * Date: 21.07.2010
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects;
 
-import javax.persistence.Embeddable;
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeam;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.AObjectID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.data.RobotMotionResult_V2;
@@ -23,7 +22,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextk
 /**
  * Simple data holder describing TIGER-bots recognized and tracked by the
  * {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AWorldPredictor}
- * 
  * <p>
  * <i>(Being aware of EJ-SE Items 13, 14 and 55: members are public to reduce noise)</i>
  * </p>
@@ -31,9 +29,8 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextk
  * @see TrackedBot
  * @see ATrackedObject
  * @author Gero
- * 
  */
-@Embeddable
+@Persistent
 public class TrackedTigerBot extends TrackedBot
 {
 	/**  */
@@ -43,44 +40,37 @@ public class TrackedTigerBot extends TrackedBot
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	/** not final for ObjectDB */
+	/**  */
 	private boolean				ballContact;
 	
-	/** special treatment, when bot is manual controlled */
-	private transient boolean	manualControl		= false;
-	
-	private transient Path		path					= null;
-	
+	private transient boolean	visible				= true;
 	private transient ABot		bot					= null;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/**
-	 * Providing a <strong>hard, deep</strong> copy of original
-	 * @param o
-	 */
-	public TrackedTigerBot(TrackedTigerBot o)
+	
+	@SuppressWarnings("unused")
+	private TrackedTigerBot()
 	{
-		this(o.getId(), o.getPos(), o.getVel(), o.getAcc(), o.getHeight(), o.getAngle(), o.getaVel(), o.getaAcc(),
-				o.confidence, o.bot);
+		super();
 	}
 	
 	
 	/**
 	 * Create TrackedTigerBot from TrackedBot
+	 * 
 	 * @param o
 	 */
-	protected TrackedTigerBot(TrackedBot o, ABot bot)
+	protected TrackedTigerBot(final TrackedBot o, final ABot bot)
 	{
 		this(o.getId(), o.getPos(), o.getVel(), o.getAcc(), o.getHeight(), o.getAngle(), o.getaVel(), o.getaAcc(),
-				o.confidence, bot);
+				o.confidence, bot, o.getTeamColor());
 	}
 	
 	
 	/**
-	 * 
 	 * @param id
 	 * @param pos
 	 * @param vel
@@ -91,12 +81,27 @@ public class TrackedTigerBot extends TrackedBot
 	 * @param aAcc
 	 * @param confidence
 	 * @param bot
+	 * @param color
 	 */
-	public TrackedTigerBot(AObjectID id, IVector2 pos, IVector2 vel, IVector2 acc, int height, float angle, float aVel,
-			float aAcc, float confidence, ABot bot)
+	public TrackedTigerBot(final AObjectID id, final IVector2 pos, final IVector2 vel, final IVector2 acc,
+			final int height, final float angle, final float aVel,
+			final float aAcc, final float confidence, final ABot bot, final ETeamColor color)
 	{
-		super(id, pos, vel, acc, height, angle, aVel, aAcc, confidence, ETeam.TIGERS);
+		super(id, pos, vel, acc, height, angle, aVel, aAcc, confidence, ETeam.TIGERS, color);
 		this.bot = bot;
+	}
+	
+	
+	/**
+	 * Create a deep copy
+	 * 
+	 * @param o
+	 */
+	public TrackedTigerBot(final TrackedTigerBot o)
+	{
+		this(o.id, o.getPos(), o.getVel(), o.getAcc(), o.getHeight(), o.getAngle(), o.getaVel(), o.getaAcc(), o
+				.getConfidence(), o.getBot(), o.getTeamColor());
+		ballContact = o.ballContact;
 	}
 	
 	
@@ -107,11 +112,14 @@ public class TrackedTigerBot extends TrackedBot
 	 * @param motion
 	 * @param height
 	 * @param bot
+	 * @param color
 	 * @return
 	 */
-	public static TrackedTigerBot motionToTrackedBot(AObjectID id, RobotMotionResult_V2 motion, int height, ABot bot)
+	public static TrackedTigerBot motionToTrackedBot(final AObjectID id, final RobotMotionResult_V2 motion,
+			final int height, final ABot bot,
+			final ETeamColor color)
 	{
-		TrackedBot trackedBot = TrackedBot.motionToTrackedBot(id, motion, height);
+		TrackedBot trackedBot = TrackedBot.motionToTrackedBot(id, motion, height, color);
 		return new TrackedTigerBot(trackedBot, bot);
 	}
 	
@@ -134,22 +142,23 @@ public class TrackedTigerBot extends TrackedBot
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public boolean isManualControl()
 	{
-		return manualControl;
+		return (getBot() != null) && getBot().isManualControl();
 	}
 	
 	
 	/**
-	 * 
 	 * @param manualControl
 	 */
-	public void setManualControl(boolean manualControl)
+	public void setManualControl(final boolean manualControl)
 	{
-		this.manualControl = manualControl;
+		if (getBot() != null)
+		{
+			getBot().setManualControl(manualControl);
+		}
 	}
 	
 	
@@ -176,24 +185,6 @@ public class TrackedTigerBot extends TrackedBot
 	
 	
 	/**
-	 * @return the path
-	 */
-	public final Path getPath()
-	{
-		return path;
-	}
-	
-	
-	/**
-	 * @param path the path to set
-	 */
-	public final void setPath(Path path)
-	{
-		this.path = path;
-	}
-	
-	
-	/**
 	 * @return the bot
 	 */
 	public final ABot getBot()
@@ -207,8 +198,26 @@ public class TrackedTigerBot extends TrackedBot
 	 * 
 	 * @param ballContact the ballContact to set
 	 */
-	public final void setBallContact(boolean ballContact)
+	public final void setBallContact(final boolean ballContact)
 	{
 		this.ballContact = ballContact;
+	}
+	
+	
+	/**
+	 * @return the visible
+	 */
+	public final boolean isVisible()
+	{
+		return visible;
+	}
+	
+	
+	/**
+	 * @param visible the visible to set
+	 */
+	public final void setVisible(final boolean visible)
+	{
+		this.visible = visible;
 	}
 }

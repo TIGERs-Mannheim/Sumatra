@@ -5,14 +5,16 @@
     <!-- [mm] -->
     <botRadius>90</botRadius>
     <!-- [mm] -->
-    <botCenterToDribblerDist>75</botCenterToDribblerDist>
+    <botCenterToDribblerDist>84</botCenterToDribblerDist>
+    <!-- Max speed during stoppage [m/s] -->
+    <stopSpeed>1.0</stopSpeed>
     <field>
         <!-- x [mm] -->
         <length>6050</length>
         <!-- y [mm] -->
         <width>4050</width>
         <!-- [mm] -->
-        <lineWidth>10</lineWidth>
+        <lineWidth>25</lineWidth>
         <!-- The border around the field -->
         <border>
             <widthL>250</widthL>

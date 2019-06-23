@@ -4,11 +4,11 @@
  * Project: TIGERS - Sumatra
  * Date: 25.11.2011
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.types;
 
+import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
 
 
@@ -16,14 +16,14 @@ import org.apache.commons.configuration.XMLConfiguration;
  * With implementing and registering this interface at an {@link AConfigManager}-instance, the config described by this
  * interface is:
  * <ul>
- * <li>loaded at startup of moduli (when status changes to {@link edu.moduli.listenerVariables.ModulesState#RESOLVED})</li>
+ * <li>loaded at startup of moduli (when status changes to
+ * {@link edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesState#RESOLVED})</li>
  * <li>editable via the config editor view</li>
  * </ul>
  * By implementing the methods of {@link IConfigObserver} correctly, this config will be exchangeable at runtime without
  * further work.
  * 
  * @author Gero
- * 
  */
 public interface IConfigClient extends IConfigObserver
 {
@@ -67,5 +67,19 @@ public interface IConfigClient extends IConfigObserver
 	 * @param loadedConfig
 	 * @return The modified XMLConfiguration
 	 */
-	XMLConfiguration prepareConfigForSaving(XMLConfiguration loadedConfig);
+	HierarchicalConfiguration prepareConfigForSaving(HierarchicalConfiguration loadedConfig);
+	
+	
+	/**
+	 * Get default configuration that should be merged with existing config.
+	 * 
+	 * @return
+	 */
+	HierarchicalConfiguration getDefaultConfig();
+	
+	
+	/**
+	 * 
+	 */
+	void clearObservers();
 }

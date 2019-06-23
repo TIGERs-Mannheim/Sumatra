@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 08.08.2010
  * Author(s): Gero, AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.types;
@@ -13,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import edu.dhbw.mannheim.tigers.moduli.AModule;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.basestation.BaseStation;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
@@ -20,16 +20,15 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBot
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.udp.ITransceiverUDP;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IBotManagerObserver;
-import edu.moduli.AModule;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IManualBotObserver;
 
 
 /**
  * A module that is capable of managing and controlling all our BattleMechs! =)
  * 
  * @author Gero
- * 
  */
-public abstract class ABotManager extends AModule
+public abstract class ABotManager extends AModule implements IManualBotObserver
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
@@ -52,7 +51,6 @@ public abstract class ABotManager extends AModule
 	// --- methods ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @param id
 	 * @param cmd
 	 */
@@ -60,7 +58,6 @@ public abstract class ABotManager extends AModule
 	
 	
 	/**
-	 * 
 	 * @param type
 	 * @param id
 	 * @param name
@@ -70,21 +67,18 @@ public abstract class ABotManager extends AModule
 	
 	
 	/**
-	 * 
 	 * @param bot
 	 */
 	public abstract void botConnectionChanged(ABot bot);
 	
 	
 	/**
-	 * 
 	 * @param id
 	 */
 	public abstract void removeBot(BotID id);
 	
 	
 	/**
-	 * 
 	 * @param oldId
 	 * @param newId
 	 */
@@ -92,69 +86,69 @@ public abstract class ABotManager extends AModule
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public abstract Map<BotID, ABot> getAllBots();
 	
 	
 	/**
-	 */
-	public abstract void removeAllBots();
-	
-	
-	/**
-	 * 
 	 * @param enable
 	 */
 	public abstract void setUseMulticast(boolean enable);
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public abstract boolean getUseMulticast();
 	
 	
 	/**
-	 * 
 	 * @param time
 	 */
 	public abstract void setUpdateAllSleepTime(long time);
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public abstract long getUpdateAllSleepTime();
 	
 	
 	/**
-	 * 
+	 * @param mcastDelegateKey
 	 * @return
 	 */
-	public abstract ITransceiverUDP getMulticastTransceiver();
+	public abstract ITransceiverUDP getMulticastTransceiver(int mcastDelegateKey);
+	
+	
+	/**
+	 * @return
+	 */
+	public abstract Map<Integer, BaseStation> getBaseStations();
+	
+	private final List<IBotManagerObserver>	observers	= new ArrayList<IBotManagerObserver>();
+	
+	
+	/**
+	 * @param chg
+	 */
+	public abstract void chargeAll(int chg);
 	
 	
 	/**
 	 * 
-	 * @return
 	 */
-	public abstract BaseStation getBaseStation();
-	
-	private final List<IBotManagerObserver>	observers	= new ArrayList<IBotManagerObserver>();
+	public abstract void dischargeAll();
 	
 	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @param o
 	 */
-	public void addObserver(IBotManagerObserver o)
+	public void addObserver(final IBotManagerObserver o)
 	{
 		synchronized (observers)
 		{
@@ -164,10 +158,9 @@ public abstract class ABotManager extends AModule
 	
 	
 	/**
-	 * 
 	 * @param o
 	 */
-	public void removeObserver(IBotManagerObserver o)
+	public void removeObserver(final IBotManagerObserver o)
 	{
 		synchronized (observers)
 		{
@@ -176,7 +169,7 @@ public abstract class ABotManager extends AModule
 	}
 	
 	
-	protected void notifyBotConnectionChanged(ABot bot)
+	protected void notifyBotConnectionChanged(final ABot bot)
 	{
 		synchronized (observers)
 		{
@@ -188,7 +181,7 @@ public abstract class ABotManager extends AModule
 	}
 	
 	
-	protected void notifyBotAdded(ABot bot)
+	protected void notifyBotAdded(final ABot bot)
 	{
 		synchronized (observers)
 		{
@@ -200,7 +193,7 @@ public abstract class ABotManager extends AModule
 	}
 	
 	
-	protected void notifyBotRemoved(ABot bot)
+	protected void notifyBotRemoved(final ABot bot)
 	{
 		synchronized (observers)
 		{
@@ -212,7 +205,7 @@ public abstract class ABotManager extends AModule
 	}
 	
 	
-	protected void notifyBotIdChanged(BotID oldId, BotID newId)
+	protected void notifyBotIdChanged(final BotID oldId, final BotID newId)
 	{
 		synchronized (observers)
 		{
@@ -222,4 +215,6 @@ public abstract class ABotManager extends AModule
 			}
 		}
 	}
+	
+	
 }

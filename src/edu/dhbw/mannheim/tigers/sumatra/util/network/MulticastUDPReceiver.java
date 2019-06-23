@@ -11,8 +11,10 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -22,29 +24,31 @@ import org.apache.log4j.Logger;
  * on it
  * 
  * @author Gero
- * 
  */
 public class MulticastUDPReceiver implements IReceiver
 {
-	private static final Logger	log				= Logger.getLogger(MulticastUDPReceiver.class.getName());
+	private static final Logger	log					= Logger.getLogger(MulticastUDPReceiver.class.getName());
 	
-	private static final int		SO_TIMEOUT		= 500;
+	private static final int		SO_TIMEOUT			= 2000;
 	
 	// Connection
-	private List<MulticastSocket>	sockets			= new LinkedList<MulticastSocket>();
-	private InetAddress				group				= null;
+	private List<MulticastSocket>	sockets				= new LinkedList<MulticastSocket>();
+	private MulticastSocket			currentSocket		= null;
+	private InetAddress				group					= null;
 	
 	/** The internal state-switch of this transmitter */
-	private boolean					readyToReceive	= false;
+	private boolean					readyToReceive		= false;
 	
-	private static final String[]	PREFIXES			= { "vbox", "tap", "tun", "ham" };
+	private Set<MulticastSocket>	socketsTimedOut	= new HashSet<MulticastSocket>();
+	
+	private static final String[]	PREFIXES				= { "tap", "tun", "ham", "WAN" };
 	
 	
 	/**
 	 * @param port
 	 * @param groupStr
 	 */
-	public MulticastUDPReceiver(int port, String groupStr)
+	public MulticastUDPReceiver(final int port, final String groupStr)
 	{
 		List<NetworkInterface> ifaces = getNetworkInterfaces();
 		for (NetworkInterface iface : ifaces)
@@ -60,7 +64,7 @@ public class MulticastUDPReceiver implements IReceiver
 				addSocket(port, groupStr, iface);
 			} catch (SocketException err)
 			{
-				log.error("Weird. Could not determin if network interface is p2p", err);
+				log.error("Weird. Could not determine if network interface is p2p", err);
 			}
 		}
 		
@@ -77,7 +81,7 @@ public class MulticastUDPReceiver implements IReceiver
 	 * @param groupStr
 	 * @param iface
 	 */
-	public MulticastUDPReceiver(int port, String groupStr, NetworkInterface iface)
+	public MulticastUDPReceiver(final int port, final String groupStr, final NetworkInterface iface)
 	{
 		addSocket(port, groupStr, iface);
 		
@@ -118,11 +122,11 @@ public class MulticastUDPReceiver implements IReceiver
 	}
 	
 	
-	private boolean isUselessInterface(NetworkInterface iface)
+	private boolean isUselessInterface(final NetworkInterface iface)
 	{
 		try
 		{
-			if (iface.isPointToPoint() || iface.isVirtual() || !iface.isUp())
+			if (iface.getInterfaceAddresses().isEmpty() || iface.isPointToPoint() || iface.isVirtual() || !iface.isUp())
 			{
 				return true;
 			}
@@ -142,7 +146,7 @@ public class MulticastUDPReceiver implements IReceiver
 	}
 	
 	
-	private void addSocket(int port, String groupStr, NetworkInterface iface)
+	private void addSocket(final int port, final String groupStr, final NetworkInterface iface)
 	{
 		MulticastSocket socket;
 		try
@@ -161,12 +165,12 @@ public class MulticastUDPReceiver implements IReceiver
 			joinNetworkGroup(socket, groupStr);
 		} catch (IOException err)
 		{
-			log.error("Could not create multicast socket on port " + port, err);
+			log.error("Could not create multicast socket on iface " + iface.getDisplayName() + " and port " + port, err);
 		}
 	}
 	
 	
-	private void joinNetworkGroup(MulticastSocket socket, String groupStr)
+	private void joinNetworkGroup(final MulticastSocket socket, final String groupStr)
 	{
 		// Parse group
 		try
@@ -192,12 +196,28 @@ public class MulticastUDPReceiver implements IReceiver
 	
 	
 	@Override
-	public DatagramPacket receive(DatagramPacket store) throws IOException
+	public DatagramPacket receive(final DatagramPacket store) throws IOException
 	{
 		if (!isReady())
 		{
 			log.error("Receiver is not ready to receive!");
 			return null;
+		}
+		
+		// first try current socket for performance reasons
+		if (currentSocket != null)
+		{
+			try
+			{
+				currentSocket.receive(store);
+				return store;
+			} catch (EOFException eof)
+			{
+				log.error("EOF error, buffer may be too small!", eof);
+			} catch (SocketTimeoutException e)
+			{
+				// go on below
+			}
 		}
 		
 		boolean socketChanged = false;
@@ -213,8 +233,10 @@ public class MulticastUDPReceiver implements IReceiver
 					{
 						sockets.remove(socket);
 						sockets.add(0, socket);
+						currentSocket = socket;
 						log.info("MulticastSocket changed to " + socket.getNetworkInterface().getDisplayName() + " "
 								+ socket.getLocalPort());
+						socketsTimedOut.remove(socket);
 					}
 					received = true;
 					break;
@@ -223,7 +245,11 @@ public class MulticastUDPReceiver implements IReceiver
 					log.error("EOF error, buffer may be too small!", eof);
 				} catch (SocketTimeoutException e)
 				{
-					log.debug("Socket timed out on iface " + socket.getNetworkInterface().getDisplayName());
+					if (!socketsTimedOut.contains(socket))
+					{
+						log.debug("Socket timed out on iface " + socket.getNetworkInterface().getDisplayName());
+						socketsTimedOut.add(socket);
+					}
 					socketChanged = true;
 				}
 			}

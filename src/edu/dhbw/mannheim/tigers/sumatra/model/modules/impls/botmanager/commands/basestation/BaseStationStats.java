@@ -9,8 +9,11 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -22,151 +25,321 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.
 public class BaseStationStats extends ACommand
 {
 	/** */
+	public static final int	NUM_BOTS	= 12;
+	
+	/** */
 	public static class WifiStats
 	{
 		/** */
-		public long	txBytesSent;
-		/** */
-		public long	txBytesLost;
-		/** */
-		public long	rxBytesRecv;
-		/** */
-		public long	rxBytesLost;
+		@SerialData(type = ESerialDataType.UINT8)
+		private int		botId;
 		
 		/** */
-		public long	txPacketsSent;
+		@SerialData(type = ESerialDataType.UINT8)
+		private int		rxLoss;				// 0 - 200
 		/** */
-		public long	txPacketsLost;
+		@SerialData(type = ESerialDataType.UINT8)
+		private int		txLoss;				// 0 - 200
 		/** */
-		public long	rxPacketsRecv;
+		@SerialData(type = ESerialDataType.UINT16)
+		private int		linkQuality;		// 0 - 40000
 		/** */
-		public long	rxPacketsLost;
+		@SerialData(type = ESerialDataType.UINT16)
+		private int		rxLevel;			// 0 - 40000
+		/** */
+		@SerialData(type = ESerialDataType.UINT16)
+		private int		txLevel;			// 0 - 40000
+													
+		/** */
+		@SerialData(type = ESerialDataType.UINT32)
+		private long	txBytesSentRaw;
+		/** */
+		@SerialData(type = ESerialDataType.UINT32)
+		private long	txBytesSentCOBS;
+		/** */
+		@SerialData(type = ESerialDataType.UINT32)
+		private long	rxBytesRecvRaw;
+		/** */
+		@SerialData(type = ESerialDataType.UINT32)
+		private long	rxBytesRecvCOBS;
 		
 		/** */
-		public long	retransmissions;
+		@SerialData(type = ESerialDataType.UINT32)
+		private long	txPacketsSent;
+		/** */
+		@SerialData(type = ESerialDataType.UINT32)
+		private long	rxPacketsRecv;
+		
+		
+		/**
+		 * @return the botId
+		 */
+		public BotID getBotId()
+		{
+			return BaseStationACommand.getBotIdFromBaseStationId(botId);
+		}
+		
+		
+		/**
+		 * @return the rxLoss
+		 */
+		public float getRxLoss()
+		{
+			return rxLoss / 2.0f;
+		}
+		
+		
+		/**
+		 * @return the txLoss
+		 */
+		public float getTxLoss()
+		{
+			return txLoss / 2.0f;
+		}
+		
+		
+		/**
+		 * @return the linkQuality
+		 */
+		public float getLinkQuality()
+		{
+			return linkQuality / 400.0f;
+		}
+		
+		
+		/**
+		 * @return the rxLevel
+		 */
+		public float getRxLevel()
+		{
+			return rxLevel / 400.0f;
+		}
+		
+		
+		/**
+		 * @return the txLevel
+		 */
+		public float getTxLevel()
+		{
+			return txLevel / 400.0f;
+		}
+		
+		
+		/**
+		 * @return the txBytesSentRaw
+		 */
+		public long getTxBytesSentRaw()
+		{
+			return txBytesSentRaw;
+		}
+		
+		
+		/**
+		 * @return the txBytesSentCOBS
+		 */
+		public long getTxBytesSentCOBS()
+		{
+			return txBytesSentCOBS;
+		}
+		
+		
+		/**
+		 * @return the rxBytesRecvRaw
+		 */
+		public long getRxBytesRecvRaw()
+		{
+			return rxBytesRecvRaw;
+		}
+		
+		
+		/**
+		 * @return the rxBytesRecvCOBS
+		 */
+		public long getRxBytesRecvCOBS()
+		{
+			return rxBytesRecvCOBS;
+		}
+		
+		
+		/**
+		 * @return the txPacketsSent
+		 */
+		public long getTxPacketsSent()
+		{
+			return txPacketsSent;
+		}
+		
+		
+		/**
+		 * @return the rxPacketsRecv
+		 */
+		public long getRxPacketsRecv()
+		{
+			return rxPacketsRecv;
+		}
 	}
 	
 	/** */
 	public static class EthStats
 	{
 		/** */
-		public long	txBytesSent;
+		@SerialData(type = ESerialDataType.UINT8)
+		private int		rxLevel;		// 0 - 200
 		/** */
-		public long	rxBytesRecv;
+		@SerialData(type = ESerialDataType.UINT8)
+		private int		txLevel;		// 0 - 200
 		/** */
-		public long	rxBytesLost;
+		@SerialData(type = ESerialDataType.UINT16)
+		private int		rxLoss;			// 0 - 40000
+												
+		/** */
+		@SerialData(type = ESerialDataType.UINT32)
+		private long	txBytesSent;
+		/** */
+		@SerialData(type = ESerialDataType.UINT32)
+		private long	rxBytesRecv;
 		
 		/** */
-		public long	txFramesSent;
+		@SerialData(type = ESerialDataType.UINT32)
+		private long	txFramesSent;
 		/** */
-		public long	rxFramesRecv;
-		/** */
-		public long	rxFramesLost;
+		@SerialData(type = ESerialDataType.UINT32)
+		private long	rxFramesRecv;
 		
+		@SerialData(type = ESerialDataType.UINT16)
+		private int		updateRate;
+		
+		
+		/**
+		 * @return the rxLevel
+		 */
+		public float getRxLevel()
+		{
+			return rxLevel / 2.0f;
+		}
+		
+		
+		/**
+		 * @return the txLevel
+		 */
+		public float getTxLevel()
+		{
+			return txLevel / 2.0f;
+		}
+		
+		
+		/**
+		 * @return the rxLoss
+		 */
+		public float getRxLoss()
+		{
+			return rxLoss / 400.0f;
+		}
+		
+		
+		/**
+		 * @return the txBytesSent
+		 */
+		public long getTxBytesSent()
+		{
+			return txBytesSent;
+		}
+		
+		
+		/**
+		 * @return the rxBytesRecv
+		 */
+		public long getRxBytesRecv()
+		{
+			return rxBytesRecv;
+		}
+		
+		
+		/**
+		 * @return the txFramesSent
+		 */
+		public long getTxFramesSent()
+		{
+			return txFramesSent;
+		}
+		
+		
+		/**
+		 * @return the rxFramesRecv
+		 */
+		public long getRxFramesRecv()
+		{
+			return rxFramesRecv;
+		}
+		
+		
+		/**
+		 * @return the updateRate
+		 */
+		public int getUpdateRate()
+		{
+			return updateRate;
+		}
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private WifiStats	wifiStats	= new WifiStats();
+	@SerialData(type = ESerialDataType.EMBEDDED)
+	private WifiStats	wifiStats[]	= new WifiStats[NUM_BOTS];
+	@SerialData(type = ESerialDataType.EMBEDDED)
 	private EthStats	ethStats		= new EthStats();
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/** */
+	public BaseStationStats()
+	{
+		super(ECommand.CMD_BASE_STATS);
+		
+		for (int i = 0; i < NUM_BOTS; i++)
+		{
+			wifiStats[i] = new WifiStats();
+		}
+	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		wifiStats.txBytesSent = byteArray2UInt(data, 0);
-		wifiStats.txBytesLost = byteArray2UInt(data, 4);
-		wifiStats.rxBytesRecv = byteArray2UInt(data, 8);
-		wifiStats.rxBytesLost = byteArray2UInt(data, 12);
-		
-		wifiStats.txPacketsSent = byteArray2UInt(data, 16);
-		wifiStats.txPacketsLost = byteArray2UInt(data, 20);
-		wifiStats.rxPacketsRecv = byteArray2UInt(data, 24);
-		wifiStats.rxPacketsLost = byteArray2UInt(data, 28);
-		
-		wifiStats.retransmissions = byteArray2UInt(data, 32);
-		
-		ethStats.txBytesSent = byteArray2UInt(data, 36);
-		ethStats.rxBytesRecv = byteArray2UInt(data, 40);
-		ethStats.rxBytesLost = byteArray2UInt(data, 44);
-		
-		ethStats.txFramesSent = byteArray2UInt(data, 48);
-		ethStats.rxFramesRecv = byteArray2UInt(data, 52);
-		ethStats.rxFramesLost = byteArray2UInt(data, 56);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		int2ByteArray(data, 0, (int) wifiStats.txBytesSent);
-		int2ByteArray(data, 4, (int) wifiStats.txBytesLost);
-		int2ByteArray(data, 8, (int) wifiStats.rxBytesRecv);
-		int2ByteArray(data, 12, (int) wifiStats.rxBytesLost);
-		
-		int2ByteArray(data, 16, (int) wifiStats.txPacketsSent);
-		int2ByteArray(data, 20, (int) wifiStats.txPacketsLost);
-		int2ByteArray(data, 24, (int) wifiStats.rxPacketsRecv);
-		int2ByteArray(data, 28, (int) wifiStats.rxPacketsLost);
-		
-		int2ByteArray(data, 32, (int) wifiStats.retransmissions);
-		
-		int2ByteArray(data, 36, (int) ethStats.txBytesSent);
-		int2ByteArray(data, 40, (int) ethStats.rxBytesRecv);
-		int2ByteArray(data, 44, (int) ethStats.rxBytesLost);
-		
-		int2ByteArray(data, 48, (int) ethStats.txFramesSent);
-		int2ByteArray(data, 52, (int) ethStats.rxFramesRecv);
-		int2ByteArray(data, 56, (int) ethStats.rxFramesLost);
-		
-		return data;
-	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_BASE_STATS;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 60;
-	}
-	
-	
 	/**
 	 * @return the wifiStats
 	 */
-	public WifiStats getWifiStats()
+	public WifiStats[] getWifiStats()
 	{
 		return wifiStats;
 	}
 	
 	
 	/**
-	 * @param wifiStats the wifiStats to set
+	 * 
+	 * @param botID
+	 * @return null if botID is not found in stats
 	 */
-	public void setWifiStats(WifiStats wifiStats)
+	public WifiStats getWifiStats(BotID botID)
 	{
-		this.wifiStats = wifiStats;
+		for (WifiStats stats : wifiStats)
+		{
+			if (stats.getBotId() == botID)
+			{
+				return stats;
+			}
+		}
+		
+		return null;
 	}
 	
 	
@@ -176,14 +349,5 @@ public class BaseStationStats extends ACommand
 	public EthStats getEthStats()
 	{
 		return ethStats;
-	}
-	
-	
-	/**
-	 * @param ethStats the ethStats to set
-	 */
-	public void setEthStats(EthStats ethStats)
-	{
-		this.ethStats = ethStats;
 	}
 }

@@ -10,7 +10,9 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -22,7 +24,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.
 public class TigerCtrlSetControllerType extends ACommand
 {
 	/** */
-	public static enum ControllerType
+	public static enum EControllerType
 	{
 		/** */
 		NONE(0x00),
@@ -34,7 +36,7 @@ public class TigerCtrlSetControllerType extends ACommand
 		private int	id;
 		
 		
-		private ControllerType(int i)
+		private EControllerType(int i)
 		{
 			id = i;
 		}
@@ -55,9 +57,9 @@ public class TigerCtrlSetControllerType extends ACommand
 		 * @param type
 		 * @return
 		 */
-		public static ControllerType getControllerTypeConstant(int type)
+		public static EControllerType getControllerTypeConstant(int type)
 		{
-			for (ControllerType t : values())
+			for (EControllerType t : values())
 			{
 				if (t.getId() == type)
 				{
@@ -73,8 +75,8 @@ public class TigerCtrlSetControllerType extends ACommand
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	private ControllerType	type	= ControllerType.NONE;
+	@SerialData(type = ESerialDataType.UINT8)
+	private int	type	= EControllerType.NONE.getId();
 	
 	
 	// --------------------------------------------------------------------------
@@ -84,6 +86,7 @@ public class TigerCtrlSetControllerType extends ACommand
 	 */
 	public TigerCtrlSetControllerType()
 	{
+		super(ECommand.CMD_CTRL_SET_CONTROLLER_TYPE);
 	}
 	
 	
@@ -91,45 +94,17 @@ public class TigerCtrlSetControllerType extends ACommand
 	 * 
 	 * @param t
 	 */
-	public TigerCtrlSetControllerType(ControllerType t)
+	public TigerCtrlSetControllerType(EControllerType t)
 	{
-		type = t;
+		super(ECommand.CMD_CTRL_SET_CONTROLLER_TYPE);
+		
+		type = t.getId();
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		type = ControllerType.getControllerTypeConstant(byteArray2UByte(data, 0));
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		byte2ByteArray(data, 0, type.getId());
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_CTRL_SET_CONTROLLER_TYPE;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 1;
-	}
 	
 	
 	// --------------------------------------------------------------------------
@@ -138,17 +113,17 @@ public class TigerCtrlSetControllerType extends ACommand
 	/**
 	 * @return the type
 	 */
-	public ControllerType getType()
+	public EControllerType getControllerType()
 	{
-		return type;
+		return EControllerType.getControllerTypeConstant(type);
 	}
 	
 	
 	/**
 	 * @param type the type to set
 	 */
-	public void setType(ControllerType type)
+	public void setControllerType(EControllerType type)
 	{
-		this.type = type;
+		this.type = type.getId();
 	}
 }

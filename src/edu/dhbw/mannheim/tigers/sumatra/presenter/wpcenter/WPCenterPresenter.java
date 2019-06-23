@@ -9,13 +9,16 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.wpcenter;
 
+import java.awt.Component;
+
 import javax.swing.SwingUtilities;
 
+import edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesState;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.ILookAndFeelStateObserver;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.IModuliStateObserver;
-import edu.dhbw.mannheim.tigers.sumatra.view.main.ISumatraView;
 import edu.dhbw.mannheim.tigers.sumatra.view.wpcenter.WPCenterPanel;
-import edu.moduli.listenerVariables.ModulesState;
+import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
+import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraViewPresenter;
 
 
 /**
@@ -24,7 +27,7 @@ import edu.moduli.listenerVariables.ModulesState;
  * @author Marcel Sauer
  * 
  */
-public class WPCenterPresenter implements ILookAndFeelStateObserver, IModuliStateObserver
+public class WPCenterPresenter implements ILookAndFeelStateObserver, IModuliStateObserver, ISumatraViewPresenter
 {
 	
 	// --------------------------------------------------------------------------
@@ -155,13 +158,23 @@ public class WPCenterPresenter implements ILookAndFeelStateObserver, IModuliStat
 	}
 	
 	
-	/**
-	 * 
-	 * @return
-	 */
-	public ISumatraView getView()
+	@Override
+	public Component getComponent()
 	{
 		return wpCenterPanel;
+	}
+	
+	
+	@Override
+	public ISumatraView getSumatraView()
+	{
+		return wpCenterPanel;
+	}
+	
+	
+	@Override
+	public void onEmergencyStop()
+	{
 	}
 	
 }

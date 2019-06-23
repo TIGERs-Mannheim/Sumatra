@@ -4,12 +4,12 @@
  * Project: TIGERS - Sumatra
  * Date: Jan 26, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.replay;
 
 import java.awt.Cursor;
+import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -19,21 +19,23 @@ import java.util.Collections;
 import java.util.List;
 
 import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JComboBox;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.record.RecordPersistance;
+import org.apache.log4j.Logger;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.persistance.IRecordPersistence;
+import edu.dhbw.mannheim.tigers.sumatra.model.persistance.RecordBerkeleyPersistence;
 
 
 /**
  * This panel contains primary the record button for capturing
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class ReplayLoadPanel extends JPanel
 {
@@ -41,15 +43,17 @@ public class ReplayLoadPanel extends JPanel
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	/**  */
-	private static final long		serialVersionUID	= 1L;
-	private static final String	BASE_PATH			= "logs/record/";
+	private static final long		serialVersionUID		= 1L;
+	private static final String	BASE_PATH				= "data/record/";
+	private static final Logger	log						= Logger.getLogger(ReplayLoadPanel.class.getName());
 	
-	private ODBFileFilter			odbFileFilter		= new ODBFileFilter();
+	private FileFilter				fileFilter				= new RecordDbFilter();
 	private List<File>				persistanceFiles;
-	private File						persistancePath	= new File(BASE_PATH);
+	private File						persistancePath		= new File(BASE_PATH);
 	
-	private JComboBox<File>			persistanceCombo;
-	private ActionListener			comboListener		= new ComboxListener();
+	private JComboBox<String>		persistanceCombo;
+	private ActionListener			comboListener			= new ComboxListener();
+	private PopupMenuListener		ComboxPopupListener	= new ComboxPopupListener();
 	
 	
 	// --------------------------------------------------------------------------
@@ -64,19 +68,23 @@ public class ReplayLoadPanel extends JPanel
 		// --- border ---
 		final TitledBorder border = BorderFactory.createTitledBorder("load Replay");
 		setBorder(border);
+		setLayout(new FlowLayout());
 		
-		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		if (!(persistancePath.isDirectory()))
 		{
-			persistancePath.mkdir();
+			persistancePath.mkdirs();
 		}
-		persistanceFiles = Arrays.asList(persistancePath.listFiles(odbFileFilter));
+		persistanceFiles = Arrays.asList(persistancePath.listFiles(fileFilter));
 		Collections.sort(persistanceFiles);
-		persistanceCombo = new JComboBox<File>(persistanceFiles.toArray(new File[persistanceFiles.size()]));
+		persistanceCombo = new JComboBox<String>();
+		for (File file : persistanceFiles)
+		{
+			persistanceCombo.addItem(file.getName());
+		}
 		persistanceCombo.addActionListener(comboListener);
+		persistanceCombo.addPopupMenuListener(ComboxPopupListener);
 		
 		add(persistanceCombo);
-		add(Box.createGlue());
 	}
 	
 	
@@ -86,17 +94,17 @@ public class ReplayLoadPanel extends JPanel
 	
 	/**
 	 * Update Records in Combobox
-	 * 
 	 */
 	public void doUpdate()
 	{
 		persistanceCombo.removeActionListener(comboListener);
 		persistanceCombo.removeAllItems();
 		
-		persistanceFiles = Arrays.asList(persistancePath.listFiles(odbFileFilter));
+		persistanceFiles = Arrays.asList(persistancePath.listFiles(fileFilter));
+		Collections.sort(persistanceFiles);
 		for (File file : persistanceFiles)
 		{
-			persistanceCombo.addItem(file);
+			persistanceCombo.addItem(file.getName());
 		}
 		comboListener = new ComboxListener();
 		persistanceCombo.addActionListener(comboListener);
@@ -111,26 +119,51 @@ public class ReplayLoadPanel extends JPanel
 	// --------------------------------------------------------------------------
 	
 	
-	private class ODBFileFilter implements FileFilter
+	private class RecordDbFilter implements FileFilter
 	{
 		
 		
 		@Override
-		public boolean accept(File pathname)
+		public boolean accept(final File pathname)
 		{
-			return pathname.getName().toLowerCase().endsWith(".odb");
+			return true;
 		}
 	}
 	
+	private class ComboxPopupListener implements PopupMenuListener
+	{
+		
+		@Override
+		public void popupMenuCanceled(final PopupMenuEvent e)
+		{
+			
+		}
+		
+		
+		@Override
+		public void popupMenuWillBecomeInvisible(final PopupMenuEvent e)
+		{
+			
+		}
+		
+		
+		@Override
+		public void popupMenuWillBecomeVisible(final PopupMenuEvent e)
+		{
+			doUpdate();
+			
+		}
+		
+	}
 	
 	private class ComboxListener implements ActionListener, Runnable
 	{
 		
 		@Override
-		public void actionPerformed(ActionEvent arg0)
+		public void actionPerformed(final ActionEvent arg0)
 		{
 			setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-			Thread loadThread = new Thread(this);
+			Thread loadThread = new Thread(this, "LoadRecording");
 			loadThread.start();
 		}
 		
@@ -138,18 +171,26 @@ public class ReplayLoadPanel extends JPanel
 		@Override
 		public void run()
 		{
-			String dbname = ((File) persistanceCombo.getSelectedItem()).getName();
-			RecordPersistance persistance = new RecordPersistance(dbname.substring(0, dbname.indexOf(".")));
-			persistance.load();
-			
-			List<IRecordFrame> aiFrameBuffer = persistance.getRecordFrames();
-			ReplayWindow replaceWindow = new ReplayWindow(aiFrameBuffer);
-			replaceWindow.activate();
-			
+			IRecordPersistence persistance = null;
+			try
+			{
+				String dbname = ((String) persistanceCombo.getSelectedItem());
+				
+				persistance = new RecordBerkeleyPersistence(dbname);
+				
+				ReplayWindow replaceWindow = new ReplayWindow(persistance);
+				replaceWindow.activate();
+			} catch (Exception e)
+			{
+				log.error("An exception ocurred on load. See log.", e);
+				JOptionPane.showMessageDialog(null, "An exception ocurred on load. See log.", "Error",
+						JOptionPane.ERROR_MESSAGE);
+				if (persistance != null)
+				{
+					persistance.close();
+				}
+			}
 			setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-			
 		}
-		
 	}
-	
 }

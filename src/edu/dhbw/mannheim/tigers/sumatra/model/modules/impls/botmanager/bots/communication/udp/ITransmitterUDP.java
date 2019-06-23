@@ -73,4 +73,10 @@ public interface ITransmitterUDP
 	 */
 	Statistics getStats();
 	
+	
+	/**
+	 * 
+	 * @param legacy
+	 */
+	void setLegacy(boolean legacy);
 }

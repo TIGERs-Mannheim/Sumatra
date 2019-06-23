@@ -9,12 +9,12 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.types;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
+import edu.dhbw.mannheim.tigers.moduli.AModule;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IBotManagerObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IWorldPredictorObserver;
-import edu.moduli.AModule;
 
 
 /**
@@ -35,10 +35,8 @@ public abstract class AWorldPredictor extends AModule implements ICamDetnFrameCo
 	/** */
 	public static final String								MODULE_ID	= "worldpredictor";
 	
-	protected IWorldFrameConsumer							consumer;
-	// protected static final int SIGNAL_COUNT = 1;
-	// protected CountDownLatch startSignal;
-	protected final List<IWorldPredictorObserver>	observers	= new ArrayList<IWorldPredictorObserver>();
+	protected List<IWorldFrameConsumer>					consumers	= new CopyOnWriteArrayList<IWorldFrameConsumer>();
+	protected final List<IWorldPredictorObserver>	observers	= new CopyOnWriteArrayList<IWorldPredictorObserver>();
 	
 	
 	// --------------------------------------------------------------------------
@@ -50,17 +48,17 @@ public abstract class AWorldPredictor extends AModule implements ICamDetnFrameCo
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
-	public void setWorldFrameConsumer(IWorldFrameConsumer consumer)
+	public void addWorldFrameConsumer(IWorldFrameConsumer consumer)
 	{
-		this.consumer = consumer;
-		// startSignal.countDown();
+		consumers.add(consumer);
 	}
 	
 	
-	// protected void resetCountDownLatch()
-	// {
-	// startSignal = new CountDownLatch(SIGNAL_COUNT);
-	// }
+	@Override
+	public void removeWorldFrameConsumer(IWorldFrameConsumer consumer)
+	{
+		consumers.remove(consumer);
+	}
 	
 	
 	/**

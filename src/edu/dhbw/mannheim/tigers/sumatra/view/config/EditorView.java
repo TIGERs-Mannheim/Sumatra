@@ -25,7 +25,7 @@ import javax.swing.ScrollPaneConstants;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 
-import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.commons.configuration.HierarchicalConfiguration;
 
 import edu.dhbw.mannheim.tigers.sumatra.view.commons.treetable.ITreeTableModel;
 import edu.dhbw.mannheim.tigers.sumatra.view.commons.treetable.JTreeTable;
@@ -63,10 +63,10 @@ public class EditorView extends JPanel
 	/**
 	 * @param title
 	 * @param configKey
-	 * @param xmlConfig
+	 * @param config
 	 * @param editable
 	 */
-	public EditorView(String title, String configKey, XMLConfiguration xmlConfig, boolean editable)
+	public EditorView(String title, String configKey, HierarchicalConfiguration config, boolean editable)
 	{
 		super();
 		this.configKey = configKey;
@@ -110,7 +110,7 @@ public class EditorView extends JPanel
 				save();
 			}
 		};
-		saveAction.setEnabled(false);
+		saveAction.setEnabled(true);
 		JButton saveBtn = new JButton(saveAction);
 		controls.add(saveBtn);
 		controls.add(Box.createHorizontalGlue());
@@ -140,7 +140,7 @@ public class EditorView extends JPanel
 		
 		
 		// Finally: Add model
-		model = new ConfigXMLTreeTableModel(xmlConfig);
+		model = new ConfigXMLTreeTableModel(config);
 		model.setEditable(editable);
 		treetable = new JTreeTable(model);
 		treetable.getModel().addTableModelListener(new TableModelListener()
@@ -166,7 +166,7 @@ public class EditorView extends JPanel
 	 * @param config
 	 * @param editable
 	 */
-	public void updateModel(XMLConfiguration config, boolean editable)
+	public void updateModel(HierarchicalConfiguration config, boolean editable)
 	{
 		model = new ConfigXMLTreeTableModel(config);
 		model.setEditable(editable);
@@ -199,13 +199,12 @@ public class EditorView extends JPanel
 		notifySavePressed(configKey);
 		
 		// Mark
-		saveAction.setEnabled(false);
+		saveAction.setEnabled(true);
 	}
 	
 	
 	private void reload()
 	{
-		// Save
 		notifyReloadPressed(configKey);
 	}
 	

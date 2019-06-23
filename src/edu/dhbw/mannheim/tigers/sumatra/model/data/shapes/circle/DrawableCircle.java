@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Jan 15, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle;
@@ -13,20 +12,21 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 
-import javax.persistence.Embeddable;
+import com.sleepycat.persist.model.Persistent;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.ColorWrapper;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.IDrawableShape;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.FieldPanel;
+import edu.dhbw.mannheim.tigers.sumatra.presenter.visualizer.IFieldPanel;
 
 
 /**
  * Drawable of a circle
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
-@Embeddable
+@Persistent
 public class DrawableCircle extends Circle implements IDrawableShape
 {
 	
@@ -34,12 +34,21 @@ public class DrawableCircle extends Circle implements IDrawableShape
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private Color	color	= Color.red;
+	private ColorWrapper	color	= new ColorWrapper(Color.red);
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	/**
+	 * For some reason, ObjectDB wants a no-arg constructor with this class...
+	 */
+	private DrawableCircle()
+	{
+		super(new Circle(AVector2.ZERO_VECTOR, 1));
+	}
+	
 	
 	/**
 	 * @param circle
@@ -57,7 +66,7 @@ public class DrawableCircle extends Circle implements IDrawableShape
 	public DrawableCircle(final ICircle circle, final Color color)
 	{
 		super(circle);
-		this.color = color;
+		this.color = new ColorWrapper(color);
 	}
 	
 	
@@ -67,11 +76,11 @@ public class DrawableCircle extends Circle implements IDrawableShape
 	
 	
 	@Override
-	public void paintShape(Graphics2D g)
+	public void paintShape(final Graphics2D g, final IFieldPanel fieldPanel, final boolean invert)
 	{
 		// --- from SSLVision-mm to java2d-coordinates ---
-		final IVector2 center = FieldPanel.transformToGuiCoordinates(center());
-		final float radius = FieldPanel.scaleXLength(radius());
+		final IVector2 center = fieldPanel.transformToGuiCoordinates(center(), invert);
+		final float radius = fieldPanel.scaleXLength(radius());
 		
 		g.setColor(getColor());
 		g.setStroke(new BasicStroke(1));
@@ -88,15 +97,21 @@ public class DrawableCircle extends Circle implements IDrawableShape
 	 */
 	public Color getColor()
 	{
-		return color;
+		// this may happen with old databases
+		if (color == null)
+		{
+			// standard color
+			return Color.red;
+		}
+		return color.getColor();
 	}
 	
 	
 	/**
 	 * @param color the color to set
 	 */
-	public void setColor(Color color)
+	public void setColor(final Color color)
 	{
-		this.color = color;
+		this.color = new ColorWrapper(color);
 	}
 }

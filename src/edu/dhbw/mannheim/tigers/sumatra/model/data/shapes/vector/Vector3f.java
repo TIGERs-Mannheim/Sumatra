@@ -9,7 +9,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector;
 
-import javax.persistence.Embeddable;
+import com.sleepycat.persist.model.Persistent;
 
 
 /**
@@ -18,7 +18,7 @@ import javax.persistence.Embeddable;
  * @author Gero
  * 
  */
-@Embeddable
+@Persistent
 public class Vector3f extends AVector3
 {
 	// --------------------------------------------------------------------------
@@ -26,17 +26,16 @@ public class Vector3f extends AVector3
 	// --------------------------------------------------------------------------
 	
 	
-	/** not final for ObjectDB */
-	private float	x;
-	/** not final for ObjectDB */
-	private float	y;
-	/** not final for ObjectDB */
-	private float	z;
+	private final float	x;
+	private final float	y;
+	private final float	z;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	
 	/**
 	 * 
 	 * @param x
@@ -118,38 +117,5 @@ public class Vector3f extends AVector3
 	public float z()
 	{
 		return z;
-	}
-	
-	
-	/**
-	 * This method is not for setting the value. It only prevents eclipse from making the value final. The value has not
-	 * to be final, because it is written and read from a db for the learning play finder.
-	 * @param x the x to set
-	 */
-	protected void setX(float x)
-	{
-		this.x = x;
-	}
-	
-	
-	/**
-	 * This method is not for setting the value. It only prevents eclipse from making the value final. The value has not
-	 * to be final, because it is written and read from a db for the learning play finder.
-	 * @param y the y to set
-	 */
-	protected void setY(float y)
-	{
-		this.y = y;
-	}
-	
-	
-	/**
-	 * This method is not for setting the value. It only prevents eclipse from making the value final. The value has not
-	 * to be final, because it is written and read from a db for the learning play finder.
-	 * @param z the z to set
-	 */
-	protected void setZ(float z)
-	{
-		this.z = z;
 	}
 }

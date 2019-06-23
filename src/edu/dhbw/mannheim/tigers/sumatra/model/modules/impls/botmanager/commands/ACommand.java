@@ -13,48 +13,12 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands
  */
 public abstract class ACommand
 {
-	/**
-	 * 
-	 * @param data
-	 */
-	public abstract void setData(byte[] data);
+	private final ECommand	cmd;
 	
 	
-	/**
-	 * 
-	 * @return
-	 */
-	public abstract byte[] getData();
-	
-	
-	/**
-	 * 
-	 * @return
-	 */
-	public abstract int getCommand();
-	
-	
-	/**
-	 * 
-	 * @return
-	 */
-	public abstract int getDataLength();
-	
-	
-	/**
-	 * 
-	 * @return
-	 */
-	public byte[] getHeader()
+	protected ACommand(ECommand cmd)
 	{
-		final byte header[] = new byte[CommandConstants.HEADER_SIZE];
-		
-		header[0] = (byte) (getCommand() & 0x000000FF);
-		header[1] = (byte) ((getCommand() & 0x0000FF00) >> 8);
-		header[2] = (byte) (getDataLength() & 0x000000FF);
-		header[3] = (byte) ((getDataLength() & 0x0000FF00) >> 8);
-		
-		return header;
+		this.cmd = cmd;
 	}
 	
 	
@@ -62,27 +26,9 @@ public abstract class ACommand
 	 * 
 	 * @return
 	 */
-	public int getSection()
+	public ECommand getType()
 	{
-		return ((getCommand() & 0xFF00) >> 8);
-	}
-	
-	
-	/**
-	 * 
-	 * @return
-	 */
-	public byte[] getTransferData()
-	{
-		final byte[] header = getHeader();
-		final byte[] data = getData();
-		
-		final byte[] packet = new byte[header.length + data.length];
-		
-		System.arraycopy(header, 0, packet, 0, header.length);
-		System.arraycopy(data, 0, packet, header.length, data.length);
-		
-		return packet;
+		return cmd;
 	}
 	
 	

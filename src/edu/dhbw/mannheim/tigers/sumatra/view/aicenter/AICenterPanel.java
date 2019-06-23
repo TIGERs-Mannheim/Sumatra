@@ -9,24 +9,18 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.aicenter;
 
-import java.awt.BorderLayout;
-import java.awt.Component;
 import java.awt.Insets;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.JCheckBox;
 import javax.swing.JMenu;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.UIManager;
 
 import net.miginfocom.swing.MigLayout;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent;
-import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.InformationPanel;
-import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.botoverview.BotFullOverviewPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview.ModuleControlPanel;
-import edu.dhbw.mannheim.tigers.sumatra.view.commons.ConfigControlMenu;
-import edu.dhbw.mannheim.tigers.sumatra.view.main.ISumatraView;
+import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
 
 
 /**
@@ -41,44 +35,31 @@ public class AICenterPanel extends JPanel implements ISumatraView
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private static final long			serialVersionUID	= 8132550010453691515L;
+	private static final long	serialVersionUID	= 8132550010453691515L;
 	
-	private static final int			ID						= 3;
-	private static final String		TITLE					= "AI Center";
-	
-	private InformationPanel			informationPanel	= null;
-	private BotFullOverviewPanel		botPanel				= null;
-	private ModuleControlPanel			modulesPanel		= null;
-	
-	private final ConfigControlMenu	aiConfigMenu		= new ConfigControlMenu("AI-Config", AAgent.KEY_AI_CONFIG);
-	private final ConfigControlMenu	geomMenu				= new ConfigControlMenu("Geometry", AAgent.KEY_GEOMETRY_CONFIG);
-	private final ConfigControlMenu	teamMenu				= new ConfigControlMenu("Team", AAgent.KEY_TEAM_CONFIG);
+	private final JCheckBox		chkAiActive;
+	private ModuleControlPanel	modulesPanel		= null;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 */
 	public AICenterPanel()
 	{
-		setLayout(new BorderLayout());
+		setLayout(new MigLayout("insets 0 0 0 0"));
 		
 		final JPanel combinePanel = new JPanel();
-		combinePanel.setLayout(new MigLayout("fill", "", ""));
+		combinePanel.setLayout(new MigLayout("insets 0 0 0 0", "", ""));
 		
-		informationPanel = new InformationPanel();
-		botPanel = new BotFullOverviewPanel();
+		chkAiActive = new JCheckBox("AI activated", false);
 		modulesPanel = new ModuleControlPanel();
 		
-		combinePanel.add(informationPanel, "wrap");
+		combinePanel.add(chkAiActive, "wrap, top");
 		combinePanel.add(modulesPanel, "wrap");
-		combinePanel.add(botPanel);
 		
-		
-		JScrollPane scrollPane = new JScrollPane(combinePanel);
-		this.add(scrollPane, BorderLayout.CENTER);
+		add(combinePanel);
 		
 		UIManager.put("TabbedPane.tabAreaInsets", new Insets(0, 0, 0, 0));
 	}
@@ -87,14 +68,6 @@ public class AICenterPanel extends JPanel implements ISumatraView
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/**
-	 * 
-	 * @return
-	 */
-	public InformationPanel getInformationPanel()
-	{
-		return informationPanel;
-	}
 	
 	
 	/**
@@ -109,42 +82,10 @@ public class AICenterPanel extends JPanel implements ISumatraView
 	
 	/**
 	 * 
-	 * @return
-	 */
-	public BotFullOverviewPanel getBotOverviewPanel()
-	{
-		return botPanel;
-	}
-	
-	
-	/**
-	 * 
 	 */
 	public void clearView()
 	{
-		informationPanel.clearView();
 		modulesPanel.onStop();
-	}
-	
-	
-	@Override
-	public int getId()
-	{
-		return ID;
-	}
-	
-	
-	@Override
-	public String getTitle()
-	{
-		return TITLE;
-	}
-	
-	
-	@Override
-	public Component getViewComponent()
-	{
-		return this;
 	}
 	
 	
@@ -152,11 +93,6 @@ public class AICenterPanel extends JPanel implements ISumatraView
 	public List<JMenu> getCustomMenus()
 	{
 		final List<JMenu> menus = new ArrayList<JMenu>();
-		
-		menus.add(teamMenu.getConfigMenu());
-		menus.add(aiConfigMenu.getConfigMenu());
-		menus.add(geomMenu.getConfigMenu());
-		
 		return menus;
 	}
 	
@@ -182,5 +118,14 @@ public class AICenterPanel extends JPanel implements ISumatraView
 	@Override
 	public void onHidden()
 	{
+	}
+	
+	
+	/**
+	 * @return the chkAiActive
+	 */
+	public final JCheckBox getChkAiActive()
+	{
+		return chkAiActive;
 	}
 }

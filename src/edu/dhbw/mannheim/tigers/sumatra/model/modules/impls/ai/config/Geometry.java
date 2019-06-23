@@ -4,31 +4,29 @@
  * Project: TIGERS - Sumatra
  * Date: 24.01.2011
  * Author(s): Oliver Steinbrecher <OST1988@aol.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config;
 
 import org.apache.commons.configuration.Configuration;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.area.FreekickArea;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.area.Goal;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.area.PenaltyArea;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeam;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.Circlef;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.field.FreekickArea;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.field.Goal;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.field.PenaltyArea;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.rectangle.Rectanglef;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.Circle;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.rectangle.Rectangle;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Linef;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Line;
 
 
 /**
  * Configuration object for geometry parameters.
  * 
  * @author Oliver Steinbrecher <OST1988@aol.com>
- * 
  */
 public class Geometry
 {
@@ -41,6 +39,8 @@ public class Geometry
 	private final float			botRadius;
 	/** [mm] */
 	private final float			botCenterToDribblerDist;
+	/** [m/s] */
+	private final float			stopSpeed;
 	/** x-axis [mm] */
 	private final float			fieldLength;
 	/** y-axis [mm] */
@@ -54,11 +54,11 @@ public class Geometry
 	/** judgesLength [mm] */
 	private final float			judgesBorderLength;
 	/** Represents the field as a rectangle */
-	private final Rectanglef	field;
+	private final Rectangle		field;
 	/** Represents the field WITH margin as a rectangle */
-	private final Rectanglef	fieldWBorders;
+	private final Rectangle		fieldWBorders;
 	/** Represents the field with margin and referee area */
-	private final Rectanglef	fieldWReferee;
+	private final Rectangle		fieldWReferee;
 	/** Distance (goal line - penalty mark)[mm] */
 	private final float			distanceToPenaltyMark;
 	/** radius of the two, small quarter circles at the sides of the penalty area. */
@@ -74,11 +74,11 @@ public class Geometry
 	/** Their Goal */
 	private final Goal			goalTheir;
 	/** "Mittellinie" */
-	private final Linef			median;
+	private final Line			median;
 	/** Tigers goal line */
-	private final Linef			goalLineOur;
+	private final Line			goalLineOur;
 	/** Opponent goal line */
-	private final Linef			goalLineTheir;
+	private final Line			goalLineTheir;
 	/** Our Penalty Area ("Strafraum") */
 	private final PenaltyArea	penaltyAreaOur;
 	/** Their Penalty Area ("Strafraum") */
@@ -87,9 +87,9 @@ public class Geometry
 	private final Vector2f		penaltyMarkOur;
 	/** Their penalty mark */
 	private final Vector2f		penaltyMarkTheir;
-	/** penalty line (bots must be behind this line when a penalty kick is executed) */
+	/** penalty line on our side (bots must be behind this line when a penalty kick is executed) */
 	private final Vector2f		penaltyLineOur;
-	/** penalty line (bots must be behind this line when a penalty kick is executed) */
+	/** penalty line on their side (bots must be behind this line when a penalty kick is executed) */
 	private final Vector2f		penaltyLineTheir;
 	/** Our Freekick Area ("erweiterter Strafraum bei free kick") */
 	private final FreekickArea	freekickAreaOur;
@@ -100,23 +100,25 @@ public class Geometry
 	/** The radius of the center circle ("Mittelkreis") [mm] */
 	private final float			centerCircleRadius;
 	/** The center circle ("Mittelkreis") */
-	private final Circlef		centerCircle;
+	private final Circle			centerCircle;
 	
 	private final Vector2f		maintenancePosition;
 	
-	private final Rectanglef	ourHalf;
+	private final Rectangle		ourHalf;
 	
 	private final float			botToBallDistanceStop;
+	private float					goalDepth;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	Geometry(Configuration config)
+	Geometry(final Configuration config)
 	{
 		ballRadius = config.getFloat("ballRadius");
 		botRadius = config.getFloat("botRadius");
 		botCenterToDribblerDist = config.getFloat("botCenterToDribblerDist");
+		stopSpeed = config.getFloat("stopSpeed");
 		
 		fieldLength = config.getFloat("field.length");
 		fieldWidth = config.getFloat("field.width");
@@ -126,6 +128,7 @@ public class Geometry
 		judgesBorderLength = config.getFloat("field.judgesBorder.widthL");
 		
 		goalSize = config.getFloat("field.goal.innerWidth");
+		goalDepth = config.getFloat("field.goal.innerDepth");
 		distanceToPenaltyMark = config.getFloat("field.distanceToPenaltyMark");
 		distanceToPenaltyArea = config.getFloat("field.distanceToPenaltyArea");
 		distancePenaltyMarkToPenaltyLine = config.getFloat("field.distanceToPenaltyLine");
@@ -153,65 +156,75 @@ public class Geometry
 		penaltyLineOur = calcOurPenalityLine(fieldLength, distanceToPenaltyMark, distancePenaltyMarkToPenaltyLine);
 		penaltyLineTheir = calcTheirPenalityLine(fieldLength, distanceToPenaltyMark, distancePenaltyMarkToPenaltyLine);
 		
-		median = new Linef(AVector2.ZERO_VECTOR, AVector2.Y_AXIS);
+		median = new Line(AVector2.ZERO_VECTOR, AVector2.Y_AXIS);
 		maintenancePosition = getVector(config, "field.maintenancePosition");
 		
-		ourHalf = new Rectanglef(field.topLeft(), field.xExtend() / 2, field.yExtend());
+		ourHalf = new Rectangle(field.topLeft(), field.xExtend() / 2, field.yExtend());
 		
 		botToBallDistanceStop = config.getFloat("field.botToBallDistanceStop");
-		
 	}
 	
 	
-	private Rectanglef calcField(IVector2 center, float fieldLength, float fieldWidth)
+	/**
+	 * @return the goalDepth
+	 */
+	public float getGoalDepth()
 	{
-		return new Rectanglef(center.addNew(new Vector2f(-fieldLength / 2, fieldWidth / 2)), fieldLength, fieldWidth);
+		return goalDepth;
 	}
 	
 	
-	private Goal calcOurGoal(float goalSize, float fieldLength)
+	private Rectangle calcField(final IVector2 center, final float fieldLength, final float fieldWidth)
 	{
-		return new Goal(goalSize, new Vector2f(-fieldLength / 2, 0));
+		return new Rectangle(center.addNew(new Vector2f(-fieldLength / 2, fieldWidth / 2)), fieldLength, fieldWidth);
 	}
 	
 	
-	private Goal calcTheirGoal(float goalSize, float fieldLength)
+	private Goal calcOurGoal(final float goalSize, final float fieldLength)
 	{
-		return new Goal(goalSize, new Vector2f(fieldLength / 2, 0));
+		return new Goal(goalSize, new Vector2f(-fieldLength / 2, 0), -getGoalDepth());
 	}
 	
 	
-	private Linef calcGoalLine(IVector2 goalCenter, IVector2 dir)
+	private Goal calcTheirGoal(final float goalSize, final float fieldLength)
 	{
-		return new Linef(goalCenter, dir);
+		return new Goal(goalSize, new Vector2f(fieldLength / 2, 0), getGoalDepth());
 	}
 	
 	
-	private Circlef calcCenterCircle(IVector2 center, float radius)
+	private Line calcGoalLine(final IVector2 goalCenter, final IVector2 dir)
 	{
-		return new Circlef(center, radius);
+		return new Line(goalCenter, dir);
 	}
 	
 	
-	private Vector2f calcOurPenalityMark(float fieldLength, float distanceToPenaltyMark)
+	private Circle calcCenterCircle(final IVector2 center, final float radius)
+	{
+		return new Circle(center, radius);
+	}
+	
+	
+	private Vector2f calcOurPenalityMark(final float fieldLength, final float distanceToPenaltyMark)
 	{
 		return new Vector2f((-fieldLength / 2) + distanceToPenaltyMark, 0);
 	}
 	
 	
-	private Vector2f calcTheirPenalityMark(float fieldLength, float distanceToPenaltyMark)
+	private Vector2f calcTheirPenalityMark(final float fieldLength, final float distanceToPenaltyMark)
 	{
 		return new Vector2f((fieldLength / 2) - distanceToPenaltyMark, 0);
 	}
 	
 	
-	private Vector2f calcTheirPenalityLine(float fieldLength, float distanceToPenaltyMark, float distanceToPenaltyLine)
+	private Vector2f calcTheirPenalityLine(final float fieldLength, final float distanceToPenaltyMark,
+			final float distanceToPenaltyLine)
 	{
 		return new Vector2f((fieldLength / 2) - distanceToPenaltyMark - distanceToPenaltyLine, 0);
 	}
 	
 	
-	private Vector2f calcOurPenalityLine(float fieldLength, float distanceToPenaltyMark, float distanceTopenaltyLine)
+	private Vector2f calcOurPenalityLine(final float fieldLength, final float distanceToPenaltyMark,
+			final float distanceTopenaltyLine)
 	{
 		return new Vector2f((-fieldLength / 2) + distanceToPenaltyMark + distanceTopenaltyLine, 0);
 	}
@@ -222,7 +235,6 @@ public class Geometry
 	// --------------------------------------------------------------------------
 	
 	/**
-	 * 
 	 * Returns our goal.
 	 * 
 	 * @return goal object
@@ -234,7 +246,6 @@ public class Geometry
 	
 	
 	/**
-	 * 
 	 * Returns their goal.
 	 * 
 	 * @return goal object
@@ -245,7 +256,7 @@ public class Geometry
 	}
 	
 	
-	private Vector2f getVector(Configuration config, String value)
+	private Vector2f getVector(final Configuration config, final String value)
 	{
 		final Vector2 vec = new Vector2();
 		vec.setSavedString(config.getString(value));
@@ -267,6 +278,15 @@ public class Geometry
 	
 	
 	/**
+	 * @return the stopSpeed
+	 */
+	public final float getStopSpeed()
+	{
+		return stopSpeed;
+	}
+	
+	
+	/**
 	 * @return the botRadius [mm]
 	 */
 	public float getBotRadius()
@@ -276,7 +296,6 @@ public class Geometry
 	
 	
 	/**
-	 * 
 	 * Returns the field length [mm].
 	 * 
 	 * @return returns field length (x-axis).
@@ -288,7 +307,6 @@ public class Geometry
 	
 	
 	/**
-	 * 
 	 * Returns the field width [mm].
 	 * 
 	 * @return returns field length (y-axis).
@@ -302,25 +320,29 @@ public class Geometry
 	/**
 	 * @return the field
 	 */
-	public Rectanglef getField()
+	public Rectangle getField()
 	{
 		return field;
 	}
 	
 	
 	/**
+	 * Field with border margin, but without referee area
+	 * 
 	 * @return the fieldWBorders
 	 */
-	public Rectanglef getFieldWBorders()
+	public Rectangle getFieldWBorders()
 	{
 		return fieldWBorders;
 	}
 	
 	
 	/**
+	 * Field including referee area
+	 * 
 	 * @return the fieldWBorders
 	 */
-	public Rectanglef getFieldWReferee()
+	public Rectangle getFieldWReferee()
 	{
 		return fieldWReferee;
 	}
@@ -338,7 +360,7 @@ public class Geometry
 	/**
 	 * @return "Mittellinie"
 	 */
-	public Linef getMedian()
+	public Line getMedian()
 	{
 		return median;
 	}
@@ -347,7 +369,7 @@ public class Geometry
 	/**
 	 * @return
 	 */
-	public Linef getGoalLineOur()
+	public Line getGoalLineOur()
 	{
 		return goalLineOur;
 	}
@@ -356,7 +378,7 @@ public class Geometry
 	/**
 	 * @return
 	 */
-	public Linef getGoalLineTheir()
+	public Line getGoalLineTheir()
 	{
 		return goalLineTheir;
 	}
@@ -390,7 +412,6 @@ public class Geometry
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public Vector2f getCenter()
@@ -400,7 +421,6 @@ public class Geometry
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public float getGoalSize()
@@ -410,7 +430,6 @@ public class Geometry
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public float getCenterCircleRadius()
@@ -420,17 +439,15 @@ public class Geometry
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
-	public Circlef getCenterCircle()
+	public Circle getCenterCircle()
 	{
 		return centerCircle;
 	}
 	
 	
 	/**
-	 * 
 	 * @return distance from goal line to penalty area
 	 */
 	public float getDistanceToPenaltyArea()
@@ -440,7 +457,6 @@ public class Geometry
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public float getLengthOfPenaltyAreaFrontLine()
@@ -450,7 +466,6 @@ public class Geometry
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public PenaltyArea getPenaltyAreaOur()
@@ -460,7 +475,6 @@ public class Geometry
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public PenaltyArea getPenaltyAreaTheir()
@@ -472,14 +486,15 @@ public class Geometry
 	/**
 	 * @return the ourHalf
 	 */
-	public Rectanglef getOurHalf()
+	public Rectangle getOurHalf()
 	{
 		return ourHalf;
 	}
 	
 	
 	/**
-	 * penalty line (bots must be behind this line when a penalty kick is executed)
+	 * penalty line on our side (bots must be behind this line when a penalty kick is executed)
+	 * 
 	 * @return vector pointing to the center of the line
 	 */
 	public Vector2f getPenaltyLineOur()
@@ -489,7 +504,8 @@ public class Geometry
 	
 	
 	/**
-	 * penalty line (bots must be behind this line when a penalty kick is executed)
+	 * penalty line their side(bots must be behind this line when a penalty kick is executed)
+	 * 
 	 * @return vector pointing to the center of the line
 	 */
 	public Vector2f getPenaltyLineTheir()
@@ -499,7 +515,6 @@ public class Geometry
 	
 	
 	/**
-	 * 
 	 * @return The width of the border around the field
 	 */
 	public float getBoundaryWidth()
@@ -519,6 +534,7 @@ public class Geometry
 	
 	/**
 	 * distance between ball and bot required during stop signal (without ball and bot radius!)
+	 * 
 	 * @return distance
 	 */
 	public float getBotToBallDistanceStop()
@@ -564,7 +580,6 @@ public class Geometry
 	
 	
 	/**
-	 * 
 	 * @return the freekickarea of us
 	 */
 	public FreekickArea getFreekickAreaOur()

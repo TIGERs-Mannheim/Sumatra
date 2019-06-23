@@ -40,12 +40,12 @@ public final class ConfigManager
 	// --- class variables ------------------------------------------------------
 	// --------------------------------------------------------------------------
 	// Logger
-	private static final Logger						log								= Logger.getLogger(ConfigManager.class
-																											.getName());
+	private static final Logger					log								= Logger.getLogger(ConfigManager.class
+																										.getName());
 	
-	private static ConfigManager						instance							= null;
-	private static final HashMap<String, String>	defaultGamePadConfigMap		= new HashMap<String, String>();
-	private static final HashMap<String, String>	defaultKeyboardConfigMap	= new HashMap<String, String>();
+	private static ConfigManager					instance							= null;
+	private static final Map<String, String>	defaultGamePadConfigMap		= new HashMap<String, String>();
+	private static final Map<String, String>	defaultKeyboardConfigMap	= new HashMap<String, String>();
 	
 	
 	// --------------------------------------------------------------------------
@@ -165,7 +165,7 @@ public final class ConfigManager
 	 * @param controllerPresenter
 	 * @return
 	 */
-	public HashMap<String, String> loadDefaultConfig(AControllerPresenter controllerPresenter)
+	public Map<String, String> loadDefaultConfig(AControllerPresenter controllerPresenter)
 	{
 		if (controllerPresenter.getType() == EControllerType.KEYBOARD)
 		{

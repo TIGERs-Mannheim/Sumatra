@@ -28,10 +28,4 @@ public interface IReplayOptionsPanelObserver
 	 */
 	void onSave(boolean active);
 	
-	
-	/**
-	 * update Records
-	 * 
-	 */
-	void onUpdate();
 }

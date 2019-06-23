@@ -25,7 +25,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.inputDevice.AInp
  * 
  */
 
-public class ActionTranslator
+class ActionTranslator
 {
 	// --------------------------------------------------------------------------
 	// --- instance variables ---------------------------------------------------
@@ -43,7 +43,7 @@ public class ActionTranslator
 	/**
 	 * @param inputDevice
 	 */
-	public ActionTranslator(AInputDevice inputDevice)
+	ActionTranslator(AInputDevice inputDevice)
 	{
 		this.inputDevice = inputDevice;
 	}
@@ -57,7 +57,7 @@ public class ActionTranslator
 	 * turn hashmap containing all single commands into an instance of ActionCommand
 	 * @param values
 	 */
-	public void translate(HashMap<String, Double> values)
+	void translate(HashMap<String, Double> values)
 	{
 		double forward = 0;
 		double backward = 0;

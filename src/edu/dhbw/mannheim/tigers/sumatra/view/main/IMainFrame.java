@@ -11,6 +11,8 @@ package edu.dhbw.mannheim.tigers.sumatra.view.main;
 
 import java.util.List;
 
+import edu.dhbw.mannheim.tigers.sumatra.views.ASumatraView;
+
 
 /**
  * Interface for the main frame. Necessary for the nogui feature.
@@ -66,7 +68,7 @@ public interface IMainFrame
 	 * 
 	 * @param view
 	 */
-	void addView(ISumatraView view);
+	void addView(ASumatraView view);
 	
 	
 	/**

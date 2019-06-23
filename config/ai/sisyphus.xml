@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sisyphus base="edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus">
+    <updatespline>
+        <SplineEndGoalNotReachedDecisionMaker>
+            <positionTol comment="Dist [mm] - max allowed distance to destination when pos is considered reached.">40.0</positionTol>
+            <orientationTol comment="Dist [rad] - max allowed distance to target orientation when orientation is considered reached.">0.17</orientationTol>
+        </SplineEndGoalNotReachedDecisionMaker>
+        <CollisionDetectionDecisionMaker>
+            <ignoreFirstMillimeters comment="the first MM of the spline are ignored by the collision detection. So it is possible to drive away from another bot or ball">100.0</ignoreFirstMillimeters>
+            <ignoreLastMillimeters comment="the last MM of the spline are ignored by the collision detection. So it is possible to drive to another bot or ball">100.0</ignoreLastMillimeters>
+            <collisionIterationsMaximum comment="maximum amount of iterations done by the collision detection (started at the position of the bot)">10.0</collisionIterationsMaximum>
+            <collisionIterationsStepSize comment="step size of iterations done by the collision detection (started at the position of the bot)">0.1</collisionIterationsStepSize>
+            <collisionSafetyDistance comment="distance from path to obstacles to fire a collision detection">0.0</collisionSafetyDistance>
+        </CollisionDetectionDecisionMaker>
+        <BotNotOnSplineDecisionMaker>
+            <allowedDistanceVerticalToSpline comment="how much is the bot allowed to differ vertical from the current spline until a new spline is calculated[mm]">50.0</allowedDistanceVerticalToSpline>
+            <allowedDistanceToSpline comment="how much is the bot allowed to differ from the current spline until a new spline is calculated[mm]">200.0</allowedDistanceToSpline>
+        </BotNotOnSplineDecisionMaker>
+        <DestinationChangedDecisionMaker>
+            <timeRemainingTolerance comment="time [s] - if remaining time is below this_ new spline will be enforced.">0.5</timeRemainingTolerance>
+            <destinationTolerance comment="dist [m] - if distance between old and new destination on spline is greater_ new spline will be enforced">0.1</destinationTolerance>
+            <lookahead comment="time [s] - destinations will be taken on spline now plus lookahead.">0.5</lookahead>
+        </DestinationChangedDecisionMaker>
+        <NewPathShorterDecisionMaker>
+            <useShorterPathIfFaster comment="if the new calculated path is faster by this amount of time it will replace the old path [s]">1.5</useShorterPathIfFaster>
+        </NewPathShorterDecisionMaker>
+    </updatespline>
+    <errt>
+        <TuneableParameter>
+            <pDestination comment="probability to choose targetNode_ BE CAREFUL: pRandom = (1 - pDest - pWaypoint)">0.2</pDestination>
+            <pWaypoint comment="probability to choose a waypoint_ BE CAREFUL: pRandom = (1 - pDest - pWaypoint)">0.6</pWaypoint>
+            <stepSize comment="distance between 2 nodes [mm]">100</stepSize>
+            <maxIterations comment="maximum amount of iterations">1000</maxIterations>
+            <maxIterationsFastApprox comment="maximum amount of iterations for fast approximation">100</maxIterationsFastApprox>
+            <reduceSafetyForPathSmoothing comment="the safety distance for the path smoothing is reduced to this percentage">0.7f</reduceSafetyForPathSmoothing>
+        </TuneableParameter>
+    </errt>
+    <Sisyphus>
+        <pathPlanningInterval comment="Time [ms] - How often should the pathplanning be executed?">20</pathPlanningInterval>
+        <maxRotateVelocity comment="Vel [rad/s] - Max rotation velocity to use for spline generation">10.0</maxRotateVelocity>
+        <maxRotateVelocity:GRSIM comment="Vel [rad/s] - Max rotation velocity to use for spline generation">10.0</maxRotateVelocity:GRSIM>
+        <maxRotateAcceleration comment="Vel [rad/s^2] - Max rotation acceleration to use for spline generation">15.0</maxRotateAcceleration>
+        <maxRotateAcceleration:GRSIM comment="Vel [rad/s^2] - Max rotation acceleration to use for spline generation">15.0</maxRotateAcceleration:GRSIM>
+        <normalAngleToSpeed comment="Func [poly] - This function maps the normal angle at path points to speed at this point">poly:0.0;2.0</normalAngleToSpeed>
+        <maxLinearVelocity comment="Vel [m/s] - Max linear velocity to use for spline generation">3.0</maxLinearVelocity>
+        <maxLinearVelocity:GRSIM comment="Vel [m/s] - Max linear velocity to use for spline generation">2.5</maxLinearVelocity:GRSIM>
+        <maxLinearAcceleration comment="Acc [m/s^2] - Max linear acceleration to use for spline generation">2.5</maxLinearAcceleration>
+        <maxLinearAcceleration:GRSIM comment="Acc [m/s^2] - Max linear acceleration to use for spline generation">2.5</maxLinearAcceleration:GRSIM>
+        <pathReductionScore comment="Points on a path with a combined angle*distance score below this value will be removed">0.0</pathReductionScore>
+        <curveSpeed comment="factor to increase curve speed (CAREFUL: only 1.0f is really secure)">1.0</curveSpeed>
+    </Sisyphus>
+    <FieldInformation>
+        <safetyDistance comment="min. distance to obstacles [mm]">60</safetyDistance>
+        <secondSafetyDistance comment="min. distance to obstacles in 2nd round [mm]">20</secondSafetyDistance>
+        <safetyDistanceBall comment="min. distance to the ball">120</safetyDistanceBall>
+        <pufferSafetyEndToDest comment="puffer between end of safety distance and possible start / target positions for the ERRT">10</pufferSafetyEndToDest>
+        <predictionIterationsMaximum comment="time in seconds which are predicted for the path planning">10</predictionIterationsMaximum>
+        <predictionStepSize comment="time in seconds for the prediction step size">0.1</predictionStepSize>
+    </FieldInformation>
+</sisyphus>

@@ -94,8 +94,8 @@ public class FramePacker
 	 */
 	public List<CamRobot> getBotList()
 	{
-		final List<CamRobot> bots = new ArrayList<CamRobot>(oldFrame.robotsTigers);
-		bots.addAll(oldFrame.robotsEnemies);
+		final List<CamRobot> bots = new ArrayList<CamRobot>(oldFrame.robotsYellow);
+		bots.addAll(oldFrame.robotsBlue);
 		return bots;
 	}
 	
@@ -127,7 +127,7 @@ public class FramePacker
 			newBalls.add(newBall);
 			
 			newFrame = new CamDetectionFrame(oldFrame.tCapture, oldFrame.tSent, oldFrame.tReceived, oldFrame.cameraId,
-					oldFrame.frameNumber, oldFrame.fps, newBalls, oldFrame.robotsTigers, oldFrame.robotsEnemies,
+					oldFrame.frameNumber, oldFrame.fps, newBalls, oldFrame.robotsYellow, oldFrame.robotsBlue,
 					oldFrame.teamProps);
 		} else
 		{

@@ -4,22 +4,23 @@
  * Project: TIGERS - Sumatra
  * Date: 30.01.2011
  * Author(s): osteinbrecher
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.move;
 
 import java.util.List;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACondition.EConditionState;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move.MovementCon;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ASkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveAndStaySkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveToSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill.EMoveToMode;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.IMoveToSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleState;
 
 
@@ -30,7 +31,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleSt
  * 
  * @author Oliver Steinbrecher <OST1988@aol.com>
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class MoveRole extends ARole
 {
@@ -62,6 +62,7 @@ public class MoveRole extends ARole
 	}
 	
 	private final EMoveBehavior	behavior;
+	private IMoveToSkill				skill;
 	
 	
 	// --------------------------------------------------------------------------
@@ -70,47 +71,64 @@ public class MoveRole extends ARole
 	
 	
 	/**
-	 * Default constructor
-	 */
-	@Deprecated
-	public MoveRole()
-	{
-		this(EMoveBehavior.LOOK_AT_BALL);
-		updateDestination(Vector2.ZERO_VECTOR);
-		updateLookAtTarget(AIConfig.getGeometry().getPenaltyMarkTheir());
-	}
-	
-	
-	/**
 	 * Create a simple move role.
+	 * 
 	 * @param behavior
 	 */
-	public MoveRole(EMoveBehavior behavior)
+	public MoveRole(final EMoveBehavior behavior)
 	{
 		super(ERole.MOVE);
 		IRoleState state = new MovingState();
 		setInitialState(state);
-		// addTransition(EStateId.MOVING, EEvent.DEST_UPDATE, state);
 		addEndTransition(EStateId.MOVING, EEvent.DONE);
 		this.behavior = behavior;
+		if (behavior == EMoveBehavior.DO_COMPLETE)
+		{
+			skill = AMoveSkill.createMoveToSkill(EMoveToMode.DO_COMPLETE);
+		} else
+		{
+			skill = AMoveSkill.createMoveToSkill(EMoveToMode.STAY);
+		}
+	}
+	
+	
+	/**
+	 * @param dest
+	 * @param orientation
+	 * @param speed
+	 */
+	public MoveRole(final IVector2 dest, final float orientation, final float speed)
+	{
+		super(ERole.MOVE);
+		IRoleState state = new MovingState();
+		setInitialState(state);
+		addEndTransition(EStateId.MOVING, EEvent.DONE);
+		behavior = EMoveBehavior.DO_COMPLETE;
+		IMoveToSkill moveSkill = AMoveSkill.createMoveToSkill(EMoveToMode.DO_COMPLETE);
+		moveSkill.getMoveCon().updateDestination(dest);
+		moveSkill.getMoveCon().updateTargetAngle(orientation);
+		moveSkill.getMoveCon().setSpeed(speed);
+		skill = moveSkill;
 	}
 	
 	
 	/**
 	 * Moves the bot
-	 * @author Daniel Andres <andreslopez.daniel@gmail.com>
 	 * 
+	 * @author Daniel Andres <andreslopez.daniel@gmail.com>
 	 */
 	private class MovingState implements IRoleState
 	{
+		
+		
 		@Override
-		public void onSkillStarted(ASkill skill, BotID botID)
+		public void onSkillStarted(final ISkill skill, final BotID botID)
 		{
 		}
 		
 		
 		@Override
-		public void onSkillCompleted(ASkill skill, BotID botID)
+		public void onSkillCompleted(final ISkill skill, final BotID botID)
 		{
 			nextState(EEvent.DONE);
 		}
@@ -119,12 +137,15 @@ public class MoveRole extends ARole
 		@Override
 		public void doEntryActions()
 		{
-			if (behavior == EMoveBehavior.DO_COMPLETE)
+			
+			setNewSkill(skill);
+			switch (behavior)
 			{
-				setNewSkill(new MoveToSkill(getMoveCon()));
-			} else
-			{
-				setNewSkill(new MoveAndStaySkill(getMoveCon()));
+				case LOOK_AT_BALL:
+					skill.getMoveCon().updateLookAtTarget(getAiFrame().getWorldFrame().getBall());
+					break;
+				default:
+					// nothing to do
 			}
 		}
 		
@@ -138,14 +159,6 @@ public class MoveRole extends ARole
 		@Override
 		public void doUpdate()
 		{
-			switch (behavior)
-			{
-				case LOOK_AT_BALL:
-					updateLookAtTarget(getAiFrame().worldFrame.ball.getPos());
-					break;
-				default:
-					// nothing to do
-			}
 		}
 		
 		
@@ -162,6 +175,15 @@ public class MoveRole extends ARole
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
+	/**
+	 * @return
+	 */
+	public final MovementCon getMoveCon()
+	{
+		return skill.getMoveCon();
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -170,5 +192,14 @@ public class MoveRole extends ARole
 	public void fillNeededFeatures(final List<EFeature> features)
 	{
 		// only needed MOVING and this is already set in ARole
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public boolean checkMoveCondition()
+	{
+		return getMoveCon().checkCondition(getWFrame(), getBotID()) == EConditionState.FULFILLED;
 	}
 }

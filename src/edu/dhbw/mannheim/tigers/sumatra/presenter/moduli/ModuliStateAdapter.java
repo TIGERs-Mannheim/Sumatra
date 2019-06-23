@@ -14,8 +14,10 @@ import java.beans.PropertyChangeListener;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.apache.log4j.Logger;
+
+import edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesState;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.moduli.listenerVariables.ModulesState;
 
 
 /**
@@ -30,6 +32,7 @@ public final class ModuliStateAdapter implements PropertyChangeListener
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
+	private static final Logger					log			= Logger.getLogger(ModuliStateAdapter.class.getName());
 	private SumatraModel								model			= null;
 	private static ModuliStateAdapter			instance		= null;
 	private final List<IModuliStateObserver>	observers	= new CopyOnWriteArrayList<IModuliStateObserver>();
@@ -96,7 +99,13 @@ public final class ModuliStateAdapter implements PropertyChangeListener
 			{
 				for (IModuliStateObserver o : observers)
 				{
-					o.onModuliStateChanged(newState);
+					try
+					{
+						o.onModuliStateChanged(newState);
+					} catch (Exception err)
+					{
+						log.error("Exception while changing moduli state in class " + o.getClass().getName(), err);
+					}
 				}
 			}
 		}

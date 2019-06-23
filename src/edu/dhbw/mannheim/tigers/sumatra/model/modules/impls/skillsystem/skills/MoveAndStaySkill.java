@@ -4,16 +4,11 @@
  * Project: TIGERS - Sumatra
  * Date: May 2, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills;
 
-import java.util.List;
-
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move.MovementCon;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
 
 
@@ -21,7 +16,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillNa
  * Same as {@link MoveToSkill}, but does not complete.
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class MoveAndStaySkill extends MoveToSkill
 {
@@ -36,11 +30,10 @@ public class MoveAndStaySkill extends MoveToSkill
 	// --------------------------------------------------------------------------
 	
 	/**
-	 * @param moveCon
 	 */
-	public MoveAndStaySkill(MovementCon moveCon)
+	public MoveAndStaySkill()
 	{
-		super(ESkillName.MOVE_AND_STAY, moveCon);
+		super(ESkillName.MOVE_AND_STAY);
 	}
 	
 	
@@ -50,27 +43,21 @@ public class MoveAndStaySkill extends MoveToSkill
 	
 	
 	@Override
-	protected boolean isComplete(TrackedTigerBot bot)
+	protected boolean isMoveComplete()
 	{
-		if (!done && super.isComplete(bot))
+		if (!done && super.isMoveComplete())
 		{
-			removePath();
 			done = true;
+			removePath();
 		}
 		return false;
 	}
 	
 	
 	@Override
-	protected void periodicProcess(TrackedTigerBot bot, List<ACommand> cmds)
+	public void onNewPath(final Path path)
 	{
-		super.periodicProcess(bot, cmds);
-	}
-	
-	
-	@Override
-	protected void onNewSpline()
-	{
+		super.onNewPath(path);
 		done = false;
 	}
 	// --------------------------------------------------------------------------

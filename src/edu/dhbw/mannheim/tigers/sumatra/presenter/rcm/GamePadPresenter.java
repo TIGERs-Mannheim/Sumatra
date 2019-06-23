@@ -14,7 +14,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.inputDevice.cont
 
 /**
  */
-public class GamePadPresenter extends AControllerPresenter
+class GamePadPresenter extends AControllerPresenter
 {
 	// --------------------------------------------------------------------------
 	// --- class variables ------------------------------------------------------
@@ -26,7 +26,7 @@ public class GamePadPresenter extends AControllerPresenter
 	/**
 	 * @param newController
 	 */
-	public GamePadPresenter(Controller newController)
+	GamePadPresenter(Controller newController)
 	{
 		super(newController);
 	}

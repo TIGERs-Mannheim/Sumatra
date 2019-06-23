@@ -4,27 +4,26 @@
  * Project: TIGERS - Sumatra
  * Date: Apr 4, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.util.Map;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.BotAiInformation;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
-import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.FieldPanel;
 
 
 /**
  * Display role names for each bot
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class RoleNameLayer extends AFieldLayer
 {
@@ -52,21 +51,23 @@ public class RoleNameLayer extends AFieldLayer
 	
 	
 	@Override
-	protected void paintLayer(Graphics2D g)
+	protected void paintLayerAif(final Graphics2D g, final IRecordFrame frame)
 	{
 		g.setColor(Color.yellow);
-		for (Map.Entry<BotID, ERole> entry : getAiFrame().getAssigendERoles().entrySet())
+		g.setFont(new Font("", Font.PLAIN, 9));
+		for (Map.Entry<BotID, BotAiInformation> entry : frame.getTacticalField().getBotAiInformation().entrySet())
 		{
 			BotID botID = entry.getKey();
-			ERole role = entry.getValue();
-			TrackedTigerBot bot = getAiFrame().getRecordWfFrame().getTigerBotsVisible().getWithNull(botID);
+			BotAiInformation aiInfo = entry.getValue();
+			
+			TrackedTigerBot bot = frame.getWorldFrame().getTigerBotsVisible().getWithNull(botID);
 			if (bot == null)
 			{
 				continue;
 			}
 			IVector2 pos = bot.getPos();
-			IVector2 guiPos = FieldPanel.transformToGuiCoordinates(pos);
-			g.drawString(role.name(), guiPos.x(), guiPos.y());
+			IVector2 guiPos = getFieldPanel().transformToGuiCoordinates(pos, frame.getWorldFrame().isInverted());
+			g.drawString(aiInfo.getRole(), guiPos.x() + 10, guiPos.y());
 		}
 	}
 	

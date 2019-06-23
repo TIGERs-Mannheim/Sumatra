@@ -10,15 +10,9 @@
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tigerv2;
 
 import java.awt.Color;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
 import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
@@ -38,35 +32,17 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.comm
  */
 public class TigerBotV2Summary extends JPanel
 {
-	/**
-	 *
-	 */
-	public interface ITigerBotV2SummaryObserver
-	{
-		/** */
-		void onConnectionChange();
-		
-		
-		/**
-		 * @param oofCheck
-		 */
-		void onOOFCheckChange(boolean oofCheck);
-	}
-	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long								serialVersionUID	= 5485796598824650963L;
-	private final JTextField								status;
-	private final JCheckBox									oofCheck;
-	private final JProgressBar								battery;
-	private final JButton									connect;
+	private static final long	serialVersionUID	= 5485796598824650963L;
+	private final JTextField	status;
+	private final JProgressBar	battery;
 	
-	private String												name;
-	private BotID												id;
-	private ENetworkState									netState;
-	
-	private final List<ITigerBotV2SummaryObserver>	observers			= new ArrayList<ITigerBotV2SummaryObserver>();
+	private String					name;
+	private BotID					id;
+	private ENetworkState		netState;
+	private final JTextField	cap;
 	
 	
 	// --------------------------------------------------------------------------
@@ -77,28 +53,25 @@ public class TigerBotV2Summary extends JPanel
 	 */
 	public TigerBotV2Summary()
 	{
-		setLayout(new MigLayout("fill", "[100,fill]10[100,fill]30[60]10[60]10[60]30[40]5[60]", "0[]0"));
+		setLayout(new MigLayout("fill", "[100,fill]20[40]10[60,fill]20[30]10[60,fill]", "0[]0"));
+		
+		cap = new JTextField();
+		cap.setHorizontalAlignment(JTextField.RIGHT);
 		
 		name = "Bob";
-		id = new BotID();
+		id = BotID.createBotId();
 		netState = ENetworkState.CONNECTING;
 		
 		status = new JTextField();
 		status.setEditable(false);
-		oofCheck = new JCheckBox("OOF Check");
 		battery = new JProgressBar(12800, 16800);
 		battery.setStringPainted(true);
 		
-		connect = new JButton("Disconnect");
-		
-		connect.addActionListener(new Connect());
-		oofCheck.addActionListener(new OOFChange());
-		
 		add(status);
-		add(connect);
-		add(oofCheck);
 		add(new JLabel("Battery:"));
 		add(battery, "growy");
+		add(new JLabel("Kicker:"));
+		add(cap);
 		
 		setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.BLACK), "Trish (1)"));
 		
@@ -110,30 +83,6 @@ public class TigerBotV2Summary extends JPanel
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/**
-	 * @param observer
-	 */
-	public void addObserver(ITigerBotV2SummaryObserver observer)
-	{
-		synchronized (observers)
-		{
-			observers.add(observer);
-		}
-	}
-	
-	
-	/**
-	 * 
-	 * @param observer
-	 */
-	public void removeObserver(ITigerBotV2SummaryObserver observer)
-	{
-		synchronized (observers)
-		{
-			observers.remove(observer);
-		}
-	}
-	
 	
 	/**
 	 * 
@@ -163,31 +112,8 @@ public class TigerBotV2Summary extends JPanel
 	 */
 	public void setBatteryLevel(final float voltage)
 	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				battery.setValue((int) (voltage * 1000));
-				battery.setString(String.format(Locale.ENGLISH, "%1.2f V", voltage));
-			}
-		});
-	}
-	
-	
-	/**
-	 * @param enable
-	 */
-	public void setOofCheck(final boolean enable)
-	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				oofCheck.setSelected(enable);
-			}
-		});
+		battery.setValue((int) (voltage * 1000));
+		battery.setString(String.format(Locale.ENGLISH, "%1.2f V", voltage));
 	}
 	
 	
@@ -201,27 +127,54 @@ public class TigerBotV2Summary extends JPanel
 	}
 	
 	
-	private void notifyConnectionChange()
+	/**
+	 * @param f
+	 */
+	public void setCap(final float f)
 	{
-		synchronized (observers)
+		float green = 1;
+		float red = 0;
+		
+		// increase red level => yellow
+		if (f < 125)
 		{
-			for (final ITigerBotV2SummaryObserver observer : observers)
-			{
-				observer.onConnectionChange();
-			}
-		}
-	}
-	
-	
-	private void notifyOOFChange(boolean oofCheck)
-	{
-		synchronized (observers)
+			red = f / 125;
+		} else
 		{
-			for (final ITigerBotV2SummaryObserver observer : observers)
-			{
-				observer.onOOFCheckChange(oofCheck);
-			}
+			red = 1;
 		}
+		
+		// decrease green level => red
+		if (f > 125)
+		{
+			green = 1 - ((f - 125) / 125);
+		} else
+		{
+			green = 1;
+		}
+		
+		if (green < 0)
+		{
+			green = 0;
+		}
+		
+		if (red < 0)
+		{
+			red = 0;
+		}
+		
+		final float g = green;
+		final float r = red;
+		
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				cap.setText(String.format(Locale.ENGLISH, "%3.1fV", f));
+				cap.setBackground(new Color(r, g, 0));
+			}
+		});
 	}
 	
 	
@@ -230,14 +183,12 @@ public class TigerBotV2Summary extends JPanel
 		final String title = String.format("[ %d ] %s", id.getNumber(), name);
 		Color borderColor = null;
 		String stateText = "";
-		String buttonText = "Disconnect";
 		
 		switch (netState)
 		{
 			case OFFLINE:
 				stateText = "Offline";
 				borderColor = Color.RED;
-				buttonText = "Connect";
 				break;
 			case CONNECTING:
 				stateText = "Connecting";
@@ -251,7 +202,6 @@ public class TigerBotV2Summary extends JPanel
 		
 		final Color col = borderColor;
 		final String text = stateText;
-		final String bText = buttonText;
 		
 		SwingUtilities.invokeLater(new Runnable()
 		{
@@ -260,26 +210,7 @@ public class TigerBotV2Summary extends JPanel
 			{
 				setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(col), title));
 				status.setText(text);
-				connect.setText(bText);
 			}
 		});
-	}
-	
-	private class Connect implements ActionListener
-	{
-		@Override
-		public void actionPerformed(ActionEvent e)
-		{
-			notifyConnectionChange();
-		}
-	}
-	
-	private class OOFChange implements ActionListener
-	{
-		@Override
-		public void actionPerformed(ActionEvent e)
-		{
-			notifyOOFChange(oofCheck.isSelected());
-		}
 	}
 }

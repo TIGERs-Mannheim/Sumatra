@@ -9,12 +9,15 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.DynamicPosition;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACondition;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.ECondition;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
 
 
 /**
@@ -36,22 +39,20 @@ public class ViewAngleCondition extends ACondition
 	 * The {@link Float} class is used here to underline an uninitialized {@link ViewAngleCondition}.
 	 * [rad]
 	 */
-	private float	angle;
+	private float				angle					= 0;
+	private DynamicPosition	target				= null;
+	private IVector2			destPos				= null;
+	
+	@Configurable(comment = "Tol [rad/s] - when below, rotation is considered to be done")
+	private static float		rotSpeedTolerance	= 0.1f;
+	
+	@Configurable(comment = "Tol [rad] - this tolerance value is used to check if the viewing direction of the bot is correct.")
+	private static float		angleTolerance		= 0.17f;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	
-	/**
-	 * @param angle [rad]
-	 */
-	public ViewAngleCondition(float angle)
-	{
-		super(ECondition.VIEW_ANGLE);
-		updateTargetAngle(angle);
-	}
 	
 	
 	/**
@@ -61,7 +62,7 @@ public class ViewAngleCondition extends ACondition
 	 */
 	public ViewAngleCondition()
 	{
-		this(0);
+		super(ECondition.VIEW_ANGLE);
 		setActive(false);
 	}
 	
@@ -78,25 +79,105 @@ public class ViewAngleCondition extends ACondition
 	 * @return true when bot has reached its destination angle
 	 */
 	@Override
-	protected EConditionState doCheckCondition(WorldFrame worldFrame, BotID botID)
+	protected EConditionState doCheckCondition(SimpleWorldFrame worldFrame, BotID botID)
 	{
-		final float angleTolerance = getBotConfig().getTolerances().getViewAngle();
-		final float rotSpeedThreshold = getBotConfig().getSkills().getRotationSpeedThreshold();
-		
-		final TrackedTigerBot bot = worldFrame.tigerBotsVisible.get(botID);
-		
-		final String conditionStr = String.format(
-				"rotation(%.2f) < angleTol (%.2f) && botVel(%.2f) < rotSpeedThreshold(%.2f)",
-				Math.abs(AngleMath.getShortestRotation(bot.getAngle(), getTargetAngle())), angleTolerance,
-				Math.abs(bot.getaVel()), rotSpeedThreshold);
-		setCondition(conditionStr);
-		
-		if ((Math.abs(AngleMath.getShortestRotation(bot.getAngle(), getTargetAngle())) < angleTolerance)
-				&& (Math.abs(bot.getaVel()) < rotSpeedThreshold))
+		if ((destPos != null) && (target != null))
 		{
+			target.update(worldFrame);
+			updateLookAtTarget(destPos, target);
+		}
+		
+		final TrackedTigerBot bot = worldFrame.getBot(botID);
+		
+		if (!(Math.abs(AngleMath.getShortestRotation(bot.getAngle(), getTargetAngle())) < angleTolerance))
+		{
+			setCondition(String.format("Rot. %.1f > %.1f",
+					Math.abs(AngleMath.getShortestRotation(bot.getAngle(), getTargetAngle())), angleTolerance));
+		} else if (!(Math.abs(bot.getaVel()) < rotSpeedTolerance))
+		{
+			setCondition(String.format("Vel. %.1f > %.1f", Math.abs(bot.getaVel()), rotSpeedTolerance));
+		} else
+		{
+			setCondition("Orient. reached.");
 			return EConditionState.FULFILLED;
 		}
+		
 		return EConditionState.PENDING;
+	}
+	
+	
+	/**
+	 * Updates the angle the bot should look at.
+	 * @param destPos
+	 * @param lookAtTarget
+	 */
+	private void updateLookAtTarget(IVector2 destPos, DynamicPosition lookAtTarget)
+	{
+		final IVector2 tmp = lookAtTarget.subtractNew(destPos);
+		if (!tmp.isZeroVector())
+		{
+			final float angle = tmp.getAngle();
+			updateTargetAngle(angle);
+			resetCache();
+		}
+		target = lookAtTarget;
+		this.destPos = destPos;
+		// lookAtTarget and destination are equal => can not calc angle.
+		// as this happens quite frequently, just keep the old angle and do not complain
+	}
+	
+	
+	/**
+	 * Updates the angle the bot should look at.
+	 * @param lookAtTarget
+	 */
+	public void updateLookAtTarget(DynamicPosition lookAtTarget)
+	{
+		target = lookAtTarget;
+	}
+	
+	
+	/**
+	 * Update dynamic positions and recalc angle occording to destination
+	 * 
+	 * @param destination
+	 * @param swf
+	 */
+	public void update(IVector2 destination, SimpleWorldFrame swf)
+	{
+		if (target != null)
+		{
+			target.update(swf);
+			updateLookAtTarget(destination, target);
+		}
+	}
+	
+	
+	@Override
+	public void update(SimpleWorldFrame swf, BotID botId)
+	{
+		super.update(swf, botId);
+		if (!isActive())
+		{
+			updateTargetAngle(swf.getBot(botId).getAngle());
+		}
+	}
+	
+	
+	/**
+	 * updates the intended view angle.
+	 * condition will be activated, if it was not.
+	 * 
+	 * Use {@link ACondition#setActive(boolean)} to keep current angle
+	 * 
+	 * @param angle the absolute angle the bot should look at (-pi,pi)
+	 *           <b>[rad]</b>
+	 */
+	public final void updateTargetAngle(float angle)
+	{
+		this.angle = angle;
+		setActive(true);
+		resetCache();
 	}
 	
 	
@@ -119,28 +200,9 @@ public class ViewAngleCondition extends ACondition
 	}
 	
 	
-	/**
-	 * updates the intended view angle.
-	 * condition will be activated, if it was not.
-	 * 
-	 * Use {@link ACondition#setActive(boolean)} to keep current angle
-	 * 
-	 * @param angle the absolute angle the bot should look at (-pi,pi)
-	 *           <b>[rad]</b>
-	 */
-	public final void updateTargetAngle(float angle)
-	{
-		this.angle = angle;
-		setActive(true);
-		resetCache();
-	}
-	
-	
 	@Override
 	protected boolean compareContent(ACondition condition)
 	{
-		final float angleTolerance = getBotConfig().getTolerances().getViewAngle();
-		
 		if (condition == null)
 		{
 			return false;
@@ -162,5 +224,14 @@ public class ViewAngleCondition extends ACondition
 			return true;
 		}
 		return false;
+	}
+	
+	
+	/**
+	 * @return the target
+	 */
+	public final DynamicPosition getTarget()
+	{
+		return target;
 	}
 }

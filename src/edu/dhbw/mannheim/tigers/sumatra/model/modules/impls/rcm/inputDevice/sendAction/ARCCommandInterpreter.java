@@ -10,7 +10,6 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.inputDevice.sendAction;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.ActionCommand;
 
 
@@ -25,22 +24,11 @@ public abstract class ARCCommandInterpreter
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	protected static final float	TWO_PI	= 2 * (float) Math.PI;
-	
-	protected final EBotType		type;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	/**
-	 * 
-	 * @param type
-	 */
-	public ARCCommandInterpreter(EBotType type)
-	{
-		this.type = type;
-	}
 	
 	
 	// --------------------------------------------------------------------------
@@ -57,16 +45,6 @@ public abstract class ARCCommandInterpreter
 	 *
 	 */
 	public abstract void stopAll();
-	
-	
-	/**
-	 * 
-	 * @return
-	 */
-	public EBotType getType()
-	{
-		return type;
-	}
 	
 	
 	// --------------------------------------------------------------------------

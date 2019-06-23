@@ -8,46 +8,13 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationAuth;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationPing;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationStats;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationVisionConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerDribble;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerChargeAuto;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerChargeManual;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerIrLog;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerKickV2;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerStatusV2;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerMotorPidLog;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerMotorSetManual;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerMotorSetParams;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerMotorSetPidSp;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerMovementLis3Log;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerMulticastUpdateAllV2;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerSystemAnnouncement;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerSystemBigPing;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerSystemPing;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerSystemPong;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerSystemPowerLog;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerSystemSetIdentity;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerSystemSetLogs;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerSystemStatusMovement;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerBootloaderCommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerBootloaderData;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerBootloaderResponse;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerCtrlSetControllerType;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerCtrlSetFilterParams;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerCtrlSetPIDParams;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerCtrlSpline1D;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerCtrlSpline2D;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerCtrlVisionPos;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerKickerStatusV3;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerSystemConsoleCommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerSystemConsolePrint;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerSystemStatusV2;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialDescription;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialException;
 
 
 /**
@@ -55,7 +22,14 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.
 public final class CommandFactory
 {
 	// Logger
-	private static final Logger	log	= Logger.getLogger(CommandFactory.class.getName());
+	private static final Logger					log						= Logger.getLogger(CommandFactory.class.getName());
+	
+	private static CommandFactory					instance					= null;
+	
+	private Map<Integer, SerialDescription>	commands					= new HashMap<Integer, SerialDescription>();
+	
+	private static final int						HEADER_LENGTH			= 2;
+	private static final int						LEGACY_HEADER_LENGTH	= 4;
 	
 	
 	private CommandFactory()
@@ -65,121 +39,214 @@ public final class CommandFactory
 	
 	
 	/**
-	 * @param header
+	 * Get singleton instance.
+	 * 
 	 * @return
 	 */
-	public static ACommand createEmptyPacket(byte[] header)
+	public static synchronized CommandFactory getInstance()
 	{
-		if (header.length < CommandConstants.HEADER_SIZE)
+		if (instance == null)
 		{
-			log.error("Header too short");
-			
-			return null;
+			instance = new CommandFactory();
 		}
-		
-		int command = ACommand.byteArray2UShort(header, 0);
-		
-		switch (command)
-		{
-			case CommandConstants.CMD_MOTOR_DRIBBLE:
-				return new TigerDribble();
-			case CommandConstants.CMD_MOTOR_PID_LOG:
-				return new TigerMotorPidLog();
-			case CommandConstants.CMD_MOTOR_SET_MANUAL:
-				return new TigerMotorSetManual();
-			case CommandConstants.CMD_MOTOR_SET_PID_SP:
-				return new TigerMotorSetPidSp();
-			case CommandConstants.CMD_MOTOR_SET_PARAMS:
-				return new TigerMotorSetParams();
-				
-			case CommandConstants.CMD_KICKER_STATUSV2:
-				return new TigerKickerStatusV2();
-			case CommandConstants.CMD_KICKER_KICKV2:
-				return new TigerKickerKickV2();
-			case CommandConstants.CMD_KICKER_CHARGE_AUTO:
-				return new TigerKickerChargeAuto();
-			case CommandConstants.CMD_KICKER_CHARGE_MANUAL:
-				return new TigerKickerChargeManual();
-			case CommandConstants.CMD_KICKER_IR_LOG:
-				return new TigerKickerIrLog();
-			case CommandConstants.CMD_KICKER_STATUSV3:
-				return new TigerKickerStatusV3();
-				
-			case CommandConstants.CMD_SYSTEM_STATUS_MOVEMENT:
-				return new TigerSystemStatusMovement();
-			case CommandConstants.CMD_SYSTEM_POWER_LOG:
-				return new TigerSystemPowerLog();
-			case CommandConstants.CMD_SYSTEM_SET_IDENTITY:
-				return new TigerSystemSetIdentity();
-			case CommandConstants.CMD_SYSTEM_ANNOUNCEMENT:
-				return new TigerSystemAnnouncement();
-			case CommandConstants.CMD_SYSTEM_PING:
-				return new TigerSystemPing();
-			case CommandConstants.CMD_SYSTEM_PONG:
-				return new TigerSystemPong();
-			case CommandConstants.CMD_SYSTEM_BIG_PING:
-				return new TigerSystemBigPing();
-			case CommandConstants.CMD_SYSTEM_SET_LOGS:
-				return new TigerSystemSetLogs();
-			case CommandConstants.CMD_SYSTEM_CONSOLE_PRINT:
-				return new TigerSystemConsolePrint();
-			case CommandConstants.CMD_SYSTEM_CONSOLE_COMMAND:
-				return new TigerSystemConsoleCommand();
-			case CommandConstants.CMD_SYSTEM_STATUS_V2:
-				return new TigerSystemStatusV2();
-				
-			case CommandConstants.CMD_MOVEMENT_LIS3_LOG:
-				return new TigerMovementLis3Log();
-				
-			case CommandConstants.CMD_MULTICAST_UPDATE_ALL_V2:
-				return new TigerMulticastUpdateAllV2();
-				
-			case CommandConstants.CMD_CTRL_VISION_POS:
-				return new TigerCtrlVisionPos();
-			case CommandConstants.CMD_CTRL_SPLINE_2D:
-				return new TigerCtrlSpline2D();
-			case CommandConstants.CMD_CTRL_SPLINE_1D:
-				return new TigerCtrlSpline1D();
-			case CommandConstants.CMD_CTRL_SET_FILTER_PARAMS:
-				return new TigerCtrlSetFilterParams();
-			case CommandConstants.CMD_CTRL_SET_PID_PARAMS:
-				return new TigerCtrlSetPIDParams();
-			case CommandConstants.CMD_CTRL_SET_CONTROLLER_TYPE:
-				return new TigerCtrlSetControllerType();
-				
-			case CommandConstants.CMD_BASE_ACOMMAND:
-				return new BaseStationACommand();
-			case CommandConstants.CMD_BASE_PING:
-				return new BaseStationPing();
-			case CommandConstants.CMD_BASE_AUTH:
-				return new BaseStationAuth();
-			case CommandConstants.CMD_BASE_STATS:
-				return new BaseStationStats();
-			case CommandConstants.CMD_BASE_VISION_CONFIG:
-				return new BaseStationVisionConfig();
-				
-			case CommandConstants.CMD_BOOTLOADER_COMMAND:
-				return new TigerBootloaderCommand();
-			case CommandConstants.CMD_BOOTLOADER_DATA:
-				return new TigerBootloaderData();
-			case CommandConstants.CMD_BOOTLOADER_RESPONSE:
-				return new TigerBootloaderResponse();
-		}
-		
-		return null;
+		return instance;
 	}
 	
 	
 	/**
-	 * @param header
+	 * Call once per application lifetime to parse all commands.
+	 */
+	public void loadCommands()
+	{
+		commands.clear();
+		
+		for (ECommand ecmd : ECommand.values())
+		{
+			SerialDescription desc;
+			try
+			{
+				desc = new SerialDescription(ecmd.getClazz());
+				
+				// do sanity checks for encode and decode - should not throw any exception
+				desc.decode(desc.encode(desc.newInstance()));
+			} catch (SerialException err)
+			{
+				log.error("Could not load command: " + ecmd, err);
+				continue;
+			}
+			
+			ACommand acmd;
+			try
+			{
+				acmd = (ACommand) desc.newInstance();
+			} catch (SerialException err)
+			{
+				log.error("Could not create instance of: " + ecmd);
+				continue;
+			} catch (ClassCastException err)
+			{
+				log.error(ecmd + " is not based on ACommand!", err);
+				continue;
+			}
+			
+			if (acmd.getType().getId() != ecmd.getId())
+			{
+				log.error("ECommand id mismatch in command: " + ecmd + ". The command does not use the correct enum.");
+				continue;
+			}
+			
+			if (commands.get(ecmd.getId()) != null)
+			{
+				log.error(ecmd + "'s command code is already defined by: "
+						+ commands.get(ecmd.getId()).getClass().getName());
+				continue;
+			}
+			
+			commands.put(ecmd.getId(), desc);
+		}
+	}
+	
+	
+	/**
+	 * Parse byte data and create command.
+	 * 
 	 * @param data
+	 * @param legacy true if this is a legacy command which's header includes data length
 	 * @return
 	 */
-	public static ACommand createPacket(byte[] header, byte[] data)
+	public ACommand decode(final byte[] data, final boolean legacy)
 	{
-		final ACommand cmd = createEmptyPacket(header);
-		cmd.setData(data);
+		int cmdId = ACommand.byteArray2UShort(data, 0);
 		
-		return cmd;
+		if (!commands.containsKey(cmdId))
+		{
+			log.error("Unknown command: " + cmdId + ", length: " + data.length);
+			return null;
+		}
+		
+		byte[] cmdData;
+		
+		if (legacy)
+		{
+			cmdData = new byte[data.length - LEGACY_HEADER_LENGTH];
+			System.arraycopy(data, LEGACY_HEADER_LENGTH, cmdData, 0, data.length - LEGACY_HEADER_LENGTH);
+		} else
+		{
+			cmdData = new byte[data.length - HEADER_LENGTH];
+			System.arraycopy(data, HEADER_LENGTH, cmdData, 0, data.length - HEADER_LENGTH);
+		}
+		
+		SerialDescription cmdDesc = commands.get(cmdId);
+		
+		ACommand acmd;
+		
+		try
+		{
+			acmd = (ACommand) cmdDesc.decode(cmdData);
+			int cmdDataLen = cmdDesc.getLength(acmd);
+			if (cmdDataLen != cmdData.length)
+			{
+				String cmdStr = String.format("0x%x", cmdId);
+				log.warn("Command " + cmdStr + " did not parse all data (" + cmdDataLen + " used of " + cmdData.length
+						+ " available)");
+			}
+		} catch (SerialException err)
+		{
+			log.error("Could not parse cmd: " + cmdId, err);
+			return null;
+		}
+		
+		return acmd;
+	}
+	
+	
+	/**
+	 * Encode command in byte stream.
+	 * 
+	 * @param cmd
+	 * @param legacy true if this is a legacy command which's header includes data length
+	 * @return
+	 */
+	public byte[] encode(final ACommand cmd, final boolean legacy)
+	{
+		int cmdId = cmd.getType().getId();
+		
+		if (!commands.containsKey(cmdId))
+		{
+			log.error("No description for command: " + cmdId);
+			return null;
+		}
+		
+		SerialDescription cmdDesc = commands.get(cmdId);
+		
+		byte[] cmdData;
+		try
+		{
+			cmdData = cmdDesc.encode(cmd);
+		} catch (SerialException err)
+		{
+			log.error("Could not encode command: " + cmdId, err);
+			return null;
+		}
+		
+		byte[] data;
+		
+		if (legacy)
+		{
+			data = new byte[cmdData.length + LEGACY_HEADER_LENGTH];
+			
+			ACommand.short2ByteArray(data, 0, cmdId);
+			ACommand.short2ByteArray(data, 2, cmdData.length);
+			
+			System.arraycopy(cmdData, 0, data, LEGACY_HEADER_LENGTH, cmdData.length);
+		} else
+		{
+			data = new byte[cmdData.length + HEADER_LENGTH];
+			
+			ACommand.short2ByteArray(data, 0, cmdId);
+			
+			System.arraycopy(cmdData, 0, data, HEADER_LENGTH, cmdData.length);
+		}
+		
+		return data;
+	}
+	
+	
+	/**
+	 * @param cmd
+	 * @param legacy
+	 * @return
+	 */
+	public int getLength(final ACommand cmd, final boolean legacy)
+	{
+		int length;
+		int cmdId = cmd.getType().getId();
+		
+		if (!commands.containsKey(cmdId))
+		{
+			log.error("No description for command: " + cmdId);
+			return 0;
+		}
+		
+		SerialDescription cmdDesc = commands.get(cmdId);
+		
+		try
+		{
+			length = cmdDesc.getLength(cmd);
+		} catch (SerialException err)
+		{
+			log.error("Could not get length of: " + cmd.getType(), err);
+			return 0;
+		}
+		
+		if (legacy)
+		{
+			length += LEGACY_HEADER_LENGTH;
+		} else
+		{
+			length += HEADER_LENGTH;
+		}
+		
+		return length;
 	}
 }

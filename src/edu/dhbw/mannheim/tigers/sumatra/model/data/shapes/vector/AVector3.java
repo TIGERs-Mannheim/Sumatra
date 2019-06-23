@@ -9,10 +9,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector;
 
-import javax.persistence.Embeddable;
-
-import org.apache.commons.configuration.HierarchicalConfiguration;
-import org.apache.log4j.Logger;
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
@@ -27,16 +24,13 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
  * 
  * @author AndreR
  */
-@Embeddable
+@Persistent
 public abstract class AVector3 implements IVector3
 {
 	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	/**  */
-	private static final Logger	log			= Logger.getLogger(AVector3.class.getName());
-	
 	/** Vector3f(1,0,0) */
 	public static final Vector3f	X_AXIS		= new Vector3f(1, 0, 0);
 	/** Vector3f(0,1,0) */
@@ -69,7 +63,7 @@ public abstract class AVector3 implements IVector3
 			result.add(vector);
 		} else
 		{
-			log.error("addNew: vector is null!");
+			throw new NullPointerException("Input vector is null");
 		}
 		
 		return result;
@@ -85,7 +79,7 @@ public abstract class AVector3 implements IVector3
 			result.subtract(vector);
 		} else
 		{
-			log.error("subtractNew: vector is null!");
+			throw new NullPointerException("Input vector is null");
 		}
 		
 		return result;
@@ -169,17 +163,10 @@ public abstract class AVector3 implements IVector3
 	
 	
 	@Override
-	public HierarchicalConfiguration getConfiguration()
+	public IVector3 mirrorXY()
 	{
-		final HierarchicalConfiguration config = new HierarchicalConfiguration();
-		
-		config.addProperty("x", x());
-		config.addProperty("y", y());
-		config.addProperty("z", z());
-		
-		return config;
+		return new Vector3f(-x(), -y(), z());
 	}
-	
 	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------

@@ -12,7 +12,9 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -33,6 +35,7 @@ public class TigerDribble extends ACommand
 	private static final Logger	log		= Logger.getLogger(TigerDribble.class.getName());
 	
 	/** [rpm] */
+	@SerialData(type = ESerialDataType.UINT16)
 	private int							rpm;
 	/** */
 	public static final int			MAX_RPM	= 25000;
@@ -46,6 +49,8 @@ public class TigerDribble extends ACommand
 	 */
 	public TigerDribble()
 	{
+		super(ECommand.CMD_MOTOR_DRIBBLE);
+		
 		rpm = 0;
 	}
 	
@@ -55,6 +60,8 @@ public class TigerDribble extends ACommand
 	 */
 	public TigerDribble(int speed)
 	{
+		super(ECommand.CMD_MOTOR_DRIBBLE);
+		
 		rpm = speed;
 		
 		if (speed > MAX_RPM)
@@ -68,38 +75,6 @@ public class TigerDribble extends ACommand
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		rpm = byteArray2Short(data, 0);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		short2ByteArray(data, 0, rpm);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_MOTOR_DRIBBLE;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 2;
-	}
-	
-	
 	/**
 	 * @return [rpm]
 	 */

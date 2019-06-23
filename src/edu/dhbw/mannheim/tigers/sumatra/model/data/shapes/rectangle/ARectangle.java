@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import javax.persistence.Entity;
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
@@ -30,11 +30,11 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Line;
  * 
  * This abstract class represents a rectangle. It is used i. e. to describe a part-rectangle of the field.
  * Implementing {@link IRectangle}.
- * Superclass for {@link Rectangle} and {@link Rectanglef}.
+ * Superclass for {@link Rectangle} and {@link Rectangle}.
  * 
  * @author Oliver Steinbrecher <OST1988@aol.com>, MalteM
  */
-@Entity
+@Persistent
 public abstract class ARectangle implements Serializable, IRectangle
 {
 	// --------------------------------------------------------------------------
@@ -42,8 +42,6 @@ public abstract class ARectangle implements Serializable, IRectangle
 	// --------------------------------------------------------------------------
 	/**  */
 	private static final long	serialVersionUID	= 471915511201286760L;
-	
-	private final Random			randomGenerator	= new Random(System.nanoTime());
 	
 	
 	// --------------------------------------------------------------------------
@@ -175,8 +173,8 @@ public abstract class ARectangle implements Serializable, IRectangle
 	@Deprecated
 	public boolean isLineIntersectingShape(ILine line)
 	{
-		final Vector2 s = new Vector2(line.supportVector());
-		final Vector2 n = line.directionVector().normalizeNew();
+		final IVector2 s = new Vector2(line.supportVector());
+		final IVector2 n = line.directionVector().normalizeNew();
 		final boolean d1 = SumatraMath.isPositive(topLeft().subtractNew(s).scalarProduct(n));
 		final boolean d2 = SumatraMath.isPositive(topRight().subtractNew(s).scalarProduct(n));
 		final boolean d3 = SumatraMath.isPositive(bottomLeft().subtractNew(s).scalarProduct(n));
@@ -309,7 +307,7 @@ public abstract class ARectangle implements Serializable, IRectangle
 	 */
 	public boolean isLineSegmentIntersectingRectangle(IVector2 startPoint, IVector2 dir1)
 	{
-		final Vector2 endPoint = startPoint.addNew(dir1);
+		final IVector2 endPoint = startPoint.addNew(dir1);
 		
 		final float a = ((endPoint.y() - startPoint.y()) * topLeft().x())
 				+ ((startPoint.x() - endPoint.x()) * topLeft().y())
@@ -361,13 +359,13 @@ public abstract class ARectangle implements Serializable, IRectangle
 	 * @author DionH
 	 */
 	@Override
-	public Vector2 nearestPointOutside(IVector2 point)
+	public IVector2 nearestPointOutside(IVector2 point)
 	{
 		// if point is inside
 		if ((point.x() > topLeft().x()) && (point.x() < topRight().x()) && (point.y() > topLeft().y())
 				&& (point.y() < bottomLeft().y()))
 		{
-			Vector2 nearestPoint;
+			IVector2 nearestPoint;
 			float distance;
 			
 			// left
@@ -410,7 +408,7 @@ public abstract class ARectangle implements Serializable, IRectangle
 	 * @return a point guaranteed to be within rectangle
 	 * @author DanielW
 	 */
-	public Vector2 nearestPointInside(IVector2 point)
+	public IVector2 nearestPointInside(IVector2 point)
 	{
 		final Vector2 inside = new Vector2(0, 0);
 		// setx
@@ -449,11 +447,11 @@ public abstract class ARectangle implements Serializable, IRectangle
 	 * @author Oliver Steinbrecher
 	 */
 	@Override
-	public Vector2 getRandomPointInShape()
+	public IVector2 getRandomPointInShape()
 	{
-		
 		float x;
 		float y;
+		Random randomGenerator = new Random(System.nanoTime());
 		
 		if (SumatraMath.hasDigitsAfterDecimalPoint(xExtend()) || SumatraMath.hasDigitsAfterDecimalPoint(yExtend()))
 		{
@@ -503,11 +501,11 @@ public abstract class ARectangle implements Serializable, IRectangle
 	
 	
 	@Override
-	public List<Vector2> getIntersectionPoints(ILine line) throws MathException
+	public List<IVector2> getIntersectionPoints(ILine line) throws MathException
 	{
-		List<Vector2> allIntersectionPoints = new ArrayList<Vector2>(4);
+		List<IVector2> allIntersectionPoints = new ArrayList<IVector2>(4);
 		
-		List<Vector2> results = new ArrayList<Vector2>();
+		List<IVector2> results = new ArrayList<IVector2>();
 		
 		List<Line> edges = getEdges();
 		for (Line edge : edges)
@@ -520,7 +518,7 @@ public abstract class ARectangle implements Serializable, IRectangle
 			}
 		}
 		
-		for (Vector2 p : allIntersectionPoints)
+		for (IVector2 p : allIntersectionPoints)
 		{
 			if (!isPointInShape(p))
 			{
@@ -540,9 +538,9 @@ public abstract class ARectangle implements Serializable, IRectangle
 	
 	
 	@Override
-	public Vector2 getDistantIntersectionPoint(ILine line) throws MathException
+	public IVector2 getDistantIntersectionPoint(ILine line) throws MathException
 	{
-		List<Vector2> points = getIntersectionPoints(line);
+		List<IVector2> points = getIntersectionPoints(line);
 		
 		if (points.isEmpty())
 		{
@@ -554,8 +552,8 @@ public abstract class ARectangle implements Serializable, IRectangle
 			return points.get(0);
 		}
 		
-		Vector2 a = points.get(0);
-		Vector2 b = points.get(1);
+		IVector2 a = points.get(0);
+		IVector2 b = points.get(1);
 		
 		if (line.supportVector().subtractNew(a).getLength2() < line.supportVector().subtractNew(b).getLength2())
 		{
@@ -567,9 +565,9 @@ public abstract class ARectangle implements Serializable, IRectangle
 	
 	
 	@Override
-	public Vector2 getNearIntersectionPoint(ILine line) throws MathException
+	public IVector2 getNearIntersectionPoint(ILine line) throws MathException
 	{
-		List<Vector2> points = getIntersectionPoints(line);
+		List<IVector2> points = getIntersectionPoints(line);
 		
 		if (points.isEmpty())
 		{
@@ -581,8 +579,8 @@ public abstract class ARectangle implements Serializable, IRectangle
 			return points.get(0);
 		}
 		
-		Vector2 a = points.get(0);
-		Vector2 b = points.get(1);
+		IVector2 a = points.get(0);
+		IVector2 b = points.get(1);
 		
 		if (line.supportVector().subtractNew(a).getLength2() < line.supportVector().subtractNew(b).getLength2())
 		{

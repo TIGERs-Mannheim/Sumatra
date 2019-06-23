@@ -9,7 +9,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.types;
 
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.HierarchicalConfiguration;
 
 
 /**
@@ -22,11 +22,11 @@ public interface IConfigObserver
 	/**
 	 * @param newConfig
 	 */
-	void onLoad(Configuration newConfig);
+	void onLoad(HierarchicalConfiguration newConfig);
 	
 	
 	/**
 	 * @param freshConfig
 	 */
-	void onReload(Configuration freshConfig);
+	void onReload(HierarchicalConfiguration freshConfig);
 }

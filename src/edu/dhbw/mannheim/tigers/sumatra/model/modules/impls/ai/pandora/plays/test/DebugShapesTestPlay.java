@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Jan 15, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.test;
@@ -14,14 +13,16 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AthenaAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.EGameState;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.IDrawableShape;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.Circle;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.DrawableCircle;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.ellipse.DrawableEllipse;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.ellipse.EApexType;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.ellipse.Ellipse;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.DrawableLine;
@@ -30,6 +31,8 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Line;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACondition.EConditionState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.move.MoveRole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.move.MoveRole.EMoveBehavior;
 
@@ -38,7 +41,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.mov
  * Test the DEBUG shapes
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class DebugShapesTestPlay extends APlay
 {
@@ -68,16 +70,12 @@ public class DebugShapesTestPlay extends APlay
 	
 	
 	/**
-	 * @param aiFrame
-	 * @param numAssignedRoles
 	 */
-	public DebugShapesTestPlay(AIInfoFrame aiFrame, int numAssignedRoles)
+	public DebugShapesTestPlay()
 	{
-		super(aiFrame, numAssignedRoles);
-		setTimeout(Long.MAX_VALUE);
+		super(EPlay.DEBUG_SHAPES);
 		
 		role = new MoveRole(EMoveBehavior.LOOK_AT_BALL);
-		addDefensiveRole(role, aiFrame.worldFrame.ball.getPos());
 		
 		path = new ArrayList<IVector2>();
 		path.add(new Vector2(0, 0));
@@ -95,12 +93,16 @@ public class DebugShapesTestPlay extends APlay
 	
 	
 	@Override
-	protected void beforeUpdate(AIInfoFrame frame)
+	protected void doUpdate(final AthenaAiFrame frame)
 	{
+		if (!role.hasBeenAssigned())
+		{
+			return;
+		}
 		final List<IDrawableShape> shapes = new LinkedList<IDrawableShape>();
 		
 		// lines
-		DrawableLine l1 = new DrawableLine(new Line(Vector2.ZERO_VECTOR, role.getPos()), Color.red);
+		DrawableLine l1 = new DrawableLine(new Line(AVector2.ZERO_VECTOR, role.getPos()), Color.red);
 		l1.setText("Bot");
 		l1.setTextLocation(ETextLocation.CENTER);
 		shapes.add(l1);
@@ -112,7 +114,7 @@ public class DebugShapesTestPlay extends APlay
 		final float rad = AIConfig.getGeometry().getBotRadius() * 2;
 		IDrawableShape c1 = new DrawableCircle(new Circle(role.getPos(), rad), Color.cyan);
 		shapes.add(c1);
-		IDrawableShape c2 = new DrawableCircle(new Circle(Vector2.ZERO_VECTOR, rad / 2), Color.magenta);
+		IDrawableShape c2 = new DrawableCircle(new Circle(AVector2.ZERO_VECTOR, rad / 2), Color.magenta);
 		shapes.add(c2);
 		
 		// ellipses around bot
@@ -157,20 +159,15 @@ public class DebugShapesTestPlay extends APlay
 			frame.addDebugShape(shape);
 		}
 		
-		role.updateDestination(curDestination);
-	}
-	
-	
-	@Override
-	protected void afterUpdate(AIInfoFrame currentFrame)
-	{
-		EConditionState state = role.checkMovementCondition(currentFrame.worldFrame);
+		role.getMoveCon().updateDestination(curDestination);
+		
+		EConditionState state = role.getMoveCon().checkCondition(frame.getWorldFrame(), role.getBotID());
 		if (state == EConditionState.FULFILLED)
 		{
 			changeDestination();
 		} else if (state == EConditionState.BLOCKED)
 		{
-			curDestination = GeoMath.stepAlongLine(curDestination, Vector2.ZERO_VECTOR, -50);
+			curDestination = GeoMath.stepAlongLine(curDestination, AVector2.ZERO_VECTOR, -50);
 		}
 		
 		if (speedCounter > ROT_SPEED)
@@ -192,9 +189,35 @@ public class DebugShapesTestPlay extends APlay
 		currentPathPoint %= path.size();
 		curDestination = path.get(currentPathPoint);
 	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	
+	@Override
+	protected ARole onRemoveRole()
+	{
+		return role;
+	}
+	
+	
+	@Override
+	protected ARole onAddRole()
+	{
+		if (getRoles().isEmpty())
+		{
+			return role;
+		}
+		throw new IllegalStateException("This Play can only handle one role!");
+	}
+	
+	
+	@Override
+	protected void onGameStateChanged(final EGameState gameState)
+	{
+	}
 	
 	
 }

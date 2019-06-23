@@ -26,7 +26,8 @@ public interface IOptionsPanelObserver
 	
 	
 	/**
-	 * Turn the field clockwise 90deg
+	 * @param option
+	 * @param state
 	 */
-	void onTurnField();
+	void onActionFired(EVisualizerOptions option, boolean state);
 }

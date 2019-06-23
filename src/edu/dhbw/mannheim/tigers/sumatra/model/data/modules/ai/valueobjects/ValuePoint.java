@@ -12,7 +12,7 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.valueobjects;
 import java.io.Serializable;
 import java.util.Comparator;
 
-import javax.persistence.Embeddable;
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
@@ -25,7 +25,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
  * @author Oliver Steinbrecher <OST1988@aol.com>
  * 
  */
-@Embeddable
+@Persistent
 public class ValuePoint extends Vector2
 {
 	// --------------------------------------------------------------------------
@@ -35,9 +35,9 @@ public class ValuePoint extends Vector2
 	private static final long									serialVersionUID		= -6549729498617629967L;
 	
 	/** */
-	public static final Comparator<? super ValuePoint>	YCOMPARATOR				= new YLowComparator();
+	public static final Comparator<? super ValuePoint>	Y_COMPARATOR				= new YLowComparator();
 	/**  */
-	public static final Comparator<? super ValuePoint>	VALUEHIGHCOMPARATOR	= new ValueHighComparator();
+	public static final Comparator<? super ValuePoint>	VALUE_HIGH_COMPARATOR	= new ValueHighComparator();
 	/**  */
 	public static final Comparator<? super ValuePoint>	VALUELOWCOMPARATOR	= new ValueLowComparator();
 	/**  */
@@ -47,6 +47,14 @@ public class ValuePoint extends Vector2
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	
+	@SuppressWarnings("unused")
+	private ValuePoint()
+	{
+	}
+	
+	
 	/**
 	 * 
 	 * @param x

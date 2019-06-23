@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Mar 24, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.referee;
@@ -18,7 +17,6 @@ import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.referee.RefereeMsg;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamProps;
 import edu.dhbw.mannheim.tigers.sumatra.util.network.IReceiver;
 import edu.dhbw.mannheim.tigers.sumatra.util.network.MulticastUDPReceiver;
@@ -29,7 +27,6 @@ import edu.dhbw.mannheim.tigers.sumatra.util.network.NetworkUtility;
  * New implementation of the referee receiver with the new protobuf message format (2013)
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class RefereeReceiver implements Runnable, IReceiver
 {
@@ -47,8 +44,6 @@ public class RefereeReceiver implements Runnable, IReceiver
 	private final String					address;
 	private final NetworkInterface	nif;
 	
-	private long							lastId;
-	
 	private Thread							referee;
 	private IReceiver						receiver;
 	
@@ -62,11 +57,10 @@ public class RefereeReceiver implements Runnable, IReceiver
 	 * @param subnodeConfiguration
 	 * @param handler
 	 */
-	public RefereeReceiver(SubnodeConfiguration subnodeConfiguration, RefereeHandler handler)
+	public RefereeReceiver(final SubnodeConfiguration subnodeConfiguration, final RefereeHandler handler)
 	{
 		this.handler = handler;
 		
-		lastId = -1;
 		address = subnodeConfiguration.getString("address");
 		port = Integer.valueOf(subnodeConfiguration.getInt("port"));
 		String network = subnodeConfiguration.getString("interface", "");
@@ -133,7 +127,6 @@ public class RefereeReceiver implements Runnable, IReceiver
 				receive(packet);
 			} catch (final IOException err)
 			{
-				lastId = -1;
 				if (!expectIOE)
 				{
 					log.error("Error while receiving referee-message!", err);
@@ -149,7 +142,6 @@ public class RefereeReceiver implements Runnable, IReceiver
 				sslRefereeMsg = SSL_Referee.parseFrom(packetIn);
 			} catch (IOException err)
 			{
-				lastId = -1;
 				log.error("Could not read referee message ", err);
 				continue;
 			}
@@ -161,17 +153,9 @@ public class RefereeReceiver implements Runnable, IReceiver
 				// Was interrupted...
 				break;
 			}
-			final RefereeMsg msg = new RefereeMsg(sslRefereeMsg, teamProps);
-			teamProps.setKeeperId(msg.getTeamInfoTigers().getGoalie());
-			
-			// If this message really contains new game-state information: Pass it to the agent!
-			if (isNewMessage(msg))
-			{
-				handler.notifyConsumer(msg);
-			}
 			
 			// Notify the receipt of a new RefereeMessage to any other observers
-			handler.onNewRefereeMsg(msg);
+			handler.onNewExternalRefereeMsg(sslRefereeMsg);
 		}
 		
 		// Cleanup
@@ -179,24 +163,8 @@ public class RefereeReceiver implements Runnable, IReceiver
 	}
 	
 	
-	/**
-	 * @param msg The recently received message
-	 * @return Whether this message does really new game-state information
-	 * @author FriederB
-	 */
-	private boolean isNewMessage(RefereeMsg msg)
-	{
-		if (lastId < msg.getCommandCounter())
-		{
-			lastId = msg.getCommandCounter();
-			return true;
-		}
-		return false;
-	}
-	
-	
 	@Override
-	public DatagramPacket receive(DatagramPacket store) throws IOException
+	public DatagramPacket receive(final DatagramPacket store) throws IOException
 	{
 		return receiver.receive(store);
 	}

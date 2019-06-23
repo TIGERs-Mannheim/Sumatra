@@ -17,12 +17,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Embeddable;
-import javax.persistence.FetchType;
-import javax.persistence.OneToMany;
+import net.sf.oval.constraint.NotNull;
+import net.sf.oval.constraint.Size;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
+import com.sleepycat.persist.model.Persistent;
+
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 
 
@@ -33,7 +32,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBo
  * @param <T>
  * 
  */
-@Embeddable
+@Persistent
 public class BotIDMap<T> implements IBotIDMap<T>
 {
 	// --------------------------------------------------------------------------
@@ -41,7 +40,8 @@ public class BotIDMap<T> implements IBotIDMap<T>
 	// --------------------------------------------------------------------------
 	private static final long	serialVersionUID	= -5736073179625081902L;
 	
-	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+	@NotNull
+	@Size(min = 1)
 	private Map<BotID, T>		map;
 	
 	
@@ -95,10 +95,10 @@ public class BotIDMap<T> implements IBotIDMap<T>
 	 * @param botList
 	 * @return
 	 */
-	public static BotIDMap<TrackedBot> createBotIDMapFoes(final BotIDMapConst<TrackedBot> foeBots,
+	public static BotIDMap<TrackedTigerBot> createBotIDMapFoes(final BotIDMapConst<TrackedTigerBot> foeBots,
 			final List<BotID> botList)
 	{
-		BotIDMap<TrackedBot> map = new BotIDMap<TrackedBot>();
+		BotIDMap<TrackedTigerBot> map = new BotIDMap<TrackedTigerBot>();
 		for (BotID botID : botList)
 		{
 			map.put(botID, foeBots.get(botID));

@@ -11,67 +11,100 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.airecord;
 
 import java.util.Date;
 
-import javax.persistence.Entity;
+import net.sf.oval.constraint.AssertValid;
+import net.sf.oval.constraint.NotNull;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import com.sleepycat.persist.model.Persistent;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBall;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMap;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMapConst;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.IBotIDMap;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamProps;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.fieldPrediction.WorldFramePrediction;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.fieldPrediction.FieldPredictor;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.fieldPrediction.WorldFramePrediction;
 
 
 /**
- * TODO Nicolai Ommer <nicolai.ommer@gmail.com>, add comment!
- * - What should this type do (in one sentence)?
- * - If not intuitive: A simple example how to use this class
+ * Wrapper class for worldframe
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  * 
  */
-@Entity
+@Persistent(version = 4)
 public class RecordWfFrame implements IRecordWfFrame
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	/** our enemies visible */
-	private BotIDMapConst<TrackedBot>		foeBots;
-	/** tiger bots that were detected by the WorldPredictor */
-	private BotIDMapConst<TrackedTigerBot>	tigerBotsVisible;
-	/** tiger bots that were detected by the WorldPredictor AND are connected */
-	private IBotIDMap<TrackedTigerBot>		tigerBotsAvailable;
-	/**  */
-	private TrackedBall							ball;
-	/**  */
-	private long									time;
-	/**  */
-	private Date									systemTime;
-	/**  */
-	private TeamProps								teamProps;
 	
-	private WorldFramePrediction				worldPrediction;
+	/** our enemies visible */
+	@NotNull
+	@AssertValid
+	private final BotIDMapConst<TrackedTigerBot>	foeBots;
+	
+	/** tiger bots that were detected by the WorldPredictor */
+	@NotNull
+	@AssertValid
+	private final BotIDMapConst<TrackedTigerBot>	tigerBotsVisible;
+	
+	/** tiger bots that were detected by the WorldPredictor AND are connected */
+	@NotNull
+	private final IBotIDMap<TrackedTigerBot>		tigerBotsAvailable;
+	
+	/** all bots, foes and tigers */
+	@NotNull
+	private final IBotIDMap<TrackedTigerBot>		bots;
+	/**  */
+	@NotNull
+	private final TrackedBall							ball;
+	/**  */
+	@NotNull
+	private final Date									systemTime;
+	
+	@NotNull
+	private final ETeamColor							ownTeamColor;
+	
+	private final boolean								inverted;
+	
+	private transient WorldFramePrediction			worldFramePrediction	= null;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
+	
+	@SuppressWarnings("unused")
+	private RecordWfFrame()
+	{
+		foeBots = null;
+		tigerBotsAvailable = null;
+		tigerBotsVisible = null;
+		ball = null;
+		systemTime = null;
+		ownTeamColor = null;
+		bots = new BotIDMap<TrackedTigerBot>();
+		inverted = false;
+	}
+	
+	
 	/**
 	 * @param wFrame
 	 */
-	public RecordWfFrame(WorldFrame wFrame)
+	public RecordWfFrame(IRecordWfFrame wFrame)
 	{
-		foeBots = wFrame.foeBots;
-		tigerBotsVisible = wFrame.tigerBotsVisible;
-		tigerBotsAvailable = wFrame.tigerBotsAvailable;
-		ball = wFrame.ball;
-		time = wFrame.time;
-		setSystemTime(new Date());
-		teamProps = wFrame.teamProps;
-		worldPrediction = wFrame.getWorldFramePrediction();
+		foeBots = wFrame.getFoeBots();
+		tigerBotsVisible = wFrame.getTigerBotsVisible();
+		tigerBotsAvailable = wFrame.getTigerBotsAvailable();
+		bots = wFrame.getBots();
+		ball = wFrame.getBall();
+		systemTime = wFrame.getSystemTime();
+		ownTeamColor = wFrame.getTeamColor();
+		worldFramePrediction = wFrame.getWorldFramePrediction();
+		inverted = wFrame.isInverted();
 	}
 	
 	
@@ -89,18 +122,9 @@ public class RecordWfFrame implements IRecordWfFrame
 	 * @return the foeBots
 	 */
 	@Override
-	public final BotIDMapConst<TrackedBot> getFoeBots()
+	public final BotIDMapConst<TrackedTigerBot> getFoeBots()
 	{
 		return foeBots;
-	}
-	
-	
-	/**
-	 * @param foeBots the foeBots to set
-	 */
-	public final void setFoeBots(BotIDMapConst<TrackedBot> foeBots)
-	{
-		this.foeBots = foeBots;
 	}
 	
 	
@@ -115,30 +139,12 @@ public class RecordWfFrame implements IRecordWfFrame
 	
 	
 	/**
-	 * @param tigerBotsVisible the tigerBotsVisible to set
-	 */
-	public final void setTigerBotsVisible(BotIDMapConst<TrackedTigerBot> tigerBotsVisible)
-	{
-		this.tigerBotsVisible = tigerBotsVisible;
-	}
-	
-	
-	/**
 	 * @return the tigerBotsAvailable
 	 */
 	@Override
 	public final IBotIDMap<TrackedTigerBot> getTigerBotsAvailable()
 	{
 		return tigerBotsAvailable;
-	}
-	
-	
-	/**
-	 * @param tigerBotsAvailable the tigerBotsAvailable to set
-	 */
-	public final void setTigerBotsAvailable(IBotIDMap<TrackedTigerBot> tigerBotsAvailable)
-	{
-		this.tigerBotsAvailable = tigerBotsAvailable;
 	}
 	
 	
@@ -153,53 +159,6 @@ public class RecordWfFrame implements IRecordWfFrame
 	
 	
 	/**
-	 * @param ball the ball to set
-	 */
-	public final void setBall(TrackedBall ball)
-	{
-		this.ball = ball;
-	}
-	
-	
-	/**
-	 * @return the time
-	 */
-	@Override
-	public final long getTime()
-	{
-		return time;
-	}
-	
-	
-	/**
-	 * @param time the time to set
-	 */
-	public final void setTime(long time)
-	{
-		this.time = time;
-	}
-	
-	
-	/**
-	 * @return the teamProps
-	 */
-	@Override
-	public final TeamProps getTeamProps()
-	{
-		return teamProps;
-	}
-	
-	
-	/**
-	 * @param teamProps the teamProps to set
-	 */
-	public final void setTeamProps(TeamProps teamProps)
-	{
-		this.teamProps = teamProps;
-	}
-	
-	
-	/**
 	 * @return the systemTime
 	 */
 	@Override
@@ -209,18 +168,58 @@ public class RecordWfFrame implements IRecordWfFrame
 	}
 	
 	
-	/**
-	 * @param systemTime the systemTime to set
-	 */
-	public final void setSystemTime(Date systemTime)
+	@Override
+	public final ETeamColor getTeamColor()
 	{
-		this.systemTime = systemTime;
+		return ownTeamColor;
+	}
+	
+	
+	@Override
+	public final IBotIDMap<TrackedTigerBot> getBots()
+	{
+		assureBotsFilled();
+		return bots;
+	}
+	
+	
+	@Override
+	public final TrackedTigerBot getBot(BotID botId)
+	{
+		assureBotsFilled();
+		return bots.getWithNull(botId);
+	}
+	
+	
+	/**
+	 * As this is a record frame and earlier versions had not field bots,
+	 * lets will the list, if it is empty, but there are bots.
+	 */
+	private void assureBotsFilled()
+	{
+		if (bots.isEmpty() && !(tigerBotsVisible.isEmpty() && foeBots.isEmpty()))
+		{
+			bots.putAll(tigerBotsVisible);
+			bots.putAll(foeBots);
+		}
 	}
 	
 	
 	@Override
 	public WorldFramePrediction getWorldFramePrediction()
 	{
-		return worldPrediction;
+		if (worldFramePrediction == null)
+		{
+			worldFramePrediction = new FieldPredictor(bots.values(), ball).create();
+		}
+		return worldFramePrediction;
 	}
+	
+	
+	@Override
+	public boolean isInverted()
+	{
+		return inverted;
+	}
+	
 }

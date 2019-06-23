@@ -9,10 +9,10 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
 
-import java.util.Arrays;
-
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -26,15 +26,16 @@ public class TigerMulticastUpdateAllV2 extends ACommand
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private int								useMove;
+	@SerialData(type = ESerialDataType.UINT8)
 	private final int						botId[];
+	@SerialData(type = ESerialDataType.EMBEDDED)
 	private final TigerMotorMoveV2	move[];
+	@SerialData(type = ESerialDataType.EMBEDDED)
 	private final TigerKickerKickV2	kick[];
+	@SerialData(type = ESerialDataType.EMBEDDED)
 	private final TigerDribble			dribble[];
-	
-	private final int						moveLength;
-	private final int						kickLength;
-	private final int						dribbleLength;
+	@SerialData(type = ESerialDataType.UINT8)
+	private int								useMove;
 	
 	private final int						MAX_BOTS	= 6;
 	
@@ -47,14 +48,12 @@ public class TigerMulticastUpdateAllV2 extends ACommand
 	 */
 	public TigerMulticastUpdateAllV2()
 	{
+		super(ECommand.CMD_MULTICAST_UPDATE_ALL_V2);
+		
 		botId = new int[MAX_BOTS];
 		move = new TigerMotorMoveV2[MAX_BOTS];
 		kick = new TigerKickerKickV2[MAX_BOTS];
 		dribble = new TigerDribble[MAX_BOTS];
-		
-		moveLength = new TigerMotorMoveV2().getDataLength();
-		kickLength = new TigerKickerKickV2().getDataLength();
-		dribbleLength = new TigerDribble().getDataLength();
 		
 		for (int i = 0; i < MAX_BOTS; i++)
 		{
@@ -69,97 +68,6 @@ public class TigerMulticastUpdateAllV2 extends ACommand
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		int pos = 0;
-		
-		for (int i = 0; i < MAX_BOTS; i++)
-		{
-			botId[i] = byteArray2UByte(data, i);
-		}
-		
-		pos += MAX_BOTS;
-		
-		for (int i = 0; i < MAX_BOTS; i++)
-		{
-			move[i].setData(Arrays.copyOfRange(data, pos + (i * moveLength), pos + (i * moveLength) + moveLength));
-		}
-		
-		pos += MAX_BOTS * moveLength;
-		
-		for (int i = 0; i < MAX_BOTS; i++)
-		{
-			kick[i].setData(Arrays.copyOfRange(data, pos + (i * kickLength), pos + (i * kickLength) + kickLength));
-		}
-		
-		pos += MAX_BOTS * kickLength;
-		
-		for (int i = 0; i < MAX_BOTS; i++)
-		{
-			dribble[i].setData(Arrays.copyOfRange(data, pos + (i * dribbleLength), pos + (i * dribbleLength)
-					+ dribbleLength));
-		}
-		
-		pos += MAX_BOTS * dribbleLength;
-		
-		useMove = byteArray2UByte(data, pos);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		int pos = 0;
-		
-		for (int i = 0; i < MAX_BOTS; i++)
-		{
-			byte2ByteArray(data, i, botId[i]);
-		}
-		
-		pos += MAX_BOTS;
-		
-		for (int i = 0; i < MAX_BOTS; i++)
-		{
-			System.arraycopy(move[i].getData(), 0, data, pos + (i * moveLength), moveLength);
-		}
-		
-		pos += MAX_BOTS * moveLength;
-		
-		for (int i = 0; i < MAX_BOTS; i++)
-		{
-			System.arraycopy(kick[i].getData(), 0, data, pos + (i * kickLength), kickLength);
-		}
-		
-		pos += MAX_BOTS * kickLength;
-		
-		for (int i = 0; i < MAX_BOTS; i++)
-		{
-			System.arraycopy(dribble[i].getData(), 0, data, pos + (i * dribbleLength), dribbleLength);
-		}
-		
-		pos += MAX_BOTS * dribbleLength;
-		
-		byte2ByteArray(data, pos, useMove);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_MULTICAST_UPDATE_ALL_V2;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return MAX_BOTS + (MAX_BOTS * moveLength) + (MAX_BOTS * kickLength) + (MAX_BOTS * dribbleLength) + 1;
-	}
 	
 	
 	// --------------------------------------------------------------------------

@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 29.03.2011
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem;
@@ -18,23 +17,26 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.Sisyphus;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.NormalStopSkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IWorldPredictorObserver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ImmediateStopSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.WorldFrameFactory;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IWorldFrameConsumer;
 
 
 /**
  * Skill executer with nano second precision.
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
-public class SkillExecutor implements Runnable, IWorldPredictorObserver
+public class SkillExecutor implements Runnable, IWorldFrameConsumer
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
@@ -44,22 +46,25 @@ public class SkillExecutor implements Runnable, IWorldPredictorObserver
 	
 	private static final long							NO_SKILL_TIMEOUT_NS		= TimeUnit.MILLISECONDS.toNanos(500);
 	
-	private AMoveSkill									skill							= null;
+	private ISkill											skill							= null;
 	
-	private final BotID									botId;
+	private final ABot									bot;
 	
 	/** [ns] */
 	private final long									period;
 	
 	/** Volatile because it is written from the outside */
 	private volatile WorldFrame						latestWorldFrame			= null;
-	private Sisyphus										latestSisyphus				= null;
 	private final List<ISkillExecutorObserver>	observers					= new ArrayList<ISkillExecutorObserver>();
 	
-	private final BlockingDeque<AMoveSkill>		newSkills					= new LinkedBlockingDeque<AMoveSkill>(1);
+	private final BlockingDeque<ISkill>				newSkills					= new LinkedBlockingDeque<ISkill>(1);
 	
 	private long											timeLastCompletedSkill	= 0;
 	private boolean										stopSent						= false;
+	
+	private final ISkillWorldInfoProvider			provider;
+	
+	private final Object									syncProcess					= new Object();
 	
 	
 	// --------------------------------------------------------------------------
@@ -67,13 +72,15 @@ public class SkillExecutor implements Runnable, IWorldPredictorObserver
 	// --------------------------------------------------------------------------
 	
 	/**
-	 * @param botId
+	 * @param bot
 	 * @param period [us]
+	 * @param provider
 	 */
-	public SkillExecutor(BotID botId, long period)
+	public SkillExecutor(final ABot bot, final long period, final ISkillWorldInfoProvider provider)
 	{
-		this.botId = botId;
+		this.bot = bot;
 		this.period = TimeUnit.MICROSECONDS.toNanos(period);
+		this.provider = provider;
 	}
 	
 	
@@ -85,7 +92,7 @@ public class SkillExecutor implements Runnable, IWorldPredictorObserver
 	/**
 	 * @param observer
 	 */
-	public void addObserver(ISkillExecutorObserver observer)
+	public void addObserver(final ISkillExecutorObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -97,7 +104,7 @@ public class SkillExecutor implements Runnable, IWorldPredictorObserver
 	/**
 	 * @param observer
 	 */
-	public void removeObserver(ISkillExecutorObserver observer)
+	public void removeObserver(final ISkillExecutorObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -107,39 +114,51 @@ public class SkillExecutor implements Runnable, IWorldPredictorObserver
 	
 	
 	@Override
-	public synchronized void run()
+	public void run()
 	{
 		try
 		{
-			final WorldFrame worldFrame = latestWorldFrame;
-			
-			if (worldFrame == null)
+			WorldFrame worldFrame = latestWorldFrame;
+			if (bot.getNetworkState() != ENetworkState.ONLINE)
 			{
 				return;
 			}
-			final TrackedTigerBot bot = worldFrame.tigerBotsVisible.getWithNull(botId);
-			
-			
-			if (bot == null)
+			if ((worldFrame != null) && (worldFrame.getBot(bot.getBotID()) == null))
 			{
-				resetSkills();
 				return;
 			}
-			AMoveSkill newSkill;
+			ISkill newSkill;
 			synchronized (newSkills)
 			{
 				newSkill = newSkills.poll();
 			}
-			if ((skill != null) || (newSkill != null))
+			TrackedTigerBot tBot = null;
+			boolean insideField = true;
+			if (worldFrame != null)
 			{
-				process(bot, worldFrame, newSkill);
+				tBot = worldFrame.getBot(bot.getBotID());
+				insideField = AIConfig.getGeometry().getFieldWReferee().isPointInShape(tBot.getPos());
+			}
+			if (((skill != null) || (newSkill != null)) && insideField)
+			{
+				
+				if (((tBot == null) || (worldFrame == null)) && ((newSkill != null) && (newSkill.needsVision())))
+				{
+					resetSkills();
+					return;
+				}
+				if (worldFrame == null)
+				{
+					worldFrame = new WorldFrame(WorldFrameFactory.createEmptyWorldFrame(0), bot.getColor(), false);
+				}
+				process(tBot, worldFrame, newSkill);
 				if ((skill != null) && (skill.getSkillName() != ESkillName.IMMEDIATE_STOP))
 				{
 					stopSent = false;
 				}
 			} else if (!stopSent && ((System.nanoTime() - timeLastCompletedSkill) > NO_SKILL_TIMEOUT_NS))
 			{
-				sentStop(worldFrame);
+				sentStop();
 			}
 		} catch (Throwable err)
 		{
@@ -149,39 +168,51 @@ public class SkillExecutor implements Runnable, IWorldPredictorObserver
 	}
 	
 	
-	private void process(TrackedTigerBot bot, WorldFrame worldFrame, AMoveSkill newSkill)
+	private void process(final TrackedTigerBot tBot, final WorldFrame worldFrame, final ISkill newSkill)
 	{
-		if ((newSkill != null))
+		synchronized (syncProcess)
 		{
-			// switch to new skill
-			log.trace("Switch to new skill: " + newSkill);
-			
-			if (skill != null)
+			if ((newSkill != null))
 			{
-				skill.setWorldFrame(latestWorldFrame);
-				enqueueCmds(skill.calcExitActions(bot));
-			}
-			
-			skill = newSkill;
-			
-			skill.setWorldFrame(latestWorldFrame);
-			
-			enqueueCmds(skill.calcEntryActions(bot));
-			notifySkillStarted(skill);
-		} else
-		{
-			skill.setWorldFrame(worldFrame);
-			
-			if (skill.isComplete())
-			{
-				enqueueCmds(skill.calcExitActions(bot));
-				notifySkillCompleted(skill);
-				skill = null;
-				timeLastCompletedSkill = System.nanoTime();
+				// switch to new skill
+				log.trace("Switch to new skill: " + newSkill);
+				
+				if (skill != null)
+				{
+					skill.setWorldFrame(worldFrame);
+					enqueueCmds(skill.calcExitActions());
+				}
+				
+				skill = newSkill;
+				
+				skill.setWorldFrame(worldFrame);
+				if (tBot != null)
+				{
+					skill.settBot(tBot);
+				}
+				skill.setBot(bot);
+				
+				enqueueCmds(skill.calcEntryActions());
+				notifySkillStarted(skill);
 			} else
 			{
-				// process
-				enqueueCmds(skill.calcActions(bot));
+				skill.setWorldFrame(worldFrame);
+				if (tBot != null)
+				{
+					skill.settBot(tBot);
+				}
+				
+				if (skill.isComplete())
+				{
+					enqueueCmds(skill.calcExitActions());
+					notifySkillCompleted(skill);
+					skill = null;
+					timeLastCompletedSkill = System.nanoTime();
+				} else
+				{
+					// process
+					enqueueCmds(skill.calcActions());
+				}
 			}
 		}
 	}
@@ -190,9 +221,14 @@ public class SkillExecutor implements Runnable, IWorldPredictorObserver
 	/**
 	 * Clears all skills
 	 */
-	private synchronized void resetSkills()
+	private void resetSkills()
 	{
-		skill = null;
+		if (skill != null)
+		{
+			enqueueCmds(skill.calcExitActions());
+			notifySkillCompleted(skill);
+			skill = null;
+		}
 		synchronized (newSkills)
 		{
 			newSkills.clear();
@@ -201,7 +237,7 @@ public class SkillExecutor implements Runnable, IWorldPredictorObserver
 	}
 	
 	
-	private void enqueueCmds(List<ACommand> cmds)
+	private void enqueueCmds(final List<ACommand> cmds)
 	{
 		for (ACommand cmd : cmds)
 		{
@@ -210,7 +246,7 @@ public class SkillExecutor implements Runnable, IWorldPredictorObserver
 	}
 	
 	
-	private void notifyNewCommand(ACommand cmd)
+	private void notifyNewCommand(final ACommand cmd)
 	{
 		synchronized (observers)
 		{
@@ -222,7 +258,7 @@ public class SkillExecutor implements Runnable, IWorldPredictorObserver
 	}
 	
 	
-	private void notifySkillCompleted(AMoveSkill skill)
+	private void notifySkillCompleted(final ISkill skill)
 	{
 		synchronized (observers)
 		{
@@ -234,7 +270,7 @@ public class SkillExecutor implements Runnable, IWorldPredictorObserver
 	}
 	
 	
-	private void notifySkillStarted(AMoveSkill skill)
+	private void notifySkillStarted(final ISkill skill)
 	{
 		synchronized (observers)
 		{
@@ -253,16 +289,11 @@ public class SkillExecutor implements Runnable, IWorldPredictorObserver
 	 * Set a new skill
 	 * 
 	 * @param nSkill
-	 * @param provider
 	 */
-	public void setSkill(AMoveSkill nSkill, ISkillWorldInfoProvider provider)
+	public void setSkill(final ISkill nSkill)
 	{
-		// synchronized (this)
-		// {
-		latestSisyphus = provider.getSisyphus();
-		// }
-		nSkill.setSisyphus(latestSisyphus);
-		nSkill.setPeriod(period);
+		nSkill.setSisyphus(provider.getSisyphus());
+		nSkill.setDt(period);
 		synchronized (newSkills)
 		{
 			if (newSkills.remainingCapacity() == 0)
@@ -281,56 +312,47 @@ public class SkillExecutor implements Runnable, IWorldPredictorObserver
 	
 	
 	@Override
-	public void onNewWorldFrame(WorldFrame wf)
+	public void onNewSimpleWorldFrame(final SimpleWorldFrame wf)
 	{
-		latestWorldFrame = wf;
 	}
 	
 	
 	@Override
-	public void onVisionSignalLost(WorldFrame emptyWf)
+	public void onNewWorldFrame(final WorldFrame wFrame)
 	{
-		if (latestWorldFrame != null)
+		if ((bot != null) && (bot.getColor() == wFrame.getTeamColor()))
 		{
-			sentStop(latestWorldFrame);
-			latestWorldFrame = null;
+			latestWorldFrame = wFrame;
 		}
+	}
+	
+	
+	@Override
+	public void onVisionSignalLost(final SimpleWorldFrame emptyWf)
+	{
+		sentStop();
+		latestWorldFrame = null;
 	}
 	
 	
 	/**
 	 * Sent immediate stop signal
-	 * 
-	 * @param wFrame
 	 */
-	public synchronized void sentStop(WorldFrame wFrame)
+	private void sentStop()
 	{
-		if (wFrame == null)
-		{
-			return;
-		}
-		
 		if (!stopSent)
 		{
-			final TrackedTigerBot bot = wFrame.tigerBotsVisible.getWithNull(botId);
-			if ((bot != null) && (latestSisyphus != null))
-			// && ((bot.getBotType() != EBotType.TIGER_V2) || (((TigerBotV2) bot.getBot()).getControllerType() ==
-			// ControllerType.FUSION_VEL)))
-			{
-				AMoveSkill stopSkill = new NormalStopSkill();
-				stopSkill.setSisyphus(latestSisyphus);
-				process(bot, wFrame, stopSkill);
-				stopSent = true;
-			}
+			stopSent = true;
+			AMoveSkill stopSkill = new ImmediateStopSkill();
+			stopSkill.setSisyphus(provider.getSisyphus());
+			WorldFrame wFrame = new WorldFrame(WorldFrameFactory.createEmptyWorldFrame(0), bot.getColor(), false);
+			process(null, wFrame, stopSkill);
 		}
 	}
 	
 	
-	/**
-	 * Sent immediate stop signal
-	 */
-	public void sentStop()
+	@Override
+	public void onStop()
 	{
-		sentStop(latestWorldFrame);
 	}
 }

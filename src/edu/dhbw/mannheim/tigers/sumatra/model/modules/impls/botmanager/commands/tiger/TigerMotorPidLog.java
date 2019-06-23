@@ -10,7 +10,9 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -24,14 +26,23 @@ public class TigerMotorPidLog extends ACommand
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
+	@SerialData(type = ESerialDataType.UINT8)
 	private int	id;
+	@SerialData(type = ESerialDataType.INT32)
 	private int	latest;
+	@SerialData(type = ESerialDataType.INT32)
 	private int	setpoint;
+	@SerialData(type = ESerialDataType.INT32)
 	private int	pError;
+	@SerialData(type = ESerialDataType.INT32)
 	private int	iError;
+	@SerialData(type = ESerialDataType.INT32)
 	private int	dError;
+	@SerialData(type = ESerialDataType.INT32)
 	private int	output;
+	@SerialData(type = ESerialDataType.UINT8)
 	private int	overload;
+	@SerialData(type = ESerialDataType.UINT16)
 	private int	eCurrent;
 	
 	
@@ -43,6 +54,7 @@ public class TigerMotorPidLog extends ACommand
 	 */
 	public TigerMotorPidLog()
 	{
+		super(ECommand.CMD_MOTOR_PID_LOG);
 	}
 	
 	
@@ -61,6 +73,8 @@ public class TigerMotorPidLog extends ACommand
 	public TigerMotorPidLog(int id, int current, int setpoint, int pError, int iError, int dError, int output,
 			boolean overload, int eCurrent)
 	{
+		super(ECommand.CMD_MOTOR_PID_LOG);
+		
 		set(id, current, setpoint, pError, iError, dError, output, overload, eCurrent);
 	}
 	
@@ -73,54 +87,6 @@ public class TigerMotorPidLog extends ACommand
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		id = byteArray2UByte(data, 0);
-		latest = byteArray2Int(data, 1);
-		setpoint = byteArray2Int(data, 5);
-		pError = byteArray2Int(data, 9);
-		iError = byteArray2Int(data, 13);
-		dError = byteArray2Int(data, 17);
-		output = byteArray2Int(data, 21);
-		overload = byteArray2UByte(data, 25);
-		eCurrent = byteArray2UShort(data, 26);
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		byte2ByteArray(data, 0, id);
-		int2ByteArray(data, 1, latest);
-		int2ByteArray(data, 5, setpoint);
-		int2ByteArray(data, 9, pError);
-		int2ByteArray(data, 13, iError);
-		int2ByteArray(data, 17, dError);
-		int2ByteArray(data, 21, output);
-		byte2ByteArray(data, 25, overload);
-		short2ByteArray(data, 26, eCurrent);
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_MOTOR_PID_LOG;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 28;
-	}
-	
-	
 	/**
 	 * 
 	 * @param id

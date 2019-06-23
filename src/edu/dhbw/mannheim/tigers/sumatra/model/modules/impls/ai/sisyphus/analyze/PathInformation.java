@@ -9,6 +9,8 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.analyze;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.TuneableParameter;
+
 /**
  * data holder for information concerning pathes
  * 

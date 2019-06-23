@@ -11,7 +11,6 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills;
 
 import java.util.List;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
 
@@ -19,11 +18,11 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillNa
 /**
  * Stops the bot
  * 
- * @author ChristianK
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class ImmediateStopSkill extends AMoveSkill
 {
-	private int	ctr	= 0;
+	// private EControllerType lastCtrlType = EControllerType.NONE;
 	
 	
 	/**
@@ -35,24 +34,42 @@ public class ImmediateStopSkill extends AMoveSkill
 	
 	
 	@Override
-	public List<ACommand> doCalcEntryActions(TrackedTigerBot bot, List<ACommand> cmds)
+	public List<ACommand> doCalcEntryActions(final List<ACommand> cmds)
 	{
 		getDevices().dribble(cmds, false);
 		getDevices().disarm(cmds);
 		stopMoveImmediately(cmds);
+		// if (getBotType() == EBotType.TIGER_V2)
+		// {
+		// TigerBotV2 botV2 = (TigerBotV2) getBot();
+		// lastCtrlType = botV2.getControllerType();
+		// cmds.add(new TigerCtrlSetControllerType(EControllerType.NONE));
+		// }
 		
 		return cmds;
 	}
 	
 	
 	@Override
-	protected void periodicProcess(TrackedTigerBot bot, List<ACommand> cmds)
+	protected void periodicProcess(final List<ACommand> cmds)
 	{
-		stopMoveImmediately(cmds);
-		ctr++;
-		if (ctr > 5)
-		{
-			complete();
-		}
+	}
+	
+	
+	@Override
+	public boolean needsVision()
+	{
+		return false;
+	}
+	
+	
+	@Override
+	protected List<ACommand> doCalcExitActions(final List<ACommand> cmds)
+	{
+		// if (getBotType() == EBotType.TIGER_V2)
+		// {
+		// cmds.add(new TigerCtrlSetControllerType(lastCtrlType));
+		// }
+		return cmds;
 	}
 }

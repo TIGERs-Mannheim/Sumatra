@@ -9,7 +9,8 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.score;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AthenaAiFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.MetisAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
@@ -40,7 +41,7 @@ public abstract class AScore
 	 * @param frame
 	 * @return high score is a low priority in role assignment
 	 */
-	protected abstract int doCalcScore(TrackedTigerBot tiger, ARole role, AIInfoFrame frame);
+	protected abstract int doCalcScore(TrackedTigerBot tiger, ARole role, MetisAiFrame frame);
 	
 	
 	/**
@@ -50,7 +51,7 @@ public abstract class AScore
 	 * @param frame
 	 * @return
 	 */
-	public int calcScore(TrackedTigerBot tiger, ARole role, AIInfoFrame frame)
+	public int calcScore(TrackedTigerBot tiger, ARole role, MetisAiFrame frame)
 	{
 		if (active)
 		{
@@ -67,7 +68,7 @@ public abstract class AScore
 	 * @param frame
 	 * @return
 	 */
-	protected abstract int doCalcScoreOnPos(IVector2 position, ARole role, AIInfoFrame frame);
+	protected abstract int doCalcScoreOnPos(IVector2 position, ARole role, AthenaAiFrame frame);
 	
 	
 	/**
@@ -77,7 +78,7 @@ public abstract class AScore
 	 * @param frame
 	 * @return
 	 */
-	public int calcScoreOnPos(IVector2 position, ARole role, AIInfoFrame frame)
+	public int calcScoreOnPos(IVector2 position, ARole role, AthenaAiFrame frame)
 	{
 		if (active)
 		{

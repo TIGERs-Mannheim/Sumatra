@@ -9,6 +9,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals;
 
+import java.awt.Color;
 import java.awt.Component;
 
 import javax.swing.JScrollPane;
@@ -31,6 +32,7 @@ public class BotCenterTreeNode extends DefaultMutableTreeNode
 	private String						title;
 	private final ETreeIconType	icon;
 	private final Component			userComponent;
+	private Color						color;
 	
 	
 	// --------------------------------------------------------------------------
@@ -40,14 +42,34 @@ public class BotCenterTreeNode extends DefaultMutableTreeNode
 	 * @param title
 	 * @param type
 	 * @param component
+	 * @param useScrollbar
 	 */
-	public BotCenterTreeNode(String title, ETreeIconType type, Component component)
+	public BotCenterTreeNode(String title, ETreeIconType type, Component component, boolean useScrollbar)
+	{
+		this(title, type, Color.black, component, useScrollbar);
+	}
+	
+	
+	/**
+	 * @param title
+	 * @param type
+	 * @param color
+	 * @param component
+	 * @param useScrollbar
+	 */
+	public BotCenterTreeNode(String title, ETreeIconType type, Color color, Component component, boolean useScrollbar)
 	{
 		super(title);
-		
 		this.title = title;
 		icon = type;
-		userComponent = new JScrollPane(component);
+		if (useScrollbar)
+		{
+			userComponent = new JScrollPane(component);
+		} else
+		{
+			userComponent = component;
+		}
+		this.color = color;
 	}
 	
 	
@@ -94,5 +116,23 @@ public class BotCenterTreeNode extends DefaultMutableTreeNode
 	public final String getTitle()
 	{
 		return title;
+	}
+	
+	
+	/**
+	 * @return the color
+	 */
+	public final Color getColor()
+	{
+		return color;
+	}
+	
+	
+	/**
+	 * @param color the color to set
+	 */
+	public final void setColor(Color color)
+	{
+		this.color = color;
 	}
 }

@@ -48,7 +48,7 @@ public class BotOverviewPanel extends JPanel
 	private static final long							serialVersionUID		= 1881197595736545167L;
 	
 	// Id
-	private BotID											botId						= new BotID();
+	private BotID									botId						= BotID.createBotId();
 	
 	// Current role
 	private final JTextField							roleText;
@@ -188,7 +188,7 @@ public class BotOverviewPanel extends JPanel
 	 */
 	public final void setBotId(final BotID botID)
 	{
-		botId = new BotID(botID);
+		botId = botID;
 	}
 	
 	

@@ -72,7 +72,7 @@ public class PointCloud implements Comparable<PointCloud>
 	public void updateCloud(WorldFrame wf)
 	{
 		// new WF
-		if (wf.id != null)
+		if (wf.getId() != null)
 		{
 			
 			// creating new points regarding its evolution

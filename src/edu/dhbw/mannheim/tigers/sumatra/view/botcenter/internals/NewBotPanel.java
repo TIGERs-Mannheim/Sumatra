@@ -22,6 +22,7 @@ import javax.swing.JLabel;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
 
@@ -42,6 +43,7 @@ public class NewBotPanel extends JDialog
 	private JComboBox<String>				type					= null;
 	private JTextField						id						= null;
 	private JTextField						name					= null;
+	private JComboBox<ETeamColor>			color					= null;
 	
 	private ImageIcon							botIcon				= null;
 	
@@ -74,6 +76,7 @@ public class NewBotPanel extends JDialog
 		type = new JComboBox<String>(names);
 		id = new JTextField();
 		name = new JTextField();
+		color = new JComboBox<ETeamColor>(ETeamColor.values());
 		
 		final JButton ok = new JButton("OK");
 		final JButton cancel = new JButton("Cancel");
@@ -87,8 +90,10 @@ public class NewBotPanel extends JDialog
 		add(id);
 		add(new JLabel("Name:"));
 		add(name, "wrap");
-		add(ok, "span 3, w 100, align center");
-		add(cancel, "span 3, w 100, align center, grow 0");
+		add(new JLabel("Color:"));
+		add(color, "wrap");
+		add(ok, "span 4, w 100, align center");
+		add(cancel, "span 4, w 100, align center, grow 0");
 		
 		pack();
 		
@@ -136,9 +141,18 @@ public class NewBotPanel extends JDialog
 	/**
 	 * @return
 	 */
+	public ETeamColor getColor()
+	{
+		return (ETeamColor) color.getSelectedItem();
+	}
+	
+	
+	/**
+	 * @return
+	 */
 	public BotID getId()
 	{
-		return new BotID(Integer.parseInt(id.getText()));
+		return BotID.createBotId(Integer.parseInt(id.getText()), getColor());
 	}
 	
 	

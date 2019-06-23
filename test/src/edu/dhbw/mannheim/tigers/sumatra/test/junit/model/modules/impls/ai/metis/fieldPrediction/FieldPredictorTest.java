@@ -15,24 +15,18 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import edu.dhbw.mannheim.tigers.sumatra.Sumatra;
-import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector3;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBall;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMap;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.IBotIDMap;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.fieldPrediction.FieldPredictionInformation;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.fieldPrediction.FieldPredictor;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.fieldPrediction.WorldFramePrediction;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.config.ConfigManager;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AConfigManager;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.fieldPrediction.FieldPredictionInformation;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.fieldPrediction.FieldPredictor;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.fieldPrediction.WorldFramePrediction;
+import edu.dhbw.mannheim.tigers.sumatra.util.SumatraSetupHelper;
 
 
 /**
@@ -64,12 +58,7 @@ public class FieldPredictorTest
 	@BeforeClass
 	public static void init()
 	{
-		Sumatra.touch();
-		SumatraModel.getInstance().setUserProperty(AAgent.KEY_AI_CONFIG, "ai_default.xml");
-		SumatraModel.getInstance().setUserProperty(AAgent.KEY_GEOMETRY_CONFIG, "RoboCup_2012.xml");
-		AConfigManager.registerConfigClient(AIConfig.getInstance().getAiClient());
-		AConfigManager.registerConfigClient(AIConfig.getInstance().getGeomClient());
-		new ConfigManager(); // Loads all registered configs (accessed via singleton)
+		SumatraSetupHelper.setupSumatra();
 	}
 	
 	
@@ -83,26 +72,23 @@ public class FieldPredictorTest
 		Vector3 n = new Vector3(0, 0, 0);
 		TrackedBall ball = new TrackedBall(n, n, n, 0f, true);
 		
-		IBotIDMap<TrackedBot> foes = new BotIDMap<TrackedBot>();
-		IBotIDMap<TrackedTigerBot> tigers = new BotIDMap<TrackedTigerBot>();
-		BotID tiger1BotID = new BotID(0);
-		TrackedTigerBot tiger1 = new TrackedTigerBot(tiger1BotID, new Vector2(200, 200), new Vector2(0, 0.01), null, 0,
-				0f, 0f, 0f, 0f, null);
-		tigers.put(tiger1BotID, tiger1);
+		IBotIDMap<TrackedTigerBot> bots = new BotIDMap<TrackedTigerBot>();
+		BotID tiger1BotID = BotID.createBotId(0, ETeamColor.YELLOW);
+		TrackedTigerBot tiger1 = new TrackedTigerBot(tiger1BotID, new Vector2(200, 200), new Vector2(0, 0.01),
+				Vector2.ZERO_VECTOR, 0, 0f, 0f, 0f, 0f, null, ETeamColor.YELLOW);
+		bots.put(tiger1BotID, tiger1);
 		
-		BotID tiger2BotID = new BotID(1);
-		TrackedTigerBot tiger2 = new TrackedTigerBot(tiger2BotID, new Vector2(0, 400), new Vector2(0.01, 0), null, 0, 0f,
-				0f, 0f, 0f, null);
-		tigers.put(tiger2BotID, tiger2);
+		BotID tiger2BotID = BotID.createBotId(1, ETeamColor.YELLOW);
+		TrackedTigerBot tiger2 = new TrackedTigerBot(tiger2BotID, new Vector2(0, 400), new Vector2(0.01, 0),
+				Vector2.ZERO_VECTOR, 0, 0f, 0f, 0f, 0f, null, ETeamColor.YELLOW);
+		bots.put(tiger2BotID, tiger2);
 		
-		WorldFrame wf = new WorldFrame(foes, tigers, tigers, ball, 0, 0, null, 0);
-		
-		FieldPredictor fp = new FieldPredictor();
+		FieldPredictor fp = new FieldPredictor(bots.values(), ball);
 		
 		// do
-		wfp = fp.create(wf);
+		wfp = fp.create();
 		
-		fpi = wfp.getTiger(tiger1BotID);
+		fpi = wfp.getBot(tiger1BotID);
 	}
 	
 	

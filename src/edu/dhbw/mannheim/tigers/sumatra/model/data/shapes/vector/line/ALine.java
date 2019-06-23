@@ -9,6 +9,8 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line;
 
+import com.sleepycat.persist.model.Persistent;
+
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.exceptions.MathException;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
@@ -20,6 +22,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
  * @author Malte
  * 
  */
+@Persistent
 public abstract class ALine implements ILine
 {
 	// --------------------------------------------------------------------------

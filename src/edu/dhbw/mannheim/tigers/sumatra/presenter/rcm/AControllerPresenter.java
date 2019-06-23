@@ -19,7 +19,7 @@ import net.java.games.input.Controller;
 
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.AObjectID;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.inputDevice.controller.ControllerFactory;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.inputDevice.controller.EControllerType;
@@ -37,18 +37,14 @@ public abstract class AControllerPresenter
 	// --------------------------------------------------------------------------
 	// --- class variables ------------------------------------------------------
 	// --------------------------------------------------------------------------
-	// Logger
 	private static final Logger	log				= Logger.getLogger(AControllerPresenter.class.getName());
 	
 	private Map<String, String>	currentConfig	= new HashMap<String, String>();
 	private Controller				controller;
 	private final ControllerPanel	cPanel;
 	
-	private int							botNumber;
+	private BotID						botId;
 	private LocalDevice				localDevice		= null;
-	
-	
-	// --- logger ---
 	
 	
 	// --------------------------------------------------------------------------
@@ -58,7 +54,7 @@ public abstract class AControllerPresenter
 	 * 
 	 * @param newController
 	 */
-	public AControllerPresenter(Controller newController)
+	AControllerPresenter(Controller newController)
 	{
 		controller = newController;
 		
@@ -95,7 +91,7 @@ public abstract class AControllerPresenter
 	 * @param key (Component)
 	 * @param value (Action)
 	 */
-	public void setCurrentConfig(String key, String value)
+	private void setCurrentConfig(String key, String value)
 	{
 		// --- get textfield map with all actions (key) and textfields (value)
 		final Map<String, JTextField> tfMap = cPanel.getTextFieldMap();
@@ -203,20 +199,20 @@ public abstract class AControllerPresenter
 	 * starts polling for controller
 	 * @return activation status
 	 */
-	public boolean startPolling()
+	boolean startPolling()
 	{
 		if (ControllerFactory.getInstance().isUsed(controller))
 		{
 			return true;
 		}
 		
-		botNumber = cPanel.getBotNumber();
+		botId = cPanel.getBotNumber();
 		
-		if ((botNumber >= AObjectID.BOT_ID_MIN) && (botNumber <= AObjectID.BOT_ID_MAX))
+		if (botId.isBot())
 		{
 			for (final ABot bot : RCMPresenter.getInstance().getAllBots())
 			{
-				if (bot.getBotID().getNumber() == botNumber)
+				if (bot.getBotID().equals(botId))
 				{
 					if ((controller.getType() == Controller.Type.KEYBOARD)
 							|| (controller.getType() == Controller.Type.GAMEPAD)
@@ -236,7 +232,7 @@ public abstract class AControllerPresenter
 	/**
 	 * stops polling for controller
 	 */
-	public void stopPolling()
+	void stopPolling()
 	{
 		if (localDevice != null)
 		{
@@ -275,9 +271,9 @@ public abstract class AControllerPresenter
 	/**
 	 * @return the botNumber
 	 */
-	public final int getBotNumber()
+	public final BotID getBotNumber()
 	{
-		return botNumber;
+		return botId;
 	}
 	
 }

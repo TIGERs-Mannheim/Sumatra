@@ -49,6 +49,17 @@ public class PIDParametersXYW
 	}
 	
 	
+	/**
+	 * @param params
+	 */
+	public PIDParametersXYW(PIDParametersXYW params)
+	{
+		x = new PIDParameters(params.x);
+		y = new PIDParameters(params.y);
+		w = new PIDParameters(params.w);
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------

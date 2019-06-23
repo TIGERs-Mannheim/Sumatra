@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 24.03.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.math.functions;
@@ -25,15 +24,7 @@ public interface IFunction1D
 	 * @param x input
 	 * @return function value
 	 */
-	public float eval(float x);
-	
-	
-	/**
-	 * Identifies function in saveable string.
-	 * 
-	 * @return
-	 */
-	public String getIdentifier();
+	float eval(float... x);
 	
 	
 	/**
@@ -42,14 +33,11 @@ public interface IFunction1D
 	 * 
 	 * @return
 	 */
-	public List<Float> getParameters();
+	List<Float> getParameters();
 	
 	
 	/**
-	 * Set function parameters.
-	 * Used for creating functions from strings.
-	 * 
-	 * @param params
+	 * @return
 	 */
-	public void setParameters(List<Float> params);
+	EFunction getIdentifier();
 }

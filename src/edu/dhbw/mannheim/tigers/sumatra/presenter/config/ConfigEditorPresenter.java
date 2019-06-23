@@ -9,19 +9,16 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.config;
 
-import org.apache.log4j.Logger;
+import java.awt.Component;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AConfigManager;
+import edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesState;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.config.ConfigManager;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IConfigManagerObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ManagedConfig;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.IModuliStateObserver;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.ModuliStateAdapter;
 import edu.dhbw.mannheim.tigers.sumatra.view.config.ConfigEditorView;
 import edu.dhbw.mannheim.tigers.sumatra.view.config.IConfigEditorViewObserver;
-import edu.dhbw.mannheim.tigers.sumatra.view.main.ISumatraView;
-import edu.moduli.exceptions.ModuleNotFoundException;
-import edu.moduli.listenerVariables.ModulesState;
+import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
+import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraViewPresenter;
 
 
 /**
@@ -31,19 +28,11 @@ import edu.moduli.listenerVariables.ModulesState;
  * @author Gero
  * 
  */
-public class ConfigEditorPresenter implements IModuliStateObserver, IConfigManagerObserver, IConfigEditorViewObserver
+public class ConfigEditorPresenter implements IConfigManagerObserver, IConfigEditorViewObserver, ISumatraViewPresenter
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	// Logger
-	private static final Logger		log				= Logger.getLogger(ConfigEditorPresenter.class.getName());
-	
-	private final SumatraModel			model				= SumatraModel.getInstance();
-	private final ModuliStateAdapter	moduliAdapter	= ModuliStateAdapter.getInstance();
-	
-	private AConfigManager				configManager	= null;
-	
 	private final ConfigEditorView	view;
 	
 	
@@ -55,7 +44,14 @@ public class ConfigEditorPresenter implements IModuliStateObserver, IConfigManag
 	public ConfigEditorPresenter()
 	{
 		view = new ConfigEditorView();
-		moduliAdapter.addObserver(this);
+		
+		// Get initial state
+		for (final ManagedConfig config : ConfigManager.getInstance().getLoadedConfigs())
+		{
+			onConfigAdded(config);
+		}
+		
+		ConfigManager.getInstance().addObserver(this);
 	}
 	
 	
@@ -63,7 +59,7 @@ public class ConfigEditorPresenter implements IModuliStateObserver, IConfigManag
 	// --- IConfigManagerObserver -----------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
-	public void onConfigAdded(ManagedConfig newConfig)
+	public final void onConfigAdded(ManagedConfig newConfig)
 	{
 		if (newConfig.getClient().isEditable())
 		{
@@ -88,77 +84,55 @@ public class ConfigEditorPresenter implements IModuliStateObserver, IConfigManag
 	@Override
 	public void onApplyPressed(String configKey)
 	{
-		configManager.notifyConfigEdited(configKey);
+		ConfigManager.getInstance().notifyConfigEdited(configKey);
 	}
 	
 	
 	@Override
 	public boolean onSavePressed(String configKey)
 	{
-		return configManager.saveConfig(configKey);
+		return ConfigManager.getInstance().saveConfig(configKey);
 	}
 	
 	
 	@Override
 	public void onReloadPressed(String configKey)
 	{
-		configManager.reloadConfig(configKey);
+		ConfigManager.getInstance().reloadConfig(configKey);
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void onModuliStateChanged(ModulesState state)
-	{
-		switch (state)
-		{
-			case RESOLVED:
-				if (configManager == null)
-				{
-					try
-					{
-						configManager = (AConfigManager) model.getModule(AConfigManager.MODULE_ID);
-						
-						// Get initial state
-						for (final ManagedConfig config : configManager.getLoadedConfigs())
-						{
-							onConfigAdded(config);
-						}
-						
-					} catch (final ModuleNotFoundException err1)
-					{
-						log.error("Unable to getModule '" + AConfigManager.MODULE_ID + "'!");
-						return;
-					}
-				}
-				
-				configManager.removeObserver(this);
-				configManager.addObserver(this);
-				
-				break;
-			case ACTIVE:
-				break;
-			case NOT_LOADED:
-				break;
-			default:
-				break;
-		}
-	}
-	
 	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	
 	
-	/**
-	 * 
-	 * @return
-	 */
-	public ISumatraView getView()
+	@Override
+	public Component getComponent()
 	{
 		return view;
+	}
+	
+	
+	@Override
+	public ISumatraView getSumatraView()
+	{
+		return view;
+	}
+	
+	
+	@Override
+	public void onEmergencyStop()
+	{
+	}
+	
+	
+	@Override
+	public void onModuliStateChanged(ModulesState state)
+	{
 	}
 }

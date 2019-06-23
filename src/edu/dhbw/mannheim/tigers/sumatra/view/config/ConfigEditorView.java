@@ -9,7 +9,6 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.config;
 
-import java.awt.Component;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +21,7 @@ import javax.swing.SwingConstants;
 import net.miginfocom.swing.MigLayout;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IConfigClient;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ManagedConfig;
-import edu.dhbw.mannheim.tigers.sumatra.view.main.ISumatraView;
+import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
 
 
 /**
@@ -38,9 +37,6 @@ public class ConfigEditorView extends JPanel implements ISumatraView
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	private static final long					serialVersionUID	= -7007103316635397718L;
-	
-	private static final String				TITLE					= "Config Editor";
-	private static final int					ID						= 8;
 	
 	private final JTabbedPane					tabpane;
 	private final Map<String, EditorView>	tabs					= new HashMap<String, EditorView>();
@@ -70,7 +66,7 @@ public class ConfigEditorView extends JPanel implements ISumatraView
 	public void addConfigModel(ManagedConfig newConfig, IConfigEditorViewObserver observer)
 	{
 		final IConfigClient client = newConfig.getClient();
-		final EditorView newView = new EditorView(client.getName(), client.getConfigKey(), newConfig.getXmlConfig(),
+		final EditorView newView = new EditorView(client.getName(), client.getConfigKey(), newConfig.getConfig(),
 				client.isEditable());
 		newView.addObserver(observer);
 		
@@ -89,9 +85,7 @@ public class ConfigEditorView extends JPanel implements ISumatraView
 	{
 		final IConfigClient client = config.getClient();
 		final EditorView view = tabs.get(client.getConfigKey());
-		view.updateModel(config.getXmlConfig(), client.isEditable());
-		// this.revalidate();
-		// this.repaint();
+		view.updateModel(config.getConfig(), client.isEditable());
 	}
 	
 	
@@ -126,26 +120,6 @@ public class ConfigEditorView extends JPanel implements ISumatraView
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	@Override
-	public int getId()
-	{
-		return ID;
-	}
-	
-	
-	@Override
-	public String getTitle()
-	{
-		return TITLE;
-	}
-	
-	
-	@Override
-	public Component getViewComponent()
-	{
-		return this;
-	}
 	
 	
 	@Override

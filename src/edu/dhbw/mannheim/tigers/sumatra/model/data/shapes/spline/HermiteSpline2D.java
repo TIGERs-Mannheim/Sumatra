@@ -9,7 +9,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline;
 
-import javax.persistence.Embeddable;
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
@@ -25,14 +25,14 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
  * @author AndreR
  * 
  */
-@Embeddable
+@Persistent(version = 2)
 public class HermiteSpline2D
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private HermiteSpline	x;
-	private HermiteSpline	y;
+	private IHermiteSpline	x;
+	private IHermiteSpline	y;
 	
 	private float				length	= -1;
 	
@@ -40,6 +40,14 @@ public class HermiteSpline2D
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	
+	@SuppressWarnings("unused")
+	private HermiteSpline2D()
+	{
+	}
+	
+	
 	/**
 	 * Create a 2D hermite cubic spline.
 	 * 
@@ -72,6 +80,17 @@ public class HermiteSpline2D
 	}
 	
 	
+	/**
+	 * @param spline
+	 */
+	public HermiteSpline2D(HermiteSpline2D spline)
+	{
+		x = new HermiteSpline(spline.x);
+		y = new HermiteSpline(spline.y);
+		length = spline.length;
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -84,6 +103,15 @@ public class HermiteSpline2D
 	public Vector2 value(float t)
 	{
 		return new Vector2(x.value(t), y.value(t));
+	}
+	
+	
+	/**
+	 */
+	public void mirror()
+	{
+		x.mirrorPosition();
+		y.mirrorPosition();
 	}
 	
 	
@@ -121,12 +149,12 @@ public class HermiteSpline2D
 	{
 		float a = firstDerivative(0).getLength2();
 		float b = 0.0f;
-		float c = firstDerivative(x.tEnd).getLength2();
+		float c = firstDerivative(x.getEndTime()).getLength2();
 		
-		if ((x.a + y.a) != 0.0f) // maximum existent?
+		if ((x.getA()[3] + y.getA()[3]) != 0.0f) // maximum existent?
 		{
-			float t = -(y.b + x.b) / ((3 * y.a) + (3 * x.a)); // time at maximum
-			if ((t > 0) && (t < x.tEnd))
+			float t = -(y.getA()[2] + x.getA()[2]) / ((3 * y.getA()[3]) + (3 * x.getA()[3])); // time at maximum
+			if ((t > 0) && (t < x.getEndTime()))
 			{
 				b = firstDerivative(t).getLength2();
 			}
@@ -146,7 +174,7 @@ public class HermiteSpline2D
 	{
 		// maximum of second derivative is at begin or end
 		float a = secondDerivative(0).getLength2();
-		float b = secondDerivative(x.tEnd).getLength2();
+		float b = secondDerivative(x.getEndTime()).getLength2();
 		
 		return SumatraMath.max(a, b);
 	}
@@ -249,7 +277,7 @@ public class HermiteSpline2D
 	 */
 	public float getEndTime()
 	{
-		return x.tEnd;
+		return x.getEndTime();
 	}
 	
 	
@@ -259,7 +287,7 @@ public class HermiteSpline2D
 	/**
 	 * @return
 	 */
-	public HermiteSpline getXSpline()
+	public IHermiteSpline getXSpline()
 	{
 		return x;
 	}
@@ -268,8 +296,15 @@ public class HermiteSpline2D
 	/**
 	 * @return
 	 */
-	public HermiteSpline getYSpline()
+	public IHermiteSpline getYSpline()
 	{
 		return y;
+	}
+	
+	
+	@Override
+	public String toString()
+	{
+		return "[x=" + x + ", y=" + y + ", length=" + length + "]";
 	}
 }

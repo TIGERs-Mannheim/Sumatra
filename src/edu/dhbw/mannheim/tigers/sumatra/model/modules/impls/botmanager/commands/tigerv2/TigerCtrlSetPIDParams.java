@@ -11,7 +11,9 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.botmanager.PIDParameters;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -40,13 +42,15 @@ public class TigerCtrlSetPIDParams extends ACommand
 		/** */
 		VEL_W(0x06),
 		/** */
-		ACC_X(0x07),
+		MOTOR(0x07),
+		/**  */
+		DRIBBLER(0x0A),
 		/** */
-		ACC_Y(0x08),
+		SPLINE_X(0x0B),
 		/** */
-		ACC_W(0x09),
+		SPLINE_Y(0x0C),
 		/** */
-		DRIBBLER(0x0A);
+		SPLINE_W(0x0D), ;
 		
 		private final int	val;
 		
@@ -90,8 +94,10 @@ public class TigerCtrlSetPIDParams extends ACommand
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private PIDParameters	params;
-	private PIDParamType		type;
+	@SerialData(type = ESerialDataType.EMBEDDED)
+	private PIDParameters	params	= new PIDParameters();
+	@SerialData(type = ESerialDataType.UINT8)
+	private int					type;
 	
 	
 	// --------------------------------------------------------------------------
@@ -100,7 +106,9 @@ public class TigerCtrlSetPIDParams extends ACommand
 	/** */
 	public TigerCtrlSetPIDParams()
 	{
-		type = PIDParamType.UNKNOWN;
+		super(ECommand.CMD_CTRL_SET_PID_PARAMS);
+		
+		type = PIDParamType.UNKNOWN.getValue();
 	}
 	
 	
@@ -110,7 +118,9 @@ public class TigerCtrlSetPIDParams extends ACommand
 	 */
 	public TigerCtrlSetPIDParams(PIDParamType type, PIDParameters params)
 	{
-		this.type = type;
+		super(ECommand.CMD_CTRL_SET_PID_PARAMS);
+		
+		this.type = type.getValue();
 		setParams(params);
 	}
 	
@@ -118,42 +128,6 @@ public class TigerCtrlSetPIDParams extends ACommand
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		params.setKp(byteArray2Float(data, 0));
-		params.setKi(byteArray2Float(data, 4));
-		params.setKd(byteArray2Float(data, 8));
-		type = PIDParamType.getPIDParamTypeConstant(byteArray2UByte(data, 12));
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		float2ByteArray(data, 0, params.getKp());
-		float2ByteArray(data, 4, params.getKi());
-		float2ByteArray(data, 8, params.getKd());
-		byte2ByteArray(data, 12, type.getValue());
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_CTRL_SET_PID_PARAMS;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 13;
-	}
 	
 	
 	// --------------------------------------------------------------------------
@@ -162,18 +136,18 @@ public class TigerCtrlSetPIDParams extends ACommand
 	/**
 	 * @return the type
 	 */
-	public PIDParamType getType()
+	public PIDParamType getParamType()
 	{
-		return type;
+		return PIDParamType.getPIDParamTypeConstant(type);
 	}
 	
 	
 	/**
 	 * @param type the type to set
 	 */
-	public void setType(PIDParamType type)
+	public void setParamType(PIDParamType type)
 	{
-		this.type = type;
+		this.type = type.getValue();
 	}
 	
 	

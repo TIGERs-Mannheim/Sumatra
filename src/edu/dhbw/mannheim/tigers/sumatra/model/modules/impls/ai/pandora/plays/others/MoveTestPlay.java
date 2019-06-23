@@ -9,9 +9,12 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.others;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AthenaAiFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.EGameState;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.move.MoveRole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.move.MoveRole.EMoveBehavior;
 
@@ -33,10 +36,11 @@ public class MoveTestPlay extends APlay
 	private final MoveRole	moveRole1;
 	private final MoveRole	moveRole2;
 	
-	private EState				state	= EState.PREPARE;
+	private EState				state	= EState.INIT;
 	
 	private enum EState
 	{
+		INIT,
 		PREPARE,
 		DO
 	}
@@ -47,17 +51,12 @@ public class MoveTestPlay extends APlay
 	// --------------------------------------------------------------------------
 	
 	/**
-	 * @param aiFrame
-	 * @param numAssignedRoles
 	 */
-	public MoveTestPlay(AIInfoFrame aiFrame, int numAssignedRoles)
+	public MoveTestPlay()
 	{
-		super(aiFrame, numAssignedRoles);
+		super(EPlay.MOVE_TEST);
 		moveRole1 = new MoveRole(EMoveBehavior.NORMAL);
 		moveRole2 = new MoveRole(EMoveBehavior.NORMAL);
-		addAggressiveRole(moveRole1, new Vector2(-2000, 1500));
-		addAggressiveRole(moveRole2, new Vector2(2000, 1900));
-		setTimeout(Long.MAX_VALUE);
 	}
 	
 	
@@ -67,37 +66,76 @@ public class MoveTestPlay extends APlay
 	
 	
 	@Override
-	protected void beforeUpdate(AIInfoFrame frame)
+	protected void doUpdate(AthenaAiFrame frame)
 	{
+		if (getRoles().size() != 2)
+		{
+			return;
+		}
 		switch (state)
 		{
+			case INIT:
+				moveRole1.getMoveCon().updateDestination(new Vector2(-2000, 1500));
+				moveRole2.getMoveCon().updateDestination(new Vector2(2000, 1900));
+				state = EState.PREPARE;
+				break;
 			case PREPARE:
 				if (moveRole1.checkMoveCondition() && moveRole2.checkMoveCondition())
 				{
-					moveRole1.updateDestination(new Vector2(2000, 1500));
-					moveRole2.updateDestination(new Vector2(-2000, 1900));
+					moveRole1.getMoveCon().updateDestination(new Vector2(2000, 1500));
+					moveRole2.getMoveCon().updateDestination(new Vector2(-2000, 1900));
 					state = EState.DO;
 				}
 				break;
 			case DO:
 				if (moveRole1.checkMoveCondition() && moveRole2.checkMoveCondition())
 				{
-					moveRole1.updateDestination(new Vector2(-2000, 1500));
-					moveRole2.updateDestination(new Vector2(2000, 1900));
+					moveRole1.getMoveCon().updateDestination(new Vector2(-2000, 1500));
+					moveRole2.getMoveCon().updateDestination(new Vector2(2000, 1900));
 					state = EState.PREPARE;
 				}
 				break;
 		}
-		moveRole1.updateLookAtTarget(moveRole2.getPos());
-		moveRole2.updateLookAtTarget(moveRole1.getPos());
+		moveRole1.getMoveCon().updateLookAtTarget(moveRole2.getPos());
+		moveRole2.getMoveCon().updateLookAtTarget(moveRole1.getPos());
 	}
 	
 	
 	@Override
-	protected void afterUpdate(AIInfoFrame currentFrame)
+	protected ARole onRemoveRole()
 	{
-		
+		switch (getRoles().size())
+		{
+			case 1:
+				return moveRole1;
+			case 2:
+				return moveRole2;
+			default:
+				throw new IllegalStateException();
+		}
 	}
+	
+	
+	@Override
+	protected ARole onAddRole()
+	{
+		switch (getRoles().size())
+		{
+			case 0:
+				return moveRole1;
+			case 1:
+				return moveRole2;
+			default:
+				throw new IllegalStateException();
+		}
+	}
+	
+	
+	@Override
+	protected void onGameStateChanged(EGameState gameState)
+	{
+	}
+	
 	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------

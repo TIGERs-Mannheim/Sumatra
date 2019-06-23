@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<roles base="edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles">
+    <defense>
+        <DefenderRole>
+            <marginDefenseArea comment="">300.0</marginDefenseArea>
+            <chipKickLength comment="">1000.0</chipKickLength>
+        </DefenderRole>
+        <KeeperRole>
+            <chipKickDistance comment="Dist [mm] - Distance to chip ball out of penArea.">1000</chipKickDistance>
+            <chipKickDecisionDistance comment="Security Dist [mm] - Distance around the penalty area. If the ball is inside this area the keeper tries to kick it away">100</chipKickDecisionDistance>
+            <chipKickDecisionVelocity comment="Speed of the ball [m/s] - If the ball is slower_ the bot will try to kick it out of the penalty area.">0.4</chipKickDecisionVelocity>
+            <distToGoalLine comment="Dist [mm] - The distance to the goal line from the initial keeper position">500</distToGoalLine>
+            <maxSplineLength comment="Dist [mm] - Longest spline to be computed for the keeper.">1000</maxSplineLength>
+            <maxSplineLength:GRSIM comment="Dist [mm] - Longest spline to be computed for the keeper.">1000</maxSplineLength:GRSIM>
+            <safetyAroundPenalty comment="Dist [mm] - Distance around the penalty area where the bot is allowed to block.">400</safetyAroundPenalty>
+        </KeeperRole>
+    </defense>
+    <offense>
+        <PenaltyShooterRole>
+            <distanceToBall comment="Distance from ball to prepositionate">120.0</distanceToBall>
+            <shootingAngle comment="Defines shooting-angle between bot and keeper">20</shootingAngle>
+        </PenaltyShooterRole>
+        <AOffensiveRole>
+            <showDebugInformations comment="">false</showDebugInformations>
+        </AOffensiveRole>
+    </offense>
+    <test>
+        <StraightKickTrainerRole>
+            <waitingTime comment="Time [ms] to wait before doing the kick">300</waitingTime>
+            <dist2Ball comment="Dist [mm] to ball in prepare state">121.5</dist2Ball>
+            <ballAtDestTol comment="Dist [mm] to ball when it is considered to be at its destination">50.0</ballAtDestTol>
+            <ballMovingVelTol comment="Velocity tolerance [m/s] when the ball is considered to be moving">0.1</ballMovingVelTol>
+        </StraightKickTrainerRole>
+        <ChipKickTrainerV2Role>
+            <waitingTime comment="Time [ms] to wait before doing the chipkick">1500</waitingTime>
+            <dist2Ball comment="Dist [mm] to ball in prepare state">121.5</dist2Ball>
+            <ballAtDestTol comment="Dist [mm] to ball when it is considered to be at its destination">80.0</ballAtDestTol>
+        </ChipKickTrainerV2Role>
+    </test>
+    <move>
+        <MoveBallToRole>
+            <positioningPreAiming comment="Dist [mm] - distance to ball before aiming">150.0</positioningPreAiming>
+        </MoveBallToRole>
+    </move>
+</roles>

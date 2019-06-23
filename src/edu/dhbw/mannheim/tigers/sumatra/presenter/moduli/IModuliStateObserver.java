@@ -9,7 +9,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.moduli;
 
-import edu.moduli.listenerVariables.ModulesState;
+import edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesState;
 
 
 /**

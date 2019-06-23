@@ -10,15 +10,13 @@
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.devices.EKickDevice;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ASkill;
 
 
 /**
  * TigerBotSkills observer.
  * 
  * @author AndreR
- * 
  */
 public interface ISkillsPanelObserver
 {
@@ -56,14 +54,6 @@ public interface ISkillsPanelObserver
 	
 	/**
 	 * 
-	 * @param kicklength
-	 * @param device
-	 */
-	void onKick(float kicklength, EKickDevice device);
-	
-	
-	/**
-	 * 
 	 * @param lookAtTarget
 	 */
 	void onLookAt(Vector2 lookAtTarget);
@@ -80,5 +70,5 @@ public interface ISkillsPanelObserver
 	 * 
 	 * @param skill
 	 */
-	void onSkill(AMoveSkill skill);
+	void onSkill(ASkill skill);
 }

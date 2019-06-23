@@ -19,12 +19,10 @@ import javax.swing.JSplitPane;
 import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ABotManager;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.BotCenterTreeNode;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.BotTreePanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.IBotTreeObserver;
-import edu.dhbw.mannheim.tigers.sumatra.view.commons.ConfigControlMenu;
-import edu.dhbw.mannheim.tigers.sumatra.view.main.ISumatraView;
+import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
 
 
 /**
@@ -39,18 +37,12 @@ public class BotCenterPanel extends JPanel implements IBotTreeObserver, ISumatra
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long			serialVersionUID	= 2686191777355388548L;
+	private static final long	serialVersionUID	= 2686191777355388548L;
 	
-	private static final String		TITLE					= "Bot Center";
-	private static final int			ID						= 2;
+	private BotTreePanel			botTree				= null;
+	private JSplitPane			splitPane			= null;
 	
-	private BotTreePanel					botTree				= null;
-	private JSplitPane					splitPane			= null;
-	
-	private final ConfigControlMenu	configMenu			= new ConfigControlMenu("Botmanager",
-																				ABotManager.KEY_BOTMANAGER_CONFIG);
-	
-	private boolean						active				= false;
+	private boolean				active				= false;
 	
 	
 	// --------------------------------------------------------------------------
@@ -123,33 +115,9 @@ public class BotCenterPanel extends JPanel implements IBotTreeObserver, ISumatra
 	
 	
 	@Override
-	public int getId()
-	{
-		return ID;
-	}
-	
-	
-	@Override
-	public String getTitle()
-	{
-		return TITLE;
-	}
-	
-	
-	@Override
-	public Component getViewComponent()
-	{
-		return this;
-	}
-	
-	
-	@Override
 	public List<JMenu> getCustomMenus()
 	{
 		final List<JMenu> menus = new ArrayList<JMenu>();
-		
-		menus.add(configMenu.getConfigMenu());
-		
 		return menus;
 	}
 	

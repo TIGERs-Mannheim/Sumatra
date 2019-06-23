@@ -15,9 +15,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.ActionCommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.inputDevice.sendAction.ARCCommandInterpreter;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.inputDevice.sendAction.ActionSender;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.inputDevice.sendAction.interpreter.NullInterpreter;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.inputDevice.sendAction.interpreter.TigerInterpreter;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.inputDevice.sendAction.interpreter.TigerV2Interpreter;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.inputDevice.sendAction.TigerV2Interpreter;
 
 
 /**
@@ -33,7 +31,7 @@ public abstract class AInputDevice
 	// --------------------------------------------------------------------------
 	private final ARCCommandInterpreter	cmdInterpreter;
 	
-	protected final ActionSender			actionSender;
+	private final ActionSender				actionSender;
 	
 	
 	// --------------------------------------------------------------------------
@@ -48,14 +46,11 @@ public abstract class AInputDevice
 		{
 			case TIGER:
 			case GRSIM:
-				cmdInterpreter = new TigerInterpreter(bot);
-				break;
 			case TIGER_V2:
 				cmdInterpreter = new TigerV2Interpreter(bot);
 				break;
 			default:
-				cmdInterpreter = new NullInterpreter(bot);
-				break;
+				throw new IllegalArgumentException("Invalid bot type: " + bot.getType());
 		}
 		
 		actionSender = new ActionSender();

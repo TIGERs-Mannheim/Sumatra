@@ -14,6 +14,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import javax.swing.ButtonGroup;
 import javax.swing.JPanel;
@@ -62,6 +63,8 @@ public class ConsolePanel extends JPanel
 	private JRadioButton								targetMedia			= new JRadioButton("Media");
 	
 	private final List<IConsolePanelObserver>	observers			= new ArrayList<IConsolePanelObserver>();
+	
+	private long										timingStart			= 0;
 	
 	
 	// --------------------------------------------------------------------------
@@ -156,6 +159,12 @@ public class ConsolePanel extends JPanel
 			public void run()
 			{
 				textPane.append(print.getText() + "\n", aset);
+				
+				if (print.getText().startsWith("Time run out:"))
+				{
+					float time = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - timingStart) / 1000.0f;
+					textPane.append("Real time: " + time + "\n", aset);
+				}
 			}
 		});
 	}
@@ -182,6 +191,12 @@ public class ConsolePanel extends JPanel
 			textPane.append(text + "\n", aset);
 			
 			cmdInput.setText("");
+			
+			
+			if (text.startsWith("timing"))
+			{
+				timingStart = System.nanoTime();
+			}
 			
 			notifyConsoleCommand(text, target);
 		}

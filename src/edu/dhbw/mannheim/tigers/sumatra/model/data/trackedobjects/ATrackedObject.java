@@ -11,7 +11,9 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects;
 
 import java.io.Serializable;
 
-import javax.persistence.Embeddable;
+import net.sf.oval.constraint.NotNull;
+
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.AObjectID;
@@ -28,7 +30,7 @@ import edu.dhbw.mannheim.tigers.sumatra.util.units.DistanceUnit;
  * @author Gero
  * 
  */
-@Embeddable
+@Persistent
 public abstract class ATrackedObject implements Serializable
 {
 	// --------------------------------------------------------------------------
@@ -39,6 +41,7 @@ public abstract class ATrackedObject implements Serializable
 	private static final long	serialVersionUID	= -5601755416618153247L;
 	
 	/** bot = assigned standardPatternId, ball = own specific Id */
+	@NotNull
 	protected AObjectID			id;
 	
 	/** 0-1, 1 = confident */
@@ -48,6 +51,12 @@ public abstract class ATrackedObject implements Serializable
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	
+	@SuppressWarnings("unused")
+	private ATrackedObject()
+	{
+	}
 	
 	
 	/**

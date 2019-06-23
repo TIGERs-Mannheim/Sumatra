@@ -21,4 +21,10 @@ public interface IWatchdogObserver
 	 *
 	 */
 	void onWatchdogTimeout();
+	
+	
+	/**
+	 * @return
+	 */
+	String getName();
 }

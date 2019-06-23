@@ -14,7 +14,6 @@ import java.util.Iterator;
 
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 
@@ -50,12 +49,10 @@ public class Assigner
 	 * @param bot
 	 * @param assignees
 	 * @param role
-	 * @param frame
 	 */
-	public void assign(final TrackedTigerBot bot, final Collection<TrackedTigerBot> assignees, final ARole role,
-			final AIInfoFrame frame)
+	public void assign(final TrackedTigerBot bot, final Collection<TrackedTigerBot> assignees, final ARole role)
 	{
-		doAssign(bot, role, frame);
+		doAssign(bot, role);
 		assignees.remove(bot);
 	}
 	
@@ -64,17 +61,15 @@ public class Assigner
 	 * @param bot
 	 * @param assigneesIt
 	 * @param role
-	 * @param frame
 	 */
-	public void assign(final TrackedTigerBot bot, final Iterator<TrackedTigerBot> assigneesIt, final ARole role,
-			final AIInfoFrame frame)
+	public void assign(final TrackedTigerBot bot, final Iterator<TrackedTigerBot> assigneesIt, final ARole role)
 	{
-		doAssign(bot, role, frame);
+		doAssign(bot, role);
 		assigneesIt.remove();
 	}
 	
 	
-	private void doAssign(TrackedTigerBot bot, ARole role, AIInfoFrame frame)
+	private void doAssign(TrackedTigerBot bot, ARole role)
 	{
 		// Safety check
 		if (role.hasBeenAssigned())
@@ -85,6 +80,5 @@ public class Assigner
 		
 		// Assign
 		role.assignBotID(bot.getId());
-		frame.putAssignedRole(role);
 	}
 }

@@ -8,30 +8,28 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles;
 
-import java.lang.reflect.Constructor;
-
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense.DefenderK2DRole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense.DefenderKNDWDPRole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense.KeeperSoloRole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense.KeeperSoloV2Role;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.DynamicPosition;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense.DefenderRole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense.KeeperRole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense.ManToManMarkerRole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense.PassiveDefenderRole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.move.MoveBallToRole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.move.MoveRole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.move.MoveWithDistanceToPointRole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.move.TurnAroundBallRole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.BallBreakerRole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.BallConquerRole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.BallGetterRole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.ChipKickRole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.PassReceiverStraightRole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.PassSenderRole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.RedirectRole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.ShooterV2Role;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.ShooterV3Role;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.standard.penalty.KeeperPenaltyThemRole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.move.MoveRole.EMoveBehavior;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.EpicPenaltyShooterRole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.OffensiveRole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.PenaltyShooterRole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.SimpleShooterRole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.standard.PenaltyKeeperRoleV2;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.test.ChipKickTrainerRole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.test.ChipKickTrainerV2Role;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.test.DestChangedTestRole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.test.SkillTestRole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.test.TurnAroundTestRole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.test.StarCalibrateRole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.test.StraightKickTrainerRole;
+import edu.dhbw.mannheim.tigers.sumatra.util.IInstanceableEnum;
+import edu.dhbw.mannheim.tigers.sumatra.util.InstanceableClass;
+import edu.dhbw.mannheim.tigers.sumatra.util.InstanceableParameter;
 
 
 /**
@@ -39,81 +37,87 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.tes
  * {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.Lachesis}.
  * 
  * @author Gero, ChristianK
- * 
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public enum ERole
+public enum ERole implements IInstanceableEnum
 {
+	// main
+	/**  */
+	OFFENSIVE(new InstanceableClass(OffensiveRole.class)),
+	/**  */
+	SUPPORT(new InstanceableClass(SupportRole.class)),
+	/** */
+	DEFENDER(new InstanceableClass(DefenderRole.class)),
+	/** */
+	KEEPER(new InstanceableClass(KeeperRole.class)),
+	
 	// movement
-	/** Moves with a distance to the ball */
-	MOVE_DISTANCE_BALL(MoveWithDistanceToPointRole.class),
 	/** */
-	MOVE(MoveRole.class),
+	MOVE(new InstanceableClass(MoveRole.class, new InstanceableParameter(EMoveBehavior.class, "moveBehavior", "NORMAL"))),
 	/**  */
-	MOVE_BALL_TO(MoveBallToRole.class),
-	/** */
-	TURN_AROUND_BALL(TurnAroundBallRole.class),
+	MOVE_BALL_TO(new InstanceableClass(MoveBallToRole.class, new InstanceableParameter(IVector2.class, "ballTarget",
+			"0,0"))),
 	
-	// Defense
+	// to be removed
 	/** */
-	DEFENDER_K2D(DefenderK2DRole.class),
-	/** */
-	DEFENDER_KNDWDP(DefenderKNDWDPRole.class),
-	/** */
-	KEEPER_SOLO(KeeperSoloRole.class),
-	/** */
-	KEEPER_SOLO_V2(KeeperSoloV2Role.class),
-	/** */
-	MAN_TO_MAN_MARKER(ManToManMarkerRole.class),
-	/** */
-	PASSIVE_DEFENDER(PassiveDefenderRole.class),
-	
-	// Offense
-	/** */
-	BALL_CONQUERER(BallConquerRole.class),
-	/** */
-	BALL_GETTER(BallGetterRole.class),
-	/** */
-	CHIP_KICK(ChipKickRole.class),
-	/** */
-	PASS_RECEIVER_STRAIGHT(PassReceiverStraightRole.class),
-	/** */
-	PASS_SENDER(PassSenderRole.class),
-	/**  */
-	REDIRECTER(RedirectRole.class),
-	/** */
-	SHOOTERV2(ShooterV2Role.class),
-	/**  */
-	BALL_BREAKER(BallBreakerRole.class),
+	MAN_TO_MAN_MARKER(new InstanceableClass(ManToManMarkerRole.class, new InstanceableParameter(DynamicPosition.class,
+			"markerPos", "0,0"))),
 	
 	// Standards
 	/** */
-	PENALTY_THEM_KEEPER(KeeperPenaltyThemRole.class),
-	/**  */
-	SKILL_TEST(SkillTestRole.class),
-	/**  */
-	TURN_ROUND_TEST(TurnAroundTestRole.class),
-	/**  */
-	SHOOTERV3(ShooterV3Role.class), ;
+	PENALTY_KEEPER_V2(new InstanceableClass(PenaltyKeeperRoleV2.class)),
 	
-	private final Class<?>	impl;
+	// test
+	/** */
+	MOVE_TO_TEST(new InstanceableClass(MoveRole.class, new InstanceableParameter(IVector2.class, "destination", "0,0"),
+			new InstanceableParameter(Float.TYPE, "orientation", "0.0"), new InstanceableParameter(Float.TYPE, "speed",
+					"3.0"))),
+	/**  */
+	SKILL_TEST(new InstanceableClass(SkillTestRole.class)),
+	/**  */
+	STAR_CALIBRATE(new InstanceableClass(StarCalibrateRole.class)),
+	/**  */
+	DEST_CHANGED(new InstanceableClass(DestChangedTestRole.class, new InstanceableParameter(IVector2.class, "diffDest",
+			"0,1000"), new InstanceableParameter(IVector2.class, "diffAngle", "1000,0"), new InstanceableParameter(
+			Integer.TYPE, "freq", "30"))),
+	/**  */
+	SIMPLE_SHOOTER(new InstanceableClass(SimpleShooterRole.class)),
+	/**  */
+	PENALTY_SHOOTER(new InstanceableClass(PenaltyShooterRole.class)),
+	
+	/**  */
+	EPIC_PENALTY_SHOOTER(new InstanceableClass(EpicPenaltyShooterRole.class)),
+	
+	/**  */
+	CHIP_KICK_TRAINER(new InstanceableClass(ChipKickTrainerRole.class, new InstanceableParameter(Integer.TYPE, "durLow",
+			"2000"), new InstanceableParameter(Integer.TYPE, "durHigh", "6000"), new InstanceableParameter(Integer.TYPE,
+			"dribbleLow", "5000"), new InstanceableParameter(Integer.TYPE, "dribbleHigh", "15000"))),
+	/**  */
+	CHIP_KICK_TRAINER_V2(new InstanceableClass(ChipKickTrainerV2Role.class, new InstanceableParameter(Integer.TYPE,
+			"durLow",
+			"2000"), new InstanceableParameter(Integer.TYPE, "durHigh", "6000"), new InstanceableParameter(Integer.TYPE,
+			"dribbleLow", "5000"), new InstanceableParameter(Integer.TYPE, "dribbleHigh", "15000"))),
+	
+	/**  */
+	STRAIGHT_KICK_TRAINER(new InstanceableClass(StraightKickTrainerRole.class)), ;
+	
+	private final InstanceableClass	clazz;
 	
 	
 	/**
 	 */
-	private ERole(Class<?> impl)
+	private ERole(final InstanceableClass clazz)
 	{
-		this.impl = impl;
+		this.clazz = clazz;
 	}
 	
 	
 	/**
-	 * Returns the first public constructor of the Play.
-	 * @return
-	 * @throws NoSuchMethodException
-	 * @throws SecurityException
+	 * @return the paramImpls
 	 */
-	public Constructor<?> getConstructor() throws NoSuchMethodException
+	@Override
+	public final InstanceableClass getInstanceableClass()
 	{
-		return impl.getConstructor();
+		return clazz;
 	}
 }

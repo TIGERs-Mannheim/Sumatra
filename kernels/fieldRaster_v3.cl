@@ -81,10 +81,6 @@
 				}
 				// --------
 				
-				if (vS <= 0.0001)
-				{
-					vS = 0.0001f;
-				}
 				
 				float s_neg[4]; 
 				s_neg[0]=50 + (20 * vS);
@@ -93,8 +89,8 @@
 				s_neg[3]=50 - (25 * vS);
 				if(s_neg[3]<=1)
 				 s_neg[3]=1;
-				 if(s_neg[0]>75)
-				 	s_neg[0]=75;
+				 if(s_neg[0]>150)
+				 	s_neg[0]=150;
 				
 				float rVec[2];
 				rVec[0]=rec_n - goalArray_n;
@@ -105,21 +101,21 @@
 				
 				float temp = (float) sqrt((x * rVec[0]) + (y * rVec[1]));
 				
-
-				temp = ((-1.f / 7.5f) * temp * temp) + 1000.f;
-				if (temp < 0)
-				{
-					temp = 0;
-				}
 	
 				if (i < ourBot)
 				{
-					dstArray[gid] -= temp;
+					if (temp < shortestTiger)
+					{
+						shortestTiger = temp;
+					}
 				} else
 				{
-					dstArray[gid] += temp;
+					if (temp < shortestFoe)
+					{
+						shortestFoe = temp;
+					}
 				}
-	
+				dstArray[gid] = (shortestFoe - shortestTiger);
 	}
 
 };

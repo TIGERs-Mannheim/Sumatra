@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 26.11.2011
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config;
@@ -12,7 +11,7 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.HierarchicalConfiguration;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.config.AConfigClient;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent;
@@ -44,7 +43,7 @@ public final class TeamConfig extends AConfigClient
 	
 	private TeamConfig()
 	{
-		super("Team Config", AAgent.TEAM_CONFIG_PATH, AAgent.KEY_TEAM_CONFIG, AAgent.VALUE_TEAM_CONFIG, true);
+		super("team", AAgent.TEAM_CONFIG_PATH, AAgent.KEY_TEAM_CONFIG, AAgent.VALUE_TEAM_CONFIG, true);
 	}
 	
 	
@@ -61,7 +60,7 @@ public final class TeamConfig extends AConfigClient
 	// --- IConfigClient --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
-	public void onLoad(Configuration xmlConfig)
+	public void onLoad(final HierarchicalConfiguration xmlConfig)
 	{
 		team = new TeamProps(xmlConfig);
 		
@@ -81,7 +80,7 @@ public final class TeamConfig extends AConfigClient
 	/**
 	 * @param newObserver
 	 */
-	public void addObserver(ITeamConfigObserver newObserver)
+	public void addObserver(final ITeamConfigObserver newObserver)
 	{
 		synchronized (observers)
 		{
@@ -100,7 +99,7 @@ public final class TeamConfig extends AConfigClient
 	 * @param oldObserver
 	 * @return
 	 */
-	public boolean removeObserver(ITeamConfigObserver oldObserver)
+	public boolean removeObserver(final ITeamConfigObserver oldObserver)
 	{
 		synchronized (observers)
 		{
@@ -112,7 +111,7 @@ public final class TeamConfig extends AConfigClient
 	/**
 	 * @return the team
 	 */
-	public final TeamProps getTeam()
+	public TeamProps getTeamProps()
 	{
 		return team;
 	}

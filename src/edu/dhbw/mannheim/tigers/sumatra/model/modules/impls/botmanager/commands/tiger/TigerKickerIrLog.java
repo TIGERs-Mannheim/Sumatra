@@ -10,7 +10,9 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
+import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
@@ -33,6 +35,7 @@ public class TigerKickerIrLog extends ACommand
 	/** */
 	public static final int	BARRIER		= 1;
 	
+	@SerialData(type = ESerialDataType.UINT16)
 	private final int			voltage[]	= new int[4];
 	
 	
@@ -44,6 +47,7 @@ public class TigerKickerIrLog extends ACommand
 	 */
 	public TigerKickerIrLog()
 	{
+		super(ECommand.CMD_KICKER_IR_LOG);
 	}
 	
 	
@@ -55,44 +59,6 @@ public class TigerKickerIrLog extends ACommand
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	@Override
-	public void setData(byte[] data)
-	{
-		for (int i = 0; i < 4; i++)
-		{
-			voltage[i] = byteArray2UShort(data, i * 2);
-		}
-	}
-	
-	
-	@Override
-	public byte[] getData()
-	{
-		final byte data[] = new byte[getDataLength()];
-		
-		for (int i = 0; i < 4; i++)
-		{
-			short2ByteArray(data, i * 2, voltage[i]);
-		}
-		
-		return data;
-	}
-	
-	
-	@Override
-	public int getCommand()
-	{
-		return CommandConstants.CMD_KICKER_IR_LOG;
-	}
-	
-	
-	@Override
-	public int getDataLength()
-	{
-		return 8;
-	}
-	
-	
 	/**
 	 * @return the voltage
 	 */

@@ -53,9 +53,12 @@ public class MulticastTransceiverUDP implements ITransceiverUDP, IReceiverUDPObs
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
+	 * @param legacy
 	 */
-	public MulticastTransceiverUDP()
+	public MulticastTransceiverUDP(boolean legacy)
 	{
+		transmitter.setLegacy(legacy);
+		receiver.setLegacy(legacy);
 	}
 	
 	
@@ -322,6 +325,7 @@ public class MulticastTransceiverUDP implements ITransceiverUDP, IReceiverUDPObs
 	{
 		return transmitter.getStats();
 	}
+	
 	
 	// --------------------------------------------------------------------------
 	// --- Threads --------------------------------------------------------

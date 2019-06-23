@@ -13,25 +13,28 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.log4j.Logger;
-
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.functions.Function1dPoly;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.functions.IFunction1D;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.SplinePair3D;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.SplineTrajectoryGenerator;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline.ISpline;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move.MovementCon;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.ERRTPlanner_WPC;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IAIObserver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.TuneableParameter;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
 import edu.dhbw.mannheim.tigers.sumatra.util.NamedThreadFactory;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
+import edu.dhbw.mannheim.tigers.sumatra.util.units.DistanceUnit;
 
 
 /*
@@ -48,7 +51,6 @@ import edu.dhbw.mannheim.tigers.sumatra.util.NamedThreadFactory;
  * Accordingly, pointless or interminable activities are often described as Sisyphean.
  * Sisyphus was a common subject for ancient writers and was depicted by the painter
  * Polygnotus on the walls of the Lesche at Delphi.
- * 
  * source:
  * the omniscient and omnipotent god of knowledge aka wikipedia
  */
@@ -58,27 +60,52 @@ import edu.dhbw.mannheim.tigers.sumatra.util.NamedThreadFactory;
  * 
  * @author Christian Koenig, Bernhard Perun, Dirk Klostermann
  */
-public class Sisyphus
+public class Sisyphus implements IPathConsumer
 {
 	// ------------------------------------------------------------------------
 	// --- variables ----------------------------------------------------------
 	// ------------------------------------------------------------------------
-	// Logger
-	private static final Logger						log								= Logger.getLogger(Sisyphus.class.getName());
 	
 	// --- errt and dss ---
-	private Map<BotID, ScheduledExecutorService>	schedulers						= new ConcurrentHashMap<BotID, ScheduledExecutorService>();
+	private Map<BotID, ScheduledExecutorService>	schedulers					= new ConcurrentHashMap<BotID, ScheduledExecutorService>();
 	
 	// --- current-paths ---
-	private Map<BotID, Path>							currentPaths					= new ConcurrentHashMap<BotID, Path>();
+	private Map<BotID, Path>							currentPaths				= new ConcurrentHashMap<BotID, Path>();
+	private Map<BotID, Path>							latestPaths					= new ConcurrentHashMap<BotID, Path>();
 	
-	private Map<BotID, PathFinderThread>			pathFinderThreads				= new ConcurrentHashMap<BotID, PathFinderThread>();
+	private Map<BotID, PathFinderThread>			pathFinderThreads			= new ConcurrentHashMap<BotID, PathFinderThread>();
 	
-	// --- just for DEBUG ---
-	/** */
-	private final List<IAIObserver>					aiObservers;
+	private final SplineTrajectoryGenerator		trajGeneratorMove			= new SplineTrajectoryGenerator();
 	
-	private Map<BotID, Integer>						destOrientChangedCounter	= new ConcurrentHashMap<BotID, Integer>();
+	/** number of new paths between start/stop (usually one Skill lifetime) */
+	private Map<BotID, Integer>						newPathCounter				= new ConcurrentHashMap<BotID, Integer>();
+	
+	@Configurable(comment = "Time [ms] - How often should the pathplanning be executed?")
+	private static int									pathPlanningInterval		= 20;
+	
+	/** [rad/s] */
+	@Configurable(comment = "Vel [rad/s] - Max rotation velocity to use for spline generation", speziType = EBotType.class, spezis = { "GRSIM" })
+	public static float									maxRotateVelocity			= 10;
+	/** [rad/s^2] */
+	@Configurable(comment = "Vel [rad/s^2] - Max rotation acceleration to use for spline generation", speziType = EBotType.class, spezis = { "GRSIM" })
+	public static float									maxRotateAcceleration	= 15;
+	/**  */
+	@Configurable(comment = "Func [poly] - This function maps the normal angle at path points to speed at this point")
+	public static IFunction1D							normalAngleToSpeed		= Function1dPoly.linear(0, 2);
+	
+	/** [m/s] */
+	@Configurable(comment = "Vel [m/s] - Max linear velocity to use for spline generation", speziType = EBotType.class, spezis = { "GRSIM" })
+	public static float									maxLinearVelocity			= 2.5f;
+	/** [m/s^2] */
+	@Configurable(comment = "Acc [m/s^2] - Max linear acceleration to use for spline generation", speziType = EBotType.class, spezis = { "GRSIM" })
+	public static float									maxLinearAcceleration	= 2.5f;
+	
+	@Configurable(comment = "Points on a path with a combined angle*distance score below this value will be removed")
+	private static float									pathReductionScore		= 0.0f;
+	
+	/** factor to increase curve speed */
+	@Configurable(comment = "factor to increase curve speed (CAREFUL: only 1.0f is really secure)")
+	public static float									curveSpeed					= 1.5f;
 	
 	
 	// ------------------------------------------------------------------------
@@ -90,19 +117,64 @@ public class Sisyphus
 	 */
 	public Sisyphus()
 	{
-		// --- set aiObservers for DEBUG-data ---
-		aiObservers = new ArrayList<IAIObserver>();
+	}
+	
+	
+	// ------------------------------------------------------------------------
+	// --- observers ----------------------------------------------------------
+	// ------------------------------------------------------------------------
+	
+	private final Map<BotID, IPathConsumer>	observers	= new ConcurrentSkipListMap<BotID, IPathConsumer>();
+	
+	
+	/**
+	 * @param botId
+	 * @param observer
+	 */
+	public void addObserver(final BotID botId, final IPathConsumer observer)
+	{
+		synchronized (observers)
+		{
+			observers.put(botId, observer);
+		}
 	}
 	
 	
 	/**
-	 * 
-	 * @param observers
+	 * @param botId
 	 */
-	public Sisyphus(List<IAIObserver> observers)
+	public void removeObserver(final BotID botId)
 	{
-		// --- set aiObservers for DEBUG-data ---
-		aiObservers = observers;
+		synchronized (observers)
+		{
+			observers.remove(botId);
+		}
+	}
+	
+	
+	private void notifyNewPath(final Path path)
+	{
+		synchronized (observers)
+		{
+			IPathConsumer pathConsumer = observers.get(path.getBotID());
+			if (pathConsumer != null)
+			{
+				pathConsumer.onNewPath(path);
+			}
+		}
+	}
+	
+	
+	private void notifyPotentialNewPath(final Path path)
+	{
+		synchronized (observers)
+		{
+			IPathConsumer pathConsumer = observers.get(path.getBotID());
+			if (pathConsumer != null)
+			{
+				pathConsumer.onPotentialNewPath(path);
+			}
+		}
 	}
 	
 	
@@ -110,194 +182,87 @@ public class Sisyphus
 	// --- methods ------------------------------------------------------------
 	// ------------------------------------------------------------------------
 	
-	
 	/**
-	 * Returns a path from bot to target.
+	 * Start the PP thread with given input
 	 * 
-	 * old param: 'restrictedArea' area the bot is not allowed to enter this area; if there is no such area: use null; if
-	 * current botpos
-	 * or target are within restrictedArea it is set null automatically
-	 * 
-	 * @param wFrame current worldframe
-	 * @param botId id of bot
-	 * @param currentTimeOnSpline
+	 * @param botId
 	 * @param moveCon
 	 * @return
 	 */
-	public Path calcPath(WorldFrame wFrame, BotID botId, float currentTimeOnSpline, MovementCon moveCon)
+	public Path startPathPlanning(final BotID botId, final MovementCon moveCon)
 	{
-		// --- check botId ---
-		if (botId.isUninitializedID())
-		{
-			return null;
-		}
+		assureBotInit(botId);
 		
-		// --- checks in front of path getting ---
-		if (wFrame == null)
-		{
-			log.error("worldframe=null");
-			return null;
-		}
+		newPathCounter.put(botId, 0);
 		
-		PathFinderInput pathFinderInput = new PathFinderInput(wFrame, botId, currentPaths, currentTimeOnSpline, moveCon);
-		if (schedulers.get(botId) == null)
-		{
-			initializeSchedulerForBot(botId, wFrame, pathFinderInput);
-		} else
-		{
-			pathFinderThreads.get(botId).setPathFinderInput(pathFinderInput);
-			// if there is a new target do something different
-			if (currentPaths.get(botId) != null)
-			{
-				IVector2 oldTarget = currentPaths.get(botId).getTarget();
-				IVector2 newTarget = moveCon.getDestCon().getDestination();
-				float distanceTargets = oldTarget.subtractNew(newTarget).getLength2();
-				float distanceBotNewTarget = wFrame.getTiger(botId).getPos().subtractNew(newTarget).getLength2();
-				boolean targetChangedMoreThanTol = !oldTarget.equals(newTarget,
-						AIConfig.getBotConfig(wFrame.getTiger(botId).getBotType()).getTolerances().getPositioning());
-				boolean targetChanged = (moveCon.getDestCon().isActive() && ((distanceTargets * 10) > distanceBotNewTarget) && (distanceBotNewTarget > 100))
-						|| ((distanceBotNewTarget < 100) && targetChangedMoreThanTol);
-				boolean orientationChanged = moveCon.getAngleCon().isActive()
-						&& !SumatraMath.isEqual(currentPaths.get(botId).getDestOrient(), pathFinderInput.getDstOrient(),
-								AIConfig.getBotConfig(wFrame.getTiger(botId).getBotType()).getTolerances().getAiming());
-				int counter = 0;
-				if (destOrientChangedCounter.containsKey(botId))
-				{
-					counter = destOrientChangedCounter.get(botId);
-				}
-				if (targetChanged || orientationChanged || moveCon.isForceNewSpline())
-				{
-					// if (counter == 0)
-					// {
-					counter++;
-					log.trace("Target changed: " + targetChanged + " / Orientation changed: " + orientationChanged
-							+ " (oldOrient: " + currentPaths.get(botId).getDestOrient() + " / newOrient: "
-							+ pathFinderInput.getDstOrient() + " (oldDest: " + currentPaths.get(botId).getTarget()
-							+ " / newDest: " + pathFinderInput.getTarget() + ")");
-					pathFinderThreads.get(botId).getPath().setOld(true);
-					pathFinderThreads.get(botId).waitForPath();
-					// }
-					// TODO DirkK move to config
-					// counter = (counter++) % 10;
-				} else
-				{
-					counter = 0;
-				}
-				destOrientChangedCounter.put(botId, counter);
-			}
-		}
-		
-		Path path = currentPaths.get(botId);
-		
-		// Even the SkillSystem gets its own...
-		return path.copyLight();
+		PathFinderInput pathFinderInput = new PathFinderInput(botId, currentPaths, 0, moveCon);
+		PathFinderThread thread = pathFinderThreads.get(botId);
+		thread.start(pathFinderInput);
+		return currentPaths.get(botId);
 	}
 	
 	
 	/**
-	 * Use this method to create your own (virtual) path
-	 * You can set the spline in the path to visualize it
-	 * 
-	 * @param path
+	 * @param botId
 	 */
-	public void newExternalPath(Path path)
+	public void stopPathPlanning(final BotID botId)
 	{
-		notifyObservers(path);
-	}
-	
-	
-	private void notifyObservers(Path path)
-	{
-		for (final IAIObserver o1 : aiObservers)
+		PathFinderThread thread = pathFinderThreads.get(botId);
+		if (thread != null)
 		{
-			// Every observer its own copy!
-			o1.onNewPath(path.copyLight());
+			thread.stop();
 		}
+		clearPath(botId);
 	}
 	
 	
-	private void initializeSchedulerForBot(BotID botId, WorldFrame wFrame, PathFinderInput pathFinderInput)
+	/**
+	 * @param botId
+	 */
+	public void clearPath(final BotID botId)
 	{
-		
-		ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory(
-				"Pathplanner-" + botId.getNumber()));
-		schedulers.put(botId, scheduler);
-		
-		Path path = new Path(botId, pathFinderInput.getTarget(), pathFinderInput.getDstOrient());
-		path.setOld(true);
-		currentPaths.put(botId, path);
-		PathFinderThread pathFinderThread = new PathFinderThread(this, botId, path);
-		pathFinderThreads.put(botId, pathFinderThread);
-		
-		pathFinderThread.setPathFinderInput(pathFinderInput);
-		
-		TrackedTigerBot bot = wFrame.tigerBotsVisible.getWithNull(botId);
-		if (bot == null)
+		currentPaths.remove(botId);
+		latestPaths.remove(botId);
+	}
+	
+	
+	@Override
+	public void onNewPath(final Path path)
+	{
+		currentPaths.put(path.getBotID(), path);
+		Integer counter = newPathCounter.get(path.getBotID());
+		if (counter == null)
 		{
-			log.warn("Bot " + botId + " not found.");
+			counter = 0;
+		}
+		newPathCounter.put(path.getBotID(), counter + 1);
+		notifyNewPath(path);
+	}
+	
+	
+	@Override
+	public void onPotentialNewPath(final Path path)
+	{
+		latestPaths.put(path.getBotID(), path);
+		notifyPotentialNewPath(path);
+	}
+	
+	
+	private void assureBotInit(final BotID botId)
+	{
+		if (schedulers.containsKey(botId))
+		{
 			return;
 		}
+		ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory(
+				"Pathplanner-" + botId.getNumber() + "-" + botId.getTeamColor().name()));
+		schedulers.put(botId, scheduler);
+		
+		PathFinderThread pathFinderThread = new PathFinderThread(this, botId);
+		pathFinderThreads.put(botId, pathFinderThread);
+		
 		// calculate a new path every PATH_PLANNING_INTERVAL seconds
-		final int pathPlanningInterval = AIConfig.getGeneral(bot.getBotType()).getPathplanningInterval();
 		scheduler.scheduleAtFixedRate(pathFinderThread, 0, pathPlanningInterval, TimeUnit.MILLISECONDS);
-		
-		// to have a path immediately let the thread run once within this thread
-		pathFinderThread.waitForPath();
-		
-	}
-	
-	
-	/**
-	 * @param botId
-	 * @param path the oldPath to add
-	 * @param pfi the PathFinderInput which was used to calculate this path
-	 */
-	public final void onNewPath(BotID botId, Path path, PathFinderInput pfi)
-	{
-		currentPaths.put(botId, path);
-		pfi.getwFrame().getTiger(botId).setPath(path);
-		// --- notify observers ---
-		if (path.isChanged())
-		{
-			notifyObservers(path);
-		}
-	}
-	
-	
-	/**
-	 * stops the thread for the given bot
-	 * 
-	 * @param botId
-	 */
-	public final void stopPathPlanning(BotID botId)
-	{
-		if (schedulers.get(botId) != null)
-		{
-			clearPath(botId);
-			PathFinderInput pfi = pathFinderThreads.get(botId).getPathFinderInput();
-			pfi.setActive(false);
-			pathFinderThreads.get(botId).setPathFinderInput(pfi);
-		}
-	}
-	
-	
-	/**
-	 * clears the painted path and spline
-	 * 
-	 * @param botId
-	 */
-	public final void clearPath(BotID botId)
-	{
-		final Path path;
-		if (currentPaths.get(botId) != null)
-		{
-			path = new Path(botId, currentPaths.get(botId).getTarget(), currentPaths.get(botId).getDestOrient());
-			
-		} else
-		{
-			path = new Path(botId, Vector2.ZERO_VECTOR, 0f);
-		}
-		notifyObservers(path);
 	}
 	
 	
@@ -306,34 +271,128 @@ public class Sisyphus
 	 */
 	public final void stopAllPathPlanning()
 	{
+		for (PathFinderThread thread : pathFinderThreads.values())
+		{
+			thread.stop();
+			thread.onTermination();
+		}
 		for (ScheduledExecutorService scheduler : schedulers.values())
 		{
 			scheduler.shutdown();
 		}
 		schedulers.clear();
+		pathFinderThreads.clear();
 	}
 	
 	
 	/**
 	 * calculates a spline for a bot according a given movement condition
 	 * 
-	 * NOT TESTED PROPERLY YET
+	 * @param botId
+	 * @param worldFrame
+	 * @param moveCon
+	 * @param pathPlanningParams
+	 * @return
+	 */
+	public ISpline calculateSpline(final BotID botId, final SimpleWorldFrame worldFrame, final MovementCon moveCon,
+			final TuneableParameter pathPlanningParams)
+	{
+		Map<BotID, Path> paths = new HashMap<BotID, Path>();
+		PathFinderInput pfi = new PathFinderInput(botId, paths, 0f, moveCon);
+		pfi.update(worldFrame);
+		
+		IPathFinder pathFinder = new ERRTPlanner_WPC();
+		if (pathPlanningParams != null)
+		{
+			((ERRTPlanner_WPC) pathFinder).setAdjustableParams(pathPlanningParams);
+		}
+		Path path = pathFinder.calcPath(pfi);
+		addAHermiteSpline(worldFrame, path, pfi);
+		return path.getSpline();
+	}
+	
+	
+	/**
+	 * calculates a spline for a bot according a given movement condition
 	 * 
-	 * @param bot
+	 * @param botId
 	 * @param worldFrame
 	 * @param moveCon
 	 * @return
 	 */
-	public ISpline calculateSpline(TrackedTigerBot bot, WorldFrame worldFrame, MovementCon moveCon)
+	public ISpline calculateSpline(final BotID botId, final SimpleWorldFrame worldFrame, final MovementCon moveCon)
 	{
-		Map<BotID, Path> dummy = new HashMap<BotID, Path>();
-		PathFinderInput pfi = new PathFinderInput(worldFrame, bot.getId(), dummy, 0f, moveCon);
-		ERRTPlanner_WPC planner = new ERRTPlanner_WPC();
-		Path path = planner.calcPath(pfi);
-		
-		PathFinderThread pft = new PathFinderThread(null, bot.getId(), null);
-		pft.addAHermiteSpline(path, pfi);
-		
-		return path.getSpline();
+		return calculateSpline(botId, worldFrame, moveCon, null);
 	}
+	
+	
+	/**
+	 * Add a spline to the path
+	 * 
+	 * @param wFrame
+	 * @param path
+	 * @param pfi
+	 */
+	public void addAHermiteSpline(final SimpleWorldFrame wFrame, final Path path, final PathFinderInput pfi)
+	{
+		TrackedTigerBot bot = wFrame.getBot(pfi.getBotId());
+		float dstOrient = pfi.getDstOrient();
+		List<IVector2> mPath = new ArrayList<IVector2>();
+		mPath.add(DistanceUnit.MILLIMETERS.toMeters(bot.getPos()));
+		
+		for (IVector2 p : path.getPath())
+		{
+			mPath.add(DistanceUnit.MILLIMETERS.toMeters(p));
+		}
+		
+		if (pfi.getMoveCon().getSpeed() > 0)
+		{
+			trajGeneratorMove.setPositionTrajParams(pfi.getMoveCon().getSpeed(), Sisyphus.maxLinearAcceleration);
+		} else
+		{
+			trajGeneratorMove.setPositionTrajParams(Sisyphus.maxLinearVelocity, Sisyphus.maxLinearAcceleration);
+		}
+		trajGeneratorMove.setRotationTrajParams(maxRotateVelocity, Sisyphus.maxRotateAcceleration);
+		trajGeneratorMove.setSplineParams(normalAngleToSpeed);
+		trajGeneratorMove.setReducePathScore(pathReductionScore);
+		
+		SplinePair3D trajectories = trajGeneratorMove.create(mPath, bot.getVel(), pfi.getMoveCon().getVelAtDestination(),
+				bot.getAngle(), dstOrient, bot.getaVel(), 0);
+		path.setHermiteSpline(trajectories);
+		trajectories.setStartTime(System.nanoTime());
+	}
+	
+	
+	/**
+	 * Currently executed path
+	 * 
+	 * @return the currentPaths
+	 */
+	public Map<BotID, Path> getCurrentPaths()
+	{
+		return currentPaths;
+	}
+	
+	
+	/**
+	 * Potential new path that were calculated last
+	 * 
+	 * @return the currentPaths
+	 */
+	public Map<BotID, Path> getLatestPaths()
+	{
+		return latestPaths;
+	}
+	
+	
+	/**
+	 * Number of new paths that were used in current Pathplanning episode (Skill)
+	 * 
+	 * @return
+	 */
+	public Map<BotID, Integer> getNumberOfPaths()
+	{
+		return newPathCounter;
+	}
+	
 }

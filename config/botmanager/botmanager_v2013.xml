@@ -1,30 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <botmanager>
-    <multicast>
-        <useMulticast>true</useMulticast>
-        <interface>192.168.2.0</interface>
-        <group>225.42.42.42</group>
-        <localPort>10040</localPort>
-        <remotePort>10041</remotePort>
-    </multicast>
-    <baseStation>
-        <ip>192.168.2.210</ip>
+    <baseStation id="0">
+        <ip>192.168.70.210</ip>
         <localPort>10200</localPort>
         <remotePort>10201</remotePort>
         <active>true</active>
         <invertPos>false</invertPos>
         <visionRate>30</visionRate>
-        <tigersBlue>true</tigersBlue>
+        <channel>100</channel>
+        <maxBots>8</maxBots>
+        <timeout>1000</timeout>
+    </baseStation>
+    <baseStation id="1">
+        <ip>192.168.70.211</ip>
+        <localPort>10202</localPort>
+        <remotePort>10203</remotePort>
+        <active>false</active>
+        <invertPos>false</invertPos>
+        <visionRate>30</visionRate>
+        <channel>100</channel>
+        <maxBots>6</maxBots>
+        <timeout>1000</timeout>
     </baseStation>
     <updateAll>
-        <useMulticast>false</useMulticast>
-        <sleep>20</sleep>
+        <useMulticast>true</useMulticast>
     </updateAll>
+    <grSimNetwork id="0">
+        <ip>127.0.0.1</ip>
+        <port>20011</port>
+        <teamYellow>true</teamYellow>
+    </grSimNetwork>
+    <grSimNetwork id="1">
+        <ip>127.0.0.1</ip>
+        <port>20011</port>
+        <teamYellow>false</teamYellow>
+    </grSimNetwork>
     <bots>
         <bot id="0">
             <name>Gandalf</name>
             <type>TigerBotV2</type>
-            <active>false</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>-1</mcastDelegateKey>
+            <baseStationKey>0</baseStationKey>
             <features>
                 <CHIP_KICKER>WORKING</CHIP_KICKER>
                 <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
@@ -32,11 +49,13 @@
                 <MOVE>WORKING</MOVE>
                 <BARRIER>WORKING</BARRIER>
             </features>
-            <oofcheck>false</oofcheck>
             <controllerType>2</controllerType>
+            <ctrlmoveType>POS</ctrlmoveType>
             <logs>
-                <movement>true</movement>
+                <movement>false</movement>
+                <extMovement>false</extMovement>
                 <kicker>true</kicker>
+                <power>true</power>
                 <accel>false</accel>
                 <ir>false</ir>
             </logs>
@@ -53,9 +72,9 @@
                         <z>0.01</z>
                     </vel>
                     <acc>
-                        <x>0.1</x>
-                        <y>0.1</y>
-                        <z>0.1</z>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
                     </acc>
                 </state>
                 <sensor>
@@ -70,19 +89,19 @@
                         <z>5.0E-4</z>
                     </encoder>
                     <accelerometer>
-                        <x>0.4</x>
-                        <y>0.4</y>
+                        <x>0.5</x>
+                        <y>0.5</y>
                     </accelerometer>
-                    <gyroscope>0.01</gyroscope>
+                    <gyroscope>0.3</gyroscope>
                     <motor>
-                        <x>0.01</x>
-                        <y>0.01</y>
+                        <x>0.1</x>
+                        <y>0.1</y>
                         <z>1.3</z>
                     </motor>
                 </sensor>
             </sensorFusion>
             <controller>
-                <pos>
+                <spline>
                     <x>
                         <Kp>2.0</Kp>
                         <Ki>0.0</Ki>
@@ -98,171 +117,66 @@
                         <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </w>
-                </pos>
+                </spline>
                 <vel>
                     <x>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </x>
                     <y>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </y>
                     <w>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </w>
                 </vel>
-                <acc>
+                <pos>
                     <x>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
                     </x>
                     <y>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
                     </y>
                     <w>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.5</Kd>
                     </w>
-                </acc>
+                </pos>
+                <motor>
+                    <Kp>2.0</Kp>
+                    <Ki>0.1</Ki>
+                    <Kd>0.3</Kd>
+                </motor>
                 <dribbler>
                     <Kp>0.2</Kp>
                     <Ki>0.1</Ki>
                     <Kd>0.0</Kd>
                 </dribbler>
             </controller>
+            <structure>
+                <frontAngle>45.0</frontAngle>
+                <backAngle>60.0</backAngle>
+                <botRadius>0.076</botRadius>
+                <wheelRadius>0.025</wheelRadius>
+                <mass>3.0</mass>
+            </structure>
         </bot>
         <bot id="1">
             <name>Achilles</name>
             <type>TigerBotV2</type>
-            <active>false</active>
-            <features>
-                <CHIP_KICKER>WORKING</CHIP_KICKER>
-                <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
-                <DRIBBLER>WORKING</DRIBBLER>
-                <MOVE>WORKING</MOVE>
-                <BARRIER>KAPUT</BARRIER>
-            </features>
-            <oofcheck>false</oofcheck>
-            <controllerType>2</controllerType>
-            <logs>
-                <movement>true</movement>
-                <kicker>true</kicker>
-                <accel>false</accel>
-                <ir>false</ir>
-            </logs>
-            <sensorFusion>
-                <state>
-                    <pos>
-                        <x>0.01</x>
-                        <y>0.01</y>
-                        <z>0.01</z>
-                    </pos>
-                    <vel>
-                        <x>0.01</x>
-                        <y>0.01</y>
-                        <z>0.01</z>
-                    </vel>
-                    <acc>
-                        <x>0.1</x>
-                        <y>0.1</y>
-                        <z>0.1</z>
-                    </acc>
-                </state>
-                <sensor>
-                    <vision>
-                        <x>0.001</x>
-                        <y>0.001</y>
-                        <z>0.001</z>
-                    </vision>
-                    <encoder>
-                        <x>5.0E-4</x>
-                        <y>5.0E-4</y>
-                        <z>5.0E-4</z>
-                    </encoder>
-                    <accelerometer>
-                        <x>0.4</x>
-                        <y>0.4</y>
-                    </accelerometer>
-                    <gyroscope>0.01</gyroscope>
-                    <motor>
-                        <x>0.01</x>
-                        <y>0.01</y>
-                        <z>1.3</z>
-                    </motor>
-                </sensor>
-            </sensorFusion>
-            <controller>
-                <pos>
-                    <x>
-                        <Kp>2.0</Kp>
-                        <Ki>0.0</Ki>
-                        <Kd>0.0</Kd>
-                    </x>
-                    <y>
-                        <Kp>2.0</Kp>
-                        <Ki>0.0</Ki>
-                        <Kd>0.0</Kd>
-                    </y>
-                    <w>
-                        <Kp>2.0</Kp>
-                        <Ki>0.0</Ki>
-                        <Kd>0.0</Kd>
-                    </w>
-                </pos>
-                <vel>
-                    <x>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
-                        <Kd>0.0</Kd>
-                    </x>
-                    <y>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
-                        <Kd>0.0</Kd>
-                    </y>
-                    <w>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
-                        <Kd>0.0</Kd>
-                    </w>
-                </vel>
-                <acc>
-                    <x>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
-                    </x>
-                    <y>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
-                    </y>
-                    <w>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
-                    </w>
-                </acc>
-                <dribbler>
-                    <Kp>0.2</Kp>
-                    <Ki>0.1</Ki>
-                    <Kd>0.0</Kd>
-                </dribbler>
-            </controller>
-        </bot>
-        <bot id="2">
-            <name>Eichbaum</name>
-            <type>TigerBotV2</type>
-            <active>false</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>-1</mcastDelegateKey>
+            <baseStationKey>0</baseStationKey>
             <features>
                 <CHIP_KICKER>WORKING</CHIP_KICKER>
                 <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
@@ -270,11 +184,13 @@
                 <MOVE>WORKING</MOVE>
                 <BARRIER>WORKING</BARRIER>
             </features>
-            <oofcheck>false</oofcheck>
             <controllerType>2</controllerType>
+            <ctrlmoveType>POS</ctrlmoveType>
             <logs>
-                <movement>true</movement>
+                <movement>false</movement>
+                <extMovement>false</extMovement>
                 <kicker>true</kicker>
+                <power>true</power>
                 <accel>false</accel>
                 <ir>false</ir>
             </logs>
@@ -291,9 +207,9 @@
                         <z>0.01</z>
                     </vel>
                     <acc>
-                        <x>0.1</x>
-                        <y>0.1</y>
-                        <z>0.1</z>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
                     </acc>
                 </state>
                 <sensor>
@@ -308,19 +224,19 @@
                         <z>5.0E-4</z>
                     </encoder>
                     <accelerometer>
-                        <x>0.4</x>
-                        <y>0.4</y>
+                        <x>0.5</x>
+                        <y>0.5</y>
                     </accelerometer>
-                    <gyroscope>0.01</gyroscope>
+                    <gyroscope>0.3</gyroscope>
                     <motor>
-                        <x>0.01</x>
-                        <y>0.01</y>
+                        <x>0.1</x>
+                        <y>0.1</y>
                         <z>1.3</z>
                     </motor>
                 </sensor>
             </sensorFusion>
             <controller>
-                <pos>
+                <spline>
                     <x>
                         <Kp>2.0</Kp>
                         <Ki>0.0</Ki>
@@ -336,52 +252,66 @@
                         <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </w>
-                </pos>
+                </spline>
                 <vel>
                     <x>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </x>
                     <y>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </y>
                     <w>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </w>
                 </vel>
-                <acc>
+                <pos>
                     <x>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
                     </x>
                     <y>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
                     </y>
                     <w>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.5</Kd>
                     </w>
-                </acc>
+                </pos>
+                <motor>
+                    <Kp>2.0</Kp>
+                    <Ki>0.1</Ki>
+                    <Kd>0.3</Kd>
+                </motor>
                 <dribbler>
                     <Kp>0.2</Kp>
                     <Ki>0.1</Ki>
                     <Kd>0.0</Kd>
                 </dribbler>
             </controller>
+            <structure>
+                <frontAngle>45.0</frontAngle>
+                <backAngle>60.0</backAngle>
+                <botRadius>0.076</botRadius>
+                <wheelRadius>0.025</wheelRadius>
+                <mass>3.0</mass>
+            </structure>
         </bot>
         <bot id="3">
             <name>Tigger</name>
             <type>TigerBotV2</type>
-            <active>false</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>-1</mcastDelegateKey>
+            <baseStationKey>0</baseStationKey>
             <features>
                 <CHIP_KICKER>WORKING</CHIP_KICKER>
                 <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
@@ -389,11 +319,13 @@
                 <MOVE>WORKING</MOVE>
                 <BARRIER>WORKING</BARRIER>
             </features>
-            <oofcheck>false</oofcheck>
             <controllerType>2</controllerType>
+            <ctrlmoveType>POS</ctrlmoveType>
             <logs>
-                <movement>true</movement>
+                <movement>false</movement>
+                <extMovement>false</extMovement>
                 <kicker>true</kicker>
+                <power>true</power>
                 <accel>false</accel>
                 <ir>false</ir>
             </logs>
@@ -410,9 +342,9 @@
                         <z>0.01</z>
                     </vel>
                     <acc>
-                        <x>0.1</x>
-                        <y>0.1</y>
-                        <z>0.1</z>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
                     </acc>
                 </state>
                 <sensor>
@@ -427,19 +359,19 @@
                         <z>5.0E-4</z>
                     </encoder>
                     <accelerometer>
-                        <x>0.4</x>
-                        <y>0.4</y>
+                        <x>0.5</x>
+                        <y>0.5</y>
                     </accelerometer>
-                    <gyroscope>0.01</gyroscope>
+                    <gyroscope>0.3</gyroscope>
                     <motor>
-                        <x>0.01</x>
-                        <y>0.01</y>
+                        <x>0.1</x>
+                        <y>0.1</y>
                         <z>1.3</z>
                     </motor>
                 </sensor>
             </sensorFusion>
             <controller>
-                <pos>
+                <spline>
                     <x>
                         <Kp>2.0</Kp>
                         <Ki>0.0</Ki>
@@ -455,52 +387,66 @@
                         <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </w>
-                </pos>
+                </spline>
                 <vel>
                     <x>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </x>
                     <y>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </y>
                     <w>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </w>
                 </vel>
-                <acc>
+                <pos>
                     <x>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
                     </x>
                     <y>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
                     </y>
                     <w>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.5</Kd>
                     </w>
-                </acc>
+                </pos>
+                <motor>
+                    <Kp>2.0</Kp>
+                    <Ki>0.1</Ki>
+                    <Kd>0.3</Kd>
+                </motor>
                 <dribbler>
                     <Kp>0.2</Kp>
                     <Ki>0.1</Ki>
                     <Kd>0.0</Kd>
                 </dribbler>
             </controller>
+            <structure>
+                <frontAngle>45.0</frontAngle>
+                <backAngle>60.0</backAngle>
+                <botRadius>0.076</botRadius>
+                <wheelRadius>0.025</wheelRadius>
+                <mass>3.0</mass>
+            </structure>
         </bot>
         <bot id="4">
             <name>Optimus Prime</name>
             <type>TigerBotV2</type>
-            <active>false</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>-1</mcastDelegateKey>
+            <baseStationKey>0</baseStationKey>
             <features>
                 <CHIP_KICKER>WORKING</CHIP_KICKER>
                 <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
@@ -508,11 +454,13 @@
                 <MOVE>WORKING</MOVE>
                 <BARRIER>WORKING</BARRIER>
             </features>
-            <oofcheck>false</oofcheck>
             <controllerType>2</controllerType>
+            <ctrlmoveType>POS</ctrlmoveType>
             <logs>
-                <movement>true</movement>
+                <movement>false</movement>
+                <extMovement>false</extMovement>
                 <kicker>true</kicker>
+                <power>true</power>
                 <accel>false</accel>
                 <ir>false</ir>
             </logs>
@@ -529,9 +477,9 @@
                         <z>0.01</z>
                     </vel>
                     <acc>
-                        <x>0.1</x>
-                        <y>0.1</y>
-                        <z>0.1</z>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
                     </acc>
                 </state>
                 <sensor>
@@ -546,138 +494,19 @@
                         <z>5.0E-4</z>
                     </encoder>
                     <accelerometer>
-                        <x>0.4</x>
-                        <y>0.4</y>
+                        <x>0.5</x>
+                        <y>0.5</y>
                     </accelerometer>
-                    <gyroscope>0.01</gyroscope>
+                    <gyroscope>0.3</gyroscope>
                     <motor>
-                        <x>0.01</x>
-                        <y>0.01</y>
-                        <z>1.3</z>
-                    </motor>
-                </sensor>
-            </sensorFusion>
-            <controller>
-                <pos>
-                    <x>
-                        <Kp>2.0</Kp>
-                        <Ki>0.0</Ki>
-                        <Kd>0.0</Kd>
-                    </x>
-                    <y>
-                        <Kp>2.0</Kp>
-                        <Ki>0.0</Ki>
-                        <Kd>0.0</Kd>
-                    </y>
-                    <w>
-                        <Kp>2.0</Kp>
-                        <Ki>0.0</Ki>
-                        <Kd>0.0</Kd>
-                    </w>
-                </pos>
-                <vel>
-                    <x>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
-                        <Kd>0.0</Kd>
-                    </x>
-                    <y>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
-                        <Kd>0.0</Kd>
-                    </y>
-                    <w>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
-                        <Kd>0.0</Kd>
-                    </w>
-                </vel>
-                <acc>
-                    <x>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
-                    </x>
-                    <y>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
-                    </y>
-                    <w>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
-                    </w>
-                </acc>
-                <dribbler>
-                    <Kp>0.2</Kp>
-                    <Ki>0.1</Ki>
-                    <Kd>0.0</Kd>
-                </dribbler>
-            </controller>
-        </bot>
-        <bot id="5">
-            <name>Odysseus</name>
-            <type>TigerBotV2</type>
-            <active>false</active>
-            <features>
-                <CHIP_KICKER>WORKING</CHIP_KICKER>
-                <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
-                <DRIBBLER>WORKING</DRIBBLER>
-                <MOVE>WORKING</MOVE>
-                <BARRIER>WORKING</BARRIER>
-            </features>
-            <oofcheck>false</oofcheck>
-            <controllerType>2</controllerType>
-            <logs>
-                <movement>true</movement>
-                <kicker>true</kicker>
-                <accel>false</accel>
-                <ir>false</ir>
-            </logs>
-            <sensorFusion>
-                <state>
-                    <pos>
-                        <x>0.01</x>
-                        <y>0.01</y>
-                        <z>0.01</z>
-                    </pos>
-                    <vel>
-                        <x>0.01</x>
-                        <y>0.01</y>
-                        <z>0.01</z>
-                    </vel>
-                    <acc>
                         <x>0.1</x>
                         <y>0.1</y>
-                        <z>0.1</z>
-                    </acc>
-                </state>
-                <sensor>
-                    <vision>
-                        <x>0.001</x>
-                        <y>0.001</y>
-                        <z>0.001</z>
-                    </vision>
-                    <encoder>
-                        <x>5.0E-4</x>
-                        <y>5.0E-4</y>
-                        <z>5.0E-4</z>
-                    </encoder>
-                    <accelerometer>
-                        <x>0.4</x>
-                        <y>0.4</y>
-                    </accelerometer>
-                    <gyroscope>0.01</gyroscope>
-                    <motor>
-                        <x>0.01</x>
-                        <y>0.01</y>
                         <z>1.3</z>
                     </motor>
                 </sensor>
             </sensorFusion>
             <controller>
-                <pos>
+                <spline>
                     <x>
                         <Kp>2.0</Kp>
                         <Ki>0.0</Ki>
@@ -693,64 +522,80 @@
                         <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </w>
-                </pos>
+                </spline>
                 <vel>
                     <x>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </x>
                     <y>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </y>
                     <w>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </w>
                 </vel>
-                <acc>
+                <pos>
                     <x>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
                     </x>
                     <y>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
                     </y>
                     <w>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.5</Kd>
                     </w>
-                </acc>
+                </pos>
+                <motor>
+                    <Kp>2.0</Kp>
+                    <Ki>0.1</Ki>
+                    <Kd>0.3</Kd>
+                </motor>
                 <dribbler>
                     <Kp>0.2</Kp>
                     <Ki>0.1</Ki>
                     <Kd>0.0</Kd>
                 </dribbler>
             </controller>
+            <structure>
+                <frontAngle>45.0</frontAngle>
+                <backAngle>60.0</backAngle>
+                <botRadius>0.076</botRadius>
+                <wheelRadius>0.025</wheelRadius>
+                <mass>3.0</mass>
+            </structure>
         </bot>
         <bot id="6">
             <name>Leopard 3</name>
             <type>TigerBotV2</type>
-            <active>false</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>-1</mcastDelegateKey>
+            <baseStationKey>0</baseStationKey>
             <features>
-                <CHIP_KICKER>KAPUT</CHIP_KICKER>
-                <STRAIGHT_KICKER>KAPUT</STRAIGHT_KICKER>
+                <CHIP_KICKER>WORKING</CHIP_KICKER>
+                <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
                 <DRIBBLER>WORKING</DRIBBLER>
                 <MOVE>WORKING</MOVE>
                 <BARRIER>WORKING</BARRIER>
             </features>
-            <oofcheck>false</oofcheck>
             <controllerType>2</controllerType>
+            <ctrlmoveType>POS</ctrlmoveType>
             <logs>
-                <movement>true</movement>
+                <movement>false</movement>
+                <extMovement>false</extMovement>
                 <kicker>true</kicker>
+                <power>true</power>
                 <accel>false</accel>
                 <ir>false</ir>
             </logs>
@@ -767,9 +612,9 @@
                         <z>0.01</z>
                     </vel>
                     <acc>
-                        <x>0.1</x>
-                        <y>0.1</y>
-                        <z>0.1</z>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
                     </acc>
                 </state>
                 <sensor>
@@ -784,19 +629,19 @@
                         <z>5.0E-4</z>
                     </encoder>
                     <accelerometer>
-                        <x>0.4</x>
-                        <y>0.4</y>
+                        <x>0.5</x>
+                        <y>0.5</y>
                     </accelerometer>
-                    <gyroscope>0.01</gyroscope>
+                    <gyroscope>0.3</gyroscope>
                     <motor>
-                        <x>0.01</x>
-                        <y>0.01</y>
+                        <x>0.1</x>
+                        <y>0.1</y>
                         <z>1.3</z>
                     </motor>
                 </sensor>
             </sensorFusion>
             <controller>
-                <pos>
+                <spline>
                     <x>
                         <Kp>2.0</Kp>
                         <Ki>0.0</Ki>
@@ -812,52 +657,66 @@
                         <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </w>
-                </pos>
+                </spline>
                 <vel>
                     <x>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </x>
                     <y>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </y>
                     <w>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </w>
                 </vel>
-                <acc>
+                <pos>
                     <x>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
                     </x>
                     <y>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
                     </y>
                     <w>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.5</Kd>
                     </w>
-                </acc>
+                </pos>
+                <motor>
+                    <Kp>2.0</Kp>
+                    <Ki>0.1</Ki>
+                    <Kd>0.3</Kd>
+                </motor>
                 <dribbler>
                     <Kp>0.2</Kp>
                     <Ki>0.1</Ki>
                     <Kd>0.0</Kd>
                 </dribbler>
             </controller>
+            <structure>
+                <frontAngle>45.0</frontAngle>
+                <backAngle>60.0</backAngle>
+                <botRadius>0.076</botRadius>
+                <wheelRadius>0.025</wheelRadius>
+                <mass>3.0</mass>
+            </structure>
         </bot>
         <bot id="7">
             <name>Q</name>
             <type>TigerBotV2</type>
-            <active>false</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>-1</mcastDelegateKey>
+            <baseStationKey>0</baseStationKey>
             <features>
                 <CHIP_KICKER>WORKING</CHIP_KICKER>
                 <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
@@ -865,11 +724,13 @@
                 <MOVE>WORKING</MOVE>
                 <BARRIER>WORKING</BARRIER>
             </features>
-            <oofcheck>false</oofcheck>
             <controllerType>2</controllerType>
+            <ctrlmoveType>POS</ctrlmoveType>
             <logs>
-                <movement>true</movement>
+                <movement>false</movement>
+                <extMovement>false</extMovement>
                 <kicker>true</kicker>
+                <power>true</power>
                 <accel>false</accel>
                 <ir>false</ir>
             </logs>
@@ -886,9 +747,9 @@
                         <z>0.01</z>
                     </vel>
                     <acc>
-                        <x>0.1</x>
-                        <y>0.1</y>
-                        <z>0.1</z>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
                     </acc>
                 </state>
                 <sensor>
@@ -903,19 +764,19 @@
                         <z>5.0E-4</z>
                     </encoder>
                     <accelerometer>
-                        <x>0.4</x>
-                        <y>0.4</y>
+                        <x>0.5</x>
+                        <y>0.5</y>
                     </accelerometer>
-                    <gyroscope>0.01</gyroscope>
+                    <gyroscope>0.3</gyroscope>
                     <motor>
-                        <x>0.01</x>
-                        <y>0.01</y>
+                        <x>0.1</x>
+                        <y>0.1</y>
                         <z>1.3</z>
                     </motor>
                 </sensor>
             </sensorFusion>
             <controller>
-                <pos>
+                <spline>
                     <x>
                         <Kp>2.0</Kp>
                         <Ki>0.0</Ki>
@@ -931,647 +792,66 @@
                         <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </w>
-                </pos>
+                </spline>
                 <vel>
                     <x>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </x>
                     <y>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </y>
                     <w>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </w>
                 </vel>
-                <acc>
+                <pos>
                     <x>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
                     </x>
                     <y>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
                     </y>
                     <w>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.5</Kd>
                     </w>
-                </acc>
+                </pos>
+                <motor>
+                    <Kp>2.0</Kp>
+                    <Ki>0.1</Ki>
+                    <Kd>0.3</Kd>
+                </motor>
                 <dribbler>
                     <Kp>0.2</Kp>
                     <Ki>0.1</Ki>
                     <Kd>0.0</Kd>
                 </dribbler>
             </controller>
+            <structure>
+                <frontAngle>45.0</frontAngle>
+                <backAngle>60.0</backAngle>
+                <botRadius>0.076</botRadius>
+                <wheelRadius>0.025</wheelRadius>
+                <mass>3.0</mass>
+            </structure>
         </bot>
         <bot id="8">
-            <name>This Bot</name>
-            <type>TigerBotV2</type>
-            <active>false</active>
-            <features>
-                <CHIP_KICKER>WORKING</CHIP_KICKER>
-                <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
-                <DRIBBLER>WORKING</DRIBBLER>
-                <MOVE>WORKING</MOVE>
-                <BARRIER>WORKING</BARRIER>
-            </features>
-            <oofcheck>false</oofcheck>
-            <controllerType>2</controllerType>
-            <logs>
-                <movement>true</movement>
-                <kicker>true</kicker>
-                <accel>false</accel>
-                <ir>false</ir>
-            </logs>
-            <sensorFusion>
-                <state>
-                    <pos>
-                        <x>0.01</x>
-                        <y>0.01</y>
-                        <z>0.01</z>
-                    </pos>
-                    <vel>
-                        <x>0.01</x>
-                        <y>0.01</y>
-                        <z>0.01</z>
-                    </vel>
-                    <acc>
-                        <x>0.1</x>
-                        <y>0.1</y>
-                        <z>0.1</z>
-                    </acc>
-                </state>
-                <sensor>
-                    <vision>
-                        <x>0.001</x>
-                        <y>0.001</y>
-                        <z>0.001</z>
-                    </vision>
-                    <encoder>
-                        <x>5.0E-4</x>
-                        <y>5.0E-4</y>
-                        <z>5.0E-4</z>
-                    </encoder>
-                    <accelerometer>
-                        <x>0.4</x>
-                        <y>0.4</y>
-                    </accelerometer>
-                    <gyroscope>0.01</gyroscope>
-                    <motor>
-                        <x>0.01</x>
-                        <y>0.01</y>
-                        <z>1.3</z>
-                    </motor>
-                </sensor>
-            </sensorFusion>
-            <controller>
-                <pos>
-                    <x>
-                        <Kp>2.0</Kp>
-                        <Ki>0.0</Ki>
-                        <Kd>0.0</Kd>
-                    </x>
-                    <y>
-                        <Kp>2.0</Kp>
-                        <Ki>0.0</Ki>
-                        <Kd>0.0</Kd>
-                    </y>
-                    <w>
-                        <Kp>2.0</Kp>
-                        <Ki>0.0</Ki>
-                        <Kd>0.0</Kd>
-                    </w>
-                </pos>
-                <vel>
-                    <x>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
-                        <Kd>0.0</Kd>
-                    </x>
-                    <y>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
-                        <Kd>0.0</Kd>
-                    </y>
-                    <w>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
-                        <Kd>0.0</Kd>
-                    </w>
-                </vel>
-                <acc>
-                    <x>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
-                    </x>
-                    <y>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
-                    </y>
-                    <w>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
-                    </w>
-                </acc>
-                <dribbler>
-                    <Kp>0.2</Kp>
-                    <Ki>0.1</Ki>
-                    <Kd>0.0</Kd>
-                </dribbler>
-            </controller>
-        </bot>
-        <bot id="9">
-            <name>Yoda</name>
-            <type>TigerBotV2</type>
-            <active>false</active>
-            <features>
-                <CHIP_KICKER>WORKING</CHIP_KICKER>
-                <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
-                <DRIBBLER>WORKING</DRIBBLER>
-                <MOVE>WORKING</MOVE>
-                <BARRIER>WORKING</BARRIER>
-            </features>
-            <oofcheck>false</oofcheck>
-            <controllerType>2</controllerType>
-            <logs>
-                <movement>true</movement>
-                <kicker>true</kicker>
-                <accel>false</accel>
-                <ir>false</ir>
-            </logs>
-            <sensorFusion>
-                <state>
-                    <pos>
-                        <x>0.01</x>
-                        <y>0.01</y>
-                        <z>0.01</z>
-                    </pos>
-                    <vel>
-                        <x>0.01</x>
-                        <y>0.01</y>
-                        <z>0.01</z>
-                    </vel>
-                    <acc>
-                        <x>0.1</x>
-                        <y>0.1</y>
-                        <z>0.1</z>
-                    </acc>
-                </state>
-                <sensor>
-                    <vision>
-                        <x>0.001</x>
-                        <y>0.001</y>
-                        <z>0.001</z>
-                    </vision>
-                    <encoder>
-                        <x>5.0E-4</x>
-                        <y>5.0E-4</y>
-                        <z>5.0E-4</z>
-                    </encoder>
-                    <accelerometer>
-                        <x>0.4</x>
-                        <y>0.4</y>
-                    </accelerometer>
-                    <gyroscope>0.01</gyroscope>
-                    <motor>
-                        <x>0.01</x>
-                        <y>0.01</y>
-                        <z>1.3</z>
-                    </motor>
-                </sensor>
-            </sensorFusion>
-            <controller>
-                <pos>
-                    <x>
-                        <Kp>2.0</Kp>
-                        <Ki>0.0</Ki>
-                        <Kd>0.0</Kd>
-                    </x>
-                    <y>
-                        <Kp>2.0</Kp>
-                        <Ki>0.0</Ki>
-                        <Kd>0.0</Kd>
-                    </y>
-                    <w>
-                        <Kp>2.0</Kp>
-                        <Ki>0.0</Ki>
-                        <Kd>0.0</Kd>
-                    </w>
-                </pos>
-                <vel>
-                    <x>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
-                        <Kd>0.0</Kd>
-                    </x>
-                    <y>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
-                        <Kd>0.0</Kd>
-                    </y>
-                    <w>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
-                        <Kd>0.0</Kd>
-                    </w>
-                </vel>
-                <acc>
-                    <x>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
-                    </x>
-                    <y>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
-                    </y>
-                    <w>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
-                    </w>
-                </acc>
-                <dribbler>
-                    <Kp>0.2</Kp>
-                    <Ki>0.1</Ki>
-                    <Kd>0.0</Kd>
-                </dribbler>
-            </controller>
-        </bot>
-        <bot id="10">
-            <name>Hercules</name>
-            <type>TigerBotV2</type>
-            <active>false</active>
-            <features>
-                <CHIP_KICKER>WORKING</CHIP_KICKER>
-                <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
-                <DRIBBLER>WORKING</DRIBBLER>
-                <MOVE>WORKING</MOVE>
-                <BARRIER>WORKING</BARRIER>
-            </features>
-            <oofcheck>false</oofcheck>
-            <controllerType>0</controllerType>
-            <logs>
-                <movement>true</movement>
-                <kicker>true</kicker>
-                <accel>false</accel>
-                <ir>false</ir>
-            </logs>
-            <sensorFusion>
-                <state>
-                    <pos>
-                        <x>0.01</x>
-                        <y>0.01</y>
-                        <z>0.01</z>
-                    </pos>
-                    <vel>
-                        <x>0.01</x>
-                        <y>0.01</y>
-                        <z>0.01</z>
-                    </vel>
-                    <acc>
-                        <x>0.1</x>
-                        <y>0.1</y>
-                        <z>0.1</z>
-                    </acc>
-                </state>
-                <sensor>
-                    <vision>
-                        <x>0.001</x>
-                        <y>0.001</y>
-                        <z>0.001</z>
-                    </vision>
-                    <encoder>
-                        <x>5.0E-4</x>
-                        <y>5.0E-4</y>
-                        <z>5.0E-4</z>
-                    </encoder>
-                    <accelerometer>
-                        <x>0.4</x>
-                        <y>0.4</y>
-                    </accelerometer>
-                    <gyroscope>0.01</gyroscope>
-                    <motor>
-                        <x>0.01</x>
-                        <y>0.01</y>
-                        <z>1.3</z>
-                    </motor>
-                </sensor>
-            </sensorFusion>
-            <controller>
-                <pos>
-                    <x>
-                        <Kp>2.0</Kp>
-                        <Ki>0.0</Ki>
-                        <Kd>0.0</Kd>
-                    </x>
-                    <y>
-                        <Kp>2.0</Kp>
-                        <Ki>0.0</Ki>
-                        <Kd>0.0</Kd>
-                    </y>
-                    <w>
-                        <Kp>2.0</Kp>
-                        <Ki>0.0</Ki>
-                        <Kd>0.0</Kd>
-                    </w>
-                </pos>
-                <vel>
-                    <x>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
-                        <Kd>0.0</Kd>
-                    </x>
-                    <y>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
-                        <Kd>0.0</Kd>
-                    </y>
-                    <w>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
-                        <Kd>0.0</Kd>
-                    </w>
-                </vel>
-                <acc>
-                    <x>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
-                    </x>
-                    <y>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
-                    </y>
-                    <w>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
-                    </w>
-                </acc>
-                <dribbler>
-                    <Kp>0.2</Kp>
-                    <Ki>0.1</Ki>
-                    <Kd>0.0</Kd>
-                </dribbler>
-            </controller>
-        </bot>
-        <bot id="11">
-            <name>Heidi</name>
-            <type>TigerBotV2</type>
-            <active>false</active>
-            <features>
-                <CHIP_KICKER>WORKING</CHIP_KICKER>
-                <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
-                <DRIBBLER>WORKING</DRIBBLER>
-                <MOVE>WORKING</MOVE>
-                <BARRIER>WORKING</BARRIER>
-            </features>
-            <oofcheck>false</oofcheck>
-            <controllerType>0</controllerType>
-            <logs>
-                <movement>true</movement>
-                <kicker>true</kicker>
-                <accel>false</accel>
-                <ir>false</ir>
-            </logs>
-            <sensorFusion>
-                <state>
-                    <pos>
-                        <x>0.01</x>
-                        <y>0.01</y>
-                        <z>0.01</z>
-                    </pos>
-                    <vel>
-                        <x>0.01</x>
-                        <y>0.01</y>
-                        <z>0.01</z>
-                    </vel>
-                    <acc>
-                        <x>0.1</x>
-                        <y>0.1</y>
-                        <z>0.1</z>
-                    </acc>
-                </state>
-                <sensor>
-                    <vision>
-                        <x>0.001</x>
-                        <y>0.001</y>
-                        <z>0.001</z>
-                    </vision>
-                    <encoder>
-                        <x>5.0E-4</x>
-                        <y>5.0E-4</y>
-                        <z>5.0E-4</z>
-                    </encoder>
-                    <accelerometer>
-                        <x>0.4</x>
-                        <y>0.4</y>
-                    </accelerometer>
-                    <gyroscope>0.01</gyroscope>
-                    <motor>
-                        <x>0.01</x>
-                        <y>0.01</y>
-                        <z>1.3</z>
-                    </motor>
-                </sensor>
-            </sensorFusion>
-            <controller>
-                <pos>
-                    <x>
-                        <Kp>2.0</Kp>
-                        <Ki>0.0</Ki>
-                        <Kd>0.0</Kd>
-                    </x>
-                    <y>
-                        <Kp>2.0</Kp>
-                        <Ki>0.0</Ki>
-                        <Kd>0.0</Kd>
-                    </y>
-                    <w>
-                        <Kp>2.0</Kp>
-                        <Ki>0.0</Ki>
-                        <Kd>0.0</Kd>
-                    </w>
-                </pos>
-                <vel>
-                    <x>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
-                        <Kd>0.0</Kd>
-                    </x>
-                    <y>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
-                        <Kd>0.0</Kd>
-                    </y>
-                    <w>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
-                        <Kd>0.0</Kd>
-                    </w>
-                </vel>
-                <acc>
-                    <x>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
-                    </x>
-                    <y>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
-                    </y>
-                    <w>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
-                    </w>
-                </acc>
-                <dribbler>
-                    <Kp>0.2</Kp>
-                    <Ki>0.1</Ki>
-                    <Kd>0.0</Kd>
-                </dribbler>
-            </controller>
-        </bot>
-        <bot id="12">
-            <name>FIT</name>
-            <type>TigerBotV2</type>
-            <active>false</active>
-            <features>
-                <CHIP_KICKER>WORKING</CHIP_KICKER>
-                <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
-                <DRIBBLER>WORKING</DRIBBLER>
-                <MOVE>WORKING</MOVE>
-                <BARRIER>WORKING</BARRIER>
-            </features>
-            <oofcheck>false</oofcheck>
-            <controllerType>0</controllerType>
-            <logs>
-                <movement>true</movement>
-                <kicker>true</kicker>
-                <accel>false</accel>
-                <ir>false</ir>
-            </logs>
-            <sensorFusion>
-                <state>
-                    <pos>
-                        <x>0.01</x>
-                        <y>0.01</y>
-                        <z>0.01</z>
-                    </pos>
-                    <vel>
-                        <x>0.01</x>
-                        <y>0.01</y>
-                        <z>0.01</z>
-                    </vel>
-                    <acc>
-                        <x>0.1</x>
-                        <y>0.1</y>
-                        <z>0.1</z>
-                    </acc>
-                </state>
-                <sensor>
-                    <vision>
-                        <x>0.001</x>
-                        <y>0.001</y>
-                        <z>0.001</z>
-                    </vision>
-                    <encoder>
-                        <x>5.0E-4</x>
-                        <y>5.0E-4</y>
-                        <z>5.0E-4</z>
-                    </encoder>
-                    <accelerometer>
-                        <x>0.4</x>
-                        <y>0.4</y>
-                    </accelerometer>
-                    <gyroscope>0.01</gyroscope>
-                    <motor>
-                        <x>0.01</x>
-                        <y>0.01</y>
-                        <z>1.3</z>
-                    </motor>
-                </sensor>
-            </sensorFusion>
-            <controller>
-                <pos>
-                    <x>
-                        <Kp>2.0</Kp>
-                        <Ki>0.0</Ki>
-                        <Kd>0.0</Kd>
-                    </x>
-                    <y>
-                        <Kp>2.0</Kp>
-                        <Ki>0.0</Ki>
-                        <Kd>0.0</Kd>
-                    </y>
-                    <w>
-                        <Kp>2.0</Kp>
-                        <Ki>0.0</Ki>
-                        <Kd>0.0</Kd>
-                    </w>
-                </pos>
-                <vel>
-                    <x>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
-                        <Kd>0.0</Kd>
-                    </x>
-                    <y>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
-                        <Kd>0.0</Kd>
-                    </y>
-                    <w>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
-                        <Kd>0.0</Kd>
-                    </w>
-                </vel>
-                <acc>
-                    <x>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
-                    </x>
-                    <y>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
-                    </y>
-                    <w>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
-                    </w>
-                </acc>
-                <dribbler>
-                    <Kp>0.2</Kp>
-                    <Ki>0.1</Ki>
-                    <Kd>0.0</Kd>
-                </dribbler>
-            </controller>
-        </bot>
-        <bot id="13">
             <name>Reality Checkpoint</name>
             <type>TigerBotV2</type>
-            <active>false</active>
+            <color>YELLOW</color>
+            <mcastDelegateKey>-1</mcastDelegateKey>
+            <baseStationKey>0</baseStationKey>
             <features>
                 <CHIP_KICKER>WORKING</CHIP_KICKER>
                 <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
@@ -1579,11 +859,13 @@
                 <MOVE>WORKING</MOVE>
                 <BARRIER>WORKING</BARRIER>
             </features>
-            <oofcheck>false</oofcheck>
-            <controllerType>0</controllerType>
+            <controllerType>2</controllerType>
+            <ctrlmoveType>POS</ctrlmoveType>
             <logs>
-                <movement>true</movement>
+                <movement>false</movement>
+                <extMovement>false</extMovement>
                 <kicker>true</kicker>
+                <power>true</power>
                 <accel>false</accel>
                 <ir>false</ir>
             </logs>
@@ -1600,9 +882,9 @@
                         <z>0.01</z>
                     </vel>
                     <acc>
-                        <x>0.1</x>
-                        <y>0.1</y>
-                        <z>0.1</z>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
                     </acc>
                 </state>
                 <sensor>
@@ -1617,19 +899,19 @@
                         <z>5.0E-4</z>
                     </encoder>
                     <accelerometer>
-                        <x>0.4</x>
-                        <y>0.4</y>
+                        <x>0.5</x>
+                        <y>0.5</y>
                     </accelerometer>
-                    <gyroscope>0.01</gyroscope>
+                    <gyroscope>0.3</gyroscope>
                     <motor>
-                        <x>0.01</x>
-                        <y>0.01</y>
+                        <x>0.1</x>
+                        <y>0.1</y>
                         <z>1.3</z>
                     </motor>
                 </sensor>
             </sensorFusion>
             <controller>
-                <pos>
+                <spline>
                     <x>
                         <Kp>2.0</Kp>
                         <Ki>0.0</Ki>
@@ -1645,47 +927,734 @@
                         <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </w>
-                </pos>
+                </spline>
                 <vel>
                     <x>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </x>
                     <y>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </y>
                     <w>
-                        <Kp>2.0</Kp>
-                        <Ki>0.5</Ki>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
                         <Kd>0.0</Kd>
                     </w>
                 </vel>
-                <acc>
+                <pos>
                     <x>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
                     </x>
                     <y>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
                     </y>
                     <w>
-                        <Kp>1.0</Kp>
-                        <Ki>0.1</Ki>
-                        <Kd>0.0</Kd>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.5</Kd>
                     </w>
-                </acc>
+                </pos>
+                <motor>
+                    <Kp>2.0</Kp>
+                    <Ki>0.1</Ki>
+                    <Kd>0.3</Kd>
+                </motor>
                 <dribbler>
                     <Kp>0.2</Kp>
                     <Ki>0.1</Ki>
                     <Kd>0.0</Kd>
                 </dribbler>
             </controller>
+            <structure>
+                <frontAngle>45.0</frontAngle>
+                <backAngle>60.0</backAngle>
+                <botRadius>0.076</botRadius>
+                <wheelRadius>0.025</wheelRadius>
+                <mass>3.0</mass>
+            </structure>
+        </bot>
+        <bot id="9">
+            <name>This Bot</name>
+            <type>TigerBotV2</type>
+            <color>YELLOW</color>
+            <mcastDelegateKey>-1</mcastDelegateKey>
+            <baseStationKey>0</baseStationKey>
+            <features>
+                <CHIP_KICKER>WORKING</CHIP_KICKER>
+                <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
+                <DRIBBLER>WORKING</DRIBBLER>
+                <MOVE>WORKING</MOVE>
+                <BARRIER>WORKING</BARRIER>
+            </features>
+            <controllerType>2</controllerType>
+            <ctrlmoveType>POS</ctrlmoveType>
+            <logs>
+                <movement>false</movement>
+                <extMovement>false</extMovement>
+                <kicker>true</kicker>
+                <power>true</power>
+                <accel>false</accel>
+                <ir>false</ir>
+            </logs>
+            <sensorFusion>
+                <state>
+                    <pos>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
+                    </pos>
+                    <vel>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
+                    </vel>
+                    <acc>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
+                    </acc>
+                </state>
+                <sensor>
+                    <vision>
+                        <x>0.001</x>
+                        <y>0.001</y>
+                        <z>0.001</z>
+                    </vision>
+                    <encoder>
+                        <x>5.0E-4</x>
+                        <y>5.0E-4</y>
+                        <z>5.0E-4</z>
+                    </encoder>
+                    <accelerometer>
+                        <x>0.5</x>
+                        <y>0.5</y>
+                    </accelerometer>
+                    <gyroscope>0.3</gyroscope>
+                    <motor>
+                        <x>0.1</x>
+                        <y>0.1</y>
+                        <z>1.3</z>
+                    </motor>
+                </sensor>
+            </sensorFusion>
+            <controller>
+                <spline>
+                    <x>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </x>
+                    <y>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </y>
+                    <w>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </w>
+                </spline>
+                <vel>
+                    <x>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </x>
+                    <y>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </y>
+                    <w>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </w>
+                </vel>
+                <pos>
+                    <x>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
+                    </x>
+                    <y>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
+                    </y>
+                    <w>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.5</Kd>
+                    </w>
+                </pos>
+                <motor>
+                    <Kp>2.0</Kp>
+                    <Ki>0.1</Ki>
+                    <Kd>0.3</Kd>
+                </motor>
+                <dribbler>
+                    <Kp>0.2</Kp>
+                    <Ki>0.1</Ki>
+                    <Kd>0.0</Kd>
+                </dribbler>
+            </controller>
+            <structure>
+                <frontAngle>45.0</frontAngle>
+                <backAngle>60.0</backAngle>
+                <botRadius>0.076</botRadius>
+                <wheelRadius>0.025</wheelRadius>
+                <mass>3.0</mass>
+            </structure>
+        </bot>
+        <bot id="10">
+            <name>Yoda</name>
+            <type>TigerBotV2</type>
+            <color>YELLOW</color>
+            <mcastDelegateKey>-1</mcastDelegateKey>
+            <baseStationKey>0</baseStationKey>
+            <features>
+                <CHIP_KICKER>WORKING</CHIP_KICKER>
+                <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
+                <DRIBBLER>WORKING</DRIBBLER>
+                <MOVE>WORKING</MOVE>
+                <BARRIER>WORKING</BARRIER>
+            </features>
+            <controllerType>2</controllerType>
+            <ctrlmoveType>POS</ctrlmoveType>
+            <logs>
+                <movement>false</movement>
+                <extMovement>false</extMovement>
+                <kicker>true</kicker>
+                <power>true</power>
+                <accel>false</accel>
+                <ir>false</ir>
+            </logs>
+            <sensorFusion>
+                <state>
+                    <pos>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
+                    </pos>
+                    <vel>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
+                    </vel>
+                    <acc>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
+                    </acc>
+                </state>
+                <sensor>
+                    <vision>
+                        <x>0.001</x>
+                        <y>0.001</y>
+                        <z>0.001</z>
+                    </vision>
+                    <encoder>
+                        <x>5.0E-4</x>
+                        <y>5.0E-4</y>
+                        <z>5.0E-4</z>
+                    </encoder>
+                    <accelerometer>
+                        <x>0.5</x>
+                        <y>0.5</y>
+                    </accelerometer>
+                    <gyroscope>0.3</gyroscope>
+                    <motor>
+                        <x>0.1</x>
+                        <y>0.1</y>
+                        <z>1.3</z>
+                    </motor>
+                </sensor>
+            </sensorFusion>
+            <controller>
+                <spline>
+                    <x>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </x>
+                    <y>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </y>
+                    <w>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </w>
+                </spline>
+                <vel>
+                    <x>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </x>
+                    <y>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </y>
+                    <w>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </w>
+                </vel>
+                <pos>
+                    <x>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
+                    </x>
+                    <y>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
+                    </y>
+                    <w>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.5</Kd>
+                    </w>
+                </pos>
+                <motor>
+                    <Kp>2.0</Kp>
+                    <Ki>0.1</Ki>
+                    <Kd>0.3</Kd>
+                </motor>
+                <dribbler>
+                    <Kp>0.2</Kp>
+                    <Ki>0.1</Ki>
+                    <Kd>0.0</Kd>
+                </dribbler>
+            </controller>
+            <structure>
+                <frontAngle>45.0</frontAngle>
+                <backAngle>60.0</backAngle>
+                <botRadius>0.076</botRadius>
+                <wheelRadius>0.025</wheelRadius>
+                <mass>3.0</mass>
+            </structure>
+        </bot>
+        <bot id="11">
+            <name>Hercules</name>
+            <type>TigerBotV2</type>
+            <color>YELLOW</color>
+            <mcastDelegateKey>-1</mcastDelegateKey>
+            <baseStationKey>0</baseStationKey>
+            <features>
+                <CHIP_KICKER>WORKING</CHIP_KICKER>
+                <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
+                <DRIBBLER>WORKING</DRIBBLER>
+                <MOVE>WORKING</MOVE>
+                <BARRIER>WORKING</BARRIER>
+            </features>
+            <controllerType>2</controllerType>
+            <ctrlmoveType>POS</ctrlmoveType>
+            <logs>
+                <movement>false</movement>
+                <extMovement>false</extMovement>
+                <kicker>true</kicker>
+                <power>true</power>
+                <accel>false</accel>
+                <ir>false</ir>
+            </logs>
+            <sensorFusion>
+                <state>
+                    <pos>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
+                    </pos>
+                    <vel>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
+                    </vel>
+                    <acc>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
+                    </acc>
+                </state>
+                <sensor>
+                    <vision>
+                        <x>0.001</x>
+                        <y>0.001</y>
+                        <z>0.001</z>
+                    </vision>
+                    <encoder>
+                        <x>5.0E-4</x>
+                        <y>5.0E-4</y>
+                        <z>5.0E-4</z>
+                    </encoder>
+                    <accelerometer>
+                        <x>0.5</x>
+                        <y>0.5</y>
+                    </accelerometer>
+                    <gyroscope>0.3</gyroscope>
+                    <motor>
+                        <x>0.1</x>
+                        <y>0.1</y>
+                        <z>1.3</z>
+                    </motor>
+                </sensor>
+            </sensorFusion>
+            <controller>
+                <spline>
+                    <x>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </x>
+                    <y>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </y>
+                    <w>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </w>
+                </spline>
+                <vel>
+                    <x>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </x>
+                    <y>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </y>
+                    <w>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </w>
+                </vel>
+                <pos>
+                    <x>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
+                    </x>
+                    <y>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
+                    </y>
+                    <w>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.5</Kd>
+                    </w>
+                </pos>
+                <motor>
+                    <Kp>2.0</Kp>
+                    <Ki>0.1</Ki>
+                    <Kd>0.3</Kd>
+                </motor>
+                <dribbler>
+                    <Kp>0.2</Kp>
+                    <Ki>0.1</Ki>
+                    <Kd>0.0</Kd>
+                </dribbler>
+            </controller>
+            <structure>
+                <frontAngle>45.0</frontAngle>
+                <backAngle>60.0</backAngle>
+                <botRadius>0.076</botRadius>
+                <wheelRadius>0.025</wheelRadius>
+                <mass>3.0</mass>
+            </structure>
+        </bot>
+        <bot id="2">
+            <name>Eichbaum</name>
+            <type>TigerBotV2</type>
+            <color>BLUE</color>
+            <mcastDelegateKey>-1</mcastDelegateKey>
+            <baseStationKey>0</baseStationKey>
+            <features>
+                <CHIP_KICKER>WORKING</CHIP_KICKER>
+                <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
+                <DRIBBLER>WORKING</DRIBBLER>
+                <MOVE>WORKING</MOVE>
+                <BARRIER>WORKING</BARRIER>
+            </features>
+            <controllerType>2</controllerType>
+            <ctrlmoveType>POS</ctrlmoveType>
+            <logs>
+                <movement>false</movement>
+                <extMovement>false</extMovement>
+                <kicker>true</kicker>
+                <power>true</power>
+                <accel>false</accel>
+                <ir>false</ir>
+            </logs>
+            <sensorFusion>
+                <state>
+                    <pos>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
+                    </pos>
+                    <vel>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
+                    </vel>
+                    <acc>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
+                    </acc>
+                </state>
+                <sensor>
+                    <vision>
+                        <x>0.001</x>
+                        <y>0.001</y>
+                        <z>0.001</z>
+                    </vision>
+                    <encoder>
+                        <x>5.0E-4</x>
+                        <y>5.0E-4</y>
+                        <z>5.0E-4</z>
+                    </encoder>
+                    <accelerometer>
+                        <x>0.5</x>
+                        <y>0.5</y>
+                    </accelerometer>
+                    <gyroscope>0.3</gyroscope>
+                    <motor>
+                        <x>0.1</x>
+                        <y>0.1</y>
+                        <z>1.3</z>
+                    </motor>
+                </sensor>
+            </sensorFusion>
+            <controller>
+                <spline>
+                    <x>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </x>
+                    <y>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </y>
+                    <w>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </w>
+                </spline>
+                <vel>
+                    <x>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </x>
+                    <y>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </y>
+                    <w>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </w>
+                </vel>
+                <pos>
+                    <x>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
+                    </x>
+                    <y>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
+                    </y>
+                    <w>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.5</Kd>
+                    </w>
+                </pos>
+                <motor>
+                    <Kp>2.0</Kp>
+                    <Ki>0.1</Ki>
+                    <Kd>0.3</Kd>
+                </motor>
+                <dribbler>
+                    <Kp>0.2</Kp>
+                    <Ki>0.1</Ki>
+                    <Kd>0.0</Kd>
+                </dribbler>
+            </controller>
+            <structure>
+                <frontAngle>45.0</frontAngle>
+                <backAngle>60.0</backAngle>
+                <botRadius>0.076</botRadius>
+                <wheelRadius>0.025</wheelRadius>
+                <mass>3.0</mass>
+            </structure>
+        </bot>
+        <bot id="5">
+            <name>Odysseus</name>
+            <type>TigerBotV2</type>
+            <color>BLUE</color>
+            <mcastDelegateKey>-1</mcastDelegateKey>
+            <baseStationKey>0</baseStationKey>
+            <features>
+                <CHIP_KICKER>WORKING</CHIP_KICKER>
+                <STRAIGHT_KICKER>WORKING</STRAIGHT_KICKER>
+                <DRIBBLER>WORKING</DRIBBLER>
+                <MOVE>WORKING</MOVE>
+                <BARRIER>WORKING</BARRIER>
+            </features>
+            <controllerType>2</controllerType>
+            <ctrlmoveType>POS</ctrlmoveType>
+            <logs>
+                <movement>true</movement>
+                <extMovement>true</extMovement>
+                <kicker>true</kicker>
+                <power>true</power>
+                <accel>false</accel>
+                <ir>false</ir>
+            </logs>
+            <sensorFusion>
+                <state>
+                    <pos>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
+                    </pos>
+                    <vel>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
+                    </vel>
+                    <acc>
+                        <x>0.01</x>
+                        <y>0.01</y>
+                        <z>0.01</z>
+                    </acc>
+                </state>
+                <sensor>
+                    <vision>
+                        <x>0.001</x>
+                        <y>0.001</y>
+                        <z>0.001</z>
+                    </vision>
+                    <encoder>
+                        <x>5.0E-4</x>
+                        <y>5.0E-4</y>
+                        <z>5.0E-4</z>
+                    </encoder>
+                    <accelerometer>
+                        <x>0.5</x>
+                        <y>0.5</y>
+                    </accelerometer>
+                    <gyroscope>0.3</gyroscope>
+                    <motor>
+                        <x>0.1</x>
+                        <y>0.1</y>
+                        <z>1.3</z>
+                    </motor>
+                </sensor>
+            </sensorFusion>
+            <controller>
+                <spline>
+                    <x>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </x>
+                    <y>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </y>
+                    <w>
+                        <Kp>2.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </w>
+                </spline>
+                <vel>
+                    <x>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </x>
+                    <y>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </y>
+                    <w>
+                        <Kp>0.1</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>0.0</Kd>
+                    </w>
+                </vel>
+                <pos>
+                    <x>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
+                    </x>
+                    <y>
+                        <Kp>4.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
+                    </y>
+                    <w>
+                        <Kp>7.0</Kp>
+                        <Ki>0.0</Ki>
+                        <Kd>4.0</Kd>
+                    </w>
+                </pos>
+                <motor>
+                    <Kp>2.0</Kp>
+                    <Ki>0.1</Ki>
+                    <Kd>0.3</Kd>
+                </motor>
+                <dribbler>
+                    <Kp>0.2</Kp>
+                    <Ki>0.1</Ki>
+                    <Kd>0.0</Kd>
+                </dribbler>
+            </controller>
+            <structure>
+                <frontAngle>45.0</frontAngle>
+                <backAngle>60.0</backAngle>
+                <botRadius>0.076</botRadius>
+                <wheelRadius>0.025</wheelRadius>
+                <mass>3.0</mass>
+            </structure>
         </bot>
     </bots>
 </botmanager>
