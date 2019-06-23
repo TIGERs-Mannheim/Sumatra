@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Jul 19, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.views;
@@ -17,6 +16,7 @@ import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesState;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
+import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.ModuliStateAdapter;
 import edu.dhbw.mannheim.tigers.sumatra.view.main.Icons;
 
 
@@ -24,7 +24,6 @@ import edu.dhbw.mannheim.tigers.sumatra.view.main.Icons;
  * Base class for any Sumatra View (the tabs in the GUI)
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public abstract class ASumatraView
 {
@@ -35,6 +34,17 @@ public abstract class ASumatraView
 	private final ESumatraViewType	type;
 	private ISumatraViewPresenter		presenter	= null;
 	private View							view			= null;
+	private EViewMode						mode			= EViewMode.NORMAL;
+	
+	/**
+	 */
+	public enum EViewMode
+	{
+		/**  */
+		NORMAL,
+		/**  */
+		REPLAY
+	}
 	
 	
 	// --------------------------------------------------------------------------
@@ -43,9 +53,8 @@ public abstract class ASumatraView
 	
 	/**
 	 * @param type
-	 * 
 	 */
-	public ASumatraView(ESumatraViewType type)
+	public ASumatraView(final ESumatraViewType type)
 	{
 		this.type = type;
 	}
@@ -66,9 +75,13 @@ public abstract class ASumatraView
 			log.trace("Creating presenter for view " + type.getTitle());
 			presenter = createPresenter();
 			getView().setComponent(presenter.getComponent());
-			// let the presenter update itself according to the current moduli state
-			ModulesState currentState = SumatraModel.getInstance().getModulesState().get();
-			presenter.onModuliStateChanged(currentState);
+			if (mode == EViewMode.NORMAL)
+			{
+				ModuliStateAdapter.getInstance().addObserver(presenter);
+				// let the presenter update itself according to the current moduli state
+				ModulesState currentState = SumatraModel.getInstance().getModulesState().get();
+				presenter.onModuliStateChanged(currentState);
+			}
 			log.trace("Presenter created for view " + type.getTitle());
 		}
 	}
@@ -88,7 +101,6 @@ public abstract class ASumatraView
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public final synchronized ISumatraView getSumatraView()
@@ -116,7 +128,7 @@ public abstract class ASumatraView
 	 * 
 	 * @return
 	 */
-	public final boolean isInitialized()
+	public final synchronized boolean isInitialized()
 	{
 		return (presenter != null) && (view != null);
 	}
@@ -162,5 +174,23 @@ public abstract class ASumatraView
 		builder.append(isInitialized());
 		builder.append("]");
 		return builder.toString();
+	}
+	
+	
+	/**
+	 * @return the mode
+	 */
+	public final EViewMode getMode()
+	{
+		return mode;
+	}
+	
+	
+	/**
+	 * @param mode the mode to set
+	 */
+	public final void setMode(final EViewMode mode)
+	{
+		this.mode = mode;
 	}
 }

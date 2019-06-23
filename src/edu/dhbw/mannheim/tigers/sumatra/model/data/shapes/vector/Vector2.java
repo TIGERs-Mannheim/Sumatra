@@ -11,7 +11,12 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+
+import org.json.simple.JSONObject;
 
 import com.sleepycat.persist.model.Persistent;
 
@@ -28,18 +33,17 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
  * @author Gero
  */
 @Persistent
-public class Vector2 extends AVector2 implements Serializable
+public class Vector2 extends AVector2
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final long	serialVersionUID	= -8795210822775094406L;
 	
 	
 	/** */
-	public float					x;
+	public float	x;
 	/** */
-	public float					y;
+	public float	y;
 	
 	
 	// --------------------------------------------------------------------------
@@ -146,6 +150,43 @@ public class Vector2 extends AVector2 implements Serializable
 	{
 		this.y = y;
 		return this;
+	}
+	
+	
+	/**
+	 * @param i
+	 * @param value
+	 */
+	public void set(final int i, final float value)
+	{
+		switch (i)
+		{
+			case 0:
+				x = value;
+				break;
+			case 1:
+				y = value;
+				break;
+			default:
+				throw new IllegalArgumentException("Invalid index: " + i);
+		}
+	}
+	
+	
+	/**
+	 * @param i
+	 * @return
+	 */
+	public float get(final int i)
+	{
+		switch (i)
+		{
+			case 0:
+				return x;
+			case 1:
+				return y;
+		}
+		throw new IllegalArgumentException("Invalid index: " + i);
 	}
 	
 	
@@ -459,5 +500,73 @@ public class Vector2 extends AVector2 implements Serializable
 							+ finalValues);
 		}
 		return new Vector2(Float.valueOf(finalValues.get(0)), Float.valueOf(finalValues.get(1)));
+	}
+	
+	
+	/**
+	 * rotates this around axis and returns the new object.
+	 * 
+	 * @param axis
+	 * @param angle
+	 * @return
+	 */
+	public Vector2 turnAround(final IVector2 axis, final float angle)
+	{
+		x = x - axis.x();
+		y = y - axis.y();
+		turn(angle);
+		x = x + axis.x();
+		y = y + axis.y();
+		return this;
+	}
+	
+	// --------------------------------------------------------------------------
+	// --- InnerClasses --------------------------------------------------------
+	// --------------------------------------------------------------------------
+	/**  */
+	public static final Comparator<? super IVector2>	Y_COMPARATOR	= new YComparator();
+	
+	
+	private static class YComparator implements Comparator<IVector2>, Serializable
+	{
+		
+		/**  */
+		private static final long	serialVersionUID	= 1794858044291002364L;
+		
+		
+		@Override
+		public int compare(final IVector2 v1, final IVector2 v2)
+		{
+			if (v1.y() > v2.y())
+			{
+				return 1;
+			} else if (v1.y() < v2.y())
+			{
+				return -1;
+			} else
+			{
+				return 0;
+			}
+		}
+	}
+	
+	
+	@Override
+	public JSONObject toJSON()
+	{
+		Map<String, Object> jsonMapping = new LinkedHashMap<String, Object>();
+		jsonMapping.put("x", x);
+		jsonMapping.put("y", y);
+		return new JSONObject(jsonMapping);
+	}
+	
+	
+	@Override
+	public List<Number> getNumberList()
+	{
+		List<Number> numbers = new ArrayList<>();
+		numbers.add(x());
+		numbers.add(y());
+		return numbers;
 	}
 }

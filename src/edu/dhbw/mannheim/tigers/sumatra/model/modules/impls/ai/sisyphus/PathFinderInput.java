@@ -4,74 +4,39 @@
  * Project: TIGERS - Sumatra
  * Date: Feb 27, 2013
  * Author(s): Dirk Klostermann <klostermannn@googlemail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus;
 
-import java.util.Map;
-
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move.MovementCon;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.finder.FieldInformation;
 
 
 /**
  * data holder for the input data passed to the path planning
  * 
  * @author Dirk Klostermann <klostermannn@googlemail.com>
- * 
  */
-public class PathFinderInput
+public final class PathFinderInput
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
 	private final BotID					botId;
 	private final MovementCon			moveCon;
-	private final Map<BotID, Path>	existingPathes;
+	/** Information about the Field, calculates whether a way is free */
 	private final FieldInformation	fieldInfo;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * @param botId
-	 * @param existingPathes a list of the pathes from the last frame (all pathes are null at the beginning)
-	 * @param currentTimeOnSpline
 	 * @param moveCon
 	 */
-	public PathFinderInput(BotID botId, Map<BotID, Path> existingPathes, float currentTimeOnSpline, MovementCon moveCon)
+	public PathFinderInput(final BotID botId, final MovementCon moveCon)
 	{
 		this.botId = botId;
-		this.existingPathes = existingPathes;
 		this.moveCon = moveCon;
-		
 		fieldInfo = new FieldInformation(botId, moveCon);
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	/**
-	 * 
-	 * @param swf
-	 */
-	public void update(SimpleWorldFrame swf)
-	{
-		fieldInfo.updateWorldFrame(swf);
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	
 	/**
@@ -93,24 +58,6 @@ public class PathFinderInput
 	
 	
 	/**
-	 * @return the existingPathes
-	 */
-	public Map<BotID, Path> getExistingPathes()
-	{
-		return existingPathes;
-	}
-	
-	
-	/**
-	 * @return the fieldInfo
-	 */
-	public FieldInformation getFieldInfo()
-	{
-		return fieldInfo;
-	}
-	
-	
-	/**
 	 * @return the target
 	 */
 	public IVector2 getDestination()
@@ -122,9 +69,17 @@ public class PathFinderInput
 	/**
 	 * @return the moveCon
 	 */
-	public final MovementCon getMoveCon()
+	public MovementCon getMoveCon()
 	{
 		return moveCon;
 	}
 	
+	
+	/**
+	 * @return the fieldInfo
+	 */
+	public FieldInformation getFieldInfo()
+	{
+		return fieldInfo;
+	}
 }

@@ -4,12 +4,9 @@
  * Project: TIGERS - Sumatra
  * Date: Apr 29, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine;
-
-import java.util.Map;
 
 
 /**
@@ -17,7 +14,6 @@ import java.util.Map;
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  * @param <StateType> like {@link IState} or {@link IRoleState}
- * 
  */
 public interface IStateMachine<StateType>
 {
@@ -28,11 +24,11 @@ public interface IStateMachine<StateType>
 	
 	/**
 	 * Enqueue an event and let the state machine
-	 * transite to the next state on next update
+	 * transit to the next state on next update
 	 * 
 	 * @param event
 	 */
-	void nextState(Enum<? extends Enum<?>> event);
+	void triggerEvent(Enum<? extends Enum<?>> event);
 	
 	
 	/**
@@ -48,9 +44,10 @@ public interface IStateMachine<StateType>
 	
 	
 	/**
-	 * @return
+	 * @param esp
+	 * @param state
 	 */
-	Map<EventStatePair, StateType> getTransititions();
+	void addTransition(final EventStatePair esp, final StateType state);
 	
 	
 	/**
@@ -59,4 +56,15 @@ public interface IStateMachine<StateType>
 	 * @return
 	 */
 	boolean valid();
+	
+	
+	/**
+	 * Restart the state machine with the initial state
+	 */
+	void restart();
+	
+	
+	/**
+	 */
+	void stop();
 }

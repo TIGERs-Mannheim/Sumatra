@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 23.11.2011
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.commons.treetable;
@@ -17,6 +16,8 @@ import java.awt.event.MouseEvent;
 import java.util.EventObject;
 
 import javax.swing.AbstractCellEditor;
+import javax.swing.DefaultCellEditor;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.JTree;
@@ -32,8 +33,12 @@ import javax.swing.tree.DefaultTreeSelectionModel;
 import javax.swing.tree.TreeCellRenderer;
 import javax.swing.tree.TreePath;
 
+import org.apache.commons.configuration.HierarchicalConfiguration.Node;
+import org.apache.commons.configuration.tree.ConfigurationNode;
+
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.ILookAndFeelStateObserver;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.LookAndFeelStateAdapter;
+import edu.dhbw.mannheim.tigers.sumatra.util.String2ValueConverter;
 
 
 /**
@@ -42,7 +47,6 @@ import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.LookAndFeelStateAdapter;
  * <li><a href="http://java.sun.com/products/jfc/tsc/articles/treetable1/">TreeTable 1</a> and</li>
  * <li><a href="http://java.sun.com/products/jfc/tsc/articles/treetable2/">TreeTable 2</a></li>
  * </ul>
- * 
  * Swing doesn't provide any combination of the a {@link JTree} and {@link JTable} of the shelve, although it would've
  * been very convenient... So this combines the two to provide a solution!<br/>
  * Basically the first column of a {@link JTable} is rendered by an underlying {@link JTree}. The model is an
@@ -52,7 +56,6 @@ import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.LookAndFeelStateAdapter;
  * Although the whole thing is a little more complex then usual it works quite well! ^^
  * 
  * @author Gero
- * 
  */
 public class JTreeTable extends JTable
 {
@@ -67,7 +70,7 @@ public class JTreeTable extends JTable
 	/**
 	 * @param treeTableModel
 	 */
-	public JTreeTable(ITreeTableModel treeTableModel)
+	public JTreeTable(final ITreeTableModel treeTableModel)
 	{
 		super();
 		setTreeTableModel(treeTableModel);
@@ -82,7 +85,7 @@ public class JTreeTable extends JTable
 	 * 
 	 * @param treeTableModel
 	 */
-	public void setTreeTableModel(ITreeTableModel treeTableModel)
+	public void setTreeTableModel(final ITreeTableModel treeTableModel)
 	{
 		// Create the tree. It will be used as a renderer and editor.
 		tree = new TreeTableCellRenderer(treeTableModel);
@@ -102,6 +105,9 @@ public class JTreeTable extends JTable
 		setDefaultRenderer(ITreeTableModel.class, tree);
 		setDefaultEditor(ITreeTableModel.class, new TreeTableCellEditor());
 		
+		setDefaultRenderer(Boolean.TYPE, getDefaultRenderer(Boolean.class));
+		setDefaultEditor(Boolean.TYPE, getDefaultEditor(Boolean.class));
+		
 		// No grid.
 		setShowGrid(false);
 		
@@ -119,7 +125,7 @@ public class JTreeTable extends JTable
 	
 	
 	@Override
-	public String getToolTipText(MouseEvent event)
+	public String getToolTipText(final MouseEvent event)
 	{
 		return treeTableModel.getToolTipText(event);
 	}
@@ -162,13 +168,63 @@ public class JTreeTable extends JTable
 	 * Overridden to pass the new rowHeight to the tree.
 	 */
 	@Override
-	public void setRowHeight(int rowHeight)
+	public void setRowHeight(final int rowHeight)
 	{
 		super.setRowHeight(rowHeight);
 		if ((tree != null) && (tree.getRowHeight() != rowHeight))
 		{
 			tree.setRowHeight(getRowHeight());
 		}
+	}
+	
+	
+	@Override
+	public TableCellEditor getCellEditor(final int row, final int column)
+	{
+		if (column == 1)
+		{
+			TreePath path = tree.getPathForRow(row);
+			Node node = (Node) path.getLastPathComponent();
+			for (ConfigurationNode attr : node.getAttributes("class"))
+			{
+				Class<?> classType = String2ValueConverter.getClassFromValue(attr.getValue());
+				if (classType.isEnum())
+				{
+					String[] entries = new String[classType.getEnumConstants().length];
+					int i = 0;
+					for (Object obj : classType.getEnumConstants())
+					{
+						entries[i++] = obj.toString();
+					}
+					JComboBox<String> cb = new JComboBox<String>(entries);
+					return new DefaultCellEditor(cb);
+				}
+				TableCellEditor defEditor = getDefaultEditor(classType);
+				if (defEditor == null)
+				{
+					return getDefaultEditor(String.class);
+				}
+				return defEditor;
+			}
+		}
+		return super.getCellEditor(row, column);
+	}
+	
+	
+	@Override
+	public TableCellRenderer getCellRenderer(final int row, final int column)
+	{
+		if (column == 1)
+		{
+			TreePath path = tree.getPathForRow(row);
+			Node node = (Node) path.getLastPathComponent();
+			for (ConfigurationNode attr : node.getAttributes("class"))
+			{
+				Class<?> classType = String2ValueConverter.getClassFromValue(attr.getValue());
+				return getDefaultRenderer(classType);
+			}
+		}
+		return super.getCellRenderer(row, column);
 	}
 	
 	
@@ -187,7 +243,7 @@ public class JTreeTable extends JTable
 		/**
 		 * @param treeTableModel
 		 */
-		public TreeTableCellRenderer(ITreeTableModel treeTableModel)
+		public TreeTableCellRenderer(final ITreeTableModel treeTableModel)
 		{
 			super(treeTableModel);
 		}
@@ -221,7 +277,7 @@ public class JTreeTable extends JTable
 		 * the table.
 		 */
 		@Override
-		public void setRowHeight(int rowHeight)
+		public void setRowHeight(final int rowHeight)
 		{
 			if (rowHeight > 0)
 			{
@@ -238,7 +294,7 @@ public class JTreeTable extends JTable
 		 * This is overridden to set the height to match that of the JTable.
 		 */
 		@Override
-		public void setBounds(int x, int y, int w, int h)
+		public void setBounds(final int x, final int y, final int w, final int h)
 		{
 			super.setBounds(x, 0, w, JTreeTable.this.getHeight());
 		}
@@ -249,7 +305,7 @@ public class JTreeTable extends JTable
 		 * row will be drawn at 0,0.
 		 */
 		@Override
-		public void paint(Graphics g)
+		public void paint(final Graphics g)
 		{
 			g.translate(0, -visibleRow * getRowHeight());
 			super.paint(g);
@@ -260,8 +316,9 @@ public class JTreeTable extends JTable
 		 * TreeCellRenderer method. Overridden to update the visible row.
 		 */
 		@Override
-		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
-				int row, int column)
+		public Component getTableCellRendererComponent(final JTable table, final Object value, final boolean isSelected,
+				final boolean hasFocus,
+				final int row, final int column)
 		{
 			if (isSelected)
 			{
@@ -281,14 +338,15 @@ public class JTreeTable extends JTable
 	 * TreeTableCellEditor implementation. Component returned is the
 	 * JTree.
 	 */
-	public class TreeTableCellEditor extends AbstractCellEditor implements TableCellEditor
+	private class TreeTableCellEditor extends AbstractCellEditor implements TableCellEditor
 	{
 		/**  */
 		private static final long	serialVersionUID	= -2591875536212318768L;
 		
 		
 		@Override
-		public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int r, int c)
+		public Component getTableCellEditorComponent(final JTable table, final Object value, final boolean isSelected,
+				final int r, final int c)
 		{
 			return tree;
 		}
@@ -310,7 +368,7 @@ public class JTreeTable extends JTable
 		 * sequence).
 		 */
 		@Override
-		public boolean isCellEditable(EventObject e)
+		public boolean isCellEditable(final EventObject e)
 		{
 			if (e instanceof MouseEvent)
 			{
@@ -458,7 +516,7 @@ public class JTreeTable extends JTable
 		class ListSelectionHandler implements ListSelectionListener
 		{
 			@Override
-			public void valueChanged(ListSelectionEvent e)
+			public void valueChanged(final ListSelectionEvent e)
 			{
 				updateSelectedPathsFromSelectedRows();
 			}
@@ -471,7 +529,6 @@ public class JTreeTable extends JTable
 	 * as {@link ILookAndFeelStateObserver} for Sumatra.
 	 * 
 	 * @author Gero
-	 * 
 	 */
 	private static class TreeRenderer extends DefaultTreeCellRenderer implements ILookAndFeelStateObserver
 	{
@@ -484,7 +541,7 @@ public class JTreeTable extends JTable
 		/**
 		 * @param treeTableModel
 		 */
-		public TreeRenderer(ITreeTableModel treeTableModel)
+		public TreeRenderer(final ITreeTableModel treeTableModel)
 		{
 			super();
 			this.treeTableModel = treeTableModel;
@@ -504,8 +561,9 @@ public class JTreeTable extends JTable
 		
 		
 		@Override
-		public Component getTreeCellRendererComponent(JTree tree, Object value, boolean selected, boolean expanded,
-				boolean isLeaf, int row, boolean hasFocus)
+		public Component getTreeCellRendererComponent(final JTree tree, final Object value, final boolean selected,
+				final boolean expanded,
+				final boolean isLeaf, final int row, final boolean hasFocus)
 		{
 			final Component comp = super.getTreeCellRendererComponent(tree, value, selected, expanded, isLeaf, row,
 					hasFocus);

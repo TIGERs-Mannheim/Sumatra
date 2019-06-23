@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 23.11.2011
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.config;
@@ -22,6 +21,7 @@ import org.apache.commons.configuration.HierarchicalConfiguration.Node;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.apache.commons.configuration.tree.ConfigurationNode;
 
+import edu.dhbw.mannheim.tigers.sumatra.util.String2ValueConverter;
 import edu.dhbw.mannheim.tigers.sumatra.view.commons.treetable.ATreeTableModel;
 import edu.dhbw.mannheim.tigers.sumatra.view.commons.treetable.ITreeTableModel;
 
@@ -38,7 +38,7 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 	// --------------------------------------------------------------------------
 	private static final String[]					COLUMNS	= new String[] { "Node", "Value", "Comment" };
 	private static final Class<?>[]				CLASSES	= new Class<?>[] { ITreeTableModel.class, String.class,
-			String.class											};
+																		String.class };
 	
 	
 	private final HierarchicalConfiguration	config;
@@ -50,7 +50,7 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 	/**
 	 * @param xml
 	 */
-	public ConfigXMLTreeTableModel(HierarchicalConfiguration xml)
+	public ConfigXMLTreeTableModel(final HierarchicalConfiguration xml)
 	{
 		// Hopefully there is no comment as first element... :-P
 		super(xml.getRoot());
@@ -62,7 +62,7 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
-	public Object getValueAt(Object obj, int col)
+	public Object getValueAt(final Object obj, final int col)
 	{
 		if (col == 0)
 		{
@@ -71,12 +71,26 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 		}
 		
 		final Node node = (Node) obj;
-		String result = "";
+		Object result = "";
 		switch (col)
 		{
 			case 1:
 				final Object val = node.getValue();
-				result = val == null ? "" : val.toString();
+				if (val != null)
+				{
+					for (ConfigurationNode attr : node.getAttributes("class"))
+					{
+						Class<?> classType = String2ValueConverter.getClassFromValue(attr.getValue());
+						if (classType.isEnum() || (classType == Boolean.TYPE) || (classType == Boolean.class))
+						{
+							result = String2ValueConverter.parseString(classType, val.toString());
+						} else
+						{
+							result = val.toString();
+						}
+						break;
+					}
+				}
 				break;
 			
 			case 2:
@@ -91,13 +105,15 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 					result += " " + comment.getTextContent();
 				}
 				break;
+			default:
+				throw new IllegalArgumentException("Invalid value for col: " + col);
 		}
 		return result;
 	}
 	
 	
 	@Override
-	public void renderTreeCellComponent(JLabel label, Object value)
+	public void renderTreeCellComponent(final JLabel label, final Object value)
 	{
 		final Node node = (Node) value;
 		label.setText(node.getName());
@@ -105,7 +121,7 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 	
 	
 	@Override
-	public Object getChild(Object obj, int index)
+	public Object getChild(final Object obj, final int index)
 	{
 		final Node node = (Node) obj;
 		final List<?> list = node.getChildren();
@@ -119,7 +135,7 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 	
 	
 	@Override
-	public int getIndexOfChild(Object parentObj, Object childObj)
+	public int getIndexOfChild(final Object parentObj, final Object childObj)
 	{
 		final Node node = (Node) parentObj;
 		final List<?> children = node.getChildren();
@@ -136,7 +152,7 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 	
 	
 	@Override
-	public int getChildCount(Object obj)
+	public int getChildCount(final Object obj)
 	{
 		final Node node = (Node) obj;
 		return node.getChildrenCount();
@@ -144,7 +160,7 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 	
 	
 	@Override
-	public boolean isCellEditable(Object obj, int col)
+	public boolean isCellEditable(final Object obj, final int col)
 	{
 		// 0 = "Name"
 		if (col == 0)
@@ -170,13 +186,14 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 			case 2:
 				final org.w3c.dom.Node comment = getComment(obj);
 				return comment != null;
+			default:
+				throw new IllegalArgumentException();
 		}
-		return false;
 	}
 	
 	
 	@Override
-	public void setValueAt(Object value, Object obj, int col)
+	public void setValueAt(final Object value, final Object obj, final int col)
 	{
 		final Node node = (Node) obj;
 		switch (col)
@@ -194,12 +211,14 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 					fireTreeNodesChanged(this, getPathTo(node), new int[0], new Object[0]);
 				}
 				break;
+			default:
+				throw new IllegalArgumentException();
 		}
 	}
 	
 	
 	@Override
-	public String getToolTipText(MouseEvent event)
+	public String getToolTipText(final MouseEvent event)
 	{
 		final JTable table = (JTable) event.getSource();
 		final int row = table.rowAtPoint(event.getPoint());
@@ -220,7 +239,7 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 	// --------------------------------------------------------------------------
 	// --- local helper functions -----------------------------------------------
 	// --------------------------------------------------------------------------
-	private Object[] getPathTo(Node node)
+	private Object[] getPathTo(final Node node)
 	{
 		// Gather path elements
 		final List<Node> list = new LinkedList<Node>();
@@ -253,7 +272,7 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 	 * @param obj
 	 * @return The associated comment-node (or <code>null</code>)
 	 */
-	private org.w3c.dom.Node getComment(Object obj)
+	private org.w3c.dom.Node getComment(final Object obj)
 	{
 		final Node xmlNode = (Node) obj;
 		final org.w3c.dom.Node node = (org.w3c.dom.Node) xmlNode.getReference();
@@ -291,14 +310,14 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 	
 	
 	@Override
-	public String getColumnName(int col)
+	public String getColumnName(final int col)
 	{
 		return COLUMNS[col];
 	}
 	
 	
 	@Override
-	public Class<?> getColumnClass(int col)
+	public Class<?> getColumnClass(final int col)
 	{
 		return CLASSES[col];
 	}

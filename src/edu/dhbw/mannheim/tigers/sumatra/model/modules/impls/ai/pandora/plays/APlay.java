@@ -18,7 +18,10 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AthenaAiFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.MetisAiFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.EGameState;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 
@@ -89,6 +92,12 @@ public abstract class APlay
 			return;
 		}
 		
+		if (newRole.isCompleted())
+		{
+			log.error("Role is already completed. Can not switch to new role: " + newRole.getType());
+			return;
+		}
+		
 		boolean removed = roles.remove(oldRole);
 		if (!removed)
 		{
@@ -97,7 +106,7 @@ public abstract class APlay
 		}
 		roles.add(newRole);
 		
-		newRole.assignBotID(newBotId);
+		newRole.assignBotID(newBotId, oldRole.getAiFrame());
 		newRole.update(oldRole.getAiFrame());
 		
 		oldRole.removeSkillObserver();
@@ -130,8 +139,7 @@ public abstract class APlay
 	
 	
 	/**
-	 * Remove a role
-	 * TODO should not be public
+	 * Remove a role. Do not call this from your Play!! This is intended for the RoleAssigner only
 	 * 
 	 * @param role
 	 */
@@ -157,14 +165,15 @@ public abstract class APlay
 	 * Ask the play to add the specified number of roles
 	 * 
 	 * @param count
+	 * @param frame
 	 * @return the added roles
 	 */
-	public final List<ARole> addRoles(final int count)
+	public final List<ARole> addRoles(final int count, final MetisAiFrame frame)
 	{
 		List<ARole> roles = new ArrayList<ARole>();
 		for (int i = 0; i < count; i++)
 		{
-			ARole role = onAddRole();
+			ARole role = onAddRole(frame);
 			roles.add(role);
 			addRole(role);
 		}
@@ -176,14 +185,15 @@ public abstract class APlay
 	 * Ask the play to remove the specified number of roles
 	 * 
 	 * @param count
+	 * @param frame
 	 * @return
 	 */
-	public final List<ARole> removeRoles(final int count)
+	public final List<ARole> removeRoles(final int count, final MetisAiFrame frame)
 	{
 		List<ARole> roles = new ArrayList<ARole>();
 		for (int i = 0; i < count; i++)
 		{
-			ARole role = onRemoveRole();
+			ARole role = onRemoveRole(frame);
 			roles.add(role);
 			removeRole(role);
 		}
@@ -195,9 +205,10 @@ public abstract class APlay
 	 * Remove one role from this Play.
 	 * Assume that there is at least one role left.
 	 * 
+	 * @param frame
 	 * @return the removed role
 	 */
-	protected abstract ARole onRemoveRole();
+	protected abstract ARole onRemoveRole(MetisAiFrame frame);
 	
 	
 	/**
@@ -205,9 +216,10 @@ public abstract class APlay
 	 * Please assume that the Play will start with zero roles until the play can only run with
 	 * a static number of roles anyway
 	 * 
+	 * @param frame
 	 * @return the added role
 	 */
-	protected abstract ARole onAddRole();
+	protected abstract ARole onAddRole(MetisAiFrame frame);
 	
 	
 	/**
@@ -242,6 +254,14 @@ public abstract class APlay
 	public final boolean isFinished()
 	{
 		return state == EPlayState.FINISHED;
+	}
+	
+	
+	/**
+	 * @param frame
+	 */
+	public void updateBeforeRoles(final AthenaAiFrame frame)
+	{
 	}
 	
 	
@@ -317,6 +337,32 @@ public abstract class APlay
 	
 	
 	/**
+	 * You can reorder the roles you get with getRoles() and update them here.
+	 * getRoles() will return an unmodifiable list, so you can not reorder this list directly.
+	 * This method will check if you have not put any extra roles or wrong number of roles!
+	 * 
+	 * @param orderedRoles
+	 */
+	public final void setReorderedRoles(final List<ARole> orderedRoles)
+	{
+		if (roles.size() != orderedRoles.size())
+		{
+			throw new IllegalArgumentException("Provided orderedRoles list does not have correct size: "
+					+ orderedRoles.size());
+		}
+		for (ARole role : orderedRoles)
+		{
+			if (!roles.contains(role))
+			{
+				throw new IllegalArgumentException("Provided orderedRoles list contains an unknown role! " + role.getType());
+			}
+		}
+		roles.clear();
+		roles.addAll(orderedRoles);
+	}
+	
+	
+	/**
 	 * Returns the actual play state.
 	 * 
 	 * @return
@@ -336,36 +382,31 @@ public abstract class APlay
 	}
 	
 	
-	@Override
-	public int hashCode()
+	/**
+	 * Roles will be resorted to that first role in list is nearest to first destination and so on
+	 * 
+	 * @param destinations
+	 */
+	protected void reorderRolesToDestinations(final List<IVector2> destinations)
 	{
-		final int prime = 31;
-		int result = 1;
-		result = (prime * result) + ((type == null) ? 0 : type.hashCode());
-		return result;
-	}
-	
-	
-	@Override
-	public boolean equals(final Object obj)
-	{
-		if (this == obj)
+		List<ARole> roles = new ArrayList<ARole>(getRoles());
+		List<ARole> rolesSorted = new ArrayList<ARole>(getRoles().size());
+		for (IVector2 dest : destinations)
 		{
-			return true;
+			float minDist = Float.MAX_VALUE;
+			ARole theRole = null;
+			for (ARole role : roles)
+			{
+				float dist = GeoMath.distancePP(dest, role.getPos());
+				if (dist < minDist)
+				{
+					minDist = dist;
+					theRole = role;
+				}
+			}
+			roles.remove(theRole);
+			rolesSorted.add(theRole);
 		}
-		if (obj == null)
-		{
-			return false;
-		}
-		if (getClass() != obj.getClass())
-		{
-			return false;
-		}
-		APlay other = (APlay) obj;
-		if (type != other.type)
-		{
-			return false;
-		}
-		return true;
+		setReorderedRoles(rolesSorted);
 	}
 }

@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 06.11.2010
  * Author(s): Malte
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense;
@@ -28,9 +27,9 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.IMoveToSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveAndStaySkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveToSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleState;
 
 
@@ -41,7 +40,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleSt
  * The vertical line defined by that x-value must not be overrun.<br>
  * 
  * @author Malte
- * 
  */
 public class ManToManMarkerRole extends ARole
 {
@@ -71,7 +69,7 @@ public class ManToManMarkerRole extends ARole
 	 */
 	public ManToManMarkerRole()
 	{
-		this(new DynamicPosition(Vector2.ZERO_VECTOR));
+		this(new DynamicPosition(AVector2.ZERO_VECTOR));
 	}
 	
 	
@@ -107,13 +105,13 @@ public class ManToManMarkerRole extends ARole
 	
 	private class DefendState implements IRoleState
 	{
-		private MoveToSkill	skill	= null;
+		private IMoveToSkill	skill	= null;
 		
 		
 		@Override
 		public void doEntryActions()
 		{
-			skill = new MoveAndStaySkill();
+			skill = AMoveSkill.createMoveToSkill();
 			setNewSkill(skill);
 			skill.getMoveCon().updateDestination(getPos());
 			skill.getMoveCon().updateLookAtTarget(target);
@@ -194,13 +192,13 @@ public class ManToManMarkerRole extends ARole
 		
 		
 		@Override
-		public void onSkillStarted(ISkill skill, BotID botID)
+		public void onSkillStarted(final ISkill skill, final BotID botID)
 		{
 		}
 		
 		
 		@Override
-		public void onSkillCompleted(ISkill skill, BotID botID)
+		public void onSkillCompleted(final ISkill skill, final BotID botID)
 		{
 		}
 		
@@ -227,7 +225,7 @@ public class ManToManMarkerRole extends ARole
 	 * 
 	 * @param forbiddenCircle
 	 */
-	public void setForbiddenCircle(ICircle forbiddenCircle)
+	public void setForbiddenCircle(final ICircle forbiddenCircle)
 	{
 		final Circle circle = new Circle(forbiddenCircle.center(), forbiddenCircle.radius()
 				+ AIConfig.getGeometry().getBotRadius());
@@ -240,7 +238,7 @@ public class ManToManMarkerRole extends ARole
 	 * 
 	 * @param gap
 	 */
-	public void setGap(float gap)
+	public void setGap(final float gap)
 	{
 		this.gap = gap;
 	}
@@ -260,7 +258,7 @@ public class ManToManMarkerRole extends ARole
 	 * 
 	 * @param maxLength
 	 */
-	public void setMaxLength(float maxLength)
+	public void setMaxLength(final float maxLength)
 	{
 		this.maxLength = maxLength;
 	}

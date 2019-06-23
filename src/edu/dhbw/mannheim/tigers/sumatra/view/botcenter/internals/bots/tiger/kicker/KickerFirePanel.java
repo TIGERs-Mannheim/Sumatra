@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 10.09.2010
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.kicker;
@@ -23,15 +22,14 @@ import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.other.EKickerMode;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerKickV2;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerKickV2.EKickerMode;
 
 
 /**
  * Manual kicker firing control
  * 
  * @author AndreR
- * 
  */
 public class KickerFirePanel extends JPanel
 {
@@ -128,7 +126,7 @@ public class KickerFirePanel extends JPanel
 	/**
 	 * @param observer
 	 */
-	public void addObserver(IKickerFirePanelObserver observer)
+	public void addObserver(final IKickerFirePanelObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -140,7 +138,7 @@ public class KickerFirePanel extends JPanel
 	/**
 	 * @param observer
 	 */
-	public void removeObserver(IKickerFirePanelObserver observer)
+	public void removeObserver(final IKickerFirePanelObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -149,7 +147,7 @@ public class KickerFirePanel extends JPanel
 	}
 	
 	
-	private void notifyFire(int level, float duration, EKickerMode mode, int device)
+	private void notifyFire(final int level, final float duration, final EKickerMode mode, final int device)
 	{
 		synchronized (observers)
 		{
@@ -168,7 +166,7 @@ public class KickerFirePanel extends JPanel
 	public class Fire implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent arg0)
+		public void actionPerformed(final ActionEvent arg0)
 		{
 			float dur = 0;
 			EKickerMode m = EKickerMode.FORCE;

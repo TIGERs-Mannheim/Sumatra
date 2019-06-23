@@ -4,12 +4,12 @@
  * Project: TIGERS - Sumatra
  * Date: May 7, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.others;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AthenaAiFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.MetisAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.EGameState;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
@@ -22,9 +22,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.mov
 /**
  * This play will move two robots in opposite directions, while looking at each other.
  * 
- * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class MoveTestPlay extends APlay
 {
@@ -33,10 +31,10 @@ public class MoveTestPlay extends APlay
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private final MoveRole	moveRole1;
-	private final MoveRole	moveRole2;
+	private MoveRole	moveRole1;
+	private MoveRole	moveRole2;
 	
-	private EState				state	= EState.INIT;
+	private EState		state	= EState.INIT;
 	
 	private enum EState
 	{
@@ -66,9 +64,9 @@ public class MoveTestPlay extends APlay
 	
 	
 	@Override
-	protected void doUpdate(AthenaAiFrame frame)
+	protected void doUpdate(final AthenaAiFrame frame)
 	{
-		if (getRoles().size() != 2)
+		if (getRoles().size() != 6)
 		{
 			return;
 		}
@@ -102,7 +100,7 @@ public class MoveTestPlay extends APlay
 	
 	
 	@Override
-	protected ARole onRemoveRole()
+	protected ARole onRemoveRole(final MetisAiFrame frame)
 	{
 		switch (getRoles().size())
 		{
@@ -117,13 +115,15 @@ public class MoveTestPlay extends APlay
 	
 	
 	@Override
-	protected ARole onAddRole()
+	protected ARole onAddRole(final MetisAiFrame frame)
 	{
 		switch (getRoles().size())
 		{
 			case 0:
+				moveRole1 = new MoveRole(EMoveBehavior.NORMAL);
 				return moveRole1;
 			case 1:
+				moveRole2 = new MoveRole(EMoveBehavior.NORMAL);
 				return moveRole2;
 			default:
 				throw new IllegalStateException();
@@ -132,7 +132,7 @@ public class MoveTestPlay extends APlay
 	
 	
 	@Override
-	protected void onGameStateChanged(EGameState gameState)
+	protected void onGameStateChanged(final EGameState gameState)
 	{
 	}
 	

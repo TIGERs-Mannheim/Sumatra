@@ -11,8 +11,7 @@ package edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 
 import javax.swing.JCheckBox;
 import javax.swing.SwingUtilities;
@@ -23,11 +22,13 @@ import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesState;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.Agent;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.RoleFinderInfo;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.ECalculator;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.support.RedirectPosGPUCalc;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.support.RedirectPosGPUCalc.EScoringTypes;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
@@ -36,13 +37,13 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.ILookAndFeelStateObserver;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.LookAndFeelStateAdapter;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.IModuliStateObserver;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.ModuliStateAdapter;
 import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.AICenterPanel;
-import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview.CalculatorList;
 import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview.IAIModeChanged;
+import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview.IAthenaControlPanelObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview.ICalculatorObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview.PlayControlPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview.RoleControlPanel;
+import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview.SupporterGridPanel.ISupporterGridPanelObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview.TacticalFieldControlPanel;
 import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
 import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraViewPresenter;
@@ -86,6 +87,8 @@ public class AICenterPresenter implements IModuliStateObserver, IAIObserver, ILo
 		aiCenterPanel.getModulesPanel().getRolePanel().addObserver(guiFeedbackObserver);
 		aiCenterPanel.getModulesPanel().getPlayPanel().addObserver(guiFeedbackObserver);
 		aiCenterPanel.getModulesPanel().addObserver(guiFeedbackObserver);
+		aiCenterPanel.getModulesPanel().getAthenaPanel().addObserver(guiFeedbackObserver);
+		aiCenterPanel.getModulesPanel().getSupporterGridPanel().addObserver(guiFeedbackObserver);
 		
 		aiCenterPanel.getChkAiActive().addActionListener(new ActionListener()
 		{
@@ -110,14 +113,8 @@ public class AICenterPresenter implements IModuliStateObserver, IAIObserver, ILo
 			}
 		});
 		
-		CalculatorList calulatorList = aiCenterPanel.getModulesPanel().getMetisCalculatorsPanel().getCalculatorList();
-		calulatorList.addObserver(guiFeedbackObserver);
-		for (ECalculator calc : ECalculator.values())
-		{
-			calulatorList.addElement(calc.name(), calc.isInitiallyActive());
-		}
+		aiCenterPanel.getModulesPanel().getMetisCalculatorsPanel().addObserver(guiFeedbackObserver);
 		
-		ModuliStateAdapter.getInstance().addObserver(this);
 		LookAndFeelStateAdapter.getInstance().addObserver(this);
 		
 		aiCenterPanel.clearView();
@@ -151,7 +148,7 @@ public class AICenterPresenter implements IModuliStateObserver, IAIObserver, ILo
 							
 					}
 					
-					aiAgent.addObserver(this);
+					aiAgent.addVisObserver(this);
 					aiAgent.getAthena().addObserver(this);
 					
 					aiCenterPanel.getChkAiActive().setSelected(aiAgent.isActive());
@@ -159,6 +156,7 @@ public class AICenterPresenter implements IModuliStateObserver, IAIObserver, ILo
 					{
 						aiCenterPanel.getModulesPanel().onStart();
 					}
+					aiCenterPanel.getModulesPanel().getMetisCalculatorsPanel().setActive(true);
 					
 				} catch (final ModuleNotFoundException err)
 				{
@@ -175,9 +173,10 @@ public class AICenterPresenter implements IModuliStateObserver, IAIObserver, ILo
 			{
 				if (aiAgent != null)
 				{
-					aiAgent.removeObserver(this);
+					aiAgent.removeVisObserver(this);
 				}
 				aiAgent = null;
+				aiCenterPanel.getModulesPanel().getMetisCalculatorsPanel().setActive(false);
 				aiCenterPanel.getModulesPanel().onStop();
 				aiCenterPanel.clearView();
 				break;
@@ -205,8 +204,12 @@ public class AICenterPresenter implements IModuliStateObserver, IAIObserver, ILo
 	
 	
 	@Override
-	public void onNewAIInfoFrame(final AIInfoFrame lastFrame)
+	public void onNewAIInfoFrame(final IRecordFrame lastFrame)
 	{
+		if (lastFrame.getTeamColor() != team)
+		{
+			return;
+		}
 		SwingUtilities.invokeLater(new Runnable()
 		{
 			@Override
@@ -233,20 +236,23 @@ public class AICenterPresenter implements IModuliStateObserver, IAIObserver, ILo
 						break;
 					}
 				}
+				
+				aiCenterPanel.getModulesPanel().getAthenaPanel().onNewAIInfoFrame(lastFrame);
+				aiCenterPanel.getModulesPanel().getMetisCalculatorsPanel().onNewAIInfoFrame(lastFrame);
 			}
 		});
 	}
 	
 	
 	@Override
-	public void onAIException(final Exception ex, final IRecordFrame frame, final IRecordFrame prevFrame)
+	public void onAIException(final Throwable ex, final IRecordFrame frame, final IRecordFrame prevFrame)
 	{
 	}
 	
 	
-	private int calcFreeBots(final AIInfoFrame aiFrame)
+	private int calcFreeBots(final IRecordFrame aiFrame)
 	{
-		int counter = aiFrame.getWorldFrame().tigerBotsAvailable.size();
+		int counter = aiFrame.getWorldFrame().getTigerBotsAvailable().size();
 		
 		for (final APlay play : aiFrame.getPlayStrategy().getActivePlays())
 		{
@@ -296,7 +302,8 @@ public class AICenterPresenter implements IModuliStateObserver, IAIObserver, ILo
 		return aiCenterPanel;
 	}
 	
-	private class GuiFeedbackObserver implements IAICenterObserver, ICalculatorObserver
+	private class GuiFeedbackObserver implements IAICenterObserver, ICalculatorObserver, IAthenaControlPanelObserver,
+			ISupporterGridPanelObserver
 	{
 		
 		@Override
@@ -349,17 +356,83 @@ public class AICenterPresenter implements IModuliStateObserver, IAIObserver, ILo
 		
 		
 		@Override
-		public void selectedCalculatorsChanged(final List<String> values)
+		public void onNewRoleFinderInfos(final Map<EPlay, RoleFinderInfo> infos)
+		{
+			aiAgent.getAthena().getAthenaAdapter().getAiControl().getRoleFinderInfos().clear();
+			aiAgent.getAthena().getAthenaAdapter().getAiControl().getRoleFinderInfos().putAll(infos);
+		}
+		
+		
+		@Override
+		public void onNewRoleFinderOverrides(final Map<EPlay, Boolean> overrides)
+		{
+			aiAgent.getAthena().getAthenaAdapter().getAiControl().getRoleFinderOverrides().clear();
+			aiAgent.getAthena().getAthenaAdapter().getAiControl().getRoleFinderOverrides().putAll(overrides);
+		}
+		
+		
+		@Override
+		public void onCalculatorStateChanged(final ECalculator eCalc, final boolean active)
 		{
 			if (aiAgent != null)
 			{
-				List<ECalculator> calculators = new ArrayList<ECalculator>(values.size());
-				for (String value : values)
-				{
-					calculators.add(ECalculator.valueOf(value));
-				}
-				aiAgent.getMetis().setActiveCalculators(calculators);
+				aiAgent.getMetis().setCalculatorActive(eCalc, active);
 			}
+		}
+		
+		
+		@Override
+		public void onWeightChanged(final EScoringTypes type, final float value)
+		{
+			if (aiAgent == null)
+			{
+				return;
+			}
+			RedirectPosGPUCalc calc = (RedirectPosGPUCalc) aiAgent.getMetis().getCalculator(ECalculator.REDIRECT_POS_GPU);
+			calc.updateWeight(type, value);
+			for (Map.Entry<EScoringTypes, Float> entry : calc.getWeights().entrySet())
+			{
+				aiCenterPanel.getModulesPanel().getSupporterGridPanel().setWeighting(entry.getKey(), entry.getValue());
+			}
+		}
+		
+		
+		@Override
+		public void onQueryWeights()
+		{
+			if (aiAgent == null)
+			{
+				return;
+			}
+			RedirectPosGPUCalc calc = (RedirectPosGPUCalc) aiAgent.getMetis().getCalculator(ECalculator.REDIRECT_POS_GPU);
+			for (Map.Entry<EScoringTypes, Float> entry : calc.getWeights().entrySet())
+			{
+				aiCenterPanel.getModulesPanel().getSupporterGridPanel().setWeighting(entry.getKey(), entry.getValue());
+			}
+		}
+		
+		
+		@Override
+		public void onSaveWeights(final String name)
+		{
+			if (aiAgent == null)
+			{
+				return;
+			}
+			RedirectPosGPUCalc calc = (RedirectPosGPUCalc) aiAgent.getMetis().getCalculator(ECalculator.REDIRECT_POS_GPU);
+			calc.saveWeights(name);
+		}
+		
+		
+		@Override
+		public void onLoadWeights(final String name)
+		{
+			if (aiAgent == null)
+			{
+				return;
+			}
+			RedirectPosGPUCalc calc = (RedirectPosGPUCalc) aiAgent.getMetis().getCalculator(ECalculator.REDIRECT_POS_GPU);
+			calc.loadWeights(name);
 		}
 	}
 }

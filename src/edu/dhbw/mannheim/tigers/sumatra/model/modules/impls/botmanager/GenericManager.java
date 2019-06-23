@@ -10,12 +10,12 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -29,23 +29,21 @@ import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamDetectionFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrameWrapper;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.basestation.BaseStation;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.basestation.EBaseStation;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.BotFactory;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.BotInitException;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.GrSimBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.TigerBot;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.TigerBotV2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.udp.ITransceiverUDP;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.grsim.GrSimNetworkCfg;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.BotSkillFactory;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandFactory;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerChargeAuto;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.config.AConfigClient;
@@ -54,9 +52,12 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IWorldPredictorOb
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ABotManager;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AWorldPredictor;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IConfigClient;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IConfigObserver;
 import edu.dhbw.mannheim.tigers.sumatra.util.GlobalShortcuts;
 import edu.dhbw.mannheim.tigers.sumatra.util.GlobalShortcuts.EShortcut;
 import edu.dhbw.mannheim.tigers.sumatra.util.NamedThreadFactory;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.ConfigRegistration;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.EConfigurableCat;
 
 
 /**
@@ -74,21 +75,19 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 	
 	// "UTF-8";
 	private static final String					XML_ENCODING	= "ISO-8859-1";
-	private final Map<BotID, ABot>				botTable			= new ConcurrentSkipListMap<BotID, ABot>(
-																						BotID.getComparator());
 	private boolean									moduleRunning	= false;
 	private AWorldPredictor							wp					= null;
 	
 	private Map<Integer, MulticastDelegate>	mcastDelegate	= new HashMap<Integer, MulticastDelegate>();
 	private boolean									useMulticast	= false;
-	private Map<Integer, BaseStation>			baseStations	= new HashMap<Integer, BaseStation>();
+	private Map<EBaseStation, BaseStation>		baseStations	= new EnumMap<>(EBaseStation.class);
 	private Map<Integer, GrSimNetworkCfg>		grSimNetwork	= new HashMap<Integer, GrSimNetworkCfg>();
 	
 	private static IConfigClient					configClient	= new ConfigClient();
 	private static HierarchicalConfiguration	config;
 	
 	private boolean									autoCharge;
-	private int											maxCap;
+	private final String								configFileName;
 	
 	
 	// --------------------------------------------------------------
@@ -102,7 +101,8 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 	public GenericManager(final SubnodeConfiguration subnodeConfiguration)
 	{
 		autoCharge = subnodeConfiguration.getBoolean("autoChargeInitially");
-		maxCap = subnodeConfiguration.getInt("maxCap");
+		configFileName = subnodeConfiguration.getString("config", "");
+		ConfigRegistration.registerConfigurableCallback(EConfigurableCat.RCM, new ConfigListener());
 	}
 	
 	
@@ -127,18 +127,22 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 	@Override
 	public void startModule()
 	{
+		BotSkillFactory.getInstance().loadSkills();
 		CommandFactory.getInstance().loadCommands();
 		
-		if (config == null)
+		if (!configFileName.isEmpty())
+		{
+			ConfigManager.getInstance().loadConfig(KEY_BOTMANAGER_CONFIG, configFileName);
+		} else
 		{
 			ConfigManager.getInstance().reloadConfig(KEY_BOTMANAGER_CONFIG);
 		}
 		
 		loadConfig(config);
 		
-		if (!botTable.isEmpty())
+		if (!getBotTable().isEmpty())
 		{
-			AIConfig.setBotSpezi(botTable.values().iterator().next().getType().name());
+			ConfigRegistration.applySpezis(getBotTable().values().iterator().next().getType().name());
 		}
 		
 		for (MulticastDelegate md : mcastDelegate.values())
@@ -164,7 +168,7 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 				@Override
 				public void run()
 				{
-					chargeAll(maxCap);
+					chargeAll();
 				}
 			}, 2, TimeUnit.SECONDS);
 			executor.shutdown();
@@ -176,7 +180,7 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 			@Override
 			public void run()
 			{
-				chargeAll(maxCap);
+				chargeAll();
 			}
 		});
 		
@@ -193,13 +197,12 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 	
 	
 	@Override
-	public void chargeAll(final int chg)
+	public void chargeAll()
 	{
-		log.info("Auto charging bots");
-		maxCap = chg;
+		log.debug("Auto charging bots");
 		for (final ABot bot : getAllBots().values())
 		{
-			bot.execute(new TigerKickerChargeAuto(maxCap));
+			bot.execute(new TigerKickerChargeAuto(bot.getKickerMaxCap()));
 		}
 		autoCharge = true;
 	}
@@ -244,23 +247,6 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 	}
 	
 	
-	/**
-	 * Be aware of the fact that this method might be called from several threads
-	 */
-	@Override
-	public void execute(final BotID id, final ACommand cmd)
-	{
-		final ABot bot = botTable.get(id);
-		if (bot != null)
-		{
-			bot.execute(cmd);
-		} else
-		{
-			log.warn("Execute: Invalid botID: " + id);
-		}
-	}
-	
-	
 	@Override
 	public void botConnectionChanged(final ABot bot)
 	{
@@ -268,8 +254,7 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 		
 		if ((bot.getNetworkState() == ENetworkState.ONLINE) && autoCharge)
 		{
-			bot.setKickerMaxCap(maxCap);
-			bot.execute(new TigerKickerChargeAuto(maxCap));
+			bot.execute(new TigerKickerChargeAuto(bot.getKickerMaxCap()));
 		}
 	}
 	
@@ -277,22 +262,17 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 	@Override
 	public ABot addBot(final EBotType type, final BotID id, final String name)
 	{
-		if (botTable.containsKey(id))
+		if (getBotTable().containsKey(id))
 		{
 			return null;
 		}
 		
 		final ABot bot = BotFactory.createBot(type, id, name);
-		botTable.put(id, bot);
+		getBotTable().put(id, bot);
 		
 		if ((bot.getType() == EBotType.TIGER))
 		{
 			((TigerBot) bot).setMulticastDelegate(mcastDelegate.get(bot.getMcastDelegateKey()));
-		}
-		
-		if (bot.getType() == EBotType.TIGER_V2)
-		{
-			((TigerBotV2) bot).setBaseStation(baseStations.get(bot.getBaseStationKey()));
 		}
 		
 		notifyBotAdded(bot);
@@ -304,17 +284,12 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 	@Override
 	public void removeBot(final BotID id)
 	{
-		final ABot bot = botTable.remove(id);
+		final ABot bot = getBotTable().remove(id);
 		if (bot != null)
 		{
 			if ((bot.getType() == EBotType.TIGER))
 			{
 				((TigerBot) bot).setMulticastDelegate(null);
-			}
-			
-			if (bot.getType() == EBotType.TIGER_V2)
-			{
-				((TigerBotV2) bot).setBaseStation(null);
 			}
 			
 			bot.stop();
@@ -326,24 +301,24 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 	@Override
 	public void changeBotId(final BotID oldId, final BotID newId)
 	{
-		if (!botTable.containsKey(oldId))
+		if (!getBotTable().containsKey(oldId))
 		{
 			return;
 		}
 		
-		final ABot bot = botTable.get(oldId);
+		final ABot bot = getBotTable().get(oldId);
 		
-		if (botTable.containsKey(newId))
+		if (getBotTable().containsKey(newId))
 		{
 			bot.internalSetBotId(oldId);
 			return;
 		}
 		
-		botTable.remove(oldId);
+		getBotTable().remove(oldId);
 		
 		bot.internalSetBotId(newId);
 		
-		botTable.put(newId, bot);
+		getBotTable().put(newId, bot);
 		
 		notifyBotIdChanged(oldId, newId);
 	}
@@ -352,7 +327,7 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 	@Override
 	public Map<BotID, ABot> getAllBots()
 	{
-		return botTable;
+		return getBotTable();
 	}
 	
 	
@@ -360,12 +335,12 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 	{
 		stopBots();
 		
-		for (final ABot bot : botTable.values())
+		for (final ABot bot : getBotTable().values())
 		{
 			notifyBotRemoved(bot);
 		}
 		
-		botTable.clear();
+		getBotTable().clear();
 	}
 	
 	
@@ -437,7 +412,7 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 	
 	
 	@Override
-	public Map<Integer, BaseStation> getBaseStations()
+	public Map<EBaseStation, BaseStation> getBaseStations()
 	{
 		return baseStations;
 	}
@@ -447,10 +422,10 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 	{
 		removeAllBots();
 		
-		final List<?> mcastConfigs = config.configurationsAt("multicast");
-		for (final Object name : mcastConfigs)
+		final List<HierarchicalConfiguration> mcastConfigs = config.configurationsAt("multicast");
+		for (final HierarchicalConfiguration name : mcastConfigs)
 		{
-			final SubnodeConfiguration mcastConfig = (SubnodeConfiguration) name;
+			final HierarchicalConfiguration mcastConfig = name;
 			int key = mcastConfig.getInt("[@id]");
 			MulticastDelegate md = new MulticastDelegate(mcastConfig, this);
 			mcastDelegate.put(key, md);
@@ -463,7 +438,7 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 		{
 			final SubnodeConfiguration baseStationConfig = (SubnodeConfiguration) name;
 			int key = baseStationConfig.getInt("[@id]");
-			baseStations.put(key, new BaseStation(baseStationConfig));
+			baseStations.put(key == 0 ? EBaseStation.PRIMARY : EBaseStation.SECONDARY, new BaseStation());
 		}
 		
 		final List<?> grSimConfigs = config.configurationsAt("grSimNetwork");
@@ -483,7 +458,8 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 			{
 				final ABot bot = BotFactory.createBot(botConfig);
 				
-				botTable.put(bot.getBotID(), bot);
+				setBotType(bot.getType());
+				getBotTable().put(bot.getBotID(), bot);
 				notifyBotAdded(bot);
 				
 			} catch (final BotInitException err)
@@ -515,10 +491,11 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 		{
 			// save base station config
 			final List<ConfigurationNode> bsNodes = new ArrayList<ConfigurationNode>();
-			for (BaseStation baseStation : baseStations.values())
-			{
-				bsNodes.add(baseStation.getConfig().getRootNode());
-			}
+			// can not save anymore...
+			// for (BaseStation baseStation : baseStations.values())
+			// {
+			// bsNodes.add(baseStation.getConfig().getRootNode());
+			// }
 			botmanager.addNodes("", bsNodes);
 		}
 		
@@ -537,12 +514,12 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 		final List<ConfigurationNode> nodes = new ArrayList<ConfigurationNode>();
 		
 		final List<BotID> sortedBots = new ArrayList<BotID>();
-		sortedBots.addAll(botTable.keySet());
+		sortedBots.addAll(getBotTable().keySet());
 		Collections.sort(sortedBots);
 		
 		for (final BotID i : sortedBots)
 		{
-			final ABot bot = botTable.get(i);
+			final ABot bot = getBotTable().get(i);
 			nodes.add(bot.getConfiguration().getRootNode().getChild(0));
 		}
 		
@@ -557,7 +534,7 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 	
 	private void stopBots()
 	{
-		for (final ABot bot : botTable.values())
+		for (final ABot bot : getBotTable().values())
 		{
 			bot.stop();
 			
@@ -565,27 +542,17 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 			{
 				((TigerBot) bot).setMulticastDelegate(null);
 			}
-			
-			if (bot.getType() == EBotType.TIGER_V2)
-			{
-				((TigerBotV2) bot).setBaseStation(null);
-			}
 		}
 	}
 	
 	
 	private void startBots()
 	{
-		for (final ABot bot : botTable.values())
+		for (final ABot bot : getBotTable().values())
 		{
 			if ((bot.getType() == EBotType.TIGER))
 			{
 				((TigerBot) bot).setMulticastDelegate(mcastDelegate.get(bot.getMcastDelegateKey()));
-			}
-			
-			if (bot.getType() == EBotType.TIGER_V2)
-			{
-				((TigerBotV2) bot).setBaseStation(baseStations.get(bot.getBaseStationKey()));
 			}
 			
 			if ((bot.getType() == EBotType.GRSIM))
@@ -599,14 +566,14 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 	
 	
 	@Override
-	public void onNewWorldFrame(final SimpleWorldFrame wf)
+	public void onNewWorldFrame(final WorldFrameWrapper wfWrapper)
 	{
 		for (Map.Entry<Integer, MulticastDelegate> entry : mcastDelegate.entrySet())
 		{
 			int key = entry.getKey();
 			MulticastDelegate md = entry.getValue();
 			Set<BotID> botIds = new HashSet<BotID>();
-			for (TrackedTigerBot bot : wf.getBots().values())
+			for (TrackedTigerBot bot : wfWrapper.getSimpleWorldFrame().getBots().values())
 			{
 				if ((bot.getBot() != null) && (bot.getBot().getMcastDelegateKey() == key))
 				{
@@ -614,44 +581,6 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 				}
 			}
 			md.setOnFieldBots(botIds);
-		}
-	}
-	
-	
-	@Override
-	public void onManualBotAdded(final BotID botId)
-	{
-		ABot bot = botTable.get(botId);
-		if (bot == null)
-		{
-			log.error("Bot with id " + botId + " does not exist.");
-		} else
-		{
-			bot.setManualControl(true);
-		}
-	}
-	
-	
-	@Override
-	public void onManualBotRemoved(final BotID botId)
-	{
-		ABot bot = botTable.get(botId);
-		if (bot == null)
-		{
-			log.error("Bot with id " + botId + " does not exist.");
-		} else
-		{
-			bot.setManualControl(false);
-		}
-	}
-	
-	
-	@Override
-	public void onVisionSignalLost(final SimpleWorldFrame emptyWf)
-	{
-		for (MulticastDelegate md : mcastDelegate.values())
-		{
-			md.setOnFieldBots(new HashSet<BotID>());
 		}
 	}
 	
@@ -688,6 +617,34 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 			}
 			return new XMLConfiguration();
 		}
+		
+		
+		@Override
+		public boolean isRequired()
+		{
+			return true;
+		}
+	}
+	
+	private class ConfigListener implements IConfigObserver
+	{
+		
+		@Override
+		public void onLoad(final HierarchicalConfiguration newConfig)
+		{
+			
+		}
+		
+		
+		@Override
+		public void onReload(final HierarchicalConfiguration freshConfig)
+		{
+			for (ABot bot : getAllBots().values())
+			{
+				bot.setDefaultKickerMaxCap();
+			}
+		}
+		
 	}
 	
 	
@@ -697,11 +654,5 @@ public class GenericManager extends ABotManager implements IWorldPredictorObserv
 	public static IConfigClient getBotManagerConfigClient()
 	{
 		return configClient;
-	}
-	
-	
-	@Override
-	public void onNewCamDetectionFrame(final CamDetectionFrame frame)
-	{
 	}
 }

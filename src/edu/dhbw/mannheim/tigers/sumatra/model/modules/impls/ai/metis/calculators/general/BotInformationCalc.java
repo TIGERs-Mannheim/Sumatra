@@ -8,9 +8,12 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.general;
 
+import java.util.Map;
+
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.BaseAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.BotAiInformation;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.DrawablePath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.TacticalField;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
@@ -19,8 +22,9 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move.MovementCon;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeatureState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveToSkill;
 
@@ -32,27 +36,12 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.M
  */
 public class BotInformationCalc extends ACalculator
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	/**
 	  * 
 	  */
 	public BotInformationCalc()
 	{
-		
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	
 	@Override
@@ -67,9 +56,20 @@ public class BotInformationCalc extends ACalculator
 			
 			aiInfo.setBallContact(bot.hasBallContact());
 			aiInfo.setVel(bot.getVel());
+			aiInfo.setPos(bot.getPos());
+			float preVel = 0;
+			if (baseAiFrame.getPrevFrame() != null)
+			{
+				BotAiInformation preAiInfo = baseAiFrame.getPrevFrame().getTacticalField().getBotAiInformation().get(botId);
+				if (preAiInfo != null)
+				{
+					preVel = preAiInfo.getMaxVel();
+				}
+			}
+			aiInfo.setMaxVel(Math.max(bot.getVel().getLength2(), preVel));
 			
-			Path path = baseAiFrame.getPrevFrame().getAresData().getLatestPaths().get(botId);
-			aiInfo.setPathPlanning(path != null);
+			DrawablePath path = baseAiFrame.getPrevFrame().getAresData().getLatestPaths().get(botId);
+			aiInfo.setPathPlanning((path != null) && (path.getPath() != null));
 			aiInfo.setNumPaths(baseAiFrame.getPrevFrame().getAresData().getNumberOfPaths(botId));
 			
 			ABot aBot = bot.getBot();
@@ -77,6 +77,15 @@ public class BotInformationCalc extends ACalculator
 			{
 				aiInfo.setBattery(aBot.getBatteryLevel());
 				aiInfo.setKickerCharge(aBot.getKickerLevel());
+				String brokenFeatures = "BroFeat: ";
+				for (Map.Entry<EFeature, EFeatureState> entry : aBot.getBotFeatures().entrySet())
+				{
+					if (entry.getValue().equals(EFeatureState.KAPUT))
+					{
+						brokenFeatures += " " + entry.getKey();
+					}
+				}
+				aiInfo.setBrokenFeatures(brokenFeatures);
 			}
 			
 			play: for (APlay play : baseAiFrame.getPrevFrame().getPlayStrategy().getActivePlays())
@@ -87,14 +96,8 @@ public class BotInformationCalc extends ACalculator
 					{
 						aiInfo.setPlay(play.getType().name());
 						aiInfo.setRole(role.getType().name());
-						ISkill skill = role.getCurrentSkill();
-						if (skill != null)
-						{
-							aiInfo.setSkill(skill.getSkillName().name());
-						} else
-						{
-							aiInfo.setSkill("no skill");
-						}
+						aiInfo.setSkill(String.valueOf(baseAiFrame.getPrevFrame().getAresData().getSkills()
+								.get(role.getBotID())));
 						aiInfo.setRoleState(role.getCurrentState().name());
 						
 						ISkill moveSkill = role.getCurrentSkill();
@@ -113,8 +116,4 @@ public class BotInformationCalc extends ACalculator
 			newTacticalField.getBotAiInformation().put(botId, aiInfo);
 		}
 	}
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 }

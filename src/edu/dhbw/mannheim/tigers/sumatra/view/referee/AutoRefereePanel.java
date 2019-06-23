@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Mar 5, 2014
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.referee;
@@ -19,15 +18,13 @@ import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.referee.RefereeHandler;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AReferee;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.autoreferee.AutoReferee;
 
 
 /**
  * Auto referee control panel
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class AutoRefereePanel extends JPanel
 {
@@ -97,12 +94,12 @@ public class AutoRefereePanel extends JPanel
 	private class ActiveActionListener implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			try
 			{
-				RefereeHandler referee = (RefereeHandler) SumatraModel.getInstance().getModule(AReferee.MODULE_ID);
-				referee.getAutoReferee().setActive(chkBoxActive.isSelected());
+				AutoReferee referee = (AutoReferee) SumatraModel.getInstance().getModule(AutoReferee.MODULE_ID);
+				referee.getAutoRefereeActions().setActive(chkBoxActive.isSelected());
 			} catch (ModuleNotFoundException err)
 			{
 				log.error("Referee module not found.", err);
@@ -113,12 +110,12 @@ public class AutoRefereePanel extends JPanel
 	private class ReplaceBallOutsideActionListener implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			try
 			{
-				RefereeHandler referee = (RefereeHandler) SumatraModel.getInstance().getModule(AReferee.MODULE_ID);
-				referee.getAutoReferee().setReplaceBallOutside(chkBoxReplaceBallOutside.isSelected());
+				AutoReferee referee = (AutoReferee) SumatraModel.getInstance().getModule(AutoReferee.MODULE_ID);
+				referee.getAutoRefereeActions().setReplaceBallOutside(chkBoxReplaceBallOutside.isSelected());
 			} catch (ModuleNotFoundException err)
 			{
 				log.error("Referee module not found.", err);
@@ -129,12 +126,12 @@ public class AutoRefereePanel extends JPanel
 	private class ReplaceBallGoalActionListener implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			try
 			{
-				RefereeHandler referee = (RefereeHandler) SumatraModel.getInstance().getModule(AReferee.MODULE_ID);
-				referee.getAutoReferee().setActive(chkBoxReplaceBallGoal.isSelected());
+				AutoReferee referee = (AutoReferee) SumatraModel.getInstance().getModule(AutoReferee.MODULE_ID);
+				referee.getAutoRefereeActions().setReplaceBallGoal(chkBoxReplaceBallGoal.isSelected());
 			} catch (ModuleNotFoundException err)
 			{
 				log.error("Referee module not found.", err);

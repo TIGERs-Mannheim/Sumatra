@@ -9,24 +9,23 @@
 package edu.dhbw.mannheim.tigers.sumatra.presenter.rcm;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
-import javax.swing.JTextField;
-
-import net.java.games.input.Component;
 import net.java.games.input.Controller;
 
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.inputDevice.controller.ControllerFactory;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.inputDevice.controller.EControllerType;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.inputDevice.local.ConfigManager;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.inputDevice.local.LocalDevice;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.ActionSender;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.ExtIdentifier;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.PollingService;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.RcmAction;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.RcmActionMap;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.RcmActionMap.ERcmControllerConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.RcmActionMapping;
+import edu.dhbw.mannheim.tigers.sumatra.view.rcm.ButtonSelectAction;
 import edu.dhbw.mannheim.tigers.sumatra.view.rcm.ControllerPanel;
-import edu.dhbw.mannheim.tigers.sumatra.view.rcm.ShowRCMMainPanel;
+import edu.dhbw.mannheim.tigers.sumatra.view.rcm.IIdentifierSelectionObserver;
 
 
 /**
@@ -37,35 +36,74 @@ public abstract class AControllerPresenter
 	// --------------------------------------------------------------------------
 	// --- class variables ------------------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final Logger	log				= Logger.getLogger(AControllerPresenter.class.getName());
 	
-	private Map<String, String>	currentConfig	= new HashMap<String, String>();
-	private Controller				controller;
-	private final ControllerPanel	cPanel;
-	
-	private BotID						botId;
-	private LocalDevice				localDevice		= null;
+	private static final Logger	log	= Logger.getLogger(AControllerPresenter.class.getName());
+	private final RcmActionMap		config;
+	private final Controller		controller;
+	private PollingService			pollingService;
+	private final ControllerPanel	panel;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructor(s) -------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	
 	/**
-	 * 
 	 * @param newController
 	 */
-	AControllerPresenter(Controller newController)
+	protected AControllerPresenter(final Controller newController)
 	{
 		controller = newController;
-		
-		cPanel = ShowRCMMainPanel.getInstance().addControllerPanel(controller, AControllerPresenter.this);
+		config = new RcmActionMap(controller);
+		pollingService = new PollingService(config, new ActionSender(""));
+		panel = new ControllerPanel();
+		ConfigObserver ob = new ConfigObserver();
+		panel.addObserver(ob);
+		panel.getConfigPanel().addObserver(ob);
 		loadDefaultConfig();
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
+	/**
+	 */
+	private void loadDefaultConfig()
+	{
+		config.loadDefault(controller);
+		panel.reloadConfig(config);
+	}
+	
+	
+	/**
+	 * starts polling for controller
+	 * 
+	 * @param actionSender
+	 */
+	public void startPolling(final ActionSender actionSender)
+	{
+		if ((controller.getType() == Controller.Type.KEYBOARD)
+				|| (controller.getType() == Controller.Type.GAMEPAD)
+				|| (controller.getType() == Controller.Type.STICK))
+		{
+			if (pollingService != null)
+			{
+				pollingService.stop();
+			}
+			pollingService = new PollingService(config, actionSender);
+			pollingService.start();
+		}
+	}
+	
+	
+	/**
+	 * stops polling for controller
+	 */
+	public void stopPolling()
+	{
+		pollingService.stop();
+	}
+	
+	
 	/**
 	 * @return Controller
 	 */
@@ -76,204 +114,170 @@ public abstract class AControllerPresenter
 	
 	
 	/**
-	 * recognize when new component selected. changes component to string and calls setCurrentConfig
-	 * @param newComponent
-	 * @param action
+	 * @return
 	 */
-	public void onNewSelectedButton(Component newComponent, String action)
+	public RcmActionMap getConfig()
 	{
-		setCurrentConfig(newComponent.getIdentifier().toString(), action);
+		return config;
 	}
 	
 	
 	/**
-	 * sets current config on new component
-	 * @param key (Component)
-	 * @param value (Action)
+	 * @return
 	 */
-	private void setCurrentConfig(String key, String value)
+	public ActionSender getActionSender()
 	{
-		// --- get textfield map with all actions (key) and textfields (value)
-		final Map<String, JTextField> tfMap = cPanel.getTextFieldMap();
+		return pollingService.getActionSender();
+	}
+	
+	
+	/**
+	 * @return the panel
+	 */
+	public ControllerPanel getPanel()
+	{
+		return panel;
+	}
+	
+	private class ConfigObserver implements IRCMConfigChangedObserver
+	{
 		
-		// --- iterate trough components ---
-		for (final Object ccKey : currentConfig.keySet())
+		@Override
+		public void onActionMappingCreated(final RcmActionMapping mapping)
 		{
-			// --- if currentConfig contains action - should always be entered ---
-			if (value.equals(currentConfig.get(ccKey)))
+			config.addMapping(mapping);
+		}
+		
+		
+		@Override
+		public void onActionMappingChanged(final RcmActionMapping mapping)
+		{
+			// changes are processed on the fly
+		}
+		
+		
+		@Override
+		public void onActionMappingRemoved(final RcmActionMapping mapping)
+		{
+			config.removeMapping(mapping);
+		}
+		
+		
+		@Override
+		public void onSaveConfig()
+		{
+			config.saveDefault(controller);
+		}
+		
+		
+		@Override
+		public void onSaveConfigAs(final File file)
+		{
+			config.save(file);
+		}
+		
+		
+		@Override
+		public void onLoadConfig(final File file)
+		{
+			config.load(file);
+			panel.reloadConfig(config);
+		}
+		
+		
+		@Override
+		public void onLoadDefaultConfig()
+		{
+			loadDefaultConfig();
+		}
+		
+		
+		@Override
+		public void onSelectAssignment(final RcmActionMapping actionMapping)
+		{
+			new ButtonSelectAction(new IIdentifierSelectionObserver()
 			{
-				// --- remove old entry ---
-				currentConfig.remove(ccKey);
+				@Override
+				public void onIdentifiersSelectionCanceled()
+				{
+				}
 				
-				// --- if currentConfig contains component ---
-				if (currentConfig.containsKey(key))
+				
+				@Override
+				public void onIdentifiersSelected(final List<ExtIdentifier> identifiers)
 				{
-					// --- swap components ---
-					currentConfig.put(ccKey.toString(), currentConfig.get(key));
-					// --- swap textfield text ---
-					tfMap.get(currentConfig.get(key)).setText(ccKey.toString());
+					actionMapping.getIdentifiers().clear();
+					actionMapping.getIdentifiers().addAll(identifiers);
+					panel.reloadConfig(config);
 				}
-				// --- put new component and action in current configuration ---
-				currentConfig.put(key, value);
-				break;
-			}
+			}, controller);
 		}
-		log.info("HashMapConfig: " + currentConfig.toString());
-	}
-	
-	
-	/**
-	 * invokes saveConfig in ConfigManager
-	 * @param file
-	 */
-	public void saveCurrentConfig(File file)
-	{
-		ConfigManager.getInstance().saveConfig(file, currentConfig);
-	}
-	
-	
-	/**
-	 * 
-	 * @param file
-	 */
-	public void loadCurrentConfig(File file)
-	{
-		// --- temporary HashMap - equals to currentConfig ---
-		final Map<String, String> tempMap = new HashMap<String, String>();
 		
-		// --- get config from file ---
-		currentConfig = ConfigManager.getInstance().loadConfig(file);
 		
-		// --- iterate trough components ---
-		for (final Object key : currentConfig.keySet())
+		@Override
+		public void onSelectionAssistant()
 		{
-			// --- iterate trough components of controller ---
-			for (final Component comp : controller.getComponents())
+			new IdentifierSelectorAssistant();
+		}
+		
+		
+		@Override
+		public void onConfigChanged(final ERcmControllerConfig configType, final float value)
+		{
+			config.getConfigValues().put(configType, value);
+		}
+		
+		
+		@Override
+		public void onUnassignBot()
+		{
+			getActionSender().notifyBotUnassigned();
+		}
+	}
+	
+	private class IdentifierSelectorAssistant implements IIdentifierSelectionObserver
+	{
+		
+		private final List<RcmAction>	actions;
+		
+		
+		/**
+		 * 
+		 */
+		public IdentifierSelectorAssistant()
+		{
+			actions = new ArrayList<RcmAction>(RcmAction.getDefaultActions());
+			select();
+		}
+		
+		
+		private void select()
+		{
+			log.info("Select action for " + actions.get(0));
+			new ButtonSelectAction(this, controller);
+		}
+		
+		
+		@Override
+		public void onIdentifiersSelected(final List<ExtIdentifier> identifiers)
+		{
+			RcmActionMapping mapping = new RcmActionMapping(identifiers, actions.get(0));
+			config.addMapping(mapping);
+			panel.reloadConfig(config);
+			actions.remove(0);
+			if (!actions.isEmpty())
 			{
-				// --- check for negative components (axis)
-				if (key.toString().substring(0, 1).equals("-"))
-				{
-					if (key.toString().substring(1).equals(comp.getIdentifier().toString()))
-					{
-						tempMap.put(key.toString(), currentConfig.get(key));
-						break;
-					}
-				}
-				if (key.toString().length() > 2)
-				{
-					if (key.toString().substring(0, 3).equals(comp.getIdentifier().toString()))
-					{
-						tempMap.put(key.toString(), currentConfig.get(key));
-						log.info(tempMap);
-						break;
-					}
-				}
-				// --- check for all other components ---
-				else
-				{
-					// --- if component found on controller, save in tempMap ---
-					if (key.toString().equals(comp.getIdentifier().toString()))
-					{
-						tempMap.put(key.toString(), currentConfig.get(key));
-						break;
-					}
-				}
-			}
-		}
-		log.info("Succesfully loaded " + file.getName());
-		cPanel.showConfig(tempMap);
-	}
-	
-	
-	/**
-	 * load Default Config on startUp
-	 */
-	public final void loadDefaultConfig()
-	{
-		currentConfig.putAll(ConfigManager.getInstance().loadDefaultConfig(this));
-		cPanel.showConfig(currentConfig);
-	}
-	
-	
-	/**
-	 * starts polling for controller
-	 * @return activation status
-	 */
-	boolean startPolling()
-	{
-		if (ControllerFactory.getInstance().isUsed(controller))
-		{
-			return true;
-		}
-		
-		botId = cPanel.getBotNumber();
-		
-		if (botId.isBot())
-		{
-			for (final ABot bot : RCMPresenter.getInstance().getAllBots())
+				select();
+			} else
 			{
-				if (bot.getBotID().equals(botId))
-				{
-					if ((controller.getType() == Controller.Type.KEYBOARD)
-							|| (controller.getType() == Controller.Type.GAMEPAD)
-							|| (controller.getType() == Controller.Type.STICK))
-					{
-						localDevice = new LocalDevice(bot, controller);
-						localDevice.setCurrentConfig(currentConfig);
-						return localDevice.startPolling();
-					}
-				}
+				log.info("Done");
 			}
 		}
-		return false;
-	}
-	
-	
-	/**
-	 * stops polling for controller
-	 */
-	void stopPolling()
-	{
-		if (localDevice != null)
+		
+		
+		@Override
+		public void onIdentifiersSelectionCanceled()
 		{
-			localDevice.stopPolling();
 		}
 	}
-	
-	
-	/**
-	 * Set a new controller. polling will be stopped and started if it is currently active
-	 * 
-	 * @param newController
-	 */
-	public void setController(Controller newController)
-	{
-		boolean isPolling = (localDevice == null ? false : localDevice.isPolling());
-		if (isPolling)
-		{
-			stopPolling();
-		}
-		controller = newController;
-		if (isPolling)
-		{
-			startPolling();
-		}
-		log.trace("New controller set: " + newController.getName());
-	}
-	
-	
-	/**
-	 * @return EControllerType
-	 */
-	public abstract EControllerType getType();
-	
-	
-	/**
-	 * @return the botNumber
-	 */
-	public final BotID getBotNumber()
-	{
-		return botId;
-	}
-	
 }

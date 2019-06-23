@@ -28,17 +28,17 @@ public class RefereeMsg
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private ETeamColor		color;
-	private ETeamSpecRefCmd	teamSpecRefCmd;
+	private final ETeamColor		color;
+	private final ETeamSpecRefCmd	teamSpecRefCmd;
 	
-	private final Command	command;
-	private final long		cmdTimestamp;
-	private final long		cmdCounter;
-	private final long		packetTimestamp;
-	private final Stage		stage;
-	private final long		stageTimeLeft;
-	private final TeamInfo	teamInfoYellow;
-	private final TeamInfo	teamInfoBlue;
+	private final Command			command;
+	private final long				cmdTimestamp;
+	private final long				cmdCounter;
+	private final long				packetTimestamp;
+	private final Stage				stage;
+	private final long				stageTimeLeft;
+	private final TeamInfo			teamInfoYellow;
+	private final TeamInfo			teamInfoBlue;
 	
 	
 	// --------------------------------------------------------------------------
@@ -48,6 +48,8 @@ public class RefereeMsg
 	@SuppressWarnings("unused")
 	private RefereeMsg()
 	{
+		color = ETeamColor.UNINITIALIZED;
+		teamSpecRefCmd = ETeamSpecRefCmd.NoCommand;
 		command = null;
 		cmdTimestamp = 0;
 		cmdCounter = 0;
@@ -229,5 +231,14 @@ public class RefereeMsg
 	public final ETeamSpecRefCmd getTeamSpecRefCmd()
 	{
 		return teamSpecRefCmd;
+	}
+	
+	
+	/**
+	 * @return the color
+	 */
+	public final ETeamColor getColor()
+	{
+		return color;
 	}
 }

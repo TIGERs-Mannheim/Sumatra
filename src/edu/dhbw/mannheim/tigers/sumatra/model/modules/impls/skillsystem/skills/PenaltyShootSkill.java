@@ -15,10 +15,11 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerKickV2.EKickerMode;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.other.EKickerDevice;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.other.EKickerMode;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.devices.EKickDevice;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.devices.TigerDevices;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.test.PositionSkill;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
 
 
@@ -107,7 +108,7 @@ public class PenaltyShootSkill extends PositionSkill
 	
 	
 	@Override
-	public void doCalcActions(final List<ACommand> cmds)
+	protected void update(final List<ACommand> cmds)
 	{
 		IVector2 destination = null;
 		IVector2 orientation = new Vector2(0, 0);
@@ -135,18 +136,18 @@ public class PenaltyShootSkill extends PositionSkill
 		switch (state)
 		{
 			case Prepositioning_1:
-				destination = getWorldFrame().getBall().getPos().addNew(new Vector2(-300, 0));
+				destination = getWorldFrame().getBall().getPos().addNew(new Vector2(-200, 0));
 				if (GeoMath.distancePP(destination, getPos()) < 30)
 				{
 					state = EState.Prepositioning_2;
 				}
-				orientation = getWorldFrame().ball.getPos().subtractNew(getPos());
+				orientation = getWorldFrame().getBall().getPos().subtractNew(getPos());
 				break;
 			case Prepositioning_2:
 				if ((slowMoveDistCounter > (0 - earlyNormalStartFix))
-						&& ((System.currentTimeMillis() - stepTimeCounter) > stepTimeForSlowMove))
+						&& ((SumatraClock.currentTimeMillis() - stepTimeCounter) > stepTimeForSlowMove))
 				{
-					stepTimeCounter = System.currentTimeMillis();
+					stepTimeCounter = SumatraClock.currentTimeMillis();
 					slowMoveDistCounter = slowMoveDistCounter - 3;
 				} else if (slowMoveDistCounter < (0 - earlyNormalStartFix))
 				{
@@ -158,9 +159,9 @@ public class PenaltyShootSkill extends PositionSkill
 						.getPos()
 						.addNew(
 								new Vector2(
-										(-AIConfig.getGeometry().getBotCenterToDribblerDist()
+										(-getBot().getCenter2DribblerDist()
 												- AIConfig.getGeometry().getBallRadius() - correctionDist - slowMoveDistCounter), 0));
-				orientation = getWorldFrame().ball.getPos().subtractNew(getPos());
+				orientation = getWorldFrame().getBall().getPos().subtractNew(getPos());
 				
 				
 				break;
@@ -168,58 +169,43 @@ public class PenaltyShootSkill extends PositionSkill
 				switch (rotateDirection)
 				{
 					case LEFT:
-						orientation = getWorldFrame().ball.getPos().addNew(new Vector2(0, 100)).subtractNew(getPos())
+						orientation = getWorldFrame().getBall().getPos().addNew(new Vector2(0, 100)).subtractNew(getPos())
 								.multiplyNew(-1);
 						break;
 					case RIGHT:
-						orientation = getWorldFrame().ball.getPos().addNew(new Vector2(0, -100)).subtractNew(getPos())
+						orientation = getWorldFrame().getBall().getPos().addNew(new Vector2(0, -100)).subtractNew(getPos())
 								.multiplyNew(-1);
 						break;
 				}
-				destination = getPos();
+				destination = getPos().addNew(new Vector2(50, 0));
 				if (time == 0)
 				{
-					time = System.currentTimeMillis();
-				} else if ((System.currentTimeMillis() - time) > timeout)
+					time = SumatraClock.currentTimeMillis();
+				} else if ((SumatraClock.currentTimeMillis() - time) > timeout)
 				{
 					complete();
 					return;
 				}
-				else if ((System.currentTimeMillis() - time) > timeToShoot)
+				else if ((SumatraClock.currentTimeMillis() - time) > timeToShoot)
 				{
-					getDevices().kickGeneral(cmds, EKickerMode.FORCE, EKickDevice.STRAIGHT,
-							TigerDevices.getStraightKickMaxDuration(), dribbleSpeed);
+					getDevices().kickGeneralSpeed(cmds, EKickerMode.FORCE, EKickerDevice.STRAIGHT,
+							8, dribbleSpeed);
 				}
 				break;
 		}
 		
 		setDestination(destination);
 		setOrientation(orientation.getAngle());
-		super.doCalcActions(cmds);
 	}
 	
 	
 	@Override
-	public List<ACommand> calcEntryActions(final List<ACommand> cmds)
+	public void doCalcEntryActions(final List<ACommand> cmds)
 	{
-		super.calcEntryActions(cmds);
-		stepTimeCounter = System.currentTimeMillis();
-		return cmds;
+		super.doCalcEntryActions(cmds);
+		stepTimeCounter = SumatraClock.currentTimeMillis();
 	}
 	
-	
-	@Override
-	public List<ACommand> calcExitActions(final List<ACommand> cmds)
-	{
-		getDevices().dribble(cmds, false);
-		getDevices().allOff(cmds);
-		return cmds;
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 * Skill will go on and Shoot.
@@ -239,9 +225,4 @@ public class PenaltyShootSkill extends PositionSkill
 	{
 		rotateDirection = rotate;
 	}
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
 }

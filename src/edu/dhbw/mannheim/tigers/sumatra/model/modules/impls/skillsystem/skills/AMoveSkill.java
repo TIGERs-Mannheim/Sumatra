@@ -9,41 +9,56 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.log4j.Logger;
 
+import Jama.Matrix;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AiMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.HermiteSplineTrajectory1D;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.HermiteSplineTrajectory1D.HermiteSplineTrajectoryPart1D;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.HermiteSplineTrajectory2D;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.HermiteSplineTrajectory2D.HermiteSplineTrajectoryPart2D;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.SplinePair3D;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.SplineTrajectoryGenerator;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline.HermiteSpline;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline.HermiteSpline2D;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.DrawablePath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline.BSplinePath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector3;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.Sisyphus;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.TigerBotV2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector3;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACondition.EConditionState;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move.MovementCon;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.IPath;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.DoNothingDriver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.EPathDriver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.HermiteSplinePathDriver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.IPathDriver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.LongPathDriver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.MixedPathDriver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.PathPointDriver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.SplinePathDriver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.finder.traj.TrajPath;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeatureState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECtrlMoveType;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.EBotSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.botskills.BotSkillPositionPid;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.botskills.BotSkillTrajCtrl;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.other.EKickerDevice;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.other.EKickerMode;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.other.LimitedVelocityCommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerMotorMoveV2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerCtrlResetCommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerCtrlSetControllerType.EControllerType;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerCtrlSpline1D;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerCtrlSpline2D;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerSkillPositioningCommand;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerSystemMatchPosVel;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv3.TigerSystemBotSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.LinearPolicy;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IConfigObserver;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.ConfigRegistration;
 import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
-import edu.dhbw.mannheim.tigers.sumatra.util.units.DistanceUnit;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.EConfigurableCat;
+import edu.dhbw.mannheim.tigers.sumatra.util.learning.GaussianPolicy;
+import edu.dhbw.mannheim.tigers.sumatra.util.learning.IPolicyController;
 
 
 /**
@@ -52,689 +67,573 @@ import edu.dhbw.mannheim.tigers.sumatra.util.units.DistanceUnit;
  * 
  * @author AndreR
  */
-public abstract class AMoveSkill extends ASkill
+public abstract class AMoveSkill extends ASkill implements IMoveToSkill
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	private static final Logger	log								= Logger.getLogger(AMoveSkill.class.getName());
+	@SuppressWarnings("unused")
+	private static final Logger		log							= Logger.getLogger(AMoveSkill.class.getName());
 	
-	@Configurable(comment = "Dist [mm] - if using Spline/Pos movement controller, this is the distance to destination, when pos ctrl will be activated")
-	private static float				changeToPosCtrlThreshold	= 100;
+	private final MovementCon			moveCon						= new MovementCon();
+	private IPathDriver					pathDriver					= new DoNothingDriver();
+	private boolean						doComplete					= false;
+	private boolean						isInitialized				= false;
+	/** number of new paths between start/stop (usually one Skill lifetime) */
+	private int								newPathCounter				= 0;
+	
+	private boolean						kickerArmed					= false;
+	private int								lastDribbleDuration		= 0;
+	
+	// @Configurable(comment = "Vel [m/s] - Threshold below which a velocity is considered as slow")
+	// private static float driveSlowVelocityThreshold = 2.0f;
+	
+	@Configurable(comment = "Which type of command should be send to the bots? POS or VEL or POS_LEARNED")
+	private static ECommandType		defaultCommandType		= ECommandType.POS;
+	private ECommandType					commandType					= defaultCommandType;
+	
+	private static IPolicyController	policyController			= new LinearPolicy();
+	
+	protected float						forcedTimeToDestination	= 0.0f;
+	private long							initTime						= SumatraClock.nanoTime();
 	
 	@Configurable
-	private static float				positionMoveLookAhead		= 0.5f;
+	private static EBotSkill			positionSkill				= EBotSkill.POSITION_PID;
+	// private float lastCurPathTime = 0;
 	
-	private SplinePair3D				splinePair						= new SplinePair3D();
-	private SplinePair3D				splinePairMirrored			= new SplinePair3D();
+	@Configurable
+	private static EMoveToType			moveToType					= EMoveToType.DEFAULT;
 	
-	private int							lastSentPositionPart			= 0;
-	private int							lastSentRotationPart			= 0;
-	
-	private float						maxLinearVelocity				= 10;
+	@Configurable
+	private static String				policyCtrlFile				= "/home/geforce/workspace/policysearchtoolbox/+Experiments/data/SSLRobotReal/SSLRobotTask_RBFStates_RBFProdKernelActions_GPPolicy_RKHSREPS_SSLRobot_Simple/SSLRobotReal_201501301543_01/eval001/trial001/controller_020.txt";
 	
 	
-	private boolean					overridePP						= false;
-	private IVector2					destination						= null;
-	private float						targetOrientation				= 0;
-	
-	@Configurable(comment = "The default MoveToSkill. SPLINE or POS")
-	private static EMoveToSkill	moveToSkill						= EMoveToSkill.SPLINE;
-	
-	private enum EMoveToSkill
+	private enum EMoveToType
 	{
-		SPLINE,
-		POS
+		DEFAULT,
+		TRAJECTORY
+	}
+	
+	static
+	{
+		ConfigRegistration.registerConfigurableCallback(EConfigurableCat.SKILLS, new IConfigObserver()
+		{
+			@Override
+			public void onReload(final HierarchicalConfiguration freshConfig)
+			{
+				if (((defaultCommandType == ECommandType.POS_LEARNED) && !policyCtrlFile.isEmpty())
+				)
+				{
+					if (policyController.getClass().equals(GaussianPolicy.class))
+					{
+						GaussianPolicy gp = (GaussianPolicy) policyController;
+						if (!gp.getCtrlFile().equals(policyCtrlFile))
+						{
+							policyController = GaussianPolicy.createGp(policyCtrlFile, "");
+						}
+					} else
+					{
+						policyController = GaussianPolicy.createGp(policyCtrlFile, "");
+					}
+				} else
+				{
+					policyController = new LinearPolicy();
+				}
+			}
+			
+			
+			@Override
+			public void onLoad(final HierarchicalConfiguration newConfig)
+			{
+			}
+		});
 	}
 	
 	/**
+	 * Which type of command should be send to the bots
 	 */
-	public enum EMoveToMode
+	public enum ECommandType
 	{
 		/**  */
-		DO_COMPLETE,
+		TRAJ_PATH,
 		/**  */
-		STAY;
+		POS,
+		/**  */
+		VEL,
+		/**  */
+		POS_VEL,
+		/** Position controller as learned during 'Robot Learning: IP'(NicolaiO) */
+		POS_LEARNED;
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 * @param skillName
-	 */
-	public AMoveSkill(final ESkillName skillName)
+	@Configurable(comment = "The default pathDriver: MIXED_SPLINE_POS, PATH_POINT, HERMITE_SPLINE")
+	private static EPathDriver	defaultPathDriver	= EPathDriver.MIXED_SPLINE_POS;
+	
+	
+	protected AMoveSkill(final ESkillName skillName)
 	{
 		super(skillName);
+		moveCon.setPenaltyAreaAllowedOur(false);
+	}
+	
+	
+	protected AMoveSkill(final ESkillName skillName, final float forcedTimeToDestination)
+	{
+		super(skillName);
+		moveCon.setPenaltyAreaAllowedOur(false);
+		this.forcedTimeToDestination = forcedTimeToDestination;
 	}
 	
 	
 	/**
 	 * Create the configured default MoveToSkill
 	 * 
-	 * @param moveToMode
 	 * @return
 	 */
-	public static IMoveToSkill createMoveToSkill(final EMoveToMode moveToMode)
+	public static IMoveToSkill createMoveToSkill()
 	{
-		switch (moveToSkill)
+		switch (moveToType)
 		{
-			case POS:
-				return new MoveToV2Skill(moveToMode);
-			case SPLINE:
-				switch (moveToMode)
-				{
-					case DO_COMPLETE:
-						return new MoveToSkill();
-					case STAY:
-						return new MoveAndStaySkill();
-				}
+			case DEFAULT:
+				return new MoveToSkill();
+			case TRAJECTORY:
+				return new MoveToTrajSkill();
+			default:
+				throw new IllegalStateException();
 		}
-		throw new IllegalStateException();
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	@Override
-	public final List<ACommand> calcEntryActions(final List<ACommand> cmds)
+	/**
+	 * Create the configured default MoveToSkill
+	 * 
+	 * @param forcedTimeToDestination
+	 * @return
+	 */
+	public static IMoveToSkill createMoveToSkill(final float forcedTimeToDestination)
 	{
-		maxLinearVelocity = Math.min(maxLinearVelocity, Sisyphus.maxLinearVelocity);
-		return doCalcEntryActions(cmds);
+		return createMoveToSkill();
 	}
 	
 	
-	protected List<ACommand> doCalcEntryActions(final List<ACommand> cmds)
+	private void processMoveCon(final List<ACommand> cmds)
 	{
-		HermiteSpline2D pos = new HermiteSpline2D(getPos().multiplyNew(0.001f), getPos().multiplyNew(0.001f), getVel(),
-				AVector2.ZERO_VECTOR);
-		HermiteSpline rot = new HermiteSpline(getAngle(), getAngle(), getaVel(), 0);
-		
-		SplinePair3D pair = new SplinePair3D();
-		pair.setPositionTrajectory(new HermiteSplineTrajectory2D(pos));
-		pair.setRotationTrajectory(new HermiteSplineTrajectory1D(rot));
-		
-		setNewTrajectory(pair, Arrays.asList(new IVector2[] { getPos() }));
-		return cmds;
-	}
-	
-	
-	@Override
-	public final List<ACommand> calcActions(final List<ACommand> cmds)
-	{
-		if (isMoveComplete())
+		if (getMoveCon().isArmKicker() && (getBot().getBotFeatures().get(EFeature.BARRIER) != EFeatureState.KAPUT)
+				&& (getBot().getBotFeatures().get(EFeature.STRAIGHT_KICKER) != EFeatureState.KAPUT))
 		{
-			complete();
-			
-			return cmds;
-		}
-		
-		periodicProcess(cmds);
-		
-		if ((splinePair.getPositionTrajectory() != null) && (splinePair.getRotationTrajectory() != null))
-		{
-			if ((getBotType() == EBotType.GRSIM) || (getBotType() == EBotType.TIGER))
+			if (!kickerArmed || (getBot().getKickerLevel() < (getBot().getKickerMaxCap() - 50)))
 			{
-				sendVelOrPos(cmds);
-				return cmds;
+				kickerArmed = true;
+				getDevices().kickGeneralSpeed(cmds, EKickerMode.ARM, EKickerDevice.STRAIGHT, 8, 0);
 			}
-			TigerBotV2 botV2 = (TigerBotV2) getBot();
-			if (botV2.getControllerType() == EControllerType.FUSION)
-			{
-				switch (botV2.getCtrlMoveType())
-				{
-					case POS:
-						sendPositions(cmds);
-						break;
-					case SPLINE:
-						sendSplines(cmds);
-						break;
-					case SPLINE_POS:
-						sendSplinesOrPos(cmds);
-						break;
-					case VEL:
-						sendVelocities(cmds);
-						break;
-					default:
-						break;
-				
-				}
-			} else if (botV2.getControllerType() == EControllerType.FUSION_VEL)
-			{
-				sendVelocities(cmds);
-			}
-		}
-		return cmds;
-	}
-	
-	
-	@Override
-	public final List<ACommand> calcExitActions(final List<ACommand> cmds)
-	{
-		if (getSisyphus() != null)
+		} else if (kickerArmed)
 		{
-			getSisyphus().clearPath(getBot().getBotID());
+			kickerArmed = false;
+			getDevices().disarm(cmds);
 		}
-		TigerCtrlResetCommand cmd = new TigerCtrlResetCommand();
-		cmds.add(cmd);
-		return doCalcExitActions(cmds);
+		
+		if (lastDribbleDuration != moveCon.getDribbleDuration())
+		{
+			getDevices().dribble(cmds, moveCon.getDribbleDuration());
+			lastDribbleDuration = moveCon.getDribbleDuration();
+		}
+		cmds.add(new LimitedVelocityCommand(moveCon.getSpeed()));
+		
+		pathDriver.setMovingSpeed(moveCon.getMovingSpeed());
 	}
 	
 	
-	protected List<ACommand> doCalcExitActions(final List<ACommand> cmds)
+	private IVector3 getNextDestination()
 	{
-		return cmds;
-	}
-	
-	
-	protected abstract void periodicProcess(List<ACommand> cmds);
-	
-	
-	protected final void setNewTrajectory(final SplinePair3D traj, final List<IVector2> nodes)
-	{
-		splinePair = traj;
-		
-		splinePair.setStartTime(System.nanoTime());
-		
+		IVector3 poss = pathDriver.getNextDestination(getTBot(), getWorldFrame());
+		IVector2 dest = new Vector2(poss.getXYVector());
+		dest = AIConfig.getGeometry().getFieldWReferee().nearestPointInside(dest);
+		float orient = poss.z();
 		if (getWorldFrame().isInverted())
 		{
-			splinePairMirrored = new SplinePair3D(traj);
-			splinePairMirrored.mirror();
+			dest = dest.multiplyNew(-1);
+			orient = AngleMath.normalizeAngle(orient + AngleMath.PI);
 		}
-		
-		lastSentPositionPart = -1;
-		lastSentRotationPart = -1;
-		
-		destination = splinePair.getPositionTrajectory().getPosition(splinePair.getTotalTime());
-		targetOrientation = splinePair.getRotationTrajectory().getPosition(splinePair.getTotalTime());
-		
-		getBot().newSpline(traj);
+		return new Vector3(dest, orient);
 	}
 	
 	
-	protected HermiteSplineTrajectory2D getPositionTraj()
+	@Override
+	public void doCalcActions(final List<ACommand> cmds)
 	{
-		return splinePair.getPositionTrajectory();
-	}
-	
-	
-	protected HermiteSplineTrajectory1D getRotationTraj()
-	{
-		return splinePair.getRotationTrajectory();
-	}
-	
-	
-	/**
-	 * Send splines unless we are near our destination, then
-	 * send positions
-	 * 
-	 * @param cmds
-	 */
-	private void sendSplinesOrPos(final List<ACommand> cmds)
-	{
-		float tCur = splinePair.getTrajectoryTime();
-		float tEnd = splinePair.getPositionTrajectory().getTotalTime();
-		IVector2 curDest = splinePair.getPositionTrajectory().getValueByTime(tCur);
-		IVector2 targetDest = splinePair.getPositionTrajectory().getValueByTime(tEnd);
-		float dist = GeoMath.distancePP(targetDest, curDest);
-		
-		if (dist < (changeToPosCtrlThreshold / 1000.0f))
+		if (getWorldFrame().getBots().containsKey(getBot().getBotID()))
 		{
-			sendPositions(cmds);
-		} else
-		{
-			sendSplines(cmds);
-		}
-	}
-	
-	
-	/**
-	 * Send velocities unless we are near our destination, then
-	 * send positions
-	 * 
-	 * @param cmds
-	 */
-	private void sendVelOrPos(final List<ACommand> cmds)
-	{
-		float tCur = splinePair.getTrajectoryTime();
-		float tEnd = splinePair.getPositionTrajectory().getTotalTime();
-		IVector2 curDest = splinePair.getPositionTrajectory().getValueByTime(tCur);
-		IVector2 targetDest = splinePair.getPositionTrajectory().getValueByTime(tEnd);
-		float dist = GeoMath.distancePP(targetDest, curDest);
-		
-		if (dist < (changeToPosCtrlThreshold / 1000.0f))
-		{
-			sendPositions(cmds);
-		} else
-		{
-			sendVelocities(cmds);
-		}
-	}
-	
-	
-	/**
-	 * The legacy version only sends out simple velocity commands.
-	 * 
-	 * @param cmds
-	 */
-	private void sendVelocities(final List<ACommand> cmds)
-	{
-		float t = splinePair.getTrajectoryTime();
-		
-		Vector2 globalVel = splinePair.getPositionTrajectory().getVelocity(t);
-		float angle = splinePair.getRotationTrajectory().getPosition(t);
-		Vector2 localVel = AiMath.convertGlobalBotVector2Local(globalVel, angle);
-		
-		float w = splinePair.getRotationTrajectory().getVelocity(t);
-		
-		float velComp = -w * getDt();
-		localVel.turn(velComp);
-		
-		cmds.add(new TigerMotorMoveV2(localVel, w));
-	}
-	
-	
-	/**
-	 * Send positions of the spline to the bot,
-	 * using a small lookahead
-	 * 
-	 * @param cmds
-	 */
-	private void sendPositions(final List<ACommand> cmds)
-	{
-		if (overridePP)
-		{
-			IVector2 locDest = destination;
-			float locTargetOrient = targetOrientation;
-			if (getWorldFrame().isInverted())
+			moveCon.update(getWorldFrame(), getBot().getBotID());
+			if (doComplete && isDestinationReached())
 			{
-				locDest = destination.multiplyNew(-1);
-				locTargetOrient = AngleMath.normalizeAngle(targetOrientation + AngleMath.PI);
+				complete();
+				return;
 			}
-			cmds.add(new TigerSkillPositioningCommand(locDest, locTargetOrient));
+			
+			processMoveCon(cmds);
+		}
+		update(cmds);
+		isInitialized = true;
+		
+		if (pathDriver.getSupportedCommands().isEmpty())
+		{
 			return;
 		}
-		SplinePair3D locSplinePair;
-		if (getWorldFrame().isInverted())
+		
+		ECommandType cmdType = commandType;
+		if (!pathDriver.getSupportedCommands().contains(commandType))
 		{
-			locSplinePair = splinePairMirrored;
-		} else
-		{
-			locSplinePair = splinePair;
+			cmdType = pathDriver.getSupportedCommands().get(0);
 		}
+		pathDriver.update(getTBot(), getWorldFrame());
 		
-		float ct = locSplinePair.getTrajectoryTime();
-		float t = Math.min(ct + positionMoveLookAhead, locSplinePair.getTotalTime());
+		switch (cmdType)
+		{
+			case TRAJ_PATH:
+				TrajPath path = pathDriver.getPath();
+				if (path != null)
+				{
+					cmds.add(getBot().getPathFinder().getPositioningCommand(path, getWorldFrame().isInverted()));
+				} else
+				{
+					cmds.add(new TigerCtrlResetCommand());
+				}
+				break;
+			case POS:
+				IVector3 poss = getNextDestination();
+				switch (positionSkill)
+				{
+					case POSITION_PID:
+						cmds.add(new TigerSystemBotSkill(new BotSkillPositionPid(poss.getXYVector(), poss.z())));
+						break;
+					case TRAJ_CTRL:
+						cmds.add(new TigerSystemBotSkill(new BotSkillTrajCtrl(poss.getXYVector(), poss.z())));
+						break;
+					default:
+						throw new IllegalArgumentException("Invalid position skill: " + positionSkill);
+				}
+				break;
+			case VEL:
+			{
+				final TigerMotorMoveV2 move = new TigerMotorMoveV2();
+				IVector3 vel = pathDriver.getNextLocalVelocity(getTBot(), getWorldFrame(), getDt());
+				if ((getMoveCon().getSpeed() > 0) && (vel.getXYVector().getLength2() > getMoveCon().getSpeed()))
+				{
+					vel = new Vector3(vel.getXYVector().scaleTo(getMoveCon().getSpeed()), vel.z());
+				}
+				move.setX(vel.x());
+				move.setY(vel.y());
+				move.setW(vel.z());
+				cmds.add(move);
+			}
+				break;
+			case POS_VEL:
+				IVector3 destination = getNextDestination();
+				IVector3 vel = pathDriver.getNextVelocity(getTBot(), getWorldFrame());
+				final TigerSystemMatchPosVel posVel = new TigerSystemMatchPosVel(destination, vel);
+				cmds.add(posVel);
+				break;
+			case POS_LEARNED:
+			{
+				// dest vel only used for non controlled states
+				final IVector3 destVel = pathDriver.getNextVelocity(getTBot(), getWorldFrame());
+				Vector2 destVelXY = destVel.getXYVector();
+				float botW = getTBot().getAngle();
+				
+				final IVector3 destState = pathDriver.getNextDestination(getTBot(), getWorldFrame());
+				
+				Vector2 destXY = destState.getXYVector().multiplyNew(1e-3f);
+				float destW = destState.z();
+				
+				float botWVel = getTBot().getaVel();
+				
+				Vector2 botPos = getTBot().getPos().multiplyNew(1e-3f);
+				IVector2 botVel = getTBot().getVel();
+				IVector2 botVelLocal = AiMath.convertGlobalBotVector2Local(botVel, botW);
+				
+				// if worldframe is inverted, turn positions
+				if (getWorldFrame().isInverted())
+				{
+					destXY.multiply(-1);
+					destW = AngleMath.normalizeAngle(destW + AngleMath.PI);
+					botPos.multiply(-1);
+					botW = AngleMath.normalizeAngle(botW + AngleMath.PI);
+					destVelXY.multiply(-1);
+				}
+				
+				float diffW = AngleMath.normalizeAngle(destW - botW);
+				IVector2 dV = botVelLocal;
+				
+				// System.out.println(diffW + " " + botW + " " + destW);
+				
+				IVector2 diffPosGlobal = destXY.subtractNew(botPos);
+				// angle between global pos2Dest and global bot orientation
+				float alpha = GeoMath.angleBetweenVectorAndVectorWithNegative(new Vector2(botW), diffPosGlobal);
+				float diffXLocal = AngleMath.cos(alpha) * diffPosGlobal.getLength2();
+				float diffYLocal = AngleMath.sin(alpha) * diffPosGlobal.getLength2();
+				IVector2 dP = new Vector2(diffXLocal, diffYLocal);
+				
+				
+				int stateDim = policyController.getStateDimension();
+				Matrix state = new Matrix(1, stateDim);
+				switch (stateDim)
+				{
+					case 2:
+						state.set(0, 0, dP.x());
+						state.set(0, 1, dV.y());
+						break;
+					case 4:
+						state.set(0, 0, dP.x());
+						state.set(0, 1, dP.y());
+						state.set(0, 2, dV.y());
+						state.set(0, 3, dV.x());
+						break;
+					case 6:
+						state.set(0, 0, dP.x());
+						state.set(0, 1, dP.y());
+						state.set(0, 2, diffW);
+						state.set(0, 3, dV.y());
+						state.set(0, 4, dV.x());
+						state.set(0, 5, botWVel);
+						break;
+					default:
+						throw new IllegalArgumentException("Invalid state dim: " + stateDim);
+				}
+				
+				
+				Matrix u = policyController.getControl(state);
+				
+				
+				final TigerMotorMoveV2 momove = new TigerMotorMoveV2();
+				// y on bot is x here and vice versa
+				// set default values
+				Vector2 destVelLocal = AiMath.convertGlobalBotVector2Local(destVelXY, botW);
+				momove.setX(destVelLocal.x());
+				momove.setY(destVelLocal.y());
+				momove.setW(destVel.z());
+				
+				switch (u.getColumnDimension())
+				{
+					case 3:
+						momove.setW((float) u.get(0, 2));
+					case 2:
+						momove.setX((float) u.get(0, 1));
+					case 1:
+						momove.setY((float) u.get(0, 0));
+						break;
+					default:
+				}
+				cmds.add(momove);
+			}
+				break;
+			default:
+				throw new IllegalStateException();
+		}
+	}
+	
+	
+	protected void update(final List<ACommand> cmds)
+	{
 		
-		IVector2 dest = locSplinePair.getPositionTrajectory().getValueByTime(t).multiplyNew(1000.0f);
-		float orient = locSplinePair.getRotationTrajectory().getPosition(t);
-		
-		cmds.add(new TigerSkillPositioningCommand(dest, orient));
 	}
 	
 	
 	/**
-	 * For the new TigerBotV2 the splines are directly transferred to the bot.
+	 * Check if destination reached through MoveCon
 	 * 
-	 * @param cmds
+	 * @return
 	 */
-	private void sendSplines(final List<ACommand> cmds)
+	protected final boolean isDestinationReached()
 	{
-		SplinePair3D locSplinePair;
-		if (getWorldFrame().isInverted())
+		boolean moveConOk = moveCon.checkCondition(getWorldFrame(), getBot().getBotID()) != EConditionState.PENDING;
+		boolean pathDriverDone = pathDriver.isDone();
+		return moveConOk && pathDriverDone;
+	}
+	
+	
+	/**
+	 * @param commandType the commandType to set
+	 */
+	public final void setCommandType(final ECommandType commandType)
+	{
+		this.commandType = commandType;
+	}
+	
+	
+	/**
+	 * @return the pathDriver
+	 */
+	protected final IPathDriver getPathDriver()
+	{
+		return pathDriver;
+	}
+	
+	
+	/**
+	 * @param pathDriver the pathDriver to set
+	 */
+	public final void setPathDriver(final IPathDriver pathDriver)
+	{
+		this.pathDriver = pathDriver;
+	}
+	
+	
+	/**
+	 * @return the moveCon
+	 */
+	@Override
+	public final MovementCon getMoveCon()
+	{
+		return moveCon;
+	}
+	
+	
+	/**
+	 * @param doComplete the doComplete to set
+	 */
+	@Override
+	public final void setDoComplete(final boolean doComplete)
+	{
+		this.doComplete = doComplete;
+	}
+	
+	
+	@Override
+	public DrawablePath getDrawablePath()
+	{
+		DrawablePath dp = new DrawablePath();
+		return decoratePath(dp);
+	}
+	
+	
+	@Override
+	public DrawablePath getLatestDrawablePath()
+	{
+		return decoratePath(new DrawablePath());
+	}
+	
+	
+	private DrawablePath decoratePath(final DrawablePath dp)
+	{
+		if (isInitialized)
 		{
-			locSplinePair = splinePairMirrored;
-		} else
-		{
-			locSplinePair = splinePair;
+			pathDriver.decoratePath(getTBot(), dp.getPathShapes());
+			pathDriver.decoratePathDebug(getTBot(), dp.getPathDebugShapes());
 		}
-		
-		float t = locSplinePair.getTrajectoryTime();
-		
-		if (lastSentPositionPart < 0)
+		return dp;
+	}
+	
+	
+	@Override
+	public final int getNewPathCounter()
+	{
+		return newPathCounter;
+	}
+	
+	
+	/**
+	 * @param newPathCounter the newPathCounter to set
+	 */
+	protected final void setNewPathCounter(final int newPathCounter)
+	{
+		this.newPathCounter = newPathCounter;
+	}
+	
+	
+	protected final IPathDriver getDefaultPathDriver(final IPath path)
+	{
+		switch (defaultPathDriver)
 		{
-			TigerCtrlSpline2D splineCmd = new TigerCtrlSpline2D();
-			splineCmd.setSpline(locSplinePair.getPositionTrajectory().getSpline(0));
-			splineCmd.setOption(1);
-			
-			cmds.add(splineCmd);
-			
-			lastSentPositionPart = 0;
-			// System.out.println("Spline time: " + getPositionTraj().getTotalTime() + " parts="
-			// + getPositionTraj().getNumParts());
-			// System.out.println("MaxVel: " + getPositionTraj().getPart(0).spline.getMaxFirstDerivative());
-			// System.out.println("MaxAcc: " + getPositionTraj().getPart(0).spline.getMaxSecondDerivative());
-			// System.out.println("spline: " + getPositionTraj().getPart(0).spline.toString());
+			case HERMITE_SPLINE:
+				return (new HermiteSplinePathDriver(getTBot(), path, getMoveCon().getSpeed(), getSplineForcedEndTime()));
+			case MIXED_SPLINE_POS:
+				return (new MixedPathDriver(new HermiteSplinePathDriver(getTBot(), path, getMoveCon().getSpeed(),
+						getSplineForcedEndTime()),
+						new PathPointDriver(path, getMoveCon()), getMoveCon().getDestCon().getDestination()));
+			case MIXED_LONG_POS:
+				return (new MixedPathDriver(new LongPathDriver(getTBot(), path, getMoveCon().getSpeed(),
+						getSplineForcedEndTime()),
+						new PathPointDriver(path, getMoveCon()), getMoveCon().getDestCon().getDestination()));
+			case PATH_POINT:
+				return (new PathPointDriver(path, getMoveCon()));
+			case LONG:
+				return (new LongPathDriver(getTBot(), path, getMoveCon().getSpeed(),
+						getSplineForcedEndTime()));
+			case BSPLINE:
+				List<IVector2> cps = new ArrayList<IVector2>();
+				if (getVel().getLength2() > 0.4)
+				{
+					IVector2 pos1 = getPos().addNew(getVel().multiplyNew(600f));
+					cps.add(pos1);
+				} else
+				{
+					cps.add(getPos());
+				}
+				for (IVector2 key : path.getPathPoints())
+				{
+					if (!isVectorInList(cps, key))
+					{
+						cps.add(key);
+					}
+				}
+				BSplinePath bpath = new BSplinePath(cps, new Vector2(0, 0), new Vector2(0, 0), true);
+				return (new MixedPathDriver(new SplinePathDriver(bpath), new PathPointDriver(path, getMoveCon()),
+						getMoveCon().getDestCon().getDestination()));
+			default:
+				throw new IllegalStateException();
 		}
-		
-		if (lastSentPositionPart < (locSplinePair.getPositionTrajectory().getNumParts() - 1))
+	}
+	
+	
+	/**
+	 * @return the gpController
+	 */
+	public final IPolicyController getPolicyController()
+	{
+		return policyController;
+	}
+	
+	
+	/**
+	 * @param gpController the gpController to set
+	 */
+	public final void setGpController(final GaussianPolicy gpController)
+	{
+		policyController = gpController;
+	}
+	
+	
+	private float getSplineForcedEndTime()
+	{
+		return forcedTimeToDestination - ((SumatraClock.nanoTime() - initTime) * 1e-12f);
+	}
+	
+	
+	private boolean isVectorInList(final List<IVector2> list, final IVector2 vec)
+	{
+		for (IVector2 key : list)
 		{
-			HermiteSplineTrajectoryPart2D lastPart = locSplinePair.getPositionTrajectory().getPart(lastSentPositionPart);
-			HermiteSplineTrajectoryPart2D partToSend = locSplinePair.getPositionTrajectory().getPart(
-					lastSentPositionPart + 1);
-			
-			float sendTime = (lastPart.startTime + lastPart.endTime) / 2;
-			
-			if (t > sendTime)
+			if (key.equals(vec, 50f))
 			{
-				TigerCtrlSpline2D splineCmd = new TigerCtrlSpline2D();
-				splineCmd.setSpline(partToSend.spline);
-				splineCmd.setOption(lastSentPositionPart + 2);
-				
-				cmds.add(splineCmd);
-				
-				// System.out.println(lastSentPositionPart + " MaxVel: "
-				// + getPositionTraj().getPart(lastSentPositionPart).spline.getMaxFirstDerivative());
-				// System.out.println(lastSentPositionPart + " MaxAcc: "
-				// + getPositionTraj().getPart(lastSentPositionPart).spline.getMaxSecondDerivative());
-				// System.out.println(lastSentPositionPart + " spline: "
-				// + getPositionTraj().getPart(lastSentPositionPart).spline.toString());
-				lastSentPositionPart++;
+				return true;
 			}
 		}
-		
-		if (lastSentRotationPart < 0)
-		{
-			TigerCtrlSpline1D splineCmd = new TigerCtrlSpline1D();
-			splineCmd.setSpline(locSplinePair.getRotationTrajectory().getSpline(0));
-			splineCmd.setOption(1);
-			
-			cmds.add(splineCmd);
-			
-			lastSentRotationPart = 0;
-		}
-		
-		if (lastSentRotationPart < (locSplinePair.getRotationTrajectory().getNumParts() - 1))
-		{
-			HermiteSplineTrajectoryPart1D lastPart = locSplinePair.getRotationTrajectory().getPart(lastSentRotationPart);
-			HermiteSplineTrajectoryPart1D partToSend = locSplinePair.getRotationTrajectory().getPart(
-					lastSentRotationPart + 1);
-			
-			float sendTime = (lastPart.start + lastPart.end) / 2;
-			
-			if (t > sendTime)
-			{
-				TigerCtrlSpline1D splineCmd = new TigerCtrlSpline1D();
-				splineCmd.setSpline(partToSend.spline);
-				splineCmd.setOption(lastSentRotationPart + 2);
-				
-				cmds.add(splineCmd);
-				
-				lastSentRotationPart++;
-			}
-		}
+		return false;
 	}
 	
 	
 	/**
-	 * @param cmds list to put the move command
+	 * @return the isInitialized
 	 */
-	public final void stopMove(final List<ACommand> cmds)
+	public final boolean isInitialized()
 	{
-		getDevices().dribble(cmds, false);
-		if (getBot().getType() == EBotType.TIGER_V2)
-		{
-			TigerBotV2 botV2 = (TigerBotV2) getBot();
-			if (botV2.getControllerType() == EControllerType.FUSION_VEL)
-			{
-				cmds.add(new TigerMotorMoveV2(new Vector2(0, 0), 0f));
-			} else if ((botV2.getControllerType() == EControllerType.FUSION)
-					&& (botV2.getCtrlMoveType() == ECtrlMoveType.VEL))
-			{
-				cmds.add(new TigerMotorMoveV2(new Vector2(0, 0), 0f));
-			}
-		} else
-		{
-			cmds.add(new TigerMotorMoveV2(new Vector2(0, 0), 0f));
-		}
+		return isInitialized;
 	}
 	
 	
 	/**
-	 * Stop immediately
-	 * 
-	 * @param cmds
+	 * @return the commandType
 	 */
-	public final void stopMoveImmediately(final List<ACommand> cmds)
+	public final ECommandType getCommandType()
 	{
-		if (getBot().getType() == EBotType.TIGER_V2)
-		{
-			TigerBotV2 botV2 = (TigerBotV2) getBot();
-			if (botV2.getControllerType() == EControllerType.FUSION_VEL)
-			{
-				cmds.add(new TigerMotorMoveV2(new Vector2(0, 0), 0f));
-			} else
-			{
-				TigerCtrlSpline2D splineCmd = new TigerCtrlSpline2D();
-				splineCmd.setOption(0);
-				
-				cmds.add(splineCmd);
-				
-				TigerCtrlSpline1D splineCmd2 = new TigerCtrlSpline1D();
-				splineCmd2.setOption(0);
-				
-				cmds.add(splineCmd2);
-			}
-		} else
-		{
-			cmds.add(new TigerMotorMoveV2(new Vector2(0, 0), 0f));
-		}
-	}
-	
-	
-	/**
-	 * This will draw the path and spline to the visualizer
-	 * 
-	 * @param botId
-	 * @param nodes nodes on the path including start and end [mm]
-	 * @param pair spline pair
-	 */
-	protected final void visualizePath(final BotID botId, final List<IVector2> nodes, final SplinePair3D pair)
-	{
-		Path path = new Path(botId, nodes, nodes.get(nodes.size() - 1), 0);
-		path.setHermiteSpline(pair);
-		getSisyphus().onNewPath(path);
-	}
-	
-	
-	/**
-	 * Create an empty dummy path to remove current spline and path
-	 */
-	protected final void removePath()
-	{
-		// List<IVector2> nodesSpline = new ArrayList<IVector2>(2);
-		// nodesSpline.add(DistanceUnit.MILLIMETERS.toMeters(getPos()));
-		// nodesSpline.add(DistanceUnit.MILLIMETERS.toMeters(getPos()));
-		// List<IVector2> nodes = new ArrayList<IVector2>(1);
-		// nodes.add(getPos());
-		//
-		// SplinePair3D pair = new SplineTrajectoryGenerator().create(nodesSpline, Vector2.ZERO_VECTOR,
-		// Vector2.ZERO_VECTOR,
-		// 0, 0, 0, 0);
-		// visualizePath(getBot().getBotID(), nodes, pair);
-		getSisyphus().clearPath(getBot().getBotID());
-	}
-	
-	
-	protected final SplineTrajectoryGenerator createDefaultGenerator(final EBotType botType)
-	{
-		SplineTrajectoryGenerator gen = new SplineTrajectoryGenerator();
-		gen.setPositionTrajParams(maxLinearVelocity, Sisyphus.maxLinearAcceleration);
-		gen.setReducePathScore(0.0f);
-		gen.setRotationTrajParams(Sisyphus.maxRotateVelocity, Sisyphus.maxRotateAcceleration);
-		return gen;
-	}
-	
-	
-	/**
-	 * Create a new spline with the given path nodes and the final lookAtTarget.
-	 * This will also set the spline for execution and sent it to visualizer
-	 * 
-	 * @param nodes on the path including destination and excluding current position
-	 * @param finalOrientation
-	 */
-	protected final void createSpline(final List<IVector2> nodes, final float finalOrientation)
-	{
-		createSpline(nodes, finalOrientation, createDefaultGenerator(getBotType()));
-	}
-	
-	
-	/**
-	 * Create a new spline with the given path nodes and the final lookAtTarget.
-	 * This will also set the spline for execution and sent it to visualizer
-	 * 
-	 * @param nodes on the path including destination and excluding current position
-	 * @param lookAtTarget final look
-	 */
-	protected final void createSpline(final List<IVector2> nodes, final IVector2 lookAtTarget)
-	{
-		createSpline(nodes, lookAtTarget, createDefaultGenerator(getBotType()));
-	}
-	
-	
-	/**
-	 * Create a new spline with the given path nodes and the final lookAtTarget.
-	 * This will also set the spline for execution and sent it to visualizer
-	 * 
-	 * @param nodes on the path including destination and excluding current position
-	 * @param lookAtTarget final look
-	 * @param gen custom spline generator
-	 * @throws IllegalArgumentException if lookAtTarget and last node are equal
-	 */
-	protected final void createSpline(final List<IVector2> nodes, final IVector2 lookAtTarget,
-			final SplineTrajectoryGenerator gen)
-	{
-		IVector2 dir = lookAtTarget.subtractNew(nodes.get(nodes.size() - 1));
-		final float finalOrientation;
-		if (dir.isZeroVector())
-		{
-			log.warn("lookAtTarget and destination are equal. Can not calculate final orientation. Keep current. "
-					+ lookAtTarget + " " + nodes.get(nodes.size() - 1));
-			finalOrientation = getAngle();
-		} else
-		{
-			finalOrientation = dir.getAngle();
-		}
-		createSpline(nodes, finalOrientation, gen);
-	}
-	
-	
-	/**
-	 * Create a new spline with the given path nodes and the final lookAtTarget.
-	 * This will also set the spline for execution and sent it to visualizer
-	 * 
-	 * @param nodes on the path including destination and excluding current position
-	 * @param finalOrientation
-	 * @param gen custom spline generator
-	 */
-	protected final void createSpline(final List<IVector2> nodes, final float finalOrientation,
-			final SplineTrajectoryGenerator gen)
-	{
-		SplinePair3D pair = createSplineWithoutDrivingIt(nodes, finalOrientation, gen);
-		setNewTrajectory(pair, nodes);
-		visualizePath(getBot().getBotID(), nodes, pair);
-	}
-	
-	
-	protected final SplinePair3D createSplineWithoutDrivingIt(final List<IVector2> nodes, final float finalOrientation,
-			final SplineTrajectoryGenerator gen)
-	{
-		List<IVector2> nodesMM = new ArrayList<IVector2>(nodes.size() + 1);
-		nodesMM.add(convertAIVector2SplineNode(getPos()));
-		
-		// use position on spline instead of current position (which may be wrong due to delay)
-		// if ((getPositionTraj() != null) && (getTrajectoryTime() < getPositionTraj().getTotalTime()))
-		// {
-		// nodesMM.add(getPositionTraj().getValueByTime(getTrajectoryTime()));
-		// } else
-		// {
-		// nodesMM.add(DistanceUnit.MILLIMETERS.toMeters(bot.getPos()));
-		// }
-		
-		for (IVector2 vec : nodes)
-		{
-			nodesMM.add(convertAIVector2SplineNode(vec));
-		}
-		
-		return gen.create(nodesMM, getVel(), AVector2.ZERO_VECTOR, convertAIAngle2SplineOrientation(getAngle()),
-				convertAIAngle2SplineOrientation(finalOrientation), getaVel(), 0f);
-	}
-	
-	
-	private IVector2 convertAIVector2SplineNode(final IVector2 vec)
-	{
-		IVector2 mVec = DistanceUnit.MILLIMETERS.toMeters(vec);
-		return mVec;
-	}
-	
-	
-	private float convertAIAngle2SplineOrientation(final float angle)
-	{
-		return angle;
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	protected boolean isMoveComplete()
-	{
-		float t = splinePair.getTrajectoryTime();
-		
-		boolean position = (splinePair.getPositionTrajectory() == null ? false : ((t > splinePair.getPositionTrajectory()
-				.getTotalTime())));
-		boolean rotation = (splinePair.getRotationTrajectory() == null ? false : (t > splinePair.getRotationTrajectory()
-				.getTotalTime()));
-		
-		return position && rotation;
-	}
-	
-	
-	/**
-	 * @return the maxLinearVelocity
-	 */
-	public final float getMaxLinearVelocity()
-	{
-		return maxLinearVelocity;
-	}
-	
-	
-	/**
-	 * @param maxLinearVelocity the maxLinearVelocity to set
-	 */
-	public final void setMaxLinearVelocity(final float maxLinearVelocity)
-	{
-		this.maxLinearVelocity = maxLinearVelocity;
-	}
-	
-	
-	/**
-	 * @param overridePP the overridePP to set
-	 */
-	public final void setOverridePP(final boolean overridePP)
-	{
-		this.overridePP = overridePP;
-	}
-	
-	
-	/**
-	 * @param destination the destination to set [mm]
-	 */
-	protected final void setDestination(final IVector2 destination)
-	{
-		this.destination = destination;
-	}
-	
-	
-	/**
-	 * @param targetOrientation the targetOrientation to set
-	 */
-	public final void setTargetOrientation(final float targetOrientation)
-	{
-		this.targetOrientation = targetOrientation;
+		return commandType;
 	}
 }

@@ -4,121 +4,95 @@
  * Project: TIGERS - Sumatra
  * Date: Mar 12, 2014
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
+ * MarkG <Mark.Geiger@dlr.de>
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.DynamicPosition;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AiMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.AroundBallDriver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.DoNothingDriver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.EMovingSpeed;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.EPathDriver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.IKickPathDriver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.KickBallDriver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.KickBallSplineDriver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.PushBallDriver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.TurnWithBallDriver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature.EFeatureState;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeatureState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerKickV2.EKickerMode;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.other.EKickerDevice;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.other.EKickerMode;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.devices.ChipParams;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.devices.EKickDevice;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.devices.TigerDevices;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
-import edu.dhbw.mannheim.tigers.sumatra.util.csvexporter.CSVExporter;
 
 
 /**
  * Perform straight (and chip) kicks with static and moving balls
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ *         MarkG <Mark.Geiger@dlr.de>
  */
-public class KickSkill extends PositionSkill
+public class KickSkill extends AMoveSkill
 {
-	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	private static final Logger	log							= Logger.getLogger(KickSkill.class
-																					.getName());
-	
-	// ###### general params ###########
-	@Configurable(comment = "Vel [m/s] of the ball when hitting pass receiver. Used for calculation of shoot duration when passing.")
-	private static float				passEndVel					= 0.5f;
-	@Configurable(comment = "Time [ms] after which the skill will time out")
-	private static int				runtimeTimeout				= 5000;
-	@Configurable(comment = "Bool - Export move data to a csv file")
-	private static boolean			exportMoveData				= false;
-	
-	
-	// ###### "check if complete" params #########
-	@Configurable(comment = "Tol [mm] - Max. distance between initial ball pos and current ball pos before completing skill when ball was stopped")
-	private static int				ballToInitPosTol			= 200;
-	@Configurable(comment = "Tol [m/s] - Offset for initial ball velocity. If current ball vel is higher than the sum, skill will be completed")
-	private static float				ballVelHigherTol			= 0.8f;
+	private static final Logger	log					= Logger.getLogger(KickSkill.class
+																			.getName());
 	
 	// ###### parameters ##########
+	// ###### delay #######
 	@Configurable(comment = "Delay [s] to wait before sending kick command, starting when kicking is possible")
-	private static float				workingKickDelay			= 0.0f;
+	private static float				workingKickDelay	= 0.0f;
 	@Configurable(comment = "Delay [s] to wait before sending kick command, starting when kicking is possible")
-	private static float				brokenKickDelay			= 0.7f;
-	private float						kickDelay					= workingKickDelay;
+	private static float				brokenKickDelay	= 0.7f;
+	private float						kickDelay			= workingKickDelay;
 	
 	
-	@Configurable(comment = "Vel [m/s] that is assumed for driving to ball when calculating future ball pos")
-	private static float				driveSpeed4BallSpeed		= 0.8f;
-	@Configurable(comment = "Dist [mm] that the bot should always keep to ball (plus radius)", speziType = EBotType.class, spezis = { "GRSIM" })
-	private static float				securityDistance2Ball	= 100;
-	@Configurable(comment = "Dist [mm] for preposition that the bot should keep to ball (plus radius)", speziType = EBotType.class, spezis = { "GRSIM" })
-	private static float				preDistance2Ball			= 120;
+	@Configurable(comment = "If ball is moving faster than this and not in our direction, bot will wait.")
+	private static float				waitBallSpeedTol	= 2;
 	
-	@Configurable(comment = "Dist [mm] tolerance when switching from turn to kick mode.", speziType = EBotType.class, spezis = { "GRSIM" })
-	private static float				switchDistanceTol			= 50;
+	@Configurable(comment = "Desired ball velocity at kicker of receiving bot")
+	private static float				defaultPassEndVel	= 1.5f;
 	
-	@Configurable(comment = "If bot is within this distance behind the ball, it will arm and kick even tough ball is moving in its direction")
-	private static float				behindBallDistTol			= 400;
+	@Configurable(comment = "Added to kick speed due to ball not rolling after kick")
+	private static float				kickSpeedOffset	= 1.0f;
 	
-	@Configurable(comment = "Max angle [rad] between velocity vector and ball2Bot vector for switching to kick mode")
-	private static float				angleBallVelTol			= 0.2f;
+	@Configurable(comment = "Which type of command should be send to the bots? POS or VEL")
+	private static ECommandType	cmdMode				= ECommandType.POS;
 	
-	@Configurable(comment = "Which type of command should be send to the bot?", speziType = EBotType.class, spezis = { "GRSIM" })
-	private static ECommandMode	cmdMode						= ECommandMode.VEL;
+	@Configurable(comment = "Dribble speed if receiving ball")
+	private static int				dribbleOnReceive	= 10000;
 	
-	@Configurable(comment = "Dist [mm] that the destination is set behind ball hit point")
-	private static int				distBehindBallHitTarget	= 100;
 	
 	// ######### from construction #########
-	private final DynamicPosition	receiver;
-	private final EKickMode			kickMode;
+	private DynamicPosition			receiver;
+	private EKickMode					kickMode;
 	
 	// ########## state variables ############
-	private boolean					kickSent						= false;
-	protected long						kickTimeStart				= 0;
 	
-	private IVector2					direction;
-	private IVector2					initBallPos					= null;
-	private IVector2					initBallVel					= null;
+	protected long						kickTimeStart		= 0;
+	private int							duration				= -1;
+	private EMoveMode					moveMode				= EMoveMode.NORMAL;
+	private EKickerDevice			device				= EKickerDevice.STRAIGHT;
+	private IKickPathDriver			currentDriver		= new DoNothingDriver();
+	private float						passEndVel			= defaultPassEndVel;
 	
-	private EState						state							= EState.TURN;
-	
-	private CSVExporter				csvExporter					= new CSVExporter("kick", "kick", true);
-	
-	
-	private enum EState
-	{
-		TURN,
-		KICK,
-	}
-	
+	// ########## Pushing ####################
+	private long						timeLastMoved		= System.nanoTime();
+	private IVector2					lastPos				= null;
 	
 	/**
 	 */
@@ -129,13 +103,20 @@ public class KickSkill extends PositionSkill
 		/**  */
 		MAX,
 		/**  */
-		POINT
+		POINT,
+		/**  */
+		FIXED_DURATION,
 	}
 	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
+	/**
+	 */
+	public enum EMoveMode
+	{
+		/**  */
+		NORMAL,
+		/**  */
+		CHILL
+	}
 	
 	
 	/**
@@ -147,7 +128,51 @@ public class KickSkill extends PositionSkill
 	 */
 	public KickSkill(final DynamicPosition receiver, final EKickMode kickMode)
 	{
-		this(ESkillName.KICK, receiver, kickMode);
+		this(ESkillName.KICK, receiver, kickMode, EMoveMode.NORMAL);
+	}
+	
+	
+	/**
+	 * If receiver is a vector, kick in this direction with max force,
+	 * if receiver is a botId, pass to this bot with appropriate force
+	 * 
+	 * @param receiver
+	 * @param kickMode
+	 * @param moveMode
+	 */
+	public KickSkill(final DynamicPosition receiver, final EKickMode kickMode, final EMoveMode moveMode)
+	{
+		this(ESkillName.KICK, receiver, kickMode, moveMode);
+	}
+	
+	
+	/**
+	 * Kick with fixed duration
+	 * 
+	 * @param receiver
+	 * @param moveMode
+	 * @param duration
+	 */
+	public KickSkill(final DynamicPosition receiver, final EMoveMode moveMode, final int duration)
+	{
+		this(receiver, EKickMode.FIXED_DURATION, moveMode);
+		this.duration = duration;
+	}
+	
+	
+	/**
+	 * Kick with fixed duration
+	 * 
+	 * @param receiver
+	 * @param kickMode
+	 * @param moveMode
+	 * @param duration
+	 */
+	public KickSkill(final DynamicPosition receiver, final EKickMode kickMode, final EMoveMode moveMode,
+			final int duration)
+	{
+		this(ESkillName.KICK, receiver, kickMode, moveMode);
+		this.duration = duration;
 	}
 	
 	
@@ -158,23 +183,123 @@ public class KickSkill extends PositionSkill
 	 * @param skillName
 	 * @param receiver
 	 */
-	protected KickSkill(final ESkillName skillName, final DynamicPosition receiver, final EKickMode kickMode)
+	protected KickSkill(final ESkillName skillName, final DynamicPosition receiver, final EKickMode kickMode,
+			final EMoveMode moveMode)
 	{
 		super(skillName);
+		this.moveMode = moveMode;
 		this.receiver = receiver;
 		this.kickMode = kickMode;
-		startTimeout(runtimeTimeout);
-		setCommandMode(cmdMode);
+		setCommandType(cmdMode);
+		getMoveCon().setDriveFast(true);
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
+	private void updatePushingCheck()
+	{
+		if (lastPos == null)
+		{
+			lastPos = getPos();
+		}
+		float dist2Ball = GeoMath.distancePP(getPos(), getWorldFrame().getBall().getPos());
+		if (dist2Ball > 400)
+		{
+			// we may just wait to receive the ball. pushing only makes sense if ball is near by
+			return;
+		}
+		if (GeoMath.distancePP(lastPos, getPos()) > 50)
+		{
+			timeLastMoved = System.nanoTime();
+			lastPos = getPos();
+		}
+		if (((System.nanoTime() - timeLastMoved) > 1e9) && (currentDriver.getType() != EPathDriver.PUSH_BALL))
+		{
+			currentDriver = new PushBallDriver(receiver);
+		}
+	}
+	
+	
+	private void updateReceiverTarget()
+	{
+		receiver.update(getWorldFrame());
+	}
 	
 	
 	@Override
-	public List<ACommand> calcEntryActions(final List<ACommand> cmds)
+	protected final void update(final List<ACommand> cmds)
+	{
+		updateReceiverTarget();
+		updateDirection();
+		updatePushingCheck();
+		updateDriver();
+		
+		generateKickCmd(cmds);
+	}
+	
+	
+	private void updateDriver()
+	{
+		final IVector2 ballPos = getWorldFrame().getBall().getPos();
+		final IVector2 ballVel = getWorldFrame().getBall().getVel();
+		final TrackedTigerBot bot = getTBot();
+		
+		if (((ballVel.getLength2() > waitBallSpeedTol)
+				&& (Math.abs(AngleMath.difference(ballVel.getAngle(), bot.getPos().subtractNew(ballPos).getAngle())) > AngleMath.PI_HALF))
+				|| !AIConfig.getGeometry().getField().isPointInShape(getWorldFrame().getBall().getPos()))
+		{
+			// ball is fast and is not moving in our direction
+			if (currentDriver.getType() != EPathDriver.DO_NOTHING)
+			{
+				currentDriver = new DoNothingDriver();
+			}
+		} else if (currentDriver.isDone() || (currentDriver.getType() == EPathDriver.DO_NOTHING))
+		{
+			float dist2Ball = GeoMath.distancePP(ballPos, getPos());
+			boolean useSpline = false;
+			if (dist2Ball < 150)
+			{
+				currentDriver = new TurnWithBallDriver(receiver);
+			} else if (useSpline)
+			{
+				currentDriver = new KickBallSplineDriver(receiver);
+			} else
+			{
+				switch (currentDriver.getType())
+				{
+					case AROUND_BALL:
+					case CATCH_BALL:
+					case TURN_WITH_BALL:
+						// currentDriver = new KickBallV2Driver(receiver);
+						currentDriver = new KickBallDriver(receiver);
+						// if (moveMode == EMoveMode.CHILL)
+						// {
+						// currentDriver = new KickBallChillTrajDriver(receiver);
+						// } else
+						// {
+						// currentDriver = new KickBallTrajDriver(receiver);
+						// }
+						break;
+					case DO_NOTHING:
+					case PUSH_BALL:
+					case KICK_TRAJ:
+					case KICK_CHILL_TRAJ:
+					case KICK_BALL:
+					case KICK_BALL_V2:
+						// currentDriver = new KickBallTrajDriver(receiver);
+						// currentDriver = new CatchBallDriver(receiver);
+						currentDriver = new AroundBallDriver(receiver);
+						break;
+					default:
+						throw new RuntimeException("Using wrong PathDriver in KickSkill");
+				}
+			}
+		}
+		setPathDriver(currentDriver);
+	}
+	
+	
+	@Override
+	public void doCalcEntryActions(final List<ACommand> cmds)
 	{
 		if (getBot().getBotFeatures().get(EFeature.BARRIER) == EFeatureState.KAPUT)
 		{
@@ -184,226 +309,213 @@ public class KickSkill extends PositionSkill
 			kickDelay = workingKickDelay;
 		}
 		
-		initBallPos = getWorldFrame().getBall().getPos();
-		initBallVel = getWorldFrame().getBall().getVel();
-		
-		return cmds;
-	}
-	
-	
-	@Override
-	public void doCalcActions(final List<ACommand> cmds)
-	{
-		// arm or force kicker
-		if ((kickTimeStart != 0) && !kickSent
-				&& (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - kickTimeStart) > (kickDelay * 1000)))
+		setCommandType(cmdMode);
+		if (moveMode == EMoveMode.CHILL)
 		{
-			generateKickCmd(cmds);
-			kickSent = true;
-		}
-		
-		// movement
-		updateDirection();
-		calcDestAndOrient(cmds);
-		
-		if (exportMoveData)
-		{
-			List<Float> exportValues = new ArrayList<Float>();
-			exportValues.add((float) System.nanoTime());
-			exportValues.add(getDestination().x());
-			exportValues.add(getDestination().y());
-			exportValues.add(getOrientation());
-			exportValues.add(getPos().x());
-			exportValues.add(getPos().y());
-			exportValues.add(getWorldFrame().getBall().getPos().x());
-			exportValues.add(getWorldFrame().getBall().getPos().y());
-			csvExporter.addValues(exportValues);
-		}
-		
-		// check for completion
-		if (getWorldFrame().getBall().getVel().getLength2() < 0.1)
-		{
-			initBallVel = AVector2.ZERO_VECTOR;
-			initBallPos = getWorldFrame().getBall().getPos();
-		}
-		
-		if ((initBallVel.getLength2() < 0.01)
-				&& !initBallPos.equals(getWorldFrame().getBall().getPos(), ballToInitPosTol))
-		{
-			log.debug("Completed due to ball did not move initially and is not at initial pos anymore. Init vel: "
-					+ initBallVel.getLength2());
-			complete();
-		}
-		
-		if ((initBallVel.getLength2() > 0.1)
-				&& (getWorldFrame().getBall().getVel().getLength2() > (initBallVel.getLength2() + ballVelHigherTol)))
-		{
-			log.debug("Completed due to ball moving faster than initially: "
-					+ getWorldFrame().getBall().getVel().getLength2() + ">" + initBallVel.getLength2() + "+"
-					+ ballVelHigherTol);
-			complete();
-		}
-	}
-	
-	
-	@Override
-	public List<ACommand> calcExitActions(final List<ACommand> cmds)
-	{
-		getDevices().allOff(cmds);
-		if (exportMoveData)
-		{
-			csvExporter.close();
-		}
-		return cmds;
-	}
-	
-	
-	protected void generateKickCmd(final List<ACommand> cmds)
-	{
-		float kickLength = receiver.subtractNew(getWorldFrame().getBall().getPos()).getLength2();
-		EKickDevice device = EKickDevice.STRAIGHT;
-		EKickerMode mode = EKickerMode.ARM;
-		float duration = TigerDevices.getStraightKickMaxDuration();
-		
-		if (getBot().getBotFeatures().get(EFeature.BARRIER) == EFeatureState.KAPUT)
-		{
-			mode = EKickerMode.FORCE;
-			startTimeout(200);
-		}
-		
-		if (getBot().getBotFeatures().get(EFeature.STRAIGHT_KICKER) == EFeatureState.WORKING)
-		{
-			duration = calcDuration(kickLength);
-			
-		} else if (getBot().getBotFeatures().get(EFeature.CHIP_KICKER) == EFeatureState.WORKING)
-		{
-			// kicker is broken, lets chip with 1/2 length :)
-			ChipParams chipValues = TigerDevices.calcChipFastParams(kickLength);
-			duration = chipValues.getDuration();
-			device = EKickDevice.CHIP;
+			getMoveCon().setSpeed(EMovingSpeed.SLOW, 1.5f);
 		} else
 		{
-			log.warn("Kicker of bot " + getBot().getBotID() + " is configured broken!");
+			getMoveCon().setDriveFast(true);
+		}
+	}
+	
+	
+	@Override
+	protected void doCalcExitActions(final List<ACommand> cmds)
+	{
+		getDevices().allOff(cmds);
+	}
+	
+	
+	private void generateKickCmd(final List<ACommand> cmds)
+	{
+		float kickLength = receiver.subtractNew(getWorldFrame().getBall().getPos()).getLength2();
+		EKickerDevice usedDevice = device;
+		EKickerMode mode = EKickerMode.ARM;
+		float kickSpeed = -1;
+		int dribble = 0;
+		
+		if ((getBot().getBotFeatures().get(EFeature.BARRIER) == EFeatureState.KAPUT))
+		{
+			mode = EKickerMode.FORCE;
+		}
+		
+		if ((device == EKickerDevice.STRAIGHT)
+				&& (getBot().getBotFeatures().get(EFeature.STRAIGHT_KICKER) != EFeatureState.WORKING))
+		{
+			// kicker is broken, lets chip with 1/2 length :)
+			kickLength /= 2;
+			usedDevice = EKickerDevice.CHIP;
+		} else if ((device == EKickerDevice.CHIP)
+				&& (getBot().getBotFeatures().get(EFeature.CHIP_KICKER) != EFeatureState.WORKING))
+		{
+			usedDevice = EKickerDevice.STRAIGHT;
+		} else if ((getBot().getBotFeatures().get(EFeature.STRAIGHT_KICKER) != EFeatureState.WORKING)
+				&& (getBot().getBotFeatures().get(EFeature.CHIP_KICKER) != EFeatureState.WORKING))
+		{
+			log.warn("Kicker and Chipper of bot " + getBot().getBotID() + " is configured broken!");
 			complete();
 		}
 		
-		getDevices().kickGeneral(cmds, mode, device, duration, 0);
+		switch (usedDevice)
+		{
+			case CHIP:
+			{
+				ChipParams chipValues = calcChipParams(kickLength);
+				duration = chipValues.getDuration();
+				dribble = chipValues.getDribbleSpeed();
+				if ((moveMode == EMoveMode.CHILL) && (chipValues.getDribbleSpeed() > 0))
+				{
+					mode = EKickerMode.DRIBBLER;
+				}
+				break;
+			}
+			case STRAIGHT:
+			{
+				kickSpeed = calcStraightKickSpeed(kickLength);
+				currentDriver.setShootSpeed(kickSpeed);
+				break;
+			}
+		}
+		
+		if (currentDriver.isReceiving() && !getTBot().hasBallContact())
+		{
+			dribble = dribbleOnReceive;
+		}
+		
+		if (readyForKick())
+		{
+			// this is only used if barrier is broken!
+			if (kickTimeStart == 0)
+			{
+				// start time for kick
+				kickTimeStart = SumatraClock.nanoTime();
+			}
+			
+			boolean delayReached = (TimeUnit.NANOSECONDS.toMillis(SumatraClock.nanoTime() - kickTimeStart) >= (kickDelay * 1000));
+			if (delayReached)
+			{
+				if (kickSpeed > 0)
+				{
+					getDevices().kickGeneralSpeed(cmds, mode, usedDevice, kickSpeed, dribble);
+				} else
+				{
+					getDevices().kickGeneralDuration(cmds, mode, usedDevice, duration, dribble);
+				}
+			}
+		} else
+		{
+			getDevices().disarm(cmds);
+			kickTimeStart = 0;
+		}
+		getDevices().dribble(cmds, dribble);
+	}
+	
+	
+	private boolean readyForKick()
+	{
+		// TODO
+		IVector2 dir = receiver.subtractNew(getWorldFrame().getBall().getPos());
+		float angle = Math.abs(AngleMath.getShortestRotation(dir.getAngle(), getTBot().getAngle()));
+		boolean angleOk = angle < 0.2f;
+		return angleOk && currentDriver.armKicker()
+				&& (currentDriver.getType() != EPathDriver.PUSH_BALL);
 	}
 	
 	
 	private void updateDirection()
 	{
 		receiver.update(getWorldFrame());
-		IVector2 receiverTarget = receiver;
-		if (receiver.getTrackedId().isBot())
-		{
-			TrackedTigerBot bot = getWorldFrame().getBot((BotID) receiver.getTrackedId());
-			receiverTarget = AiMath.getBotKickerPos(bot.getPos(), bot.getAngle());
-		}
-		direction = receiverTarget.subtractNew(getWorldFrame().getBall().getPos()).normalize();
 	}
 	
 	
-	private void calcDestAndOrient(final List<ACommand> cmds)
+	protected float calcStraightKickSpeed(final float length)
 	{
-		setOrientation(getDirection().getAngle());
-		
-		IVector2 ballPos = getWorldFrame().getBall().getPos();
-		IVector2 ball2Bot = getPos().subtractNew(getWorldFrame().getBall().getPos());
-		IVector2 ballVel = getWorldFrame().getBall().getVel();
-		if (ballVel.getLength2() > 0.1f)
-		{
-			float angleDiff = Math.abs(AngleMath.getShortestRotation(ball2Bot.getAngle(), ballVel.getAngle()));
-			if ((angleDiff > angleBallVelTol) || (ball2Bot.getLength2() > behindBallDistTol))
-			{
-				// get future ballPos
-				float time2Ball = GeoMath.distancePP(getPos(), getWorldFrame().getBall().getPos())
-						/ (driveSpeed4BallSpeed * 1000);
-				ballPos = getWorldFrame().getBall().getPosAt(time2Ball);
-			}
-			if ((angleDiff < angleBallVelTol))
-			{
-				// ball is moving in our direction, arm!
-				float kickLength = receiver.subtractNew(getWorldFrame().getBall().getPos()).getLength2();
-				getDevices().kickGeneral(cmds, EKickerMode.ARM, EKickDevice.STRAIGHT, calcDuration(kickLength), 0);
-			}
-		}
-		
-		float preDist2Ball = preDistance2Ball + AIConfig.getGeometry().getBotRadius()
-				+ AIConfig.getGeometry().getBallRadius();
-		float secDist2Ball = securityDistance2Ball + AIConfig.getGeometry().getBotRadius()
-				+ AIConfig.getGeometry().getBallRadius();
-		IVector2 preDest = ballPos.addNew(getDirection().scaleToNew(
-				-preDist2Ball));
-		
-		switch (state)
-		{
-			case TURN:
-				// check if ball is in our way
-				if (GeoMath.p2pVisibilityBall(getWorldFrame(), getPos(), preDest, secDist2Ball))
-				{
-					setDestination(preDest);
-				} else
-				{
-					// set destination secDist away from ball
-					IVector2 lp = GeoMath.leadPointOnLine(ballPos, preDest, getPos());
-					// +20 to make sure we do not toggle between the two if-else branches too much
-					setDestination(GeoMath.stepAlongLine(ballPos, lp, secDist2Ball + 20));
-				}
-				
-				float dist2Dest = GeoMath.distancePP(getPos(), preDest);
-				if (dist2Dest < switchDistanceTol)
-				{
-					state = EState.KICK;
-				}
-				break;
-			case KICK:
-				if (kickTimeStart == 0)
-				{
-					// start time for kick
-					kickTimeStart = System.nanoTime();
-				}
-				
-				// postDest == point behind ball, so that bot would theoretically touch the ball
-				IVector2 postDest = ballPos.subtractNew(getDirection().scaleToNew(
-						AIConfig.getGeometry().getBotCenterToDribblerDist()));
-				if (GeoMath.distancePP(postDest, getPos()) > 20)
-				{
-					// make sure we hit the ball correctly in the middle of the kicker,
-					// if we are not directly behind the ball
-					setDestination(GeoMath.stepAlongLine(postDest, getPos(), -distBehindBallHitTarget));
-				} else
-				{
-					setDestination(ballPos.addNew(getDirection().scaleToNew(distBehindBallHitTarget)));
-				}
-				
-				
-				break;
-			default:
-				throw new IllegalStateException("Should not be here!");
-		}
-	}
-	
-	
-	protected int calcDuration(final float length)
-	{
-		int duration;
 		switch (kickMode)
 		{
 			case MAX:
-				duration = TigerDevices.getStraightKickMaxDuration();
-				break;
+				return 8;
 			case PASS:
-				duration = (int) TigerDevices.calcStraightDuration(length, passEndVel);
-				break;
+				return AIConfig.getBallModel().getVelForDist(length, passEndVel) + kickSpeedOffset;
 			case POINT:
-				duration = (int) TigerDevices.calcStraightDuration(length, 0);
-				break;
+				return AIConfig.getBallModel().getVelForDist(length, 0) + kickSpeedOffset;
+			case FIXED_DURATION:
+				return getDevices().calcKickSpeed(duration);
 			default:
 				throw new IllegalStateException();
 		}
-		
-		return duration;
+	}
+	
+	
+	protected ChipParams calcChipParams(final float kickLength)
+	{
+		return TigerDevices.calcChipFastParams(kickLength);
+	}
+	
+	
+	/**
+	 * @return the kickDelay
+	 */
+	public final float getKickDelay()
+	{
+		return kickDelay;
+	}
+	
+	
+	/**
+	 * @param kickDelay the kickDelay to set
+	 */
+	public final void setKickDelay(final float kickDelay)
+	{
+		this.kickDelay = kickDelay;
+	}
+	
+	
+	/**
+	 * @return the device
+	 */
+	public final EKickerDevice getDevice()
+	{
+		return device;
+	}
+	
+	
+	/**
+	 * @param device the device to set
+	 */
+	public final void setDevice(final EKickerDevice device)
+	{
+		this.device = device;
+	}
+	
+	
+	/**
+	 * Update the receiver target
+	 * 
+	 * @param recv
+	 */
+	public final void setReceiver(final DynamicPosition recv)
+	{
+		receiver = recv;
+		updateDirection();
+	}
+	
+	
+	/**
+	 * @return the kickMode
+	 */
+	public final EKickMode getKickMode()
+	{
+		return kickMode;
+	}
+	
+	
+	/**
+	 * @param kickMode the kickMode to set
+	 */
+	public final void setKickMode(final EKickMode kickMode)
+	{
+		this.kickMode = kickMode;
 	}
 	
 	
@@ -417,14 +529,38 @@ public class KickSkill extends PositionSkill
 	
 	
 	/**
-	 * @return the direction
+	 * @return the passEndVel
 	 */
-	protected final IVector2 getDirection()
+	public final float getPassEndVel()
 	{
-		return direction;
+		return passEndVel;
 	}
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
+	
+	/**
+	 * @param passEndVel the passEndVel to set
+	 */
+	public final void setPassEndVel(final float passEndVel)
+	{
+		this.passEndVel = passEndVel;
+	}
+	
+	
+	/**
+	 * @param duration the duration to set
+	 */
+	public final void setDuration(final int duration)
+	{
+		kickMode = EKickMode.FIXED_DURATION;
+		this.duration = duration;
+	}
+	
+	
+	/**
+	 * @return the duration
+	 */
+	public final int getDuration()
+	{
+		return duration;
+	}
 }

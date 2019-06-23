@@ -9,17 +9,23 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.general;
 
+import java.awt.Color;
+
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.BaseAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.BotDistance;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.TacticalField;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ballpossession.BallPossession;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ballpossession.EBallPossession;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.Circle;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.DrawableCircle;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.ACalculator;
 import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.EDrawableShapesLayer;
 
 
 /**
@@ -57,7 +63,7 @@ public class BallPossessionCalc extends ACalculator
 	// --------------------------------------------------------------------------
 	
 	@Override
-	public void doCalc(TacticalField newTacticalField, BaseAiFrame baseAiFrame)
+	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
 		WorldFrame wFrame = baseAiFrame.getWorldFrame();
 		
@@ -72,7 +78,7 @@ public class BallPossessionCalc extends ACalculator
 				+ AIConfig.getGeometry().getBotRadius();
 		final BotID tigersHave = closestTiger.getDist() < tolerance ? closestTiger.getBot().getId() : NO_BOT;
 		final BotID opponentsHave = closestEnemy.getDist() < tolerance ? closestEnemy.getBot().getId() : NO_BOT;
-		final IVector2 ballVel = wFrame.ball.getVel();
+		final IVector2 ballVel = wFrame.getBall().getVel();
 		
 		
 		// Fill BallPossession
@@ -92,12 +98,24 @@ public class BallPossessionCalc extends ACalculator
 					currentPossession.setEBallPossession(EBallPossession.WE);
 					currentPossession.setTigersId(tigersHave);
 				}
+				TrackedTigerBot bot = baseAiFrame.getWorldFrame().getBot(tigersHave);
+				newTacticalField
+						.getDrawableShapes()
+						.get(EDrawableShapesLayer.BALL_POSSESSION)
+						.add(new DrawableCircle(new Circle(bot.getPos(), AIConfig.getGeometry().getBotRadius() + 20),
+								Color.BLACK));
 			} else
 			{
 				if (!opponentsHave.equals(NO_BOT))
 				{
 					currentPossession.setEBallPossession(EBallPossession.THEY);
 					currentPossession.setOpponentsId(opponentsHave);
+					TrackedTigerBot bot = baseAiFrame.getWorldFrame().getBot(opponentsHave);
+					newTacticalField
+							.getDrawableShapes()
+							.get(EDrawableShapesLayer.BALL_POSSESSION)
+							.add(new DrawableCircle(new Circle(bot.getPos(), AIConfig.getGeometry().getBotRadius() + 20),
+									Color.BLACK));
 				} else
 				{
 					currentPossession.setEBallPossession(EBallPossession.NO_ONE);
@@ -107,6 +125,7 @@ public class BallPossessionCalc extends ACalculator
 		{
 			currentPossession = baseAiFrame.getPrevFrame().getTacticalField().getBallPossession();
 		}
+		
 		newTacticalField.setBallPossession(currentPossession);
 	}
 }

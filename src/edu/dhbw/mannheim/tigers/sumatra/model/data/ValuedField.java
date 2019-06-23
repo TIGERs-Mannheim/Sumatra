@@ -20,6 +20,9 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.ColorPickerFactory;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.IColorPicker;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.IDrawableShape;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.visualizer.IFieldPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.FieldPanel;
 
@@ -41,10 +44,9 @@ public class ValuedField implements IDrawableShape
 	private final int						numY;
 	private final int						offset;
 	
-	private boolean						drawDebug		= false;
-	private boolean						drawInverted	= false;
+	private boolean						drawDebug	= false;
 	
-	private transient IColorPicker	colorPicker		= ColorPickerFactory.scaledSingleBlack(0, 0, 0, 2);
+	private transient IColorPicker	colorPicker	= ColorPickerFactory.scaledSingleBlack(0, 0, 0, 0.5f, 2);
 	
 	
 	// --------------------------------------------------------------------------
@@ -59,7 +61,7 @@ public class ValuedField implements IDrawableShape
 		numY = 0;
 		offset = 0;
 		data = new float[numY * numX];
-		colorPicker = ColorPickerFactory.scaledSingleBlack(0, 0, 0, 2);
+		colorPicker = ColorPickerFactory.scaledSingleBlack(0, 0, 0, 0.5f, 2);
 	}
 	
 	
@@ -89,7 +91,12 @@ public class ValuedField implements IDrawableShape
 	 */
 	public float getValue(final int x, final int y)
 	{
-		return data[offset + (y * numX) + x];
+		int idx = offset + (y * numX) + x;
+		if (idx < data.length)
+		{
+			return data[idx];
+		}
+		return -1;
 	}
 	
 	
@@ -132,7 +139,7 @@ public class ValuedField implements IDrawableShape
 				int nextX = FieldPanel.FIELD_MARGIN + Math.round((y * sizeX) + (sizeX / 2));
 				
 				float relValue;
-				if (drawInverted)
+				if (invert)
 				{
 					relValue = getValue(getNumX() - x - 1, getNumY() - y - 1);
 				} else
@@ -151,7 +158,7 @@ public class ValuedField implements IDrawableShape
 						relValue = 1;
 					}
 					colorPicker.applyColor(g, 1 - relValue);
-					g.fillRect(guiX, guiY, (nextX - guiX), (nextY - guiY));
+					g.fillRect(guiX - 1, guiY - 1, (nextX - guiX) + 2, (nextY - guiY) + 2);
 				} else
 				{
 					g.setColor(Color.black);
@@ -175,6 +182,35 @@ public class ValuedField implements IDrawableShape
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	/**
+	 * @param x
+	 * @param y
+	 * @return
+	 */
+	public IVector2 getPointOnField(final int x, final int y)
+	{
+		return new Vector2((((x + 0.5) / numX) * AIConfig.getGeometry().getFieldLength())
+				- (AIConfig.getGeometry().getFieldLength() / 2), (((y + 0.5) / numY) * AIConfig.getGeometry()
+				.getFieldWidth())
+				- (AIConfig.getGeometry().getFieldWidth() / 2));
+	}
+	
+	
+	/**
+	 * Value for a vector in field coordinates
+	 * 
+	 * @param point
+	 * @return
+	 */
+	public float getValueForPoint(final IVector2 point)
+	{
+		float fieldLength = AIConfig.getGeometry().getFieldLength();
+		float fieldWidth = AIConfig.getGeometry().getFieldWidth();
+		float x = ((numX / fieldLength) * (point.x() + (fieldLength / 2))) - 0.5f;
+		float y = ((numY / fieldWidth) * (point.y() + (fieldWidth / 2))) - 0.5f;
+		return getValue((int) x, (int) y);
+	}
 	
 	
 	/**
@@ -207,27 +243,10 @@ public class ValuedField implements IDrawableShape
 	/**
 	 * @param drawDebug the drawDebug to set
 	 */
+	@Override
 	public final void setDrawDebug(final boolean drawDebug)
 	{
 		this.drawDebug = drawDebug;
-	}
-	
-	
-	/**
-	 * @return the drawInverted
-	 */
-	public final boolean isDrawInverted()
-	{
-		return drawInverted;
-	}
-	
-	
-	/**
-	 * @param drawInverted the drawInverted to set
-	 */
-	public final void setDrawInverted(final boolean drawInverted)
-	{
-		this.drawInverted = drawInverted;
 	}
 	
 	

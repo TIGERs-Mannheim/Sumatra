@@ -9,7 +9,11 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+
+import org.json.simple.JSONObject;
 
 import com.sleepycat.persist.model.Persistent;
 
@@ -68,6 +72,19 @@ public class Vector3 extends AVector3
 	
 	
 	/**
+	 * @param x
+	 * @param y
+	 * @param z
+	 */
+	public Vector3(final double x, final double y, final double z)
+	{
+		this.x = (float) x;
+		this.y = (float) y;
+		this.z = (float) z;
+	}
+	
+	
+	/**
 	 * Providing a <strong>hard, deep</strong> copy of original
 	 * 
 	 * @param xy
@@ -87,6 +104,16 @@ public class Vector3 extends AVector3
 	public Vector3(final IVector3 original)
 	{
 		set(original);
+	}
+	
+	
+	/**
+	 * @param list
+	 * @return
+	 */
+	public static Vector3 fromNumberList(final List<? extends Number> list)
+	{
+		return new Vector3(list.get(0).floatValue(), list.get(1).floatValue(), list.get(2).floatValue());
 	}
 	
 	
@@ -115,6 +142,48 @@ public class Vector3 extends AVector3
 		x = original.x();
 		y = original.y();
 		z = original.z();
+	}
+	
+	
+	/**
+	 * @param i
+	 * @param value
+	 */
+	public void set(final int i, final float value)
+	{
+		switch (i)
+		{
+			case 0:
+				x = value;
+				break;
+			case 1:
+				y = value;
+				break;
+			case 2:
+				z = value;
+				break;
+			default:
+				throw new IllegalArgumentException("Invalid index: " + i);
+		}
+	}
+	
+	
+	/**
+	 * @param i
+	 * @return
+	 */
+	public float get(final int i)
+	{
+		switch (i)
+		{
+			case 0:
+				return x;
+			case 1:
+				return y;
+			case 2:
+				return z;
+		}
+		throw new IllegalArgumentException("Invalid index: " + i);
 	}
 	
 	
@@ -248,5 +317,48 @@ public class Vector3 extends AVector3
 		}
 		return new Vector3(Float.valueOf(finalValues.get(0)), Float.valueOf(finalValues.get(1)),
 				Float.valueOf(finalValues.get(2)));
+	}
+	
+	
+	/**
+	 * Convert to absolute values
+	 * 
+	 * @return
+	 */
+	public IVector3 abs()
+	{
+		x = Math.abs(x);
+		y = Math.abs(y);
+		z = Math.abs(z);
+		return this;
+	}
+	
+	
+	@Override
+	public JSONObject toJSON()
+	{
+		Map<String, Object> jsonMapping = new LinkedHashMap<String, Object>();
+		jsonMapping.put("x", x);
+		jsonMapping.put("y", y);
+		jsonMapping.put("z", z);
+		return new JSONObject(jsonMapping);
+	}
+	
+	
+	@Override
+	public List<Number> getNumberList()
+	{
+		List<Number> numbers = new ArrayList<>();
+		numbers.add(x);
+		numbers.add(y);
+		numbers.add(z);
+		return numbers;
+	}
+	
+	
+	@Override
+	public boolean isFinite()
+	{
+		return Float.isFinite(x) && Float.isFinite(y) && Float.isFinite(z);
 	}
 }

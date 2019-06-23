@@ -18,6 +18,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordWfFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AthenaAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.MetisAiFrame;
@@ -87,10 +88,7 @@ public class Athena
 	 */
 	public void addObserver(final IAIModeChanged observer)
 	{
-		synchronized (observers)
-		{
-			observers.add(observer);
-		}
+		observers.add(observer);
 	}
 	
 	
@@ -99,10 +97,7 @@ public class Athena
 	 */
 	public void removeObserver(final IAIModeChanged observer)
 	{
-		synchronized (observers)
-		{
-			observers.remove(observer);
-		}
+		observers.remove(observer);
 	}
 	
 	
@@ -197,23 +192,23 @@ public class Athena
 	}
 	
 	
-	private void processBotDetection(final WorldFrame wFrame, final WorldFrame preWFrame,
+	private void processBotDetection(final WorldFrame wFrame, final IRecordWfFrame preWFrame,
 			final PlayStrategy.Builder playStrategyBuilder)
 	{
 		// All tigers connected?
 		final boolean tigerDisconnected = !wFrame.tigerBotsAvailable.keySet().containsAll(
-				preWFrame.tigerBotsAvailable.keySet());
-		final boolean tigerConnected = !preWFrame.tigerBotsAvailable.keySet().containsAll(
+				preWFrame.getTigerBotsAvailable().keySet());
+		final boolean tigerConnected = !preWFrame.getTigerBotsAvailable().keySet().containsAll(
 				wFrame.tigerBotsAvailable.keySet());
 		
 		// Same tigers as last frame?
-		final Collection<BotID> preTigersVisible = preWFrame.tigerBotsVisible.keySet();
+		final Collection<BotID> preTigersVisible = preWFrame.getTigerBotsVisible().keySet();
 		final Collection<BotID> tigersVisible = wFrame.tigerBotsVisible.keySet();
 		final boolean tigersRemoved = !tigersVisible.isEmpty() && !tigersVisible.containsAll(preTigersVisible);
 		final boolean tigersAdded = !preTigersVisible.isEmpty() && !preTigersVisible.containsAll(tigersVisible);
 		
 		// Same enemies as last frame?
-		final Collection<BotID> preEnemies = preWFrame.foeBots.keySet();
+		final Collection<BotID> preEnemies = preWFrame.getFoeBots().keySet();
 		final Collection<BotID> enemies = wFrame.foeBots.keySet();
 		final boolean enemyRemoved = !enemies.isEmpty() && !enemies.containsAll(preEnemies);
 		final boolean enemyAdded = !preEnemies.isEmpty() && !preEnemies.containsAll(enemies);
@@ -236,12 +231,26 @@ public class Athena
 		// update all plays with the new frame and remove plays which failed or succeeded
 		for (APlay play : new ArrayList<APlay>(frame.getPlayStrategy().getActivePlays()))
 		{
-			for (ARole role : play.getRoles())
-			{
-				role.update(frame);
-			}
 			
-			play.update(frame);
+			try
+			{
+				for (ARole role : play.getRoles())
+				{
+					role.updateBefore(frame);
+				}
+				
+				play.updateBeforeRoles(frame);
+				
+				for (ARole role : play.getRoles())
+				{
+					role.update(frame);
+				}
+				
+				play.update(frame);
+			} catch (Exception err)
+			{
+				log.error("Exception during play update!", err);
+			}
 		}
 	}
 	

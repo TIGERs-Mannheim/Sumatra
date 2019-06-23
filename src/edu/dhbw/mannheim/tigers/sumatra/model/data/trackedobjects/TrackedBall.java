@@ -4,22 +4,22 @@
  * Project: TIGERS - Sumatra
  * Date: 21.07.2010
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects;
 
 import com.sleepycat.persist.model.Persistent;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector3;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector3;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector3f;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BallID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.WPConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.data.BallMotionResult;
-import edu.dhbw.mannheim.tigers.sumatra.util.units.DistanceUnit;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.kalman.WPConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.kalman.oextkal.data.BallMotionResult;
 
 
 /**
@@ -31,32 +31,19 @@ import edu.dhbw.mannheim.tigers.sumatra.util.units.DistanceUnit;
  * 
  * @see ATrackedObject
  * @author Gero
- * 
  */
 @Persistent
 public class TrackedBall extends ATrackedObject
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	/**  */
-	private static final long	serialVersionUID	= -4610674696000287580L;
-	
 	/** mm */
-	private Vector3				pos;
+	private Vector3	pos;
 	/** m/s */
-	private Vector3				vel;
+	private Vector3	vel;
 	/** m/s^2 */
-	private Vector3				acc;
+	private Vector3	acc;
 	
 	/** not final for ObjectDB */
-	private boolean				onCam;
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// -------------------------------------------------------------------------
+	private boolean	onCam;
 	
 	
 	@SuppressWarnings("unused")
@@ -68,9 +55,10 @@ public class TrackedBall extends ATrackedObject
 	
 	/**
 	 * Providing a <strong>hard, deep</strong> copy of original
+	 * 
 	 * @param original
 	 */
-	public TrackedBall(TrackedBall original)
+	public TrackedBall(final TrackedBall original)
 	{
 		super(original);
 		onCam = original.onCam;
@@ -81,14 +69,14 @@ public class TrackedBall extends ATrackedObject
 	
 	
 	/**
-	 * 
 	 * @param pos
 	 * @param vel
 	 * @param acc
 	 * @param confidence
 	 * @param onCam
 	 */
-	public TrackedBall(IVector3 pos, IVector3 vel, IVector3 acc, float confidence, boolean onCam)
+	public TrackedBall(final IVector3 pos, final IVector3 vel, final IVector3 acc, final float confidence,
+			final boolean onCam)
 	{
 		super(new BallID(), confidence);
 		this.pos = new Vector3(pos);
@@ -99,11 +87,10 @@ public class TrackedBall extends ATrackedObject
 	
 	
 	/**
-	 * 
 	 * @param motion
 	 * @return
 	 */
-	public static TrackedBall motionToTrackedBall(BallMotionResult motion)
+	public static TrackedBall motionToTrackedBall(final BallMotionResult motion)
 	{
 		final float xPos = (float) (motion.x / WPConfig.FILTER_CONVERT_MM_TO_INTERNAL_UNIT);
 		final float xVel = (float) (motion.vx / WPConfig.FILTER_CONVERT_MperS_TO_INTERNAL_V);
@@ -126,13 +113,16 @@ public class TrackedBall extends ATrackedObject
 	
 	/**
 	 * Mirror position, velocity and acceleration over x and y axis.
-	 * Do NEVER call this in the AI!
+	 * 
+	 * @return
 	 */
-	public void mirror()
+	public TrackedBall mirror()
 	{
-		pos.set(new Vector3(-pos.x(), -pos.y(), pos.z()));
-		vel.set(new Vector3(-vel.x(), -vel.y(), vel.z()));
-		acc.set(new Vector3(-acc.x(), -acc.y(), acc.z()));
+		TrackedBall tb = new TrackedBall(this);
+		tb.pos.set(new Vector3(-pos.x(), -pos.y(), pos.z()));
+		tb.vel.set(new Vector3(-vel.x(), -vel.y(), vel.z()));
+		tb.acc.set(new Vector3(-acc.x(), -acc.y(), acc.z()));
+		return tb;
 	}
 	
 	
@@ -140,24 +130,74 @@ public class TrackedBall extends ATrackedObject
 	 * gets the theoretical position of the ball after a given time
 	 * 
 	 * @param time [s]
-	 * @return
+	 * @return the position
 	 */
-	public IVector2 getPosAt(float time)
+	public IVector2 getPosByTime(final float time)
 	{
-		/*
-		 * f(x) = ballVel / ( x + 1 )
-		 * F(x) = ballVel * log( x + 1 )
-		 * Integrate from 0 to time, to get moved distance.
-		 */
-		double distance = (getVel().getLength2() * Math.log(time + 1)) - (getVel().getLength2() * Math.log(1));
-		float distanceF = (float) distance;
-		return getPos().addNew(getVel().normalizeNew().multiplyNew(DistanceUnit.METERS.toMillimeters(distanceF)));
+		return AIConfig.getBallModel().getPosByTime(getPos(), getVel(), time);
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
+	/**
+	 * gets the theoretical position of the ball when it reaches a given velocity
+	 * 
+	 * @param velocity [m/s]
+	 * @return the position
+	 */
+	public IVector2 getPosByVel(final float velocity)
+	{
+		return AIConfig.getBallModel().getPosByVel(getPos(), getVel(), velocity);
+	}
+	
+	
+	/**
+	 * gets the theoretical needed time for the ball to reach pos,
+	 * pos should be on the balls movementPath.
+	 * 
+	 * @param pos
+	 * @return the time [s]
+	 */
+	public float getTimeByPos(final IVector2 pos)
+	{
+		return AIConfig.getBallModel().getTimeByDist(getVel().getLength2(), GeoMath.distancePP(pos, getPos()));
+	}
+	
+	
+	/**
+	 * gets the theoretical time where the ball reaches a given velocity
+	 * 
+	 * @param velocity [m/s]
+	 * @return the time [s]
+	 */
+	public float getTimeByVel(final float velocity)
+	{
+		return AIConfig.getBallModel().getTimeByVel(getVel().getLength2(), velocity);
+	}
+	
+	
+	/**
+	 * gets the theoretical velocity of the ball at a given position
+	 * 
+	 * @param pos
+	 * @return the velocity [m/s]
+	 */
+	public float getVelByPos(final IVector2 pos)
+	{
+		return AIConfig.getBallModel().getVelByDist(getVel().getLength2(), GeoMath.distancePP(pos, getPos()));
+	}
+	
+	
+	/**
+	 * gets the theoretical velocity of the ball after a given time
+	 * 
+	 * @param time [s]
+	 * @return the velocity [m/s]
+	 */
+	public float getVelByTime(final float time)
+	{
+		return AIConfig.getBallModel().getVelByTime(getVel().getLength2(), time);
+	}
+	
 	
 	@Override
 	public BallID getId()
@@ -167,7 +207,6 @@ public class TrackedBall extends ATrackedObject
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public boolean isOnCam()
@@ -198,7 +237,6 @@ public class TrackedBall extends ATrackedObject
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public IVector3 getPos3()
@@ -208,7 +246,6 @@ public class TrackedBall extends ATrackedObject
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public IVector3 getVel3()
@@ -218,12 +255,10 @@ public class TrackedBall extends ATrackedObject
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public IVector3 getAcc3()
 	{
 		return acc;
 	}
-	
 }

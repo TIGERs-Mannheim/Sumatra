@@ -9,7 +9,6 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.rectangle;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -24,10 +23,10 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.ILine;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Line;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.finder.traj.obstacles.IObstacle;
 
 
 /**
- * 
  * This abstract class represents a rectangle. It is used i. e. to describe a part-rectangle of the field.
  * Implementing {@link IRectangle}.
  * Superclass for {@link Rectangle} and {@link Rectangle}.
@@ -35,13 +34,12 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Line;
  * @author Oliver Steinbrecher <OST1988@aol.com>, MalteM
  */
 @Persistent
-public abstract class ARectangle implements Serializable, IRectangle
+public abstract class ARectangle implements IRectangle, IObstacle
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	/**  */
-	private static final long	serialVersionUID	= 471915511201286760L;
+	private static Random	randomGenerator	= new Random();
 	
 	
 	// --------------------------------------------------------------------------
@@ -83,14 +81,14 @@ public abstract class ARectangle implements Serializable, IRectangle
 	
 	
 	/**
-	 * 
 	 * Function is used to check if two rectangles are equal. First compare the length and width and then the content of
 	 * idSet.
+	 * 
 	 * @param obj
 	 * @return true when equal.
 	 */
 	@Override
-	public boolean equals(Object obj)
+	public boolean equals(final Object obj)
 	{
 		if (obj == null)
 		{
@@ -127,12 +125,13 @@ public abstract class ARectangle implements Serializable, IRectangle
 	
 	/**
 	 * checks if the point is inside the rectangle
+	 * 
 	 * @param point
 	 * @return true if inside (corners included!!)
 	 * @author DanielW
 	 */
 	@Override
-	public boolean isPointInShape(IVector2 point)
+	public boolean isPointInShape(final IVector2 point)
 	{
 		return isPointInShape(point, 0);
 	}
@@ -140,12 +139,13 @@ public abstract class ARectangle implements Serializable, IRectangle
 	
 	/**
 	 * checks if the point is inside the rectangle
+	 * 
 	 * @param point
 	 * @param margin
 	 * @return true if inside (corners included!!)
 	 * @author DanielW
 	 */
-	public boolean isPointInShape(IVector2 point, float margin)
+	public boolean isPointInShape(final IVector2 point, final float margin)
 	{
 		return (((point.x() + margin) >= topLeft().x()) && ((point.x() - margin) <= (topLeft().x() + xExtend()))
 				&& ((point.y() - margin) <= topLeft().y()) && ((point.y() + margin) >= (topLeft().y() - yExtend())));
@@ -159,19 +159,19 @@ public abstract class ARectangle implements Serializable, IRectangle
 	 * _ _ /_ _
 	 * |  /   |
 	 * | /    |
-	 * |/_ _ _| 
+	 * |/_ _ _|
 	 * /
 	 * </pre>
 	 * 
 	 * Funktioniert zur Zeit noch nicht..
+	 * 
 	 * @param line
 	 * @return true if intersecting
 	 * @author MalteM
-	 * 
 	 */
 	@Override
 	@Deprecated
-	public boolean isLineIntersectingShape(ILine line)
+	public boolean isLineIntersectingShape(final ILine line)
 	{
 		final IVector2 s = new Vector2(line.supportVector());
 		final IVector2 n = line.directionVector().normalizeNew();
@@ -185,14 +185,13 @@ public abstract class ARectangle implements Serializable, IRectangle
 	
 	
 	/**
-	 * 
 	 * <pre>
 	 * Calculates intersection points of line intersection
 	 * 
 	 * _ _ /_ _ _
 	 * |  /     |
 	 * | /      |
-	 * |/_ _ _ _| 
+	 * |/_ _ _ _|
 	 * /
 	 * </pre>
 	 * 
@@ -204,7 +203,7 @@ public abstract class ARectangle implements Serializable, IRectangle
 	 *         Three vectors: Intersection along line (intersection corners of Rectangle and middle point in between)
 	 * @author DionH
 	 */
-	public List<IVector2> lineIntersection(ILine line)
+	public List<IVector2> lineIntersection(final ILine line)
 	{
 		final List<IVector2> retList = new ArrayList<IVector2>();
 		float vecT;
@@ -305,7 +304,7 @@ public abstract class ARectangle implements Serializable, IRectangle
 	 * @param dir1
 	 * @return true if intersecting
 	 */
-	public boolean isLineSegmentIntersectingRectangle(IVector2 startPoint, IVector2 dir1)
+	public boolean isLineSegmentIntersectingRectangle(final IVector2 startPoint, final IVector2 dir1)
 	{
 		final IVector2 endPoint = startPoint.addNew(dir1);
 		
@@ -354,40 +353,42 @@ public abstract class ARectangle implements Serializable, IRectangle
 	 * returns the nearest point outside this rectangle:
 	 * - the point itself if outside
 	 * - a point on the outer circumference if inside
+	 * 
 	 * @param point
 	 * @return a point guaranteed to be outside of the rectangle
 	 * @author DionH
 	 */
 	@Override
-	public IVector2 nearestPointOutside(IVector2 point)
+	public IVector2 nearestPointOutside(final IVector2 point)
 	{
 		// if point is inside
-		if ((point.x() > topLeft().x()) && (point.x() < topRight().x()) && (point.y() > topLeft().y())
-				&& (point.y() < bottomLeft().y()))
+		// if ((point.x() > topLeft().x()) && (point.x() < topRight().x()) && (point.y() > topLeft().y())
+		// && (point.y() < bottomLeft().y()))
+		if (isPointInShape(point))
 		{
 			IVector2 nearestPoint;
 			float distance;
 			
 			// left
-			distance = point.x() - topLeft().x();
+			distance = Math.abs(point.x() - topLeft().x());
 			nearestPoint = new Vector2(topLeft().x(), point.y());
 			
 			// right
-			if (distance > (topRight().x() - point.x()))
+			if (distance > Math.abs(topRight().x() - point.x()))
 			{
 				distance = topRight().x() - point.x();
 				nearestPoint = new Vector2(topRight().x(), point.y());
 			}
 			
 			// top
-			if (distance > (point.y() - topLeft().y()))
+			if (distance > Math.abs(point.y() - topLeft().y()))
 			{
 				distance = point.y() - topLeft().y();
 				nearestPoint = new Vector2(point.x(), topLeft().y());
 			}
 			
 			// bottom
-			if (distance > (bottomLeft().y() - point.y()))
+			if (distance > Math.abs(bottomLeft().y() - point.y()))
 			{
 				nearestPoint = new Vector2(point.x(), bottomLeft().y());
 			}
@@ -396,7 +397,7 @@ public abstract class ARectangle implements Serializable, IRectangle
 		}
 		
 		// else return point
-		return new Vector2(point);
+		return point;
 	}
 	
 	
@@ -404,11 +405,12 @@ public abstract class ARectangle implements Serializable, IRectangle
 	 * returns the nearest point inside this rectangle:
 	 * - the point itself if inside
 	 * - a point on the outer circumference if outside
+	 * 
 	 * @param point
 	 * @return a point guaranteed to be within rectangle
 	 * @author DanielW
 	 */
-	public IVector2 nearestPointInside(IVector2 point)
+	public IVector2 nearestPointInside(final IVector2 point)
 	{
 		final Vector2 inside = new Vector2(0, 0);
 		// setx
@@ -440,7 +442,24 @@ public abstract class ARectangle implements Serializable, IRectangle
 	
 	
 	/**
+	 * returns the nearest point inside this rectangle:
+	 * - the point itself if inside
+	 * - a point on the outer circumference if outside
 	 * 
+	 * @param point
+	 * @param margin
+	 * @return a point guaranteed to be within rectangle
+	 * @author DanielW
+	 */
+	public IVector2 nearestPointInside(final IVector2 point, final float margin)
+	{
+		IVector2 inside = nearestPointInside(point);
+		IVector2 dir = inside.subtractNew(point).normalizeNew();
+		return inside.addNew(dir.multiplyNew(margin));
+	}
+	
+	
+	/**
 	 * Generates a random point within the shape.
 	 * 
 	 * @return a random point within the shape
@@ -451,7 +470,6 @@ public abstract class ARectangle implements Serializable, IRectangle
 	{
 		float x;
 		float y;
-		Random randomGenerator = new Random(System.nanoTime());
 		
 		if (SumatraMath.hasDigitsAfterDecimalPoint(xExtend()) || SumatraMath.hasDigitsAfterDecimalPoint(yExtend()))
 		{
@@ -473,7 +491,6 @@ public abstract class ARectangle implements Serializable, IRectangle
 		{
 			/*
 			 * handle normal rectangles
-			 * 
 			 * Especially when the length and width have no position after decimal point
 			 * the result vector should not have one.
 			 */
@@ -501,7 +518,7 @@ public abstract class ARectangle implements Serializable, IRectangle
 	
 	
 	@Override
-	public List<IVector2> getIntersectionPoints(ILine line) throws MathException
+	public List<IVector2> getIntersectionPoints(final ILine line) throws MathException
 	{
 		List<IVector2> allIntersectionPoints = new ArrayList<IVector2>(4);
 		
@@ -538,7 +555,7 @@ public abstract class ARectangle implements Serializable, IRectangle
 	
 	
 	@Override
-	public IVector2 getDistantIntersectionPoint(ILine line) throws MathException
+	public IVector2 getDistantIntersectionPoint(final ILine line) throws MathException
 	{
 		List<IVector2> points = getIntersectionPoints(line);
 		
@@ -565,7 +582,7 @@ public abstract class ARectangle implements Serializable, IRectangle
 	
 	
 	@Override
-	public IVector2 getNearIntersectionPoint(ILine line) throws MathException
+	public IVector2 getNearIntersectionPoint(final ILine line) throws MathException
 	{
 		List<IVector2> points = getIntersectionPoints(line);
 		

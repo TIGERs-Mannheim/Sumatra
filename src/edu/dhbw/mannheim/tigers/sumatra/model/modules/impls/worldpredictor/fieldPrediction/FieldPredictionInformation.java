@@ -4,13 +4,13 @@
  * Project: TIGERS - Sumatra
  * Date: May 17, 2013
  * Author(s): Dirk Klostermann <klostermannn@googlemail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.fieldPrediction;
 
 import com.sleepycat.persist.model.Persistent;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 
@@ -19,7 +19,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
  * data holder for the prediction information of a field obstacle (ball or bot)
  * 
  * @author Dirk Klostermann <klostermannn@googlemail.com>
- * 
  */
 @Persistent(version = 3)
 public class FieldPredictionInformation
@@ -42,8 +41,8 @@ public class FieldPredictionInformation
 	@SuppressWarnings("unused")
 	private FieldPredictionInformation()
 	{
-		pos = new Vector2(Vector2.ZERO_VECTOR);
-		vel = new Vector2(Vector2.ZERO_VECTOR);
+		pos = new Vector2(AVector2.ZERO_VECTOR);
+		vel = new Vector2(AVector2.ZERO_VECTOR);
 		firstCrashAfterTime = 0;
 	}
 	
@@ -53,7 +52,7 @@ public class FieldPredictionInformation
 	 * @param vel
 	 * @param firstCrashAfterTime
 	 */
-	public FieldPredictionInformation(IVector2 pos, IVector2 vel, float firstCrashAfterTime)
+	public FieldPredictionInformation(final IVector2 pos, final IVector2 vel, final float firstCrashAfterTime)
 	{
 		super();
 		this.pos = new Vector2(pos);
@@ -77,7 +76,6 @@ public class FieldPredictionInformation
 		{
 			time = firstCrashAfterTime;
 		}
-		// TODO DirkK ball should not stop but change direction
 		IVector2 velocityLength = vel.multiplyNew(time);
 		// if (time > 1)
 		// {
@@ -107,5 +105,14 @@ public class FieldPredictionInformation
 		FieldPredictionInformation fpi = new FieldPredictionInformation(pos.multiplyNew(-1), vel.multiplyNew(-1),
 				firstCrashAfterTime);
 		return fpi;
+	}
+	
+	
+	/**
+	 * @return the vel
+	 */
+	public IVector2 getVel()
+	{
+		return vel;
 	}
 }

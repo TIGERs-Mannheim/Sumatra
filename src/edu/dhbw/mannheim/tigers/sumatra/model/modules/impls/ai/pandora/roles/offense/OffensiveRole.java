@@ -8,8 +8,8 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.EGameState;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.states.OffensiveRoleStopState;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.OffensiveStrategy.EOffensiveStrategy;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.states.OffensiveRoleSupportiveAttackerState;
 
 
 /**
@@ -17,7 +17,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.off
  * 
  * @author Mark Geiger <Mark.Geiger@dlr.de>
  */
-public class OffensiveRole extends OffensiveRoleStopState
+public class OffensiveRole extends OffensiveRoleSupportiveAttackerState
 {
 	
 	// --------------------------------------------------------------------------
@@ -33,55 +33,77 @@ public class OffensiveRole extends OffensiveRoleStopState
 	public OffensiveRole()
 	{
 		super();
-		
 		BallGettingState getter = new BallGettingState();
 		KickState kicker = new KickState();
 		StopState stop = new StopState();
+		DelayState delay = new DelayState();
+		RedirectCatchSpecialMoveState redirector = new RedirectCatchSpecialMoveState();
+		InterceptionState intercept = new InterceptionState();
+		SupportiveAttackerState supporter = new SupportiveAttackerState();
+		setInitialState(stop);
 		
-		setInitialState(getter);
+		addTransition(EOffensiveStrategy.GET, getter);
+		addTransition(EOffensiveStrategy.KICK, kicker);
+		addTransition(EOffensiveStrategy.DELAY, delay);
+		addTransition(EOffensiveStrategy.STOP, stop);
+		addTransition(EOffensiveStrategy.REDIRECT_CATCH_SPECIAL_MOVE, redirector);
+		addTransition(EOffensiveStrategy.INTERCEPT, intercept);
+		addTransition(EOffensiveStrategy.SUPPORTIVE_ATTACKER, supporter);
+	}
+	
+	
+	@Override
+	public void beforeFirstUpdate()
+	{
+		EOffensiveStrategy initialState = getAiFrame().getTacticalField().getOffensiveStrategy()
+				.getCurrentOffensivePlayConfiguration().get(getBotID());
 		
-		addTransition(EStateId.GET, EEvent.BALL_CONTROL_OBTAINED, kicker);
-		addTransition(EStateId.KICK, EEvent.LOST_BALL, getter);
-		addTransition(EStateId.STOP, EEvent.GAME_STARTED, getter);
-		addTransition(EStateId.GET, EEvent.STOP, stop);
-		addTransition(EStateId.KICK, EEvent.STOP, stop);
-		addTransition(EStateId.STOP, EEvent.NORMALSTART, getter);
+		if (initialState == null)
+		{
+			int idx = getAiFrame().getPrevFrame().getAICom().getUnassignedStateCounter();
+			
+			if (idx >= getAiFrame().getTacticalField().getOffensiveStrategy().getUnassignedStrategies().size())
+			{
+				initialState = EOffensiveStrategy.REDIRECT_CATCH_SPECIAL_MOVE;
+			} else
+			{
+				initialState = getAiFrame().getTacticalField().getOffensiveStrategy().getUnassignedStrategies()
+						.get(idx);
+				getAiFrame().getPrevFrame().getAICom().setUnassignedStateCounter(idx + 1);
+			}
+		}
+		
+		switch (initialState)
+		{
+			case REDIRECT_CATCH_SPECIAL_MOVE:
+				triggerEvent(EOffensiveStrategy.REDIRECT_CATCH_SPECIAL_MOVE);
+				break;
+			case DELAY:
+				triggerEvent(EOffensiveStrategy.DELAY);
+				break;
+			case GET:
+				triggerEvent(EOffensiveStrategy.GET);
+				break;
+			case INTERCEPT:
+				triggerEvent(EOffensiveStrategy.INTERCEPT);
+				break;
+			case KICK:
+				triggerEvent(EOffensiveStrategy.KICK);
+				break;
+			case STOP:
+				triggerEvent(EOffensiveStrategy.STOP);
+				break;
+			case SUPPORTIVE_ATTACKER:
+				triggerEvent(EOffensiveStrategy.SUPPORTIVE_ATTACKER);
+				break;
+			default:
+				break;
+		}
 	}
 	
 	
 	// ----------------------------------------------------------------------- //
 	// -------------------- functions ---------------------------------------- //
 	// ----------------------------------------------------------------------- //
-	
-	@Override
-	public void onGameStateChanged(final EGameState gameState)
-	{
-		setNormalStart(false);
-		switch (gameState)
-		{
-			case CORNER_KICK_THEY:
-			case TIMEOUT_THEY:
-			case TIMEOUT_WE:
-			case DIRECT_KICK_THEY:
-			case GOAL_KICK_THEY:
-			case HALTED:
-			case PREPARE_PENALTY_THEY:
-			case PREPARE_KICKOFF_THEY:
-			case PREPARE_KICKOFF_WE:
-			case PREPARE_PENALTY_WE:
-			case STOPPED:
-			case THROW_IN_THEY:
-				nextState(EEvent.STOP);
-				break;
-			case CORNER_KICK_WE:
-			case DIRECT_KICK_WE:
-			case GOAL_KICK_WE:
-			case THROW_IN_WE:
-				nextState(EEvent.GAME_STARTED);
-				break;
-			default:
-				break;
-		}
-	}
 	
 }

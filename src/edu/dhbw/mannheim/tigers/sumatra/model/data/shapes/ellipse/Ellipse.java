@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Jan 17, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.ellipse;
@@ -16,16 +15,17 @@ import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.rectangle.Rectangle;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.ILine;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Line;
 
 
 /**
  * Default implementation of an ellipse
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 @Persistent
 public class Ellipse implements IEllipse
@@ -91,6 +91,7 @@ public class Ellipse implements IEllipse
 	
 	/**
 	 * Copy constructor
+	 * 
 	 * @param ellipse
 	 */
 	public Ellipse(final IEllipse ellipse)
@@ -104,7 +105,7 @@ public class Ellipse implements IEllipse
 	// --------------------------------------------------------------------------
 	
 	@Override
-	public IVector2 getApex(EApexType apexType)
+	public IVector2 getApex(final EApexType apexType)
 	{
 		final IVector2 res;
 		final float bigRad = getDiameterMax();
@@ -183,7 +184,7 @@ public class Ellipse implements IEllipse
 	
 	
 	@Override
-	public boolean isPointInShape(IVector2 point)
+	public boolean isPointInShape(final IVector2 point)
 	{
 		final float lenPos = getFocusPositive().subtractNew(point).getLength2();
 		final float lenNeg = getFocusNegative().subtractNew(point).getLength2();
@@ -196,14 +197,35 @@ public class Ellipse implements IEllipse
 	
 	
 	@Override
-	public boolean isLineIntersectingShape(ILine line)
+	public boolean isLineIntersectingShape(final ILine line)
 	{
 		return !getIntersectingPoints(line).isEmpty();
 	}
 	
 	
+	/**
+	 * @param start
+	 * @param end
+	 * @return
+	 */
+	public boolean isLineSegmentIntersectingShape(final IVector2 start, final IVector2 end)
+	{
+		List<IVector2> intersecs = getIntersectingPoints(Line.newLine(start, end));
+		Rectangle rect = new Rectangle(start, end);
+		int numInvalid = 0;
+		for (IVector2 inters : intersecs)
+		{
+			if (!rect.isPointInShape(inters))
+			{
+				numInvalid++;
+			}
+		}
+		return (intersecs.size() - numInvalid) > 0;
+	}
+	
+	
 	@Override
-	public IVector2 nearestPointOutside(IVector2 point)
+	public IVector2 nearestPointOutside(final IVector2 point)
 	{
 		// get a point, that lies on one line with center and point and is outside field (greater radius distance from
 		// center)
@@ -218,7 +240,7 @@ public class Ellipse implements IEllipse
 	
 	
 	@Override
-	public IVector2 stepOnCurve(IVector2 start, float step)
+	public IVector2 stepOnCurve(final IVector2 start, final float step)
 	{
 		if (GeoMath.distancePP(start, nearestPointOutside(start)) > POINT_ON_CURVE_TOL)
 		{
@@ -286,7 +308,7 @@ public class Ellipse implements IEllipse
 	
 	
 	@Override
-	public List<IVector2> getIntersectingPoints(ILine line)
+	public List<IVector2> getIntersectingPoints(final ILine line)
 	{
 		final IVector2 pt1 = line.supportVector();
 		final IVector2 pt2 = line.supportVector().addNew(line.directionVector());
@@ -296,7 +318,7 @@ public class Ellipse implements IEllipse
 	
 	
 	@Override
-	public List<IVector2> getIntersectingPoints(IVector2 p1, IVector2 p2)
+	public List<IVector2> getIntersectingPoints(final IVector2 p1, final IVector2 p2)
 	{
 		return getIntersectingPoints(p1, p2, false);
 	}

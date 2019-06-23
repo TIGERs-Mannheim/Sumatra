@@ -14,6 +14,7 @@ import net.sf.oval.constraint.NotNull;
 import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.AICom;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.AresData;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.IPlayStrategy;
@@ -26,7 +27,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.referee.RefereeMsg;
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@Entity(version = 4)
+@Entity(version = 6)
 public class RecordFrame implements IRecordFrame
 {
 	// --------------------------------------------------------------------------
@@ -44,6 +45,8 @@ public class RecordFrame implements IRecordFrame
 	
 	/** only contains new referee messages (for one frame) */
 	private final RefereeMsg		refereeMsg;
+	/** the updated referee message. It will contain current times, scores, etc. */
+	private final RefereeMsg		latestRefereeMsg;
 	
 	/** stores all tactical information added by metis' calculators. */
 	@NotNull
@@ -62,6 +65,8 @@ public class RecordFrame implements IRecordFrame
 	@NotNull
 	private final ETeamColor		teamColor;
 	
+	private final float				fps;
+	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
@@ -75,7 +80,9 @@ public class RecordFrame implements IRecordFrame
 		playStrategy = null;
 		aresData = new AresData();
 		refereeMsg = null;
+		latestRefereeMsg = null;
 		teamColor = null;
+		fps = 0;
 	}
 	
 	
@@ -90,8 +97,10 @@ public class RecordFrame implements IRecordFrame
 		playStrategy = aiFrame.getPlayStrategy();
 		
 		aresData = new AresData(aiFrame.getAresData());
-		refereeMsg = aiFrame.getLatestRefereeMsg();
+		refereeMsg = aiFrame.getNewRefereeMsg();
+		latestRefereeMsg = aiFrame.getLatestRefereeMsg();
 		teamColor = aiFrame.getTeamColor();
+		fps = aiFrame.getFps();
 	}
 	
 	
@@ -107,6 +116,16 @@ public class RecordFrame implements IRecordFrame
 	{
 		id = nextId;
 		nextId++;
+	}
+	
+	
+	/**
+	 * @param id
+	 */
+	@Override
+	public void setId(final int id)
+	{
+		this.id = id;
 	}
 	
 	
@@ -130,6 +149,16 @@ public class RecordFrame implements IRecordFrame
 	 */
 	@Override
 	public final RefereeMsg getLatestRefereeMsg()
+	{
+		return latestRefereeMsg;
+	}
+	
+	
+	/**
+	 * @return the refereeMsg
+	 */
+	@Override
+	public final RefereeMsg getNewRefereeMsg()
 	{
 		return refereeMsg;
 	}
@@ -179,7 +208,22 @@ public class RecordFrame implements IRecordFrame
 	@Override
 	public void cleanUp()
 	{
-		// remove ValuedFields as they are too big atm
-		tacticalInfo.getSupportValues().clear();
+		tacticalInfo.cleanup();
 	}
+	
+	
+	@Override
+	public float getFps()
+	{
+		return fps;
+	}
+	
+	
+	@Override
+	public AICom getAICom()
+	{
+		return new AICom();
+	}
+	
+	
 }

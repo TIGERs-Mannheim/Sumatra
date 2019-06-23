@@ -8,29 +8,28 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem;
 
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.moduli.exceptions.InitModuleException;
 import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
+import edu.dhbw.mannheim.tigers.moduli.exceptions.StartModuleException;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.AresData;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.Sisyphus;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.PathFinderThread;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.TigerBotV3;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ImmediateStopSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.IdleSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IBotManagerObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ABotManager;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ASkillSystem;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AWorldPredictor;
-import edu.dhbw.mannheim.tigers.sumatra.util.NamedThreadFactory;
 
 
 /**
@@ -38,45 +37,22 @@ import edu.dhbw.mannheim.tigers.sumatra.util.NamedThreadFactory;
  * 
  * @author AndreR
  */
-public class GenericSkillSystem extends ASkillSystem implements IBotManagerObserver
-
+public class GenericSkillSystem extends ASkillSystem
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	// Logger
-	private static final Logger						log				= Logger.getLogger(GenericSkillSystem.class.getName());
+	private static final Logger				log							= Logger
+																								.getLogger(GenericSkillSystem.class.getName());
 	
-	private ABotManager									botManager		= null;
-	private AWorldPredictor								worldpredictor	= null;
+	private final BotManagerObserver			botManagerObserver		= new BotManagerObserver();
+	private final SkillExecutorScheduler	skillExecutorScheduler	= new SkillExecutorScheduler();
+	private ABotManager							botManager;
+	private final PathFinderThread			pathFinderScheduler		= new PathFinderThread();
 	
-	private final Map<BotID, SkillExecutorInfo>	skillExecutors	= new HashMap<BotID, SkillExecutorInfo>();
-	/** [us] */
-	private final long									minPeriod;
-	
-	private final Sisyphus								sisyphus			= new Sisyphus();
-	
-	private static class SkillExecutorInfo
-	{
-		/** */
-		public SkillExecutor					executor;
-		/** */
-		public ExecutorHandler				handler;
-		/** */
-		public ScheduledExecutorService	service;
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	  * 
 	  */
 	public GenericSkillSystem()
 	{
-		minPeriod = 20000;
 	}
 	
 	
@@ -85,42 +61,63 @@ public class GenericSkillSystem extends ASkillSystem implements IBotManagerObser
 	 */
 	public GenericSkillSystem(final SubnodeConfiguration subnodeConfiguration)
 	{
-		minPeriod = subnodeConfiguration.getLong("minProcessingPeriod");
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	@Override
 	public void initModule() throws InitModuleException
 	{
 	}
 	
 	
-	@Override
-	public void startModule()
+	/**
+	 * initialize skill system without starting threads
+	 */
+	public void init()
 	{
 		try
 		{
 			botManager = (ABotManager) SumatraModel.getInstance().getModule(ABotManager.MODULE_ID);
-			worldpredictor = (AWorldPredictor) SumatraModel.getInstance().getModule(AWorldPredictor.MODULE_ID);
-			
+			botManager.addObserver(botManagerObserver);
+			for (Map.Entry<BotID, ABot> entry : botManager.getAllBots().entrySet())
+			{
+				BotID botId = entry.getKey();
+				ABot bot = entry.getValue();
+				skillExecutorScheduler.addSkillExecutor(botId, new SkillExecutor(bot, this));
+				skillExecutorScheduler.addObserver(new ExecutorHandler(botId), botId);
+			}
 		} catch (final ModuleNotFoundException err)
 		{
 			log.error("Unable to find module '" + ABotManager.MODULE_ID + "'!");
-			return;
 		}
-		
-		botManager.addObserver(this);
-		
-		// Finish initialization
-		final Map<BotID, ABot> botList = botManager.getAllBots();
-		
-		// create bot skill executors
-		for (final BotID botId : botList.keySet())
+	}
+	
+	
+	@Override
+	public void startModule() throws StartModuleException
+	{
+		super.startModule();
+		init();
+		skillExecutorScheduler.start();
+		pathFinderScheduler.startScheduler();
+	}
+	
+	
+	/**
+	 */
+	public void deinit()
+	{
+		if (botManager != null)
 		{
-			addExecutor(botId);
+			botManager.removeObserver(botManagerObserver);
+			for (BotID botId : botManager.getAllBots().keySet())
+			{
+				SkillExecutor skillExecutor = skillExecutorScheduler.removeSkillExecutor(botId);
+				if (skillExecutor != null)
+				{
+					skillExecutor.clearObservers();
+				}
+			}
 		}
 	}
 	
@@ -128,118 +125,71 @@ public class GenericSkillSystem extends ASkillSystem implements IBotManagerObser
 	@Override
 	public void stopModule()
 	{
-		if (botManager != null)
-		{
-			botManager.removeObserver(this);
-		}
-		
+		super.stopModule();
 		emergencyStop();
 		
-		for (final SkillExecutorInfo info : skillExecutors.values())
-		{
-			removeExecutor(info.handler.getBotID());
-		}
+		pathFinderScheduler.stopScheduler();
 		
-		sisyphus.stopAllPathPlanning();
+		deinit();
 		
-		skillExecutors.clear();
-	}
-	
-	
-	@Override
-	public void deinitModule()
-	{
-		super.deinitModule();
-		
-		botManager = null;
-		worldpredictor = null;
+		skillExecutorScheduler.stop();
 	}
 	
 	
 	@Override
 	public void execute(final BotID botId, final ISkill skill)
 	{
-		final SkillExecutorInfo info = skillExecutors.get(botId);
-		if ((info == null) || (info.executor == null))
-		{
-			log.warn("invalid botID: " + botId);
-			return;
-		}
-		
-		info.executor.setSkill(skill);
+		skillExecutorScheduler.execute(skill, botId);
 		
 	}
 	
 	
 	@Override
-	public void onBotIdChanged(final BotID oldId, final BotID newId)
+	public void reset(final BotID botId)
 	{
-		final SkillExecutorInfo info = skillExecutors.get(oldId);
-		info.handler.setBotId(newId);
-		
-		skillExecutors.put(newId, info);
-		skillExecutors.remove(oldId);
+		skillExecutorScheduler.execute(new IdleSkill(), botId);
 	}
 	
 	
 	@Override
-	public void onBotAdded(final ABot bot)
+	public void emergencyStop()
 	{
-		addExecutor(bot.getBotID());
+		skillExecutorScheduler.resetAll();
+		checkObserversCleared();
 	}
 	
 	
+	/**
+	 * @return the latestAresData
+	 */
 	@Override
-	public void onBotRemoved(final ABot bot)
+	public AresData getLatestAresData()
 	{
-		removeExecutor(bot.getBotID());
+		AresData aresData = new AresData();
+		for (ISkill skill : skillExecutorScheduler.getCurrentSkills())
+		{
+			BotID botID = skill.getBot().getBotID();
+			aresData.getPaths().put(botID, skill.getDrawablePath());
+			aresData.getLatestPaths().put(botID, skill.getLatestDrawablePath());
+			aresData.getNumPaths().put(botID, skill.getNewPathCounter());
+			aresData.getSkills().put(botID, skill.getSkillName().name());
+		}
+		return new AresData(aresData);
 	}
 	
 	
-	private void addExecutor(final BotID botID)
+	/**
+	 * @return the pathFinderScheduler
+	 */
+	@Override
+	public final PathFinderThread getPathFinderScheduler()
 	{
-		final ABot bot = botManager.getAllBots().get(botID);
-		final SkillExecutor executor = new SkillExecutor(bot, minPeriod, this);
-		final ExecutorHandler handler = new ExecutorHandler(botID);
-		
-		executor.addObserver(handler);
-		worldpredictor.addWorldFrameConsumer(executor);
-		
-		final SkillExecutorInfo info = new SkillExecutorInfo();
-		info.executor = executor;
-		info.handler = handler;
-		info.service = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("SkillExecutor bot "
-				+ botID.getNumber() + " " + botID.getTeamColor()));
-		skillExecutors.put(botID, info);
-		
-		info.service.scheduleAtFixedRate(executor, 0, minPeriod, TimeUnit.MICROSECONDS);
-	}
-	
-	
-	private void removeExecutor(final BotID botID)
-	{
-		final SkillExecutorInfo info = skillExecutors.get(botID);
-		if (info == null)
-		{
-			log.warn("Invalid executor id: " + botID);
-			return;
-		}
-		
-		worldpredictor.removeWorldFrameConsumer(info.executor);
-		info.service.shutdown();
-		try
-		{
-			info.service.awaitTermination(minPeriod, TimeUnit.MICROSECONDS);
-		} catch (InterruptedException err)
-		{
-			log.error("Interrupted.", err);
-		}
-		info.executor.removeObserver(info.handler);
+		return pathFinderScheduler;
 	}
 	
 	private class ExecutorHandler implements ISkillExecutorObserver
 	{
-		private BotID	botID;
+		private final BotID	botID;
 		
 		
 		/**
@@ -251,28 +201,21 @@ public class GenericSkillSystem extends ASkillSystem implements IBotManagerObser
 		}
 		
 		
-		/**
-		 * @param botID
-		 */
-		public void setBotId(final BotID botID)
-		{
-			this.botID = botID;
-		}
-		
-		
-		/**
-		 * @return
-		 */
-		public BotID getBotID()
-		{
-			return botID;
-		}
-		
-		
 		@Override
 		public void onNewCommand(final ACommand command)
 		{
 			botManager.execute(botID, command);
+		}
+		
+		
+		@Override
+		public void onNewMatchCommand(final List<ACommand> commands)
+		{
+			ABot bot = botManager.getAllBots().get(botID);
+			if ((bot != null) && (bot.getType() == EBotType.TIGER_V3))
+			{
+				((TigerBotV3) bot).executeMatchCmd(commands);
+			}
 		}
 		
 		
@@ -285,37 +228,72 @@ public class GenericSkillSystem extends ASkillSystem implements IBotManagerObser
 		
 		
 		@Override
+		public void onSkillCompletedItself(final ISkill skill)
+		{
+			notifySkillCompleted(skill, botID);
+		}
+		
+		
+		@Override
 		public void onSkillCompleted(final ISkill skill)
 		{
 			log.trace("Completed Skill " + skill.getSkillName() + " on Bot " + botID);
-			notifySkillCompleted(skill, botID);
+		}
+		
+		
+		@Override
+		public void onSkillProcessed(final ISkill skill)
+		{
 		}
 	}
 	
-	
-	@Override
-	public void emergencyStop()
+	private class BotManagerObserver implements IBotManagerObserver
 	{
-		if (botManager != null)
+		
+		
+		@Override
+		public void onBotConnectionChanged(final ABot bot)
 		{
-			for (final ABot bot : botManager.getAllBots().values())
+		}
+		
+		
+		@Override
+		public void onBotAdded(final ABot bot)
+		{
+			SkillExecutor skillExecutor = new SkillExecutor(bot, GenericSkillSystem.this);
+			skillExecutor.addObserver(new ExecutorHandler(bot.getBotID()));
+			skillExecutorScheduler.addSkillExecutor(bot.getBotID(), skillExecutor);
+		}
+		
+		
+		@Override
+		public void onBotRemoved(final ABot bot)
+		{
+			SkillExecutor skillExecutor = skillExecutorScheduler.removeSkillExecutor(bot.getBotID());
+			if (skillExecutor != null)
 			{
-				execute(bot.getBotID(), new ImmediateStopSkill());
+				skillExecutor.clearObservers();
 			}
 		}
-		checkObserversCleared();
+		
+		
+		@Override
+		public void onBotIdChanged(final BotID oldId, final BotID newId)
+		{
+			SkillExecutor skillExecutor = skillExecutorScheduler.removeSkillExecutor(oldId);
+			skillExecutor.clearObservers();
+			SkillExecutor newSkillExecutor = new SkillExecutor(skillExecutor.getBot(), GenericSkillSystem.this);
+			newSkillExecutor.addObserver(new ExecutorHandler(newId));
+			skillExecutorScheduler.addSkillExecutor(newId, newSkillExecutor);
+		}
 	}
 	
 	
-	@Override
-	public void onBotConnectionChanged(final ABot bot)
+	/**
+	 * @return the skillExecutorScheduler
+	 */
+	public final SkillExecutorScheduler getSkillExecutorScheduler()
 	{
-	}
-	
-	
-	@Override
-	public Sisyphus getSisyphus()
-	{
-		return sisyphus;
+		return skillExecutorScheduler;
 	}
 }

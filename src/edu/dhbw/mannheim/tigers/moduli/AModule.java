@@ -23,6 +23,7 @@ public abstract class AModule
 	private String						type;
 	private SubnodeConfiguration	subnodeConfiguration;
 	private List<String>				dependencies	= new ArrayList<String>();
+	private boolean					startModule		= true;
 	
 	
 	// --------------------------------------------------------------------------
@@ -31,6 +32,7 @@ public abstract class AModule
 	
 	/**
 	 * Inits module.
+	 * 
 	 * @throws InitModuleException
 	 */
 	public abstract void initModule() throws InitModuleException;
@@ -44,6 +46,7 @@ public abstract class AModule
 	
 	/**
 	 * Starts module.
+	 * 
 	 * @throws StartModuleException
 	 */
 	public abstract void startModule() throws StartModuleException;
@@ -71,7 +74,7 @@ public abstract class AModule
 	/**
 	 * @param id
 	 */
-	public void setId(String id)
+	public void setId(final String id)
 	{
 		this.id = id;
 	}
@@ -89,7 +92,7 @@ public abstract class AModule
 	/**
 	 * @param type
 	 */
-	public void setType(String type)
+	public void setType(final String type)
 	{
 		this.type = type;
 	}
@@ -107,14 +110,13 @@ public abstract class AModule
 	/**
 	 * @param dependencies
 	 */
-	public void setDependencies(List<String> dependencies)
+	public void setDependencies(final List<String> dependencies)
 	{
 		this.dependencies = dependencies;
 	}
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public SubnodeConfiguration getSubnodeConfiguration()
@@ -123,7 +125,7 @@ public abstract class AModule
 	}
 	
 	
-	void setSubnodeConfiguration(SubnodeConfiguration subnodeConfiguration)
+	void setSubnodeConfiguration(final SubnodeConfiguration subnodeConfiguration)
 	{
 		this.subnodeConfiguration = subnodeConfiguration;
 	}
@@ -139,5 +141,23 @@ public abstract class AModule
 		builder.append(type);
 		builder.append("]");
 		return builder.toString();
+	}
+	
+	
+	/**
+	 * @return the active
+	 */
+	public boolean isStartModule()
+	{
+		return startModule;
+	}
+	
+	
+	/**
+	 * @param startModule
+	 */
+	public void setStartModule(final boolean startModule)
+	{
+		this.startModule = startModule;
 	}
 }

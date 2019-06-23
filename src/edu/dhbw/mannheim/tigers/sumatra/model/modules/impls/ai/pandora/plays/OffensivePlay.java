@@ -8,13 +8,11 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee.Command;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AthenaAiFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.MetisAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.EGameState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.EpicPenaltyShooterRole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.OffensiveRole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.states.OffensiveRoleStopState;
 
 
 /**
@@ -31,18 +29,11 @@ public class OffensivePlay extends APlay
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private OffensiveRole				offensiveRole	= null;
-	private EpicPenaltyShooterRole	penaltyRole		= null;
-	private boolean						penaltyActive	= false;
-	
-	
 	/**
 	 */
 	public OffensivePlay()
 	{
 		super(EPlay.OFFENSIVE);
-		offensiveRole = new OffensiveRole();
-		penaltyRole = new EpicPenaltyShooterRole();
 	}
 	
 	
@@ -57,56 +48,44 @@ public class OffensivePlay extends APlay
 	
 	
 	@Override
-	protected ARole onRemoveRole()
+	protected ARole onRemoveRole(final MetisAiFrame frame)
 	{
 		return getLastRole();
 	}
 	
 	
 	@Override
-	protected ARole onAddRole()
+	protected ARole onAddRole(final MetisAiFrame frame)
 	{
-		offensiveRole = new OffensiveRole();
-		return offensiveRole;
+		OffensiveRole newRole;
+		newRole = new OffensiveRole();
+		return newRole;
+	}
+	
+	
+	@Override
+	public void updateBeforeRoles(final AthenaAiFrame frame)
+	{
 	}
 	
 	
 	@Override
 	protected void onGameStateChanged(final EGameState gameState)
 	{
-		switch (gameState)
-		{
-			case PREPARE_PENALTY_WE:
-				if (!penaltyActive)
-				{
-					penaltyRole = new EpicPenaltyShooterRole();
-					penaltyActive = true;
-					switchRoles(offensiveRole, penaltyRole);
-				}
-				break;
-			default:
-				if (penaltyActive)
-				{
-					penaltyActive = false;
-					switchRoles(penaltyRole, offensiveRole);
-				}
-				break;
-		}
+		
 	}
 	
 	
 	@Override
 	protected void doUpdate(final AthenaAiFrame frame)
 	{
-		if (frame.getNewRefereeMsg() != null)
-		{
-			if (frame.getNewRefereeMsg().getCommand().equals(Command.NORMAL_START))
-			{
-				OffensiveRoleStopState.normalStartCalled();
-			}
-		}
+		frame.getPrevFrame().getAICom().setSpecialMoveCounter(0);
+		frame.getAICom().setSpecialMoveCounter(0);
+		frame.getAICom().setUnassignedStateCounter(0);
+		frame.getPrevFrame().getAICom().setUnassignedStateCounter(0);
 	}
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
 }

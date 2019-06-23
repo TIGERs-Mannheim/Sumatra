@@ -8,15 +8,24 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects;
 
+import java.io.Serializable;
+import java.util.Comparator;
+
 import com.sleepycat.persist.model.Persistent;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeam;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.AObjectID;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.DummyBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.data.RobotMotionResult_V2;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.kalman.oextkal.data.RobotMotionResult_V2;
 
 
 /**
@@ -30,21 +39,19 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextk
  * @see ATrackedObject
  * @author Gero
  */
-@Persistent
+@Persistent(version = 2)
 public class TrackedTigerBot extends TrackedBot
 {
-	/**  */
-	private static final long	serialVersionUID	= -8452911236731387383L;
 	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
 	/**  */
-	private boolean				ballContact;
+	private boolean	ballContact;
 	
-	private transient boolean	visible				= true;
-	private transient ABot		bot					= null;
+	private boolean	visible	= true;
+	private ABot		bot		= new DummyBot();
 	
 	
 	// --------------------------------------------------------------------------
@@ -88,7 +95,13 @@ public class TrackedTigerBot extends TrackedBot
 			final float aAcc, final float confidence, final ABot bot, final ETeamColor color)
 	{
 		super(id, pos, vel, acc, height, angle, aVel, aAcc, confidence, ETeam.TIGERS, color);
-		this.bot = bot;
+		if (bot != null)
+		{
+			this.bot = bot;
+		} else
+		{
+			this.bot = new DummyBot();
+		}
 	}
 	
 	
@@ -102,6 +115,7 @@ public class TrackedTigerBot extends TrackedBot
 		this(o.id, o.getPos(), o.getVel(), o.getAcc(), o.getHeight(), o.getAngle(), o.getaVel(), o.getaAcc(), o
 				.getConfidence(), o.getBot(), o.getTeamColor());
 		ballContact = o.ballContact;
+		visible = o.visible;
 	}
 	
 	
@@ -124,6 +138,63 @@ public class TrackedTigerBot extends TrackedBot
 	}
 	
 	
+	/**
+	 * Create a bot with zero-state
+	 * 
+	 * @param botId
+	 * @param bot
+	 * @return
+	 */
+	public static TrackedTigerBot defaultBot(final BotID botId, final ABot bot)
+	{
+		return new TrackedTigerBot(botId, AVector2.ZERO_VECTOR, AVector2.ZERO_VECTOR, AVector2.ZERO_VECTOR, 135, 0, 0, 0,
+				0, bot, botId.getTeamColor());
+	}
+	
+	
+	/**
+	 * @param t
+	 * @return
+	 */
+	public IVector2 getPosByTime(final float t)
+	{
+		if (bot.getPathFinder().getCurPath() != null)
+		{
+			return bot.getPathFinder().getCurPath().getPosition(bot.getPathFinder().getCurPath().getVeryCurrentTime() + t);
+		}
+		return getPos().addNew(getVel().multiplyNew(t));
+	}
+	
+	
+	/**
+	 * @param t
+	 * @return
+	 */
+	public IVector2 getVelByTime(final float t)
+	{
+		if (bot.getPathFinder().getCurPath() != null)
+		{
+			return bot.getPathFinder().getCurPath().getVelocity(bot.getPathFinder().getCurPath().getVeryCurrentTime() + t);
+		}
+		return getVel();
+	}
+	
+	
+	/**
+	 * @param t
+	 * @return
+	 */
+	public float getAngleByTime(final float t)
+	{
+		if (bot.getPathFinder().getCurPath() != null)
+		{
+			return bot.getPathFinder().getCurPath()
+					.getOrientation(bot.getPathFinder().getCurPath().getVeryCurrentTime() + t);
+		}
+		return AngleMath.normalizeAngle(getAngle() + (getaVel() * t));
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -133,10 +204,6 @@ public class TrackedTigerBot extends TrackedBot
 	 */
 	public final EBotType getBotType()
 	{
-		if (bot == null)
-		{
-			return EBotType.UNKNOWN;
-		}
 		return bot.getType();
 	}
 	
@@ -144,21 +211,9 @@ public class TrackedTigerBot extends TrackedBot
 	/**
 	 * @return
 	 */
-	public boolean isManualControl()
+	public boolean isBlocked()
 	{
-		return (getBot() != null) && getBot().isManualControl();
-	}
-	
-	
-	/**
-	 * @param manualControl
-	 */
-	public void setManualControl(final boolean manualControl)
-	{
-		if (getBot() != null)
-		{
-			getBot().setManualControl(manualControl);
-		}
+		return (getBot() != null) && !getBot().getControlledBy().isEmpty();
 	}
 	
 	
@@ -219,5 +274,35 @@ public class TrackedTigerBot extends TrackedBot
 	public final void setVisible(final boolean visible)
 	{
 		this.visible = visible;
+	}
+	
+	/**  */
+	public static final Comparator<? super TrackedTigerBot>	DISTANCE_TO_GOAL_COMPARATOR	= new DistanceToGoalComparator();
+	
+	
+	private static class DistanceToGoalComparator implements Comparator<TrackedTigerBot>, Serializable
+	{
+		
+		/**  */
+		private static final long	serialVersionUID	= 1794858044291002364L;
+		
+		
+		@Override
+		public int compare(final TrackedTigerBot v1, final TrackedTigerBot v2)
+		{
+			if (GeoMath.distancePP(v1.getPos(), AIConfig.getGeometry().getGoalOur().getGoalCenter()) > GeoMath.distancePP(
+					v2.getPos(), AIConfig.getGeometry().getGoalOur().getGoalCenter()))
+			{
+				return 1;
+			} else if (GeoMath.distancePP(v1.getPos(), AIConfig.getGeometry().getGoalOur().getGoalCenter()) < GeoMath
+					.distancePP(v2.getPos(), AIConfig.getGeometry().getGoalOur().getGoalCenter()))
+			{
+				return -1;
+			} else
+			{
+				return 0;
+			}
+		}
+		
 	}
 }

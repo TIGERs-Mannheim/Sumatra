@@ -17,20 +17,24 @@ import java.util.Map;
 public enum EBotType
 {
 	/** */
-	UNKNOWN("Unknown", "Unknown Bot"),
+	UNKNOWN(0, "Unknown", "Unknown Bot"),
 	/** */
-	TIGER("TigerBot", "Tiger Bot"),
+	TIGER(2, "TigerBot", "Tiger Bot"),
 	/** */
-	TIGER_V2("TigerBotV2", "Tiger Bot v2013"),
-	/** */
-	GRSIM("grSim", "grSim Bot");
+	GRSIM(1, "grSim", "grSim Bot"),
+	/**  */
+	TIGER_V3(4, "TigerBotV3", "Tiger Bot v2015"),
+	/**  */
+	SUMATRA(5, "sumatra", "SumatraBot");
 	
-	private String	cfgName;
-	private String	displayName;
+	private final String	cfgName;
+	private final String	displayName;
+	private final int		versionId;
 	
 	
-	private EBotType(String cfgName, String displayName)
+	private EBotType(final int versionId, final String cfgName, final String displayName)
 	{
+		this.versionId = versionId;
 		this.cfgName = cfgName;
 		this.displayName = displayName;
 	}
@@ -60,7 +64,7 @@ public enum EBotType
 	 * @param cfgName
 	 * @return
 	 */
-	public static EBotType getTypeFromCfgName(String cfgName)
+	public static EBotType getTypeFromCfgName(final String cfgName)
 	{
 		for (EBotType t : EBotType.values())
 		{
@@ -89,5 +93,17 @@ public enum EBotType
 	public String getDisplayName()
 	{
 		return displayName;
+	}
+	
+	
+	/**
+	 * At least same version as given type?
+	 * 
+	 * @param type
+	 * @return
+	 */
+	public boolean atLeast(final EBotType type)
+	{
+		return type.versionId <= versionId;
 	}
 }

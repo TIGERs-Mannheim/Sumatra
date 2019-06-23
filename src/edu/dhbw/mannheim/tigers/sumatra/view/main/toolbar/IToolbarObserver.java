@@ -4,17 +4,15 @@
  * Project: TIGERS - Sumatra
  * Date: 04.08.2010
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.main.toolbar;
 
 
 /**
- * MainFrame observer
+ * Toolbar observer
  * 
  * @author AndreR
- * 
  */
 public interface IToolbarObserver
 {
@@ -28,4 +26,16 @@ public interface IToolbarObserver
 	 *
 	 */
 	void onEmergencyStop();
+	
+	
+	/**
+	 * @param active
+	 */
+	void onRecordAndSave(boolean active);
+	
+	
+	/**
+	 * @param active
+	 */
+	void onRecord(boolean active);
 }

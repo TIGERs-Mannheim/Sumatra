@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Oct 15, 2012
  * Author(s): dirk
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.analyze;
@@ -13,6 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.TuneableParameter;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 
 
 /**
@@ -22,7 +22,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.Tun
  * 3. rambo mode used / crash occured
  * 
  * @author dirk
- * 
  */
 public class ParameterDebugger
 {
@@ -56,7 +55,7 @@ public class ParameterDebugger
 	{
 		if (testing)
 		{
-			calculationStarted = System.nanoTime();
+			calculationStarted = SumatraClock.nanoTime();
 		}
 	}
 	
@@ -68,7 +67,7 @@ public class ParameterDebugger
 	{
 		if (testing)
 		{
-			currentlyTested.addCalculation(System.nanoTime() - calculationStarted);
+			currentlyTested.addCalculation(SumatraClock.nanoTime() - calculationStarted);
 		}
 	}
 	
@@ -126,9 +125,10 @@ public class ParameterDebugger
 	
 	/**
 	 * changes the parameters
+	 * 
 	 * @param adjustableParams
 	 */
-	public void changeParameterConfigToTest(TuneableParameter adjustableParams)
+	public void changeParameterConfigToTest(final TuneableParameter adjustableParams)
 	{
 		configurations.add(currentlyTested);
 		final PathInformation newCurrentlyTested = new PathInformation(adjustableParams);
@@ -151,7 +151,7 @@ public class ParameterDebugger
 	/**
 	 * @param testing the testing to set
 	 */
-	public void setTesting(boolean testing)
+	public void setTesting(final boolean testing)
 	{
 		this.testing = testing;
 	}

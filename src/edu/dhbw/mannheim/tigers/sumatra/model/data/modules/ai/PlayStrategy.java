@@ -12,15 +12,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import net.sf.oval.constraint.NotNull;
-import net.sf.oval.constraint.Size;
-
 import com.sleepycat.persist.model.Persistent;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.IDrawableShape;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMap;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter.EAIControlState;
 
 
@@ -29,34 +27,22 @@ import edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter.EAIControlState;
  * 
  * @author Oliver Steinbrecher <OST1988@aol.com>
  */
-@Persistent(version = 3)
+@Persistent(version = 4)
 public class PlayStrategy implements IPlayStrategy
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	private transient List<APlay>	activePlays;
 	
 	/** Contains all finished plays of the last cycle */
 	private transient List<APlay>	finishedPlays;
 	
-	@NotNull
-	private BotConnection			botConnection;
-	
-	@Size(min = 4, profiles = { "compatibility" })
-	private List<IDrawableShape>	debugShapes;
-	
 	private EAIControlState			aiControlState;
 	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	@SuppressWarnings("unused")
 	private PlayStrategy()
 	{
+		activePlays = new ArrayList<>();
+		finishedPlays = new ArrayList<>();
 	}
 	
 	
@@ -67,15 +53,8 @@ public class PlayStrategy implements IPlayStrategy
 	{
 		activePlays = Collections.unmodifiableList(builder.activePlays);
 		finishedPlays = Collections.unmodifiableList(builder.finishedPlays);
-		botConnection = builder.botConnection;
-		debugShapes = new ArrayList<IDrawableShape>();
 		aiControlState = builder.controlState;
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	
 	/**
@@ -96,6 +75,8 @@ public class PlayStrategy implements IPlayStrategy
 	
 	
 	/**
+	 * Warn: This will construct a new map each time it is called!
+	 * 
 	 * @return
 	 */
 	@Override
@@ -107,6 +88,55 @@ public class PlayStrategy implements IPlayStrategy
 			for (ARole role : play.getRoles())
 			{
 				roles.put(role.getBotID(), role);
+			}
+		}
+		return roles;
+	}
+	
+	
+	/**
+	 * Get roles by type
+	 * 
+	 * @param roleType
+	 * @return
+	 */
+	@Override
+	public List<ARole> getActiveRoles(final ERole roleType)
+	{
+		List<ARole> roles = new ArrayList<ARole>();
+		for (APlay play : activePlays)
+		{
+			for (ARole role : play.getRoles())
+			{
+				if (role.getType() == roleType)
+				{
+					roles.add(role);
+				}
+			}
+		}
+		return roles;
+	}
+	
+	
+	/**
+	 * Get roles by play
+	 * 
+	 * @param playType
+	 * @return
+	 */
+	@Override
+	public List<ARole> getActiveRoles(final EPlay playType)
+	{
+		List<ARole> roles = new ArrayList<ARole>();
+		for (APlay play : activePlays)
+		{
+			if (play.getType() != playType)
+			{
+				continue;
+			}
+			for (ARole role : play.getRoles())
+			{
+				roles.add(role);
 			}
 		}
 		return roles;
@@ -134,26 +164,6 @@ public class PlayStrategy implements IPlayStrategy
 	public List<APlay> getFinishedPlays()
 	{
 		return finishedPlays;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	@Override
-	public BotConnection getBotConnection()
-	{
-		return botConnection;
-	}
-	
-	
-	/**
-	 * @return the debugShapes
-	 */
-	@Override
-	public List<IDrawableShape> getDebugShapes()
-	{
-		return debugShapes;
 	}
 	
 	

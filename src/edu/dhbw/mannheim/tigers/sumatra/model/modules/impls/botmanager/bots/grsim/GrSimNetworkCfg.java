@@ -8,17 +8,17 @@ import org.apache.commons.configuration.HierarchicalConfiguration.Node;
  * Project: TIGERS - Sumatra
  * Date: Oct 23, 2013
  * Author(s): Peter Birkenkampf, TilmanS
- * 
  * *********************************************************
  */
 import org.apache.commons.configuration.SubnodeConfiguration;
+
+import edu.dhbw.mannheim.tigers.sumatra.util.config.UserConfig;
 
 
 /**
  * Configuration for communicating with grSim
  * 
  * @author Peter Birkenkampf, TilmanS
- * 
  */
 public class GrSimNetworkCfg
 {
@@ -27,7 +27,8 @@ public class GrSimNetworkCfg
 	// --------------------------------------------------------------
 	
 	private String		ip;
-	private int			port;
+	private int			port, backPort;
+	private int			portCfg;
 	private boolean	teamYellow;
 	private int			key;
 	
@@ -39,10 +40,12 @@ public class GrSimNetworkCfg
 	/**
 	 * @param config
 	 */
-	public GrSimNetworkCfg(SubnodeConfiguration config)
+	public GrSimNetworkCfg(final SubnodeConfiguration config)
 	{
 		ip = config.getString("ip", "127.0.0.1");
-		port = config.getInt("port", 20011);
+		portCfg = config.getInt("port", 20011);
+		port = UserConfig.getGrSimCommandPort();
+		backPort = UserConfig.getGrSimCommandBackPort();
 		teamYellow = config.getBoolean("teamYellow", false);
 		
 		key = config.getInt("[@id]");
@@ -72,6 +75,15 @@ public class GrSimNetworkCfg
 	
 	
 	/**
+	 * @return
+	 */
+	public int getBackPort()
+	{
+		return backPort;
+	}
+	
+	
+	/**
 	 * @return the teamYellow
 	 */
 	public boolean isTeamYellow()
@@ -90,9 +102,11 @@ public class GrSimNetworkCfg
 		node.addAttribute(new Node("id", key));
 		config.setRoot(node);
 		config.addProperty("ip", ip);
-		config.addProperty("port", port);
+		config.addProperty("port", portCfg);
 		config.addProperty("teamYellow", teamYellow);
 		
 		return config;
 	}
+	
+	
 }

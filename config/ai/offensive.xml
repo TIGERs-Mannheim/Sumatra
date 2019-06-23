@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<offensive base="edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.offense">
+    <OffensiveConstants>
+        <cheeringStopTimer class="float" comment="time in seconds">3.0</cheeringStopTimer>
+        <delayWaitTime class="float" comment="time in seconds">3.0</delayWaitTime>
+        <showDebugInformations class="boolean" comment="show additional informations in debug log, lots of spamming">true</showDebugInformations>
+        <forcePassWhenIndirectIsCalled class="boolean" comment="no directShots when indirectFreeKick is called">true</forcePassWhenIndirectIsCalled>
+        <minDistToBall class="float" comment="minimal distance to ball for move Positions">40.0</minDistToBall>
+        <distanceToPenaltyArea class="float" comment="distance to our Penalty Area">300.0</distanceToPenaltyArea>
+        <chanceToDoSpecialMove class="float" comment="chance to do hard coded plays for indirects in enemy half">0.7</chanceToDoSpecialMove>
+    </OffensiveConstants>
+</offensive>

@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Jan 23, 2014
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai;
@@ -19,7 +18,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
  * Possible game states which depend on incoming referee messages and some other constraints
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public enum EGameState
 {
@@ -63,10 +61,15 @@ public enum EGameState
 	/**  */
 	GOAL_KICK_THEY,
 	
-	/** A direkt free kick within the field */
+	/** A direct free kick within the field */
 	DIRECT_KICK_WE,
-	/** A direkt free kick within the field */
-	DIRECT_KICK_THEY;
+	/** A direct free kick within the field */
+	DIRECT_KICK_THEY,
+	
+	/**  */
+	BREAK,
+	/**  */
+	POST_GAME, ;
 	
 	/**
 	 * Get the required ball position for this game state
@@ -74,7 +77,7 @@ public enum EGameState
 	 * @param frame
 	 * @return
 	 */
-	public IVector2 getRequiredBallPos(IRecordFrame frame)
+	public IVector2 getRequiredBallPos(final IRecordFrame frame)
 	{
 		IVector2 marker = null;
 		float fLength = AIConfig.getGeometry().getFieldLength();
@@ -96,6 +99,7 @@ public enum EGameState
 				break;
 			case DIRECT_KICK_THEY:
 			case DIRECT_KICK_WE:
+			case STOPPED:
 				marker = frame.getWorldFrame().getBall().getPos();
 				break;
 			case THROW_IN_THEY:
@@ -108,9 +112,6 @@ public enum EGameState
 			case PREPARE_KICKOFF_THEY:
 			case PREPARE_KICKOFF_WE:
 				marker = AIConfig.getGeometry().getCenter();
-				break;
-			case STOPPED:
-				marker = frame.getWorldFrame().getBall().getPos();
 				break;
 			default:
 				break;

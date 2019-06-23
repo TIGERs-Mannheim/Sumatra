@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 20.08.2010
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
@@ -19,12 +18,10 @@ import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 /**
  * Dribble command for the tiger bot.
- * 
  * Velocity is in [rpm] and can be negative to indicate
  * reverse direction.
  * 
  * @author Andre
- * 
  */
 public class TigerDribble extends ACommand
 {
@@ -38,7 +35,7 @@ public class TigerDribble extends ACommand
 	@SerialData(type = ESerialDataType.UINT16)
 	private int							rpm;
 	/** */
-	public static final int			MAX_RPM	= 25000;
+	public static final int			MAX_RPM	= 40000;
 	
 	
 	// --------------------------------------------------------------------------
@@ -58,7 +55,7 @@ public class TigerDribble extends ACommand
 	/**
 	 * @param speed [rpm]
 	 */
-	public TigerDribble(int speed)
+	public TigerDribble(final int speed)
 	{
 		super(ECommand.CMD_MOTOR_DRIBBLE);
 		
@@ -87,7 +84,7 @@ public class TigerDribble extends ACommand
 	/**
 	 * @param rpm
 	 */
-	public void setSpeed(int rpm)
+	public void setSpeed(final int rpm)
 	{
 		this.rpm = rpm;
 		

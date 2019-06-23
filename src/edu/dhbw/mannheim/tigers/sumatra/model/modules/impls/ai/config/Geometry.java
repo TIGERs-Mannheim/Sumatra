@@ -21,6 +21,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Line;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
 
 
 /**
@@ -30,94 +31,108 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Line;
  */
 public class Geometry
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
+	private final String				ballModelIdentifier;
 	/** [mm] */
-	private final float			ballRadius;
+	private final float				ballRadius;
 	/** [mm] */
-	private final float			botRadius;
-	/** [mm] */
-	private final float			botCenterToDribblerDist;
+	private final float				botRadius;
 	/** [m/s] */
-	private final float			stopSpeed;
+	private final float				stopSpeed;
 	/** x-axis [mm] */
-	private final float			fieldLength;
+	private final float				fieldLength;
 	/** y-axis [mm] */
-	private final float			fieldWidth;
+	private final float				fieldWidth;
 	/** boundaryWidth [mm] */
-	private final float			boundaryWidth;
+	private final float				boundaryWidth;
 	/** boundaryLength [mm] */
-	private final float			boundaryLength;
+	private final float				boundaryLength;
 	/** judgesWidth [mm] */
-	private final float			judgesBorderWidth;
+	private final float				judgesBorderWidth;
 	/** judgesLength [mm] */
-	private final float			judgesBorderLength;
+	private final float				judgesBorderLength;
 	/** Represents the field as a rectangle */
-	private final Rectangle		field;
+	private final Rectangle			field;
 	/** Represents the field WITH margin as a rectangle */
-	private final Rectangle		fieldWBorders;
+	private final Rectangle			fieldWBorders;
 	/** Represents the field with margin and referee area */
-	private final Rectangle		fieldWReferee;
+	private final Rectangle			fieldWReferee;
 	/** Distance (goal line - penalty mark)[mm] */
-	private final float			distanceToPenaltyMark;
+	private final float				distanceToPenaltyMark;
 	/** radius of the two, small quarter circles at the sides of the penalty area. */
-	private final float			distanceToPenaltyArea;
+	private final float				distanceToPenaltyArea;
 	/**  */
-	private final float			distancePenaltyMarkToPenaltyLine;
+	private final float				distancePenaltyMarkToPenaltyLine;
 	/** the length of the short line of the penalty area, that is parallel to the goal line */
-	private final float			lengthOfPenaltyAreaFrontLine;
+	private final float				lengthOfPenaltyAreaFrontLine;
 	/** [mm] */
-	private final float			goalSize;
+	private final float				goalSize;
 	/** Our Goal */
-	private final Goal			goalOur;
+	private final Goal				goalOur;
 	/** Their Goal */
-	private final Goal			goalTheir;
-	/** "Mittellinie" */
-	private final Line			median;
+	private final Goal				goalTheir;
 	/** Tigers goal line */
-	private final Line			goalLineOur;
+	private final Line				goalLineOur;
 	/** Opponent goal line */
-	private final Line			goalLineTheir;
+	private final Line				goalLineTheir;
 	/** Our Penalty Area ("Strafraum") */
-	private final PenaltyArea	penaltyAreaOur;
+	private final PenaltyArea		penaltyAreaOur;
 	/** Their Penalty Area ("Strafraum") */
-	private final PenaltyArea	penaltyAreaTheir;
+	private final PenaltyArea		penaltyAreaTheir;
 	/** Our penalty mark */
-	private final Vector2f		penaltyMarkOur;
+	private final Vector2f			penaltyMarkOur;
 	/** Their penalty mark */
-	private final Vector2f		penaltyMarkTheir;
+	private final Vector2f			penaltyMarkTheir;
 	/** penalty line on our side (bots must be behind this line when a penalty kick is executed) */
-	private final Vector2f		penaltyLineOur;
+	private final Vector2f			penaltyLineOur;
 	/** penalty line on their side (bots must be behind this line when a penalty kick is executed) */
-	private final Vector2f		penaltyLineTheir;
+	private final Vector2f			penaltyLineTheir;
 	/** Our Freekick Area ("erweiterter Strafraum bei free kick") */
-	private final FreekickArea	freekickAreaOur;
+	private final FreekickArea		freekickAreaOur;
 	/** Their Freekick Area ("erweiterter Strafraum bei free kick") */
-	private final FreekickArea	freekickAreaTheir;
+	private final FreekickArea		freekickAreaTheir;
 	/** The center of the field */
-	private final Vector2f		center;
+	private final Vector2f			center;
 	/** The radius of the center circle ("Mittelkreis") [mm] */
-	private final float			centerCircleRadius;
+	private final float				centerCircleRadius;
 	/** The center circle ("Mittelkreis") */
-	private final Circle			centerCircle;
+	private final Circle				centerCircle;
 	
-	private final Vector2f		maintenancePosition;
+	private final Rectangle			ourHalf;
 	
-	private final Rectangle		ourHalf;
+	private final float				botToBallDistanceStop;
+	private float						goalDepth;
 	
-	private final float			botToBallDistanceStop;
-	private float					goalDepth;
+	private final Configuration	config;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	Geometry(final Configuration config)
+	@Configurable
+	private static float				penaltyAreaMargin				= 100;
+	
+	@Configurable
+	private static float				center2DribblerDistDefault	= 75;
+	
+	@Configurable
+	private static Float[]			cameraHeights					= new Float[] { 3500f, 3500f, 3500f, 3500f };
+	@Configurable
+	private static Float[]			cameraFocalLength				= new Float[] { 0f, 0f, 0f, 0f };
+	@Configurable
+	private static Float[]			cameraPrincipalPointX		= new Float[] { 0f, 0f, 0f, 0f };
+	@Configurable
+	private static Float[]			cameraPrincipalPointY		= new Float[] { 0f, 0f, 0f, 0f };
+	
+	@Configurable(comment = "If true, Geometry will be refreshed with data from vision, if available.")
+	private static boolean			receiveGeometry				= true;
+	
+	
+	/**
+	 * @param config
+	 */
+	public Geometry(final Configuration config)
 	{
+		this.config = config;
+		ballModelIdentifier = config.getString("ballModel", "default");
 		ballRadius = config.getFloat("ballRadius");
 		botRadius = config.getFloat("botRadius");
-		botCenterToDribblerDist = config.getFloat("botCenterToDribblerDist");
 		stopSpeed = config.getFloat("stopSpeed");
 		
 		fieldLength = config.getFloat("field.length");
@@ -155,9 +170,6 @@ public class Geometry
 		centerCircle = calcCenterCircle(center, centerCircleRadius);
 		penaltyLineOur = calcOurPenalityLine(fieldLength, distanceToPenaltyMark, distancePenaltyMarkToPenaltyLine);
 		penaltyLineTheir = calcTheirPenalityLine(fieldLength, distanceToPenaltyMark, distancePenaltyMarkToPenaltyLine);
-		
-		median = new Line(AVector2.ZERO_VECTOR, AVector2.Y_AXIS);
-		maintenancePosition = getVector(config, "field.maintenancePosition");
 		
 		ourHalf = new Rectangle(field.topLeft(), field.xExtend() / 2, field.yExtend());
 		
@@ -345,24 +357,6 @@ public class Geometry
 	public Rectangle getFieldWReferee()
 	{
 		return fieldWReferee;
-	}
-	
-	
-	/**
-	 * @return the maintenancePosition
-	 */
-	public Vector2f getMaintenancePosition()
-	{
-		return maintenancePosition;
-	}
-	
-	
-	/**
-	 * @return "Mittellinie"
-	 */
-	public Line getMedian()
-	{
-		return median;
 	}
 	
 	
@@ -571,15 +565,6 @@ public class Geometry
 	
 	
 	/**
-	 * @return the botCenterToDribblerDist
-	 */
-	public final float getBotCenterToDribblerDist()
-	{
-		return botCenterToDribblerDist;
-	}
-	
-	
-	/**
 	 * @return the freekickarea of us
 	 */
 	public FreekickArea getFreekickAreaOur()
@@ -594,5 +579,92 @@ public class Geometry
 	public FreekickArea getFreekickAreaTheir()
 	{
 		return freekickAreaTheir;
+	}
+	
+	
+	/**
+	 * The default penalty Area margin. Use this is your base margin.
+	 * You may want to set a relative margin to this one.
+	 * 
+	 * @return
+	 */
+	public static float getPenaltyAreaMargin()
+	{
+		return penaltyAreaMargin;
+	}
+	
+	
+	/**
+	 * Default distance from robot center to dribbler.
+	 * Consider taking this value from ABot, as it could have a better value!
+	 * 
+	 * @return the center2DribblerDistDefault
+	 */
+	public static final float getCenter2DribblerDistDefault()
+	{
+		return center2DribblerDistDefault;
+	}
+	
+	
+	/**
+	 * @return the cameraHeights
+	 */
+	public final Float[] getCameraHeights()
+	{
+		return cameraHeights;
+	}
+	
+	
+	/**
+	 * @return the cameraHeights
+	 */
+	public final Float[] getCameraFocalLength()
+	{
+		return cameraFocalLength;
+	}
+	
+	
+	/**
+	 * @return the cameraPrincipalPointX
+	 */
+	public final Float[] getCameraPrincipalPointX()
+	{
+		return cameraPrincipalPointX;
+	}
+	
+	
+	/**
+	 * @return the cameraPrincipalPointY
+	 */
+	public final Float[] getCameraPrincipalPointY()
+	{
+		return cameraPrincipalPointY;
+	}
+	
+	
+	/**
+	 * @return the receiveGeometry
+	 */
+	public static final boolean isReceiveGeometry()
+	{
+		return receiveGeometry;
+	}
+	
+	
+	/**
+	 * @return the config
+	 */
+	public final Configuration getConfig()
+	{
+		return config;
+	}
+	
+	
+	/**
+	 * @return the ballModelIdentifier
+	 */
+	public final String getBallModelIdentifier()
+	{
+		return ballModelIdentifier;
 	}
 }

@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 20.06.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation;
@@ -21,7 +20,6 @@ import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
  * Configure vision rate and field coordinate inversion.
  * 
  * @author AndreR
- * 
  */
 public class BaseStationConfig extends ACommand
 {
@@ -31,6 +29,7 @@ public class BaseStationConfig extends ACommand
 	@SerialData(type = ESerialDataType.UINT8)
 	private int							channel				= 100;
 	@SerialData(type = ESerialDataType.UINT8)
+	@Deprecated
 	private int							positionInverted	= 0;
 	@SerialData(type = ESerialDataType.UINT8)
 	private int							maxBots				= 0;
@@ -55,18 +54,16 @@ public class BaseStationConfig extends ACommand
 	
 	
 	/**
-	 * 
-	 * @param invertPos
 	 * @param visionRate
 	 * @param maxBots
 	 * @param channel
 	 * @param timeout
 	 */
-	public BaseStationConfig(int channel, boolean invertPos, int maxBots, int visionRate, int timeout)
+	public BaseStationConfig(final int channel, final int maxBots, final int visionRate, final int timeout)
 	{
 		super(ECommand.CMD_BASE_CONFIG);
 		
-		positionInverted = invertPos ? 1 : 0;
+		positionInverted = 0;
 		this.visionRate = visionRate;
 		this.maxBots = maxBots;
 		setChannel(channel);
@@ -94,7 +91,7 @@ public class BaseStationConfig extends ACommand
 	/**
 	 * @param positionInverted the positionInverted to set
 	 */
-	public void setPositionInverted(boolean positionInverted)
+	public void setPositionInverted(final boolean positionInverted)
 	{
 		this.positionInverted = positionInverted ? 1 : 0;
 	}
@@ -112,7 +109,7 @@ public class BaseStationConfig extends ACommand
 	/**
 	 * @param visionRate the visionRate to set
 	 */
-	public void setVisionRate(int visionRate)
+	public void setVisionRate(final int visionRate)
 	{
 		this.visionRate = visionRate;
 	}
@@ -130,7 +127,7 @@ public class BaseStationConfig extends ACommand
 	/**
 	 * @param channel the channel to set
 	 */
-	public void setChannel(int channel)
+	public void setChannel(final int channel)
 	{
 		if (channel > MAX_CHANNEL)
 		{
@@ -154,7 +151,7 @@ public class BaseStationConfig extends ACommand
 	/**
 	 * @param maxBots the maxBots to set
 	 */
-	public void setMaxBots(int maxBots)
+	public void setMaxBots(final int maxBots)
 	{
 		this.maxBots = maxBots;
 	}
@@ -172,7 +169,7 @@ public class BaseStationConfig extends ACommand
 	/**
 	 * @param timeout the timeout to set
 	 */
-	public void setTimeout(int timeout)
+	public void setTimeout(final int timeout)
 	{
 		this.timeout = timeout;
 	}

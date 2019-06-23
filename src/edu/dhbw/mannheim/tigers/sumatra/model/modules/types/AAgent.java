@@ -10,8 +10,10 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.types;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import edu.dhbw.mannheim.tigers.moduli.AModule;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IAIObserver;
 
@@ -20,9 +22,9 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IAIObserver;
  * This is the base class for every agent who wants to control our robots!
  * 
  * @author Gero
- * 
  */
-public abstract class AAgent extends AModule implements IWorldFrameConsumer, IRefereeMsgConsumer
+public abstract class AAgent extends AModule implements IWorldFrameConsumer, IRefereeMsgConsumer,
+		IMultiTeamMessageConsumer
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
@@ -38,23 +40,6 @@ public abstract class AAgent extends AModule implements IWorldFrameConsumer, IRe
 	/** */
 	public static final String			AI_CONFIG_PATH				= "./config/ai/";
 	
-	/** */
-	public static final String			KEY_AI_CONFIG				= AAgent.class.getName() + ".config";
-	/**  */
-	public static final String			VALUE_AI_CONFIG			= "ai_default.xml";
-	
-	/** */
-	public static final String			KEY_SKILL_CONFIG			= AAgent.class.getName() + ".skills";
-	/** */
-	public static final String			VALUE_SKILL_CONFIG		= "skills.xml";
-	
-	/** */
-	public static final String			KEY_BOT_CONFIG				= AAgent.class.getName() + ".bot";
-	/** */
-	public static final String			BOT_CONFIG_PATH			= "./config/bot/";
-	/**  */
-	public static final String			VALUE_BOT_CONFIG			= "bots_default.xml";
-	
 	
 	// --- geometry ---
 	/** */
@@ -62,49 +47,50 @@ public abstract class AAgent extends AModule implements IWorldFrameConsumer, IRe
 	/** */
 	public static final String			GEOMETRY_CONFIG_PATH		= "./config/geometry/";
 	/**  */
-	public static final String			VALUE_GEOMETRY_CONFIG	= "RoboCup_2014.xml";
+	public static final String			VALUE_GEOMETRY_CONFIG	= "grSim.xml";
 	
-	// --- team ---
-	/** */
-	public static final String			KEY_TEAM_CONFIG			= AAgent.class.getName() + ".team.v2";
-	/** */
-	public static final String			TEAM_CONFIG_PATH			= "./config/team/";
-	/**  */
-	public static final String			VALUE_TEAM_CONFIG			= "team_default.xml";
 	
-	// AI visualization
 	/** */
 	private final List<IAIObserver>	observers					= new ArrayList<IAIObserver>();
 	
 	private ETeamColor					teamColor					= ETeamColor.UNINITIALIZED;
 	
+	private final List<IAIObserver>	visObservers				= new CopyOnWriteArrayList<IAIObserver>();
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
+	
 	/**
-	 * 
-	 * @param o
+	 * @param observer
 	 */
-	public void addObserver(IAIObserver o)
+	public void addVisObserver(final IAIObserver observer)
 	{
-		synchronized (observers)
-		{
-			observers.add(o);
-		}
+		visObservers.add(observer);
 	}
 	
 	
 	/**
-	 * 
+	 * @param observer
+	 */
+	public void removeVisObserver(final IAIObserver observer)
+	{
+		visObservers.remove(observer);
+	}
+	
+	
+	/**
 	 * @param o
 	 */
-	public void removeObserver(IAIObserver o)
+	public void addObserver(final IAIObserver o)
 	{
-		synchronized (observers)
-		{
-			observers.remove(o);
-		}
+		observers.add(o);
+	}
+	
+	
+	/**
+	 * @param o
+	 */
+	public void removeObserver(final IAIObserver o)
+	{
+		observers.remove(o);
 	}
 	
 	
@@ -128,11 +114,65 @@ public abstract class AAgent extends AModule implements IWorldFrameConsumer, IRe
 	
 	
 	/**
-	 * 
 	 * @param color
 	 */
-	protected final void setTeamColor(ETeamColor color)
+	protected final void setTeamColor(final ETeamColor color)
 	{
 		teamColor = color;
+	}
+	
+	
+	/**
+	 * This function is used to notify the last {@link AIInfoFrame} to visualization observers.
+	 * 
+	 * @param lastAIInfoframe
+	 */
+	protected void notifyNewAIInfoFrame(final AIInfoFrame lastAIInfoframe)
+	{
+		for (final IAIObserver o : observers)
+		{
+			o.onNewAIInfoFrame(lastAIInfoframe);
+		}
+	}
+	
+	
+	/**
+	 * This function is used to notify the last {@link AIInfoFrame} to visualization observers.
+	 * 
+	 * @param lastAIInfoframe
+	 */
+	protected void notifyNewAIInfoFrameVisualize(final AIInfoFrame lastAIInfoframe)
+	{
+		if (lastAIInfoframe == null)
+		{
+			return;
+		}
+		for (final IAIObserver o : visObservers)
+		{
+			o.onNewAIInfoFrame(lastAIInfoframe);
+		}
+	}
+	
+	
+	protected void notifyAIStopped(final ETeamColor teamColor)
+	{
+		for (final IAIObserver o : visObservers)
+		{
+			o.onAIStopped(teamColor);
+		}
+	}
+	
+	
+	/**
+	 * @param ex
+	 * @param frame
+	 * @param prevFrame
+	 */
+	protected void notifyNewAIExceptionVisualize(final Throwable ex, final AIInfoFrame frame, final AIInfoFrame prevFrame)
+	{
+		for (final IAIObserver o : visObservers)
+		{
+			o.onAIException(ex, frame, prevFrame);
+		}
 	}
 }

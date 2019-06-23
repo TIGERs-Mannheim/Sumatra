@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 27.11.2011
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.config;
@@ -36,7 +35,6 @@ import edu.dhbw.mannheim.tigers.sumatra.view.commons.treetable.JTreeTable;
  * possibilities to save, load and switch config.
  * 
  * @author Gero
- * 
  */
 public class EditorView extends JPanel
 {
@@ -44,6 +42,8 @@ public class EditorView extends JPanel
 	// --- constants and variables ----------------------------------------------
 	// --------------------------------------------------------------------------
 	private static final long								serialVersionUID	= -7098099480668190062L;
+	
+	private static final boolean							disableApply		= false;
 	
 	private final String										configKey;
 	
@@ -53,6 +53,7 @@ public class EditorView extends JPanel
 	
 	private final Action										applyAction;
 	private final Action										saveAction;
+	private final Action										readAction;
 	
 	private final List<IConfigEditorViewObserver>	observers			= new LinkedList<IConfigEditorViewObserver>();
 	
@@ -66,7 +67,8 @@ public class EditorView extends JPanel
 	 * @param config
 	 * @param editable
 	 */
-	public EditorView(String title, String configKey, HierarchicalConfiguration config, boolean editable)
+	public EditorView(final String title, final String configKey, final HierarchicalConfiguration config,
+			final boolean editable)
 	{
 		super();
 		this.configKey = configKey;
@@ -89,12 +91,12 @@ public class EditorView extends JPanel
 			
 			
 			@Override
-			public void actionPerformed(ActionEvent e)
+			public void actionPerformed(final ActionEvent e)
 			{
 				apply();
 			}
 		};
-		applyAction.setEnabled(false);
+		applyAction.setEnabled(!disableApply);
 		JButton applyBtn = new JButton(applyAction);
 		controls.add(applyBtn);
 		controls.add(Box.createHorizontalGlue());
@@ -105,7 +107,7 @@ public class EditorView extends JPanel
 			
 			
 			@Override
-			public void actionPerformed(ActionEvent e)
+			public void actionPerformed(final ActionEvent e)
 			{
 				save();
 			}
@@ -115,13 +117,29 @@ public class EditorView extends JPanel
 		controls.add(saveBtn);
 		controls.add(Box.createHorizontalGlue());
 		
+		readAction = new AbstractAction("Read")
+		{
+			private static final long	serialVersionUID	= 1L;
+			
+			
+			@Override
+			public void actionPerformed(final ActionEvent e)
+			{
+				read();
+			}
+		};
+		readAction.setEnabled(true);
+		JButton readBtn = new JButton(readAction);
+		controls.add(readBtn);
+		controls.add(Box.createHorizontalGlue());
+		
 		Action reloadAction = new AbstractAction("Reload")
 		{
 			private static final long	serialVersionUID	= 1L;
 			
 			
 			@Override
-			public void actionPerformed(ActionEvent e)
+			public void actionPerformed(final ActionEvent e)
 			{
 				reload();
 			}
@@ -146,7 +164,7 @@ public class EditorView extends JPanel
 		treetable.getModel().addTableModelListener(new TableModelListener()
 		{
 			@Override
-			public void tableChanged(TableModelEvent event)
+			public void tableChanged(final TableModelEvent event)
 			{
 				if ((event.getType() == TableModelEvent.UPDATE) && (event.getFirstRow() == event.getLastRow()))
 				{
@@ -166,7 +184,7 @@ public class EditorView extends JPanel
 	 * @param config
 	 * @param editable
 	 */
-	public void updateModel(HierarchicalConfiguration config, boolean editable)
+	public void updateModel(final HierarchicalConfiguration config, final boolean editable)
 	{
 		model = new ConfigXMLTreeTableModel(config);
 		model.setEditable(editable);
@@ -174,7 +192,7 @@ public class EditorView extends JPanel
 		treetable.getModel().addTableModelListener(new TableModelListener()
 		{
 			@Override
-			public void tableChanged(TableModelEvent event)
+			public void tableChanged(final TableModelEvent event)
 			{
 				if ((event.getType() == TableModelEvent.UPDATE) && (event.getFirstRow() == event.getLastRow()))
 				{
@@ -203,6 +221,12 @@ public class EditorView extends JPanel
 	}
 	
 	
+	private void read()
+	{
+		notifyReadPressed(configKey);
+	}
+	
+	
 	private void reload()
 	{
 		notifyReloadPressed(configKey);
@@ -215,7 +239,7 @@ public class EditorView extends JPanel
 		notifyApplyPressed(configKey);
 		
 		// Re-enable btn
-		applyAction.setEnabled(false);
+		applyAction.setEnabled(disableApply);
 	}
 	
 	
@@ -225,7 +249,7 @@ public class EditorView extends JPanel
 	/**
 	 * @param newObserver
 	 */
-	public void addObserver(IConfigEditorViewObserver newObserver)
+	public void addObserver(final IConfigEditorViewObserver newObserver)
 	{
 		observers.add(newObserver);
 	}
@@ -235,13 +259,13 @@ public class EditorView extends JPanel
 	 * @param oldObserver
 	 * @return
 	 */
-	public boolean removeObserver(IConfigEditorViewObserver oldObserver)
+	public boolean removeObserver(final IConfigEditorViewObserver oldObserver)
 	{
 		return observers.remove(oldObserver);
 	}
 	
 	
-	private void notifyApplyPressed(String configKey)
+	private void notifyApplyPressed(final String configKey)
 	{
 		for (final IConfigEditorViewObserver observer : observers)
 		{
@@ -250,7 +274,7 @@ public class EditorView extends JPanel
 	}
 	
 	
-	private boolean notifySavePressed(String configKey)
+	private boolean notifySavePressed(final String configKey)
 	{
 		boolean result = true;
 		for (final IConfigEditorViewObserver observer : observers)
@@ -262,7 +286,17 @@ public class EditorView extends JPanel
 	}
 	
 	
-	private void notifyReloadPressed(String configKey)
+	private void notifyReadPressed(final String configKey)
+	{
+		for (final IConfigEditorViewObserver observer : observers)
+		{
+			// If any returns false (e.g., save fails): return false
+			observer.onReadPressed(configKey);
+		}
+	}
+	
+	
+	private void notifyReloadPressed(final String configKey)
 	{
 		for (final IConfigEditorViewObserver observer : observers)
 		{

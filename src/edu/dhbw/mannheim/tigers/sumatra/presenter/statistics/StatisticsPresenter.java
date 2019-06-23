@@ -16,10 +16,10 @@ import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesState;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.Agent;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IAIObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.ModuliStateAdapter;
 import edu.dhbw.mannheim.tigers.sumatra.view.statistics.StatisticsPanel;
 import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
 import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraViewPresenter;
@@ -38,10 +38,12 @@ public class StatisticsPresenter implements ISumatraViewPresenter, IAIObserver
 	// --------------------------------------------------------------------------
 	
 	private static final Logger	log					= Logger.getLogger(StatisticsPresenter.class.getName());
+	
+	private ETeamColor				teamColor;
+	
 	private final StatisticsPanel	statisticsPanel;
 	
-	private AAgent						aiAgentBlue;
-	private AAgent						aiAgentYellow;
+	private AAgent						aiAgent;
 	
 	/** Used to limit updates */
 	private int							statShowCounter	= 0;
@@ -54,13 +56,13 @@ public class StatisticsPresenter implements ISumatraViewPresenter, IAIObserver
 	// --------------------------------------------------------------------------
 	
 	/**
-	  * 
-	  */
-	public StatisticsPresenter()
+	 * @param teamColor
+	 */
+	public StatisticsPresenter(final ETeamColor teamColor)
 	{
-		statisticsPanel = new StatisticsPanel();
+		this.teamColor = teamColor;
 		
-		ModuliStateAdapter.getInstance().addObserver(this);
+		statisticsPanel = new StatisticsPanel(teamColor);
 	}
 	
 	
@@ -77,26 +79,31 @@ public class StatisticsPresenter implements ISumatraViewPresenter, IAIObserver
 				
 				try
 				{
-					aiAgentBlue = (AAgent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_BLUE);
-					aiAgentYellow = (AAgent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_YELLOW);
+					switch (teamColor)
+					{
+						case BLUE:
+							aiAgent = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_BLUE);
+							break;
+						case YELLOW:
+							aiAgent = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_YELLOW);
+							break;
+						default:
+							throw new IllegalStateException();
+							
+					}
 					// get AIInfoFrames
-					aiAgentBlue.addObserver(this);
-					aiAgentYellow.addObserver(this);
+					aiAgent.addVisObserver(this);
 				} catch (ModuleNotFoundException err)
 				{
 					log.error("Could not find ai agents.", err);
 				}
 				break;
 			case RESOLVED:
-				if (aiAgentBlue != null)
+				
+				if (aiAgent != null)
 				{
-					aiAgentBlue.removeObserver(this);
-					aiAgentBlue = null;
-				}
-				if (aiAgentYellow != null)
-				{
-					aiAgentYellow.removeObserver(this);
-					aiAgentYellow = null;
+					aiAgent.removeVisObserver(this);
+					aiAgent = null;
 				}
 				break;
 			case NOT_LOADED:
@@ -126,7 +133,7 @@ public class StatisticsPresenter implements ISumatraViewPresenter, IAIObserver
 	
 	
 	@Override
-	public void onNewAIInfoFrame(final AIInfoFrame lastAIInfoframe)
+	public void onNewAIInfoFrame(final IRecordFrame lastAIInfoframe)
 	{
 		statShowCounter++;
 		if ((statShowCounter % statShowTreshold) == 0)
@@ -138,7 +145,7 @@ public class StatisticsPresenter implements ISumatraViewPresenter, IAIObserver
 	
 	
 	@Override
-	public void onAIException(final Exception ex, final IRecordFrame frame, final IRecordFrame prevFrame)
+	public void onAIException(final Throwable ex, final IRecordFrame frame, final IRecordFrame prevFrame)
 	{
 	}
 	

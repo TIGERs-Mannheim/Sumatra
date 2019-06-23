@@ -25,9 +25,10 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERo
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ImmediateStopSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.IdleSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.StraightMoveSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleState;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 
 
 /**
@@ -149,7 +150,7 @@ public class StarCalibrateRole extends ARole
 			float diff = desiredPos.subtractNew(endPos).getLength2();
 			diffs.add(diff);
 			
-			long timeDiff = System.nanoTime() - startTime;
+			long timeDiff = SumatraClock.nanoTime() - startTime;
 			times.add(TimeUnit.NANOSECONDS.toMillis(timeDiff));
 			
 			log.info("Diffs: " + diffs);
@@ -160,10 +161,10 @@ public class StarCalibrateRole extends ARole
 		@Override
 		public void onSkillStarted(ISkill skill, BotID botID)
 		{
-			if (skill.getSkillName() != ESkillName.IMMEDIATE_STOP)
+			if (skill.getSkillName() != ESkillName.IDLE)
 			{
 				startPos = getPos();
-				startTime = System.nanoTime();
+				startTime = SumatraClock.nanoTime();
 			}
 		}
 		
@@ -171,12 +172,12 @@ public class StarCalibrateRole extends ARole
 		@Override
 		public final void onSkillCompleted(ISkill skill, BotID botID)
 		{
-			if (skill.getSkillName() == ESkillName.IMMEDIATE_STOP)
+			if (skill.getSkillName() == ESkillName.IDLE)
 			{
 				onStateFinished();
 			} else
 			{
-				setNewSkill(new ImmediateStopSkill());
+				setNewSkill(new IdleSkill());
 			}
 		}
 		
@@ -205,7 +206,7 @@ public class StarCalibrateRole extends ARole
 		@Override
 		protected void onStateFinished()
 		{
-			nextState(EEvent.DEFAULT_DONE);
+			triggerEvent(EEvent.DEFAULT_DONE);
 		}
 	}
 	
@@ -224,7 +225,7 @@ public class StarCalibrateRole extends ARole
 		@Override
 		protected void onStateFinished()
 		{
-			nextState(EEvent.REVERSE_DONE);
+			triggerEvent(EEvent.REVERSE_DONE);
 		}
 	}
 	

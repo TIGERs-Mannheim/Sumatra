@@ -1,85 +1,42 @@
 /*
  * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
- * Date: 22.07.2010
- * Author(s):
- * Lukas
- * Clemens
- * Gero
+ * Date: Apr 19, 2015
+ * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.cam.sslvision;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.MessagesRobocupSslGeometry.SSL_GeometryCameraCalibration;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.MessagesRobocupSslGeometry.SSL_GeometryData;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamCalibration;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamFieldGeometry;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamGeometryFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamProps;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamFieldSize;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamGeometry;
 
 
 /**
- * Provides a static conversion-method for the {@link SSL_GeometryData} to wrap the incoming SSL-Vision formats with
- * our own, internal representations
+ * Translate geometry data from protobuf message to our format
  * 
- * @see edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.cam.SSLVisionCam
- * @author Lukas, Clemens, Gero
- * 
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class SSLVisionCamGeometryTranslator
 {
-	// --------------------------------------------------------------------------
-	// --- method(s) ------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
-	 * @param geometryFrame
-	 * @param teamProps
+	 * @param geometryData
 	 * @return
 	 */
-	public CamGeometryFrame translate(SSL_GeometryData geometryFrame, TeamProps teamProps)
+	public CamGeometry translate(final SSL_GeometryData geometryData)
 	{
-		final boolean haveToTurn = false;
-		
-		// --- check if detectionFrame != null ---
-		if (geometryFrame == null)
+		Map<Integer, CamCalibration> calibrations = new HashMap<>();
+		for (int i = 0; i < geometryData.getCalibCount(); i++)
 		{
-			return null;
+			CamCalibration calibration = new CamCalibration(geometryData.getCalib(i));
+			calibrations.put(calibration.getCameraId(), calibration);
 		}
-		
-		// --- new field geometry for new data ---
-		final CamFieldGeometry fieldGeometry = new CamFieldGeometry(geometryFrame.getField());
-		
-		
-		// --- new calibration-list for new data ---
-		final List<CamCalibration> calibration = new ArrayList<CamCalibration>();
-		for (final SSL_GeometryCameraCalibration cc : geometryFrame.getCalibList())
-		{
-			if (haveToTurn)
-			{
-				final CamCalibration newCC = new CamCalibration(cc.getCameraId(), cc.getFocalLength(),
-				// TODO Gero: Have to turn?? (Gero)
-						cc.getPrincipalPointX(), cc.getPrincipalPointY(), cc.getDistortion(),
-						
-						// TODO Gero: Have to turn?? (Gero)
-						cc.getQ0(), cc.getQ1(), cc.getQ2(), cc.getQ3(),
-						
-						// TODO Gero: Have to turn?? (Gero)
-						cc.getTx(), cc.getTy(), cc.getTz(),
-						
-						// Turn
-						-cc.getDerivedCameraWorldTx(), -cc.getDerivedCameraWorldTy(), cc.getDerivedCameraWorldTz());
-				calibration.add(newCC);
-			} else
-			{
-				calibration.add(new CamCalibration(cc));
-			}
-		}
-		
-		return new CamGeometryFrame(fieldGeometry, calibration);
+		CamFieldSize fieldSize = new CamFieldSize(geometryData.getField());
+		return new CamGeometry(calibrations, fieldSize);
 	}
-	
 }

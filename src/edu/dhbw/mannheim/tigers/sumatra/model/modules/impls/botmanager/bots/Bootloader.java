@@ -13,18 +13,20 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.TimerTask;
+import java.util.zip.CRC32;
 
-import org.apache.log4j.Logger;
-
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerBootloaderCommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerBootloaderCommand.EBootCommand;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.basestation.IBaseStation;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.basestation.IBaseStationObserver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerBootloaderData;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerBootloaderResponse;
-import edu.dhbw.mannheim.tigers.sumatra.util.GeneralPurposeTimer;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv3.TigerBootloaderCrc;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv3.TigerBootloaderRequestCrc;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv3.TigerBootloaderRequestData;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv3.TigerBootloaderRequestSize;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv3.TigerBootloaderSize;
 
 
 /**
@@ -32,78 +34,117 @@ import edu.dhbw.mannheim.tigers.sumatra.util.GeneralPurposeTimer;
  * 
  * @author AndreR
  */
-public class Bootloader
+public class Bootloader implements IBaseStationObserver
 {
 	/** */
 	public interface IBootloaderObserver
 	{
 		/**
-		 * @param state
+		 * @param botId
+		 * @param procId
+		 * @param bytesRead
+		 * @param totalSize
 		 */
-		void onStateChanged(EBootloaderState state);
-		
-		
-		/**
-		 * @param current
-		 * @param total
-		 */
-		void onProgressUpdate(long current, long total);
+		void onBootloaderProgress(BotID botId, EProcessorID procId, long bytesRead, long totalSize);
 	}
 	
 	/** */
-	public enum EBootloaderState
+	public static enum EProcessorID
 	{
 		/** */
-		IDLE,
+		PROC_ID_MAIN(0, "main.bin"),
 		/** */
-		MODE_QUERY,
+		PROC_ID_MEDIA(1, "media.bin"),
 		/** */
-		ERASING,
+		PROC_ID_LEFT(2, "left.bin"),
 		/** */
-		PROGRAMMING
+		PROC_ID_RIGHT(3, "right.bin"),
+		/** */
+		PROC_ID_KD(4, "kd.bin"),
+		/** */
+		PROC_ID_UNKNOWN(5, "unknown.bin");
+		
+		private EProcessorID(final int id, final String filename)
+		{
+			name = filename;
+			this.id = id;
+		}
+		
+		private String	name;
+		private int		id;
+		
+		
+		/**
+		 * @return the name
+		 */
+		public String getFilename()
+		{
+			return name;
+		}
+		
+		
+		/**
+		 * @return the id
+		 */
+		public int getId()
+		{
+			return id;
+		}
+		
+		
+		/**
+		 * Convert procID to enum.
+		 * 
+		 * @param id
+		 * @return
+		 */
+		public static EProcessorID getProcessorIDConstant(final int id)
+		{
+			for (EProcessorID t : values())
+			{
+				if (t.getId() == id)
+				{
+					return t;
+				}
+			}
+			
+			return PROC_ID_UNKNOWN;
+		}
 	}
 	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	private RandomAccessFile						file							= null;
-	private long										filesize						= 0;
-	private Map<Integer, TimerTask>				activeChunks				= new HashMap<Integer, TimerTask>();
-	private TigerBotV2								bot							= null;
-	private int											nextOffset					= 0;
-	private EBootloaderState						state							= EBootloaderState.IDLE;
-	private final Logger								log							= Logger.getLogger(getClass());
-	private CommandTimeout							lastCommandTimeout		= null;
-	private int											target						= 0;
-	
-	private final List<IBootloaderObserver>	observers					= new ArrayList<IBootloaderObserver>();
-	
-	
-	private static final int						CHUNK_TIMEOUT				= 500;
-	private static final int						COMMAND_TIMEOUT			= 500;
-	private static final int						ERASE_TIMEOUT				= 12000;
-	private static final int						NUM_PACKETS_IN_FLIGHT	= 1;
+	private final IBaseStation								baseStation;
+	private static final List<IBootloaderObserver>	observers	= new ArrayList<IBootloaderObserver>();
+	private static String									programFolder;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * @param bot
+	 * @param bs
 	 */
-	public Bootloader(final TigerBotV2 bot)
+	public Bootloader(final IBaseStation bs)
 	{
-		this.bot = bot;
+		baseStation = bs;
+		
+		bs.addObserver(this);
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
+	/** */
+	public void delete()
+	{
+		baseStation.removeObserver(this);
+	}
+	
+	
 	/**
 	 * @param observer
 	 */
-	public void addObserver(final IBootloaderObserver observer)
+	public static void addObserver(final IBootloaderObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -115,7 +156,7 @@ public class Bootloader
 	/**
 	 * @param observer
 	 */
-	public void removeObserver(final IBootloaderObserver observer)
+	public static void removeObserver(final IBootloaderObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -124,401 +165,143 @@ public class Bootloader
 	}
 	
 	
-	private void notifyStateChanged(final EBootloaderState state)
+	private void notifyBootloaderProgress(final BotID botId, final EProcessorID procId, final long bytesRead,
+			final long totalSize)
 	{
-		synchronized (observers)
+		for (IBootloaderObserver observer : observers)
 		{
-			for (IBootloaderObserver observer : observers)
-			{
-				observer.onStateChanged(state);
-			}
-		}
-	}
-	
-	
-	private void notifyProgressUpdate(final long current, final long total)
-	{
-		synchronized (observers)
-		{
-			for (IBootloaderObserver observer : observers)
-			{
-				observer.onProgressUpdate(current, total);
-			}
+			observer.onBootloaderProgress(botId, procId, bytesRead, totalSize);
 		}
 	}
 	
 	
 	/**
-	 * @param binFile
-	 * @param target
-	 * @return
+	 * Set the folder containing main.bin, media.bin, ...
+	 * 
+	 * @param folder
 	 */
-	public boolean start(final String binFile, final int target)
+	public static void setProgramFolder(final String folder)
 	{
-		this.target = target;
-		
-		try
-		{
-			file = new RandomAccessFile(binFile, "r");
-			filesize = file.length();
-		} catch (FileNotFoundException err)
-		{
-			return false;
-		} catch (IOException err)
-		{
-			return false;
-		}
-		
-		activeChunks.clear();
-		nextOffset = 0;
-		notifyProgressUpdate(nextOffset, filesize);
-		
-		log.debug("Starting wireless firmware update. Filesize: " + filesize + " Bytes");
-		
-		state = EBootloaderState.MODE_QUERY;
-		notifyStateChanged(state);
-		
-		sendCommand(new TigerBootloaderCommand(EBootCommand.MODE_QUERY));
-		
-		return true;
-	}
-	
-	
-	/** */
-	public void cancel()
-	{
-		for (TimerTask t : activeChunks.values())
-		{
-			t.cancel();
-		}
-		
-		activeChunks.clear();
-		
-		if (lastCommandTimeout != null)
-		{
-			lastCommandTimeout.cancel();
-		}
-		
-		try
-		{
-			if (file != null)
-			{
-				file.close();
-			}
-		} catch (IOException err)
-		{
-		}
-	}
-	
-	
-	private void sendCommand(final TigerBootloaderCommand cmd)
-	{
-		CommandTimeout timeout = new CommandTimeout(cmd);
-		lastCommandTimeout = timeout;
-		
-		switch (cmd.getCommand())
-		{
-			case ERASE_MAIN:
-			case ERASE_MEDIA:
-			{
-				GeneralPurposeTimer.getInstance().schedule(timeout, ERASE_TIMEOUT);
-			}
-				break;
-			case ENTER:
-			case EXIT:
-			{
-			}
-				break;
-			default:
-			{
-				GeneralPurposeTimer.getInstance().schedule(timeout, COMMAND_TIMEOUT);
-			}
-				break;
-		}
-		
-		log.debug("Command outgoing: " + cmd.getType());
-		
-		bot.execute(cmd);
-	}
-	
-	
-	/**
-	 * @param response
-	 */
-	public void response(final TigerBootloaderResponse response)
-	{
-		if (lastCommandTimeout != null)
-		{
-			lastCommandTimeout.cancel();
-		}
-		
-		switch (state)
-		{
-			case MODE_QUERY:
-			{
-				switch (response.getResponse())
-				{
-					case MODE_NORMAL:
-					{
-						GeneralPurposeTimer.getInstance().schedule(new DelayToBoot(), 1000);
-						
-						sendCommand(new TigerBootloaderCommand(EBootCommand.ENTER));
-					}
-						break;
-					case MODE_BOOTLOADER:
-					{
-						state = EBootloaderState.ERASING;
-						
-						sendCommand(new TigerBootloaderCommand(EBootCommand.getCommandConstant(EBootCommand.ERASE_MAIN
-								.getId() + target)));
-					}
-						break;
-					default:
-					{
-						log.warn("Invalid response in state MODE_QUERY: " + response.getType());
-					}
-				}
-			}
-				break;
-			case ERASING:
-			{
-				switch (response.getResponse())
-				{
-					case ACK:
-					{
-						state = EBootloaderState.PROGRAMMING;
-						
-						for (int i = 0; i < NUM_PACKETS_IN_FLIGHT; i++)
-						{
-							sendChunk(nextOffset);
-							nextOffset += TigerBootloaderData.BOOTLOADER_DATA_SIZE;
-						}
-						
-						notifyProgressUpdate(nextOffset, filesize);
-					}
-						break;
-					default:
-					{
-						log.warn("None-ACK response while in ERASING state");
-					}
-						break;
-				}
-			}
-				break;
-			case PROGRAMMING:
-			{
-				switch (response.getResponse())
-				{
-					case NACK:
-					{
-						TimerTask t = activeChunks.remove(response.getOffset());
-						if (t != null)
-						{
-							t.cancel();
-						}
-						sendChunk(response.getOffset());
-					}
-						break;
-					case ACK:
-					{
-						TimerTask t = activeChunks.remove(response.getOffset());
-						if (t != null)
-						{
-							t.cancel();
-						}
-						
-						if (nextOffset < filesize)
-						{
-							sendChunk(nextOffset);
-							nextOffset += TigerBootloaderData.BOOTLOADER_DATA_SIZE;
-							notifyProgressUpdate(nextOffset, filesize);
-						} else if (activeChunks.isEmpty())
-						{
-							state = EBootloaderState.IDLE;
-							
-							sendCommand(new TigerBootloaderCommand(EBootCommand.EXIT));
-							
-							try
-							{
-								file.close();
-							} catch (IOException err)
-							{
-							}
-						}
-					}
-						break;
-					default:
-						break;
-				}
-			}
-				break;
-			default:
-			{
-				log.warn("Response " + response.getType() + " in IDLE mode");
-			}
-				break;
-		}
-		
-		notifyStateChanged(state);
-	}
-	
-	
-	private void timeout(final int offset)
-	{
-		if (state != EBootloaderState.PROGRAMMING)
-		{
-			log.warn("Data chunk timeout while not in programming mode");
-		}
-		
-		log.info("Data timeout @" + offset);
-		
-		activeChunks.remove(offset);
-		
-		sendChunk(offset);
-	}
-	
-	
-	private void timeout(final TigerBootloaderCommand cmd)
-	{
-		lastCommandTimeout = null;
-		
-		log.info("Command timeout " + cmd.getType());
-		
-		switch (state)
-		{
-			case MODE_QUERY:
-			{
-				sendCommand(new TigerBootloaderCommand(EBootCommand.MODE_QUERY));
-			}
-				break;
-			case ERASING:
-			{
-				sendCommand(new TigerBootloaderCommand(EBootCommand.getCommandConstant(EBootCommand.ERASE_MAIN.getId()
-						+ target)));
-			}
-				break;
-			case PROGRAMMING:
-			{
-				log.warn("Command timeout in PROGRAMMING mode");
-			}
-			default:
-				break;
-		}
-	}
-	
-	
-	private void delayToBoot()
-	{
-		log.debug("Boot delay finished");
-		
-		sendCommand(new TigerBootloaderCommand(EBootCommand.MODE_QUERY));
-	}
-	
-	
-	private void sendChunk(final int offset)
-	{
-		byte[] data = new byte[TigerBootloaderData.BOOTLOADER_DATA_SIZE];
-		
-		try
-		{
-			file.seek(offset);
-			file.readFully(data);
-		} catch (EOFException err)
-		{
-			log.debug("EOF");
-		} catch (IOException err)
-		{
-			log.error("File read error");
-			state = EBootloaderState.IDLE;
-			notifyStateChanged(state);
-			return;
-		}
-		
-		TigerBootloaderData cmd = new TigerBootloaderData(data, TigerBootloaderData.BOOTLOADER_DATA_SIZE, offset);
-		
-		DataTimeout t = new DataTimeout(offset);
-		GeneralPurposeTimer.getInstance().schedule(t, CHUNK_TIMEOUT);
-		
-		activeChunks.put(offset, t);
-		
-		bot.execute(cmd);
+		programFolder = folder;
 	}
 	
 	
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	// --------------------------------------------------------------------------
-	// --- classes --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	private class DataTimeout extends TimerTask
+	private RandomAccessFile openFile(final int procId) throws FileNotFoundException, IOException
 	{
-		private final int	offset;
-		
-		
-		/**
-		 * @param o
-		 */
-		public DataTimeout(final int o)
-		{
-			offset = o;
-		}
-		
-		
-		@Override
-		public void run()
-		{
-			timeout(offset);
-		}
-	}
-	
-	private class CommandTimeout extends TimerTask
-	{
-		private final TigerBootloaderCommand	cmd;
-		
-		
-		/**
-		 * @param cmd
-		 */
-		public CommandTimeout(final TigerBootloaderCommand cmd)
-		{
-			this.cmd = cmd;
-		}
-		
-		
-		@Override
-		public void run()
-		{
-			timeout(cmd);
-		}
-	}
-	
-	private class DelayToBoot extends TimerTask
-	{
-		@Override
-		public void run()
-		{
-			delayToBoot();
-		}
+		String filename = programFolder + "\\"
+				+ EProcessorID.getProcessorIDConstant(procId).getFilename();
+		return new RandomAccessFile(filename, "r");
 	}
 	
 	
-	/**
-	 * @return the state
-	 */
-	public final EBootloaderState getState()
+	@Override
+	public void onIncommingBotCommand(final BotID id, final ACommand command)
 	{
-		return state;
-	}
-	
-	
-	/**
-	 * @param state the state to set
-	 */
-	public final void setState(final EBootloaderState state)
-	{
-		this.state = state;
-		notifyStateChanged(state);
+		switch (command.getType())
+		{
+			case CMD_BOOTLOADER_REQUEST_SIZE:
+			{
+				TigerBootloaderRequestSize reqSize = (TigerBootloaderRequestSize) command;
+				
+				TigerBootloaderSize size = new TigerBootloaderSize();
+				size.setProcId(reqSize.getProcId());
+				
+				try
+				{
+					RandomAccessFile file = openFile(reqSize.getProcId());
+					size.setSize(file.length());
+					file.close();
+				} catch (FileNotFoundException err)
+				{
+					size.setInvalidSize();
+				} catch (IOException err)
+				{
+					size.setInvalidSize();
+				}
+				
+				baseStation.enqueueCommand(id, size);
+				
+				notifyBootloaderProgress(id, EProcessorID.getProcessorIDConstant(reqSize.getProcId()), 0, size.getSize());
+			}
+				break;
+			case CMD_BOOTLOADER_REQUEST_CRC:
+			{
+				TigerBootloaderRequestCrc crcReq = (TigerBootloaderRequestCrc) command;
+				TigerBootloaderCrc crcAns = new TigerBootloaderCrc();
+				
+				int readSize = (int) (crcReq.getEndAddr() - crcReq.getStartAddr());
+				
+				byte b[] = new byte[readSize];
+				Arrays.fill(b, (byte) 0xFF);
+				
+				try
+				{
+					RandomAccessFile file = openFile(crcReq.getProcId());
+					file.seek(crcReq.getStartAddr());
+					file.readFully(b);
+					file.close();
+				} catch (FileNotFoundException err)
+				{
+					return;
+				} catch (EOFException err)
+				{
+				} catch (IOException err)
+				{
+					return;
+				}
+				
+				CRC32 crc = new CRC32();
+				crc.reset();
+				crc.update(b);
+				crcAns.setCrc(crc.getValue());
+				crcAns.setProcId(crcReq.getProcId());
+				crcAns.setStartAddr(crcReq.getStartAddr());
+				crcAns.setEndAddr(crcReq.getEndAddr());
+				
+				baseStation.enqueueCommand(id, crcAns);
+			}
+				break;
+			case CMD_BOOTLOADER_REQUEST_DATA:
+			{
+				long fileLength = 0;
+				TigerBootloaderRequestData reqData = (TigerBootloaderRequestData) command;
+				TigerBootloaderData ansData = new TigerBootloaderData();
+				
+				byte b[] = new byte[(int) reqData.getSize()];
+				Arrays.fill(b, (byte) 0xFF);
+				
+				try
+				{
+					RandomAccessFile file = openFile(reqData.getProcId());
+					file.seek(reqData.getOffset());
+					fileLength = file.length();
+					file.readFully(b);
+					file.close();
+				} catch (FileNotFoundException err)
+				{
+					return;
+				} catch (EOFException err)
+				{
+				} catch (IOException err)
+				{
+					return;
+				}
+				
+				ansData.setProcId(reqData.getProcId());
+				ansData.setOffset(reqData.getOffset());
+				ansData.setPayload(b);
+				
+				baseStation.enqueueCommand(id, ansData);
+				
+				notifyBootloaderProgress(id, EProcessorID.getProcessorIDConstant(reqData.getProcId()), reqData.getOffset()
+						+ reqData.getSize(), fileLength);
+			}
+				break;
+			default:
+				break;
+		}
 	}
 }

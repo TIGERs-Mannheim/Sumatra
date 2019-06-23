@@ -22,14 +22,14 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee.TeamInfo;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.referee.RefereeMsg;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.ITeamConfigObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamProps;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.cam.SumatraCam;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ACam;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AReferee;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IRefereeMsgConsumer;
 import edu.dhbw.mannheim.tigers.sumatra.util.GlobalShortcuts;
 import edu.dhbw.mannheim.tigers.sumatra.util.GlobalShortcuts.EShortcut;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 
 
 /**
@@ -39,39 +39,35 @@ import edu.dhbw.mannheim.tigers.sumatra.util.GlobalShortcuts.EShortcut;
  * 
  * @author Gero
  */
-public class RefereeHandler extends AReferee implements ITeamConfigObserver
+public class RefereeHandler extends AReferee
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	private static final Logger		log				= Logger.getLogger(RefereeHandler.class.getName());
-	private static final int			TIMEOUT			= 10000;
-	
-	private final RefereeReceiver		receiver;
-	private final GrSimBallReplacer	ballReplacer;
-	private final AutoReferee			autoReferee;
-	
-	private TeamProps						teamProps		= null;
-	private final Object					teamPropsSync	= new Object();
-	
-	private int								refMsgId			= 0;
+	private static final Logger	log		= Logger.getLogger(RefereeHandler.class.getName());
+	private final RefereeReceiver	receiver;
+	private final IBallReplacer	ballReplacer;
+	private int							refMsgId	= 0;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * @param subconfig
 	 */
 	public RefereeHandler(final SubnodeConfiguration subconfig)
 	{
-		// Register for team properties
-		TeamConfig.getInstance().addObserver(this);
-		
 		receiver = new RefereeReceiver(subconfig, this);
-		ballReplacer = new GrSimBallReplacer(subconfig);
-		autoReferee = new AutoReferee(this);
+		if ("sumatra".equals(subconfig.getString("ballReplacer", "")))
+		{
+			SumatraCam cam = null;
+			try
+			{
+				cam = (SumatraCam) SumatraModel.getInstance().getModule(ACam.MODULE_ID);
+			} catch (ModuleNotFoundException err)
+			{
+				log.error("Could not find cam module", err);
+			}
+			ballReplacer = cam;
+		} else
+		{
+			ballReplacer = new GrSimBallReplacer(subconfig);
+		}
 		
 		GlobalShortcuts.register(EShortcut.REFEREE_HALT, new Runnable()
 		{
@@ -100,9 +96,6 @@ public class RefereeHandler extends AReferee implements ITeamConfigObserver
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	@Override
 	public void initModule() throws InitModuleException
 	{
@@ -114,17 +107,6 @@ public class RefereeHandler extends AReferee implements ITeamConfigObserver
 	public void startModule() throws StartModuleException
 	{
 		receiver.start();
-		
-		try
-		{
-			// register auto referee for new ai frames
-			// only use yellow agent, because autoReferee does not use team specific data from ai frames
-			AAgent agent = (AAgent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_YELLOW);
-			agent.addObserver(autoReferee);
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("Could not find agent module", err);
-		}
 	}
 	
 	
@@ -132,15 +114,6 @@ public class RefereeHandler extends AReferee implements ITeamConfigObserver
 	public void stopModule()
 	{
 		receiver.cleanup();
-		
-		try
-		{
-			AAgent agent = (AAgent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_YELLOW);
-			agent.removeObserver(autoReferee);
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("Could not find agent module", err);
-		}
 	}
 	
 	
@@ -154,14 +127,11 @@ public class RefereeHandler extends AReferee implements ITeamConfigObserver
 	// --------------------------------------------------------------------------
 	// --- on incoming msg ------------------------------------------------------
 	// --------------------------------------------------------------------------
-	protected void notifyConsumer(final RefereeMsg msg, final ETeamColor color)
+	protected void notifyConsumer(final RefereeMsg msg)
 	{
 		for (IRefereeMsgConsumer consumer : getConsumers())
 		{
-			if (consumer.getTeamColor().equals(color))
-			{
-				consumer.onNewRefereeMsg(msg);
-			}
+			consumer.onNewRefereeMsg(msg);
 		}
 	}
 	
@@ -170,6 +140,10 @@ public class RefereeHandler extends AReferee implements ITeamConfigObserver
 	{
 		if (isReceiveExternalMsg())
 		{
+			if (isNewMessage(msg))
+			{
+				log.trace("Referee msg: " + msg.getCommand());
+			}
 			onNewRefereeMsg(msg);
 		}
 	}
@@ -179,11 +153,11 @@ public class RefereeHandler extends AReferee implements ITeamConfigObserver
 	{
 		final RefereeMsg msgYellow = new RefereeMsg(msg, ETeamColor.YELLOW);
 		final RefereeMsg msgBlue = new RefereeMsg(msg, ETeamColor.BLUE);
-		teamProps.setKeeperIdYellow(msgYellow.getTeamInfoYellow().getGoalie());
-		teamProps.setKeeperIdBlue(msgBlue.getTeamInfoBlue().getGoalie());
+		TeamConfig.setKeeperIdYellow(msgYellow.getTeamInfoYellow().getGoalie());
+		TeamConfig.setKeeperIdBlue(msgBlue.getTeamInfoBlue().getGoalie());
 		
-		notifyConsumer(msgYellow, ETeamColor.YELLOW);
-		notifyConsumer(msgBlue, ETeamColor.BLUE);
+		notifyConsumer(msgYellow);
+		notifyConsumer(msgBlue);
 		notifyNewRefereeMsg(msgYellow);
 	}
 	
@@ -200,17 +174,29 @@ public class RefereeHandler extends AReferee implements ITeamConfigObserver
 	// --------------------------------------------------------------------------
 	// --- send own msg ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
 	@Override
-	public void sendOwnRefereeMsg(final Command cmd, final int goalsBlue, final int goalsYellow, final short timeLeft)
+	public void sendOwnRefereeMsg(final Command cmd, final int goalsBlue, final int goalsYellow, final int timeLeft)
 	{
-		final TeamProps newTeamProps = getTeamProperties();
-		if (newTeamProps == null)
-		{
-			return;
-		}
-		
+		SSL_Referee refMsg = createRefereeMsg(cmd, goalsBlue, goalsYellow, timeLeft, refMsgId);
+		refMsgId++;
+		onNewRefereeMsg(refMsg);
+	}
+	
+	
+	/**
+	 * @param cmd
+	 * @param goalsBlue
+	 * @param goalsYellow
+	 * @param timeLeft
+	 * @param refId
+	 * @return
+	 */
+	private SSL_Referee createRefereeMsg(final Command cmd, final int goalsBlue, final int goalsYellow,
+			final int timeLeft, final int refId)
+	{
 		TeamInfo.Builder teamBlueBuilder = TeamInfo.newBuilder();
-		teamBlueBuilder.setGoalie(newTeamProps.getKeeperIdBlue());
+		teamBlueBuilder.setGoalie(TeamConfig.getKeeperIdBlue());
 		teamBlueBuilder.setName("Blue");
 		teamBlueBuilder.setRedCards(1);
 		teamBlueBuilder.setScore(goalsBlue);
@@ -219,7 +205,7 @@ public class RefereeHandler extends AReferee implements ITeamConfigObserver
 		teamBlueBuilder.setYellowCards(3);
 		
 		TeamInfo.Builder teamYellowBuilder = TeamInfo.newBuilder();
-		teamYellowBuilder.setGoalie(newTeamProps.getKeeperIdYellow());
+		teamYellowBuilder.setGoalie(TeamConfig.getKeeperIdYellow());
 		teamYellowBuilder.setName("Yellow");
 		teamYellowBuilder.setRedCards(0);
 		teamYellowBuilder.setScore(goalsYellow);
@@ -228,57 +214,16 @@ public class RefereeHandler extends AReferee implements ITeamConfigObserver
 		teamYellowBuilder.setYellowCards(1);
 		
 		SSL_Referee.Builder builder = SSL_Referee.newBuilder();
-		builder.setPacketTimestamp(System.currentTimeMillis());
+		builder.setPacketTimestamp(SumatraClock.currentTimeMillis());
 		builder.setBlue(teamBlueBuilder.build());
 		builder.setYellow(teamYellowBuilder.build());
 		builder.setCommand(cmd);
-		builder.setCommandCounter(refMsgId);
-		builder.setCommandTimestamp(System.currentTimeMillis());
+		builder.setCommandCounter(refId);
+		builder.setCommandTimestamp(SumatraClock.currentTimeMillis());
 		builder.setStageTimeLeft(timeLeft);
 		builder.setStage(Stage.NORMAL_FIRST_HALF);
 		
-		refMsgId++;
-		onNewRefereeMsg(builder.build());
-	}
-	
-	
-	@Override
-	public void onNewTeamConfig(final TeamProps teamProps)
-	{
-		synchronized (teamPropsSync)
-		{
-			final boolean wasNull = (this.teamProps == null);
-			
-			this.teamProps = teamProps;
-			
-			if (wasNull)
-			{
-				teamPropsSync.notifyAll();
-			}
-		}
-	}
-	
-	
-	/**
-	 * @return <code>null</code> if interrupted!
-	 */
-	protected TeamProps getTeamProperties()
-	{
-		synchronized (teamPropsSync)
-		{
-			while (teamProps == null)
-			{
-				try
-				{
-					teamPropsSync.wait(TIMEOUT);
-				} catch (final InterruptedException err)
-				{
-					return null;
-				}
-			}
-			
-			return teamProps;
-		}
+		return builder.build();
 	}
 	
 	
@@ -286,19 +231,5 @@ public class RefereeHandler extends AReferee implements ITeamConfigObserver
 	public void replaceBall(final IVector2 pos)
 	{
 		ballReplacer.replaceBall(pos);
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	/**
-	 * @return the autoReferee
-	 */
-	public final AutoReferee getAutoReferee()
-	{
-		return autoReferee;
 	}
 }

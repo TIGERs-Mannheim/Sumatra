@@ -12,19 +12,20 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.DynamicPosition;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACondition.EConditionState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.IMoveToSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.KickSkill.EKickMode;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.KickSkill.EMoveMode;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.KickTestSkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveAndStaySkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveToSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleState;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
 
 
@@ -40,23 +41,26 @@ public class StraightKickTrainerRole extends ARole
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private final Random		rnd					= new Random(System.currentTimeMillis());
+	private final Random				rnd					= new Random(SumatraClock.currentTimeMillis());
 	
-	private final IVector2	target;
+	private final DynamicPosition	target;
 	
 	@Configurable(comment = "Time [ms] to wait before doing the kick")
-	private static long		waitingTime			= 1000;
+	private static long				waitingTime			= 1000;
 	
 	@Configurable(comment = "Dist [mm] to ball in prepare state")
-	private static float		dist2Ball			= AIConfig.getGeometry().getBotRadius()
-																	+ AIConfig.getGeometry().getBallRadius()
-																	+ 10;
+	private static float				dist2Ball			= AIConfig.getGeometry().getBotRadius()
+																			+ AIConfig.getGeometry().getBallRadius()
+																			+ 10;
 	
 	@Configurable(comment = "Dist [mm] to ball when it is considered to be at its destination")
-	private static float		ballAtDestTol		= 50;
+	private static float				ballAtDestTol		= 50;
 	
 	@Configurable(comment = "Velocity tolerance [m/s] when the ball is considered to be moving")
-	private static float		ballMovingVelTol	= 0.1f;
+	private static float				ballMovingVelTol	= 0.1f;
+	
+	
+	private final int					minDur, maxDur;
 	
 	
 	// --------------------------------------------------------------------------
@@ -64,13 +68,16 @@ public class StraightKickTrainerRole extends ARole
 	// --------------------------------------------------------------------------
 	
 	/**
+	 * @param target
+	 * @param minDur
+	 * @param maxDur
 	 */
-	public StraightKickTrainerRole()
+	public StraightKickTrainerRole(final DynamicPosition target, final int minDur, final int maxDur)
 	{
 		super(ERole.STRAIGHT_KICK_TRAINER);
-		
-		target = AIConfig.getGeometry().getGoalTheir()
-				.getGoalCenter();
+		this.minDur = minDur;
+		this.maxDur = maxDur;
+		this.target = target;
 		
 		IRoleState doState = new DoState();
 		IRoleState prepareState = new PrepareState();
@@ -108,8 +115,8 @@ public class StraightKickTrainerRole extends ARole
 		{
 			// float dist = GeoMath.distancePP(getWFrame().getBall().getPos(), target);
 			float factor = 1; // Math.min(dist / 6000f, 1f);
-			int duration = (int) (factor * (rnd.nextInt(8000) + 2000));
-			KickTestSkill skill = new KickTestSkill(target, duration);
+			int duration = (int) (factor * (rnd.nextInt((maxDur - minDur) + 1) + minDur));
+			KickTestSkill skill = new KickTestSkill(target, EKickMode.FIXED_DURATION, EMoveMode.CHILL, duration);
 			setNewSkill(skill);
 		}
 		
@@ -135,7 +142,7 @@ public class StraightKickTrainerRole extends ARole
 		@Override
 		public void onSkillCompleted(final ISkill skill, final BotID botID)
 		{
-			nextState(EEvent.KICKED);
+			triggerEvent(EEvent.KICKED);
 		}
 		
 		
@@ -148,14 +155,15 @@ public class StraightKickTrainerRole extends ARole
 	
 	private class PrepareState implements IRoleState
 	{
-		private MoveToSkill	skill	= null;
+		private IMoveToSkill	skill	= null;
 		
 		
 		@Override
 		public void doEntryActions()
 		{
-			skill = new MoveAndStaySkill();
-			skill.getMoveCon().setPenaltyAreaAllowed(true);
+			skill = AMoveSkill.createMoveToSkill();
+			skill.getMoveCon().setPenaltyAreaAllowedOur(true);
+			skill.getMoveCon().setPenaltyAreaAllowedTheir(true);
 			setNewSkill(skill);
 		}
 		
@@ -166,14 +174,7 @@ public class StraightKickTrainerRole extends ARole
 			if ((getWFrame().getBall().getVel().getLength2() < ballMovingVelTol)
 					&& AIConfig.getGeometry().getField().isPointInShape(getWFrame().getBall().getPos()))
 			{
-				IVector2 dest = GeoMath.stepAlongLine(getWFrame().getBall().getPos(), target, -dist2Ball);
-				skill.getMoveCon().updateDestination(dest);
-				skill.getMoveCon().updateLookAtTarget(target);
-				
-				if (skill.getMoveCon().checkCondition(getWFrame(), getBotID()) == EConditionState.FULFILLED)
-				{
-					nextState(EEvent.PREPARED);
-				}
+				triggerEvent(EEvent.PREPARED);
 			}
 		}
 		
@@ -211,16 +212,16 @@ public class StraightKickTrainerRole extends ARole
 		@Override
 		public void doEntryActions()
 		{
-			startTime = System.nanoTime();
+			startTime = SumatraClock.nanoTime();
 		}
 		
 		
 		@Override
 		public void doUpdate()
 		{
-			if ((System.nanoTime() - startTime) > TimeUnit.MILLISECONDS.toNanos(waitingTime))
+			if ((SumatraClock.nanoTime() - startTime) > TimeUnit.MILLISECONDS.toNanos(waitingTime))
 			{
-				nextState(EEvent.DONE);
+				triggerEvent(EEvent.DONE);
 			}
 		}
 		

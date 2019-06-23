@@ -12,8 +12,11 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculator
 
 import java.util.concurrent.TimeUnit;
 
+import org.apache.log4j.Logger;
+
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.BaseAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.TacticalField;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 
 
 /**
@@ -23,16 +26,14 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.TacticalField;
  */
 public abstract class ACalculator
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
+	private static final Logger	log						= Logger.getLogger(ACalculator.class.getName());
+	private boolean					active					= true;
 	
+	private long						lastCalculationTime	= 0;
 	
-	private boolean		active					= true;
+	private ECalculator				type						= null;
 	
-	private long			lastCalculationTime	= 0;
-	
-	private ECalculator	type;
+	private Exception					lastException			= null;
 	
 	
 	// --------------------------------------------------------------------------
@@ -46,10 +47,24 @@ public abstract class ACalculator
 	 */
 	public final void calculate(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
-		if (active && (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastCalculationTime) > type.getTimeRateMs()))
+		if (active && ((type == null)
+				|| (TimeUnit.NANOSECONDS.toMillis(SumatraClock.nanoTime() - lastCalculationTime) >= type.getTimeRateMs())))
 		{
-			doCalc(newTacticalField, baseAiFrame);
-			lastCalculationTime = System.nanoTime();
+			try
+			{
+				doCalc(newTacticalField, baseAiFrame);
+				lastException = null;
+			} catch (Exception err)
+			{
+				if ((lastException == null) || ((err.getMessage() != null)
+						&& !err.getMessage().equals(lastException.getMessage())))
+				{
+					log.error("Error in calculator " + getType().name(), err);
+				}
+				lastException = err;
+				fallbackCalc(newTacticalField, baseAiFrame);
+			}
+			lastCalculationTime = SumatraClock.nanoTime();
 		} else
 		{
 			fallbackCalc(newTacticalField, baseAiFrame);
@@ -74,6 +89,14 @@ public abstract class ACalculator
 	 * @param baseAiFrame
 	 */
 	public void fallbackCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+	{
+	}
+	
+	
+	/**
+	 * Called before destruction
+	 */
+	public void deinit()
 	{
 	}
 	

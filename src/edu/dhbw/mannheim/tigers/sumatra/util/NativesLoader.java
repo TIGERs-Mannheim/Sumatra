@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 10.02.2012
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.util;
@@ -12,6 +11,8 @@ package edu.dhbw.mannheim.tigers.sumatra.util;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.lang.reflect.Field;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -69,7 +70,7 @@ public class NativesLoader
 	/**
 	 * @param basePath
 	 */
-	public NativesLoader(String basePath)
+	public NativesLoader(final String basePath)
 	{
 		this(basePath, DEFAULT_FOLDER_MAP, false);
 	}
@@ -79,7 +80,7 @@ public class NativesLoader
 	 * @param basePath
 	 * @param applyLibraryPathHack
 	 */
-	public NativesLoader(String basePath, boolean applyLibraryPathHack)
+	public NativesLoader(final String basePath, final boolean applyLibraryPathHack)
 	{
 		this(basePath, DEFAULT_FOLDER_MAP, applyLibraryPathHack);
 	}
@@ -90,7 +91,8 @@ public class NativesLoader
 	 * @param folderMap
 	 * @param applyLibraryPathHack
 	 */
-	public NativesLoader(String basePath, Map<OsIdentifier, String> folderMap, boolean applyLibraryPathHack)
+	public NativesLoader(final String basePath, final Map<OsIdentifier, String> folderMap,
+			final boolean applyLibraryPathHack)
 	{
 		super();
 		setBasePath(basePath);
@@ -142,13 +144,21 @@ public class NativesLoader
 			try
 			{
 				final Field fieldSysPath = ClassLoader.class.getDeclaredField("sys_paths");
-				fieldSysPath.setAccessible(true);
-				fieldSysPath.set(null, null);
-				fieldSysPath.setAccessible(false);
+				AccessController.doPrivileged((PrivilegedAction<Void>)
+						() -> {
+							fieldSysPath.setAccessible(true);
+							try
+							{
+								fieldSysPath.set(null, null);
+							} catch (Exception err)
+							{
+								log.fatal("Unable to perform library-path hack!", err);
+							}
+							fieldSysPath.setAccessible(false);
+							return null; // nothing to return
+					}
+						);
 			} catch (final NoSuchFieldException err)
-			{
-				log.fatal("Unable to perform library-path hack!", err);
-			} catch (final IllegalAccessException err)
 			{
 				log.fatal("Unable to perform library-path hack!", err);
 			} catch (final SecurityException err)
@@ -223,37 +233,10 @@ public class NativesLoader
 		if (!fullFile.exists())
 		{
 			// Filter for libName (while omitting os-dependent extensions)
-			final File[] files = subFolder.listFiles(new FilenameFilter()
-			{
-				@Override
-				public boolean accept(File file, String filename)
-				{
-					String name = filename;
-					// Omit os-dependent suffixes
-					final String[] nameParts = name.split("\\.(?=[^\\.]+$)");
-					if ((nameParts.length < 1) || nameParts[0].isEmpty())
-					{
-						return false;
-					}
-					
-					name = nameParts[0];
-					
-					// Omit lib prefix
-					if (name.startsWith("lib") && (name.length() > 3))
-					{
-						name = name.substring(3);
-					}
-					
-					if (name.endsWith("64"))
-					{
-						name = name.substring(0, name.length() - 2);
-					}
-					return name.toLowerCase().equals(libName.toLowerCase());
-				}
-			});
+			final File[] files = subFolder.listFiles(new MyFilenameFilter(libName));
 			
 			// If libName is unique, exactlly one file should have passed the filter
-			if (files.length == 1)
+			if ((files != null) && (files.length == 1))
 			{
 				System.load(files[0].getAbsolutePath());
 			} else
@@ -308,9 +291,50 @@ public class NativesLoader
 		/**
 		 * @param msg
 		 */
-		public LoaderException(String msg)
+		public LoaderException(final String msg)
 		{
 			super(msg);
+		}
+	}
+	
+	private static class MyFilenameFilter implements FilenameFilter
+	{
+		String	libName;
+		
+		
+		/**
+		 * @param libName
+		 */
+		public MyFilenameFilter(final String libName)
+		{
+			this.libName = libName;
+		}
+		
+		
+		@Override
+		public boolean accept(final File file, final String filename)
+		{
+			String name = filename;
+			// Omit os-dependent suffixes
+			final String[] nameParts = name.split("\\.(?=[^\\.]+$)");
+			if ((nameParts.length < 1) || nameParts[0].isEmpty())
+			{
+				return false;
+			}
+			
+			name = nameParts[0];
+			
+			// Omit lib prefix
+			if (name.startsWith("lib") && (name.length() > 3))
+			{
+				name = name.substring(3);
+			}
+			
+			if (name.endsWith("64"))
+			{
+				name = name.substring(0, name.length() - 2);
+			}
+			return name.toLowerCase().equals(libName.toLowerCase());
 		}
 	}
 }

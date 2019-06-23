@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 27.11.2011
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.config;
@@ -13,7 +12,6 @@ package edu.dhbw.mannheim.tigers.sumatra.view.config;
  * This is a view observer-interface which is used to connect user-input with the underlying presenter
  * 
  * @author Gero
- * 
  */
 public interface IConfigEditorViewObserver
 {
@@ -38,4 +36,12 @@ public interface IConfigEditorViewObserver
 	 * @param configKey
 	 */
 	void onReloadPressed(String configKey);
+	
+	
+	/**
+	 * Read config from classes
+	 * 
+	 * @param configKey
+	 */
+	void onReadPressed(String configKey);
 }

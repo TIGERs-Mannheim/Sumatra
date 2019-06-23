@@ -8,6 +8,8 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger;
 
+import java.util.Arrays;
+
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
 import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
@@ -111,6 +113,6 @@ public class TigerSystemPong extends ACommand
 	 */
 	public final byte[] getPayload()
 	{
-		return payload;
+		return Arrays.copyOf(payload, payload.length);
 	}
 }

@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Jan 12, 2014
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.botoverview;
@@ -26,7 +25,6 @@ import edu.dhbw.mannheim.tigers.sumatra.view.botoverview.BotOverviewPanel;
  * Table Model for {@link BotOverviewPanel}
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class BotOverviewTableModel extends AbstractTableModel
 {
@@ -34,15 +32,14 @@ public class BotOverviewTableModel extends AbstractTableModel
 	private static final long									serialVersionUID	= 4712760313475190867L;
 	private final SortedMap<BotID, BotOverviewColumn>	data					= new ConcurrentSkipListMap<BotID, BotOverviewColumn>(
 																										BotID.getComparator());
-	private transient BotID[]									sortedBots			= new BotID[0];
+	private BotID[]												sortedBots			= new BotID[0];
 	
 	
 	/**
-	 * 
 	 * @param botId
 	 * @param columnData
 	 */
-	public void putBot(BotID botId, BotOverviewColumn columnData)
+	public void putBot(final BotID botId, final BotOverviewColumn columnData)
 	{
 		BotOverviewColumn col = data.get(botId);
 		if (col == null)
@@ -61,11 +58,14 @@ public class BotOverviewTableModel extends AbstractTableModel
 	/**
 	 * @param botId
 	 */
-	public void removeBot(BotID botId)
+	public void removeBot(final BotID botId)
 	{
-		data.remove(botId);
-		update();
-		fireTableStructureChanged();
+		Object rem = data.remove(botId);
+		if (rem != null)
+		{
+			update();
+			fireTableStructureChanged();
+		}
 	}
 	
 	
@@ -73,7 +73,7 @@ public class BotOverviewTableModel extends AbstractTableModel
 	 * @param botId
 	 * @return
 	 */
-	public BotOverviewColumn getBotOverviewColumn(BotID botId)
+	public BotOverviewColumn getBotOverviewColumn(final BotID botId)
 	{
 		return data.get(botId);
 	}
@@ -109,7 +109,7 @@ public class BotOverviewTableModel extends AbstractTableModel
 	
 	
 	@Override
-	public String getColumnName(int col)
+	public String getColumnName(final int col)
 	{
 		return "Bot " + sortedBots[col].getNumber() + " "
 				+ (sortedBots[col].getTeamColor() == ETeamColor.YELLOW ? "Y" : "B");
@@ -117,14 +117,14 @@ public class BotOverviewTableModel extends AbstractTableModel
 	
 	
 	@Override
-	public Object getValueAt(int row, int col)
+	public Object getValueAt(final int row, final int col)
 	{
 		return data.get(sortedBots[col]).getData().get(row);
 	}
 	
 	
 	@Override
-	public Class<?> getColumnClass(int c)
+	public Class<?> getColumnClass(final int c)
 	{
 		return getValueAt(0, c).getClass();
 	}

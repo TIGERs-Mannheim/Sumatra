@@ -17,7 +17,6 @@ import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamProps;
 import edu.dhbw.mannheim.tigers.sumatra.util.network.IReceiver;
 import edu.dhbw.mannheim.tigers.sumatra.util.network.MulticastUDPReceiver;
 import edu.dhbw.mannheim.tigers.sumatra.util.network.NetworkUtility;
@@ -68,13 +67,6 @@ public class RefereeReceiver implements Runnable, IReceiver
 		
 		// --- Choose network-interface
 		nif = NetworkUtility.chooseNetworkInterface(network, 3);
-		if (nif == null)
-		{
-			log.info("No nif for referee specified, will try all.");
-		} else
-		{
-			log.info("Chose nif for referee: " + nif.getDisplayName() + ".");
-		}
 	}
 	
 	
@@ -88,9 +80,11 @@ public class RefereeReceiver implements Runnable, IReceiver
 	{
 		if (nif == null)
 		{
+			log.debug("No nif for referee specified, will try all.");
 			receiver = new MulticastUDPReceiver(port, address);
 		} else
 		{
+			log.info("Chose nif for referee: " + nif.getDisplayName() + ".");
 			receiver = new MulticastUDPReceiver(port, address, nif);
 		}
 		
@@ -144,14 +138,6 @@ public class RefereeReceiver implements Runnable, IReceiver
 			{
 				log.error("Could not read referee message ", err);
 				continue;
-			}
-			
-			// Translate
-			final TeamProps teamProps = handler.getTeamProperties();
-			if (teamProps == null)
-			{
-				// Was interrupted...
-				break;
 			}
 			
 			// Notify the receipt of a new RefereeMessage to any other observers

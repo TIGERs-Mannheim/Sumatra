@@ -21,6 +21,7 @@ import com.sleepycat.persist.PrimaryIndex;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.RecordFrame;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 
 
 /**
@@ -96,20 +97,26 @@ public class RecordBerkeleyPersistence extends ABerkeleyPersistence implements I
 	@Override
 	public synchronized void saveFrames(final List<IRecordFrame> frames)
 	{
-		long start = System.nanoTime();
+		long start = SumatraClock.nanoTime();
 		for (IRecordFrame frame : frames)
 		{
-			dataAccessor.recordFrameById.put((RecordFrame) frame);
+			if (frame == null)
+			{
+				log.error("null frame! sth is wrong...");
+			} else
+			{
+				dataAccessor.recordFrameById.put((RecordFrame) frame);
+			}
 		}
-		long time = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-		log.info(frames.size() + " record frames saved in " + time + "ms");
+		long time = TimeUnit.NANOSECONDS.toMillis(SumatraClock.nanoTime() - start);
+		log.debug(frames.size() + " record frames saved in " + time + "ms");
 	}
 	
 	
 	@Override
 	public synchronized void saveLogEvent(final List<BerkeleyLogEvent> logEvents)
 	{
-		long start = System.nanoTime();
+		long start = SumatraClock.nanoTime();
 		if (dataAccessor.logEventByTimeStamp == null)
 		{
 			log.error("You are trying to save an logEvent to an old version of a database. How did you do this?");
@@ -119,8 +126,8 @@ public class RecordBerkeleyPersistence extends ABerkeleyPersistence implements I
 		{
 			dataAccessor.logEventByTimeStamp.put(event);
 		}
-		long time = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-		log.info(logEvents.size() + " log events saved in " + time + "ms");
+		long time = TimeUnit.NANOSECONDS.toMillis(SumatraClock.nanoTime() - start);
+		log.debug(logEvents.size() + " log events saved in " + time + "ms");
 	}
 	
 	
@@ -178,6 +185,7 @@ public class RecordBerkeleyPersistence extends ABerkeleyPersistence implements I
 	@Override
 	public synchronized List<IRecordFrame> load(final int startIndex, final int length)
 	{
+		long tStart = System.nanoTime();
 		List<IRecordFrame> frames = new ArrayList<IRecordFrame>(length);
 		final Integer indexOffset = getFirstKey();
 		if (indexOffset == null)
@@ -196,7 +204,9 @@ public class RecordBerkeleyPersistence extends ABerkeleyPersistence implements I
 			}
 			frames.add(frame);
 		}
-		log.info("Loaded " + frames.size() + " frames from db");
+		long tEnd = System.nanoTime();
+		float time = (tEnd - tStart) / 1e9f;
+		log.info("Loaded " + frames.size() + " frames from db in " + time + "s");
 		return frames;
 	}
 	

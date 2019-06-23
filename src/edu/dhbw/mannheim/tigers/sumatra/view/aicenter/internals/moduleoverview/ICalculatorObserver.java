@@ -4,24 +4,23 @@
  * Project: TIGERS - Sumatra
  * Date: Apr 8, 2013
  * Author(s): Daniel Andres <andreslopez.daniel@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview;
 
-import java.util.List;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.ECalculator;
 
 
 /**
  * Observer interface for calculator panel
+ * 
  * @author Daniel Andres <andreslopez.daniel@gmail.com>
  */
 public interface ICalculatorObserver
 {
-	
 	/**
-	 * @param values
+	 * @param eCalc
+	 * @param active
 	 */
-	void selectedCalculatorsChanged(List<String> values);
-	
+	void onCalculatorStateChanged(ECalculator eCalc, boolean active);
 }

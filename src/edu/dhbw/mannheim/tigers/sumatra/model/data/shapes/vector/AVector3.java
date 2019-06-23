@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 09.08.2012
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector;
@@ -21,7 +20,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
  * 
  * @see Vector3
  * @see Vector3f
- * 
  * @author AndreR
  */
 @Persistent
@@ -55,7 +53,7 @@ public abstract class AVector3 implements IVector3
 	
 	
 	@Override
-	public Vector3 addNew(IVector3 vector)
+	public Vector3 addNew(final IVector3 vector)
 	{
 		Vector3 result = new Vector3(this);
 		if (vector != null)
@@ -71,7 +69,7 @@ public abstract class AVector3 implements IVector3
 	
 	
 	@Override
-	public Vector3 subtractNew(IVector3 vector)
+	public Vector3 subtractNew(final IVector3 vector)
 	{
 		Vector3 result = new Vector3(this);
 		if (vector != null)
@@ -87,14 +85,14 @@ public abstract class AVector3 implements IVector3
 	
 	
 	@Override
-	public Vector3 multiplyNew(float f)
+	public Vector3 multiplyNew(final float f)
 	{
 		return new Vector3(x() * f, y() * f, z() * f);
 	}
 	
 	
 	@Override
-	public Vector3 turnAroundZNew(float angle)
+	public Vector3 turnAroundZNew(final float angle)
 	{
 		float x2;
 		float y2;
@@ -121,21 +119,21 @@ public abstract class AVector3 implements IVector3
 	
 	
 	@Override
-	public boolean equalsVector(IVector3 v)
+	public boolean equalsVector(final IVector3 v)
 	{
-		return (v.x() == x()) && (v.y() == y()) && (v.z() == z());
+		return (SumatraMath.isEqual(v.x(), x())) && SumatraMath.isEqual(v.y(), y()) && SumatraMath.isEqual(v.z(), z());
 	}
 	
 	
 	@Override
-	public boolean equalsVector(IVector3 vec, float tolerance)
+	public boolean equalsVector(final IVector3 vec, final float tolerance)
 	{
 		return subtractNew(vec).getLength3() < tolerance;
 	}
 	
 	
 	@Override
-	public boolean equals(IVector3 vec, float dx, float dy, float dz)
+	public boolean equals(final IVector3 vec, final float dx, final float dy, final float dz)
 	{
 		return (Math.abs(vec.x() - x()) <= dx) && (Math.abs(vec.y() - y()) <= dy) && (Math.abs(vec.z() - z()) <= dz);
 	}

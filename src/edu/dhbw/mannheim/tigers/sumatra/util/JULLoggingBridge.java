@@ -41,9 +41,10 @@ public class JULLoggingBridge extends Handler
 	/**
 	 * Resets the entire JUL logging system and adds the JULLoggingBridge instance
 	 * to the root logger.
+	 * 
 	 * @param handler
 	 */
-	public static void install(JULLoggingBridge handler)
+	public static void install(final JULLoggingBridge handler)
 	{
 		LogManager.getLogManager().reset();
 		LogManager.getLogManager().getLogger("").addHandler(handler);
@@ -52,6 +53,7 @@ public class JULLoggingBridge extends Handler
 	
 	/**
 	 * Rereads the JUL configuration.
+	 * 
 	 * @throws IOException
 	 * @throws SecurityException
 	 */
@@ -72,7 +74,7 @@ public class JULLoggingBridge extends Handler
 	 *           If <code>true</code>, use the attached formatter if
 	 *           available. If <code>false</code> the formatter is ignored.
 	 */
-	public JULLoggingBridge(boolean classname, boolean format)
+	public JULLoggingBridge(final boolean classname, final boolean format)
 	{
 		this.classname = classname;
 		this.format = format;
@@ -102,15 +104,12 @@ public class JULLoggingBridge extends Handler
 	/**
 	 * Return the Logger instance that will be used for logging.
 	 */
-	protected Logger getPublisher(LogRecord record)
+	protected Logger getPublisher(final LogRecord record)
 	{
 		String name = null;
 		if (classname)
 		{
-			if (name == null)
-			{
-				name = record.getSourceClassName();
-			}
+			name = record.getSourceClassName();
 		}
 		if (name == null)
 		{
@@ -145,12 +144,13 @@ public class JULLoggingBridge extends Handler
 	 * <p>
 	 * This handler ignores the Level attached to the LogRecord, as this cares about discarding log statements.
 	 * </p>
+	 * 
 	 * @param record
 	 *           Description of the log event. A null record is silently
 	 *           ignored and is not published.
 	 */
 	@Override
-	public void publish(LogRecord record)
+	public void publish(final LogRecord record)
 	{
 		/*
 		 * Silently ignore null records.
@@ -254,7 +254,7 @@ public class JULLoggingBridge extends Handler
 	 * @param publisher
 	 *           who logs out
 	 */
-	protected void publishFallback(LogRecord record, Logger publisher)
+	protected void publishFallback(final LogRecord record, final Logger publisher)
 	{
 		publisher.debug(record.getMessage(), record.getThrown());
 	}

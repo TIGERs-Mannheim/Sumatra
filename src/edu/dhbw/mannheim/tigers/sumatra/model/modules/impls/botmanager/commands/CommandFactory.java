@@ -22,14 +22,18 @@ import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialException;
 public final class CommandFactory
 {
 	// Logger
-	private static final Logger					log						= Logger.getLogger(CommandFactory.class.getName());
+	private static final Logger					log							= Logger.getLogger(CommandFactory.class.getName());
 	
-	private static CommandFactory					instance					= null;
+	private static CommandFactory					instance						= null;
 	
-	private Map<Integer, SerialDescription>	commands					= new HashMap<Integer, SerialDescription>();
+	private Map<Integer, SerialDescription>	commands						= new HashMap<Integer, SerialDescription>();
 	
-	private static final int						HEADER_LENGTH			= 2;
-	private static final int						LEGACY_HEADER_LENGTH	= 4;
+	private static final int						HEADER_LENGTH				= 2;
+	private static final int						LEGACY_HEADER_LENGTH		= 4;
+	private static final int						RELIABLE_HEADER_LENGTH	= 4;
+	
+	/** Reliable commands use an extended header, signaled by 8th bit in section */
+	private static final int						RELIABLE_CMD_MASK			= 0x8000;
 	
 	
 	private CommandFactory()
@@ -117,10 +121,19 @@ public final class CommandFactory
 	public ACommand decode(final byte[] data, final boolean legacy)
 	{
 		int cmdId = ACommand.byteArray2UShort(data, 0);
+		boolean reliable = false;
+		int seq = 0;
+		
+		if (!legacy && ((cmdId & RELIABLE_CMD_MASK) == RELIABLE_CMD_MASK))
+		{
+			reliable = true;
+			cmdId &= ~RELIABLE_CMD_MASK;
+			seq = ACommand.byteArray2UShort(data, HEADER_LENGTH);
+		}
 		
 		if (!commands.containsKey(cmdId))
 		{
-			log.error("Unknown command: " + cmdId + ", length: " + data.length);
+			log.warn("Unknown command: " + cmdId + ", length: " + data.length);
 			return null;
 		}
 		
@@ -132,8 +145,16 @@ public final class CommandFactory
 			System.arraycopy(data, LEGACY_HEADER_LENGTH, cmdData, 0, data.length - LEGACY_HEADER_LENGTH);
 		} else
 		{
-			cmdData = new byte[data.length - HEADER_LENGTH];
-			System.arraycopy(data, HEADER_LENGTH, cmdData, 0, data.length - HEADER_LENGTH);
+			if (reliable)
+			{
+				cmdData = new byte[data.length - RELIABLE_HEADER_LENGTH];
+				System.arraycopy(data, RELIABLE_HEADER_LENGTH, cmdData, 0, data.length - RELIABLE_HEADER_LENGTH);
+			}
+			else
+			{
+				cmdData = new byte[data.length - HEADER_LENGTH];
+				System.arraycopy(data, HEADER_LENGTH, cmdData, 0, data.length - HEADER_LENGTH);
+			}
 		}
 		
 		SerialDescription cmdDesc = commands.get(cmdId);
@@ -143,12 +164,22 @@ public final class CommandFactory
 		try
 		{
 			acmd = (ACommand) cmdDesc.decode(cmdData);
+			if (reliable)
+			{
+				acmd.setReliable(true);
+				acmd.setSeq(seq);
+			}
 			int cmdDataLen = cmdDesc.getLength(acmd);
 			if (cmdDataLen != cmdData.length)
 			{
 				String cmdStr = String.format("0x%x", cmdId);
+				StringBuilder sb = new StringBuilder();
+				for (byte b : cmdData)
+				{
+					sb.append(String.format("%02x ", b));
+				}
 				log.warn("Command " + cmdStr + " did not parse all data (" + cmdDataLen + " used of " + cmdData.length
-						+ " available)");
+						+ " available) Data: " + sb.toString());
 			}
 		} catch (SerialException err)
 		{
@@ -174,7 +205,7 @@ public final class CommandFactory
 		if (!commands.containsKey(cmdId))
 		{
 			log.error("No description for command: " + cmdId);
-			return null;
+			return new byte[0];
 		}
 		
 		SerialDescription cmdDesc = commands.get(cmdId);
@@ -201,11 +232,26 @@ public final class CommandFactory
 			System.arraycopy(cmdData, 0, data, LEGACY_HEADER_LENGTH, cmdData.length);
 		} else
 		{
-			data = new byte[cmdData.length + HEADER_LENGTH];
-			
-			ACommand.short2ByteArray(data, 0, cmdId);
-			
-			System.arraycopy(cmdData, 0, data, HEADER_LENGTH, cmdData.length);
+			if (cmd.isReliable())
+			{
+				data = new byte[cmdData.length + RELIABLE_HEADER_LENGTH];
+				
+				cmdId |= RELIABLE_CMD_MASK;
+				
+				ACommand.short2ByteArray(data, 0, cmdId);
+				ACommand.short2ByteArray(data, 2, cmd.getSeq());
+				
+				System.arraycopy(cmdData, 0, data, RELIABLE_HEADER_LENGTH, cmdData.length);
+				
+			}
+			else
+			{
+				data = new byte[cmdData.length + HEADER_LENGTH];
+				
+				ACommand.short2ByteArray(data, 0, cmdId);
+				
+				System.arraycopy(cmdData, 0, data, HEADER_LENGTH, cmdData.length);
+			}
 		}
 		
 		return data;
@@ -244,7 +290,14 @@ public final class CommandFactory
 			length += LEGACY_HEADER_LENGTH;
 		} else
 		{
-			length += HEADER_LENGTH;
+			if (cmd.isReliable())
+			{
+				length += RELIABLE_HEADER_LENGTH;
+			}
+			else
+			{
+				length += HEADER_LENGTH;
+			}
 		}
 		
 		return length;

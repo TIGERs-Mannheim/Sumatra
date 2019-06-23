@@ -4,12 +4,12 @@
  * Project: TIGERS - Sumatra
  * Date: 02.09.2010
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ABotSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ASkill;
 
 
@@ -21,7 +21,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.A
 public interface ISkillsPanelObserver
 {
 	/**
-	 * 
 	 * @param x
 	 * @param y
 	 */
@@ -29,7 +28,6 @@ public interface ISkillsPanelObserver
 	
 	
 	/**
-	 * 
 	 * @param x
 	 * @param y
 	 * @param angle
@@ -38,7 +36,6 @@ public interface ISkillsPanelObserver
 	
 	
 	/**
-	 * 
 	 * @param distance [mm]
 	 * @param angle [rad]
 	 */
@@ -46,29 +43,25 @@ public interface ISkillsPanelObserver
 	
 	
 	/**
-	 * 
-	 * @param targetAngle
-	 */
-	void onRotate(float targetAngle);
-	
-	
-	/**
-	 * 
 	 * @param lookAtTarget
 	 */
 	void onLookAt(Vector2 lookAtTarget);
 	
 	
 	/**
-	 * 
 	 * @param rpm
 	 */
 	void onDribble(int rpm);
 	
 	
 	/**
-	 * 
 	 * @param skill
 	 */
 	void onSkill(ASkill skill);
+	
+	
+	/**
+	 * @param skill
+	 */
+	void onBotSkill(ABotSkill skill);
 }

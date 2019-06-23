@@ -15,15 +15,13 @@ import java.awt.geom.GeneralPath;
 import java.util.Map;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline.ISpline;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.DrawablePath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.IDrawableShape;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.Sisyphus;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.tree.Node;
-import edu.dhbw.mannheim.tigers.sumatra.util.units.DistanceUnit;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.IPath;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.tree.DrawableTree;
 
 
 /**
@@ -33,21 +31,15 @@ import edu.dhbw.mannheim.tigers.sumatra.util.units.DistanceUnit;
  */
 public class AresLayer extends AFieldLayer
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
+	private boolean	showPaths					= false;
+	private boolean	showDecoration				= false;
+	private boolean	showDebug					= false;
+	private boolean	showPotentialPaths		= false;
+	private boolean	showPotentialDecoration	= false;
+	private boolean	showPotentialDebug		= false;
+	private boolean	showUnsmoothedPath		= false;
+	private boolean	showRamboTree				= false;
 	
-	
-	private boolean	showPaths				= false;
-	private boolean	showSplines				= false;
-	private boolean	showPPErrorTree		= false;
-	private boolean	showPotentialPaths	= false;
-	private boolean	showPotentialSplines	= false;
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 */
@@ -57,15 +49,53 @@ public class AresLayer extends AFieldLayer
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	@Override
 	protected void paintLayerAif(final Graphics2D g2, final IRecordFrame frame)
 	{
-		drawPaths(g2, frame);
-		drawRambo(g2, frame);
+		boolean invert = frame.getWorldFrame().isInverted();
+		for (Map.Entry<BotID, DrawablePath> entry : frame.getAresData().getPaths().entrySet())
+		{
+			TrackedTigerBot bot = frame.getWorldFrame().getBot(entry.getKey());
+			if (showPaths)
+			{
+				drawPathPoints(g2, bot, entry.getValue().getPath(), Color.red, invert);
+			}
+			if (showDecoration)
+			{
+				drawDrawableShapes(g2, entry.getValue().getPathShapes(), invert);
+			}
+			if (showDebug)
+			{
+				drawDrawableShapes(g2, entry.getValue().getPathDebugShapes(), invert);
+			}
+			if (showUnsmoothedPath)
+			{
+				drawPathPointsUnsmoothed(g2, bot, entry.getValue().getPath(), Color.magenta, invert);
+			}
+			if (showRamboTree && (entry.getValue().getPath() != null) && (entry.getValue().getPath().getTree() != null))
+			{
+				IDrawableShape treeShape = new DrawableTree(entry.getValue().getPath().getTree().getRoot(), Color.red);
+				treeShape.paintShape(g2, getFieldPanel(), invert);
+			}
+		}
+		for (Map.Entry<BotID, DrawablePath> entry : frame.getAresData().getLatestPaths().entrySet())
+		{
+			TrackedTigerBot bot = frame.getWorldFrame().getBot(entry.getKey());
+			if (showPotentialPaths)
+			{
+				drawPathPoints(g2, bot, entry.getValue().getPath(), Color.magenta, invert);
+			}
+			if (showPotentialDecoration)
+			{
+				drawDrawableShapes(g2, entry.getValue().getPathShapes(), invert);
+			}
+			if (showPotentialDebug)
+			{
+				drawDrawableShapes(g2, entry.getValue().getPathDebugShapes(), invert);
+			}
+		}
+		
+		markRambo(g2, frame);
 	}
 	
 	
@@ -77,22 +107,21 @@ public class AresLayer extends AFieldLayer
 	{
 		super.setInitialVisibility();
 		showPaths = false;
-		showSplines = false;
-		showPPErrorTree = false;
+		showDecoration = false;
+		showDebug = false;
+		showPotentialPaths = false;
+		showPotentialDecoration = false;
+		showPotentialDebug = false;
 	}
 	
 	
-	private void drawRambo(final Graphics2D g, final IRecordFrame frame)
+	private void markRambo(final Graphics2D g, final IRecordFrame frame)
 	{
-		Map<BotID, Path> paths = frame.getAresData().getPaths();
-		if (paths == null)
-		{
-			return;
-		}
+		Map<BotID, DrawablePath> paths = frame.getAresData().getPaths();
 		for (TrackedTigerBot bot : frame.getWorldFrame().getTigerBotsAvailable().values())
 		{
-			Path path = paths.get(bot.getId());
-			if ((path != null) && path.isRambo())
+			DrawablePath dPath = paths.get(bot.getId());
+			if ((dPath != null) && (dPath.getPath() != null) && dPath.getPath().isRambo())
 			{
 				// --- mark rambo ---
 				g.setColor(Color.red);
@@ -103,155 +132,68 @@ public class AresLayer extends AFieldLayer
 	}
 	
 	
-	private void drawPaths(final Graphics2D g, final IRecordFrame frame)
+	private void drawPathPointsUnsmoothed(final Graphics2D g, final TrackedTigerBot bot, final IPath path,
+			final Color color,
+			final boolean invert)
 	{
-		Map<BotID, Path> paths = frame.getAresData().getPaths();
-		Map<BotID, Path> latestPaths = frame.getAresData().getLatestPaths();
-		// --- draw paths ---
-		if (showPotentialPaths || showPotentialSplines)
+		if ((path == null) || (bot == null))
 		{
-			for (final Path p : latestPaths.values())
-			{
-				// --- get robot position ---
-				TrackedTigerBot bot = frame.getWorldFrame().getBot(p.getBotID());
-				if (bot != null)
-				{
-					drawPath(g, bot, p, true, frame.getWorldFrame().isInverted());
-				}
-			}
+			return;
 		}
-		if ((showPaths || showSplines || showPPErrorTree))
+		
+		g.setColor(color);
+		g.setStroke(new BasicStroke(1));
+		final GeneralPath drawPath = new GeneralPath();
+		
+		IVector2 startPos = path.getStartPos() == null ? bot.getPos() : path.getStartPos();
+		final IVector2 transBotPos = getFieldPanel().transformToGuiCoordinates(startPos, invert);
+		final int robotX = (int) transBotPos.x();
+		final int robotY = (int) transBotPos.y();
+		drawPath.moveTo(robotX, robotY);
+		
+		for (IVector2 point : path.getUnsmoothedPathPoints())
 		{
-			for (final Path p : paths.values())
-			{
-				// --- get robot position ---
-				TrackedTigerBot bot = frame.getWorldFrame().getBot(p.getBotID());
-				if (bot != null)
-				{
-					drawPath(g, bot, p, false, frame.getWorldFrame().isInverted());
-				}
-			}
+			final IVector2 transPathPoint = getFieldPanel().transformToGuiCoordinates(point, invert);
+			g.drawOval((int) transPathPoint.x() - 1, (int) transPathPoint.y() - 1, 3, 3);
+			drawPath.lineTo((int) transPathPoint.x(), (int) transPathPoint.y());
 		}
+		g.draw(drawPath);
 	}
 	
 	
-	/**
-	 * Draws a path.
-	 * 
-	 * @param g
-	 * @param bot
-	 * @param path
-	 */
-	private void drawPath(final Graphics2D g, final TrackedTigerBot bot, final Path path, final boolean latestPath,
+	private void drawPathPoints(final Graphics2D g, final TrackedTigerBot bot, final IPath path, final Color color,
 			final boolean invert)
 	{
-		// --- from SSLVision-mm to java2d-coordinates ---
-		final IVector2 transBotPos = getFieldPanel().transformToGuiCoordinates(bot.getPos(), invert);
-		final int robotX = (int) transBotPos.x();
-		final int robotY = (int) transBotPos.y();
-		
-		// --- draw waypoints ---
-		if ((!latestPath && showPaths) || (latestPath && showPotentialPaths))
+		if ((path == null) || (bot == null))
 		{
-			if (latestPath)
-			{
-				g.setColor(Color.black);
-			} else
-			{
-				g.setColor(Color.red);
-			}
-			g.setStroke(new BasicStroke(1));
-			final GeneralPath drawPath = new GeneralPath();
+			return;
+		}
+		
+		g.setColor(color);
+		g.setStroke(new BasicStroke(1));
+		final GeneralPath drawPath = new GeneralPath();
+		if (path.getCurrentDestinationNodeIdx() > 0)
+		{
+			IVector2 point = path.getPathPoints().get(path.getCurrentDestinationNodeIdx() - 1);
+			final IVector2 transPathPoint = getFieldPanel().transformToGuiCoordinates(point, invert);
+			g.drawOval((int) transPathPoint.x() - 1, (int) transPathPoint.y() - 1, 3, 3);
+			drawPath.moveTo((int) transPathPoint.x(), (int) transPathPoint.y());
+		} else
+		{
+			IVector2 startPos = path.getStartPos() == null ? bot.getPos() : path.getStartPos();
+			final IVector2 transBotPos = getFieldPanel().transformToGuiCoordinates(startPos, invert);
+			final int robotX = (int) transBotPos.x();
+			final int robotY = (int) transBotPos.y();
 			drawPath.moveTo(robotX, robotY);
-			for (final IVector2 point : path.getPath())
-			{
-				final IVector2 transPathPoint = getFieldPanel().transformToGuiCoordinates(point, invert);
-				g.drawOval((int) transPathPoint.x(), (int) transPathPoint.y(), 2, 2);
-				drawPath.lineTo((int) transPathPoint.x(), (int) transPathPoint.y());
-			}
-			g.draw(drawPath);
 		}
-		
-		// draw splines
-		if ((!latestPath && showSplines) || (latestPath && showPotentialSplines))
+		for (int i = path.getCurrentDestinationNodeIdx(); i < path.getPathPoints().size(); i++)
 		{
-			final ISpline spline = path.getSpline();
-			if (spline != null)
-			{
-				for (float t = 0; t < spline.getTotalTime(); t += 0.020)
-				{
-					if (t > 10)
-					{
-						// stop drawing here, because this would slow down Sumatra extensivly
-						break;
-					}
-					IVector2 pointToDraw = new Vector2(spline.getValueByTime(t));
-					pointToDraw = DistanceUnit.METERS.toMillimeters(pointToDraw);
-					float curvature = Math.abs(spline.getAccelerationByTime(t).getLength2());
-					curvature = 1 - (curvature / Sisyphus.maxLinearVelocity);
-					if (curvature > 1)
-					{
-						curvature = 1;
-					}
-					
-					float colorRed = curvature * 2;
-					if (colorRed > 1)
-					{
-						colorRed = 1;
-					}
-					if (colorRed < 0)
-					{
-						colorRed = 0;
-					}
-					float colorGreen = 1 - curvature;
-					colorGreen *= 2;
-					if (colorGreen > 1)
-					{
-						colorGreen = 1;
-					}
-					if (colorGreen < 0)
-					{
-						colorGreen = 0;
-					}
-					float colorBlue = 0;
-					if (latestPath)
-					{
-						colorBlue = 1;
-					}
-					
-					g.setColor(new Color(colorRed, colorGreen, colorBlue));
-					if (path.getFirstCollisionAt() != null)
-					{
-						float diff = Math.abs(path.getFirstCollisionAt().getTime() - t);
-						if (diff < 0.2)
-						{
-							g.setColor(new Color(0, 0, 255));
-						}
-					}
-					// flip x and y since field is vertically drawn
-					final IVector2 pointToDrawGUI = getFieldPanel().transformToGuiCoordinates(pointToDraw,
-							invert);
-					g.fillOval((int) pointToDrawGUI.x() - 1, (int) pointToDrawGUI.y() - 1, 2, 2);
-				}
-				
-				IVector2 curPoint = spline.getValueByTime(path.getHermiteSpline().getTrajectoryTime()).multiplyNew(1000);
-				IVector2 curPointGui = getFieldPanel().transformToGuiCoordinates(curPoint, invert);
-				g.setColor(Color.magenta);
-				g.fillOval((int) curPointGui.x() - 1, (int) curPointGui.y() - 1, 2, 2);
-				
-			}
+			IVector2 point = path.getPathPoints().get(i);
+			final IVector2 transPathPoint = getFieldPanel().transformToGuiCoordinates(point, invert);
+			g.drawOval((int) transPathPoint.x() - 1, (int) transPathPoint.y() - 1, 3, 3);
+			drawPath.lineTo((int) transPathPoint.x(), (int) transPathPoint.y());
 		}
-		if (showPPErrorTree && (path.getTree() != null))
-		{
-			Node root = path.getTree().getRoot();
-			for (Node children : root.getChildrenRecursive())
-			{
-				IVector2 childrenGUI = getFieldPanel().transformToGuiCoordinates(children, invert);
-				IVector2 parentGUI = getFieldPanel().transformToGuiCoordinates(children.getParent(), invert);
-				g.setColor(new Color(0, 255, 0));
-				g.drawLine((int) childrenGUI.x(), (int) childrenGUI.y(), (int) parentGUI.x(), (int) parentGUI.y());
-			}
-		}
+		g.draw(drawPath);
 	}
 	
 	
@@ -267,18 +209,18 @@ public class AresLayer extends AFieldLayer
 	/**
 	 * @param visible
 	 */
-	public void showSplines(final boolean visible)
+	public void showDecoration(final boolean visible)
 	{
-		showSplines = visible;
+		showDecoration = visible;
 	}
 	
 	
 	/**
 	 * @param showPPErrorTree the showPPErrorTree to set
 	 */
-	public void showPPErrorTree(final boolean showPPErrorTree)
+	public void showDebug(final boolean showPPErrorTree)
 	{
-		this.showPPErrorTree = showPPErrorTree;
+		showDebug = showPPErrorTree;
 	}
 	
 	
@@ -294,8 +236,35 @@ public class AresLayer extends AFieldLayer
 	/**
 	 * @param visible
 	 */
-	public void showPotentialSplines(final boolean visible)
+	public void showPotentialDecoration(final boolean visible)
 	{
-		showPotentialSplines = visible;
+		showPotentialDecoration = visible;
+	}
+	
+	
+	/**
+	 * @param visible
+	 */
+	public void showPotentialDebug(final boolean visible)
+	{
+		showPotentialDebug = visible;
+	}
+	
+	
+	/**
+	 * @param visible
+	 */
+	public void showUnsmoothedPaths(final boolean visible)
+	{
+		showUnsmoothedPath = visible;
+	}
+	
+	
+	/**
+	 * @param isSelected
+	 */
+	public void showRambo(final boolean isSelected)
+	{
+		showRamboTree = isSelected;
 	}
 }

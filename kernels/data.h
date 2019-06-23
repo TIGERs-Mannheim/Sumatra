@@ -25,3 +25,4 @@ typedef struct _Bot {
 	Vector2 pos;
 } Bot;
 
+#define fitRange(value) max(0.0f, min(1.0f, value))

@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 01.04.2011
  * Author(s): Malte
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line;
@@ -18,19 +17,16 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
  * no start or end. Its length is infinite!
  * 
  * @author Malte
- * 
  */
 public interface ILine
 {
 	/**
-	 * 
 	 * @return
 	 */
 	IVector2 supportVector();
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	IVector2 directionVector();
@@ -97,40 +93,15 @@ public interface ILine
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	boolean isHorizontal();
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	boolean isVertical();
-	
-	
-	/**
-	 * Checks, if a given point is on the left side of the line.
-	 * Left and right are defined by the view direction of the direction vector.
-	 * If the point is on the line, the answer is true.
-	 * 
-	 * <pre>
-	 * 
-	 *    ^
-	 *    |
-	 *    |   +
-	 *    |
-	 *    |
-	 * 
-	 * Would be false!
-	 * </pre>
-	 * 
-	 * @author Malte
-	 * @param point
-	 * @return
-	 */
-	boolean isPointOnTheLeft(IVector2 point);
 	
 	
 	/**

@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 26.03.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory;
@@ -16,7 +15,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
  * 2 dimensional trajectory.
  * 
  * @author AndreR
- * 
  */
 public interface ITrajectory2D
 {
@@ -24,7 +22,7 @@ public interface ITrajectory2D
 	 * Get position at time t.
 	 * 
 	 * @param t time
-	 * @return position
+	 * @return position [mm]
 	 */
 	Vector2 getPosition(float t);
 	

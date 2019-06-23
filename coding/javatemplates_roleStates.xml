@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><templates>
+<template autoinsert="true" context="java" deleted="false" description="" enabled="true" name="state">private class ${type} implements IState
+	{
+		@Override
+		public void doEntryActions()
+		{
+			
+		}
+		
+		
+		@Override
+		public void doUpdate()
+		{
+		}
+		
+		
+		@Override
+		public void doExitActions()
+		{
+		}
+		
+		
+		@Override
+		public Enum&lt;? extends Enum&lt;?&gt;&gt; getIdentifier()
+		{
+			return ${var};
+		}
+	}</template><template autoinsert="true" context="java" deleted="false" description="creates enums for stateId and event and a comment header for states" enabled="true" name="stateHead">	// --------------------------------------------------------------------------
+	// --- states ---------------------------------------------------------------
+	// --------------------------------------------------------------------------
+	
+	private enum EStateId
+	{
+		${curser}
+	}
+	
+	private enum EEvent
+	{
+		
+	}</template><template autoinsert="true" context="java" deleted="false" description="" enabled="true" name="stateRole">private class ${type} implements IRoleState
+	{
+		
+		@Override
+		public void doEntryActions()
+		{
+			${cursor}
+		}
+		
+		
+		@Override
+		public void doUpdate()
+		{
+		}
+		
+		
+		@Override
+		public void doExitActions()
+		{
+		}
+		
+		
+		@Override
+		public void onSkillStarted(ISkill skill, BotID botID)
+		{
+		}
+		
+		
+		@Override
+		public void onSkillCompleted(ISkill skill, BotID botID)
+		{
+		}
+		
+		
+		@Override
+		public Enum&lt;? extends Enum&lt;?&gt;&gt; getIdentifier()
+		{
+			return ${var};
+		}
+	}</template></templates>

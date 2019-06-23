@@ -25,4 +25,11 @@ public interface IColorPicker
 	 * @return
 	 */
 	Color applyColor(Graphics2D g, float relValue);
+	
+	
+	/**
+	 * @param relValue
+	 * @return
+	 */
+	Color getColor(float relValue);
 }

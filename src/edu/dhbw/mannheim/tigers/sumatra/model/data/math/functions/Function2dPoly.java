@@ -11,6 +11,8 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.math.functions;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.sleepycat.persist.model.Persistent;
+
 
 /**
  * Two dimensional function
@@ -18,6 +20,7 @@ import java.util.List;
  * 
  * @author AndreR
  */
+@Persistent
 public class Function2dPoly implements IFunction1D
 {
 	// --------------------------------------------------------------------------
@@ -30,6 +33,16 @@ public class Function2dPoly implements IFunction1D
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	/**
+	 */
+	@SuppressWarnings("unused")
+	private Function2dPoly()
+	{
+		a = new float[0];
+	}
+	
+	
 	/**
 	 * Create polynomial function.
 	 * param a must be in the form: y=a[0]+a[1]*x+a[2]*y+a[3]*x*y+a[4]*x*x+a[5]*y*y

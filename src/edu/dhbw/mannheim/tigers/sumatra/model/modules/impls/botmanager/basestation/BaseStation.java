@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 22.04.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.basestation;
@@ -12,18 +11,22 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.basestat
 import java.net.NetworkInterface;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.TimerTask;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
-import org.apache.commons.configuration.HierarchicalConfiguration.Node;
-import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
+import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.udp.ITransceiverUDPObserver;
@@ -31,14 +34,27 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.comm
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationAuth;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationConfigV2;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationConfigV2.BSModuleConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationConfigV2.EWifiSpeed;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationEthStats;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationPing;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationStats;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationStats.WifiStats;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationWifiStats;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationWifiStats.BotStats;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerSystemConsolePrint;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.cam.SSLVisionCam;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ACam;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IConfigObserver;
 import edu.dhbw.mannheim.tigers.sumatra.util.GeneralPurposeTimer;
 import edu.dhbw.mannheim.tigers.sumatra.util.IWatchdogObserver;
 import edu.dhbw.mannheim.tigers.sumatra.util.NamedThreadFactory;
 import edu.dhbw.mannheim.tigers.sumatra.util.Watchdog;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.ConfigRegistration;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.EConfigurableCat;
 import edu.dhbw.mannheim.tigers.sumatra.util.network.NetworkUtility;
 
 
@@ -47,27 +63,41 @@ import edu.dhbw.mannheim.tigers.sumatra.util.network.NetworkUtility;
  * Acts as a packaging Transceiver which prepends commands by BotIDs.
  * 
  * @author AndreR
- * 
  */
 public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatchdogObserver
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	private final Set<IBaseStationObserver>	observers		= new HashSet<IBaseStationObserver>();
+	private static final Logger					log				= Logger.getLogger(BaseStation.class.getName());
+	private final List<IBaseStationObserver>	observers		= new CopyOnWriteArrayList<IBaseStationObserver>();
 	private final UnicastTransceiverUDP			transceiver		= new UnicastTransceiverUDP(false);
-	private final Logger								log				= Logger.getLogger(getClass());
+	private final IConfigObserver					configObserver	= new ConfigObserver();
 	
+	@Configurable(defValue = "10200", spezis = { "PRIMARY", "SECONDARY" })
 	private int											localPort		= 10200;
-	private String										host				= "127.0.0.1";
+	@Configurable(defValue = "192.168.20.210", spezis = { "PRIMARY", "SECONDARY" })
+	private String										host				= "192.168.20.210";
+	@Configurable(defValue = "10201", spezis = { "PRIMARY", "SECONDARY" })
 	private int											dstPort			= 10201;
 	
-	private boolean									invertPosition	= false;
-	private int											channel			= 100;
-	private int											visionRate		= 30;
-	private int											maxBots			= 6;
+	@Configurable(defValue = "92", spezis = { "PRIMARY", "SECONDARY" })
+	private int											channel			= 92;
+	@Configurable(comment = "Fix the runtime regardless of the number of bot that are connected.", defValue = "true", spezis = {
+			"PRIMARY", "SECONDARY" })
+	private boolean									fixedRuntime	= true;
+	@Configurable(comment = "Max communication slots to open for communication to bots", defValue = "8", spezis = {
+			"PRIMARY", "SECONDARY" })
+	private int											maxBots			= 8;
+	@Configurable(comment = "timeout when bot is considered to be offline.", defValue = "1000", spezis = {
+			"PRIMARY", "SECONDARY" })
 	private int											timeout			= 1000;
+	@Configurable(comment = "wifi speed (must be consistent with bots wifi speed!)", defValue = "WIFI_SPEED_2M", spezis = {
+			"PRIMARY", "SECONDARY" })
+	private EWifiSpeed								speed				= EWifiSpeed.WIFI_SPEED_2M;
+	
+	@Configurable(comment = "If true, connect automatically on startup", defValue = "false", spezis = {
+			"PRIMARY", "SECONDARY" })
+	private boolean									active			= false;
+	private int											visionPort		= -1;
+	private String										visionAddress	= "";
 	
 	private ScheduledExecutorService				pingService		= null;
 	private PingThread								pingThread		= null;
@@ -76,10 +106,17 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 	private static final int						TIMEOUT			= 2000;
 	private final Watchdog							watchdog			= new Watchdog(TIMEOUT);
 	private ENetworkState							netState			= ENetworkState.OFFLINE;
-	private boolean									active			= false;
+	
+	private Set<BotID>								lastBots			= new HashSet<BotID>();
 	private BaseStationStats						latestStats		= null;
 	
 	private final int									key;
+	
+	private static final int						STAT_ENTRIES	= 10;
+	private Queue<BaseStationWifiStats>			wifiStats		= new LinkedList<BaseStationWifiStats>();
+	private Queue<BaseStationEthStats>			ethStats			= new LinkedList<BaseStationEthStats>();
+	
+	private int											updateRate		= 0;
 	
 	
 	// --------------------------------------------------------------------------
@@ -88,34 +125,10 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 	/** */
 	public BaseStation()
 	{
-		init();
 		key = 0;
 	}
 	
 	
-	/**
-	 * 
-	 * @param config
-	 */
-	public BaseStation(SubnodeConfiguration config)
-	{
-		host = config.getString("ip", "127.0.0.1");
-		localPort = config.getInt("localPort", 10200);
-		dstPort = config.getInt("remotePort", 10201);
-		active = config.getBoolean("active", false);
-		invertPosition = config.getBoolean("invertPos", false);
-		visionRate = config.getInt("visionRate", 30);
-		maxBots = config.getInt("maxBots", 6);
-		channel = config.getInt("channel", 100);
-		timeout = config.getInt("timeout", 1000);
-		key = config.getInt("[@id]");
-		init();
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	private void init()
 	{
 		// Detect the correct interface for base station
@@ -135,27 +148,21 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 	
 	
 	@Override
-	public void addObserver(IBaseStationObserver observer)
+	public void addObserver(final IBaseStationObserver observer)
 	{
-		synchronized (observers)
-		{
-			observers.add(observer);
-		}
+		observers.add(observer);
 	}
 	
 	
 	@Override
-	public void removeObserver(IBaseStationObserver observer)
+	public void removeObserver(final IBaseStationObserver observer)
 	{
-		synchronized (observers)
-		{
-			observers.remove(observer);
-		}
+		observers.remove(observer);
 	}
 	
 	
 	@Override
-	public void enqueueCommand(BotID id, ACommand cmd)
+	public void enqueueCommand(final BotID id, final ACommand cmd)
 	{
 		if (!transceiver.isOpen())
 		{
@@ -169,10 +176,9 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 	
 	
 	/**
-	 * 
 	 * @param cmd
 	 */
-	public void enqueueCommand(ACommand cmd)
+	public void enqueueCommand(final ACommand cmd)
 	{
 		if (!transceiver.isOpen())
 		{
@@ -184,7 +190,7 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 	
 	
 	@Override
-	public void onIncommingCommand(ACommand cmd)
+	public void onIncommingCommand(final ACommand cmd)
 	{
 		if (watchdog.isActive())
 		{
@@ -206,6 +212,18 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 					return;
 				}
 				
+				switch (baseCmd.getChild().getType())
+				{
+					case CMD_SYSTEM_CONSOLE_PRINT:
+					{
+						final TigerSystemConsolePrint print = (TigerSystemConsolePrint) baseCmd.getChild();
+						log.info("Console(" + baseCmd.getId().getNumberWithColorOffset() + "): " + print.getText());
+					}
+						break;
+					default:
+						break;
+				}
+				
 				notifyIncommingBotCommand(baseCmd.getId(), baseCmd.getChild());
 			}
 				break;
@@ -223,17 +241,82 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 			{
 				BaseStationStats stats = (BaseStationStats) cmd;
 				
-				latestStats = stats;
-				
+				Set<BotID> curBots = new HashSet<BotID>();
 				for (WifiStats wifiStats : stats.getWifiStats())
 				{
-					if (wifiStats.getLinkQuality() == 0.0f)
+					if (wifiStats.getBotId().isBot())
 					{
-						notifyBotOffline(wifiStats.getBotId());
+						curBots.add(wifiStats.getBotId());
+					}
+				}
+				for (BotID botId : lastBots)
+				{
+					if (!curBots.contains(botId))
+					{
+						notifyBotOffline(botId);
 					}
 				}
 				
+				lastBots = curBots;
+				latestStats = stats;
+				
 				notifyNewBaseStationStats(stats);
+			}
+				break;
+			case CMD_BASE_WIFI_STATS:
+			{
+				BaseStationWifiStats stats = (BaseStationWifiStats) cmd;
+				
+				wifiStats.add(stats);
+				
+				if (wifiStats.size() > STAT_ENTRIES)
+				{
+					// this gives a nice report over the last second every 100ms :)
+					stats = new BaseStationWifiStats(stats, wifiStats.remove());
+				}
+				updateRate = stats.getUpdateRate();
+				
+				Set<BotID> curBots = new HashSet<BotID>();
+				for (BotStats wifiStats : stats.getBotStats())
+				{
+					BotID botId = wifiStats.getBotId();
+					if (botId.isBot())
+					{
+						curBots.add(botId);
+					}
+				}
+				for (BotID botId : lastBots)
+				{
+					if (!curBots.contains(botId))
+					{
+						notifyBotOffline(botId);
+					}
+				}
+				for (BotID botId : curBots)
+				{
+					if (!lastBots.contains(botId))
+					{
+						notifyBotOnline(botId);
+					}
+				}
+				
+				lastBots = curBots;
+				
+				notifyNewBaseStationWifiStats(stats);
+			}
+				break;
+			case CMD_BASE_ETH_STATS:
+			{
+				BaseStationEthStats stats = (BaseStationEthStats) cmd;
+				
+				ethStats.add(stats);
+				
+				if (ethStats.size() > STAT_ENTRIES)
+				{
+					stats = new BaseStationEthStats(stats, ethStats.remove());
+				}
+				
+				notifyNewBaseStationEthStats(stats);
 			}
 				break;
 			case CMD_BASE_AUTH:
@@ -251,28 +334,30 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 	
 	
 	@Override
-	public void onOutgoingCommand(ACommand cmd)
+	public void onOutgoingCommand(final ACommand cmd)
 	{
 	}
 	
 	
 	/**
-	 * 
 	 * @param active
 	 */
-	public void setActive(boolean active)
+	public void setActive(final boolean active)
 	{
 		this.active = active;
 	}
 	
 	
 	/** */
+	@Override
 	public void connect()
 	{
 		if (!active)
 		{
 			return;
 		}
+		
+		ConfigRegistration.registerConfigurableCallback(EConfigurableCat.BOTMGR, configObserver);
 		
 		if (netState == ENetworkState.OFFLINE)
 		{
@@ -282,14 +367,30 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 	
 	
 	/** */
+	@Override
 	public void disconnect()
 	{
 		changeNetworkState(ENetworkState.OFFLINE);
+		ConfigRegistration.unregisterConfigurableCallback(EConfigurableCat.BOTMGR, configObserver);
+	}
+	
+	
+	private void reconnect()
+	{
+		boolean conn = transceiver.isOpen();
+		
+		disconnect();
+		
+		init();
+		
+		if (conn)
+		{
+			connect();
+		}
 	}
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public ENetworkState getNetState()
@@ -299,11 +400,10 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 	
 	
 	/**
-	 * 
 	 * @param numPings
 	 * @param payloadLength
 	 */
-	public void startPing(int numPings, int payloadLength)
+	public void startPing(final int numPings, final int payloadLength)
 	{
 		stopPing();
 		
@@ -329,47 +429,22 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 	}
 	
 	
-	/**
-	 * 
-	 * @param channel
-	 * @param invert
-	 * @param maxBots
-	 * @param rate
-	 * @param timeout
-	 */
-	public void setConfig(int channel, boolean invert, int maxBots, int rate, int timeout)
+	private void sendConfig()
 	{
-		enqueueCommand(new BaseStationConfig(channel, invert, maxBots, rate, timeout));
-		
-		this.channel = channel;
-		invertPosition = invert;
-		this.maxBots = maxBots;
-		visionRate = rate;
-		this.timeout = timeout;
+		BaseStationConfigV2 config = new BaseStationConfigV2();
+		config.setVisionIp(visionAddress);
+		config.setVisionPort(visionPort);
+		BSModuleConfig modConf = config.getModuleConfig(0);
+		modConf.setChannel(channel);
+		modConf.setFixedRuntime(fixedRuntime);
+		modConf.setMaxBots(maxBots);
+		modConf.setSpeed(speed);
+		modConf.setTimeout(timeout);
+		enqueueCommand(config);
 	}
 	
 	
-	/**
-	 * 
-	 * @return
-	 */
-	public boolean isPositionInverted()
-	{
-		return invertPosition;
-	}
-	
-	
-	/**
-	 * 
-	 * @return
-	 */
-	public int getVisionRate()
-	{
-		return visionRate;
-	}
-	
-	
-	private void changeNetworkState(ENetworkState newState)
+	private void changeNetworkState(final ENetworkState newState)
 	{
 		if (netState == newState)
 		{
@@ -378,6 +453,7 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 		
 		if ((netState == ENetworkState.OFFLINE) && (newState == ENetworkState.CONNECTING))
 		{
+			init();
 			// start transceiver
 			transceiver.addObserver(this);
 			transceiver.open();
@@ -412,20 +488,30 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 			return;
 		}
 		
-		if ((netState == ENetworkState.CONNECTING) && (newState == ENetworkState.ONLINE))
+		// if ((netState == ENetworkState.CONNECTING) && (newState == ENetworkState.ONLINE))
+		if ((netState != ENetworkState.ONLINE) && (newState == ENetworkState.ONLINE))
 		{
-			if (connectTimer != null)
+			// if (connectTimer != null)
+			// {
+			// connectTimer.cancel();
+			// }
+			//
+			try
 			{
-				connectTimer.cancel();
+				SSLVisionCam cam = (SSLVisionCam) SumatraModel.getInstance().getModule(ACam.MODULE_ID);
+				visionAddress = cam.getAddress();
+				visionPort = cam.getPort();
+			} catch (ModuleNotFoundException err)
+			{
+				log.error("Could not find cam module", err);
 			}
-			
-			setConfig(channel, invertPosition, maxBots, visionRate, timeout);
 			
 			// start watchdog
 			watchdog.start(this);
 			
 			netState = newState;
 			notifyNetworkStateChanged(netState);
+			sendConfig();
 			
 			log.info("Connected base station");
 			
@@ -434,9 +520,12 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 		
 		if ((netState == ENetworkState.ONLINE) && (newState == ENetworkState.CONNECTING))
 		{
-			for (WifiStats wifiStats : latestStats.getWifiStats())
+			if (latestStats != null)
 			{
-				notifyBotOffline(wifiStats.getBotId());
+				for (WifiStats wifiStats : latestStats.getWifiStats())
+				{
+					notifyBotOffline(wifiStats.getBotId());
+				}
 			}
 			
 			// stop watchdog
@@ -455,9 +544,12 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 		
 		if ((netState == ENetworkState.ONLINE) && (newState == ENetworkState.OFFLINE))
 		{
-			for (WifiStats wifiStats : latestStats.getWifiStats())
+			if (latestStats != null)
 			{
-				notifyBotOffline(wifiStats.getBotId());
+				for (WifiStats wifiStats : latestStats.getWifiStats())
+				{
+					notifyBotOffline(wifiStats.getBotId());
+				}
 			}
 			
 			// stop watchdog
@@ -479,110 +571,91 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 	}
 	
 	
-	private void notifyNetworkStateChanged(ENetworkState netState)
+	private void notifyNetworkStateChanged(final ENetworkState netState)
 	{
-		synchronized (observers)
+		for (IBaseStationObserver observer : observers)
 		{
-			for (IBaseStationObserver observer : observers)
-			{
-				observer.onNetworkStateChanged(netState);
-			}
+			observer.onNetworkStateChanged(netState);
 		}
 	}
 	
 	
 	/**
-	 * 
 	 * @param id
 	 * @param cmd
 	 */
-	private void notifyIncommingBotCommand(BotID id, ACommand cmd)
+	private void notifyIncommingBotCommand(final BotID id, final ACommand cmd)
 	{
-		synchronized (observers)
+		for (IBaseStationObserver observer : observers)
 		{
-			for (IBaseStationObserver observer : observers)
-			{
-				observer.onIncommingBotCommand(id, cmd);
-			}
+			observer.onIncommingBotCommand(id, cmd);
 		}
 	}
 	
 	
 	/**
-	 * 
 	 * @param cmd
 	 */
-	private void notifyIncommingBaseStationCommand(ACommand cmd)
+	private void notifyIncommingBaseStationCommand(final ACommand cmd)
 	{
-		synchronized (observers)
+		for (IBaseStationObserver observer : observers)
 		{
-			for (IBaseStationObserver observer : observers)
-			{
-				observer.onIncommingBaseStationCommand(cmd);
-			}
+			observer.onIncommingBaseStationCommand(cmd);
 		}
 	}
 	
 	
-	private void notifyNewBaseStationStats(BaseStationStats stats)
+	private void notifyNewBaseStationStats(final BaseStationStats stats)
 	{
-		synchronized (observers)
+		for (IBaseStationObserver observer : observers)
 		{
-			for (IBaseStationObserver observer : observers)
-			{
-				observer.onNewBaseStationStats(stats);
-			}
+			observer.onNewBaseStationStats(stats);
 		}
 	}
 	
 	
-	private void notifyNewPingDelay(float delay)
+	private void notifyNewBaseStationWifiStats(final BaseStationWifiStats stats)
 	{
-		synchronized (observers)
+		for (IBaseStationObserver observer : observers)
 		{
-			for (IBaseStationObserver observer : observers)
-			{
-				observer.onNewPingDelay(delay);
-			}
+			observer.onNewBaseStationWifiStats(stats);
 		}
 	}
 	
 	
-	private void notifyBotOffline(BotID id)
+	private void notifyNewBaseStationEthStats(final BaseStationEthStats stats)
 	{
-		synchronized (observers)
+		for (IBaseStationObserver observer : observers)
 		{
-			for (IBaseStationObserver observer : observers)
-			{
-				observer.onBotOffline(id);
-			}
+			observer.onNewBaseStationEthStats(stats);
 		}
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 * @return the config
-	 */
-	public HierarchicalConfiguration getConfig()
+	private void notifyNewPingDelay(final float delay)
 	{
-		final HierarchicalConfiguration config = new HierarchicalConfiguration();
-		Node node = new Node("baseStation");
-		node.addAttribute(new Node("id", key));
-		config.setRoot(node);
-		config.addProperty("ip", host);
-		config.addProperty("localPort", localPort);
-		config.addProperty("remotePort", dstPort);
-		config.addProperty("active", active);
-		config.addProperty("invertPos", invertPosition);
-		config.addProperty("visionRate", visionRate);
-		config.addProperty("channel", channel);
-		config.addProperty("maxBots", maxBots);
-		config.addProperty("timeout", 1000);
-		
-		return config;
+		for (IBaseStationObserver observer : observers)
+		{
+			observer.onNewPingDelay(delay);
+		}
+	}
+	
+	
+	private void notifyBotOffline(final BotID id)
+	{
+		for (IBaseStationObserver observer : observers)
+		{
+			observer.onBotOffline(id);
+		}
+	}
+	
+	
+	private void notifyBotOnline(final BotID id)
+	{
+		for (IBaseStationObserver observer : observers)
+		{
+			observer.onBotOnline(id);
+		}
 	}
 	
 	
@@ -593,7 +666,7 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 	 * @param dstPort
 	 * @param localPort
 	 */
-	public void setIpConfig(String host, int dstPort, int localPort)
+	public void setIpConfig(final String host, final int dstPort, final int localPort)
 	{
 		boolean conn = transceiver.isOpen();
 		
@@ -649,68 +722,6 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 		}
 	}
 	
-	private class PingThread extends Thread
-	{
-		private int								id					= 0;
-		private int								payloadLength	= 0;
-		
-		private final Map<Integer, Long>	activePings		= new HashMap<Integer, Long>();
-		
-		
-		/**
-		 * @param payloadLength
-		 */
-		public PingThread(int payloadLength)
-		{
-			this.payloadLength = payloadLength;
-		}
-		
-		
-		@Override
-		public void run()
-		{
-			synchronized (activePings)
-			{
-				activePings.put(id, System.nanoTime());
-			}
-			
-			enqueueCommand(new BaseStationPing(id, payloadLength));
-			id++;
-		}
-		
-		
-		/**
-		 * @param id
-		 */
-		public void pongArrived(int id)
-		{
-			Long startTime = null;
-			
-			synchronized (activePings)
-			{
-				startTime = activePings.remove(id);
-			}
-			
-			if (startTime == null)
-			{
-				return;
-			}
-			
-			final float delayPongArrive = (System.nanoTime() - startTime) / 1000000.0f;
-			
-			notifyNewPingDelay(delayPongArrive);
-		}
-	}
-	
-	private class Connector extends TimerTask
-	{
-		@Override
-		public void run()
-		{
-			enqueueCommand(new BaseStationAuth());
-		}
-	}
-	
 	
 	@Override
 	public String getName()
@@ -743,5 +754,95 @@ public class BaseStation implements IBaseStation, ITransceiverUDPObserver, IWatc
 	public int getTimeout()
 	{
 		return timeout;
+	}
+	
+	
+	/**
+	 * @return the updateRate
+	 */
+	public final int getUpdateRate()
+	{
+		return updateRate;
+	}
+	
+	private class PingThread extends Thread
+	{
+		private int								id					= 0;
+		private int								payloadLength	= 0;
+		
+		private final Map<Integer, Long>	activePings		= new HashMap<Integer, Long>();
+		
+		
+		/**
+		 * @param payloadLength
+		 */
+		public PingThread(final int payloadLength)
+		{
+			this.payloadLength = payloadLength;
+		}
+		
+		
+		@Override
+		public void run()
+		{
+			synchronized (activePings)
+			{
+				activePings.put(id, SumatraClock.nanoTime());
+			}
+			
+			enqueueCommand(new BaseStationPing(id, payloadLength));
+			id++;
+		}
+		
+		
+		/**
+		 * @param id
+		 */
+		public void pongArrived(final int id)
+		{
+			Long startTime = null;
+			
+			synchronized (activePings)
+			{
+				startTime = activePings.remove(id);
+			}
+			
+			if (startTime == null)
+			{
+				return;
+			}
+			
+			final float delayPongArrive = (SumatraClock.nanoTime() - startTime) / 1000000.0f;
+			
+			notifyNewPingDelay(delayPongArrive);
+		}
+	}
+	
+	private class Connector extends TimerTask
+	{
+		@Override
+		public void run()
+		{
+			enqueueCommand(new BaseStationAuth());
+			if (netState == ENetworkState.ONLINE)
+			{
+				connectTimer.cancel();
+			}
+		}
+	}
+	
+	private class ConfigObserver implements IConfigObserver
+	{
+		@Override
+		public void onLoad(final HierarchicalConfiguration newConfig)
+		{
+		}
+		
+		
+		@Override
+		public void onReload(final HierarchicalConfiguration freshConfig)
+		{
+			reconnect();
+		}
 	}
 }

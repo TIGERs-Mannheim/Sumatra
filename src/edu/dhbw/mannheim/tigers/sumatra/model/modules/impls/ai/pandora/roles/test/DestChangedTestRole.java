@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Jan 29, 2014
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.test;
@@ -14,6 +13,7 @@ import java.util.List;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.Circle;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.DrawableCircle;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.DrawableLine;
@@ -22,9 +22,9 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.IMoveToSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveAndStaySkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveToSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleState;
 
 
@@ -32,7 +32,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleSt
  * Test role for testing fast changing destinations
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class DestChangedTestRole extends ARole
 {
@@ -55,7 +54,7 @@ public class DestChangedTestRole extends ARole
 	 * @param diffLookAt
 	 * @param freq
 	 */
-	public DestChangedTestRole(IVector2 diffDest, IVector2 diffLookAt, int freq)
+	public DestChangedTestRole(final IVector2 diffDest, final IVector2 diffLookAt, final int freq)
 	{
 		super(ERole.DEST_CHANGED);
 		this.diffDest = diffDest;
@@ -77,15 +76,15 @@ public class DestChangedTestRole extends ARole
 	
 	private class MainState implements IRoleState
 	{
-		private MoveToSkill	skill	= null;
+		private IMoveToSkill	skill	= null;
 		
 		
 		@Override
 		public void doEntryActions()
 		{
-			skill = new MoveAndStaySkill();
+			skill = AMoveSkill.createMoveToSkill();
 			skill.getMoveCon().getDestCon().updateDestination(getPos());
-			skill.getMoveCon().updateLookAtTarget(Vector2.ZERO_VECTOR);
+			skill.getMoveCon().updateLookAtTarget(AVector2.ZERO_VECTOR);
 			setNewSkill(skill);
 		}
 		
@@ -93,7 +92,7 @@ public class DestChangedTestRole extends ARole
 		@Override
 		public void doUpdate()
 		{
-			if ((getWFrame().getId().getFrameNumber() % freq) == 0)
+			if ((getWFrame().getId() % freq) == 0)
 			{
 				IVector2 random = new Vector2((Math.random() * diffDest.x()), (Math.random() * diffDest.y()));
 				skill.getMoveCon().updateDestination(random);
@@ -117,13 +116,13 @@ public class DestChangedTestRole extends ARole
 		
 		
 		@Override
-		public void onSkillStarted(ISkill skill, BotID botID)
+		public void onSkillStarted(final ISkill skill, final BotID botID)
 		{
 		}
 		
 		
 		@Override
-		public void onSkillCompleted(ISkill skill, BotID botID)
+		public void onSkillCompleted(final ISkill skill, final BotID botID)
 		{
 		}
 		
@@ -142,7 +141,7 @@ public class DestChangedTestRole extends ARole
 	
 	
 	@Override
-	public void fillNeededFeatures(List<EFeature> features)
+	public void fillNeededFeatures(final List<EFeature> features)
 	{
 	}
 	

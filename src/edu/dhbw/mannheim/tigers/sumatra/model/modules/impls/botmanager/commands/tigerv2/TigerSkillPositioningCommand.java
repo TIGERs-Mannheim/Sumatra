@@ -4,11 +4,11 @@
  * Project: TIGERS - Sumatra
  * Date: Jan 29, 2014
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
@@ -18,10 +18,9 @@ import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
 
 /**
- * Keeper Skill Command
+ * Send a destination to bot
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class TigerSkillPositioningCommand extends ACommand
 {
@@ -33,7 +32,10 @@ public class TigerSkillPositioningCommand extends ACommand
 	
 	/** [mm] */
 	@SerialData(type = ESerialDataType.INT16)
-	private int	destination[]	= new int[3];
+	private int		destination[]	= new int[3];
+	
+	@SerialData(type = ESerialDataType.FLOAT16)
+	private float	t					= -1;
 	
 	
 	// --------------------------------------------------------------------------
@@ -46,7 +48,7 @@ public class TigerSkillPositioningCommand extends ACommand
 	@SuppressWarnings("unused")
 	private TigerSkillPositioningCommand()
 	{
-		this(Vector2.ZERO_VECTOR, 0);
+		this(AVector2.ZERO_VECTOR, 0);
 	}
 	
 	
@@ -54,13 +56,25 @@ public class TigerSkillPositioningCommand extends ACommand
 	 * @param destination [mm]
 	 * @param orientation [rad]
 	 */
-	public TigerSkillPositioningCommand(IVector2 destination, float orientation)
+	public TigerSkillPositioningCommand(final IVector2 destination, final float orientation)
+	{
+		this(destination, orientation, -1);
+	}
+	
+	
+	/**
+	 * @param destination [mm]
+	 * @param orientation [rad]
+	 * @param t
+	 */
+	public TigerSkillPositioningCommand(final IVector2 destination, final float orientation, final float t)
 	{
 		super(ECommand.CMD_SKILL_POSITIONING);
 		
 		this.destination[0] = (int) destination.x();
 		this.destination[1] = (int) destination.y();
 		this.destination[2] = (int) (1000 * orientation);
+		this.t = t;
 	}
 	
 	
@@ -88,6 +102,15 @@ public class TigerSkillPositioningCommand extends ACommand
 	public final float getOrientation()
 	{
 		return destination[2] / 1000.0f;
+	}
+	
+	
+	/**
+	 * @return the t
+	 */
+	public final float getT()
+	{
+		return t;
 	}
 	
 }

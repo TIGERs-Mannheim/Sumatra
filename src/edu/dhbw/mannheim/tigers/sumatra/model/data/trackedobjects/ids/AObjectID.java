@@ -38,6 +38,8 @@ public abstract class AObjectID implements Comparable<AObjectID>, Serializable
 	public static final int		BOT_ID_MIN			= 0;
 	/** */
 	public static final int		BOT_ID_MAX			= 11;
+	/** */
+	public static final int		BOT_ID_MAX_BS		= 23;
 	
 	
 	// --------------------------------------------------------------------------

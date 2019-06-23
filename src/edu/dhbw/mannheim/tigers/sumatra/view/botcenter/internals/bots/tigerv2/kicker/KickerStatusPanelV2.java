@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 30.05.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tigerv2.kicker;
@@ -24,7 +23,6 @@ import net.miginfocom.swing.MigLayout;
  * Kicker status panel
  * 
  * @author AndreR
- * 
  */
 public class KickerStatusPanelV2 extends JPanel
 {

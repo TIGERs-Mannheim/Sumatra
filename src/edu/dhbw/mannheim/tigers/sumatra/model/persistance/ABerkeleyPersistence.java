@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Aug 26, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.persistance;
@@ -12,13 +11,13 @@ package edu.dhbw.mannheim.tigers.sumatra.model.persistance;
 import java.io.File;
 
 import org.apache.log4j.Logger;
+import org.zeroturnaround.zip.ZipUtil;
 
 
 /**
  * Abstract berkeley persistence for all data independent actions.
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public abstract class ABerkeleyPersistence
 {
@@ -40,14 +39,35 @@ public abstract class ABerkeleyPersistence
 	 * @param dbPath
 	 * @param readOnly
 	 */
-	public ABerkeleyPersistence(String dbPath, boolean readOnly)
+	public ABerkeleyPersistence(final String dbPath, final boolean readOnly)
 	{
-		this.dbPath = dbPath;
+		if (dbPath.endsWith(".zip"))
+		{
+			this.dbPath = dbPath.substring(0, dbPath.length() - 4);
+			if (!new File(this.dbPath).exists())
+			{
+				log.info("Unpacking database...");
+				ZipUtil.unpack(new File(dbPath), new File(this.dbPath));
+				log.info("Unpacking finished.");
+			}
+		} else
+		{
+			this.dbPath = dbPath;
+		}
+		log.info("Setting up database...");
 		env = new BerkeleyEnv();
-		File envHome = new File(dbPath);
-		envHome.mkdirs();
+		File envHome = new File(this.dbPath);
+		if (!envHome.exists())
+		{
+			boolean mkdirs = envHome.mkdirs();
+			if (!mkdirs)
+			{
+				log.error("Could not create " + envHome);
+			}
+		}
 		env.setup(envHome, readOnly);
 		attachShutDownHook();
+		log.info("Database ready!");
 	}
 	
 	

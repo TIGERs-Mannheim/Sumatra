@@ -12,7 +12,11 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.log4j.Logger;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.DynamicPosition;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
@@ -21,11 +25,11 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARo
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill.EMoveToMode;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ChipTestSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.IMoveToSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleState;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 
 
 /**
@@ -35,22 +39,14 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleSt
  */
 public class ChipKickTrainerRole extends ARole
 {
+	private static final Logger	log	= Logger.getLogger(ChipKickTrainerRole.class.getName());
+	private final Random				rnd	= new Random(SumatraClock.currentTimeMillis());
 	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
+	private final int					durLow;
+	private final int					durHigh;
+	private final int					dribbleLow;
+	private final int					dribbleHigh;
 	
-	private final Random	rnd	= new Random(System.currentTimeMillis());
-	
-	private final int		durLow;
-	private final int		durHigh;
-	private final int		dribbleLow;
-	private final int		dribbleHigh;
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 * @param durLow
@@ -102,7 +98,9 @@ public class ChipKickTrainerRole extends ARole
 		{
 			int duration = rnd.nextInt((durHigh - durLow) + 1) + durLow;
 			int dribble = rnd.nextInt((dribbleHigh - dribbleLow) + 1) + dribbleLow;
-			ChipTestSkill skill = new ChipTestSkill(duration, dribble);
+			log.debug(durLow + " " + durHigh + " " + dribbleLow + " " + dribbleHigh);
+			log.debug("Duration=" + duration + " dribble=" + dribble);
+			ChipTestSkill skill = new ChipTestSkill(new DynamicPosition(AVector2.ZERO_VECTOR), duration, dribble);
 			setNewSkill(skill);
 		}
 		
@@ -128,7 +126,7 @@ public class ChipKickTrainerRole extends ARole
 		@Override
 		public void onSkillCompleted(final ISkill skill, final BotID botID)
 		{
-			nextState(EEvent.CHIPPED);
+			triggerEvent(EEvent.CHIPPED);
 		}
 		
 		
@@ -147,8 +145,10 @@ public class ChipKickTrainerRole extends ARole
 		@Override
 		public void doEntryActions()
 		{
-			skill = AMoveSkill.createMoveToSkill(EMoveToMode.DO_COMPLETE);
-			skill.getMoveCon().setPenaltyAreaAllowed(true);
+			skill = AMoveSkill.createMoveToSkill();
+			skill.setDoComplete(true);
+			skill.getMoveCon().setPenaltyAreaAllowedOur(true);
+			skill.getMoveCon().setPenaltyAreaAllowedTheir(true);
 			setNewSkill(skill);
 		}
 		
@@ -179,7 +179,7 @@ public class ChipKickTrainerRole extends ARole
 		@Override
 		public void onSkillCompleted(final ISkill skill, final BotID botID)
 		{
-			nextState(EEvent.PREPARED);
+			triggerEvent(EEvent.PREPARED);
 		}
 		
 		
@@ -198,16 +198,16 @@ public class ChipKickTrainerRole extends ARole
 		@Override
 		public void doEntryActions()
 		{
-			startTime = System.nanoTime();
+			startTime = SumatraClock.nanoTime();
 		}
 		
 		
 		@Override
 		public void doUpdate()
 		{
-			if ((System.nanoTime() - startTime) > TimeUnit.MILLISECONDS.toNanos(400))
+			if ((SumatraClock.nanoTime() - startTime) > TimeUnit.MILLISECONDS.toNanos(400))
 			{
-				nextState(EEvent.DONE);
+				triggerEvent(EEvent.DONE);
 			}
 		}
 		

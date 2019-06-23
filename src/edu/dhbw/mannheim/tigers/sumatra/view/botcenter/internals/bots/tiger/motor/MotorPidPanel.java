@@ -27,6 +27,7 @@ import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerMotorPidLog;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 
 
 /**
@@ -111,7 +112,7 @@ public class MotorPidPanel extends JPanel
 		add(targetChart, "grow");
 		add(errorChart, "grow");
 		
-		timeOffset = System.nanoTime();
+		timeOffset = SumatraClock.nanoTime();
 	}
 	
 	
@@ -128,13 +129,13 @@ public class MotorPidPanel extends JPanel
 			@Override
 			public void run()
 			{
-				latest.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getLatest());
-				setpoint.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getSetpoint());
-				output.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getOutput());
-				pError.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getpError());
-				iError.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getiError());
-				dError.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getdError());
-				current.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getECurrent());
+				latest.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, log.getLatest());
+				setpoint.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, log.getSetpoint());
+				output.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, log.getOutput());
+				pError.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, log.getpError());
+				iError.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, log.getiError());
+				dError.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, log.getdError());
+				current.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, log.getECurrent());
 			}
 		});
 	}

@@ -4,11 +4,14 @@
  * Project: TIGERS - Sumatra
  * Date: 21.07.2010
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam;
 
+import com.sleepycat.persist.model.Persistent;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector3;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector3;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector3f;
 
 
@@ -20,26 +23,27 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector3f;
  * <p>
  * <i>(Being aware of EJ-SE Items 13, 14 and 55: members are public to reduce noise)</i>
  * </p>
- * @author Gero
  * 
+ * @author Gero
  */
+@Persistent
 public class CamBall extends ACamObject
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	/** ? */
-	public final int			area;
+	private final int			area;
 	
 	/** mm, (NA in current SSLVision) */
-	public final Vector3f	pos;
+	private final IVector3	pos;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
+	@SuppressWarnings("unused")
+	private CamBall()
+	{
+		super();
+		area = 0;
+		pos = AVector3.ZERO_VECTOR;
+	}
+	
+	
 	/**
 	 * <p>
 	 * <i>Implemented being aware of EJSE Item 2; but we prefer performance over readability - at least in this case.
@@ -54,10 +58,13 @@ public class CamBall extends ACamObject
 	 * @param z
 	 * @param pixelX
 	 * @param pixelY
+	 * @param timestamp
+	 * @param camId
 	 */
-	public CamBall(float confidence, int area, float x, float y, float z, float pixelX, float pixelY)
+	public CamBall(final float confidence, final int area, final float x, final float y, final float z,
+			final float pixelX, final float pixelY, final long timestamp, final int camId)
 	{
-		super(confidence, pixelX, pixelY);
+		super(confidence, pixelX, pixelY, timestamp, camId);
 		this.area = area;
 		pos = new Vector3f(x, y, z);
 	}
@@ -66,11 +73,28 @@ public class CamBall extends ACamObject
 	/**
 	 * @param newCamBall
 	 */
-	public CamBall(CamBall newCamBall)
+	public CamBall(final CamBall newCamBall)
 	{
-		super(newCamBall.confidence, newCamBall.pixelX, newCamBall.pixelY);
-		area = newCamBall.area;
-		pos = new Vector3f(newCamBall.pos);
+		super(newCamBall.getConfidence(), newCamBall.getPixelX(), newCamBall.getPixelY(), newCamBall.getTimestamp(),
+				newCamBall.getCameraId());
+		area = newCamBall.getArea();
+		pos = new Vector3f(newCamBall.getPos());
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public static CamBall defaultInstance()
+	{
+		return new CamBall(0, 0, 0, 0, 0, 0, 0, 0, 0);
+	}
+	
+	
+	@Override
+	public ECamObjectType implementation()
+	{
+		return ECamObjectType.Ball;
 	}
 	
 	
@@ -78,21 +102,43 @@ public class CamBall extends ACamObject
 	public String toString()
 	{
 		StringBuilder builder = new StringBuilder();
-		builder.append("SSLBall [area=");
-		builder.append(area);
-		builder.append(", confidence=");
-		builder.append(confidence);
-		builder.append(", pixelX=");
-		builder.append(pixelX);
-		builder.append(", pixelY=");
-		builder.append(pixelY);
+		builder.append("SSLBall [timestamp=");
+		builder.append(getTimestamp());
+		builder.append(", camId=");
+		builder.append(getCameraId());
 		builder.append(", x=");
-		builder.append(pos.x());
+		builder.append(getPos().x());
 		builder.append(", y=");
-		builder.append(pos.y());
+		builder.append(getPos().y());
 		builder.append(", z=");
-		builder.append(pos.z());
+		builder.append(getPos().z());
+		builder.append(", area=");
+		builder.append(getArea());
+		builder.append(", confidence=");
+		builder.append(getConfidence());
+		builder.append(", pixelX=");
+		builder.append(getPixelX());
+		builder.append(", pixelY=");
+		builder.append(getPixelY());
 		builder.append("]");
 		return builder.toString();
+	}
+	
+	
+	/**
+	 * @return the area
+	 */
+	public int getArea()
+	{
+		return area;
+	}
+	
+	
+	/**
+	 * @return the pos
+	 */
+	public IVector3 getPos()
+	{
+		return pos;
 	}
 }

@@ -1,6 +1,2 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<lachesis base="edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis">
-    <NewRoleAssigner>
-        <calcInterval comment="time [ms] - Time to wait after roleAssignment">900</calcInterval>
-    </NewRoleAssigner>
-</lachesis>
+<lachesis base="edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis"/>

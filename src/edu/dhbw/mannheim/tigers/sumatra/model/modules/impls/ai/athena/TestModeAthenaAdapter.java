@@ -4,11 +4,12 @@
  * Project: TIGERS - Sumatra
  * Date: Feb 8, 2014
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,7 @@ import org.apache.log4j.Logger;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.MetisAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.PlayStrategy.Builder;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.RoleFinderInfo;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.others.GuiTestPlay;
@@ -28,7 +30,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARo
  * Test mode
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class TestModeAthenaAdapter extends AAthenaAdapter
 {
@@ -36,14 +37,45 @@ public class TestModeAthenaAdapter extends AAthenaAdapter
 	
 	
 	@Override
-	public void doProcess(MetisAiFrame metisAiFrame, Builder playStrategyBuilder, AIControl aiControl)
+	public void doProcess(final MetisAiFrame metisAiFrame, final Builder playStrategyBuilder, final AIControl aiControl)
 	{
+		Map<EPlay, RoleFinderInfo> infosCopy = new HashMap<EPlay, RoleFinderInfo>(metisAiFrame.getTacticalField()
+				.getRoleFinderInfos());
+		metisAiFrame.getTacticalField().getRoleFinderInfos().clear();
+		for (Map.Entry<EPlay, RoleFinderInfo> entry : infosCopy.entrySet())
+		{
+			Boolean override = getAiControl().getRoleFinderOverrides().get(entry.getKey());
+			if ((override != null) && !override)
+			{
+				metisAiFrame.getTacticalField().getRoleFinderInfos().put(entry.getKey(), entry.getValue());
+			}
+		}
+		for (Map.Entry<EPlay, RoleFinderInfo> entry : getAiControl().getRoleFinderInfos().entrySet())
+		{
+			// only put plays that are not present
+			metisAiFrame.getTacticalField().getRoleFinderInfos().putIfAbsent(entry.getKey(), entry.getValue());
+		}
+		
+		updatePlays(metisAiFrame.getTacticalField().getRoleFinderInfos(), playStrategyBuilder.getActivePlays());
+		
+		GuiTestPlay guiPlay = getGuiTestPlay(playStrategyBuilder.getActivePlays());
+		if (guiPlay != null)
+		{
+			for (ARole role : new ArrayList<ARole>(guiPlay.getRoles()))
+			{
+				if (role.isCompleted())
+				{
+					guiPlay.setRoleToBeRemoved(role);
+					guiPlay.removeRoles(1, metisAiFrame);
+				}
+			}
+		}
+		// process legacy
 		if (aiControl.hasChanged())
 		{
 			// process roles
 			if (!aiControl.getAddRoles().isEmpty())
 			{
-				GuiTestPlay guiPlay = getGuiTestPlay(playStrategyBuilder.getActivePlays());
 				if (guiPlay == null)
 				{
 					guiPlay = new GuiTestPlay();
@@ -52,12 +84,11 @@ public class TestModeAthenaAdapter extends AAthenaAdapter
 				for (ARole role : aiControl.getAddRoles())
 				{
 					guiPlay.setRoleToBeAdded(role);
-					guiPlay.addRoles(1);
+					guiPlay.addRoles(1, metisAiFrame);
 				}
 			}
 			if (!aiControl.getRemoveRoles().isEmpty())
 			{
-				GuiTestPlay guiPlay = getGuiTestPlay(playStrategyBuilder.getActivePlays());
 				if (guiPlay == null)
 				{
 					log.warn("Tried to remove at least one role, but there is no guiPlay active.");
@@ -66,7 +97,7 @@ public class TestModeAthenaAdapter extends AAthenaAdapter
 					for (ARole role : aiControl.getRemoveRoles())
 					{
 						guiPlay.setRoleToBeRemoved(role);
-						guiPlay.removeRoles(1);
+						guiPlay.removeRoles(1, metisAiFrame);
 					}
 				}
 			}
@@ -84,7 +115,7 @@ public class TestModeAthenaAdapter extends AAthenaAdapter
 						}
 					}
 				}
-				entry.getValue().assignBotID(botId);
+				entry.getValue().assignBotID(botId, metisAiFrame);
 			}
 			
 			for (APlay play : aiControl.getAddPlays())
@@ -94,6 +125,7 @@ public class TestModeAthenaAdapter extends AAthenaAdapter
 			
 			for (APlay play : aiControl.getRemovePlays())
 			{
+				play.changeToFinished();
 				if (!playStrategyBuilder.getActivePlays().remove(play))
 				{
 					log.warn("Play " + play.getType() + " could not be removed, because it does not exist.");
@@ -111,7 +143,7 @@ public class TestModeAthenaAdapter extends AAthenaAdapter
 			{
 				if ((roleSum + addedRoles) < metisAiFrame.getWorldFrame().tigerBotsAvailable.size())
 				{
-					entry.getKey().addRoles(entry.getValue());
+					entry.getKey().addRoles(entry.getValue(), metisAiFrame);
 					addedRoles++;
 				}
 			}
@@ -120,7 +152,7 @@ public class TestModeAthenaAdapter extends AAthenaAdapter
 			{
 				if (!entry.getKey().getRoles().isEmpty())
 				{
-					entry.getKey().removeRoles(entry.getValue());
+					entry.getKey().removeRoles(entry.getValue(), metisAiFrame);
 				}
 			}
 			
@@ -145,7 +177,7 @@ public class TestModeAthenaAdapter extends AAthenaAdapter
 	}
 	
 	
-	private GuiTestPlay getGuiTestPlay(List<APlay> activePlays)
+	private GuiTestPlay getGuiTestPlay(final List<APlay> activePlays)
 	{
 		GuiTestPlay guiPlay = null;
 		for (APlay aPlay : activePlays)

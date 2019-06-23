@@ -4,13 +4,12 @@
  * Project: TIGERS - Sumatra
  * Date: Jan 29, 2014
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
 import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
@@ -21,7 +20,6 @@ import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
  * Keeper Skill Command
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class TigerSkillKeeperCommand extends ACommand
 {
@@ -47,10 +45,9 @@ public class TigerSkillKeeperCommand extends ACommand
 	/**
 	  * 
 	  */
-	@SuppressWarnings("unused")
-	private TigerSkillKeeperCommand()
+	public TigerSkillKeeperCommand()
 	{
-		this(Vector2.ZERO_VECTOR, 0);
+		this(AVector2.ZERO_VECTOR, 0);
 	}
 	
 	
@@ -58,7 +55,7 @@ public class TigerSkillKeeperCommand extends ACommand
 	 * @param point2Block
 	 * @param radius
 	 */
-	public TigerSkillKeeperCommand(IVector2 point2Block, float radius)
+	public TigerSkillKeeperCommand(final IVector2 point2Block, final float radius)
 	{
 		super(ECommand.CMD_SKILL_KEEPER);
 		

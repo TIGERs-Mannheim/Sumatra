@@ -17,15 +17,13 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.RecordFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.referee.RefereeMsg;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.visualizer.IFieldPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.FieldPanel.EFieldTurn;
-import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.replay.Recorder;
-import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.replay.Recorder.ERecordMode;
-import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.replay.ReplayWindow;
 
 
 /**
@@ -41,24 +39,20 @@ public class MultiFieldLayerUI
 	// --------------------------------------------------------------------------
 	
 	/**  */
-	private final transient List<AFieldLayer>	aiLayerList			= new CopyOnWriteArrayList<AFieldLayer>();
-	private final transient List<AFieldLayer>	swfLayerList		= new CopyOnWriteArrayList<AFieldLayer>();
-	private final transient List<AFieldLayer>	allLayerList		= new CopyOnWriteArrayList<AFieldLayer>();
+	private final transient List<AFieldLayer>	aiLayerList		= new CopyOnWriteArrayList<AFieldLayer>();
+	private final transient List<AFieldLayer>	swfLayerList	= new CopyOnWriteArrayList<AFieldLayer>();
+	private final transient List<AFieldLayer>	allLayerList	= new CopyOnWriteArrayList<AFieldLayer>();
 	
-	private final List<Layer>						layers				= new LinkedList<Layer>();
+	private final List<Layer>						layers			= new LinkedList<Layer>();
 	
-	private boolean									fancyPainting		= false;
+	private boolean									fancyPainting	= false;
 	
-	private boolean									recording			= false;
-	private static final int						MAX_FRAMES			= 3600;
-	private static final int						FRAME_BUFFER_SIZE	= 1000;
-	private Recorder									recorder				= null;
+	private SimpleWorldFrame						wFrame			= null;
+	private IRecordFrame								aiFrameYellow	= null;
+	private IRecordFrame								aiFrameBlue		= null;
+	private RefereeMsg								refereeMsg		= null;
 	
-	private SimpleWorldFrame						wFrame				= null;
-	
-	private IRecordFrame								aiFrameYellow		= null;
-	private IRecordFrame								aiFrameBlue			= null;
-	private Set<ETeamColor>							displayColors		= new HashSet<ETeamColor>();
+	private Set<ETeamColor>							displayColors	= new HashSet<ETeamColor>();
 	
 	
 	private static class Layer
@@ -102,17 +96,19 @@ public class MultiFieldLayerUI
 	 */
 	public void update(final IRecordFrame aiFrame)
 	{
-		if (aiFrame.getTeamColor() == ETeamColor.YELLOW)
+		if (aiFrame == null)
 		{
-			aiFrameYellow = aiFrame;
+			aiFrameBlue = null;
+			aiFrameYellow = null;
 		} else
 		{
-			aiFrameBlue = aiFrame;
-		}
-		if (recording)
-		{
-			RecordFrame recFrame = new RecordFrame(aiFrame);
-			recorder.addRecordFrame(recFrame);
+			if (aiFrame.getTeamColor() == ETeamColor.YELLOW)
+			{
+				aiFrameYellow = aiFrame;
+			} else
+			{
+				aiFrameBlue = aiFrame;
+			}
 		}
 	}
 	
@@ -125,6 +121,29 @@ public class MultiFieldLayerUI
 	public void updateWf(final SimpleWorldFrame frame)
 	{
 		wFrame = frame;
+	}
+	
+	
+	/**
+	 * Set new referee msg
+	 * 
+	 * @param msg
+	 */
+	public void updateRefereeMsg(final RefereeMsg msg)
+	{
+		refereeMsg = msg;
+	}
+	
+	
+	/**
+	 * @param aiPoint
+	 */
+	public void onFieldClick(final IVector2 aiPoint)
+	{
+		for (Layer layer : layers)
+		{
+			layer.layer.onFieldClick(aiPoint);
+		}
 	}
 	
 	
@@ -164,6 +183,7 @@ public class MultiFieldLayerUI
 					}
 				}
 			}
+			layer.layer.paintRefereeCmd(refereeMsg, g);
 		}
 	}
 	
@@ -301,45 +321,6 @@ public class MultiFieldLayerUI
 	public void setFancyPainting(final boolean fancyPainting)
 	{
 		this.fancyPainting = fancyPainting;
-	}
-	
-	
-	/**
-	 * @return the record
-	 */
-	public final boolean isRecord()
-	{
-		return recording;
-	}
-	
-	
-	/**
-	 * @param record the record to set
-	 * @param saving the saving to set
-	 */
-	public final void setRecording(final boolean record, final boolean saving)
-	{
-		// if we are currently recording, but stop is requested, we stop and show new window with recording result
-		if (recording && !record && (recorder.getRecordFrames().size() > 0))
-		{
-			recorder.close();
-			if (!saving)
-			{
-				ReplayWindow replaceWindow = new ReplayWindow(recorder.getRecordFrames(), recorder.getLogEvents());
-				replaceWindow.activate();
-			}
-			
-		} else if (!recording && record)
-		{
-			if (saving)
-			{
-				recorder = new Recorder(ERecordMode.DATABASE, FRAME_BUFFER_SIZE);
-			} else
-			{
-				recorder = new Recorder(ERecordMode.LIMITED_BUFFER, MAX_FRAMES);
-			}
-		}
-		recording = record;
 	}
 	
 	

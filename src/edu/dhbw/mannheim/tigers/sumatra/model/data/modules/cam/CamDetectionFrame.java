@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 21.07.2010
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam;
@@ -12,76 +11,48 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam;
 import java.util.Collections;
 import java.util.List;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.FrameID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamProps;
-
 
 /**
  * This class contains every information a
  * {@link edu.dhbw.mannheim.tigers.sumatra.model.data.MessagesRobocupSslDetection.SSL_DetectionFrame} has to offer about
- * the current situation on the
- * field
- * <p>
- * <i>(Being aware of EJ-SE Items 13, 14 and 55: members are public to reduce noise)</i>
- * </p>
+ * the current situation on the field
  * 
  * @author Gero
- * 
  */
 public class CamDetectionFrame
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
 	/** time-stamp in System.nanotime() */
-	public final long					tCapture;
+	private final long				tCapture;
 	
 	/** time-stamp in System.nanotime() */
-	public final long					tSent;
+	private final long				tSent;
 	
 	/** time-stamp in System.nanotime() */
-	public final long					tReceived;
+	private final long				tReceived;
 	
 	/** ID 0 or 1 */
-	public final int					cameraId;
+	private final int					cameraId;
 	
 	/** independent frame number, continuous */
-	public final long					frameNumber;
-	
-	/** */
-	public final FrameID				id;
-	
-	/** frames per second (refresh every second) */
-	public final double				fps;
-	
-	/** */
-	public final List<CamBall>		balls;
-	/** */
-	public final List<CamRobot>	robotsYellow;
-	/** */
-	public final List<CamRobot>	robotsBlue;
-	
-	/** */
-	public final TeamProps			teamProps;
+	private final long				frameNumber;
+	private final List<CamBall>	balls;
+	private final List<CamRobot>	robotsYellow;
+	private final List<CamRobot>	robotsBlue;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * @param tCapture
 	 * @param tSent
 	 * @param tReceived
 	 * @param cameraId
 	 * @param frameNumber
-	 * @param fps
 	 * @param balls
 	 * @param yellowBots
 	 * @param blueBots
-	 * @param teamProps
 	 */
-	public CamDetectionFrame(long tCapture, long tSent, long tReceived, int cameraId, long frameNumber, double fps,
-			List<CamBall> balls, List<CamRobot> yellowBots, List<CamRobot> blueBots, TeamProps teamProps)
+	public CamDetectionFrame(final long tCapture, final long tSent, final long tReceived, final int cameraId,
+			final long frameNumber,
+			final List<CamBall> balls, final List<CamRobot> yellowBots, final List<CamRobot> blueBots)
 	{
 		// Fields
 		this.tCapture = tCapture;
@@ -89,16 +60,93 @@ public class CamDetectionFrame
 		this.tReceived = tReceived;
 		this.cameraId = cameraId;
 		this.frameNumber = frameNumber;
-		this.fps = fps;
-		
-		id = new FrameID(cameraId, frameNumber);
 		
 		// Collections
-		// this.balls = Collections.unmodifiableList(balls);
-		this.balls = balls;
+		this.balls = Collections.unmodifiableList(balls);
 		robotsYellow = Collections.unmodifiableList(yellowBots);
 		robotsBlue = Collections.unmodifiableList(blueBots);
-		
-		this.teamProps = teamProps;
+	}
+	
+	
+	@Override
+	public String toString()
+	{
+		return "tCapture:" + gettCapture() + "/tSend:" + gettSent() + "/tReceived:" + gettReceived() + "/cameraId:"
+				+ getCameraId()
+				+ "/frameNumber:" + getFrameNumber() + "/balls:" + getBalls() + "/rY:"
+				+ getRobotsYellow()
+				+ "/rB:" + getRobotsBlue();
+	}
+	
+	
+	/**
+	 * @return the tCapture
+	 */
+	public long gettCapture()
+	{
+		return tCapture;
+	}
+	
+	
+	/**
+	 * @return the tSent
+	 */
+	public long gettSent()
+	{
+		return tSent;
+	}
+	
+	
+	/**
+	 * @return the tReceived
+	 */
+	public long gettReceived()
+	{
+		return tReceived;
+	}
+	
+	
+	/**
+	 * @return the cameraId
+	 */
+	public int getCameraId()
+	{
+		return cameraId;
+	}
+	
+	
+	/**
+	 * @return the frameNumber
+	 */
+	public long getFrameNumber()
+	{
+		return frameNumber;
+	}
+	
+	
+	/**
+	 * @return the balls
+	 */
+	public List<CamBall> getBalls()
+	{
+		return balls;
+	}
+	
+	
+	/**
+	 * @return the robotsYellow
+	 */
+	public List<CamRobot> getRobotsYellow()
+	{
+		return robotsYellow;
+	}
+	
+	
+	/**
+	 * @return the robotsBlue
+	 */
+	public List<CamRobot> getRobotsBlue()
+	{
+		return robotsBlue;
 	}
 }

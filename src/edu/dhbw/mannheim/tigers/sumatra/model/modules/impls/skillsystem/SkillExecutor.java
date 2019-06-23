@@ -1,239 +1,198 @@
 /*
  * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
- * Date: 29.03.2011
- * Author(s): AndreR
+ * Date: Nov 27, 2014
+ * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrameWrapper;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerCtrlResetCommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ImmediateStopSkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.WorldFrameFactory;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IWorldFrameConsumer;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.IdleSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ASkillSystem;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
 
 
 /**
- * Skill executer with nano second precision.
+ * Execute skills for a single bot
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class SkillExecutor implements Runnable, IWorldFrameConsumer
+public class SkillExecutor
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	private static final Logger						log							= Logger.getLogger(SkillExecutor.class
-																										.getName());
-	
-	private static final long							NO_SKILL_TIMEOUT_NS		= TimeUnit.MILLISECONDS.toNanos(500);
-	
-	private ISkill											skill							= null;
-	
+	private static final Logger						log									= Logger.getLogger(SkillExecutor.class
+																												.getName());
+	private static final int							MAX_SKILL_PROCESSING_TIME_US	= 1000;
+	private ISkill											currentSkill						= new IdleSkill();
+	private ISkill											newSkill								= null;
 	private final ABot									bot;
+	private final ASkillSystem							skillSystem;
+	private final List<ISkillExecutorObserver>	observers							= new CopyOnWriteArrayList<ISkillExecutorObserver>();
 	
-	/** [ns] */
-	private final long									period;
+	private final Object									newSkillSync						= new Object();
 	
-	/** Volatile because it is written from the outside */
-	private volatile WorldFrame						latestWorldFrame			= null;
-	private final List<ISkillExecutorObserver>	observers					= new ArrayList<ISkillExecutorObserver>();
+	private int												dtPeaks								= 0;
 	
-	private final BlockingDeque<ISkill>				newSkills					= new LinkedBlockingDeque<ISkill>(1);
+	private boolean										resetSent							= false;
 	
-	private long											timeLastCompletedSkill	= 0;
-	private boolean										stopSent						= false;
+	@Configurable(comment = "Pause skills if the ball is outside of field")
+	private static boolean								pauseSkillsIfBallOutside		= false;
 	
-	private final ISkillWorldInfoProvider			provider;
-	
-	private final Object									syncProcess					= new Object();
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 * @param bot
-	 * @param period [us]
-	 * @param provider
+	 * @param skillSystem
 	 */
-	public SkillExecutor(final ABot bot, final long period, final ISkillWorldInfoProvider provider)
+	public SkillExecutor(final ABot bot, final ASkillSystem skillSystem)
 	{
 		this.bot = bot;
-		this.period = TimeUnit.MICROSECONDS.toNanos(period);
-		this.provider = provider;
+		this.skillSystem = skillSystem;
+		currentSkill.setBot(bot);
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
 	/**
-	 * @param observer
+	 * @param wf
 	 */
-	public void addObserver(final ISkillExecutorObserver observer)
+	public void update(final WorldFrameWrapper wf)
 	{
-		synchronized (observers)
+		long start = SumatraClock.nanoTime();
+		
+		if (bot.getNetworkState() != ENetworkState.ONLINE)
 		{
-			observers.add(observer);
+			return;
+		}
+		List<ACommand> cmds = new ArrayList<ACommand>(5);
+		ISkill nextSkill;
+		synchronized (newSkillSync)
+		{
+			nextSkill = newSkill;
+			newSkill = null;
+		}
+		processNewSkill(nextSkill, wf, cmds);
+		executeSave(() -> currentSkill.update(wf == null ? null : wf.getWorldFrame(bot.getColor())));
+		processSkillCompleted(cmds);
+		executeSave(() -> currentSkill.calcActions(cmds));
+		notifySkillProcessed(currentSkill);
+		if (bot.getType() == EBotType.TIGER_V3)
+		{
+			if (pauseSkillsIfBallOutside)
+			{
+				IVector2 ballPos = wf.getSimpleWorldFrame().getBall().getPos();
+				if (!AIConfig.getGeometry().getField().isPointInShape(ballPos, 0))
+				{
+					cmds.clear();
+					if (!resetSent)
+					{
+						cmds.add(new TigerCtrlResetCommand());
+						log.info("Skill " + currentSkill.getSkillName() + " paused, because ball outside field.");
+						resetSent = true;
+					}
+				} else
+				{
+					resetSent = false;
+				}
+			}
+			executeSave(() -> notifyNewMatchCommands(cmds));
+		} else
+		{
+			enqueueCmds(cmds);
+		}
+		
+		if (!SumatraModel.getInstance().isProductive() && (bot.getType() != EBotType.SUMATRA))
+		{
+			long diff = SumatraClock.nanoTime() - start;
+			if (diff > (MAX_SKILL_PROCESSING_TIME_US * 1000))
+			{
+				dtPeaks++;
+				if (dtPeaks > 5)
+				{
+					log.warn("Skill " + currentSkill.getSkillName().name() + " needed " + (diff / 1000)
+							+ "us! Max allowed is " + MAX_SKILL_PROCESSING_TIME_US + "us");
+					dtPeaks = 0;
+				}
+			} else
+			{
+				dtPeaks = 0;
+			}
 		}
 	}
 	
 	
 	/**
-	 * @param observer
+	 * @param skill
 	 */
-	public void removeObserver(final ISkillExecutorObserver observer)
+	public void setNewSkill(final ISkill skill)
 	{
-		synchronized (observers)
+		synchronized (newSkillSync)
 		{
-			observers.remove(observer);
+			newSkill = skill;
 		}
 	}
 	
 	
-	@Override
-	public void run()
+	private void processNewSkill(final ISkill skill, final WorldFrameWrapper wf, final List<ACommand> cmds)
+	{
+		if (skill == null)
+		{
+			return;
+		}
+		
+		executeSave(() -> currentSkill.calcExitActions(cmds));
+		executeSave(() -> notifySkillCompleted(currentSkill));
+		final ISkill nextSkill;
+		if (skill.needsVision() && ((wf == null) || (wf.getSimpleWorldFrame().getBot(bot.getBotID()) == null)))
+		{
+			nextSkill = new IdleSkill();
+		} else
+		{
+			nextSkill = skill;
+		}
+		nextSkill.setBot(bot);
+		nextSkill.setSkillSystem(skillSystem);
+		executeSave(() -> nextSkill.update(wf == null ? null : wf.getWorldFrame(bot.getColor())));
+		executeSave(() -> nextSkill.calcEntryActions(cmds));
+		executeSave(() -> notifySkillStarted(nextSkill));
+		currentSkill = nextSkill;
+	}
+	
+	
+	private void processSkillCompleted(final List<ACommand> cmds)
+	{
+		if (currentSkill.isComplete())
+		{
+			notifySkillCompletedItself(currentSkill);
+			processNewSkill(new IdleSkill(), null, cmds);
+		}
+	}
+	
+	
+	private void executeSave(final Runnable run)
 	{
 		try
 		{
-			WorldFrame worldFrame = latestWorldFrame;
-			if (bot.getNetworkState() != ENetworkState.ONLINE)
-			{
-				return;
-			}
-			if ((worldFrame != null) && (worldFrame.getBot(bot.getBotID()) == null))
-			{
-				return;
-			}
-			ISkill newSkill;
-			synchronized (newSkills)
-			{
-				newSkill = newSkills.poll();
-			}
-			TrackedTigerBot tBot = null;
-			boolean insideField = true;
-			if (worldFrame != null)
-			{
-				tBot = worldFrame.getBot(bot.getBotID());
-				insideField = AIConfig.getGeometry().getFieldWReferee().isPointInShape(tBot.getPos());
-			}
-			if (((skill != null) || (newSkill != null)) && insideField)
-			{
-				
-				if (((tBot == null) || (worldFrame == null)) && ((newSkill != null) && (newSkill.needsVision())))
-				{
-					resetSkills();
-					return;
-				}
-				if (worldFrame == null)
-				{
-					worldFrame = new WorldFrame(WorldFrameFactory.createEmptyWorldFrame(0), bot.getColor(), false);
-				}
-				process(tBot, worldFrame, newSkill);
-				if ((skill != null) && (skill.getSkillName() != ESkillName.IMMEDIATE_STOP))
-				{
-					stopSent = false;
-				}
-			} else if (!stopSent && ((System.nanoTime() - timeLastCompletedSkill) > NO_SKILL_TIMEOUT_NS))
-			{
-				sentStop();
-			}
+			run.run();
 		} catch (Throwable err)
 		{
-			log.error("Exception in Skillexecuter: " + err.getMessage(), err);
-			resetSkills();
+			log.error("Exception in SkillExecutor " + currentSkill.getBot().getBotID(), err);
 		}
-	}
-	
-	
-	private void process(final TrackedTigerBot tBot, final WorldFrame worldFrame, final ISkill newSkill)
-	{
-		synchronized (syncProcess)
-		{
-			if ((newSkill != null))
-			{
-				// switch to new skill
-				log.trace("Switch to new skill: " + newSkill);
-				
-				if (skill != null)
-				{
-					skill.setWorldFrame(worldFrame);
-					enqueueCmds(skill.calcExitActions());
-				}
-				
-				skill = newSkill;
-				
-				skill.setWorldFrame(worldFrame);
-				if (tBot != null)
-				{
-					skill.settBot(tBot);
-				}
-				skill.setBot(bot);
-				
-				enqueueCmds(skill.calcEntryActions());
-				notifySkillStarted(skill);
-			} else
-			{
-				skill.setWorldFrame(worldFrame);
-				if (tBot != null)
-				{
-					skill.settBot(tBot);
-				}
-				
-				if (skill.isComplete())
-				{
-					enqueueCmds(skill.calcExitActions());
-					notifySkillCompleted(skill);
-					skill = null;
-					timeLastCompletedSkill = System.nanoTime();
-				} else
-				{
-					// process
-					enqueueCmds(skill.calcActions());
-				}
-			}
-		}
-	}
-	
-	
-	/**
-	 * Clears all skills
-	 */
-	private void resetSkills()
-	{
-		if (skill != null)
-		{
-			enqueueCmds(skill.calcExitActions());
-			notifySkillCompleted(skill);
-			skill = null;
-		}
-		synchronized (newSkills)
-		{
-			newSkills.clear();
-		}
-		timeLastCompletedSkill = System.nanoTime();
 	}
 	
 	
@@ -248,111 +207,100 @@ public class SkillExecutor implements Runnable, IWorldFrameConsumer
 	
 	private void notifyNewCommand(final ACommand cmd)
 	{
-		synchronized (observers)
+		for (final ISkillExecutorObserver observer : observers)
 		{
-			for (final ISkillExecutorObserver observer : observers)
-			{
-				observer.onNewCommand(cmd);
-			}
+			observer.onNewCommand(cmd);
+		}
+	}
+	
+	
+	private void notifyNewMatchCommands(final List<ACommand> cmds)
+	{
+		for (final ISkillExecutorObserver observer : observers)
+		{
+			observer.onNewMatchCommand(cmds);
 		}
 	}
 	
 	
 	private void notifySkillCompleted(final ISkill skill)
 	{
-		synchronized (observers)
+		for (final ISkillExecutorObserver observer : observers)
 		{
-			for (final ISkillExecutorObserver observer : observers)
-			{
-				observer.onSkillCompleted(skill);
-			}
+			observer.onSkillCompleted(skill);
+		}
+	}
+	
+	
+	private void notifySkillCompletedItself(final ISkill skill)
+	{
+		for (final ISkillExecutorObserver observer : observers)
+		{
+			observer.onSkillCompletedItself(skill);
 		}
 	}
 	
 	
 	private void notifySkillStarted(final ISkill skill)
 	{
-		synchronized (observers)
+		for (final ISkillExecutorObserver observer : observers)
 		{
-			for (final ISkillExecutorObserver observer : observers)
-			{
-				observer.onSkillStarted(skill);
-			}
+			observer.onSkillStarted(skill);
 		}
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
+	private void notifySkillProcessed(final ISkill skill)
+	{
+		for (final ISkillExecutorObserver observer : observers)
+		{
+			observer.onSkillProcessed(skill);
+		}
+	}
+	
+	
 	/**
-	 * Set a new skill
+	 * @param observer
+	 */
+	public void addObserver(final ISkillExecutorObserver observer)
+	{
+		observers.add(observer);
+	}
+	
+	
+	/**
+	 * @param observer
+	 */
+	public void removeObserver(final ISkillExecutorObserver observer)
+	{
+		observers.remove(observer);
+	}
+	
+	
+	/**
 	 * 
-	 * @param nSkill
 	 */
-	public void setSkill(final ISkill nSkill)
+	public void clearObservers()
 	{
-		nSkill.setSisyphus(provider.getSisyphus());
-		nSkill.setDt(period);
-		synchronized (newSkills)
-		{
-			if (newSkills.remainingCapacity() == 0)
-			{
-				try
-				{
-					newSkills.remove();
-				} catch (NoSuchElementException err)
-				{
-					log.warn("newSkills was modified between statements. No proper synchronization!");
-				}
-			}
-			newSkills.add(nSkill);
-		}
-	}
-	
-	
-	@Override
-	public void onNewSimpleWorldFrame(final SimpleWorldFrame wf)
-	{
-	}
-	
-	
-	@Override
-	public void onNewWorldFrame(final WorldFrame wFrame)
-	{
-		if ((bot != null) && (bot.getColor() == wFrame.getTeamColor()))
-		{
-			latestWorldFrame = wFrame;
-		}
-	}
-	
-	
-	@Override
-	public void onVisionSignalLost(final SimpleWorldFrame emptyWf)
-	{
-		sentStop();
-		latestWorldFrame = null;
+		observers.clear();
 	}
 	
 	
 	/**
-	 * Sent immediate stop signal
+	 * @return the currentSkill
 	 */
-	private void sentStop()
+	public ISkill getCurrentSkill()
 	{
-		if (!stopSent)
-		{
-			stopSent = true;
-			AMoveSkill stopSkill = new ImmediateStopSkill();
-			stopSkill.setSisyphus(provider.getSisyphus());
-			WorldFrame wFrame = new WorldFrame(WorldFrameFactory.createEmptyWorldFrame(0), bot.getColor(), false);
-			process(null, wFrame, stopSkill);
-		}
+		return currentSkill;
 	}
 	
 	
-	@Override
-	public void onStop()
+	/**
+	 * @return the bot
+	 */
+	public ABot getBot()
 	{
+		return bot;
 	}
+	
 }

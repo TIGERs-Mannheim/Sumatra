@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 07.04.2014
  * Author(s): Simon
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.valueobjects;
@@ -22,7 +21,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
  * A Bot with a Value
  * 
  * @author Simon
- * 
  */
 @Persistent
 public class ValueBot
@@ -54,7 +52,7 @@ public class ValueBot
 	 * @param bot
 	 * @param value
 	 */
-	public ValueBot(BotID bot, float value)
+	public ValueBot(final BotID bot, final float value)
 	{
 		this.bot = bot;
 		this.value = value;
@@ -64,7 +62,7 @@ public class ValueBot
 	/**
 	 * @param bot
 	 */
-	public ValueBot(BotID bot)
+	public ValueBot(final BotID bot)
 	{
 		this.bot = bot;
 	}
@@ -73,12 +71,6 @@ public class ValueBot
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	@Override
-	public int hashCode()
-	{
-		return Float.floatToIntBits(value);
-	}
 	
 	
 	@Override
@@ -89,14 +81,31 @@ public class ValueBot
 	
 	
 	@Override
-	public boolean equals(Object obj)
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = 1;
+		result = (prime * result) + Float.floatToIntBits(value);
+		return result;
+	}
+	
+	
+	@Override
+	public boolean equals(final Object obj)
 	{
 		if (this == obj)
 		{
 			return true;
 		}
-		
-		final ValueBot other = (ValueBot) obj;
+		if (obj == null)
+		{
+			return false;
+		}
+		if (getClass() != obj.getClass())
+		{
+			return false;
+		}
+		ValueBot other = (ValueBot) obj;
 		if (!SumatraMath.isEqual(value, other.value))
 		{
 			return false;
@@ -106,9 +115,7 @@ public class ValueBot
 	
 	
 	/**
-	 * 
 	 * Sort {@link ValuePoint} after Value, highest value first.
-	 * 
 	 */
 	private static class ValueHighComparator implements Comparator<ValueBot>, Serializable
 	{
@@ -118,7 +125,7 @@ public class ValueBot
 		
 		
 		@Override
-		public int compare(ValueBot v1, ValueBot v2)
+		public int compare(final ValueBot v1, final ValueBot v2)
 		{
 			if (v1.value < v2.value)
 			{
@@ -134,9 +141,7 @@ public class ValueBot
 	}
 	
 	/**
-	 * 
 	 * Sort {@link ValuePoint} after Value, lowest value first.
-	 * 
 	 */
 	private static class ValueLowComparator implements Comparator<ValueBot>, Serializable
 	{
@@ -146,7 +151,7 @@ public class ValueBot
 		
 		
 		@Override
-		public int compare(ValueBot v1, ValueBot v2)
+		public int compare(final ValueBot v1, final ValueBot v2)
 		{
 			if (v1.value > v2.value)
 			{
@@ -167,7 +172,6 @@ public class ValueBot
 	// --------------------------------------------------------------------------
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public float getValue()
@@ -177,10 +181,9 @@ public class ValueBot
 	
 	
 	/**
-	 * 
 	 * @param value
 	 */
-	public void setValue(float value)
+	public void setValue(final float value)
 	{
 		this.value = value;
 	}

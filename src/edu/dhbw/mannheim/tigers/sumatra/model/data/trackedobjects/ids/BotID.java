@@ -8,6 +8,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -103,6 +104,29 @@ public final class BotID extends AObjectID
 			default:
 				throw new IllegalStateException();
 		}
+	}
+	
+	
+	/**
+	 * Create botid from a number with color offset based BS format
+	 * 
+	 * @param number
+	 * @return
+	 */
+	public static BotID createBotIdFromIdWithColorOffsetBS(int number)
+	{
+		if (number > BOT_ID_MAX_BS)
+		{
+			return UNINITIALIZED_ID;
+		}
+		
+		ETeamColor color = ETeamColor.YELLOW;
+		if (number > BOT_ID_MAX)
+		{
+			number -= BOT_ID_MAX + 1;
+			color = ETeamColor.BLUE;
+		}
+		return createBotId(number, color);
 	}
 	
 	
@@ -233,7 +257,7 @@ public final class BotID extends AObjectID
 	 */
 	public static Collection<BotID> getAllYellow()
 	{
-		return YELLOW_BOT_IDS.values();
+		return new ArrayList<>(YELLOW_BOT_IDS.values());
 	}
 	
 	
@@ -242,7 +266,18 @@ public final class BotID extends AObjectID
 	 */
 	public static Collection<BotID> getAllBlue()
 	{
-		return BLUE_BOT_IDS.values();
+		return new ArrayList<>(BLUE_BOT_IDS.values());
+	}
+	
+	
+	/**
+	 * @return new list with all known bot ids
+	 */
+	public static Collection<BotID> getAll()
+	{
+		Collection<BotID> all = getAllBlue();
+		all.addAll(getAllYellow());
+		return all;
 	}
 	
 	

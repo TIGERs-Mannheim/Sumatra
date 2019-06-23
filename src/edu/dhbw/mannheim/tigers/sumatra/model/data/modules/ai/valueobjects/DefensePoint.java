@@ -17,6 +17,7 @@ import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 
 
 /**
@@ -25,14 +26,13 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
  * @see ValuePoint
  * @author PhilippP
  */
-@Persistent(version = 1)
+@Persistent(version = 2)
+@Deprecated
 public class DefensePoint extends ValuePoint
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	/**  */
-	private static final long			serialVersionUID		= -3397056222207062545L;
 	/**  */
 	private TrackedBot					protectAgainst;
 	// Threat value direct from the calculators
@@ -102,7 +102,7 @@ public class DefensePoint extends ValuePoint
 	 * @param value
 	 * @param passingBot
 	 */
-	public DefensePoint(final IVector2 vec, final float value, final TrackedBot passingBot)
+	public DefensePoint(final IVector2 vec, final float value, final TrackedTigerBot passingBot)
 	{
 		super(vec, value);
 		setProtectAgainst(passingBot);
@@ -211,16 +211,16 @@ public class DefensePoint extends ValuePoint
 	/**
 	 * @return the protectAgainst
 	 */
-	public TrackedBot getProtectAgainst()
+	public TrackedTigerBot getProtectAgainst()
 	{
-		return protectAgainst;
+		return (TrackedTigerBot) protectAgainst;
 	}
 	
 	
 	/**
 	 * @param protectAgainst the protectAgainst to set
 	 */
-	public void setProtectAgainst(final TrackedBot protectAgainst)
+	public void setProtectAgainst(final TrackedTigerBot protectAgainst)
 	{
 		this.protectAgainst = protectAgainst;
 	}
@@ -322,5 +322,45 @@ public class DefensePoint extends ValuePoint
 			value += threatListQuantifyd.get(kind);
 		}
 		
+	}
+	
+	
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = super.hashCode();
+		result = (prime * result) + ((protectAgainst == null) ? 0 : protectAgainst.hashCode());
+		return result;
+	}
+	
+	
+	@Override
+	public boolean equals(final Object obj)
+	{
+		if (this == obj)
+		{
+			return true;
+		}
+		if (!super.equals(obj))
+		{
+			return false;
+		}
+		if (getClass() != obj.getClass())
+		{
+			return false;
+		}
+		DefensePoint other = (DefensePoint) obj;
+		if (protectAgainst == null)
+		{
+			if (other.protectAgainst != null)
+			{
+				return false;
+			}
+		} else if (!protectAgainst.equals(other.protectAgainst))
+		{
+			return false;
+		}
+		return true;
 	}
 }

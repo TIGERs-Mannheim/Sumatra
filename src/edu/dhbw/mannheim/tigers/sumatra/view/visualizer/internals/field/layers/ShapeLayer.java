@@ -9,13 +9,14 @@
 package edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers;
 
 import java.awt.Graphics2D;
-import java.util.Date;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.IDrawableShape;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.EDrawableShapesLayer;
 
 
 /**
@@ -25,74 +26,56 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.IDrawableShape;
  */
 public class ShapeLayer extends AFieldLayer
 {
+	private final Map<EDrawableShapesLayer, Boolean>	visibilityMap	= new HashMap<>();
 	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	private static final Map<Date, IDrawableShape>	BAD_DEBUG_SHAPES	= new LinkedHashMap<Date, IDrawableShape>();
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 */
 	public ShapeLayer()
 	{
-		super(EFieldLayer.SHAPES, false);
+		super(EFieldLayer.SHAPES, true);
+		for (EDrawableShapesLayer l : EDrawableShapesLayer.values())
+		{
+			visibilityMap.put(l, false);
+		}
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
+	/**
+	 * @param dsLayer
+	 * @param visible
+	 */
+	public void setVisible(final EDrawableShapesLayer dsLayer, final boolean visible)
+	{
+		visibilityMap.put(dsLayer, visible);
+	}
 	
 	
 	@Override
 	protected void paintLayerAif(final Graphics2D g, final IRecordFrame frame)
 	{
-		final List<IDrawableShape> debugShapes = frame.getPlayStrategy().getDebugShapes();
-		for (IDrawableShape shape : debugShapes)
+		for (EDrawableShapesLayer l : EDrawableShapesLayer.values())
 		{
-			shape.paintShape(g, getFieldPanel(), frame.getWorldFrame().isInverted());
-		}
-		synchronized (BAD_DEBUG_SHAPES)
-		{
-			for (Map.Entry<Date, IDrawableShape> entry : BAD_DEBUG_SHAPES.entrySet())
+			boolean visible = visibilityMap.get(l);
+			if (visible && frame.getTacticalField().getDrawableShapes().containsKey(l))
 			{
-				if (entry.getKey().after(frame.getWorldFrame().getSystemTime()))
+				// copy to avoid sync
+				List<IDrawableShape> shapes = new ArrayList<IDrawableShape>(frame.getTacticalField().getDrawableShapes()
+						.get(l));
+				
+				for (IDrawableShape shape : shapes)
 				{
-					break;
+					shape.setDrawDebug(isDebugInformationVisible());
+					shape.paintShape(g, getFieldPanel(), frame.getWorldFrame().isInverted());
 				}
-				Date date = new Date(frame.getWorldFrame().getSystemTime().getTime() - 200);
-				if (!entry.getKey().before(date))
-				{
-					entry.getValue().paintShape(g, getFieldPanel(), frame.getWorldFrame().isInverted());
-				}
-			}
-			while (BAD_DEBUG_SHAPES.size() > 5000)
-			{
-				Date d = BAD_DEBUG_SHAPES.keySet().iterator().next();
-				BAD_DEBUG_SHAPES.remove(d);
 			}
 		}
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	/**
-	 * @param shape
-	 */
-	public static void addDebugShape(final IDrawableShape shape)
+	@Override
+	protected boolean isForceVisible()
 	{
-		synchronized (BAD_DEBUG_SHAPES)
-		{
-			BAD_DEBUG_SHAPES.put(new Date(), shape);
-		}
+		return true;
 	}
 }

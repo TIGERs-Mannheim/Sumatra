@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 22.09.2010
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.timer;
@@ -24,7 +23,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.timer.SumatraTimer;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.ITimerObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ATimer;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.IModuliStateObserver;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.ModuliStateAdapter;
 import edu.dhbw.mannheim.tigers.sumatra.util.NamedThreadFactory;
 import edu.dhbw.mannheim.tigers.sumatra.view.timer.TimerChartPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.timer.TimerPanel;
@@ -37,7 +35,6 @@ import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraViewPresenter;
  * 
  * @author Gero
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class TimerPresenter implements IModuliStateObserver, ITimerObserver, ISumatraViewPresenter
 {
@@ -65,8 +62,6 @@ public class TimerPresenter implements IModuliStateObserver, ITimerObserver, ISu
 	{
 		timerPanel = new TimerPanel();
 		chartPanel = timerPanel.getChartPanel();
-		
-		ModuliStateAdapter.getInstance().addObserver(this);
 	}
 	
 	
@@ -74,7 +69,7 @@ public class TimerPresenter implements IModuliStateObserver, ITimerObserver, ISu
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
-	public void onModuliStateChanged(ModulesState state)
+	public void onModuliStateChanged(final ModulesState state)
 	{
 		switch (state)
 		{
@@ -125,7 +120,7 @@ public class TimerPresenter implements IModuliStateObserver, ITimerObserver, ISu
 	
 	
 	@Override
-	public void onNewTimerInfo(TimerInfo info)
+	public void onNewTimerInfo(final TimerInfo info)
 	{
 		chartPanel.onNewTimerInfo(info);
 	}

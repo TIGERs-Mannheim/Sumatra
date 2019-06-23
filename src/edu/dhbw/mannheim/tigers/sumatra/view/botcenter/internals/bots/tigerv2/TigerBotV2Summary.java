@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 12.03.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tigerv2;
@@ -17,10 +16,12 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.TigerBotV3;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
 
 
@@ -28,7 +29,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.comm
  * Tiger bot summary for the overview panel.
  * 
  * @author AndreR
- * 
  */
 public class TigerBotV2Summary extends JPanel
 {
@@ -53,10 +53,10 @@ public class TigerBotV2Summary extends JPanel
 	 */
 	public TigerBotV2Summary()
 	{
-		setLayout(new MigLayout("fill", "[100,fill]20[40]10[60,fill]20[30]10[60,fill]", "0[]0"));
+		setLayout(new MigLayout("fillx", "[100,fill]20[40]10[60,fill]20[30]10[60,fill]", "0[]0"));
 		
 		cap = new JTextField();
-		cap.setHorizontalAlignment(JTextField.RIGHT);
+		cap.setHorizontalAlignment(SwingConstants.RIGHT);
 		
 		name = "Bob";
 		id = BotID.createBotId();
@@ -64,7 +64,7 @@ public class TigerBotV2Summary extends JPanel
 		
 		status = new JTextField();
 		status.setEditable(false);
-		battery = new JProgressBar(12800, 16800);
+		battery = new JProgressBar((int) (TigerBotV3.BAT_MIN * 1000), (int) (TigerBotV3.BAT_MAX * 1000));
 		battery.setStringPainted(true);
 		
 		add(status);
@@ -85,10 +85,9 @@ public class TigerBotV2Summary extends JPanel
 	// --------------------------------------------------------------------------
 	
 	/**
-	 * 
 	 * @param id
 	 */
-	public void setId(BotID id)
+	public void setId(final BotID id)
 	{
 		this.id = id;
 		updateTitle();
@@ -96,10 +95,9 @@ public class TigerBotV2Summary extends JPanel
 	
 	
 	/**
-	 * 
 	 * @param name
 	 */
-	public void setBotName(String name)
+	public void setBotName(final String name)
 	{
 		this.name = name;
 		updateTitle();
@@ -107,7 +105,6 @@ public class TigerBotV2Summary extends JPanel
 	
 	
 	/**
-	 * 
 	 * @param voltage
 	 */
 	public void setBatteryLevel(final float voltage)
@@ -120,7 +117,7 @@ public class TigerBotV2Summary extends JPanel
 	/**
 	 * @param state
 	 */
-	public void setNetworkState(ENetworkState state)
+	public void setNetworkState(final ENetworkState state)
 	{
 		netState = state;
 		updateTitle();
@@ -212,5 +209,14 @@ public class TigerBotV2Summary extends JPanel
 				status.setText(text);
 			}
 		});
+	}
+	
+	
+	/**
+	 * @return the netState
+	 */
+	public final ENetworkState getNetState()
+	{
+		return netState;
 	}
 }

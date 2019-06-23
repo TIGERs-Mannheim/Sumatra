@@ -3,7 +3,8 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="icons"/>
 	<classpathentry kind="src" path="test/src"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
+	<classpathentry kind="src" path="performance/src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
 	<classpathentry kind="lib" path="lib/Sim_Vis_Protocol.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="lib" path="lib/jchart2d-3.2.2.jar">
@@ -17,20 +18,18 @@
 			<attribute name="javadoc_location" value="jar:platform:/resource/Sumatra/doc/commons-lang-2.6-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/Jama-1.0.3.jar">
+	<classpathentry kind="lib" path="lib/Jama-1.0.3.jar" sourcepath="lib/Jama-1.0.3-sources.zip">
 		<attributes>
 			<attribute name="javadoc_location" value="jar:platform:/resource/Sumatra/doc/Jama-1.0.3.zip!/"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/log4j-1.2.17.jar"/>
 	<classpathentry kind="lib" path="lib/miglayout-4.0-swing.jar"/>
-	<classpathentry kind="lib" path="lib/miglayout-4.0-swt.jar"/>
 	<classpathentry kind="lib" path="lib/miglayout-4.0.jar" sourcepath="lib/miglayout-4.0-sources.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="jar:platform:/resource/Sumatra/doc/miglayout-4.0-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/protobuf-java-2.4.1.jar"/>
 	<classpathentry kind="lib" path="lib/uncommons-maths-1.2.3.jar"/>
 	<classpathentry kind="lib" path="lib/idw-gpl-1.6.1.jar">
 		<attributes>
@@ -40,15 +39,9 @@
 	<classpathentry kind="lib" path="lib/ProtobufMessages.jar"/>
 	<classpathentry kind="lib" path="lib/mqtt_develop.jar"/>
 	<classpathentry kind="lib" path="lib/JOCL-0.1.9.jar"/>
-	<classpathentry kind="lib" path="lib/AndroidSerialization.jar"/>
 	<classpathentry kind="lib" path="lib/commons-logging-1.1.1.jar" sourcepath="lib/commons-logging-1.1.1-sources.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="jar:platform:/resource/Sumatra/doc/commons-logging-1.1.1-javadoc.jar!/"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="lib/je-5.0.84.jar">
-		<attributes>
-			<attribute name="javadoc_location" value="jar:platform:/resource/Sumatra/doc/je-5.0.84.zip!/api-javadocs"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/junit-benchmarks-0.7.0.jar">
@@ -83,9 +76,21 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/commons-collections-3.2.1.jar"/>
-	<classpathentry kind="lib" path="lib/bluecove-bluez-2.1.1-SNAPSHOT.jar"/>
 	<classpathentry kind="lib" path="lib/bluecove-2.1.1-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="lib/encog-core-3.2.0.jar"/>
+	<classpathentry kind="lib" path="lib/encog-examples-3.2.0.jar"/>
 	<classpathentry kind="lib" path="lib/matlabcontrol-4.1.0.jar" sourcepath="lib/matlabcontrol-4.1.0-sources.jar"/>
 	<classpathentry kind="lib" path="lib/SumatraMessaging.jar"/>
+	<classpathentry kind="lib" path="lib/json-simple-1.1.1.jar"/>
+	<classpathentry kind="lib" path="lib/bluecove-gpl-2.1.1-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="lib/protobuf-java-2.6.1.jar"/>
+	<classpathentry kind="lib" path="lib/je-6.2.31.jar"/>
+	<classpathentry kind="lib" path="lib/zt-zip-1.8.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:platform:/resource/Sumatra/lib/zt-zip-1.8-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/slf4j-api-1.7.12.jar"/>
+	<classpathentry kind="lib" path="lib/slf4j-log4j12-1.7.12.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

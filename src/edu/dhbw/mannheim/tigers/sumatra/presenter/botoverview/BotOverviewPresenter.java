@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Jan 12, 2014
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.botoverview;
@@ -17,10 +16,8 @@ import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesState;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IAIObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.ModuliStateAdapter;
 import edu.dhbw.mannheim.tigers.sumatra.view.botoverview.BotOverviewPanel;
 import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
 import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraViewPresenter;
@@ -30,7 +27,6 @@ import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraViewPresenter;
  * Bot Overview Presenter
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class BotOverviewPresenter implements ISumatraViewPresenter, IAIObserver
 {
@@ -56,8 +52,6 @@ public class BotOverviewPresenter implements ISumatraViewPresenter, IAIObserver
 	public BotOverviewPresenter()
 	{
 		botOverviewPanel = new BotOverviewPanel();
-		
-		ModuliStateAdapter.getInstance().addObserver(this);
 	}
 	
 	
@@ -66,7 +60,7 @@ public class BotOverviewPresenter implements ISumatraViewPresenter, IAIObserver
 	// --------------------------------------------------------------------------
 	
 	@Override
-	public void onModuliStateChanged(ModulesState state)
+	public void onModuliStateChanged(final ModulesState state)
 	{
 		switch (state)
 		{
@@ -77,8 +71,8 @@ public class BotOverviewPresenter implements ISumatraViewPresenter, IAIObserver
 					aiAgentBlue = (AAgent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_BLUE);
 					aiAgentYellow = (AAgent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_YELLOW);
 					// get AIInfoFrames
-					aiAgentBlue.addObserver(this);
-					aiAgentYellow.addObserver(this);
+					aiAgentBlue.addVisObserver(this);
+					aiAgentYellow.addVisObserver(this);
 				} catch (ModuleNotFoundException err)
 				{
 					log.error("Could not find ai agents.", err);
@@ -87,12 +81,12 @@ public class BotOverviewPresenter implements ISumatraViewPresenter, IAIObserver
 			case RESOLVED:
 				if (aiAgentBlue != null)
 				{
-					aiAgentBlue.removeObserver(this);
+					aiAgentBlue.removeVisObserver(this);
 					aiAgentBlue = null;
 				}
 				if (aiAgentYellow != null)
 				{
-					aiAgentYellow.removeObserver(this);
+					aiAgentYellow.removeVisObserver(this);
 					aiAgentYellow = null;
 				}
 				break;
@@ -123,14 +117,14 @@ public class BotOverviewPresenter implements ISumatraViewPresenter, IAIObserver
 	
 	
 	@Override
-	public void onNewAIInfoFrame(final AIInfoFrame lastAIInfoframe)
+	public void onNewAIInfoFrame(final IRecordFrame lastAIInfoframe)
 	{
 		botOverviewPanel.onNewAIInfoFrame(lastAIInfoframe);
 	}
 	
 	
 	@Override
-	public void onAIException(Exception ex, IRecordFrame frame, IRecordFrame prevFrame)
+	public void onAIException(final Throwable ex, final IRecordFrame frame, final IRecordFrame prevFrame)
 	{
 	}
 	

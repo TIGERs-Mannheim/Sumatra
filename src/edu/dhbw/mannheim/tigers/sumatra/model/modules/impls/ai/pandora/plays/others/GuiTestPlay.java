@@ -10,6 +10,7 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.ot
 
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.MetisAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.EGameState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
@@ -56,7 +57,7 @@ public class GuiTestPlay extends APlay
 	
 	
 	@Override
-	protected ARole onRemoveRole()
+	protected ARole onRemoveRole(final MetisAiFrame frame)
 	{
 		if (roleToBeRemoved != null)
 		{
@@ -69,15 +70,15 @@ public class GuiTestPlay extends APlay
 	
 	
 	@Override
-	protected ARole onAddRole()
+	protected ARole onAddRole(final MetisAiFrame frame)
 	{
-		if (roleToBeAdded != null)
+		if ((roleToBeAdded != null))
 		{
 			ARole role = roleToBeAdded;
-			roleToBeAdded = null;
 			lastAddedRoleType = role.getType();
 			return role;
 		}
+		log.warn("Could not add requested role. Creating new default instance. Your custom parameters will not be used! You may need to set a fixed botID.");
 		try
 		{
 			return RoleFactory.createDefaultRole(lastAddedRoleType);

@@ -9,6 +9,8 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai;
 
 import java.text.DecimalFormat;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -17,6 +19,7 @@ import org.apache.log4j.Logger;
 import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ballpossession.EBallPossession;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.statistics.PenaltyStats;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 
 
@@ -25,31 +28,53 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
  * 
  * @author Daniel Andres <andreslopez.daniel@gmail.com>
  */
-@Persistent
+@Persistent(version = 1)
 public class Statistics
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final Logger					log							= Logger.getLogger(Statistics.class.getName());
+	private static final Logger							log							= Logger.getLogger(Statistics.class
+																											.getName());
 	
-	private Map<EBallPossession, Percentage>	ballPossessionGeneral;
-	private Map<BotID, Percentage>				ballPossessionTigers;
-	private Map<BotID, Percentage>				ballPossessionOpponents;
+	private final Map<EBallPossession, Percentage>	ballPossessionGeneral;
+	private Map<Integer, Percentage>						ballPossessionTigers;
+	private Map<BotID, Percentage>						ballPossessionOpponents;
 	
-	private Map<BotID, Percentage>				tackleWon;
-	private Map<BotID, Percentage>				tackleLost;
-	private Percentage								tackleGeneralWon;
-	private Percentage								tackleGeneralLost;
+	private Map<BotID, Percentage>						tackleWon;
+	private Map<BotID, Percentage>						tackleLost;
+	private Percentage										tackleGeneralWon;
+	private Percentage										tackleGeneralLost;
 	
-	private int											possibleTigersGoals		= 0;
-	private int											possibleOpponentsGoals	= 0;
-	private Map<BotID, Percentage>				possibleBotGoals;
+	private int													possibleTigersGoals		= 0;
+	private int													possibleOpponentsGoals	= 0;
+	private Map<BotID, Percentage>						possibleBotGoals;
+	
+	private List<PenaltyStats>								bestPenaltyShooters;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	/**
+	 * 
+	 */
+	public Statistics()
+	{
+		ballPossessionGeneral = new HashMap<EBallPossession, Percentage>();
+		for (EBallPossession bp : EBallPossession.values())
+		{
+			ballPossessionGeneral.put(bp, new Percentage());
+		}
+		ballPossessionTigers = new HashMap<Integer, Percentage>();
+		ballPossessionOpponents = new HashMap<BotID, Percentage>();
+		tackleWon = new HashMap<BotID, Percentage>();
+		tackleLost = new HashMap<BotID, Percentage>();
+		tackleGeneralWon = new Percentage();
+		tackleGeneralLost = new Percentage();
+		possibleBotGoals = new HashMap<BotID, Percentage>();
+	}
 	
 	
 	// --------------------------------------------------------------------------
@@ -68,9 +93,9 @@ public class Statistics
 					.append("%").append(" - "
 					).append(entry.getValue().getCurrent()).append("\n");
 		}
-		for (Entry<BotID, Percentage> entry : ballPossessionTigers.entrySet())
+		for (Entry<Integer, Percentage> entry : ballPossessionTigers.entrySet())
 		{
-			message.append("Tiger: ").append(entry.getKey().getNumber()).append(": "
+			message.append("Tiger: ").append(entry.getKey().intValue()).append(": "
 					).append(df.format((entry.getValue().getPercent() * 100))).append("%"
 					).append(" - "
 					).append(entry.getValue().getCurrent()).append("\n");
@@ -123,29 +148,20 @@ public class Statistics
 	
 	
 	/**
-	 * @param ballPossessionGeneral the ballPossessionGeneral to set
-	 */
-	public void setBallPossessionGeneral(final Map<EBallPossession, Percentage> ballPossessionGeneral)
-	{
-		this.ballPossessionGeneral = ballPossessionGeneral;
-	}
-	
-	
-	/**
 	 * @return the ballPossessionTigers
 	 */
-	public Map<BotID, Percentage> getBallPossessionTigers()
+	public Map<Integer, Percentage> getBallPossessionTigers()
 	{
 		return ballPossessionTigers;
 	}
 	
 	
 	/**
-	 * @param ballPossessionTigers the ballPossessionTigers to set
+	 * @param ballPossessionTigers2 the ballPossessionTigers to set
 	 */
-	public void setBallPossessionTigers(final Map<BotID, Percentage> ballPossessionTigers)
+	public void setBallPossessionTigers(final Map<Integer, Percentage> ballPossessionTigers2)
 	{
-		this.ballPossessionTigers = ballPossessionTigers;
+		ballPossessionTigers = ballPossessionTigers2;
 	}
 	
 	
@@ -155,15 +171,6 @@ public class Statistics
 	public Map<BotID, Percentage> getBallPossessionOpponents()
 	{
 		return ballPossessionOpponents;
-	}
-	
-	
-	/**
-	 * @param ballPossessionOpponents the ballPossessionOpponents to set
-	 */
-	public void setBallPossessionOpponents(final Map<BotID, Percentage> ballPossessionOpponents)
-	{
-		this.ballPossessionOpponents = ballPossessionOpponents;
 	}
 	
 	
@@ -283,5 +290,23 @@ public class Statistics
 	public Map<BotID, Percentage> getPossibleBotGoals()
 	{
 		return possibleBotGoals;
+	}
+	
+	
+	/**
+	 * @param bestPenaltyShooters
+	 */
+	public void setBestPenaltyShooterStats(final List<PenaltyStats> bestPenaltyShooters)
+	{
+		this.bestPenaltyShooters = bestPenaltyShooters;
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public List<PenaltyStats> getBestPenaltyShooterStats()
+	{
+		return bestPenaltyShooters;
 	}
 }

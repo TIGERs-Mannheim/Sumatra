@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 21.07.2010
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects;
@@ -22,57 +21,42 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.AObjectID;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.UninitializedID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.WPConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.data.RobotMotionResult_V2;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.kalman.WPConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.kalman.oextkal.data.RobotMotionResult_V2;
 
 
 /**
  * Simple data holder describing bots recognized and tracked by the
  * {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AWorldPredictor}
- * 
  * <p>
  * <i>(Being aware of EJ-SE Items 13, 14 and 55: members are public to reduce noise)</i>
  * </p>
  * 
  * @see ATrackedObject
  * @author Gero
- * 
  */
-@Persistent
+@Persistent(version = 1)
 public class TrackedBot extends ATrackedObject
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	/**  */
-	private static final long	serialVersionUID	= 3617073411160054690L;
-	
-	
 	/** mm */
 	@NotNull
-	private final Vector2		pos;
+	private final Vector2	pos;
 	/** m/s */
 	@NotNull
-	private final Vector2		vel;
+	private final Vector2	vel;
 	/** m/s^2 */
-	@NotNull
-	private final Vector2		acc;
+	private final Vector2	acc;
 	
 	/** mm */
-	private final int				height;
+	private final int			height;
 	/** rad not final for mirroring */
-	private float					angle;
+	private float				angle;
 	/** rad/s */
-	private final float			aVel;
+	private final float		aVel;
 	/** rad/s^2 */
-	private final float			aAcc;
+	private final float		aAcc;
 	
-	private final BotID			botId;
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructor(s) -------------------------------------------------------
-	// --------------------------------------------------------------------------
+	private final BotID		botId;
 	
 	
 	@SuppressWarnings("unused")
@@ -91,7 +75,6 @@ public class TrackedBot extends ATrackedObject
 	
 	
 	/**
-	 * 
 	 * @param id
 	 * @param pos
 	 * @param vel
@@ -103,8 +86,9 @@ public class TrackedBot extends ATrackedObject
 	 * @param confidence
 	 * @param team
 	 */
-	protected TrackedBot(AObjectID id, IVector2 pos, IVector2 vel, IVector2 acc, int height, float angle, float aVel,
-			float aAcc, float confidence, ETeam team, ETeamColor teamColor)
+	protected TrackedBot(final AObjectID id, final IVector2 pos, final IVector2 vel, final IVector2 acc,
+			final int height, final float angle, final float aVel,
+			final float aAcc, final float confidence, final ETeam team, final ETeamColor teamColor)
 	{
 		super(id, confidence);
 		this.pos = new Vector2(pos);
@@ -119,14 +103,14 @@ public class TrackedBot extends ATrackedObject
 	
 	
 	/**
-	 * 
 	 * @param id
 	 * @param motion
 	 * @param height
 	 * @return
 	 */
-	protected static TrackedBot motionToTrackedBot(AObjectID id, RobotMotionResult_V2 motion, int height,
-			ETeamColor color)
+	protected static TrackedBot motionToTrackedBot(final AObjectID id, final RobotMotionResult_V2 motion,
+			final int height,
+			final ETeamColor color)
 	{
 		IVector2 pos = new Vector2f((float) (motion.x / WPConfig.FILTER_CONVERT_MM_TO_INTERNAL_UNIT),
 				(float) (motion.y / WPConfig.FILTER_CONVERT_MM_TO_INTERNAL_UNIT));

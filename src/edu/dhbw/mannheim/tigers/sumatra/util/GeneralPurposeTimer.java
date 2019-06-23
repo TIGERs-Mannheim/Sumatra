@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 11.09.2010
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.util;
@@ -19,38 +18,23 @@ import java.util.Timer;
  * Use this singleton to keep the overall thread count low.
  * 
  * @author AndreR
- * 
  */
 public final class GeneralPurposeTimer extends Timer
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	private static GeneralPurposeTimer	instance	= null;
+	private static final GeneralPurposeTimer	instance	= new GeneralPurposeTimer();
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	private GeneralPurposeTimer()
 	{
 		super("GeneralPurposeTimer");
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * @return
 	 */
-	public static synchronized GeneralPurposeTimer getInstance()
+	public static GeneralPurposeTimer getInstance()
 	{
-		if (instance == null)
-		{
-			instance = new GeneralPurposeTimer();
-		}
-		
 		return instance;
 	}
 }

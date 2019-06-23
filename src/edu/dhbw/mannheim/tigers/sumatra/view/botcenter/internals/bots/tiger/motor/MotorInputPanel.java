@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 31.05.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.motor;
@@ -26,7 +25,6 @@ import net.miginfocom.swing.MigLayout;
  * Simple numeric XYW(V) input for movement
  * 
  * @author AndreR
- * 
  */
 public class MotorInputPanel extends JPanel
 {
@@ -34,7 +32,6 @@ public class MotorInputPanel extends JPanel
 	public interface IMotorInputPanelObserver
 	{
 		/**
-		 * 
 		 * @param x
 		 * @param y
 		 * @param w
@@ -44,7 +41,6 @@ public class MotorInputPanel extends JPanel
 		
 		
 		/**
-		 * 
 		 * @param x
 		 * @param y
 		 * @param w
@@ -69,16 +65,15 @@ public class MotorInputPanel extends JPanel
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @param useV use V component (compensated rotation)
 	 */
-	public MotorInputPanel(boolean useV)
+	public MotorInputPanel(final boolean useV)
 	{
 		setLayout(new MigLayout("wrap 2", "[100]10[100,fill]", ""));
 		
-		xSpeed = new JTextField();
-		ySpeed = new JTextField();
-		wSpeed = new JTextField();
+		xSpeed = new JTextField("0");
+		ySpeed = new JTextField("0");
+		wSpeed = new JTextField("0");
 		if (useV)
 		{
 			vSpeed = new JTextField();
@@ -106,10 +101,9 @@ public class MotorInputPanel extends JPanel
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @param observer
 	 */
-	public void addObserver(IMotorInputPanelObserver observer)
+	public void addObserver(final IMotorInputPanelObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -119,10 +113,9 @@ public class MotorInputPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @param observer
 	 */
-	public void removeObserver(IMotorInputPanelObserver observer)
+	public void removeObserver(final IMotorInputPanelObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -138,7 +131,7 @@ public class MotorInputPanel extends JPanel
 	private class SetSpeed implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			float x;
 			float y;
@@ -172,7 +165,7 @@ public class MotorInputPanel extends JPanel
 	}
 	
 	
-	private void notifySetSpeed(float x, float y, float w)
+	private void notifySetSpeed(final float x, final float y, final float w)
 	{
 		synchronized (observers)
 		{
@@ -184,7 +177,7 @@ public class MotorInputPanel extends JPanel
 	}
 	
 	
-	private void notifySetSpeed(float x, float y, float w, float v)
+	private void notifySetSpeed(final float x, final float y, final float w, final float v)
 	{
 		synchronized (observers)
 		{

@@ -38,28 +38,54 @@ public final class ColorPickerFactory
 	 */
 	public static IColorPicker scaledSingleBlack(final float r, final float g, final float b, final int colorId)
 	{
+		return scaledSingleBlack(r, g, b, 1.0f, colorId);
+	}
+	
+	
+	/**
+	 * Scale color between black and r,g or b with respect to the alpha channel.
+	 * colorId chooses which color to scale. The r/g/b param for this color will be ignored
+	 * 
+	 * @param r red
+	 * @param g green
+	 * @param b blue
+	 * @param alpha alpha channel
+	 * @param colorId one of 1(red),2(green),3(blue)
+	 * @return
+	 */
+	public static IColorPicker scaledSingleBlack(final float r, final float g, final float b, final float alpha,
+			final int colorId)
+	{
 		return new IColorPicker()
 		{
 			
 			@Override
 			public Color applyColor(final Graphics2D g2, final float relValue)
 			{
+				Color color = getColor(relValue);
+				g2.setColor(color);
+				return color;
+			}
+			
+			
+			@Override
+			public Color getColor(final float relValue)
+			{
 				Color color;
 				switch (colorId)
 				{
 					case 1:
-						color = new Color(relValue, g, b);
+						color = new Color(relValue, g, b, alpha);
 						break;
 					case 2:
-						color = new Color(r, relValue, b);
+						color = new Color(r, relValue, b, alpha);
 						break;
 					case 3:
-						color = new Color(r, g, relValue);
+						color = new Color(r, g, relValue, alpha);
 						break;
 					default:
 						throw new IllegalArgumentException("Invalid colorId: " + colorId);
 				}
-				g2.setColor(color);
 				return color;
 			}
 		};
@@ -81,11 +107,19 @@ public final class ColorPickerFactory
 			@Override
 			public Color applyColor(final Graphics2D g, final float relValue)
 			{
+				Color color = getColor(relValue);
+				g.setColor(color);
+				return color;
+			}
+			
+			
+			@Override
+			public Color getColor(final float relValue)
+			{
 				int red = (int) ((color2.getRed() * relValue) + (color1.getRed() * (1 - relValue)));
 				int green = (int) ((color2.getGreen() * relValue) + (color1.getGreen() * (1 - relValue)));
 				int blue = (int) ((color2.getBlue() * relValue) + (color1.getBlue() * (1 - relValue)));
 				Color stepColor = new Color(red, green, blue);
-				g.setColor(stepColor);
 				return stepColor;
 			}
 		};
@@ -102,14 +136,19 @@ public final class ColorPickerFactory
 	{
 		return new IColorPicker()
 		{
-			final int	type	= AlphaComposite.SRC_OVER;
-			
-			
 			@Override
 			public Color applyColor(final Graphics2D g, final float relValue)
 			{
+				final int type = AlphaComposite.SRC_OVER;
 				g.setColor(color);
 				g.setComposite(AlphaComposite.getInstance(type, relValue));
+				return color;
+			}
+			
+			
+			@Override
+			public Color getColor(final float relValue)
+			{
 				return color;
 			}
 		};

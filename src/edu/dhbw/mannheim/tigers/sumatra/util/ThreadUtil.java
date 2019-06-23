@@ -4,13 +4,14 @@
  * Project: TIGERS - Sumatra
  * Date: 28.04.2011
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.util;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
+
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 
 
 /**
@@ -36,7 +37,7 @@ public final class ThreadUtil
 	 * 
 	 * @param sleepTotal The time this thread should sleep [ns]
 	 */
-	public static void parkNanosSafe(long sleepTotal)
+	public static void parkNanosSafe(final long sleepTotal)
 	{
 		final long sleepStart = System.nanoTime();
 		long stillSleep = sleepTotal;
@@ -57,12 +58,11 @@ public final class ThreadUtil
 	 * 
 	 * @param sleepTotal The time this thread should sleep [ns]
 	 * @param cancelSwitch This can be used to cancel the sleep by setting it to <code>true</code>
-	 * 
 	 * @return Whether the thread really slept enough or it has been canceled
 	 */
-	public static boolean parkNanosSafe(long sleepTotal, AtomicBoolean cancelSwitch)
+	public static boolean parkNanosSafe(final long sleepTotal, final AtomicBoolean cancelSwitch)
 	{
-		final long sleepStart = System.nanoTime();
+		final long sleepStart = SumatraClock.nanoTime();
 		long stillSleep = sleepTotal;
 		
 		boolean sleptEnough = false;
@@ -79,7 +79,7 @@ public final class ThreadUtil
 			}
 			
 			// Check if sleptEnough
-			long timeSinceStart = System.nanoTime() - sleepStart;
+			long timeSinceStart = SumatraClock.nanoTime() - sleepStart;
 			stillSleep = sleepTotal - timeSinceStart;
 			sleptEnough = stillSleep <= 0;
 			

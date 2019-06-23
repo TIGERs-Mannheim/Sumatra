@@ -4,35 +4,25 @@
  * Project: TIGERS - Sumatra
  * Date: 29.08.2010
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.observer;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrameWrapper;
 
 
 /**
  * Counterpart to {@link IWorldPredictorObserver}
  * 
  * @author Gero
- * 
  */
 public interface IWorldPredictorObservable
 {
-	
-	
 	/**
 	 * Notifies observers with new Wf
-	 * @param wFrame
+	 * 
+	 * @param wfWrapper
 	 */
-	void notifyNewWorldFrame(SimpleWorldFrame wFrame);
-	
-	
-	/**
-	 * Notifies about Vision signal Lost
-	 * @param emptyWf emptyWorldFrame
-	 */
-	void notifyVisionSignalLost(SimpleWorldFrame emptyWf);
+	void notifyNewWorldFrame(WorldFrameWrapper wfWrapper);
 	
 }

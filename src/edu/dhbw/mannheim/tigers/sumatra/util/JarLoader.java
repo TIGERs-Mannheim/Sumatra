@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Feb 9, 2014
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.util;
@@ -13,6 +12,8 @@ import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 
 import org.apache.log4j.Logger;
 
@@ -21,7 +22,6 @@ import org.apache.log4j.Logger;
  * Utility class for loading jar files
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class JarLoader
 {
@@ -36,7 +36,7 @@ public class JarLoader
 	/**
 	 * @param path
 	 */
-	public static void loadJar(String path)
+	public static void loadJar(final String path)
 	{
 		URL jarURL;
 		try
@@ -52,7 +52,12 @@ public class JarLoader
 		try
 		{
 			Method method = sysclass.getDeclaredMethod("addURL", new Class[] { URL.class });
-			method.setAccessible(true);
+			AccessController.doPrivileged((PrivilegedAction<Void>)
+					() -> {
+						method.setAccessible(true);
+						return null; // nothing to return
+				}
+					);
 			method.invoke(urlClassLoader, new Object[] { jarURL });
 		} catch (Throwable t)
 		{

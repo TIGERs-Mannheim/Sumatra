@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Aug 25, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes;
@@ -19,24 +18,16 @@ import com.sleepycat.persist.model.Persistent;
  * This wrapper class will wrap a {@link Color} object. This object will be persistable.
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
-@Persistent
+@Persistent(version = 1)
 public class ColorWrapper implements Serializable
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	/**  */
 	private static final long	serialVersionUID	= 952878454594587069L;
 	private transient Color		color;
 	private int						colorValue;
+	private int						colorAlpha;
 	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	@SuppressWarnings("unused")
 	private ColorWrapper()
@@ -48,7 +39,7 @@ public class ColorWrapper implements Serializable
 	/**
 	 * @param color
 	 */
-	public ColorWrapper(Color color)
+	public ColorWrapper(final Color color)
 	{
 		setColor(color);
 	}
@@ -72,6 +63,7 @@ public class ColorWrapper implements Serializable
 		if (color == null)
 		{
 			color = new Color(colorValue);
+			color = new Color(color.getRed(), color.getGreen(), color.getBlue(), colorAlpha);
 		}
 		return color;
 	}
@@ -80,9 +72,10 @@ public class ColorWrapper implements Serializable
 	/**
 	 * @param color the color to set
 	 */
-	public final void setColor(Color color)
+	public final void setColor(final Color color)
 	{
 		this.color = color;
 		colorValue = color.getRGB();
+		colorAlpha = color.getAlpha();
 	}
 }

@@ -20,9 +20,9 @@ package edu.dhbw.mannheim.tigers.sumatra.views;
 public enum ESumatraViewType
 {
 	/**  */
-	AI_CENTER_YELLOW(0, "AI Center Y"),
+	AI_CENTER_YELLOW(0, "AIY"),
 	/**  */
-	AI_CENTER_BLUE(3, "AI Center B"),
+	AI_CENTER_BLUE(3, "AIB"),
 	/**  */
 	LOG(1, "Log"),
 	/**  */
@@ -30,21 +30,33 @@ public enum ESumatraViewType
 	/**  */
 	VISUALIZER(4, "Visualizer"),
 	/**  */
-	TIMER(5, "Timer Info"),
+	TIMER(5, "Timer"),
 	/**  */
-	REFEREE(6, "Referee"),
+	REFEREE(6, "Ref"),
 	/**  */
-	WP_CENTER(7, "WP Center"),
+	WP_CENTER(7, "WP"),
 	/**  */
-	CONFIG_EDITOR(8, "Config Editor"),
+	CONFIG_EDITOR(8, "Cfg"),
 	/**  */
 	PLAYFINDER_STATS(14, "Play Finder Statistics"),
 	/**  */
 	RCM(31, "RCM"),
 	/**  */
-	BOT_OVERVIEW(32, "Bot Overview"),
+	BOT_OVERVIEW(32, "Bots"),
 	/** */
-	STATISTICS(33, "Game Statistics");
+	STATISTICS_YELLOW(33, "Stats Y"),
+	/** */
+	STATISTICS_BLUE(36, "Stats B"),
+	/** */
+	OFFENSIVE_STRATEGY(34, "Offensive Strategy"),
+	/**  */
+	BOT_CENTER_V2(35, "Bot Center"),
+	/**  */
+	SIMULATION(37, "Simulation"),
+	/**  */
+	REPLAY_CONTROL(38, "Replay"),
+	/**  */
+	BALL_ANALYSER(39, "Ball");
 	
 	private final int		id;
 	private final String	title;

@@ -10,19 +10,9 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.List;
-
-import org.apache.log4j.Logger;
-
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AthenaAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMap;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 
 
 /**
@@ -36,10 +26,8 @@ public class Lachesis
 	// --------------------------------------------------------------------------
 	// --- instance variables ---------------------------------------------------
 	// --------------------------------------------------------------------------
-	// Logger
-	private static final Logger		log	= Logger.getLogger(Lachesis.class.getName());
 	
-	private final INewRoleAssigner	roleAssigner;
+	private final IRoleAssigner	roleAssigner;
 	
 	
 	// --------------------------------------------------------------------------
@@ -49,9 +37,8 @@ public class Lachesis
 	 */
 	public Lachesis()
 	{
-		log.trace("Creating");
-		roleAssigner = new NewRoleAssigner();
-		log.trace("Created");
+		// roleAssigner = new NewRoleAssigner();
+		roleAssigner = new SimplifiedRoleAssigner();
 	}
 	
 	
@@ -65,59 +52,8 @@ public class Lachesis
 	 */
 	public final void assignRoles(final AthenaAiFrame frame)
 	{
-		// ##### Check preconditions
-		if (frame.getPlayStrategy().getActivePlays().isEmpty())
-		{
-			// No play, thus no roles to assign
-			return;
-		}
-		
-		
-		// what bots want a role?
 		final BotIDMap<TrackedTigerBot> assignees = new BotIDMap<TrackedTigerBot>(
 				frame.getWorldFrame().tigerBotsAvailable);
-		
-		List<APlay> playsToAssign = new LinkedList<APlay>(frame.getPlayStrategy().getActivePlays());
-		Collections.sort(playsToAssign, new APlayComparator());
-		roleAssigner.assignRoles(assignees, playsToAssign, frame);
-		
-		for (ARole role : frame.getPlayStrategy().getActiveRoles().values())
-		{
-			if (!role.hasBeenAssigned())
-			{
-				log.warn("Role not assigned: " + role.getType());
-			}
-		}
-	}
-	
-	
-	/**
-	 * Comparator for RoleAssigner.
-	 * Sorts the Plays in assigning-order.
-	 * 
-	 * @author MalteJ
-	 */
-	private class APlayComparator implements Comparator<APlay>
-	{
-		
-		//
-		@Override
-		public int compare(final APlay a, final APlay b)
-		{
-			if (a.getType() == EPlay.OFFENSIVE)
-			{
-				return -1;
-			}
-			if ((a.getType() == EPlay.DEFENSIVE) && (b.getType() != EPlay.OFFENSIVE))
-			{
-				return -1;
-			}
-			if ((a.getType() == EPlay.SUPPORT) && ((b.getType() != EPlay.OFFENSIVE) && (b.getType() != EPlay.DEFENSIVE)))
-			{
-				return -1;
-			}
-			// Alle anderen Fälle sind untergeordnet (alte Plays zuletzt zugewiesen werden...
-			return 1;
-		}
+		roleAssigner.assignRoles(assignees, frame.getPlayStrategy().getActivePlays(), frame);
 	}
 }

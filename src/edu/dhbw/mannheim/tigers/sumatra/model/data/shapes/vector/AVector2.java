@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 16.10.2010
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector;
@@ -21,9 +20,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
  * 
  * @see Vector2
  * @see Vector2f
- * 
  * @author Gero
- * 
  */
 @Persistent
 public abstract class AVector2 implements IVector2
@@ -61,7 +58,8 @@ public abstract class AVector2 implements IVector2
 	{
 		if (isZeroVector())
 		{
-			throw new IllegalArgumentException("You try to calculate the angle between the X-Axis and a zero-vector!");
+			assert false : "You try to calculate the angle between the X-Axis and a zero-vector!";
+			return 0;
 		}
 		final float scalarProduct = scalarProduct(AVector2.X_AXIS);
 		float result = AngleMath.acos(scalarProduct / (1 * getLength2()));
@@ -75,7 +73,7 @@ public abstract class AVector2 implements IVector2
 	
 	
 	@Override
-	public Vector2 addNew(IVector2 vector)
+	public Vector2 addNew(final IVector2 vector)
 	{
 		final Vector2 result = new Vector2();
 		if (vector != null)
@@ -92,7 +90,7 @@ public abstract class AVector2 implements IVector2
 	
 	
 	@Override
-	public Vector2 subtractNew(IVector2 vector)
+	public Vector2 subtractNew(final IVector2 vector)
 	{
 		final Vector2 result = new Vector2();
 		if (vector != null)
@@ -109,7 +107,7 @@ public abstract class AVector2 implements IVector2
 	
 	
 	@Override
-	public Vector2 multiplyNew(float factor)
+	public Vector2 multiplyNew(final float factor)
 	{
 		final Vector2 result = new Vector2();
 		result.x = x() * factor;
@@ -120,7 +118,7 @@ public abstract class AVector2 implements IVector2
 	
 	
 	@Override
-	public Vector2 scaleToNew(float newLength)
+	public Vector2 scaleToNew(final float newLength)
 	{
 		final float oldLength = getLength2();
 		if (oldLength != 0)
@@ -134,7 +132,7 @@ public abstract class AVector2 implements IVector2
 	
 	
 	@Override
-	public Vector2 turnNew(float angle)
+	public Vector2 turnNew(final float angle)
 	{
 		float x2;
 		float y2;
@@ -149,14 +147,14 @@ public abstract class AVector2 implements IVector2
 	
 	
 	@Override
-	public float scalarProduct(IVector2 v)
+	public float scalarProduct(final IVector2 v)
 	{
 		return ((x() * v.x()) + (y() * v.y()));
 	}
 	
 	
 	@Override
-	public Vector2 projectToNew(IVector2 v)
+	public Vector2 projectToNew(final IVector2 v)
 	{
 		if (v.isZeroVector())
 		{
@@ -167,7 +165,7 @@ public abstract class AVector2 implements IVector2
 	
 	
 	@Override
-	public Vector2 turnToNew(float angle)
+	public Vector2 turnToNew(final float angle)
 	{
 		final float len = getLength2();
 		final float yn = AngleMath.sin(angle) * len;
@@ -177,7 +175,7 @@ public abstract class AVector2 implements IVector2
 	
 	
 	@Override
-	public IVector2 roundNew(int digits)
+	public IVector2 roundNew(final int digits)
 	{
 		final float newX;
 		final float newY;
@@ -227,7 +225,7 @@ public abstract class AVector2 implements IVector2
 	
 	
 	@Override
-	public boolean equals(Object obj)
+	public boolean equals(final Object obj)
 	{
 		if (this == obj)
 		{
@@ -247,8 +245,12 @@ public abstract class AVector2 implements IVector2
 	
 	
 	@Override
-	public boolean equals(IVector2 vec, float tolerance)
+	public boolean equals(final IVector2 vec, final float tolerance)
 	{
+		if (vec == null)
+		{
+			return false;
+		}
 		return subtractNew(vec).getLength2() < tolerance;
 	}
 	
@@ -314,4 +316,23 @@ public abstract class AVector2 implements IVector2
 		return x() + "," + y();
 	}
 	
+	
+	@Override
+	public Vector2 turnAroundNew(final IVector2 axis, final float angle)
+	{
+		float x2 = x() - axis.x();
+		float y2 = y() - axis.y();
+		
+		final float cosA = AngleMath.cos(angle);
+		final float sinA = AngleMath.sin(angle);
+		
+		float x2old = x2;
+		x2 = (x2 * cosA) - (y2 * sinA);
+		y2 = (y2 * cosA) + (x2old * sinA);
+		
+		x2 = x2 + axis.x();
+		y2 = y2 + axis.y();
+		
+		return new Vector2(x2, y2);
+	}
 }

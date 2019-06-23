@@ -11,16 +11,21 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentSkipListMap;
+
+import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.moduli.AModule;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.basestation.BaseStation;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.basestation.EBaseStation;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.udp.ITransceiverUDP;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerChargeAuto;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IBotManagerObserver;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IManualBotObserver;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.IRobotsPanelObserver;
 
 
 /**
@@ -28,33 +33,122 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IManualBotObserve
  * 
  * @author Gero
  */
-public abstract class ABotManager extends AModule implements IManualBotObserver
+public abstract class ABotManager extends AModule implements IRobotsPanelObserver
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
+	private static final Logger		log							= Logger.getLogger(ABotManager.class.getName());
+	
 	/** */
-	public static final String	MODULE_TYPE					= "ABotManager";
+	public static final String			MODULE_TYPE					= "ABotManager";
 	/** */
-	public static final String	MODULE_ID					= "botmanager";
+	public static final String			MODULE_ID					= "botmanager";
 	
 	
 	/** */
-	public static final String	KEY_BOTMANAGER_CONFIG	= ABotManager.class.getName() + ".botmanagerConfig";
+	public static final String			KEY_BOTMANAGER_CONFIG	= ABotManager.class.getName() + ".botmanagerConfig";
 	/** */
-	public static final String	BOTMANAGER_CONFIG_PATH	= "./config/botmanager/";
+	public static final String			BOTMANAGER_CONFIG_PATH	= "./config/botmanager/";
 	/**  */
-	public static final String	VALUE_BOTMANAGER_CONFIG	= "botmanager_sim.xml";
+	public static final String			VALUE_BOTMANAGER_CONFIG	= "botmanager_sumatra.xml";
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods ---------------------------------------------------------
-	// --------------------------------------------------------------------------
+	private final Map<BotID, ABot>	botTable						= new ConcurrentSkipListMap<BotID, ABot>(
+																						BotID.getComparator());
+	/**  */
+	public static final String			BLOCKED_BY_SUMATRA		= "Blocked by Sumatra";
+	
+	private EBotType						botType						= EBotType.UNKNOWN;
+	
+	
 	/**
+	 * Be aware of the fact that this method might be called from several threads
+	 * 
 	 * @param id
 	 * @param cmd
 	 */
-	public abstract void execute(BotID id, ACommand cmd);
+	public void execute(final BotID id, final ACommand cmd)
+	{
+		final ABot bot = getBotTable().get(id);
+		if (bot != null)
+		{
+			bot.execute(cmd);
+		} else
+		{
+			log.warn("Execute: Invalid botID: " + id);
+		}
+	}
+	
+	
+	@Override
+	public void onHideBotFromAiClicked(final BotID botId, final boolean hide)
+	{
+		ABot bot = botTable.get(botId);
+		if (bot == null)
+		{
+			log.error("Bot with id " + botId + " does not exist.");
+		} else
+		{
+			bot.setHideFromAi(hide);
+		}
+	}
+	
+	
+	@Override
+	public void onHideBotFromRcmClicked(final BotID botId, final boolean hide)
+	{
+		ABot bot = botTable.get(botId);
+		if (bot == null)
+		{
+			log.error("Bot with id " + botId + " does not exist.");
+		} else
+		{
+			bot.setHideFromRcm(hide);
+		}
+	}
+	
+	
+	@Override
+	public void onDisableBotClicked(final BotID botId, final boolean disable)
+	{
+		ABot bot = botTable.get(botId);
+		if (bot == null)
+		{
+			log.error("Bot with id " + botId + " does not exist.");
+		} else if (disable)
+		{
+			bot.setControlledBy(BLOCKED_BY_SUMATRA);
+		} else
+		{
+			bot.setControlledBy("");
+		}
+	}
+	
+	
+	@Override
+	public void onCharge(final BotID botId)
+	{
+		ABot bot = botTable.get(botId);
+		if (bot == null)
+		{
+			log.error("Bot with id " + botId + " does not exist.");
+		} else
+		{
+			bot.execute(new TigerKickerChargeAuto(bot.getKickerMaxCap()));
+		}
+	}
+	
+	
+	@Override
+	public void onDischarge(final BotID botId)
+	{
+		ABot bot = botTable.get(botId);
+		if (bot == null)
+		{
+			log.error("Bot with id " + botId + " does not exist.");
+		} else
+		{
+			bot.execute(new TigerKickerChargeAuto(0));
+		}
+	}
 	
 	
 	/**
@@ -125,15 +219,15 @@ public abstract class ABotManager extends AModule implements IManualBotObserver
 	/**
 	 * @return
 	 */
-	public abstract Map<Integer, BaseStation> getBaseStations();
+	public abstract Map<EBaseStation, BaseStation> getBaseStations();
+	
 	
 	private final List<IBotManagerObserver>	observers	= new ArrayList<IBotManagerObserver>();
 	
 	
 	/**
-	 * @param chg
 	 */
-	public abstract void chargeAll(int chg);
+	public abstract void chargeAll();
 	
 	
 	/**
@@ -217,4 +311,29 @@ public abstract class ABotManager extends AModule implements IManualBotObserver
 	}
 	
 	
+	/**
+	 * @return the botTable
+	 */
+	public Map<BotID, ABot> getBotTable()
+	{
+		return botTable;
+	}
+	
+	
+	/**
+	 * @return the botType
+	 */
+	public final EBotType getBotType()
+	{
+		return botType;
+	}
+	
+	
+	/**
+	 * @param botType the botType to set
+	 */
+	protected final void setBotType(final EBotType botType)
+	{
+		this.botType = botType;
+	}
 }

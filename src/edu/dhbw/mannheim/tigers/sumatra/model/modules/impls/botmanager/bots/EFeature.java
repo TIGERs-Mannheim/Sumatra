@@ -4,12 +4,11 @@
  * Project: TIGERS - Sumatra
  * Date: Apr 17, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots;
 
-import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 
@@ -17,50 +16,36 @@ import java.util.Map;
  * This class defines what features are available for each single bot
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
+ * @note IDs correspond to TigerBotV3 match feedback bitfield, do not change!
  */
 public enum EFeature
 {
 	/**  */
-	CHIP_KICKER("Chip Kicker"),
+	MOVE("Move", 0x0001),
 	/**  */
-	STRAIGHT_KICKER("Straight Kicker"),
+	DRIBBLER("Dribbler", 0x0002),
 	/**  */
-	DRIBBLER("Dribbler"),
+	STRAIGHT_KICKER("Straight Kicker", 0x0004),
 	/**  */
-	MOVE("Move"),
+	CHIP_KICKER("Chip Kicker", 0x0008),
 	/**  */
-	BARRIER("Barrier", "Limited: barrier feedback to Sumatra not working, Kaput: Not working at all");
+	BARRIER("Barrier", 0x0010);
 	
 	private final String	name;
-	private final String	desc;
+	private final int		id;
 	
-	/**
-	 */
-	public enum EFeatureState
+	
+	private EFeature(final String name, final int id)
 	{
-		/**  */
-		WORKING,
-		/**  */
-		LIMITED,
-		/**  */
-		KAPUT,
-		/**  */
-		UNKNOWN;
+		this.name = name;
+		this.id = id;
 	}
 	
 	
-	private EFeature(String name)
+	private EFeature(final String name, final int id, final String desc)
 	{
 		this.name = name;
-		desc = "";
-	}
-	
-	
-	private EFeature(String name, String desc)
-	{
-		this.name = name;
-		this.desc = desc;
+		this.id = id;
 	}
 	
 	
@@ -71,7 +56,7 @@ public enum EFeature
 	 */
 	public static Map<EFeature, EFeatureState> createFeatureList()
 	{
-		Map<EFeature, EFeatureState> map = new EnumMap<EFeature, EFeatureState>(EFeature.class);
+		Map<EFeature, EFeatureState> map = new LinkedHashMap<EFeature, EFeatureState>();
 		for (EFeature f : EFeature.values())
 		{
 			map.put(f, EFeatureState.UNKNOWN);
@@ -90,11 +75,31 @@ public enum EFeature
 	
 	
 	/**
-	 * @return the desc
+	 * @return the id
 	 */
-	public final String getDesc()
+	public int getId()
 	{
-		return desc;
+		return id;
+	}
+	
+	
+	/**
+	 * Convert an id to an enum.
+	 * 
+	 * @param id
+	 * @return enum
+	 */
+	public static EFeature getFeatureConstant(final int id)
+	{
+		for (EFeature s : values())
+		{
+			if (s.getId() == id)
+			{
+				return s;
+			}
+		}
+		
+		return null;
 	}
 	
 }

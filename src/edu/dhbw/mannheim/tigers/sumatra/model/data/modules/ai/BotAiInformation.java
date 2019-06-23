@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Jan 12, 2014
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai;
@@ -22,15 +21,10 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
  * Dataholder for bot information from AI
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
-@Persistent(version = 2)
+@Persistent(version = 5)
 public class BotAiInformation
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	private String			play				= "";
 	private String			role				= "";
 	private String			skill				= "";
@@ -42,11 +36,10 @@ public class BotAiInformation
 	private List<String>	conditions		= new ArrayList<String>();
 	private int				numPaths			= 0;
 	private IVector2		vel				= Vector2.ZERO_VECTOR;
+	private IVector2		pos				= Vector2.ZERO_VECTOR;
+	private String			brokenFeatures	= "";
+	private float			maxVel			= 0;
 	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	  * 
@@ -55,16 +48,6 @@ public class BotAiInformation
 	{
 		
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	
 	/**
@@ -79,7 +62,7 @@ public class BotAiInformation
 	/**
 	 * @param play the play to set
 	 */
-	public final void setPlay(String play)
+	public final void setPlay(final String play)
 	{
 		this.play = play;
 	}
@@ -97,7 +80,7 @@ public class BotAiInformation
 	/**
 	 * @param role the role to set
 	 */
-	public final void setRole(String role)
+	public final void setRole(final String role)
 	{
 		this.role = role;
 	}
@@ -115,7 +98,7 @@ public class BotAiInformation
 	/**
 	 * @param skill the skill to set
 	 */
-	public final void setSkill(String skill)
+	public final void setSkill(final String skill)
 	{
 		this.skill = skill;
 	}
@@ -133,7 +116,7 @@ public class BotAiInformation
 	/**
 	 * @param ballContact the ballContact to set
 	 */
-	public final void setBallContact(boolean ballContact)
+	public final void setBallContact(final boolean ballContact)
 	{
 		this.ballContact = ballContact;
 	}
@@ -151,7 +134,7 @@ public class BotAiInformation
 	/**
 	 * @param battery the battery to set
 	 */
-	public final void setBattery(float battery)
+	public final void setBattery(final float battery)
 	{
 		this.battery = battery;
 	}
@@ -169,7 +152,7 @@ public class BotAiInformation
 	/**
 	 * @param kickerCharge the kickerCharge to set
 	 */
-	public final void setKickerCharge(float kickerCharge)
+	public final void setKickerCharge(final float kickerCharge)
 	{
 		this.kickerCharge = kickerCharge;
 	}
@@ -187,7 +170,7 @@ public class BotAiInformation
 	/**
 	 * @param roleState the roleState to set
 	 */
-	public final void setRoleState(String roleState)
+	public final void setRoleState(final String roleState)
 	{
 		this.roleState = roleState;
 	}
@@ -205,7 +188,7 @@ public class BotAiInformation
 	/**
 	 * @param condition the conditions to add
 	 */
-	public final void addCondition(String condition)
+	public final void addCondition(final String condition)
 	{
 		conditions.add(condition);
 	}
@@ -223,7 +206,7 @@ public class BotAiInformation
 	/**
 	 * @param pathPlanning the pathPlanning to set
 	 */
-	public final void setPathPlanning(boolean pathPlanning)
+	public final void setPathPlanning(final boolean pathPlanning)
 	{
 		this.pathPlanning = pathPlanning;
 	}
@@ -241,7 +224,7 @@ public class BotAiInformation
 	/**
 	 * @param numPaths the numPaths to set
 	 */
-	public final void setNumPaths(int numPaths)
+	public final void setNumPaths(final int numPaths)
 	{
 		this.numPaths = numPaths;
 	}
@@ -259,8 +242,63 @@ public class BotAiInformation
 	/**
 	 * @param vel the vel to set
 	 */
-	public final void setVel(IVector2 vel)
+	public final void setVel(final IVector2 vel)
 	{
-		this.vel = vel;
+		// avoid numerical problems for zero-vel
+		this.vel = vel.addNew(new Vector2(1e-5, 1e-5));
+	}
+	
+	
+	/**
+	 * @return the pos
+	 */
+	public final IVector2 getPos()
+	{
+		return pos;
+	}
+	
+	
+	/**
+	 * @param pos the pos to set
+	 */
+	public final void setPos(final IVector2 pos)
+	{
+		this.pos = pos;
+	}
+	
+	
+	/**
+	 * @return the brokenFeatures
+	 */
+	public final String getBrokenFeatures()
+	{
+		return brokenFeatures;
+	}
+	
+	
+	/**
+	 * @param brokenFeatures the brokenFeatures to set
+	 */
+	public final void setBrokenFeatures(final String brokenFeatures)
+	{
+		this.brokenFeatures = brokenFeatures;
+	}
+	
+	
+	/**
+	 * @return the maxVel
+	 */
+	public final float getMaxVel()
+	{
+		return maxVel;
+	}
+	
+	
+	/**
+	 * @param maxVel the maxVel to set
+	 */
+	public final void setMaxVel(final float maxVel)
+	{
+		this.maxVel = maxVel;
 	}
 }

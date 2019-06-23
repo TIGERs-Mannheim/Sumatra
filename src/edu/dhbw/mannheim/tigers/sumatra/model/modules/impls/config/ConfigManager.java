@@ -14,6 +14,7 @@ import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,18 +29,15 @@ import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesState;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.GenericManager;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AConfigManager;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IConfigClient;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IConfigObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ManagedConfig;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.IModuliStateObserver;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.ModuliStateAdapter;
 import edu.dhbw.mannheim.tigers.sumatra.util.config.ConfigAnnotationProcessor;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.ConfigRegistration;
 
 
 /**
@@ -48,7 +46,7 @@ import edu.dhbw.mannheim.tigers.sumatra.util.config.ConfigAnnotationProcessor;
  * 
  * @author Gero
  */
-public class ConfigManager extends AConfigManager implements IModuliStateObserver
+public class ConfigManager extends AConfigManager
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
@@ -72,19 +70,19 @@ public class ConfigManager extends AConfigManager implements IModuliStateObserve
 	// --------------------------------------------------------------------------
 	
 	/**
-	 * Create new config Manager. This is only for testing
+	 * Create new config Manager.
 	 */
 	public ConfigManager()
 	{
-		AConfigManager.registerConfigClient(TeamConfig.getInstance());
 		AConfigManager.registerConfigClient(GenericManager.getBotManagerConfigClient());
-		List<IConfigClient> clients = AIConfig.getConfigClients();
+		AConfigManager.registerConfigClient(AIConfig.getGeometryClient());
+		List<IConfigClient> clients = ConfigRegistration.getConfigClients();
 		for (IConfigClient client : clients)
 		{
 			AConfigManager.registerConfigClient(client);
 		}
+		
 		initModule();
-		ModuliStateAdapter.getInstance().addObserver(this);
 	}
 	
 	
@@ -127,7 +125,26 @@ public class ConfigManager extends AConfigManager implements IModuliStateObserve
 				fileName = client.getDefaultValue();
 				model.setUserProperty(client.getConfigKey(), fileName);
 			}
-			final HierarchicalConfiguration loadedConfig = doLoadConfig(client, fileName);
+			final File file = new File(client.getConfigPath() + fileName);
+			
+			final HierarchicalConfiguration loadedConfig;
+			if (!file.exists())
+			{
+				if (client.isRequired())
+				{
+					log.warn("Config file " + fileName + " was not found! Using " + client.getDefaultValue());
+					fileName = client.getDefaultValue();
+					model.setUserProperty(client.getConfigKey(), fileName);
+					loadedConfig = doLoadConfig(client, fileName);
+				} else
+				{
+					loadedConfig = null;
+				}
+			} else
+			{
+				loadedConfig = doLoadConfig(client, fileName);
+			}
+			
 			final HierarchicalConfiguration config;
 			final HierarchicalConfiguration defConfig = client.getDefaultConfig();
 			if ((loadedConfig == null) && (defConfig == null))
@@ -342,6 +359,7 @@ public class ConfigManager extends AConfigManager implements IModuliStateObserve
 		// Let the client prepare
 		final HierarchicalConfiguration hConfig = client.prepareConfigForSaving(config.getConfig());
 		final XMLConfiguration xmlConfig = new XMLConfiguration(hConfig);
+		xmlConfig.setDelimiterParsingDisabled(true);
 		xmlConfig.setFileName(newFileName);
 		
 		// Not same object?
@@ -362,15 +380,15 @@ public class ConfigManager extends AConfigManager implements IModuliStateObserve
 		
 		
 		final String path = client.getConfigPath() + newFileName;
+		FileOutputStream targetFile = null;
+		OutputStream prettyOut = null;
 		try
 		{
-			final FileOutputStream targetFile = new FileOutputStream(path, false);
+			targetFile = new FileOutputStream(path, false);
 			
-			final OutputStream prettyOut = new PrettyXMLOutputStream(targetFile, XML_ENCODING);
+			prettyOut = new PrettyXMLOutputStream(targetFile, XML_ENCODING);
 			xmlConfig.save(prettyOut, XML_ENCODING);
 			
-			prettyOut.close();
-			targetFile.close();
 		} catch (final ConfigurationException err)
 		{
 			log.error("Unable to save config '" + client.getConfigKey() + "' to '" + path + "'.");
@@ -378,12 +396,46 @@ public class ConfigManager extends AConfigManager implements IModuliStateObserve
 		} catch (final FileNotFoundException err)
 		{
 			log.error("Unable to access the file to save the config to: " + path, err);
-		} catch (final IOException err)
+		} finally
 		{
-			log.error("Error while saving config: Unable to close streams!", err);
+			try
+			{
+				if (prettyOut != null)
+				{
+					prettyOut.close();
+				}
+				if (targetFile != null)
+				{
+					targetFile.close();
+				}
+			} catch (IOException err)
+			{
+				log.error("Error while saving config: Unable to close streams!", err);
+			}
 		}
 		
 		return true;
+	}
+	
+	
+	/**
+	 * @param configKey
+	 */
+	public void readConfig(final String configKey)
+	{
+		final ManagedConfig config = configMap.get(configKey);
+		if (config == null)
+		{
+			log.error("Read: Unable to read config, there is no config for this key: '" + configKey + "'.");
+			return;
+		}
+		IConfigClient client = config.getClient();
+		
+		config.setConfig(client.getDefaultConfig());
+		
+		// Notify client
+		config.notifyOnReload();
+		notifyConfigReloaded(config);
 	}
 	
 	
@@ -411,8 +463,11 @@ public class ConfigManager extends AConfigManager implements IModuliStateObserve
 		
 		// Filter
 		final String[] list = configFolder.list(new ConfigNameFilter());
-		
-		return Arrays.asList(list);
+		if (list != null)
+		{
+			return Arrays.asList(list);
+		}
+		return new ArrayList<>();
 	}
 	
 	
@@ -478,11 +533,5 @@ public class ConfigManager extends AConfigManager implements IModuliStateObserve
 		{
 			return !name.startsWith(".");
 		}
-	}
-	
-	
-	@Override
-	public void onModuliStateChanged(final ModulesState state)
-	{
 	}
 }

@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 24.10.2011
  * Author(s): osteinbrecher
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers;
@@ -13,17 +12,18 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
-import java.util.LinkedList;
-import java.util.List;
+import java.awt.Shape;
+import java.awt.geom.Arc2D;
 
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AiMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.Circle;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.DrawableCircle;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector3;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
 
@@ -33,7 +33,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
  * accelerations and the ball.
  * 
  * @author Oliver Steinbrecher
- * 
  */
 public class BallBotLayer extends AFieldLayer
 {
@@ -41,14 +40,10 @@ public class BallBotLayer extends AFieldLayer
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	private static final Logger	log					= Logger.getLogger(BallBotLayer.class.getName());
-	private static final int		BALL_BUFFER_SIZE	= 100;
-	private static final float		BALL_FLY_TOL		= 2f;
+	private static final float		BALL_FLY_TOL		= 15f;
 	
 	private boolean					showVelocity		= false;
 	private boolean					showAcceleration	= false;
-	private boolean					showBallBuffer		= false;
-	
-	private List<IVector3>			ballBuffer			= new LinkedList<IVector3>();
 	
 	
 	// --------------------------------------------------------------------------
@@ -67,35 +62,16 @@ public class BallBotLayer extends AFieldLayer
 	// --------------------------------------------------------------------------
 	
 	@Override
-	protected void paintLayerSwf(Graphics2D g2, SimpleWorldFrame wFrame)
+	protected void paintLayerSwf(final Graphics2D g2, final SimpleWorldFrame wFrame)
 	{
 		// --- draw tiger robots ---
 		for (final TrackedTigerBot bot : wFrame.getBots().values())
 		{
-			drawRobot(g2, bot, bot.getTeamColor(), String.valueOf(bot.getId().getNumber()), bot.isManualControl());
-		}
-		
-		// --- draw ballBuffer ---
-		if (showBallBuffer)
-		{
-			for (IVector3 ballPos : ballBuffer)
-			{
-				drawBall(g2, ballPos, wFrame.getBall().getVel(), true);
-			}
-			ballBuffer.add(wFrame.getBall().getPos3());
-			if (ballBuffer.size() > BALL_BUFFER_SIZE)
-			{
-				ballBuffer.remove(0);
-			}
-		} else
-		{
-			ballBuffer.clear();
+			drawRobot(g2, bot, bot.getTeamColor(), String.valueOf(bot.getId().getNumber()), bot.isBlocked());
 		}
 		
 		// --- draw balls ---
-		drawBall(g2, wFrame.getBall().getPos3(), wFrame.getBall().getVel(), false);
-		
-		drawFutureBallPos(g2);
+		drawBall(g2, wFrame);
 	}
 	
 	
@@ -115,43 +91,65 @@ public class BallBotLayer extends AFieldLayer
 	 * Draws a ball on the field.
 	 * 
 	 * @param g graphics object
-	 * @param ballPos
-	 * @param vel
 	 */
-	private void drawBall(Graphics2D g, IVector3 ballPos, IVector2 vel, boolean ballBuffer)
+	private void drawBall(final Graphics2D g, final SimpleWorldFrame wFrame)
 	{
-		final IVector2 drawPoint = getFieldPanel().transformToGuiCoordinates(ballPos.getXYVector());
+		IVector2 ballPos = wFrame.getBall().getPos();
+		final IVector2 drawPoint = getFieldPanel().transformToGuiCoordinates(wFrame.getBall().getPos());
 		
 		int ballRadius = getFieldPanel().scaleXLength(AIConfig.getGeometry().getBallRadius());
-		
-		if (ballBuffer)
-		{
-			ballRadius *= 0.9;
-		}
 		
 		final int drawingX = (int) (drawPoint.x() - ballRadius);
 		final int drawingY = (int) (drawPoint.y() - ballRadius);
 		
 		g.setColor(Color.orange);
-		if (ballPos.z() > BALL_FLY_TOL)
+		if (wFrame.getBall().getPos3().z() > BALL_FLY_TOL)
 		{
 			g.setColor(Color.red);
 		}
 		
-		if (ballBuffer)
-		{
-			g.setColor(g.getColor().brighter());
-		}
+		g.setColor(g.getColor().brighter());
 		
 		g.fillOval(drawingX, drawingY, ballRadius * 2, ballRadius * 2);
+		g.setStroke(new BasicStroke(1));
+		DrawableCircle circle1 = new DrawableCircle(new Circle(ballPos, 120), g.getColor());
+		circle1.paintShape(g, getFieldPanel(), false);
+		DrawableCircle circle2 = new DrawableCircle(new Circle(ballPos, 105), g.getColor());
+		circle2.paintShape(g, getFieldPanel(), false);
 		
-		if (showVelocity && !ballBuffer)
+		if (showVelocity)
 		{
+			IVector2 pVel = wFrame.getBall().getPos().addNew(wFrame.getBall().getVel().multiplyNew(200));
+			IVector2 velGui = getFieldPanel().transformToGuiCoordinates(pVel);
 			g.setColor(Color.cyan);
 			g.setStroke(new BasicStroke(3));
 			g.drawLine(((drawingX + ballRadius)), ((drawingY + ballRadius)),
-					(int) ((drawingX + ballRadius) + (vel.y() * 100)), (int) ((drawingY + ballRadius) + (vel.x() * 100)));
+					(int) velGui.x(), (int) velGui.y());
 		}
+		
+		drawBallStandingStillPos(g, wFrame);
+	}
+	
+	
+	private void drawBallStandingStillPos(final Graphics2D g, final SimpleWorldFrame wFrame)
+	{
+		IVector2 ballPos = wFrame.getBall().getPosByVel(0);
+		DrawableCircle dCircle = new DrawableCircle(ballPos, AIConfig.getGeometry().getBallRadius() + 5, Color.red);
+		dCircle.paintShape(g, getFieldPanel(), false);
+	}
+	
+	
+	private Color getBotColor(final TrackedTigerBot bot)
+	{
+		final Color botColor;
+		if (!bot.isVisible())
+		{
+			botColor = bot.getTeamColor() == ETeamColor.YELLOW ? Color.green : Color.magenta;
+		} else
+		{
+			botColor = bot.getTeamColor() == ETeamColor.YELLOW ? Color.yellow : Color.blue;
+		}
+		return botColor;
 	}
 	
 	
@@ -163,17 +161,15 @@ public class BallBotLayer extends AFieldLayer
 	 * @param teamColor yellow or blue
 	 * @param id 1-12
 	 */
-	private void drawRobot(Graphics2D g, TrackedBot bot, ETeamColor teamColor, String id, boolean alternateColor)
+	private void drawRobot(final Graphics2D g, final TrackedTigerBot bot, final ETeamColor teamColor, final String id,
+			final boolean alternateColor)
 	{
-		final Color botColor = teamColor == ETeamColor.YELLOW ? Color.yellow : Color.blue;
+		final Color botColor = getBotColor(bot);
 		final Color bgColor = teamColor == ETeamColor.YELLOW ? Color.black : Color.white;
 		final Color dirColor = teamColor == ETeamColor.YELLOW ? Color.red : Color.yellow;
 		
-		final int robotRadius = getFieldPanel().scaleXLength(AIConfig.getGeometry().getBotRadius());
 		
-		// --- get needed data ---
-		final Vector2 vel = new Vector2(bot.getVel());
-		final Vector2 acc = new Vector2(bot.getAcc());
+		final int robotRadius = getFieldPanel().scaleXLength(AIConfig.getGeometry().getBotRadius());
 		
 		// --- determinate drawing-position ---
 		int drawingX = 0;
@@ -202,15 +198,25 @@ public class BallBotLayer extends AFieldLayer
 			return;
 		}
 		
-		// --- draw bot-oval ---
-		if (alternateColor)
-		{
-			g.setColor(botColor.darker());
-		} else
-		{
-			g.setColor(botColor);
-		}
-		g.fillOval(drawingX, drawingY, robotRadius * 2, robotRadius * 2);
+		// --- draw bot ---
+		g.setColor(botColor);
+		float r = AIConfig.getGeometry().getBotRadius();
+		float center2DribblerDist = bot.getBot().getCenter2DribblerDist();
+		float alpha = (float) Math.acos(center2DribblerDist / r);
+		float startAngleRad = (bot.getAngle() - AngleMath.PI_HALF) + getFieldTurn().getAngle() + alpha;
+		float startAngle = AngleMath.rad2deg(startAngleRad);
+		float endAngle = 360 - AngleMath.rad2deg(2 * alpha);
+		
+		Shape botShape = new Arc2D.Double(drawingX, drawingY, robotRadius * 2, robotRadius * 2, startAngle,
+				endAngle, Arc2D.CHORD);
+		
+		g.fill(botShape);
+		
+		g.setColor(Color.RED);
+		g.setStroke(new BasicStroke(2));
+		final IVector2 kickerPos = getFieldPanel().transformToGuiCoordinates(
+				AiMath.getBotKickerPos(bot.getPos(), bot.getAngle(), bot.getBot().getCenter2DribblerDist() - 20));
+		g.drawLine(drawingX + robotRadius, drawingY + robotRadius, (int) kickerPos.x(), (int) kickerPos.y());
 		
 		// --- draw id and direction-sign ---
 		g.setColor(bgColor);
@@ -220,52 +226,41 @@ public class BallBotLayer extends AFieldLayer
 		g.setColor(dirColor);
 		g.setStroke(new BasicStroke(3));
 		
-		IVector2 p1 = bot.getPos().addNew(new Vector2(bot.getAngle()).scaleTo(AIConfig.getGeometry().getBotRadius() / 2));
-		IVector2 p2 = bot.getPos().addNew(new Vector2(bot.getAngle()).scaleTo(AIConfig.getGeometry().getBotRadius()));
-		IVector2 pt1 = getFieldPanel().transformToGuiCoordinates(p1);
-		IVector2 pt2 = getFieldPanel().transformToGuiCoordinates(p2);
-		g.drawLine((int) pt1.x(), (int) pt1.y(), (int) pt2.x(), (int) pt2.y());
+		if (bot.isBlocked())
+		{
+			g.setColor(Color.red);
+			g.drawArc(drawingX, drawingY, robotRadius * 2, robotRadius * 2, 0, 360);
+		}
+		
+		// IVector2 p1 = bot.getPos().addNew(new Vector2(bot.getAngle()).scaleTo(AIConfig.getGeometry().getBotRadius() /
+		// 2));
+		// IVector2 p2 = bot.getPos().addNew(new Vector2(bot.getAngle()).scaleTo(AIConfig.getGeometry().getBotRadius()));
+		// IVector2 pt1 = getFieldPanel().transformToGuiCoordinates(p1);
+		// IVector2 pt2 = getFieldPanel().transformToGuiCoordinates(p2);
+		// g.drawLine((int) pt1.x(), (int) pt1.y(), (int) pt2.x(), (int) pt2.y());
 		
 		
 		// --- velocity ---
 		if (showVelocity)
 		{
+			IVector2 pVel = bot.getPos().addNew(bot.getVel().multiplyNew(1000));
+			IVector2 velGui = getFieldPanel().transformToGuiCoordinates(pVel);
 			g.setColor(Color.cyan);
 			g.setStroke(new BasicStroke(3));
 			g.drawLine(((drawingX + robotRadius)), ((drawingY + robotRadius)),
-					(int) ((drawingX + robotRadius) + (vel.y * 100)), (int) ((drawingY + robotRadius) + (vel.x * 100)));
+					(int) velGui.x(), (int) velGui.y());
 		}
 		
 		// --- acceleration ---
 		if (showAcceleration)
 		{
+			IVector2 pAcc = bot.getPos().addNew(bot.getAcc().multiplyNew(1000));
+			IVector2 accGui = getFieldPanel().transformToGuiCoordinates(pAcc);
 			g.setColor(Color.magenta);
 			g.setStroke(new BasicStroke(3));
 			g.drawLine(((drawingX + robotRadius)), ((drawingY + robotRadius)),
-					(int) ((drawingX + robotRadius) + (acc.y * 100)), (int) ((drawingY + robotRadius) + (acc.x * 100)));
+					(int) accGui.x(), (int) accGui.y());
 		}
-		
-	}
-	
-	
-	private void drawFutureBallPos(Graphics2D g)
-	{
-		// TODO DirkK inspect NPE in Sumatrav3
-		// if (showPPErrorTree)
-		// {
-		// IRecordWfFrame wFrame = getAiFrame().getRecordWfFrame();
-		// FieldPredictionInformation ball = wFrame.getWorldFramePrediction().getBall();
-		// for (float t = 0; t < 1; t += 0.020)
-		// {
-		// IVector2 pointToDraw = new Vector2(ball.getPosAt(t));
-		//
-		// g.setColor(new Color(255, 255, 255));
-		//
-		// // fip x and y since field is vertically drawn
-		// final IVector2 pointToDrawGUI = getFieldPanel().transformToGuiCoordinates(pointToDraw);
-		// g.fillOval((int) pointToDrawGUI.x() - 1, (int) pointToDrawGUI.y() - 1, 2, 2);
-		// }
-		// }
 	}
 	
 	
@@ -277,7 +272,7 @@ public class BallBotLayer extends AFieldLayer
 	/**
 	 * @param visible
 	 */
-	public void showVelocity(boolean visible)
+	public void showVelocity(final boolean visible)
 	{
 		showVelocity = visible;
 	}
@@ -286,17 +281,9 @@ public class BallBotLayer extends AFieldLayer
 	/**
 	 * @param visible
 	 */
-	public void showAcceleration(boolean visible)
+	public void showAcceleration(final boolean visible)
 	{
 		showAcceleration = visible;
 	}
 	
-	
-	/**
-	 * @param visible
-	 */
-	public void showBallBuffer(boolean visible)
-	{
-		showBallBuffer = visible;
-	}
 }

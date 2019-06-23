@@ -26,33 +26,51 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators
  */
 public class GameStateCalc extends ACalculator
 {
-	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	private static final float	BALL_MOVED_DISTANCE_TOL	= 50;
 	private IVector2				ballPosOnPrepare			= null;
+	private boolean				goalScoredState			= false;
 	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	@Override
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
 		final EGameState lastGameState = baseAiFrame.getPrevFrame().getTacticalField().getGameState();
-		final RefereeMsg refereeMsg = baseAiFrame.getNewRefereeMsg();
+		RefereeMsg refereeMsg = baseAiFrame.getNewRefereeMsg();
 		EGameState newGameState = lastGameState;
+		
+		if ((lastGameState == EGameState.UNKNOWN) && (refereeMsg == null))
+		{
+			refereeMsg = baseAiFrame.getLatestRefereeMsg();
+		}
 		
 		if (refereeMsg != null)
 		{
+			switch (refereeMsg.getStage())
+			{
+				case NORMAL_FIRST_HALF:
+				case NORMAL_SECOND_HALF:
+				case EXTRA_FIRST_HALF:
+				case EXTRA_SECOND_HALF:
+					break;
+				case NORMAL_FIRST_HALF_PRE:
+				case NORMAL_SECOND_HALF_PRE:
+				case EXTRA_FIRST_HALF_PRE:
+				case EXTRA_SECOND_HALF_PRE:
+					break;
+				case NORMAL_HALF_TIME:
+				case EXTRA_HALF_TIME:
+				case EXTRA_TIME_BREAK:
+				case PENALTY_SHOOTOUT_BREAK:
+					newGameState = EGameState.BREAK;
+					break;
+				case POST_GAME:
+					newGameState = EGameState.POST_GAME;
+					break;
+				case PENALTY_SHOOTOUT:
+					break;
+				default:
+					break;
+			}
 			switch (refereeMsg.getTeamSpecRefCmd())
 			{
 				case DirectFreeKickEnemies:
@@ -85,10 +103,13 @@ public class GameStateCalc extends ACalculator
 					break;
 				case ForceStart:
 					newGameState = EGameState.RUNNING;
+					goalScoredState = false;
 					break;
 				case GoalEnemies:
+					goalScoredCheck(newTacticalField, baseAiFrame);
 					break;
 				case GoalTigers:
+					goalScoredCheck(newTacticalField, baseAiFrame);
 					break;
 				case Halt:
 					newGameState = EGameState.HALTED;
@@ -108,11 +129,12 @@ public class GameStateCalc extends ACalculator
 				case NoCommand:
 					break;
 				case NormalStart:
-					if (lastGameState == EGameState.STOPPED)
+					if ((lastGameState == EGameState.STOPPED) || (lastGameState == EGameState.UNKNOWN))
 					{
-						// NORMAL_START is not allowed after STOP, but assistant ref may press wrong button...
+						// NORMAL_START is not allowed after STOP, but assistant ref may pressed wrong button...
 						newGameState = EGameState.RUNNING;
 					}
+					goalScoredState = false;
 					break;
 				case PenaltyEnemies:
 					newGameState = EGameState.PREPARE_PENALTY_THEY;
@@ -145,7 +167,6 @@ public class GameStateCalc extends ACalculator
 					break;
 				default:
 					ballPosOnPrepare = null;
-					
 			}
 		} else
 		{
@@ -178,6 +199,7 @@ public class GameStateCalc extends ACalculator
 				case HALTED:
 					break;
 				case RUNNING:
+					goalScoredState = false;
 					break;
 				case STOPPED:
 					break;
@@ -187,16 +209,35 @@ public class GameStateCalc extends ACalculator
 					break;
 				case UNKNOWN:
 					break;
+				case BREAK:
+					break;
+				case POST_GAME:
+					break;
 				default:
 					throw new IllegalStateException();
 			}
 		}
 		
 		newTacticalField.setGameState(newGameState);
+		newTacticalField.setGoalScored(goalScoredState);
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
+	private void goalScoredCheck(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+	{
+		RefereeMsg latestRef = baseAiFrame.getPrevFrame().getLatestRefereeMsg();
+		RefereeMsg currentRef = baseAiFrame.getNewRefereeMsg();
+		if ((latestRef != null) && (currentRef != null))
+		{
+			int scoreTigersCurrent = currentRef.getTeamInfoTigers().getScore();
+			int scoreTigersLast = latestRef.getTeamInfoTigers().getScore();
+			int scoreFoesCurrent = currentRef.getTeamInfoThem().getScore();
+			int scoreFoesLast = latestRef.getTeamInfoThem().getScore();
+			if ((scoreTigersCurrent > scoreTigersLast) || (scoreFoesCurrent > scoreFoesLast))
+			{
+				goalScoredState = true;
+			}
+		}
+		
+	}
 }

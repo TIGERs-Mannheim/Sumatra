@@ -10,7 +10,6 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.frames;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.AresData;
 
 
@@ -19,22 +18,14 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.AresData;
  * 
  * @author Oliver Steinbrecher, Daniel Waigand, Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class AIInfoFrame extends AthenaAiFrame implements IRecordFrame
+public class AIInfoFrame extends AthenaAiFrame
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	/** frames per second (based on last frames) */
 	private final float		fps;
 	
 	/** Paths for bots */
 	private final AresData	aresData;
 	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 * @param athenaAiFrame
@@ -73,6 +64,7 @@ public class AIInfoFrame extends AthenaAiFrame implements IRecordFrame
 	/**
 	 * @return the fps
 	 */
+	@Override
 	public float getFps()
 	{
 		return fps;

@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Feb 8, 2014
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena;
@@ -15,7 +14,9 @@ import java.util.List;
 import java.util.Map;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.RoleFinderInfo;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 
 
@@ -23,29 +24,23 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARo
  * Contains information about added and removed plays and roles
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public final class AIControl
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
+	private final List<APlay>						addPlays					= new LinkedList<APlay>();
+	private final List<APlay>						removePlays				= new LinkedList<APlay>();
+	private final List<ARole>						addRoles					= new LinkedList<ARole>();
+	private final List<ARole>						removeRoles				= new LinkedList<ARole>();
+	private final Map<BotID, ARole>				assignRoles				= new HashMap<BotID, ARole>();
 	
-	private final List<APlay>				addPlays					= new LinkedList<APlay>();
-	private final List<APlay>				removePlays				= new LinkedList<APlay>();
-	private final List<ARole>				addRoles					= new LinkedList<ARole>();
-	private final List<ARole>				removeRoles				= new LinkedList<ARole>();
-	private final Map<BotID, ARole>		assignRoles				= new HashMap<BotID, ARole>();
+	private final Map<APlay, Integer>			addRoles2Play			= new HashMap<APlay, Integer>();
+	private final Map<APlay, Integer>			removeRolesFromPlay	= new HashMap<APlay, Integer>();
 	
-	private final Map<APlay, Integer>	addRoles2Play			= new HashMap<APlay, Integer>();
-	private final Map<APlay, Integer>	removeRolesFromPlay	= new HashMap<APlay, Integer>();
+	private boolean									changed					= false;
 	
-	private boolean							changed					= false;
+	private final Map<EPlay, RoleFinderInfo>	roleFinderInfos		= new HashMap<EPlay, RoleFinderInfo>();
+	private final Map<EPlay, Boolean>			roleFinderOverrides	= new HashMap<EPlay, Boolean>();
 	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	  * 
@@ -55,14 +50,10 @@ public final class AIControl
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	/**
 	 * @param play
 	 */
-	public void addPlay(APlay play)
+	public void addPlay(final APlay play)
 	{
 		addPlays.add(play);
 		changed = true;
@@ -72,7 +63,7 @@ public final class AIControl
 	/**
 	 * @param play
 	 */
-	public void removePlay(APlay play)
+	public void removePlay(final APlay play)
 	{
 		removePlays.add(play);
 		changed = true;
@@ -83,7 +74,7 @@ public final class AIControl
 	 * @param role
 	 * @param botId
 	 */
-	public void addRole(ARole role, BotID botId)
+	public void addRole(final ARole role, final BotID botId)
 	{
 		addRoles.add(role);
 		if (botId.isBot())
@@ -97,7 +88,7 @@ public final class AIControl
 	/**
 	 * @param role
 	 */
-	public void removeRole(ARole role)
+	public void removeRole(final ARole role)
 	{
 		removeRoles.add(role);
 		changed = true;
@@ -108,7 +99,7 @@ public final class AIControl
 	 * @param play
 	 * @param numRoles
 	 */
-	public void addRoles2Play(APlay play, int numRoles)
+	public void addRoles2Play(final APlay play, final int numRoles)
 	{
 		addRoles2Play.put(play, numRoles);
 		changed = true;
@@ -116,11 +107,10 @@ public final class AIControl
 	
 	
 	/**
-	 * 
 	 * @param play
 	 * @param numRoles
 	 */
-	public void removeRolesFromPlay(APlay play, int numRoles)
+	public void removeRolesFromPlay(final APlay play, final int numRoles)
 	{
 		removeRolesFromPlay.put(play, numRoles);
 		changed = true;
@@ -216,5 +206,23 @@ public final class AIControl
 	public final Map<BotID, ARole> getAssignRoles()
 	{
 		return assignRoles;
+	}
+	
+	
+	/**
+	 * @return the roleFinderInfos
+	 */
+	public final Map<EPlay, RoleFinderInfo> getRoleFinderInfos()
+	{
+		return roleFinderInfos;
+	}
+	
+	
+	/**
+	 * @return the roleFinderOverrides
+	 */
+	public final Map<EPlay, Boolean> getRoleFinderOverrides()
+	{
+		return roleFinderOverrides;
 	}
 }

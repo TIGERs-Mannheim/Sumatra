@@ -4,14 +4,14 @@
  * Project: TIGERS - Sumatra
  * Date: 12.04.2011
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.util.network;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -22,15 +22,13 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.util.collection.Pair;
-
 
 /**
  * This class provides some helpful methods for choosing the right network-interface (nif) for a given IPv4-address
  * 
  * @author Gero
  */
-public class NetworkUtility
+public final class NetworkUtility
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
@@ -38,9 +36,11 @@ public class NetworkUtility
 	private static final Logger	log	= Logger.getLogger(NetworkUtility.class.getName());
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
+	private NetworkUtility()
+	{
+	}
+	
+	
 	/**
 	 * @param networkStr
 	 * @param compareBytes Number of bytes to check (from most to least significant byte)
@@ -48,7 +48,7 @@ public class NetworkUtility
 	 *         {@link InterfaceAddress} whose first 3 bytes matches the first 3 bytes of the {@link Inet4Address} defined
 	 *         by the given string. null, if networkStr is empty
 	 */
-	public static NetworkInterface chooseNetworkInterface(String networkStr, int compareBytes)
+	public static NetworkInterface chooseNetworkInterface(final String networkStr, final int compareBytes)
 	{
 		if (networkStr.trim().isEmpty())
 		{
@@ -103,7 +103,7 @@ public class NetworkUtility
 	}
 	
 	
-	private static boolean cmpIP4Addrs(InetAddress addr1, InetAddress addr2, int bytesToCompare)
+	private static boolean cmpIP4Addrs(final InetAddress addr1, final InetAddress addr2, final int bytesToCompare)
 	{
 		byte[] addr1b = addr1.getAddress();
 		byte[] addr2b = addr2.getAddress();
@@ -126,44 +126,22 @@ public class NetworkUtility
 	
 	
 	/**
-	 * @param networkStr
-	 * @param listenGroup
-	 * @param listenPort
-	 * @param result
+	 * Quietly close a stream or what ever. c may be null.
+	 * Only use this method if you ensured that any important errors were already reported!
+	 * 
+	 * @param c
 	 */
-	public void addNifByAddress(String networkStr, String listenGroup, int listenPort,
-			List<Pair<InetSocketAddress, NetworkInterface>> result)
+	public static void closeQuietly(final Closeable c)
 	{
-		try
+		if (c != null)
 		{
-			InetSocketAddress socAddr = new InetSocketAddress(listenGroup, listenPort);
-			NetworkInterface nif = chooseNetworkInterface(networkStr, 3);
-			
-			if (nif == null)
+			try
 			{
-				log.debug("No nif for '" + networkStr + "' found!");
-				return;
+				c.close();
+			} catch (IOException err)
+			{
+				// ignore
 			}
-			
-			if (nif.supportsMulticast())
-			{
-				// Check if nif already there:
-				for (Pair<InetSocketAddress, NetworkInterface> p : result)
-				{
-					if (p.right.equals(nif))
-					{
-						// Done, jump off
-						return;
-					}
-				}
-				result.add(new Pair<InetSocketAddress, NetworkInterface>(socAddr, nif));
-			} else
-			{
-				log.debug("Nif '" + nif + "' doesn't support multicast!");
-			}
-		} catch (SocketException err)
-		{
-			log.debug("Error detecting network to listen on incoming bot-discovery...");
 		}
 	}
 }

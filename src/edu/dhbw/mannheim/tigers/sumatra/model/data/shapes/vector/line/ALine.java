@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 17.11.2010
  * Author(s): Malte
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line;
@@ -20,7 +19,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
  * Abstract {@link ILine Line}
  * 
  * @author Malte
- * 
  */
 @Persistent
 public abstract class ALine implements ILine
@@ -67,6 +65,10 @@ public abstract class ALine implements ILine
 			// Line is parallel to y-axis
 			throw new MathException("Can't calculate the slope of a vertical line!");
 		}
+		if (directionVector().isZeroVector())
+		{
+			throw new MathException("Can not calculate the slope of a line with zero direction vector!");
+		}
 		return directionVector().y() / directionVector().x();
 	}
 	
@@ -79,6 +81,11 @@ public abstract class ALine implements ILine
 			// Line is parallel to y-axis
 			throw new MathException("Can't calculate y-intercept of a vertical line!");
 		}
+		if (directionVector().isZeroVector())
+		{
+			// Line is parallel to y-axis
+			throw new MathException("Can't calculate y-intercept of a line with zero direction vector!");
+		}
 		float factor = (-supportVector().x()) / directionVector().x();
 		float yIntercept = (factor * directionVector().y()) + supportVector().y();
 		return yIntercept;
@@ -86,14 +93,14 @@ public abstract class ALine implements ILine
 	
 	
 	@Override
-	public float getYValue(float x) throws MathException
+	public float getYValue(final float x) throws MathException
 	{
 		return (x * getSlope()) + getYIntercept();
 	}
 	
 	
 	@Override
-	public float getXValue(float y) throws MathException
+	public float getXValue(final float y) throws MathException
 	{
 		if (isVertical())
 		{
@@ -130,7 +137,7 @@ public abstract class ALine implements ILine
 	
 	
 	@Override
-	public boolean isPointInFront(IVector2 point)
+	public boolean isPointInFront(final IVector2 point)
 	{
 		Vector2 b = point.subtractNew(supportVector());
 		
@@ -141,12 +148,5 @@ public abstract class ALine implements ILine
 		}
 		
 		return true;
-	}
-	
-	
-	@Override
-	public boolean isPointOnTheLeft(IVector2 point)
-	{
-		return false;
 	}
 }

@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 06.04.2011
  * Author(s): GuntherB
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.valueobjects;
@@ -16,7 +15,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
  * Evolving Point Cloud.
  * 
  * @author GuntherB
- * 
  */
 public class PointCloud implements Comparable<PointCloud>
 {
@@ -49,7 +47,7 @@ public class PointCloud implements Comparable<PointCloud>
 	/**
 	 * @param masterPoint
 	 */
-	public PointCloud(ValuePoint masterPoint)
+	public PointCloud(final ValuePoint masterPoint)
 	{
 		this.masterPoint = masterPoint;
 		
@@ -67,20 +65,15 @@ public class PointCloud implements Comparable<PointCloud>
 	/**
 	 * updates each point in the cloud with newest information, lets
 	 * the crowd grow if not on maximum evolution, evaluates cloud
+	 * 
 	 * @param wf
 	 */
-	public void updateCloud(WorldFrame wf)
+	public void updateCloud(final WorldFrame wf)
 	{
-		// new WF
-		if (wf.getId() != null)
-		{
-			
-			// creating new points regarding its evolution
-			increaseRaySize();
-			
-			lifetime++;
-		}
+		// creating new points regarding its evolution
+		increaseRaySize();
 		
+		lifetime++;
 	}
 	
 	
@@ -129,14 +122,14 @@ public class PointCloud implements Comparable<PointCloud>
 	/**
 	 * @param value
 	 */
-	public void setValue(float value)
+	public void setValue(final float value)
 	{
 		currentCloudValue = value;
 	}
 	
 	
 	@Override
-	public int compareTo(PointCloud o)
+	public int compareTo(final PointCloud o)
 	{
 		if (currentCloudValue > o.currentCloudValue)
 		{
@@ -165,7 +158,7 @@ public class PointCloud implements Comparable<PointCloud>
 	
 	
 	@Override
-	public boolean equals(Object obj)
+	public boolean equals(final Object obj)
 	{
 		if (this == obj)
 		{

@@ -27,6 +27,7 @@ import org.apache.log4j.Logger;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.Statistics;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandFactory;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 
 
 /**
@@ -234,26 +235,26 @@ public class BufferedTransmitterUDP implements ITransmitterUDP
 						final Long lastSendTime = buffer.get(cmdId);
 						if (lastSendTime != null)
 						{
-							if (lastSendTime > (System.nanoTime() - minDelay))
+							if (lastSendTime > (SumatraClock.nanoTime() - minDelay))
 							{
 								// latest command of this type was less than <minDelay> ns ago
 								lateCmds.put(cmdId, cmd);
 							} else
 							{
 								// waited at least minDelay ms
-								buffer.put(cmdId, System.nanoTime());
+								buffer.put(cmdId, SumatraClock.nanoTime());
 								processCommand(cmd);
 							}
 						} else
 						{
-							buffer.put(cmdId, System.nanoTime());
+							buffer.put(cmdId, SumatraClock.nanoTime());
 							processCommand(cmd);
 						}
 					}
 				} while (cmd != null);
 				
 				// check late commands
-				long earliestTime = System.nanoTime();
+				long earliestTime = SumatraClock.nanoTime();
 				
 				for (final Iterator<ACommand> iter = lateCmds.values().iterator(); iter.hasNext();)
 				{
@@ -262,7 +263,7 @@ public class BufferedTransmitterUDP implements ITransmitterUDP
 					final long lastSendTime = buffer.get(lateCmd.getType().getId());
 					
 					// command now waited <minDelay>
-					if (lastSendTime <= (System.nanoTime() - minDelay))
+					if (lastSendTime <= (SumatraClock.nanoTime() - minDelay))
 					{
 						synchronized (sendQueue)
 						{
@@ -296,7 +297,7 @@ public class BufferedTransmitterUDP implements ITransmitterUDP
 						wakeup.await();
 					} else
 					{
-						wakeup.awaitNanos(System.nanoTime() - earliestTime);
+						wakeup.awaitNanos(SumatraClock.nanoTime() - earliestTime);
 					}
 				} catch (final InterruptedException err)
 				{

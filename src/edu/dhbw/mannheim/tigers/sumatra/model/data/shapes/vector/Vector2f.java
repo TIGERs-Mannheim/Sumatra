@@ -4,12 +4,17 @@
  * Project: TIGERS - Sumatra
  * Date: 05.08.2010
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.json.simple.JSONObject;
 
 import com.sleepycat.persist.model.Persistent;
 
@@ -18,7 +23,6 @@ import com.sleepycat.persist.model.Persistent;
  * Similar to {@link Vector2}, but final/immutable!
  * 
  * @author Gero
- * 
  */
 @Persistent
 public class Vector2f extends AVector2 implements Serializable
@@ -36,11 +40,10 @@ public class Vector2f extends AVector2 implements Serializable
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @param x
 	 * @param y
 	 */
-	public Vector2f(float x, float y)
+	public Vector2f(final float x, final float y)
 	{
 		this.x = x;
 		this.y = y;
@@ -49,9 +52,10 @@ public class Vector2f extends AVector2 implements Serializable
 	
 	/**
 	 * Providing a <strong>hard, deep</strong> copy of original
+	 * 
 	 * @param xy
 	 */
-	public Vector2f(IVector2 xy)
+	public Vector2f(final IVector2 xy)
 	{
 		x = xy.x();
 		y = xy.y();
@@ -60,7 +64,6 @@ public class Vector2f extends AVector2 implements Serializable
 	
 	/**
 	 * Creates a final vector with (0, 0)
-	 * 
 	 */
 	public Vector2f()
 	{
@@ -70,7 +73,7 @@ public class Vector2f extends AVector2 implements Serializable
 	
 	
 	@Override
-	public boolean similar(IVector2 vec, float treshold)
+	public boolean similar(final IVector2 vec, final float treshold)
 	{
 		final IVector2 newVec = subtractNew(vec);
 		return (Math.abs(newVec.x()) < treshold) && (Math.abs(newVec.y()) < treshold);
@@ -91,5 +94,25 @@ public class Vector2f extends AVector2 implements Serializable
 	public float y()
 	{
 		return y;
+	}
+	
+	
+	@Override
+	public JSONObject toJSON()
+	{
+		Map<String, Object> jsonMapping = new LinkedHashMap<String, Object>();
+		jsonMapping.put("x", x);
+		jsonMapping.put("y", y);
+		return new JSONObject(jsonMapping);
+	}
+	
+	
+	@Override
+	public List<Number> getNumberList()
+	{
+		List<Number> numbers = new ArrayList<>();
+		numbers.add(x());
+		numbers.add(y());
+		return numbers;
 	}
 }

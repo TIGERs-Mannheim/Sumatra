@@ -16,15 +16,9 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.score;
 public enum EScore
 {
 	/** */
-	BALL_ROLE_DISTANCE,
-	/** */
-	BOT_ROLE_DISTANCE,
-	/** */
 	FEATURES,
 	/** */
-	PENALTY,
-	/** */
-	BEHAVIOUR,
+	DOUBLE_TOUCH,
 	/**  */
-	KICKER
+	KICKER_EMPTY,
 }

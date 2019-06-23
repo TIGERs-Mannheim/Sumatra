@@ -33,7 +33,7 @@ public final class BotFactory
 	 * @return
 	 * @throws BotInitException
 	 */
-	public static ABot createBot(SubnodeConfiguration config) throws BotInitException
+	public static ABot createBot(final SubnodeConfiguration config) throws BotInitException
 	{
 		ABot bot = null;
 		EBotType type = EBotType.getTypeFromCfgName(config.getString(TYPE));
@@ -46,8 +46,8 @@ public final class BotFactory
 			case TIGER:
 				bot = new TigerBot(config);
 				break;
-			case TIGER_V2:
-				bot = new TigerBotV2(config);
+			case SUMATRA:
+				bot = new SumatraBot(config);
 				break;
 			default:
 				throw new IllegalStateException("Bot type could not be read: " + config.getString(TYPE));
@@ -63,7 +63,7 @@ public final class BotFactory
 	 * @param name
 	 * @return
 	 */
-	public static ABot createBot(EBotType type, BotID id, String name)
+	public static ABot createBot(final EBotType type, final BotID id, final String name)
 	{
 		ABot bot = null;
 		
@@ -74,9 +74,6 @@ public final class BotFactory
 				break;
 			case TIGER:
 				bot = new TigerBot(id);
-				break;
-			case TIGER_V2:
-				bot = new TigerBotV2(id);
 				break;
 			default:
 				log.error("!! createBot() type was NOT found. Bot remains NULL !!");

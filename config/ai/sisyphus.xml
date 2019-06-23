@@ -1,60 +1,164 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <sisyphus base="edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus">
-    <updatespline>
-        <SplineEndGoalNotReachedDecisionMaker>
-            <positionTol comment="Dist [mm] - max allowed distance to destination when pos is considered reached.">40.0</positionTol>
-            <orientationTol comment="Dist [rad] - max allowed distance to target orientation when orientation is considered reached.">0.17</orientationTol>
-        </SplineEndGoalNotReachedDecisionMaker>
-        <CollisionDetectionDecisionMaker>
-            <ignoreFirstMillimeters comment="the first MM of the spline are ignored by the collision detection. So it is possible to drive away from another bot or ball">100.0</ignoreFirstMillimeters>
-            <ignoreLastMillimeters comment="the last MM of the spline are ignored by the collision detection. So it is possible to drive to another bot or ball">100.0</ignoreLastMillimeters>
-            <collisionIterationsMaximum comment="maximum amount of iterations done by the collision detection (started at the position of the bot)">10.0</collisionIterationsMaximum>
-            <collisionIterationsStepSize comment="step size of iterations done by the collision detection (started at the position of the bot)">0.1</collisionIterationsStepSize>
-            <collisionSafetyDistance comment="distance from path to obstacles to fire a collision detection">0.0</collisionSafetyDistance>
-        </CollisionDetectionDecisionMaker>
-        <BotNotOnSplineDecisionMaker>
-            <allowedDistanceVerticalToSpline comment="how much is the bot allowed to differ vertical from the current spline until a new spline is calculated[mm]">50.0</allowedDistanceVerticalToSpline>
-            <allowedDistanceToSpline comment="how much is the bot allowed to differ from the current spline until a new spline is calculated[mm]">200.0</allowedDistanceToSpline>
-        </BotNotOnSplineDecisionMaker>
-        <DestinationChangedDecisionMaker>
-            <timeRemainingTolerance comment="time [s] - if remaining time is below this_ new spline will be enforced.">0.5</timeRemainingTolerance>
-            <destinationTolerance comment="dist [m] - if distance between old and new destination on spline is greater_ new spline will be enforced">0.1</destinationTolerance>
-            <lookahead comment="time [s] - destinations will be taken on spline now plus lookahead.">0.5</lookahead>
-        </DestinationChangedDecisionMaker>
-        <NewPathShorterDecisionMaker>
-            <useShorterPathIfFaster comment="if the new calculated path is faster by this amount of time it will replace the old path [s]">1.5</useShorterPathIfFaster>
-        </NewPathShorterDecisionMaker>
-    </updatespline>
+    <Sisyphus>
+        <defaultPathPlanningInterval class="int" comment="Time [ms] - How often should the pathplanning be executed?">20</defaultPathPlanningInterval>
+    </Sisyphus>
     <errt>
         <TuneableParameter>
-            <pDestination comment="probability to choose targetNode_ BE CAREFUL: pRandom = (1 - pDest - pWaypoint)">0.2</pDestination>
-            <pWaypoint comment="probability to choose a waypoint_ BE CAREFUL: pRandom = (1 - pDest - pWaypoint)">0.6</pWaypoint>
-            <stepSize comment="distance between 2 nodes [mm]">100</stepSize>
-            <maxIterations comment="maximum amount of iterations">1000</maxIterations>
-            <maxIterationsFastApprox comment="maximum amount of iterations for fast approximation">100</maxIterationsFastApprox>
-            <reduceSafetyForPathSmoothing comment="the safety distance for the path smoothing is reduced to this percentage">0.7f</reduceSafetyForPathSmoothing>
+            <pDestination class="float" comment="probability to choose targetNode, BE CAREFUL: pRandom = (1 - pDest - pWaypoint)">0.2</pDestination>
+            <pWaypoint class="float" comment="probability to choose a waypoint, BE CAREFUL: pRandom = (1 - pDest - pWaypoint)">0.6</pWaypoint>
+            <stepSize class="float" comment="distance between 2 nodes [mm]">100</stepSize>
+            <maxIterations class="int" comment="maximum amount of iterations">1000</maxIterations>
+            <maxIterationsFastApprox class="int" comment="maximum amount of iterations for fast approximation">50</maxIterationsFastApprox>
+            <reduceSafetyForPathSmoothing class="float" comment="the safety distance for the path smoothing is reduced to this percentage">0.2f</reduceSafetyForPathSmoothing>
+            <useKDTree class="boolean" comment="Use SimpleTree or KDTree as Datacontainer for Pathplanning ">false</useKDTree>
         </TuneableParameter>
     </errt>
-    <Sisyphus>
-        <pathPlanningInterval comment="Time [ms] - How often should the pathplanning be executed?">20</pathPlanningInterval>
-        <maxRotateVelocity comment="Vel [rad/s] - Max rotation velocity to use for spline generation">10.0</maxRotateVelocity>
-        <maxRotateVelocity:GRSIM comment="Vel [rad/s] - Max rotation velocity to use for spline generation">10.0</maxRotateVelocity:GRSIM>
-        <maxRotateAcceleration comment="Vel [rad/s^2] - Max rotation acceleration to use for spline generation">15.0</maxRotateAcceleration>
-        <maxRotateAcceleration:GRSIM comment="Vel [rad/s^2] - Max rotation acceleration to use for spline generation">15.0</maxRotateAcceleration:GRSIM>
-        <normalAngleToSpeed comment="Func [poly] - This function maps the normal angle at path points to speed at this point">poly:0.0;2.0</normalAngleToSpeed>
-        <maxLinearVelocity comment="Vel [m/s] - Max linear velocity to use for spline generation">3.0</maxLinearVelocity>
-        <maxLinearVelocity:GRSIM comment="Vel [m/s] - Max linear velocity to use for spline generation">2.5</maxLinearVelocity:GRSIM>
-        <maxLinearAcceleration comment="Acc [m/s^2] - Max linear acceleration to use for spline generation">2.5</maxLinearAcceleration>
-        <maxLinearAcceleration:GRSIM comment="Acc [m/s^2] - Max linear acceleration to use for spline generation">2.5</maxLinearAcceleration:GRSIM>
-        <pathReductionScore comment="Points on a path with a combined angle*distance score below this value will be removed">0.0</pathReductionScore>
-        <curveSpeed comment="factor to increase curve speed (CAREFUL: only 1.0f is really secure)">1.0</curveSpeed>
-    </Sisyphus>
-    <FieldInformation>
-        <safetyDistance comment="min. distance to obstacles [mm]">60</safetyDistance>
-        <secondSafetyDistance comment="min. distance to obstacles in 2nd round [mm]">20</secondSafetyDistance>
-        <safetyDistanceBall comment="min. distance to the ball">120</safetyDistanceBall>
-        <pufferSafetyEndToDest comment="puffer between end of safety distance and possible start / target positions for the ERRT">10</pufferSafetyEndToDest>
-        <predictionIterationsMaximum comment="time in seconds which are predicted for the path planning">10</predictionIterationsMaximum>
-        <predictionStepSize comment="time in seconds for the prediction step size">0.1</predictionStepSize>
-    </FieldInformation>
+    <spline>
+        <decisionmaker>
+            <DestinationChangedDecisionMaker>
+                <timeRemainingTolerance class="float" comment="time [s] - if remaining time is below this, new spline will be enforced.">0.5</timeRemainingTolerance>
+                <destinationTolerance class="float" comment="dist [mm] - if distance between old and new destination on spline is greater, new spline will be enforced">100</destinationTolerance>
+                <lookahead class="float" comment="time [s] - destinations will be taken on spline now plus lookahead.">0.5</lookahead>
+            </DestinationChangedDecisionMaker>
+            <BotNotOnSplineDecisionMaker>
+                <allowedDistanceVerticalToSpline class="float" comment="how much is the bot allowed to differ vertical from the current spline until a new spline is calculated[mm]">50.0</allowedDistanceVerticalToSpline>
+                <allowedDistanceToSpline class="float" comment="how much is the bot allowed to differ from the current spline until a new spline is calculated[mm]">200.0</allowedDistanceToSpline>
+            </BotNotOnSplineDecisionMaker>
+            <NewPathShorterDecisionMaker>
+                <useShorterPathIfFaster class="float" comment="[s] if the new calculated path is faster by this amount of time it will replace the old path [s]">1.5</useShorterPathIfFaster>
+            </NewPathShorterDecisionMaker>
+            <SplineEndGoalNotReachedDecisionMaker>
+                <positionTol class="float" comment="Dist [mm] - max allowed distance to destination when pos is considered reached.">40.0</positionTol>
+                <orientationTol class="float" comment="Dist [rad] - max allowed distance to target orientation when orientation is considered reached.">0.17</orientationTol>
+            </SplineEndGoalNotReachedDecisionMaker>
+            <CollisionDetectionDecisionMaker>
+                <timeOffsetStart class="float" comment="Offset time [s] appended to startTime">0.2</timeOffsetStart>
+                <timeOffsetEnd class="float" comment="Offset time [s] prepended to endTime">0.0</timeOffsetEnd>
+                <timeLength class="float" comment="Time length [s] to check for collisions">0.5</timeLength>
+                <timeStepSize class="float" comment="step size of iterations done by the collision detection (started at the position of the bot)">0.1</timeStepSize>
+                <safetyDistance class="float" comment="distance from path to obstacles to fire a collision detection">30.0</safetyDistance>
+            </CollisionDetectionDecisionMaker>
+        </decisionmaker>
+        <SplineGenerator>
+            <maxLinearVelocity class="float" comment="Vel [m/s] - Max linear velocity to use for spline generation">2.1</maxLinearVelocity>
+            <maxLinearAcceleration class="float" comment="Acc [m/s^2] - Max linear acceleration to use for spline generation">3</maxLinearAcceleration>
+            <maxRotateVelocity class="float" comment="Vel [rad/s] - Max rotation velocity to use for spline generation">10</maxRotateVelocity>
+            <maxRotateAcceleration class="float" comment="Vel [rad/s^2] - Max rotation acceleration to use for spline generation">15</maxRotateAcceleration>
+            <pathReductionScore class="float" comment="Points on a path with a combined angle*distance score below this value will be removed">0.0</pathReductionScore>
+        </SplineGenerator>
+    </spline>
+    <finder>
+        <FieldInformation>
+            <safetyDistance class="float" comment="min. distance to obstacles [mm]">100.0</safetyDistance>
+            <secondSafetyDistance class="float" comment="min. distance to obstacles in 2nd round [mm]">40.0</secondSafetyDistance>
+            <safetyDistanceBall class="float" comment="min. distance to the ball">200.0</safetyDistanceBall>
+            <pufferSafetyEndToDest class="float" comment="puffer between end of safety distance and possible start / target positions for the ERRT">10.0</pufferSafetyEndToDest>
+            <predictionIterationsMaximum class="float" comment="time in seconds which are predicted for the path planning">10.0</predictionIterationsMaximum>
+            <predictionStepSize class="float" comment="time in seconds for the prediction step size">0.1</predictionStepSize>
+            <margin2PenaltyAreaOurInner class="float" comment="Margin between our penArea border and bot center to keep">10.0</margin2PenaltyAreaOurInner>
+            <margin2PenaltyAreaTheirInner class="float" comment="Margin between their penArea border and bot center to keep">-20.0</margin2PenaltyAreaTheirInner>
+            <margin2PenaltyAreaTheirOuter class="float" comment="Margin between their penArea border and bot center to keep, should be bigger than margin2PenaltyAreaPathPlanning">0.0</margin2PenaltyAreaTheirOuter>
+            <pathPlanningCircleVelocity class="float" comment="Path planning max distance, calculated by factor times velocy">2000.0</pathPlanningCircleVelocity>
+            <pathPlanningCircleFixed class="float" comment="Path planning max distance, calculated by factor times velocy">200.0</pathPlanningCircleFixed>
+        </FieldInformation>
+        <traj>
+            <TrajPathFinder>
+                <onPathTolerance class="float" comment="">1000.0</onPathTolerance>
+                <newPathTimeTolerance class="float" comment="">0.1</newPathTimeTolerance>
+            </TrajPathFinder>
+            <TrajPathNode>
+                <collisionStepSize class="float" comment="">0.1</collisionStepSize>
+                <plottingStepSize class="float" comment="">0.1</plottingStepSize>
+                <showTimes class="boolean" comment="">false</showTimes>
+            </TrajPathNode>
+            <obstacles>
+                <ObstacleGenerator>
+                    <defSecDistBall class="float" comment="">300.0</defSecDistBall>
+                    <defSecDistBots class="float" comment="">300.0</defSecDistBots>
+                    <defMinDist2Obstacle class="float" comment="">3000.0</defMinDist2Obstacle>
+                </ObstacleGenerator>
+                <CatchBallObstacle>
+                    <defRadius class="float" comment="">200.0</defRadius>
+                    <defArcAngle class="float" comment="">1</defArcAngle>
+                    <maxPredTimeBot class="float" comment="">1.0</maxPredTimeBot>
+                    <minVel class="float" comment="">0.5</minVel>
+                </CatchBallObstacle>
+            </obstacles>
+        </traj>
+    </finder>
+    <driver>
+        <MixedPathDriver>
+            <changeToClosePathDriverThreshold class="float" comment="Dist [mm] - this is the threshold distance to destination, when the close path driver will be activated">500.0</changeToClosePathDriverThreshold>
+        </MixedPathDriver>
+        <PathPointDriver>
+            <distTolerance class="float" comment="If nearer than this dist [mm] to next point, go on to next point.">100.0</distTolerance>
+            <raySizeMin class="float" comment="Min Raysize [mm] for p2pVisibility check (when standing)">30.0</raySizeMin>
+            <raySizeMax class="float" comment="Max Raysize [mm] for p2pVisibility check (when vel=3.0)">150.0</raySizeMax>
+        </PathPointDriver>
+        <PositionDriver>
+            <maxDistanceFast class="float" comment="max dist [mm] that destination may differ from bot pos. If greater, dest is modified.">400</maxDistanceFast>
+            <maxDistanceFast:TIGER_V3 class="float" comment="max dist [mm] that destination may differ from bot pos. If greater, dest is modified.">600</maxDistanceFast:TIGER_V3>
+            <maxDistanceSlow class="float" comment="Max dist [mm] in slow mode">450.0</maxDistanceSlow>
+            <maxDistanceSlow:TIGER_V3 class="float" comment="Max dist [mm] in slow mode">300.0</maxDistanceSlow:TIGER_V3>
+            <maxDistanceFaster class="float" comment="Max dist [mm] in faster mode">500</maxDistanceFaster>
+            <maxDistanceFaster:TIGER_V3 class="float" comment="Max dist [mm] in faster mode">600</maxDistanceFaster:TIGER_V3>
+        </PositionDriver>
+        <LongPathDriver>
+            <lookAngles class="[Ljava.lang.Float;" comment="Driving Angels">0.0;3.1415927</lookAngles>
+            <startTimeFinalOrientation class="float" comment="Time to Start Rotation">0.1</startTimeFinalOrientation>
+            <minSplineTime class="float" comment="Time to Start Rotation">2.0</minSplineTime>
+            <positionMoveLookAhead class="float" comment="time [s]">0.3</positionMoveLookAhead>
+        </LongPathDriver>
+        <SplinePathDriver>
+            <positionMoveLookAhead class="float" comment="time [s]">0.3</positionMoveLookAhead>
+            <positionMoveMode
+                class="edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.SplinePathDriver$EPositionMoveMode" comment="move mode for sending positions">POS_ON_TANGENT</positionMoveMode>
+        </SplinePathDriver>
+        <AroundBallDriver>
+            <driveSpeed4BallSpeed class="float" comment="Vel [m/s] that is assumed for driving to ball when calculating future ball pos">1.1</driveSpeed4BallSpeed>
+            <triangleAngle class="float" comment="Angle [rad] of the triangle">0.6</triangleAngle>
+            <securityDistance2Ball class="float" comment="Dist [mm] that the bot should always keep to ball (plus radius)">20.0</securityDistance2Ball>
+            <minFutureTime class="float" comment="">0.7</minFutureTime>
+        </AroundBallDriver>
+        <PushBallDriver>
+            <pushDistance class="float" comment="Distance behind ball to set destination when pushing the ball">50.0</pushDistance>
+        </PushBallDriver>
+        <KickBallChillTrajDriver>
+            <dist2Ball class="float" comment="">200.0</dist2Ball>
+            <doneTolerance class="float" comment="">50.0</doneTolerance>
+        </KickBallChillTrajDriver>
+        <KickBallDriver>
+            <distBehindBallHitTarget class="int" comment="Dist [mm] that the destination is set behind ball hit point">10</distBehindBallHitTarget>
+            <triangleAngleOuter class="float" comment="Angle [rad] of the triangle">0.7</triangleAngleOuter>
+            <secDist2Ball class="float" comment="">200.0</secDist2Ball>
+            <futureBallLookahead class="float" comment="">0.3</futureBallLookahead>
+            <posTolerance class="float" comment="">70.0</posTolerance>
+            <ballVelTolerance class="float" comment="">0.5</ballVelTolerance>
+        </KickBallDriver>
+        <TurnWithBallDriver>
+            <orthDirTurnPercent class="float" comment="">0.7</orthDirTurnPercent>
+            <orientAheadPercent class="float" comment="">0.5</orientAheadPercent>
+            <destDist class="float" comment="">100.0</destDist>
+        </TurnWithBallDriver>
+        <TrajPathDriver>
+            <pidXYp class="float" comment="">0.003</pidXYp>
+            <pidXYd class="float" comment="">0.0</pidXYd>
+            <pidXYi class="float" comment="">0.0</pidXYi>
+            <pidWp class="float" comment="">2</pidWp>
+            <pidWd class="float" comment="">0.0</pidWd>
+            <pidWi class="float" comment="">0.0</pidWi>
+            <delay class="float" comment="">0.07</delay>
+            <commandType
+                class="edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.TrajPathDriver$ECommandMode" comment="">POS_ONLY</commandType>
+            <switchToNearTol class="float" comment="">500.0</switchToNearTol>
+            <switchToFarTol class="float" comment="">700.0</switchToFarTol>
+            <positionMoveLookAhead class="float" comment="time [s]">0.3</positionMoveLookAhead>
+            <positionMoveMode
+                class="edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.TrajPathDriver$EPositionMoveMode" comment="move mode for sending positions">POS_ON_TANGENT</positionMoveMode>
+        </TrajPathDriver>
+    </driver>
+    <PathFinderThread>
+        <numberOfThreads class="int" comment="Number of threads in thread pool for pathplanning. Needs moduli restart.">6</numberOfThreads>
+    </PathFinderThread>
 </sisyphus>

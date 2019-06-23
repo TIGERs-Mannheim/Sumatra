@@ -9,6 +9,7 @@
 package edu.dhbw.mannheim.tigers.sumatra.view.aicenter.internals.moduleoverview;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -121,12 +122,12 @@ public class RoleControlPanel extends JPanel implements IAIModeChanged
 		add(scrollPaneActiveRoles);
 		add(controlPanel);
 		
-		components.add(this);
 		components.add(activeRolesList);
 		components.add(instanceablePanel);
 		components.add(clearRolesButton);
 		components.add(deleteRoleButton);
 		components.add(checkUseBotId);
+		setEnabled(false);
 	}
 	
 	
@@ -166,11 +167,11 @@ public class RoleControlPanel extends JPanel implements IAIModeChanged
 			case EMERGENCY_MODE:
 			case MATCH_MODE:
 			case MIXED_TEAM_MODE:
-				setPanelEnabled(false);
+				setEnabled(false);
 				activeRolesListModel.clear();
 				break;
 			case TEST_MODE:
-				setPanelEnabled(true);
+				setEnabled(true);
 				
 				String roleStr = SumatraModel.getInstance().getUserProperty(ROLE_KEY);
 				if (roleStr != null)
@@ -224,22 +225,6 @@ public class RoleControlPanel extends JPanel implements IAIModeChanged
 				activeRolesListModel.addElement(roles.get(j));
 			}
 		}
-	}
-	
-	
-	private void setPanelEnabled(final boolean enabled)
-	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				for (JComponent comp : components)
-				{
-					comp.setEnabled(enabled);
-				}
-			}
-		});
 	}
 	
 	
@@ -362,6 +347,17 @@ public class RoleControlPanel extends JPanel implements IAIModeChanged
 					});
 				}
 			}
+		}
+	}
+	
+	
+	@Override
+	public void setEnabled(final boolean enabled)
+	{
+		super.setEnabled(enabled);
+		for (Component comp : components)
+		{
+			comp.setEnabled(enabled);
 		}
 	}
 }

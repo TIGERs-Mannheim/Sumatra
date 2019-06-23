@@ -4,25 +4,19 @@
  * Project: TIGERS - Sumatra
  * Date: 04.08.2010
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.main;
 
-import java.awt.GraphicsDevice;
-
 import javax.swing.UIManager.LookAndFeelInfo;
-
-import edu.dhbw.mannheim.tigers.sumatra.view.main.toolbar.IToolbarObserver;
 
 
 /**
  * MainFrame observer
  * 
  * @author AndreR
- * 
  */
-public interface IMainFrameObserver extends IToolbarObserver
+public interface IMainFrameObserver
 {
 	
 	/**
@@ -40,17 +34,18 @@ public interface IMainFrameObserver extends IToolbarObserver
 	/**
  *
  */
-	void onAbout();
-	
-	
-	/**
- *
- */
 	void onExit();
 	
 	
 	/**
 	 * 
+	 */
+	default void onAbout()
+	{
+	}
+	
+	
+	/**
 	 * @param filename
 	 */
 	void onLoadLayout(String filename);
@@ -63,16 +58,9 @@ public interface IMainFrameObserver extends IToolbarObserver
 	
 	
 	/**
-	 * 
 	 * @param info
 	 */
-	void onSelectLookAndFeel(LookAndFeelInfo info);
-	
-	
-	/**
-	 * 
-	 * @param gd
-	 */
-	void onSetFullscreen(GraphicsDevice gd);
-	
+	default void onSelectLookAndFeel(final LookAndFeelInfo info)
+	{
+	}
 }

@@ -22,9 +22,8 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.AresData;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ImmediateStopSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.IdleSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ASkillSystem;
 
 
@@ -110,22 +109,27 @@ public class Ares
 			final Boolean stopped = botIsStopped.get(botId);
 			if ((stopped == null) || !stopped)
 			{
-				skillSystem.execute(botId, new ImmediateStopSkill());
+				skillSystem.execute(botId, new IdleSkill());
 				botIsStopped.put(botId, Boolean.TRUE);
 			}
 		}
 		
-		Map<BotID, Path> paths = new HashMap<BotID, Path>(skillSystem.getSisyphus().getCurrentPaths());
-		Map<BotID, Path> latestPaths = new HashMap<BotID, Path>(skillSystem.getSisyphus().getLatestPaths());
-		Map<BotID, Integer> numPaths = new HashMap<BotID, Integer>(skillSystem.getSisyphus().getNumberOfPaths());
-		
+		AresData data = skillSystem.getLatestAresData();
 		for (BotID botId : BotID.getAll(frame.getTeamColor().opposite()))
 		{
-			paths.remove(botId);
-			latestPaths.remove(botId);
-			numPaths.remove(botId);
+			data.getPaths().remove(botId);
+			data.getLatestPaths().remove(botId);
+			data.getNumPaths().remove(botId);
 		}
-		
-		return new AresData(paths, latestPaths, numPaths);
+		return data;
+	}
+	
+	
+	/**
+	 * @return the skillSystem
+	 */
+	public ASkillSystem getSkillSystem()
+	{
+		return skillSystem;
 	}
 }

@@ -4,19 +4,17 @@
  * Project: TIGERS - Sumatra
  * Date: Apr 9, 2013
  * Author(s): Dirk Klostermann <klostermannn@googlemail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector3;
 
 
 /**
  * every spline which can be calculated for a path should implement this interface
  * 
  * @author Dirk Klostermann <klostermannn@googlemail.com>
- * 
  */
 public interface ISpline
 {
@@ -25,34 +23,38 @@ public interface ISpline
 	/**
 	 * the position on the field after a given time
 	 * 
-	 * @param t the time from the beginning
-	 * @return
+	 * @param t [s] the time from the beginning
+	 * @return [mm,mm,rad]
 	 */
-	IVector2 getValueByTime(float t);
+	IVector3 getPositionByTime(float t);
 	
 	
 	/**
-	 * get the acceleration on the spline after a given time, this is the first derivation
+	 * The velocity, basically the derivative of the position
+	 * 
+	 * @param t [s]
+	 * @return [m/s,m/s,rad/s]
+	 */
+	IVector3 getVelocityByTime(float t);
+	
+	
+	/**
 	 * @param t
 	 * @return
 	 */
-	IVector2 getAccelerationByTime(float t);
-	
-	
-	/**
-	 * the length of the spline in mm
-	 * 
-	 * @return
-	 */
-	float getLength();
+	IVector3 getAccelerationByTime(float t);
 	
 	
 	/**
 	 * total time in s
 	 * 
-	 * @return
+	 * @return [s]
 	 */
 	float getTotalTime();
 	
 	
+	/**
+	 * @return
+	 */
+	float getCurrentTime();
 }

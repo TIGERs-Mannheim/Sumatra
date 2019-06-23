@@ -8,21 +8,12 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.main;
 
-import java.awt.Dimension;
-import java.awt.Frame;
-import java.awt.GraphicsConfiguration;
-import java.awt.GraphicsDevice;
-import java.awt.GraphicsEnvironment;
-import java.awt.HeadlessException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Properties;
 
-import javax.swing.JFrame;
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UIManager.LookAndFeelInfo;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -35,7 +26,10 @@ import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesState;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.Agent;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ASkillSystem;
+import edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter.EAIControlState;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.ILookAndFeelStateObserver;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.LookAndFeelStateAdapter;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.IModuliStateObserver;
@@ -43,20 +37,22 @@ import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.ModuliStateAdapter;
 import edu.dhbw.mannheim.tigers.sumatra.util.GlobalShortcuts;
 import edu.dhbw.mannheim.tigers.sumatra.util.GlobalShortcuts.EShortcut;
 import edu.dhbw.mannheim.tigers.sumatra.view.main.AboutDialog;
-import edu.dhbw.mannheim.tigers.sumatra.view.main.IMainFrameObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.main.MainFrame;
+import edu.dhbw.mannheim.tigers.sumatra.view.main.toolbar.IToolbarObserver;
 import edu.dhbw.mannheim.tigers.sumatra.views.ASumatraView;
 import edu.dhbw.mannheim.tigers.sumatra.views.impl.AICenterView;
+import edu.dhbw.mannheim.tigers.sumatra.views.impl.BallAnalyserView;
 import edu.dhbw.mannheim.tigers.sumatra.views.impl.BotCenterView;
 import edu.dhbw.mannheim.tigers.sumatra.views.impl.BotOverviewView;
 import edu.dhbw.mannheim.tigers.sumatra.views.impl.ConfigEditorView;
 import edu.dhbw.mannheim.tigers.sumatra.views.impl.LogView;
+import edu.dhbw.mannheim.tigers.sumatra.views.impl.OffensiveStrategyView;
 import edu.dhbw.mannheim.tigers.sumatra.views.impl.RcmView;
 import edu.dhbw.mannheim.tigers.sumatra.views.impl.RefereeView;
+import edu.dhbw.mannheim.tigers.sumatra.views.impl.SimulationView;
 import edu.dhbw.mannheim.tigers.sumatra.views.impl.StatisticsView;
 import edu.dhbw.mannheim.tigers.sumatra.views.impl.TimerView;
 import edu.dhbw.mannheim.tigers.sumatra.views.impl.VisualizerView;
-import edu.dhbw.mannheim.tigers.sumatra.views.impl.WPCenterView;
 
 
 /**
@@ -67,35 +63,20 @@ import edu.dhbw.mannheim.tigers.sumatra.views.impl.WPCenterView;
  * 
  * @author BernhardP, AndreR
  */
-public class MainPresenter implements IMainFrameObserver, IModuliStateObserver, ILookAndFeelStateObserver
+public class MainPresenter extends AMainPresenter implements IModuliStateObserver,
+		ILookAndFeelStateObserver, IToolbarObserver
 {
-	// --------------------------------------------------------------------------
-	// --- instance-variable(s) -------------------------------------------------
-	// --------------------------------------------------------------------------
-	// Logger
 	private static final Logger	log						= Logger.getLogger(MainPresenter.class.getName());
 	
-	// --- model and view ---
-	private MainFrame					mainFrameGUI			= null;
-	
-	
-	// Layout
-	/** The key the currently selected layout is stored in the application properties */
-	public static final String		KEY_LAYOUT_PROP		= MainPresenter.class.getName() + ".layout";
-	/** */
-	public static final String		LAYOUT_CONFIG_PATH	= "./config/gui/";
-	/** */
-	public static final String		LAYOUT_DEFAULT			= "default.ly";
-	
-	/** */
-	public static final String		KEY_LAF_PROP			= MainPresenter.class.getName() + ".lookAndFeel";
-	
 	private static final String	LAST_LAYOUT_FILENAME	= "last.ly";
+	private static final String	LAYOUT_DEFAULT			= "default.ly";
+	private static final String	KEY_LAYOUT_PROP		= MainPresenter.class.getName() + ".layout";
 	
-	private GraphicsDevice			graphicsDevice			= null;
-	
+	private final MainFrame			mainFrameGUI			= new MainFrame();
 	private ToolbarPresenter		toolbar;
 	private ASkillSystem				skillSystem				= null;
+	private Agent						agentYellow				= null;
+	private Agent						agentBlue				= null;
 	
 	
 	// --------------------------------------------------------------------------
@@ -107,60 +88,38 @@ public class MainPresenter implements IMainFrameObserver, IModuliStateObserver, 
 	 */
 	public MainPresenter()
 	{
-		log.trace("load");
-		
 		InfoNodeLookAndFeel.install();
-		log.trace("info node look and feel installed");
 		
 		// --- add variable - Listener (stateModules) ---
 		ModuliStateAdapter.getInstance().addObserver(this);
-		log.trace("ModuliStateAdapter created");
 		
 		LookAndFeelStateAdapter.getInstance().addObserver(this);
-		log.trace("LookAndFeelStateAdapter created");
 		
 		// --- start GUI ---
-		mainFrameGUI = new MainFrame();
 		toolbar = new ToolbarPresenter(mainFrameGUI.getToolbar());
 		mainFrameGUI.getToolbar().addObserver(toolbar);
 		mainFrameGUI.getToolbar().addObserver(this);
 		
-		addView(new AICenterView(ETeamColor.YELLOW));
-		addView(new AICenterView(ETeamColor.BLUE));
-		addView(new BotCenterView());
-		addView(new ConfigEditorView());
-		addView(new LogView());
-		addView(new RcmView());
-		addView(new RefereeView());
-		addView(new TimerView());
-		addView(new VisualizerView());
-		addView(new WPCenterView());
-		addView(new BotOverviewView());
-		addView(new StatisticsView());
+		mainFrameGUI.addView(new AICenterView(ETeamColor.YELLOW));
+		mainFrameGUI.addView(new AICenterView(ETeamColor.BLUE));
+		mainFrameGUI.addView(new BotCenterView());
+		mainFrameGUI.addView(new ConfigEditorView());
+		mainFrameGUI.addView(new LogView(true));
+		mainFrameGUI.addView(new RcmView());
+		mainFrameGUI.addView(new RefereeView());
+		mainFrameGUI.addView(new TimerView());
+		mainFrameGUI.addView(new VisualizerView());
+		mainFrameGUI.addView(new BotOverviewView());
+		mainFrameGUI.addView(new StatisticsView(ETeamColor.YELLOW));
+		mainFrameGUI.addView(new StatisticsView(ETeamColor.BLUE));
+		mainFrameGUI.addView(new OffensiveStrategyView());
+		mainFrameGUI.addView(new SimulationView());
+		mainFrameGUI.addView(new BallAnalyserView());
 		
+		init(mainFrameGUI);
 		
-		loadLayoutAndConfig();
-		refreshLayoutItems();
+		loadConfig();
 		refreshModuliItems();
-		
-		mainFrameGUI.addObserver(this);
-		
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				// initialize all views that are currently visible
-				for (ASumatraView view : mainFrameGUI.getViews())
-				{
-					if (view.getView().isShowing())
-					{
-						view.ensureInitialized();
-					}
-				}
-				mainFrameGUI.updateViewMenu();
-			}
-		});
 		
 		GlobalShortcuts.register(EShortcut.MATCH_LAYOUT, new Runnable()
 		{
@@ -188,110 +147,6 @@ public class MainPresenter implements IMainFrameObserver, IModuliStateObserver, 
 				onLoadLayout("default.ly");
 			}
 		});
-		
-		log.trace("loaded");
-	}
-	
-	
-	/**
-	 * @param view
-	 */
-	public final void addView(final ASumatraView view)
-	{
-		mainFrameGUI.addView(view);
-	}
-	
-	
-	/**
-	 * @param gd
-	 */
-	public void setFullscreen(final GraphicsDevice gd)
-	{
-		if (mainFrameGUI == null)
-		{
-			return;
-		}
-		
-		if (gd != null)
-		{
-			if (graphicsDevice == null)
-			{
-				graphicsDevice = gd;
-				
-				mainFrameGUI.dispose();
-				mainFrameGUI.setResizable(false);
-				mainFrameGUI.setUndecorated(true);
-			} else
-			{
-				graphicsDevice.setFullScreenWindow(null);
-				
-				graphicsDevice = gd;
-			}
-			
-			final GraphicsConfiguration gc = graphicsDevice.getDefaultConfiguration();
-			log.debug("Display size: " + gc.getBounds().width + " x " + gc.getBounds().height);
-			
-			try
-			{
-				graphicsDevice.setFullScreenWindow(mainFrameGUI);
-			} catch (final Exception e)
-			{
-				log.error("Fullscreen failed" + e.getMessage(), e);
-				
-				setFullscreen(null);
-			}
-			
-			if (graphicsDevice.getFullScreenWindow() == null)
-			{
-				log.error("Fullscreen failed");
-				
-				setFullscreen(null);
-			}
-		} else
-		{
-			if (graphicsDevice != null)
-			{
-				graphicsDevice.setFullScreenWindow(null);
-				
-				SwingUtilities.invokeLater(new Runnable()
-				{
-					@Override
-					public void run()
-					{
-						mainFrameGUI.setVisible(false);
-						mainFrameGUI.dispose();
-						mainFrameGUI.setResizable(true);
-						mainFrameGUI.setIgnoreRepaint(false);
-						mainFrameGUI.setUndecorated(false);
-						mainFrameGUI.pack();
-						mainFrameGUI.setVisible(true);
-					}
-				});
-				
-				graphicsDevice = null;
-			}
-		}
-	}
-	
-	
-	private void refreshLayoutItems()
-	{
-		final ArrayList<String> filenames = new ArrayList<String>();
-		
-		// --- read all available layouts from guiLayout-folder ---
-		final File dir = new File(LAYOUT_CONFIG_PATH);
-		final File[] fileList = dir.listFiles();
-		
-		for (final File file : fileList)
-		{
-			if (!file.isHidden() && !file.getName().startsWith("."))
-			{
-				filenames.add(file.getName());
-			}
-		}
-		
-		mainFrameGUI.setMenuLayoutItems(filenames);
-		mainFrameGUI.selectLayoutItem(getCurrentLayout());
 	}
 	
 	
@@ -302,11 +157,17 @@ public class MainPresenter implements IMainFrameObserver, IModuliStateObserver, 
 		// --- read all config-files from config-folder ---
 		final File dir = new File(SumatraModel.MODULI_CONFIG_PATH);
 		final File[] fileList = dir.listFiles();
-		for (final File file : fileList)
+		if (fileList != null)
 		{
-			if (!file.isHidden() && !file.getName().startsWith("."))
+			for (final File file : fileList)
 			{
-				filenames.add(file.getName());
+				if (file != null)
+				{
+					if (!file.isHidden() && !file.getName().startsWith("."))
+					{
+						filenames.add(file.getName());
+					}
+				}
 			}
 		}
 		
@@ -315,29 +176,17 @@ public class MainPresenter implements IMainFrameObserver, IModuliStateObserver, 
 	}
 	
 	
-	/**
-	 * Sets default value for currentLayout and currentModuliConfig.
-	 */
-	private void loadLayoutAndConfig()
+	private void loadConfig()
 	{
 		final Properties userSettings = SumatraModel.getInstance().getUserSettings();
-		// ## Load position
-		loadPosition(mainFrameGUI, userSettings);
-		mainFrameGUI.setVisible(true);
 		
 		// ## Init moduli config
 		final String moduliConfig = SumatraModel.getInstance().getCurrentModuliConfig();
 		mainFrameGUI.selectModuliItem(moduliConfig);
 		
-		// ## Init Layout
-		final String layout = userSettings.getProperty(MainPresenter.KEY_LAYOUT_PROP);
-		log.debug("Loading layout: " + layout);
-		onLoadLayout(layout);
-		
-		
 		// ## Init Look-and-Feel
 		final LookAndFeelInfo[] lafs = UIManager.getInstalledLookAndFeels();
-		String lookAndFeel = userSettings.getProperty(MainPresenter.KEY_LAF_PROP);
+		String lookAndFeel = userSettings.getProperty(AMainPresenter.KEY_LAF_PROP);
 		if (lookAndFeel == null)
 		{
 			log.debug("Unproper Lool-and-Feel, taking System default.");
@@ -378,6 +227,14 @@ public class MainPresenter implements IMainFrameObserver, IModuliStateObserver, 
 				{
 					log.error("Could not get skillsystem module");
 				}
+				try
+				{
+					agentYellow = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_YELLOW);
+					agentBlue = (Agent) SumatraModel.getInstance().getModule(AAgent.MODULE_ID_BLUE);
+				} catch (ModuleNotFoundException err)
+				{
+					log.error("Could not get agent module");
+				}
 				mainFrameGUI.setModuliMenuEnabled(false);
 				break;
 			case NOT_LOADED:
@@ -385,58 +242,6 @@ public class MainPresenter implements IMainFrameObserver, IModuliStateObserver, 
 				mainFrameGUI.setModuliMenuEnabled(true);
 				break;
 		}
-	}
-	
-	
-	@Override
-	public void onSaveLayout()
-	{
-		// --- Ask for the filename ---
-		final String initial = SumatraModel.getInstance().getUserProperty(KEY_LAYOUT_PROP);
-		String filename = JOptionPane.showInputDialog(null, "Please specify the name of the layout file:", initial);
-		
-		if (filename == null)
-		{
-			return;
-		}
-		
-		// --- add .ly if necessary ---
-		if (!filename.endsWith(".ly"))
-		{
-			filename += ".ly";
-		}
-		
-		final String filenameWithPath = LAYOUT_CONFIG_PATH + filename;
-		
-		mainFrameGUI.saveLayout(filenameWithPath);
-		
-		// --- DEBUG msg ---
-		log.debug("Saved layout to: " + filename);
-		
-		refreshLayoutItems();
-	}
-	
-	
-	@Override
-	public void onDeleteLayout()
-	{
-		// --- delete current layout ---
-		final String currentLayout = getCurrentLayout();
-		final File file = new File(LAYOUT_CONFIG_PATH + currentLayout);
-		
-		// --- if file exists -> delete ---
-		if (file.exists())
-		{
-			boolean deleted = file.delete();
-			if (!deleted)
-			{
-				log.error("Could not delete file:" + file);
-			}
-		}
-		
-		refreshLayoutItems();
-		
-		log.debug("Deleted layout: " + currentLayout);
 	}
 	
 	
@@ -450,18 +255,10 @@ public class MainPresenter implements IMainFrameObserver, IModuliStateObserver, 
 	@Override
 	public void onExit()
 	{
-		// save current layout to separat file
-		saveCurrentLayout();
-		// save last layout for next usage
-		SumatraModel.getInstance().setUserProperty(MainPresenter.KEY_LAYOUT_PROP, LAST_LAYOUT_FILENAME);
+		super.onExit();
 		
 		// ### Persist user settings
 		final Properties appProps = SumatraModel.getInstance().getUserSettings();
-		
-		
-		// --- save gui position ---
-		savePosition(mainFrameGUI, appProps);
-		
 		
 		// --- persist application properties ---
 		final File uf = SumatraModel.getInstance().getUserPropertiesFile();
@@ -499,33 +296,6 @@ public class MainPresenter implements IMainFrameObserver, IModuliStateObserver, 
 	
 	
 	@Override
-	public void onLoadLayout(final String filename)
-	{
-		String path = LAYOUT_CONFIG_PATH + filename;
-		setCurrentLayout(filename);
-		
-		if (!new File(path).exists())
-		{
-			log.warn("Layout file: " + path + " does not exist, falling back to " + LAYOUT_DEFAULT);
-			path = LAYOUT_CONFIG_PATH + LAYOUT_DEFAULT;
-			setCurrentLayout(LAYOUT_DEFAULT);
-		}
-		
-		mainFrameGUI.loadLayout(path);
-		
-		// --- DEBUG msg ---
-		log.debug("Loaded layout: " + path);
-	}
-	
-	
-	@Override
-	public void onRefreshLayoutItems()
-	{
-		refreshLayoutItems();
-	}
-	
-	
-	@Override
 	public void onSelectLookAndFeel(final LookAndFeelInfo info)
 	{
 		try
@@ -554,18 +324,6 @@ public class MainPresenter implements IMainFrameObserver, IModuliStateObserver, 
 	
 	
 	@Override
-	public void onSetFullscreen(final GraphicsDevice gd)
-	{
-		if (mainFrameGUI == null)
-		{
-			return;
-		}
-		
-		setFullscreen(gd);
-	}
-	
-	
-	@Override
 	public void onLookAndFeelChanged()
 	{
 		mainFrameGUI.setLookAndFeel(getCurrentLookAndFeel());
@@ -589,117 +347,18 @@ public class MainPresenter implements IMainFrameObserver, IModuliStateObserver, 
 				sumatraView.getPresenter().onEmergencyStop();
 			}
 		}
+		if (agentYellow != null)
+		{
+			agentYellow.getAthena().changeMode(EAIControlState.EMERGENCY_MODE);
+		}
+		if (agentBlue != null)
+		{
+			agentBlue.getAthena().changeMode(EAIControlState.EMERGENCY_MODE);
+		}
 		if (skillSystem != null)
 		{
 			skillSystem.emergencyStop();
 		}
-	}
-	
-	
-	// ---------------------------------------------------------------
-	// -------------- Save Gui Position and size ---------------------
-	// ---------------------------------------------------------------
-	/**
-	 * Load JFrame size and position.
-	 */
-	private void loadPosition(final JFrame frame, final Properties appProps)
-	{
-		final String prefix = this.getClass().getName();
-		
-		final int displayCount = getInt(appProps, prefix + ".disyplayCount", 1);
-		int x = 0;
-		int y = 0;
-		
-		if (displayCount == getNumberOfDisplays())
-		{
-			/*
-			 * no changes of available displays thus load window
-			 * position from config file.
-			 */
-			x = getInt(appProps, prefix + ".x", 0);
-			y = getInt(appProps, prefix + ".y", 0);
-		}
-		frame.setLocation(x, y);
-		
-		final String strMaximized = appProps.getProperty(prefix + ".maximized", "true");
-		final boolean maximized = Boolean.valueOf(strMaximized);
-		
-		if (maximized)
-		{
-			frame.setExtendedState(frame.getExtendedState() | Frame.MAXIMIZED_BOTH);
-		} else
-		{
-			final int w = getInt(appProps, prefix + ".w", 1456);
-			final int h = getInt(appProps, prefix + ".h", 886);
-			
-			frame.setSize(new Dimension(w, h));
-		}
-	}
-	
-	
-	/**
-	 * Save JFrame size and position.
-	 */
-	private void savePosition(final JFrame frame, final Properties appProps)
-	{
-		final String prefix = this.getClass().getName();
-		appProps.setProperty(prefix + ".disyplayCount", "" + getNumberOfDisplays());
-		appProps.setProperty(prefix + ".x", "" + frame.getX());
-		appProps.setProperty(prefix + ".y", "" + frame.getY());
-		appProps.setProperty(prefix + ".w", "" + frame.getWidth());
-		appProps.setProperty(prefix + ".h", "" + frame.getHeight());
-		appProps.setProperty(prefix + ".maximized",
-				String.valueOf((frame.getExtendedState() & Frame.MAXIMIZED_BOTH) == Frame.MAXIMIZED_BOTH));
-	}
-	
-	
-	private void saveCurrentLayout()
-	{
-		final String filenameWithPath = LAYOUT_CONFIG_PATH + LAST_LAYOUT_FILENAME;
-		
-		mainFrameGUI.saveLayout(filenameWithPath);
-	}
-	
-	
-	/**
-	 * Read parameter from property file.
-	 * 
-	 * @param props , the property file
-	 * @param name , value to read
-	 * @param defaultValue
-	 */
-	private int getInt(final Properties props, final String name, final int defaultValue)
-	{
-		final String v = props.getProperty(name);
-		if (v == null)
-		{
-			return defaultValue;
-		}
-		return Integer.parseInt(v);
-		
-	}
-	
-	
-	/**
-	 * Returns the number of displays.
-	 * 
-	 * @return the number of available display devices (default return is 1)
-	 */
-	private int getNumberOfDisplays()
-	{
-		try
-		{
-			// Get local graphics environment
-			final GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
-			
-			return env.getScreenDevices().length;
-			
-		} catch (final HeadlessException e)
-		{
-			log.fatal("HeadlessException", e);
-		}
-		
-		return 1;
 	}
 	
 	
@@ -708,24 +367,48 @@ public class MainPresenter implements IMainFrameObserver, IModuliStateObserver, 
 	// --------------------------------------------------------------------------
 	private String getCurrentLookAndFeel()
 	{
-		return SumatraModel.getInstance().getUserProperty(MainPresenter.KEY_LAF_PROP);
+		return SumatraModel.getInstance().getUserProperty(AMainPresenter.KEY_LAF_PROP);
 	}
 	
 	
 	private void setCurrentLookAndFeel(final String newLookAndFeel)
 	{
-		SumatraModel.getInstance().setUserProperty(MainPresenter.KEY_LAF_PROP, newLookAndFeel);
+		SumatraModel.getInstance().setUserProperty(AMainPresenter.KEY_LAF_PROP, newLookAndFeel);
 	}
 	
 	
-	private String getCurrentLayout()
+	@Override
+	public void onRecordAndSave(final boolean active)
 	{
-		return SumatraModel.getInstance().getUserProperty(MainPresenter.KEY_LAYOUT_PROP);
 	}
 	
 	
-	private void setCurrentLayout(final String newLayout)
+	@Override
+	public void onRecord(final boolean active)
 	{
-		SumatraModel.getInstance().setUserProperty(MainPresenter.KEY_LAYOUT_PROP, newLayout);
+	}
+	
+	
+	@Override
+	protected String getLayoutKey()
+	{
+		return KEY_LAYOUT_PROP;
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	@Override
+	public String getLastLayoutFile()
+	{
+		return LAST_LAYOUT_FILENAME;
+	}
+	
+	
+	@Override
+	protected String getDefaultLayout()
+	{
+		return LAYOUT_DEFAULT;
 	}
 }

@@ -4,10 +4,12 @@
  * Project: TIGERS - Sumatra
  * Date: 09.08.2012
  * Author(s): Gero, AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector;
+
+import edu.dhbw.mannheim.tigers.sumatra.util.csvexporter.IJsonString;
+import edu.dhbw.mannheim.tigers.sumatra.util.csvexporter.INumberListable;
 
 
 /**
@@ -15,14 +17,11 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector;
  * 
  * @see Vector3
  * @see Vector3f
- * 
  * @see Vector2
  * @see Vector2f
- * 
  * @author Gero, AndreR
- * 
  */
-public interface IVector3
+public interface IVector3 extends IJsonString, INumberListable
 {
 	/**
 	 * @return The X part of the vector
@@ -117,7 +116,6 @@ public interface IVector3
 	
 	/**
 	 * Check if vectors are equal with individual tolerances.
-	 * 
 	 * Tolerances are always positive!
 	 * 
 	 * @param vec vector to check
@@ -133,7 +131,6 @@ public interface IVector3
 	 * Return {x, y, z}
 	 * 
 	 * @return 3 element array
-	 * 
 	 * @author AndreR
 	 */
 	float[] toArray();
@@ -143,7 +140,6 @@ public interface IVector3
 	 * Return (double){x, y, z}
 	 * 
 	 * @return 3 element array
-	 * 
 	 * @author AndreR
 	 */
 	double[] toDoubleArray();
@@ -161,5 +157,11 @@ public interface IVector3
 	 * @return
 	 */
 	IVector3 mirrorXY();
+	
+	
+	/**
+	 * @return
+	 */
+	boolean isFinite();
 	
 }

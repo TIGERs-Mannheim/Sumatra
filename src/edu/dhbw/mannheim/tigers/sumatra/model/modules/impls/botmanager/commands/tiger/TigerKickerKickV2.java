@@ -12,6 +12,7 @@ import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECommand;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.other.EKickerMode;
 import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData;
 import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
 
@@ -31,38 +32,6 @@ public class TigerKickerKickV2 extends ACommand
 		public static final int	CHIP		= 1;
 	}
 	
-	
-	/**
-	 */
-	public static enum EKickerMode
-	{
-		/**  */
-		FORCE(0),
-		/**  */
-		ARM(1),
-		/**  */
-		DISARM(2),
-		/**  */
-		DRIBBLER(3),
-		/**  */
-		NONE(0xFF);
-		private final int	id;
-		
-		
-		private EKickerMode(int id)
-		{
-			this.id = id;
-		}
-		
-		
-		/**
-		 * @return the id
-		 */
-		public final int getId()
-		{
-			return id;
-		}
-	}
 	
 	// Logger
 	private static final Logger	log				= Logger.getLogger(TigerKickerKickV2.class.getName());
@@ -91,58 +60,40 @@ public class TigerKickerKickV2 extends ACommand
 	 */
 	public TigerKickerKickV2()
 	{
-		super(ECommand.CMD_KICKER_KICKV2);
-		
-		setDevice(Device.STRAIGHT);
-		setMode(EKickerMode.NONE);
-		setFiringDuration(0);
-		setLevel(MAX_LEVEL);
+		this(Device.STRAIGHT, EKickerMode.NONE, 0);
 	}
 	
 	
 	/**
-	 * 
 	 * @param firingDuration
 	 * @param mode
 	 */
-	public TigerKickerKickV2(float firingDuration, EKickerMode mode)
+	public TigerKickerKickV2(final float firingDuration, final EKickerMode mode)
 	{
-		super(ECommand.CMD_KICKER_KICKV2);
-		
-		setDevice(Device.STRAIGHT);
-		setMode(mode);
-		setFiringDuration(firingDuration);
-		setLevel(MAX_LEVEL);
+		this(Device.STRAIGHT, mode, firingDuration);
 	}
 	
 	
 	/**
-	 * 
 	 * @param device
 	 * @param mode
 	 * @param firingDuration
 	 */
-	public TigerKickerKickV2(int device, EKickerMode mode, float firingDuration)
+	public TigerKickerKickV2(final int device, final EKickerMode mode, final float firingDuration)
 	{
-		super(ECommand.CMD_KICKER_KICKV2);
-		
-		setDevice(device);
-		setMode(mode);
-		setFiringDuration(firingDuration);
-		setLevel(MAX_LEVEL);
+		this(device, mode, firingDuration, MAX_LEVEL);
 	}
 	
 	
 	/**
-	 * 
 	 * @param device
 	 * @param mode
 	 * @param firingDuration
 	 * @param level
 	 */
-	public TigerKickerKickV2(int device, EKickerMode mode, float firingDuration, int level)
+	public TigerKickerKickV2(final int device, final EKickerMode mode, final float firingDuration, final int level)
 	{
-		super(ECommand.CMD_KICKER_KICKV2);
+		super(ECommand.CMD_KICKER_KICKV2, true);
 		
 		setDevice(device);
 		setMode(mode);
@@ -152,7 +103,6 @@ public class TigerKickerKickV2 extends ACommand
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public int getDevice()
@@ -164,7 +114,7 @@ public class TigerKickerKickV2 extends ACommand
 	/**
 	 * @param device
 	 */
-	public void setDevice(int device)
+	public void setDevice(final int device)
 	{
 		deviceAndMode &= 0xF0;
 		deviceAndMode |= device;
@@ -172,7 +122,6 @@ public class TigerKickerKickV2 extends ACommand
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public int getMode()
@@ -184,7 +133,7 @@ public class TigerKickerKickV2 extends ACommand
 	/**
 	 * @param mode
 	 */
-	public void setMode(EKickerMode mode)
+	public void setMode(final EKickerMode mode)
 	{
 		deviceAndMode &= 0x0F;
 		deviceAndMode |= mode.getId() << 4;
@@ -211,7 +160,7 @@ public class TigerKickerKickV2 extends ACommand
 	 * 
 	 * @param firingDuration Duration in [us]
 	 */
-	public void setFiringDuration(float firingDuration)
+	public void setFiringDuration(final float firingDuration)
 	{
 		if (firingDuration < 0)
 		{
@@ -252,7 +201,7 @@ public class TigerKickerKickV2 extends ACommand
 	/**
 	 * @param level
 	 */
-	public void setLevel(int level)
+	public void setLevel(final int level)
 	{
 		this.level = level;
 		

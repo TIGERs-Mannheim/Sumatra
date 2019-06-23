@@ -82,4 +82,12 @@ public interface IConfigClient extends IConfigObserver
 	 * 
 	 */
 	void clearObservers();
+	
+	
+	/**
+	 * Is the config file required? Must it exist?
+	 * 
+	 * @return
+	 */
+	boolean isRequired();
 }

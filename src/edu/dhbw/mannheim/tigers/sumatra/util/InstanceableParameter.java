@@ -4,26 +4,28 @@
  * Project: TIGERS - Sumatra
  * Date: Jan 11, 2014
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.util;
+
+import java.util.Arrays;
+import java.util.List;
 
 
 /**
  * Parameter of a {@link InstanceableClass}.
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class InstanceableParameter
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final Class<?>	impl;
-	private final String		description;
-	private final String		defaultValue;
+	private final Class<?>			impl;
+	private final String				description;
+	private final String				defaultValue;
+	private final List<Class<?>>	genericsImpls;
 	
 	
 	// --------------------------------------------------------------------------
@@ -35,12 +37,15 @@ public class InstanceableParameter
 	 * @param impl
 	 * @param description
 	 * @param defaultValue
+	 * @param genericsImpls
 	 */
-	public InstanceableParameter(Class<?> impl, String description, String defaultValue)
+	public InstanceableParameter(final Class<?> impl, final String description, final String defaultValue,
+			final Class<?>... genericsImpls)
 	{
 		this.impl = impl;
 		this.description = description;
 		this.defaultValue = defaultValue;
+		this.genericsImpls = Arrays.asList(genericsImpls);
 	}
 	
 	
@@ -50,12 +55,17 @@ public class InstanceableParameter
 	
 	/**
 	 * Parse given String to value
+	 * 
 	 * @param value
 	 * @return
 	 */
-	public Object parseString(String value)
+	public Object parseString(final String value)
 	{
-		return String2ValueConverter.parseString(impl, value);
+		if (genericsImpls.isEmpty())
+		{
+			return String2ValueConverter.parseString(impl, value);
+		}
+		return String2ValueConverter.parseString(impl, genericsImpls, value);
 	}
 	
 	
@@ -88,5 +98,14 @@ public class InstanceableParameter
 	public final String getDefaultValue()
 	{
 		return defaultValue;
+	}
+	
+	
+	/**
+	 * @return the genericsImpls
+	 */
+	protected List<Class<?>> getGenericsImpls()
+	{
+		return genericsImpls;
 	}
 }

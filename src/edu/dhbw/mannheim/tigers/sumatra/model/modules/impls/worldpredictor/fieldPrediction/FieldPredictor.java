@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: May 17, 2013
  * Author(s): Dirk Klostermann <klostermannn@googlemail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.fieldPrediction;
@@ -28,11 +27,9 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
  * crashes are regarded as followed:<br>
  * - ball reflects in another direction<br>
  * - bots stop at a crash
- * 
  * the class uses a
  * 
  * @author Dirk Klostermann <klostermannn@googlemail.com>
- * 
  */
 public final class FieldPredictor
 {
@@ -53,7 +50,7 @@ public final class FieldPredictor
 	 * @param bots
 	 * @param ball
 	 */
-	public FieldPredictor(Collection<TrackedTigerBot> bots, TrackedBall ball)
+	public FieldPredictor(final Collection<TrackedTigerBot> bots, final TrackedBall ball)
 	{
 		this.bots = bots;
 		this.ball = ball;
@@ -66,6 +63,7 @@ public final class FieldPredictor
 	/**
 	 * creates a WorldPredictionInformation, this is a pre calculation to get an estimation where the bots and the ball
 	 * will be in the future
+	 * 
 	 * @return
 	 */
 	public WorldFramePrediction create()
@@ -83,7 +81,27 @@ public final class FieldPredictor
 	}
 	
 	
-	private FieldPredictionInformation getFieldPredictionInfo(IVector2 pos, IVector2 vel, float rad)
+	/**
+	 * Create a stub wfp without crash information for fast calculation (testing purpose)
+	 * 
+	 * @return
+	 */
+	public WorldFramePrediction createStub()
+	{
+		IBotIDMap<FieldPredictionInformation> botFpis = new BotIDMap<FieldPredictionInformation>();
+		for (TrackedTigerBot bot : bots)
+		{
+			FieldPredictionInformation fpi = new FieldPredictionInformation(bot.getPos(), bot.getVelInMM(),
+					Float.MAX_VALUE);
+			botFpis.put(bot.getId(), fpi);
+		}
+		FieldPredictionInformation fpiBall = new FieldPredictionInformation(ball.getPos(), ball.getVelInMM(),
+				Float.MAX_VALUE);
+		return new WorldFramePrediction(botFpis, fpiBall);
+	}
+	
+	
+	private FieldPredictionInformation getFieldPredictionInfo(final IVector2 pos, final IVector2 vel, final float rad)
 	{
 		float crash = getFirstCrashOfElement(pos, vel, rad);
 		return new FieldPredictionInformation(pos, vel, crash);
@@ -92,12 +110,13 @@ public final class FieldPredictor
 	
 	/**
 	 * first crash of this element
+	 * 
 	 * @param pos
 	 * @param vel
 	 * @param radius
 	 * @return the time when the bot will crash the first time [s]
 	 */
-	private float getFirstCrashOfElement(IVector2 pos, IVector2 vel, float radius)
+	private float getFirstCrashOfElement(final IVector2 pos, final IVector2 vel, final float radius)
 	{
 		float firstCrash = Float.MAX_VALUE;
 		for (TrackedTigerBot tiger : bots)
@@ -113,8 +132,9 @@ public final class FieldPredictor
 	}
 	
 	
-	private float checkForEarlierCrash(IVector2 botPos, IVector2 botVel, float botRad, IVector2 obstaclePos,
-			IVector2 obstacleVel, float obstacleRad, float firstCrash)
+	private float checkForEarlierCrash(final IVector2 botPos, final IVector2 botVel, final float botRad,
+			final IVector2 obstaclePos,
+			final IVector2 obstacleVel, final float obstacleRad, final float firstCrash)
 	{
 		float crash = crash(botPos, botVel, botRad, obstaclePos, obstacleVel, obstacleRad);
 		if (crash < firstCrash)
@@ -125,8 +145,9 @@ public final class FieldPredictor
 	}
 	
 	
-	private float crash(IVector2 botPos, IVector2 botVel, float botRad, IVector2 obstaclePos, IVector2 obstacleVel,
-			float obstacleRad)
+	private float crash(final IVector2 botPos, final IVector2 botVel, final float botRad, final IVector2 obstaclePos,
+			final IVector2 obstacleVel,
+			final float obstacleRad)
 	{
 		if (!botPos.equals(obstaclePos, 0.01f) && !botVel.isZeroVector() && !obstacleVel.isZeroVector())
 		{

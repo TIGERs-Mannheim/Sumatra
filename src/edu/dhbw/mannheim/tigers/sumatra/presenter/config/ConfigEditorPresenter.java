@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 23.11.2011
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.config;
@@ -26,7 +25,6 @@ import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraViewPresenter;
  * are registered and allows the user to change them at runtime.
  * 
  * @author Gero
- * 
  */
 public class ConfigEditorPresenter implements IConfigManagerObserver, IConfigEditorViewObserver, ISumatraViewPresenter
 {
@@ -59,7 +57,7 @@ public class ConfigEditorPresenter implements IConfigManagerObserver, IConfigEdi
 	// --- IConfigManagerObserver -----------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
-	public final void onConfigAdded(ManagedConfig newConfig)
+	public final void onConfigAdded(final ManagedConfig newConfig)
 	{
 		if (newConfig.getClient().isEditable())
 		{
@@ -69,7 +67,7 @@ public class ConfigEditorPresenter implements IConfigManagerObserver, IConfigEdi
 	
 	
 	@Override
-	public void onConfigReloaded(ManagedConfig config)
+	public void onConfigReloaded(final ManagedConfig config)
 	{
 		if (config.getClient().isEditable())
 		{
@@ -82,23 +80,30 @@ public class ConfigEditorPresenter implements IConfigManagerObserver, IConfigEdi
 	// --- IConfigEditorViewObserver --------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
-	public void onApplyPressed(String configKey)
+	public void onApplyPressed(final String configKey)
 	{
 		ConfigManager.getInstance().notifyConfigEdited(configKey);
 	}
 	
 	
 	@Override
-	public boolean onSavePressed(String configKey)
+	public boolean onSavePressed(final String configKey)
 	{
 		return ConfigManager.getInstance().saveConfig(configKey);
 	}
 	
 	
 	@Override
-	public void onReloadPressed(String configKey)
+	public void onReloadPressed(final String configKey)
 	{
 		ConfigManager.getInstance().reloadConfig(configKey);
+	}
+	
+	
+	@Override
+	public void onReadPressed(final String configKey)
+	{
+		ConfigManager.getInstance().readConfig(configKey);
 	}
 	
 	
@@ -132,7 +137,8 @@ public class ConfigEditorPresenter implements IConfigManagerObserver, IConfigEdi
 	
 	
 	@Override
-	public void onModuliStateChanged(ModulesState state)
+	public void onModuliStateChanged(final ModulesState state)
 	{
 	}
+	
 }

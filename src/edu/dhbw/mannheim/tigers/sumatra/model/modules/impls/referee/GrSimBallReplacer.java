@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Mar 5, 2014
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.referee;
@@ -23,15 +22,15 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.GrSimReplacement;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.GrSimReplacement.grSim_BallReplacement;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.GrSimReplacement.grSim_Replacement;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.UserConfig;
 
 
 /**
  * Replace the ball in the simulator grSim
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
-public class GrSimBallReplacer
+public class GrSimBallReplacer implements IBallReplacer
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
@@ -50,10 +49,17 @@ public class GrSimBallReplacer
 	/**
 	 * @param subconfig
 	 */
-	public GrSimBallReplacer(SubnodeConfiguration subconfig)
+	public GrSimBallReplacer(final SubnodeConfiguration subconfig)
 	{
+		int port = subconfig.getInt("simPort");
 		ip = subconfig.getString("simIp");
-		port = subconfig.getInt("simPort");
+		if ((port == 20011) && (UserConfig.getGrSimCommandPort() > 0))
+		{
+			// little bit hacky, but if sim port is detected, use the port configured in UserConfig
+			port = UserConfig.getGrSimCommandPort();
+		}
+		
+		this.port = port;
 	}
 	
 	
@@ -62,10 +68,10 @@ public class GrSimBallReplacer
 	// --------------------------------------------------------------------------
 	
 	/**
-	 * 
 	 * @param pos
 	 */
-	public void replaceBall(IVector2 pos)
+	@Override
+	public void replaceBall(final IVector2 pos)
 	{
 		grSim_BallReplacement.Builder builder = GrSimReplacement.grSim_BallReplacement.newBuilder();
 		builder.setX(pos.x() / 1000f);

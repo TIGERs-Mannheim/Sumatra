@@ -8,13 +8,12 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills;
 
-import java.util.LinkedList;
 import java.util.List;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.test.PositionSkill;
 
 
 /**
@@ -22,9 +21,8 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillNa
  * Mainly for testing purposes.
  * 
  * @author AndreR
- * 
  */
-public class StraightMoveSkill extends AMoveSkill
+public class StraightMoveSkill extends PositionSkill
 {
 	/** mm */
 	private final int		distance;
@@ -33,11 +31,10 @@ public class StraightMoveSkill extends AMoveSkill
 	
 	
 	/**
-	 * 
 	 * @param distance [mm]
 	 * @param angle [rad]
 	 */
-	public StraightMoveSkill(int distance, float angle)
+	public StraightMoveSkill(final int distance, final float angle)
 	{
 		super(ESkillName.STRAIGHT_MOVE);
 		
@@ -47,25 +44,9 @@ public class StraightMoveSkill extends AMoveSkill
 	
 	
 	@Override
-	public List<ACommand> doCalcEntryActions(List<ACommand> cmds)
+	public void doCalcEntryActions(final List<ACommand> cmds)
 	{
-		List<IVector2> path = new LinkedList<IVector2>();
-		path.add(getPos().addNew(new Vector2(getAngle() + angle).multiply(distance)));
-		createSpline(path, getAngle());
-		return cmds;
-	}
-	
-	
-	@Override
-	protected void periodicProcess(List<ACommand> cmds)
-	{
-	}
-	
-	
-	@Override
-	protected boolean isMoveComplete()
-	{
-		return super.isMoveComplete();
+		setDestination(getPos().addNew(new Vector2(getAngle() + angle).multiply(distance)));
 	}
 	
 	

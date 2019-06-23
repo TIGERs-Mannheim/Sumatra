@@ -13,15 +13,14 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.valueobjects.ValuePoint;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.Circle;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.DrawableCircle;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.offense.OffensiveConstants;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
-import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.EDrawableShapesLayer;
 
 
 /**
@@ -36,10 +35,8 @@ public abstract class AOffensiveRole extends ARole
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	protected static final Logger	log							= Logger.getLogger(AOffensiveRole.class.getName());
-	
-	@Configurable
-	protected static boolean		showDebugInformations	= false;
+	protected static final Logger	log		= Logger.getLogger(AOffensiveRole.class.getName());
+	protected int						animator	= 0;
 	
 	
 	// --------------------------------------------------------------------------
@@ -47,6 +44,7 @@ public abstract class AOffensiveRole extends ARole
 	// --------------------------------------------------------------------------
 	
 	/**
+	 * 
 	 */
 	public AOffensiveRole()
 	{
@@ -59,31 +57,19 @@ public abstract class AOffensiveRole extends ARole
 	{
 		features.add(EFeature.STRAIGHT_KICKER);
 		features.add(EFeature.MOVE);
+		features.add(EFeature.BARRIER);
 	}
 	
 	
-	protected enum EStateId
+	/**
+	 * This method is called before the state machine update.
+	 * Use this for role-global actions. <br>
+	 */
+	@Override
+	protected void beforeUpdate()
 	{
-		/**  */
-		GET,
-		/**  */
-		KICK,
-		/**  */
-		STOP
-	}
-	
-	protected enum EEvent
-	{
-		/**  */
-		BALL_CONTROL_OBTAINED,
-		/**  */
-		LOST_BALL,
-		/**  */
-		GAME_STARTED,
-		/**  */
-		STOP,
-		/**  */
-		NORMALSTART
+		animator++;
+		changeStateIfNecessary();
 	}
 	
 	
@@ -92,51 +78,55 @@ public abstract class AOffensiveRole extends ARole
 	// ----------------------------------------------------------------------- //
 	
 	/**
-	 * checks if bot is in control of the ball, if so change to kicker,
-	 * else change to getter.
 	 * 
-	 * @param destination target movePosition
 	 */
-	protected boolean checkBallObtained(final ValuePoint destination)
+	public void changeStateIfNecessary()
 	{
-		IVector2 ballPos = getAiFrame().getWorldFrame().ball.getPos();
-		IVector2 botPos = getPos();
-		float distanceToBall = 325;
-		float distanceToDestination = 140;
-		float leavingDistance = 450;
-		
-		if (getCurrentState() == EStateId.GET)
+		if (getAiFrame().getTacticalField() != null)
 		{
-			getAiFrame().addDebugShape(new DrawableCircle(new Circle(ballPos, distanceToBall), Color.RED));
-			getAiFrame().addDebugShape(new DrawableCircle(new Circle(destination, distanceToDestination), Color.RED));
-		} else
-		{
-			getAiFrame().addDebugShape(new DrawableCircle(new Circle(ballPos, leavingDistance), Color.YELLOW));
-		}
-		
-		if (((GeoMath.distancePP(botPos, destination) < (distanceToDestination)) && (GeoMath.distancePP(botPos, ballPos) < (distanceToBall)))
-				|| ((getCurrentState() == EStateId.KICK) && (GeoMath.distancePP(ballPos, botPos) < leavingDistance)))
-		{
-			if (getCurrentState() == EStateId.GET)
+			if (getAiFrame().getTacticalField().getOffensiveStrategy() != null)
 			{
-				printDebugInformation("Ball Control Obtained");
+				if (getAiFrame().getTacticalField().getOffensiveStrategy().getCurrentOffensivePlayConfiguration() != null)
+				{
+					if (getAiFrame().getTacticalField().getOffensiveStrategy()
+							.getCurrentOffensivePlayConfiguration().containsKey(getBotID()))
+					{
+						if (getCurrentState() != getAiFrame().getTacticalField().getOffensiveStrategy()
+								.getCurrentOffensivePlayConfiguration().get(getBotID()))
+						{
+							triggerEvent(getAiFrame().getTacticalField().getOffensiveStrategy()
+									.getCurrentOffensivePlayConfiguration().get(getBotID()));
+						}
+					}
+				}
 			}
-			return true;
 		}
-		if (getCurrentState() != EStateId.GET)
-		{
-			printDebugInformation("Lost Ball");
-		}
-		return false;
 	}
 	
 	
-	protected void printDebugInformation(final String message)
+	protected void printDebugInformation(final String text)
 	{
-		if (showDebugInformations)
+		if (OffensiveConstants.isShowDebugInformations())
 		{
-			log.debug(message);
+			log.debug(text);
 		}
 	}
 	
+	
+	protected void visualizeTarget(final IVector2 target)
+	{
+		Circle targetCircle = new Circle(target, 150 + (int) (Math.sin(animator / 5) * 100));
+		Color bigTargetColor = new Color(50, 10, 125, 60);
+		DrawableCircle dtargetCircle = new DrawableCircle(targetCircle, bigTargetColor);
+		dtargetCircle.setFill(true);
+		
+		Circle targetCircle2 = new Circle(target, 50 + (int) (Math.sin(animator / 5) * 30));
+		DrawableCircle dtargetCircle2 = new DrawableCircle(targetCircle2, new Color(10, 10, 200, 60));
+		dtargetCircle2.setFill(true);
+		DrawableCircle dtargetCircle3 = new DrawableCircle(targetCircle, bigTargetColor);
+		
+		getAiFrame().getTacticalField().getDrawableShapes().get(EDrawableShapesLayer.OFFENSIVE).add(dtargetCircle);
+		getAiFrame().getTacticalField().getDrawableShapes().get(EDrawableShapesLayer.OFFENSIVE).add(dtargetCircle2);
+		getAiFrame().getTacticalField().getDrawableShapes().get(EDrawableShapesLayer.OFFENSIVE).add(dtargetCircle3);
+	}
 }

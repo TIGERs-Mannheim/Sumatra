@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 14.01.2011
  * Author(s): Malte
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.referee;
@@ -23,7 +22,6 @@ import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
  * Referee view.
  * 
  * @author Malte, DionH, FriederB
- * 
  */
 public class RefereePanel extends JPanel implements ISumatraView
 {
@@ -44,7 +42,7 @@ public class RefereePanel extends JPanel implements ISumatraView
 	 */
 	public RefereePanel()
 	{
-		setLayout(new MigLayout("wrap 1", "[grow, fill]", ""));
+		setLayout(new MigLayout("wrap 1, inset 0", "[grow, fill]", ""));
 		JTabbedPane tabs = new JTabbedPane();
 		showRefereeMsgPanel = new ShowRefereeMsgPanel();
 		createRefereeMsgPanel = new CreateRefereeMsgPanel();

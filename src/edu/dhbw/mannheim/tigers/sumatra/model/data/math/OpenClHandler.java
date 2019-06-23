@@ -19,8 +19,11 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.jocl.CL;
+import org.jocl.CLException;
 import org.jocl.cl_device_id;
 import org.jocl.cl_platform_id;
+
+import edu.dhbw.mannheim.tigers.sumatra.util.config.UserConfig;
 
 
 /**
@@ -55,17 +58,21 @@ public final class OpenClHandler
 	 */
 	private OpenClHandler()
 	{
-		
-		
 		PlatformDeviceInfo pdi = null;
-		try
+		if (UserConfig.getOpenClDevice() >= 0)
 		{
-			// Enable exceptions and subsequently omit error checks in this sample
-			CL.setExceptionsEnabled(true);
-			pdi = findDevice();
-		} catch (Throwable e)
+			try
+			{
+				// Enable exceptions and subsequently omit error checks in this sample
+				CL.setExceptionsEnabled(true);
+				pdi = findDevice();
+			} catch (Throwable e)
+			{
+				log.error("OpenCL error'd when looking for devices.", e);
+			}
+		} else
 		{
-			log.error("OpenCL error'd when looking for devices.", e);
+			log.info("OpenCL is disabled in user config.");
 		}
 		platformDevice = pdi;
 		
@@ -92,7 +99,14 @@ public final class OpenClHandler
 		
 		// Obtain the number of platforms
 		int numPlatformsArray[] = new int[1];
-		clGetPlatformIDs(0, null, numPlatformsArray);
+		try
+		{
+			clGetPlatformIDs(0, null, numPlatformsArray);
+		} catch (CLException err)
+		{
+			log.warn("Can not use OpenCL: " + err.getMessage());
+			return null;
+		}
 		int numPlatforms = numPlatformsArray[0];
 		log.info("Detected " + numPlatforms + " opencl platforms.");
 		
@@ -131,8 +145,17 @@ public final class OpenClHandler
 			return null;
 		}
 		
-		Collections.sort(pdInfos, new PlatformDeviceInfoComparator());
-		PlatformDeviceInfo pdInfo = pdInfos.get(0);
+		int deviceIndex = UserConfig.getOpenClDevice() - 1;
+		final PlatformDeviceInfo pdInfo;
+		if ((deviceIndex >= 0) && (deviceIndex < pdInfos.size()))
+		{
+			pdInfo = pdInfos.get(deviceIndex);
+		} else
+		{
+			Collections.sort(pdInfos, new PlatformDeviceInfoComparator());
+			pdInfo = pdInfos.get(0);
+		}
+		
 		log.info("Choosing " + pdInfo.name);
 		return pdInfo;
 	}
@@ -179,11 +202,11 @@ public final class OpenClHandler
 			
 			if (deviceType1 != deviceType2)
 			{
-				if (deviceType1 == CL.CL_DEVICE_TYPE_GPU)
+				if (deviceType1 == CL.CL_DEVICE_TYPE_CPU)
 				{
-					return -1;
+					return 1;
 				}
-				return 1;
+				return -1;
 			}
 			
 			long freq1 = JOCLDeviceQuery.getLong(o1.device, CL.CL_DEVICE_MAX_CLOCK_FREQUENCY);

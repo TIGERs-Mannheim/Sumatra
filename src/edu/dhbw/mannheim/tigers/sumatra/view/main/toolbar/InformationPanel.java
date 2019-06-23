@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 10.09.2010
  * Author(s): Oliver Steinbrecher <OST1988@aol.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.main.toolbar;
@@ -19,6 +18,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
@@ -30,7 +30,6 @@ import org.apache.log4j.Logger;
  * This panel gives an overview of the general information within the ai-module.
  * 
  * @author Oliver Steinbrecher <OST1988@aol.com>
- * 
  */
 public class InformationPanel extends JPanel
 {
@@ -58,7 +57,7 @@ public class InformationPanel extends JPanel
 	{
 		setLayout(new MigLayout("inset 1", "", "[center]"));
 		
-		aIExceptionCounterField = new JTextField();
+		aIExceptionCounterField = new JTextField(3);
 		aIExceptionCounterField.setEditable(false);
 		aIExceptionCounterField.setBackground(Color.WHITE);
 		aIExceptionCounterField.setText(String.valueOf(aIExceptionCounter));
@@ -67,7 +66,7 @@ public class InformationPanel extends JPanel
 		clearAIExceptionButton.addActionListener(new ActionListener()
 		{
 			@Override
-			public void actionPerformed(ActionEvent arg0)
+			public void actionPerformed(final ActionEvent arg0)
 			{
 				clearAIExceptionArea();
 			}
@@ -78,8 +77,8 @@ public class InformationPanel extends JPanel
 		aIExceptionText.setEditable(false);
 		aIExceptionText.setBackground(Color.WHITE);
 		
-		final JScrollPane scrollPane = new JScrollPane(aIExceptionText, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-				JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		final JScrollPane scrollPane = new JScrollPane(aIExceptionText, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+				ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		scrollPane.setPreferredSize(new Dimension(TEXT_BOX_WIDTH, 0));
 		
 		add(clearAIExceptionButton);
@@ -96,7 +95,7 @@ public class InformationPanel extends JPanel
 	/**
 	 * @param ex
 	 */
-	public void setAIException(final Exception ex)
+	public void setAIException(final Throwable ex)
 	{
 		SwingUtilities.invokeLater(new Runnable()
 		{
@@ -111,7 +110,11 @@ public class InformationPanel extends JPanel
 					{
 						text = ex.getClass().getName();
 					}
-					aIExceptionText.append(text + "\n");
+					if (!aIExceptionText.getText().isEmpty())
+					{
+						aIExceptionText.append("\n");
+					}
+					aIExceptionText.append(text);
 					lastAIException = String.valueOf(ex.getMessage());
 					aIExceptionText.setBackground(Color.RED);
 					aIExceptionCounter++;
@@ -150,8 +153,8 @@ public class InformationPanel extends JPanel
 			{
 				aIExceptionText.setText("");
 				aIExceptionText.setBackground(Color.WHITE);
-				aIExceptionCounterField.setText(String.valueOf(aIExceptionCounter));
 				aIExceptionCounter = 0;
+				aIExceptionCounterField.setText(String.valueOf(aIExceptionCounter));
 			}
 		});
 	}

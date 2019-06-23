@@ -8,21 +8,18 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.offense;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.awt.Color;
 import java.util.List;
-import java.util.Map;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.BaseAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AiMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.TacticalField;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.valueobjects.ValueBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.valueobjects.ValuePoint;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.DrawablePoint;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.ACalculator;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.helper.ShooterMemory;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.EDrawableShapesLayer;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.AFieldLayer;
 
 
 /**
@@ -61,53 +58,20 @@ public class ShooterCalc extends ACalculator
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
 		WorldFrame wFrame = baseAiFrame.getWorldFrame();
-		mem.update(wFrame, wFrame.ball.getPos());
-		newTacticalField.setBestDirectShotTarget(mem.getBestPoint());
-		newTacticalField.setGoalValuePoints(mem.getGeneratedGoalPoints());
 		
-		Map<BotID, ValuePoint> goalBotValuePoints = new HashMap<BotID, ValuePoint>();
+		// Evaluate direct goal shot targets (using ShooterMemory)
+		mem.update(wFrame, baseAiFrame, wFrame.getBall().getPos());
+		ValuePoint bestDirectShotTarget = mem.getBestPoint();
+		newTacticalField.setBestDirectShotTarget(bestDirectShotTarget);
+		List<ValuePoint> goalValuePoints = mem.getGeneratedGoalPoints();
+		newTacticalField.setGoalValuePoints(goalValuePoints);
 		
-		List<TrackedBot> offensiveBots = new ArrayList<TrackedBot>(6);
-		for (TrackedBot bot : wFrame.getTigerBotsAvailable().values())
+		for (ValuePoint vp : goalValuePoints)
 		{
-			// if (bot.getPos().x() < -1000)
-			// {
-			// continue;
-			// }
-			offensiveBots.add(bot);
-			
-			mem.update(wFrame, bot.getPos());
-			goalBotValuePoints.put(bot.getId(), mem.getBestPoint());
+			Color color = AFieldLayer.getColorByValue(vp.getValue());
+			newTacticalField.getDrawableShapes().get(EDrawableShapesLayer.GOAL_POINTS).add(new DrawablePoint(vp, color));
 		}
-		newTacticalField.setBestDirectShotTargetBots(goalBotValuePoints);
-		
-		Map<BotID, List<ValueBot>> shooterReceiverStraightLines = new HashMap<BotID, List<ValueBot>>();
-		for (TrackedBot shooter : offensiveBots)
-		{
-			List<ValueBot> valueTargets = new ArrayList<ValueBot>(6);
-			shooterReceiverStraightLines.put(shooter.getId(), valueTargets);
-			for (TrackedBot receiver : offensiveBots)
-			{
-				if (shooter.equals(receiver))
-				{
-					continue;
-				}
-				float value = AiMath.getScoreForStraightShot(wFrame, shooter.getPos(), receiver.getPos());
-				valueTargets.add(new ValueBot(receiver.getId(), value));
-			}
-		}
-		newTacticalField.setShooterReceiverStraightLines(shooterReceiverStraightLines);
-		
-		Map<BotID, ValueBot> ballReceiverStraightLine = new HashMap<BotID, ValueBot>();
-		for (TrackedBot receiver : offensiveBots)
-		{
-			float value = AiMath.getScoreForStraightShot(wFrame, wFrame.ball.getPos(), receiver.getPos());
-			ballReceiverStraightLine.put(receiver.getId(), new ValueBot(receiver.getId(), value));
-		}
-		newTacticalField.setBallReceiverStraightLines(ballReceiverStraightLine);
+		newTacticalField.getDrawableShapes().get(EDrawableShapesLayer.GOAL_POINTS)
+				.add(new DrawablePoint(bestDirectShotTarget, Color.blue));
 	}
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 }

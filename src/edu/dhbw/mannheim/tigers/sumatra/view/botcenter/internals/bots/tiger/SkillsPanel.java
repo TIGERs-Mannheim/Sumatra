@@ -22,12 +22,13 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
+import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ABotSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.EBotSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ASkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.CurveTestSkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.EightSkill;
 import edu.dhbw.mannheim.tigers.sumatra.util.IInstanceableObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.commons.InstanceablePanel;
 
@@ -44,6 +45,11 @@ public class SkillsPanel extends JPanel implements IInstanceableObserver
 	// --------------------------------------------------------------------------
 	private static final long						serialVersionUID			= 5399293600256113771L;
 	
+	private static final String					DEF_SKILL_KEY				= SkillsPanel.class.getCanonicalName()
+																									+ ".defskill";
+	private static final String					DEF_BOT_SKILL_KEY			= SkillsPanel.class.getCanonicalName()
+																									+ ".defbotskill";
+	
 	private JTextField								moveToX						= null;
 	private JTextField								moveToY						= null;
 	
@@ -54,16 +60,10 @@ public class SkillsPanel extends JPanel implements IInstanceableObserver
 	private JTextField								straightMoveDist			= null;
 	private JTextField								straightMoveAngle			= null;
 	
-	private JTextField								rotateAngle					= null;
-	
 	private JTextField								lookX							= null;
 	private JTextField								lookY							= null;
 	
 	private JTextField								dribbleRPM					= null;
-	
-	private JTextField								eightSize;
-	private JTextField								turnTestSize;
-	private JTextField								turnTestAngle;
 	
 	private final List<ISkillsPanelObserver>	observers					= new ArrayList<ISkillsPanelObserver>();
 	
@@ -79,6 +79,29 @@ public class SkillsPanel extends JPanel implements IInstanceableObserver
 		
 		InstanceablePanel skillCustomPanel = new InstanceablePanel(ESkillName.values());
 		skillCustomPanel.addObserver(this);
+		String strDefSkill = SumatraModel.getInstance().getUserProperty(DEF_SKILL_KEY, ESkillName.KICK.name());
+		try
+		{
+			ESkillName defSkill = ESkillName.valueOf(strDefSkill);
+			skillCustomPanel.setSelectedItem(defSkill);
+		} catch (IllegalArgumentException err)
+		{
+			// ignore
+		}
+		
+		InstanceablePanel botSkillCustomPanel = new InstanceablePanel(EBotSkill.values());
+		botSkillCustomPanel.addObserver(this);
+		String strDefBotSkill = SumatraModel.getInstance().getUserProperty(DEF_BOT_SKILL_KEY,
+				EBotSkill.GLOBAL_POSITION.name());
+		try
+		{
+			EBotSkill defSkill = EBotSkill.valueOf(strDefBotSkill);
+			botSkillCustomPanel.setSelectedItem(defSkill);
+		} catch (IllegalArgumentException err)
+		{
+			// ignore
+		}
+		
 		
 		// MOVING TO XY
 		final JPanel moveToXYPanel = new JPanel(new MigLayout("fill", "[]10[50,fill]20[]10[50,fill]20[100,fill]"));
@@ -116,20 +139,6 @@ public class SkillsPanel extends JPanel implements IInstanceableObserver
 		straightMovePanel.add(straightMoveAngle);
 		
 		straightMovePanel.setBorder(BorderFactory.createTitledBorder("StraightMove"));
-		
-		// ROTATE
-		final JPanel rotatePanel = new JPanel(new MigLayout("fill", "[]10[50,fill]20[100,fill]"));
-		
-		rotateAngle = new JTextField("90");
-		
-		final JButton rotate = new JButton("rotate");
-		rotate.addActionListener(new Rotate());
-		
-		rotatePanel.add(new JLabel("Angle [deg]: "));
-		rotatePanel.add(rotateAngle);
-		rotatePanel.add(rotate);
-		
-		rotatePanel.setBorder(BorderFactory.createTitledBorder("Rotate"));
 		
 		
 		// LOOKING
@@ -183,37 +192,12 @@ public class SkillsPanel extends JPanel implements IInstanceableObserver
 		
 		rotateAndMoveToXYPanel.add(rotateAndMoveToXY);
 		
-		rotateAndMoveToXYPanel.setBorder(BorderFactory.createTitledBorder("RotateWhileMoving"));
-		
-		final JPanel eightPanel = new JPanel(new MigLayout("fill", "[]10[50,fill]20[100,fill]"));
-		eightPanel.setBorder(BorderFactory.createTitledBorder("Eight"));
-		final JButton eightBtn = new JButton("Eight Skill");
-		eightSize = new JTextField("1000");
-		eightPanel.add(new JLabel("Eight [mm]: "));
-		eightPanel.add(eightSize);
-		eightPanel.add(eightBtn);
-		eightBtn.addActionListener(new Eight());
-		
-		final JPanel turnTestPanel = new JPanel(new MigLayout("fill", "[]10[50,fill]20[100,fill]"));
-		turnTestPanel.setBorder(BorderFactory.createTitledBorder("Curve"));
-		final JButton turnTestBtn = new JButton("Curve");
-		turnTestSize = new JTextField("300");
-		turnTestAngle = new JTextField("90");
-		turnTestPanel.add(new JLabel("Curve [mm], [deg]: "));
-		turnTestPanel.add(turnTestSize);
-		turnTestPanel.add(turnTestAngle);
-		turnTestPanel.add(turnTestBtn);
-		turnTestBtn.addActionListener(new Curve());
-		
 		add(skillCustomPanel, "wrap");
+		add(botSkillCustomPanel, "wrap");
 		add(moveToXYPanel, "wrap");
 		add(straightMovePanel, "wrap");
-		add(rotatePanel, "wrap");
 		add(aimPanel, "wrap");
 		add(dribblePanel, "wrap");
-		add(rotateAndMoveToXYPanel, "wrap");
-		add(eightPanel, "wrap");
-		add(turnTestPanel, "wrap");
 		add(Box.createGlue(), "push");
 	}
 	
@@ -281,18 +265,6 @@ public class SkillsPanel extends JPanel implements IInstanceableObserver
 	}
 	
 	
-	private void notifyRotate(final float targetAngle)
-	{
-		synchronized (observers)
-		{
-			for (final ISkillsPanelObserver observer : observers)
-			{
-				observer.onRotate(targetAngle);
-			}
-		}
-	}
-	
-	
 	private void notifyLookAt(final Vector2 lookAtTarget)
 	{
 		synchronized (observers)
@@ -332,10 +304,36 @@ public class SkillsPanel extends JPanel implements IInstanceableObserver
 	}
 	
 	
+	/**
+	 * @param skill
+	 */
+	private void notifyBotSkill(final ABotSkill skill)
+	{
+		synchronized (observers)
+		{
+			for (final ISkillsPanelObserver observer : observers)
+			{
+				observer.onBotSkill(skill);
+			}
+		}
+	}
+	
+	
 	@Override
 	public void onNewInstance(final Object object)
 	{
-		notifySkill((ASkill) object);
+		if (object instanceof ASkill)
+		{
+			ASkill skill = (ASkill) object;
+			SumatraModel.getInstance().setUserProperty(DEF_SKILL_KEY, skill.getSkillName().name());
+			notifySkill(skill);
+		}
+		else if (object instanceof ABotSkill)
+		{
+			ABotSkill skill = (ABotSkill) object;
+			SumatraModel.getInstance().setUserProperty(DEF_BOT_SKILL_KEY, skill.getType().name());
+			notifyBotSkill(skill);
+		}
 	}
 	
 	
@@ -425,27 +423,9 @@ public class SkillsPanel extends JPanel implements IInstanceableObserver
 		}
 	}
 	
-	private class Rotate implements ActionListener
-	{
-		
-		@Override
-		public void actionPerformed(final ActionEvent arg0)
-		{
-			try
-			{
-				float angle = AngleMath.deg2rad(Float.parseFloat(rotateAngle.getText()));
-				notifyRotate(angle);
-			} catch (final NumberFormatException err)
-			{
-				return;
-			}
-		}
-	}
-	
 	
 	private class LookAt implements ActionListener
 	{
-		
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
@@ -460,15 +440,12 @@ public class SkillsPanel extends JPanel implements IInstanceableObserver
 				return;
 			}
 			notifyLookAt(new Vector2(x, y));
-			
 		}
-		
 	}
 	
 	
 	private class Dribble implements ActionListener
 	{
-		
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
@@ -484,45 +461,5 @@ public class SkillsPanel extends JPanel implements IInstanceableObserver
 			}
 			notifyDribble(rpm);
 		}
-		
 	}
-	
-	private class Eight implements ActionListener
-	{
-		
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			try
-			{
-				float size = Float.parseFloat(eightSize.getText());
-				
-				notifySkill(new EightSkill(size));
-			} catch (NumberFormatException err)
-			{
-				eightSize.setBackground(Color.RED);
-			}
-		}
-		
-	}
-	
-	private class Curve implements ActionListener
-	{
-		
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			try
-			{
-				float size = Float.parseFloat(turnTestSize.getText());
-				float angle = AngleMath.deg2rad(Float.parseFloat(turnTestAngle.getText()));
-				notifySkill(new CurveTestSkill(size, angle));
-			} catch (NumberFormatException err)
-			{
-				turnTestSize.setBackground(Color.RED);
-			}
-		}
-		
-	}
-	
 }

@@ -8,20 +8,22 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.botcenter.bootloader;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.File;
 
+import org.apache.log4j.Logger;
+
+import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
+import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.Bootloader.EBootloaderState;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.Bootloader;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.Bootloader.EProcessorID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.Bootloader.IBootloaderObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.TigerBotV2;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IBotManagerObserver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.TigerBotV3;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerBootloaderCheckForUpdates;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ABotManager;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.botcenter.bootloader.FirmwareBotPresenter.IFirmwareBotPresenterObserver;
+import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bootloader.FirmwareBotPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bootloader.FirmwareUpdatePanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bootloader.FirmwareUpdatePanel.IFirmwareUpdatePanelObserver;
 
@@ -31,33 +33,36 @@ import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bootloader.Firm
  * 
  * @author AndreR
  */
-public class FirmwareUpdatePresenter implements IFirmwareUpdatePanelObserver, IFirmwareBotPresenterObserver,
-		IBotManagerObserver
+public class FirmwareUpdatePresenter implements IFirmwareUpdatePanelObserver, IBootloaderObserver
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private FirmwareUpdatePanel							updatePanel		= new FirmwareUpdatePanel();
-	private List<FirmwareBotPresenter>					targets			= new ArrayList<FirmwareBotPresenter>();
-	private String												filePath;
-	// private FirmwareBotPresenter currentBotFlashing = null;
-	private final Map<BotID, FirmwareBotPresenter>	botPresenter	= new HashMap<BotID, FirmwareBotPresenter>();
+	private final FirmwareUpdatePanel	updatePanel;
+	private static final Logger			log	= Logger.getLogger(FirmwareUpdatePresenter.class.getName());
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 * @param botManager
-	 */
-	public FirmwareUpdatePresenter(final ABotManager botManager)
+	/** */
+	public FirmwareUpdatePresenter()
 	{
+		updatePanel = new FirmwareUpdatePanel();
 		updatePanel.addObserver(this);
 		
-		for (ABot bot : botManager.getAllBots().values())
-		{
-			onBotConnectionChanged(bot);
-		}
+		onSelectFirmwareFolder(SumatraModel.getInstance().getUserProperty(
+				FirmwareUpdatePanel.class.getCanonicalName() + ".firmwareFolder"));
+	}
+	
+	
+	/**
+	 * @param updatePanel
+	 */
+	public FirmwareUpdatePresenter(final FirmwareUpdatePanel updatePanel)
+	{
+		this.updatePanel = updatePanel;
+		this.updatePanel.addObserver(this);
+		
+		onSelectFirmwareFolder(SumatraModel.getInstance().getUserProperty(
+				FirmwareUpdatePanel.class.getCanonicalName() + ".firmwareFolder"));
 	}
 	
 	
@@ -72,24 +77,41 @@ public class FirmwareUpdatePresenter implements IFirmwareUpdatePanelObserver, IF
 	
 	
 	@Override
-	public void onStartFirmwareUpdate(final String filePath, final int target)
+	public void onSelectFirmwareFolder(final String folderPath)
 	{
-		this.filePath = filePath;
-		
-		targets.clear();
-		
-		for (FirmwareBotPresenter presenter : botPresenter.values())
+		File testMain = new File(folderPath + "/release/app/run/main.bin");
+		if (!testMain.exists())
 		{
-			if (presenter.getBotPanel().getChkEnabled())
+			log.warn("Compiled firmware binaries not found: " + folderPath);
+		}
+		
+		Bootloader.setProgramFolder(folderPath + "/release/app/run");
+		
+		updatePanel.removeAllBotPanels();
+	}
+	
+	
+	@Override
+	public void onStartFirmwareUpdate()
+	{
+		ABotManager botManager;
+		
+		try
+		{
+			botManager = (ABotManager) SumatraModel.getInstance().getModule(ABotManager.MODULE_ID);
+		} catch (ModuleNotFoundException err)
+		{
+			return;
+		}
+		
+		for (ABot bot : botManager.getAllBots().values())
+		{
+			if (bot.getType() == EBotType.TIGER_V3)
 			{
-				targets.add(presenter);
-				presenter.start(this.filePath, target);
+				TigerBotV3 botV3 = (TigerBotV3) bot;
+				botV3.execute(new TigerBootloaderCheckForUpdates());
 			}
 		}
-		updatePanel.setFlashing(true);
-		
-		// initiate flashing
-		onFirmwareUpdateComplete();
 	}
 	
 	
@@ -106,78 +128,12 @@ public class FirmwareUpdatePresenter implements IFirmwareUpdatePanelObserver, IF
 	
 	
 	@Override
-	public void onFirmwareUpdateComplete()
+	public void onBootloaderProgress(final BotID botId, final EProcessorID procId, final long bytesRead,
+			final long totalSize)
 	{
-		if (targets.isEmpty())
-		{
-			// currentBotFlashing = null;
-			updatePanel.setFlashing(false);
-			return;
-		}
-		
-		// currentBotFlashing = targets.remove(0);
-		targets.remove(0);
-		// currentBotFlashing.start(filePath, targetMain);
-	}
-	
-	
-	@Override
-	public void onBotAdded(final ABot bot)
-	{
-	}
-	
-	
-	@Override
-	public void onBotRemoved(final ABot bot)
-	{
-	}
-	
-	
-	@Override
-	public void onBotIdChanged(final BotID oldId, final BotID newId)
-	{
-	}
-	
-	
-	@Override
-	public void onBotConnectionChanged(final ABot bot)
-	{
-		if ((bot.getType() == EBotType.TIGER_V2))
-		{
-			FirmwareBotPresenter presenter = botPresenter.get(bot.getBotID());
-			if ((bot.getNetworkState() == ENetworkState.ONLINE))
-			{
-				if (presenter == null)
-				{
-					FirmwareBotPresenter pres = new FirmwareBotPresenter((TigerBotV2) bot);
-					updatePanel.addBotPanel(pres.getBotPanel());
-					botPresenter.put(bot.getBotID(), pres);
-					pres.addObserver(this);
-				}
-			}
-			// else
-			// {
-			// if ((presenter != null) && (presenter != currentBotFlashing))
-			// {
-			// updatePanel.removeBotPanel(presenter.getBotPanel());
-			// botPresenter.remove(bot.getBotID());
-			// presenter.removeObserver(this);
-			// }
-			// }
-		}
-	}
-	
-	
-	@Override
-	public void onCancel()
-	{
-		targets.clear();
-		// currentBotFlashing = null;
-		for (FirmwareBotPresenter presenter : botPresenter.values())
-		{
-			presenter.cancel();
-			presenter.onStateChanged(EBootloaderState.IDLE);
-		}
-		updatePanel.setFlashing(false);
+		FirmwareBotPanel panel = updatePanel.getOrCreateBotPanel(botId);
+		panel.setProcessorId(procId);
+		panel.setProgress(bytesRead, totalSize);
+		panel.setBotId(botId);
 	}
 }

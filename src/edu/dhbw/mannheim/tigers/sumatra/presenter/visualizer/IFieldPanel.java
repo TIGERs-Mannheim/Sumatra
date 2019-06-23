@@ -13,9 +13,11 @@ import java.awt.Graphics2D;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordWfFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.referee.RefereeMsg;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.EVisualizerOptions;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.IFieldPanelObserver;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.EDrawableShapesLayer;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.FieldPanel.EFieldTurn;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.layers.MultiFieldLayerUI;
 
@@ -53,6 +55,14 @@ public interface IFieldPanel
 	
 	
 	/**
+	 * Draws referee msg
+	 * 
+	 * @param msg
+	 */
+	void updateRefereeMsg(final RefereeMsg msg);
+	
+	
+	/**
 	 * @param newObserver
 	 */
 	void addObserver(IFieldPanelObserver newObserver);
@@ -62,6 +72,13 @@ public interface IFieldPanel
 	 * @param oldObserver
 	 */
 	void removeObserver(IFieldPanelObserver oldObserver);
+	
+	
+	/**
+	 * @param dsLayer
+	 * @param visible
+	 */
+	void setLayerVisiblility(final EDrawableShapesLayer dsLayer, final boolean visible);
 	
 	
 	/**
@@ -182,4 +199,40 @@ public interface IFieldPanel
 	 * @return
 	 */
 	int getFieldWidth();
+	
+	
+	/**
+	 * @return the scaleFactor
+	 */
+	float getScaleFactor();
+	
+	
+	/**
+	 * @return the fieldOriginY
+	 */
+	float getFieldOriginY();
+	
+	
+	/**
+	 * @return the fieldOriginX
+	 */
+	float getFieldOriginX();
+	
+	
+	/**
+	 * @return
+	 */
+	int getWidth();
+	
+	
+	/**
+	 * @return
+	 */
+	int getHeight();
+	
+	
+	/**
+	 * 
+	 */
+	void repaint();
 }

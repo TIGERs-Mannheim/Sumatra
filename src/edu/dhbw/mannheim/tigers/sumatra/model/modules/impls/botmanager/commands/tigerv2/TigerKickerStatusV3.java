@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 30.05.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2;
@@ -20,13 +19,11 @@ import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
  * - Charge current [mA]
  * - Capacitor level [V]
  * - IR barrier level [V]
- * 
  * - Mode (Manual, Automatic charging)
  * - Arm state
  * - Arm device
  * 
  * @author AndreR
- * 
  */
 public class TigerKickerStatusV3 extends ACommand
 {
@@ -60,7 +57,6 @@ public class TigerKickerStatusV3 extends ACommand
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @return
 	 */
 	public float getChargeCurrent()
@@ -70,17 +66,15 @@ public class TigerKickerStatusV3 extends ACommand
 	
 	
 	/**
-	 * 
 	 * @param chargeCurrent
 	 */
-	public void setChargeCurrent(float chargeCurrent)
+	public void setChargeCurrent(final float chargeCurrent)
 	{
 		this.chargeCurrent = (int) (chargeCurrent * 1000.0f);
 	}
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public float getCapLevel()
@@ -90,17 +84,15 @@ public class TigerKickerStatusV3 extends ACommand
 	
 	
 	/**
-	 * 
 	 * @param capLevel
 	 */
-	public void setCapLevel(float capLevel)
+	public void setCapLevel(final float capLevel)
 	{
 		this.capLevel = (int) (capLevel * 10.0f);
 	}
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public float getIrLevel()
@@ -110,10 +102,9 @@ public class TigerKickerStatusV3 extends ACommand
 	
 	
 	/**
-	 * 
 	 * @param irLevel
 	 */
-	public void setIrLevel(float irLevel)
+	public void setIrLevel(final float irLevel)
 	{
 		this.irLevel = (int) (irLevel * 10000.0f);
 	}

@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 14.05.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory;
@@ -13,6 +12,14 @@ import java.util.Random;
 
 import com.sleepycat.persist.model.Persistent;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline.ISpline;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector3;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector3;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
+import edu.dhbw.mannheim.tigers.sumatra.util.units.DistanceUnit;
+
 
 /**
  * Storage class for a position and rotation spline.
@@ -20,9 +27,9 @@ import com.sleepycat.persist.model.Persistent;
  * @author AndreR
  */
 @Persistent(version = 2)
-public class SplinePair3D
+public class SplinePair3D implements ISpline, ITrajectory2D
 {
-	private static final Random			rnd				= new Random(System.nanoTime());
+	private static final Random			rnd				= new Random(SumatraClock.nanoTime());
 	private static final int				MAX_RANDOM_ID	= 999999999;
 	private final int							randomId;
 	/** */
@@ -30,7 +37,7 @@ public class SplinePair3D
 	/** */
 	private HermiteSplineTrajectory1D	rotation;
 	
-	private long								startTime		= 0;
+	private long								startTime		= SumatraClock.nanoTime();
 	
 	
 	/**
@@ -45,7 +52,7 @@ public class SplinePair3D
 	/**
 	 * @param traj
 	 */
-	public SplinePair3D(SplinePair3D traj)
+	public SplinePair3D(final SplinePair3D traj)
 	{
 		this();
 		position = new HermiteSplineTrajectory2D(traj.position);
@@ -75,7 +82,7 @@ public class SplinePair3D
 	/**
 	 * @param position the position to set
 	 */
-	public void setPositionTrajectory(HermiteSplineTrajectory2D position)
+	public void setPositionTrajectory(final HermiteSplineTrajectory2D position)
 	{
 		this.position = position;
 	}
@@ -93,7 +100,7 @@ public class SplinePair3D
 	/**
 	 * @param rotation the rotation to set
 	 */
-	public void setRotationTrajectory(HermiteSplineTrajectory1D rotation)
+	public void setRotationTrajectory(final HermiteSplineTrajectory1D rotation)
 	{
 		this.rotation = rotation;
 	}
@@ -106,7 +113,7 @@ public class SplinePair3D
 	 * 
 	 * @param pair Trajectory to append.
 	 */
-	public void append(SplinePair3D pair)
+	public void append(final SplinePair3D pair)
 	{
 		position.append(pair.position);
 		rotation.append(pair.rotation);
@@ -132,19 +139,25 @@ public class SplinePair3D
 	
 	
 	/**
-	 * 
 	 * @return [s]
 	 */
 	public final float getTrajectoryTime()
 	{
-		return ((System.nanoTime() - startTime) / (1e9f));
+		return ((SumatraClock.nanoTime() - startTime) / (1e9f));
+	}
+	
+	
+	@Override
+	public float getCurrentTime()
+	{
+		return getTrajectoryTime();
 	}
 	
 	
 	/**
 	 * @param startTime [ns]
 	 */
-	public final void setStartTime(long startTime)
+	public final void setStartTime(final long startTime)
 	{
 		this.startTime = startTime;
 	}
@@ -155,9 +168,57 @@ public class SplinePair3D
 	 * 
 	 * @return [s]
 	 */
+	@Override
 	public final float getTotalTime()
 	{
 		return Math.max(position.getTotalTime(), rotation.getTotalTime());
 	}
 	
+	
+	@Override
+	public IVector3 getPositionByTime(final float t)
+	{
+		IVector2 pos = DistanceUnit.METERS.toMillimeters(getPositionTrajectory().getPosition(t));
+		float orientation = getRotationTrajectory().getPosition(t);
+		return new Vector3(pos, orientation);
+	}
+	
+	
+	@Override
+	public IVector3 getVelocityByTime(final float t)
+	{
+		IVector2 pos = getPositionTrajectory().getVelocity(t);
+		float orientation = getRotationTrajectory().getVelocity(t);
+		return new Vector3(pos, orientation);
+	}
+	
+	
+	@Override
+	public IVector3 getAccelerationByTime(final float t)
+	{
+		IVector2 pos = getPositionTrajectory().getAcceleration(t);
+		float orientation = getRotationTrajectory().getAcceleration(t);
+		return new Vector3(pos, orientation);
+	}
+	
+	
+	@Override
+	public Vector2 getPosition(final float t)
+	{
+		return getPositionByTime(t).getXYVector();
+	}
+	
+	
+	@Override
+	public Vector2 getVelocity(final float t)
+	{
+		return getVelocityByTime(t).getXYVector();
+	}
+	
+	
+	@Override
+	public Vector2 getAcceleration(final float t)
+	{
+		return getAccelerationByTime(t).getXYVector();
+	}
 }

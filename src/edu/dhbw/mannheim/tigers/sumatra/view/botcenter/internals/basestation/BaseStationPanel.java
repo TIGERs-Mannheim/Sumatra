@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 23.04.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.basestation;
@@ -30,7 +29,6 @@ import net.miginfocom.swing.MigLayout;
  * Base station configuration panel.
  * 
  * @author AndreR
- * 
  */
 public class BaseStationPanel extends JPanel
 {
@@ -48,7 +46,6 @@ public class BaseStationPanel extends JPanel
 		
 		
 		/**
-		 * 
 		 * @param numPings
 		 * @param payload
 		 */
@@ -60,14 +57,12 @@ public class BaseStationPanel extends JPanel
 		
 		
 		/**
-		 * 
 		 * @param ch
-		 * @param invertPos
 		 * @param rate
 		 * @param bots
 		 * @param to
 		 */
-		void onCfgChanged(int ch, boolean invertPos, int rate, int bots, int to);
+		void onCfgChanged(int ch, int rate, int bots, int to);
 	}
 	
 	// --------------------------------------------------------------------------
@@ -92,7 +87,7 @@ public class BaseStationPanel extends JPanel
 	private final JTextField								channel				= new JTextField();
 	private final JTextField								timeout				= new JTextField();
 	
-	private BaseStationNetworkPanel						networkPanel		= null;
+	private BaseStationControlPanel						networkPanel		= null;
 	
 	private final List<IBaseStationPanelObserver>	observers			= new ArrayList<IBaseStationPanelObserver>();
 	
@@ -105,7 +100,7 @@ public class BaseStationPanel extends JPanel
 	{
 		setLayout(new MigLayout(""));
 		
-		networkPanel = new BaseStationNetworkPanel();
+		networkPanel = new BaseStationControlPanel();
 		
 		JButton saveNetCfgButton = new JButton("Save");
 		saveNetCfgButton.addActionListener(new SaveNetCfg());
@@ -162,7 +157,6 @@ public class BaseStationPanel extends JPanel
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @param delay
 	 */
 	public void setPingDelay(final float delay)
@@ -179,21 +173,18 @@ public class BaseStationPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @param newChannel
-	 * @param invert
 	 * @param rate
 	 * @param bots
 	 * @param to
 	 */
-	public void setConfig(final int newChannel, final boolean invert, final int rate, final int bots, final int to)
+	public void setConfig(final int newChannel, final int rate, final int bots, final int to)
 	{
 		SwingUtilities.invokeLater(new Runnable()
 		{
 			@Override
 			public void run()
 			{
-				invertVision.setSelected(invert);
 				visionRate.setText("" + rate);
 				channel.setText("" + newChannel);
 				maxBots.setText("" + bots);
@@ -204,10 +195,9 @@ public class BaseStationPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @param observer
 	 */
-	public void addObserver(IBaseStationPanelObserver observer)
+	public void addObserver(final IBaseStationPanelObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -217,10 +207,9 @@ public class BaseStationPanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @param observer
 	 */
-	public void removeObserver(IBaseStationPanelObserver observer)
+	public void removeObserver(final IBaseStationPanelObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -236,7 +225,7 @@ public class BaseStationPanel extends JPanel
 	 * @param dstPort
 	 * @param localPort
 	 */
-	public void setNetCfg(String host, int dstPort, int localPort)
+	public void setNetCfg(final String host, final int dstPort, final int localPort)
 	{
 		this.host.setText(host);
 		this.dstPort.setText("" + dstPort);
@@ -244,7 +233,7 @@ public class BaseStationPanel extends JPanel
 	}
 	
 	
-	private void notifyNetCfgChanged(String host, int dstPort, int localPort)
+	private void notifyNetCfgChanged(final String host, final int dstPort, final int localPort)
 	{
 		synchronized (observers)
 		{
@@ -256,7 +245,7 @@ public class BaseStationPanel extends JPanel
 	}
 	
 	
-	private void notifyStartPing(int numPings, int payload)
+	private void notifyStartPing(final int numPings, final int payload)
 	{
 		synchronized (observers)
 		{
@@ -280,13 +269,13 @@ public class BaseStationPanel extends JPanel
 	}
 	
 	
-	private void notifyCfgChanged(int ch, boolean invert, int rate, int bots, int to)
+	private void notifyCfgChanged(final int ch, final int rate, final int bots, final int to)
 	{
 		synchronized (observers)
 		{
 			for (IBaseStationPanelObserver observer : observers)
 			{
-				observer.onCfgChanged(ch, invert, rate, bots, to);
+				observer.onCfgChanged(ch, rate, bots, to);
 			}
 		}
 	}
@@ -296,10 +285,9 @@ public class BaseStationPanel extends JPanel
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @return
 	 */
-	public BaseStationNetworkPanel getNetworkPanel()
+	public BaseStationControlPanel getNetworkPanel()
 	{
 		return networkPanel;
 	}
@@ -308,7 +296,7 @@ public class BaseStationPanel extends JPanel
 	private class SaveNetCfg implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent arg0)
+		public void actionPerformed(final ActionEvent arg0)
 		{
 			int local;
 			int dst;
@@ -329,7 +317,7 @@ public class BaseStationPanel extends JPanel
 	private class SaveVisionCfg implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent arg0)
+		public void actionPerformed(final ActionEvent arg0)
 		{
 			int rate;
 			int bots;
@@ -347,14 +335,14 @@ public class BaseStationPanel extends JPanel
 				return;
 			}
 			
-			notifyCfgChanged(ch, invertVision.isSelected(), rate, bots, to);
+			notifyCfgChanged(ch, rate, bots, to);
 		}
 	}
 	
 	private class StartStopPing implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent arg0)
+		public void actionPerformed(final ActionEvent arg0)
 		{
 			if (pingIsActive)
 			{

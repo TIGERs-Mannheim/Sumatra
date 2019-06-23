@@ -12,22 +12,28 @@ import java.util.Arrays;
 import java.util.List;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeam;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.defense.DefensePointsCalc;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.fieldanalysis.FieldAnalyserCalc;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.defense.DefenseCalc;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.general.BallLeftFieldCalc;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.general.BallPossessionCalc;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.general.BotInformationCalc;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.general.BotLastTouchedBallCalc;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.general.BotToBallDistanceCalc;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.general.BufferCalc;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.general.GameBehaviorCalc;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.general.GameStateCalc;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.general.LetterCalculator;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.general.MixedTeamBothTouchedBothCalc;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.general.PossibleGoalCalc;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.general.RoleFinderCalc;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.general.StatisticsCalc;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.offense.OffenseMovePositionsCalc;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.offense.OffensiveActionsCalc;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.offense.OffensiveMovePositionsCalc;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.offense.OffensiveStrategyCalc;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.offense.ShooterCalc;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.support.PassCalc;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.support.PassTargetCalc;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.support.RedirectPosGPUCalc;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.support.RedirectPosRefCalc;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.support.SupportPositionGPUCalc;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.support.SupportCalc;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.test.AiMathTestCalc;
 import edu.dhbw.mannheim.tigers.sumatra.util.IInstanceableEnum;
 import edu.dhbw.mannheim.tigers.sumatra.util.InstanceableClass;
 import edu.dhbw.mannheim.tigers.sumatra.util.InstanceableParameter;
@@ -41,7 +47,13 @@ import edu.dhbw.mannheim.tigers.sumatra.util.InstanceableParameter;
 public enum ECalculator implements IInstanceableEnum
 {
 	/**  */
+	LETTER(new InstanceableClass(LetterCalculator.class), false),
+	/**  */
+	BUFFER(new InstanceableClass(BufferCalc.class)),
+	/**  */
 	GAME_STATE(new InstanceableClass(GameStateCalc.class)),
+	/**  */
+	GAME_BEHAVIOR(new InstanceableClass(GameBehaviorCalc.class)),
 	/** */
 	BOT_TO_BALL_DISTANCE_TIGERS(new InstanceableClass(BotToBallDistanceCalc.class, new InstanceableParameter(
 			ETeam.class, "team", ETeam.TIGERS.name()))),
@@ -49,7 +61,7 @@ public enum ECalculator implements IInstanceableEnum
 	BOT_TO_BALL_DISTANCE_OPPONENTS(new InstanceableClass(BotToBallDistanceCalc.class, new InstanceableParameter(
 			ETeam.class, "team", ETeam.OPPONENTS.name()))),
 	/** */
-	DEFENSE_POINTS(new InstanceableClass(DefensePointsCalc.class)),
+	DEFENSE_CALC(new InstanceableClass(DefenseCalc.class), GAME_STATE),
 	/** */
 	BALL_POSSESSION(new InstanceableClass(BallPossessionCalc.class), BOT_TO_BALL_DISTANCE_TIGERS,
 			BOT_TO_BALL_DISTANCE_OPPONENTS),
@@ -57,28 +69,62 @@ public enum ECalculator implements IInstanceableEnum
 	POSSIBLE_GOAL(new InstanceableClass(PossibleGoalCalc.class)),
 	/** */
 	BOT_LAST_TOUCHED_BALL(new InstanceableClass(BotLastTouchedBallCalc.class)),
-	/** */
-	FIELD_ANALYSER(new InstanceableClass(FieldAnalyserCalc.class), false),
 	/**  */
 	SHOOTER_MEMORY(new InstanceableClass(ShooterCalc.class)),
 	/** */
-	OFFENSE_MOVE_POSITIONS(new InstanceableClass(OffenseMovePositionsCalc.class)),
+	OFFENSE_MOVE_POSITIONS(new InstanceableClass(OffensiveMovePositionsCalc.class)),
 	/**  */
 	BOT_INFORMATION(new InstanceableClass(BotInformationCalc.class)),
 	/**  */
 	BALL_LEFT_FIELD(new InstanceableClass(BallLeftFieldCalc.class)),
 	/**  */
-	BEST_PASSRECEIVER(new InstanceableClass(PassCalc.class), SHOOTER_MEMORY),
-	/**  */
-	REDIRECT_POSITIONS(new InstanceableClass(RedirectPosRefCalc.class)),
-	/**  */
 	REDIRECT_POS_GPU(new InstanceableClass(RedirectPosGPUCalc.class), BALL_POSSESSION),
+	/** */
+	PASS_TARGETS(new InstanceableClass(PassTargetCalc.class), REDIRECT_POS_GPU),
+	/** */
+	SUPPORT(new InstanceableClass(SupportCalc.class), REDIRECT_POS_GPU, PASS_TARGETS, GAME_STATE),
 	/**  */
-	SUPPORT_POSITIONS_GPU(new InstanceableClass(SupportPositionGPUCalc.class), REDIRECT_POSITIONS, REDIRECT_POS_GPU),
+	OFFENSIVE_STRATEGY(new InstanceableClass(OffensiveStrategyCalc.class), GAME_STATE, OFFENSE_MOVE_POSITIONS,
+			SHOOTER_MEMORY),
+	/**  */
+	OFFENSIVE_ACTION(new InstanceableClass(OffensiveActionsCalc.class)),
+	/**  */
+	ROLE_FINDER(new InstanceableClass(RoleFinderCalc.class), GAME_BEHAVIOR),
+	/** */
+	// BIG_DATA(new InstanceableClass(BigDataCalc.class)),
+	/**  */
+	AI_MATH_TEST(new InstanceableClass(AiMathTestCalc.class), false),
+	/** Checks if both subteams have touched the ball */
+	MIXED_TEAM_BOTH_TOUCHED(new InstanceableClass(MixedTeamBothTouchedBothCalc.class), GAME_STATE, BOT_LAST_TOUCHED_BALL),
 	/** */
 	STATISTICS(new InstanceableClass(StatisticsCalc.class), GAME_STATE, BALL_POSSESSION, POSSIBLE_GOAL,
-			BOT_LAST_TOUCHED_BALL);
+			BOT_LAST_TOUCHED_BALL, ROLE_FINDER),
 	
+	/** berkeley support */
+	/** */
+	@Deprecated
+	BALL_MOVEMENT_ANALYSER(new InstanceableClass(null), false),
+	/** */
+	@Deprecated
+	DEFENSE_POINTS(new InstanceableClass(null), false),
+	/** */
+	@Deprecated
+	SUPPORT_POSITIONS(new InstanceableClass(null), false),
+	/**  */
+	@Deprecated
+	REDIRECT_POSITIONS(new InstanceableClass(null), false),
+	/**  */
+	@Deprecated
+	SUPPORT_POSITIONS_GPU(new InstanceableClass(null), false),
+	/**  */
+	@Deprecated
+	BEST_PASSRECEIVER(new InstanceableClass(null), false),
+	/** */
+	@Deprecated
+	DEFENSE_CALC2(new InstanceableClass(null), false),
+	/**  */
+	@Deprecated
+	BIG_DATA(new InstanceableClass(null), false);
 	
 	private final boolean				initiallyActive;
 	private final long					timeRateMs;

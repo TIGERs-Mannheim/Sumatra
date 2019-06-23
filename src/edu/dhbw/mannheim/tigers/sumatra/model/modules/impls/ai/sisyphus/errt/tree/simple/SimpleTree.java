@@ -4,11 +4,11 @@
  * Project: TIGERS - Sumatra
  * Date: Oct 8, 2012
  * Author(s): dirk
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.tree.simple;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -29,16 +29,15 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.tre
  * basic tree for the ERRT algorithm, every node can have an unlimited amount of children
  * 
  * @author dirk
- * 
  */
-@Persistent
+@Persistent(version = 1)
 public class SimpleTree implements ITree
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	// Logger
-	private static final Logger	log	= Logger.getLogger(SimpleTree.class.getName());
+	private static final Logger	log				= Logger.getLogger(SimpleTree.class.getName());
 	
 	@NotNull
 	private Node						root;
@@ -48,6 +47,13 @@ public class SimpleTree implements ITree
 	// lists all nodes
 	// not regarded for smoothing
 	private Set<Node>					listOfAll;
+	private FieldHash<Node>			nodeHash;
+	
+	// Set of all Leaf nodes (calculated during adding a node)
+	private Set<Node>					setOfLeafs;
+	
+	private int							nodesAll			= 0;
+	private int							regardedNodes	= 0;
 	
 	
 	// --------------------------------------------------------------------------
@@ -64,12 +70,15 @@ public class SimpleTree implements ITree
 	 * @param root
 	 * @param goal
 	 */
-	public SimpleTree(IVector2 root, Node goal)
+	public SimpleTree(final IVector2 root, final Node goal)
 	{
 		goalNode = goal;
 		this.root = new Node(root);
 		listOfAll = new HashSet<Node>();
 		listOfAll.add(this.root);
+		setOfLeafs = new HashSet<Node>();
+		
+		nodeHash = new FieldHash<Node>(1000);
 	}
 	
 	
@@ -83,7 +92,7 @@ public class SimpleTree implements ITree
 	 * @return
 	 */
 	@Override
-	public Node getNearest(Node target, boolean allowRoot)
+	public Node getNearest(final Node target, final boolean allowRoot)
 	{
 		// calculate with squares, because real distance is not needed and: if a^2 > b^2 then |a| > |b|
 		// longer than possible -> first tested node will be nearer
@@ -93,7 +102,19 @@ public class SimpleTree implements ITree
 		
 		Node nearestNode = root;
 		
-		for (final Node currentNode : listOfAll)
+		Collection<Node> nodesToSearch = listOfAll;
+		
+		Collection<Node> nearByNodes = nodeHash.find(target.x, target.y);
+		nodesAll += nodesToSearch.size();
+		
+		// take only nearby nodes if there are some, improves performance by 10-15%
+		if (!nearByNodes.isEmpty())
+		{
+			nodesToSearch = nearByNodes;
+		}
+		regardedNodes += nodesToSearch.size();
+		
+		for (final Node currentNode : nodesToSearch)
 		{
 			currentSquareDistance = GeoMath.distancePPSqr(target, currentNode);
 			
@@ -114,69 +135,41 @@ public class SimpleTree implements ITree
 	
 	
 	/**
+	 * TODO dirk, add comment!
+	 * 
+	 * @return
+	 */
+	public String regardedPercentage()
+	{
+		return regardedNodes + " / " + nodesAll + " = " + (((float) regardedNodes) / ((float) nodesAll));
+	}
+	
+	
+	/**
 	 * add a node to the tree
 	 * 
 	 * @param father the father/parent of the new node
 	 * @param newNode the node which should be added to the tree
-	 * @param isSuccessor determines if the successor variable should be set, too
 	 */
 	@Override
-	public void add(Node father, Node newNode, boolean isSuccessor)
+	public void add(final Node father, final Node newNode)
 	{
 		// add it to the list of all nodes
 		if (!listOfAll.contains(newNode))
 		{
+			nodeHash.add(newNode.x, newNode.y, newNode);
 			listOfAll.add(newNode);
+		}
+		if (setOfLeafs.contains(father))
+		{
+			setOfLeafs.remove(father);
+		}
+		if (newNode.getChildren().size() <= 0)
+		{
+			setOfLeafs.add(newNode);
 		}
 		father.addChild(newNode);
 		newNode.setParent(father);
-		
-		// if the successors are already set they have to be updated, too
-		if (isSuccessor)
-		{
-			father.setSuccessor(newNode);
-		}
-	}
-	
-	
-	/**
-	 * 
-	 * add a node to the tree
-	 * 
-	 * @param father the father/parent of the new node
-	 * @param newNode the node which should be added to the tree
-	 */
-	public void add(Node father, Node newNode)
-	{
-		add(father, newNode, false);
-	}
-	
-	
-	@Override
-	public void removeBetween(Node startNode, Node endNode, boolean isSuccessor)
-	{
-		startNode.addChild(endNode);
-		endNode.setParent(startNode);
-		if (isSuccessor)
-		{
-			startNode.setSuccessor(endNode);
-		}
-	}
-	
-	
-	/**
-	 * set the successor variable for the path
-	 */
-	@Override
-	public void makeDoubleLinkedList()
-	{
-		Node currentNode = goalNode;
-		while (currentNode.getParent() != null)
-		{
-			final Node parent = currentNode.getParent();
-			parent.setSuccessor(currentNode);
-			currentNode = parent;
-		}
 	}
 	
 	
@@ -185,14 +178,13 @@ public class SimpleTree implements ITree
 	 */
 	public void printPath()
 	{
-		log.warn("Path:");
-		Node currentNode = root;
-		while (currentNode.getSuccessor() != null)
+		log.warn("Path (reverse):");
+		Node currentNode = goalNode;
+		while (currentNode.getParent() != null)
 		{
 			log.warn(currentNode.toString());
-			currentNode = currentNode.getSuccessor();
+			currentNode = currentNode.getParent();
 		}
-		
 	}
 	
 	
@@ -209,4 +201,20 @@ public class SimpleTree implements ITree
 		}
 		return root;
 	}
+	
+	
+	@Override
+	public Set<Node> getAllNodes()
+	{
+		return listOfAll;
+	}
+	
+	
+	@Override
+	public Set<Node> getAllLeafs()
+	{
+		return listOfAll;
+	}
+	
+	
 }

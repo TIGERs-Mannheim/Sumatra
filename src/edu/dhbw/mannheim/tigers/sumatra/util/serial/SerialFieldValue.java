@@ -4,13 +4,14 @@
  * Project: TIGERS - Sumatra
  * Date: 24.10.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.util.serial;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+
+import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
@@ -20,27 +21,27 @@ import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
  * Single value command data field.
  * 
  * @author AndreR
- * 
  */
 public class SerialFieldValue extends ASerialField
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private SerialDescription	embedded	= null;
+	private SerialDescription		embedded	= null;
+	
+	private static final Logger	log		= Logger.getLogger(SerialFieldValue.class.getName());
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @param field Reflection Field.
 	 * @param type ESerialDataType
 	 * @param offset byte array offset
 	 * @throws SerialException
 	 */
-	public SerialFieldValue(Field field, ESerialDataType type, int offset) throws SerialException
+	public SerialFieldValue(final Field field, final ESerialDataType type, final int offset) throws SerialException
 	{
 		super(field, type, offset);
 		
@@ -55,7 +56,7 @@ public class SerialFieldValue extends ASerialField
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
-	public void decode(byte[] data, Object obj) throws SerialException
+	public void decode(final byte[] data, final Object obj) throws SerialException
 	{
 		Object value = null;
 		
@@ -102,11 +103,36 @@ public class SerialFieldValue extends ASerialField
 	}
 	
 	
+	private void validateRange(final Object obj) throws IllegalArgumentException, IllegalAccessException
+	{
+		switch (type)
+		{
+			case UINT8:
+			case UINT16:
+			case UINT32:
+			case INT8:
+			case INT16:
+			case INT32:
+				long value = field.getLong(obj);
+				if ((value < type.getMin()) || (value > type.getMax()))
+				{
+					log.warn(type + " " + field.getDeclaringClass().getSimpleName() + "::" + field.getName()
+							+ " value is out of bounds (" + value + ")");
+				}
+				break;
+			default:
+				break;
+		}
+	}
+	
+	
 	@Override
-	public void encode(byte[] data, Object obj) throws SerialException
+	public void encode(final byte[] data, final Object obj) throws SerialException
 	{
 		try
 		{
+			validateRange(obj);
+			
 			switch (type)
 			{
 				case UINT8:
@@ -150,7 +176,7 @@ public class SerialFieldValue extends ASerialField
 	
 	
 	@Override
-	public int getLength(Object obj) throws SerialException
+	public int getLength(final Object obj) throws SerialException
 	{
 		if (type == ESerialDataType.EMBEDDED)
 		{

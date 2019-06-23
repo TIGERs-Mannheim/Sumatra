@@ -9,6 +9,7 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.others;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AthenaAiFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.MetisAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.EGameState;
@@ -22,6 +23,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPl
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.move.MoveRole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.move.MoveRole.EMoveBehavior;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.EMovingSpeed;
 
 
 /**
@@ -39,8 +41,6 @@ public class CheeringPlay extends APlay
 	private final Rectangle	field					= AIConfig.getGeometry().getField();
 	private final float		radius				= AIConfig.getGeometry().getBotToBallDistanceStop();
 	
-	// private static final int REPEAT = 4;
-	// private int currentStep = 0;
 	private CheeringPhase	state					= CheeringPhase.START;
 	
 	private int					numRolesLastTime	= 0;
@@ -95,15 +95,7 @@ public class CheeringPlay extends APlay
 					state = CheeringPhase.END;
 					break;
 				case END:
-					// if (currentStep < REPEAT)
-					// {
 					state = CheeringPhase.START;
-					// currentStep++;
-					// }
-					// else
-					// {
-					// changeToFinished();
-					// }
 					break;
 				default:
 					break;
@@ -123,7 +115,7 @@ public class CheeringPlay extends APlay
 				counterTrue++;
 			}
 		}
-		if (counterTrue >= getRoles().size())
+		if (counterTrue >= (getRoles().size() - 1))
 		{
 			return true;
 		}
@@ -160,7 +152,7 @@ public class CheeringPlay extends APlay
 	
 	
 	@Override
-	protected ARole onRemoveRole()
+	protected ARole onRemoveRole(final MetisAiFrame frame)
 	{
 		ARole role = getLastRole();
 		return role;
@@ -168,9 +160,11 @@ public class CheeringPlay extends APlay
 	
 	
 	@Override
-	protected ARole onAddRole()
+	protected ARole onAddRole(final MetisAiFrame frame)
 	{
-		ARole newRole = new MoveRole(EMoveBehavior.NORMAL);
+		MoveRole newRole = new MoveRole(EMoveBehavior.NORMAL);
+		newRole.getMoveCon().setBallObstacle(false);
+		newRole.getMoveCon().setSpeed(EMovingSpeed.SLOW, 0.5f);
 		return newRole;
 	}
 	
@@ -192,7 +186,6 @@ public class CheeringPlay extends APlay
 			IVector2 dest = GeoMath.stepAlongCircle(startOnCircle, center, angleStep * i);
 			moveRole.getMoveCon().updateDestination(dest);
 			moveRole.getMoveCon().updateLookAtTarget(center);
-			moveRole.getMoveCon().setOptimizationWanted(false);
 			i++;
 		}
 		state = CheeringPhase.GROW;

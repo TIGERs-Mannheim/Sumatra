@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 22.04.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.basestation;
@@ -12,14 +11,15 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.basestat
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationEthStats;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationStats;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationWifiStats;
 
 
 /**
  * BaseStation Observer.
  * 
  * @author AndreR
- * 
  */
 public interface IBaseStationObserver
 {
@@ -29,7 +29,9 @@ public interface IBaseStationObserver
 	 * @param id
 	 * @param command
 	 */
-	void onIncommingBotCommand(BotID id, ACommand command);
+	default void onIncommingBotCommand(final BotID id, final ACommand command)
+	{
+	}
 	
 	
 	/**
@@ -37,32 +39,63 @@ public interface IBaseStationObserver
 	 * 
 	 * @param command
 	 */
-	void onIncommingBaseStationCommand(ACommand command);
+	default void onIncommingBaseStationCommand(final ACommand command)
+	{
+	}
 	
 	
 	/**
-	 * 
 	 * @param stats
 	 */
-	void onNewBaseStationStats(BaseStationStats stats);
+	default void onNewBaseStationStats(final BaseStationStats stats)
+	{
+	}
 	
 	
 	/**
-	 * 
+	 * @param stats
+	 */
+	default void onNewBaseStationWifiStats(final BaseStationWifiStats stats)
+	{
+	}
+	
+	
+	/**
+	 * @param stats
+	 */
+	default void onNewBaseStationEthStats(final BaseStationEthStats stats)
+	{
+	}
+	
+	
+	/**
 	 * @param netState
 	 */
-	void onNetworkStateChanged(ENetworkState netState);
+	default void onNetworkStateChanged(final ENetworkState netState)
+	{
+	}
 	
 	
 	/**
-	 * 
 	 * @param delay
 	 */
-	void onNewPingDelay(float delay);
+	default void onNewPingDelay(final float delay)
+	{
+	}
 	
 	
 	/**
 	 * @param id
 	 */
-	void onBotOffline(BotID id);
+	default void onBotOffline(final BotID id)
+	{
+	}
+	
+	
+	/**
+	 * @param id
+	 */
+	default void onBotOnline(final BotID id)
+	{
+	}
 }

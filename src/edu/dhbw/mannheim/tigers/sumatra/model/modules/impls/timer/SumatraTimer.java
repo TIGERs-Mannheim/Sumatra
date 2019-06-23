@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 22.07.2010
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.timer;
@@ -20,6 +19,7 @@ import edu.dhbw.mannheim.tigers.moduli.exceptions.StartModuleException;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.timer.TimerInfo;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ATimer;
 import edu.dhbw.mannheim.tigers.sumatra.util.Dormouse;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 
 
 /**
@@ -29,7 +29,7 @@ import edu.dhbw.mannheim.tigers.sumatra.util.Dormouse;
  * @author Gero
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class SumatraTimer extends ATimer
+public class SumatraTimer extends ATimer implements ITimer
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
@@ -46,10 +46,9 @@ public class SumatraTimer extends ATimer
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @param subnodeConfiguration
 	 */
-	public SumatraTimer(SubnodeConfiguration subnodeConfiguration)
+	public SumatraTimer(final SubnodeConfiguration subnodeConfiguration)
 	{
 		
 	}
@@ -94,32 +93,32 @@ public class SumatraTimer extends ATimer
 	}
 	
 	
-	private void addTiming(TimerIdentifier tId, long time)
+	private void addTiming(final TimerIdentifier tId, final long time)
 	{
 		timings.putTiming(tId, time);
 	}
 	
 	
 	/**
-	 * 
 	 * @param timable
 	 * @param id
 	 */
-	public void stop(ETimable timable, long id)
+	@Override
+	public void stop(final ETimable timable, final long id)
 	{
 		stop(timable, id, 0);
 	}
 	
 	
 	/**
-	 * 
 	 * @param timable
 	 * @param id
 	 * @param customId
 	 */
-	public void stop(ETimable timable, long id, int customId)
+	@Override
+	public void stop(final ETimable timable, final long id, final int customId)
 	{
-		long stopTime = System.nanoTime();
+		long stopTime = SumatraClock.nanoTime();
 		TimerIdentifier timerId = new TimerIdentifier(timable, id, customId);
 		Long startTime = startTimes.remove(timerId);
 		if (startTime == null)
@@ -132,30 +131,29 @@ public class SumatraTimer extends ATimer
 	
 	
 	/**
-	 * 
 	 * @param timable
 	 * @param id
 	 */
-	public void start(ETimable timable, long id)
+	@Override
+	public void start(final ETimable timable, final long id)
 	{
 		start(timable, id, 0);
 	}
 	
 	
 	/**
-	 * 
 	 * @param timable
 	 * @param id
 	 * @param customId
 	 */
-	public void start(ETimable timable, long id, int customId)
+	@Override
+	public void start(final ETimable timable, final long id, final int customId)
 	{
-		startTimes.put(new TimerIdentifier(timable, id, customId), System.nanoTime());
+		startTimes.put(new TimerIdentifier(timable, id, customId), SumatraClock.nanoTime());
 	}
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public TimerInfo getTimerInfo()

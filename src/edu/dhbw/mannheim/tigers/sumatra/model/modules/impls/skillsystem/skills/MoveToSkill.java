@@ -10,17 +10,14 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills;
 
 import java.util.List;
 
-import org.apache.log4j.Logger;
-
-import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACondition.EConditionState;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move.MovementCon;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.DrawablePath;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.IPathConsumer;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature.EFeatureState;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.Sisyphus;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.IPath;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.ERRTFinder;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.filter.HermiteSplinePathFilter;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.filter.StubPathFilter;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.finder.iba.IBAFinder;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
 import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
@@ -29,166 +26,145 @@ import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
 /**
  * This skills asks sysiphus to create a path, makes a spline out of it and then follows the spline.
  * 
- * @author AndreR
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class MoveToSkill extends AMoveSkill implements IPathConsumer, IMoveToSkill
+public class MoveToSkill extends AMoveSkill implements IPathConsumer
 {
+	private Sisyphus				sisyphus		= null;
+	private IPath					latestPath	= null;
+	private IPath					currentPath	= null;
+	
+	@Configurable(comment = "Path filter to use to filter new pathes: HERMITE_SPLINE, NONE")
+	private static EPathFilter	pathFilter	= EPathFilter.HERMITE_SPLINE;
+	
+	private enum EPathFilter
+	{
+		HERMITE_SPLINE,
+		NONE
+	}
+	
+	@Configurable(comment = "Pathfinder to use to generate paths: ERRT, IBA")
+	private static EPathFinder	pathFinder	= EPathFinder.ERRT;
+	
+	private enum EPathFinder
+	{
+		ERRT,
+		IBA
+	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	private static final Logger	log					= Logger.getLogger(MoveToSkill.class.getName());
-	private MovementCon				moveCon;
-	
-	private boolean					kickerArmed			= false;
-	
-	@Configurable(comment = "Dist [mm] - If bot is nearer than this to destination, pathPlanning will not be used and changes directly applied")
-	private static float				circumventPPTol	= 100;
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * Move to a target with an orientation as specified in the moveCon.
 	 */
-	public MoveToSkill()
+	protected MoveToSkill()
 	{
 		this(ESkillName.MOVE_TO);
+	}
+	
+	
+	/**
+	 * Move to a target with an orientation as specified in the moveCon.
+	 */
+	protected MoveToSkill(final float forcedTimeToDestination)
+	{
+		super(ESkillName.MOVE_TO, forcedTimeToDestination);
 	}
 	
 	
 	protected MoveToSkill(final ESkillName skillName)
 	{
 		super(skillName);
-		moveCon = new MovementCon();
-		moveCon.setPenaltyAreaAllowed(false);
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	@Override
-	protected boolean isMoveComplete()
-	{
-		if (checkIsComplete())
-		{
-			log.trace("completed due to move and rotate conditions fulfilled");
-			return true;
-		}
-		return false;
-	}
-	
-	
-	private boolean checkIsComplete()
-	{
-		// Check conditions
-		boolean moveComplete = true;
-		boolean rotateComplete = true;
-		
-		if (moveCon.getDestCon().isActive())
-		{
-			moveComplete = moveCon.checkCondition(getWorldFrame(), getBot().getBotID()) == EConditionState.FULFILLED;
-		}
-		
-		if (moveCon.getAngleCon().isActive())
-		{
-			rotateComplete = moveCon.getAngleCon().checkCondition(getWorldFrame(), getBot().getBotID()) == EConditionState.FULFILLED;
-		}
-		if (moveComplete && rotateComplete)
-		{
-			return true;
-		}
-		
-		return false;
 	}
 	
 	
 	@Override
-	public List<ACommand> doCalcEntryActions(final List<ACommand> cmds)
+	public void doCalcEntryActions(final List<ACommand> cmds)
 	{
-		moveCon.setSpeed(Math.min(getMaxLinearVelocity(), moveCon.getSpeed()));
-		moveCon.update(getWorldFrame(), getBot().getBotID());
-		getSisyphus().addObserver(getBot().getBotID(), this);
-		getSisyphus().startPathPlanning(getBot().getBotID(), getMoveCon());
-		return cmds;
-	}
-	
-	
-	@Override
-	protected void periodicProcess(final List<ACommand> cmds)
-	{
-		if (moveCon.isKickerArmed() && (getBot().getBotFeatures().get(EFeature.BARRIER) != EFeatureState.KAPUT)
-				&& (getBot().getBotFeatures().get(EFeature.STRAIGHT_KICKER) != EFeatureState.KAPUT))
+		sisyphus = new Sisyphus(getBot().getBotID(), getMoveCon());
+		switch (pathFilter)
 		{
-			if (!kickerArmed || (getBot().getKickerLevel() < (getBot().getKickerMaxCap() - 50)))
-			{
-				kickerArmed = true;
-				getDevices().kickMax(cmds);
-			}
-		} else if (kickerArmed)
-		{
-			kickerArmed = false;
-			getDevices().disarm(cmds);
+			case HERMITE_SPLINE:
+				getSisyphus().setPathFilter(new HermiteSplinePathFilter());
+				break;
+			case NONE:
+				getSisyphus().setPathFilter(new StubPathFilter());
+				break;
+			default:
+				throw new IllegalStateException();
 		}
-		moveCon.update(getWorldFrame(), getBot().getBotID());
-		
-		IVector2 dest = moveCon.getDestCon().getDestination();
-		if (GeoMath.distancePP(dest, getPos()) < circumventPPTol)
+		switch (pathFinder)
 		{
-			float orient = moveCon.getAngleCon().getTargetAngle();
-			setDestination(dest);
-			setTargetOrientation(orient);
-			setOverridePP(true);
-		} else
-		{
-			setOverridePP(false);
+			case ERRT:
+				getSisyphus().setPathFinder(new ERRTFinder());
+				break;
+			case IBA:
+				getSisyphus().setPathFinder(new IBAFinder());
+				break;
+			default:
+				throw new IllegalStateException();
 		}
+		getSisyphus().addObserver(this);
+		getSkillSystem().getPathFinderScheduler().start(getSisyphus());
 	}
 	
 	
 	@Override
-	protected List<ACommand> doCalcExitActions(final List<ACommand> cmds)
+	protected void doCalcExitActions(final List<ACommand> cmds)
 	{
-		getSisyphus().stopPathPlanning(getBot().getBotID());
-		getSisyphus().removeObserver(getBot().getBotID());
-		getDevices().disarm(cmds);
-		getDevices().dribble(cmds, false);
-		if (moveCon.getVelAtDestination().equals(AVector2.ZERO_VECTOR, 0.1f))
-		{
-			stopMove(cmds);
-		}
-		return super.doCalcExitActions(cmds);
+		getSisyphus().removeObserver(this);
+		getSkillSystem().getPathFinderScheduler().stop(getSisyphus());
 	}
 	
 	
 	@Override
-	public void onNewPath(final Path path)
+	public void onNewPath(final IPath path)
 	{
-		setNewTrajectory(path.getHermiteSpline(), path.getPath());
+		currentPath = path;
+		setPathDriver(getDefaultPathDriver(path));
+		setNewPathCounter(getNewPathCounter() + 1);
 	}
 	
 	
 	@Override
-	public void onPotentialNewPath(final Path path)
+	public void onPotentialNewPath(final IPath path)
 	{
+		latestPath = path;
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
+	@Override
+	public DrawablePath getDrawablePath()
+	{
+		DrawablePath dp = super.getDrawablePath();
+		dp.setPath(currentPath);
+		getSisyphus().getPathFilter().getDrawableShapes(dp.getPathShapes());
+		return dp;
+	}
+	
+	
+	@Override
+	public final DrawablePath getLatestDrawablePath()
+	{
+		DrawablePath dp = super.getLatestDrawablePath();
+		dp.setPath(latestPath);
+		return dp;
+	}
 	
 	
 	/**
-	 * @return the moveCon
+	 * @return the sisyphus
 	 */
-	@Override
-	public MovementCon getMoveCon()
+	public final Sisyphus getSisyphus()
 	{
-		return moveCon;
+		return sisyphus;
+	}
+	
+	
+	/**
+	 * @param timeToDestination
+	 */
+	public void setForcedTimeToDestination(final float timeToDestination)
+	{
+		forcedTimeToDestination = timeToDestination;
 	}
 }

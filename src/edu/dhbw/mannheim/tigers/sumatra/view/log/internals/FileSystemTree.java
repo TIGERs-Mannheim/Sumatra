@@ -9,18 +9,20 @@ import javax.swing.tree.DefaultMutableTreeNode;
 
 /**
  * Load File System into a Tree.
+ * 
  * @author MichaelS
  */
-class FileSystemTree extends DefaultMutableTreeNode
+public class FileSystemTree extends DefaultMutableTreeNode
 {
 	private static final long	serialVersionUID	= 1L;
 	
 	
 	/**
 	 * Constructor to set Root Folder
+	 * 
 	 * @param file rootFolder
 	 */
-	public FileSystemTree(File file)
+	public FileSystemTree(final File file)
 	{
 		setUserObject(file);
 	}
@@ -28,6 +30,7 @@ class FileSystemTree extends DefaultMutableTreeNode
 	
 	/**
 	 * get Number of Childs from Node
+	 * 
 	 * @return int numberOfChilds
 	 */
 	@Override
@@ -39,11 +42,12 @@ class FileSystemTree extends DefaultMutableTreeNode
 	
 	/**
 	 * get Child by Number
+	 * 
 	 * @param index Number of Child
 	 * @return FileSystemTree
 	 */
 	@Override
-	public FileSystemTree getChildAt(int index)
+	public FileSystemTree getChildAt(final int index)
 	{
 		return new FileSystemTree((File) addFiles((File) getUserObject()).get(index));
 	}
@@ -51,6 +55,7 @@ class FileSystemTree extends DefaultMutableTreeNode
 	
 	/**
 	 * check if Element is a Leaf
+	 * 
 	 * @return boolean isLeaf
 	 */
 	@Override
@@ -62,6 +67,7 @@ class FileSystemTree extends DefaultMutableTreeNode
 	
 	/**
 	 * get Filename
+	 * 
 	 * @return String fileName
 	 */
 	@Override
@@ -73,20 +79,24 @@ class FileSystemTree extends DefaultMutableTreeNode
 	
 	/**
 	 * add all Files & Folders from Root Directory
+	 * 
 	 * @param file rootFolder
 	 * @return List fileList
 	 */
-	private List<Object> addFiles(File file)
+	private List<Object> addFiles(final File file)
 	{
 		List<Object> fileList = new ArrayList<Object>();
 		File[] files = file.listFiles();
 		
-		for (int i = 0; i < files.length; i++)
+		if (files != null)
 		{
-			// filter svn-data
-			if (!(files[i].getName().contains(".svn")))
+			for (int i = 0; i < files.length; i++)
 			{
-				fileList.add(files[i]);
+				// filter svn-data
+				if (!(files[i].getName().contains(".svn")))
+				{
+					fileList.add(files[i]);
+				}
 			}
 		}
 		

@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 17.04.2011
  * Author(s): Malte
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.rectangle;
@@ -27,20 +26,21 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Line;
  * <pre>
  * topLeft                  topRight
  *       -------------------
- *       |     xExtend     |				
+ *       |     xExtend     |
  *       |                 | yExtend
  *       |                 |
  *       -------------------
  * bottomLeft             bottomRight
  * </pre>
- * @author Malte
  * 
+ * @author Malte
  */
 public interface IRectangle extends I2DShape
 {
 	/**
 	 * Absolute value of the length of the side
 	 * that is parallel to the Y-Axis.
+	 * 
 	 * @return
 	 */
 	float yExtend();
@@ -49,6 +49,7 @@ public interface IRectangle extends I2DShape
 	/**
 	 * Absolute value of the length of the side
 	 * that is parallel to the X-Axis.
+	 * 
 	 * @return
 	 */
 	float xExtend();
@@ -56,6 +57,7 @@ public interface IRectangle extends I2DShape
 	
 	/**
 	 * Corner which is in the top-left regarding to a cartesian coordinate system.
+	 * 
 	 * @return
 	 */
 	IVector2 topLeft();
@@ -63,6 +65,7 @@ public interface IRectangle extends I2DShape
 	
 	/**
 	 * Corner which is in the top-right regarding to a cartesian coordinate system.
+	 * 
 	 * @return
 	 */
 	IVector2 topRight();
@@ -70,6 +73,7 @@ public interface IRectangle extends I2DShape
 	
 	/**
 	 * Corner which is in the bottom-left regarding to a cartesian coordinate system.
+	 * 
 	 * @return
 	 */
 	IVector2 bottomLeft();
@@ -77,6 +81,7 @@ public interface IRectangle extends I2DShape
 	
 	/**
 	 * Corner which is in the bottom-right regarding to a cartesian coordinate system.
+	 * 
 	 * @return
 	 */
 	IVector2 bottomRight();
@@ -84,13 +89,15 @@ public interface IRectangle extends I2DShape
 	
 	/**
 	 * Generates a random point within the shape.
+	 * 
 	 * @return
 	 */
 	IVector2 getRandomPointInShape();
 	
 	
 	/**
-	 * testing purpose, by GuntherB
+	 * Center of the rectangle
+	 * 
 	 * @return
 	 */
 	IVector2 getMidPoint();

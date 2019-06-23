@@ -4,13 +4,11 @@
  * Project: TIGERS - Sumatra
  * Date: 22.07.2010
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.observer;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamDetectionFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrameWrapper;
 
 
 /**
@@ -21,22 +19,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamDetectionFrame
 public interface IWorldPredictorObserver
 {
 	/**
-	 * 
-	 * @param wf
+	 * @param wfWrapper
 	 */
-	void onNewWorldFrame(SimpleWorldFrame wf);
-	
-	
-	/**
-	 * Called when there is no vision signal.
-	 * @param emptyWf
-	 */
-	void onVisionSignalLost(SimpleWorldFrame emptyWf);
-	
-	
-	/**
-	 * New unfiltered detection frame
-	 * @param frame
-	 */
-	void onNewCamDetectionFrame(CamDetectionFrame frame);
+	void onNewWorldFrame(WorldFrameWrapper wfWrapper);
 }

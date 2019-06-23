@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Jun 22, 2013
  * Author(s): Dirk Klostermann <klostermannn@googlemail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data;
@@ -16,23 +15,18 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 
 /**
  * data holder for a collision happening on the spline
+ * Deprecated, but needed for Berkeley DB!
  * 
+ * @deprecated
  * @author Dirk Klostermann <klostermannn@googlemail.com>
- * 
  */
 @Persistent
+@Deprecated
 public class Collision
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
 	private float		time;
 	private IVector2	position;
 	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	@SuppressWarnings("unused")
 	private Collision()
@@ -44,7 +38,7 @@ public class Collision
 	 * @param time
 	 * @param position
 	 */
-	public Collision(float time, IVector2 position)
+	public Collision(final float time, final IVector2 position)
 	{
 		super();
 		this.time = time;
@@ -52,14 +46,6 @@ public class Collision
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * @return the time
 	 */
@@ -72,7 +58,7 @@ public class Collision
 	/**
 	 * @param time the time to set
 	 */
-	public void setTime(float time)
+	public void setTime(final float time)
 	{
 		this.time = time;
 	}
@@ -90,7 +76,7 @@ public class Collision
 	/**
 	 * @param position the position to set
 	 */
-	public void setPosition(IVector2 position)
+	public void setPosition(final IVector2 position)
 	{
 		this.position = position;
 	}

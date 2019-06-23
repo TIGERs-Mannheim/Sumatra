@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Jan 12, 2014
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botoverview;
@@ -34,7 +33,6 @@ import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
  * Main Panel for Bot Overview
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class BotOverviewPanel extends JPanel implements ISumatraView
 {

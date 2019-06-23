@@ -10,6 +10,7 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.ot
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.area.Goal;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AthenaAiFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.MetisAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.EGameState;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
@@ -55,7 +56,7 @@ public class AroundTheBallPlay extends APlay
 	@Override
 	protected void doUpdate(final AthenaAiFrame currentFrame)
 	{
-		IVector2 ballPos = new Vector2(currentFrame.getWorldFrame().ball.getPos());
+		IVector2 ballPos = new Vector2(currentFrame.getWorldFrame().getBall().getPos());
 		
 		// direction: vector from ball to the middle of the goal!
 		Vector2 direction = goal.getGoalCenter().subtractNew(ballPos);
@@ -77,14 +78,14 @@ public class AroundTheBallPlay extends APlay
 	
 	
 	@Override
-	protected ARole onRemoveRole()
+	protected ARole onRemoveRole(MetisAiFrame frame)
 	{
 		return getLastRole();
 	}
 	
 	
 	@Override
-	protected ARole onAddRole()
+	protected ARole onAddRole(MetisAiFrame frame)
 	{
 		return (new MoveRole(EMoveBehavior.LOOK_AT_BALL));
 	}

@@ -103,8 +103,18 @@ float distancePPSqr(Vector2* a, Vector2* b)
 
 uint8_t isPointInRect(Rect* rect, Vector2* point)
 {
-	return (((point->x) >= rect->x) && ((point->x) <= (rect->x + rect->xExtend))
-				&& ((point->y) >= rect->y) && ((point->y) <= (rect->y + rect->yExtend)));
+	return point->x >= rect->x && point->x <= rect->x + rect->xExtend && point->y <= rect->y  && point->y >= rect->y - rect->yExtend;
+}
+
+uint8_t isPointInRectMargin(Rect* rect, Vector2* point, float margin)
+{
+	return point->x + margin >= rect->x && point->x - margin <= rect->x + rect->xExtend && point->y - margin <= rect->y  && point->y + margin >= rect->y - rect->yExtend;
+}
+
+Rect createRect(Vector2* p1, Vector2* p2)
+{
+	Rect rect = {.x=min(p1->x, p2->x), .y=max(p1->y, p2->y), .xExtend=fabs(p1->x - p2->x), .yExtend=fabs(p1->y - p2->y)};
+	return rect;
 }
 
 uint8_t isPointInCircle(Circle* circle, Vector2* point)
@@ -150,30 +160,35 @@ float distancePL(Vector2* p, Vector2* pl1, Vector2* pl2)
 	return distancePP(p, &leadPoint);
 }
 
-float p2pVisibility(Vector2* pStart, Vector2* pEnd, Bot* botsToCheck, uint8_t numBotsToCheck, coord raySize, uint8_t reverse)
+/*
+ * Calculate a score of the visibility between pStart and pEnd.
+ * The score is 0 if no visibility and 1 if obstacle is at least raySize away (bot radius considered).
+ * If there are multiple obstacles, the sum of the score is considered.
+ * The score will always be between 0 and 1.
+ */
+float p2pVisibility(Vector2* pStart, Vector2* pEnd, Bot* botsToCheck, uint8_t numBotsToCheck, coord raySize, float minDistance, float maxVisDist)
 {
-	float minDistance = BALL_RADIUS + BOT_RADIUS + raySize;
+	// below this distance, there is no visibility
+	//float minDistance = BALL_RADIUS + BOT_RADIUS;
 
-	// checking free line
-	float sum=0;
+	float score = 0;
 	for (uint8_t i=0;i<numBotsToCheck;i++)
 	{
 		Bot bot = botsToCheck[i];
 		Vector2 leadPoint;
 		leadPointOnLine(&(bot.pos), pStart, pEnd, &leadPoint);
-		Vector2 startToLead;
-		vec_sub(&leadPoint, pStart, &startToLead);
-		Vector2 startToEnd;
-		vec_sub(pEnd, pStart, &startToEnd);
-		if((!reverse && startToLead.x/startToEnd.x>0 && startToLead.x/startToEnd.x<1) || (reverse && startToLead.x/startToEnd.x<0))
+		Rect rect = createRect(pStart, pEnd);
+		// only check those bots that possibly can be in between start and end
+		if(isPointInRectMargin(&rect, &leadPoint, 2*BOT_RADIUS))
 		{
-			// only check those bots that possibly can be in between start and end
-			float distanceBotLine = distancePL(&(bot.pos), pStart, pEnd);
-			sum+=max(0.0f, (minDistance-distanceBotLine)/minDistance);
+			float distanceBotLine = distancePP(&leadPoint, &(bot.pos));
+			score += 1 - fitRange((distanceBotLine-minDistance) / raySize);
 		}
 	}
+	float dist = distancePP(pStart, pEnd);
+	score *= 1 - fitRange(dist/maxVisDist);
 
-	return sum;
+	return fitRange(score);
 }
 
 float p2pVisibilityIgnore(Vector2* pStart, Vector2* pEnd, Bot* botsToCheck, uint8_t numBotsToCheckFrom, uint8_t numBotsToCheckTo, uint8_t ignoreID, coord raySize)
@@ -225,4 +240,15 @@ float getShortestRotation(float angle1, float angle2)
 float angleBetweenVectors(Vector2 *v1, Vector2 *v2)
 {
 	return fabs(getShortestRotation(vec_angle(v1), vec_angle(v2)));
+}
+
+/**
+ * Get the angle between the vectors p1->p2 and p1->p3
+ */
+float getAngleInTriangle(Vector2* p1, Vector2* p2, Vector2* p3)
+{
+	Vector2 p1p2,p1p3;
+	vec_sub(p2,p1,&p1p2);
+	vec_sub(p3,p1,&p1p3);
+	return angleBetweenVectors(&p1p2,&p1p3);
 }

@@ -51,7 +51,7 @@ public class PossibleGoalCalc extends ACalculator
 	{
 		WorldFrame wFrame = baseAiFrame.getWorldFrame();
 		EPossibleGoal isGoal = EPossibleGoal.NO_ONE;
-		final IVector2 ball = wFrame.ball.getPos();
+		final IVector2 ball = wFrame.getBall().getPos();
 		if (isBallPossiblyInGoal(ball, goalOur))
 		{
 			isGoal = EPossibleGoal.THEY;

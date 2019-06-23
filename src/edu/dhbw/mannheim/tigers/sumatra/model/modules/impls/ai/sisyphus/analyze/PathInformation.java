@@ -10,6 +10,7 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.analyze;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.TuneableParameter;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 
 /**
  * data holder for information concerning pathes
@@ -48,7 +49,7 @@ public class PathInformation
 	public PathInformation(TuneableParameter accordingParams)
 	{
 		this.accordingParams = accordingParams;
-		startTime = System.nanoTime();
+		startTime = SumatraClock.nanoTime();
 	}
 	
 	
@@ -80,7 +81,7 @@ public class PathInformation
 	public void goalReached()
 	{
 		pathAmount++;
-		final long endTime = System.nanoTime();
+		final long endTime = SumatraClock.nanoTime();
 		final long completeTime = endTime - startTime;
 		if (completeTime < minCompleteTime)
 		{
@@ -91,7 +92,7 @@ public class PathInformation
 			maxCompleteTime = completeTime;
 		}
 		midCompleteTime = ((midCompleteTime * (pathAmount - 1)) + completeTime) / pathAmount;
-		startTime = System.nanoTime();
+		startTime = SumatraClock.nanoTime();
 	}
 	
 	

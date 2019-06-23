@@ -4,15 +4,14 @@
  * Project: TIGERS - Sumatra
  * Date: 31.05.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tigerv2;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -20,15 +19,14 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ECtrlMoveType;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerCtrlSetControllerType.EControllerType;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerSystemQuery.EQueryType;
 
 
 /**
  * Select a controller, choose wisely :)
  * 
  * @author AndreR
- * 
  */
 public class SelectControllerPanel extends JPanel
 {
@@ -42,16 +40,19 @@ public class SelectControllerPanel extends JPanel
 		
 		
 		/**
-		 * @param type
+		 * @param ctrlType
 		 */
-		void onNewCtrlMoveSelected(ECtrlMoveType type);
+		void onApplyControllerToAll(EControllerType ctrlType);
+		
+		
+		/** */
+		void onCopyCtrlValuesToAll();
 		
 		
 		/**
-		 * @param ctrlType
-		 * @param ctrlMoveType
+		 * @param queryType
 		 */
-		void onApplyControllerToAll(EControllerType ctrlType, ECtrlMoveType ctrlMoveType);
+		void onQuery(EQueryType queryType);
 	}
 	
 	// --------------------------------------------------------------------------
@@ -61,9 +62,8 @@ public class SelectControllerPanel extends JPanel
 	private static final long									serialVersionUID	= -1550931078238006617L;
 	
 	private JComboBox<EControllerType>						controller			= null;
-	private JComboBox<ECtrlMoveType>							ctrlMove				= null;
 	
-	private final List<ISelectControllerPanelObserver>	observers			= new ArrayList<ISelectControllerPanelObserver>();
+	private final List<ISelectControllerPanelObserver>	observers			= new CopyOnWriteArrayList<ISelectControllerPanelObserver>();
 	
 	
 	// --------------------------------------------------------------------------
@@ -74,20 +74,24 @@ public class SelectControllerPanel extends JPanel
 	 */
 	public SelectControllerPanel()
 	{
-		setLayout(new MigLayout("", "", ""));
+		setLayout(new MigLayout("wrap 1", "", ""));
 		
 		controller = new JComboBox<EControllerType>(EControllerType.values());
 		controller.addActionListener(new SaveControllerType());
 		
-		ctrlMove = new JComboBox<ECtrlMoveType>(ECtrlMoveType.values());
-		ctrlMove.addActionListener(new SaveCtrlMoveType());
+		JButton btnQuery = new JButton("Query controller type");
+		btnQuery.addActionListener(new QueryListener());
 		
-		JButton btnApplyToAll = new JButton("Apply to all");
+		JButton btnApplyToAll = new JButton("Apply controller type to all bots");
 		btnApplyToAll.addActionListener(new ApplyToAllActionListener());
 		
+		JButton copyToAll = new JButton("Copy all ctrl values to all bots");
+		copyToAll.addActionListener(new CopyToAll());
+		
 		add(controller);
-		add(ctrlMove);
+		add(btnQuery);
 		add(btnApplyToAll);
+		add(copyToAll);
 	}
 	
 	
@@ -95,70 +99,59 @@ public class SelectControllerPanel extends JPanel
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @param observer
 	 */
-	public void addObserver(ISelectControllerPanelObserver observer)
+	public void addObserver(final ISelectControllerPanelObserver observer)
 	{
-		synchronized (observers)
-		{
-			observers.add(observer);
-		}
+		observers.add(observer);
 	}
 	
 	
 	/**
-	 * 
 	 * @param observer
 	 */
-	public void removeObserver(ISelectControllerPanelObserver observer)
+	public void removeObserver(final ISelectControllerPanelObserver observer)
 	{
-		synchronized (observers)
+		observers.remove(observer);
+	}
+	
+	
+	private void notifyNewControllerSelected(final EControllerType type)
+	{
+		for (ISelectControllerPanelObserver observer : observers)
 		{
-			observers.remove(observer);
+			observer.onNewControllerSelected(type);
 		}
 	}
 	
 	
-	private void notifyNewControllerSelected(EControllerType type)
+	private void notifyApplyControllerToAll(final EControllerType ctrlType)
 	{
-		synchronized (observers)
+		for (ISelectControllerPanelObserver observer : observers)
 		{
-			for (ISelectControllerPanelObserver observer : observers)
-			{
-				observer.onNewControllerSelected(type);
-			}
+			observer.onApplyControllerToAll(ctrlType);
 		}
 	}
 	
 	
-	private void notifyNewCtrlMoveSelected(ECtrlMoveType type)
+	private void notifyCopyCtrlValuesToAll()
 	{
-		synchronized (observers)
+		for (ISelectControllerPanelObserver observer : observers)
 		{
-			for (ISelectControllerPanelObserver observer : observers)
-			{
-				observer.onNewCtrlMoveSelected(type);
-			}
+			observer.onCopyCtrlValuesToAll();
 		}
 	}
 	
 	
-	private void notifyApplyControllerToAll(EControllerType ctrlType, ECtrlMoveType ctrlMoveType)
+	private void notifyQuery(final EQueryType queryType)
 	{
-		synchronized (observers)
+		for (ISelectControllerPanelObserver observer : observers)
 		{
-			for (ISelectControllerPanelObserver observer : observers)
-			{
-				observer.onApplyControllerToAll(ctrlType, ctrlMoveType);
-			}
+			observer.onQuery(queryType);
 		}
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * @param t
 	 */
@@ -177,50 +170,40 @@ public class SelectControllerPanel extends JPanel
 		});
 	}
 	
-	
-	/**
-	 * @param t
-	 */
-	public void setCtrlMoveType(final ECtrlMoveType t)
-	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				if (!ctrlMove.getSelectedItem().equals(t))
-				{
-					ctrlMove.setSelectedItem(t);
-				}
-			}
-		});
-	}
-	
 	private class SaveControllerType implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			notifyNewControllerSelected((EControllerType) controller.getSelectedItem());
 		}
 	}
 	
-	private class SaveCtrlMoveType implements ActionListener
-	{
-		@Override
-		public void actionPerformed(ActionEvent e)
-		{
-			notifyNewCtrlMoveSelected((ECtrlMoveType) ctrlMove.getSelectedItem());
-		}
-	}
 	
 	private class ApplyToAllActionListener implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
-			notifyApplyControllerToAll((EControllerType) controller.getSelectedItem(),
-					(ECtrlMoveType) ctrlMove.getSelectedItem());
+			notifyApplyControllerToAll((EControllerType) controller.getSelectedItem());
+		}
+	}
+	
+	private class CopyToAll implements ActionListener
+	{
+		@Override
+		public void actionPerformed(final ActionEvent arg0)
+		{
+			notifyCopyCtrlValuesToAll();
+		}
+	}
+	
+	private class QueryListener implements ActionListener
+	{
+		@Override
+		public void actionPerformed(final ActionEvent arg0)
+		{
+			notifyQuery(EQueryType.CTRL_TYPE);
 		}
 	}
 }

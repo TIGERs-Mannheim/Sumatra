@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 07.08.2010
  * Author(s): Gero, AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.observer;

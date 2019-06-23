@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 03.07.2011
  * Author(s): DanielAl
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.area;
@@ -31,6 +30,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Line;
 
 /**
  * Class representing the area around the penalty area with extra space for freekick
+ * 
  * @author Daniel Andres <andreslopez.daniel@gmail.com>
  */
 public class FreekickArea implements I2DShape
@@ -75,7 +75,7 @@ public class FreekickArea implements I2DShape
 	 * @param owner
 	 * @param config
 	 */
-	public FreekickArea(ETeam owner, Configuration config)
+	public FreekickArea(final ETeam owner, final Configuration config)
 	{
 		ETeam.assertOneTeam(owner);
 		this.owner = owner;
@@ -132,7 +132,7 @@ public class FreekickArea implements I2DShape
 	 * @param length [mm]
 	 * @return
 	 */
-	public IVector2 stepAlongArea(float length)
+	public IVector2 stepAlongArea(final float length)
 	{
 		float perimeterQuarterCircle = (freekickCircleNeg.radius() * AngleMath.PI) / 2;
 		int toggle = -1;
@@ -169,7 +169,7 @@ public class FreekickArea implements I2DShape
 	
 	
 	@Override
-	public boolean isPointInShape(IVector2 point)
+	public boolean isPointInShape(final IVector2 point)
 	{
 		if (field.isPointInShape(point))
 		{
@@ -198,7 +198,7 @@ public class FreekickArea implements I2DShape
 	 * @param margin
 	 * @return
 	 */
-	public boolean isPointInShape(IVector2 point, float margin)
+	public boolean isPointInShape(final IVector2 point, final float margin)
 	{
 		if (field.isPointInShape(point))
 		{
@@ -224,7 +224,7 @@ public class FreekickArea implements I2DShape
 	 */
 	@Override
 	@Deprecated
-	public boolean isLineIntersectingShape(ILine line)
+	public boolean isLineIntersectingShape(final ILine line)
 	{
 		return false;
 	}
@@ -234,14 +234,12 @@ public class FreekickArea implements I2DShape
 	 * While in the rectangle, the point outside is on the line which goes through {@link IVector2} and is parallel to
 	 * the x-axis + BotRadius. While in one of the circles, the point outside is on the line which goes through
 	 * {@link IVector2} and the center of the circle + BotRadius.
-	 * If this addition of the botRadius is changed, please consider changing
-	 * {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.defense.DefensePointsCalc}.
 	 * 
 	 * @param point
 	 * @return point outside the Area
 	 */
 	@Override
-	public IVector2 nearestPointOutside(IVector2 point)
+	public IVector2 nearestPointOutside(final IVector2 point)
 	{
 		if (!isPointInShape(point))
 		{
@@ -278,14 +276,11 @@ public class FreekickArea implements I2DShape
 	 * Area, but inside the field plus botRadius and towards {@link IVector2}.
 	 * If {@link IVector2} is behind the PenaltyArea, behavior is undefined.
 	 * 
-	 * If this addition of the botRadius is changed, please consider changing
-	 * {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.defense.DefensePointsCalc}.
-	 * 
 	 * @param point
 	 * @param pointToBuildLine
 	 * @return point outside the area
 	 */
-	public IVector2 nearestPointOutside(IVector2 point, IVector2 pointToBuildLine)
+	public IVector2 nearestPointOutside(final IVector2 point, final IVector2 pointToBuildLine)
 	{
 		if (!isPointInShape(point))
 		{
@@ -393,13 +388,12 @@ public class FreekickArea implements I2DShape
 	
 	
 	/**
-	 * 
 	 * For {@link #nearestPointOutside(IVector2 point, IVector2 pointToBuildLine)} only.
 	 * Scales Vector from Point to intersection to a Vector from point to intersection + botRadius.
 	 * 
 	 * @return
 	 */
-	private Vector2 scaleVector(IVector2 intersection, IVector2 point, IVector2 pointToBuildLine)
+	private Vector2 scaleVector(final IVector2 intersection, final IVector2 point, final IVector2 pointToBuildLine)
 	{
 		if (intersection.equals(point, PRECISION))
 		{
@@ -414,14 +408,13 @@ public class FreekickArea implements I2DShape
 	
 	
 	/**
-	 * 
 	 * @param vector
 	 * @return 0: x,y <= 0
 	 *         1: x <= 0 , y > 0
 	 *         2: x > 0 , y <= 0
 	 *         3: x,y > 0
 	 */
-	private int directionCounter(IVector2 vector)
+	private int directionCounter(final IVector2 vector)
 	{
 		
 		int counter = 0;

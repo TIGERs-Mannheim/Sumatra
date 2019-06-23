@@ -8,6 +8,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.views.impl;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.statistics.StatisticsPresenter;
 import edu.dhbw.mannheim.tigers.sumatra.views.ASumatraView;
 import edu.dhbw.mannheim.tigers.sumatra.views.ESumatraViewType;
@@ -22,32 +23,24 @@ import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraViewPresenter;
 public class StatisticsView extends ASumatraView
 {
 	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
 	
+	private ETeamColor	teamColor;
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
-	  * 
-	  */
-	public StatisticsView()
+	 * @param color
+	 */
+	public StatisticsView(final ETeamColor color)
 	{
-		super(ESumatraViewType.STATISTICS);
+		super(color == ETeamColor.YELLOW ? ESumatraViewType.STATISTICS_YELLOW : ESumatraViewType.STATISTICS_BLUE);
+		teamColor = color;
 	}
 	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	@Override
 	protected ISumatraViewPresenter createPresenter()
 	{
-		return new StatisticsPresenter();
+		return new StatisticsPresenter(teamColor);
 	}
 	
 	// --------------------------------------------------------------------------

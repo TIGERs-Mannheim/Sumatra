@@ -9,7 +9,10 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.data.math.functions;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+
+import com.sleepycat.persist.model.Persistent;
 
 
 /**
@@ -17,6 +20,7 @@ import java.util.List;
  * 
  * @author AndreR
  */
+@Persistent
 public class Function1dPoly implements IFunction1D
 {
 	// --------------------------------------------------------------------------
@@ -29,6 +33,16 @@ public class Function1dPoly implements IFunction1D
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
+	
+	/**
+	 */
+	@SuppressWarnings("unused")
+	private Function1dPoly()
+	{
+		a = new float[0];
+	}
+	
+	
 	/**
 	 * Create polynomial function.
 	 * param a must be in the form: y=a[0]+a[1]*x+a[2]*x*x+...
@@ -38,7 +52,7 @@ public class Function1dPoly implements IFunction1D
 	 */
 	public Function1dPoly(final float[] a)
 	{
-		this.a = a;
+		this.a = Arrays.copyOf(a, a.length);
 	}
 	
 	

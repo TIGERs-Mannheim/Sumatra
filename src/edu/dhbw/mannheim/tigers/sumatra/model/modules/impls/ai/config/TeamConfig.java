@@ -8,111 +8,96 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config;
 
-import java.util.LinkedList;
-import java.util.List;
-
-import org.apache.commons.configuration.HierarchicalConfiguration;
-
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.config.AConfigClient;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
 
 
 /**
- * Holds information about team specific things (see {@link TeamProps}).
+ * Contain information about teams and play direction
  * 
  * @author Gero
  */
-public final class TeamConfig extends AConfigClient
+public final class TeamConfig
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private final List<ITeamConfigObserver>	observers	= new LinkedList<ITeamConfigObserver>();
 	
-	private TeamProps									team;
+	@Configurable
+	private static int			keeperIdBlue	= 0;
+	@Configurable
+	private static int			keeperIdYellow	= 0;
+	@Configurable
+	private static ETeamColor	leftTeam			= ETeamColor.BLUE;
 	
 	
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	private static class TeamConfigHolder
-	{
-		private static final TeamConfig	CONFIG	= new TeamConfig();
-	}
-	
 	
 	private TeamConfig()
 	{
-		super("team", AAgent.TEAM_CONFIG_PATH, AAgent.KEY_TEAM_CONFIG, AAgent.VALUE_TEAM_CONFIG, true);
 	}
 	
 	
 	/**
+	 * @return the keeperIdBlue
+	 */
+	public static final int getKeeperIdBlue()
+	{
+		return keeperIdBlue;
+	}
+	
+	
+	/**
+	 * @return the keeperIdYellow
+	 */
+	public static final int getKeeperIdYellow()
+	{
+		return keeperIdYellow;
+	}
+	
+	
+	/**
+	 * @param tc
 	 * @return
 	 */
-	public static TeamConfig getInstance()
+	public static final int getKeeperId(final ETeamColor tc)
 	{
-		return TeamConfigHolder.CONFIG;
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- IConfigClient --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	@Override
-	public void onLoad(final HierarchicalConfiguration xmlConfig)
-	{
-		team = new TeamProps(xmlConfig);
-		
-		synchronized (observers)
+		if (tc == ETeamColor.BLUE)
 		{
-			for (final ITeamConfigObserver observer : observers)
-			{
-				observer.onNewTeamConfig(team);
-			}
-		}
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- IConfigClient --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 * @param newObserver
-	 */
-	public void addObserver(final ITeamConfigObserver newObserver)
-	{
-		synchronized (observers)
+			return keeperIdBlue;
+		} else if (tc == ETeamColor.YELLOW)
 		{
-			observers.add(newObserver);
-			
-			// Notify current state
-			if (team != null)
-			{
-				newObserver.onNewTeamConfig(team);
-			}
+			return keeperIdYellow;
 		}
+		throw new IllegalArgumentException();
 	}
 	
 	
 	/**
-	 * @param oldObserver
-	 * @return
+	 * @return the leftTeam
 	 */
-	public boolean removeObserver(final ITeamConfigObserver oldObserver)
+	public static final ETeamColor getLeftTeam()
 	{
-		synchronized (observers)
-		{
-			return observers.remove(oldObserver);
-		}
+		return leftTeam;
 	}
 	
 	
 	/**
-	 * @return the team
+	 * @param keeperIdBlue the keeperIdBlue to set
 	 */
-	public TeamProps getTeamProps()
+	public static final void setKeeperIdBlue(final int keeperIdBlue)
 	{
-		return team;
+		TeamConfig.keeperIdBlue = keeperIdBlue;
+	}
+	
+	
+	/**
+	 * @param keeperIdYellow the keeperIdYellow to set
+	 */
+	public static final void setKeeperIdYellow(final int keeperIdYellow)
+	{
+		TeamConfig.keeperIdYellow = keeperIdYellow;
 	}
 }

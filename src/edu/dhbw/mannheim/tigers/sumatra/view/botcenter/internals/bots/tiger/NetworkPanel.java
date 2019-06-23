@@ -37,6 +37,7 @@ import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.Statistics;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 
 
 /**
@@ -179,7 +180,7 @@ public class NetworkPanel extends JPanel
 		add(pingPanel, "wrap");
 		add(chart, "span, grow, pushy");
 		
-		timeOffset = System.nanoTime();
+		timeOffset = SumatraClock.nanoTime();
 	}
 	
 	
@@ -231,7 +232,7 @@ public class NetworkPanel extends JPanel
 			}
 		});
 		
-		txTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, stat.raw);
+		txTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, stat.raw);
 	}
 	
 	
@@ -256,7 +257,7 @@ public class NetworkPanel extends JPanel
 			}
 		});
 		
-		rxTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, stat.raw);
+		rxTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, stat.raw);
 	}
 	
 	
@@ -316,7 +317,7 @@ public class NetworkPanel extends JPanel
 			@Override
 			public void run()
 			{
-				delayTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, d);
+				delayTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, d);
 				
 				delay.setText(String.format(Locale.ENGLISH, "%1.2f ms", d));
 			}

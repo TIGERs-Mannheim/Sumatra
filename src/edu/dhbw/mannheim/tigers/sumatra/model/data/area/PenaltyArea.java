@@ -8,16 +8,20 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.area;
 
+import java.awt.Color;
 import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.BaseAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.exceptions.MathException;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeam;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.TacticalField;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.DrawablePoint;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.I2DShape;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.Circle;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.ellipse.Ellipse;
@@ -28,6 +32,8 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.ILine;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Line;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.EDrawableShapesLayer;
 
 
 /**
@@ -67,7 +73,6 @@ public class PenaltyArea implements I2DShape
 	// private final Rectangle behindPenaltyRectangle;
 	private final Rectangle			field;
 	
-	private final float				botRadius;
 	/** for nearestPointOutside only; check for closeness to front line */
 	private static final float		PRECISION	= 0.05f;
 	
@@ -89,7 +94,6 @@ public class PenaltyArea implements I2DShape
 		float lengthOfPenaltyAreaFrontLine = config.getFloat("field.lengthOfPenaltyAreaFrontLine");
 		lengthOfPenaltyAreaFrontLineHalf = lengthOfPenaltyAreaFrontLine / 2;
 		float distanceToPenaltyMark = config.getFloat("field.distanceToPenaltyMark");
-		botRadius = config.getFloat("botRadius");
 		
 		final float fieldLength = config.getFloat("field.length");
 		final float fieldWidth = config.getFloat("field.width");
@@ -245,9 +249,36 @@ public class PenaltyArea implements I2DShape
 			{
 				return true;
 			}
-			if (penaltyRectangle.isPointInShape(point, margin))
+			// TIGERS
+			if (margin != 0)
 			{
-				return true;
+				Rectangle marginRectangle = new Rectangle(penaltyRectangle.bottomLeft(), new Vector2(penaltyRectangle
+						.bottomLeft().addNew(new Vector2(margin, 0)).x, penaltyRectangle.topRight().y()));
+				if (owner == ETeam.OPPONENTS)
+				{
+					marginRectangle = new Rectangle(penaltyRectangle.bottomRight(), new Vector2(penaltyRectangle
+							.bottomRight()
+							.addNew(new Vector2(-margin, 0)).x, penaltyRectangle.topLeft().y()));
+				}
+				if (margin > 0)
+				{
+					if (penaltyRectangle.isPointInShape(point) || marginRectangle.isPointInShape(point))
+					{
+						return true;
+					}
+				} else
+				{
+					if (penaltyRectangle.isPointInShape(point) && !marginRectangle.isPointInShape(point))
+					{
+						return true;
+					}
+				}
+			} else
+			{
+				if (penaltyRectangle.isPointInShape(point))
+				{
+					return true;
+				}
 			}
 		}
 		return false;
@@ -354,46 +385,140 @@ public class PenaltyArea implements I2DShape
 	}
 	
 	
-	/**
-	 * While in the rectangle, the point outside is on the line which goes through {@link IVector2} and is parallel to
-	 * the x-axis + BotRadius. While in one of the circles, the point outside is on the line which goes through
-	 * {@link IVector2} and the center of the circle + BotRadius.
-	 * If this addition of the botRadius is changed, please consider changing
-	 * {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.defense.DefensePointsCalc}.
-	 * 
-	 * @param point
-	 * @return point outside the Area
-	 */
 	@Override
 	public IVector2 nearestPointOutside(final IVector2 point)
 	{
-		if (!isPointInShape(point))
+		return nearestPointOutside(point, 0);
+	}
+	
+	
+	private Rectangle getPenaltyRectangleWithMargin(final float margin)
+	{
+		IVector2 bottomRight = new Vector2(goalCenter.x(), lengthOfPenaltyAreaFrontLineHalf);
+		final IVector2 topleft;
+		if (owner == ETeam.TIGERS)
 		{
-			return point;
+			topleft = new Vector2(goalCenter.x() + radiusOfPenaltyArea + margin, -lengthOfPenaltyAreaFrontLineHalf);
+		} else
+		{
+			topleft = new Vector2(goalCenter.x() - radiusOfPenaltyArea - margin, -lengthOfPenaltyAreaFrontLineHalf);
 		}
 		
-		if (penaltyRectangle.isPointInShape(point))
+		Rectangle rectMargin = new Rectangle(topleft, bottomRight);
+		return rectMargin;
+	}
+	
+	
+	private IVector2 getPointInsideField(final IVector2 point)
+	{
+		IVector2 preprocessedPoint = point;
+		float maxX = AIConfig.getGeometry().getFieldLength() / 2;
+		if ((owner == ETeam.TIGERS) && (point.y() < -maxX))
+		{
+			preprocessedPoint = new Vector2(maxX, point.y());
+		} else if ((owner == ETeam.OPPONENTS) && (point.y() > maxX))
+		{
+			preprocessedPoint = new Vector2(maxX, point.y());
+		}
+		return preprocessedPoint;
+	}
+	
+	
+	/**
+	 * Calculate the nearest point outside of the penalty area with a given margin.
+	 * 
+	 * @param point
+	 * @param margin
+	 * @return nearest point outside of penalty area
+	 */
+	public IVector2 nearestPointOutside(final IVector2 point, final float margin)
+	{
+		IVector2 preprocessedPoint = getPointInsideField(point);
+		
+		if (!isPointInShape(preprocessedPoint, margin))
+		{
+			return preprocessedPoint;
+		}
+		
+		
+		if (getPenaltyRectangleWithMargin(margin).isPointInShape(preprocessedPoint))
 		{
 			if (owner == ETeam.TIGERS)
 			{
-				return new Vector2(goalCenter.x() + radiusOfPenaltyArea + botRadius, point.y());
+				return new Vector2(goalCenter.x() + radiusOfPenaltyArea + margin, preprocessedPoint.y());
 			}
-			return new Vector2(goalCenter.x() - radiusOfPenaltyArea - botRadius, point.y());
+			return new Vector2(goalCenter.x() - radiusOfPenaltyArea - margin, preprocessedPoint.y());
 		}
 		
 		// vector from middle of one quarter circle to given point has to be scaled to circleRadius + botRadius
 		// but first: positive or negative circle has to be found out
-		if (point.y() > 0)
+		if (((owner == ETeam.OPPONENTS) && (preprocessedPoint.y() > 0))
+				|| ((owner == ETeam.TIGERS) && (preprocessedPoint.y() > 0)))
 		{
-			final Vector2 pToPVector = new Vector2(point.x() - penaltyCirclePosCentre.x(), point.y()
-					- penaltyCirclePosCentre.y());
-			pToPVector.scaleTo(radiusOfPenaltyArea + botRadius);
-			return new Vector2(pToPVector.x + penaltyCirclePosCentre.x(), pToPVector.y + penaltyCirclePosCentre.y());
+			final Vector2 pToPVector = preprocessedPoint.subtractNew(penaltyCirclePosCentre);
+			pToPVector.scaleTo((radiusOfPenaltyArea + margin));
+			return pToPVector.addNew(penaltyCirclePosCentre);
 		}
-		final Vector2 pToPVector = new Vector2(point.x() - penaltyCircleNegCentre.x(), point.y()
-				- penaltyCircleNegCentre.y());
-		pToPVector.scaleTo(radiusOfPenaltyArea + botRadius);
-		return new Vector2(pToPVector.x + penaltyCircleNegCentre.x(), pToPVector.y + penaltyCircleNegCentre.y());
+		final Vector2 pToPVector = preprocessedPoint.subtractNew(penaltyCircleNegCentre);
+		pToPVector.scaleTo((radiusOfPenaltyArea + margin));
+		return pToPVector.addNew(penaltyCircleNegCentre);
+	}
+	
+	
+	/**
+	 * Warn: Under construction, untested and exceptional return value if null
+	 * 
+	 * @param p1
+	 * @param p2
+	 * @param margin
+	 * @return
+	 */
+	public IVector2 getLineIntersection(final IVector2 p1, final IVector2 p2, final float margin)
+	{
+		ILine line = Line.newLine(p1, p2);
+		float frontX = penaltyAreaFrontLine.supportVector().x();
+		ILine frontLineWithMargin = Line.newLine(new Vector2(frontX - (Math.signum(frontX) * margin),
+				-lengthOfPenaltyAreaFrontLineHalf), new Vector2(frontX - (Math.signum(frontX) * margin),
+				-lengthOfPenaltyAreaFrontLineHalf));
+		try
+		{
+			IVector2 frontLineIntersect = GeoMath.intersectionPoint(frontLineWithMargin, line);
+			if (Math.abs(frontLineIntersect.y()) < lengthOfPenaltyAreaFrontLineHalf)
+			{
+				return frontLineIntersect;
+			}
+		} catch (MathException err)
+		{
+			throw new IllegalArgumentException("Given line is parallel to front line.");
+		}
+		
+		Circle circlePosMargin = new Circle(penaltyCirclePos.center(), penaltyCirclePos.radius() + margin);
+		Rectangle circlePosQuarterRect = new Rectangle(penaltyCirclePos.center(), new Vector2(frontLineWithMargin
+				.supportVector().x(), lengthOfPenaltyAreaFrontLineHalf + penaltyCirclePos.radius() + margin));
+		List<IVector2> intersections = circlePosMargin.lineIntersections(line);
+		for (IVector2 intersect : intersections)
+		{
+			if (circlePosQuarterRect.isPointInShape(intersect))
+			{
+				return intersect;
+			}
+		}
+		
+		Circle circleNegMargin = new Circle(penaltyCircleNeg.center(), penaltyCircleNeg.radius() + margin);
+		Rectangle circleNegQuarterRect = new Rectangle(penaltyCircleNeg.center(), new Vector2(frontLineWithMargin
+				.supportVector().x(), -(lengthOfPenaltyAreaFrontLineHalf + penaltyCircleNeg.radius() + margin)));
+		intersections = circleNegMargin.lineIntersections(line);
+		for (IVector2 intersect : intersections)
+		{
+			if (circleNegQuarterRect.isPointInShape(intersect))
+			{
+				return intersect;
+			}
+		}
+		
+		assert false : "Given line is strange. It does not cut";
+		// FIXME return some valid value
+		return null;
 	}
 	
 	
@@ -401,176 +526,97 @@ public class PenaltyArea implements I2DShape
 	 * Nearest point on line from {@link IVector2} to {@link IVector2}, which is outside of this penalty
 	 * Area, but inside the field plus botRadius and towards {@link IVector2}.
 	 * If {@link IVector2} is behind the PenaltyArea, behavior is undefined.
-	 * If this addition of the botRadius is changed, please consider changing
-	 * {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.defense.DefensePointsCalc}.
 	 * 
 	 * @param point
 	 * @param pointToBuildLine
+	 * @param margin
 	 * @return point outside the area
 	 */
-	
-	public IVector2 nearestPointOutside(final IVector2 point, final IVector2 pointToBuildLine)
+	public IVector2 nearestPointOutside(final IVector2 point, final IVector2 pointToBuildLine, final float margin)
 	{
-		if (!isPointInShape(point))
+		if (!isPointInShape(point, margin))
 		{
+			float xOfGoalLine = goalCenter.x();
+			if (((owner == ETeam.TIGERS) && (xOfGoalLine > point.x()))
+					|| ((owner == ETeam.OPPONENTS) && (xOfGoalLine < point.x())))
+			{
+				float yOfPenAreaBeginPlusMargin = getLengthOfPenaltyAreaFrontLineHalf()
+						+ getRadiusOfPenaltyArea() + margin;
+				if (point.y() > 0)
+				{
+					return new Vector2(xOfGoalLine, yOfPenAreaBeginPlusMargin);
+				}
+				return new Vector2(xOfGoalLine, -yOfPenAreaBeginPlusMargin);
+			}
 			return point;
 		}
 		
-		final Vector2 p2pVector = new Vector2(pointToBuildLine.x() - point.x(), pointToBuildLine.y() - point.y());
+		final Vector2 p2pVector = pointToBuildLine.subtractNew(point);
 		
 		if (p2pVector.isZeroVector())
 		{
-			return nearestPointOutside(point);
+			return nearestPointOutside(point, margin);
 		}
-		
-		final int directionCounterP2PVector = directionCounter(p2pVector);
 		
 		// for intersection calculations
 		final Line p2pLine = new Line(point, p2pVector);
 		
 		
 		// intersection on pos. circle
-		List<IVector2> intersections = penaltyCirclePos.lineIntersections(p2pLine);
+		Circle circlePosMargin = new Circle(penaltyCirclePos.center(), penaltyCirclePos.radius() + margin);
+		List<IVector2> intersections = circlePosMargin.lineIntersections(p2pLine);
 		
 		for (final IVector2 intersection : intersections)
 		{
 			// test if intersection is in field, on pos. quarter circle and direction is toward pointToBuildLine
 			if ((intersection.y() >= lengthOfPenaltyAreaFrontLineHalf)
-					&& (directionCounterP2PVector == directionCounter(new Vector2(intersection.x() - point.x(),
-							intersection.y() - point.y()))) && field.isPointInShape(intersection))
+					&& field.isPointInShape(intersection))
 			{
-				return scaleVector(intersection, point, pointToBuildLine);
+				return intersection;
 			}
 		}
 		
 		
 		// intersection is on neg. circle
-		intersections = penaltyCircleNeg.lineIntersections(p2pLine);
+		Circle circleNegMargin = new Circle(penaltyCircleNeg.center(), penaltyCircleNeg.radius() + margin);
+		intersections = circleNegMargin.lineIntersections(p2pLine);
 		
 		for (final IVector2 intersection : intersections)
 		{
 			// test if intersection is in field, on neg. quarter circle and direction is toward pointToBuildLine
 			if ((intersection.y() <= -lengthOfPenaltyAreaFrontLineHalf)
-					&& field.isPointInShape(intersection)
-					&& (directionCounterP2PVector == directionCounter(new Vector2(intersection.x() - point.x(),
-							intersection.y() - point.y()))) && field.isPointInShape(intersection))
+					&& field.isPointInShape(intersection))
 			{
-				return scaleVector(intersection, point, pointToBuildLine);
+				return intersection;
 			}
 		}
 		
 		// intersection is on rectangle
-		intersections = penaltyRectangle.lineIntersection(p2pLine);
+		intersections = getPenaltyRectangleWithMargin(margin).lineIntersection(p2pLine);
 		
-		switch (intersections.size())
+		for (final IVector2 intersection : intersections)
 		{
-		// p2pLine is on one side of the rectangle
-			case 3:
-				for (int i = 0; i < intersections.size(); i += 2)
+			if (owner == ETeam.TIGERS)
+			{
+				// intersection needs to be on frontLine of penaltyArea
+				if ((Math.abs(intersection.x() - (goalCenter.x() + radiusOfPenaltyArea + margin)) < PRECISION))
 				{
-					final IVector2 intersection = intersections.get(i);
-					if (owner == ETeam.TIGERS)
-					{
-						// intersection needs to be on frontLine of penaltyArea
-						if ((Math.abs(intersection.x() - (goalCenter.x() + radiusOfPenaltyArea)) < PRECISION)
-								&& (directionCounterP2PVector == directionCounter(new Vector2(intersection.x() - point.x(),
-										intersection.y() - point.y()))))
-						{
-							return scaleVector(intersection, point, pointToBuildLine);
-						}
-					} else
-					{
-						// intersection needs to be on frontLine of penaltyArea
-						if ((Math.abs(intersection.x() - (goalCenter.x() - radiusOfPenaltyArea)) < PRECISION)
-								&& (directionCounterP2PVector == directionCounter(new Vector2(intersection.x() - point.x(),
-										intersection.y() - point.y()))))
-						{
-							return scaleVector(intersection, point, pointToBuildLine);
-						}
-					}
+					return intersection;
 				}
-				break;
-			case 1:
-			case 2:
-				for (final IVector2 intersection : intersections)
+			} else
+			{
+				// intersection needs to be on frontLine of penaltyArea
+				if ((Math.abs(intersection.x() - (goalCenter.x() - radiusOfPenaltyArea - margin)) < PRECISION))
 				{
-					if (owner == ETeam.TIGERS)
-					{
-						// intersection needs to be on frontLine of penaltyArea
-						if ((Math.abs(intersection.x() - (goalCenter.x() + radiusOfPenaltyArea)) < PRECISION)
-								&& (directionCounterP2PVector == directionCounter(new Vector2(intersection.x() - point.x(),
-										intersection.y() - point.y()))))
-						{
-							return scaleVector(intersection, point, pointToBuildLine);
-						}
-					} else
-					{
-						// intersection needs to be on frontLine of penaltyArea
-						if ((Math.abs(intersection.x() - (goalCenter.x() - radiusOfPenaltyArea)) < PRECISION)
-								&& (directionCounterP2PVector == directionCounter(new Vector2(intersection.x() - point.x(),
-										intersection.y() - point.y()))))
-						{
-							return scaleVector(intersection, point, pointToBuildLine);
-						}
-					}
-					
+					return intersection;
 				}
+			}
 		}
-		
+		assert false : "Unexpected state in nearestPointOutside! " + point;
 		// if something went wrong, which should not happen if pointToBuild line is not behind the Area
 		return point;
 	}
 	
-	
-	/**
-	 * For {@link #nearestPointOutside(IVector2 point, IVector2 pointToBuildLine)} only.
-	 * Scales Vector from Point to intersection to a Vector from point to intersection + botRadius.
-	 * 
-	 * @return
-	 */
-	private Vector2 scaleVector(final IVector2 intersection, final IVector2 point, final IVector2 pointToBuildLine)
-	{
-		if (intersection.equals(point, PRECISION))
-		{
-			final Vector2 conVector = new Vector2(pointToBuildLine.x() - point.x(), pointToBuildLine.y() - point.y());
-			conVector.scaleTo(botRadius);
-			return new Vector2(conVector.x() + point.x(), conVector.y() + point.y());
-		}
-		final Vector2 conVector = new Vector2(intersection.x() - point.x(), intersection.y() - point.y());
-		conVector.scaleTo(conVector.getLength2() + botRadius);
-		return new Vector2(conVector.x() + point.x(), conVector.y() + point.y());
-	}
-	
-	
-	/**
-	 * @param vector
-	 * @return 0: x,y <= 0
-	 *         1: x <= 0 , y > 0
-	 *         2: x > 0 , y <= 0
-	 *         3: x,y > 0
-	 */
-	private int directionCounter(final IVector2 vector)
-	{
-		
-		int counter = 0;
-		
-		if (vector.x() > 0)
-		{
-			counter += 2;
-		}
-		
-		if (vector.y() > 0)
-		{
-			counter += 1;
-		}
-		
-		return counter;
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 * @return the penaltyMark in this penaltyArea
@@ -668,5 +714,50 @@ public class PenaltyArea implements I2DShape
 	public final Vector2f getGoalCenter()
 	{
 		return goalCenter;
+	}
+	
+	
+	/**
+	 * Visual test for penalty area
+	 * 
+	 * @param newTacticalField
+	 * @param baseAiFrame
+	 */
+	public void testPenArea(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+	{
+		float flen = AIConfig.getGeometry().getFieldLength() + 400;
+		float fwidth = AIConfig.getGeometry().getFieldWidth() + 400;
+		float step = 50;
+		PenaltyArea po = AIConfig.getGeometry().getPenaltyAreaOur();
+		PenaltyArea pt = AIConfig.getGeometry().getPenaltyAreaTheir();
+		for (float x = -flen / 2; x < (flen / 2); x += step)
+		{
+			for (float y = -fwidth / 2; y < (fwidth / 2); y += step)
+			{
+				IVector2 point = new Vector2(x, y);
+				Color color = po.isPointInShape(point, 200) ? Color.GREEN : Color.RED;
+				newTacticalField.getDrawableShapes().get(EDrawableShapesLayer.UNSORTED)
+						.add(new DrawablePoint(point, color));
+				IVector2 no = pt.nearestPointOutside(point, new Vector2(0, 3000), 200);
+				if (!no.equals(point))
+				{
+					// newTacticalField.getDrawableShapes().get(EDrawableShapesLayer.UNSORTED)
+					// .add(new DrawableLine(Line.newLine(point, no), Color.red, false));
+					newTacticalField.getDrawableShapes().get(EDrawableShapesLayer.UNSORTED)
+							.add(new DrawablePoint(no, Color.GREEN));
+				} else
+				{
+					newTacticalField.getDrawableShapes().get(EDrawableShapesLayer.UNSORTED)
+							.add(new DrawablePoint(point, Color.BLACK));
+				}
+				
+				newTacticalField
+						.getDrawableShapes()
+						.get(EDrawableShapesLayer.UNSORTED)
+						.add(new DrawablePoint(point, GeoMath.p2pVisibilityBall(baseAiFrame.getWorldFrame(), point,
+								new Vector2(), 200) ? Color.GREEN : Color.RED));
+				
+			}
+		}
 	}
 }

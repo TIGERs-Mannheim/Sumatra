@@ -4,17 +4,17 @@
  * Project: TIGERS - Sumatra
  * Date: Oct 8, 2012
  * Author(s): dirk
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt.tree;
+
+import java.util.Set;
 
 
 /**
  * every Tree used by ERRT should implement this interface
  * 
  * @author DirkK
- * 
  */
 public interface ITree
 {
@@ -33,28 +33,8 @@ public interface ITree
 	 * 
 	 * @param father the father/parent of the new node
 	 * @param newNode the node which should be added to the tree
-	 * @param isSuccessor
 	 */
-	void add(Node father, Node newNode, boolean isSuccessor);
-	
-	
-	/**
-	 * removes all nodes between this both nodes
-	 * excl. the start and endNode
-	 * 
-	 * @param startNode
-	 * @param endNode
-	 * @param isSuccessor determines if the successor variable should be set, too
-	 */
-	void removeBetween(Node startNode, Node endNode, boolean isSuccessor);
-	
-	
-	/**
-	 * creates a double linked list
-	 * 
-	 * the successor variable is set and points to the child, which is the next on the path
-	 */
-	void makeDoubleLinkedList();
+	void add(Node father, Node newNode);
 	
 	
 	/**
@@ -63,6 +43,22 @@ public interface ITree
 	 * @return the node where the bot is
 	 */
 	Node getRoot();
+	
+	
+	/**
+	 * Get a set of all used Nodes in this tree
+	 * 
+	 * @return
+	 */
+	Set<Node> getAllNodes();
+	
+	
+	/**
+	 * Get a set of all Leaf Nodes in this tree
+	 * 
+	 * @return
+	 */
+	Set<Node> getAllLeafs();
 	
 	
 }

@@ -4,23 +4,20 @@
  * Project: TIGERS - Sumatra
  * Date: 22.07.2010
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.util.observer;
 
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 
 /**
  * @param <S> Observable type (Subject)
  * @param <O> Observer type
  * @param <E> Event type
- * 
  * @see IObserver
- * 
  * @author Gero
  */
 public class Observable<S extends IObservable<S, O, E>, O extends IObserver<S, O, E>, E> implements
@@ -31,7 +28,7 @@ public class Observable<S extends IObservable<S, O, E>, O extends IObserver<S, O
 	 * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	 * Global declarations
 	 */
-	private final List<O>	registeredObservers	= new ArrayList<O>();
+	private final List<O>	registeredObservers	= new CopyOnWriteArrayList<O>();
 	
 	private E					lastEvent;
 	
@@ -39,7 +36,7 @@ public class Observable<S extends IObservable<S, O, E>, O extends IObserver<S, O
 	/**
 	 * @param initEvent
 	 */
-	public Observable(E initEvent)
+	public Observable(final E initEvent)
 	{
 		this.lastEvent = initEvent;
 	}
@@ -55,7 +52,7 @@ public class Observable<S extends IObservable<S, O, E>, O extends IObserver<S, O
 	 * @param event The event (e) that changed the model
 	 */
 	@Override
-	public synchronized void notifyObservers(E event)
+	public synchronized void notifyObservers(final E event)
 	{
 		lastEvent = event;
 		
@@ -71,7 +68,7 @@ public class Observable<S extends IObservable<S, O, E>, O extends IObserver<S, O
 	
 	
 	@SuppressWarnings("unchecked")
-	private void doNotify(E event)
+	private void doNotify(final E event)
 	{
 		for (final O observer : registeredObservers)
 		{
@@ -89,7 +86,7 @@ public class Observable<S extends IObservable<S, O, E>, O extends IObserver<S, O
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	public boolean addObservers(O... observers)
+	public boolean addObservers(final O... observers)
 	{
 		if (observers == null)
 		{
@@ -122,7 +119,7 @@ public class Observable<S extends IObservable<S, O, E>, O extends IObserver<S, O
 	
 	
 	@Override
-	public synchronized boolean removeObserver(O observer)
+	public synchronized boolean removeObserver(final O observer)
 	{
 		final boolean containedObs = registeredObservers.remove(observer);
 		

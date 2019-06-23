@@ -10,7 +10,6 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -22,14 +21,16 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.Sisyphus;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.devices.TigerDevices;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.ISkillEventObserver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ASkillSystem;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.ConfigRegistration;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.EConfigurableCat;
 
 
 /**
@@ -41,13 +42,11 @@ public abstract class ASkill implements ISkill
 {
 	private static final Logger				log				= Logger.getLogger(ASkill.class.getName());
 	
-	/** [ns] */
-	private long									dt;
-	
 	private boolean								completed		= false;
 	
 	private final ESkillName					skillName;
 	
+	private ASkillSystem							skillSystem		= null;
 	private WorldFrame							worldFrame		= null;
 	
 	private TrackedTigerBot						tBot				= null;
@@ -55,10 +54,12 @@ public abstract class ASkill implements ISkill
 	
 	private final Set<ISkillEventObserver>	observers		= new HashSet<ISkillEventObserver>();
 	
-	private Sisyphus								sisyphus			= null;
-	
 	private long									timeoutStart	= Long.MAX_VALUE;
 	private long									timeout			= 0;
+	
+	private long									lastUpdate		= SumatraClock.nanoTime();
+	private float									dt					= 1;
+	private float									minDt				= 0.008f;
 	
 	
 	/**
@@ -74,13 +75,13 @@ public abstract class ASkill implements ISkill
 	 * @return
 	 */
 	@Override
-	public ESkillName getSkillName()
+	public final ESkillName getSkillName()
 	{
 		return skillName;
 	}
 	
 	
-	protected WorldFrame getWorldFrame()
+	protected final WorldFrame getWorldFrame()
 	{
 		return worldFrame;
 	}
@@ -90,35 +91,30 @@ public abstract class ASkill implements ISkill
 	 * @param newWorldFrame
 	 */
 	@Override
-	public void setWorldFrame(final WorldFrame newWorldFrame)
+	public final void update(final WorldFrame newWorldFrame)
 	{
-		worldFrame = newWorldFrame;
-	}
-	
-	
-	/**
-	 * @param period [ns]
-	 */
-	@Override
-	public void setDt(final long period)
-	{
-		dt = period;
-	}
-	
-	
-	/**
-	 * @return period [s]
-	 */
-	public float getDt()
-	{
-		return dt / 1e9f;
+		if (newWorldFrame != null)
+		{
+			worldFrame = newWorldFrame;
+			TrackedTigerBot newTbot = worldFrame.getBot(bot.getBotID());
+			if (newTbot != null)
+			{
+				tBot = newTbot;
+			}
+		} else
+		{
+			if (needsVision())
+			{
+				complete();
+			}
+		}
 	}
 	
 	
 	/**
 	 * Called from derived user classes to signal the skill system to remove this skill
 	 */
-	protected void complete()
+	public final void complete()
 	{
 		completed = true;
 	}
@@ -128,82 +124,63 @@ public abstract class ASkill implements ISkill
 	 * @return
 	 */
 	@Override
-	public boolean isComplete()
+	public final boolean isComplete()
 	{
 		return completed;
 	}
 	
 	
 	/**
-	 * @return
 	 */
 	@Override
-	public final List<ACommand> calcActions()
+	public final void calcActions(final List<ACommand> cmds)
 	{
-		if ((System.nanoTime() - timeoutStart) > timeout)
+		if ((SumatraClock.nanoTime() - timeoutStart) > timeout)
 		{
 			log.trace("Skill " + getSkillName().name() + " timed out");
 			complete();
+			return;
 		}
-		return calcActions(new ArrayList<ACommand>());
+		dt = (SumatraClock.nanoTime() - lastUpdate) * 1e-9f;
+		// skip update if we get too many frames
+		if (dt >= getMinDt())
+		{
+			doCalcActions(cmds);
+			lastUpdate = SumatraClock.nanoTime();
+		}
 	}
 	
 	
-	/**
-	 * @param cmds
-	 * @return
-	 */
 	@Override
-	public abstract List<ACommand> calcActions(List<ACommand> cmds);
-	
-	
-	/**
-	 * @return
-	 */
-	@Override
-	public final List<ACommand> calcExitActions()
+	public final void calcExitActions(final List<ACommand> cmds)
 	{
-		List<ACommand> cmds = calcExitActions(new ArrayList<ACommand>());
+		doCalcExitActions(cmds);
+		getDevices().disarm(cmds);
+		getDevices().dribble(cmds, false);
 		observers.clear();
-		
-		return cmds;
 	}
 	
 	
-	/**
-	 * Should be overridden by subclasses!!!
-	 * 
-	 * @param cmds
-	 * @return
-	 */
 	@Override
-	public List<ACommand> calcExitActions(final List<ACommand> cmds)
+	public final void calcEntryActions(final List<ACommand> cmds)
 	{
-		return cmds;
+		ConfigRegistration.applySpezis(this, EConfigurableCat.SKILLS, getBotType().name());
+		doCalcEntryActions(cmds);
 	}
 	
 	
-	/**
-	 * @return
-	 */
-	@Override
-	public final List<ACommand> calcEntryActions()
+	protected void doCalcActions(final List<ACommand> cmds)
 	{
-		AIConfig.getSkillsClient().applyConfigToObject(this, getBotType().name());
-		return calcEntryActions(new ArrayList<ACommand>());
 	}
 	
 	
-	/**
-	 * Should be overridden by subclasses!!!
-	 * 
-	 * @param cmds
-	 * @return
-	 */
-	@Override
-	public List<ACommand> calcEntryActions(final List<ACommand> cmds)
+	protected void doCalcExitActions(final List<ACommand> cmds)
 	{
-		return cmds;
+	}
+	
+	
+	protected void doCalcEntryActions(final List<ACommand> cmds)
+	{
 	}
 	
 	
@@ -211,7 +188,7 @@ public abstract class ASkill implements ISkill
 	 * @param observer
 	 */
 	@Override
-	public void addObserver(final ISkillEventObserver observer)
+	public final void addObserver(final ISkillEventObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -224,7 +201,7 @@ public abstract class ASkill implements ISkill
 	 * @param observer
 	 */
 	@Override
-	public void removeObserver(final ISkillEventObserver observer)
+	public final void removeObserver(final ISkillEventObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -233,7 +210,7 @@ public abstract class ASkill implements ISkill
 	}
 	
 	
-	protected void notifyEvent(final Enum<? extends Enum<?>> event)
+	protected final void notifyEvent(final Enum<? extends Enum<?>> event)
 	{
 		synchronized (observers)
 		{
@@ -257,7 +234,7 @@ public abstract class ASkill implements ISkill
 	}
 	
 	
-	protected IVector2 getPos()
+	protected final IVector2 getPos()
 	{
 		if (tBot != null)
 		{
@@ -267,7 +244,7 @@ public abstract class ASkill implements ISkill
 	}
 	
 	
-	protected float getAngle()
+	protected final float getAngle()
 	{
 		if (tBot != null)
 		{
@@ -277,7 +254,7 @@ public abstract class ASkill implements ISkill
 	}
 	
 	
-	protected IVector2 getVel()
+	protected final IVector2 getVel()
 	{
 		if (tBot != null)
 		{
@@ -287,7 +264,7 @@ public abstract class ASkill implements ISkill
 	}
 	
 	
-	protected float getaVel()
+	protected final float getaVel()
 	{
 		if (tBot != null)
 		{
@@ -297,13 +274,13 @@ public abstract class ASkill implements ISkill
 	}
 	
 	
-	protected EBotType getBotType()
+	protected final EBotType getBotType()
 	{
 		return bot.getType();
 	}
 	
 	
-	protected boolean hasBallContact()
+	protected final boolean hasBallContact()
 	{
 		if (tBot != null)
 		{
@@ -331,6 +308,8 @@ public abstract class ASkill implements ISkill
 	
 	
 	/**
+	 * This must only be called by SkillExecuter!!
+	 * 
 	 * @param bot the bot to set
 	 */
 	@Override
@@ -341,42 +320,25 @@ public abstract class ASkill implements ISkill
 			log.warn("Bot already set!");
 		}
 		this.bot = bot;
+		// tBot = TrackedTigerBot.defaultBot(bot.getBotID(), bot);
 	}
 	
 	
 	/**
-	 * @param tBot the tBot to set
+	 * Careful, may be null if no vision
+	 * 
+	 * @return
 	 */
-	@Override
-	public final void settBot(final TrackedTigerBot tBot)
+	protected final TrackedTigerBot getTBot()
 	{
-		this.tBot = tBot;
-	}
-	
-	
-	/**
-	 * @param sisyphus
-	 */
-	@Override
-	public final void setSisyphus(final Sisyphus sisyphus)
-	{
-		this.sisyphus = sisyphus;
+		return tBot;
 	}
 	
 	
 	/**
 	 * @return
 	 */
-	protected final Sisyphus getSisyphus()
-	{
-		return sisyphus;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public final TigerDevices getDevices()
+	protected final TigerDevices getDevices()
 	{
 		return getBot().getDevices();
 	}
@@ -389,7 +351,7 @@ public abstract class ASkill implements ISkill
 	 */
 	public final void startTimeout(final int ms)
 	{
-		timeoutStart = System.nanoTime();
+		timeoutStart = SumatraClock.nanoTime();
 		timeout = TimeUnit.MILLISECONDS.toNanos(ms);
 	}
 	
@@ -397,8 +359,55 @@ public abstract class ASkill implements ISkill
 	/**
 	 * @return
 	 */
-	public final boolean isTimeoutRunning()
+	protected final boolean isTimeoutRunning()
 	{
 		return timeout != 0;
+	}
+	
+	
+	/**
+	 * @return dt since last update in [s]
+	 */
+	protected final float getDt()
+	{
+		return dt;
+	}
+	
+	
+	/**
+	 * @return the minDt
+	 */
+	protected final float getMinDt()
+	{
+		return minDt;
+	}
+	
+	
+	/**
+	 * @param minDt the minDt to set
+	 */
+	@Override
+	public final void setMinDt(final float minDt)
+	{
+		this.minDt = minDt;
+	}
+	
+	
+	/**
+	 * @return the skillSystem
+	 */
+	protected final ASkillSystem getSkillSystem()
+	{
+		return skillSystem;
+	}
+	
+	
+	/**
+	 * @param skillSystem the skillSystem to set
+	 */
+	@Override
+	public final void setSkillSystem(final ASkillSystem skillSystem)
+	{
+		this.skillSystem = skillSystem;
 	}
 }

@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 23.11.2011
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.commons.treetable;
@@ -33,7 +32,7 @@ public abstract class ATreeTableModel implements ITreeTableModel
 	/**
 	 * @param root
 	 */
-	public ATreeTableModel(Object root)
+	public ATreeTableModel(final Object root)
 	{
 		this.root = root;
 	}
@@ -47,14 +46,14 @@ public abstract class ATreeTableModel implements ITreeTableModel
 	
 	
 	@Override
-	public boolean isLeaf(Object obj)
+	public boolean isLeaf(final Object obj)
 	{
 		return getChildCount(obj) == 0;
 	}
 	
 	
 	@Override
-	public void valueForPathChanged(TreePath paramTreePath, Object paramObject)
+	public void valueForPathChanged(final TreePath paramTreePath, final Object paramObject)
 	{
 		
 	}
@@ -66,14 +65,14 @@ public abstract class ATreeTableModel implements ITreeTableModel
 	 * and keyboard events in the Tree column to the underlying JTree.
 	 */
 	@Override
-	public boolean isCellEditable(Object node, int column)
+	public boolean isCellEditable(final Object node, final int column)
 	{
 		return getColumnClass(column) == ITreeTableModel.class;
 	}
 	
 	
 	@Override
-	public void setEditable(boolean editable)
+	public void setEditable(final boolean editable)
 	{
 		this.editable = editable;
 	}
@@ -87,14 +86,14 @@ public abstract class ATreeTableModel implements ITreeTableModel
 	
 	
 	@Override
-	public void addTreeModelListener(TreeModelListener l)
+	public void addTreeModelListener(final TreeModelListener l)
 	{
 		listenerList.add(TreeModelListener.class, l);
 	}
 	
 	
 	@Override
-	public void removeTreeModelListener(TreeModelListener l)
+	public void removeTreeModelListener(final TreeModelListener l)
 	{
 		listenerList.remove(TreeModelListener.class, l);
 	}
@@ -105,10 +104,10 @@ public abstract class ATreeTableModel implements ITreeTableModel
 	 * notification on this event type. The event instance
 	 * is lazily created using the parameters passed into
 	 * the fire method.
-	 * 
 	 * @see EventListenerList
 	 */
-	protected void fireTreeNodesChanged(Object source, Object[] path, int[] childIndices, Object[] children)
+	protected void fireTreeNodesChanged(final Object source, final Object[] path, final int[] childIndices,
+			final Object[] children)
 	{
 		// Guaranteed to return a non-null array
 		Object[] listeners = listenerList.getListenerList();
@@ -135,10 +134,10 @@ public abstract class ATreeTableModel implements ITreeTableModel
 	 * notification on this event type. The event instance
 	 * is lazily created using the parameters passed into
 	 * the fire method.
-	 * 
 	 * @see EventListenerList
 	 */
-	protected void fireTreeNodesInserted(Object source, Object[] path, int[] childIndices, Object[] children)
+	protected void fireTreeNodesInserted(final Object source, final Object[] path, final int[] childIndices,
+			final Object[] children)
 	{
 		// Guaranteed to return a non-null array
 		Object[] listeners = listenerList.getListenerList();
@@ -165,10 +164,10 @@ public abstract class ATreeTableModel implements ITreeTableModel
 	 * notification on this event type. The event instance
 	 * is lazily created using the parameters passed into
 	 * the fire method.
-	 * 
 	 * @see EventListenerList
 	 */
-	protected void fireTreeNodesRemoved(Object source, Object[] path, int[] childIndices, Object[] children)
+	protected void fireTreeNodesRemoved(final Object source, final Object[] path, final int[] childIndices,
+			final Object[] children)
 	{
 		// Guaranteed to return a non-null array
 		Object[] listeners = listenerList.getListenerList();
@@ -195,10 +194,10 @@ public abstract class ATreeTableModel implements ITreeTableModel
 	 * notification on this event type. The event instance
 	 * is lazily created using the parameters passed into
 	 * the fire method.
-	 * 
 	 * @see EventListenerList
 	 */
-	protected void fireTreeStructureChanged(Object source, Object[] path, int[] childIndices, Object[] children)
+	protected void fireTreeStructureChanged(final Object source, final Object[] path, final int[] childIndices,
+			final Object[] children)
 	{
 		// Guaranteed to return a non-null array
 		Object[] listeners = listenerList.getListenerList();

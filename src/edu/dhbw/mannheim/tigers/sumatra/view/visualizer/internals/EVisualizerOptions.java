@@ -8,12 +8,15 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals;
 
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.IVisualizerOption;
+
+
 /**
  * Available visualizer options and their names
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public enum EVisualizerOptions
+public enum EVisualizerOptions implements IVisualizerOption
 {
 	/**  */
 	LAYER_DEBUG_INFOS("layer DEBUG infos"),
@@ -30,29 +33,19 @@ public enum EVisualizerOptions
 	/**  */
 	POSITION_GRID("position grid"),
 	/**  */
-	ANALYSIS_GRID("analyze grid"),
-	/**  */
 	VELOCITY("velocity"),
 	/**  */
 	ACCELERATION("acceleration"),
 	/**  */
 	PATHS("paths"),
 	/**  */
-	SPLINES("splines"),
+	PATH_DECORATION("path decoration"),
 	/** */
-	ERROR_TREE("error tree"),
-	/**  */
-	PATTERNS("patterns"),
-	/**  */
-	GOAL_POINTS("goal points"),
+	PP_DEBUG("path debug"),
 	/**  */
 	FIELD_MARKS("field marks"),
 	/**  */
 	ROLE_NAME("rolenames"),
-	/**  */
-	TACTICS("tactics"),
-	/**  */
-	BALL_BUFFER("ball buffer"),
 	/**  */
 	YELLOW_AI("Yellow AI"),
 	/**  */
@@ -66,11 +59,23 @@ public enum EVisualizerOptions
 	/**  */
 	POT_PATHS("Potential paths"),
 	/**  */
-	POT_SPLINES("Potential Splines"),
+	POT_PATH_DECORATION("Potential path dec."),
+	/**  */
+	POT_DEBUG("Potential Debug"),
 	/**  */
 	SUPPORT_POS("Support Positions"),
 	/**  */
-	MISC("Misc");
+	SUPPORT_GRID("Support Grid"),
+	/***/
+	INTERSECTION("Cam intersection"),
+	/**  */
+	POSITION_BUFFER("Pos Buffer"),
+	/**  */
+	PATHS_UNSMOOTHED("Unsmoothed paths"),
+	/**  */
+	PATHS_RAMBO("Rambo tree"),
+	/**  */
+	VISION("Vision");
 	
 	
 	private final String	name;
@@ -88,6 +93,7 @@ public enum EVisualizerOptions
 	/**
 	 * @return the name
 	 */
+	@Override
 	public final String getName()
 	{
 		return name;

@@ -25,13 +25,10 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARo
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill.EMoveToMode;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.IMoveToSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.KickSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.KickSkill.EKickMode;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveAndStaySkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveToSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleState;
 import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
 
@@ -95,7 +92,7 @@ public class PenaltyShooterRole extends ARole
 		@Override
 		public void doEntryActions()
 		{
-			MoveToSkill skill = new MoveAndStaySkill();
+			IMoveToSkill skill = AMoveSkill.createMoveToSkill();
 			IVector2 firstDestination = AIConfig.getGeometry().getPenaltyMarkTheir().addNew(new Vector2(-400, 0));
 			skill.getMoveCon().updateLookAtTarget(getAiFrame().getWorldFrame().getBall().getPos());
 			skill.getMoveCon().updateDestination(firstDestination);
@@ -117,7 +114,7 @@ public class PenaltyShooterRole extends ARole
 			if (keeperFoe != null)
 			{
 				IVector2 keeperPos = keeperFoe.getPos();
-				IVector2 ballPos = getAiFrame().getWorldFrame().ball.getPos();
+				IVector2 ballPos = getAiFrame().getWorldFrame().getBall().getPos();
 				IVector2 posToBall = ballPos.subtractNew(getPos());
 				
 				getAiFrame().addDebugShape(new DrawableLine(new Line(ballPos, keeperPos.subtractNew(ballPos))));
@@ -129,7 +126,7 @@ public class PenaltyShooterRole extends ARole
 				if (getAiFrame().getNewRefereeMsg().getCommand().equals(Command.NORMAL_START))
 				{
 					// System.out.println("prepared!");
-					nextState(EEvent.PREPARED);
+					triggerEvent(EEvent.PREPARED);
 				}
 			} catch (NullPointerException e)
 			{
@@ -226,12 +223,13 @@ public class PenaltyShooterRole extends ARole
 		@Override
 		public void doEntryActions()
 		{
-			IVector2 ballPos = getAiFrame().getWorldFrame().ball.getPos();
+			IVector2 ballPos = getAiFrame().getWorldFrame().getBall().getPos();
 			IVector2 target = AIConfig.getGeometry().getGoalTheir().getGoalPostRight().addNew(new Vector2(0, 30));
 			IVector2 targetToBall = ballPos.subtractNew(target).normalizeNew();
 			IVector2 moveTarget = ballPos.addNew(targetToBall.multiplyNew(distanceToBall));
 			
-			IMoveToSkill moveSkill = AMoveSkill.createMoveToSkill(EMoveToMode.DO_COMPLETE);
+			IMoveToSkill moveSkill = AMoveSkill.createMoveToSkill();
+			moveSkill.setDoComplete(true);
 			moveSkill.getMoveCon().updateDestination(moveTarget);
 			moveSkill.getMoveCon().updateLookAtTarget(ballPos);
 			setNewSkill(moveSkill);
@@ -252,7 +250,7 @@ public class PenaltyShooterRole extends ARole
 			if (keeperFoe != null)
 			{
 				IVector2 keeperPos = keeperFoe.getPos();
-				IVector2 ballPos = getAiFrame().getWorldFrame().ball.getPos();
+				IVector2 ballPos = getAiFrame().getWorldFrame().getBall().getPos();
 				
 				IVector2 posToBall = ballPos.subtractNew(getPos());
 				IVector2 posToEnemy = keeperPos.subtractNew(ballPos);

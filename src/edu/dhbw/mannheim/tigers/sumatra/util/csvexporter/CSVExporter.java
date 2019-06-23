@@ -11,15 +11,15 @@ package edu.dhbw.mannheim.tigers.sumatra.util.csvexporter;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.lang.reflect.Field;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
+import java.util.stream.Stream;
 
 import org.apache.log4j.Logger;
 
@@ -57,128 +57,69 @@ public final class CSVExporter
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private static final Logger					log				= Logger.getLogger(CSVExporter.class.getName());
-	private boolean									autoIncrement	= false;
-	private String										export			= "export";
-	private final Queue<String>					values			= new LinkedList<String>();
-	private final Queue<String>					header			= new LinkedList<String>();
-	private String										additionalInfo	= "";
-	private File										file;
-	private BufferedWriter							fileWriter;
-	private boolean									writeHeader		= false;
-	private static final String					delimiter		= ",";
-	private int											headerSize		= 0;
-	private final String								id;
+	private static final Logger	log				= Logger.getLogger(CSVExporter.class.getName());
+	private boolean					autoIncrement	= false;
+	private final String				fileName;
+	private final Queue<String>	values			= new LinkedList<String>();
+	private final Queue<String>	header			= new LinkedList<String>();
+	private String						additionalInfo	= "";
+	private File						file;
+	private BufferedWriter			fileWriter;
+	private boolean					writeHeader		= false;
+	private static final String	delimiter		= ",";
+	private int							headerSize		= 0;
 	
-	private boolean									isClosed			= false;
-	
-	private static Map<String, CSVExporter>	instances		= new HashMap<String, CSVExporter>();
+	private boolean					isClosed			= false;
+	private boolean					append			= false;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
-	 * get an instance of {@link CSVExporter} with the specified id
-	 * 
-	 * @param id id of the instance
-	 * @return the instance
-	 * @throws CSVExporterException
+	 * @param fileName
+	 * @param autoIncrement
+	 * @param append
 	 */
-	public static CSVExporter getInstance(final String id)
+	public CSVExporter(final String fileName, final boolean autoIncrement, final boolean append)
 	{
-		if (instances.containsKey(id))
-		{
-			return instances.get(id);
-		}
-		return null;
-		// throw new CSVExporterException(id + " is not a known instance", null);
+		this.fileName = fileName;
+		this.autoIncrement = autoIncrement;
+		this.append = append;
 	}
 	
 	
 	/**
-	 * get an instance of {@link CSVExporter} with the specified id
-	 * or creates one with the default filename "export.csv"
-	 * 
-	 * @param id
-	 * @return the instance
-	 */
-	public static CSVExporter createOrGetInstance(final String id)
-	{
-		if (!instances.containsKey(id))
-		{
-			instances.put(id, new CSVExporter(id, "export", true));
-		}
-		return instances.get(id);
-	}
-	
-	
-	/**
-	 * creates a new {@link CSVExporter} instance
-	 * 
-	 * @param id
-	 * @param fileName base name of the csv-file (without ".csv")
-	 * @param autoIncrement if true a counter is added to the filename which increments each time a new instance is
-	 *           created (a new measurement is started) else the file is overwritten
-	 * @return
-	 * @throws CSVExporterException
-	 */
-	public static CSVExporter createInstance(final String id, final String fileName, final boolean autoIncrement)
-	{
-		if (instances.containsKey(id))
-		{
-			// throw new CSVExporterException(id + " is already there", null);
-			return null;
-		}
-		CSVExporter instance = new CSVExporter(id, fileName, autoIncrement);
-		instances.put(id, instance);
-		return instance;
-	}
-	
-	
-	/**
-	 * creates a new {@link CSVExporter} instance
-	 * 
-	 * @param id
-	 * @param fileName base name of the csv-file (without ".csv")
-	 * @return
-	 * @throws CSVExporterException
-	 */
-	public static CSVExporter createInstance(final String id, final String fileName) throws CSVExporterException
-	{
-		return createInstance(id, fileName, false);
-	}
-	
-	
-	/**
-	 * @param id
-	 * @param export
+	 * @param fileName sub-dir and name of exported file without .csv ending
 	 * @param autoIncrement
 	 */
-	public CSVExporter(final String id, final String export, final boolean autoIncrement)
+	public CSVExporter(final String fileName, final boolean autoIncrement)
 	{
-		this.id = id;
-		this.export = export;
-		this.autoIncrement = autoIncrement;
+		this(fileName, autoIncrement, false);
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
+	/**
+	 * @param folder
+	 * @param key
+	 * @param stream
+	 */
+	public static void exportList(final String folder, final String key, final Stream<INumberListable> stream)
+	{
+		CSVExporter exporter = new CSVExporter(folder + "/" + key, false);
+		stream.forEach(nl -> exporter.addValues(nl.getNumberList()));
+		exporter.close();
+	}
 	
 	
 	/**
-	 * adds a new data set to a file
+	 * adds a new data set to a file.
 	 * 
 	 * @param values list of values. note: count of values has to match the header
 	 */
-	public void addValues(final Object... values)
+	public void addValues(final Number... values)
 	{
 		this.values.clear();
-		for (final Object object : values)
+		for (final Number f : values)
 		{
-			this.values.add(object.toString());
+			this.values.add(String.valueOf(f));
 		}
 		persistRecord();
 	}
@@ -186,33 +127,15 @@ public final class CSVExporter
 	
 	/**
 	 * adds a new data set to a file.
-	 * Floats will be formated with %.4f
 	 * 
 	 * @param values list of values. note: count of values has to match the header
 	 */
-	public void addValues(final Float... values)
+	public void addValues(final List<Number> values)
 	{
 		this.values.clear();
-		for (final Float f : values)
+		for (final Object f : values)
 		{
-			this.values.add(String.format("%.4f", f));
-		}
-		persistRecord();
-	}
-	
-	
-	/**
-	 * adds a new data set to a file.
-	 * Floats will be formated with %.4f
-	 * 
-	 * @param values list of values. note: count of values has to match the header
-	 */
-	public void addValues(final List<Float> values)
-	{
-		this.values.clear();
-		for (final Float f : values)
-		{
-			this.values.add(String.format("%.4f", f));
+			this.values.add(String.valueOf(f));
 		}
 		persistRecord();
 	}
@@ -296,19 +219,29 @@ public final class CSVExporter
 		{
 			if (file == null)
 			{
-				new File("logs/" + export).getParentFile().mkdirs();
+				File dir = new File(fileName).getParentFile();
+				if (!dir.exists())
+				{
+					boolean created = dir.mkdirs();
+					if (!created)
+					{
+						log.warn("Could not create export dir: " + dir.getAbsolutePath());
+					}
+				}
 				int counter = 0;
 				if (autoIncrement)
 				{
-					while ((file = new File("logs/" + export + counter + ".csv")).exists())
+					while ((file = new File(fileName + counter + ".csv")).exists())
 					{
 						counter++;
 					}
 				} else
 				{
-					file = new File("logs/" + export + ".csv");
+					file = new File(fileName + ".csv");
 				}
-				fileWriter = new BufferedWriter(new FileWriter(file));
+				
+				fileWriter = new BufferedWriter(new OutputStreamWriter(
+						new FileOutputStream(file, append), "UTF-8"));
 				
 				if (writeHeader)
 				{
@@ -358,7 +291,7 @@ public final class CSVExporter
 	 */
 	public String getAbsoluteFileName()
 	{
-		return new File("logs/" + export + ".csv").getAbsolutePath();
+		return new File(fileName + ".csv").getAbsolutePath();
 	}
 	
 	
@@ -373,13 +306,12 @@ public final class CSVExporter
 			try
 			{
 				fileWriter.close();
-				log.info("Saved csv file to " + file.getAbsolutePath());
+				log.debug("Saved csv file to " + file.getAbsolutePath());
 			} catch (final IOException err)
 			{
 				throw new CSVExporterException("io error while closing the file", err);
 			}
 		}
-		instances.remove(id);
 		isClosed = true;
 	}
 	

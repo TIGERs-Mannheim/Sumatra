@@ -22,6 +22,7 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -88,7 +89,7 @@ public class OpenClContext
 	 * @param kernelName The name of the main function in the kernel
 	 * @return if program was created
 	 */
-	public final boolean createProgram(final String kernelName)
+	public final cl_kernel createProgram(final String kernelName)
 	{
 		try
 		{
@@ -104,9 +105,9 @@ public class OpenClContext
 		} catch (Error e)
 		{
 			log.error("Error while building OpenCL kernel", e);
-			return false;
+			return null;
 		}
-		return true;
+		return kernel;
 	}
 	
 	
@@ -123,7 +124,8 @@ public class OpenClContext
 		BufferedReader br = null;
 		try
 		{
-			br = new BufferedReader(new InputStreamReader(new FileInputStream("./kernels/" + sourceFileName)));
+			br = new BufferedReader(new InputStreamReader(new FileInputStream("./kernels/" + sourceFileName),
+					Charset.forName("UTF-8")));
 			StringBuffer sb = new StringBuffer();
 			String line = null;
 			while (true)

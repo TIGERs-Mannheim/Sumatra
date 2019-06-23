@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 20.03.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline;
@@ -12,6 +11,7 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline;
 import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.ITrajectory2D;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 
@@ -19,27 +19,15 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 /**
  * A hermite spline in 2D.
  * This class only takes two points. For more complex splines with more points combine multiple HermiteSplines.
- * 
  * This implementation always references values on a t-axis from 0 to tEnd.
  * 
  * @author AndreR
- * 
  */
 @Persistent(version = 2)
-public class HermiteSpline2D
+public class HermiteSpline2D implements ITrajectory2D
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
 	private IHermiteSpline	x;
 	private IHermiteSpline	y;
-	
-	private float				length	= -1;
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	
 	@SuppressWarnings("unused")
@@ -56,7 +44,8 @@ public class HermiteSpline2D
 	 * @param initialVelocity Initial velocity.
 	 * @param finalVelocity Final velocity.
 	 */
-	public HermiteSpline2D(IVector2 initialPos, IVector2 finalPos, IVector2 initialVelocity, IVector2 finalVelocity)
+	public HermiteSpline2D(final IVector2 initialPos, final IVector2 finalPos, final IVector2 initialVelocity,
+			final IVector2 finalVelocity)
 	{
 		x = new HermiteSpline(initialPos.x(), finalPos.x(), initialVelocity.x(), finalVelocity.x());
 		y = new HermiteSpline(initialPos.y(), finalPos.y(), initialVelocity.y(), finalVelocity.y());
@@ -72,8 +61,9 @@ public class HermiteSpline2D
 	 * @param finalVelocity Final velocity.
 	 * @param tEnd End time.
 	 */
-	public HermiteSpline2D(IVector2 initialPos, IVector2 finalPos, IVector2 initialVelocity, IVector2 finalVelocity,
-			float tEnd)
+	public HermiteSpline2D(final IVector2 initialPos, final IVector2 finalPos, final IVector2 initialVelocity,
+			final IVector2 finalVelocity,
+			final float tEnd)
 	{
 		x = new HermiteSpline(initialPos.x(), finalPos.x(), initialVelocity.x(), finalVelocity.x(), tEnd);
 		y = new HermiteSpline(initialPos.y(), finalPos.y(), initialVelocity.y(), finalVelocity.y(), tEnd);
@@ -83,24 +73,20 @@ public class HermiteSpline2D
 	/**
 	 * @param spline
 	 */
-	public HermiteSpline2D(HermiteSpline2D spline)
+	public HermiteSpline2D(final HermiteSpline2D spline)
 	{
 		x = new HermiteSpline(spline.x);
 		y = new HermiteSpline(spline.y);
-		length = spline.length;
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * Get the 2D value.
 	 * 
 	 * @param t "Time" in range 0-tEnd
 	 * @return
 	 */
-	public Vector2 value(float t)
+	public Vector2 value(final float t)
 	{
 		return new Vector2(x.value(t), y.value(t));
 	}
@@ -121,7 +107,7 @@ public class HermiteSpline2D
 	 * @param t "Time" in range 0-tEnd
 	 * @return
 	 */
-	public Vector2 firstDerivative(float t)
+	public Vector2 firstDerivative(final float t)
 	{
 		return new Vector2(x.firstDerivative(t), y.firstDerivative(t));
 	}
@@ -133,7 +119,7 @@ public class HermiteSpline2D
 	 * @param t "Time" in range 0-tEnd
 	 * @return
 	 */
-	public Vector2 secondDerivative(float t)
+	public Vector2 secondDerivative(final float t)
 	{
 		return new Vector2(x.secondDerivative(t), y.secondDerivative(t));
 	}
@@ -153,7 +139,10 @@ public class HermiteSpline2D
 		
 		if ((x.getA()[3] + y.getA()[3]) != 0.0f) // maximum existent?
 		{
-			float t = -(y.getA()[2] + x.getA()[2]) / ((3 * y.getA()[3]) + (3 * x.getA()[3])); // time at maximum
+			float[] ax = x.getA();
+			float[] ay = y.getA();
+			// http://www.wolframalpha.com/input/?i=solve%28+derivative%28sqrt%28%286*a*x%2B2*b%29%5E2+%2B+%286*c*x%2B2*d%29%5E2%29%2C+x%29+%3D+0%2C+x%29
+			float t = ((-ax[3] * ax[2]) - (ay[3] * ay[2])) / (3 * ((ax[3] * ax[3]) + (ay[3] * ay[3])));
 			if ((t > 0) && (t < x.getEndTime()))
 			{
 				b = firstDerivative(t).getLength2();
@@ -186,7 +175,7 @@ public class HermiteSpline2D
 	 * @param t "Time" in range 0-tEnd
 	 * @return Curvature, high values mean tight curves.
 	 */
-	public float getCurvature(float t)
+	public float getCurvature(final float t)
 	{
 		float x1 = x.firstDerivative(t);
 		float x2 = x.secondDerivative(t);
@@ -202,75 +191,6 @@ public class HermiteSpline2D
 	
 	
 	/**
-	 * get the total length of the spline in mm
-	 * 
-	 * @return
-	 */
-	public float getLength()
-	{
-		if (length == -1)
-		{
-			length = getLength(100);
-		}
-		return length;
-	}
-	
-	
-	/**
-	 * The total length along the spline.
-	 * 
-	 * @param points Interpolation points, 100 should be a good value. Use higher values for a more accurate result.
-	 * @return Spline length.
-	 */
-	public float getLength(int points)
-	{
-		// unfortunately the most efficient way to calculate the length of a 2D spline is numeric integration
-		float length = 0;
-		float dT = 1.0f / points;
-		
-		for (float t = 0.0f; t < getEndTime(); t += dT)
-		{
-			length += firstDerivative(t).getLength2() * dT;
-		}
-		
-		return length;
-	}
-	
-	
-	/**
-	 * Get the 2D value but by driven way
-	 * 
-	 * @param drivenWay
-	 * @return
-	 */
-	public IVector2 getValue(float drivenWay)
-	{
-		return value(lengthToTime(drivenWay));
-	}
-	
-	
-	/**
-	 * for the defense points, LOW PRECISION, BAD PERFORMANCE
-	 * 
-	 * @param drivenWay
-	 * @return
-	 */
-	public float lengthToTime(float drivenWay)
-	{
-		float length = 0;
-		for (float t = 0.0f; t < getEndTime(); t += 0.01f)
-		{
-			length += firstDerivative(t).getLength2() * 0.01f;
-			if (length >= drivenWay)
-			{
-				return t;
-			}
-		}
-		return getEndTime();
-	}
-	
-	
-	/**
 	 * Get the end time.
 	 * 
 	 * @return tEnd
@@ -281,9 +201,6 @@ public class HermiteSpline2D
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * @return
 	 */
@@ -305,6 +222,34 @@ public class HermiteSpline2D
 	@Override
 	public String toString()
 	{
-		return "[x=" + x + ", y=" + y + ", length=" + length + "]";
+		return "[x=" + x + ", y=" + y + "]";
+	}
+	
+	
+	@Override
+	public Vector2 getPosition(final float t)
+	{
+		return value(t).multiply(1000);
+	}
+	
+	
+	@Override
+	public Vector2 getVelocity(final float t)
+	{
+		return firstDerivative(t);
+	}
+	
+	
+	@Override
+	public Vector2 getAcceleration(final float t)
+	{
+		return secondDerivative(t);
+	}
+	
+	
+	@Override
+	public float getTotalTime()
+	{
+		return getEndTime();
 	}
 }

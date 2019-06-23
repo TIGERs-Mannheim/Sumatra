@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Nov 20, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2;
@@ -21,7 +20,6 @@ import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
  * Extended status command
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class TigerSystemStatusExt extends TigerSystemStatusV2
 {
@@ -73,9 +71,9 @@ public class TigerSystemStatusExt extends TigerSystemStatusV2
 	// --------------------------------------------------------------------------
 	
 	@Override
-	public List<Float> getAllValues()
+	public List<Object> getAllValues()
 	{
-		List<Float> values = super.getAllValues();
+		List<Object> values = super.getAllValues();
 		values.add(getTargetPosition().x);
 		values.add(getTargetPosition().y);
 		values.add(getTargetOrientation());

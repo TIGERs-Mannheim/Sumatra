@@ -15,7 +15,6 @@ import java.awt.Graphics2D;
 import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.ColorWrapper;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.IDrawableShape;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.visualizer.IFieldPanel;
@@ -26,8 +25,8 @@ import edu.dhbw.mannheim.tigers.sumatra.presenter.visualizer.IFieldPanel;
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@Persistent
-public class DrawableCircle extends Circle implements IDrawableShape
+@Persistent(version = 1)
+public class DrawableCircle extends Circle
 {
 	
 	// --------------------------------------------------------------------------
@@ -35,6 +34,7 @@ public class DrawableCircle extends Circle implements IDrawableShape
 	// --------------------------------------------------------------------------
 	
 	private ColorWrapper	color	= new ColorWrapper(Color.red);
+	private boolean		fill	= false;
 	
 	
 	// --------------------------------------------------------------------------
@@ -44,6 +44,7 @@ public class DrawableCircle extends Circle implements IDrawableShape
 	/**
 	 * For some reason, ObjectDB wants a no-arg constructor with this class...
 	 */
+	@SuppressWarnings("unused")
 	private DrawableCircle()
 	{
 		super(new Circle(AVector2.ZERO_VECTOR, 1));
@@ -70,6 +71,18 @@ public class DrawableCircle extends Circle implements IDrawableShape
 	}
 	
 	
+	/**
+	 * @param center
+	 * @param radius
+	 * @param color
+	 */
+	public DrawableCircle(final IVector2 center, final float radius, final Color color)
+	{
+		super(center, radius);
+		this.color = new ColorWrapper(color);
+	}
+	
+	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -85,6 +98,10 @@ public class DrawableCircle extends Circle implements IDrawableShape
 		g.setColor(getColor());
 		g.setStroke(new BasicStroke(1));
 		g.drawOval((int) (center.x() - radius), (int) (center.y() - radius), (int) radius * 2, (int) radius * 2);
+		if (fill)
+		{
+			g.fillOval((int) (center.x() - radius), (int) (center.y() - radius), (int) radius * 2, (int) radius * 2);
+		}
 	}
 	
 	
@@ -113,5 +130,14 @@ public class DrawableCircle extends Circle implements IDrawableShape
 	public void setColor(final Color color)
 	{
 		this.color = new ColorWrapper(color);
+	}
+	
+	
+	/**
+	 * @param fill
+	 */
+	public void setFill(final boolean fill)
+	{
+		this.fill = fill;
 	}
 }

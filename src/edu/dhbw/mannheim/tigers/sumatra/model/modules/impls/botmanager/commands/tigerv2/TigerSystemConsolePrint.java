@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 16.04.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2;
@@ -21,7 +20,6 @@ import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
  * Simple text messages from a tigerv2 bot.
  * 
  * @author AndreR
- * 
  */
 public class TigerSystemConsolePrint extends ACommand
 {
@@ -33,12 +31,18 @@ public class TigerSystemConsolePrint extends ACommand
 		/** */
 		MAIN(1),
 		/** */
-		MEDIA(2);
+		MEDIA(2),
+		/** */
+		LEFT(4),
+		/** */
+		RIGHT(8),
+		/** */
+		KD(0x10);
 		
 		private final int	id;
 		
 		
-		private ConsolePrintSource(int id)
+		private ConsolePrintSource(final int id)
 		{
 			this.id = id;
 		}
@@ -61,7 +65,7 @@ public class TigerSystemConsolePrint extends ACommand
 		 * @param id 1 (MAIN) or 2 (MEDIA)
 		 * @return enum
 		 */
-		public static ConsolePrintSource getSourceConstant(int id)
+		public static ConsolePrintSource getSourceConstant(final int id)
 		{
 			for (ConsolePrintSource s : values())
 			{
@@ -113,7 +117,7 @@ public class TigerSystemConsolePrint extends ACommand
 	/**
 	 * @param source the source to set
 	 */
-	public void setSource(ConsolePrintSource source)
+	public void setSource(final ConsolePrintSource source)
 	{
 		this.source = source.getId();
 	}
@@ -141,7 +145,7 @@ public class TigerSystemConsolePrint extends ACommand
 	/**
 	 * @param text the text to set
 	 */
-	public void setText(String text)
+	public void setText(final String text)
 	{
 		try
 		{

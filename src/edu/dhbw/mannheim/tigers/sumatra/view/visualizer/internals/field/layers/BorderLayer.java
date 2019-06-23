@@ -31,7 +31,6 @@ public class BorderLayer extends AFieldLayer
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private static final int	FIELD_GOAL_HEIGHT_BASE		= 220;
 	private static final int	FIELD_COLOR_RED				= 0;
 	private static final int	FIELD_COLOR_GREEN				= 180;
 	private static final int	FIELD_COLOR_GREEN_REFEREE	= 150;
@@ -70,7 +69,7 @@ public class BorderLayer extends AFieldLayer
 		getFieldPanel().turnField(getFieldTurn(), -AngleMath.PI_HALF, g);
 		
 		final int fieldGoalWidth = getFieldPanel().scaleXLength(AIConfig.getGeometry().getGoalSize());
-		final int fieldGoalHeight = getFieldPanel().scaleXLength(FIELD_GOAL_HEIGHT_BASE);
+		final int fieldGoalHeight = getFieldPanel().scaleXLength(AIConfig.getGeometry().getGoalDepth());
 		
 		final int fieldTotalWidth = getFieldPanel().getFieldTotalWidth();
 		final int fieldTotalHeight = getFieldPanel().getFieldTotalHeight();

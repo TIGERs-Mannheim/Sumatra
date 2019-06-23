@@ -10,9 +10,10 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.errt;
 
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.analyze.ETuneableParameter;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.ConfigRegistration;
 import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.EConfigurableCat;
 
 
 /**
@@ -49,6 +50,10 @@ public class TuneableParameter
 	
 	private boolean					fastApprox							= false;
 	
+	// TODO DanielAl switch with class instance to allow more than two implementaions
+	@Configurable(comment = "Use SimpleTree or KDTree as Datacontainer for Pathplanning ")
+	private static boolean			useKDTree							= false;
+	
 	
 	/**
 	 * @return the fastApprox
@@ -65,6 +70,8 @@ public class TuneableParameter
 	public void setFastApprox(final boolean fastApprox)
 	{
 		this.fastApprox = fastApprox;
+		stepSize = 1000;
+		maxIterations = maxIterationsFastApprox;
 	}
 	
 	
@@ -76,22 +83,7 @@ public class TuneableParameter
 	 */
 	public TuneableParameter()
 	{
-		AIConfig.getSisyphusClient().applyConfigToObject(this, "");
-	}
-	
-	
-	/**
-	 * creates path planning parameters which are not so accurate but enable a faster path planning
-	 * 
-	 * @return
-	 */
-	public static TuneableParameter getParamsForApproximation()
-	{
-		TuneableParameter tune = new TuneableParameter();
-		tune.fastApprox = true;
-		tune.stepSize = 1000;
-		tune.maxIterations = tune.maxIterationsFastApprox;
-		return tune;
+		ConfigRegistration.applySpezis(this, EConfigurableCat.SISYPHUS, "");
 	}
 	
 	
@@ -257,13 +249,29 @@ public class TuneableParameter
 	
 	
 	/**
-	 * TODO dirk, add comment!
-	 * 
 	 * @return
 	 */
 	public float getReduceSafetyForPathSmoothing()
 	{
 		return reduceSafetyForPathSmoothing;
+	}
+	
+	
+	/**
+	 * @return the useKDTree
+	 */
+	public boolean isUseKDTree()
+	{
+		return useKDTree;
+	}
+	
+	
+	/**
+	 * @param useKDTree the useKDTree to set
+	 */
+	public void setUseKDTree(final boolean useKDTree)
+	{
+		TuneableParameter.useKDTree = useKDTree;
 	}
 	
 	

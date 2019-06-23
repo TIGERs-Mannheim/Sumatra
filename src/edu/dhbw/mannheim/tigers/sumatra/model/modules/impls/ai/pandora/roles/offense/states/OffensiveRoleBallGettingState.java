@@ -9,14 +9,19 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.states;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.DynamicPosition;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AiMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.valueobjects.ValuePoint;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector3;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.OffensiveStrategy.EOffensiveStrategy;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.offense.OffensiveConstants;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.offense.data.OffensiveMovePosition;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.offense.data.OffensiveMovePosition.EOffensiveMoveType;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.AOffensiveRole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.IMoveToSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveAndStaySkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleState;
 
 
@@ -43,7 +48,7 @@ public abstract class OffensiveRoleBallGettingState extends AOffensiveRole
 	 */
 	public class BallGettingState implements IRoleState
 	{
-		private MoveAndStaySkill	skill	= null;
+		private IMoveToSkill	move	= null;
 		
 		
 		@Override
@@ -55,102 +60,98 @@ public abstract class OffensiveRoleBallGettingState extends AOffensiveRole
 		@Override
 		public void onSkillCompleted(final ISkill skill, final BotID botID)
 		{
-			
+			setNewSkill(move);
 		}
 		
 		
 		@Override
 		public void doEntryActions()
 		{
-			switch (getAiFrame().getTacticalField().getGameState())
-			{
-				case DIRECT_KICK_THEY:
-				case GOAL_KICK_THEY:
-				case PREPARE_PENALTY_THEY:
-				case PREPARE_KICKOFF_THEY:
-				case STOPPED:
-				case THROW_IN_THEY:
-					nextState(EEvent.STOP);
-					break;
-				default:
-					break;
-			}
-			
-			skill = new MoveAndStaySkill();
-			setNewSkill(skill);
+			move = AMoveSkill.createMoveToSkill();
+			move.getMoveCon().setDriveFast(true);
+			setNewSkill(move);
 		}
 		
 		
 		@Override
 		public void doExitActions()
 		{
-			
+			if (move != null)
+			{
+				move.getMoveCon().setDribbleDuration(0);
+			}
 		}
 		
 		
 		@Override
 		public void doUpdate()
 		{
-			/*
-			 * Früher zu kick wenn ball langsam oder stehend.
-			 * nicht zu kick wenn redirect move ( anpassen in MoveCalc ).
-			 */
-			ValuePoint movePos = getAiFrame().getTacticalField().getOffenseMovePositions().get(getBotID());
-			
-			skill.getMoveCon().setBallObstacle(true);
-			skill.getMoveCon().setArmKicker(false);
-			if (((movePos.value - 5) > -0.001) && ((movePos.value - 5) < 0.001))
+			OffensiveMovePosition movePos = getAiFrame().getTacticalField().getOffenseMovePositions().get(getBotID());
+			move.getMoveCon().setArmKicker(false);
+			EOffensiveMoveType type = movePos.getType();
+			switch (type)
 			{
-				// Redirect Ball
-				IVector3 poss = AiMath.calcRedirectPositions(getBot(), getWFrame().getBall(), getAiFrame()
-						.getTacticalField().getBestDirectShootTarget(), 4.0f);
-				skill.getMoveCon().updateTargetAngle(poss.z());
-				skill.getMoveCon().setBallObstacle(false);
-				skill.getMoveCon().setArmKicker(true);
-			} else if (((movePos.value - 3) > -0.001) && ((movePos.value - 3) < 0.001))
-			{
-				// follow Ball
-				skill.getMoveCon().setBallObstacle(false);
-				skill.getMoveCon().updateLookAtTarget(
-						new DynamicPosition(getAiFrame().getTacticalField().getBestDirectShootTarget()));
-			}
-			else if (((movePos.value - 7) > -0.001) && ((movePos.value - 7) < 0.001))
-			{
-				// BALL_STANDING_STILL
-				if (GeoMath.distancePP(getPos(), getWFrame().ball.getPos()) < 440)
-				{
-					nextState(EEvent.BALL_CONTROL_OBTAINED);
-				}
-				skill.getMoveCon().updateLookAtTarget(
-						new DynamicPosition(getAiFrame().getTacticalField().getBestDirectShootTarget()));
-			} else if (((movePos.value - 4) > -0.001) && ((movePos.value - 4) < 0.001))
-			{
-				// BALL_MOVING_SLOW
-				if (GeoMath.distancePP(getPos(), getWFrame().ball.getPos()) < 440)
-				{
-					nextState(EEvent.BALL_CONTROL_OBTAINED);
-				}
-				skill.getMoveCon().updateLookAtTarget(
-						new DynamicPosition(getAiFrame().getTacticalField().getBestDirectShootTarget()));
-			}
-			else
-			{
-				if (checkBallObtained(movePos))
-				{
-					nextState(EEvent.BALL_CONTROL_OBTAINED);
-				}
-				skill.getMoveCon().updateLookAtTarget(
-						new DynamicPosition(getAiFrame().getTacticalField().getBestDirectShootTarget()));
+				case IGNORE_BALL:
+					move.getMoveCon().setBallObstacle(false);
+					break;
+				case NORMAL:
+				case UNREACHABLE:
+					move.getMoveCon().setBallObstacle(true);
+					break;
+				default:
+					break;
 			}
 			
-			skill.getMoveCon().updateDestination(movePos);
+			if (AIConfig.getGeometry().getPenaltyAreaTheir()
+					.isPointInShape(movePos, OffensiveConstants.getDistanceToPenaltyArea()))
+			{
+				movePos.set(AIConfig.getGeometry().getPenaltyAreaTheir()
+						.nearestPointOutside(movePos, OffensiveConstants.getDistanceToPenaltyArea()));
+			} else if (AIConfig.getGeometry().getPenaltyAreaOur()
+					.isPointInShape(movePos, OffensiveConstants.getDistanceToPenaltyArea()))
+			{
+				movePos.set(AIConfig.getGeometry().getPenaltyAreaOur()
+						.nearestPointOutside(movePos, OffensiveConstants.getDistanceToPenaltyArea()));
+			}
+			if (GeoMath.distancePP(getWFrame().getBall().getPos(), movePos) < OffensiveConstants.getMinDistToBall())
+			{
+				IVector2 dir = getWFrame().getBall().getPos().subtractNew(getPos()).normalizeNew();
+				if (dir.isZeroVector())
+				{
+					dir = new Vector2(-1, 0);
+				}
+				movePos.set(movePos.subtractNew(dir.multiplyNew(OffensiveConstants.getMinDistToBall())));
+			}
+			IVector2 target = getAiFrame().getTacticalField().getBestDirectShootTarget();
+			if (target == null)
+			{
+				target = AIConfig.getGeometry().getGoalTheir().getGoalCenter();
+			}
+			move.getMoveCon().updateLookAtTarget(
+					new DynamicPosition(target));
+			
+			if (!AIConfig.getGeometry().getField().isPointInShape(movePos))
+			{
+				movePos.set(AIConfig.getGeometry().getField().nearestPointInside(movePos, 200f));
+			}
+			
+			
+			if (AIConfig.getGeometry().getPenaltyAreaTheir()
+					.isPointInShape(movePos, AIConfig.getGeometry().getBotRadius() + 30))
+			{
+				movePos.set(AIConfig.getGeometry().getPenaltyAreaTheir().nearestPointOutside(movePos, 200f));
+			}
+			
+			move.getMoveCon().updateDestination(movePos);
 		}
 		
 		
 		@Override
 		public Enum<? extends Enum<?>> getIdentifier()
 		{
-			return EStateId.GET;
+			return EOffensiveStrategy.GET;
 		}
+		
 	}
+	
 }

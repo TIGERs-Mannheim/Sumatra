@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 11.08.2010
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals;
@@ -13,12 +12,10 @@ package edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals;
  * FieldPanel observer interface.
  * 
  * @author AndreR
- * 
  */
 public interface IOptionsPanelObserver
 {
 	/**
-	 * 
 	 * @param string
 	 * @param isSelected
 	 */
@@ -30,4 +27,10 @@ public interface IOptionsPanelObserver
 	 * @param state
 	 */
 	void onActionFired(EVisualizerOptions option, boolean state);
+	
+	
+	/**
+	 * @param value
+	 */
+	void onPosBufferChanged(int value);
 }

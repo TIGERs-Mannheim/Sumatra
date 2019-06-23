@@ -11,6 +11,7 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.math;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.log4j.Logger;
@@ -19,19 +20,18 @@ import Jama.Matrix;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.exceptions.MathException;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.Circle;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.functions.IFunction1D;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.ICircle;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.ellipse.IEllipse;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.rectangle.Rectangle;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector3;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector3f;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.ILine;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Line;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ATrackedObject;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
 
@@ -47,21 +47,15 @@ public final class GeoMath
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	// Logger
-	private static final Logger	log				= Logger.getLogger(GeoMath.class.getName());
+	private static final Logger	log		= Logger.getLogger(GeoMath.class.getName());
 	
 	/** Matrix X index */
-	private static final int		X					= 0;
+	private static final int		X			= 0;
 	/** Matrix X index */
-	private static final int		Y					= 1;
-	
-	/** Senseless Vector. Vector2f(42000,42000). Use it to initialize your vector. */
-	public static final IVector2	INIT_VECTOR		= new Vector2f(42000, 42000);
-	
-	/** Senseless Vector. Vector3f(42000,42000). Use it to initialize your vector. */
-	public static final IVector3	INIT_VECTOR3	= new Vector3f(42000, 42000, 42000);
+	private static final int		Y			= 1;
 	
 	/**  */
-	public static final float		ACCURACY			= 0.001f;
+	public static final float		ACCURACY	= 0.001f;
 	
 	
 	// --------------------------------------------------------------------------
@@ -304,7 +298,6 @@ public final class GeoMath
 	{
 		if (p1.equals(p2) || p1.equals(p3))
 		{
-			log.warn("AIMath#calculateBisector(): some vectors are equal!");
 			return new Vector2(p1);
 		}
 		if (p2.equals(p3))
@@ -319,6 +312,50 @@ public final class GeoMath
 		p3p2.add(p3);
 		
 		return p3p2;
+	}
+	
+	
+	/**
+	 * returns the dotted line (see image)
+	 * 
+	 * <pre>
+	 * p2				  p3
+	 *  \      p4   /
+	 *   \----x----/
+	 *    \   |   /
+	 *     \  |  /
+	 *      \^|^/
+	 *       \|/<--alpha
+	 *       p1
+	 * </pre>
+	 * 
+	 * @param p1 triangle edge
+	 * @param p2 triangle edge
+	 * @param p3 triangle edge
+	 * @param x position in triangle
+	 * @return distance
+	 * @author DirkK
+	 */
+	
+	public static float triangleDistance(final IVector2 p1, final IVector2 p2, final IVector2 p3, final IVector2 x)
+	{
+		ILine ball2LeftPost = Line.newLine(p1, p2);
+		ILine ball2RightPost = Line.newLine(p1, p3);
+		ILine defenseLine = new Line(x, x.subtractNew(p1).turnNew(AngleMath.PI_HALF));
+		
+		IVector2 defenseLineLeft = x;
+		IVector2 defenseLineRight = x;
+		try
+		{
+			defenseLineLeft = GeoMath.intersectionPoint(ball2LeftPost, defenseLine);
+			defenseLineRight = GeoMath.intersectionPoint(ball2RightPost, defenseLine);
+		} catch (MathException err)
+		{
+			log.warn("This should not happen!");
+			err.printStackTrace();
+		}
+		
+		return GeoMath.distancePP(defenseLineLeft, defenseLineRight);
 	}
 	
 	
@@ -389,6 +426,46 @@ public final class GeoMath
 	
 	
 	/**
+	 * Two line segments (Strecke) are given by two vectors each.
+	 * This method calculates the nearest point to line segment one to on line segment two.
+	 * If one or both of the lines are points (both vectors are the same) the distance form the line segment to the point
+	 * is calculated
+	 * THIS FUNCTION IS NOT CORRECT, IT IS JUST AN APPROXIMATION
+	 * 
+	 * @param l1p1
+	 * @param l1p2
+	 * @param p2
+	 * @author Dirk, Felix
+	 * @return
+	 * @throws MathException if lines are parallel or equal or one of the vectors is zero
+	 */
+	public static IVector2 nearestPointOnLineSegment(final IVector2 l1p1, final IVector2 l1p2, final IVector2 p2)
+			throws MathException
+	{
+		// line crossing
+		IVector2 lc = null;
+		// special cases: one or both lines are points
+		if (l1p1.equals(l1p2))
+		{
+			return l1p1;
+		}
+		lc = leadPointOnLine(p2, new Line(l1p1, l1p2.subtractNew(l1p1)));
+		// limit to line segments
+		IVector2 nearestPointToCrossingForLineSegement1 = new Vector2(lc);
+		if (ratio(l1p1, lc, l1p2) > 1)
+		{
+			nearestPointToCrossingForLineSegement1 = new Vector2(l1p2);
+		}
+		if ((ratio(l1p2, lc, l1p1) > 1)
+				&& ((ratio(l1p1, lc, l1p2) < 1) || (ratio(l1p2, lc, l1p1) < ratio(l1p1, lc, l1p2))))
+		{
+			nearestPointToCrossingForLineSegement1 = new Vector2(l1p1);
+		}
+		return nearestPointToCrossingForLineSegement1;
+	}
+	
+	
+	/**
 	 * returns the factor the distance between root and point 1 is longer than the distance between root and point 2
 	 * e.g. root = (0,0), point1 = (100,0), point2 = (200,0) -> ratio = 1/2
 	 * 
@@ -433,6 +510,10 @@ public final class GeoMath
 		{
 			throw new MathException("v2 is the zero vector!");
 		}
+		assert !Float.isNaN(v1.x());
+		assert !Float.isNaN(v1.x());
+		assert !Float.isNaN(v2.y());
+		assert !Float.isNaN(v2.y());
 		// Create a matrix
 		final Matrix m = new Matrix(2, 2);
 		m.set(0, 0, v1.x());
@@ -456,6 +537,64 @@ public final class GeoMath
 		
 		return new Vector2(x, y);
 		
+	}
+	
+	
+	/**
+	 * TODO FelixB <bayer.fel@gmail.com>, add comment!
+	 * 
+	 * @param p1p1 first point of the first line
+	 * @param p1p2 second point of the first line
+	 * @param p2p1 first point of the second line
+	 * @param p2p2 second point of the second line
+	 * @return intersection of the two paths if exists, null else
+	 */
+	public static IVector2 intersectionBetweenPaths(final IVector2 p1p1, final IVector2 p1p2, final IVector2 p2p1,
+			final IVector2 p2p2)
+	{
+		IVector2 intersectionPoint = intersectionPointPath(p1p1, p1p2.subtractNew(p1p1), p2p1, p2p2.subtractNew(p2p1));
+		return intersectionPoint;
+	}
+	
+	
+	/**
+	 * Calculates the intersection point of two paths. Returns null if there is no intersection point.
+	 * 
+	 * @param p1 vector to the first point of the first path
+	 * @param v1 vector from the first point of the first path to the second point of the first path
+	 * @param p2 vector to the first point of the second path
+	 * @param v2 vector from the first point of the second path to the second point of the second path
+	 * @return the intersection point of the two paths if possible, else null
+	 */
+	public static Vector2 intersectionPointPath(final IVector2 p1, final IVector2 v1, final IVector2 p2,
+			final IVector2 v2)
+	{
+		IVector2 intersectionPoint = null;
+		try
+		{
+			intersectionPoint = intersectionPoint(p1, v1, p2, v2);
+		} catch (MathException err)
+		{
+			// There is no intersection point at all
+			return null;
+		}
+		
+		if (betweenValues(p1, p1.addNew(v1), intersectionPoint) &&
+				betweenValues(p2, p2.addNew(v2), intersectionPoint))
+		{
+			return (Vector2) intersectionPoint;
+		}
+		return null;
+	}
+	
+	
+	/*
+	 * Tests if the vector pm lies in the rectangle spanned by p1 and p2.
+	 */
+	private static boolean betweenValues(final IVector2 p1, final IVector2 p2, final IVector2 pm)
+	{
+		return (((p1.x() <= pm.x()) && (pm.x() <= p2.x())) || ((p2.x() <= pm.x()) && (pm.x() <= p1.x())))
+				&& (((p1.y() <= pm.y()) && (pm.y() <= p2.y())) || ((p2.y() <= pm.y()) && (pm.y() <= p1.y())));
 	}
 	
 	
@@ -501,6 +640,40 @@ public final class GeoMath
 	
 	
 	/**
+	 * Calculates Intersection point between two linear functions
+	 * 
+	 * @param l1
+	 * @param l2
+	 * @return
+	 * @throws MathException
+	 */
+	public static IVector2 intersectionPointLinearFunctions(final IFunction1D l1, final IFunction1D l2)
+			throws MathException
+	{
+		if ((l1.getParameters().size() != 2) || (l2.getParameters().size() != 2))
+		{
+			throw new MathException("No Linear Function");
+		}
+		
+		/** m_a*x + n_a = m_b*x + n_b */
+		final float x = ((l2.getParameters().get(0) - l1.getParameters().get(0))
+				/ (l1.getParameters().get(1) - l2.getParameters().get(1)));
+		final float y = l1.eval(x);
+		
+		// if the cut not or cut in every point, because they are the same, return default
+		if (new Float(x).isInfinite() || new Float(y).isInfinite())
+		{
+			throw new MathException("Linera intersections: The Linear Functions have no, or infinite much cutpoints!");
+		}
+		final Vector2 res = new Vector2(x, y);
+		
+		return res;
+		
+		
+	}
+	
+	
+	/**
 	 * Calculates if a Point is on a Line.
 	 * 
 	 * @param line
@@ -510,43 +683,17 @@ public final class GeoMath
 	 */
 	public static boolean isPointOnLine(final ILine line, final IVector2 point)
 	{
-		boolean pointOnLine = false;
-		
-		IVector2 supportV = line.supportVector();
-		IVector2 directionV = line.directionVector();
-		
-		IVector2 startLine1 = supportV;
-		IVector2 endLine1 = supportV.addNew(directionV);
-		
-		float faktorX = (point.x() - supportV.x()) / directionV.x();
-		float faktorY = (point.y() - supportV.y()) / directionV.y();
-		
-		if (Float.isNaN(faktorX))
+		IVector2 lp = GeoMath.leadPointOnLine(point, line);
+		if (GeoMath.distancePP(point, lp) < 1e-4f)
 		{
-			faktorX = faktorY;
+			return isVectorBetween(point, line.supportVector(), line.supportVector().addNew(line.directionVector()));
 		}
-		
-		if (Float.isNaN(faktorY))
-		{
-			faktorY = faktorX;
-		}
-		
-		
-		if (isVectorBetween(point, startLine1, endLine1) && SumatraMath.isEqual(faktorX, faktorY))
-		{
-			pointOnLine = true;
-		} else
-		{
-			pointOnLine = false;
-		}
-		
-		return pointOnLine;
-		
+		return false;
 	}
 	
 	
 	/**
-	 * Check if is a Vektor bewtween min and max.
+	 * Check if is a Vector between min and max.
 	 * Only look at x and y
 	 * 
 	 * @param point
@@ -712,6 +859,30 @@ public final class GeoMath
 	
 	
 	/**
+	 * Steps along a linear Function
+	 * 
+	 * @param func
+	 * @param aPoint
+	 * @param distance
+	 * @return
+	 * @throws MathException
+	 */
+	public static IVector2 stepAlongFunction1D(final IFunction1D func, final IVector2 aPoint, final double distance)
+			throws MathException
+	{
+		if (func.getParameters().size() != 2)
+		{
+			throw new MathException("Not a linear Function");
+		}
+		final float deltaX = (float) (Math.cos(Math.atan(func.getParameters().get(1))) * distance);
+		float newX = aPoint.x() + deltaX;
+		final Vector2 res = new Vector2(newX, func.eval(newX));
+		
+		return res;
+	}
+	
+	
+	/**
 	 * Calculates the intersection points of the given line and the circle.
 	 * If they do not intersect, the list is empty.
 	 * 
@@ -777,6 +948,57 @@ public final class GeoMath
 	
 	
 	/**
+	 * Finds all bots within reach blocking a beam between to points.
+	 * Ray looks like this:
+	 * 
+	 * <pre>
+	 * | * |
+	 * |   |
+	 * |   |
+	 * | * |
+	 * </pre>
+	 * 
+	 * @param wf
+	 * @param start
+	 * @param end
+	 * @param raySize
+	 * @param ignoreIds
+	 * @return A list of bots between the two points
+	 * @author JulianT
+	 */
+	public static List<TrackedBot> findBlockingBots(final SimpleWorldFrame wf, final IVector2 start, final IVector2 end,
+			final float raySize, final Collection<BotID> ignoreIds)
+	{
+		List<TrackedBot> blockingBots = new LinkedList<TrackedBot>();
+		final float minDistance = AIConfig.getGeometry().getBallRadius() + AIConfig.getGeometry().getBotRadius()
+				+ raySize;
+		
+		// checking free line
+		final float distanceStartEndSquared = distancePPSqr(start, end);
+		for (final TrackedBot bot : wf.getBots().values())
+		{
+			if (ignoreIds.contains(bot.getId()))
+			{
+				continue;
+			}
+			final float distanceBotStartSquared = distancePPSqr(bot.getPos(), start);
+			final float distanceBotEndSquared = distancePPSqr(bot.getPos(), end);
+			if ((distanceStartEndSquared > distanceBotStartSquared) && (distanceStartEndSquared > distanceBotEndSquared))
+			{
+				// only check those bots that possibly can be in between start and end
+				final float distanceBotLine = distancePL(bot.getPos(), start, end);
+				if (distanceBotLine < minDistance)
+				{
+					blockingBots.add(bot);
+				}
+			}
+		}
+		
+		return blockingBots;
+	}
+	
+	
+	/**
 	 * Checks if the beam between two points is blocked by ball or not.
 	 * ray looks like this:
 	 * 
@@ -800,20 +1022,32 @@ public final class GeoMath
 		final float minDistance = AIConfig.getGeometry().getBallRadius() + AIConfig.getGeometry().getBotRadius()
 				+ raySize;
 		
-		// checking free line
-		final float distanceStartEndSquared = distancePPSqr(start, end);
 		IVector2 ballPos = wf.getBall().getPos();
-		final float distanceBotStartSquared = distancePPSqr(ballPos, start);
-		final float distanceBotEndSquared = distancePPSqr(ballPos, end);
-		if ((distanceStartEndSquared > distanceBotStartSquared) && (distanceStartEndSquared > distanceBotEndSquared))
+		Rectangle rect = new Rectangle(start, end);
+		if (!rect.isPointInShape(ballPos, AIConfig.getGeometry().getBotRadius()))
 		{
-			// only check those bots that possibly can be in between start and end
-			final float distanceBotLine = distancePL(ballPos, start, end);
-			if (distanceBotLine < minDistance)
-			{
-				return false;
-			}
+			return true;
 		}
+		float dist = GeoMath.distancePL(wf.getBall().getPos(), start, end);
+		if (dist < minDistance)
+		{
+			return false;
+		}
+		
+		// checking free line
+		// final float distanceStartEndSquared = distancePPSqr(start, end);
+		// IVector2 ballPos = wf.getBall().getPos();
+		// final float distanceBotStartSquared = distancePPSqr(ballPos, start);
+		// final float distanceBotEndSquared = distancePPSqr(ballPos, end);
+		// if ((distanceStartEndSquared > distanceBotStartSquared) && (distanceStartEndSquared > distanceBotEndSquared))
+		// {
+		// // only check those bots that possibly can be in between start and end
+		// final float distanceBotLine = distancePL(ballPos, start, end);
+		// if (distanceBotLine < minDistance)
+		// {
+		// return false;
+		// }
+		// }
 		
 		return true;
 	}
@@ -890,6 +1124,30 @@ public final class GeoMath
 	
 	
 	/**
+	 * Checks if the beam between two points is blocked or not.
+	 * ray looks like this:
+	 * 
+	 * <pre>
+	 * | * |
+	 * |   |
+	 * |   |
+	 * | * |
+	 * </pre>
+	 * 
+	 * @param wf
+	 * @param start
+	 * @param end
+	 * @return
+	 * @author GuntherB
+	 */
+	public static boolean p2pVisibility(final WorldFrame wf, final IVector2 start, final IVector2 end)
+	{
+		List<BotID> emptylist = new ArrayList<BotID>();
+		return p2pVisibility(wf, start, end, emptylist);
+	}
+	
+	
+	/**
 	 * Check if one of the end points is visible from start
 	 * 
 	 * @param wf
@@ -909,6 +1167,52 @@ public final class GeoMath
 			}
 		}
 		return false;
+	}
+	
+	
+	/**
+	 * direct copy of the p2pVisibility from the opencl code
+	 * 
+	 * @param wf
+	 * @param start
+	 * @param end
+	 * @param raySize
+	 * @param ignoreIds
+	 * @return
+	 */
+	public static float p2pVisibilityVoting(final WorldFrame wf, final IVector2 start, final IVector2 end,
+			final float raySize, final List<BotID> ignoreIds)
+	{
+		// float p2pVisibilityIgnore(Vector2* pStart, Vector2* pEnd, Bot* botsToCheck, uint8_t numBotsToCheckFrom, uint8_t
+		// numBotsToCheckTo, uint8_t ignoreID, coord raySize)
+		// {
+		float minDistance = AIConfig.getGeometry().getBallRadius() + AIConfig.getGeometry().getBotRadius() + raySize;
+		List<TrackedTigerBot> bots = new ArrayList<TrackedTigerBot>(wf.getBots().values());
+		
+		// checking free line
+		float sum = 0;
+		for (TrackedTigerBot bot : bots)
+		{
+			if (ignoreIds.contains(bot.getId()))
+			{
+				continue;
+			}
+			// Bot bot = botsToCheck[i];
+			Vector2 leadPoint = leadPointOnLine(bot.getPos(), start, end);
+			// leadPointOnLine(&(bot.pos), pStart, pEnd, &leadPoint);
+			Vector2 startToLead = leadPoint.subtract(start);
+			// vec_sub(&leadPoint, pStart, &startToLead);
+			Vector2 startToEnd = end.subtractNew(start);
+			// vec_sub(pEnd, pStart, &startToEnd);
+			if (((startToLead.x / startToEnd.x) > 0) && ((startToLead.x / startToEnd.x) < 1))
+			{
+				// only check those bots that possibly can be in between start and end
+				float distanceBotLine = distancePL(bot.getPos(), start, end);
+				sum += Math.max(0.0f, (minDistance - distanceBotLine) / minDistance);
+			}
+		}
+		
+		return sum;
 	}
 	
 	
@@ -991,10 +1295,11 @@ public final class GeoMath
 	 * @param externalPoint
 	 * @return
 	 */
-	public static List<IVector2> tangentialIntersections(final Circle circle, final IVector2 externalPoint)
+	public static List<IVector2> tangentialIntersections(final ICircle circle, final IVector2 externalPoint)
 	{
 		IVector2 dir = externalPoint.subtractNew(circle.center());
 		float d = dir.getLength2();
+		assert circle.radius() <= d;
 		float alpha = (float) Math.acos(circle.radius() / d);
 		float beta = dir.getAngle();
 		
@@ -1031,4 +1336,5 @@ public final class GeoMath
 		}
 		return closest;
 	}
+	
 }

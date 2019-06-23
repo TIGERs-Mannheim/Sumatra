@@ -8,8 +8,6 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.playpattern;
 
-import java.io.Serializable;
-
 import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
@@ -32,14 +30,11 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
  */
 @Persistent
 @Deprecated
-public class Pattern implements Serializable, Comparable<Pattern>
+public class Pattern implements Comparable<Pattern>
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	/**  */
-	private static final long					serialVersionUID				= -8169924221595742209L;
 	
 	
 	private final transient float				minX								= -AIConfig.getGeometry().getFieldLength() / 2;
@@ -169,7 +164,7 @@ public class Pattern implements Serializable, Comparable<Pattern>
 						actualReceiver.getPos(), patternRecieverPos));
 		
 		// score which checks if the ball is near the passer position of this pattern
-		final double ballScore = SCALE_MATCHING_SCORE * calcPositionDifference(wFrame.ball.getPos(), patternPasserPos);
+		final double ballScore = SCALE_MATCHING_SCORE * calcPositionDifference(wFrame.getBall().getPos(), patternPasserPos);
 		
 		
 		final double angleScore = SCALE_MATCHING_SCORE

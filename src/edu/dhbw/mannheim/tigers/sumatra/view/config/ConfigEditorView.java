@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 23.11.2011
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.config;
@@ -29,7 +28,6 @@ import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
  * ConfigEdtior-module. The changes made to the configurations are then instantly available to the runtime.
  * 
  * @author Gero
- * 
  */
 public class ConfigEditorView extends JPanel implements ISumatraView
 {
@@ -49,7 +47,7 @@ public class ConfigEditorView extends JPanel implements ISumatraView
 	 */
 	public ConfigEditorView()
 	{
-		setLayout(new MigLayout("fill, wrap 1"));
+		setLayout(new MigLayout("fill, wrap 1, inset 0"));
 		
 		tabpane = new JTabbedPane(SwingConstants.TOP, JTabbedPane.WRAP_TAB_LAYOUT);
 		add(tabpane, "grow");
@@ -63,7 +61,7 @@ public class ConfigEditorView extends JPanel implements ISumatraView
 	 * @param newConfig
 	 * @param observer
 	 */
-	public void addConfigModel(ManagedConfig newConfig, IConfigEditorViewObserver observer)
+	public void addConfigModel(final ManagedConfig newConfig, final IConfigEditorViewObserver observer)
 	{
 		final IConfigClient client = newConfig.getClient();
 		final EditorView newView = new EditorView(client.getName(), client.getConfigKey(), newConfig.getConfig(),
@@ -81,7 +79,7 @@ public class ConfigEditorView extends JPanel implements ISumatraView
 	/**
 	 * @param config
 	 */
-	public void refreshConfigModel(ManagedConfig config)
+	public void refreshConfigModel(final ManagedConfig config)
 	{
 		final IConfigClient client = config.getClient();
 		final EditorView view = tabs.get(client.getConfigKey());

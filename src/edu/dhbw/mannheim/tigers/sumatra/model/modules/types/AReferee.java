@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import edu.dhbw.mannheim.tigers.moduli.AModule;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee.Command;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.referee.RefereeMsg;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
@@ -41,6 +42,7 @@ public abstract class AReferee extends AModule implements IRefereeMsgProducer
 	
 	
 	private boolean								receiveExternalMsg	= true;
+	private long									lastRefMsgCounter		= 0;
 	
 	
 	/**
@@ -97,7 +99,7 @@ public abstract class AReferee extends AModule implements IRefereeMsgProducer
 	 * @param goalsYellow
 	 * @param timeLeft
 	 */
-	public abstract void sendOwnRefereeMsg(Command cmd, int goalsBlue, int goalsYellow, short timeLeft);
+	public abstract void sendOwnRefereeMsg(Command cmd, int goalsBlue, int goalsYellow, int timeLeft);
 	
 	
 	/**
@@ -106,6 +108,22 @@ public abstract class AReferee extends AModule implements IRefereeMsgProducer
 	 * @param pos
 	 */
 	public abstract void replaceBall(IVector2 pos);
+	
+	
+	/**
+	 * @param msg The recently received message
+	 * @return Whether this message does really new game-state information
+	 */
+	protected boolean isNewMessage(final SSL_Referee msg)
+	{
+		if (msg.getCommandCounter() != lastRefMsgCounter)
+		{
+			lastRefMsgCounter = msg.getCommandCounter();
+			return true;
+		}
+		
+		return false;
+	}
 	
 	
 	// --------------------------------------------------------------------------

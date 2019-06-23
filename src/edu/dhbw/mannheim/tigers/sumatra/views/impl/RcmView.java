@@ -9,7 +9,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.views.impl;
 
-import edu.dhbw.mannheim.tigers.sumatra.presenter.rcm.RCMPresenterMqtt;
+import edu.dhbw.mannheim.tigers.sumatra.presenter.rcm.RCMPresenter;
 import edu.dhbw.mannheim.tigers.sumatra.views.ASumatraView;
 import edu.dhbw.mannheim.tigers.sumatra.views.ESumatraViewType;
 import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraViewPresenter;
@@ -48,7 +48,7 @@ public class RcmView extends ASumatraView
 	@Override
 	public ISumatraViewPresenter createPresenter()
 	{
-		return new RCMPresenterMqtt();
+		return new RCMPresenter();
 	}
 	
 	// --------------------------------------------------------------------------

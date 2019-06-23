@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 21.07.2010
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam;
@@ -20,54 +19,32 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.MessagesRobocupSslGeometry.SS
  * </p>
  * 
  * @author Gero
- * 
  */
 public class CamCalibration
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	/** */
-	public final int		cameraId;
+	private final int		cameraId;
 	
-	/** */
-	public final float	focalLength;
+	private final float	focalLength;
 	
-	/** */
-	public final float	principalPointX;
-	/** */
-	public final float	principalPointY;
+	private final float	principalPointX;
+	private final float	principalPointY;
 	
-	/** */
-	public final float	distortion;
+	private final float	distortion;
 	
-	/** */
-	public final float	q0;
-	/** */
-	public final float	q1;
-	/** */
-	public final float	q2;
-	/** */
-	public final float	q3;
+	private final float	q0;
+	private final float	q1;
+	private final float	q2;
+	private final float	q3;
 	
-	/** */
-	public final float	tx;
-	/** */
-	public final float	ty;
-	/** */
-	public final float	tz;
+	private final float	tx;
+	private final float	ty;
+	private final float	tz;
 	
-	/** */
-	public final float	derivedCameraWorldTx;
-	/** */
-	public final float	derivedCameraWorldTy;
-	/** */
-	public final float	derivedCameraWorldTz;
+	private final float	derivedCameraWorldTx;
+	private final float	derivedCameraWorldTy;
+	private final float	derivedCameraWorldTz;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * <p>
 	 * <i>Implemented being aware of EJSE Item 2; but we prefer performance over readability - at least in this case.
@@ -91,9 +68,11 @@ public class CamCalibration
 	 * @param derivedCameraWorldTy
 	 * @param derivedCameraWorldTz
 	 */
-	public CamCalibration(int cameraId, float focalLength, float principalPointX, float principalPointY,
-			float distortion, float q0, float q1, float q2, float q3, float tx, float ty, float tz,
-			float derivedcameraWorldTx, float derivedCameraWorldTy, float derivedCameraWorldTz)
+	public CamCalibration(final int cameraId, final float focalLength, final float principalPointX,
+			final float principalPointY,
+			final float distortion, final float q0, final float q1, final float q2, final float q3, final float tx,
+			final float ty, final float tz,
+			final float derivedcameraWorldTx, final float derivedCameraWorldTy, final float derivedCameraWorldTz)
 	{
 		this.cameraId = cameraId;
 		this.focalLength = focalLength;
@@ -116,7 +95,7 @@ public class CamCalibration
 	/**
 	 * @param cc
 	 */
-	public CamCalibration(SSL_GeometryCameraCalibration cc)
+	public CamCalibration(final SSL_GeometryCameraCalibration cc)
 	{
 		cameraId = cc.getCameraId();
 		focalLength = cc.getFocalLength();
@@ -141,35 +120,170 @@ public class CamCalibration
 	{
 		final StringBuilder builder = new StringBuilder();
 		builder.append("SSLCameraCalibration [cameraId=");
-		builder.append(cameraId);
+		builder.append(getCameraId());
 		builder.append(", focalLength=");
-		builder.append(focalLength);
+		builder.append(getFocalLength());
 		builder.append(", principalPointX=");
-		builder.append(principalPointX);
+		builder.append(getPrincipalPointX());
 		builder.append(", principalPointY=");
-		builder.append(principalPointY);
+		builder.append(getPrincipalPointY());
 		builder.append(", distortion=");
-		builder.append(distortion);
+		builder.append(getDistortion());
 		builder.append(", q0=");
-		builder.append(q0);
+		builder.append(getQ0());
 		builder.append(", q1=");
-		builder.append(q1);
+		builder.append(getQ1());
 		builder.append(", q2=");
-		builder.append(q2);
+		builder.append(getQ2());
 		builder.append(", q3=");
-		builder.append(q3);
+		builder.append(getQ3());
 		builder.append(", tx=");
-		builder.append(tx);
+		builder.append(getTx());
 		builder.append(", ty=");
-		builder.append(ty);
+		builder.append(getTy());
 		builder.append(", tz=");
-		builder.append(tz);
+		builder.append(getTz());
 		builder.append(", derivedCameraWorldTx=");
-		builder.append(derivedCameraWorldTx);
+		builder.append(getDerivedCameraWorldTx());
 		builder.append(", derivedCameraWorldTy=");
-		builder.append(derivedCameraWorldTy);
+		builder.append(getDerivedCameraWorldTy());
 		builder.append(", derivedCameraWorldTz=");
-		builder.append(derivedCameraWorldTz);
+		builder.append(getDerivedCameraWorldTz());
 		return builder.toString();
+	}
+	
+	
+	/**
+	 * @return the cameraId
+	 */
+	public int getCameraId()
+	{
+		return cameraId;
+	}
+	
+	
+	/**
+	 * @return the focalLength
+	 */
+	public float getFocalLength()
+	{
+		return focalLength;
+	}
+	
+	
+	/**
+	 * @return the principalPointX
+	 */
+	public float getPrincipalPointX()
+	{
+		return principalPointX;
+	}
+	
+	
+	/**
+	 * @return the principalPointY
+	 */
+	public float getPrincipalPointY()
+	{
+		return principalPointY;
+	}
+	
+	
+	/**
+	 * @return the distortion
+	 */
+	public float getDistortion()
+	{
+		return distortion;
+	}
+	
+	
+	/**
+	 * @return the q0
+	 */
+	public float getQ0()
+	{
+		return q0;
+	}
+	
+	
+	/**
+	 * @return the q1
+	 */
+	public float getQ1()
+	{
+		return q1;
+	}
+	
+	
+	/**
+	 * @return the q2
+	 */
+	public float getQ2()
+	{
+		return q2;
+	}
+	
+	
+	/**
+	 * @return the q3
+	 */
+	public float getQ3()
+	{
+		return q3;
+	}
+	
+	
+	/**
+	 * @return the tx
+	 */
+	public float getTx()
+	{
+		return tx;
+	}
+	
+	
+	/**
+	 * @return the ty
+	 */
+	public float getTy()
+	{
+		return ty;
+	}
+	
+	
+	/**
+	 * @return the tz
+	 */
+	public float getTz()
+	{
+		return tz;
+	}
+	
+	
+	/**
+	 * @return the derivedCameraWorldTx
+	 */
+	public float getDerivedCameraWorldTx()
+	{
+		return derivedCameraWorldTx;
+	}
+	
+	
+	/**
+	 * @return the derivedCameraWorldTy
+	 */
+	public float getDerivedCameraWorldTy()
+	{
+		return derivedCameraWorldTy;
+	}
+	
+	
+	/**
+	 * @return the derivedCameraWorldTz
+	 */
+	public float getDerivedCameraWorldTz()
+	{
+		return derivedCameraWorldTz;
 	}
 }

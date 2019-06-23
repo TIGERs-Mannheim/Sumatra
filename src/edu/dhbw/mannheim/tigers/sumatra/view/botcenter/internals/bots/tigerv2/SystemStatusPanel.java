@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 14.03.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tigerv2;
@@ -33,15 +32,16 @@ import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 
 import net.miginfocom.swing.MigLayout;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerSystemMatchFeedback;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerSystemStatusExt;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerSystemStatusV2;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 
 
 /**
  * Displays system status messages content.
  * 
  * @author AndreR
- * 
  */
 public class SystemStatusPanel extends JPanel
 {
@@ -115,7 +115,7 @@ public class SystemStatusPanel extends JPanel
 	/**
 	 * @param observer
 	 */
-	public void addObserver(ISystemStatusPanelObserver observer)
+	public void addObserver(final ISystemStatusPanelObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -127,7 +127,7 @@ public class SystemStatusPanel extends JPanel
 	/**
 	 * @param observer
 	 */
-	public void removeObserver(ISystemStatusPanelObserver observer)
+	public void removeObserver(final ISystemStatusPanelObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -136,7 +136,7 @@ public class SystemStatusPanel extends JPanel
 	}
 	
 	
-	private void notifyCapture(boolean capture)
+	private void notifyCapture(final boolean capture)
 	{
 		synchronized (observers)
 		{
@@ -355,7 +355,7 @@ public class SystemStatusPanel extends JPanel
 		add(motorChart, "push, grow");
 		add(motorVelChart, "push, grow");
 		
-		timeOffset = System.nanoTime();
+		timeOffset = SumatraClock.nanoTime();
 	}
 	
 	
@@ -369,7 +369,7 @@ public class SystemStatusPanel extends JPanel
 		chkBox.addActionListener(new ActionListener()
 		{
 			@Override
-			public void actionPerformed(ActionEvent e)
+			public void actionPerformed(final ActionEvent e)
 			{
 				if (chkBox.isSelected())
 				{
@@ -415,17 +415,17 @@ public class SystemStatusPanel extends JPanel
 		acc[1].setText(String.format(Locale.ENGLISH, "%.3f m/s2", status.getAcceleration().y));
 		acc[2].setText(String.format(Locale.ENGLISH, "%.3f rad/s2", status.getAngularAcceleration()));
 		
-		posXTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getPosition().x);
-		posYTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getPosition().y);
-		posWTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getOrientation());
+		posXTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, status.getPosition().x);
+		posYTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, status.getPosition().y);
+		posWTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, status.getOrientation());
 		
-		velXTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getVelocity().x);
-		velYTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getVelocity().y);
-		velWTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getAngularVelocity());
+		velXTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, status.getVelocity().x);
+		velYTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, status.getVelocity().y);
+		velWTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, status.getAngularVelocity());
 		
-		accXTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getAcceleration().x);
-		accYTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getAcceleration().y);
-		accWTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getAngularAcceleration());
+		accXTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, status.getAcceleration().x);
+		accYTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, status.getAcceleration().y);
+		accWTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, status.getAngularAcceleration());
 	}
 	
 	
@@ -434,7 +434,7 @@ public class SystemStatusPanel extends JPanel
 	 */
 	public void addSystemStatusExt(final TigerSystemStatusExt status)
 	{
-		double time = (System.nanoTime() - timeOffset) / 1000000000.0;
+		double time = (SumatraClock.nanoTime() - timeOffset) / 1000000000.0;
 		targetPosXTrace.addPoint(time, status.getTargetPosition().x);
 		targetPosYTrace.addPoint(time, status.getTargetPosition().y);
 		targetPosWTrace.addPoint(time, status.getTargetOrientation());
@@ -454,11 +454,45 @@ public class SystemStatusPanel extends JPanel
 		}
 	}
 	
+	
+	/**
+	 * @param status
+	 */
+	public void addTigerSystemMatchFeedback(final TigerSystemMatchFeedback status)
+	{
+		kickerLevel.setText(String.format(Locale.ENGLISH, "%.1f V", status.getKickerLevel()));
+		barrierInterrupted.setSelected(status.isBarrierInterrupted());
+		
+		pos[0].setText(String.format(Locale.ENGLISH, "%.3f m", status.getPosition().x));
+		pos[1].setText(String.format(Locale.ENGLISH, "%.3f m", status.getPosition().y));
+		pos[2].setText(String.format(Locale.ENGLISH, "%.3f rad", status.getOrientation()));
+		
+		vel[0].setText(String.format(Locale.ENGLISH, "%.3f m/s", status.getVelocity().x));
+		vel[1].setText(String.format(Locale.ENGLISH, "%.3f m/s", status.getVelocity().y));
+		vel[2].setText(String.format(Locale.ENGLISH, "%.3f rad/s", status.getAngularVelocity()));
+		
+		acc[0].setText(String.format(Locale.ENGLISH, "%.3f m/s2", status.getAcceleration().x));
+		acc[1].setText(String.format(Locale.ENGLISH, "%.3f m/s2", status.getAcceleration().y));
+		acc[2].setText(String.format(Locale.ENGLISH, "%.3f rad/s2", status.getAngularAcceleration()));
+		
+		posXTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, status.getPosition().x);
+		posYTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, status.getPosition().y);
+		posWTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, status.getOrientation());
+		
+		velXTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, status.getVelocity().x);
+		velYTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, status.getVelocity().y);
+		velWTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, status.getAngularVelocity());
+		
+		accXTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, status.getAcceleration().x);
+		accYTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, status.getAcceleration().y);
+		accWTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, status.getAngularAcceleration());
+	}
+	
 	private class CaptureActionListener implements ActionListener
 	{
 		
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			notifyCapture(btnCapture.isSelected());
 		}

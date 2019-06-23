@@ -59,10 +59,9 @@ public class TigerSystemStatusV2 extends ACommand
 	
 	
 	/**
-	 * 
 	 * @param cmd
 	 */
-	protected TigerSystemStatusV2(ECommand cmd)
+	protected TigerSystemStatusV2(final ECommand cmd)
 	{
 		super(cmd);
 	}
@@ -71,9 +70,9 @@ public class TigerSystemStatusV2 extends ACommand
 	/**
 	 * @return
 	 */
-	public List<Float> getAllValues()
+	public List<Object> getAllValues()
 	{
-		List<Float> values = new ArrayList<Float>(18);
+		List<Object> values = new ArrayList<Object>(18);
 		values.add(getPosition().x);
 		values.add(getPosition().y);
 		values.add(getOrientation());
@@ -154,7 +153,6 @@ public class TigerSystemStatusV2 extends ACommand
 	
 	
 	/**
-	 * 
 	 * @return true if position content is updated
 	 */
 	public boolean isPositionUpdated()
@@ -164,7 +162,6 @@ public class TigerSystemStatusV2 extends ACommand
 	
 	
 	/**
-	 * 
 	 * @return true if velocity content is updated
 	 */
 	public boolean isVelocityUpdated()
@@ -174,7 +171,6 @@ public class TigerSystemStatusV2 extends ACommand
 	
 	
 	/**
-	 * 
 	 * @return true if acceleration content is updated
 	 */
 	public boolean isAccelerationUpdated()
@@ -184,7 +180,6 @@ public class TigerSystemStatusV2 extends ACommand
 	
 	
 	/**
-	 * 
 	 * @return true if the dribbler reached the desired speed
 	 */
 	public boolean isDribblerSpeedReached()
@@ -194,7 +189,6 @@ public class TigerSystemStatusV2 extends ACommand
 	
 	
 	/**
-	 * 
 	 * @return true if the dribbler is not able to reach the desired value
 	 */
 	public boolean isDribblerOverloaded()

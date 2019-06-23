@@ -19,21 +19,21 @@ import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature.EFeatureState;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeatureState;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ABotSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerDribble;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerMotorMoveV2;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv3.TigerSystemBotSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill.EMoveToMode;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ASkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.IMoveToSkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.RotateTestSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.StraightMoveSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ABotManager;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ASkillSystem;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.BotCenterTreeNode;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.IFeatureChangedObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.ISkillsPanelObserver;
-import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.motor.IMotorEnhancedInputPanel;
+import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.motor.IMotorEnhancedInputPanelObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.motor.MotorInputPanel.IMotorInputPanelObserver;
 
 
@@ -43,7 +43,7 @@ import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.moto
  * @author AndreR
  */
 public abstract class ABotPresenter implements IMotorInputPanelObserver, ISkillsPanelObserver,
-		IMotorEnhancedInputPanel, IFeatureChangedObserver
+		IMotorEnhancedInputPanelObserver, IFeatureChangedObserver
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
@@ -86,13 +86,23 @@ public abstract class ABotPresenter implements IMotorInputPanelObserver, ISkills
 			
 			return;
 		}
+		try
+		{
+			botmanager = (ABotManager) SumatraModel.getInstance().getModule("botmanager");
+		} catch (final ModuleNotFoundException err)
+		{
+			log.error("Botmanager not found", err);
+			
+			return;
+		}
 	}
 	
 	
 	@Override
 	public void onMoveToXY(final float x, final float y)
 	{
-		IMoveToSkill skill = AMoveSkill.createMoveToSkill(EMoveToMode.DO_COMPLETE);
+		IMoveToSkill skill = AMoveSkill.createMoveToSkill();
+		skill.setDoComplete(true);
 		skill.getMoveCon().updateDestination(new Vector2(x, y));
 		skillsystem.execute(bot.getBotID(), skill);
 	}
@@ -101,7 +111,8 @@ public abstract class ABotPresenter implements IMotorInputPanelObserver, ISkills
 	@Override
 	public void onRotateAndMoveToXY(final float x, final float y, final float angle)
 	{
-		IMoveToSkill skill = AMoveSkill.createMoveToSkill(EMoveToMode.DO_COMPLETE);
+		IMoveToSkill skill = AMoveSkill.createMoveToSkill();
+		skill.setDoComplete(true);
 		skill.getMoveCon().updateDestination(new Vector2(x, y));
 		skill.getMoveCon().updateTargetAngle(angle);
 		skillsystem.execute(bot.getBotID(), skill);
@@ -116,16 +127,10 @@ public abstract class ABotPresenter implements IMotorInputPanelObserver, ISkills
 	
 	
 	@Override
-	public void onRotate(final float targetAngle)
-	{
-		skillsystem.execute(bot.getBotID(), new RotateTestSkill(targetAngle));
-	}
-	
-	
-	@Override
 	public void onLookAt(final Vector2 lookAtTarget)
 	{
-		IMoveToSkill skill = AMoveSkill.createMoveToSkill(EMoveToMode.DO_COMPLETE);
+		IMoveToSkill skill = AMoveSkill.createMoveToSkill();
+		skill.setDoComplete(true);
 		skill.getMoveCon().updateLookAtTarget(lookAtTarget);
 		skillsystem.execute(bot.getBotID(), skill);
 	}
@@ -142,6 +147,13 @@ public abstract class ABotPresenter implements IMotorInputPanelObserver, ISkills
 	public void onSkill(final ASkill skill)
 	{
 		skillsystem.execute(bot.getBotID(), skill);
+	}
+	
+	
+	@Override
+	public void onBotSkill(final ABotSkill skill)
+	{
+		bot.execute(new TigerSystemBotSkill(skill));
 	}
 	
 	

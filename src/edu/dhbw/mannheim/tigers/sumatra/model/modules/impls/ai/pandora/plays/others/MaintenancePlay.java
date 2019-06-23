@@ -8,13 +8,13 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.others;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AthenaAiFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.MetisAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AiMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.EGameState;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.Circle;
@@ -24,6 +24,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBo
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMap;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.IBotIDMap;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACondition.EConditionState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
@@ -66,18 +67,18 @@ public class MaintenancePlay extends APlay
 	
 	
 	@Override
-	protected ARole onRemoveRole()
+	protected ARole onRemoveRole(final MetisAiFrame frame)
 	{
 		return getLastRole();
 	}
 	
 	
 	@Override
-	protected ARole onAddRole()
+	protected ARole onAddRole(final MetisAiFrame frame)
 	{
-		MoveRole role = new MoveRole(EMoveBehavior.DO_COMPLETE);
+		MoveRole role = new MoveRole(EMoveBehavior.NORMAL);
 		role.getMoveCon().updateTargetAngle(orientation);
-		role.getMoveCon().setPenaltyAreaAllowed(true);
+		role.getMoveCon().setPenaltyAreaAllowedOur(true);
 		
 		
 		return role;
@@ -102,41 +103,33 @@ public class MaintenancePlay extends APlay
 		
 		IBotIDMap<TrackedTigerBot> otherBots = new BotIDMap<>();
 		otherBots.putAll(frame.getWorldFrame().getFoeBots());
-		otherBots.putAll(AiMath.getOtherBots(frame));
+		otherBots.putAll(frame.getWorldFrame().getTigerBotsVisible());
 		
 		List<ARole> roles = new ArrayList<ARole>(getRoles());
-		Collections.sort(roles, new RoleComparator());
+		Collections.sort(roles, Comparator.comparing(e -> e.getBotID()));
 		
 		Circle shape;
+		boolean destsReached = true;
 		for (ARole aRole : roles)
 		{
 			MoveRole moveRole = (MoveRole) aRole;
 			do
 			{
+				
 				dest = dest.addNew(direction);
 				shape = new Circle(dest, AIConfig.getGeometry().getBotRadius() * 2);
-			} while (!AiMath.isShapeFreeOfBots(shape, otherBots, null));
+			} while (!AiMath.isShapeFreeOfBots(shape, otherBots, aRole.getBot()));
 			moveRole.getMoveCon().updateDestination(dest);
+			
+			destsReached = destsReached
+					&& (moveRole.getMoveCon().checkCondition(frame.getWorldFrame(), moveRole.getBotID()) == EConditionState.FULFILLED);
 		}
-	}
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	private static class RoleComparator implements Comparator<ARole>, Serializable
-	{
-		
-		/**  */
-		private static final long	serialVersionUID	= -3790249541686387658L;
-		
-		
-		@Override
-		public int compare(final ARole o1, final ARole o2)
+		if (destsReached)
 		{
-			return o1.getBotID().compareTo(o2.getBotID());
+			for (ARole aRole : roles)
+			{
+				aRole.setCompleted();
+			}
 		}
-		
 	}
-	
 }

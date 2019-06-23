@@ -22,12 +22,6 @@ public enum EFieldLayer
 	/** */
 	POSITIONING_RASTER,
 	/** */
-	ANALYSING_RASTER,
-	/** */
-	GOAL_POINTS,
-	/** */
-	PATTERN_LAYER,
-	/** */
 	SHAPES,
 	/**  */
 	COORDINATES,
@@ -36,9 +30,7 @@ public enum EFieldLayer
 	/**  */
 	FIELD_MARKS,
 	/**  */
-	OFFENSIVE_POINTS,
-	/**  */
-	TACTICS,
+	SUPPORT_POSITIONS,
 	/**  */
 	ARES,
 	/**  */
@@ -48,7 +40,11 @@ public enum EFieldLayer
 	/**  */
 	FIELD_PREDICTOR,
 	/**  */
-	SUPPORT_POS,
+	VALUED_FIELD,
 	/**  */
-	MISC;
+	POSITION_BUFFER,
+	/***/
+	INTERSECTION,
+	/**  */
+	VISION;
 }

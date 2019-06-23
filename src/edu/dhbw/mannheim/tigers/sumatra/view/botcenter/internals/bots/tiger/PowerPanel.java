@@ -31,6 +31,7 @@ import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerSystemPowerLog;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 
 
 /**
@@ -161,7 +162,7 @@ public class PowerPanel extends JPanel
 		add(iVccChart, "push, grow");
 		add(i5VChart, "push, grow");
 		
-		timeOffset = System.nanoTime();
+		timeOffset = SumatraClock.nanoTime();
 	}
 	
 	
@@ -173,9 +174,9 @@ public class PowerPanel extends JPanel
 	 */
 	public void addPowerLog(final TigerSystemPowerLog log)
 	{
-		iVccTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getiVCC());
-		i5VTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getI5V());
-		i3V3Trace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getI3V3());
+		iVccTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, log.getiVCC());
+		i5VTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, log.getI5V());
+		i3V3Trace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, log.getI3V3());
 		
 		iVcc.setText(String.format(Locale.ENGLISH, "%1.3f", log.getiVCC()));
 		i5V.setText(String.format(Locale.ENGLISH, "%1.3f", log.getI5V()));

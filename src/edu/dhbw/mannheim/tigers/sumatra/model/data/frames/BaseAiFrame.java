@@ -8,6 +8,8 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.frames;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.AICom;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.referee.RefereeMsg;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
@@ -19,27 +21,21 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamConfig
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class BaseAiFrame
+public class BaseAiFrame implements IRecordFrame
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	/** Current worldFrame */
-	private final WorldFrame		worldFrame;
+	private final WorldFrame			worldFrame;
 	/** only contains new referee messages (for one frame); will be null otherwise. */
-	private final RefereeMsg		refereeMsg;
+	private final RefereeMsg			refereeMsg;
 	/** the updated referee message. It will contain current times, scores, etc. */
-	private final RefereeMsg		latestRefereeMsg;
+	private final RefereeMsg			latestRefereeMsg;
 	/** previous frame */
-	private transient AIInfoFrame	prevFrame;
+	private transient IRecordFrame	prevFrame;
 	/** color of the team the AI controls */
-	private final ETeamColor		teamColor;
+	private final ETeamColor			teamColor;
+	/** AICommunication */
+	private final AICom					aiCom;
 	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 * @param worldFrame
@@ -50,13 +46,14 @@ public class BaseAiFrame
 	 */
 	public BaseAiFrame(final WorldFrame worldFrame, final RefereeMsg newRefereeMsg,
 			final RefereeMsg latestRefereeMsg,
-			final AIInfoFrame prevFrame, final ETeamColor teamColor)
+			final IRecordFrame prevFrame, final ETeamColor teamColor)
 	{
 		this.worldFrame = worldFrame;
 		refereeMsg = newRefereeMsg;
 		this.latestRefereeMsg = latestRefereeMsg;
 		this.prevFrame = prevFrame;
 		this.teamColor = teamColor;
+		aiCom = new AICom();
 	}
 	
 	
@@ -70,16 +67,14 @@ public class BaseAiFrame
 		latestRefereeMsg = original.latestRefereeMsg;
 		prevFrame = original.prevFrame;
 		teamColor = original.teamColor;
+		aiCom = original.aiCom;
 	}
 	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 * Clean up old aiFrames
 	 */
+	@Override
 	public void cleanUp()
 	{
 		prevFrame = null;
@@ -93,9 +88,9 @@ public class BaseAiFrame
 	{
 		if (teamColor == ETeamColor.YELLOW)
 		{
-			return BotID.createBotId(TeamConfig.getInstance().getTeamProps().getKeeperIdYellow(), teamColor);
+			return BotID.createBotId(TeamConfig.getKeeperIdYellow(), teamColor);
 		}
-		return BotID.createBotId(TeamConfig.getInstance().getTeamProps().getKeeperIdBlue(), teamColor);
+		return BotID.createBotId(TeamConfig.getKeeperIdBlue(), teamColor);
 	}
 	
 	
@@ -106,20 +101,16 @@ public class BaseAiFrame
 	{
 		if (teamColor == ETeamColor.YELLOW)
 		{
-			return BotID.createBotId(TeamConfig.getInstance().getTeamProps().getKeeperIdBlue(), teamColor);
+			return BotID.createBotId(TeamConfig.getKeeperIdBlue(), teamColor.opposite());
 		}
-		return BotID.createBotId(TeamConfig.getInstance().getTeamProps().getKeeperIdYellow(), teamColor);
+		return BotID.createBotId(TeamConfig.getKeeperIdYellow(), teamColor.opposite());
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	
 	/**
 	 * @return the worldFrame
 	 */
+	@Override
 	public WorldFrame getWorldFrame()
 	{
 		return worldFrame;
@@ -129,6 +120,7 @@ public class BaseAiFrame
 	/**
 	 * @return the refereeMsg
 	 */
+	@Override
 	public RefereeMsg getNewRefereeMsg()
 	{
 		return refereeMsg;
@@ -138,6 +130,7 @@ public class BaseAiFrame
 	/**
 	 * @return the refereeMsg
 	 */
+	@Override
 	public RefereeMsg getLatestRefereeMsg()
 	{
 		return latestRefereeMsg;
@@ -147,7 +140,7 @@ public class BaseAiFrame
 	/**
 	 * @return the prevFrame
 	 */
-	public AIInfoFrame getPrevFrame()
+	public IRecordFrame getPrevFrame()
 	{
 		return prevFrame;
 	}
@@ -156,8 +149,33 @@ public class BaseAiFrame
 	/**
 	 * @return the teamColor
 	 */
+	@Override
 	public final ETeamColor getTeamColor()
 	{
 		return teamColor;
+	}
+	
+	
+	/**
+	 * @return the AICommunication DataHolder
+	 */
+	@Override
+	public AICom getAICom()
+	{
+		return aiCom;
+	}
+	
+	
+	@Override
+	public float getFps()
+	{
+		return 0;
+	}
+	
+	
+	@Override
+	public void setId(final int id)
+	{
+		throw new IllegalStateException("Its not intended to call this method on this implementation!");
 	}
 }

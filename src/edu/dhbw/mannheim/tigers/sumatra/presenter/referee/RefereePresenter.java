@@ -22,7 +22,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AReferee;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.ILookAndFeelStateObserver;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.LookAndFeelStateAdapter;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.IModuliStateObserver;
-import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.ModuliStateAdapter;
 import edu.dhbw.mannheim.tigers.sumatra.view.referee.CreateRefereeMsgPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.referee.ICreateRefereeMsgObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.referee.RefereePanel;
@@ -61,7 +60,6 @@ public class RefereePresenter implements ILookAndFeelStateObserver, IModuliState
 	{
 		refereePanel = new RefereePanel();
 		LookAndFeelStateAdapter.getInstance().addObserver(this);
-		ModuliStateAdapter.getInstance().addObserver(this);
 	}
 	
 	

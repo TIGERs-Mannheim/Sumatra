@@ -4,15 +4,14 @@
  * Project: TIGERS - Sumatra
  * Date: 07.04.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tigerv2;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -30,13 +29,15 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.botmanager.SensorUnce
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.botmanager.StateUncertainties;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector3;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerCtrlSetFilterParams;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerCtrlSetPIDParams.PIDParamType;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerSystemQuery.EQueryType;
 
 
 /**
  * Configure sensor fusion and control parameters.
  * 
  * @author AndreR
- * 
  */
 public class FusionCtrlPanel extends JPanel
 {
@@ -60,7 +61,6 @@ public class FusionCtrlPanel extends JPanel
 		
 		
 		/**
-		 * 
 		 * @param pos
 		 * @param vel
 		 * @param acc
@@ -69,8 +69,10 @@ public class FusionCtrlPanel extends JPanel
 		void onNewControllerParams(PIDParametersXYW pos, PIDParametersXYW vel, PIDParametersXYW acc, PIDParameters motor);
 		
 		
-		/** */
-		void onCopyCtrlValuesToAll();
+		/**
+		 * @param queryType
+		 */
+		void onQuery(EQueryType queryType);
 	}
 	
 	// --------------------------------------------------------------------------
@@ -95,7 +97,7 @@ public class FusionCtrlPanel extends JPanel
 	private JTextField[]									ctrlMotor			= new JTextField[3];
 	
 	
-	private final List<IFusionCtrlPanelObserver>	observers			= new ArrayList<IFusionCtrlPanelObserver>();
+	private final List<IFusionCtrlPanelObserver>	observers			= new CopyOnWriteArrayList<IFusionCtrlPanelObserver>();
 	
 	
 	// --------------------------------------------------------------------------
@@ -129,9 +131,8 @@ public class FusionCtrlPanel extends JPanel
 		
 		JButton saveStateButton = new JButton("Save");
 		saveStateButton.addActionListener(new SaveNewState());
-		
-		JButton copyToAll = new JButton("Copy values to all bots");
-		copyToAll.addActionListener(new CopyToAll());
+		JButton queryStateButton = new JButton("Query");
+		queryStateButton.addActionListener(new QueryControl(EQueryType.CTRL_STATE));
 		
 		final JPanel statePanel = new JPanel(new MigLayout("fill, wrap 3", "[80]10[50,fill]10[50,fill]"));
 		statePanel.add(new JLabel(""));
@@ -146,11 +147,14 @@ public class FusionCtrlPanel extends JPanel
 		statePanel.add(new JLabel("Acceleration"));
 		statePanel.add(stateXY[2]);
 		statePanel.add(stateW[2]);
-		statePanel.add(saveStateButton, "span 4");
+		statePanel.add(saveStateButton, "span 2");
+		statePanel.add(queryStateButton, "span 2");
 		statePanel.setBorder(BorderFactory.createTitledBorder("State Uncertainties"));
 		
 		JButton saveSensorButton = new JButton("Save");
 		saveSensorButton.addActionListener(new SaveNewSensors());
+		JButton querySensorButton = new JButton("Query");
+		querySensorButton.addActionListener(new QueryControl(EQueryType.CTRL_SENSOR));
 		
 		final JPanel sensorPanel = new JPanel(new MigLayout("fill, wrap 4", "[80]10[50,fill]20[80]10[50,fill]"));
 		
@@ -179,11 +183,14 @@ public class FusionCtrlPanel extends JPanel
 		sensorPanel.add(new JLabel("Motor"));
 		sensorPanel.add(sensorMotor[1]);
 		
-		sensorPanel.add(saveSensorButton, "span 4");
+		sensorPanel.add(saveSensorButton, "span 2");
+		sensorPanel.add(querySensorButton, "span 2");
 		sensorPanel.setBorder(BorderFactory.createTitledBorder("Sensor Uncertainties"));
 		
 		JButton savePIDButton = new JButton("Save");
 		savePIDButton.addActionListener(new SaveControl());
+		JButton queryPIDButton = new JButton("Query");
+		queryPIDButton.addActionListener(new QueryControl(EQueryType.CTRL_PID));
 		
 		final JPanel ctrlPanel = new JPanel(new MigLayout("fill, wrap 8",
 				"[15]5[35,fill]5[35,fill]10[35,fill]5[35,fill]10[35,fill]5[35,fill]10[35,fill]"));
@@ -230,14 +237,14 @@ public class FusionCtrlPanel extends JPanel
 		ctrlPanel.add(ctrlPosW[2]);
 		ctrlPanel.add(ctrlMotor[2]);
 		
-		ctrlPanel.add(savePIDButton, "span 8");
+		ctrlPanel.add(savePIDButton, "span 4");
+		ctrlPanel.add(queryPIDButton, "span 4");
 		
 		ctrlPanel.setBorder(BorderFactory.createTitledBorder("Controller"));
 		
 		add(ctrlPanel);
 		add(statePanel);
 		add(sensorPanel);
-		add(copyToAll);
 	}
 	
 	
@@ -247,79 +254,109 @@ public class FusionCtrlPanel extends JPanel
 	/**
 	 * @param observer
 	 */
-	public void addObserver(IFusionCtrlPanelObserver observer)
+	public void addObserver(final IFusionCtrlPanelObserver observer)
 	{
-		synchronized (observers)
-		{
-			observers.add(observer);
-		}
+		observers.add(observer);
 	}
 	
 	
 	/**
 	 * @param observer
 	 */
-	public void removeObserver(IFusionCtrlPanelObserver observer)
+	public void removeObserver(final IFusionCtrlPanelObserver observer)
 	{
-		synchronized (observers)
+		observers.remove(observer);
+	}
+	
+	
+	private void notifyNewStateUncertainties(final StateUncertainties unc)
+	{
+		for (IFusionCtrlPanelObserver observer : observers)
 		{
-			observers.remove(observer);
+			observer.onNewStateUncertainties(unc);
 		}
 	}
 	
 	
-	private void notifyNewStateUncertainties(StateUncertainties unc)
+	private void notifyNewSensorUncertainties(final SensorUncertainties unc)
 	{
-		synchronized (observers)
+		for (IFusionCtrlPanelObserver observer : observers)
 		{
-			for (IFusionCtrlPanelObserver observer : observers)
+			observer.onNewSensorUncertainties(unc);
+		}
+	}
+	
+	
+	private void notifyNewControllerParams(final PIDParametersXYW pos, final PIDParametersXYW vel,
+			final PIDParametersXYW acc,
+			final PIDParameters motor)
+	{
+		for (IFusionCtrlPanelObserver observer : observers)
+		{
+			observer.onNewControllerParams(pos, vel, acc, motor);
+		}
+	}
+	
+	
+	private void notifyQuery(final EQueryType type)
+	{
+		for (IFusionCtrlPanelObserver observer : observers)
+		{
+			observer.onQuery(type);
+		}
+	}
+	
+	
+	/**
+	 * Update filter parameters (state and sensor noise)
+	 * 
+	 * @param params
+	 */
+	public void setFilterParams(final TigerCtrlSetFilterParams params)
+	{
+		float[] p = params.getParams();
+		
+		SwingUtilities.invokeLater(() -> {
+			switch (params.getParamType())
 			{
-				observer.onNewStateUncertainties(unc);
+				case EX_ACC:
+					stateXY[2].setText(Float.toString(p[0]));
+					stateW[2].setText(Float.toString(p[2]));
+					break;
+				case EX_POS:
+					stateXY[0].setText(Float.toString(p[0]));
+					stateW[0].setText(Float.toString(p[2]));
+					break;
+				case EX_VEL:
+					stateXY[1].setText(Float.toString(p[0]));
+					stateW[1].setText(Float.toString(p[2]));
+					break;
+				case EZ_ACC_GYRO:
+					sensorAccGyro[0].setText(Float.toString(p[0]));
+					sensorAccGyro[1].setText(Float.toString(p[2]));
+					break;
+				case EZ_ENCODER:
+					sensorEnc[0].setText(Float.toString(p[0]));
+					sensorEnc[1].setText(Float.toString(p[2]));
+					break;
+				case EZ_MOTOR:
+					sensorMotor[0].setText(Float.toString(p[0]));
+					sensorMotor[1].setText(Float.toString(p[2]));
+					break;
+				case EZ_VISION:
+					sensorVision[0].setText(Float.toString(p[0]));
+					sensorVision[1].setText(Float.toString(p[2]));
+					break;
+				case UNKNOWN:
+					break;
+				default:
+					break;
+			
 			}
-		}
+		});
 	}
 	
 	
-	private void notifyNewSensorUncertainties(SensorUncertainties unc)
-	{
-		synchronized (observers)
-		{
-			for (IFusionCtrlPanelObserver observer : observers)
-			{
-				observer.onNewSensorUncertainties(unc);
-			}
-		}
-	}
-	
-	
-	private void notifyNewControllerParams(PIDParametersXYW pos, PIDParametersXYW vel, PIDParametersXYW acc,
-			PIDParameters motor)
-	{
-		synchronized (observers)
-		{
-			for (IFusionCtrlPanelObserver observer : observers)
-			{
-				observer.onNewControllerParams(pos, vel, acc, motor);
-			}
-		}
-	}
-	
-	
-	private void notifyCopyCtrlValuesToAll()
-	{
-		synchronized (observers)
-		{
-			for (IFusionCtrlPanelObserver observer : observers)
-			{
-				observer.onCopyCtrlValuesToAll();
-			}
-		}
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * Update sensor fusion parameters.
 	 * 
@@ -348,6 +385,75 @@ public class FusionCtrlPanel extends JPanel
 				sensorMotor[1].setText(Float.toString(params.getEz().getMotor().z()));
 			}
 		});
+	}
+	
+	
+	/**
+	 * @param type
+	 * @param params
+	 */
+	public void setParams(final PIDParamType type, final PIDParameters params)
+	{
+		switch (type)
+		{
+			case DRIBBLER:
+				break;
+			case MOTOR:
+				ctrlMotor[0].setText(Float.toString(params.getKp()));
+				ctrlMotor[1].setText(Float.toString(params.getKi()));
+				ctrlMotor[2].setText(Float.toString(params.getKd()));
+				break;
+			case POS_W:
+				ctrlPosW[0].setText(Float.toString(params.getKp()));
+				ctrlPosW[1].setText(Float.toString(params.getKi()));
+				ctrlPosW[2].setText(Float.toString(params.getKd()));
+				break;
+			case POS_X:
+				ctrlPosXY[0].setText(Float.toString(params.getKp()));
+				ctrlPosXY[1].setText(Float.toString(params.getKi()));
+				ctrlPosXY[2].setText(Float.toString(params.getKd()));
+				break;
+			case POS_Y:
+				ctrlPosXY[0].setText(Float.toString(params.getKp()));
+				ctrlPosXY[1].setText(Float.toString(params.getKi()));
+				ctrlPosXY[2].setText(Float.toString(params.getKd()));
+				break;
+			case SPLINE_W:
+				ctrlSplineW[0].setText(Float.toString(params.getKp()));
+				ctrlSplineW[1].setText(Float.toString(params.getKi()));
+				ctrlSplineW[2].setText(Float.toString(params.getKd()));
+				break;
+			case SPLINE_X:
+				ctrlSplineXY[0].setText(Float.toString(params.getKp()));
+				ctrlSplineXY[1].setText(Float.toString(params.getKi()));
+				ctrlSplineXY[2].setText(Float.toString(params.getKd()));
+				break;
+			case SPLINE_Y:
+				ctrlSplineXY[0].setText(Float.toString(params.getKp()));
+				ctrlSplineXY[1].setText(Float.toString(params.getKi()));
+				ctrlSplineXY[2].setText(Float.toString(params.getKd()));
+				break;
+			case UNKNOWN:
+				break;
+			case VEL_W:
+				ctrlVelW[0].setText(Float.toString(params.getKp()));
+				ctrlVelW[1].setText(Float.toString(params.getKi()));
+				ctrlVelW[2].setText(Float.toString(params.getKd()));
+				break;
+			case VEL_X:
+				ctrlVelXY[0].setText(Float.toString(params.getKp()));
+				ctrlVelXY[1].setText(Float.toString(params.getKi()));
+				ctrlVelXY[2].setText(Float.toString(params.getKd()));
+				break;
+			case VEL_Y:
+				ctrlVelXY[0].setText(Float.toString(params.getKp()));
+				ctrlVelXY[1].setText(Float.toString(params.getKi()));
+				ctrlVelXY[2].setText(Float.toString(params.getKd()));
+				break;
+			default:
+				break;
+		
+		}
 	}
 	
 	
@@ -398,7 +504,7 @@ public class FusionCtrlPanel extends JPanel
 	private class SaveNewState implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			StateUncertainties unc = new StateUncertainties();
 			
@@ -423,7 +529,7 @@ public class FusionCtrlPanel extends JPanel
 	private class SaveNewSensors implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			SensorUncertainties unc = new SensorUncertainties();
 			
@@ -452,7 +558,7 @@ public class FusionCtrlPanel extends JPanel
 	private class SaveControl implements ActionListener
 	{
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			float xy[] = new float[3]; // P, I, D
 			float w[] = new float[3]; // P, I, D
@@ -523,12 +629,24 @@ public class FusionCtrlPanel extends JPanel
 		}
 	}
 	
-	private class CopyToAll implements ActionListener
+	private class QueryControl implements ActionListener
 	{
-		@Override
-		public void actionPerformed(ActionEvent arg0)
+		private EQueryType	type;
+		
+		
+		/**
+		 * @param type
+		 */
+		public QueryControl(final EQueryType type)
 		{
-			notifyCopyCtrlValuesToAll();
+			this.type = type;
+		}
+		
+		
+		@Override
+		public void actionPerformed(final ActionEvent e)
+		{
+			notifyQuery(type);
 		}
 	}
 }

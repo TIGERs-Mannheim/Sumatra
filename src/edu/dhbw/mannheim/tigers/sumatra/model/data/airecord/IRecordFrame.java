@@ -8,6 +8,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.airecord;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.AICom;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.AresData;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.IPlayStrategy;
@@ -36,21 +37,36 @@ public interface IRecordFrame
 	
 	
 	/**
+	 * @return
+	 */
+	RefereeMsg getNewRefereeMsg();
+	
+	
+	/**
 	 * @return the tacticalInfo
 	 */
-	ITacticalField getTacticalField();
+	default ITacticalField getTacticalField()
+	{
+		throw new IllegalStateException("No tactical field available.");
+	}
 	
 	
 	/**
 	 * @return the playStrategy
 	 */
-	IPlayStrategy getPlayStrategy();
+	default IPlayStrategy getPlayStrategy()
+	{
+		throw new IllegalStateException("No play strategy available.");
+	}
 	
 	
 	/**
 	 * @return
 	 */
-	AresData getAresData();
+	default AresData getAresData()
+	{
+		throw new IllegalStateException("No ares data available.");
+	}
 	
 	
 	/**
@@ -58,7 +74,10 @@ public interface IRecordFrame
 	 * 
 	 * @return
 	 */
-	boolean isPersistable();
+	default boolean isPersistable()
+	{
+		return false;
+	}
 	
 	
 	/**
@@ -73,4 +92,22 @@ public interface IRecordFrame
 	 * 
 	 */
 	void cleanUp();
+	
+	
+	/**
+	 * @return
+	 */
+	float getFps();
+	
+	
+	/**
+	 * @param id
+	 */
+	void setId(int id);
+	
+	
+	/**
+	 * @return
+	 */
+	AICom getAICom();
 }

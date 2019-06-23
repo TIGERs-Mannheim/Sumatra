@@ -1,37 +1,36 @@
 /*
  * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
  * Project: TIGERS - Sumatra
- * Date: 05.08.2010
- * Author(s):
- * Gero
- * Oliver Steinbrecher
- * Daniel Waigand
+ * Date: 12.11.2013
+ * Author(s): jaue_ma
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis;
 
-import java.util.Collection;
 import java.util.List;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.MetisAiFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AthenaAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMap;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
 
 
 /**
- * Encapsulates types which are capable of assigning roles to bots
+ * This interface declares the methods for a RoleAssigner
  * 
- * @author Gero, Oliver Steinbrecher, Daniel Waigand
- * 
+ * @author MalteJ
  */
 public interface IRoleAssigner
 {
+	
 	/**
-	 * @param assignees The {@link TrackedTigerBot}s which are waiting for {@link ARole}
-	 * @param rolesToAssign The {@link ARole}s which have to be assigned
-	 * @param frame The {@link AIInfoFrame} of the current AI-cycle
+	 * Assignes the roles of activePlays to the assignees and may change the role counts of the plays.
+	 * 
+	 * @param assignees the current available TigerBots
+	 * @param activePlays the current active plays
+	 * @param frame the current frame
 	 */
-	void assignRoles(Collection<TrackedTigerBot> assignees, List<ARole> rolesToAssign, MetisAiFrame frame);
+	void assignRoles(BotIDMap<TrackedTigerBot> assignees, List<APlay> activePlays, AthenaAiFrame frame);
+	
 }

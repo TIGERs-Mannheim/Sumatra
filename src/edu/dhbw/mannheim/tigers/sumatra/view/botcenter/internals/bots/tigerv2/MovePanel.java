@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Feb 1, 2014
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tigerv2;
@@ -20,7 +19,6 @@ import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.moto
  * Includes enhanced motor input panel for bot control
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class MovePanel extends JPanel
 {
@@ -47,8 +45,8 @@ public class MovePanel extends JPanel
 		enhanced = new MotorEnhancedInputPanel();
 		
 		setLayout(new MigLayout());
-		add(input, "wrap, aligny top");
-		add(enhanced);
+		add(enhanced, "wrap, aligny top");
+		add(input);
 	}
 	
 	

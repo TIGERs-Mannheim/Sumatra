@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Apr 20, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger;
@@ -32,14 +31,13 @@ import net.miginfocom.swing.MigLayout;
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature.EFeatureState;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeatureState;
 
 
 /**
  * Panel for setting bot features
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class FeaturePanel extends JPanel
 {
@@ -114,7 +112,7 @@ public class FeaturePanel extends JPanel
 					cmb.setActionCommand(entry.getKey().name());
 					cmb.addItemListener(new FeatureStateSelectedListener());
 					featuresPanel.add(cmb, c2);
-					featuresPanel.add(new JLabel(entry.getKey().getDesc()), c3);
+					featuresPanel.add(new JLabel(""), c3);
 				}
 			}
 		});
@@ -124,7 +122,7 @@ public class FeaturePanel extends JPanel
 	{
 		
 		@Override
-		public void itemStateChanged(ItemEvent e)
+		public void itemStateChanged(final ItemEvent e)
 		{
 			@SuppressWarnings("unchecked")
 			JComboBox<EFeatureState> cmb = (JComboBox<EFeatureState>) e.getSource();
@@ -147,7 +145,7 @@ public class FeaturePanel extends JPanel
 	/**
 	 * @param observer
 	 */
-	public void addObserver(IFeatureChangedObserver observer)
+	public void addObserver(final IFeatureChangedObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -159,7 +157,7 @@ public class FeaturePanel extends JPanel
 	/**
 	 * @param observer
 	 */
-	public void removeObserver(IFeatureChangedObserver observer)
+	public void removeObserver(final IFeatureChangedObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -168,7 +166,7 @@ public class FeaturePanel extends JPanel
 	}
 	
 	
-	private void notifyFeatureChanged(EFeature feature, EFeatureState state)
+	private void notifyFeatureChanged(final EFeature feature, final EFeatureState state)
 	{
 		synchronized (observers)
 		{
@@ -183,7 +181,7 @@ public class FeaturePanel extends JPanel
 	{
 		
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			synchronized (observers)
 			{

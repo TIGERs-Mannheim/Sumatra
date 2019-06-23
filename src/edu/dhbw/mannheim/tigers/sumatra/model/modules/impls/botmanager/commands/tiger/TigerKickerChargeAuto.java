@@ -43,7 +43,7 @@ public class TigerKickerChargeAuto extends ACommand
 	 */
 	public TigerKickerChargeAuto()
 	{
-		super(ECommand.CMD_KICKER_CHARGE_AUTO);
+		super(ECommand.CMD_KICKER_CHARGE_AUTO, true);
 	}
 	
 	
@@ -52,8 +52,7 @@ public class TigerKickerChargeAuto extends ACommand
 	 */
 	public TigerKickerChargeAuto(final int max)
 	{
-		super(ECommand.CMD_KICKER_CHARGE_AUTO);
-		
+		super(ECommand.CMD_KICKER_CHARGE_AUTO, true);
 		setMax(max);
 	}
 	

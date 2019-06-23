@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Jul 21, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.views.impl;
@@ -16,42 +15,26 @@ import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraViewPresenter;
 
 
 /**
- * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class LogView extends ASumatraView
 {
+	private final boolean	addAppender;
 	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
-	 * 
+	 * @param addAppender
 	 */
-	public LogView()
+	public LogView(final boolean addAppender)
 	{
 		super(ESumatraViewType.LOG);
+		this.addAppender = addAppender;
 	}
 	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	@Override
 	public ISumatraViewPresenter createPresenter()
 	{
-		return new LogPresenter();
+		return new LogPresenter(addAppender);
 	}
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 }

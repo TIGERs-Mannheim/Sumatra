@@ -20,25 +20,24 @@ import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrameWrapper;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.SplinePair3D;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.cam.CamDetectionFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature.EFeatureState;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeatureState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ITigerBotObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.TigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.Statistics;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.other.EKickerMode;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerChargeAuto;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerChargeManual;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerIrLog;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerKickV2;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerKickV2.EKickerMode;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerStatusV2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerMotorPidLog;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerMotorSetManual;
@@ -57,6 +56,7 @@ import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.ILookAndFeelStateObserver;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.LookAndFeelStateAdapter;
 import edu.dhbw.mannheim.tigers.sumatra.util.GeneralPurposeTimer;
 import edu.dhbw.mannheim.tigers.sumatra.util.ThreadUtil;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.BotCenterTreeNode;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.ETreeIconType;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.FeaturePanel;
@@ -85,7 +85,7 @@ import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.moto
  * @author AndreR
  */
 public class TigerBotPresenter extends ABotPresenter implements ITigerBotMainPanelObserver, ILookAndFeelStateObserver,
-IMotorMainPanelObserver, INetworkPanelObserver, IWorldPredictorObserver, IKickerPanelObserver
+		IMotorMainPanelObserver, INetworkPanelObserver, IWorldPredictorObserver, IKickerPanelObserver
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
@@ -117,8 +117,8 @@ IMotorMainPanelObserver, INetworkPanelObserver, IWorldPredictorObserver, IKicker
 	private final TigerBotSummaryObserver	tigerBotSummaryObserver	= new TigerBotSummaryObserver();
 	
 	
-	private long									startNewWP					= System.nanoTime();
-	private long									startMotor					= System.nanoTime();
+	private long									startNewWP					= SumatraClock.nanoTime();
+	private long									startMotor					= SumatraClock.nanoTime();
 	// in milliseconds
 	private static final long					VISUALIZATION_FREQUENCY	= 200;
 	
@@ -408,33 +408,20 @@ IMotorMainPanelObserver, INetworkPanelObserver, IWorldPredictorObserver, IKicker
 	
 	
 	@Override
-	public void onNewWorldFrame(final SimpleWorldFrame wf)
+	public void onNewWorldFrame(final WorldFrameWrapper wfWrapper)
 	{
-		final TrackedTigerBot tracked = wf.getBots().getWithNull(bot.getBotID());
+		final TrackedTigerBot tracked = wfWrapper.getSimpleWorldFrame().getBots().getWithNull(bot.getBotID());
 		if (tracked == null)
 		{
 			return;
 		}
-		if ((System.nanoTime() - startNewWP) > TimeUnit.MILLISECONDS.toNanos(VISUALIZATION_FREQUENCY))
+		if ((SumatraClock.nanoTime() - startNewWP) > TimeUnit.MILLISECONDS.toNanos(VISUALIZATION_FREQUENCY))
 		{
 			final Vector2f vel = new Vector2f(tracked.getVel().turnNew(-tracked.getAngle()));
 			
 			motorMain.getEnhancedInputPanel().setLatestWPData(new Vector2f(-vel.y(), vel.x()), tracked.getaVel());
-			startNewWP = System.nanoTime();
+			startNewWP = SumatraClock.nanoTime();
 		}
-	}
-	
-	
-	@Override
-	public void onNewCamDetectionFrame(final CamDetectionFrame frame)
-	{
-	}
-	
-	
-	@Override
-	public void onVisionSignalLost(final SimpleWorldFrame emptyWf)
-	{
-		motorMain.getEnhancedInputPanel().setLatestWPData(new Vector2f(0.0f, 0.0f), 0.0f);
 	}
 	
 	
@@ -539,11 +526,11 @@ IMotorMainPanelObserver, INetworkPanelObserver, IWorldPredictorObserver, IKicker
 		@Override
 		public void onNewSystemStatusMovement(final TigerSystemStatusMovement status)
 		{
-			if ((System.nanoTime() - startMotor) > TimeUnit.MILLISECONDS.toNanos(VISUALIZATION_FREQUENCY))
+			if ((SumatraClock.nanoTime() - startMotor) > TimeUnit.MILLISECONDS.toNanos(VISUALIZATION_FREQUENCY))
 			{
 				motorMain.getEnhancedInputPanel().setLatestVelocity(status.getVelocity());
 				motorMain.getEnhancedInputPanel().setLatestAngularVelocity(status.getAngularVelocity());
-				startMotor = System.nanoTime();
+				startMotor = SumatraClock.nanoTime();
 			}
 		}
 		
@@ -767,7 +754,7 @@ IMotorMainPanelObserver, INetworkPanelObserver, IWorldPredictorObserver, IKicker
 			{
 				synchronized (activePings)
 				{
-					activePings.put(id, System.nanoTime());
+					activePings.put(id, SumatraClock.nanoTime());
 				}
 				
 				bot.execute(new TigerSystemPing(id));
@@ -797,7 +784,7 @@ IMotorMainPanelObserver, INetworkPanelObserver, IWorldPredictorObserver, IKicker
 				return;
 			}
 			
-			final float delayPongArrive = (System.nanoTime() - startTime) / 1000000.0f;
+			final float delayPongArrive = (SumatraClock.nanoTime() - startTime) / 1000000.0f;
 			
 			network.setDelay(delayPongArrive);
 		}

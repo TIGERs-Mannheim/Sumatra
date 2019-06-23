@@ -4,18 +4,15 @@
  * Project: TIGERS - Sumatra
  * Date: May 3, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine;
-
 
 
 /**
  * State of a state machine
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public interface IState
 {

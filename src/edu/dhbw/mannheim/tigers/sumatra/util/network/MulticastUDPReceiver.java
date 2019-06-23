@@ -27,21 +27,22 @@ import org.apache.log4j.Logger;
  */
 public class MulticastUDPReceiver implements IReceiver
 {
-	private static final Logger	log					= Logger.getLogger(MulticastUDPReceiver.class.getName());
+	private static final Logger	log						= Logger.getLogger(MulticastUDPReceiver.class.getName());
 	
-	private static final int		SO_TIMEOUT			= 2000;
+	private static final int		SO_TIMEOUT				= 100;
 	
 	// Connection
-	private List<MulticastSocket>	sockets				= new LinkedList<MulticastSocket>();
-	private MulticastSocket			currentSocket		= null;
-	private InetAddress				group					= null;
+	private List<MulticastSocket>	sockets					= new LinkedList<MulticastSocket>();
+	private MulticastSocket			currentSocket			= null;
+	private InetAddress				group						= null;
 	
 	/** The internal state-switch of this transmitter */
-	private boolean					readyToReceive		= false;
+	private boolean					readyToReceive			= false;
 	
-	private Set<MulticastSocket>	socketsTimedOut	= new HashSet<MulticastSocket>();
+	private Set<MulticastSocket>	socketsTimedOut		= new HashSet<MulticastSocket>();
 	
-	private static final String[]	PREFIXES				= { "tap", "tun", "ham", "WAN" };
+	private static final String[]	USELESS_PREFIXES		= { "tap", "tun", "ham", "WAN" };
+	private static final String[]	PREFERRED_PREFIXES	= { "lo", "eth", "enp" };
 	
 	
 	/**
@@ -135,7 +136,7 @@ public class MulticastUDPReceiver implements IReceiver
 			log.error("Could not determine iface properties");
 		}
 		
-		for (String prefix : PREFIXES)
+		for (String prefix : USELESS_PREFIXES)
 		{
 			if (iface.getDisplayName().contains(prefix))
 			{
@@ -154,11 +155,18 @@ public class MulticastUDPReceiver implements IReceiver
 			socket = new MulticastSocket(port);
 			socket.setNetworkInterface(iface);
 			int i;
-			for (i = 0; i < sockets.size(); i++)
+			socket_loop: for (i = 0; i < sockets.size(); i++)
 			{
-				if (sockets.get(i).getNetworkInterface().getMTU() < iface.getMTU())
+				for (String prefix : PREFERRED_PREFIXES)
 				{
-					break;
+					if (socket.getNetworkInterface().getDisplayName().contains(prefix))
+					{
+						break socket_loop;
+					}
+					if (sockets.get(i).getNetworkInterface().getDisplayName().contains(prefix))
+					{
+						continue socket_loop;
+					}
 				}
 			}
 			sockets.add(i, socket);

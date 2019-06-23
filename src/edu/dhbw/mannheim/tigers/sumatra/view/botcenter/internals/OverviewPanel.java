@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 11.08.2010
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals;
@@ -25,7 +24,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
  * Overview of all bots.
  * 
  * @author AndreR
- * 
  */
 public class OverviewPanel extends JPanel
 {
@@ -56,7 +54,7 @@ public class OverviewPanel extends JPanel
 	/**
 	 * @param active
 	 */
-	public void setActive(boolean active)
+	public void setActive(final boolean active)
 	{
 		this.active = active;
 		
@@ -68,7 +66,7 @@ public class OverviewPanel extends JPanel
 	 * @param botID
 	 * @param panel
 	 */
-	public void addBotPanel(BotID botID, JPanel panel)
+	public void addBotPanel(final BotID botID, final JPanel panel)
 	{
 		botPanels.put(botID, panel);
 		
@@ -79,9 +77,13 @@ public class OverviewPanel extends JPanel
 	/**
 	 * @param botID
 	 */
-	public void removeBotPanel(BotID botID)
+	public void removeBotPanel(final BotID botID)
 	{
-		botPanels.remove(botID);
+		JPanel panel = botPanels.get(botID);
+		if (panel != null)
+		{
+			panel.setEnabled(false);
+		}
 		
 		updatePanels();
 	}
@@ -97,6 +99,16 @@ public class OverviewPanel extends JPanel
 	}
 	
 	
+	/**
+	 * @param botId
+	 * @return
+	 */
+	public JPanel getBotPanel(final BotID botId)
+	{
+		return botPanels.get(botId);
+	}
+	
+	
 	private void updatePanels()
 	{
 		final JPanel panel = this;
@@ -108,15 +120,18 @@ public class OverviewPanel extends JPanel
 			{
 				removeAll();
 				
-				if (active)
+				if (active && !botPanels.isEmpty())
 				{
 					for (final JPanel panel : botPanels.values())
 					{
-						add(panel, "wrap, gapbottom 0");
+						if (panel.isEnabled())
+						{
+							add(panel, "wrap, gapbottom 0");
+						}
 					}
 				} else
 				{
-					add(new JLabel("Botcenter unavailable - botmanager stopped"), "wrap");
+					add(new JLabel("No bots connected."), "wrap");
 				}
 				
 				add(Box.createGlue(), "push");

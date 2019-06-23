@@ -42,7 +42,7 @@ public final class GlobalShortcuts
 		/**  */
 		EMERGENCY_MODE(KeyEvent.VK_ESCAPE, "esc"),
 		/**  */
-		START_STOP(KeyEvent.VK_BACK_QUOTE, "`"),
+		START_STOP(KeyEvent.VK_F11, "F11"),
 		
 		/**  */
 		MATCH_MODE(KeyEvent.VK_F1, "F1"),
@@ -60,11 +60,14 @@ public final class GlobalShortcuts
 		DISCHARGE_ALL_BOTS(KeyEvent.VK_F6, "F6"),
 		
 		/**  */
-		REFEREE_HALT(KeyEvent.VK_F7, "F7"),
+		RESET_FIELD(KeyEvent.VK_F7, "F7"),
+		
 		/**  */
-		REFEREE_STOP(KeyEvent.VK_F8, "F8"),
+		REFEREE_HALT(KeyEvent.VK_F8, "F8"),
 		/**  */
-		REFEREE_START(KeyEvent.VK_F9, "F9"),
+		REFEREE_STOP(KeyEvent.VK_F9, "F9"),
+		/**  */
+		REFEREE_START(KeyEvent.VK_F10, "F10"),
 		
 		;
 		

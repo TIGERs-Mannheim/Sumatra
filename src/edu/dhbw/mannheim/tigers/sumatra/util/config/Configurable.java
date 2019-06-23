@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Mar 17, 2014
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.util.config;
@@ -23,22 +22,13 @@ import java.lang.annotation.Target;
  * Preferably use static, if you do not consider to have different values at the same time.
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 @Retention(value = RetentionPolicy.RUNTIME)
 @Target({ ElementType.FIELD })
 public @interface Configurable
 {
 	/**
-	 * @return
-	 */
-	Class<? extends Enum<?>> speziType() default EDummy.class;
-	
-	
-	/**
 	 * Available specializations of this field.
-	 * This must be String-representations of an enum value of the type
-	 * specified by {@link Configurable#speziType()}!
 	 * 
 	 * @return
 	 */
@@ -47,6 +37,7 @@ public @interface Configurable
 	
 	/**
 	 * Documentation of this field
+	 * 
 	 * @return
 	 */
 	String comment() default "";
@@ -54,6 +45,7 @@ public @interface Configurable
 	
 	/**
 	 * Set a default value. This is only needed, if field is not static.
+	 * 
 	 * @return
 	 */
 	String defValue() default "";

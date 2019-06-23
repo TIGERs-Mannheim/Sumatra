@@ -11,16 +11,24 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.ValuedField;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.MultiTeamMessage;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ballpossession.BallPossession;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.valueobjects.DefensePoint;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.valueobjects.ValueBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.valueobjects.ValuePoint;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.IDrawableShape;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBall;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.fieldanalysis.AIRectangleVector;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.fieldanalysis.EnhancedFieldAnalyser;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.RoleFinderInfo;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.ECalculator;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.defense.data.FoeBotData;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.offense.data.OffensiveAction;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.offense.data.OffensiveMovePosition;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.support.data.AdvancedPassTarget;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.EDrawableShapesLayer;
 
 
 /**
@@ -30,11 +38,10 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators
  */
 public interface ITacticalField
 {
-	
 	/**
-	 * @return
+	 * Remove data that is too large to keep
 	 */
-	List<DefensePoint> getDefGoalPoints();
+	void cleanup();
 	
 	
 	/**
@@ -84,16 +91,9 @@ public interface ITacticalField
 	
 	
 	/**
-	 * @return dynamicFieldAnalyser - a analyser witch allowed to find some specific points with the help of
-	 *         {@link AIRectangleVector}
+	 * @return
 	 */
-	EnhancedFieldAnalyser getEnhancedFieldAnalyser();
-	
-	
-	/**
-	 * @return the goalValuePoints
-	 */
-	List<ValuePoint> getGoalValuePoints();
+	BotID getBotTouchedBall();
 	
 	
 	/**
@@ -105,55 +105,25 @@ public interface ITacticalField
 	/**
 	 * @return
 	 */
-	Map<BotID, ValuePoint> getBestDirectShotTargetBots();
+	List<ValuePoint> getGoalValuePoints();
 	
 	
 	/**
 	 * @return
 	 */
-	Map<BotID, List<ValueBot>> getShooterReceiverStraightLines();
+	ValuedField getSupporterValuedField();
 	
 	
 	/**
 	 * @return
 	 */
-	Map<BotID, ValueBot> getBallReceiverStraightLines();
+	Map<BotID, OffensiveMovePosition> getOffenseMovePositions();
 	
 	
 	/**
 	 * @return
 	 */
-	Map<BotID, IVector2> getSupportPositions();
-	
-	
-	/**
-	 * @return
-	 */
-	Map<BotID, IVector2> getSupportTargets();
-	
-	
-	/**
-	 * @return
-	 */
-	List<IVector2> getSupportIntersections();
-	
-	
-	/**
-	 * @return
-	 */
-	Map<BotID, IVector2> getSupportRedirectPositions();
-	
-	
-	/**
-	 * @return
-	 */
-	Map<BotID, ValuedField> getSupportValues();
-	
-	
-	/**
-	 * @return
-	 */
-	Map<BotID, ValuePoint> getOffenseMovePositions();
+	OffensiveStrategy getOffensiveStrategy();
 	
 	
 	/**
@@ -169,19 +139,127 @@ public interface ITacticalField
 	
 	
 	/**
+	 * Flag for a goal scored (tigers or foes), used for forcing all bots on our side before prepare kickoff signal
+	 * true when a goal was scored, the game state is stopped until it is started again.
+	 * 
+	 * @return the goalScored
+	 */
+	boolean isGoalScored();
+	
+	
+	/**
 	 * @return
 	 */
 	IVector2 getBallLeftFieldPos();
 	
 	
 	/**
-	 * @return
-	 */
-	ValueBot getBestPassTarget();
-	
-	
-	/**
 	 * @return the Statistics
 	 */
 	Statistics getStatistics();
+	
+	
+	/**
+	 * @return
+	 */
+	Map<EPlay, RoleFinderInfo> getRoleFinderInfos();
+	
+	
+	/**
+	 * @return
+	 */
+	EGameBehavior getGameBehavior();
+	
+	
+	/**
+	 * @return
+	 */
+	Map<EDrawableShapesLayer, List<IDrawableShape>> getDrawableShapes();
+	
+	
+	/**
+	 * Best points to pass to near bots
+	 * 
+	 * @return
+	 */
+	List<AdvancedPassTarget> getAdvancedPassTargetsRanked();
+	
+	
+	/**
+	 * @return the dangerousFoeBots
+	 */
+	List<FoeBotData> getDangerousFoeBots();
+	
+	
+	/**
+	 * @return
+	 */
+	Map<ELetter, List<IVector2>> getLetters();
+	
+	
+	/**
+	 * @return
+	 */
+	Map<BotID, SortedMap<Long, IVector2>> getBotPosBuffer();
+	
+	
+	/**
+	 * @return
+	 */
+	List<TrackedBall> getBallBuffer();
+	
+	
+	/**
+	 * @return
+	 */
+	Map<ECalculator, Integer> getMetisCalcTimes();
+	
+	
+	/**
+	 * @return
+	 */
+	List<IVector2> getTopGpuGridPositions();
+	
+	
+	/**
+	 * @return
+	 */
+	Map<BotID, OffensiveAction> getOffensiveActions();
+	
+	
+	/**
+	 * @return
+	 */
+	boolean needTwoForBallBlock();
+	
+	
+	/**
+	 * @param needTwoForBallBlock
+	 */
+	void setNeedTwoForBallBlock(boolean needTwoForBallBlock);
+	
+	
+	/**
+	 * @return
+	 */
+	Map<BotID, IVector2> getSupportPositions();
+	
+	
+	/**
+	 * @return
+	 */
+	MultiTeamMessage getMultiTeamMessage();
+	
+	
+	/**
+	 * @param message
+	 */
+	void setMultiTeamMessage(MultiTeamMessage message);
+	
+	
+	/**
+	 * @return
+	 */
+	public boolean isMixedTeamBothTouchedBall();
+	
 }

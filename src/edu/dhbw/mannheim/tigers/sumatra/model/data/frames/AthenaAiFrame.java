@@ -4,49 +4,34 @@
  * Project: TIGERS - Sumatra
  * Date: Oct 11, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.frames;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.IPlayStrategy;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.IDrawableShape;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.EDrawableShapesLayer;
 
 
 /**
  * Ai frame for athena data, based on {@link MetisAiFrame}
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class AthenaAiFrame extends MetisAiFrame
 {
-	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	private final IPlayStrategy	playStrategy;
 	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 * @param metisAiFrame
 	 * @param playStrategy
 	 */
-	public AthenaAiFrame(MetisAiFrame metisAiFrame, IPlayStrategy playStrategy)
+	public AthenaAiFrame(final MetisAiFrame metisAiFrame, final IPlayStrategy playStrategy)
 	{
 		super(metisAiFrame, metisAiFrame.getTacticalField());
 		this.playStrategy = playStrategy;
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	
 	/**
@@ -55,22 +40,18 @@ public class AthenaAiFrame extends MetisAiFrame
 	 * visualize your plays actions
 	 * 
 	 * @see IDrawableShape
-	 * 
 	 * @param drawableShape
 	 */
-	public void addDebugShape(IDrawableShape drawableShape)
+	public void addDebugShape(final IDrawableShape drawableShape)
 	{
-		playStrategy.getDebugShapes().add(drawableShape);
+		getTacticalField().getDrawableShapes().get(EDrawableShapesLayer.UNSORTED).add(drawableShape);
 	}
 	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 * @return the playStrategy
 	 */
+	@Override
 	public IPlayStrategy getPlayStrategy()
 	{
 		return playStrategy;

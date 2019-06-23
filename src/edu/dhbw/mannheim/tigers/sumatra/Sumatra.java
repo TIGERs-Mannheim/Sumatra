@@ -175,6 +175,10 @@ public final class Sumatra
 		// Connect java.util.logging (for jinput)
 		JULLoggingBridge.install();
 		
+		// enable AWT keyboard for RCM
+		// -Djinput.plugins=net.java.games.input.AWTEnvironmentPlugin
+		// System.setProperty("jinput.plugins", "net.java.games.input.AWTEnvironmentPlugin");
+		
 		log = Logger.getLogger(Sumatra.class.getName());
 		log.trace("Logger initialized and starting Sumatra");
 	}

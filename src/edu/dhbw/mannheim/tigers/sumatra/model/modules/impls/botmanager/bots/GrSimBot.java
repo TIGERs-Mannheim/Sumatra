@@ -9,39 +9,52 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots;
 
 import java.util.Map;
-import java.util.Timer;
 import java.util.TimerTask;
 
-import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 
 import Jama.Matrix;
+
+import com.sleepycat.persist.model.Persistent;
+
 import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.KickerModel;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrameWrapper;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AiMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.SplinePair3D;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector3;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector3;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature.EFeatureState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.grsim.GrSimConnection;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.grsim.GrSimNetworkCfg;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.grsim.GrSimStatus;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ABotSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.botskills.BotSkillGlobalPosition;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.botskills.BotSkillLocalVelocity;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.botskills.BotSkillPositionPid;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.other.EKickerMode;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.other.LimitedVelocityCommand;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.other.TigerKickerKickV3;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerDribble;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerChargeAuto;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerKickV2;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerKickV2.EKickerMode;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerMotorMoveV2;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerSkillPositioningCommand;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv3.TigerSystemBotSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AWorldPredictor;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IWorldFrameConsumer;
+import edu.dhbw.mannheim.tigers.sumatra.util.GeneralPurposeTimer;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
 
 
 /**
@@ -50,44 +63,70 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IWorldFrameConsumer;
  * 
  * @author TilmanS
  */
-public class GrSimBot extends ABot implements IWorldFrameConsumer
+@Persistent(version = 4)
+public class GrSimBot extends SimBot implements IWorldFrameConsumer
 {
 	// Logger
-	private static final Logger	log							= Logger.getLogger(GrSimBot.class.getName());
+	private static final Logger			log							= Logger.getLogger(GrSimBot.class.getName());
 	
-	private GrSimConnection			con;
-	private GrSimNetworkCfg			grSimCfg;
+	private transient GrSimConnection	con;
+	private transient GrSimNetworkCfg	grSimCfg;
+	private transient GrSimStatus			status						= new GrSimStatus();
 	
-	private Vector2					lastDirection				= new Vector2();
-	private float						lastAngularVelocity		= 0.0f;
-	private float						lastCompensatedVelocity	= 0.0f;
+	private Vector2							lastDirection				= new Vector2();
+	private float								lastAngularVelocity		= 0.0f;
+	private float								lastCompensatedVelocity	= 0.0f;
 	
-	private Matrix						xEpsilon						= null;
-	private Matrix						yEpsilon						= null;
+	private transient Matrix				xEpsilon						= null;
+	private transient Matrix				yEpsilon						= null;
 	
-	private int							maxCapacitorVoltage		= 0;
-	private int							currentCapacitorVoltage	= 0;
+	private int									maxCapacitorVoltage		= 0;
+	private int									currentCapacitorVoltage	= 0;
 	
-	private float						velXBuffer					= 0.0f;
-	private float						velYBuffer					= 0.0f;
-	private float						velZBuffer					= 0.0f;
+	private float								velXBuffer					= 0.0f;
+	private float								velYBuffer					= 0.0f;
+	private float								velZBuffer					= 0.0f;
 	
-	private boolean					kickerDeadtimeActive		= false;
-	private static final int		KICKER_DEADTIME_MS		= 1000;
-	private static final int		KICKER_DRIBBLE_ARM_MS	= 3000;
 	
-	private SimpleWorldFrame		latestWorldFrame			= null;
+	// private boolean kickerDeadtimeActive = false;
+	// private static final int KICKER_DEADTIME_MS = 1000;
+	private static final int				KICKER_DRIBBLE_ARM_MS	= 3000;
 	
-	private ENetworkState			networkState				= ENetworkState.ONLINE;
+	private transient SimpleWorldFrame	latestWorldFrame			= null;
 	
-	private class KickerDeadTimeTimerTask extends TimerTask
+	@Configurable(comment = "multiplied on position error for PositionController")
+	private static float						positionErrorMultiplier	= 0.003f;
+	
+	@Configurable(comment = "Default maximum Capacitor charge for kicker")
+	private static int						defaultKickerMaxCap		= 180;
+	
+	@Configurable
+	private static boolean					useTrajectory				= true;
+	
+	private final transient KickerModel	kickModel					= KickerModel.forBot(EBotType.GRSIM);
+	
+	@Configurable(comment = "Dist [mm] - Distance between center of bot to dribbling bar")
+	private static float						center2DribblerDist		= 90;
+	
+	@Configurable
+	private static float						delay							= 0.02f;
+	
+	
+	// private class KickerDeadTimeTimerTask extends TimerTask
+	// {
+	// @Override
+	// public void run()
+	// {
+	// kickerDeadtimeActive = false;
+	// currentCapacitorVoltage = maxCapacitorVoltage;
+	// }
+	// }
+	
+	
+	@SuppressWarnings("unused")
+	private GrSimBot()
 	{
-		@Override
-		public void run()
-		{
-			kickerDeadtimeActive = false;
-			currentCapacitorVoltage = maxCapacitorVoltage;
-		}
+		
 	}
 	
 	
@@ -98,7 +137,7 @@ public class GrSimBot extends ABot implements IWorldFrameConsumer
 	public GrSimBot(final SubnodeConfiguration botConfig) throws BotInitException
 	{
 		super(botConfig);
-		networkState = ENetworkState.valueOf(botConfig.getString("networkState", "OFFLINE"));
+		setKickerMaxCap(defaultKickerMaxCap);
 	}
 	
 	
@@ -108,15 +147,14 @@ public class GrSimBot extends ABot implements IWorldFrameConsumer
 	public GrSimBot(final BotID id)
 	{
 		super(EBotType.GRSIM, id, -1, id.getTeamColor() == ETeamColor.YELLOW ? 0 : 1);
+		setKickerMaxCap(defaultKickerMaxCap);
 	}
 	
 	
 	@Override
-	public HierarchicalConfiguration getConfiguration()
+	public void setDefaultKickerMaxCap()
 	{
-		HierarchicalConfiguration config = super.getConfiguration();
-		config.addProperty("bot.networkState", networkState);
-		return config;
+		setKickerMaxCap(defaultKickerMaxCap);
 	}
 	
 	
@@ -128,7 +166,7 @@ public class GrSimBot extends ABot implements IWorldFrameConsumer
 		result.put(EFeature.CHIP_KICKER, EFeatureState.WORKING);
 		result.put(EFeature.STRAIGHT_KICKER, EFeatureState.WORKING);
 		result.put(EFeature.MOVE, EFeatureState.WORKING);
-		result.put(EFeature.BARRIER, EFeatureState.LIMITED);
+		result.put(EFeature.BARRIER, EFeatureState.WORKING);
 		return result;
 	}
 	
@@ -161,7 +199,7 @@ public class GrSimBot extends ABot implements IWorldFrameConsumer
 	
 	private void sendGrSimCommand(final ACommand cmd)
 	{
-		con.setId(botId.getNumber());
+		con.setId(getBotId().getNumber());
 		
 		switch (cmd.getType())
 		{
@@ -196,19 +234,75 @@ public class GrSimBot extends ABot implements IWorldFrameConsumer
 				break;
 			}
 			case CMD_SKILL_POSITIONING:
-				handlePositionMove((TigerSkillPositioningCommand) cmd, con);
+			{
+				TigerSkillPositioningCommand posCmd = (TigerSkillPositioningCommand) cmd;
+				handlePositionMove(posCmd.getDestination(), posCmd.getOrientation(), con);
+			}
+				break;
+			case CMD_SYSTEM_BOT_SKILL:
+				TigerSystemBotSkill botSkill = (TigerSystemBotSkill) cmd;
+				ABotSkill skill = botSkill.getSkill();
+				switch (skill.getType())
+				{
+					case GLOBAL_POSITION:
+						BotSkillGlobalPosition posCmd = (BotSkillGlobalPosition) skill;
+						handleTrajectoryMove(posCmd.getPos(), posCmd.getOrientation(), posCmd.getT(), con);
+						break;
+					case LOCAL_VELOCITY:
+					{
+						BotSkillLocalVelocity velCmd = (BotSkillLocalVelocity) skill;
+						final TigerMotorMoveV2 move = new TigerMotorMoveV2();
+						move.setX(velCmd.getY());
+						move.setY(-velCmd.getX());
+						move.setW(velCmd.getW());
+						handleMove(move, con);
+					}
+						break;
+					case MOTORS_OFF:
+					{
+						final TigerMotorMoveV2 move = new TigerMotorMoveV2();
+						move.setX(0);
+						move.setY(0);
+						move.setW(0);
+						handleMove(move, con);
+					}
+						break;
+					case POSITION_PID:
+						BotSkillPositionPid pidPos = (BotSkillPositionPid) skill;
+						handlePositionMove(pidPos.getPos(), pidPos.getOrientation(), con);
+						break;
+					case PENALTY_SHOOT:
+					case TUNE_PID:
+					case GLOBAL_POS_VEL:
+					case GLOBAL_VELOCITY:
+					case ENC_TRAIN:
+					default:
+						log.warn("Unhandled bot skill: " + skill.getType());
+						break;
+				}
 				break;
 			case CMD_KICKER_KICKV2:
 				handleKick((TigerKickerKickV2) cmd, con);
+				break;
+			case CMD_KICKER_KICKV3:
+				handleKick((TigerKickerKickV3) cmd, con);
 				break;
 			case CMD_MOTOR_DRIBBLE:
 				handleDribble((TigerDribble) cmd, con);
 				break;
 			case CMD_CTRL_RESET:
-				// ignore
+				final TigerMotorMoveV2 move = new TigerMotorMoveV2();
+				move.setX(0);
+				move.setY(0);
+				move.setW(0);
+				handleMove(move, con);
+				break;
+			case CMD_SYSTEM_LIMITED_VEL:
+				LimitedVelocityCommand limVelCmd = (LimitedVelocityCommand) cmd;
+				getPerformance().setVelMaxOverride(limVelCmd.getMaxVelocity());
 				break;
 			default:
-				log.debug("Unhandled Command!" + cmd.getType().toString());
+				log.error("Unhandled Command!" + cmd.getType().toString());
 		}
 		
 		con.send();
@@ -234,11 +328,38 @@ public class GrSimBot extends ABot implements IWorldFrameConsumer
 	}
 	
 	
-	private void handlePositionMove(final TigerSkillPositioningCommand cmd, final GrSimConnection con)
+	private void handleTrajectoryMove(final IVector2 dest, final float targetAngle, final float transTime,
+			final GrSimConnection con)
 	{
-		IVector2 dest = cmd.getDestination();
-		float orient = cmd.getOrientation();
-		
+		if (latestWorldFrame != null)
+		{
+			TrackedTigerBot tBot = latestWorldFrame.getBot(getBotID());
+			if (tBot == null)
+			{
+				return;
+			}
+			
+			IVector3 localVel = handleTrajectoryMove(dest, targetAngle, transTime,
+					new Vector3(tBot.getPos(), tBot.getAngle()),
+					new Vector3(tBot.getVel(), tBot.getaVel()), delay, true);
+			velXBuffer = localVel.x();
+			velYBuffer = localVel.y();
+			velZBuffer = localVel.z();
+		}
+		if (Float.isFinite(velXBuffer) && Float.isFinite(velYBuffer) && Float.isFinite(velZBuffer))
+		{
+			con.setVelX(velXBuffer);
+			con.setVelY(velYBuffer);
+			con.setVelZ(velZBuffer);
+		} else
+		{
+			log.error("vel not finite!!!");
+		}
+	}
+	
+	
+	private void handlePositionMove(final IVector2 dest, final float orient, final GrSimConnection con)
+	{
 		con.setWheelSpeed(false);
 		
 		if (latestWorldFrame != null)
@@ -249,13 +370,16 @@ public class GrSimBot extends ABot implements IWorldFrameConsumer
 				log.warn("No bot with id " + getBotID());
 				return;
 			}
-			IVector2 error = dest.subtractNew(bot.getPos()).multiply(0.002f);
-			IVector2 localVel = AiMath.convertGlobalBotVector2Local(error, bot.getAngle());
-			velXBuffer = localVel.y();
-			velYBuffer = -localVel.x();
 			
 			float errorW = orient - bot.getAngle();
 			velZBuffer = AngleMath.normalizeAngle(errorW) * 4;
+			
+			IVector2 error = dest.subtractNew(bot.getPos()).multiply(positionErrorMultiplier);
+			float futureAngle = bot.getAngle() + (velZBuffer * 0.04f);
+			IVector2 localVel = AiMath.convertGlobalBotVector2Local(error, futureAngle);
+			velXBuffer = localVel.y();
+			velYBuffer = -localVel.x();
+			
 		} else
 		{
 			velXBuffer = 0;
@@ -272,18 +396,58 @@ public class GrSimBot extends ABot implements IWorldFrameConsumer
 	 * @param kick
 	 * @param con
 	 */
+	private void handleKick(final TigerKickerKickV3 kick, final GrSimConnection con)
+	{
+		switch (kick.getMode())
+		{
+			case ARM:
+			case DISARM:
+				con.setKickmode(1);
+				con.setKickmode(1);
+				break;
+			case DRIBBLER:
+				log.warn("Dribble-arm not implemented atm");
+				break;
+			case FORCE:
+				con.setKickmode(0);
+				break;
+			case NONE:
+				break;
+			default:
+				break;
+		}
+		
+		con.setKickspeedX(kick.getKickSpeed());
+		con.setKickerDisarm(kick.getMode() == EKickerMode.DISARM);
+		
+		switch (kick.getDevice())
+		{
+			case STRAIGHT:
+				con.setKickspeedZ(0.0f);
+				break;
+			case CHIP:
+				con.setKickspeedZ(kick.getKickSpeed());
+				break;
+		}
+	}
+	
+	
+	/**
+	 * @param kick
+	 * @param con
+	 */
 	private void handleKick(final TigerKickerKickV2 kick, final GrSimConnection con)
 	{
+		// log.trace("Kick: " + kick.getDevice() + " " + kick.getMode() + " " + kick.getFiringDuration());
 		int kickmode = kick.getMode();
 		if (kickmode == 3) // dribble-arm
 		{
-			Timer timer = new Timer();
-			timer.schedule(new TimerTask()
+			GeneralPurposeTimer.getInstance().schedule(new TimerTask()
 			{
-				
 				@Override
 				public void run()
 				{
+					Thread.currentThread().setName("KickerTimerTask");
 					kick.setMode(EKickerMode.ARM);
 					handleKick(kick, con);
 				}
@@ -306,28 +470,27 @@ public class GrSimBot extends ABot implements IWorldFrameConsumer
 				boolean disarm = false;
 				if ((kickmode == 1) || (kickmode == 0)) // Force || Arm
 				{
-					if (kickerDeadtimeActive)
+					// if (kickerDeadtimeActive)
+					// {
+					// con.setKickspeedX(0.0f);
+					// con.setKickspeedZ(0.0f);
+					// } else
+					// {
+					// kickerDeadtimeActive = true;
+					float firingDuration = kick.getFiringDuration();
+					if (firingDuration > 10000.0f)
 					{
-						con.setKickspeedX(0.0f);
-						con.setKickspeedZ(0.0f);
-					} else
-					{
-						kickerDeadtimeActive = true;
-						float firingDuration = kick.getFiringDuration();
-						if (firingDuration > 10000.0f)
-						{
-							firingDuration = 10000.0f;
-						}
-						// TODO something smarter would be great...
-						float kickspeed = ((maxCapacitorVoltage * 0.02f) * (firingDuration * 0.0001f))
-								+ (kick.getLevel() * 0);
-						con.setKickspeedX(kickspeed);
-						con.setKickspeedZ(0.0f);
-						
-						// currentCapacitorVoltage = 0;
-						Timer kickerDeadtime = new Timer();
-						kickerDeadtime.schedule(new KickerDeadTimeTimerTask(), KICKER_DEADTIME_MS);
+						firingDuration = 10000.0f;
 					}
+					// float kickspeed = ((maxCapacitorVoltage * 0.02f) * (firingDuration * 0.0001f))
+					// + (kick.getLevel() * 0);
+					float kickspeed = kickModel.getKickSpeed(firingDuration);
+					con.setKickspeedX(kickspeed);
+					con.setKickspeedZ(0.0f);
+					
+					// currentCapacitorVoltage = 0;
+					// GeneralPurposeTimer.getInstance().schedule(new KickerDeadTimeTimerTask(), KICKER_DEADTIME_MS);
+					// }
 				} else if (kick.getMode() == 2)
 				{
 					disarm = true;
@@ -340,27 +503,26 @@ public class GrSimBot extends ABot implements IWorldFrameConsumer
 				boolean disarm = false;
 				if ((kickmode == 1) || (kickmode == 0)) // Force || Arm
 				{
-					if (kickerDeadtimeActive)
+					// if (kickerDeadtimeActive)
+					// {
+					// con.setKickspeedX(0.0f);
+					// con.setKickspeedZ(0.0f);
+					// } else
+					// {
+					// kickerDeadtimeActive = true;
+					float firingDuration = kick.getFiringDuration();
+					if (firingDuration > 10000.0f)
 					{
-						con.setKickspeedX(0.0f);
-						con.setKickspeedZ(0.0f);
-					} else
-					{
-						kickerDeadtimeActive = true;
-						float firingDuration = kick.getFiringDuration();
-						if (firingDuration > 10000.0f)
-						{
-							firingDuration = 10000.0f;
-						}
-						float kickspeed = (((maxCapacitorVoltage * 0.03f) * (firingDuration * 0.0001f)) / 2)
-								+ (kick.getLevel() * 0); // TODO something smarter would be great...
-						con.setKickspeedZ(kickspeed);
-						con.setKickspeedX(kickspeed);
-						
-						// currentCapacitorVoltage = 0;
-						Timer kickerDeadtime = new Timer();
-						kickerDeadtime.schedule(new KickerDeadTimeTimerTask(), KICKER_DEADTIME_MS);
+						firingDuration = 10000.0f;
 					}
+					float kickspeed = (((maxCapacitorVoltage * 0.045f) * (firingDuration * 0.0001f)) / 2)
+							+ (kick.getLevel() * 0); // TODO something smarter would be great...
+					con.setKickspeedZ(kickspeed);
+					con.setKickspeedX(kickspeed);
+					
+					// currentCapacitorVoltage = 0;
+					// GeneralPurposeTimer.getInstance().schedule(new KickerDeadTimeTimerTask(), KICKER_DEADTIME_MS);
+					// }
 				} else if (kick.getMode() == 2)
 				{
 					disarm = true;
@@ -411,22 +573,14 @@ public class GrSimBot extends ABot implements IWorldFrameConsumer
 		{
 			log.error("Could not find WP module", err);
 		}
-	}
-	
-	
-	/**
-	 * @param networkState the networkState to set
-	 */
-	public final void setNetworkState(final ENetworkState networkState)
-	{
-		this.networkState = networkState;
-		notifyNetworkStateChanged(networkState);
+		super.start();
 	}
 	
 	
 	@Override
 	public void stop()
 	{
+		super.stop();
 		AWorldPredictor wp;
 		try
 		{
@@ -451,13 +605,6 @@ public class GrSimBot extends ABot implements IWorldFrameConsumer
 	public float getKickerLevel()
 	{
 		return currentCapacitorVoltage;
-	}
-	
-	
-	@Override
-	public ENetworkState getNetworkState()
-	{
-		return networkState;
 	}
 	
 	
@@ -495,15 +642,9 @@ public class GrSimBot extends ABot implements IWorldFrameConsumer
 	
 	
 	@Override
-	public void onNewSimpleWorldFrame(final SimpleWorldFrame worldFrame)
+	public void onNewWorldFrame(final WorldFrameWrapper wFrame)
 	{
-		latestWorldFrame = worldFrame;
-	}
-	
-	
-	@Override
-	public void onNewWorldFrame(final WorldFrame wFrame)
-	{
+		latestWorldFrame = wFrame.getSimpleWorldFrame();
 	}
 	
 	
@@ -514,16 +655,35 @@ public class GrSimBot extends ABot implements IWorldFrameConsumer
 	
 	
 	@Override
-	public void onVisionSignalLost(final SimpleWorldFrame emptyWf)
-	{
-		latestWorldFrame = null;
-	}
-	
-	
-	@Override
 	public float getKickerLevelMax()
 	{
 		return 200;
 	}
 	
+	
+	@Override
+	public boolean isAvailableToAi()
+	{
+		if (super.isAvailableToAi())
+		{
+			return getNetworkState() == ENetworkState.ONLINE;
+		}
+		return false;
+	}
+	
+	
+	/**
+	 * @return the status
+	 */
+	public final GrSimStatus getStatus()
+	{
+		return status;
+	}
+	
+	
+	@Override
+	public float getCenter2DribblerDist()
+	{
+		return center2DribblerDist;
+	}
 }

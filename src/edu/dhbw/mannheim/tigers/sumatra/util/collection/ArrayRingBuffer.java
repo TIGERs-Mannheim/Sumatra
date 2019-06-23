@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 28.07.2010
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.util.collection;
@@ -56,7 +55,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	 */
 	@SuppressWarnings("unchecked")
 	// Allowed here, obviously...
-	public ArrayRingBuffer(int size)
+	public ArrayRingBuffer(final int size)
 	{
 		this.store = (D[]) new Object[size];
 		this.size = size;
@@ -75,7 +74,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	}
 	
 	
-	private int dec(int pos)
+	private int dec(final int pos)
 	{
 		return ((head - 1) + size) % size;
 	}
@@ -91,13 +90,13 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	}
 	
 	
-	private int inc(int pos)
+	private int inc(final int pos)
 	{
 		return (pos + 1) % size;
 	}
 	
 	
-	private boolean addAtFront(D param)
+	private boolean addAtFront(final D param)
 	{
 		synchronized (sync)
 		{
@@ -188,7 +187,6 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 		{
 			if (arr.length >= size())
 			{
-				// System.arraycopy(store, 0, arr, 0, size());
 				fillArray(arr);
 			} else
 			{
@@ -208,7 +206,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	}
 	
 	
-	private void fillArray(Object[] arr)
+	private void fillArray(final Object[] arr)
 	{
 		final Iterator<D> it = iterator();
 		int i = 0;
@@ -221,7 +219,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	
 	
 	@Override
-	public boolean containsAll(Collection<?> paramCollection)
+	public boolean containsAll(final Collection<?> paramCollection)
 	{
 		synchronized (sync)
 		{
@@ -253,7 +251,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
 	@Override
-	public boolean addAll(Collection<? extends D> paramCollection)
+	public boolean addAll(final Collection<? extends D> paramCollection)
 	{
 		throw new UnsupportedOperationException("addAll(Objects) is not supported!");
 	}
@@ -263,7 +261,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
 	@Override
-	public boolean removeAll(Collection<?> paramCollection)
+	public boolean removeAll(final Collection<?> paramCollection)
 	{
 		throw new UnsupportedOperationException("removeAll(Objects) is not supported!");
 	}
@@ -273,7 +271,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
 	@Override
-	public boolean retainAll(Collection<?> paramCollection)
+	public boolean retainAll(final Collection<?> paramCollection)
 	{
 		throw new UnsupportedOperationException("retainAll(Objects) is not supported!");
 	}
@@ -300,7 +298,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	
 	
 	@Override
-	public void addFirst(D paramE)
+	public void addFirst(final D paramE)
 	{
 		synchronized (sync)
 		{
@@ -318,7 +316,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
 	@Override
-	public void addLast(D paramE)
+	public void addLast(final D paramE)
 	{
 		throw new UnsupportedOperationException("addLast is not supported!");
 	}
@@ -328,7 +326,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
 	@Override
-	public boolean offerFirst(D paramE)
+	public boolean offerFirst(final D paramE)
 	{
 		throw new UnsupportedOperationException("offerFirst is not supported!");
 	}
@@ -338,7 +336,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
 	@Override
-	public boolean offerLast(D paramE)
+	public boolean offerLast(final D paramE)
 	{
 		throw new UnsupportedOperationException("offerLast is not supported!");
 	}
@@ -444,7 +442,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
 	@Override
-	public boolean removeFirstOccurrence(Object paramObject)
+	public boolean removeFirstOccurrence(final Object paramObject)
 	{
 		throw new UnsupportedOperationException("removeFirstOccurrence is not supported!");
 	}
@@ -454,7 +452,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
 	@Override
-	public boolean removeLastOccurrence(Object paramObject)
+	public boolean removeLastOccurrence(final Object paramObject)
 	{
 		throw new UnsupportedOperationException("removeLastOccurrence is not supported!");
 	}
@@ -464,7 +462,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
 	@Override
-	public boolean add(D paramE)
+	public boolean add(final D paramE)
 	{
 		throw new UnsupportedOperationException("add is not supported!");
 	}
@@ -474,7 +472,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
 	@Override
-	public boolean offer(D paramE)
+	public boolean offer(final D paramE)
 	{
 		throw new UnsupportedOperationException("offer is not supported!");
 	}
@@ -521,7 +519,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	
 	
 	@Override
-	public void push(D paramE)
+	public void push(final D paramE)
 	{
 		synchronized (sync)
 		{
@@ -544,7 +542,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
 	@Override
-	public boolean remove(Object paramObject)
+	public boolean remove(final Object paramObject)
 	{
 		throw new UnsupportedOperationException("remove(Object) is not supported!");
 	}
@@ -554,7 +552,7 @@ public class ArrayRingBuffer<D> implements Deque<D>, Serializable
 	 * <strong>NOT (YET) SUPPORTED!</strong>
 	 */
 	@Override
-	public boolean contains(Object paramObject)
+	public boolean contains(final Object paramObject)
 	{
 		throw new UnsupportedOperationException("contains(Object) is not supported!");
 	}

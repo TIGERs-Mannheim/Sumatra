@@ -28,16 +28,16 @@ public class TigerMotorMoveV2 extends ACommand
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	/** x component, [mm/s], int16_t */
-	@SerialData(type = ESerialDataType.UINT16)
+	@SerialData(type = ESerialDataType.INT16)
 	private int			x;
 	/** y component, [mm/s], int16_t */
-	@SerialData(type = ESerialDataType.UINT16)
+	@SerialData(type = ESerialDataType.INT16)
 	private int			y;
 	/** non-compensated angular velocity */
-	@SerialData(type = ESerialDataType.UINT16)
+	@SerialData(type = ESerialDataType.INT16)
 	private int			w;
 	/** compensated angular velocity */
-	@SerialData(type = ESerialDataType.UINT16)
+	@SerialData(type = ESerialDataType.INT16)
 	private int			v;
 	
 	private boolean	dirUsed	= false;
@@ -260,5 +260,14 @@ public class TigerMotorMoveV2 extends ACommand
 		{
 			setV(vv);
 		}
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public boolean isAllFilled()
+	{
+		return dirUsed && wUsed;
 	}
 }

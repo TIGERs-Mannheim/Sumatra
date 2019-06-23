@@ -10,10 +10,11 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai;
 
 import java.util.List;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.IDrawableShape;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMap;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.EPlay;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter.EAIControlState;
 
 
@@ -38,21 +39,23 @@ public interface IPlayStrategy
 	
 	
 	/**
+	 * @param roleType
+	 * @return
+	 */
+	List<ARole> getActiveRoles(final ERole roleType);
+	
+	
+	/**
+	 * @param playType
+	 * @return
+	 */
+	List<ARole> getActiveRoles(final EPlay playType);
+	
+	
+	/**
 	 * @return
 	 */
 	List<APlay> getFinishedPlays();
-	
-	
-	/**
-	 * @return
-	 */
-	BotConnection getBotConnection();
-	
-	
-	/**
-	 * @return the debugShapes
-	 */
-	List<IDrawableShape> getDebugShapes();
 	
 	
 	/**

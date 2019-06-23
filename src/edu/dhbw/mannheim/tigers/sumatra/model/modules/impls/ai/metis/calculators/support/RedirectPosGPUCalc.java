@@ -17,8 +17,16 @@ import static org.jocl.CL.clEnqueueReadBuffer;
 import static org.jocl.CL.clReleaseMemObject;
 import static org.jocl.CL.clSetKernelArg;
 
+import java.awt.Color;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.log4j.Logger;
@@ -26,22 +34,29 @@ import org.jocl.CL;
 import org.jocl.Pointer;
 import org.jocl.Sizeof;
 import org.jocl.cl_mem;
+import org.json.simple.JSONValue;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.ValuedField;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.BaseAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.OpenClContext;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.OpenClHandler;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.EGameState;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.TacticalField;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ballpossession.EBallPossession;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.IDrawableShape;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.Circle;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.DrawableCircle;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.ACalculator;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.IConfigObserver;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.ConfigRegistration;
 import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.EConfigurableCat;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.EDrawableShapesLayer;
 
 
 /**
@@ -51,129 +66,224 @@ import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
  */
 public class RedirectPosGPUCalc extends ACalculator implements IConfigObserver
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	private static final Logger			log									= Logger.getLogger(RedirectPosGPUCalc.class
-																									.getName());
-	private OpenClContext					pm;
-	
-	@Configurable(comment = "RaySize for visibility checks")
-	private static int						raySize								= 100;
+	private static final Logger					log				= Logger
+																						.getLogger(RedirectPosGPUCalc.class
+																								.getName());
+	private static final int						MAX_FOE_BOTS	= 6;
+	private OpenClContext							pm;
 	
 	@Configurable(comment = "Number of points to check on x axis")
-	private static int						numX									= 128;
+	private static int								numX				= 88;
 	@Configurable(comment = "Number of points to check on y axis")
-	private static int						numY									= 64;
+	private static int								numY				= 66;
 	
-	@Configurable(comment = "Distance to the Ball (Free Kicks)")
-	private static int						distanceBallFreeKick				= 600;
-	
-	@Configurable
-	private static int						fieldUpperBoundX					= 200;
-	@Configurable
-	private static int						fieldLowerBoundX					= -2000;
-	
-	@Configurable
-	private static float						maxAngleTol							= AngleMath.PI_QUART;
-	
-	private boolean							recreateKernel						= false;
-	@Configurable
-	private static float						nearBallTol							= 500;
-	@Configurable
-	private static float						dist2BotsTol						= 100;
-	@Configurable
-	private static float						dist2BlockLineTol					= AIConfig.getGeometry().getBotRadius();
-	@Configurable
-	private static float						rotationWeight						= 0.3f;
-	@Configurable
-	private static float						dist2BotsWeight					= 0.05f;
-	@Configurable
-	private static float						p2pVisTargetWeight				= 0.2f;
-	@Configurable
-	private static float						p2pVisReceiverWeight				= 0.2f;
-	@Configurable
-	private static float						dist2BallWeight					= 0.05f;
-	@Configurable
-	private static float						dist2TargetWeight					= 0.1f;
-	@Configurable
-	private static float						dist2ShooterWeight				= 0.1f;
-	@Configurable
-	private static float						goalPostAngleWeight				= 0.1f;
-	@Configurable
-	private static float						visibilityOfOtherBotsWeight	= 1.0f;
-	@Configurable
-	private static float						blockPosWeight						= 0.2f;
-	@Configurable
-	private static float						blockPosDefenseWeight			= 0.5f;
-	@Configurable
-	private static float						directShootingLineWeight		= 0.2f;
-	@Configurable
-	private static float						freeZoneAroundPenalty			= 1000.0f;
-	
-	private static float						dist2TargetTol						= AIConfig.getGeometry().getPenaltyAreaTheir()
-																									.getRadiusOfPenaltyArea()
-																									+ AIConfig.getGeometry()
-																											.getPenaltyAreaTheir()
-																											.getLengthOfPenaltyAreaFrontLineHalf()
-																									+ 50;
-	
-	private static float						dist2OurGoal						= AIConfig.getGeometry().getPenaltyAreaTheir()
-																									.getRadiusOfPenaltyArea()
-																									+ AIConfig.getGeometry()
-																											.getPenaltyAreaTheir()
-																											.getLengthOfPenaltyAreaFrontLineHalf()
-																									+ freeZoneAroundPenalty;
-	
-	private int[]								gameStateID							= new int[1];
-	
-	private int[]								offenseOrDefense					= new int[1];
-	private EOffenseOrDeffenseSupporter	offenseOrDefenseEnum;
+	@Configurable(comment = "How many top values should be searched for?")
+	private static int								numTopValues	= 100;
 	
 	
-	private enum GameStateID
+	private final cl_mem								memObjects[]	= new cl_mem[6];
+	private boolean									runLastFrame	= false;
+	private boolean									recreateKernel	= false;
+	
+	private final int									botPosX[]		= new int[MAX_FOE_BOTS];
+	private final int									botPosY[]		= new int[MAX_FOE_BOTS];
+	private final int									ballPos[]		= new int[2];
+	private final int[]								paramsArr		= new int[EParameter.values().length];
+	private final float[]							weightsArr		= new float[EScoringTypes.values().length];
+	private float										dstArray[];
+	
+	private final Pointer							ptrBotPosX		= Pointer.to(botPosX);
+	private final Pointer							ptrBotPosY		= Pointer.to(botPosY);
+	private final Pointer							ptrBallPos		= Pointer.to(ballPos);
+	private final Pointer							ptrParams		= Pointer.to(paramsArr);
+	private final Pointer							ptrWeights		= Pointer.to(weightsArr);
+	private Pointer									dst;
+	
+	private final Map<EParameter, Integer>		parameters		= new EnumMap<>(EParameter.class);
+	private final Map<EScoringTypes, Float>	weights			= new EnumMap<>(EScoringTypes.class);
+	
+	@Configurable(comment = "[DEG] max reasonable redirect angle")
+	private static int								maxAngle			= 120;
+	@Configurable(comment = "[DEG] min reasonable redirect angle")
+	private static int								minAngle			= 40;
+	@Configurable(comment = "Max possible/reasonable passing range")
+	private static int								maxDistBall		= 5000;
+	@Configurable(comment = "Min possible/reasonable passing range")
+	private static int								minDistBall		= 500;
+	@Configurable(comment = "Max possible/reasonable shooting range")
+	private static int								maxDistGoal		= 5000;
+	@Configurable(comment = "Min possible/reasonable shooting range")
+	private static int								minDistGoal		= 2000;
+	@Configurable(comment = "ray size for visibility check (excluding bot radius)")
+	private static int								visRaySize		= 500;
+	@Configurable(comment = "Max possible/reasonable passing range")
+	private static int								maxVisDist		= 6000;
+	
+	/**
+	 */
+	public enum EScoringTypes
 	{
-		RUNNING,
-		DIST_BALL,
-		DIST_BALL_BLOCK,
-		DIST_BALL_OURFIELD,
-		PENALTY
+		/**  */
+		DIST_TO_BALL,
+		/**  */
+		VIS_TO_BALL,
+		/**  */
+		ANGLE_BALL_GOAL,
+		/**  */
+		DIST_GOAL,
+		/**  */
+		VIS_GOAL,
+		/**  */
+		ANGLE_GOAL_VIEW
 	}
 	
-	private enum EOffenseOrDeffenseSupporter
+	private enum EParameter
 	{
-		OFFENSE,
-		DEFENSE
+		NUM_OPPONENTS,
+		NUM_TIGERS,
+		MAX_ANGLE,
+		MIN_ANGLE,
+		MAX_DIST_GOAL,
+		MIN_DIST_GOAL,
+		MAX_DIST_BALL,
+		MIN_DIST_BALL,
+		VIS_RAY_SIZE,
+		MAX_VIS_DIST
 	}
 	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 */
 	public RedirectPosGPUCalc()
 	{
 		super();
+		applyParameters();
+		weights.put(EScoringTypes.ANGLE_BALL_GOAL, 0f);
+		weights.put(EScoringTypes.ANGLE_GOAL_VIEW, 0f);
+		weights.put(EScoringTypes.DIST_GOAL, 1f);
+		weights.put(EScoringTypes.DIST_TO_BALL, 0f);
+		weights.put(EScoringTypes.VIS_GOAL, 0f);
+		weights.put(EScoringTypes.VIS_TO_BALL, 0f);
+		String cfgName = SumatraModel.getInstance().getUserProperty(
+				RedirectPosGPUCalc.class.getCanonicalName() + ".config",
+				"default.cfg");
+		loadWeights(cfgName);
 		init();
-		AIConfig.getMetisClient().addObserver(this);
+		ConfigRegistration.registerConfigurableCallback(EConfigurableCat.METIS, this);
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
+	private void applyParameters()
+	{
+		parameters.put(EParameter.MAX_ANGLE, maxAngle);
+		parameters.put(EParameter.MIN_ANGLE, minAngle);
+		parameters.put(EParameter.MAX_DIST_BALL, maxDistBall);
+		parameters.put(EParameter.MIN_DIST_BALL, minDistBall);
+		parameters.put(EParameter.MAX_DIST_GOAL, maxDistGoal);
+		parameters.put(EParameter.MIN_DIST_GOAL, minDistGoal);
+		parameters.put(EParameter.VIS_RAY_SIZE, visRaySize);
+		parameters.put(EParameter.MAX_VIS_DIST, maxVisDist);
+		parameters.put(EParameter.NUM_TIGERS, 0);
+		
+		for (Map.Entry<EParameter, Integer> entry : parameters.entrySet())
+		{
+			paramsArr[entry.getKey().ordinal()] = entry.getValue();
+		}
+	}
+	
+	
+	@Override
+	public void deinit()
+	{
+		ConfigRegistration.unregisterConfigurableCallback(EConfigurableCat.METIS, this);
+		if (runLastFrame)
+		{
+			// Release kernel, program, and memory objects
+			for (cl_mem memobj : memObjects)
+			{
+				clReleaseMemObject(memobj);
+			}
+		}
+	}
+	
+	
+	/**
+	 * Update the given weight by adapting all either weights to that all weights
+	 * are normalized again
+	 * 
+	 * @param type
+	 * @param value
+	 */
+	public void updateWeight(final EScoringTypes type, final float value)
+	{
+		assert (value >= 0) && (value <= 1) : "Invalid value: " + value;
+		float partialSum = (float) weights.entrySet().stream().filter(e -> e.getKey() != type)
+				.mapToDouble(e -> e.getValue()).sum();
+		if (partialSum < 1e-6)
+		{
+			// reject weight change. All others already zero
+			return;
+		}
+		// apply current value
+		weights.put(type, value);
+		// adapt other weights
+		weights.entrySet().stream().filter(e -> e.getKey() != type)
+				.forEach((e) -> e.setValue((e.getValue() / partialSum) * (1 - value)));
+		// update array
+		weights.entrySet().forEach(entry -> weightsArr[entry.getKey().ordinal()] = entry.getValue());
+	}
+	
+	
+	/**
+	 * @param name
+	 */
+	public void saveWeights(final String name)
+	{
+		String filename = name;
+		if (!filename.endsWith(".cfg"))
+		{
+			filename += ".cfg";
+		}
+		String jsonString = JSONValue.toJSONString(weights);
+		try
+		{
+			Files.write(Paths.get("config", "support", filename), jsonString.getBytes());
+			SumatraModel.getInstance().setUserProperty(RedirectPosGPUCalc.class.getCanonicalName() + ".config", filename);
+		} catch (IOException err)
+		{
+			log.error("Could not write weightings " + filename, err);
+		}
+	}
+	
+	
+	/**
+	 * @param name
+	 */
+	public void loadWeights(final String name)
+	{
+		try
+		{
+			byte[] bytes = Files.readAllBytes(Paths.get("config", "support", name));
+			String jsonString = new String(bytes);
+			@SuppressWarnings("unchecked")
+			Map<String, Object> map = (Map<String, Object>) JSONValue.parse(jsonString);
+			for (Map.Entry<String, Object> entry : map.entrySet())
+			{
+				Float val = (float) (double) entry.getValue();
+				EScoringTypes scType = EScoringTypes.valueOf(entry.getKey());
+				weights.put(scType, val);
+				weightsArr[scType.ordinal()] = val;
+			}
+			SumatraModel.getInstance().setUserProperty(RedirectPosGPUCalc.class.getCanonicalName() + ".config", name);
+		} catch (IOException err)
+		{
+			log.error("Could not read weights " + name, err);
+		}
+	}
+	
 	
 	private void init()
 	{
-		dist2TargetTol = AIConfig.getGeometry().getPenaltyAreaTheir().getRadiusOfPenaltyArea()
-				+ AIConfig.getGeometry().getPenaltyAreaTheir().getLengthOfPenaltyAreaFrontLineHalf();
-		dist2OurGoal = AIConfig.getGeometry().getPenaltyAreaTheir().getRadiusOfPenaltyArea()
-				+ AIConfig.getGeometry().getPenaltyAreaTheir().getLengthOfPenaltyAreaFrontLineHalf()
-				+ freeZoneAroundPenalty;
-		
 		if (OpenClHandler.isOpenClSupported())
 		{
 			pm = new OpenClContext();
@@ -183,61 +293,86 @@ public class RedirectPosGPUCalc extends ACalculator implements IConfigObserver
 			return;
 		}
 		
+		// normalize weights
+		float sum = (float) weights.values().stream().mapToDouble(w -> w).sum();
+		weights.entrySet().forEach((e) -> e.setValue(e.getValue() / sum));
+		
+		for (Map.Entry<EScoringTypes, Float> entry : weights.entrySet())
+		{
+			weightsArr[entry.getKey().ordinal()] = entry.getValue();
+		}
+		
 		pm.loadSourceFile("data.h");
 		
-		pm.loadSource("#ifndef MPI\n#define M_PI " + AngleMath.PI + "\n#endif\n");
-		
-		// Enum EOffenseOrDeffenseSupporter
-		pm.loadSource("#define OFFENSE_SUPPORTER " + EOffenseOrDeffenseSupporter.OFFENSE.ordinal() + "\n");
-		pm.loadSource("#define DEFENSE_SUPPORTER " + EOffenseOrDeffenseSupporter.DEFENSE.ordinal() + "\n");
-		
-		// Enum GameStateID
-		pm.loadSource("#define RUNNING " + GameStateID.RUNNING.ordinal() + "\n");
-		pm.loadSource("#define DIST_BALL " + GameStateID.DIST_BALL.ordinal() + "\n");
-		pm.loadSource("#define DIST_BALL_BLOCK " + GameStateID.DIST_BALL_BLOCK.ordinal() + "\n");
-		pm.loadSource("#define DIST_BALL_OURFIELD " + GameStateID.DIST_BALL_OURFIELD.ordinal() + "\n");
-		pm.loadSource("#define PENALTY " + GameStateID.PENALTY.ordinal() + "\n");
+		pm.loadSource("#ifndef M_PI\n#define M_PI " + AngleMath.PI + "\n#endif\n");
 		
 		// Sumatra const
 		pm.loadSource("#define GOAL_WIDTH " + AIConfig.getGeometry().getGoalSize() + "\n");
-		pm.loadSource("#define CENTER_CIRCLE_RADIUS " + AIConfig.getGeometry().getCenterCircleRadius() + "\n");
 		pm.loadSource("#define FIELD_LENGTH " + AIConfig.getGeometry().getField().xExtend() + "\n");
 		pm.loadSource("#define FIELD_WIDTH " + AIConfig.getGeometry().getField().yExtend() + "\n");
 		pm.loadSource("#define BALL_RADIUS " + AIConfig.getGeometry().getBallRadius() + "\n");
 		pm.loadSource("#define BOT_RADIUS " + AIConfig.getGeometry().getBotRadius() + "\n");
-		pm.loadSource("#define DRIBBLER_DIST " + AIConfig.getGeometry().getBotCenterToDribblerDist() + "\n");
-		pm.loadSource("#define PENALTY_LINE_THEIR_X " + AIConfig.getGeometry().getPenaltyLineTheir().x() + "\n");
+		pm.loadSource("#define PEN_AREA_RADIUS "
+				+ (AIConfig.getGeometry().getPenaltyAreaTheir().getRadiusOfPenaltyArea()
+						+ AIConfig.getGeometry().getPenaltyAreaTheir().getLengthOfPenaltyAreaFrontLineHalf() + AIConfig
+						.getGeometry().getBotRadius())
+				+ "\n");
 		
-		// Config Parameter
-		pm.loadSource("#define DIST_BALL_FREEKICK " + distanceBallFreeKick + "\n");
-		pm.loadSource("#define MAX_ANGLE_TOL " + maxAngleTol + "\n");
-		pm.loadSource("#define RAY_SIZE " + raySize + "\n");
-		pm.loadSource("#define FIELD_UPPER_BOUND_X " + fieldUpperBoundX + "\n");
-		pm.loadSource("#define FIELD_LOWER_BOUND_X " + fieldLowerBoundX + "\n");
-		pm.loadSource("#define NEAR_BALL ((float)" + nearBallTol + ")\n");
-		pm.loadSource("#define DIST_2_BOTS ((float)" + dist2BotsTol + ")\n");
-		pm.loadSource("#define DIST_2_TARGET ((float)" + dist2TargetTol + ")\n");
-		pm.loadSource("#define DIST_2_OUR_GOAL ((float)" + dist2OurGoal + ")\n");
-		pm.loadSource("#define DIST_2_BLOCKLINE ((float)" + dist2BlockLineTol + ")\n");
+		pm.loadSource("#define NUM_SCORES " + EScoringTypes.values().length + "\n");
 		
-		// Config Parameter Weight
-		pm.loadSource("#define W_ROTATION " + rotationWeight + "\n");
-		pm.loadSource("#define W_DIST2BOTS " + dist2BotsWeight + "\n");
-		pm.loadSource("#define W_P2P_VIS_TARGET " + p2pVisTargetWeight + "\n");
-		pm.loadSource("#define W_P2P_VIS_RECEIVER " + p2pVisReceiverWeight + "\n");
-		pm.loadSource("#define W_DIST_TARGET " + dist2TargetWeight + "\n");
-		pm.loadSource("#define W_DIST_SHOOTER " + dist2ShooterWeight + "\n");
-		pm.loadSource("#define W_DIST_BALL " + dist2BallWeight + "\n");
-		pm.loadSource("#define W_BLOCK " + blockPosWeight + "\n");
-		pm.loadSource("#define W_BLOCK_DEFENSE " + blockPosDefenseWeight + "\n");
-		pm.loadSource("#define W_GOAL_POST_ANGLE " + goalPostAngleWeight + "\n");
-		pm.loadSource("#define W_VIS_BOTS " + visibilityOfOtherBotsWeight + "\n");
-		pm.loadSource("#define W_DSHOOT_LINE " + directShootingLineWeight + "\n");
+		for (EParameter param : EParameter.values())
+		{
+			pm.loadSource("#define " + param.name() + " " + param.ordinal() + "\n");
+		}
+		
+		for (EScoringTypes st : EScoringTypes.values())
+		{
+			pm.loadSource("#define " + st.name() + " " + st.ordinal() + "\n");
+		}
 		
 		pm.loadSourceFile("GeoMath.c");
 		pm.loadSourceFile("AiMath.c");
 		pm.loadSourceFile("redirectPos.c");
-		pm.createProgram("redirect_pos");
+		
+		pm.loadSourceFile("non_max_sup.c");
+		
+		boolean created = pm.createProgram("redirect_pos") != null;
+		if (!created)
+		{
+			log.error("Could not create kernel!");
+			pm = null;
+			return;
+		}
+		
+		dstArray = new float[numY * numX];
+		dst = Pointer.to(dstArray);
+		
+		// input args
+		memObjects[0] = clCreateBuffer(pm.getContext(), CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, Sizeof.cl_int
+				* MAX_FOE_BOTS,
+				ptrBotPosX, null);
+		memObjects[1] = clCreateBuffer(pm.getContext(), CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, Sizeof.cl_int
+				* MAX_FOE_BOTS,
+				ptrBotPosY, null);
+		memObjects[2] = clCreateBuffer(pm.getContext(), CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, Sizeof.cl_int * 2,
+				ptrBallPos, null);
+		memObjects[3] = clCreateBuffer(pm.getContext(), CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, Sizeof.cl_int
+				* paramsArr.length,
+				ptrParams, null);
+		memObjects[4] = clCreateBuffer(pm.getContext(), CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, Sizeof.cl_float
+				* weightsArr.length,
+				ptrWeights, null);
+		
+		// output
+		memObjects[5] = clCreateBuffer(pm.getContext(), CL.CL_MEM_READ_WRITE | CL.CL_MEM_COPY_HOST_PTR, Sizeof.cl_float
+				* numY * numX, dst,
+				null);
+		
+		// Set the arguments for the kernel
+		for (int i = 0; i < 6; i++)
+		{
+			clSetKernelArg(pm.getKernel(), i, Sizeof.cl_mem, Pointer.to(memObjects[i]));
+		}
 	}
 	
 	
@@ -250,15 +385,37 @@ public class RedirectPosGPUCalc extends ACalculator implements IConfigObserver
 	@Override
 	public void onReload(final HierarchicalConfiguration freshConfig)
 	{
+		applyParameters();
 		recreateKernel = true;
+	}
+	
+	
+	private static int[] findTopKHeap(final float[] arr, final int k)
+	{
+		PriorityQueue<KeyValue> pq = new PriorityQueue<>();
+		for (int i = 0; i < arr.length; i++)
+		{
+			if (pq.size() < k)
+			{
+				pq.add(new KeyValue(i, arr[i]));
+			} else if (pq.peek().f > arr[i])
+			{
+				pq.poll();
+				pq.add(new KeyValue(i, arr[i]));
+			}
+		}
+		int[] res = new int[k];
+		for (int i = 0; i < k; i++)
+		{
+			res[i] = pq.poll().i;
+		}
+		return res;
 	}
 	
 	
 	@Override
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
-		EGameState gameState = newTacticalField.getGameState();
-		
 		if (pm == null)
 		{
 			return;
@@ -272,98 +429,74 @@ public class RedirectPosGPUCalc extends ACalculator implements IConfigObserver
 			init();
 		}
 		
+		if (runLastFrame)
+		{
+			// Read the output data
+			clEnqueueReadBuffer(pm.getCommandQueue(), memObjects[5], CL_TRUE, 0, Sizeof.cl_float * dstArray.length,
+					dst, 0, null, null);
+			
+			ValuedField field = new ValuedField(dstArray.clone(), numX, numY, 0);
+			newTacticalField.setSupporterValuedField(field);
+			
+			int[] indexes = findTopKHeap(dstArray, numTopValues);
+			
+			List<IDrawableShape> shapes = new ArrayList<>();
+			for (int i = 0; i < numTopValues; i++)
+			{
+				int x = indexes[i] % numX;
+				int y = indexes[i] / numX;
+				IVector2 p = field.getPointOnField(x, y);
+				int alpha = Math.max(35, Math.min(120, (int) (140 - (((i * 100) / ((double) numTopValues)) * 2.5)) - 50));
+				
+				DrawableCircle dc = new DrawableCircle(
+						new Circle(p, (float) (100 - ((i * 100) / ((double) numTopValues)))), new Color(255, 10, 000, alpha));
+				dc.setFill(true);
+				shapes.add(dc);
+				newTacticalField.getTopGpuGridPositions().add(p);
+			}
+			newTacticalField.getDrawableShapes().put(EDrawableShapesLayer.TOP_GPU_GRID, shapes);
+		}
+		runLastFrame = false;
+		
 		WorldFrame wFrame = baseAiFrame.getWorldFrame();
-		int numBots = wFrame.getBots().size();
 		
-		if (wFrame.getTigerBotsAvailable().isEmpty())
-		{
-			return;
-		}
+		ballPos[0] = (int) wFrame.getBall().getPos().x();
+		ballPos[1] = (int) wFrame.getBall().getPos().y();
 		
-		int numB = wFrame.getTigerBotsAvailable().size();
-		int botPosX[] = new int[numBots];
-		int botPosY[] = new int[numBots];
-		int ballPos[] = new int[2];
-		gameStateID = getGameStateID(gameState);
-		offenseOrDefense = getOffenseOrDeffenseForSupporters(newTacticalField);
-		
-		int botI = 0;
-		for (TrackedTigerBot bot : wFrame.getTigerBotsAvailable().values())
-		{
-			botPosX[botI] = (int) bot.getPos().x();
-			botPosY[botI] = (int) bot.getPos().y();
-			botI++;
-		}
+		int numBots = 0;
 		for (TrackedTigerBot bot : wFrame.getFoeBots().values())
 		{
 			if (!AIConfig.getGeometry().getFieldWBorders().isPointInShape(bot.getPos()))
 			{
 				continue;
 			}
-			botPosX[botI] = (int) bot.getPos().x();
-			botPosY[botI] = (int) bot.getPos().y();
-			botI++;
+			if (numBots >= MAX_FOE_BOTS)
+			{
+				break;
+			}
+			botPosX[numBots] = (int) bot.getPos().x();
+			botPosY[numBots] = (int) bot.getPos().y();
+			numBots++;
 		}
 		
-		numBots = botI;
+		paramsArr[EParameter.NUM_OPPONENTS.ordinal()] = numBots;
 		
-		ballPos[0] = (int) wFrame.getBall().getPos().x();
-		ballPos[1] = (int) wFrame.getBall().getPos().y();
+		CL.clEnqueueWriteBuffer(pm.getCommandQueue(), memObjects[0], CL.CL_FALSE, 0, Sizeof.cl_int
+				* MAX_FOE_BOTS, ptrBotPosX, 0, null, null);
+		CL.clEnqueueWriteBuffer(pm.getCommandQueue(), memObjects[1], CL.CL_FALSE, 0, Sizeof.cl_int
+				* MAX_FOE_BOTS, ptrBotPosY, 0, null, null);
+		CL.clEnqueueWriteBuffer(pm.getCommandQueue(), memObjects[2], CL.CL_FALSE, 0, Sizeof.cl_int
+				* 2, ptrBallPos, 0, null, null);
+		CL.clEnqueueWriteBuffer(pm.getCommandQueue(), memObjects[3], CL.CL_FALSE, 0, Sizeof.cl_int
+				* paramsArr.length, ptrParams, 0, null, null);
+		CL.clEnqueueWriteBuffer(pm.getCommandQueue(), memObjects[4], CL.CL_FALSE, 0, Sizeof.cl_float
+				* weightsArr.length, ptrWeights, 0, null, null);
 		
-		float dstArray[] = new float[numY * numX * numB];
-		Pointer dst = Pointer.to(dstArray);
-		
-		cl_mem memObjects[] = new cl_mem[7];
-		
-		memObjects[0] = clCreateBuffer(pm.getContext(), CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, Sizeof.cl_int * numBots,
-				Pointer.to(botPosX), null);
-		memObjects[1] = clCreateBuffer(pm.getContext(), CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, Sizeof.cl_int * numBots,
-				Pointer.to(botPosY), null);
-		memObjects[2] = clCreateBuffer(pm.getContext(), CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, Sizeof.cl_int,
-				Pointer.to(new int[] { numBots }), null);
-		memObjects[3] = clCreateBuffer(pm.getContext(), CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, Sizeof.cl_int * 2,
-				Pointer.to(ballPos), null);
-		memObjects[4] = clCreateBuffer(pm.getContext(), CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, Sizeof.cl_int,
-				Pointer.to(gameStateID), null);
-		memObjects[5] = clCreateBuffer(pm.getContext(), CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, Sizeof.cl_int,
-				Pointer.to(offenseOrDefense), null);
-		
-		// output
-		memObjects[6] = clCreateBuffer(pm.getContext(), CL.CL_MEM_READ_WRITE | CL.CL_MEM_COPY_HOST_PTR, Sizeof.cl_float
-				* numY * numX * numB, dst,
-				null);
-		
-		// Set the arguments for the kernel
-		clSetKernelArg(pm.getKernel(), 0, Sizeof.cl_mem, Pointer.to(memObjects[0]));
-		clSetKernelArg(pm.getKernel(), 1, Sizeof.cl_mem, Pointer.to(memObjects[1]));
-		clSetKernelArg(pm.getKernel(), 2, Sizeof.cl_mem, Pointer.to(memObjects[2]));
-		clSetKernelArg(pm.getKernel(), 3, Sizeof.cl_mem, Pointer.to(memObjects[3]));
-		clSetKernelArg(pm.getKernel(), 4, Sizeof.cl_mem, Pointer.to(memObjects[4]));
-		clSetKernelArg(pm.getKernel(), 5, Sizeof.cl_mem, Pointer.to(memObjects[5]));
-		clSetKernelArg(pm.getKernel(), 6, Sizeof.cl_mem, Pointer.to(memObjects[6]));
-		
-		
-		long globalWorkSize[] = new long[] { numX, numY, numB };
-		// long local_work_size[] = new long[] { 1, 1 };
+		long globalWorkSize[] = new long[] { numX, numY };
 		clEnqueueNDRangeKernel(pm.getCommandQueue(), pm.getKernel(), globalWorkSize.length, null, globalWorkSize, null,
 				0, null, null);
 		
-		// Read the output data
-		clEnqueueReadBuffer(pm.getCommandQueue(), memObjects[6], CL_TRUE, 0, Sizeof.cl_float * numX * numY * numB, dst,
-				0, null, null);
-		
-		// Release kernel, program, and memory objects
-		for (cl_mem memobj : memObjects)
-		{
-			clReleaseMemObject(memobj);
-		}
-		
-		int offset = 0;
-		for (TrackedTigerBot bot : wFrame.getTigerBotsAvailable().values())
-		{
-			newTacticalField.getSupportValues().put(bot.getId(), new ValuedField(dstArray, numX, numY, offset));
-			offset += numX * numY;
-		}
+		runLastFrame = true;
 	}
 	
 	
@@ -377,11 +510,6 @@ public class RedirectPosGPUCalc extends ACalculator implements IConfigObserver
 		
 		return result;
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	
 	/**
@@ -402,102 +530,71 @@ public class RedirectPosGPUCalc extends ACalculator implements IConfigObserver
 	}
 	
 	
-	private final int[] getGameStateID(final EGameState gameState)
+	/**
+	 * @return the weights
+	 */
+	public final Map<EScoringTypes, Float> getWeights()
 	{
-		int[] result = new int[1];
-		result[0] = GameStateID.RUNNING.ordinal();
-		
-		switch (gameState)
-		{
-			case TIMEOUT_WE:
-			case TIMEOUT_THEY:
-			case HALTED:
-			case CORNER_KICK_WE:
-			case GOAL_KICK_WE:
-			case THROW_IN_WE:
-			case DIRECT_KICK_WE:
-			case RUNNING:
-				result[0] = GameStateID.RUNNING.ordinal();
-				break;
-			
-			case STOPPED:
-				// 500mm distance to the ball
-				result[0] = GameStateID.DIST_BALL.ordinal();
-				break;
-			
-			case PREPARE_KICKOFF_THEY:
-			case PREPARE_KICKOFF_WE:
-				// our half of field, 500mm distance to te ball
-				result[0] = GameStateID.DIST_BALL_OURFIELD.ordinal();
-				break;
-			
-			case PREPARE_PENALTY_THEY:
-			case PREPARE_PENALTY_WE:
-				// 400mm behind penalty mark (getPenaltyLine.*())
-				result[0] = GameStateID.PENALTY.ordinal();
-				break;
-			
-			case CORNER_KICK_THEY:
-			case GOAL_KICK_THEY:
-			case THROW_IN_THEY:
-			case DIRECT_KICK_THEY:
-				// keep distance 500 mm from the ball.
-				// set blockPos Weight high
-				result[0] = GameStateID.DIST_BALL_BLOCK.ordinal();
-				break;
-			
-			default:
-				result[0] = GameStateID.RUNNING.ordinal();
-				break;
-		}
-		return result;
+		return weights;
 	}
 	
 	
-	private final int[] getOffenseOrDeffenseForSupporters(final TacticalField tacticalField)
+	private static class KeyValue implements Comparable<KeyValue>
 	{
-		EGameState gameState = tacticalField.getGameState();
-		switch (gameState)
-		{
-			case TIMEOUT_WE:
-			case TIMEOUT_THEY:
-			case HALTED:
-			case RUNNING:
-				if ((offenseOrDefenseEnum == EOffenseOrDeffenseSupporter.DEFENSE)
-						&& !tacticalField.getBallPossession().getEBallPossession().equals(EBallPossession.WE))
-				{
-					offenseOrDefenseEnum = EOffenseOrDeffenseSupporter.DEFENSE;
-				} else
-				{
-					offenseOrDefenseEnum = EOffenseOrDeffenseSupporter.OFFENSE;
-				}
-				break;
-			
-			case STOPPED:
-			case PREPARE_KICKOFF_WE:
-			case CORNER_KICK_WE:
-			case GOAL_KICK_WE:
-			case THROW_IN_WE:
-			case DIRECT_KICK_WE:
-			case PREPARE_PENALTY_WE:
-				offenseOrDefenseEnum = EOffenseOrDeffenseSupporter.OFFENSE;
-				break;
-			
-			case PREPARE_KICKOFF_THEY:
-			case PREPARE_PENALTY_THEY:
-			case CORNER_KICK_THEY:
-			case GOAL_KICK_THEY:
-			case THROW_IN_THEY:
-			case DIRECT_KICK_THEY:
-				offenseOrDefenseEnum = EOffenseOrDeffenseSupporter.DEFENSE;
-				break;
-			default:
-				offenseOrDefenseEnum = EOffenseOrDeffenseSupporter.OFFENSE;
-				break;
-		}
-		int[] result = new int[1];
-		result[0] = offenseOrDefenseEnum.ordinal();
+		private final int		i;
+		private final float	f;
 		
-		return result;
+		
+		private KeyValue(final int i, final float f)
+		{
+			this.i = i;
+			this.f = f;
+		}
+		
+		
+		@Override
+		public int compareTo(final KeyValue o)
+		{
+			return Float.compare(o.f, f);
+		}
+		
+		
+		@Override
+		public int hashCode()
+		{
+			final int prime = 31;
+			int result = 1;
+			result = (prime * result) + Float.floatToIntBits(f);
+			result = (prime * result) + i;
+			return result;
+		}
+		
+		
+		@Override
+		public boolean equals(final Object obj)
+		{
+			if (this == obj)
+			{
+				return true;
+			}
+			if (obj == null)
+			{
+				return false;
+			}
+			if (getClass() != obj.getClass())
+			{
+				return false;
+			}
+			KeyValue other = (KeyValue) obj;
+			if (Float.floatToIntBits(f) != Float.floatToIntBits(other.f))
+			{
+				return false;
+			}
+			if (i != other.i)
+			{
+				return false;
+			}
+			return true;
+		}
 	}
 }

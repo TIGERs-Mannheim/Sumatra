@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><templates>
+<template autoinsert="true" context="java" deleted="false" description="Inserts a list of observers for a standard Sumatra-Observable" enabled="true" name="observable_list">
+private final ${list:newType(java.util.List)}&lt;${type}&gt; observers = new ${arrayList:newType(java.util.concurrent.CopyOnWriteArrayList)}&lt;${type}&gt;();&#13;
+&#13;
+&#13;
+/**
+ * @param observer
+ */
+public void addObserver(${type} observer)&#13;
+{&#13;
+	observers.add(observer);&#13;
+}&#13;
+&#13;
+&#13;
+/**
+ * @param observer
+ */
+public void removeObserver(${type} observer)&#13;
+{&#13;
+	observers.remove(observer);&#13;
+}&#13;
+</template>
+<template autoinsert="true" context="java" deleted="false" description="Inserts a notify...(...)-method for a Sumatra-observable" enabled="true" name="observable_notify">private void notify${method}(${eventType} ${event})&#13;
+{&#13;
+	for (${observerType} observer : observers)&#13;
+	{&#13;
+		observer.on${method}(${event});&#13;
+	}&#13;
+}</template>
+</templates>

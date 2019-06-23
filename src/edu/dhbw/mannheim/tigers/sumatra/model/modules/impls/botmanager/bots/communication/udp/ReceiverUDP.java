@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 01.03.2011
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.udp;
@@ -24,15 +23,15 @@ import org.apache.log4j.Logger;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.Statistics;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.CommandFactory;
+import edu.dhbw.mannheim.tigers.sumatra.util.network.IReceiver;
 
 
 /**
  * Receiver for UDP packets.
  * 
  * @author rYan
- * 
  */
-public class ReceiverUDP
+public class ReceiverUDP implements IReceiver
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
@@ -67,7 +66,7 @@ public class ReceiverUDP
 	 * @param newSocket
 	 * @throws IOException
 	 */
-	public ReceiverUDP(DatagramSocket newSocket) throws IOException
+	public ReceiverUDP(final DatagramSocket newSocket) throws IOException
 	{
 		setSocket(newSocket);
 	}
@@ -77,10 +76,9 @@ public class ReceiverUDP
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @param observer
 	 */
-	public void addObserver(IReceiverUDPObserver observer)
+	public void addObserver(final IReceiverUDPObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -90,10 +88,9 @@ public class ReceiverUDP
 	
 	
 	/**
-	 * 
 	 * @param observer
 	 */
-	public void removeObserver(IReceiverUDPObserver observer)
+	public void removeObserver(final IReceiverUDPObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -143,10 +140,9 @@ public class ReceiverUDP
 	
 	
 	/**
-	 * 
 	 * @param newSocket
 	 */
-	public final void setSocket(DatagramSocket newSocket)
+	public final void setSocket(final DatagramSocket newSocket)
 	{
 		boolean start = false;
 		
@@ -166,10 +162,9 @@ public class ReceiverUDP
 	
 	
 	/**
-	 * 
 	 * @param cmd
 	 */
-	private void notifyNewCommand(ACommand cmd)
+	private void notifyNewCommand(final ACommand cmd)
 	{
 		synchronized (observers)
 		{
@@ -185,7 +180,6 @@ public class ReceiverUDP
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @return
 	 */
 	public Statistics getStats()
@@ -206,7 +200,7 @@ public class ReceiverUDP
 	/**
 	 * @param legacy the legacy to set
 	 */
-	public void setLegacy(boolean legacy)
+	public void setLegacy(final boolean legacy)
 	{
 		this.legacy = legacy;
 	}
@@ -286,9 +280,44 @@ public class ReceiverUDP
 					log.error("Some IOException", err);
 				} catch (final Exception err)
 				{
-					log.error("Could not decode message, probably out-of-date command description", err);
+					log.warn("Unexpected exception! See stacktrace", err);
 				}
 			}
 		}
+	}
+	
+	
+	@Override
+	public DatagramPacket receive(final DatagramPacket store) throws IOException
+	{
+		byte[] buf = null;
+		
+		try
+		{
+			buf = new byte[socket.getReceiveBufferSize()];
+		} catch (final SocketException err)
+		{
+			log.error("Could not get receive buffer size", err);
+			return null;
+		}
+		
+		final DatagramPacket packet = new DatagramPacket(buf, buf.length);
+		
+		socket.receive(packet);
+		return packet;
+	}
+	
+	
+	@Override
+	public void cleanup() throws IOException
+	{
+		stop();
+	}
+	
+	
+	@Override
+	public boolean isReady()
+	{
+		return socket.isConnected();
 	}
 }

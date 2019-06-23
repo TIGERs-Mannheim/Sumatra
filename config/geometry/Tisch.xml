@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <geometry>
+    <ballModel>lab</ballModel>
     <!-- [mm] -->
     <ballRadius>21.5</ballRadius>
     <!-- [mm] -->
@@ -10,9 +11,9 @@
     <stopSpeed>1.0</stopSpeed>
     <field>
         <!-- x [mm] Teppich: 3600 -->
-        <length>3500</length>
+        <length>3260</length>
         <!-- y [mm] Teppich: 2750 -->
-        <width>2600</width>
+        <width>2370</width>
         <!-- [mm] -->
         <lineWidth>10</lineWidth>
         <!-- The border around the field -->
@@ -32,18 +33,18 @@
             <innerHeight>155</innerHeight>
         </goal>
         <!-- distance goal line - penalty mark [mm] -->
-        <distanceToPenaltyMark>750</distanceToPenaltyMark>
+        <distanceToPenaltyMark>300</distanceToPenaltyMark>
         <!-- radius of the two, small quarter circles at the sides of the penalty 
 			area. -->
-        <distanceToPenaltyArea>810</distanceToPenaltyArea>
+        <distanceToPenaltyArea>320</distanceToPenaltyArea>
         <!-- the length of the short line of the penalty area, that is parallel 
 			to the goal line -->
-        <lengthOfPenaltyAreaFrontLine>350</lengthOfPenaltyAreaFrontLine>
+        <lengthOfPenaltyAreaFrontLine>600</lengthOfPenaltyAreaFrontLine>
         <!-- The radius of the center circle ("Mittelkreis") [mm] -->
         <centerCircleRadius>505</centerCircleRadius>
         <!-- The center ("Mittelpunkt") -->
         <center>0;0</center>
-        <maintenancePosition>-100,2100</maintenancePosition>
+        <maintenancePosition>-100,500</maintenancePosition>
         <!-- penalty line (bots must be behind goal line + penalty mark + penaltyLine 
 			when a penalty kick is executed -->
         <distanceToPenaltyLine>400</distanceToPenaltyLine>

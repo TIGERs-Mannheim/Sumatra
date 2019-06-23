@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Mar 30, 2014
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger;
@@ -32,7 +31,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
  * Display last full spline that is or was executed by bot
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class SplinePanel extends JPanel
 {
@@ -49,6 +47,7 @@ public class SplinePanel extends JPanel
 	/** [s] */
 	private static final float	TIME_TO_DISPLAY	= 10;
 	
+	private static final int	BUFFER_SIZE			= (int) Math.ceil(TIME_TO_DISPLAY / DELTA_T);
 	private SplinePair3D			latestSplinePair	= null;
 	private float					timeOffset			= 0;
 	private final Chart2D		chartX				= new Chart2D();
@@ -76,7 +75,7 @@ public class SplinePanel extends JPanel
 		btnClear.addActionListener(new ActionListener()
 		{
 			@Override
-			public void actionPerformed(ActionEvent e)
+			public void actionPerformed(final ActionEvent e)
 			{
 				clearTraces();
 			}
@@ -87,7 +86,7 @@ public class SplinePanel extends JPanel
 		btnEnable.addActionListener(new ActionListener()
 		{
 			@Override
-			public void actionPerformed(ActionEvent e)
+			public void actionPerformed(final ActionEvent e)
 			{
 				enabled = btnEnable.isSelected();
 			}
@@ -157,24 +156,23 @@ public class SplinePanel extends JPanel
 	}
 	
 	
-	private void updateCharts(SplinePair3D splinePair)
+	private void updateCharts(final SplinePair3D splinePair)
 	{
-		int bufferSize = (int) Math.ceil(TIME_TO_DISPLAY / DELTA_T);
-		ITrace2D traceAccX = new Trace2DLtd(bufferSize, "acc");
-		ITrace2D traceVelX = new Trace2DLtd(bufferSize, "vel");
-		ITrace2D tracePosX = new Trace2DLtd(bufferSize, "pos");
+		ITrace2D traceAccX = new Trace2DLtd(BUFFER_SIZE, "acc");
+		ITrace2D traceVelX = new Trace2DLtd(BUFFER_SIZE, "vel");
+		ITrace2D tracePosX = new Trace2DLtd(BUFFER_SIZE, "pos");
 		chartX.addTrace(traceAccX);
 		chartX.addTrace(traceVelX);
 		chartX.addTrace(tracePosX);
-		ITrace2D traceAccY = new Trace2DLtd(bufferSize, "acc");
-		ITrace2D traceVelY = new Trace2DLtd(bufferSize, "vel");
-		ITrace2D tracePosY = new Trace2DLtd(bufferSize, "pos");
+		ITrace2D traceAccY = new Trace2DLtd(BUFFER_SIZE, "acc");
+		ITrace2D traceVelY = new Trace2DLtd(BUFFER_SIZE, "vel");
+		ITrace2D tracePosY = new Trace2DLtd(BUFFER_SIZE, "pos");
 		chartY.addTrace(traceAccY);
 		chartY.addTrace(traceVelY);
 		chartY.addTrace(tracePosY);
-		ITrace2D traceAccW = new Trace2DLtd(bufferSize, "acc");
-		ITrace2D traceVelW = new Trace2DLtd(bufferSize, "vel");
-		ITrace2D tracePosW = new Trace2DLtd(bufferSize, "pos");
+		ITrace2D traceAccW = new Trace2DLtd(BUFFER_SIZE, "acc");
+		ITrace2D traceVelW = new Trace2DLtd(BUFFER_SIZE, "vel");
+		ITrace2D tracePosW = new Trace2DLtd(BUFFER_SIZE, "pos");
 		chartW.addTrace(traceAccW);
 		chartW.addTrace(traceVelW);
 		chartW.addTrace(tracePosW);

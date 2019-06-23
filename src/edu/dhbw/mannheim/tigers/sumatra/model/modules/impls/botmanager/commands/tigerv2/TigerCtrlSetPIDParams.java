@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 02.04.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2;
@@ -20,7 +19,6 @@ import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
  * Set PID parameters for trajectory following.
  * 
  * @author AndreR
- * 
  */
 public class TigerCtrlSetPIDParams extends ACommand
 {
@@ -55,14 +53,13 @@ public class TigerCtrlSetPIDParams extends ACommand
 		private final int	val;
 		
 		
-		private PIDParamType(int value)
+		private PIDParamType(final int value)
 		{
 			val = value;
 		}
 		
 		
 		/**
-		 * 
 		 * @return
 		 */
 		public int getValue()
@@ -77,7 +74,7 @@ public class TigerCtrlSetPIDParams extends ACommand
 		 * @param type param type value
 		 * @return enum
 		 */
-		public static PIDParamType getPIDParamTypeConstant(int type)
+		public static PIDParamType getPIDParamTypeConstant(final int type)
 		{
 			for (PIDParamType t : values())
 			{
@@ -106,7 +103,7 @@ public class TigerCtrlSetPIDParams extends ACommand
 	/** */
 	public TigerCtrlSetPIDParams()
 	{
-		super(ECommand.CMD_CTRL_SET_PID_PARAMS);
+		super(ECommand.CMD_CTRL_SET_PID_PARAMS, true);
 		
 		type = PIDParamType.UNKNOWN.getValue();
 	}
@@ -116,9 +113,9 @@ public class TigerCtrlSetPIDParams extends ACommand
 	 * @param type
 	 * @param params
 	 */
-	public TigerCtrlSetPIDParams(PIDParamType type, PIDParameters params)
+	public TigerCtrlSetPIDParams(final PIDParamType type, final PIDParameters params)
 	{
-		super(ECommand.CMD_CTRL_SET_PID_PARAMS);
+		super(ECommand.CMD_CTRL_SET_PID_PARAMS, true);
 		
 		this.type = type.getValue();
 		setParams(params);
@@ -145,7 +142,7 @@ public class TigerCtrlSetPIDParams extends ACommand
 	/**
 	 * @param type the type to set
 	 */
-	public void setParamType(PIDParamType type)
+	public void setParamType(final PIDParamType type)
 	{
 		this.type = type.getValue();
 	}
@@ -154,14 +151,13 @@ public class TigerCtrlSetPIDParams extends ACommand
 	/**
 	 * @param params
 	 */
-	public void setParams(PIDParameters params)
+	public void setParams(final PIDParameters params)
 	{
 		this.params = params;
 	}
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public PIDParameters getParams()

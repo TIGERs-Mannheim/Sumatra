@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 01.04.2011
  * Author(s): Malte
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle;
@@ -20,19 +19,16 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.ILine;
  * Circle interface.
  * 
  * @author Malte
- * 
  */
 public interface ICircle extends I2DShape
 {
 	/**
-	 * 
 	 * @return
 	 */
 	float radius();
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	IVector2 center();
@@ -48,19 +44,9 @@ public interface ICircle extends I2DShape
 	
 	
 	/**
-	 * 
 	 * @param point
 	 * @param margin like the margin in css, the area around the shape with the thickness of this value
 	 * @return
 	 */
 	boolean isPointInShape(IVector2 point, float margin);
-	
-	
-	/**
-	 * Nearest point on circle which is the intersection point between center and given point
-	 * 
-	 * @param point
-	 * @return
-	 */
-	IVector2 nearestPointOnCircle(IVector2 point);
 }

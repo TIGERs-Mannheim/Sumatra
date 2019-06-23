@@ -17,6 +17,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import javax.swing.ButtonGroup;
 import javax.swing.ButtonModel;
 import javax.swing.DefaultButtonModel;
+import javax.swing.JCheckBox;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JTabbedPane;
@@ -38,6 +39,8 @@ public class ModuleControlPanel extends JPanel implements IAIModeChanged
 	// --------------------------------------------------------------------------
 	private static final long						serialVersionUID	= -2509991904665753934L;
 	
+	private final JCheckBox							chkAiActive;
+	
 	private final JRadioButton						matchControl;
 	private final JRadioButton						mixedTeamControl;
 	private final JRadioButton						athenaControl;
@@ -46,9 +49,11 @@ public class ModuleControlPanel extends JPanel implements IAIModeChanged
 	private final JTabbedPane						tabbedPane;
 	private final PlayControlPanel				playPanel;
 	private final RoleControlPanel				rolePanel;
+	private final AthenaControlPanel				athenaPanel;
 	private final TacticalFieldControlPanel	tacticalFieldPanel;
 	private final MetisCalculatorsPanel			metisCalculatorsPanel;
 	private final ButtonGroup						modeGroup;
+	private final SupporterGridPanel				supporterGridPanel;
 	
 	private final List<IAIModeChanged>			observers			= new CopyOnWriteArrayList<IAIModeChanged>();
 	
@@ -60,14 +65,17 @@ public class ModuleControlPanel extends JPanel implements IAIModeChanged
 	 */
 	public ModuleControlPanel()
 	{
-		setLayout(new MigLayout("insets 0 0 0 0"));
+		setLayout(new MigLayout("fill, insets 0 0 0 0"));
 		
 		final JPanel controlPanel = new JPanel(new MigLayout("insets 0 0 0 0", "", ""));
+		chkAiActive = new JCheckBox("AI activated", false);
+		controlPanel.add(chkAiActive);
+		
 		matchControl = new JRadioButton("Match");
 		matchControl.addActionListener(new MatchModeControlListener());
 		controlPanel.add(matchControl);
 		
-		mixedTeamControl = new JRadioButton("Mixed Team");
+		mixedTeamControl = new JRadioButton("Mixed");
 		mixedTeamControl.addActionListener(new MixedTeamControlListener());
 		controlPanel.add(mixedTeamControl);
 		
@@ -88,27 +96,21 @@ public class ModuleControlPanel extends JPanel implements IAIModeChanged
 		btnModel.setGroup(modeGroup);
 		matchControl.setSelected(true);
 		
-		
-		final JPanel moduleStates = new JPanel(new MigLayout(""));
-		moduleStates.add(controlPanel);
-		
 		playPanel = new PlayControlPanel();
 		rolePanel = new RoleControlPanel();
 		tacticalFieldPanel = new TacticalFieldControlPanel();
 		metisCalculatorsPanel = new MetisCalculatorsPanel();
-		
-		final JPanel lachesisPanel = new JPanel(new MigLayout("fill"));
-		lachesisPanel.add(rolePanel);
-		
+		athenaPanel = new AthenaControlPanel();
+		supporterGridPanel = new SupporterGridPanel();
 		
 		tabbedPane = new JTabbedPane();
-		tabbedPane.addTab("Plays", playPanel);
+		tabbedPane.addTab("Athena", athenaPanel);
 		tabbedPane.addTab("Roles", rolePanel);
 		tabbedPane.addTab("Metis", tacticalFieldPanel);
 		tabbedPane.addTab("Metis Calcs", metisCalculatorsPanel);
+		tabbedPane.addTab("Supporter Grid", supporterGridPanel);
 		
-		
-		add(moduleStates, "wrap");
+		add(controlPanel, "wrap");
 		add(tabbedPane);
 		
 		
@@ -187,11 +189,10 @@ public class ModuleControlPanel extends JPanel implements IAIModeChanged
 						emergencyControl.setSelected(true);
 						break;
 					case MATCH_MODE:
-						tabbedPane.setSelectedComponent(playPanel);
 						matchControl.setSelected(true);
+						tabbedPane.setSelectedComponent(athenaPanel);
 						break;
 					case MIXED_TEAM_MODE:
-						tabbedPane.setSelectedComponent(playPanel);
 						mixedTeamControl.setSelected(true);
 						break;
 					case TEST_MODE:
@@ -201,8 +202,9 @@ public class ModuleControlPanel extends JPanel implements IAIModeChanged
 						break;
 				
 				}
-				playPanel.onAiModeChanged(mode);
+				// playPanel.onAiModeChanged(mode);
 				rolePanel.onAiModeChanged(mode);
+				athenaPanel.onAiModeChanged(mode);
 			}
 		});
 	}
@@ -223,7 +225,12 @@ public class ModuleControlPanel extends JPanel implements IAIModeChanged
 				mixedTeamControl.setEnabled(true);
 				athenaControl.setEnabled(true);
 				emergencyControl.setEnabled(true);
-				// onAiModeChanged(EAIControlState.TEST_MODE);
+				playPanel.setEnabled(true);
+				rolePanel.setEnabled(true);
+				athenaPanel.setEnabled(true);
+				tacticalFieldPanel.setEnabled(true);
+				metisCalculatorsPanel.setEnabled(true);
+				supporterGridPanel.setEnabled(true);
 			}
 		});
 	}
@@ -243,7 +250,12 @@ public class ModuleControlPanel extends JPanel implements IAIModeChanged
 				mixedTeamControl.setEnabled(false);
 				athenaControl.setEnabled(false);
 				emergencyControl.setEnabled(false);
-				// onAiModeChanged(EAIControlState.EMERGENCY_MODE);
+				playPanel.setEnabled(false);
+				rolePanel.setEnabled(false);
+				athenaPanel.setEnabled(false);
+				tacticalFieldPanel.setEnabled(false);
+				metisCalculatorsPanel.setEnabled(false);
+				supporterGridPanel.setEnabled(false);
 			}
 		});
 	}
@@ -305,6 +317,33 @@ public class ModuleControlPanel extends JPanel implements IAIModeChanged
 	public final MetisCalculatorsPanel getMetisCalculatorsPanel()
 	{
 		return metisCalculatorsPanel;
+	}
+	
+	
+	/**
+	 * @return the athenaPanel
+	 */
+	public final AthenaControlPanel getAthenaPanel()
+	{
+		return athenaPanel;
+	}
+	
+	
+	/**
+	 * @return the chkAiActive
+	 */
+	public final JCheckBox getChkAiActive()
+	{
+		return chkAiActive;
+	}
+	
+	
+	/**
+	 * @return the supporterGridPanel
+	 */
+	public final SupporterGridPanel getSupporterGridPanel()
+	{
+		return supporterGridPanel;
 	}
 	
 }

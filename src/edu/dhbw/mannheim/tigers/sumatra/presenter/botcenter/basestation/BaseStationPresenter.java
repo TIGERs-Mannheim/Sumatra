@@ -4,10 +4,11 @@
  * Project: TIGERS - Sumatra
  * Date: 16.06.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.botcenter.basestation;
+
+import java.awt.EventQueue;
 
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -17,12 +18,14 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.basestati
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.basestation.IBaseStationObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationEthStats;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationStats;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.basestation.BaseStationWifiStats;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.ILookAndFeelStateObserver;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.laf.LookAndFeelStateAdapter;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.BotCenterTreeNode;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.ETreeIconType;
-import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.basestation.BaseStationNetworkPanel.IBaseStationNetworkPanel;
+import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.basestation.BaseStationControlPanel.IBaseStationControlPanelObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.basestation.BaseStationPanel;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.basestation.BaseStationPanel.IBaseStationPanelObserver;
 import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.basestation.BaseStationStatsPanel;
@@ -32,10 +35,9 @@ import edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.basestation.Bas
  * Base station presenter.
  * 
  * @author AndreR
- * 
  */
 public class BaseStationPresenter implements IBaseStationPanelObserver, IBaseStationObserver,
-		ILookAndFeelStateObserver, IBaseStationNetworkPanel
+		ILookAndFeelStateObserver, IBaseStationControlPanelObserver
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
@@ -52,7 +54,7 @@ public class BaseStationPresenter implements IBaseStationPanelObserver, IBaseSta
 	/**
 	 * @param station
 	 */
-	public BaseStationPresenter(BaseStation station)
+	public BaseStationPresenter(final BaseStation station)
 	{
 		baseStationPanel = new BaseStationPanel();
 		statsPanel = new BaseStationStatsPanel();
@@ -60,8 +62,6 @@ public class BaseStationPresenter implements IBaseStationPanelObserver, IBaseSta
 		baseStation = station;
 		
 		baseStationPanel.setNetCfg(baseStation.getHost(), baseStation.getDstPort(), baseStation.getLocalPort());
-		baseStationPanel.setConfig(baseStation.getChannel(), baseStation.isPositionInverted(),
-				baseStation.getVisionRate(), baseStation.getMaxBots(), baseStation.getTimeout());
 		baseStationPanel.getNetworkPanel().setConnectionState(baseStation.getNetState());
 		
 		baseStation.addObserver(this);
@@ -89,7 +89,6 @@ public class BaseStationPresenter implements IBaseStationPanelObserver, IBaseSta
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public JPanel getBaseStationPanel()
@@ -113,41 +112,53 @@ public class BaseStationPresenter implements IBaseStationPanelObserver, IBaseSta
 	
 	
 	@Override
-	public void onNetCfgChanged(String host, int dstPort, int localPort)
+	public void onNetCfgChanged(final String host, final int dstPort, final int localPort)
 	{
 		baseStation.setIpConfig(host, dstPort, localPort);
 	}
 	
 	
 	@Override
-	public void onIncommingBotCommand(BotID id, ACommand command)
+	public void onIncommingBotCommand(final BotID id, final ACommand command)
 	{
 	}
 	
 	
 	@Override
-	public void onIncommingBaseStationCommand(ACommand command)
+	public void onIncommingBaseStationCommand(final ACommand command)
 	{
 	}
 	
 	
 	@Override
-	public void onNewBaseStationStats(BaseStationStats stats)
+	public void onNewBaseStationStats(final BaseStationStats stats)
 	{
-		statsPanel.setStats(stats);
-		baseStationPanel.getNetworkPanel().setStats(stats.getEthStats());
 	}
 	
 	
 	@Override
-	public void onNetworkStateChanged(ENetworkState netState)
+	public void onNewBaseStationWifiStats(final BaseStationWifiStats stats)
 	{
-		baseStationPanel.getNetworkPanel().setConnectionState(netState);
 	}
 	
 	
 	@Override
-	public void onStartPing(int numPings, int payload)
+	public void onNewBaseStationEthStats(final BaseStationEthStats stats)
+	{
+	}
+	
+	
+	@Override
+	public void onNetworkStateChanged(final ENetworkState netState)
+	{
+		EventQueue.invokeLater(() -> {
+			baseStationPanel.getNetworkPanel().setConnectionState(netState);
+		});
+	}
+	
+	
+	@Override
+	public void onStartPing(final int numPings, final int payload)
 	{
 		baseStation.startPing(numPings, payload);
 	}
@@ -161,14 +172,14 @@ public class BaseStationPresenter implements IBaseStationPanelObserver, IBaseSta
 	
 	
 	@Override
-	public void onNewPingDelay(float delay)
+	public void onNewPingDelay(final float delay)
 	{
-		baseStationPanel.setPingDelay(delay);
+		EventQueue.invokeLater(() -> baseStationPanel.setPingDelay(delay));
 	}
 	
 	
 	@Override
-	public void onConnectionChange(boolean connect)
+	public void onConnectionChange(final boolean connect)
 	{
 		if (connect)
 		{
@@ -183,14 +194,19 @@ public class BaseStationPresenter implements IBaseStationPanelObserver, IBaseSta
 	
 	
 	@Override
-	public void onCfgChanged(int ch, boolean invertPos, int rate, int bots, int to)
+	public void onCfgChanged(final int ch, final int rate, final int bots, final int to)
 	{
-		baseStation.setConfig(ch, invertPos, bots, rate, to);
 	}
 	
 	
 	@Override
-	public void onBotOffline(BotID id)
+	public void onBotOffline(final BotID id)
+	{
+	}
+	
+	
+	@Override
+	public void onBotOnline(final BotID id)
 	{
 	}
 	

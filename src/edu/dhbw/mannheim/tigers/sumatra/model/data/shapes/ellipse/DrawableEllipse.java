@@ -15,11 +15,11 @@ import java.awt.Rectangle;
 
 import com.sleepycat.persist.model.Persistent;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.ColorWrapper;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.IDrawableShape;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.visualizer.IFieldPanel;
 
 
@@ -28,15 +28,16 @@ import edu.dhbw.mannheim.tigers.sumatra.presenter.visualizer.IFieldPanel;
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@Persistent
+@Persistent(version = 1)
 public class DrawableEllipse extends Ellipse implements IDrawableShape
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	private ColorWrapper	color			= new ColorWrapper(Color.red);
-	private IVector2		curveStart	= GeoMath.INIT_VECTOR;
+	private IVector2		curveStart	= Vector2.ZERO_VECTOR;
 	private float			curvelength	= 0;
+	private boolean		fill			= false;
 	
 	
 	// --------------------------------------------------------------------------
@@ -91,6 +92,10 @@ public class DrawableEllipse extends Ellipse implements IDrawableShape
 		
 		g.rotate(-getTurnAngle(), r.x + (r.width / 2), r.y + (r.height / 2));
 		g.drawOval(r.x, r.y, r.width, r.height);
+		if (fill)
+		{
+			g.fillOval(r.x, r.y, r.width, r.height);
+		}
 		g.rotate(getTurnAngle(), r.x + (r.width / 2), r.y + (r.height / 2));
 	}
 	
@@ -141,4 +146,12 @@ public class DrawableEllipse extends Ellipse implements IDrawableShape
 		return new Rectangle(x, y, width, height);
 	}
 	
+	
+	/**
+	 * @param fill
+	 */
+	public void setFill(final boolean fill)
+	{
+		this.fill = fill;
+	}
 }

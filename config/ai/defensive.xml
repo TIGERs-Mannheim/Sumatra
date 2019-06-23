@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<defensive base="edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai">
+    <pandora>
+        <plays>
+            <defense>
+                <algorithms>
+                    <DriveOnLinePointCalc>
+                        <pointOnLineGetter
+                            class="edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.defense.algorithms.helpers.EPointOnLineGetter" comment="Choose a calculator for the defense point on the shoot vector of the enemy bot.">ZONEDEFENSE</pointOnLineGetter>
+                        <minDistShootVector class="float" comment="If the defender is closer than this distance to the shoot vector, he will get a new position on the shoot vector.">270.0</minDistShootVector>
+                        <nearEnemyBotDist class="float" comment="Distance around the enemies offensive bot the defender will optimize its position">360.0</nearEnemyBotDist>
+                        <xLimit class="float" comment="Maximum x position of the defendenders">0.0</xLimit>
+                    </DriveOnLinePointCalc>
+                    <DoubleDefPointCalc>
+                        <maxXDefender class="float" comment="Defenders will not drive behind this x value">-1135.0</maxXDefender>
+                        <minDistDefenderBall class="float" comment="Minimum distance of the double block to the ball">135.0</minDistDefenderBall>
+                    </DoubleDefPointCalc>
+                    <helpers>
+                        <ZoneDefensePointCalc>
+                            <defendDistance class="float" comment="Distance of the defense point to the enemies bot">135.0</defendDistance>
+                        </ZoneDefensePointCalc>
+                        <ReceiverBlockPointCalc>
+                            <defendDistance class="float" comment="Distance of the defense point to the enemies bot">270.0</defendDistance>
+                        </ReceiverBlockPointCalc>
+                    </helpers>
+                    <ShortestPathDefensePointCalc>
+                        <stepSizeToIntersect class="float" comment="">100.0</stepSizeToIntersect>
+                    </ShortestPathDefensePointCalc>
+                </algorithms>
+            </defense>
+        </plays>
+    </pandora>
+    <metis>
+        <calculators>
+            <general>
+                <RoleFinderCalc>
+                    <ballPossessionDist class="float" comment="distance difference needed between our and the enemies nearest bot to the ball to declare the ball possessed by us">360.0</ballPossessionDist>
+                    <minimumNumDefenders class="int" comment="The minimum number of defenders demanded at all times in the game">1</minimumNumDefenders>
+                </RoleFinderCalc>
+            </general>
+            <defense>
+                <DefenseCalc>
+                    <doubleDefKickoffOn class="boolean" comment="Double defender at kickoff">true</doubleDefKickoffOn>
+                    <forceDoubleBlockAtPenAreaKickoff class="boolean" comment="Force the double block to retreat to the penalty area at kickoff">true</forceDoubleBlockAtPenAreaKickoff>
+                    <distance2Marker class="float" comment="Distance to marker">200.0</distance2Marker>
+                    <distance2MarkerOffenseNear class="float" comment="">500.0</distance2MarkerOffenseNear>
+                    <penaltyMarginOffset class="float" comment="Additional offset to penaltyArea margin">50.0</penaltyMarginOffset>
+                    <ballLookaheadOfDefenders class="float" comment="Time [s] - the position of the future ball will be used to determine the danger from the ball position">1.0</ballLookaheadOfDefenders>
+                    <doubleDefXValue class="float" comment="negative xValue of the ball to set double defenders">-1548.3334</doubleDefXValue>
+                    <blockAngle class="float" comment="Range: (0, pi / 2): If the angle between ball and x axis is greater than this value only one defender will try to block the ball">0.7</blockAngle>
+                </DefenseCalc>
+            </defense>
+        </calculators>
+    </metis>
+</defensive>

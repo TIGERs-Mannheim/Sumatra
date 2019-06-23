@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 22.09.2010
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.timer;
@@ -22,7 +21,6 @@ import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
  * Timer main panel
  * 
  * @author Gero
- * 
  */
 public class TimerPanel extends JPanel implements ISumatraView
 {
@@ -42,7 +40,7 @@ public class TimerPanel extends JPanel implements ISumatraView
 	 */
 	public TimerPanel()
 	{
-		setLayout(new MigLayout("fill", "", ""));
+		setLayout(new MigLayout("fill, inset 0", "", ""));
 		
 		chartPanel = new TimerChartPanel();
 		chartPanel.setVisible(false);
@@ -57,13 +55,14 @@ public class TimerPanel extends JPanel implements ISumatraView
 	@Override
 	public void onShown()
 	{
+		chartPanel.setVisible(true);
 	}
 	
 	
 	@Override
 	public void onHidden()
 	{
-		chartPanel.setVisible(false);
+		// chartPanel.setVisible(false);
 	}
 	
 	
@@ -84,7 +83,6 @@ public class TimerPanel extends JPanel implements ISumatraView
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @return
 	 */
 	public TimerChartPanel getChartPanel()

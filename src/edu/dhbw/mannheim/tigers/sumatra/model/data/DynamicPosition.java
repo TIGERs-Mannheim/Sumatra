@@ -9,9 +9,17 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.data;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+import org.json.simple.JSONObject;
+
+import com.sleepycat.persist.model.Persistent;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AiMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector3;
@@ -23,6 +31,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBo
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.AObjectID;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.UninitializedID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.fieldPrediction.FieldPredictionInformation;
 
 
 /**
@@ -31,20 +40,17 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.Uninitiali
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
+@Persistent
 public class DynamicPosition implements IVector2
 {
+	@SuppressWarnings("unused")
+	private static final Logger						log			= Logger.getLogger(DynamicPosition.class.getName());
 	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
+	private IVector2										pos			= Vector2.ZERO_VECTOR;
+	private final AObjectID								trackedId;
+	private float											lookahead	= 0;
+	private transient FieldPredictionInformation	predInfo		= null;
 	
-	private IVector2			pos	= Vector2.ZERO_VECTOR;
-	private final AObjectID	trackedId;
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 * @param obj
@@ -57,12 +63,31 @@ public class DynamicPosition implements IVector2
 	
 	
 	/**
+	 * @param obj
+	 * @param lookahead
+	 */
+	public DynamicPosition(final ATrackedObject obj, final float lookahead)
+	{
+		trackedId = obj.getId();
+		pos = obj.getPos();
+		this.lookahead = lookahead;
+	}
+	
+	
+	/**
 	 * @param pos
 	 */
 	public DynamicPosition(final IVector2 pos)
 	{
 		this.pos = pos;
 		trackedId = new UninitializedID();
+	}
+	
+	
+	@SuppressWarnings("unused")
+	private DynamicPosition()
+	{
+		trackedId = null;
 	}
 	
 	
@@ -83,17 +108,41 @@ public class DynamicPosition implements IVector2
 		} else if (trackedId.isBot())
 		{
 			TrackedTigerBot bot = swf.getBot((BotID) trackedId);
+			assert bot != null : "Tracked bot does not exist";
 			if (bot != null)
 			{
-				pos = bot.getPos();
+				IVector2 botPos;
+				float botAngle;
+				if ((lookahead > 1e-5f))
+				{
+					botPos = bot.getPosByTime(lookahead);
+					botAngle = bot.getAngleByTime(lookahead);
+				} else
+				{
+					botPos = bot.getPos();
+					botAngle = bot.getAngle();
+				}
+				pos = AiMath.getBotKickerPos(botPos, botAngle, bot.getBot()
+						.getCenter2DribblerDist());
 			}
 		}
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
+	/**
+	 * Get future position, if this a updated tracked object
+	 * 
+	 * @param t
+	 * @return
+	 */
+	public IVector2 getPosAt(final float t)
+	{
+		if (predInfo != null)
+		{
+			return predInfo.getPosAt(t);
+		}
+		return this;
+	}
 	
 	
 	/**
@@ -326,5 +375,94 @@ public class DynamicPosition implements IVector2
 		ETeamColor color = ETeamColor.valueOf(finalValues.get(1));
 		return new DynamicPosition(new TrackedTigerBot(BotID.createBotId(id, color), AVector2.ZERO_VECTOR,
 				AVector2.ZERO_VECTOR, AVector2.ZERO_VECTOR, 0, 0, 0, 0, 1, null, color));
+	}
+	
+	
+	/**
+	 * @return the lookahead
+	 */
+	public float getLookahead()
+	{
+		return lookahead;
+	}
+	
+	
+	/**
+	 * @param lookahead the lookahead to set
+	 */
+	public void setLookahead(final float lookahead)
+	{
+		this.lookahead = lookahead;
+	}
+	
+	
+	@Override
+	public Vector2 turnAroundNew(final IVector2 axis, final float angle)
+	{
+		return pos.turnAroundNew(axis, angle);
+	}
+	
+	
+	@Override
+	public JSONObject toJSON()
+	{
+		Map<String, Object> jsonMapping = new LinkedHashMap<String, Object>();
+		jsonMapping.put("x", pos.x());
+		jsonMapping.put("y", pos.y());
+		jsonMapping.put("trackedId", trackedId.getNumber());
+		jsonMapping.put("lookahead", lookahead);
+		return new JSONObject(jsonMapping);
+	}
+	
+	
+	@Override
+	public List<Number> getNumberList()
+	{
+		List<Number> numbers = new ArrayList<>();
+		numbers.add(x());
+		numbers.add(y());
+		numbers.add(trackedId.getNumber());
+		numbers.add(lookahead);
+		return numbers;
+	}
+	
+	
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = 1;
+		result = (prime * result) + ((pos == null) ? 0 : pos.hashCode());
+		return result;
+	}
+	
+	
+	@Override
+	public boolean equals(final Object obj)
+	{
+		if (this == obj)
+		{
+			return true;
+		}
+		if (obj == null)
+		{
+			return false;
+		}
+		if (getClass() != obj.getClass())
+		{
+			return false;
+		}
+		DynamicPosition other = (DynamicPosition) obj;
+		if (pos == null)
+		{
+			if (other.pos != null)
+			{
+				return false;
+			}
+		} else if (!pos.equals(other.pos))
+		{
+			return false;
+		}
+		return true;
 	}
 }

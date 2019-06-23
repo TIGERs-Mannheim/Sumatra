@@ -9,10 +9,13 @@
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.offense.states;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.DynamicPosition;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.OffensiveStrategy.EOffensiveStrategy;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.offense.data.OffensiveMovePosition;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.IMoveToSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveAndStaySkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleState;
 
 
@@ -21,14 +24,12 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleSt
  * 
  * @author Mark Geiger <Mark.Geiger@dlr.de>
  */
-public abstract class OffensiveRoleStopState extends OffensiveRoleKickState
+public abstract class OffensiveRoleStopState extends OffensiveRoleInterceptionState
 {
 	
 	// -------------------------------------------------------------------------- //
 	// --- variables and constants ---------------------------------------------- //
 	// -------------------------------------------------------------------------- //
-	
-	private static boolean	normalStart	= false;
 	
 	// ----------------------------------------------------------------------- //
 	// -------------------- functions ---------------------------------------- //
@@ -41,7 +42,7 @@ public abstract class OffensiveRoleStopState extends OffensiveRoleKickState
 	 */
 	public class StopState implements IRoleState
 	{
-		private MoveAndStaySkill	skill	= null;
+		private IMoveToSkill	skill	= null;
 		
 		
 		@Override
@@ -66,7 +67,7 @@ public abstract class OffensiveRoleStopState extends OffensiveRoleKickState
 		@Override
 		public void doEntryActions()
 		{
-			skill = new MoveAndStaySkill();
+			skill = AMoveSkill.createMoveToSkill();
 			skill.getMoveCon().getAngleCon().updateLookAtTarget(new DynamicPosition(getWFrame().getBall()));
 			setNewSkill(skill);
 		}
@@ -75,49 +76,26 @@ public abstract class OffensiveRoleStopState extends OffensiveRoleKickState
 		@Override
 		public void doUpdate()
 		{
-			skill.getMoveCon().getDestCon().updateDestination(getWFrame().getBall().getPos().addNew(new Vector2(-500, 0)));
-			if (normalStart)
+			IVector2 moveTarget = null;
+			if ((getAiFrame().getTacticalField().getOffenseMovePositions() != null) &&
+					getAiFrame().getTacticalField().getOffenseMovePositions().containsKey(getBotID())
+					&& (getAiFrame().getTacticalField().getOffenseMovePositions().get(getBotID()) != null))
 			{
-				nextState(EEvent.NORMALSTART);
+				OffensiveMovePosition movePos = getAiFrame().getTacticalField().getOffenseMovePositions().get(getBotID());
+				moveTarget = movePos;
+			} else
+			{
+				moveTarget = getPos();
 			}
+			skill.getMoveCon()
+					.getDestCon().updateDestination(moveTarget);
 		}
 		
 		
 		@Override
 		public Enum<? extends Enum<?>> getIdentifier()
 		{
-			return EStateId.STOP;
+			return EOffensiveStrategy.STOP;
 		}
-	}
-	
-	
-	/**
-	 * normalStart called -> go on with game
-	 */
-	public static void normalStartCalled()
-	{
-		normalStart = true;
-	}
-	
-	
-	/**
-	 * setter for normalStart
-	 * 
-	 * @param normalStart
-	 */
-	public void setNormalStart(final boolean normalStart)
-	{
-		OffensiveRoleStopState.normalStart = normalStart;
-	}
-	
-	
-	/**
-	 * getter for normalStart
-	 * 
-	 * @return
-	 */
-	public boolean getNormalStart()
-	{
-		return normalStart;
 	}
 }

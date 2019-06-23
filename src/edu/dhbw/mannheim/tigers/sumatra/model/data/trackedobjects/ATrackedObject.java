@@ -4,12 +4,12 @@
  * Project: TIGERS - Sumatra
  * Date: 21.07.2010
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects;
 
 import java.io.Serializable;
+import java.util.Comparator;
 
 import net.sf.oval.constraint.NotNull;
 
@@ -28,24 +28,20 @@ import edu.dhbw.mannheim.tigers.sumatra.util.units.DistanceUnit;
  * </p>
  * 
  * @author Gero
- * 
  */
-@Persistent
-public abstract class ATrackedObject implements Serializable
+@Persistent(version = 1)
+public abstract class ATrackedObject
 {
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	/**  */
-	private static final long	serialVersionUID	= -5601755416618153247L;
-	
 	/** bot = assigned standardPatternId, ball = own specific Id */
 	@NotNull
-	protected AObjectID			id;
+	protected AObjectID	id;
 	
 	/** 0-1, 1 = confident */
-	public float					confidence;
+	public float			confidence;
 	
 	
 	// --------------------------------------------------------------------------
@@ -63,7 +59,7 @@ public abstract class ATrackedObject implements Serializable
 	 * @param id
 	 * @param confidence
 	 */
-	public ATrackedObject(AObjectID id, float confidence)
+	public ATrackedObject(final AObjectID id, final float confidence)
 	{
 		this.id = id;
 		this.confidence = confidence;
@@ -72,9 +68,10 @@ public abstract class ATrackedObject implements Serializable
 	
 	/**
 	 * Providing a <strong>hard, deep</strong> copy of original
+	 * 
 	 * @param o
 	 */
-	public ATrackedObject(ATrackedObject o)
+	public ATrackedObject(final ATrackedObject o)
 	{
 		this(o.id, o.confidence);
 	}
@@ -97,7 +94,7 @@ public abstract class ATrackedObject implements Serializable
 	@Override
 	public String toString()
 	{
-		return "[TrackedObject; pos = " + getPos() + "]";
+		return "[TrackedObject; pos = " + getPos() + " vel = " + getVel() + "]";
 	}
 	
 	
@@ -105,7 +102,7 @@ public abstract class ATrackedObject implements Serializable
 	 * Note: This implementation will only compare the id of this object! Be beware of this when you compare sth.
 	 */
 	@Override
-	public boolean equals(Object obj)
+	public boolean equals(final Object obj)
 	{
 		if (obj == this)
 		{
@@ -162,5 +159,23 @@ public abstract class ATrackedObject implements Serializable
 	public final float getConfidence()
 	{
 		return confidence;
+	}
+	
+	/**
+	 * Compare ids of tracked objects
+	 * 
+	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+	 */
+	public static class TrackedObjectComparator implements Comparator<ATrackedObject>, Serializable
+	{
+		/**  */
+		private static final long	serialVersionUID	= -5304247749124149706L;
+		
+		
+		@Override
+		public int compare(final ATrackedObject o1, final ATrackedObject o2)
+		{
+			return o1.getId().compareTo(o2.getId());
+		}
 	}
 }

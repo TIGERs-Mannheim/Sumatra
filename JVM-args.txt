@@ -1,0 +1,23 @@
+-XX:+UseParallelGC
+
+
+-XX:NewSize=512M
+In heavy throughput environments, you should consider using this option to increase the size of the JVM young generation. By default, the young generation is quite small, and high throughput scenarios can result in a large amount of generated garbage. This garbage collection, in turn, causes the JVM to inadvertently promote short-lived objects into the old generation.
+
+-XX:+UseConcMarkSweepGC
+Selects the CMS garbage collector. This garbage collector is set for low pause time. It will result in a Java application that has a lower average throughput, but much shorter CPU-intensive garbage collections. This option is required in environments that have response time constraints.
+
+-d64
+For 64-bit machines only. By default, the directory server selects a 32-bit JVM regardless of the architecture. This options should be specified when a large JVM heap is required (greater than 4 Gytes) and the architecture is 64-bit.
+
+-Xmaxjitcodesize=48m
+Specifies the maximum code cache size (in bytes) for JIT-compiled code. Append the letter k or K to indicate kilobytes, m or M to indicate megabytes, g or G to indicate gigabytes. By default, the value is set to 48 MB:
+
+-Xnoclassgc
+Disables garbage collection (GC) of classes. This can save some GC time, which shortens interruptions during the application run.
+
+-Xverify:none
+Sets the mode of the bytecode verifier. Bytecode verification helps to troubleshoot some problems, but it also adds overhead to the running application. Possible mode arguments for this option include the following:
+
+-XX:+AggressiveOpts
+Enables the use of aggressive performance optimization features, which are expected to become default in upcoming releases. By default, this option is disabled and experimental performance features are not used.

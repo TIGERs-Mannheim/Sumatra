@@ -8,7 +8,13 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.math;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.log4j.Logger;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 
 
 /**
@@ -26,6 +32,9 @@ public final class SumatraMath
 	
 	private static final float		EPS				= 0.00001f;
 	private static final float		EQUAL_TOL		= 0.000001f;
+	
+	/** PI as a float */
+	public static final float		PI					= (float) Math.PI;
 	
 	// --------------------------------------------------------------------------
 	// --- Factorial ------------------------------------------------------------
@@ -71,6 +80,32 @@ public final class SumatraMath
 	public static float sqrt(final float number)
 	{
 		return (float) Math.sqrt(number);
+	}
+	
+	
+	/**
+	 * This is not inaccurate or fast. It just converts the result to float!
+	 * 
+	 * @author AndreR
+	 * @param number
+	 * @return
+	 */
+	public static float cos(final float number)
+	{
+		return (float) Math.cos(number);
+	}
+	
+	
+	/**
+	 * This is not inaccurate or fast. It just converts the result to float!
+	 * 
+	 * @author AndreR
+	 * @param number
+	 * @return
+	 */
+	public static float sin(final float number)
+	{
+		return (float) Math.sin(number);
 	}
 	
 	
@@ -379,4 +414,117 @@ public final class SumatraMath
 		return (((x - in_min) * (out_max - out_min)) / (in_max - in_min)) + out_min;
 	}
 	
+	
+	/**
+	 * Calculate mean value
+	 * 
+	 * @param values
+	 * @return
+	 */
+	public static float mean(final List<Float> values)
+	{
+		float sum = 0;
+		for (Float f : values)
+		{
+			sum += f;
+		}
+		return sum / values.size();
+	}
+	
+	
+	/**
+	 * Calculate mean value
+	 * 
+	 * @param values
+	 * @return
+	 */
+	public static float meanInt(final List<Integer> values)
+	{
+		float sum = 0;
+		for (Integer f : values)
+		{
+			sum += f;
+		}
+		return sum / values.size();
+	}
+	
+	
+	/**
+	 * Calculate variance
+	 * 
+	 * @param values
+	 * @return
+	 */
+	public static float variance(final List<Float> values)
+	{
+		float mu = mean(values);
+		List<Float> val2 = new ArrayList<Float>(values.size());
+		for (Float f : values)
+		{
+			float diff = f - mu;
+			val2.add(diff * diff);
+		}
+		return mean(val2);
+	}
+	
+	
+	/**
+	 * Calculate standard deviation
+	 * 
+	 * @param values
+	 * @return
+	 */
+	public static float std(final List<Float> values)
+	{
+		return sqrt(variance(values));
+	}
+	
+	
+	/**
+	 * Mean value of a vector
+	 * 
+	 * @param values
+	 * @return
+	 */
+	public static IVector2 meanVector(final List<IVector2> values)
+	{
+		Vector2 sum = new Vector2();
+		for (IVector2 v : values)
+		{
+			sum.add(v);
+		}
+		return sum.multiply(1.0f / values.size());
+	}
+	
+	
+	/**
+	 * Variance of vectors
+	 * 
+	 * @param values
+	 * @return
+	 */
+	public static IVector2 varianceVector(final List<IVector2> values)
+	{
+		IVector2 mu = meanVector(values);
+		List<IVector2> val2 = new ArrayList<>(values.size());
+		for (IVector2 v : values)
+		{
+			Vector2 diff = v.subtractNew(mu);
+			val2.add(new Vector2(diff.x * diff.x, diff.y * diff.y));
+		}
+		return meanVector(val2);
+	}
+	
+	
+	/**
+	 * Standard deviation of vectors
+	 * 
+	 * @param values
+	 * @return
+	 */
+	public static IVector2 stdVector(final List<IVector2> values)
+	{
+		IVector2 var = varianceVector(values);
+		return new Vector2(sqrt(var.x()), sqrt(var.y()));
+	}
 }

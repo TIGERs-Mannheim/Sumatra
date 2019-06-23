@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 15.01.2011
  * Author(s): Malte
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.referee;
@@ -18,7 +17,8 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee.Command;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee.Stage;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee.TeamInfo;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamProps;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.TeamConfig;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 import edu.dhbw.mannheim.tigers.sumatra.util.network.MulticastUDPTransmitter;
 import edu.dhbw.mannheim.tigers.sumatra.util.network.NetworkUtility;
 
@@ -28,7 +28,6 @@ import edu.dhbw.mannheim.tigers.sumatra.util.network.NetworkUtility;
  * The official SSL-Protocol is used.
  * 
  * @author Malte
- * 
  */
 public class RefereeMsgTransmitter
 {
@@ -49,7 +48,7 @@ public class RefereeMsgTransmitter
 	/**
 	 * @param config
 	 */
-	public RefereeMsgTransmitter(SubnodeConfiguration config)
+	public RefereeMsgTransmitter(final SubnodeConfiguration config)
 	{
 		address = config.getString("address");
 		targetPort = Integer.valueOf(config.getString("port"));
@@ -74,13 +73,12 @@ public class RefereeMsgTransmitter
 	 * @param goalsBlue
 	 * @param goalsYellow
 	 * @param timeLeft
-	 * @param newTeamProps
 	 */
-	public void sendOwnRefereeMsg(int id, Command cmd, int goalsBlue, int goalsYellow, int timeLeft,
-			TeamProps newTeamProps)
+	public void sendOwnRefereeMsg(final int id, final Command cmd, final int goalsBlue, final int goalsYellow,
+			final int timeLeft)
 	{
 		TeamInfo.Builder teamBlueBuilder = TeamInfo.newBuilder();
-		teamBlueBuilder.setGoalie(newTeamProps.getKeeperIdBlue());
+		teamBlueBuilder.setGoalie(TeamConfig.getKeeperIdBlue());
 		teamBlueBuilder.setName("Blue");
 		teamBlueBuilder.setRedCards(1);
 		teamBlueBuilder.setScore(goalsBlue);
@@ -89,7 +87,7 @@ public class RefereeMsgTransmitter
 		teamBlueBuilder.setYellowCards(3);
 		
 		TeamInfo.Builder teamYellowBuilder = TeamInfo.newBuilder();
-		teamYellowBuilder.setGoalie(newTeamProps.getKeeperIdYellow());
+		teamYellowBuilder.setGoalie(TeamConfig.getKeeperIdYellow());
 		teamYellowBuilder.setName("Yellow");
 		teamYellowBuilder.setRedCards(0);
 		teamYellowBuilder.setScore(goalsYellow);
@@ -98,12 +96,12 @@ public class RefereeMsgTransmitter
 		teamYellowBuilder.setYellowCards(1);
 		
 		SSL_Referee.Builder builder = SSL_Referee.newBuilder();
-		builder.setPacketTimestamp(System.currentTimeMillis());
+		builder.setPacketTimestamp(SumatraClock.currentTimeMillis());
 		builder.setBlue(teamBlueBuilder.build());
 		builder.setYellow(teamYellowBuilder.build());
 		builder.setCommand(cmd);
 		builder.setCommandCounter(id);
-		builder.setCommandTimestamp(System.currentTimeMillis());
+		builder.setCommandTimestamp(SumatraClock.currentTimeMillis());
 		builder.setStageTimeLeft(timeLeft);
 		builder.setStage(Stage.NORMAL_FIRST_HALF);
 		

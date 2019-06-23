@@ -4,12 +4,12 @@
  * Project: TIGERS - Sumatra
  * Date: Jun 23, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.airecord;
 
 import java.util.Date;
+import java.util.List;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBall;
@@ -17,6 +17,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBo
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMapConst;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.IBotIDMap;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.MergedCamDetectionFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.fieldPrediction.WorldFramePrediction;
 
 
@@ -24,7 +25,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.field
  * Interface for worldframe
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public interface IRecordWfFrame
 {
@@ -88,4 +88,16 @@ public interface IRecordWfFrame
 	 * @return
 	 */
 	WorldFramePrediction getWorldFramePrediction();
+	
+	
+	/**
+	 * @return
+	 */
+	long getId();
+	
+	
+	/**
+	 * @return
+	 */
+	List<MergedCamDetectionFrame> getCamFrames();
 }

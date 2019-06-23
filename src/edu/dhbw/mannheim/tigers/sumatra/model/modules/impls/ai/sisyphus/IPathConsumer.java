@@ -4,19 +4,17 @@
  * Project: TIGERS - Sumatra
  * Date: Jan 26, 2014
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.Path;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.data.IPath;
 
 
 /**
  * Interface for all classes that need to know about new pathes
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public interface IPathConsumer
 {
@@ -25,14 +23,14 @@ public interface IPathConsumer
 	 * 
 	 * @param path
 	 */
-	void onNewPath(Path path);
+	void onNewPath(IPath path);
 	
 	
 	/**
 	 * This is called each time, the PP thread has calculated a new path
-	 * (quite frequently). Only execute paths from {@link IPathConsumer#onNewPath(Path)}!
+	 * (quite frequently). Only execute paths from {@link IPathConsumer#onNewPath(IPath)}!
 	 * 
 	 * @param path
 	 */
-	void onPotentialNewPath(Path path);
+	void onPotentialNewPath(IPath path);
 }

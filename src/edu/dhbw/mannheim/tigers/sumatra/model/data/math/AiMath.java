@@ -8,30 +8,35 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.math;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.apache.log4j.Logger;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.DynamicPosition;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.area.Goal;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.area.PenaltyArea;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AthenaAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.BaseAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.exceptions.MathException;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.functions.EFunction;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.functions.IFunction1D;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.interfaces.IPointChecker;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ITacticalField;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.valueobjects.ValueBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.math.types.CatchBallInput;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.valueobjects.ValuePoint;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.DrawableBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.DrawablePoint;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.I2DShape;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.circle.Circle;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.IDrawableShape;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector3;
@@ -41,15 +46,22 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector3;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.ILine;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Line;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBall;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMap;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.IBotIDMap;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.support.SupportRole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.finder.traj.TrajPath;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.finder.traj.TrajPathFinder;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.finder.traj.obstacles.CatchBallObstacle;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.finder.traj.obstacles.IObstacle;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.finder.traj.obstacles.SimpleTimeAwareBallObstacle;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature.EFeatureState;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeatureState;
 import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
 
 
@@ -65,41 +77,51 @@ public final class AiMath
 	// --------------------------------------------------------------------------
 	
 	// Logger
-	private static final Logger	log										= Logger.getLogger(AiMath.class.getName());
+	private static final Logger			log										= Logger.getLogger(AiMath.class.getName());
 	
-	private static final float		MAX_DIST_TO_BALL_DEST_LINE			= 500;
+	private static final float				MAX_DIST_TO_BALL_DEST_LINE			= 500;
 	/** weight in the value point for distance between ball-dest-line and foe bot. higher value= less weight */
-	private static final int		DIST_BALL_DEST_LINE_WEIGHT			= 5;
+	private static final int				DIST_BALL_DEST_LINE_WEIGHT			= 5;
 	
-	private static final float		APPROX_ORIENT_BALL_DAMP_ACCURACY	= 0.005f;
+	private static final float				APPROX_ORIENT_BALL_DAMP_ACCURACY	= 0.005f;
 	
-	private static final int		APPROX_ORIENT_BALL_DAMP_MAX_ITER	= 100;
+	private static final int				APPROX_ORIENT_BALL_DAMP_MAX_ITER	= 100;
 	
-	private static final float		BALL_DAMP_FACTOR						= 0.004f;
+	private static final float				BALL_DAMP_FACTOR						= 0.004f;
 	
-	private static final float		REDIRECT_MAX_DIST_DIFF				= 500;
+	private static final float				REDIRECT_MAX_DIST_DIFF				= 1000;
 	
-	private static final float		securityDistBotBall					= 100;
+	private static final float				securityDistBotBall					= 100;
 	
-	private static final int		DIRECT_SHOOT							= -1;
-	private static final int		CHIP_KICK								= 1;
+	@Configurable
+	private static float						minDirectShootScoreChange			= 0.3f;
+	
+	@Configurable(comment = "Assumed inaccuracy per distance")
+	private static float						shootSpread								= 1 / 10f;
+	
+	@Configurable(comment = "Scaling of distance between bot and goal")
+	private static float						distanceScaling						= 0.2f;
 	
 	@Configurable(comment = "Distance from Bot in which ignore Enemy Bots by calculate ChipKick")
-	private static float				ignoreEnemyBotChipKickDistance	= 1000;
+	private static float						ignoreEnemyBotChipKickDistance	= 1000;
+	
+	@Configurable(comment = "Which method to use for calculating redirect angle: FUN or PHY")
+	private static ERedirectAngleMethod	redirectAngleMethod					= ERedirectAngleMethod.PHY;
+	
+	private enum ERedirectAngleMethod
+	{
+		/** approximated function */
+		FUN,
+		/** physical calculation */
+		PHY
+	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	private AiMath()
 	{
 		
 	}
 	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 * Convert a bot-local vector to the equivalent global one.
@@ -169,8 +191,7 @@ public final class AiMath
 		TrackedTigerBot result = null;
 		if (botMap.size() < 1)
 		{
-			log.warn("Input list in #getNearestBot has no elements!");
-			return null;
+			throw new IllegalArgumentException("Empty input list");
 		}
 		for (final TrackedTigerBot bot : botMap.values())
 		{
@@ -274,7 +295,7 @@ public final class AiMath
 		{
 			if (bot.getPos().x() > 0)
 			{
-				float distance = GeoMath.distancePP(bot, aiFrame.getWorldFrame().ball.getPos());
+				float distance = GeoMath.distancePP(bot, aiFrame.getWorldFrame().getBall().getPos());
 				Float[] sortedArray = new Float[sortedDists.size()];
 				sortedArray = sortedDists.keySet().toArray(sortedArray);
 				// if we have more or equal to 2 entries (the only two we need: passer, receiver)
@@ -294,7 +315,7 @@ public final class AiMath
 				}
 			}
 		}
-		if ((sortedDists.size() <= 1) && (aiFrame.getWorldFrame().ball.getPos().x() > 0))
+		if ((sortedDists.size() <= 1) && (aiFrame.getWorldFrame().getBall().getPos().x() > 0))
 		{
 			return null;
 		}
@@ -325,12 +346,12 @@ public final class AiMath
 	 */
 	public static BotID getReceiver(final AthenaAiFrame aiFrame, final IBotIDMap<TrackedTigerBot> botSelection)
 	{
-		IVector2 ballPos = aiFrame.getWorldFrame().ball.getPos();
+		IVector2 ballPos = aiFrame.getWorldFrame().getBall().getPos();
 		IVector2 goalCenter = AIConfig.getGeometry().getGoalTheir().getGoalCenter();
 		
 		// 1. determine nearest bots to ball we will not use the nearest, as this is our passer
 		List<BotID> botsNearestToBallSorted = AiMath.getTigerBotsNearestToPointSorted(aiFrame,
-				aiFrame.getWorldFrame().ball.getPos());
+				aiFrame.getWorldFrame().getBall().getPos());
 		if (botsNearestToBallSorted.isEmpty())
 		{
 			return null;
@@ -420,9 +441,14 @@ public final class AiMath
 	 * @param bot
 	 * @return
 	 */
-	public static IVector2 getBotKickerPos(final TrackedBot bot)
+	public static IVector2 getBotKickerPos(final TrackedTigerBot bot)
 	{
-		return getBotKickerPos(bot.getPos(), bot.getAngle());
+		if (bot.getBot() != null)
+		{
+			return getBotKickerPos(bot.getPos(), bot.getAngle(), bot.getBot().getCenter2DribblerDist());
+		}
+		log.warn("TrackedTigerBot has no ABot assigned. Guess center2DribblerDist");
+		return getBotKickerPos(bot.getPos(), bot.getAngle(), 75);
 	}
 	
 	
@@ -431,12 +457,13 @@ public final class AiMath
 	 * 
 	 * @param botPos
 	 * @param orientation
+	 * @param center2Dribbler
 	 * @return
 	 */
-	public static IVector2 getBotKickerPos(final IVector2 botPos, final float orientation)
+	public static IVector2 getBotKickerPos(final IVector2 botPos, final float orientation, final float center2Dribbler)
 	{
 		
-		return botPos.addNew(new Vector2(orientation).scaleTo(AIConfig.getGeometry().getBotCenterToDribblerDist()));
+		return botPos.addNew(new Vector2(orientation).scaleTo(center2Dribbler));
 	}
 	
 	
@@ -508,7 +535,7 @@ public final class AiMath
 	{
 		final int numberOfIterations = 30;
 		int chanceChecker = numberOfIterations + 1;
-		IVector2 shooterPosition = wf.ball.getPos();
+		IVector2 shooterPosition = wf.getBall().getPos();
 		
 		int seriesStartBest = 0;
 		int seriesStartNow = 0;
@@ -586,135 +613,16 @@ public final class AiMath
 	/**
 	 * @author Mark Geiger
 	 * @param wf World Frame
-	 * @param id botID
 	 * @param chipKick get Score for ChipKick
 	 * @return true -> Bot will shoot directly on the goal, false -> Bot will pass to another Bot
 	 */
-	public static boolean willBotShoot(final WorldFrame wf, final BotID id, final boolean chipKick)
+	public static boolean willBotShoot(final WorldFrame wf, final boolean chipKick)
 	{
-		if (getDirectShootScoreChance(wf, id, chipKick) > 0.40)
+		if (ProbabilityMath.getDirectShootScoreChanceNew(wf, wf.getBall().getPos(), chipKick) > 0.30)
 		{
 			return true;
 		}
 		return false;
-	}
-	
-	
-	/**
-	 * @author Mark Geiger
-	 * @param wf World Frame
-	 * @param orgin
-	 * @param chipKick get Score for ChipKick
-	 * @return returns a value between 0 and 1, 0 means nearly no chance to score and 1 best chance to score.
-	 */
-	public static float getDirectShootScoreChance(final WorldFrame wf, final IVector2 orgin, final boolean chipKick)
-	{
-		final int numberOfIterations = 49;
-		int chanceChecker = numberOfIterations + 1;
-		
-		IVector2 shooterPosition = orgin;
-		
-		int seriesStartBest = 0;
-		int seriesStartNow = 0;
-		int seriesSizeBest = 0;
-		int seriesSizeNow = 0;
-		
-		float enemyGoalSize = AIConfig.getGeometry().getGoalTheir().getSize();
-		Vector2f enemyGoalRight = AIConfig.getGeometry().getGoalTheir().getGoalPostRight();
-		
-		List<BotID> ignoredBots = new ArrayList<BotID>();
-		for (Entry<BotID, TrackedTigerBot> foeBot : wf.foeBots)
-		{
-			if ((GeoMath.distancePP(orgin, foeBot.getValue().getPos()) < 1000) && chipKick)
-			{
-				ignoredBots.add(foeBot.getKey());
-			}
-		}
-		
-		for (int i = 0; i <= numberOfIterations; i++)
-		{
-			Vector2 checkingPoint = new Vector2(enemyGoalRight.subtractNew(new Vector2(0,
-					(-enemyGoalSize / numberOfIterations) * i)));
-			
-			float raySize = (((enemyGoalSize / numberOfIterations) / 5));
-			boolean freeLine = GeoMath.p2pVisibility(wf, shooterPosition, checkingPoint, raySize, ignoredBots);
-			if (freeLine)
-			{
-				seriesSizeNow++;
-			} else if (seriesSizeBest <= seriesSizeNow)
-			{
-				seriesStartBest = seriesStartNow;
-				seriesSizeBest = seriesSizeNow;
-				seriesSizeNow = 0;
-				seriesStartNow = i;
-				chanceChecker--;
-			} else
-			{
-				seriesSizeNow = 0;
-				seriesStartNow = i;
-				chanceChecker--;
-			}
-		}
-		
-		if (chanceChecker == 0)
-		{
-			// There is no chance to make a direct Goal !
-			return 0;
-		}
-		if (seriesSizeBest <= seriesSizeNow)
-		{
-			seriesSizeBest = seriesSizeNow;
-		}
-		
-		IVector2 checkingPoint = new Vector2(enemyGoalRight.subtractNew(new Vector2(0,
-				(-enemyGoalSize / numberOfIterations) * seriesStartBest)));
-		IVector2 checkingPoint2 = new Vector2(enemyGoalRight.subtractNew(new Vector2(0,
-				(-enemyGoalSize / numberOfIterations) * (seriesStartBest + seriesSizeBest))));
-		
-		Circle intersectionCircle = new Circle(AIConfig.getGeometry().getGoalTheir().getGoalCenter(), enemyGoalSize);
-		
-		Line line1 = new Line(checkingPoint, wf.ball.getPos().subtractNew(checkingPoint));
-		Line line2 = new Line(checkingPoint2, wf.ball.getPos().subtractNew(checkingPoint2));
-		
-		List<IVector2> intersections1 = GeoMath.lineCircleIntersections(line1, intersectionCircle);
-		List<IVector2> intersections2 = GeoMath.lineCircleIntersections(line2, intersectionCircle);
-		checkingPoint = intersections1.get(0);
-		checkingPoint2 = intersections2.get(0);
-		
-		float seriesValue = (float) seriesSizeBest / (numberOfIterations + 1);
-		float distanceCheckPoints = GeoMath.distancePP(checkingPoint, checkingPoint2);
-		float distanceCorridorValue = distanceCheckPoints / enemyGoalSize;
-		
-		float fieldLength = AIConfig.getGeometry().getFieldLength();
-		Line enemyGoalLine = AIConfig.getGeometry().getGoalLineTheir();
-		float distanceGoalShooter = GeoMath.distancePL(shooterPosition, enemyGoalLine);
-		float distanceValue = 1 - (distanceGoalShooter / fieldLength);
-		
-		float angleTarget = GeoMath.angleBetweenVectorAndVector(AIConfig.getGeometry().getGoalTheir().getGoalCenter()
-				.subtractNew(shooterPosition), AIConfig.getGeometry().getGoalTheir().getGoalCenter());
-		angleTarget = AngleMath.rad2deg(angleTarget);
-		
-		float angleValue = 1;
-		if (angleTarget > 45)
-		{
-			angleValue = 1 - ((angleTarget - 45) / 45);
-		}
-		
-		return ((seriesValue * 2) + (distanceValue) + (distanceCorridorValue * 5) + (angleValue * 2)) / 10;
-	}
-	
-	
-	/**
-	 * getDirectShootScoreChance for a BotID
-	 * 
-	 * @param wf
-	 * @param id
-	 * @param chipKick calc for ChipKick
-	 * @return a value between 0 and 1, 0 means nearly no chance to score and 1 best chance to score.
-	 */
-	public static float getDirectShootScoreChance(final WorldFrame wf, final BotID id, final boolean chipKick)
-	{
-		return getDirectShootScoreChance(wf, getBotKickerPos(wf.tigerBotsAvailable.get(id)), chipKick);
 	}
 	
 	
@@ -798,13 +706,6 @@ public final class AiMath
 		IVector2 dampVec = shootSpeed;
 		outVec.add(dampVec);
 		
-		// ShapeLayer.addDebugShape(new DrawableLine(new Line(AVector2.ZERO_VECTOR, vec1.scaleToNew(1000)),
-		// Color.black));
-		// ShapeLayer.addDebugShape(new DrawableLine(new Line(AVector2.ZERO_VECTOR, shootSpeed.scaleToNew(1000)),
-		// Color.blue));
-		// ShapeLayer.addDebugShape(new DrawableLine(new Line(AVector2.ZERO_VECTOR, outVec.scaleToNew(1000)),
-		// Color.red));
-		
 		return outVec;
 	}
 	
@@ -841,55 +742,27 @@ public final class AiMath
 	
 	
 	/**
-	 * Approximate the orientation of the bot that is needed to kick a ball that comes
-	 * with incomingSpeedVec an angle.
-	 * 
-	 * @param initBallvel
-	 * @param angleDifInOut
-	 * @param distanceBallToBot
-	 * @return
-	 */
-	public static float calculateOrientationForRedirect(final IVector2 initBallvel, final float angleDifInOut,
-			final float distanceBallToBot)
-	{
-		// TODO: determin acceleration ? or get it as parameter, or whatever.
-		float acceleration = -0.5f;
-		
-		float distance = distanceBallToBot / 1000;
-		float inputVel = initBallvel.getLength2();
-		float time = (distance * 2) / inputVel;
-		@SuppressWarnings("unused")
-		float endVel = inputVel + (acceleration * time);
-		
-		
-		// map BallSpeed to angle
-		
-		// ImpactVelocity and AngleDif result into
-		
-		return 2.0f;
-	}
-	
-	
-	/**
 	 * Calculate the required orientation of the bot in order to correctly redirect the ball.
 	 * This uses an approximation method, so the performance is not that good...
 	 * Use {@link AiMath#calcRedirectOrientationSimple(IVector2, IVector2, IVector2)} if you do not need precise results!
 	 * 
 	 * @param kickerPos Current or desired kicker position
 	 * @param approxOrientation This orientation is used as starting value for approximating the target angle
-	 * @param ball Current ball
+	 * @param ballVel ball velocity on hit
 	 * @param shootTarget The shoot target where the bot should redirect the ball to
 	 * @param shootSpeed shoot speed of the redirector
 	 * @return
 	 */
 	public static float calcRedirectOrientation(final IVector2 kickerPos, final float approxOrientation,
-			final TrackedBall ball, final IVector2 shootTarget, final float shootSpeed)
+			final IVector2 ballVel, final IVector2 shootTarget, final float shootSpeed)
 	{
-		float ballVel = Math.max(0.1f, ball.getVel().getLength2());
+		assert shootSpeed > 0;
 		float shootAngle = shootTarget.subtractNew(kickerPos).getAngle();
-		IVector2 ballSpeedDir = kickerPos.subtractNew(ball.getPos()).scaleTo(ballVel);
-		
-		return approxOrientationBallDamp(shootSpeed, ballSpeedDir, approxOrientation, shootAngle, BALL_DAMP_FACTOR);
+		if (ballVel.isZeroVector())
+		{
+			return shootAngle;
+		}
+		return approxOrientationBallDamp(shootSpeed, ballVel, approxOrientation, shootAngle, BALL_DAMP_FACTOR);
 	}
 	
 	
@@ -910,6 +783,64 @@ public final class AiMath
 	
 	
 	/**
+	 * Calculate redirect orientation with a function based approach. Default orientation is directly looking to the
+	 * target,
+	 * depending on speeds and angles, a function should calculate a correction angle
+	 * 
+	 * @param pos
+	 * @param senderPos
+	 * @param shootTarget
+	 * @param ballSpeed
+	 * @param shootSpeed
+	 * @return
+	 */
+	public static float calcRedirectOrientationFunctionBased(final IVector2 pos, final IVector2 senderPos,
+			final IVector2 shootTarget, final float ballSpeed, final float shootSpeed)
+	{
+		IVector2 shootDir = shootTarget.subtractNew(pos);
+		IVector2 senderDir = senderPos.subtractNew(pos);
+		float angle = GeoMath.angleBetweenVectorAndVectorWithNegative(shootDir, senderDir);
+		if (angle > AngleMath.PI_HALF)
+		{
+			return shootDir.getAngle();
+		}
+		IFunction1D fn = new IFunction1D()
+		{
+			@Override
+			public List<Float> getParameters()
+			{
+				return null;
+			}
+			
+			
+			@Override
+			public EFunction getIdentifier()
+			{
+				return null;
+			}
+			
+			
+			@Override
+			public float eval(final float... x)
+			{
+				float p00 = 0.8716f;
+				float p10 = -1.195f;
+				float p01 = -0.1944f;
+				float p20 = 0.3418f;
+				float p11 = 0.4987f;
+				float p02 = 0.08771f;
+				return p00 + (p10 * x[0]) + (p01 * x[1]) + (p20 * x[0] * x[0]) + (p11 * x[0] * x[1]) + (p02 * x[1]);
+			}
+		};
+		float bs = 0;
+		// float bs = ballSpeed;
+		float rotation = Math.signum(angle) * fn.eval(Math.abs(angle), bs, shootSpeed);
+		// System.out.println(angle + " " + ballSpeed + " -> " + rotation);
+		return AngleMath.normalizeAngle(shootDir.getAngle() + rotation);
+	}
+	
+	
+	/**
 	 * Calculate destination and targetOrientation (z-component) for redirecting the ball.
 	 * Low ballSpeeds are considered.
 	 * 
@@ -919,10 +850,10 @@ public final class AiMath
 	 * @param shootSpeed how fast will the redirector shoot?
 	 * @return
 	 */
-	public static IVector3 calcRedirectPositions(final TrackedBot bot, final TrackedBall ball,
+	public static IVector3 calcRedirectPositions(final TrackedTigerBot bot, final TrackedBall ball,
 			final IVector2 shootTarget, final float shootSpeed)
 	{
-		return calcRedirectPositions(bot.getPos(), bot.getAngle(), ball, shootTarget, shootSpeed);
+		return calcRedirectPositions(bot, bot.getPos(), bot.getAngle(), ball, shootTarget, shootSpeed);
 	}
 	
 	
@@ -930,6 +861,7 @@ public final class AiMath
 	 * Calculate destination and targetOrientation (z-component) for redirecting the ball.
 	 * Low ballSpeeds are considered.
 	 * 
+	 * @param bot
 	 * @param botDesPos Bot destination or current position
 	 * @param botDesAngle Target or current orientation
 	 * @param ball
@@ -937,23 +869,48 @@ public final class AiMath
 	 * @param shootSpeed how fast will the redirector shoot?
 	 * @return
 	 */
-	public static IVector3 calcRedirectPositions(final IVector2 botDesPos, final float botDesAngle,
+	public static IVector3 calcRedirectPositions(final TrackedTigerBot bot, final IVector2 botDesPos,
+			final float botDesAngle,
 			final TrackedBall ball,
 			final IVector2 shootTarget, final float shootSpeed)
 	{
-		IVector2 kickerPos = getBotKickerPos(botDesPos, botDesAngle);
+		float center2DribblerDist = bot.getBot().getCenter2DribblerDist();
+		IVector2 kickerPos;
 		ILine ballTravelLine;
-		if (ball.getVel().getLength2() > 0.05f)
+		if (ball.getVel().getLength2() > 0.2f)
 		{
+			kickerPos = getBotKickerPos(bot);
 			ballTravelLine = new Line(ball.getPos(), ball.getVel());
+			IVector2 lp = GeoMath.leadPointOnLine(bot.getPos(), ballTravelLine);
+			if (GeoMath.distancePP(lp, bot.getPos()) > REDIRECT_MAX_DIST_DIFF)
+			{
+				kickerPos = getBotKickerPos(botDesPos, botDesAngle, center2DribblerDist);
+				ballTravelLine = Line.newLine(ball.getPos(), kickerPos);
+			}
 		} else
 		{
+			kickerPos = getBotKickerPos(botDesPos, botDesAngle, center2DribblerDist);
 			ballTravelLine = Line.newLine(ball.getPos(), kickerPos);
 		}
 		IVector2 leadPoint = GeoMath.leadPointOnLine(kickerPos, ballTravelLine);
 		float approxOrientation = botDesAngle;
-		float targetOrientation = calcRedirectOrientation(leadPoint, approxOrientation, ball, shootTarget, shootSpeed);
-		IVector2 dir = new Vector2(targetOrientation).scaleTo(-AIConfig.getGeometry().getBotCenterToDribblerDist());
+		float targetOrientation;
+		switch (redirectAngleMethod)
+		{
+			case PHY:
+				targetOrientation = calcRedirectOrientation(leadPoint, approxOrientation, ball.getVel(), shootTarget,
+						shootSpeed);
+				break;
+			case FUN:
+				targetOrientation = calcRedirectOrientationFunctionBased(leadPoint, ball.getPos(), shootTarget, ball
+						.getVel().getLength2(), shootSpeed);
+				break;
+			default:
+				throw new IllegalStateException();
+		}
+		
+		// float
+		IVector2 dir = new Vector2(targetOrientation).scaleTo(-center2DribblerDist);
 		IVector2 dest = leadPoint.addNew(dir);
 		
 		// filter high changes
@@ -961,12 +918,28 @@ public final class AiMath
 		{
 			dest = botDesPos;
 		}
-		if (Math.abs(targetOrientation - botDesAngle) > AngleMath.PI)
+		if (Math.abs(targetOrientation - botDesAngle) > AngleMath.PI_HALF)
 		{
 			targetOrientation = botDesAngle;
 		}
 		
 		IVector3 positions = new Vector3(dest.x(), dest.y(), targetOrientation);
+		
+		
+		// DebugShapeHacker.addDebugShape(new DrawablePoint(kickerPos, Color.red));
+		// DebugShapeHacker.addDebugShape(new DrawableCircle(new Circle(leadPoint, 70), Color.magenta));
+		// DebugShapeHacker.addDebugShape(new DrawableLine(Line.newLine(ball.getPos(), leadPoint), Color.blue));
+		// DebugShapeHacker.addDebugShape(new DrawableLine(Line.newLine(leadPoint, shootTarget), Color.blue));
+		// DebugShapeHacker.addDebugShape(new DrawableCircle(new Circle(dest, 50), Color.black));
+		// DebugShapeHacker.addDebugShape(new DrawableLine(new Line(bot.getPos(), new Vector2(targetOrientation)
+		// .scaleTo(100)),
+		// Color.black));
+		//
+		// if (!leadPoint.equals(kickerPos))
+		// {
+		// DebugShapeHacker.addDebugShape(new DrawableLine(Line.newLine(kickerPos, leadPoint), Color.yellow));
+		// }
+		
 		return positions;
 	}
 	
@@ -999,7 +972,7 @@ public final class AiMath
 			} catch (IllegalArgumentException e)
 			{
 				IVector2 destination = null;
-				IVector2 ballPos = wFrame.ball.getPos();
+				IVector2 ballPos = wFrame.getBall().getPos();
 				IVector2 target = AiMath.determineChipShotTarget(wFrame, 0, AIConfig.getGeometry().getGoalTheir()
 						.getGoalCenter().x());
 				if (target == null)
@@ -1046,16 +1019,18 @@ public final class AiMath
 	/**
 	 * Adjusts destination when outside of Field.
 	 * 
+	 * @param wFrame
+	 * @param botID
 	 * @param dest
 	 * @return
 	 */
-	private static IVector2 adjustPositionWhenOutsideOfField(final WorldFrame wFrame, final BotID botID,
+	public static IVector2 adjustPositionWhenOutsideOfField(final WorldFrame wFrame, final BotID botID,
 			final IVector2 dest)
 	{
 		if (!GeoMath.isInsideField(dest))
 		{
 			IVector2 destination = null;
-			IVector2 ballPos = wFrame.ball.getPos();
+			IVector2 ballPos = wFrame.getBall().getPos();
 			destination = new Vector2(ballPos.addNew(AVector2.ZERO_VECTOR.subtractNew(ballPos).normalizeNew()
 					.multiplyNew(800)));
 			return destination;
@@ -1089,7 +1064,7 @@ public final class AiMath
 			}
 			if (penArea != null)
 			{
-				if (penArea.isPointInShape(dest))
+				if (penArea.isPointInShape(dest, AIConfig.getGeometry().getBotRadius()))
 				{
 					IVector2 botPos = wFrame.getBot(botID).getPos();
 					// behind penArea?
@@ -1098,7 +1073,8 @@ public final class AiMath
 						// this will result in an acceptable new destination
 						botPos = AVector2.ZERO_VECTOR;
 					}
-					IVector2 nearestPointOutside = penArea.nearestPointOutside(dest, botPos);
+					IVector2 nearestPointOutside = penArea.nearestPointOutside(dest, botPos, AIConfig.getGeometry()
+							.getBotRadius());
 					return nearestPointOutside;
 				}
 			}
@@ -1178,153 +1154,190 @@ public final class AiMath
 	
 	
 	/**
-	 * Gives a ValueBot with a high chance to make a goal.
+	 * Find a random point drawn from Gaussian distribution that lies on the ball traveling line (now till ball stops)
+	 * mu should be a rough estimation, e.g. the last point.
 	 * 
-	 * @param aiFrame
-	 * @param pos
-	 * @return ValueBot (DIRECT_SHOOT = -1 | CHIP_KICK = 1;
+	 * @param ball
+	 * @param mu result will be centered around this point
+	 * @param sigma standard deviation for Gaussian distribution
+	 * @param rnd
+	 * @return
 	 */
-	public static ValueBot getBestPasstarget(final AthenaAiFrame aiFrame, final IVector2 pos)
+	public static IVector2 getRandomPointOnBallTravelLine(final TrackedBall ball, final IVector2 mu, final float sigma,
+			final Random rnd)
 	{
-		ValueBot bestPassReceiver = null;
-		
-		List<TrackedTigerBot> passReceivers = new ArrayList<TrackedTigerBot>();
-		List<ValueBot> valuedPassReceivers = new ArrayList<ValueBot>();
-		
-		ITacticalField tField = aiFrame.getTacticalField();
-		WorldFrame wFrame = aiFrame.getWorldFrame();
-		IVector2 ourGoalCenter = AIConfig.getGeometry().getGoalOur().getGoalCenter();
-		IVector2 ballPos = wFrame.getBall().getPos();
-		IVector2 shootTarget = tField.getBestDirectShootTarget();
-		
-		int distance2Goal = 1500;
-		int distance2Pos = 2000;
-		
-		// irgnore Bots which to near to goal and ball
-		for (TrackedTigerBot potentialPassReciever : wFrame.getTigerBotsAvailable().values())
-		{
-			IVector2 recieverPos = potentialPassReciever.getPos();
-			
-			if ((GeoMath.distancePP(recieverPos, ourGoalCenter) < distance2Goal))
-			{
-				continue;
-			}
-			if (GeoMath.distancePP(recieverPos, pos) < distance2Pos)
-			{
-				continue;
-			}
-			
-			passReceivers.add(potentialPassReciever);
-		}
-		
-		// calculate value for passing
-		for (TrackedTigerBot receiver : passReceivers)
-		{
-			float passValue = 0;
-			BotID receiverID = receiver.getId();
-			IVector2 receiverPos = receiver.getPos();
-			
-			float MAX_VALUE = 1;
-			
-			float angleWeight = 1;
-			float distamce2ReceiverWeight = 1;
-			float shootingWeight = 2;
-			float nearPenatltyWeight = 2;
-			
-			float weightSum = angleWeight + distamce2ReceiverWeight + shootingWeight + nearPenatltyWeight;
-			
-			IVector2 dvShooterPassTarget = ballPos.subtractNew(receiverPos);
-			IVector2 dvPassReciverTarget = shootTarget.subtractNew(receiverPos);
-			
-			float angle = Math.abs(AngleMath.rad2deg(GeoMath.angleBetweenVectorAndVector(dvShooterPassTarget,
-					dvPassReciverTarget)));
-			
-			double angleValue = 1;
-			
-			if (angle <= 45)
-			{
-				angleValue = 0.75 + ((1 / 180) * angle * MAX_VALUE);
-			}
-			
-			if ((angle > 45) && (angle <= 90))
-			{
-				angleValue = 1.25 - ((1 / 180) * angle * MAX_VALUE);
-			}
-			
-			if ((angle > 90) && (angle <= 180))
-			{
-				angleValue = 0.5 - ((1 / 360) * angle * MAX_VALUE);
-			}
-			
-			
-			float distamce2Receiver = GeoMath.distancePP(receiverPos, pos);
-			float distamce2ReceiverValue = (float) (MAX_VALUE - (0.0000002 * Math.pow((distamce2Receiver - 2500), 2)));
-			
-			float shootingValue = SumatraMath.map(AiMath.getScoreForStraightShot(wFrame, pos, receiverPos), 0, 1, 1, 0)
-					* MAX_VALUE;
-			
-			float nearPenatltyValue = MAX_VALUE;
-			if (AIConfig.getGeometry().getPenaltyAreaOur().isPointInShape(receiverPos, 400))
-			{
-				nearPenatltyValue = 0;
-			}
-			
-			passValue = (float) (((angleValue * angleWeight) + (distamce2ReceiverValue * distamce2ReceiverWeight)
-					+ (shootingValue * shootingWeight) + (nearPenatltyValue * nearPenatltyWeight)) / weightSum);
-			
-			valuedPassReceivers.add(new ValueBot(receiverID, passValue));
-		}
-		
-		
-		// calculate direct shoot chance from the receiver to the goal
-		for (ValueBot receiver : valuedPassReceivers)
-		{
-			ValuePoint bestDirectShot = tField.getBestDirectShotTargetBots().get(receiver.getBotID());
-			float receiverValue = receiver.getValue();
-			float shootValue = SumatraMath.map(bestDirectShot.getValue(), 0, 1, 1, 0);
-			receiver.setValue(receiverValue + shootValue);
-		}
-		
-		Collections.sort(valuedPassReceivers, ValueBot.VALUEHIGHCOMPARATOR);
-		
-		// no possible pass target
-		if (valuedPassReceivers.size() == 0)
-		{
-			return null;
-		}
-		
-		// at ChipKick ignore Bots which near to the ball
-		List<BotID> ignoredBots = new ArrayList<BotID>();
-		for (BotID key : wFrame.foeBots.keySet())
-		{
-			if (GeoMath.distancePP(ballPos, wFrame.foeBots.get(key).getPos()) < ignoreEnemyBotChipKickDistance)
-			{
-				ignoredBots.add(key);
-			}
-		}
-		
-		for (int i = 0; i < valuedPassReceivers.size(); i++)
-		{
-			IVector2 bestPassReceiverPos = wFrame.tigerBotsAvailable.get(valuedPassReceivers.get(i).getBotID()).getPos();
-			bestPassReceiver = valuedPassReceivers.get(i);
-			
-			// freeForDirectPass
-			if (GeoMath.p2pVisibility(wFrame, ballPos, bestPassReceiverPos))
-			{
-				bestPassReceiver.setValue(DIRECT_SHOOT);
-				return bestPassReceiver;
-			}
-			// freeForChipPass
-			if (GeoMath.p2pVisibility(wFrame, ballPos, bestPassReceiverPos, ignoredBots))
-			{
-				bestPassReceiver.setValue(CHIP_KICK);
-				return bestPassReceiver;
-			}
-		}
-		
-		return bestPassReceiver;
+		IVector2 rndRangeStart = ball.getPos();
+		IVector2 rndRangeEnd = ball.getPosByVel(0);
+		float lastDist = GeoMath.distancePP(rndRangeStart, mu);
+		float gaussDist = lastDist + ((float) rnd.nextGaussian() * sigma);
+		float stepDist = Math.max(0, Math.min(gaussDist, GeoMath.distancePP(rndRangeStart, rndRangeEnd)));
+		IVector2 rndDest = GeoMath.stepAlongLine(rndRangeStart, rndRangeEnd, stepDist);
+		return rndDest;
 	}
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
+	
+	
+	/**
+	 * Calculate the angle between the redirect orientation of the robot and the ball vector.
+	 * This is not the angle of the robot!
+	 * It is useful for checking if this angle is smaller than 90deg or sth.,
+	 * so that the robot can actually redirect the ball
+	 * 
+	 * @param kickerPos
+	 * @param receiver
+	 * @param vBall
+	 * @param shootSpeed
+	 * @return
+	 */
+	public static float calcRedirectAngle(final IVector2 kickerPos, final IVector2 receiver, final IVector2 vBall,
+			final float shootSpeed)
+	{
+		float approxOrient = 0;
+		if (!kickerPos.equals(receiver))
+		{
+			approxOrient = receiver.subtractNew(kickerPos).getAngle();
+		}
+		
+		float targetAngle = calcRedirectOrientation(kickerPos, approxOrient, vBall, receiver, shootSpeed);
+		float ballAngle;
+		if (vBall.isZeroVector())
+		{
+			ballAngle = targetAngle;
+		} else
+		{
+			ballAngle = AngleMath.normalizeAngle(vBall.getAngle() + AngleMath.PI);
+		}
+		float redirectAngle = Math.abs(AngleMath.difference(ballAngle, targetAngle));
+		return redirectAngle;
+	}
+	
+	
+	/**
+	 * @param input
+	 * @return
+	 */
+	public static TrajPath catchBallTrajPath(final CatchBallInput input)
+	{
+		TrackedTigerBot bot = input.getBot();
+		TrackedBall ball = input.getBall();
+		DynamicPosition receiver = input.getReceiver();
+		List<IDrawableShape> shapes = input.getShapes();
+		TrajPathFinder finder = bot.getBot().getPathFinder();
+		IVector2 dest = input.getLastDest();
+		TrajPath path = input.getLastPath();
+		float timeTolerance = 0.3f;
+		float morePreciseTol = 80;
+		float fasterTol = 0.5f;
+		float precisionTol = 500;
+		float shootSpeed = 8;
+		
+		float toBallDist = (AIConfig.getGeometry().getBallRadius() + bot.getBot().getCenter2DribblerDist()) - 50;
+		// List<IObstacle> obstacles = input.getObsGen().generateStaticObstacles();
+		List<IObstacle> obstacles = new ArrayList<>(1);
+		CatchBallObstacle catchBallObs = new CatchBallObstacle(ball, 0, receiver, shootSpeed);
+		obstacles.add(catchBallObs);
+		obstacles.add(new SimpleTimeAwareBallObstacle(ball, toBallDist));
+		shapes.add(catchBallObs);
+		
+		// look at random position to find global minimum
+		IVector2 shortestPoint;
+		float sigma = input.getLastDist2Dest();
+		if (ball.getVel().getLength2() > 0.5f)
+		{
+			shortestPoint = GeoMath.leadPointOnLine(bot.getPos(), ball.getPos(), ball.getPosByVel(0));
+			float dist2ShortestPoint = GeoMath.distancePP(shortestPoint, bot.getPos());
+			sigma = ((3 * dist2ShortestPoint) + sigma) / 4;
+		} else
+		{
+			shortestPoint = GeoMath.stepAlongLine(ball.getPos(), receiver, -toBallDist);
+		}
+		IVector2 rndDest = getRandomPointOnBallTravelLine(ball, shortestPoint, sigma, input.getRnd());
+		
+		// calculate target orientation
+		IVector2 vBallAtDest = ball.getVel().scaleToNew(ball.getVelByPos(rndDest));
+		float approxOrient = 0;
+		if (!rndDest.equals(receiver))
+		{
+			approxOrient = receiver.subtractNew(rndDest).getAngle();
+		}
+		float targetAngle = calcRedirectOrientation(rndDest, approxOrient, vBallAtDest, receiver, shootSpeed);
+		
+		IVector2 robotDest = rndDest.addNew(new Vector2(targetAngle).turn(AngleMath.PI).scaleTo(toBallDist));
+		shapes.add(new DrawableBot(robotDest, targetAngle, Color.GRAY));
+		
+		input.getFinderInput().setTrackedBot(bot);
+		input.getFinderInput().setDest(robotDest);
+		input.getFinderInput().setTargetAngle(targetAngle);
+		input.getFinderInput().setObstacles(obstacles);
+		TrajPath rndPath = finder.calcPath(input.getFinderInput());
+		if (rndPath != null)
+		{
+			float tBot = rndPath.getTotalTime();
+			IVector2 pBall = ball.getPosByTime(tBot + timeTolerance);
+			IVector2 vBall = ball.getVel().scaleToNew(ball.getVelByTime(tBot + timeTolerance));
+			float distDest2Ball = GeoMath.distancePP(pBall, rndDest);
+			if (input.isDebug())
+			{
+				DrawablePoint dP = new DrawablePoint(rndDest, Color.magenta);
+				dP.setText(String.format("%.1f", distDest2Ball));
+				shapes.add(dP);
+			}
+			
+			float redirectAngle = calcRedirectAngle(rndDest, receiver, vBall, shootSpeed);
+			
+			boolean morePrecise = distDest2Ball < (input.getLastDist2Dest() - morePreciseTol);
+			boolean faster = (path == null) || (tBot < (path.getTotalTime() - fasterTol));
+			boolean preciseEnough = (distDest2Ball < precisionTol);
+			boolean angleOk = redirectAngle < input.getMaxAngle();
+			if (angleOk && (morePrecise || (faster && preciseEnough)))
+			{
+				log.debug("New Path. " + angleOk + " && (" + morePrecise + " || (" + faster + " && " + preciseEnough
+						+ ")) " + distDest2Ball);
+				dest = rndDest;
+				path = rndPath;
+			}
+		}
+		
+		if (path != null)
+		{
+			float tBot = path.getRemainingTime();
+			IVector2 pBall = ball.getPosByTime(tBot + timeTolerance);
+			float distDest2Ball = GeoMath.distancePP(pBall, dest);
+			input.setLastDist2Dest(distDest2Ball);
+			if (input.isDebug())
+			{
+				DrawablePoint dP = new DrawablePoint(dest, Color.black);
+				dP.setText(String.format("%.1f", distDest2Ball));
+				shapes.add(dP);
+			}
+		}
+		
+		input.setLastDest(dest);
+		input.setLastPath(path);
+		return path;
+	}
+	
+	
+	/**
+	 * Determines whether support bots would be equally distributed over both field sides or not
+	 * 
+	 * @param position Support position to consider
+	 * @param aiFrame Current BaseAiFrame
+	 * @return
+	 */
+	public static boolean isBalancedSupportPosition(final IVector2 position, final BaseAiFrame aiFrame)
+	{
+		int yBalance = 0;
+		
+		for (ARole role : aiFrame.getPrevFrame().getPlayStrategy().getActiveRoles(ERole.SUPPORT))
+		{
+			if (((SupportRole) role).getDestination() != null)
+			{
+				yBalance += ((SupportRole) role).getDestination().y() < 0 ? -1 : 1;
+			}
+		}
+		
+		boolean positiveNeeded = yBalance <= 0;
+		
+		return (yBalance == 0) || (positiveNeeded && (position.y() >= 0)) || (!positiveNeeded && (position.y() < 0));
+	}
 }

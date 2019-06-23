@@ -1,0 +1,242 @@
+/*
+ * *********************************************************
+ * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
+ * Project: TIGERS - Sumatra
+ * Date: Dec 1, 2014
+ * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
+ * *********************************************************
+ */
+package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.PingStats;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerSystemPing;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
+
+
+/**
+ * Thread for performing pings to a bot
+ * 
+ * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ */
+public class PingThread implements Runnable
+{
+	private static final long						UPDATE_RATE		= 100000000;
+	
+	private int											id					= 0;
+	
+	private long										lastStatTime	= 0;
+	private int											payloadSize		= 0;
+	
+	private final List<PingDatum>					pings				= new LinkedList<PingDatum>();
+	private final List<PingDatum>					completed		= new LinkedList<PingDatum>();
+	
+	private final ABot								bot;
+	
+	
+	private final List<IPingThreadObserver>	observers		= new CopyOnWriteArrayList<IPingThreadObserver>();
+	
+	
+	/**
+	 * @param observer
+	 */
+	public void addObserver(final IPingThreadObserver observer)
+	{
+		observers.add(observer);
+	}
+	
+	
+	/**
+	 * @param observer
+	 */
+	public void removeObserver(final IPingThreadObserver observer)
+	{
+		observers.remove(observer);
+	}
+	
+	
+	private void notifyNewPingStats(final PingStats pingStats)
+	{
+		for (IPingThreadObserver observer : observers)
+		{
+			observer.onNewPingStats(pingStats);
+		}
+	}
+	
+	
+	/**
+	 * @param payloadSize
+	 * @param bot
+	 */
+	public PingThread(final int payloadSize, final ABot bot)
+	{
+		this.payloadSize = payloadSize;
+		this.bot = bot;
+	}
+	
+	
+	@Override
+	public void run()
+	{
+		synchronized (pings)
+		{
+			pings.add(new PingDatum(id));
+		}
+		
+		bot.execute(new TigerSystemPing(id, payloadSize));
+		id++;
+		
+		synchronized (pings)
+		{
+			while (!pings.isEmpty())
+			{
+				PingDatum dat = pings.get(0);
+				
+				if ((SumatraClock.nanoTime() - dat.startTime) < 1000000000)
+				{
+					break;
+				}
+				
+				dat.endTime = SumatraClock.nanoTime();
+				dat.delay = (dat.endTime - dat.startTime) / 1e9f;
+				dat.lost = true;
+				
+				pings.remove(0);
+				
+				completed.add(dat);
+			}
+		}
+		
+		processCompleted();
+	}
+	
+	
+	/**
+	 * @param id
+	 */
+	public void pongArrived(final int id)
+	{
+		PingDatum dat = null;
+		
+		synchronized (pings)
+		{
+			while (!pings.isEmpty())
+			{
+				dat = pings.remove(0);
+				
+				dat.endTime = SumatraClock.nanoTime();
+				dat.delay = (dat.endTime - dat.startTime) / 1e9f;
+				
+				completed.add(dat);
+				
+				if (dat.id == id)
+				{
+					break;
+				}
+				
+				dat.lost = true;
+			}
+		}
+		
+		processCompleted();
+	}
+	
+	
+	private synchronized void processCompleted()
+	{
+		PingDatum dat;
+		
+		while (!completed.isEmpty())
+		{
+			dat = completed.get(0);
+			
+			if ((SumatraClock.nanoTime() - dat.endTime) > 1e9)
+			{
+				completed.remove(0);
+			} else
+			{
+				break;
+			}
+		}
+		
+		if ((SumatraClock.nanoTime() - lastStatTime) > UPDATE_RATE)
+		{
+			lastStatTime = SumatraClock.nanoTime();
+			
+			PingStats stats = new PingStats();
+			
+			for (PingDatum d : completed)
+			{
+				if (d.delay < stats.minDelay)
+				{
+					stats.minDelay = d.delay;
+				}
+				
+				if (d.delay > stats.maxDelay)
+				{
+					stats.maxDelay = d.delay;
+				}
+				
+				stats.avgDelay += d.delay;
+				
+				if (d.lost)
+				{
+					stats.lostPings++;
+				}
+			}
+			
+			stats.avgDelay /= completed.size();
+			
+			if (completed.isEmpty())
+			{
+				stats.minDelay = 0;
+				stats.avgDelay = 0;
+				stats.maxDelay = 0;
+				stats.lostPings = 0;
+			}
+			
+			notifyNewPingStats(stats);
+		}
+	}
+	
+	
+	private static class PingDatum
+	{
+		public PingDatum(final int id)
+		{
+			this.id = id;
+			startTime = SumatraClock.nanoTime();
+			endTime = 0;
+			delay = 0;
+			lost = false;
+		}
+		
+		public long		startTime;
+		public long		endTime;
+		public float	delay;
+		public int		id;
+		public boolean	lost;
+	}
+	
+	/**
+	 */
+	public static interface IPingThreadObserver
+	{
+		/**
+		 * @param stats
+		 */
+		void onNewPingStats(PingStats stats);
+	}
+	
+	
+	/**
+	 */
+	public void clearObservers()
+	{
+		observers.clear();
+	}
+}

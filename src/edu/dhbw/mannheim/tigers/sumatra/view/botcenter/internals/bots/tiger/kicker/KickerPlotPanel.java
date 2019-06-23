@@ -25,6 +25,7 @@ import java.awt.Color;
 import javax.swing.JPanel;
 
 import net.miginfocom.swing.MigLayout;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 
 
 /**
@@ -81,7 +82,7 @@ public class KickerPlotPanel extends JPanel
 		
 		add(chart, "grow");
 		
-		timeOffset = System.nanoTime();
+		timeOffset = SumatraClock.nanoTime();
 	}
 	
 	
@@ -93,7 +94,7 @@ public class KickerPlotPanel extends JPanel
 	 */
 	public void addCapLevel(float lvl)
 	{
-		capTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, lvl);
+		capTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, lvl);
 	}
 	
 	
@@ -102,6 +103,6 @@ public class KickerPlotPanel extends JPanel
 	 */
 	public void addChargeCurrent(float cur)
 	{
-		chgTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, cur);
+		chgTrace.addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, cur);
 	}
 }

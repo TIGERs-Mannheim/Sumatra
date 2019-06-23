@@ -30,6 +30,7 @@ import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerKickerIrLog;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 
 
 /**
@@ -158,7 +159,7 @@ public class IRPanel extends JPanel
 		barTraces[TigerKickerIrLog.RIGHT].addPoint(3.0, 1.2);
 		barTraces[TigerKickerIrLog.BARRIER].addPoint(4.0, 0.2);
 		
-		timeOffset = System.nanoTime();
+		timeOffset = SumatraClock.nanoTime();
 	}
 	
 	
@@ -178,7 +179,7 @@ public class IRPanel extends JPanel
 			{
 				for (int i = 0; i < 4; i++)
 				{
-					voltageTraces[i].addPoint((System.nanoTime() - timeOffset) / 1000000000.0, log.getVoltage()[i]);
+					voltageTraces[i].addPoint((SumatraClock.nanoTime() - timeOffset) / 1000000000.0, log.getVoltage()[i]);
 					voltages[i].setText(String.format(Locale.ENGLISH, "%1.4f V", log.getVoltage()[i]));
 				}
 				

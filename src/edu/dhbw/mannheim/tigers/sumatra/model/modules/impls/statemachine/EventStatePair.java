@@ -4,36 +4,34 @@
  * Project: TIGERS - Sumatra
  * Date: Apr 30, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine;
 
+import java.util.Optional;
+
 
 /**
- * Pair of state and event
+ * Pair of state/stateInstance and event.
+ * Primary method here is equals.
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class EventStatePair
 {
-	private final Enum<? extends Enum<?>>	event;
-	private final Enum<? extends Enum<?>>	state;
+	private final Enum<? extends Enum<?>>				event;
+	private final Optional<Enum<? extends Enum<?>>>	state;
+	private final Optional<IState>						stateInstance;
 	
-	private EValid									valid	= EValid.UNKNOWN;
 	
 	/**
+	 * @param event
 	 */
-	public enum EValid
+	public EventStatePair(final Enum<? extends Enum<?>> event)
 	{
-		/**  */
-		UNKNOWN,
-		/**  */
-		CHECKING,
-		/**  */
-		YES,
-		/**  */
-		NO;
+		this.event = event;
+		state = Optional.empty();
+		stateInstance = Optional.empty();
 	}
 	
 	
@@ -41,10 +39,37 @@ public class EventStatePair
 	 * @param event
 	 * @param state
 	 */
-	public EventStatePair(Enum<? extends Enum<?>> event, Enum<? extends Enum<?>> state)
+	public EventStatePair(final Enum<? extends Enum<?>> event, final Enum<? extends Enum<?>> state)
 	{
 		this.event = event;
-		this.state = state;
+		this.state = Optional.of(state);
+		stateInstance = Optional.empty();
+	}
+	
+	
+	/**
+	 * @param event
+	 * @param stateInstance
+	 */
+	public EventStatePair(final Enum<? extends Enum<?>> event, final IState stateInstance)
+	{
+		this.event = event;
+		this.stateInstance = Optional.of(stateInstance);
+		state = Optional.empty();
+	}
+	
+	
+	/**
+	 * @param event
+	 * @param state
+	 * @param stateInstance
+	 */
+	public EventStatePair(final Enum<? extends Enum<?>> event, final Enum<? extends Enum<?>> state,
+			final IState stateInstance)
+	{
+		this.event = event;
+		this.stateInstance = Optional.of(stateInstance);
+		this.state = Optional.ofNullable(state);
 	}
 	
 	
@@ -54,13 +79,15 @@ public class EventStatePair
 		final int prime = 31;
 		int result = 1;
 		result = (prime * result) + ((event == null) ? 0 : event.hashCode());
-		result = (prime * result) + ((state == null) ? 0 : state.hashCode());
+		// note: we do not include state or stateInstance, because that may violate the contract
+		// of hashCode(). We have to return the same hashCode, if equals returns true, but we may
+		// return the same hash code for unequal objects.
 		return result;
 	}
 	
 	
 	@Override
-	public boolean equals(Object obj)
+	public boolean equals(final Object obj)
 	{
 		if (this == obj)
 		{
@@ -86,15 +113,19 @@ public class EventStatePair
 		{
 			return false;
 		}
-		if (state == null)
+		if (state.isPresent() && other.state.isPresent())
 		{
-			if (other.state != null)
+			if (!state.equals(other.state))
 			{
 				return false;
 			}
-		} else if (!state.equals(other.state))
+		}
+		if (stateInstance.isPresent() && other.stateInstance.isPresent())
 		{
-			return false;
+			if (!stateInstance.equals(other.stateInstance))
+			{
+				return false;
+			}
 		}
 		return true;
 	}
@@ -109,41 +140,22 @@ public class EventStatePair
 	}
 	
 	
-	/**
-	 * @return the state
-	 */
-	public final Enum<? extends Enum<?>> getState()
-	{
-		return state;
-	}
-	
-	
-	/**
-	 * @return the valid
-	 */
-	public final EValid getValid()
-	{
-		return valid;
-	}
-	
-	
-	/**
-	 * @param valid the valid to set
-	 */
-	public final void setValid(EValid valid)
-	{
-		this.valid = valid;
-	}
-	
-	
 	@Override
 	public String toString()
 	{
 		StringBuilder builder = new StringBuilder();
 		builder.append("EventStatePair [event=");
 		builder.append(event);
-		builder.append(", state=");
-		builder.append(state);
+		if (state.isPresent())
+		{
+			builder.append(", state=");
+			builder.append(state);
+		}
+		if (stateInstance.isPresent())
+		{
+			builder.append(", stateInstance=");
+			builder.append(stateInstance.getClass().getName());
+		}
 		builder.append("]");
 		return builder.toString();
 	}

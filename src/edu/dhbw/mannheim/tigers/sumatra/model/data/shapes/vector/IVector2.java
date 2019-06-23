@@ -4,10 +4,12 @@
  * Project: TIGERS - Sumatra
  * Date: 24.10.2010
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector;
+
+import edu.dhbw.mannheim.tigers.sumatra.util.csvexporter.IJsonString;
+import edu.dhbw.mannheim.tigers.sumatra.util.csvexporter.INumberListable;
 
 
 /**
@@ -15,11 +17,9 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector;
  * 
  * @see Vector2
  * @see Vector2f
- * 
  * @author Gero
- * 
  */
-public interface IVector2
+public interface IVector2 extends IJsonString, INumberListable
 {
 	/**
 	 * @return The X part of the vector
@@ -75,7 +75,7 @@ public interface IVector2
 	 * uneffected.<br>
 	 * 
 	 * <pre>
-	 *   l      
+	 *   l
 	 * ----  *   v
 	 * | v |
 	 * 
@@ -137,14 +137,12 @@ public interface IVector2
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	boolean isVertical();
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	boolean isHorizontal();
@@ -177,6 +175,7 @@ public interface IVector2
 	/**
 	 * does a projection of this onto v.
 	 * the result is a vector in direction of v but with possibly different length (even negative)
+	 * 
 	 * @param v
 	 * @return a vector in direction of v
 	 * @author DanielW
@@ -186,7 +185,6 @@ public interface IVector2
 	
 	/**
 	 * @return Whether the given {@link IVector2} nearly equals this.
-	 * 
 	 * @author Gero
 	 * @param vec
 	 * @param tolerance
@@ -228,4 +226,15 @@ public interface IVector2
 	 * @return
 	 */
 	boolean similar(IVector2 vec, float treshold);
+	
+	
+	/**
+	 * rotates a new created Vector2 around axis and returns the new object.
+	 * 
+	 * @param axis
+	 * @param angle
+	 * @return
+	 */
+	public Vector2 turnAroundNew(final IVector2 axis, final float angle);
+	
 }

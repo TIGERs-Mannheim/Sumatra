@@ -9,6 +9,9 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -21,33 +24,42 @@ import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.dhbw.mannheim.tigers.moduli.exceptions.StartModuleException;
 import edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesState;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.Referee.SSL_Referee.Command;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AthenaAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.BaseAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.MetisAiFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrameWrapper;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.MultiTeamMessage;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.AresData;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.PlayStrategy;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.TacticalField;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.referee.RefereeMsg;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.IDrawableShape;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.ares.Ares;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.athena.Athena;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.Metis;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.RoleFactory;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.timer.DummyTimer;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.timer.ETimable;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.timer.ITimer;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.timer.SumatraTimer;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.Director;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.worldpredictor.oextkal.WorldFrameFactory;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IAIObserver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AAgent;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ACam;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AMultiTeamMessage;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AReferee;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ASkillSystem;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ATimer;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.AWorldPredictor;
+import edu.dhbw.mannheim.tigers.sumatra.model.persistance.RecordManager;
+import edu.dhbw.mannheim.tigers.sumatra.presenter.aicenter.EAIControlState;
+import edu.dhbw.mannheim.tigers.sumatra.util.AugmentedDataSender;
 import edu.dhbw.mannheim.tigers.sumatra.util.FpsCounter;
+import edu.dhbw.mannheim.tigers.sumatra.util.MultiTeamMessageSender;
+import edu.dhbw.mannheim.tigers.sumatra.util.config.UserConfig;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.EDrawableShapesLayer;
 
 
 /**
@@ -58,64 +70,62 @@ import edu.dhbw.mannheim.tigers.sumatra.util.FpsCounter;
  */
 public class Agent extends AAgent implements Runnable
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	// Logger
-	private static final Logger					log					= Logger.getLogger(Agent.class.getName());
+	private static final Logger					log							= Logger.getLogger(Agent.class.getName());
 	
-	private static final int						QUEUE_LENGTH		= 1;
+	private static final int						QUEUE_LENGTH				= 1;
 	
-	private static final long						WF_TIMEOUT			= 1000;
+	private static final long						WF_TIMEOUT					= 1000;
 	
 	// Source
-	private final SumatraModel						model					= SumatraModel.getInstance();
-	private SumatraTimer								timer					= null;
-	private ACam										cam					= null;
+	private final SumatraModel						model							= SumatraModel.getInstance();
+	private ITimer										timer							= new DummyTimer();
+	private ACam										cam							= null;
 	
-	private final BlockingDeque<WorldFrame>	freshWorldFrames	= new LinkedBlockingDeque<WorldFrame>(QUEUE_LENGTH);
-	
-	
+	private final BlockingDeque<WorldFrame>	freshWorldFrames			= new LinkedBlockingDeque<WorldFrame>(
+																									QUEUE_LENGTH);
+	private List<IDrawableShape>					shapeInjectionsQueue		= new LinkedList<IDrawableShape>();
+	private List<IDrawableShape>					shapeInjectionsQueue2	= new LinkedList<IDrawableShape>();
+	private final Object								shapeSync					= new Object();
 	// AI
 	private Thread										nathan;
 	
-	private AReferee									referee				= null;
+	private AReferee									referee						= null;
 	
-	private AIInfoFrame								previousAIFrame	= null;
-	private RefereeMsg								latestRefereeMsg	= null;
+	private AIInfoFrame								previousAIFrame			= null;
+	private RefereeMsg								latestRefereeMsg			= null;
 	
 	/** {@link Metis} */
 	private Metis										metis;
 	
 	/** {@link Athena} */
-	private final Athena								athena				= new Athena();
+	private final Athena								athena						= new Athena();
 	
 	/** {@link Ares} */
 	private Ares										ares;
 	
 	private ASkillSystem								skillSystem;
 	
-	private FpsCounter								fpsCounter			= new FpsCounter();
+	private FpsCounter								fpsCounter					= new FpsCounter();
 	
 	/** was the agent activated yet? Can only be activated once */
-	private boolean									activated			= false;
+	private boolean									activated					= false;
 	private String										activatedKey;
 	/** is the agent active atm? Can also be disabled again */
-	private boolean									active				= false;
+	private boolean									active						= false;
 	
 	private ETimable									timableAgent;
-	private ETimable									timableAthena;
 	private ETimable									timableMetis;
-	private ETimable									timableAres;
 	private ETimable									timableNotify;
 	
 	
-	private long										lastRefMsgCounter	= -1;
+	private long										lastRefMsgCounter			= -1;
+	private AugmentedDataSender					augmentedDataSender		= null;
+	
+	private AMultiTeamMessage						multiTeamMessage			= null;
+	private MultiTeamMessage						multiTeamMsg				= null;
+	private MultiTeamMessageSender				multiTeamMessageSender	= null;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * @param subnodeConfiguration
 	 */
@@ -124,33 +134,27 @@ public class Agent extends AAgent implements Runnable
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- lifecycle ------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	@Override
 	public void initModule() throws InitModuleException
 	{
 		if (MODULE_ID_YELLOW.equals(getId()))
 		{
 			timableAgent = ETimable.AGENT_Y;
-			timableAthena = ETimable.ATHENA_Y;
 			timableMetis = ETimable.METIS_Y;
-			timableAres = ETimable.ARES_Y;
 			timableNotify = ETimable.AI_NOTIFY_Y;
 			setTeamColor(ETeamColor.YELLOW);
 		} else if (MODULE_ID_BLUE.equals(getId()))
 		{
 			timableAgent = ETimable.AGENT_B;
-			timableAthena = ETimable.ATHENA_B;
 			timableMetis = ETimable.METIS_B;
-			timableAres = ETimable.ARES_B;
 			timableNotify = ETimable.AI_NOTIFY_B;
 			setTeamColor(ETeamColor.BLUE);
 		}
 		
 		activatedKey = Agent.class.getName() + "-" + getId() + ".activated";
-		active = Boolean.valueOf(SumatraModel.getInstance().getUserProperty(activatedKey));
-		activated = active;
+		setActive(Boolean.valueOf(SumatraModel.getInstance().getUserProperty(activatedKey)));
+		fpsCounter = new FpsCounter();
+		
 		try
 		{
 			cam = (ACam) model.getModule(ACam.MODULE_ID);
@@ -162,6 +166,13 @@ public class Agent extends AAgent implements Runnable
 			
 			referee = (AReferee) model.getModule(AReferee.MODULE_ID);
 			referee.addRefereeMsgConsumer(this);
+			
+			multiTeamMessage = (AMultiTeamMessage) model.getModule(AMultiTeamMessage.MODULE_ID);
+			multiTeamMessage.addMultiTeamMessageConsumer(this);
+			multiTeamMessageSender = new MultiTeamMessageSender();
+			
+			metis = new Metis();
+			ares = new Ares(skillSystem);
 		} catch (final ModuleNotFoundException err)
 		{
 			log.error("Unable to find one or more modules!");
@@ -185,13 +196,11 @@ public class Agent extends AAgent implements Runnable
 			log.debug("No timer found.");
 		}
 		
-		metis = new Metis();
-		ares = new Ares(skillSystem);
-		
 		RoleFactory.selfCheckRoles();
 		
 		nathan = new Thread(this, "AI_Nathan_" + getId());
 		nathan.start();
+		
 		log.trace("Nathan started");
 	}
 	
@@ -214,23 +223,185 @@ public class Agent extends AAgent implements Runnable
 	
 	
 	/**
+	 * Process a {@link WorldFrame} (one AI cycle)
+	 * 
+	 * @param wf
+	 */
+	public void processWorldFrame(final WorldFrame wf)
+	{
+		long id = wf.getId();
+		
+		timer.start(timableAgent, id);
+		
+		// ### Take the first of the referee-messages
+		RefereeMsg refereeMsg = latestRefereeMsg;
+		
+		RefereeMsg newRefereeMsg = null;
+		if ((refereeMsg != null) && isNewMessage(refereeMsg))
+		{
+			log.trace("Referee cmd: " + refereeMsg.getCommand());
+			newRefereeMsg = refereeMsg;
+		}
+		
+		if (SumatraModel.getInstance().isProductive() && (newRefereeMsg != null))
+		{
+			switch (newRefereeMsg.getStage())
+			{
+				case NORMAL_FIRST_HALF_PRE:
+				case NORMAL_SECOND_HALF_PRE:
+				case EXTRA_FIRST_HALF_PRE:
+				case EXTRA_SECOND_HALF_PRE:
+					if ((newRefereeMsg.getCommand() == Command.HALT))
+					{
+						break;
+					}
+				case NORMAL_FIRST_HALF:
+				case NORMAL_SECOND_HALF:
+				case EXTRA_FIRST_HALF:
+				case EXTRA_SECOND_HALF:
+				case PENALTY_SHOOTOUT:
+					if (!RecordManager.isRecording())
+					{
+						RecordManager.startStopRecording(true, true);
+					}
+					break;
+				case EXTRA_HALF_TIME:
+				case NORMAL_HALF_TIME:
+				case PENALTY_SHOOTOUT_BREAK:
+				case POST_GAME:
+				case EXTRA_TIME_BREAK:
+					if (RecordManager.isRecording())
+					{
+						RecordManager.startStopRecording(false, true);
+					}
+					break;
+			}
+		}
+		BaseAiFrame baseAiFrame = new BaseAiFrame(wf, newRefereeMsg, refereeMsg, previousAIFrame, getTeamColor());
+		
+		if (previousAIFrame == null)
+		{
+			// Skip first frame
+			previousAIFrame = generateAIInfoFrame(baseAiFrame);
+			return;
+		}
+		
+		previousAIFrame.cleanUp();
+		
+		// ### Process!
+		try
+		{
+			// Analyze
+			timer.start(timableMetis, id);
+			MetisAiFrame metisAiFrame = metis.process(baseAiFrame);
+			timer.stop(timableMetis, id);
+			
+			// Set multi-team message
+			if (multiTeamMsg != null)
+			{
+				metisAiFrame.getTacticalField().setMultiTeamMessage(multiTeamMsg);
+			}
+			
+			// Choose and calculate behavior
+			AthenaAiFrame athenaAiFrame = athena.process(metisAiFrame);
+			
+			if (baseAiFrame.getPrevFrame().getPlayStrategy().getAIControlState() == EAIControlState.MIXED_TEAM_MODE)
+			{
+				multiTeamMessageSender.send(athenaAiFrame);
+			}
+			
+			synchronized (shapeSync)
+			{
+				List<IDrawableShape> shapes = new ArrayList<IDrawableShape>(shapeInjectionsQueue2);
+				shapes.addAll(shapeInjectionsQueue);
+				shapeInjectionsQueue2 = shapeInjectionsQueue;
+				shapeInjectionsQueue = new LinkedList<IDrawableShape>();
+				for (IDrawableShape shape : shapes)
+				{
+					athenaAiFrame.getTacticalField().getDrawableShapes().get(EDrawableShapesLayer.INJECT).add(shape);
+				}
+			}
+			
+			// Execute!
+			AresData aresData = ares.process(athenaAiFrame);
+			
+			timer.start(timableNotify, id);
+			// ### Populate used AIInfoFrame (for visualization etc)
+			AIInfoFrame frame = new AIInfoFrame(athenaAiFrame, aresData, fpsCounter.getAvgFps());
+			fpsCounter.newFrame();
+			
+			notifyNewAIInfoFrame(frame);
+			
+			if (UserConfig.isAugmentedDataSenderEnabled())
+			{
+				if (augmentedDataSender == null)
+				{
+					augmentedDataSender = new AugmentedDataSender();
+					augmentedDataSender.start();
+				}
+				augmentedDataSender.addFrame(frame);
+			} else if (augmentedDataSender != null)
+			{
+				augmentedDataSender.stop();
+				augmentedDataSender = null;
+			}
+			
+			previousAIFrame = frame;
+			notifyNewAIInfoFrameVisualize(previousAIFrame);
+			timer.stop(timableNotify, id);
+		} catch (final Throwable ex)
+		{
+			// # Notify observers (gui) about errors...
+			if (previousAIFrame != null)
+			{
+				notifyNewAIExceptionVisualize(ex, generateAIInfoFrame(baseAiFrame), previousAIFrame);
+			}
+			
+			// # Undo everything we've done this cycle to restore previous state
+			// - RefereeMsg
+			if (refereeMsg != null)
+			{
+				lastRefMsgCounter--;
+			}
+			
+			skillSystem.reset(getTeamColor());
+			
+			// # Prepare next cycle
+			timer.stop(timableAgent, id);
+			
+			if (previousAIFrame != null)
+			{
+				previousAIFrame.cleanUp();
+			}
+			return;
+		}
+		
+		
+		// ### End cycle
+		timer.stop(timableAgent, id);
+	}
+	
+	
+	/**
 	 *
 	 */
 	@Override
 	public void run()
 	{
-		long id = 0;
 		while (!Thread.currentThread().isInterrupted())
 		{
 			if (!active)
 			{
-				onVisionSignalLost(WorldFrameFactory.createEmptyWorldFrame(0L));
+				if (previousAIFrame != null)
+				{
+					notifyAIStopped(getTeamColor());
+				}
+				previousAIFrame = null;
 				try
 				{
 					Thread.sleep(1000);
 				} catch (InterruptedException err)
 				{
-					// not important
 				}
 				continue;
 			}
@@ -250,81 +421,7 @@ public class Agent extends AAgent implements Runnable
 				break;
 			}
 			
-			id = wf.getId().getFrameNumber();
-			
-			timer.start(timableAgent, id);
-			
-			// ### Take the first of the referee-messages
-			RefereeMsg refereeMsg = latestRefereeMsg;
-			
-			RefereeMsg newRefereeMsg = null;
-			if ((refereeMsg != null) && isNewMessage(refereeMsg))
-			{
-				newRefereeMsg = refereeMsg;
-			}
-			
-			BaseAiFrame baseAiFrame = new BaseAiFrame(wf, newRefereeMsg, refereeMsg, previousAIFrame, getTeamColor());
-			
-			if (previousAIFrame == null)
-			{
-				// Skip first frame
-				previousAIFrame = generateAIInfoFrame(baseAiFrame);
-				continue;
-			}
-			
-			previousAIFrame.cleanUp();
-			
-			// ### Process!
-			try
-			{
-				// Analyze
-				timer.start(timableMetis, id);
-				MetisAiFrame metisAiFrame = metis.process(baseAiFrame);
-				timer.stop(timableMetis, id);
-				
-				// Choose and calculate behavior
-				timer.start(timableAthena, id);
-				AthenaAiFrame athenaAiFrame = athena.process(metisAiFrame);
-				timer.stop(timableAthena, id);
-				
-				// Execute!
-				timer.start(timableAres, id);
-				AresData aresData = ares.process(athenaAiFrame);
-				timer.start(timableAres, id);
-				
-				timer.start(timableNotify, id);
-				// ### Populate used AIInfoFrame (for visualization etc)
-				AIInfoFrame frame = new AIInfoFrame(athenaAiFrame, aresData, fpsCounter.getAvgFps());
-				fpsCounter.newFrame();
-				
-				notifyNewAIInfoFrame(frame);
-				previousAIFrame = frame;
-				timer.stop(timableNotify, id);
-			} catch (final Exception ex)
-			{
-				// # Notify observers (gui) about errors...
-				notifyNewAIException(ex, generateAIInfoFrame(baseAiFrame), previousAIFrame);
-				
-				// # Undo everything we've done this cycle to restore previous state
-				// - RefereeMsg
-				if (refereeMsg != null)
-				{
-					lastRefMsgCounter--;
-				}
-				
-				skillSystem.getSisyphus().stopAllPathPlanning();
-				skillSystem.reset(getTeamColor());
-				
-				// # Prepare next cycle
-				timer.stop(timableAgent, id);
-				
-				previousAIFrame.cleanUp();
-				continue;
-			}
-			
-			
-			// ### End cycle
-			timer.stop(timableAgent, id);
+			processWorldFrame(wf);
 		}
 	}
 	
@@ -343,6 +440,11 @@ public class Agent extends AAgent implements Runnable
 		{
 			return;
 		}
+		if (augmentedDataSender != null)
+		{
+			augmentedDataSender.stop();
+			augmentedDataSender = null;
+		}
 		nathan.interrupt();
 	}
 	
@@ -350,6 +452,9 @@ public class Agent extends AAgent implements Runnable
 	@Override
 	public void deinitModule()
 	{
+		metis.stop();
+		active = false;
+		
 		if (ares != null)
 		{
 			ares = null;
@@ -360,12 +465,18 @@ public class Agent extends AAgent implements Runnable
 			referee = null;
 		}
 		
+		if (multiTeamMessage != null)
+		{
+			multiTeamMessage = null;
+		}
+		
 		if (cam != null)
 		{
 			cam = null;
 		}
 		
 		previousAIFrame = null;
+		latestRefereeMsg = null;
 	}
 	
 	
@@ -375,34 +486,32 @@ public class Agent extends AAgent implements Runnable
 	@Override
 	public void onNewRefereeMsg(final RefereeMsg msg)
 	{
-		latestRefereeMsg = msg;
-	}
-	
-	
-	@Override
-	public synchronized void onNewSimpleWorldFrame(final SimpleWorldFrame worldFrame)
-	{
-	}
-	
-	
-	@Override
-	public void onNewWorldFrame(final WorldFrame wFrame)
-	{
-		if (wFrame.getTeamColor() == getTeamColor())
+		if ((msg != null) && msg.getColor().equals(getTeamColor()))
 		{
-			freshWorldFrames.pollLast();
-			freshWorldFrames.addFirst(wFrame);
+			latestRefereeMsg = msg;
 		}
 	}
 	
 	
 	@Override
-	public void onVisionSignalLost(final SimpleWorldFrame emptyWf)
+	public void onNewMultiTeamMessage(final MultiTeamMessage message)
 	{
-		WorldFrame wf = Director.createWorldFrame(emptyWf, getTeamColor());
-		BaseAiFrame bFrame = new BaseAiFrame(wf, null, latestRefereeMsg, previousAIFrame, getTeamColor());
-		// ### Populate used AIInfoFrame (for visualization etc)
-		notifyNewAIInfoFrame(generateAIInfoFrame(bFrame));
+		if (message != null)
+		{
+			if (multiTeamMsg == null)
+			{
+				log.info("Received first multi team message");
+			}
+			multiTeamMsg = message;
+		}
+	}
+	
+	
+	@Override
+	public void onNewWorldFrame(final WorldFrameWrapper wfWrapper)
+	{
+		freshWorldFrames.pollLast();
+		freshWorldFrames.addFirst(wfWrapper.getWorldFrame(getTeamColor()));
 	}
 	
 	
@@ -414,50 +523,6 @@ public class Agent extends AAgent implements Runnable
 			return;
 		}
 		nathan.interrupt();
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- AI Visualization -----------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 * This function is used to notify the last {@link AIInfoFrame} to visualization observers.
-	 * 
-	 * @param lastAIInfoframe
-	 */
-	private void notifyNewAIInfoFrame(final AIInfoFrame lastAIInfoframe)
-	{
-		synchronized (getObservers())
-		{
-			final AIInfoFrame newAIInfoFrame = new AIInfoFrame(lastAIInfoframe);
-			for (final IAIObserver o : getObservers())
-			{
-				o.onNewAIInfoFrame(newAIInfoFrame);
-			}
-		}
-	}
-	
-	
-	private void notifyNewAIException(final Exception ex, final AIInfoFrame frame, final AIInfoFrame prevFrame)
-	{
-		synchronized (getObservers())
-		{
-			AIInfoFrame consFrame = frame;
-			if (consFrame != null)
-			{
-				consFrame = new AIInfoFrame(consFrame);
-			}
-			AIInfoFrame consPrevFrame = prevFrame;
-			if (prevFrame != null)
-			{
-				consPrevFrame = new AIInfoFrame(consPrevFrame);
-			}
-			
-			for (final IAIObserver o : getObservers())
-			{
-				o.onAIException(ex, consFrame, consPrevFrame);
-			}
-		}
 	}
 	
 	
@@ -477,6 +542,20 @@ public class Agent extends AAgent implements Runnable
 			}
 		}
 		activated = true;
+	}
+	
+	
+	/**
+	 * Inject shape from anywhere into next ai frame
+	 * 
+	 * @param shape
+	 */
+	public void injectDrawableShape(final IDrawableShape shape)
+	{
+		synchronized (shapeSync)
+		{
+			shapeInjectionsQueue.add(shape);
+		}
 	}
 	
 	
@@ -524,5 +603,31 @@ public class Agent extends AAgent implements Runnable
 	public final Athena getAthena()
 	{
 		return athena;
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public final AIInfoFrame getLatestAiFrame()
+	{
+		return previousAIFrame;
+	}
+	
+	
+	/**
+	 */
+	public void visualizeLatestAiFrame()
+	{
+		notifyNewAIInfoFrameVisualize(previousAIFrame);
+	}
+	
+	
+	/**
+	 * @param previousAIFrame the previousAIFrame to set
+	 */
+	public final void setPreviousAIFrame(final AIInfoFrame previousAIFrame)
+	{
+		this.previousAIFrame = previousAIFrame;
 	}
 }

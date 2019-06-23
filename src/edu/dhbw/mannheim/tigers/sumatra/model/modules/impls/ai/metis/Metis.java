@@ -24,6 +24,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.TacticalField;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.ACalculator;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.ECalculator;
 import edu.dhbw.mannheim.tigers.sumatra.util.InstanceableClass.NotCreateableException;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 
 
 /**
@@ -55,15 +56,18 @@ public class Metis
 		
 		for (ECalculator eCalc : ECalculator.values())
 		{
-			try
+			if (eCalc.getImpl().getImpl() != null)
 			{
-				ACalculator inst = (ACalculator) eCalc.getImpl().newDefaultInstance();
-				inst.setType(eCalc);
-				inst.setActive(eCalc.isInitiallyActive());
-				calculators.put(eCalc, inst);
-			} catch (NotCreateableException e)
-			{
-				log.error("Could not instantiate calculator: " + eCalc, e);
+				try
+				{
+					ACalculator inst = (ACalculator) eCalc.getImpl().newDefaultInstance();
+					inst.setType(eCalc);
+					inst.setActive(eCalc.isInitiallyActive());
+					calculators.put(eCalc, inst);
+				} catch (NotCreateableException e)
+				{
+					log.error("Could not instantiate calculator: " + eCalc, e);
+				}
 			}
 		}
 		
@@ -80,10 +84,16 @@ public class Metis
 	public MetisAiFrame process(final BaseAiFrame baseAiFrame)
 	{
 		TacticalField newTacticalField = new TacticalField(baseAiFrame.getWorldFrame());
+		long time = SumatraClock.nanoTime();
 		for (ACalculator calc : calculators.values())
 		{
 			calc.calculate(newTacticalField, baseAiFrame);
+			long aTime = SumatraClock.nanoTime();
+			int diff = (int) ((aTime - time) * 1e-3f);
+			newTacticalField.getMetisCalcTimes().put(calc.getType(), diff);
+			time = aTime;
 		}
+		
 		return new MetisAiFrame(baseAiFrame, newTacticalField);
 	}
 	
@@ -124,5 +134,26 @@ public class Metis
 				setCalculatorActive(calc, false);
 			}
 		}
+	}
+	
+	
+	/**
+	 */
+	public void stop()
+	{
+		for (ACalculator calc : calculators.values())
+		{
+			calc.deinit();
+		}
+	}
+	
+	
+	/**
+	 * @param eCalc
+	 * @return
+	 */
+	public ACalculator getCalculator(final ECalculator eCalc)
+	{
+		return calculators.get(eCalc);
 	}
 }

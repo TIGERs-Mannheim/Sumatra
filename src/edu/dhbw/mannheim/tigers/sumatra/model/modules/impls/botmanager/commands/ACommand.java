@@ -8,22 +8,35 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands;
 
+import com.sleepycat.persist.model.Persistent;
+
+
 /**
  *
  */
+@Persistent
 public abstract class ACommand
 {
 	private final ECommand	cmd;
+	private boolean			reliable		= false;
+	private int					seq			= -1;
+	private int					retransmits	= 0;
 	
 	
-	protected ACommand(ECommand cmd)
+	protected ACommand(final ECommand cmd)
 	{
 		this.cmd = cmd;
 	}
 	
 	
+	protected ACommand(final ECommand cmd, final boolean reliable)
+	{
+		this.cmd = cmd;
+		this.reliable = reliable;
+	}
+	
+	
 	/**
-	 * 
 	 * @return
 	 */
 	public ECommand getType()
@@ -33,11 +46,46 @@ public abstract class ACommand
 	
 	
 	/**
-	 * 
+	 * @return the reliable
+	 */
+	public boolean isReliable()
+	{
+		return reliable;
+	}
+	
+	
+	/**
+	 * @param reliable the reliable to set
+	 */
+	public void setReliable(final boolean reliable)
+	{
+		this.reliable = reliable;
+	}
+	
+	
+	/**
+	 * @return the seq
+	 */
+	public int getSeq()
+	{
+		return seq;
+	}
+	
+	
+	/**
+	 * @param seq the seq to set
+	 */
+	public void setSeq(final int seq)
+	{
+		this.seq = seq;
+	}
+	
+	
+	/**
 	 * @param b
 	 * @return
 	 */
-	public static int byte2Int(byte b)
+	public static int byte2Int(final byte b)
 	{
 		// & 0xFFFFFFFF); <-- Has no effect
 		return b;
@@ -45,12 +93,11 @@ public abstract class ACommand
 	
 	
 	/**
-	 * 
 	 * @param v
 	 * @param offset
 	 * @return
 	 */
-	public static int byteArray2UByte(byte[] v, int offset)
+	public static int byteArray2UByte(final byte[] v, final int offset)
 	{
 		int res = 0;
 		res |= v[offset] & 0xFF;
@@ -60,12 +107,11 @@ public abstract class ACommand
 	
 	
 	/**
-	 * 
 	 * @param v
 	 * @param offset
 	 * @return
 	 */
-	public static int byteArray2Int(byte[] v, int offset)
+	public static int byteArray2Int(final byte[] v, final int offset)
 	{
 		int res = 0;
 		res |= v[offset] & 0xFF;
@@ -78,12 +124,11 @@ public abstract class ACommand
 	
 	
 	/**
-	 * 
 	 * @param v
 	 * @param offset
 	 * @return
 	 */
-	public static long byteArray2UInt(byte[] v, int offset)
+	public static long byteArray2UInt(final byte[] v, final int offset)
 	{
 		long res = 0;
 		res |= v[offset] & 0xFF;
@@ -96,12 +141,11 @@ public abstract class ACommand
 	
 	
 	/**
-	 * 
 	 * @param v
 	 * @param offset
 	 * @return
 	 */
-	public static int byteArray2Short(byte[] v, int offset)
+	public static int byteArray2Short(final byte[] v, final int offset)
 	{
 		short res = 0;
 		res |= v[offset] & 0xFF;
@@ -112,12 +156,11 @@ public abstract class ACommand
 	
 	
 	/**
-	 * 
 	 * @param v
 	 * @param offset
 	 * @return
 	 */
-	public static int byteArray2UShort(byte[] v, int offset)
+	public static int byteArray2UShort(final byte[] v, final int offset)
 	{
 		int res = 0;
 		res |= v[offset] & 0xFF;
@@ -128,48 +171,44 @@ public abstract class ACommand
 	
 	
 	/**
-	 * 
 	 * @param v
 	 * @param offset
 	 * @return
 	 */
-	public static float byteArray2Float(byte[] v, int offset)
+	public static float byteArray2Float(final byte[] v, final int offset)
 	{
 		return Float.intBitsToFloat(byteArray2Int(v, offset));
 	}
 	
 	
 	/**
-	 * 
 	 * @param v
 	 * @param offset
 	 * @return
 	 */
-	public static float byteArray2HalfFloat(byte[] v, int offset)
+	public static float byteArray2HalfFloat(final byte[] v, final int offset)
 	{
 		return halfFloatBitsToFloat(byteArray2Short(v, offset));
 	}
 	
 	
 	/**
-	 * 
 	 * @param v
 	 * @param offset
 	 * @param value
 	 */
-	public static void byte2ByteArray(byte[] v, int offset, int value)
+	public static void byte2ByteArray(final byte[] v, final int offset, final int value)
 	{
 		v[offset] = (byte) (value & 0xFF);
 	}
 	
 	
 	/**
-	 * 
 	 * @param v
 	 * @param offset
 	 * @param value
 	 */
-	public static void short2ByteArray(byte[] v, int offset, int value)
+	public static void short2ByteArray(final byte[] v, final int offset, final int value)
 	{
 		v[offset + 0] = (byte) (value & 0xFF);
 		v[offset + 1] = (byte) ((value & 0xFF00) >> 8);
@@ -177,12 +216,11 @@ public abstract class ACommand
 	
 	
 	/**
-	 * 
 	 * @param v
 	 * @param offset
 	 * @param value
 	 */
-	public static void int2ByteArray(byte[] v, int offset, int value)
+	public static void int2ByteArray(final byte[] v, final int offset, final int value)
 	{
 		v[offset + 0] = (byte) (value & 0xFF);
 		v[offset + 1] = (byte) ((value & 0xFF00) >> 8);
@@ -192,24 +230,22 @@ public abstract class ACommand
 	
 	
 	/**
-	 * 
 	 * @param v
 	 * @param offset
 	 * @param value
 	 */
-	public static void float2ByteArray(byte[] v, int offset, float value)
+	public static void float2ByteArray(final byte[] v, final int offset, final float value)
 	{
 		int2ByteArray(v, offset, Float.floatToRawIntBits(value));
 	}
 	
 	
 	/**
-	 * 
 	 * @param v
 	 * @param offset
 	 * @param value
 	 */
-	public static void halfFloat2ByteArray(byte[] v, int offset, float value)
+	public static void halfFloat2ByteArray(final byte[] v, final int offset, final float value)
 	{
 		short2ByteArray(v, offset, floatToHalfFloatBits(value));
 	}
@@ -217,13 +253,12 @@ public abstract class ACommand
 	
 	/**
 	 * Converts two bytes representing a half float to a float.
-	 * 
 	 * Source from: http://stackoverflow.com/questions/6162651/half-precision-floating-point-in-java
 	 * 
 	 * @param hbits 16 Bits of a half float
 	 * @return 32Bit float
 	 */
-	public static float halfFloatBitsToFloat(int hbits)
+	public static float halfFloatBitsToFloat(final int hbits)
 	{
 		int mant = hbits & 0x03ff; // 10 bits mantissa
 		int exp = hbits & 0x7c00; // 5 bits exponent
@@ -256,15 +291,13 @@ public abstract class ACommand
 	
 	/**
 	 * Converts a float to half float bits.
-	 * 
 	 * Higher bits are set to 0.
-	 * 
 	 * Source from: http://stackoverflow.com/questions/6162651/half-precision-floating-point-in-java
 	 * 
 	 * @param fval Float to convert.
 	 * @return 16Bits of a half float.
 	 */
-	public static int floatToHalfFloatBits(float fval)
+	public static int floatToHalfFloatBits(final float fval)
 	{
 		int fbits = Float.floatToIntBits(fval);
 		int sign = (fbits >>> 16) & 0x8000; // sign only
@@ -295,5 +328,22 @@ public abstract class ACommand
 		return sign | ((((fbits & 0x7fffff) | 0x800000) // add subnormal bit
 				+ (0x800000 >>> (val - 102)) // round depending on cut off
 				) >>> (126 - val)); // div by 2^(1-(exp-127+15)) and >> 13 | exp=0
+	}
+	
+	
+	/**
+	 * @return the retransmits
+	 */
+	public final int getRetransmits()
+	{
+		return retransmits;
+	}
+	
+	
+	/**
+	 */
+	public final void incRetransmits()
+	{
+		retransmits++;
 	}
 }

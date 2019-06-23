@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 24.09.2010
  * Author(s): Oliver Steinbrecher <OST1988@aol.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.valueobjects;
@@ -23,7 +22,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
  * This is a point with a specific/arbitrary value.
  * 
  * @author Oliver Steinbrecher <OST1988@aol.com>
- * 
  */
 @Persistent
 public class ValuePoint extends Vector2
@@ -32,16 +30,14 @@ public class ValuePoint extends Vector2
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private static final long									serialVersionUID		= -6549729498617629967L;
-	
 	/** */
 	public static final Comparator<? super ValuePoint>	Y_COMPARATOR				= new YLowComparator();
 	/**  */
 	public static final Comparator<? super ValuePoint>	VALUE_HIGH_COMPARATOR	= new ValueHighComparator();
 	/**  */
-	public static final Comparator<? super ValuePoint>	VALUELOWCOMPARATOR	= new ValueLowComparator();
+	public static final Comparator<? super ValuePoint>	VALUELOWCOMPARATOR		= new ValueLowComparator();
 	/**  */
-	public float													value						= 0f;
+	public float													value							= 0f;
 	
 	
 	// --------------------------------------------------------------------------
@@ -50,28 +46,26 @@ public class ValuePoint extends Vector2
 	
 	
 	@SuppressWarnings("unused")
-	private ValuePoint()
+	protected ValuePoint()
 	{
 	}
 	
 	
 	/**
-	 * 
 	 * @param x
 	 * @param y
 	 */
-	public ValuePoint(float x, float y)
+	public ValuePoint(final float x, final float y)
 	{
 		super(x, y);
 	}
 	
 	
 	/**
-	 * 
 	 * @param vec
 	 * @param value
 	 */
-	public ValuePoint(IVector2 vec, float value)
+	public ValuePoint(final IVector2 vec, final float value)
 	{
 		super(vec);
 		this.value = value;
@@ -79,22 +73,20 @@ public class ValuePoint extends Vector2
 	
 	
 	/**
-	 * 
 	 * @param vec
 	 */
-	public ValuePoint(IVector2 vec)
+	public ValuePoint(final IVector2 vec)
 	{
 		super(vec);
 	}
 	
 	
 	/**
-	 * 
 	 * @param x
 	 * @param y
 	 * @param value
 	 */
-	public ValuePoint(float x, float y, float value)
+	public ValuePoint(final float x, final float y, final float value)
 	{
 		super(x, y);
 		this.value = value;
@@ -102,10 +94,9 @@ public class ValuePoint extends Vector2
 	
 	
 	/**
-	 * 
 	 * @param copy
 	 */
-	public ValuePoint(ValuePoint copy)
+	public ValuePoint(final ValuePoint copy)
 	{
 		super(copy);
 		value = copy.value;
@@ -117,7 +108,6 @@ public class ValuePoint extends Vector2
 	// --------------------------------------------------------------------------
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public float getValue()
@@ -127,10 +117,9 @@ public class ValuePoint extends Vector2
 	
 	
 	/**
-	 * 
 	 * @param value
 	 */
-	public void setValue(float value)
+	public void setValue(final float value)
 	{
 		this.value = value;
 	}
@@ -155,7 +144,7 @@ public class ValuePoint extends Vector2
 	
 	
 	@Override
-	public boolean equals(Object obj)
+	public boolean equals(final Object obj)
 	{
 		if (this == obj)
 		{
@@ -176,9 +165,7 @@ public class ValuePoint extends Vector2
 	}
 	
 	/**
-	 * 
 	 * Sort {@link ValuePoint} after Value, lowest value first.
-	 * 
 	 */
 	private static class YLowComparator implements Comparator<ValuePoint>, Serializable
 	{
@@ -188,7 +175,7 @@ public class ValuePoint extends Vector2
 		
 		
 		@Override
-		public int compare(ValuePoint v1, ValuePoint v2)
+		public int compare(final ValuePoint v1, final ValuePoint v2)
 		{
 			if (v1.y() > v2.y())
 			{
@@ -204,9 +191,7 @@ public class ValuePoint extends Vector2
 	}
 	
 	/**
-	 * 
 	 * Sort {@link ValuePoint} after Value, highest value first.
-	 * 
 	 */
 	private static class ValueHighComparator implements Comparator<ValuePoint>, Serializable
 	{
@@ -216,7 +201,7 @@ public class ValuePoint extends Vector2
 		
 		
 		@Override
-		public int compare(ValuePoint v1, ValuePoint v2)
+		public int compare(final ValuePoint v1, final ValuePoint v2)
 		{
 			if (v1.value < v2.value)
 			{
@@ -232,9 +217,7 @@ public class ValuePoint extends Vector2
 	}
 	
 	/**
-	 * 
 	 * Sort {@link ValuePoint} after Value, lowest value first.
-	 * 
 	 */
 	private static class ValueLowComparator implements Comparator<ValuePoint>, Serializable
 	{
@@ -244,7 +227,7 @@ public class ValuePoint extends Vector2
 		
 		
 		@Override
-		public int compare(ValuePoint v1, ValuePoint v2)
+		public int compare(final ValuePoint v1, final ValuePoint v2)
 		{
 			if (v1.value > v2.value)
 			{

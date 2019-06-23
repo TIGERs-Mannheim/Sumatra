@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 17.05.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2;
@@ -19,7 +18,6 @@ import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
  * Set the active controller on the bot.
  * 
  * @author AndreR
- * 
  */
 public class TigerCtrlSetControllerType extends ACommand
 {
@@ -31,19 +29,24 @@ public class TigerCtrlSetControllerType extends ACommand
 		/** */
 		FUSION_VEL(0x01),
 		/** */
-		FUSION(0x02);
+		FUSION(0x02),
+		/** */
+		MOTOR(0x03),
+		/** */
+		CALIBRATE(0x04),
+		/** */
+		TIGGA(0x05);
 		
 		private int	id;
 		
 		
-		private EControllerType(int i)
+		private EControllerType(final int i)
 		{
 			id = i;
 		}
 		
 		
 		/**
-		 * 
 		 * @return
 		 */
 		public int getId()
@@ -53,11 +56,10 @@ public class TigerCtrlSetControllerType extends ACommand
 		
 		
 		/**
-		 * 
 		 * @param type
 		 * @return
 		 */
-		public static EControllerType getControllerTypeConstant(int type)
+		public static EControllerType getControllerTypeConstant(final int type)
 		{
 			for (EControllerType t : values())
 			{
@@ -86,17 +88,16 @@ public class TigerCtrlSetControllerType extends ACommand
 	 */
 	public TigerCtrlSetControllerType()
 	{
-		super(ECommand.CMD_CTRL_SET_CONTROLLER_TYPE);
+		super(ECommand.CMD_CTRL_SET_CONTROLLER_TYPE, true);
 	}
 	
 	
 	/**
-	 * 
 	 * @param t
 	 */
-	public TigerCtrlSetControllerType(EControllerType t)
+	public TigerCtrlSetControllerType(final EControllerType t)
 	{
-		super(ECommand.CMD_CTRL_SET_CONTROLLER_TYPE);
+		super(ECommand.CMD_CTRL_SET_CONTROLLER_TYPE, true);
 		
 		type = t.getId();
 	}
@@ -122,7 +123,7 @@ public class TigerCtrlSetControllerType extends ACommand
 	/**
 	 * @param type the type to set
 	 */
-	public void setControllerType(EControllerType type)
+	public void setControllerType(final EControllerType type)
 	{
 		this.type = type.getId();
 	}

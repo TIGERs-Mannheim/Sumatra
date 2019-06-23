@@ -25,21 +25,20 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
-import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
-import javax.swing.JScrollPane;
 import javax.swing.JTextField;
-import javax.swing.ScrollPaneConstants;
 
 import net.miginfocom.swing.MigLayout;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.timer.ETimerStatistic;
@@ -74,12 +73,12 @@ public class TimerChartPanel extends JPanel
 	private ETimerStatistic							timerStatisticType	= ETimerStatistic.AVG;
 	
 	private final ArrayList<Color>				colors					= new ArrayList<Color>(maxTraces);
-	private final Map<ETimable, Trace2DLtd>	traces					= new HashMap<ETimable, Trace2DLtd>(maxTraces);
+	private final Map<ETimable, Trace2DLtd>	traces					= new LinkedHashMap<ETimable, Trace2DLtd>(maxTraces);
 	private final Map<ETimable, Long>			maxIds					= new HashMap<ETimable, Long>(maxTraces);
 	private final List<ETimable>					displayedTimables		= new CopyOnWriteArrayList<ETimable>();
 	
 	private boolean									freeze					= false;
-	private boolean									active					= false;
+	private boolean									active					= true;
 	private boolean									keepActive				= false;
 	
 	private final Chart2D							chart						= new Chart2D();
@@ -96,21 +95,21 @@ public class TimerChartPanel extends JPanel
 	{
 		setLayout(new BorderLayout());
 		final JPanel diagramPanel = new JPanel(new MigLayout("fill, inset 0"));
-		final JPanel controlPanel = new JPanel(new MigLayout("inset 0, center"));
 		
 		colors.add(Color.green);
 		colors.add(Color.blue);
 		colors.add(Color.orange);
 		colors.add(Color.cyan);
-		colors.add(Color.magenta);
 		colors.add(Color.yellow);
+		colors.add(Color.magenta);
 		colors.add(Color.pink);
 		colors.add(Color.darkGray);
 		colors.add(Color.red);
 		
-		displayedTimables.add(ETimable.WP);
+		displayedTimables.add(ETimable.WP_Kalman);
 		displayedTimables.add(ETimable.AGENT_Y);
 		displayedTimables.add(ETimable.AGENT_B);
+		displayedTimables.add(ETimable.SKILLS);
 		
 		chart.setBackground(getBackground());
 		chart.setForeground(Color.BLACK);
@@ -126,8 +125,11 @@ public class TimerChartPanel extends JPanel
 		maximum.setName("Maximum time");
 		chart.addTrace(maximum);
 		
-		final JButton btnFreeze = new JButton("Freeze");
-		controlPanel.add(btnFreeze);
+		JMenuBar menuBar = new JMenuBar();
+		JMenu mAction = new JMenu("TimerPanel");
+		final JMenuItem btnFreeze = new JMenuItem("Freeze");
+		mAction.add(btnFreeze);
+		menuBar.add(mAction);
 		btnFreeze.addActionListener(new ActionListener()
 		{
 			@Override
@@ -137,10 +139,9 @@ public class TimerChartPanel extends JPanel
 			}
 		});
 		final JCheckBox chkKeepActive = new JCheckBox("Keep active", keepActive);
-		controlPanel.add(chkKeepActive);
+		mAction.add(chkKeepActive);
 		chkKeepActive.addActionListener(new ActionListener()
 		{
-			
 			@Override
 			public void actionPerformed(final ActionEvent e)
 			{
@@ -149,26 +150,24 @@ public class TimerChartPanel extends JPanel
 		});
 		
 		txtCombinedFrames = new JTextField(String.valueOf(combinedFrames), 3);
-		JLabel lblCombinedFrames = new JLabel("Combined frames: ");
-		controlPanel.add(lblCombinedFrames);
-		controlPanel.add(txtCombinedFrames);
+		JMenu mFrames = new JMenu("Combined frames");
+		menuBar.add(mFrames);
+		mFrames.add(txtCombinedFrames);
 		txtCombinedFrames.addKeyListener(new TextFieldAverageKeyListener());
 		
 		txtMaxRange = new JTextField(String.valueOf(maxRange), 6);
-		JLabel lblMaxRange = new JLabel("Range: ");
 		txtMaxRange.setToolTipText("Max x values");
-		controlPanel.add(lblMaxRange);
-		controlPanel.add(txtMaxRange);
+		JMenu mRange = new JMenu("Range");
+		menuBar.add(mRange);
+		mRange.add(txtMaxRange);
 		txtMaxRange.addKeyListener(new TextFieldKeyListener());
 		
-		JPanel timablePanel = new JPanel(new MigLayout("fill, insets 0 0 13 0"));
-		JScrollPane timableScrollPane = new JScrollPane(timablePanel, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
-				ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-		timableScrollPane.setBorder(BorderFactory.createEmptyBorder());
+		JMenu mTimeables = new JMenu("Timeables");
+		menuBar.add(mTimeables);
 		for (final ETimable timable : ETimable.values())
 		{
 			final JCheckBox chkBox = new JCheckBox(timable.name());
-			timablePanel.add(chkBox);
+			mTimeables.add(chkBox);
 			if (displayedTimables.contains(timable))
 			{
 				chkBox.setSelected(true);
@@ -190,12 +189,13 @@ public class TimerChartPanel extends JPanel
 		}
 		
 		ButtonGroup group = new ButtonGroup();
-		
+		JMenu mPlots = new JMenu("Aggregate");
+		menuBar.add(mPlots);
 		for (final ETimerStatistic tStat : ETimerStatistic.values())
 		{
 			final JRadioButton rdb = new JRadioButton(tStat.name());
 			group.add(rdb);
-			controlPanel.add(rdb);
+			mPlots.add(rdb);
 			if (timerStatisticType.equals(tStat))
 			{
 				rdb.setSelected(true);
@@ -211,9 +211,8 @@ public class TimerChartPanel extends JPanel
 		}
 		
 		diagramPanel.add(chart, "grow");
-		this.add(controlPanel, BorderLayout.NORTH);
+		this.add(menuBar, BorderLayout.PAGE_START);
 		this.add(diagramPanel, BorderLayout.CENTER);
-		this.add(timableScrollPane, BorderLayout.SOUTH);
 		
 		addMouseWheelListener(new ChartMouseWheelListener());
 	}

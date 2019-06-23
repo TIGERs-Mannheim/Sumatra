@@ -23,12 +23,9 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARo
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill.EMoveToMode;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.GetBallSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.IMoveToSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.MoveBallToSkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.TurnAroundBallSplineSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.test.MoveBallToSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleState;
 import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
 
@@ -82,7 +79,8 @@ public class MoveBallToRole extends ARole
 	/**
 	 * Default constructor
 	 */
-	public MoveBallToRole()
+	@SuppressWarnings("unused")
+	private MoveBallToRole()
 	{
 		this(AVector2.ZERO_VECTOR);
 	}
@@ -96,22 +94,14 @@ public class MoveBallToRole extends ARole
 		super(ERole.MOVE_BALL_TO);
 		this.target = target;
 		GetBeforeState getBeforeState = new GetBeforeState();
-		GetState getState = new GetState();
 		PushState pushState = new PushState();
 		AimState aimState = new AimState();
 		addTransition(EStateId.GET_BEFORE, EEvent.PREPARED, aimState);
-		addTransition(EStateId.AIM, EEvent.AIMED, getState);
-		addTransition(EStateId.GET, EEvent.BALL_GOT, pushState);
+		addTransition(EStateId.AIM, EEvent.AIMED, pushState);
 		addTransition(EStateId.PUSH, EEvent.BALL_LOST, getBeforeState);
-		addEndTransition(EStateId.GET, EEvent.BALL_POSITIONED);
-		addEndTransition(EStateId.PUSH, EEvent.BALL_POSITIONED);
+		addEndTransition(EEvent.BALL_POSITIONED);
 		setInitialState(getBeforeState);
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	
 	@Override
@@ -132,11 +122,13 @@ public class MoveBallToRole extends ARole
 		@Override
 		public void doEntryActions()
 		{
-			skill = AMoveSkill.createMoveToSkill(EMoveToMode.DO_COMPLETE);
+			skill = AMoveSkill.createMoveToSkill();
+			skill.setDoComplete(true);
 			skill.getMoveCon().updateDestination(
-					GeoMath.stepAlongLine(getAiFrame().getWorldFrame().ball.getPos(), target, -positioningPreAiming - 100));
+					GeoMath.stepAlongLine(getAiFrame().getWorldFrame().getBall().getPos(), target,
+							-positioningPreAiming - 100));
 			skill.getMoveCon().updateLookAtTarget(target);
-			skill.getMoveCon().setPenaltyAreaAllowed(true);
+			skill.getMoveCon().setPenaltyAreaAllowedOur(true);
 			setNewSkill(skill);
 		}
 		
@@ -145,7 +137,8 @@ public class MoveBallToRole extends ARole
 		public void doUpdate()
 		{
 			skill.getMoveCon().updateDestination(
-					GeoMath.stepAlongLine(getAiFrame().getWorldFrame().ball.getPos(), target, -positioningPreAiming - 100));
+					GeoMath.stepAlongLine(getAiFrame().getWorldFrame().getBall().getPos(), target,
+							-positioningPreAiming - 100));
 		}
 		
 		
@@ -164,7 +157,7 @@ public class MoveBallToRole extends ARole
 		@Override
 		public void onSkillCompleted(final ISkill skill, final BotID botID)
 		{
-			nextState(EEvent.PREPARED);
+			triggerEvent(EEvent.PREPARED);
 		}
 		
 		
@@ -181,7 +174,9 @@ public class MoveBallToRole extends ARole
 		@Override
 		public void doEntryActions()
 		{
-			setNewSkill(new TurnAroundBallSplineSkill(target));
+			IMoveToSkill skill = AMoveSkill.createMoveToSkill();
+			skill.getMoveCon().updateDestination(target);
+			setNewSkill(skill);
 		}
 		
 		
@@ -206,7 +201,7 @@ public class MoveBallToRole extends ARole
 		@Override
 		public void onSkillCompleted(final ISkill skill, final BotID botID)
 		{
-			nextState(EEvent.AIMED);
+			triggerEvent(EEvent.AIMED);
 		}
 		
 		
@@ -217,48 +212,6 @@ public class MoveBallToRole extends ARole
 		}
 	}
 	
-	
-	private class GetState implements IRoleState
-	{
-		
-		@Override
-		public void doEntryActions()
-		{
-			setNewSkill(new GetBallSkill(true));
-		}
-		
-		
-		@Override
-		public void doUpdate()
-		{
-		}
-		
-		
-		@Override
-		public void doExitActions()
-		{
-		}
-		
-		
-		@Override
-		public void onSkillStarted(final ISkill skill, final BotID botID)
-		{
-		}
-		
-		
-		@Override
-		public void onSkillCompleted(final ISkill skill, final BotID botID)
-		{
-			nextState(EEvent.BALL_GOT);
-		}
-		
-		
-		@Override
-		public Enum<? extends Enum<?>> getIdentifier()
-		{
-			return EStateId.GET;
-		}
-	}
 	
 	private class PushState implements IRoleState
 	{
@@ -274,12 +227,12 @@ public class MoveBallToRole extends ARole
 		public void doUpdate()
 		{
 			WorldFrame wFrame = getAiFrame().getWorldFrame();
-			if (wFrame.ball.getPos().equals(target, BALL_REACHED_TARGET_TOL))
+			if (wFrame.getBall().getPos().equals(target, BALL_REACHED_TARGET_TOL))
 			{
-				nextState(EEvent.BALL_POSITIONED);
+				triggerEvent(EEvent.BALL_POSITIONED);
 			} else
 			{
-				nextState(EEvent.BALL_LOST);
+				triggerEvent(EEvent.BALL_LOST);
 			}
 		}
 		
@@ -316,7 +269,8 @@ public class MoveBallToRole extends ARole
 		if (getCurrentState() != EStateId.GET_BEFORE)
 		{
 			getAiFrame().addDebugShape(
-					new DrawableLine(new Line(getWFrame().ball.getPos(), target.subtractNew(getWFrame().ball.getPos())),
+					new DrawableLine(new Line(getWFrame().getBall().getPos(), target.subtractNew(getWFrame().getBall()
+							.getPos())),
 							Color.blue, true));
 			getAiFrame().addDebugShape(new DrawablePoint(target, Color.yellow));
 		}

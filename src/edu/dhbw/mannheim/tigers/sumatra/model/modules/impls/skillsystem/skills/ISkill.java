@@ -11,12 +11,12 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills;
 import java.util.List;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.Sisyphus;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.DrawablePath;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.ABot;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.ISkillEventObserver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ASkillSystem;
 
 
 /**
@@ -34,7 +34,7 @@ public interface ISkill
 	/**
 	 * @param newWorldFrame
 	 */
-	void setWorldFrame(WorldFrame newWorldFrame);
+	void update(WorldFrame newWorldFrame);
 	
 	
 	/**
@@ -44,46 +44,21 @@ public interface ISkill
 	
 	
 	/**
-	 * @return
+	 * @param cmds
 	 */
-	List<ACommand> calcActions();
+	void calcActions(List<ACommand> cmds);
 	
 	
 	/**
 	 * @param cmds
-	 * @return
 	 */
-	List<ACommand> calcActions(List<ACommand> cmds);
+	void calcExitActions(List<ACommand> cmds);
 	
 	
 	/**
-	 * @return
-	 */
-	List<ACommand> calcExitActions();
-	
-	
-	/**
-	 * Should be overridden by subclasses!!!
-	 * 
 	 * @param cmds
-	 * @return
 	 */
-	List<ACommand> calcExitActions(List<ACommand> cmds);
-	
-	
-	/**
-	 * @return
-	 */
-	List<ACommand> calcEntryActions();
-	
-	
-	/**
-	 * Should be overridden by subclasses!!!
-	 * 
-	 * @param cmds
-	 * @return
-	 */
-	List<ACommand> calcEntryActions(List<ACommand> cmds);
+	void calcEntryActions(List<ACommand> cmds);
 	
 	
 	/**
@@ -119,19 +94,46 @@ public interface ISkill
 	
 	
 	/**
-	 * @param tBot the tBot to set
+	 * Careful: This is not called from SkillExecuter thread!!
+	 * 
+	 * @return
 	 */
-	void settBot(TrackedTigerBot tBot);
+	default DrawablePath getDrawablePath()
+	{
+		return new DrawablePath();
+	}
 	
 	
 	/**
-	 * @param sisyphus
+	 * Careful: This is not called from SkillExecuter thread!!
+	 * 
+	 * @return
 	 */
-	void setSisyphus(Sisyphus sisyphus);
+	default DrawablePath getLatestDrawablePath()
+	{
+		return new DrawablePath();
+	}
 	
 	
 	/**
-	 * @param period [ns]
+	 * Careful: This is not called from SkillExecuter thread!!
+	 * 
+	 * @return
 	 */
-	void setDt(final long period);
+	default int getNewPathCounter()
+	{
+		return 0;
+	}
+	
+	
+	/**
+	 * @param skillSystem
+	 */
+	void setSkillSystem(ASkillSystem skillSystem);
+	
+	
+	/**
+	 * @param minDt
+	 */
+	void setMinDt(final float minDt);
 }

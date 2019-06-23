@@ -4,13 +4,18 @@
  * Project: TIGERS - Sumatra
  * Date: Jul 19, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.views;
 
 import java.awt.Component;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrameWrapper;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.referee.RefereeMsg;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IAIObserver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IRefereeObserver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.observer.IWorldPredictorObserver;
 import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.IModuliStateObserver;
 
 
@@ -18,9 +23,9 @@ import edu.dhbw.mannheim.tigers.sumatra.presenter.moduli.IModuliStateObserver;
  * All presenters of SumatraViews must implement this
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
-public interface ISumatraViewPresenter extends IModuliStateObserver
+public interface ISumatraViewPresenter extends IModuliStateObserver, IAIObserver, IWorldPredictorObserver,
+		IRefereeObserver
 {
 	/**
 	 * Get the component, namely the main panel of the view associated with this presenter
@@ -42,4 +47,29 @@ public interface ISumatraViewPresenter extends IModuliStateObserver
 	 * Called if emergencyStop button was pressed
 	 */
 	void onEmergencyStop();
+	
+	
+	@Override
+	default void onAIException(final Throwable ex, final IRecordFrame frame,
+			final IRecordFrame prevFrame)
+	{
+	}
+	
+	
+	@Override
+	default void onNewAIInfoFrame(final IRecordFrame lastAIInfoframe)
+	{
+	}
+	
+	
+	@Override
+	default void onNewWorldFrame(final WorldFrameWrapper wfWrapper)
+	{
+	}
+	
+	
+	@Override
+	default void onNewRefereeMsg(final RefereeMsg refMsg)
+	{
+	}
 }

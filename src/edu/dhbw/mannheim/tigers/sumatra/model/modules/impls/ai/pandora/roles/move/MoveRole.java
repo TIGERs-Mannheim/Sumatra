@@ -16,9 +16,9 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.AConditio
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.conditions.move.MovementCon;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.EMovingSpeed;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill.EMoveToMode;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.IMoveToSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleState;
@@ -80,35 +80,31 @@ public class MoveRole extends ARole
 		super(ERole.MOVE);
 		IRoleState state = new MovingState();
 		setInitialState(state);
-		addEndTransition(EStateId.MOVING, EEvent.DONE);
+		// addEndTransition(EStateId.MOVING, EEvent.DONE);
 		this.behavior = behavior;
-		if (behavior == EMoveBehavior.DO_COMPLETE)
-		{
-			skill = AMoveSkill.createMoveToSkill(EMoveToMode.DO_COMPLETE);
-		} else
-		{
-			skill = AMoveSkill.createMoveToSkill(EMoveToMode.STAY);
-		}
+		skill = AMoveSkill.createMoveToSkill();
+		skill.setDoComplete(behavior == EMoveBehavior.DO_COMPLETE);
 	}
 	
 	
 	/**
 	 * @param dest
 	 * @param orientation
+	 * @param movingSpeed
 	 * @param speed
 	 */
-	public MoveRole(final IVector2 dest, final float orientation, final float speed)
+	public MoveRole(final IVector2 dest, final float orientation, final EMovingSpeed movingSpeed, final float speed)
 	{
 		super(ERole.MOVE);
 		IRoleState state = new MovingState();
 		setInitialState(state);
 		addEndTransition(EStateId.MOVING, EEvent.DONE);
 		behavior = EMoveBehavior.DO_COMPLETE;
-		IMoveToSkill moveSkill = AMoveSkill.createMoveToSkill(EMoveToMode.DO_COMPLETE);
-		moveSkill.getMoveCon().updateDestination(dest);
-		moveSkill.getMoveCon().updateTargetAngle(orientation);
-		moveSkill.getMoveCon().setSpeed(speed);
-		skill = moveSkill;
+		skill = AMoveSkill.createMoveToSkill();
+		skill.setDoComplete(true);
+		skill.getMoveCon().updateDestination(dest);
+		skill.getMoveCon().updateTargetAngle(orientation);
+		skill.getMoveCon().setSpeed(movingSpeed, speed);
 	}
 	
 	
@@ -130,7 +126,7 @@ public class MoveRole extends ARole
 		@Override
 		public void onSkillCompleted(final ISkill skill, final BotID botID)
 		{
-			nextState(EEvent.DONE);
+			triggerEvent(EEvent.DONE);
 		}
 		
 		

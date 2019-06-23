@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 20.03.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline;
@@ -18,13 +17,11 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.math.SumatraMath;
 
 
 /**
- * Hermite Cubic or quintic Spline.
+ * Hermite Cubic or quintic Spline. Other name is Catmull-Rom-Spline.
  * This class only takes two points. For more complex splines with more points combine multiple HermiteSplines.
- * 
  * This implementation always references values on a t-axis from 0 to tEnd.
  * 
  * @author AndreR
- * 
  */
 @Persistent(version = 1)
 public class HermiteSpline implements IHermiteSpline
@@ -34,11 +31,10 @@ public class HermiteSpline implements IHermiteSpline
 	// --------------------------------------------------------------------------
 	
 	/** cubic (4) or quintic (6) - change with care! check toString() */
-	public static final int	SPLINE_SIZE	= 6;
+	public static final int	SPLINE_SIZE	= 4;
 	
-	// package visibility of a,tEnd is intended! Used by HermiteSpline2D.
-	float[]						a				= new float[SPLINE_SIZE];
-	float							tEnd;
+	private float[]			a				= new float[SPLINE_SIZE];
+	private float				tEnd;
 	
 	
 	// --------------------------------------------------------------------------
@@ -61,13 +57,9 @@ public class HermiteSpline implements IHermiteSpline
 	 * @param m0 Initial slope.
 	 * @param m1 Final slope.
 	 */
-	public HermiteSpline(float p0, float p1, float m0, float m1)
+	public HermiteSpline(final float p0, final float p1, final float m0, final float m1)
 	{
-		a[3] = ((2 * p0) - (2 * p1)) + m0 + m1;
-		a[2] = ((-3 * p0) + (3 * p1)) - (2 * m0) - m1;
-		a[1] = m0;
-		a[0] = p0;
-		tEnd = 1.0f;
+		this(p0, p1, m0, m1, 1.0f);
 	}
 	
 	
@@ -80,15 +72,22 @@ public class HermiteSpline implements IHermiteSpline
 	 * @param m1 Final slope.
 	 * @param tEnd End time.
 	 */
-	public HermiteSpline(float p0, float p1, float m0, float m1, float tEnd)
+	public HermiteSpline(final float p0, final float p1, final float m0, final float m1, final float tEnd)
 	{
 		final float t2 = tEnd * tEnd;
 		final float t3 = t2 * tEnd;
-		a[3] = (((2 * p0) / t3) - ((2 * p1) / t3)) + (m0 / t2) + (m1 / t2);
-		a[2] = ((3 * p1) / t2) - ((3 * p0) / t2) - ((2 * m0) / tEnd) - (m1 / tEnd);
-		a[1] = m0;
 		a[0] = p0;
+		a[1] = m0;
+		a[2] = ((-3 * p0) / t2) +
+				((3 * p1) / t2) +
+				((-2 * m0) / tEnd) +
+				((-1 * m1) / tEnd);
+		a[3] = (((2 * p0) / t3) +
+				((-2 * p1) / t3)) +
+				(m0 / t2) +
+				(m1 / t2);
 		this.tEnd = tEnd;
+		assert Float.isFinite(this.tEnd);
 	}
 	
 	
@@ -99,10 +98,11 @@ public class HermiteSpline implements IHermiteSpline
 	/**
 	 * @param spline
 	 */
-	public HermiteSpline(IHermiteSpline spline)
+	public HermiteSpline(final IHermiteSpline spline)
 	{
 		a = Arrays.copyOf(spline.getA(), spline.getA().length);
 		tEnd = spline.getEndTime();
+		assert Float.isFinite(tEnd);
 	}
 	
 	
@@ -144,9 +144,13 @@ public class HermiteSpline implements IHermiteSpline
 		{
 			t = tEnd;
 		}
-		
-		return (a[5] * t * t * t * t * t) + (a[4] * t * t * t * t) + (a[3] * t * t * t) + (a[2] * t * t) + (a[1] * t)
+		float result = (a[3] * t * t * t) + (a[2] * t * t) + (a[1] * t)
 				+ a[0];
+		if (a.length == 6)
+		{
+			result = (result + (a[5] * t * t * t * t * t) + (a[4] * t * t * t * t));
+		}
+		return result;
 	}
 	
 	
@@ -167,8 +171,12 @@ public class HermiteSpline implements IHermiteSpline
 		{
 			t = tEnd;
 		}
-		
-		return (a[5] * 5 * t * t * t * t) + (a[4] * 4 * t * t * t) + (a[3] * 3 * t * t) + (a[2] * 2 * t) + a[1];
+		float result = (a[3] * 3 * t * t) + (a[2] * 2 * t) + a[1];
+		if (a.length == 6)
+		{
+			result = (result + (a[5] * 5 * t * t * t * t)) + (a[4] * 4 * t * t * t);
+		}
+		return result;
 	}
 	
 	
@@ -189,8 +197,12 @@ public class HermiteSpline implements IHermiteSpline
 		{
 			t = tEnd;
 		}
-		
-		return (a[5] * 20 * t * t * t) + (a[4] * 12 * t * t) + (a[3] * 6 * t) + (a[2] * 2);
+		float result = (a[3] * 6 * t) + (a[2] * 2);
+		if (a.length == 6)
+		{
+			result = (result + (a[5] * 20 * t * t * t) + (a[4] * 12 * t * t));
+		}
+		return result;
 	}
 	
 	
@@ -268,9 +280,10 @@ public class HermiteSpline implements IHermiteSpline
 	 * @param tEnd the tEnd to set
 	 */
 	@Override
-	public void setEndTime(float tEnd)
+	public void setEndTime(final float tEnd)
 	{
 		this.tEnd = tEnd;
+		assert Float.isFinite(this.tEnd);
 	}
 	
 	
@@ -280,14 +293,18 @@ public class HermiteSpline implements IHermiteSpline
 	@Override
 	public final float[] getA()
 	{
-		return a;
+		return Arrays.copyOf(a, a.length);
 	}
 	
 	
 	@Override
 	public String toString()
 	{
-		return String.format("[%.3fx^5+%.3fx^4+%.3fx^3+%.3fx^2+%.3fx+%.3f, tEnd=%.3f]", a[0], a[1], a[2], a[3], a[4],
-				a[5], tEnd);
+		if (a.length == 6)
+		{
+			return String.format("[%.3fx^5+%.3fx^4+%.3fx^3+%.3fx^2+%.3fx+%.3f, tEnd=%.3f]", a[0], a[1], a[2], a[3], a[4],
+					a[5], tEnd);
+		}
+		return String.format("[%.3fx^3+%.3fx^2+%.3fx+%.3f, tEnd=%.3f]", a[0], a[1], a[2], a[3], tEnd);
 	}
 }

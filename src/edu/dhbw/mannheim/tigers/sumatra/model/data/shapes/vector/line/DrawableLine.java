@@ -36,8 +36,6 @@ public class DrawableLine extends Line implements IDrawableShape
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	/**  */
-	private static final long	serialVersionUID			= 7006413582126880420L;
 	
 	private static final float	ARROW_HEAD_SIZE			= 7f;
 	private static final float	ARROW_HEAD_SIZE_ANGLE	= 0.5f;
@@ -71,6 +69,7 @@ public class DrawableLine extends Line implements IDrawableShape
 	@SuppressWarnings("unused")
 	private DrawableLine()
 	{
+		super();
 	}
 	
 	

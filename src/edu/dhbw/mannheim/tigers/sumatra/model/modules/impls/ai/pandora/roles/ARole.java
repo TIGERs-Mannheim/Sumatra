@@ -10,7 +10,6 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -20,6 +19,7 @@ import org.apache.log4j.Logger;
 import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AthenaAiFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.MetisAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.EGameState;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
@@ -28,11 +28,13 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.NoObjectWithThisIDException;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.APlay;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.EMovingSpeed;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.IdleSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.DoneState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.EventStatePair;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleState;
@@ -119,18 +121,32 @@ public abstract class ARole implements ISkillSystemObserver, ISkillEventObserver
 	 */
 	public final void addTransition(final Enum<?> stateId, final Enum<?> event, final IRoleState state)
 	{
-		stateMachine.getTransititions().put(new EventStatePair(event, stateId), state);
+		stateMachine.addTransition(new EventStatePair(event, stateId), state);
+	}
+	
+	
+	/**
+	 * Add a wildcard transition
+	 * 
+	 * @param event event that occurred
+	 * @param state the next state
+	 */
+	public final void addTransition(final Enum<?> event, final IRoleState state)
+	{
+		stateMachine.addTransition(new EventStatePair(event), state);
 	}
 	
 	
 	/**
 	 * Add a transition
 	 * 
-	 * @param transitions
+	 * @param fromState
+	 * @param event event that occurred
+	 * @param toState the next state
 	 */
-	public final void addAllTransitions(final Map<EventStatePair, IRoleState> transitions)
+	public final void addTransition(final IRoleState fromState, final Enum<?> event, final IRoleState toState)
 	{
-		stateMachine.getTransititions().putAll(transitions);
+		stateMachine.addTransition(new EventStatePair(event, fromState), toState);
 	}
 	
 	
@@ -143,6 +159,29 @@ public abstract class ARole implements ISkillSystemObserver, ISkillEventObserver
 	public final void addEndTransition(final Enum<?> stateId, final Enum<?> event)
 	{
 		addTransition(stateId, event, DONE_STATE);
+	}
+	
+	
+	/**
+	 * Adds a wildcard End Transition.
+	 * 
+	 * @param event event that have to occurs, that the statemachine ends
+	 */
+	public final void addEndTransition(final Enum<?> event)
+	{
+		addTransition(event, DONE_STATE);
+	}
+	
+	
+	/**
+	 * Adds an End Transition.
+	 * 
+	 * @param state current state
+	 * @param event event that have to occurs, that the statemachine ends
+	 */
+	public final void addEndTransition(final IRoleState state, final Enum<?> event)
+	{
+		addTransition(state, event, DONE_STATE);
 	}
 	
 	
@@ -162,9 +201,12 @@ public abstract class ARole implements ISkillSystemObserver, ISkillEventObserver
 	 * 
 	 * @param event
 	 */
-	public final void nextState(final Enum<? extends Enum<?>> event)
+	public final void triggerEvent(final Enum<? extends Enum<?>> event)
 	{
-		stateMachine.nextState(event);
+		if (event != null)
+		{
+			stateMachine.triggerEvent(event);
+		}
 	}
 	
 	
@@ -225,13 +267,10 @@ public abstract class ARole implements ISkillSystemObserver, ISkillEventObserver
 	@Override
 	public final void onSkillStarted(final ISkill skill, final BotID botID)
 	{
-		synchronized (stateMachine)
+		IRoleState state = stateMachine.getCurrentState();
+		if (state != null)
 		{
-			IRoleState state = stateMachine.getCurrentState();
-			if (state != null)
-			{
-				state.onSkillStarted(skill, botID);
-			}
+			state.onSkillStarted(skill, botID);
 		}
 	}
 	
@@ -239,13 +278,10 @@ public abstract class ARole implements ISkillSystemObserver, ISkillEventObserver
 	@Override
 	public final void onSkillCompleted(final ISkill skill, final BotID botID)
 	{
-		synchronized (stateMachine)
+		IRoleState state = stateMachine.getCurrentState();
+		if ((state != null) && botID.equals(getBotID()))
 		{
-			IRoleState state = stateMachine.getCurrentState();
-			if ((state != null) && botID.equals(getBotID()))
-			{
-				state.onSkillCompleted(skill, botID);
-			}
+			state.onSkillCompleted(skill, botID);
 		}
 	}
 	
@@ -268,7 +304,7 @@ public abstract class ARole implements ISkillSystemObserver, ISkillEventObserver
 	@Override
 	public final void onNewEvent(final Enum<? extends Enum<?>> event)
 	{
-		nextState(event);
+		triggerEvent(event);
 	}
 	
 	
@@ -288,18 +324,13 @@ public abstract class ARole implements ISkillSystemObserver, ISkillEventObserver
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
 	/**
-	 * This method should only be called from the
-	 * {@link edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.Assigner} !!!
+	 * This method should only be called from the RoleAssigner!!!
 	 * 
 	 * @param newBotId
+	 * @param frame
 	 */
-	public final void assignBotID(final BotID newBotId)
+	public final void assignBotID(final BotID newBotId, final MetisAiFrame frame)
 	{
 		if (newBotId.isUninitializedID())
 		{
@@ -307,37 +338,26 @@ public abstract class ARole implements ISkillSystemObserver, ISkillEventObserver
 					+ "' with an UNINITIALIZED BotID!!!");
 		}
 		
-		if (!botID.isUninitializedID())
+		BotID oldBotId = botID;
+		botID = newBotId;
+		if (!oldBotId.isUninitializedID())
 		{
-			log.warn("Change of BotID in role " + this + " denied, it already has an assigned BotID!!!");
-		} else
-		{
-			botID = newBotId;
+			if (currentSkill != null)
+			{
+				stateMachine.restart();
+			}
 		}
 	}
 	
 	
 	/**
-	 * This method allows unassigning a bot from the role. Make sure to assign a new bot for the role afterwards!!
-	 * 
-	 * @param oldBotId
+	 * @param curFrame
 	 */
-	public final void unassignBotID(final BotID oldBotId)
+	public final void updateBefore(final AthenaAiFrame curFrame)
 	{
-		if (botID != oldBotId)
-		{
-			log.warn("Unassigning Bot " + botID + " from role " + this + "denied because of invalid BotID (" + oldBotId
-					+ ")");
-			return;
-		}
-		// log.warn("Unassigning Bot " + botID + " from role " + this);
-		botID = BotID.createBotId();
+		aiFrame = curFrame;
+		lastPos = getPos();
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- updater --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	
 	/**
@@ -345,8 +365,7 @@ public abstract class ARole implements ISkillSystemObserver, ISkillEventObserver
 	 */
 	public final void update(final AthenaAiFrame curFrame)
 	{
-		aiFrame = curFrame;
-		lastPos = getPos();
+		updateBefore(curFrame);
 		
 		if (curFrame.getWorldFrame().tigerBotsAvailable.getWithNull(botID) == null)
 		{
@@ -356,21 +375,29 @@ public abstract class ARole implements ISkillSystemObserver, ISkillEventObserver
 			return;
 		}
 		
-		if (firstUpdate)
+		try
 		{
-			if (hasBeenAssigned())
+			if (firstUpdate)
 			{
-				botType = curFrame.getWorldFrame().tigerBotsVisible.get(botID).getBotType();
-				firstUpdate = false;
-			} else
+				if (hasBeenAssigned())
+				{
+					botType = curFrame.getWorldFrame().tigerBotsVisible.get(botID).getBotType();
+					beforeFirstUpdate();
+					firstUpdate = false;
+				} else
+				{
+					log.error(this + ": Update was called although role has not been assigned!");
+					return;
+				}
+			}
+			
+			if (isCompleted())
 			{
-				log.error(this + ": Update was called although role has not been assigned!");
 				return;
 			}
-		}
-		
-		synchronized (stateMachine)
-		{
+			
+			beforeUpdate();
+			
 			if (stateMachine.getCurrentState() == null)
 			{
 				setCompleted();
@@ -378,20 +405,39 @@ public abstract class ARole implements ISkillSystemObserver, ISkillEventObserver
 			{
 				stateMachine.update();
 			}
-		}
-		
-		if ((currentSkill != null)
-				&& ((currentSkill.getSkillName() == ESkillName.MOVE_TO) || (currentSkill.getSkillName() == ESkillName.MOVE_AND_STAY)))
-		{
-			if (aiFrame.getTacticalField().getGameState() == EGameState.STOPPED)
+			
+			if (currentSkill != null)
 			{
-				AMoveSkill moveSkill = (AMoveSkill) currentSkill;
-				float maxSpeed = Math.min(moveSkill.getMaxLinearVelocity(), AIConfig.getGeometry().getStopSpeed());
-				moveSkill.setMaxLinearVelocity(maxSpeed);
+				// we will cast to AMoveSkill here. It is not ensured that all skills are based on AMoveSkill,
+				// but for skills used in roles, they actually should be!
+				reduceSpeedOnStop();
+				if (isKeeper())
+				{
+					AMoveSkill moveSkill = (AMoveSkill) currentSkill;
+					moveSkill.getMoveCon().setPenaltyAreaAllowedOur(true);
+				}
 			}
+			
+			afterUpdate();
+		} catch (Exception err)
+		{
+			log.error("Exception on role update (" + getType() + ")", err);
 		}
-		
-		afterUpdate();
+	}
+	
+	
+	private void reduceSpeedOnStop()
+	{
+		if (aiFrame.getTacticalField().getGameState() == EGameState.STOPPED)
+		{
+			AMoveSkill moveSkill = (AMoveSkill) currentSkill;
+			float maxSpeed = AIConfig.getGeometry().getStopSpeed();
+			if (moveSkill.getMoveCon().getSpeed() > 1e-4f)
+			{
+				maxSpeed = Math.min(moveSkill.getMoveCon().getSpeed(), maxSpeed);
+			}
+			moveSkill.getMoveCon().setSpeed(EMovingSpeed.SLOW, maxSpeed);
+		}
 	}
 	
 	
@@ -406,6 +452,24 @@ public abstract class ARole implements ISkillSystemObserver, ISkillEventObserver
 	
 	
 	/**
+	 * This method is called before the state machine update.
+	 * Use this for role-global actions. <br>
+	 */
+	protected void beforeUpdate()
+	{
+	}
+	
+	
+	/**
+	 * This method is called before the state machine update and only once after role instantiation
+	 * Use this for role-global actions. <br>
+	 */
+	protected void beforeFirstUpdate()
+	{
+	}
+	
+	
+	/**
 	 * This is called, when the game state has changed.
 	 * It is called before {@link APlay#doUpdate(AthenaAiFrame)}.
 	 * 
@@ -414,11 +478,6 @@ public abstract class ARole implements ISkillSystemObserver, ISkillEventObserver
 	public void onGameStateChanged(final EGameState gameState)
 	{
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- conditions -----------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	
 	/**
@@ -439,11 +498,6 @@ public abstract class ARole implements ISkillSystemObserver, ISkillEventObserver
 			}
 		}, timeMs, TimeUnit.MILLISECONDS);
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	
 	/**
@@ -528,15 +582,16 @@ public abstract class ARole implements ISkillSystemObserver, ISkillEventObserver
 		}
 		isCompleted = true;
 		removeSkillObserver();
-		if (currentSkill != null)
+		if ((currentSkill != null) && (currentSkill.getSkillName() != ESkillName.IDLE))
 		{
-			currentSkill.removeObserver(this);
+			setNewSkill(new IdleSkill());
 		}
+		stateMachine.stop();
 	}
 	
 	
 	@Override
-	public String toString()
+	public final String toString()
 	{
 		return type.toString();
 	}
@@ -580,7 +635,11 @@ public abstract class ARole implements ISkillSystemObserver, ISkillEventObserver
 			currentSkill.removeObserver(this);
 		}
 		currentSkill = newSkill;
-		currentSkill.addObserver(this);
+		if (currentSkill != null)
+		{
+			reduceSpeedOnStop();
+			currentSkill.addObserver(this);
+		}
 		this.newSkill = true;
 	}
 	

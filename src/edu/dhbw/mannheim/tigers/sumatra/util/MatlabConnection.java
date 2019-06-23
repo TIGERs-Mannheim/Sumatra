@@ -32,8 +32,8 @@ public final class MatlabConnection
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private static final Logger	log	= Logger.getLogger(MatlabConnection.class.getName());
-	private static MatlabProxy		proxy	= null;
+	private static final Logger			log	= Logger.getLogger(MatlabConnection.class.getName());
+	private static volatile MatlabProxy	proxy	= null;
 	
 	
 	// --------------------------------------------------------------------------
@@ -59,7 +59,7 @@ public final class MatlabConnection
 	 */
 	public static MatlabProxy getMatlabProxy() throws MatlabConnectionException
 	{
-		if (proxy != null)
+		if ((proxy != null) && proxy.isConnected())
 		{
 			return proxy;
 		}

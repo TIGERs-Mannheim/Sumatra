@@ -43,10 +43,13 @@ public class BotOverviewColumn
 	{
 		addData(String.format("%.1fV Bat.", botAiInformation.getBattery()));
 		addData(String.format("%.1fV Cond.", botAiInformation.getKickerCharge()));
-		addData("Vel:" + botAiInformation.getVel());
+		addData(String.format("%.0f/%.0f Pos.", botAiInformation.getPos().x(), botAiInformation.getPos().y()));
+		addData(String.format("%.1fm/s Vel.", botAiInformation.getVel().getLength2()));
+		addData(String.format("%.1fm/s Max", botAiInformation.getMaxVel()));
 		addData(botAiInformation.isBallContact() ? "ballcont." : "no ballcont.");
 		addData(botAiInformation.isPathPlanning() ? "PP running" : "no PP");
 		addData(botAiInformation.getNumPaths() + " paths");
+		addData(botAiInformation.getBrokenFeatures());
 		addData(botAiInformation.getPlay());
 		addData(botAiInformation.getRole());
 		addData(botAiInformation.getRoleState());

@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 01.06.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.modules.botmanager;
@@ -20,7 +19,6 @@ import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
  * Dataholder for PID parameters with config read/write support.
  * 
  * @author AndreR
- * 
  */
 public class PIDParameters
 {
@@ -28,11 +26,11 @@ public class PIDParameters
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	@SerialData(type = ESerialDataType.FLOAT32)
-	private float	Kp	= 0.0f;
+	private float	kp	= 0.0f;
 	@SerialData(type = ESerialDataType.FLOAT32)
-	private float	Ki	= 0.0f;
+	private float	ki	= 0.0f;
 	@SerialData(type = ESerialDataType.FLOAT32)
-	private float	Kd	= 0.0f;
+	private float	kd	= 0.0f;
 	
 	
 	// --------------------------------------------------------------------------
@@ -45,38 +43,35 @@ public class PIDParameters
 	
 	
 	/**
-	 * 
 	 * @param kp
 	 * @param ki
 	 * @param kd
 	 */
-	public PIDParameters(float kp, float ki, float kd)
+	public PIDParameters(final float kp, final float ki, final float kd)
 	{
-		Kp = kp;
-		Ki = ki;
-		Kd = kd;
+		this.kp = kp;
+		this.ki = ki;
+		this.kd = kd;
 	}
 	
 	
 	/**
-	 * 
 	 * @param config Configuration to read
 	 */
-	public PIDParameters(SubnodeConfiguration config)
+	public PIDParameters(final SubnodeConfiguration config)
 	{
 		setConfiguration(config);
 	}
 	
 	
 	/**
-	 * 
 	 * @param params
 	 */
-	public PIDParameters(PIDParameters params)
+	public PIDParameters(final PIDParameters params)
 	{
-		Kp = params.Kp;
-		Kd = params.Kd;
-		Ki = params.Ki;
+		kp = params.kp;
+		kd = params.kd;
+		ki = params.ki;
 	}
 	
 	
@@ -89,75 +84,70 @@ public class PIDParameters
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @param config read config
 	 */
-	public void setConfiguration(SubnodeConfiguration config)
+	public void setConfiguration(final SubnodeConfiguration config)
 	{
-		Kp = config.getFloat("Kp", 0.0f);
-		Ki = config.getFloat("Ki", 0.0f);
-		Kd = config.getFloat("Kd", 0.0f);
+		kp = config.getFloat("Kp", 0.0f);
+		ki = config.getFloat("Ki", 0.0f);
+		kd = config.getFloat("Kd", 0.0f);
 	}
 	
 	
 	/**
-	 * 
 	 * @return config
 	 */
 	public HierarchicalConfiguration getConfiguration()
 	{
 		final HierarchicalConfiguration config = new HierarchicalConfiguration();
 		
-		config.addProperty("Kp", Kp);
-		config.addProperty("Ki", Ki);
-		config.addProperty("Kd", Kd);
+		config.addProperty("Kp", kp);
+		config.addProperty("Ki", ki);
+		config.addProperty("Kd", kd);
 		
 		return config;
 	}
 	
 	
 	/**
-	 * 
 	 * @param kp
 	 * @param ki
 	 * @param kd
 	 */
-	public void setParameters(float kp, float ki, float kd)
+	public void setParameters(final float kp, final float ki, final float kd)
 	{
-		Kp = kp;
-		Ki = ki;
-		Kd = kd;
+		this.kp = kp;
+		this.ki = ki;
+		this.kd = kd;
 	}
 	
 	
 	/**
-	 * 
 	 * @param params
 	 */
-	public void setParameters(float[] params)
+	public void setParameters(final float[] params)
 	{
 		if (params.length < 3)
 		{
 			return;
 		}
 		
-		Kp = params[0];
-		Ki = params[1];
-		Kd = params[2];
+		kp = params[0];
+		ki = params[1];
+		kd = params[2];
 	}
 	
 	
 	/**
-	 * 
 	 * @return {Kp, Ki, Kd}
 	 */
 	public float[] getParameters()
 	{
 		float[] params = new float[3];
 		
-		params[0] = Kp;
-		params[1] = Ki;
-		params[2] = Kd;
+		params[0] = kp;
+		params[1] = ki;
+		params[2] = kd;
 		
 		return params;
 	}
@@ -168,16 +158,16 @@ public class PIDParameters
 	 */
 	public float getKp()
 	{
-		return Kp;
+		return kp;
 	}
 	
 	
 	/**
 	 * @param kp the kp to set
 	 */
-	public void setKp(float kp)
+	public void setKp(final float kp)
 	{
-		Kp = kp;
+		this.kp = kp;
 	}
 	
 	
@@ -186,16 +176,16 @@ public class PIDParameters
 	 */
 	public float getKi()
 	{
-		return Ki;
+		return ki;
 	}
 	
 	
 	/**
 	 * @param ki the ki to set
 	 */
-	public void setKi(float ki)
+	public void setKi(final float ki)
 	{
-		Ki = ki;
+		this.ki = ki;
 	}
 	
 	
@@ -204,15 +194,22 @@ public class PIDParameters
 	 */
 	public float getKd()
 	{
-		return Kd;
+		return kd;
 	}
 	
 	
 	/**
 	 * @param kd the kd to set
 	 */
-	public void setKd(float kd)
+	public void setKd(final float kd)
 	{
-		Kd = kd;
+		this.kd = kd;
+	}
+	
+	
+	@Override
+	public String toString()
+	{
+		return String.format("[kp=%s, ki=%s, kd=%s]", kp, ki, kd);
 	}
 }

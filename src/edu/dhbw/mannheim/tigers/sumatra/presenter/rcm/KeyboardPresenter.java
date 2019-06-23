@@ -9,7 +9,6 @@
 package edu.dhbw.mannheim.tigers.sumatra.presenter.rcm;
 
 import net.java.games.input.Controller;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.rcm.inputDevice.controller.EControllerType;
 
 
 /**
@@ -26,7 +25,7 @@ class KeyboardPresenter extends AControllerPresenter
 	/**
 	 * @param newController
 	 */
-	KeyboardPresenter(Controller newController)
+	KeyboardPresenter(final Controller newController)
 	{
 		super(newController);
 	}
@@ -35,10 +34,5 @@ class KeyboardPresenter extends AControllerPresenter
 	// -----------------------------------------------------------------
 	// ----- Methods ---------------------------------------------------
 	// -----------------------------------------------------------------
-	@Override
-	public EControllerType getType()
-	{
-		return EControllerType.KEYBOARD;
-	}
 	
 }

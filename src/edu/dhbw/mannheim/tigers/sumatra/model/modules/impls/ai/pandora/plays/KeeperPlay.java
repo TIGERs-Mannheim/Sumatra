@@ -8,6 +8,8 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AthenaAiFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.MetisAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.EGameState;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.defense.KeeperRole;
@@ -26,9 +28,7 @@ public class KeeperPlay extends APlay
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private ARole			keeper	= null;
-	
-	private EGameState	gameState;
+	private ARole	keeper	= null;
 	
 	
 	// --------------------------------------------------------------------------
@@ -48,7 +48,7 @@ public class KeeperPlay extends APlay
 	
 	
 	@Override
-	protected ARole onRemoveRole()
+	protected ARole onRemoveRole(final MetisAiFrame frame)
 	{
 		ARole role = keeper;
 		keeper = null;
@@ -64,21 +64,18 @@ public class KeeperPlay extends APlay
 	
 	
 	@Override
-	protected ARole onAddRole()
+	protected ARole onAddRole(final MetisAiFrame frame)
 	{
 		if (!getRoles().isEmpty())
 		{
 			throw new IllegalStateException("Keeper Play can not handle more than 1 role!");
 		}
-		if (keeper == null)
+		if (frame.getTacticalField().getGameState() == EGameState.PREPARE_KICKOFF_THEY)
 		{
-			if (gameState == EGameState.PREPARE_KICKOFF_THEY)
-			{
-				keeper = new PenaltyKeeperRoleV2();
-			} else
-			{
-				keeper = new KeeperRole();
-			}
+			keeper = new PenaltyKeeperRoleV2();
+		} else
+		{
+			keeper = new KeeperRole();
 		}
 		return (keeper);
 	}
@@ -90,13 +87,6 @@ public class KeeperPlay extends APlay
 		ARole oldKeeper = keeper;
 		switch (gameState)
 		{
-			case RUNNING:
-				if (oldKeeper != null)
-				{
-					keeper = new KeeperRole();
-					switchRoles(oldKeeper, keeper);
-				}
-				break;
 			case PREPARE_PENALTY_THEY:
 				if (oldKeeper != null)
 				{
@@ -104,23 +94,29 @@ public class KeeperPlay extends APlay
 					switchRoles(oldKeeper, keeper);
 				}
 				break;
-			case STOPPED:
-				if (keeper instanceof KeeperRole)
-				{
-					if (gameState == EGameState.STOPPED)
-					{
-						((KeeperRole) keeper).setAllowChipkick(false);
-					} else
-					{
-						((KeeperRole) keeper).setAllowChipkick(true);
-					}
-				}
 			default:
-				return;
+				if (oldKeeper != null)
+				{
+					keeper = new KeeperRole();
+					switchRoles(oldKeeper, keeper);
+				}
+				break;
 		}
-		
 	}
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
+	
+	
+	@Override
+	protected void doUpdate(final AthenaAiFrame frame)
+	{
+		if ((keeper != null) && keeper.getClass().equals(KeeperRole.class))
+		{
+			if (frame.getTacticalField().getGameState() == EGameState.STOPPED)
+			{
+				((KeeperRole) keeper).setAllowChipkick(false);
+			} else
+			{
+				((KeeperRole) keeper).setAllowChipkick(true);
+			}
+		}
+	}
 }

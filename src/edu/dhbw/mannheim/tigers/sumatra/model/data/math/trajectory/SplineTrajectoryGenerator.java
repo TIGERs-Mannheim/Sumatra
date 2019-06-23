@@ -11,16 +11,15 @@ package edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.log4j.Logger;
+
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.AngleMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.math.functions.Function1dPoly;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.math.functions.IFunction1D;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline.HermiteSpline;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.spline.HermiteSpline2D;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.Sisyphus;
 
 
 /**
@@ -30,95 +29,18 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.Sisyphus
  */
 public class SplineTrajectoryGenerator
 {
-	private static class PathPointInfo
-	{
-		/** */
-		public Vector2	point;
-		/** */
-		public Vector2	toPrevious;
-		/** */
-		public Vector2	toNext;
-		
-		
-		/** */
-		public Vector2	tangent;
-		
-		/** */
-		public float	angle;
-		/** */
-		public float	normalAngle;
-		
-		/** */
-		public float	distanceToNearest;
-		/** */
-		public float	distanceToPrevious;
-		/** */
-		public float	totalLength;
-		
-		/** to be filled later */
-		public float	velocity;
-	}
+	private static final Logger	log							= Logger.getLogger(SplineTrajectoryGenerator.class.getName());
+	private float						maxVelocity					= 1.0f;
+	private float						maxAcceleration			= 1.0f;
+	private float						maxAngularVelocity		= 1.0f;
+	private float						maxAngularAcceleration	= 1.0f;
+	private float						reducePathScore			= 0.0f;
 	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	private IFunction1D	normalAngleToSpeed		= Function1dPoly.constant(1);
-	private float			maxVelocity					= 1.0f;
-	private float			maxAcceleration			= 1.0f;
-	private float			maxAngularVelocity		= 1.0f;
-	private float			maxAngularAcceleration	= 1.0f;
-	private float			reducePathScore			= 0.0f;
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 */
 	public SplineTrajectoryGenerator()
 	{
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 * Set parameters for position trajectory generation.
-	 * 
-	 * @param maxVel Maximum velocity for trajectory.
-	 * @param acc Acceleration for trajectory.
-	 */
-	public void setPositionTrajParams(final float maxVel, final float acc)
-	{
-		maxVelocity = maxVel;
-		maxAcceleration = acc;
-	}
-	
-	
-	/**
-	 * Set parameters for rotation trajectory generation.
-	 * 
-	 * @param maxVel Maximum velocity for trajectory.
-	 * @param acc Acceleration for trajectory.
-	 */
-	public void setRotationTrajParams(final float maxVel, final float acc)
-	{
-		maxAngularVelocity = maxVel;
-		maxAngularAcceleration = acc;
-	}
-	
-	
-	/**
-	 * Set parameters for spline generation.
-	 * 
-	 * @param normalAngleToSpeedFunc This function maps the angle of the neighbor vectors at a path point to the speed at
-	 *           this point.
-	 */
-	public void setSplineParams(final IFunction1D normalAngleToSpeedFunc)
-	{
-		normalAngleToSpeed = normalAngleToSpeedFunc;
 	}
 	
 	
@@ -138,13 +60,38 @@ public class SplineTrajectoryGenerator
 			final IVector2 finalVelocityIn,
 			final float initWIn, final float finalWIn, final float initWVelIn, final float finalWVelIn)
 	{
+		
 		if (pathIn.size() > 2)
 		{
-			if (pathIn.get(0).subtractNew(pathIn.get(1)).getLength2() < 0.001)
+			boolean doubleFound = false;
+			do
 			{
-				pathIn.remove(0);
-			}
+				doubleFound = false;
+				for (int i = 0; i < (pathIn.size() - 2); i++)
+				{
+					if ((pathIn.get(i).subtractNew(pathIn.get(i + 1)).getLength2() < 0.001) ||
+							(pathIn.get(i).subtractNew(pathIn.get(i + 2)).getLength2() < 0.001))
+					{
+						pathIn.remove(i);
+						doubleFound = true;
+						break;
+					}
+					else if (pathIn.get(i + 1).subtractNew(pathIn.get(i + 2)).getLength2() < 0.001)
+					{
+						pathIn.remove(i + 1);
+						doubleFound = true;
+						break;
+					}
+				}
+			} while (doubleFound && (pathIn.size() > 2));
 		}
+		// if (pathIn.size() == 2)
+		// {
+		// if (pathIn.get(0).subtractNew(pathIn.get(1)).getLength2() < 0.001)
+		// {
+		// pathIn.remove(0);
+		// }
+		// }
 		List<IVector2> path = pathIn;
 		IVector2 initialVelocity = initialVelocityIn;
 		IVector2 finalVelocity = finalVelocityIn;
@@ -154,24 +101,11 @@ public class SplineTrajectoryGenerator
 		float finalWVel = finalWVelIn;
 		
 		List<PathPointInfo> points = preProcess(path, initialVelocity, finalVelocity);
-		// for (int i = 0; i < points.size(); i++)
-		// {
-		// if (points.get(i).distanceToNearest < 0.02)
-		// {
-		// path.remove(i);
-		// points = preProcess(path, initialVelocity, finalVelocity);
-		// break;
-		// }
-		// }
+		
 		
 		// first point processing
 		PathPointInfo info = points.get(0);
-		info.velocity = initialVelocity.getLength2();
-		if (((info.distanceToNearest * maxAcceleration) * 0.8) < info.velocity)
-		{
-			info.velocity = (info.distanceToNearest * maxAcceleration) * 0.8f;
-		}
-		info.tangent = (new Vector2(initialVelocity)).scaleTo(info.velocity);
+		info.tangent = (new Vector2(initialVelocity));
 		
 		// intermediate point processing
 		for (int i = 1; i < (points.size() - 1); i++)
@@ -179,20 +113,15 @@ public class SplineTrajectoryGenerator
 			info = points.get(i);
 			
 			// find velocity
-			info.velocity = normalAngleToSpeed.eval(info.normalAngle);
-			
-			// limit tangent to avoid spline circles
-			if (((info.distanceToNearest * maxAcceleration) * 0.8) < info.velocity)
+			info.tangent = tangent(path, i);
+			if (info.tangent.getLength2() > maxVelocity)
 			{
-				info.velocity = (info.distanceToNearest * maxAcceleration) * 0.8f;
+				info.tangent = info.tangent.scaleToNew(maxVelocity);
 			}
-			// scale tangent
-			info.tangent.scaleTo(info.velocity * Sisyphus.curveSpeed);
 		}
 		
 		// last point processing
 		info = points.get(points.size() - 1);
-		info.velocity = finalVelocity.getLength2();
 		info.tangent = new Vector2(finalVelocity);
 		
 		// now create splines and trajectories
@@ -219,48 +148,73 @@ public class SplineTrajectoryGenerator
 		SplinePair3D result = new SplinePair3D();
 		result.setPositionTrajectory(new HermiteSplineTrajectory2D(parts));
 		result.setRotationTrajectory(new HermiteSplineTrajectory1D(rotateParts));
-		
 		return result;
+	}
+	
+	
+	private float T(final List<IVector2> path, final int i)
+	{
+		if (i == 0)
+		{
+			return 0;
+		}
+		return (float) (Math.sqrt(path.get(i).subtractNew(path.get(i - 1)).getLength2()) + T(path, i - 1));
+	}
+	
+	
+	/*
+	 * nonuniform Catmull-Rom spline
+	 * C'(t1) = (P1 - P0) / (t1 - t0) - (P2 - P0) / (t2 - t0) + (P2 - P1) / (t2 - t1)
+	 * not usable for i=0 and i=size(path) - 1
+	 * from
+	 * http://stackoverflow.com/questions/9489736/catmull-rom-curve-with-no-cusps-and-no-self-intersections/19283471#
+	 * 19283471
+	 */
+	
+	private IVector2 tangent(final List<IVector2> path, final int i)
+	{
+		// if (path.get(i - 1).equals(path.get(i)) || path.get(i).equals(path.get(i + 1))
+		// || path.get(i - 1).equals(path.get(i + 1)))
+		// {
+		// log.error("Two points are double in the spline!!!");
+		// }
+		IVector2 p1 = ((path.get(i).subtractNew(path.get(i - 1))).multiplyNew(multiplicatorChecker(path, i, i - 1)));
+		IVector2 p2 = ((path.get(i + 1).subtractNew(path.get(i - 1)))
+				.multiplyNew(multiplicatorChecker(path, i + 1, i - 1)));
+		IVector2 p3 = ((path.get(i + 1).subtractNew(path.get(i))).multiplyNew(multiplicatorChecker(path, i + 1, i)));
+		return p1.subtractNew(p2).addNew(p3);
+	}
+	
+	
+	private float multiplicatorChecker(final List<IVector2> path, final int i1, final int i2)
+	{
+		Float multiplicator = (1 / (T(path, i1) - T(path, i2)));
+		if (multiplicator.isNaN())
+		{
+			log.error("Invalid spline");
+			multiplicator = 0f;
+		}
+		return multiplicator;
 	}
 	
 	
 	private List<PathPointInfo> preProcess(final List<IVector2> path, final IVector2 initialVelocity,
 			final IVector2 finalVelocity)
 	{
-		// List<IVector2> newPath = new LinkedList<IVector2>();
-		// float stepSize = 100;
-		// for (int i = 1; i < path.size(); i++)
-		// {
-		// IVector2 previous = path.get(i - 1);
-		// newPath.add(previous);
-		// IVector2 node = path.get(i);
-		// IVector2 previousToNode = node.subtractNew(previous);
-		// float dist = previousToNode.getLength2();
-		// while (dist > (stepSize * 2))
-		// {
-		// IVector2 intermediate = previous.addNew(previousToNode.scaleToNew(stepSize));
-		// newPath.add(intermediate);
-		// previous = intermediate;
-		// previousToNode = node.subtractNew(previous);
-		// dist = previousToNode.getLength2();
-		// }
-		// }
-		// newPath.add(path.get(path.size() - 1));
-		// path = newPath;
-		
 		List<PathPointInfo> points = new ArrayList<PathPointInfo>();
 		
-		PathPointInfo info = generateInfo(AVector2.ZERO_VECTOR, path.get(0), path.get(1));
-		info.tangent = new Vector2(initialVelocity);
-		points.add(info);
+		// Start Point
+		PathPointInfo infoStart = new PathPointInfo(AVector2.ZERO_VECTOR, path.get(0), path.get(1));
+		points.add(infoStart);
 		
+		// Intermediate Points
 		for (int i = 1; i < (path.size() - 1); i++)
 		{
 			IVector2 A = path.get(i - 1);
 			IVector2 B = path.get(i);
 			IVector2 C = path.get(i + 1);
 			
-			info = generateInfo(A, B, C);
+			PathPointInfo info = new PathPointInfo(A, B, C);
 			float distance = B.subtractNew(A).getLength2() + B.subtractNew(C).getLength2();
 			float score = (1.0f - info.normalAngle) * distance;
 			
@@ -275,9 +229,10 @@ public class SplineTrajectoryGenerator
 			}
 		}
 		
-		info = generateInfo(path.get(path.size() - 2), path.get(path.size() - 1), AVector2.ZERO_VECTOR);
-		info.tangent = new Vector2(finalVelocity);
-		points.add(info);
+		// End Point
+		PathPointInfo infoEnd = new PathPointInfo(path.get(path.size() - 2), path.get(path.size() - 1),
+				AVector2.ZERO_VECTOR);
+		points.add(infoEnd);
 		
 		// compute length of path
 		points.get(0).totalLength = 0;
@@ -292,34 +247,6 @@ public class SplineTrajectoryGenerator
 	}
 	
 	
-	private PathPointInfo generateInfo(final IVector2 A, final IVector2 B, final IVector2 C)
-	{
-		PathPointInfo info = new PathPointInfo();
-		
-		info.point = new Vector2(B);
-		info.toPrevious = A.subtractNew(B);
-		info.toNext = C.subtractNew(B);
-		info.distanceToPrevious = info.toPrevious.getLength2();
-		
-		info.distanceToNearest = info.toNext.getLength2();
-		if (info.toPrevious.getLength2() < info.distanceToNearest)
-		{
-			info.distanceToNearest = info.toPrevious.getLength2();
-		}
-		
-		info.toPrevious.normalize();
-		info.toNext.normalize();
-		
-		info.angle = GeoMath.angleBetweenVectorAndVector(info.toPrevious, info.toNext);
-		info.normalAngle = info.angle / AngleMath.PI;
-		
-		// get tangential vector
-		info.tangent = info.toNext.subtractNew(info.toPrevious);
-		
-		return info;
-	}
-	
-	
 	/**
 	 * Generates a spline with maxVelocity and maxAcceleration using a simple iterative approach.
 	 * 
@@ -329,20 +256,27 @@ public class SplineTrajectoryGenerator
 	 * @param finalVelocity
 	 * @return
 	 */
-	private HermiteSpline2D generateSpline(final IVector2 initialPos, final IVector2 finalPos,
+	public HermiteSpline2D generateSpline(final IVector2 initialPos, final IVector2 finalPos,
 			final IVector2 initialVelocity,
 			final IVector2 finalVelocity)
 	{
+		IVector2 initVel = initialVelocity;
+		IVector2 finalVel = finalVelocity;
+		
 		// catch some invalid velocities
-		if (initialVelocity.getLength2() > maxVelocity)
+		if (initVel.getLength2() > maxVelocity)
 		{
-			maxVelocity = initialVelocity.getLength2();
+			// need to tackle numeric issues or below while loop with become an endless loop!
+			initVel = initVel.scaleToNew(maxVelocity - 0.1f);
 		}
 		
-		if (finalVelocity.getLength2() > maxVelocity)
+		if (finalVel.getLength2() > maxVelocity)
 		{
-			maxVelocity = finalVelocity.getLength2();
+			// need to tackle numeric issues or below while loop with become an endless loop!
+			finalVel = finalVel.scaleToNew(maxVelocity - 0.1f);
 		}
+		
+		assert maxVelocity > 0;
 		
 		// generate initial guess based on distance and max velocity
 		float d = finalPos.subtractNew(initialPos).getLength2();
@@ -351,7 +285,7 @@ public class SplineTrajectoryGenerator
 		// and this will avoid nulls and NaNs in the following calculation
 		t += 0.00001f;
 		
-		HermiteSpline2D spline = new HermiteSpline2D(initialPos, finalPos, initialVelocity, finalVelocity, t);
+		HermiteSpline2D spline = new HermiteSpline2D(initialPos, finalPos, initVel, finalVel, t);
 		
 		float velDiff = maxVelocity - spline.getMaxFirstDerivative();
 		
@@ -360,9 +294,17 @@ public class SplineTrajectoryGenerator
 		{
 			t += 0.1f;
 			
-			spline = new HermiteSpline2D(initialPos, finalPos, initialVelocity, finalVelocity, t);
+			spline = new HermiteSpline2D(initialPos, finalPos, initVel, finalVel, t);
 			
 			velDiff = maxVelocity - spline.getMaxFirstDerivative();
+			
+			if (t > 60)
+			{
+				log.warn("Endless loop detected Velocity!!! " + spline.getEndTime() + ", initialPos: " + initialPos
+						+ ", finalPos: "
+						+ finalPos + ", initialVelocity: " + initialVelocity + ", finalVelocity: " + finalVelocity);
+				break;
+			}
 		}
 		
 		// now optimize for acceleration
@@ -372,9 +314,17 @@ public class SplineTrajectoryGenerator
 		{
 			t += 0.1f;
 			
-			spline = new HermiteSpline2D(initialPos, finalPos, initialVelocity, finalVelocity, t);
+			spline = new HermiteSpline2D(initialPos, finalPos, initVel, finalVel, t);
 			
 			accDiff = maxAcceleration - spline.getMaxSecondDerivative();
+			
+			if (t > 60)
+			{
+				log.warn("Endless loop detected Acceleration!!! " + spline.getEndTime() + ", initialPos: " + initialPos
+						+ ", finalPos: "
+						+ finalPos + ", initialVelocity: " + initialVelocity + ", finalVelocity: " + finalVelocity);
+				break;
+			}
 		}
 		
 		return spline;
@@ -417,13 +367,16 @@ public class SplineTrajectoryGenerator
 		float velDiff = maxAngularVelocity - spline.getMaxFirstDerivative();
 		
 		// optimize for velocity first
-		while (velDiff < 0)
+		int timeout = 100;
+		while ((velDiff < 0) && (timeout > 0))
 		{
 			t += 0.1f;
 			
 			spline = new HermiteSpline(initialPos, finalPos, initialVelocity, finalVelocity, t);
 			
 			velDiff = maxAngularVelocity - spline.getMaxFirstDerivative();
+			
+			timeout--;
 		}
 		
 		// now optimize for acceleration
@@ -442,9 +395,32 @@ public class SplineTrajectoryGenerator
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
+	/**
+	 * Set parameters for position trajectory generation.
+	 * 
+	 * @param maxVel Maximum velocity for trajectory.
+	 * @param acc Acceleration for trajectory.
+	 */
+	public void setPositionTrajParams(final float maxVel, final float acc)
+	{
+		setMaxVelocity(maxVel);
+		maxAcceleration = acc;
+	}
+	
+	
+	/**
+	 * Set parameters for rotation trajectory generation.
+	 * 
+	 * @param maxVel Maximum velocity for trajectory.
+	 * @param acc Acceleration for trajectory.
+	 */
+	public void setRotationTrajParams(final float maxVel, final float acc)
+	{
+		maxAngularVelocity = maxVel;
+		maxAngularAcceleration = acc;
+	}
+	
+	
 	/**
 	 * Path points where (1-normalAngle)*(distanceToNext+distanceToPrevious) is below this score will be removed.
 	 * 
@@ -453,5 +429,55 @@ public class SplineTrajectoryGenerator
 	public void setReducePathScore(final float s)
 	{
 		reducePathScore = s;
+	}
+	
+	
+	private static class PathPointInfo
+	{
+		
+		
+		protected PathPointInfo(final IVector2 A, final IVector2 B, final IVector2 C)
+		{
+			point = new Vector2(B);
+			toPrevious = A.subtractNew(B);
+			toNext = C.subtractNew(B);
+			distanceToPrevious = toPrevious.getLength2();
+			
+			toPrevious.normalize();
+			toNext.normalize();
+			
+			angle = GeoMath.angleBetweenVectorAndVector(toPrevious, toNext);
+			normalAngle = angle / AngleMath.PI;
+		}
+		
+		/** */
+		public Vector2		point;
+		/** */
+		public Vector2		toPrevious;
+		/** */
+		public Vector2		toNext;
+		
+		
+		/** */
+		public IVector2	tangent;
+		
+		/** */
+		public float		angle;
+		/** */
+		public float		normalAngle;
+		
+		/** */
+		public float		distanceToPrevious;
+		/** */
+		public float		totalLength;
+	}
+	
+	
+	/**
+	 * @param maxVelocity the maxVelocity to set
+	 */
+	public final void setMaxVelocity(final float maxVelocity)
+	{
+		this.maxVelocity = maxVelocity;
 	}
 }

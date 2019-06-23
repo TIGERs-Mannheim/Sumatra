@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.eclipse.jdt.launching.localJavaApplication">
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+<listEntry value="/Sumatra/src/edu/dhbw/mannheim/tigers/sumatra/Sumatra.java"/>
+</listAttribute>
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+<listEntry value="1"/>
+</listAttribute>
+<listAttribute key="org.eclipse.debug.ui.favoriteGroups">
+<listEntry value="org.eclipse.debug.ui.launchGroup.debug"/>
+<listEntry value="org.eclipse.debug.ui.launchGroup.run"/>
+</listAttribute>
+<stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="edu.dhbw.mannheim.tigers.sumatra.Sumatra"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="Sumatra"/>
+<stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Dproductive=true -Xms512m -Xmx4G -server -XX:NewSize=64M -d64 -Xmaxjitcodesize128m -Xnoclassgc -Xverify:none -Dsun.java2d.d3d=false -XX:+DisableExplicitGC -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true"/>
+</launchConfiguration>

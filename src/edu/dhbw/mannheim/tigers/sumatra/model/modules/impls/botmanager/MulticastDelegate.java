@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 11.06.2011
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager;
@@ -19,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.apache.commons.configuration.SubnodeConfiguration;
+import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2f;
@@ -41,6 +40,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tiger.TigerSystemSetIdentity;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.types.ABotManager;
 import edu.dhbw.mannheim.tigers.sumatra.util.ThreadUtil;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 import edu.dhbw.mannheim.tigers.sumatra.util.network.NetworkUtility;
 
 
@@ -48,7 +48,6 @@ import edu.dhbw.mannheim.tigers.sumatra.util.network.NetworkUtility;
  * Perform multicast handling and capsulation.
  * 
  * @author AndreR
- * 
  */
 public class MulticastDelegate implements IMulticastDelegate
 {
@@ -80,7 +79,7 @@ public class MulticastDelegate implements IMulticastDelegate
 	
 	private final MulticastHandler					mcastHandler		= new MulticastHandler();
 	
-	private final SubnodeConfiguration				config;
+	private final HierarchicalConfiguration		config;
 	
 	private static final int							MAX_BOTS				= 6;
 	
@@ -94,7 +93,7 @@ public class MulticastDelegate implements IMulticastDelegate
 	 * @param subnodeConfiguration
 	 * @param botmanager
 	 */
-	public MulticastDelegate(SubnodeConfiguration subnodeConfiguration, ABotManager botmanager)
+	public MulticastDelegate(final HierarchicalConfiguration subnodeConfiguration, final ABotManager botmanager)
 	{
 		this.botmanager = botmanager;
 		config = subnodeConfiguration;
@@ -128,21 +127,21 @@ public class MulticastDelegate implements IMulticastDelegate
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
 	@Override
-	public void setGroupedMove(BotID botId, TigerMotorMoveV2 move)
+	public void setGroupedMove(final BotID botId, final TigerMotorMoveV2 move)
 	{
 		allMoves.put(botId, move);
 	}
 	
 	
 	@Override
-	public void setGroupedKick(BotID botId, TigerKickerKickV2 kick)
+	public void setGroupedKick(final BotID botId, final TigerKickerKickV2 kick)
 	{
 		allKicks.put(botId, kick);
 	}
 	
 	
 	@Override
-	public void setGroupedDribble(BotID botId, TigerDribble dribble)
+	public void setGroupedDribble(final BotID botId, final TigerDribble dribble)
 	{
 		allDribbles.put(botId, dribble);
 	}
@@ -151,7 +150,7 @@ public class MulticastDelegate implements IMulticastDelegate
 	/**
 	 * @param enable
 	 */
-	public void enable(boolean enable)
+	public void enable(final boolean enable)
 	{
 		if (enable)
 		{
@@ -190,7 +189,7 @@ public class MulticastDelegate implements IMulticastDelegate
 	/**
 	 * @return the config
 	 */
-	public SubnodeConfiguration getConfig()
+	public HierarchicalConfiguration getConfig()
 	{
 		return config;
 	}
@@ -199,7 +198,7 @@ public class MulticastDelegate implements IMulticastDelegate
 	/**
 	 * @param field
 	 */
-	public void setOnFieldBots(Set<BotID> field)
+	public void setOnFieldBots(final Set<BotID> field)
 	{
 		final Lock writeLock = onFieldBotsLock.writeLock();
 		try
@@ -218,7 +217,7 @@ public class MulticastDelegate implements IMulticastDelegate
 	
 	
 	@Override
-	public boolean setMulticast(BotID botId, boolean enable)
+	public boolean setMulticast(final BotID botId, final boolean enable)
 	{
 		final Lock writeLock = activeBotsLock.writeLock();
 		try
@@ -261,7 +260,7 @@ public class MulticastDelegate implements IMulticastDelegate
 	
 	
 	@Override
-	public void setIdentity(TigerBot bot)
+	public void setIdentity(final TigerBot bot)
 	{
 		final TigerSystemSetIdentity ident = new TigerSystemSetIdentity();
 		
@@ -277,7 +276,7 @@ public class MulticastDelegate implements IMulticastDelegate
 	
 	
 	@Override
-	public void removeIdentity(TigerBot bot)
+	public void removeIdentity(final TigerBot bot)
 	{
 		final TigerSystemSetIdentity ident = new TigerSystemSetIdentity();
 		
@@ -318,14 +317,14 @@ public class MulticastDelegate implements IMulticastDelegate
 		{
 			active = true;
 			
-			long lastCall = System.nanoTime();
+			long lastCall = SumatraClock.nanoTime();
 			
 			final List<BotID> currentActiveBots = new ArrayList<BotID>();
 			final List<BotID> currentOnFieldBots = new ArrayList<BotID>();
 			
 			while (active)
 			{
-				final long startTime = System.nanoTime();
+				final long startTime = SumatraClock.nanoTime();
 				final long diff = startTime - lastCall;
 				if (diff > TimeUnit.MILLISECONDS.toNanos(200))
 				{
@@ -416,7 +415,7 @@ public class MulticastDelegate implements IMulticastDelegate
 				
 				mcastTransceiver.enqueueCommand(update);
 				
-				final long stopTime = System.nanoTime();
+				final long stopTime = SumatraClock.nanoTime();
 				final long duration = stopTime - startTime;
 				final long sleepTotal = TimeUnit.MILLISECONDS.toNanos(updateAllSleep) - duration;
 				
@@ -451,7 +450,7 @@ public class MulticastDelegate implements IMulticastDelegate
 	private class MulticastHandler implements ITransceiverUDPObserver
 	{
 		@Override
-		public void onIncommingCommand(ACommand cmd)
+		public void onIncommingCommand(final ACommand cmd)
 		{
 			if (cmd.getType() == ECommand.CMD_SYSTEM_ANNOUNCEMENT)
 			{
@@ -487,7 +486,7 @@ public class MulticastDelegate implements IMulticastDelegate
 		
 		
 		@Override
-		public void onOutgoingCommand(ACommand cmd)
+		public void onOutgoingCommand(final ACommand cmd)
 		{
 		}
 	}
@@ -505,7 +504,7 @@ public class MulticastDelegate implements IMulticastDelegate
 	/**
 	 * @param time
 	 */
-	public void setUpdateAllSleepTime(long time)
+	public void setUpdateAllSleepTime(final long time)
 	{
 		updateAllSleep = time;
 		config.setProperty("updateAll.sleep", time);

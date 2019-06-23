@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: May 31, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.test;
@@ -15,7 +14,7 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ASkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleState;
 
@@ -24,7 +23,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleSt
  * Tests arbitrary skills
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class SkillTestRole extends ARole
 {
@@ -32,7 +30,7 @@ public class SkillTestRole extends ARole
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private final AMoveSkill	skill;
+	private final ASkill	skill;
 	
 	
 	// --------------------------------------------------------------------------
@@ -51,13 +49,13 @@ public class SkillTestRole extends ARole
 	/**
 	 * @param skill
 	 */
-	public SkillTestRole(AMoveSkill skill)
+	public SkillTestRole(final ASkill skill)
 	{
 		this(ERole.SKILL_TEST, skill);
 	}
 	
 	
-	protected SkillTestRole(ERole role, AMoveSkill skill)
+	protected SkillTestRole(final ERole role, final ASkill skill)
 	{
 		super(role);
 		this.skill = skill;
@@ -102,15 +100,15 @@ public class SkillTestRole extends ARole
 		
 		
 		@Override
-		public void onSkillStarted(ISkill skill, BotID botID)
+		public void onSkillStarted(final ISkill skill, final BotID botID)
 		{
 		}
 		
 		
 		@Override
-		public void onSkillCompleted(ISkill skill, BotID botID)
+		public void onSkillCompleted(final ISkill skill, final BotID botID)
 		{
-			nextState(EEvent.DONE);
+			triggerEvent(EEvent.DONE);
 		}
 		
 		
@@ -132,7 +130,7 @@ public class SkillTestRole extends ARole
 	// --------------------------------------------------------------------------
 	
 	@Override
-	public void fillNeededFeatures(List<EFeature> features)
+	public void fillNeededFeatures(final List<EFeature> features)
 	{
 	}
 }

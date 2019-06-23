@@ -12,7 +12,7 @@ package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger;
 import java.util.Map;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature.EFeatureState;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeatureState;
 
 
 /**

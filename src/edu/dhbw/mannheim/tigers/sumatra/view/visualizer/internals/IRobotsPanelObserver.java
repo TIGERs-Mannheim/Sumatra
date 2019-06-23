@@ -4,25 +4,25 @@
  * Project: TIGERS - Sumatra
  * Date: 11.08.2010
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.BotPopUpMenu.IBotPopUpMenuObserver;
 
 
 /**
  * FieldPanel observer interface.
  * 
  * @author AndreR
- * 
  */
-public interface IRobotsPanelObserver
+public interface IRobotsPanelObserver extends IBotPopUpMenuObserver
 {
 	/**
-	 * 
 	 * @param botId
 	 */
-	void onRobotClick(BotID botId);
+	default void onRobotClick(final BotID botId)
+	{
+	}
 }

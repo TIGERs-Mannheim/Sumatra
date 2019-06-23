@@ -21,7 +21,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.DrawableLi
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.DrawableLine.ETextLocation;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.line.Line;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.FieldPanel;
 
 
 /**
@@ -98,54 +97,31 @@ public class CoordinatesLayer extends AFieldLayer
 		yStep1.setDrawArrowHead(false);
 		yStep1.paintShape(g, getFieldPanel(), frame.getWorldFrame().isInverted());
 		
-		IVector2 center;
-		switch (getFieldPanel().getFieldTurn())
-		{
-			case NORMAL:
-			case T180:
-				center = new Vector2((getFieldPanel().getFieldTotalWidth() / 2.0f), FieldPanel.FIELD_MARGIN - 19);
-				break;
-			case T270:
-			case T90:
-				center = new Vector2((getFieldPanel().getFieldTotalHeight() / 2.0f), FieldPanel.FIELD_MARGIN - 19);
-				break;
-			default:
-				throw new IllegalStateException();
-		}
-		int inv2;
-		switch (getFieldPanel().getFieldTurn())
-		{
-			case NORMAL:
-			case T90:
-				inv2 = 1;
-				break;
-			case T180:
-			case T270:
-				inv2 = -1;
-				break;
-			default:
-				throw new IllegalStateException();
-		}
-		
 		int inv = (frame.getWorldFrame().isInverted() ? -1 : 1);
-		IVector2 offset;
-		if ((frame.getWorldFrame().isInverted() && (inv2 == -1)) || (!frame.getWorldFrame().isInverted() && (inv2 == 1)))
+		
+		g.scale(1f / getFieldPanel().getScaleFactor(), 1f / getFieldPanel().getScaleFactor());
+		g.translate(-getFieldPanel().getFieldOriginX(), -getFieldPanel().getFieldOriginY());
+		g.setColor(frame.getTeamColor() == ETeamColor.YELLOW ? Color.YELLOW : Color.BLUE);
+		
+		int x;
+		int y = getFieldPanel().getHeight() - 18;
+		if (frame.getTeamColor() == ETeamColor.YELLOW)
 		{
-			offset = new Vector2(-110, 0);
+			x = 10;
 		} else
 		{
-			offset = new Vector2(60, 0);
+			x = getFieldPanel().getWidth() - 60;
 		}
-		
-		IVector2 posGui = center.addNew(offset);
-		g.setColor(Color.white);
 		char tColor = frame.getTeamColor() == ETeamColor.YELLOW ? 'Y' : 'B';
 		g.drawString(
 				String.format("%c x:%5d", tColor, inv * (int) lastMousePoint.x()),
-				posGui.x(), posGui.y());
+				x, y);
 		g.drawString(
 				String.format("   y:%5d", inv * (int) lastMousePoint.y()),
-				posGui.x(), posGui.y() + 11);
+				x, y + 11);
+		
+		g.translate(getFieldPanel().getFieldOriginX(), getFieldPanel().getFieldOriginY());
+		g.scale(getFieldPanel().getScaleFactor(), getFieldPanel().getScaleFactor());
 	}
 	
 	

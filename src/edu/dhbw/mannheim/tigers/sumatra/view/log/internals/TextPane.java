@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 06.08.2010
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.log.internals;
@@ -25,7 +24,6 @@ import javax.swing.text.StyledDocument;
  * This pane displays text! Colored text!
  * 
  * @author AndreR
- * 
  */
 public class TextPane extends JScrollPane
 {
@@ -46,10 +44,9 @@ public class TextPane extends JScrollPane
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
-	 * 
 	 * @param maxCapacity
 	 */
-	public TextPane(int maxCapacity)
+	public TextPane(final int maxCapacity)
 	{
 		this.maxCapacity = maxCapacity;
 		
@@ -76,7 +73,7 @@ public class TextPane extends JScrollPane
 	 * @param text
 	 * @param aset
 	 */
-	public void setText(String text, AttributeSet aset)
+	public void setText(final String text, final AttributeSet aset)
 	{
 		clear();
 		
@@ -145,9 +142,46 @@ public class TextPane extends JScrollPane
 	
 	
 	/**
+	 * @param text
+	 * @param aset
+	 */
+	public void prepend(final String text, final AttributeSet aset)
+	{
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				try
+				{
+					doc.insertString(0, text, aset);
+					
+					// Memorize the message-length
+					entries.addFirst(text.length());
+					
+					// If there are too much entries: Remove the first!
+					if (entries.size() > maxCapacity)
+					{
+						final Integer end = entries.pollLast();
+						doc.remove(doc.getLength(), end);
+					}
+					
+					if (autoscroll)
+					{
+						textPane.setCaretPosition(0);
+					}
+				} catch (final BadLocationException err)
+				{
+				}
+			}
+		});
+	}
+	
+	
+	/**
 	 * @param en
 	 */
-	public void setAutoscroll(boolean en)
+	public void setAutoscroll(final boolean en)
 	{
 		autoscroll = en;
 		if (autoscroll)

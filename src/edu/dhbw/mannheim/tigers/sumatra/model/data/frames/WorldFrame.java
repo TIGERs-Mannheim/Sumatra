@@ -21,7 +21,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMap;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotIDMapConst;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.IBotIDMap;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
 
 
 /**
@@ -79,12 +78,13 @@ public class WorldFrame extends SimpleWorldFrame implements IRecordWfFrame
 			if (bot.getTeamColor() == getTeamColor())
 			{
 				tigersVisible.put(botID, bot);
-				if ((bot.getBot() != null) && (bot.getBot().getNetworkState() == ENetworkState.ONLINE)
-						&& !bot.getBot().isManualControl()
-						&& AIConfig.getGeometry().getFieldWBorders().isPointInShape(bot.getPos())
-						&& bot.isVisible())
+				if (AIConfig.getGeometry().getFieldWReferee()
+						.isPointInShape(bot.getPos(), -AIConfig.getGeometry().getBotRadius()))
 				{
-					tigersAvailable.put(botID, bot);
+					if ((bot.getBot() != null) && (bot.getBot().isAvailableToAi()))
+					{
+						tigersAvailable.put(botID, bot);
+					}
 				}
 			}
 			else
@@ -104,14 +104,14 @@ public class WorldFrame extends SimpleWorldFrame implements IRecordWfFrame
 	 * 
 	 * @param original
 	 */
-	public WorldFrame(final WorldFrame original)
+	public WorldFrame(final IRecordWfFrame original)
 	{
 		super(original);
-		teamColor = original.teamColor;
-		inverted = original.inverted;
-		foeBots = BotIDMapConst.unmodifiableBotIDMap(original.foeBots);
-		tigerBotsAvailable = original.tigerBotsAvailable;
-		tigerBotsVisible = BotIDMapConst.unmodifiableBotIDMap(original.tigerBotsVisible);
+		teamColor = original.getTeamColor();
+		inverted = original.isInverted();
+		foeBots = BotIDMapConst.unmodifiableBotIDMap(original.getFoeBots());
+		tigerBotsAvailable = original.getTigerBotsAvailable();
+		tigerBotsVisible = BotIDMapConst.unmodifiableBotIDMap(original.getTigerBotsVisible());
 	}
 	
 	
@@ -150,7 +150,7 @@ public class WorldFrame extends SimpleWorldFrame implements IRecordWfFrame
 	 */
 	public TrackedTigerBot getTiger(final BotID botId)
 	{
-		return tigerBotsVisible.get(botId);
+		return getBot(botId);
 	}
 	
 	
@@ -162,22 +162,18 @@ public class WorldFrame extends SimpleWorldFrame implements IRecordWfFrame
 	 */
 	public TrackedBot getFoeBot(final BotID botId)
 	{
-		return foeBots.get(botId);
+		return getBot(botId);
 	}
 	
 	
 	/**
 	 * @return {@link Iterator} for foe bots map
 	 */
+	@Deprecated
 	public Iterator<Entry<BotID, TrackedTigerBot>> getFoeBotMapIterator()
 	{
 		return foeBots.entrySet().iterator();
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- modifier -------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	
 	@Override

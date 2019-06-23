@@ -20,4 +20,10 @@ public interface IMoveToSkill extends ISkill
 	 * @return
 	 */
 	MovementCon getMoveCon();
+	
+	
+	/**
+	 * @param complete
+	 */
+	void setDoComplete(boolean complete);
 }

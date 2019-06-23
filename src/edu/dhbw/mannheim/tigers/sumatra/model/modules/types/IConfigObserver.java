@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 25.11.2011
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.types;

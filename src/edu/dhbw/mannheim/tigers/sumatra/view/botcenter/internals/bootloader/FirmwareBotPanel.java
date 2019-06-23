@@ -4,19 +4,21 @@
  * Project: TIGERS - Sumatra
  * Date: 29.06.2013
  * Author(s): rYan
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bootloader;
 
-import javax.swing.JCheckBox;
+import java.awt.EventQueue;
+
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
+import javax.swing.SwingConstants;
 
 import net.miginfocom.swing.MigLayout;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.Bootloader.EBootloaderState;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.Bootloader.EProcessorID;
 
 
 /** */
@@ -25,100 +27,61 @@ public class FirmwareBotPanel extends JPanel
 	/**  */
 	private static final long	serialVersionUID	= 3866974299385225909L;
 	
-	private JCheckBox				chkEnabled			= new JCheckBox();
-	private JTextField			state					= new JTextField();
+	private JLabel					botId					= new JLabel();
+	private JTextField			processor			= new JTextField();
 	private JProgressBar			progress				= new JProgressBar(0, 100);
-	private JTextField			botName				= new JTextField();
 	
 	
 	/** */
 	public FirmwareBotPanel()
 	{
-		setLayout(new MigLayout("wrap 4", "[20]10[100,fill]10[100,fill]10[210,fill]"));
+		setLayout(new MigLayout("wrap 4", "[100,fill]10[100,fill]10[200,fill]"));
 		
-		chkEnabled.setSelected(true);
-		add(chkEnabled);
-		add(botName);
-		add(state);
+		botId = new JLabel("None", SwingConstants.CENTER);
+		botId.setFont(botId.getFont().deriveFont(20.0f));
+		
+		progress.setStringPainted(true);
+		
+		add(botId);
+		add(processor);
 		add(progress);
 	}
 	
 	
 	/**
-	 * @param enabled
+	 * @param id
 	 */
-	public void setChkEnabled(final boolean enabled)
+	public void setProcessorId(final EProcessorID id)
 	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				chkEnabled.setSelected(enabled);
-			}
+		EventQueue.invokeLater(() -> {
+			processor.setText(id.toString());
 		});
 	}
 	
 	
 	/**
-	 * 
-	 * @param s
-	 */
-	public void setState(final EBootloaderState s)
-	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				state.setText(s.name());
-			}
-		});
-	}
-	
-	
-	/**
-	 * 
 	 * @param current
 	 * @param total
 	 */
-	public void setProgress(long current, long total)
+	public void setProgress(final long current, final long total)
 	{
 		final float percentage = (current * 100f) / total;
 		
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				progress.setValue((int) percentage);
-			}
+		EventQueue.invokeLater(() -> {
+			progress.setValue((int) percentage);
+			progress.setString(current + " / " + total);
 		});
 	}
 	
 	
 	/**
-	 * 
-	 * @param name
+	 * @param id
 	 */
-	public void setBotName(final String name)
+	public void setBotId(final BotID id)
 	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				botName.setText(name);
-			}
+		EventQueue.invokeLater(() -> {
+			botId.setForeground(id.getTeamColor().getColor());
+			botId.setText("" + id.getNumber());
 		});
-	}
-	
-	
-	/**
-	 * @return the chkEnabled
-	 */
-	public final boolean getChkEnabled()
-	{
-		return chkEnabled.isSelected();
 	}
 }

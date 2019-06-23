@@ -13,24 +13,24 @@ import java.util.List;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.DynamicPosition;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.BaseAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.valueobjects.ValueBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedBall;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.ACondition.EConditionState;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.metis.calculators.support.data.AdvancedPassTarget;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EBotType;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill.EMoveToMode;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ASkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.BlockSkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ChipFastSkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.BlockSkillTrajV2;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ChipSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.IMoveToSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.KickSkill.EMoveMode;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleState;
 import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
 
@@ -54,8 +54,7 @@ public class KeeperRole extends ARole
 	{
 		DEFEND,
 		MOVE_TO_PENALTYAREA,
-		CHIP_KICK,
-		MOVE_CHIP_KICK
+		CHIP_FAST
 	}
 	
 	private enum EEvent
@@ -63,30 +62,33 @@ public class KeeperRole extends ARole
 		OUTSIDE_PENALTYAREA,
 		INSIDE_PENALTYAREA,
 		CHIP_KICK_DONE,
-		CHIP_KICK_CANCELED,
-		CHIP_KICK,
 		MOVE_CHIP_KICK
 	}
 	
-	@Configurable(comment = "Dist [mm] - Distance to chip ball out of penArea.")
-	private static int	chipKickDistance				= 1000;
-	
 	@Configurable(comment = "Security Dist [mm] - Distance around the penalty area. If the ball is inside this area the keeper tries to kick it away")
-	private static int	chipKickDecisionDistance	= 100;
+	private static int chipKickDecisionDistance = 50;
 	
 	@Configurable(comment = "Speed of the ball [m/s] - If the ball is slower, the bot will try to kick it out of the penalty area.")
-	private static float	chipKickDecisionVelocity	= 0.4f;
+	private static float chipKickDecisionVelocity = 0.4f;
 	
 	@Configurable(comment = "Dist [mm] - The distance to the goal line from the initial keeper position")
-	private static int	distToGoalLine					= 500;
+	private static float maxRelativeDistToGoalLine = 0.8f;
 	
-	@Configurable(comment = "Dist [mm] - Longest spline to be computed for the keeper.", speziType = EBotType.class, spezis = { "GRSIM" })
-	private static int	maxSplineLength				= 1000;
+	@Configurable(comment = "Dist [mm] - Longest spline to be computed for the keeper.", spezis = {
+			"", "GRSIM" })
+	private static int maxSplineLength = 1000;
 	
 	@Configurable(comment = "Dist [mm] - Distance around the penalty area where the bot is allowed to block.")
-	private static int	safetyAroundPenalty			= 400;
+	private static int safetyAroundPenalty = 400;
 	
-	private boolean		allowChipkick					= true;
+	@Configurable(comment = "Dist [mm] - Distance around the penalty area, inside the bot will pass controlled, outside the bot will just shoot")
+	private static int safetyAroundPenaltyKickType = -200;
+	
+	private boolean allowChipkick = true;
+	
+	
+	@Configurable
+	private static boolean trajSkill = true;
 	
 	
 	// --------------------------------------------------------------------------
@@ -98,12 +100,11 @@ public class KeeperRole extends ARole
 	{
 		super(ERole.KEEPER);
 		setInitialState(new MoveOutsidePenaltyState());
+		IRoleState blockState = new NormalBlockState();
 		addTransition(EStateId.DEFEND, EEvent.OUTSIDE_PENALTYAREA, new MoveOutsidePenaltyState());
-		addTransition(EStateId.DEFEND, EEvent.MOVE_CHIP_KICK, new MoveChipKickState());
-		addTransition(EStateId.MOVE_CHIP_KICK, EEvent.CHIP_KICK, new ChipKickState());
-		addTransition(EStateId.MOVE_CHIP_KICK, EEvent.CHIP_KICK_CANCELED, new NormalBlockState());
-		addTransition(EStateId.CHIP_KICK, EEvent.CHIP_KICK_DONE, new NormalBlockState());
-		addTransition(EStateId.MOVE_TO_PENALTYAREA, EEvent.INSIDE_PENALTYAREA, new NormalBlockState());
+		addTransition(EStateId.DEFEND, EEvent.MOVE_CHIP_KICK, new ChipFastState());
+		addTransition(EStateId.CHIP_FAST, EEvent.CHIP_KICK_DONE, blockState);
+		addTransition(EStateId.MOVE_TO_PENALTYAREA, EEvent.INSIDE_PENALTYAREA, blockState);
 		
 	}
 	
@@ -121,10 +122,11 @@ public class KeeperRole extends ARole
 		@Override
 		public void doEntryActions()
 		{
-			IMoveToSkill skill = AMoveSkill.createMoveToSkill(EMoveToMode.DO_COMPLETE);
-			skill.getMoveCon().setPenaltyAreaAllowed(true);
+			IMoveToSkill skill = AMoveSkill.createMoveToSkill();
+			skill.setDoComplete(true);
+			skill.getMoveCon().setPenaltyAreaAllowedOur(true);
 			skill.getMoveCon().updateDestination(AIConfig.getGeometry().getGoalOur().getGoalCenter()
-					.addNew(AVector2.X_AXIS.scaleToNew(distToGoalLine)));
+				.addNew(AVector2.X_AXIS.scaleToNew(maxRelativeDistToGoalLine)));
 			setNewSkill(skill);
 		}
 		
@@ -134,7 +136,7 @@ public class KeeperRole extends ARole
 		{
 			if (AIConfig.getGeometry().getPenaltyAreaOur().isPointInShape(getBot().getPos()))
 			{
-				nextState(EEvent.INSIDE_PENALTYAREA);
+			triggerEvent(EEvent.INSIDE_PENALTYAREA);
 			}
 		}
 		
@@ -154,7 +156,7 @@ public class KeeperRole extends ARole
 		@Override
 		public void onSkillCompleted(final ISkill skill, final BotID botID)
 		{
-			nextState(EEvent.INSIDE_PENALTYAREA);
+			triggerEvent(EEvent.INSIDE_PENALTYAREA);
 		}
 		
 		
@@ -169,13 +171,23 @@ public class KeeperRole extends ARole
 	// --------------------------------------------------------------------------
 	private class NormalBlockState implements IRoleState
 	{
-		private BlockSkill	posSkill;
+		private ASkill posSkill;
 		
 		
 		@Override
 		public void doEntryActions()
 		{
-			posSkill = new BlockSkill(distToGoalLine, maxSplineLength);
+			float dist2GoalLine = (maxRelativeDistToGoalLine
+				* (AIConfig.getGeometry().getPenaltyAreaOur().getRadiusOfPenaltyArea() - (AIConfig.getGeometry()
+						.getBotRadius() * 2)))
+				+ AIConfig.getGeometry().getBotRadius();
+			if (trajSkill)
+			{
+			posSkill = new BlockSkillTrajV2(dist2GoalLine);
+			} else
+			{
+			posSkill = new BlockSkill(dist2GoalLine, maxSplineLength);
+			}
 			setNewSkill(posSkill);
 		}
 		
@@ -185,16 +197,14 @@ public class KeeperRole extends ARole
 		{
 			// keeper is allowed to drive out of the field behind the goal
 			if (((getBot().getPos().x() > (AIConfig.getGeometry().getGoalOur().getGoalCenter().x())) && (!AIConfig
-					.getGeometry()
-					.getPenaltyAreaOur().isPointInShape(getBot().getPos(), safetyAroundPenalty))))
+				.getGeometry()
+				.getPenaltyAreaOur().isPointInShape(getBot().getPos(), safetyAroundPenalty))))
 			{
-				nextState(EEvent.OUTSIDE_PENALTYAREA);
+			triggerEvent(EEvent.OUTSIDE_PENALTYAREA);
 			}
-			
 			if (isBallLyingInPenaltyArea(getAiFrame()) && allowChipkick)
 			{
-				
-				nextState(EEvent.MOVE_CHIP_KICK);
+			triggerEvent(EEvent.MOVE_CHIP_KICK);
 			}
 		}
 		
@@ -214,7 +224,7 @@ public class KeeperRole extends ARole
 		@Override
 		public void onSkillCompleted(final ISkill skill, final BotID botID)
 		{
-			
+		
 		}
 		
 		
@@ -226,26 +236,43 @@ public class KeeperRole extends ARole
 		
 	}
 	
-	// --------------------------------------------------------------------------
-	
-	private class MoveChipKickState implements IRoleState
+	private class ChipFastState implements IRoleState
 	{
-		private IMoveToSkill	skill	= null;
 		
 		
 		@Override
 		public void doEntryActions()
 		{
-			skill = AMoveSkill.createMoveToSkill(EMoveToMode.DO_COMPLETE);
-			skill.getMoveCon().setPenaltyAreaAllowed(true);
-			skill.getMoveCon().setBotsObstacle(false);
-			skill.getMoveCon().updateLookAtTarget(getWFrame().getBall());
+			IVector2 ballPos = getWFrame().getBall().getPos();
+			IVector2 goalCenter = AIConfig.getGeometry().getGoalOur().getGoalCenter();
 			
-			IVector2 ball = getAiFrame().getWorldFrame().ball.getPos();
-			IVector2 prepareChipPos = GeoMath.stepAlongLine(ball, AIConfig.getGeometry().getGoalOur().getGoalCenter(),
-					140);
-			skill.getMoveCon().updateDestination(prepareChipPos);
+			// in general a very dangerous situation: ball is close to penalty area, if our offensive or defensive would
+			// try to get
+			// it, it s a penalty shot for the enemy! (He needs to get his diameter of 180 behind the ball) So the
+			// keeper should cover the shooting line ALL THE TIME. So it is too risky to chip to a reasonable direction.
+			// Just drive straight to the ball and chip straight
+			IVector2 chippingPosition = GeoMath.stepAlongLine(goalCenter, ballPos, 5000);
+			EMoveMode moveMode = EMoveMode.NORMAL;
 			
+			if (AIConfig.getGeometry().getPenaltyAreaOur().isPointInShape(ballPos, safetyAroundPenaltyKickType))
+			{
+			// not dangerous, the ball is inside the penalty area, if an enemy tries to get it, we get a freekick
+			// so, regard this situation like a freekick
+			chippingPosition = new Vector2(AIConfig.getGeometry().getCenter());
+			for (AdvancedPassTarget bot : getAiFrame().getTacticalField().getAdvancedPassTargetsRanked())
+			{
+				if (bot.x > (-AIConfig.getGeometry().getFieldLength() / 3f))
+				{
+					chippingPosition = new Vector2(bot.x(), bot.y());
+					break;
+				}
+			}
+			
+			// chippingPosition = GeoMath.stepAlongLine(ballPos, chippingPosition, 10000); // TODO Testen!
+			moveMode = EMoveMode.CHILL;
+			}
+			ChipSkill skill = new ChipSkill(new DynamicPosition(chippingPosition), moveMode);
+			skill.getMoveCon().setPenaltyAreaAllowedOur(true);
 			setNewSkill(skill);
 		}
 		
@@ -255,21 +282,7 @@ public class KeeperRole extends ARole
 		{
 			if (!isBallLyingInPenaltyArea(getAiFrame()))
 			{
-				nextState(EEvent.CHIP_KICK_CANCELED);
-			}
-			
-			if (skill.getMoveCon().checkCondition(getWFrame(), getBotID()) == EConditionState.FULFILLED)
-			{
-				nextState(EEvent.CHIP_KICK);
-			}
-			TrackedBall ball = getAiFrame().getWorldFrame().ball;
-			if (!ball.getVel().equals(AVector2.ZERO_VECTOR, 0.01f))
-			{
-				IVector2 prepareChipPos = GeoMath.stepAlongLine(ball.getPos(), AIConfig.getGeometry().getGoalOur()
-						.getGoalCenter(),
-						140);
-				skill.getMoveCon().updateDestination(prepareChipPos);
-				
+			triggerEvent(EEvent.CHIP_KICK_DONE);
 			}
 		}
 		
@@ -289,88 +302,15 @@ public class KeeperRole extends ARole
 		@Override
 		public void onSkillCompleted(final ISkill skill, final BotID botID)
 		{
-			
+			triggerEvent(EEvent.CHIP_KICK_DONE);
 		}
 		
 		
 		@Override
 		public Enum<? extends Enum<?>> getIdentifier()
 		{
-			return EStateId.MOVE_CHIP_KICK;
+			return EStateId.CHIP_FAST;
 		}
-		
-	}
-	
-	private class ChipKickState implements IRoleState
-	{
-		
-		
-		@Override
-		public void doEntryActions()
-		{
-			setNewSkill(new ChipFastSkill(new DynamicPosition(bestChipPos())));
-		}
-		
-		
-		@Override
-		public void doUpdate()
-		{
-			if (!isBallLyingInPenaltyArea(getAiFrame()))
-			{
-				nextState(EEvent.CHIP_KICK_DONE);
-			}
-		}
-		
-		
-		@Override
-		public void doExitActions()
-		{
-		}
-		
-		
-		@Override
-		public void onSkillStarted(final ISkill skill, final BotID botID)
-		{
-		}
-		
-		
-		@Override
-		public void onSkillCompleted(final ISkill skill, final BotID botID)
-		{
-			nextState(EEvent.CHIP_KICK_DONE);
-		}
-		
-		
-		@Override
-		public Enum<? extends Enum<?>> getIdentifier()
-		{
-			return EStateId.CHIP_KICK;
-		}
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	private IVector2 bestChipPos()
-	{
-		ValueBot passTarget = getAiFrame().getTacticalField().getBestPassTarget();
-		if (passTarget == null)
-		{
-			return AIConfig.getGeometry().getCenter();
-		}
-		
-		TrackedTigerBot possibleTarget = getWFrame().getTiger(passTarget.getBotID());
-		
-		// do not chip to the best target if it is the keeper himself or if it is a too high angle
-		if ((possibleTarget.getPos().equals(getPos(), 20f))
-				|| (Math.abs(possibleTarget.getPos().subtractNew(getPos()).getAngle()) > (Math.PI / 4)))
-		{
-			return AIConfig.getGeometry().getCenter();
-		}
-		return possibleTarget.getPos();
 	}
 	
 	
@@ -382,9 +322,9 @@ public class KeeperRole extends ARole
 	 */
 	private boolean isBallLyingInPenaltyArea(final BaseAiFrame currentFrame)
 	{
-		TrackedBall ball = currentFrame.getWorldFrame().ball;
+		TrackedBall ball = currentFrame.getWorldFrame().getBall();
 		boolean isBallInPenaltyArea = AIConfig.getGeometry().getPenaltyAreaOur()
-				.isPointInShape(ball.getPos(), chipKickDecisionDistance);
+			.isPointInShape(ball.getPos(), chipKickDecisionDistance);
 		boolean isBallNotMoving = (ball.getVel().equals(AVector2.ZERO_VECTOR, chipKickDecisionVelocity));
 		return isBallInPenaltyArea && isBallNotMoving;
 	}
@@ -404,15 +344,6 @@ public class KeeperRole extends ARole
 	
 	
 	/**
-	 * @return the distToGoalLine
-	 */
-	public static int getDistToGoalLine()
-	{
-		return distToGoalLine;
-	}
-	
-	
-	/**
 	 * @return the allowChipkick
 	 */
 	public boolean isAllowChipkick()
@@ -428,6 +359,4 @@ public class KeeperRole extends ARole
 	{
 		this.allowChipkick = allowChipkick;
 	}
-	
-	
 }

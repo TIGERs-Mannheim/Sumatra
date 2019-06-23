@@ -9,6 +9,7 @@
 package edu.dhbw.mannheim.tigers.sumatra.view.statistics;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,13 +17,19 @@ import java.util.List;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JPanel;
+import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.airecord.IRecordFrame;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.Statistics;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ballpossession.EBallPossession;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.statistics.PenaltyStats;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.IBotIDMap;
 import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
 
 
@@ -39,18 +46,17 @@ public class StatisticsPanel extends JPanel implements ISumatraView
 	// --------------------------------------------------------------------------
 	
 	/**  */
-	private static final long	serialVersionUID			= -314343167523031597L;
+	private static final long	serialVersionUID					= -314343167523031597L;
 	
-	private JTextField			ballPossessionBoth		= null;
-	private JTextField			ballPossessionOpponent	= null;
-	private JTextField			ballPossessionTigers		= null;
-	private JTextField			ballPossessionNoOne		= null;
-	private JTextField			tackleWon					= null;
-	private JTextField			tackleLost					= null;
-	private JTextField			possibleGoalsTigers		= null;
-	private JTextField			possibleGoalsOpponents	= null;
 	
-	private DecimalFormat		df								= new DecimalFormat("###.#%");
+	private JLabel					ballPossessionBothNoOne			= null;
+	private JLabel					ballPossessionTigersOpponents	= null;
+	private JLabel					tackleWonLost						= null;
+	private JLabel					possibleGoals						= null;
+	
+	private DecimalFormat		df										= new DecimalFormat("###.#%");
+	
+	private JTable					botStatTable;
 	
 	
 	// --------------------------------------------------------------------------
@@ -58,70 +64,64 @@ public class StatisticsPanel extends JPanel implements ISumatraView
 	// --------------------------------------------------------------------------
 	
 	/**
+	 * @param teamColor
 	 */
-	public StatisticsPanel()
+	public StatisticsPanel(final ETeamColor teamColor)
 	{
 		setLayout(new MigLayout("wrap"));
 		
-		ballPossessionBoth = new JTextField();
-		ballPossessionBoth.setEditable(false);
-		ballPossessionBoth.setBackground(Color.WHITE);
+		JTextField colorIndicator = new JTextField(50);
+		colorIndicator.setEditable(false);
+		if (teamColor == ETeamColor.BLUE)
+		{
+			colorIndicator.setBackground(Color.BLUE);
+		} else
+		{
+			colorIndicator.setBackground(Color.YELLOW);
+		}
 		
-		ballPossessionTigers = new JTextField();
-		ballPossessionTigers.setEditable(false);
-		ballPossessionTigers.setBackground(Color.WHITE);
-		
-		ballPossessionOpponent = new JTextField();
-		ballPossessionOpponent.setEditable(false);
-		ballPossessionOpponent.setBackground(Color.WHITE);
-		
-		ballPossessionNoOne = new JTextField();
-		ballPossessionNoOne.setEditable(false);
-		ballPossessionNoOne.setBackground(Color.WHITE);
-		
-		tackleWon = new JTextField();
-		tackleWon.setEditable(false);
-		tackleWon.setBackground(Color.WHITE);
-		
-		tackleLost = new JTextField();
-		tackleLost.setEditable(false);
-		tackleLost.setBackground(Color.WHITE);
-		
-		possibleGoalsTigers = new JTextField();
-		possibleGoalsTigers.setEditable(false);
-		possibleGoalsTigers.setBackground(Color.WHITE);
-		
-		possibleGoalsOpponents = new JTextField();
-		possibleGoalsOpponents.setEditable(false);
-		possibleGoalsOpponents.setBackground(Color.WHITE);
+		ballPossessionBothNoOne = new JLabel();
+		ballPossessionBothNoOne.setFont(ballPossessionBothNoOne.getFont().deriveFont(Font.BOLD));
+		ballPossessionTigersOpponents = new JLabel();
+		ballPossessionTigersOpponents.setFont(ballPossessionTigersOpponents.getFont().deriveFont(Font.BOLD));
+		tackleWonLost = new JLabel();
+		tackleWonLost.setFont(tackleWonLost.getFont().deriveFont(Font.BOLD));
+		possibleGoals = new JLabel();
+		possibleGoals.setFont(possibleGoals.getFont().deriveFont(Font.BOLD));
 		
 		final JPanel ballPossessionPanel = new JPanel(new MigLayout("fill, inset 0",
 				"[80,fill]10[80,fill]10[80,fill]10[80,fill]10[80,fill]"));
-		ballPossessionPanel.add(new JLabel("Both:"));
-		ballPossessionPanel.add(ballPossessionBoth);
-		ballPossessionPanel.add(new JLabel("Tigers:"));
-		ballPossessionPanel.add(ballPossessionTigers);
-		ballPossessionPanel.add(new JLabel("Opponents:"));
-		ballPossessionPanel.add(ballPossessionOpponent);
-		ballPossessionPanel.add(new JLabel("No one:"));
-		ballPossessionPanel.add(ballPossessionNoOne);
+		ballPossessionPanel.add(new JLabel("BallPossesion:"), "wrap");
+		ballPossessionPanel.add(new JLabel("Tigers - Opponents"));
+		ballPossessionPanel.add(ballPossessionTigersOpponents);
+		ballPossessionPanel.add(new JLabel("Both - No one"));
+		ballPossessionPanel.add(ballPossessionBothNoOne);
 		
 		final JPanel tacklePanel = new JPanel(new MigLayout("fill, inset 0", "[80,fill]10[80,fill]10[80,fill]"));
-		tacklePanel.add(new JLabel("Tackle Won:"));
-		tacklePanel.add(tackleWon);
-		tacklePanel.add(new JLabel("Tackle Lost:"));
-		tacklePanel.add(tackleLost);
+		tacklePanel.add(new JLabel("Tackles: Won - Lost"));
+		tacklePanel.add(tackleWonLost);
 		
-		final JPanel possibelGoalsPanel = new JPanel(new MigLayout("fill, inset 0", "[80,fill]10[80,fill]10[80,fill]"));
-		possibelGoalsPanel.add(new JLabel("Possible Goals "));
-		possibelGoalsPanel.add(new JLabel("Tigers:"));
-		possibelGoalsPanel.add(possibleGoalsTigers);
-		possibelGoalsPanel.add(new JLabel("Opponents:"));
-		possibelGoalsPanel.add(possibleGoalsOpponents);
+		final JPanel possibelGoalsPanel = new JPanel(new MigLayout("fill, inset 0",
+				"[80,fill]10[80,fill]10[80,fill]"));
+		possibelGoalsPanel.add(new JLabel("Possible Goals: Tigers - Opponents"));
+		possibelGoalsPanel.add(possibleGoals);
 		
+		botStatTable = new JTable(7, 6);
+		botStatTable.setEnabled(false);
+		
+		
+		add(colorIndicator);
 		add(ballPossessionPanel);
 		add(tacklePanel);
 		add(possibelGoalsPanel);
+		add(botStatTable);
+		
+		botStatTable.setValueAt("BotID", 0, 0);
+		botStatTable.setValueAt("GoalsPossible", 0, 1);
+		botStatTable.setValueAt("WonTackles", 0, 2);
+		botStatTable.setValueAt("LostTackles", 0, 3);
+		botStatTable.setValueAt("BallPossession", 0, 4);
+		botStatTable.setValueAt("PenaltyScore", 0, 5);
 	}
 	
 	
@@ -140,32 +140,74 @@ public class StatisticsPanel extends JPanel implements ISumatraView
 			public void run()
 			{
 				Statistics stats = lastAIInfoframe.getTacticalField().getStatistics();
-				if (stats.getBallPossessionGeneral().containsKey(EBallPossession.BOTH))
-				{
-					ballPossessionBoth.setText(df.format(stats.getBallPossessionGeneral().get(EBallPossession.BOTH)
-							.getPercent()));
-				}
+				
 				if (stats.getBallPossessionGeneral().containsKey(EBallPossession.WE))
 				{
-					ballPossessionTigers.setText(df.format(stats.getBallPossessionGeneral().get(EBallPossession.WE)
-							.getPercent()));
+					String tigersPos = df.format(stats.getBallPossessionGeneral().get(EBallPossession.WE)
+							.getPercent());
+					String oppPos = df.format(stats.getBallPossessionGeneral().get(EBallPossession.THEY)
+							.getPercent());
+					ballPossessionTigersOpponents.setText(new StringBuilder().append(tigersPos).append(" - ").append(oppPos)
+							.toString());
 				}
-				if (stats.getBallPossessionGeneral().containsKey(EBallPossession.THEY))
+				if (stats.getBallPossessionGeneral().containsKey(EBallPossession.BOTH))
 				{
-					ballPossessionOpponent.setText(df.format(stats.getBallPossessionGeneral().get(EBallPossession.THEY)
-							.getPercent()));
-				}
-				if (stats.getBallPossessionGeneral().containsKey(EBallPossession.NO_ONE))
-				{
-					ballPossessionNoOne.setText(df.format(stats.getBallPossessionGeneral().get(EBallPossession.NO_ONE)
-							.getPercent()));
+					
+					String tigersPos = df.format(stats.getBallPossessionGeneral().get(EBallPossession.BOTH)
+							.getPercent());
+					String oppPos = df.format(stats.getBallPossessionGeneral().get(EBallPossession.NO_ONE)
+							.getPercent());
+					ballPossessionBothNoOne.setText(new StringBuilder().append(tigersPos).append(" - ").append(oppPos)
+							.toString());
 				}
 				
-				tackleLost.setText("" + stats.getTackleGeneralLost().getCurrent());
-				tackleWon.setText("" + stats.getTackleGeneralWon().getCurrent());
+				String tackles = new StringBuilder().append(stats.getTackleGeneralLost().getCurrent()).append(" - ")
+						.append(stats.getTackleGeneralWon().getCurrent()).toString();
+				tackleWonLost.setText(tackles);
 				
-				possibleGoalsTigers.setText("" + stats.getPossibleTigersGoals());
-				possibleGoalsOpponents.setText("" + stats.getPossibleOpponentsGoals());
+				String pGoals = new StringBuilder().append(stats.getPossibleTigersGoals()).append(" - ")
+						.append(stats.getPossibleOpponentsGoals()).toString();
+				possibleGoals.setText(pGoals);
+				
+				IBotIDMap<TrackedTigerBot> tigersAvail = lastAIInfoframe.getWorldFrame().getTigerBotsAvailable();
+				int row = 1;
+				for (BotID bot : tigersAvail.keySet())
+				{
+					int hwId = lastAIInfoframe.getWorldFrame().getBot(bot).getBot().getHardwareId();
+					botStatTable.setValueAt(hwId, row, 0);
+					
+					if (stats.getPossibleBotGoals().containsKey(bot))
+					{
+						int botGoals = stats.getPossibleBotGoals().get(bot).getCurrent();
+						botStatTable.setValueAt(botGoals, row, 1);
+					}
+					if (stats.getTackleWon().containsKey(bot))
+					{
+						int tacklesWon = stats.getTackleWon().get(bot).getCurrent();
+						botStatTable.setValueAt(tacklesWon, row, 2);
+					}
+					if (stats.getTackleLost().containsKey(bot))
+					{
+						int tacklesLost = stats.getTackleLost().get(bot).getCurrent();
+						botStatTable.setValueAt(tacklesLost, row, 3);
+					}
+					
+					if (stats.getBallPossessionTigers().containsKey(hwId))
+					{
+						double ballPossession = stats.getBallPossessionTigers().get(hwId).getPercent();
+						botStatTable.setValueAt(df.format(ballPossession), row, 4);
+					}
+					
+					for (PenaltyStats pStat : stats.getBestPenaltyShooterStats())
+					{
+						if (pStat.getBotID().equals(bot))
+						{
+							botStatTable.setValueAt(pStat.getSummedScore(), row, 5);
+						}
+					}
+					
+					row++;
+				}
 			}
 		});
 	}

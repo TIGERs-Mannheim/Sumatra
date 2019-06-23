@@ -1,18 +1,73 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plays base="edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays">
+    <learning>
+        <LearningPlay>
+            <learningType
+                class="edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.learning.lcase.ELearningCase" comment="">ROBOT_MOVEMENT</learningType>
+            <runAll class="boolean" comment="">true</runAll>
+        </LearningPlay>
+    </learning>
+    <APenaltyPlay>
+        <distanceToX class="float" comment="Distance to a-axis on line">1000.0</distanceToX>
+        <direction
+            class="edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2" comment="Direction from startingPos with length">0.000000,200.000000</direction>
+    </APenaltyPlay>
     <others>
         <MaintenancePlay>
-            <startingPos comment="first maintenance position">-3100.000000;-1800.000000</startingPos>
-            <direction comment="Direction from startingPos with length">0.000000;200.000000</direction>
-            <orientation comment="Orientation of bots">0.0</orientation>
+            <startingPos
+                class="edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2" comment="first maintenance position">-2500.000000;-1000.000000</startingPos>
+            <direction
+                class="edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2" comment="Direction from startingPos with length">0.000000;400.000000</direction>
+            <orientation class="float" comment="Orientation of bots">0</orientation>
         </MaintenancePlay>
+        <FormationStaticPlay>
+            <formation
+                class="edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.others.FormationStaticPlay$EFormations" comment="Formation of Bots: LINE, U, CIRCLE">LINE</formation>
+        </FormationStaticPlay>
+        <FormationMovingPlay>
+            <formation
+                class="edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.others.FormationMovingPlay$EFormations" comment="Formation of Bots: LINE, CIRCLE">LINE</formation>
+        </FormationMovingPlay>
     </others>
-    <DefensePlay>
-        <DISTANCE_FACTOR comment="Multiplicator for Distance between Defense Bots (default=2 for double BotRadius)">2</DISTANCE_FACTOR>
-        <spaceBeforeKeeper comment="vertical gap between defender and keeper_ only important for backup">300.0</spaceBeforeKeeper>
-        <spaceBesidesKeeper comment="horizontal gap between defender and keeper_ only important for backup">200.0</spaceBesidesKeeper>
-        <blockRadius comment="">400.0</blockRadius>
-        <ballSpeed comment="">1.0</ballSpeed>
-        <secureDistanceStoppedMode comment="Distance should stay away from ball if EGameState=STOPPED">500.0</secureDistanceStoppedMode>
-    </DefensePlay>
+    <redirect>
+        <RedirectCirclePlay>
+            <maxCounter class="int" comment="Controls the moving speed. Higher=slower">1500</maxCounter>
+            <circle class="boolean" comment="Drive in a circle">false</circle>
+            <center
+                class="edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2" comment="Center of the circle">000.000000,0.000000</center>
+        </RedirectCirclePlay>
+        <ARedirectPlay>
+            <distance class="float" comment="dist to center (radius) [mm]">1500.0</distance>
+            <duration class="int" comment="Fixed duration for kick+redirect">2000</duration>
+            <predictTargetPos class="boolean" comment="">false</predictTargetPos>
+            <turn180degOnWait class="boolean" comment="">false</turn180degOnWait>
+            <avgBallSpeed class="float" comment="Assumed avg ball speed for calculating lookahead">2.0</avgBallSpeed>
+        </ARedirectPlay>
+        <RedirectRectanglePlay>
+            <angleDeg class="float" comment="Desired redirect angle in degree">45.0</angleDeg>
+        </RedirectRectanglePlay>
+        <RedirectDualPlay>
+            <distance class="float" comment="">4000.0</distance>
+            <receiveOnly class="boolean" comment="">true</receiveOnly>
+        </RedirectDualPlay>
+        <RedirectTrianglePlay>
+            <angleDeg class="float" comment="">25.0</angleDeg>
+            <distance class="float" comment="">3000.0</distance>
+            <redirectPos
+                class="edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2" comment="">1500.000000,1500.000000</redirectPos>
+            <dir
+                class="edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2" comment="">0.000000,-1.000000</dir>
+        </RedirectTrianglePlay>
+        <PassingPlay>
+            <center
+                class="edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2" comment="Center of the circle">2000.000000,0.000000</center>
+        </PassingPlay>
+    </redirect>
+    <defense>
+        <algorithms>
+            <ShortestPathDefensePointCalc>
+                <stepSizeToIntersect class="float" comment="">100.0</stepSizeToIntersect>
+            </ShortestPathDefensePointCalc>
+        </algorithms>
+    </defense>
 </plays>

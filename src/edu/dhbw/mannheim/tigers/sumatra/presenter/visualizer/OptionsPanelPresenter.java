@@ -4,26 +4,25 @@
  * Project: TIGERS - Sumatra
  * Date: Feb 1, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.presenter.visualizer;
 
 import java.util.Map;
 
-import javax.swing.JCheckBox;
+import javax.swing.JCheckBoxMenuItem;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.EVisualizerOptions;
 import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.IOptionsPanelObserver;
-import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.OptionsPanel;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.VisualizerOptionsMenu;
+import edu.dhbw.mannheim.tigers.sumatra.view.visualizer.internals.field.EDrawableShapesLayer;
 
 
 /**
  * Presenter for controlling the optionsPanel in the visualizer
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class OptionsPanelPresenter implements IOptionsPanelObserver
 {
@@ -31,9 +30,9 @@ public class OptionsPanelPresenter implements IOptionsPanelObserver
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private final IFieldPanel	fieldPanel;
-	private final OptionsPanel	optionsPanel;
-	private boolean				saveOptions	= true;
+	private final IFieldPanel				fieldPanel;
+	private final VisualizerOptionsMenu	optionsMenu;
+	private boolean							saveOptions	= true;
 	
 	
 	// --------------------------------------------------------------------------
@@ -43,12 +42,12 @@ public class OptionsPanelPresenter implements IOptionsPanelObserver
 	
 	/**
 	 * @param fieldPanel
-	 * @param optionsPanel
+	 * @param optionsMenu
 	 */
-	public OptionsPanelPresenter(IFieldPanel fieldPanel, OptionsPanel optionsPanel)
+	public OptionsPanelPresenter(final IFieldPanel fieldPanel, final VisualizerOptionsMenu optionsMenu)
 	{
 		this.fieldPanel = fieldPanel;
-		this.optionsPanel = optionsPanel;
+		this.optionsMenu = optionsMenu;
 	}
 	
 	
@@ -61,11 +60,11 @@ public class OptionsPanelPresenter implements IOptionsPanelObserver
 	 * Options checkboxes-handling
 	 */
 	@Override
-	public void onCheckboxClick(String actionCommand, boolean isSelected)
+	public void onCheckboxClick(final String actionCommand, final boolean isSelected)
 	{
-		Map<String, JCheckBox> cbs = optionsPanel.getCheckBoxes();
+		Map<String, JCheckBoxMenuItem> cbs = optionsMenu.getCheckBoxes();
 		
-		JCheckBox selCb = cbs.get(actionCommand);
+		JCheckBoxMenuItem selCb = cbs.get(actionCommand);
 		if (selCb == null)
 		{
 			throw new IllegalStateException("Checkbox not found for actionCommand " + actionCommand);
@@ -73,7 +72,8 @@ public class OptionsPanelPresenter implements IOptionsPanelObserver
 		
 		if (saveOptions)
 		{
-			SumatraModel.getInstance().setUserProperty(OptionsPanel.class.getCanonicalName() + "." + actionCommand,
+			SumatraModel.getInstance().setUserProperty(
+					OptionsPanelPresenter.class.getCanonicalName() + "." + actionCommand,
 					String.valueOf(isSelected));
 		}
 		
@@ -82,9 +82,18 @@ public class OptionsPanelPresenter implements IOptionsPanelObserver
 	
 	
 	@Override
-	public void onActionFired(EVisualizerOptions option, boolean state)
+	public void onActionFired(final EVisualizerOptions option, final boolean state)
 	{
 		fieldPanel.onOptionChanged(option, state);
+	}
+	
+	
+	@Override
+	public void onPosBufferChanged(final int value)
+	{
+		// PositionBufferLayer l = (PositionBufferLayer) fieldPanel.getMultiLayer().getFieldLayer(
+		// EFieldLayer.POSITION_BUFFER);
+		// l.setBotBufferSize(value);
 	}
 	
 	
@@ -96,13 +105,15 @@ public class OptionsPanelPresenter implements IOptionsPanelObserver
 	 */
 	public void reactOnActionCommand(final String actionCommand, final boolean isSelected)
 	{
-		EVisualizerOptions option = EVisualizerOptions.valueOf(actionCommand);
-		if (option == null)
+		try
 		{
-			throw new IllegalArgumentException("action command should be something from EVisualizerOptions");
+			EVisualizerOptions option = EVisualizerOptions.valueOf(actionCommand);
+			fieldPanel.onOptionChanged(option, isSelected);
+		} catch (IllegalArgumentException err)
+		{
+			EDrawableShapesLayer layer = EDrawableShapesLayer.valueOf(actionCommand);
+			fieldPanel.setLayerVisiblility(layer, isSelected);
 		}
-		
-		fieldPanel.onOptionChanged(option, isSelected);
 	}
 	
 	
@@ -123,8 +134,10 @@ public class OptionsPanelPresenter implements IOptionsPanelObserver
 	/**
 	 * @param saveOptions the saveOptions to set
 	 */
-	public final void setSaveOptions(boolean saveOptions)
+	public final void setSaveOptions(final boolean saveOptions)
 	{
 		this.saveOptions = saveOptions;
 	}
+	
+	
 }

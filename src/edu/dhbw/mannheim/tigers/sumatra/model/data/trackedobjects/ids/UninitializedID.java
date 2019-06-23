@@ -4,17 +4,19 @@
  * Project: TIGERS - Sumatra
  * Date: Mar 17, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids;
+
+import com.sleepycat.persist.model.Persistent;
+
 
 /**
  * uninitialized object id
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
+@Persistent
 public class UninitializedID extends AObjectID
 {
 	

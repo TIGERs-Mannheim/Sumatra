@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><templates>
+<template autoinsert="true" context="java" deleted="false" description="Lambda expression for invoke later" enabled="true" name="invokelater">EventQueue.invokeLater(() -&gt; ${cursor});</template><template autoinsert="true" context="java" deleted="false" description="Lambda expression around code block" enabled="true" name="invokelater_selection">EventQueue.invokeLater(() -&gt; {${line_selection}${cursor}});</template>
+<template autoinsert="true" context="java" deleted="false" description="Inserts a standard-call to SwingUtilities.invokeLater with a inline-defined runnable" enabled="true" name="invokelater">SwingUtilities.invokeLater(new Runnable() {&#13;
+  @Override&#13;
+  public void run()&#13;
+  {&#13;
+    ${cursor}&#13;
+  }&#13;
+});</template>
+</templates>

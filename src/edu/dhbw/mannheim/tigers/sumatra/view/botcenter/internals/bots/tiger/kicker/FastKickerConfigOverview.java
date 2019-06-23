@@ -8,6 +8,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tiger.kicker;
 
+import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -18,9 +19,7 @@ import java.util.TreeMap;
 
 import javax.swing.Box;
 import javax.swing.JButton;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
@@ -45,9 +44,8 @@ public class FastKickerConfigOverview extends JPanel
 		
 		
 		/**
-		 * @param chg
 		 */
-		void onSetChgAll(int chg);
+		void onSetChgAll();
 		
 		
 		/**
@@ -65,8 +63,6 @@ public class FastKickerConfigOverview extends JPanel
 	
 	private JButton											setChg				= null;
 	private JButton											dischargeAll		= null;
-	
-	private JTextField										maxCap				= null;
 	
 	private final List<IFastKickerConfigObserver>	observers			= new ArrayList<IFastKickerConfigObserver>();
 	
@@ -125,20 +121,6 @@ public class FastKickerConfigOverview extends JPanel
 	}
 	
 	
-	/**
-	 * @return
-	 */
-	public int getMaxChg()
-	{
-		if (maxCap != null)
-		{
-			final int max = Integer.parseInt(maxCap.getText());
-			return max < 0 ? 0 : max;
-		}
-		return 0;
-	}
-	
-	
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -154,20 +136,15 @@ public class FastKickerConfigOverview extends JPanel
 			{
 				removeAll();
 				
-				setChg = new JButton("set");
+				JPanel buttonPanel = new JPanel(new FlowLayout());
+				setChg = new JButton("Charge");
 				setChg.addActionListener(new SetChgAll());
-				dischargeAll = new JButton("discharge all");
+				dischargeAll = new JButton("Discharge");
 				dischargeAll.addActionListener(new DischargeAll());
 				
-				maxCap = new JTextField("150");
-				
-				final JPanel maxPanel = new JPanel(new MigLayout("fill", "[100!, fill]"));
-				maxPanel.add(new JLabel("maxCap"));
-				maxPanel.add(maxCap);
-				
-				add(maxPanel);
-				add(setChg);
-				add(dischargeAll, "wrap, push");
+				buttonPanel.add(setChg);
+				buttonPanel.add(dischargeAll);
+				add(buttonPanel, "wrap, push");
 				
 				for (final Entry<BotID, JPanel> pair : botPanels.entrySet())
 				{
@@ -232,13 +209,13 @@ public class FastKickerConfigOverview extends JPanel
 	}
 	
 	
-	private void notifySetChgAll(final int chg)
+	private void notifySetChgAll()
 	{
 		synchronized (observers)
 		{
 			for (final IFastKickerConfigObserver observer : observers)
 			{
-				observer.onSetChgAll(chg);
+				observer.onSetChgAll();
 			}
 		}
 	}
@@ -267,7 +244,7 @@ public class FastKickerConfigOverview extends JPanel
 		{
 			try
 			{
-				notifySetChgAll(getMaxChg());
+				notifySetChgAll();
 				notifyAutoLoad();
 			} catch (final NumberFormatException e)
 			{

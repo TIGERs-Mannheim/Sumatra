@@ -23,23 +23,23 @@ import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
  * 
  * @author Christian K�nig, DirkK
  */
-@Persistent
+@Persistent(version = 1)
 public class Node extends Vector2
 {
 	// ------------------------------------------------------------------------
 	// --- variable(s) --------------------------------------------------------
 	// ------------------------------------------------------------------------
-	private static final long	serialVersionUID	= -1036999154876568257L;
-	
 	// root node
-	private Node					parent				= null;
+	private Node					parent		= null;
 	
 	// all children
-	private final List<Node>	children				= new LinkedList<Node>();
+	private final List<Node>	children		= new LinkedList<Node>();
 	
 	// the children which points to the children which leads to the goal
 	// parent + successor are a double linked list
-	private Node					successor			= null;
+	// @deprecated("Double linked list not really necessary anymore")
+	@Deprecated
+	private Node					successor	= null;
 	
 	
 	// ------------------------------------------------------------------------
@@ -56,7 +56,7 @@ public class Node extends Vector2
 	 * @param x
 	 * @param y
 	 */
-	public Node(float x, float y)
+	public Node(final float x, final float y)
 	{
 		super(x, y);
 	}
@@ -65,7 +65,7 @@ public class Node extends Vector2
 	/**
 	 * @param pos
 	 */
-	public Node(IVector2 pos)
+	public Node(final IVector2 pos)
 	{
 		super(pos);
 	}
@@ -77,7 +77,7 @@ public class Node extends Vector2
 	/**
 	 * @param newNode
 	 */
-	public void addChild(Node newNode)
+	public void addChild(final Node newNode)
 	{
 		children.add(newNode);
 		newNode.parent = this;
@@ -87,7 +87,8 @@ public class Node extends Vector2
 	/**
 	 * @param suc
 	 */
-	public void setSuccessor(Node suc)
+	@Deprecated
+	public void setSuccessor(final Node suc)
 	{
 		successor = suc;
 	}
@@ -96,6 +97,7 @@ public class Node extends Vector2
 	/**
 	 * @return
 	 */
+	@Deprecated
 	public Node getSuccessor()
 	{
 		return successor;
@@ -113,6 +115,7 @@ public class Node extends Vector2
 	
 	/**
 	 * get all nodes recusively
+	 * 
 	 * @return a list of all childeren and children of the children and so on
 	 */
 	public List<Node> getChildrenRecursive()
@@ -151,7 +154,7 @@ public class Node extends Vector2
 	/**
 	 * @param parent
 	 */
-	public void setParent(Node parent)
+	public void setParent(final Node parent)
 	{
 		this.parent = parent;
 	}

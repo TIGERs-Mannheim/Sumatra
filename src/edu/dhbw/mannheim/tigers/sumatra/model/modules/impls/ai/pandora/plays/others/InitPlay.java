@@ -12,6 +12,7 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.plays.ot
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.MetisAiFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.EGameState;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
@@ -93,20 +94,20 @@ public class InitPlay extends APlay
 	
 	
 	@Override
-	protected ARole onRemoveRole()
+	protected ARole onRemoveRole(MetisAiFrame frame)
 	{
 		return getLastRole();
 	}
 	
 	
 	@Override
-	protected ARole onAddRole()
+	protected ARole onAddRole(MetisAiFrame frame)
 	{
 		MoveRole role = new MoveRole(EMoveBehavior.NORMAL);
 		if (getRoles().isEmpty())
 		{
 			// keeper
-			role.getMoveCon().setPenaltyAreaAllowed(true);
+			role.getMoveCon().setPenaltyAreaAllowedOur(true);
 		}
 		role.getMoveCon().updateDestination(destinations.get(getRoles().size()));
 		role.getMoveCon().updateTargetAngle(0);

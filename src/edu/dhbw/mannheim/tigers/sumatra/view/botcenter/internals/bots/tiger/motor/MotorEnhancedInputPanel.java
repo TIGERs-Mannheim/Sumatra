@@ -54,7 +54,7 @@ public class MotorEnhancedInputPanel extends JPanel
 	private static final float							MAX					= 6.0f;
 	private static final float							MAX_W					= 10.0f;
 	
-	private final List<IMotorEnhancedInputPanel>	observers			= new ArrayList<IMotorEnhancedInputPanel>();
+	private final List<IMotorEnhancedInputPanelObserver>	observers			= new ArrayList<IMotorEnhancedInputPanelObserver>();
 	
 	
 	// --------------------------------------------------------------------------
@@ -168,7 +168,7 @@ public class MotorEnhancedInputPanel extends JPanel
 	/**
 	 * @param observer
 	 */
-	public void addObserver(IMotorEnhancedInputPanel observer)
+	public void addObserver(IMotorEnhancedInputPanelObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -180,7 +180,7 @@ public class MotorEnhancedInputPanel extends JPanel
 	/**
 	 * @param observer
 	 */
-	public void removeObserver(IMotorEnhancedInputPanel observer)
+	public void removeObserver(IMotorEnhancedInputPanelObserver observer)
 	{
 		synchronized (observers)
 		{
@@ -193,7 +193,7 @@ public class MotorEnhancedInputPanel extends JPanel
 	{
 		synchronized (observers)
 		{
-			for (final IMotorEnhancedInputPanel observer : observers)
+			for (final IMotorEnhancedInputPanelObserver observer : observers)
 			{
 				observer.onNewVelocity(xy);
 			}
@@ -205,7 +205,7 @@ public class MotorEnhancedInputPanel extends JPanel
 	{
 		synchronized (observers)
 		{
-			for (final IMotorEnhancedInputPanel observer : observers)
+			for (final IMotorEnhancedInputPanelObserver observer : observers)
 			{
 				observer.onNewAngularVelocity(w);
 			}

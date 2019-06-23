@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 16.04.2013
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2;
@@ -21,7 +20,6 @@ import edu.dhbw.mannheim.tigers.sumatra.util.serial.SerialData.ESerialDataType;
  * Simple command message to a tigerv2 bot.
  * 
  * @author AndreR
- * 
  */
 public class TigerSystemConsoleCommand extends ACommand
 {
@@ -38,7 +36,7 @@ public class TigerSystemConsoleCommand extends ACommand
 		private final int	id;
 		
 		
-		private ConsoleCommandTarget(int id)
+		private ConsoleCommandTarget(final int id)
 		{
 			this.id = id;
 		}
@@ -61,7 +59,7 @@ public class TigerSystemConsoleCommand extends ACommand
 		 * @param id 1 (MAIN) or 2 (MEDIA)
 		 * @return enum
 		 */
-		public static ConsoleCommandTarget getTargetConstant(int id)
+		public static ConsoleCommandTarget getTargetConstant(final int id)
 		{
 			for (ConsoleCommandTarget s : values())
 			{
@@ -90,7 +88,19 @@ public class TigerSystemConsoleCommand extends ACommand
 	/** */
 	public TigerSystemConsoleCommand()
 	{
-		super(ECommand.CMD_SYSTEM_CONSOLE_COMMAND);
+		super(ECommand.CMD_SYSTEM_CONSOLE_COMMAND, true);
+	}
+	
+	
+	/**
+	 * @param target
+	 * @param command
+	 */
+	public TigerSystemConsoleCommand(final ConsoleCommandTarget target, final String command)
+	{
+		this();
+		setTarget(target);
+		setText(command);
 	}
 	
 	
@@ -124,7 +134,7 @@ public class TigerSystemConsoleCommand extends ACommand
 	/**
 	 * @param text the text to set
 	 */
-	public void setText(String text)
+	public void setText(final String text)
 	{
 		try
 		{
@@ -149,7 +159,7 @@ public class TigerSystemConsoleCommand extends ACommand
 	/**
 	 * @param target the target to set
 	 */
-	public void setTarget(ConsoleCommandTarget target)
+	public void setTarget(final ConsoleCommandTarget target)
 	{
 		this.target = target.getId();
 	}

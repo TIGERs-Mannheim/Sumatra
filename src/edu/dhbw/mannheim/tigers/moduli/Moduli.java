@@ -28,6 +28,7 @@ import edu.dhbw.mannheim.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.dhbw.mannheim.tigers.moduli.exceptions.StartModuleException;
 import edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesState;
 import edu.dhbw.mannheim.tigers.moduli.listenerVariables.ModulesStateVariable;
+import edu.dhbw.mannheim.tigers.sumatra.model.SumatraModel;
 
 
 /**
@@ -61,6 +62,7 @@ public class Moduli
 	
 	/**
 	 * Getter modulesState.
+	 * 
 	 * @return
 	 */
 	public ModulesStateVariable getModulesState()
@@ -72,9 +74,10 @@ public class Moduli
 	/**
 	 * Setter modulesState.
 	 * Only to use if you know what you are doing ;).
+	 * 
 	 * @param modulesState
 	 */
-	public void setModulesState(ModulesStateVariable modulesState)
+	public void setModulesState(final ModulesStateVariable modulesState)
 	{
 		this.modulesState = modulesState;
 	}
@@ -82,6 +85,7 @@ public class Moduli
 	
 	/**
 	 * Getter global configuration
+	 * 
 	 * @return
 	 */
 	public SubnodeConfiguration getGlobalConfiguration()
@@ -96,11 +100,12 @@ public class Moduli
 	
 	/**
 	 * Loads all available modules from configuration-file into modulesList.
+	 * 
 	 * @param xmlFile (module-)configuration-file
 	 * @throws LoadModulesException an error occurs... Can't continue.
 	 * @throws DependencyException
 	 */
-	public void loadModules(String xmlFile) throws LoadModulesException, DependencyException
+	public void loadModules(final String xmlFile) throws LoadModulesException, DependencyException
 	{
 		// --- clear all moduleList ---
 		moduleList.clear();
@@ -195,7 +200,33 @@ public class Moduli
 	
 	
 	/**
+	 * Load modules and catch exceptions
+	 * 
+	 * @param filename
+	 */
+	public void loadModulesSafe(final String filename)
+	{
+		try
+		{
+			// --- get modules from configuration-file ---
+			SumatraModel.getInstance().loadModules(
+					SumatraModel.MODULI_CONFIG_PATH + filename);
+			log.debug("Loaded config: " + filename);
+		} catch (final LoadModulesException e)
+		{
+			log.error(e.getMessage() + " (moduleConfigFile: '" + filename
+					+ "') ", e);
+		} catch (final DependencyException e)
+		{
+			log.error(e.getMessage() + " (moduleConfigFile: '" + filename
+					+ "') ", e);
+		}
+	}
+	
+	
+	/**
 	 * Starts all modules in modulesList.
+	 * 
 	 * @throws InitModuleException
 	 * @throws StartModuleException
 	 */
@@ -219,6 +250,10 @@ public class Moduli
 		// --- start modules ---
 		for (AModule m : moduleList)
 		{
+			if (!m.isStartModule())
+			{
+				continue;
+			}
 			try
 			{
 				log.trace("Starting module " + m);
@@ -243,6 +278,10 @@ public class Moduli
 		// --- stop modules ---
 		for (AModule m : moduleList)
 		{
+			if (!m.isStartModule())
+			{
+				continue;
+			}
 			try
 			{
 				m.stopModule();
@@ -273,6 +312,7 @@ public class Moduli
 	
 	/**
 	 * Returns a list with all loaded modules.
+	 * 
 	 * @return
 	 */
 	public List<AModule> getModules()
@@ -283,11 +323,12 @@ public class Moduli
 	
 	/**
 	 * Gets a module from current module-list.
+	 * 
 	 * @param moduleId module-id-string
 	 * @return
 	 * @throws ModuleNotFoundException
 	 */
-	public AModule getModule(String moduleId) throws ModuleNotFoundException
+	public AModule getModule(final String moduleId) throws ModuleNotFoundException
 	{
 		// --- search for the module ---
 		for (AModule m : moduleList)
@@ -309,6 +350,7 @@ public class Moduli
 	
 	/**
 	 * Checks, if dependencies can be resolved.
+	 * 
 	 * @throws DependencyException ... if at least one modules can't be resolved
 	 */
 	private void checkDependencies() throws DependencyException
@@ -351,7 +393,7 @@ public class Moduli
 	/**
 	 * Creates an object from a constructor and its arguments.
 	 */
-	private Object createObject(Constructor<?> constructor, Object[] arguments)
+	private Object createObject(final Constructor<?> constructor, final Object[] arguments)
 	{
 		Object object = null;
 		

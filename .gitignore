@@ -1,0 +1,18 @@
+/bin
+/src-gen
+/data
+/logs
+/target
+/benchmark
+config/user/*.props
+.settings/org.sonar.ide.eclipse.core.prefs
+.settings/org.eclim.prefs
+*.lck
+*.bak
+*~
+*$
+/log
+/data
+.owncloudsync*
+.csync*
+/Sumatra Testing root.launch

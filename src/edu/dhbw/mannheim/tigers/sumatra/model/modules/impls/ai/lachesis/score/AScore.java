@@ -4,20 +4,23 @@
  * Project: TIGERS - Sumatra
  * Date: Jun 27, 2013
  * Author(s): Daniel Andres <andreslopez.daniel@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.score;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AthenaAiFrame;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.MetisAiFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.lachesis.score.ScoreResult.EUsefulness;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARole;
 
 
 /**
  * Interface for different scores for te role assigner
+ * 
  * @author Daniel Andres <andreslopez.daniel@gmail.com>
  */
 public abstract class AScore
@@ -27,9 +30,10 @@ public abstract class AScore
 	
 	/**
 	 * activates or deactivates the score.
+	 * 
 	 * @param active
 	 */
-	public void setActive(boolean active)
+	public void setActive(final boolean active)
 	{
 		this.active = active;
 	}
@@ -39,52 +43,75 @@ public abstract class AScore
 	 * @param tiger
 	 * @param role
 	 * @param frame
-	 * @return high score is a low priority in role assignment
+	 * @return
 	 */
-	protected abstract int doCalcScore(TrackedTigerBot tiger, ARole role, MetisAiFrame frame);
+	protected abstract ScoreResult doCalcScore(TrackedTigerBot tiger, ARole role, MetisAiFrame frame);
 	
 	
 	/**
 	 * Calculates the score for the given input
+	 * 
 	 * @param tiger
 	 * @param role
 	 * @param frame
 	 * @return
 	 */
-	public int calcScore(TrackedTigerBot tiger, ARole role, MetisAiFrame frame)
+	public ScoreResult calcScore(final TrackedTigerBot tiger, final ARole role, final MetisAiFrame frame)
 	{
 		if (active)
 		{
 			return doCalcScore(tiger, role, frame);
 		}
-		return 0;
+		return ScoreResult.defaultResult();
 	}
 	
 	
 	/**
-	 * Calculates Score on a vector instead of a role
-	 * @param position
+	 * Get cumulated ScoreResult from all score calculators
+	 * 
+	 * @param scores
+	 * @param tiger
 	 * @param role
 	 * @param frame
 	 * @return
 	 */
-	protected abstract int doCalcScoreOnPos(IVector2 position, ARole role, AthenaAiFrame frame);
+	public static ScoreResult getCumulatedResult(final Collection<AScore> scores, final TrackedTigerBot tiger,
+			final ARole role, final MetisAiFrame frame)
+	{
+		List<ScoreResult> results = new ArrayList<ScoreResult>(scores.size());
+		for (AScore score : scores)
+		{
+			results.add(score.calcScore(tiger, role, frame));
+		}
+		return getCumulatedResult(results);
+	}
 	
 	
 	/**
-	 * Calculates the score for the given input
-	 * @param position
-	 * @param role
-	 * @param frame
+	 * Create a cumulated result from all scoreResults.
+	 * It will be the worst usefulness with product of degree
+	 * 
+	 * @param scores
 	 * @return
 	 */
-	public int calcScoreOnPos(IVector2 position, ARole role, AthenaAiFrame frame)
+	public static ScoreResult getCumulatedResult(final List<ScoreResult> scores)
 	{
-		if (active)
+		int degree = 0;
+		EUsefulness usefulness = EUsefulness.NEUTRAL;
+		for (ScoreResult result : scores)
 		{
-			return doCalcScoreOnPos(position, role, frame);
+			int lvl = result.getUsefulness().getLevel();
+			if (lvl > usefulness.getLevel())
+			{
+				usefulness = result.getUsefulness();
+				degree = result.getDegree();
+			}
+			else if (lvl == usefulness.getLevel())
+			{
+				degree += result.getDegree();
+			}
 		}
-		return 0;
+		return new ScoreResult(usefulness, degree);
 	}
 	
 }

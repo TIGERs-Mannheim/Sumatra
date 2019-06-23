@@ -68,6 +68,7 @@ public class RoleNameLayer extends AFieldLayer
 			IVector2 pos = bot.getPos();
 			IVector2 guiPos = getFieldPanel().transformToGuiCoordinates(pos, frame.getWorldFrame().isInverted());
 			g.drawString(aiInfo.getRole(), guiPos.x() + 10, guiPos.y());
+			g.drawString(aiInfo.getRoleState(), guiPos.x() + 10, guiPos.y() + 10);
 		}
 	}
 	

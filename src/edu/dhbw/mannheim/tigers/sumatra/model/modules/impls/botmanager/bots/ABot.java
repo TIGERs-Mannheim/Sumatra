@@ -8,6 +8,7 @@
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -18,11 +19,14 @@ import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.commons.configuration.tree.ConfigurationNode;
 import org.apache.log4j.Logger;
 
+import com.sleepycat.persist.model.Persistent;
+
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.trajectory.SplinePair3D;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.ai.ETeamColor;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature.EFeatureState;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.finder.traj.TrajPathFinder;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.ENetworkState;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication.Statistics;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.devices.TigerDevices;
 
@@ -32,37 +36,46 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.devices.
  * 
  * @author AndreR
  */
+@Persistent(version = 5)
 public abstract class ABot
 {
-	// --------------------------------------------------------------
-	// --- variables ------------------------------------------------
-	// --------------------------------------------------------------
 	private static final Logger						log				= Logger.getLogger(ABot.class.getName());
-	
 	private static final String						TYPE				= "type";
 	
-	protected BotID										botId;
+	private BotID											botId;
 	private EBotType										type				= EBotType.UNKNOWN;
-	protected String										name				= "John Doe";
-	private String											controlledBy	= "";
+	private transient String							name				= "John Doe";
+	private transient String							controlledBy	= "";
+	private transient boolean							hideFromAi		= false;
+	private transient boolean							hideFromRcm		= false;
 	
 	private final Map<EFeature, EFeatureState>	botFeatures;
-	private int												kickerMaxCap	= 0;
+	private int												kickerMaxCap	= 180;
 	
-	private final Set<IBotObserver>					observers		= new HashSet<IBotObserver>();
+	private transient final Set<IBotObserver>		observers		= new HashSet<IBotObserver>();
 	
-	private final TigerDevices							devices;
+	private transient final TigerDevices			devices;
 	
-	private int												baseStationKey;
-	private int												mcastDelegateKey;
+	private transient int								baseStationKey;
+	private transient int								mcastDelegateKey;
 	
-	/** special treatment, when bot is manual controlled */
-	private transient boolean							manualControl	= false;
+	private transient Performance						performance		= new Performance();
+	
+	private final transient TrajPathFinder			pathFinder		= new TrajPathFinder(this, false);
 	
 	
 	// --------------------------------------------------------------
 	// --- constructor(s) -------------------------------------------
 	// --------------------------------------------------------------
+	
+	@SuppressWarnings("unused")
+	protected ABot()
+	{
+		botFeatures = new HashMap<>();
+		devices = null;
+	}
+	
+	
 	/**
 	 * @param botConfig bot-database-XML-file
 	 */
@@ -78,7 +91,7 @@ public abstract class ABot
 		{
 			color = ETeamColor.valueOf(strColor);
 		}
-		botId = BotID.createBotId(botConfig.getInt("[@id]"), color);
+		setBotId(BotID.createBotId(botConfig.getInt("[@id]"), color));
 		
 		botFeatures = getDefaultFeatureStates();
 		readFeatures(botConfig);
@@ -86,7 +99,7 @@ public abstract class ABot
 		type = EBotType.getTypeFromCfgName(botConfig.getString(TYPE));
 		name = botConfig.getString("name");
 		
-		devices = new TigerDevices();
+		devices = new TigerDevices(type);
 		
 		if (botConfig.containsKey("baseStationKey"))
 		{
@@ -113,11 +126,12 @@ public abstract class ABot
 	 */
 	public ABot(final EBotType type, final BotID id, final int baseStationKey, final int mcastDelegateKey)
 	{
-		botId = id;
+		setBotId(id);
 		this.type = type;
 		botFeatures = getDefaultFeatureStates();
 		
-		devices = new TigerDevices();
+		devices = new TigerDevices(type);
+		
 		this.baseStationKey = baseStationKey;
 		this.mcastDelegateKey = mcastDelegateKey;
 	}
@@ -152,6 +166,19 @@ public abstract class ABot
 				}
 			}
 		}
+	}
+	
+	
+	/**
+	 * @return battery level between 0 and 1
+	 */
+	public float getBatteryRelative()
+	{
+		float battery = getBatteryLevel();
+		float batMin = getBatteryLevelMin();
+		float batMax = getBatteryLevelMax();
+		float batRel = Math.max(0, (battery - batMin) / (batMax - batMin));
+		return batRel;
 	}
 	
 	
@@ -205,6 +232,8 @@ public abstract class ABot
 	
 	
 	/**
+	 * The absolute maximum kicker level possible for the bot (not the currently set max cap!)
+	 * 
 	 * @return [V]
 	 */
 	public abstract float getKickerLevelMax();
@@ -261,9 +290,9 @@ public abstract class ABot
 	 */
 	public void internalSetBotId(final BotID newId)
 	{
-		final BotID oldId = botId;
+		final BotID oldId = getBotId();
 		
-		botId = newId;
+		setBotId(newId);
 		
 		notifyIdChanged(oldId, newId);
 	}
@@ -276,10 +305,10 @@ public abstract class ABot
 	{
 		final HierarchicalConfiguration config = new HierarchicalConfiguration();
 		
-		config.addProperty("bot[@id]", botId.getNumber());
+		config.addProperty("bot[@id]", getBotId().getNumber());
 		config.addProperty("bot.name", name);
 		config.addProperty("bot.type", type.getCfgName());
-		config.addProperty("bot.color", botId.getTeamColor());
+		config.addProperty("bot.color", getBotId().getTeamColor());
 		config.addProperty("bot.mcastDelegateKey", mcastDelegateKey);
 		config.addProperty("bot.baseStationKey", baseStationKey);
 		
@@ -326,14 +355,14 @@ public abstract class ABot
 	 */
 	public BotID getBotID()
 	{
-		return botId;
+		return getBotId();
 	}
 	
 	
 	@Override
 	public String toString()
 	{
-		return "[Bot: " + getName() + "|" + botId + "]";
+		return "[Bot: " + getName() + "|" + getBotId() + "]";
 	}
 	
 	
@@ -419,6 +448,11 @@ public abstract class ABot
 	
 	
 	/**
+	 */
+	public abstract void setDefaultKickerMaxCap();
+	
+	
+	/**
 	 * @return the devices
 	 */
 	public final TigerDevices getDevices()
@@ -454,7 +488,7 @@ public abstract class ABot
 	public final void setControlledBy(final String controlledBy)
 	{
 		this.controlledBy = controlledBy;
-		notifyBotBlocked(!controlledBy.isEmpty());
+		notifyBotBlocked(isBlocked());
 	}
 	
 	
@@ -463,25 +497,16 @@ public abstract class ABot
 	 */
 	public final ETeamColor getColor()
 	{
-		return botId.getTeamColor();
+		return getBotId().getTeamColor();
 	}
 	
 	
 	/**
 	 * @return the manualControl
 	 */
-	public final boolean isManualControl()
+	public final boolean isBlocked()
 	{
-		return manualControl;
-	}
-	
-	
-	/**
-	 * @param manualControl the manualControl to set
-	 */
-	public final void setManualControl(final boolean manualControl)
-	{
-		this.manualControl = manualControl;
+		return !controlledBy.isEmpty();
 	}
 	
 	
@@ -518,5 +543,139 @@ public abstract class ABot
 	public final void setMcastDelegateKey(final int mcastDelegateKey)
 	{
 		this.mcastDelegateKey = mcastDelegateKey;
+	}
+	
+	
+	/**
+	 * @return the center2DribblerDist
+	 */
+	public abstract float getCenter2DribblerDist();
+	
+	
+	/**
+	 * @return
+	 */
+	public Statistics getTxStats()
+	{
+		return new Statistics();
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public Statistics getRxStats()
+	{
+		return new Statistics();
+	}
+	
+	
+	/**
+	 * @return the excludeFromAi
+	 */
+	public final boolean isHideFromAi()
+	{
+		return hideFromAi;
+	}
+	
+	
+	/**
+	 * @param excludeFromAi the excludeFromAi to set
+	 */
+	public final void setHideFromAi(final boolean excludeFromAi)
+	{
+		hideFromAi = excludeFromAi;
+	}
+	
+	
+	/**
+	 * @return the hideFromRcm
+	 */
+	public final boolean isHideFromRcm()
+	{
+		return hideFromRcm;
+	}
+	
+	
+	/**
+	 * @param hideFromRcm the hideFromRcm to set
+	 */
+	public final void setHideFromRcm(final boolean hideFromRcm)
+	{
+		this.hideFromRcm = hideFromRcm;
+	}
+	
+	
+	/**
+	 * Each bot has its own hardware id that uniquely identifies a robot by hardware (mainboard)
+	 * 
+	 * @return
+	 */
+	public int getHardwareId()
+	{
+		return 255;
+	}
+	
+	
+	/**
+	 * @return
+	 */
+	public boolean isAvailableToAi()
+	{
+		return !isBlocked() && !isHideFromAi();
+	}
+	
+	
+	/**
+	 * @param id
+	 * @param cmd
+	 */
+	public void onIncommingBotCommand(final BotID id, final ACommand cmd)
+	{
+	}
+	
+	
+	/**
+	 * @return the botId
+	 */
+	public BotID getBotId()
+	{
+		return botId;
+	}
+	
+	
+	/**
+	 * @param botId the botId to set
+	 */
+	protected void setBotId(final BotID botId)
+	{
+		this.botId = botId;
+	}
+	
+	
+	/**
+	 * @return the performance
+	 */
+	public final Performance getPerformance()
+	{
+		return performance;
+	}
+	
+	
+	/**
+	 * @param performance the performance to set
+	 */
+	public final void setPerformance(final Performance performance)
+	{
+		this.performance = performance;
+	}
+	
+	
+	/**
+	 * @return the pathFinder
+	 */
+	public final TrajPathFinder getPathFinder()
+	{
+		return pathFinder;
 	}
 }

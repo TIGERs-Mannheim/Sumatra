@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 08.09.2010
  * Author(s): Oliver Steinbrecher <OST1988@aol.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.aicenter;
@@ -27,7 +26,6 @@ import edu.dhbw.mannheim.tigers.sumatra.views.ISumatraView;
  * This is the main panel of the ai view in sumatra.
  * 
  * @author Oliver Steinbrecher <OST1988@aol.com>
- * 
  */
 public class AICenterPanel extends JPanel implements ISumatraView
 {
@@ -37,7 +35,6 @@ public class AICenterPanel extends JPanel implements ISumatraView
 	
 	private static final long	serialVersionUID	= 8132550010453691515L;
 	
-	private final JCheckBox		chkAiActive;
 	private ModuleControlPanel	modulesPanel		= null;
 	
 	
@@ -48,18 +45,10 @@ public class AICenterPanel extends JPanel implements ISumatraView
 	 */
 	public AICenterPanel()
 	{
-		setLayout(new MigLayout("insets 0 0 0 0"));
+		setLayout(new MigLayout("fill, insets 0 0 0 0"));
 		
-		final JPanel combinePanel = new JPanel();
-		combinePanel.setLayout(new MigLayout("insets 0 0 0 0", "", ""));
-		
-		chkAiActive = new JCheckBox("AI activated", false);
 		modulesPanel = new ModuleControlPanel();
-		
-		combinePanel.add(chkAiActive, "wrap, top");
-		combinePanel.add(modulesPanel, "wrap");
-		
-		add(combinePanel);
+		add(modulesPanel);
 		
 		UIManager.put("TabbedPane.tabAreaInsets", new Insets(0, 0, 0, 0));
 	}
@@ -71,7 +60,6 @@ public class AICenterPanel extends JPanel implements ISumatraView
 	
 	
 	/**
-	 * 
 	 * @return
 	 */
 	public ModuleControlPanel getModulesPanel()
@@ -126,6 +114,6 @@ public class AICenterPanel extends JPanel implements ISumatraView
 	 */
 	public final JCheckBox getChkAiActive()
 	{
-		return chkAiActive;
+		return modulesPanel.getChkAiActive();
 	}
 }

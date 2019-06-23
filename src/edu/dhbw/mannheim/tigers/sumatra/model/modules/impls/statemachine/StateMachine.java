@@ -4,19 +4,16 @@
  * Project: TIGERS - Sumatra
  * Date: Apr 29, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine;
 
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.log4j.Logger;
-
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.EventStatePair.EValid;
 
 
 /**
@@ -24,35 +21,25 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.EventSt
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  * @param <STATETYPE>
- * 
  */
 public class StateMachine<STATETYPE extends IState> implements IStateMachine<STATETYPE>
 {
-	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	private static final Logger				log								= Logger.getLogger(StateMachine.class.getName());
-	private static final int					MAX_STATE_TRANSITIONS		= 50000;
 	
 	/** count transitions to avoid endless transitions */
-	private int										stateTransitionsLeft			= MAX_STATE_TRANSITIONS;
 	private STATETYPE								currentState					= null;
+	private STATETYPE								initialState					= null;
+	private final int								queueSize						= 1;
 	private Map<EventStatePair, STATETYPE>	transititions					= new HashMap<EventStatePair, STATETYPE>();
-	private Queue<Enum<? extends Enum<?>>>	eventQueue						= new LinkedBlockingQueue<Enum<? extends Enum<?>>>();
+	private Deque<Enum<? extends Enum<?>>>	eventQueue						= new LinkedList<Enum<? extends Enum<?>>>();
 	private boolean								initialized						= true;
 	private boolean								doEntryActionsFirstState	= true;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	/**
 	 * @param initialState
 	 */
-	public StateMachine(STATETYPE initialState)
+	public StateMachine(final STATETYPE initialState)
 	{
 		if (initialState == null)
 		{
@@ -70,10 +57,6 @@ public class StateMachine<STATETYPE extends IState> implements IStateMachine<STA
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	@Override
 	public void update()
 	{
@@ -82,15 +65,37 @@ public class StateMachine<STATETYPE extends IState> implements IStateMachine<STA
 			// no initial state or done
 			return;
 		}
-		if (stateTransitionsLeft <= 0)
+		boolean stateChanged = false;
+		int stateTransitionsLeft = 10;
+		while (!stateChanged && !eventQueue.isEmpty())
 		{
-			currentState.doExitActions();
-			currentState = null;
-			log.warn("StateMachine canceled due to too many transitions, max allowed: " + MAX_STATE_TRANSITIONS);
-			return;
+			Enum<? extends Enum<?>> newEvent = eventQueue.removeLast();
+			STATETYPE newState = transititions
+					.get(new EventStatePair(newEvent, currentState.getIdentifier(), currentState));
+			// if (newState == null)
+			// {
+			// // event for wildcard states
+			// newState = transititions.get(new EventStatePair(newEvent));
+			// }
+			if (newState != null)
+			{
+				changeState(newState);
+				// note: changeState may add events to eventQueue again!
+				stateTransitionsLeft--;
+				stateChanged = true;
+			} else
+			{
+				// no transition for the event
+				log.trace("No transition found for " + newEvent + " in state " + currentState.getIdentifier()
+						+ ". Keep state");
+			}
+			if ((stateTransitionsLeft <= 0))
+			{
+				log.warn("Possible endless loop detected! Too many transitions in one update.");
+				break;
+			}
 		}
-		Enum<? extends Enum<?>> newEvent = eventQueue.poll();
-		if (newEvent == null)
+		if (!stateChanged)
 		{
 			if (doEntryActionsFirstState)
 			{
@@ -98,114 +103,90 @@ public class StateMachine<STATETYPE extends IState> implements IStateMachine<STA
 			}
 			// no new events, simply update current
 			currentState.doUpdate();
-		} else
-		{
-			STATETYPE newState = transititions.get(new EventStatePair(newEvent, currentState.getIdentifier()));
-			if (newState != null)
-			{
-				currentState.doExitActions();
-				if (newState.getIdentifier() == DoneState.EStateId.DONE)
-				{
-					// done
-					currentState = null;
-					return;
-				}
-				log.trace("Switch state from " + enumToString(currentState.getIdentifier()) + " to "
-						+ enumToString(newState.getIdentifier()));
-				currentState = newState;
-				currentState.doEntryActions();
-				currentState.doUpdate();
-				stateTransitionsLeft--;
-			} else
-			{
-				// no transition for the event
-				log.trace("No transition found for " + newEvent + " in state " + currentState.getIdentifier()
-						+ ". Keep state");
-			}
 		}
 		doEntryActionsFirstState = false;
 	}
 	
 	
-	private String enumToString(Enum<?> e)
+	private void changeState(final STATETYPE newState)
 	{
+		currentState.doExitActions();
+		if (newState.getIdentifier() == DoneState.EStateId.DONE)
+		{
+			// done
+			currentState = null;
+			return;
+		}
+		log.trace("Switch state from " + enumToString(currentState.getIdentifier()) + " to "
+				+ enumToString(newState.getIdentifier()));
+		currentState = newState;
+		currentState.doEntryActions();
+		// currentState may got null, if the role was set to completed... :D
+		if (currentState != null)
+		{
+			currentState.doUpdate();
+		}
+	}
+	
+	
+	@Override
+	public void restart()
+	{
+		if (initialState != null)
+		{
+			changeState(initialState);
+		}
+	}
+	
+	
+	/**
+	 * 
+	 */
+	@Override
+	public void stop()
+	{
+		if (currentState != null)
+		{
+			currentState.doExitActions();
+		}
+		currentState = null;
+	}
+	
+	
+	private String enumToString(final Enum<?> e)
+	{
+		if (e == null)
+		{
+			return "null";
+		}
 		String[] canName = e.getClass().getName().split("\\.");
 		return canName[canName.length - 1] + "." + e.name();
 	}
 	
 	
 	@Override
-	public void nextState(Enum<? extends Enum<?>> event)
+	public void triggerEvent(final Enum<? extends Enum<?>> event)
 	{
 		log.trace("Event enqueued: " + enumToString(event));
 		eventQueue.add(event);
+		while (eventQueue.size() > queueSize)
+		{
+			Enum<?> ev = eventQueue.removeFirst();
+			log.trace("Queue full. Event " + ev + " removed.");
+		}
 	}
 	
 	
 	@Override
 	public boolean valid()
 	{
-		for (Map.Entry<EventStatePair, STATETYPE> entry : transititions.entrySet())
-		{
-			entry.getKey().setValid(EValid.UNKNOWN);
-		}
 		if (currentState == null)
 		{
 			log.warn("StateMachine has no initial state!");
 			return false;
 		}
-		return valid(currentState);
-	}
-	
-	
-	private boolean valid(STATETYPE state)
-	{
-		if (state == null)
-		{
-			log.warn("StateMachine has a null state!");
-			return false;
-		}
-		if (state.getIdentifier() == DoneState.EStateId.DONE)
-		{
-			return true;
-		}
-		log.trace("Checking " + state.getIdentifier() + " for validaty");
-		for (Map.Entry<EventStatePair, STATETYPE> entry : transititions.entrySet())
-		{
-			if ((entry.getKey().getState() == state.getIdentifier()))
-			{
-				switch (entry.getKey().getValid())
-				{
-					case UNKNOWN:
-						entry.getKey().setValid(EValid.CHECKING);
-						if (valid(entry.getValue()))
-						{
-							entry.getKey().setValid(EValid.YES);
-							log.trace(entry.getKey() + " is valid");
-						} else
-						{
-							log.warn("Invalid state detected: " + entry.getKey() + " -> " + entry.getValue());
-							entry.getKey().setValid(EValid.NO);
-							return false;
-						}
-						break;
-					case CHECKING:
-						continue;
-					case NO:
-						return false;
-					case YES:
-						return true;
-				}
-				
-			}
-		}
 		return true;
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	
 	@Override
@@ -215,15 +196,24 @@ public class StateMachine<STATETYPE extends IState> implements IStateMachine<STA
 	}
 	
 	
+	/**
+	 * @param esp
+	 * @param state
+	 */
 	@Override
-	public final Map<EventStatePair, STATETYPE> getTransititions()
+	public final void addTransition(final EventStatePair esp, final STATETYPE state)
 	{
-		return transititions;
+		STATETYPE preState = transititions.put(esp, state);
+		if (preState != null)
+		{
+			log.warn("Overwriting transition for EventStatePair: " + esp + ". Change state from " + preState + " to "
+					+ state);
+		}
 	}
 	
 	
 	@Override
-	public final void setInitialState(STATETYPE currentState)
+	public final void setInitialState(final STATETYPE currentState)
 	{
 		if (initialized)
 		{
@@ -231,5 +221,6 @@ public class StateMachine<STATETYPE extends IState> implements IStateMachine<STA
 		}
 		initialized = true;
 		this.currentState = currentState;
+		initialState = currentState;
 	}
 }

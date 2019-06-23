@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<math base="edu.dhbw.mannheim.tigers.sumatra.model.data.math">
+    <AiMath>
+        <shootSpread comment="Assumed inaccuracy per distance">0.1</shootSpread>
+        <ignoreEnemyBotChipKickDistance comment="Distance from Bot in which ignore Enemy Bots by calculate ChipKick">1000.0</ignoreEnemyBotChipKickDistance>
+        <redirectAngleMethod comment="Which method to use for calculating redirect angle: FUN or PHY">PHY</redirectAngleMethod>
+    </AiMath>
+    <SplineMath>
+        <splineSamplingDtPrecise comment="dt [s] to use for sampling/integrating on splines">0.01</splineSamplingDtPrecise>
+    </SplineMath>
+</math>

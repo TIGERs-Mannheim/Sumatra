@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: 06.08.2010
  * Author(s): MichealS, AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.log.internals;
@@ -25,6 +24,7 @@ import javax.swing.tree.TreePath;
 
 /**
  * Create JPanel wit JTree of Filesystem. Updates Filter by Selection.
+ * 
  * @author MichaelS, AndreR
  */
 public class TreePanel extends JPanel
@@ -53,20 +53,18 @@ public class TreePanel extends JPanel
 	
 	
 	/**
-	 * 
 	 * @param o
 	 */
-	public void addObserver(ITreePanelObserver o)
+	public void addObserver(final ITreePanelObserver o)
 	{
 		observers.add(o);
 	}
 	
 	
 	/**
-	 * 
 	 * @param o
 	 */
-	public void removeObserver(ITreePanelObserver o)
+	public void removeObserver(final ITreePanelObserver o)
 	{
 		observers.remove(o);
 	}
@@ -74,9 +72,10 @@ public class TreePanel extends JPanel
 	
 	/**
 	 * create a List of all Classes in this Node
+	 * 
 	 * @param treeNode
 	 */
-	private void createClassList(FileSystemTree treeNode, List<String> list)
+	private void createClassList(final FileSystemTree treeNode, final List<String> list)
 	{
 		if (treeNode.isLeaf())
 		{
@@ -93,7 +92,7 @@ public class TreePanel extends JPanel
 	protected class PathSelection implements TreeSelectionListener
 	{
 		@Override
-		public void valueChanged(TreeSelectionEvent e)
+		public void valueChanged(final TreeSelectionEvent e)
 		{
 			if (e.getNewLeadSelectionPath() == null)
 			{

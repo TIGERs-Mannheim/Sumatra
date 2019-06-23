@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Jul 20, 2010
  * Author(s): bernhard
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model;
@@ -32,7 +31,6 @@ import edu.dhbw.mannheim.tigers.moduli.Moduli;
  * with a simple SumatraModel.getInstance() .
  * 
  * @author bernhard
- * 
  */
 public final class SumatraModel extends Moduli
 {
@@ -44,7 +42,7 @@ public final class SumatraModel extends Moduli
 	// Logger - End
 	
 	// --- version ---
-	private static final String	VERSION							= "3.0";
+	private static final String	VERSION							= "4.0";
 	
 	// --- singleton ---
 	private static SumatraModel	instance							= new SumatraModel();
@@ -64,9 +62,14 @@ public final class SumatraModel extends Moduli
 	private static final String	KEY_MODULI_CONFIG				= SumatraModel.class.getName() + ".moduliConfig";
 	/** */
 	public static final String		MODULI_CONFIG_PATH			= "./config/moduli/";
+	/**  */
+	public static final String		MODULI_CONFIG_FILE_DEFAULT	= "moduli_sumatra.xml";
 	
 	// Application Properties
 	private static final String	CONFIG_SETTINGS_PATH			= "./config/user/";
+	
+	
+	private boolean					productive						= true;
 	
 	
 	// --------------------------------------------------------------------------
@@ -79,11 +82,17 @@ public final class SumatraModel extends Moduli
 	private SumatraModel()
 	{
 		loadApplicationProperties();
+		String prod = System.getProperty("productive");
+		if (prod != null)
+		{
+			productive = Boolean.valueOf(prod);
+		}
 	}
 	
 	
 	/**
 	 * getInstance() - Singleton-pattern.
+	 * 
 	 * @return the "one-and-only" instance of CSModel
 	 */
 	public static SumatraModel getInstance()
@@ -197,7 +206,7 @@ public final class SumatraModel extends Moduli
 	/**
 	 * @param currentModuliConfig the currentModuliConfig to set
 	 */
-	public void setCurrentModuliConfig(String currentModuliConfig)
+	public void setCurrentModuliConfig(final String currentModuliConfig)
 	{
 		userSettings.setProperty(SumatraModel.KEY_MODULI_CONFIG, currentModuliConfig);
 	}
@@ -209,7 +218,7 @@ public final class SumatraModel extends Moduli
 	/**
 	 * @param userSettings the appProperties to set
 	 */
-	public void setUserSettings(Properties userSettings)
+	public void setUserSettings(final Properties userSettings)
 	{
 		this.userSettings = userSettings;
 	}
@@ -231,7 +240,7 @@ public final class SumatraModel extends Moduli
 	 * @param value
 	 * @return The value which was associated with the given key before
 	 */
-	public String setUserProperty(String key, String value)
+	public String setUserProperty(final String key, final String value)
 	{
 		Object obj = null;
 		if (value == null)
@@ -263,9 +272,27 @@ public final class SumatraModel extends Moduli
 	 * @param key
 	 * @return The String associated with the given key
 	 */
-	public String getUserProperty(String key)
+	public String getUserProperty(final String key)
 	{
 		return userSettings.getProperty(key);
+	}
+	
+	
+	/**
+	 * Calls {@link Properties#getProperty(String)}
+	 * 
+	 * @param key
+	 * @param def
+	 * @return The String associated with the given key
+	 */
+	public String getUserProperty(final String key, final String def)
+	{
+		String val = userSettings.getProperty(key);
+		if (val == null)
+		{
+			return def;
+		}
+		return val;
 	}
 	
 	
@@ -277,5 +304,14 @@ public final class SumatraModel extends Moduli
 	public static String getVersion()
 	{
 		return VERSION;
+	}
+	
+	
+	/**
+	 * @return the productive
+	 */
+	public final boolean isProductive()
+	{
+		return productive;
 	}
 }

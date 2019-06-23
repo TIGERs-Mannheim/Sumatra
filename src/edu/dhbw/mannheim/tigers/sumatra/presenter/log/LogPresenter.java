@@ -105,8 +105,9 @@ public class LogPresenter extends WriterAppender implements ISumatraViewPresente
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
 	/**
+	 * @param addAppender
 	 */
-	public LogPresenter()
+	public LogPresenter(final boolean addAppender)
 	{
 		// set initial log level to info to avoid performance issues
 		String strLevel = SumatraModel.getInstance().getUserProperty(LOG_LEVEL_KEY);
@@ -122,7 +123,13 @@ public class LogPresenter extends WriterAppender implements ISumatraViewPresente
 		
 		// set internal output layout -> see log4j.properties
 		setLayout(new PatternLayout("%d{ABSOLUTE} %-5p [%t|%c{1}] %m%n"));
-		Logger.getRootLogger().addAppender(this);
+		if (addAppender)
+		{
+			Logger.getRootLogger().addAppender(this);
+		} else
+		{
+			setAutoScrolling(false);
+		}
 		
 		final StyleContext sc = StyleContext.getDefaultStyleContext();
 		attributeSets.put(Priority.ALL_INT,
@@ -263,7 +270,7 @@ public class LogPresenter extends WriterAppender implements ISumatraViewPresente
 	
 	private void appendLoggingEvent(final LoggingEvent event)
 	{
-		if (!checkStringFilter(event) || !checkClassFilter(event) || !checkForLogLevel(event))
+		if (!checkFilters(event))
 		{
 			return;
 		}
@@ -349,6 +356,20 @@ public class LogPresenter extends WriterAppender implements ISumatraViewPresente
 		}
 		
 		return false;
+	}
+	
+	
+	/**
+	 * @param event
+	 * @return
+	 */
+	public boolean checkFilters(final LoggingEvent event)
+	{
+		if (!checkStringFilter(event) || !checkClassFilter(event) || !checkForLogLevel(event))
+		{
+			return false;
+		}
+		return true;
 	}
 	
 	

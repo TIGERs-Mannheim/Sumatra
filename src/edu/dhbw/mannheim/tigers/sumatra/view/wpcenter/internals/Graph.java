@@ -23,6 +23,7 @@ import java.awt.Color;
 import javax.swing.JPanel;
 
 import net.miginfocom.swing.MigLayout;
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
 
 
 /**
@@ -50,7 +51,7 @@ public class Graph extends JPanel
 	 * private final ITrace2D aiTrace = new Trace2DLtd(20);
 	 */
 	
-	private final long			timeOffset			= System.nanoTime();
+	private final long			timeOffset			= SumatraClock.nanoTime();
 	
 	
 	// --------------------------------------------------------------------------
@@ -116,7 +117,7 @@ public class Graph extends JPanel
 	/*
 	 * public void onNewTimerInfo(TimerInfo info)
 	 * {
-	 * long now = System.nanoTime();
+	 * long now = SumatraClock.nanoTime();
 	 * float step = (now - timeOffset) / NS_TO_MS;
 	 * 
 	 * maximum.addPoint(step, MAXIMUM_DURATION);

@@ -66,7 +66,7 @@ public class BotToBallDistanceCalc extends ACalculator
 		final List<BotDistance> distances = new ArrayList<BotDistance>(bots.size());
 		for (TrackedBot bot : bots.values())
 		{
-			final float distanceToBall = GeoMath.distancePP(bot.getPos(), wFrame.ball.getPos());
+			final float distanceToBall = GeoMath.distancePP(bot.getPos(), wFrame.getBall().getPos());
 			distances.add(new BotDistance(bot, distanceToBall));
 		}
 		

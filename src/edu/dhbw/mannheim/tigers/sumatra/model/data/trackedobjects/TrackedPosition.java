@@ -4,14 +4,13 @@
  * Project: TIGERS - Sumatra
  * Date: 11.04.2011
  * Author(s): Gero
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.AIInfoFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.WorldFrame;
-import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
+import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.AVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.Vector2;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.AObjectID;
@@ -41,9 +40,9 @@ public class TrackedPosition
 	/**
 	 * @param objId
 	 */
-	public TrackedPosition(AObjectID objId)
+	public TrackedPosition(final AObjectID objId)
 	{
-		this(objId, GeoMath.INIT_VECTOR);
+		this(objId, AVector2.ZERO_VECTOR);
 	}
 	
 	
@@ -51,7 +50,7 @@ public class TrackedPosition
 	 * @param objId
 	 * @param vec
 	 */
-	public TrackedPosition(AObjectID objId, IVector2 vec)
+	public TrackedPosition(final AObjectID objId, final IVector2 vec)
 	{
 		this.objId = objId;
 		pos = new Vector2(vec);
@@ -61,9 +60,9 @@ public class TrackedPosition
 	/**
 	 * @param obj
 	 */
-	public TrackedPosition(ATrackedObject obj)
+	public TrackedPosition(final ATrackedObject obj)
 	{
-		this(obj, GeoMath.INIT_VECTOR);
+		this(obj, AVector2.ZERO_VECTOR);
 	}
 	
 	
@@ -71,7 +70,7 @@ public class TrackedPosition
 	 * @param obj
 	 * @param vec
 	 */
-	public TrackedPosition(ATrackedObject obj, IVector2 vec)
+	public TrackedPosition(final ATrackedObject obj, final IVector2 vec)
 	{
 		objId = obj.id;
 		pos = new Vector2(vec);
@@ -86,7 +85,7 @@ public class TrackedPosition
 	 * 
 	 * @param aiFrame
 	 */
-	public void update(AIInfoFrame aiFrame)
+	public void update(final AIInfoFrame aiFrame)
 	{
 		update(aiFrame.getWorldFrame());
 	}
@@ -97,11 +96,11 @@ public class TrackedPosition
 	 * 
 	 * @param wf
 	 */
-	public void update(WorldFrame wf)
+	public void update(final WorldFrame wf)
 	{
 		if (objId.isBall())
 		{
-			setPos(wf.ball);
+			setPos(wf.getBall());
 			positionUpdatedLastCycle = true;
 		} else
 		{
@@ -122,7 +121,7 @@ public class TrackedPosition
 	}
 	
 	
-	private boolean setPos(ATrackedObject newPos)
+	private boolean setPos(final ATrackedObject newPos)
 	{
 		if (newPos == null)
 		{

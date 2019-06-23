@@ -28,4 +28,12 @@ public interface IDrawableShape
 	 * @param invert
 	 */
 	void paintShape(Graphics2D g, IFieldPanel fieldPanel, boolean invert);
+	
+	
+	/**
+	 * @param drawDebug
+	 */
+	default void setDrawDebug(final boolean drawDebug)
+	{
+	}
 }

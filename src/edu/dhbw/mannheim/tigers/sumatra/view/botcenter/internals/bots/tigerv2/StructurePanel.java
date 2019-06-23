@@ -4,7 +4,6 @@
  * Project: TIGERS - Sumatra
  * Date: Dec 27, 2013
  * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.view.botcenter.internals.bots.tigerv2;
@@ -25,13 +24,13 @@ import net.miginfocom.swing.MigLayout;
 import org.apache.log4j.Logger;
 
 import edu.dhbw.mannheim.tigers.sumatra.model.data.modules.botmanager.Structure;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.tigerv2.TigerSystemQuery.EQueryType;
 
 
 /**
  * Set structure of bot
  * 
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * 
  */
 public class StructurePanel extends JPanel
 {
@@ -59,6 +58,12 @@ public class StructurePanel extends JPanel
 		 * @param structure
 		 */
 		void onNewStructure(Structure structure);
+		
+		
+		/**
+		 * @param type
+		 */
+		void onQuery(EQueryType type);
 	}
 	
 	private final List<IStructureObserver>	observers	= new CopyOnWriteArrayList<IStructureObserver>();
@@ -67,35 +72,26 @@ public class StructurePanel extends JPanel
 	/**
 	 * @param observer
 	 */
-	public void addObserver(IStructureObserver observer)
+	public void addObserver(final IStructureObserver observer)
 	{
-		synchronized (observers)
-		{
-			observers.add(observer);
-		}
+		observers.add(observer);
 	}
 	
 	
 	/**
 	 * @param observer
 	 */
-	public void removeObserver(IStructureObserver observer)
+	public void removeObserver(final IStructureObserver observer)
 	{
-		synchronized (observers)
-		{
-			observers.remove(observer);
-		}
+		observers.remove(observer);
 	}
 	
 	
-	private void notifyNewStructure(Structure structure)
+	private void notifyNewStructure(final Structure structure)
 	{
-		synchronized (observers)
+		for (IStructureObserver observer : observers)
 		{
-			for (IStructureObserver observer : observers)
-			{
-				observer.onNewStructure(structure);
-			}
+			observer.onNewStructure(structure);
 		}
 	}
 	
@@ -122,23 +118,17 @@ public class StructurePanel extends JPanel
 		add(txtMass);
 		JButton btnSave = new JButton("Save");
 		btnSave.addActionListener(new SaveActionListener());
-		add(btnSave, "span 2");
+		JButton btnQuery = new JButton("Query");
+		btnQuery.addActionListener(new QueryActionListener());
+		add(btnSave, "span 1");
+		add(btnQuery, "span 1");
 	}
 	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 	
 	/**
 	 * @param structure
 	 */
-	public void setStructure(Structure structure)
+	public void setStructure(final Structure structure)
 	{
 		txtFrontAngle.setText(String.valueOf(structure.getFrontAngle()));
 		txtBackAngle.setText(String.valueOf(structure.getBackAngle()));
@@ -149,9 +139,8 @@ public class StructurePanel extends JPanel
 	
 	private class SaveActionListener implements ActionListener
 	{
-		
 		@Override
-		public void actionPerformed(ActionEvent e)
+		public void actionPerformed(final ActionEvent e)
 		{
 			try
 			{
@@ -165,6 +154,18 @@ public class StructurePanel extends JPanel
 			} catch (NumberFormatException err)
 			{
 				log.error("Number could not be parsed.", err);
+			}
+		}
+	}
+	
+	private class QueryActionListener implements ActionListener
+	{
+		@Override
+		public void actionPerformed(final ActionEvent e)
+		{
+			for (IStructureObserver observer : observers)
+			{
+				observer.onQuery(EQueryType.CTRL_STRUCTURE);
 			}
 		}
 	}

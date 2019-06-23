@@ -11,7 +11,6 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora;
 
 import org.apache.log4j.Logger;
 
-import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.FrameID;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.frames.SimpleWorldFrame;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.TrackedTigerBot;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.trackedobjects.ids.BotID;
@@ -47,13 +46,13 @@ public abstract class ACondition
 	/** @see #checkCondition(SimpleWorldFrame, BotID) */
 	private static final EConditionState	UNDEFINED_RESULT	= EConditionState.NOT_CHECKED;
 	
-	private FrameID								lastId;
+	private long									lastId;
 	private EConditionState						lastResult			= EConditionState.NOT_CHECKED;
 	
 	/** Used to ensure re-calculation of the conditions state ({@link #resetCache()}) */
 	private boolean								stateChanged		= false;
 	
-	private String									condition			= "not implemented";
+	private String									condition			= "";
 	
 	/** check this condition? */
 	private boolean								active				= true;
@@ -80,7 +79,7 @@ public abstract class ACondition
 		private boolean	ok;
 		
 		
-		private EConditionState(boolean ok)
+		private EConditionState(final boolean ok)
 		{
 			this.ok = ok;
 		}
@@ -102,7 +101,7 @@ public abstract class ACondition
 	/**
 	 * @param type
 	 */
-	public ACondition(ECondition type)
+	public ACondition(final ECondition type)
 	{
 		this.type = type;
 	}
@@ -121,7 +120,7 @@ public abstract class ACondition
 	 * @param botId
 	 * @return condition state (cached, if worldFrame.id equals the one from last call!)
 	 */
-	public EConditionState checkCondition(SimpleWorldFrame worldFrame, BotID botId)
+	public EConditionState checkCondition(final SimpleWorldFrame worldFrame, final BotID botId)
 	{
 		if (!active)
 		{
@@ -129,7 +128,7 @@ public abstract class ACondition
 			// return true if not active
 			return EConditionState.DISABLED;
 		}
-		if (stateChanged || (lastId == null) || !lastId.equals(worldFrame.getId()))
+		if (stateChanged || (lastId != worldFrame.getId()))
 		{
 			lastId = worldFrame.getId();
 			
@@ -167,7 +166,7 @@ public abstract class ACondition
 	{
 		stateChanged = true;
 		
-		lastId = null;
+		lastId = 0;
 		lastResult = UNDEFINED_RESULT;
 	}
 	
@@ -193,7 +192,7 @@ public abstract class ACondition
 	 * @param swf
 	 * @param botId
 	 */
-	public void update(SimpleWorldFrame swf, BotID botId)
+	public void update(final SimpleWorldFrame swf, final BotID botId)
 	{
 	}
 	
@@ -213,7 +212,7 @@ public abstract class ACondition
 	 * @param condition
 	 * @return true when the conditions are equal
 	 */
-	public boolean compare(ACondition condition)
+	public boolean compare(final ACondition condition)
 	{
 		if ((condition == null) || (condition.getType() != getType()))
 		{
@@ -250,10 +249,9 @@ public abstract class ACondition
 	
 	
 	/**
-	 * 
 	 * @param condition
 	 */
-	public void setCondition(String condition)
+	public void setCondition(final String condition)
 	{
 		this.condition = condition;
 	}
@@ -271,7 +269,7 @@ public abstract class ACondition
 	/**
 	 * @param active the active to set
 	 */
-	public final void setActive(boolean active)
+	public final void setActive(final boolean active)
 	{
 		this.active = active;
 	}

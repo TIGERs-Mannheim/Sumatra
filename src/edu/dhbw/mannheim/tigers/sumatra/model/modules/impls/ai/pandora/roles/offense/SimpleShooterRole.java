@@ -19,7 +19,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ARo
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.pandora.roles.ERole;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.EFeature;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.AMoveSkill.EMoveToMode;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.IMoveToSkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.ISkill;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills.KickSkill;
@@ -34,16 +33,6 @@ import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.statemachine.IRoleSt
  */
 public class SimpleShooterRole extends ARole
 {
-	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
 	/**
 	  */
 	public SimpleShooterRole()
@@ -79,10 +68,11 @@ public class SimpleShooterRole extends ARole
 		@Override
 		public void doEntryActions()
 		{
-			IMoveToSkill skill = AMoveSkill.createMoveToSkill(EMoveToMode.DO_COMPLETE);
+			IMoveToSkill skill = AMoveSkill.createMoveToSkill();
+			skill.setDoComplete(true);
 			IVector2 dest = GeoMath.stepAlongLine(getWFrame().getBall().getPos(), getShootTarget(), -200);
 			skill.getMoveCon().updateDestination(dest);
-			skill.getMoveCon().updateLookAtTarget(getWFrame().ball);
+			skill.getMoveCon().updateLookAtTarget(getWFrame().getBall());
 			setNewSkill(skill);
 		}
 		
@@ -156,7 +146,7 @@ public class SimpleShooterRole extends ARole
 		@Override
 		public void onSkillCompleted(final ISkill skill, final BotID botID)
 		{
-			nextState(EEvent.LOST_BALL);
+			triggerEvent(EEvent.LOST_BALL);
 		}
 		
 		

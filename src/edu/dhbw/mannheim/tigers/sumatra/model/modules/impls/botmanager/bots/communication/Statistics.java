@@ -4,17 +4,21 @@
  * Project: TIGERS - Sumatra
  * Date: 23.08.2010
  * Author(s): AndreR
- * 
  * *********************************************************
  */
 package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.bots.communication;
+
+import com.sleepycat.persist.model.Persistent;
+
+import edu.dhbw.mannheim.tigers.sumatra.util.clock.SumatraClock;
+
 
 /**
  * Communication statistics packet.
  * 
  * @author AndreR
- * 
  */
+@Persistent
 public class Statistics
 {
 	/** */
@@ -30,14 +34,14 @@ public class Statistics
 	 */
 	public Statistics()
 	{
-		lastReset = System.nanoTime();
+		lastReset = SumatraClock.nanoTime();
 	}
 	
 	
 	/**
 	 * @param org
 	 */
-	public Statistics(Statistics org)
+	public Statistics(final Statistics org)
 	{
 		payload = org.payload;
 		raw = org.raw;
@@ -54,7 +58,7 @@ public class Statistics
 		raw = 0;
 		packets = 0;
 		
-		lastReset = System.nanoTime();
+		lastReset = SumatraClock.nanoTime();
 	}
 	
 	
@@ -71,7 +75,7 @@ public class Statistics
 	 * @param stat
 	 * @return
 	 */
-	public Statistics substract(Statistics stat)
+	public Statistics substract(final Statistics stat)
 	{
 		final Statistics ret = new Statistics();
 		ret.payload = payload - stat.payload;
@@ -86,7 +90,7 @@ public class Statistics
 	 * @param stat
 	 * @return
 	 */
-	public Statistics add(Statistics stat)
+	public Statistics add(final Statistics stat)
 	{
 		final Statistics ret = new Statistics();
 		ret.payload = payload + stat.payload;
@@ -115,7 +119,7 @@ public class Statistics
 	 * @param passedTime
 	 * @return
 	 */
-	public float getLoadPercentage(float passedTime)
+	public float getLoadPercentage(final float passedTime)
 	{
 		if (passedTime == 0)
 		{
@@ -131,6 +135,6 @@ public class Statistics
 	 */
 	public float getLoadPercentageWithLastReset()
 	{
-		return getLoadPercentage((System.nanoTime() - lastReset) / 1000000000.0f);
+		return getLoadPercentage((SumatraClock.nanoTime() - lastReset) / 1000000000.0f);
 	}
 }

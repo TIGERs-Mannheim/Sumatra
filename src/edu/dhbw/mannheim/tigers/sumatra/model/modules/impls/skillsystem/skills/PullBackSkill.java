@@ -10,9 +10,13 @@ package edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.skills;
 
 import java.util.List;
 
+import edu.dhbw.mannheim.tigers.sumatra.model.data.DynamicPosition;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.math.GeoMath;
 import edu.dhbw.mannheim.tigers.sumatra.model.data.shapes.vector.IVector2;
-import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.config.AIConfig;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.AroundBallDriver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.DoNothingDriver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.skills.PullBallDriver;
+import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.ai.sisyphus.driver.skills.TowardsBallDriver;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.botmanager.commands.ACommand;
 import edu.dhbw.mannheim.tigers.sumatra.model.modules.impls.skillsystem.ESkillName;
 import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
@@ -23,46 +27,45 @@ import edu.dhbw.mannheim.tigers.sumatra.util.config.Configurable;
  * 
  * @author Mark Geiger <Mark.Geiger@dlr.de>
  */
-public class PullBackSkill extends PositionSkill
+public class PullBackSkill extends AMoveSkill
 {
 	
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private IVector2		initPos					= null;
+	@Configurable
+	private static int			dribbleSpeed				= 20000;
 	
-	@Configurable(comment = "distance to pull the ball backwards")
-	private static float	pullDistance			= 500;
+	@Configurable
+	private static float			maxSpeedPosTowardsBall	= 150;
 	
-	@Configurable(comment = "basic / initial moveSpeed")
-	private static float	moveSpeedBasic			= 150;
-	@Configurable(comment = "speed increase over time")
-	private static float	moveSpeedRange			= 200;
+	@Configurable
+	private static float			pullingDriveSpeed			= 90;
 	
-	@Configurable(comment = "basic dribble speed")
-	private static float	dribbleSpeedBasic		= 750;
-	@Configurable(comment = "dribble speed at start, then slowly decreases to the end")
-	private static float	dribbleSpeedRange		= 12000;
+	@Configurable
+	private static float			targetTolerance			= 50;
 	
-	@Configurable(comment = "distance when ball is considered as grabbed")
-	private static float	grabBallDist			= (AIConfig.getGeometry().getBotRadius() + (AIConfig.getGeometry()
-																	.getBallRadius() * 2) + 10);
+	private AroundBallDriver	aroundBallDriver;
 	
-	@Configurable(comment = "distance to ball to move to initially")
-	private static float	distancToBall			= 40;
+	private PullBallDriver		pullBallDriver;
+	
+	private TowardsBallDriver	towardsBallDriver;
 	
 	
-	@Configurable(comment = "timeout after x ms")
-	private static float	timeout					= 2000;
-	private static float	time						= 0;
+	private EPullState			state							= EPullState.TURN;
 	
-	@Configurable(comment = "Vel [rad/s] to turn on circle (1st phase)")
-	private static float	turnCircleVel			= 50f;
+	private IVector2				pullToTarget				= null;
 	
-	// private long timeStart = System.nanoTime();
+	private IVector2				turnAroundTarget			= null;
 	
-	private long			timeSinceBallContact	= 0;
+	private enum EPullState
+	{
+		TURN,
+		GET_CLOSE,
+		PULL,
+		DO_NOTHING
+	}
 	
 	
 	// --------------------------------------------------------------------------
@@ -71,93 +74,92 @@ public class PullBackSkill extends PositionSkill
 	
 	/**
 	 * Do not use this constructor, if you extend from this class
+	 * 
+	 * @param target
+	 * @param orientation
 	 */
-	public PullBackSkill()
+	public PullBackSkill(final IVector2 target, final float orientation)
 	{
 		super(ESkillName.PULL_BACK);
+		pullToTarget = target;
 	}
 	
 	
 	@Override
-	public void doCalcActions(final List<ACommand> cmds)
+	protected void doCalcEntryActions(final List<ACommand> cmds)
 	{
+		// initial orientation here
+		IVector2 ballToPullToTarget = pullToTarget.subtractNew(getWorldFrame().getBall().getPos());
+		turnAroundTarget = getWorldFrame().getBall().getPos().addNew(ballToPullToTarget.multiplyNew(-1));
+		aroundBallDriver = new AroundBallDriver(new DynamicPosition(turnAroundTarget));
 		
-		if ((System.currentTimeMillis() - time) > timeout)
-		{
-			complete();
-		}
-		IVector2 ballPos = getWorldFrame().getBall().getPos();
-		float distanceToInit = GeoMath.distancePP(initPos, getPos());
-		
-		// float dt = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - timeStart) / 1000.0f;
-		// timeStart = System.nanoTime();
-		
-		if (distanceToInit > pullDistance)
-		{
-			complete();
-			return;
-		}
-		
-		
-		/**
-		 * 1 when pulling is done completely.
-		 * 0 when pulling just started.
-		 */
-		float donePulling = (distanceToInit / pullDistance);
-		
-		IVector2 rvBallBot = getPos().subtractNew(ballPos).normalizeNew();
-		IVector2 destination = ballPos.addNew(rvBallBot.multiplyNew(moveSpeedBasic + (moveSpeedRange * donePulling)));
-		
-		int rpm = (int) (dribbleSpeedBasic + (int) (dribbleSpeedRange * (1 - donePulling)));
-		getDevices().dribble(cmds, rpm);
-		
-		float orientation = ballPos.subtractNew(getPos()).getAngle();
-		if (!hasBallContact())
-		{
-			destination = ballPos.addNew(rvBallBot.multiplyNew(distancToBall));
-			timeSinceBallContact = System.currentTimeMillis();
-		} else if ((System.currentTimeMillis() - timeSinceBallContact) < 1500)
-		{
-			float test = (System.currentTimeMillis() - timeSinceBallContact) / 1500f;
-			destination = ballPos.addNew(rvBallBot.multiplyNew(distancToBall + (120 * test)));
-		}
-		else if (((System.currentTimeMillis() - timeSinceBallContact) > 2000)
-				&& ((System.currentTimeMillis() - timeSinceBallContact) < 5000))
-		{
-			destination = ballPos.addNew(rvBallBot.multiplyNew(distancToBall + (120)));
-			orientation = orientation + 0.2f;
-		}
-		
-		setOrientation(orientation);
-		setDestination(destination);
-		super.doCalcActions(cmds);
+		pullBallDriver = new PullBallDriver(pullingDriveSpeed, pullToTarget, targetTolerance);
+		towardsBallDriver = new TowardsBallDriver(maxSpeedPosTowardsBall);
+		setPathDriver(aroundBallDriver);
 	}
 	
 	
 	@Override
-	public List<ACommand> calcEntryActions(final List<ACommand> cmds)
+	protected void update(final List<ACommand> cmds)
 	{
-		initPos = getWorldFrame().getBall().getPos();
-		time = System.currentTimeMillis();
-		super.calcEntryActions(cmds);
-		return cmds;
+		switch (state)
+		{
+			case TURN:
+				getDevices().dribble(cmds, false);
+				if (aroundBallDriver.isDone())
+				{
+					state = EPullState.GET_CLOSE;
+					towardsBallDriver = new TowardsBallDriver(maxSpeedPosTowardsBall);
+					setPathDriver(towardsBallDriver);
+				}
+				break;
+			case GET_CLOSE:
+				getDevices().dribble(cmds, dribbleSpeed);
+				aroundBallDriver.update(getTBot(), getWorldFrame());
+				towardsBallDriver.update(getTBot(), getWorldFrame());
+				if (getTBot().hasBallContact())
+				{
+					state = EPullState.PULL;
+					pullBallDriver = new PullBallDriver(pullingDriveSpeed, pullToTarget, targetTolerance);
+					setPathDriver(pullBallDriver);
+				}
+				else if (!aroundBallDriver.isDone())
+				{
+					state = EPullState.TURN;
+					IVector2 ballToPullToTarget = pullToTarget.subtractNew(getWorldFrame().getBall().getPos());
+					turnAroundTarget = getWorldFrame().getBall().getPos().addNew(ballToPullToTarget.multiplyNew(-1));
+					aroundBallDriver = new AroundBallDriver(new DynamicPosition(turnAroundTarget));
+					setPathDriver(aroundBallDriver);
+				}
+				break;
+			case PULL:
+				getDevices().dribble(cmds, dribbleSpeed);
+				pullBallDriver.update(getTBot(), getWorldFrame());
+				if (pullBallDriver.isDone())
+				{
+					state = EPullState.DO_NOTHING;
+					setPathDriver(new DoNothingDriver());
+				}
+				else if (!getTBot().hasBallContact())
+				{
+					state = EPullState.TURN;
+					IVector2 ballToPullToTarget = pullToTarget.subtractNew(getWorldFrame().getBall().getPos());
+					turnAroundTarget = getWorldFrame().getBall().getPos().addNew(ballToPullToTarget.multiplyNew(-1));
+					aroundBallDriver = new AroundBallDriver(new DynamicPosition(turnAroundTarget));
+					setPathDriver(aroundBallDriver);
+				}
+				break;
+			case DO_NOTHING:
+				getDevices().dribble(cmds, false);
+				if (GeoMath.distancePP(getPos(), getWorldFrame().getBall().getPos()) > (targetTolerance * 1.5))
+				{
+					state = EPullState.TURN;
+					IVector2 ballToPullToTarget = pullToTarget.subtractNew(getWorldFrame().getBall().getPos());
+					turnAroundTarget = getWorldFrame().getBall().getPos().addNew(ballToPullToTarget.multiplyNew(-1));
+					aroundBallDriver = new AroundBallDriver(new DynamicPosition(turnAroundTarget));
+					setPathDriver(aroundBallDriver);
+				}
+				break;
+		}
 	}
-	
-	
-	@Override
-	public List<ACommand> calcExitActions(final List<ACommand> cmds)
-	{
-		getDevices().dribble(cmds, false);
-		getDevices().allOff(cmds);
-		return cmds;
-	}
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
 }
