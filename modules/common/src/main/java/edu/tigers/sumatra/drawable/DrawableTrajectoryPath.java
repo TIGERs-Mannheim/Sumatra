@@ -1,10 +1,13 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
 
-import java.awt.*;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.Stroke;
 import java.awt.geom.GeneralPath;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,10 +26,11 @@ import edu.tigers.sumatra.trajectory.ITrajectory;
 @Persistent
 public class DrawableTrajectoryPath implements IDrawableShape
 {
-	private static final double	PRECISION	= 0.01;
+	private static final double PRECISION = 0.1;
 	
-	private Color						color			= Color.black;
-	private final List<IVector2>	points		= new ArrayList<>();
+	private Color color = Color.black;
+	private final List<IVector2> points = new ArrayList<>();
+	private transient Stroke stroke;
 	
 	
 	@SuppressWarnings("unused")
@@ -54,7 +58,7 @@ public class DrawableTrajectoryPath implements IDrawableShape
 		
 		IVector2 vLast = null;
 		
-		double stepSize = 0.1;
+		double stepSize = 0.2;
 		for (double t = 0; t < (trajXY.getTotalTime() - stepSize); t += stepSize)
 		{
 			IVector2 pos = trajXY.getPositionMM(t).getXYVector();
@@ -74,6 +78,11 @@ public class DrawableTrajectoryPath implements IDrawableShape
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
 		g.setColor(color);
+		if (stroke == null)
+		{
+			stroke = new BasicStroke(tool.scaleXLength(10));
+		}
+		g.setStroke(stroke);
 		
 		final GeneralPath drawPath = new GeneralPath();
 		IVector2 pLast = points.get(0);

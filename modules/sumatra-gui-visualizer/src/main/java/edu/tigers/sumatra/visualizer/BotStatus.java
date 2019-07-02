@@ -4,6 +4,7 @@
 package edu.tigers.sumatra.visualizer;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +25,7 @@ public class BotStatus
 	
 	private boolean hideRcm = false;
 	private boolean hideAi = false;
-	private Map<EFeature, EFeatureState> botFeatures;
+	private Map<EFeature, EFeatureState> botFeatures = Collections.emptyMap();
 	private List<String> brokenFeatures = new ArrayList<>();
 	private ERobotMode robotMode;
 	

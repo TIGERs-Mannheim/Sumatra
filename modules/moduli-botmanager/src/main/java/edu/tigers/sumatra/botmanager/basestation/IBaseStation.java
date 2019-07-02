@@ -3,10 +3,7 @@
  */
 package edu.tigers.sumatra.botmanager.basestation;
 
-import com.github.g3force.configurable.IConfigObserver;
-
-import edu.tigers.sumatra.botmanager.bots.communication.ENetworkState;
-import edu.tigers.sumatra.botmanager.commands.ACommand;
+import edu.tigers.sumatra.botmanager.botskills.data.MatchCommand;
 import edu.tigers.sumatra.ids.BotID;
 
 
@@ -15,23 +12,13 @@ import edu.tigers.sumatra.ids.BotID;
  * 
  * @author AndreR
  */
-public interface IBaseStation extends IConfigObserver
+public interface IBaseStation
 {
 	/**
-	 * Send a bot command via base station.
-	 * 
-	 * @param id
-	 * @param cmd
+	 * @param botId
+	 * @param matchCommand
 	 */
-	void enqueueCommand(BotID id, ACommand cmd);
-	
-	
-	/**
-	 * Send a command to base station.
-	 * 
-	 * @param cmd
-	 */
-	void enqueueCommand(final ACommand cmd);
+	void acceptMatchCommand(final BotID botId, final MatchCommand matchCommand);
 	
 	
 	/**
@@ -47,38 +34,13 @@ public interface IBaseStation extends IConfigObserver
 	
 	
 	/**
-	 * Add observer.
-	 * 
-	 * @param observer
+	 * Reconnect to BS
 	 */
-	void addObserver(IBaseStationObserver observer);
-	
-	
-	/**
-	 * Remove observer.
-	 * 
-	 * @param observer
-	 */
-	void removeObserver(IBaseStationObserver observer);
-	
-	
-	/**
-	 * @return
-	 */
-	ENetworkState getNetState();
-	
-	
-	/**
-	 * @param numPings
-	 * @param payload
-	 */
-	void startPing(int numPings, int payload);
-	
-	
-	/**
-	 * end of ping
-	 */
-	void stopPing();
+	default void reconnect()
+	{
+		disconnect();
+		connect();
+	}
 	
 	
 	/**
@@ -99,10 +61,4 @@ public interface IBaseStation extends IConfigObserver
 	default void removeBot(BotID botID)
 	{
 	}
-	
-	
-	/**
-	 * @return
-	 */
-	String getName();
 }

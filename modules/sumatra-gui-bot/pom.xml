@@ -10,7 +10,7 @@
     <parent>
         <groupId>edu.tigers.sumatra</groupId>
         <artifactId>sumatra-parent</artifactId>
-        <version>6.0</version>
+        <version>2019-SNAPSHOT</version>
         <relativePath>../sumatra-parent/pom.xml</relativePath>
     </parent>
 
@@ -19,29 +19,13 @@
             <groupId>net.sf.jchart2d</groupId>
             <artifactId>jchart2d</artifactId>
         </dependency>
-
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
             <artifactId>common-gui</artifactId>
         </dependency>
-
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
             <artifactId>moduli-botmanager</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>sumatra-skillsystem</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>sumatra-pathfinder</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.github.g3force</groupId>
-            <artifactId>instanceables</artifactId>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>
@@ -52,7 +36,7 @@
             <artifactId>common-math</artifactId>
         </dependency>
         <dependency>
-            <groupId>edu.tigers.moduli</groupId>
+            <groupId>com.github.TIGERs-Mannheim</groupId>
             <artifactId>moduli</artifactId>
         </dependency>
         <dependency>
@@ -74,6 +58,10 @@
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
             <artifactId>common-bot</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-botmanager-tigers</artifactId>
         </dependency>
     </dependencies>
 </project>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.circle;
@@ -7,13 +7,14 @@ package edu.tigers.sumatra.math.circle;
 import static java.lang.Math.abs;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.rectangle.Rectangle;
+import edu.tigers.sumatra.math.line.v2.ILine;
+import edu.tigers.sumatra.math.line.v2.ILineBase;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
@@ -57,14 +58,14 @@ public final class CircleMath
 	
 	
 	/**
-	 * Get the intersection points of the shape and line
+	 * Get the intersection points of the shape and a line
 	 *
 	 * @see <a href="http://mathworld.wolfram.com/Circle-LineIntersection.html">Mathmatical Theory</a>
 	 * @param circle a circle
 	 * @param line some line
 	 * @return all intersection points
 	 */
-	public static List<IVector2> lineIntersectionsCircle(ICircular circle, final ILine line)
+	private static List<IVector2> lineIntersectionsInternal(ICircular circle, final ILine line)
 	{
 		final List<IVector2> result = new ArrayList<>();
 		
@@ -116,23 +117,52 @@ public final class CircleMath
 		
 		result.add(temp1);
 		result.add(temp2);
+		result.removeIf(p -> !circle.isPointInShape(p, 1e-6));
 		return result;
 	}
 	
 	
 	/**
 	 * Get intersection points between circle and line segment
-	 * 
+	 *
 	 * @param circle the circle
 	 * @param line the line segment
 	 * @return all intersection points
 	 */
-	public static List<IVector2> lineSegmentIntersections(final ICircle circle, final ILine line)
+	public static List<IVector2> lineIntersections(final ICircular circle, final ILineBase line)
 	{
-		List<IVector2> candidates = lineIntersectionsCircle(circle, line);
-		Rectangle rect = Rectangle.fromLineSegment(line);
-		candidates.removeIf(c -> !rect.isPointInShape(c));
-		return candidates;
+		return lineIntersectionsInternal(circle, line.toLine())
+				.stream()
+				.filter(line::isPointOnLine)
+				.collect(Collectors.toList());
+	}
+	
+	
+	public static List<IVector2> circleIntersections(final ICircle firstCircle, final ICircle secondCircle)
+	{
+		double distBetweenCircles = firstCircle.center().distanceTo(secondCircle.center());
+		double firstRadius = firstCircle.radius();
+		double secondRadius = secondCircle.radius();
+		double firstRadius2 = firstRadius * firstRadius;
+		double distBetweenCircles2 = distBetweenCircles * distBetweenCircles;
+		double secondRadius2 = secondRadius * secondRadius;
+		if (firstRadius + secondRadius < distBetweenCircles || distBetweenCircles < 0.0001)
+		{
+			return Collections.emptyList();
+		}
+		
+		
+		double a = (firstRadius2 - secondRadius2 + distBetweenCircles2) / (2 * distBetweenCircles);
+		double h = Math.sqrt(firstRadius2 - a * a);
+		
+		
+		IVector2 direction = secondCircle.center().subtractNew(firstCircle.center()).scaleTo(a);
+		IVector2 heightVector = direction.getNormalVector().scaleTo(h);
+		
+		List<IVector2> intersections = new ArrayList<>();
+		intersections.add(firstCircle.center().addNew(direction).add(heightVector));
+		intersections.add(firstCircle.center().addNew(direction).add(heightVector.multiplyNew(-1)));
+		return intersections;
 	}
 	
 	
@@ -199,21 +229,6 @@ public final class CircleMath
 		double a = dir.getAngle();
 		double b = AngleMath.normalizeAngle(arc.getStartAngle() + (arc.getRotation() / 2.0));
 		return abs(AngleMath.difference(a, b)) < (abs(arc.getRotation()) / 2.0);
-	}
-	
-	
-	/**
-	 * Get line intersections for an arc. Only the outer arc is considered, not the straight lines.
-	 * 
-	 * @param arc an arc
-	 * @param line a line
-	 * @return all intersections of line and arc
-	 */
-	public static List<IVector2> lineIntersectionsArc(final IArc arc, final ILine line)
-	{
-		return lineIntersectionsCircle(arc, line).stream()
-				.filter(intersections -> isPointInArc(arc, intersections, 1e-6))
-				.collect(Collectors.toCollection(ArrayList::new));
 	}
 	
 	

@@ -10,7 +10,7 @@
     <parent>
         <groupId>edu.tigers.sumatra</groupId>
         <artifactId>sumatra-parent</artifactId>
-        <version>6.0</version>
+        <version>2019-SNAPSHOT</version>
         <relativePath>../sumatra-parent/pom.xml</relativePath>
     </parent>
 
@@ -82,6 +82,11 @@
 
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>sumatra-gui-kick</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
             <artifactId>moduli-wp-export</artifactId>
         </dependency>
 
@@ -114,6 +119,14 @@
             <artifactId>moduli-botmanager</artifactId>
         </dependency>
         <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-botmanager-sim</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-botmanager-tigers</artifactId>
+        </dependency>
+        <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
         </dependency>
@@ -122,7 +135,7 @@
             <artifactId>moduli-ai</artifactId>
         </dependency>
         <dependency>
-            <groupId>edu.tigers.moduli</groupId>
+            <groupId>com.github.TIGERs-Mannheim</groupId>
             <artifactId>moduli</artifactId>
         </dependency>
         <dependency>
@@ -155,41 +168,58 @@
         </dependency>
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>moduli-geometry</artifactId>
+            <artifactId>sumatra-gui-skills</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-vision-simulation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-cli</groupId>
+            <artifactId>commons-cli</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-autoreferee</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>sumatra-simulation-control</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-team-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-log-analysis</artifactId>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <!-- run Sumatra with mvn exec:java -->
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.1.0</version>
                 <configuration>
-                    <executable>java</executable>
-                    <workingDirectory>${project.basedir}/../..</workingDirectory>
-                    <arguments>
-                        <argument>-Xms512m</argument>
-                        <argument>-Xmx4G</argument>
-                        <argument>-server</argument>
-                        <argument>-Xnoclassgc</argument>
-                        <argument>-Xverify:none</argument>
-                        <argument>-Dsun.java2d.d3d=false</argument>
-                        <argument>-XX:+UseG1GC</argument>
-                        <argument>-Djava.net.preferIPv4Stack=true</argument>
-                        <argument>-XX:-OmitStackTraceInFastThrow</argument>
-                        <argument>-classpath</argument>
-                        <!-- automatically creates the classpath using all project dependencies,
-                             also adding the project build directory -->
-                        <classpath/>
-                        <argument>edu.tigers.sumatra.Sumatra</argument>
-                    </arguments>
+                    <outputDirectory>${project.build.directory}/lib</outputDirectory>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
+                    <execution>
+                        <phase>process-sources</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <includeScope>runtime</includeScope>
+                            <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                        </configuration>
+                    </execution>
                     <execution>
                         <id>analyze</id>
                         <goals>
@@ -208,6 +238,15 @@
                                 <ignoredUnusedDeclaredDependencie>
                                     edu.tigers.sumatra:moduli-parameter-optimizer:*
                                 </ignoredUnusedDeclaredDependencie>
+                                <ignoredUnusedDeclaredDependencie>
+                                    edu.tigers.sumatra:moduli-botmanager*
+                                </ignoredUnusedDeclaredDependencie>
+                                <ignoredUnusedDeclaredDependency>
+                                    edu.tigers.sumatra:moduli-team-client*
+                                </ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>
+                                    edu.tigers.sumatra:moduli-log-analysis
+                                </ignoredUnusedDeclaredDependency>
                             </ignoredUnusedDeclaredDependencies>
                         </configuration>
                     </execution>

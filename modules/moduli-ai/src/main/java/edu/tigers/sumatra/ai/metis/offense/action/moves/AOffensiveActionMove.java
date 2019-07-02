@@ -4,20 +4,27 @@
 
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
-import java.util.Optional;
-
 import edu.tigers.sumatra.ai.BaseAiFrame;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.ai.metis.offense.OffensiveMath;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
 import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.KickTarget;
-import edu.tigers.sumatra.ai.metis.support.IPassTarget;
+import edu.tigers.sumatra.ai.metis.offense.finisher.IFinisherMove;
+import edu.tigers.sumatra.ai.metis.support.passtarget.IRatedPassTarget;
+import edu.tigers.sumatra.ai.metis.targetrater.AngleRangeRater;
 import edu.tigers.sumatra.ai.metis.targetrater.IRatedTarget;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
+import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.wp.data.DynamicPosition;
+import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.vector.IVector2;
+
+import java.awt.Color;
+import java.util.Optional;
 
 
 /**
@@ -50,9 +57,10 @@ public abstract class AOffensiveActionMove
 	}
 	
 	
-	protected boolean isPassPossible(final BotID botID, final TacticalField newTacticalField)
+	protected boolean isPassPossible(final BotID botID, final TacticalField newTacticalField,
+			final BaseAiFrame baseAiFrame)
 	{
-		return selectPassTarget(botID, newTacticalField).isPresent();
+		return selectPassTarget(botID, newTacticalField, baseAiFrame).isPresent();
 	}
 	
 	
@@ -64,24 +72,71 @@ public abstract class AOffensiveActionMove
 	 * @param newTacticalField
 	 * @return a valid pass target, if present
 	 */
-	protected Optional<IPassTarget> selectPassTarget(final BotID botID, final TacticalField newTacticalField)
+	protected Optional<IRatedPassTarget> selectPassTarget(final BotID botID, final TacticalField newTacticalField,
+			final BaseAiFrame baseAiFrame)
 	{
-		return newTacticalField.getPassTargetsRanked().stream()
+		return newTacticalField.getRatedPassTargetsRanked().stream()
 				.filter(passTarget -> !passTarget.getBotId().equals(botID))
+				.filter(e -> isTargetApproachAngleAccesible(newTacticalField, botID, e,
+						baseAiFrame.getWorldFrame().getBall().getPos()))
 				.findFirst();
+	}
+	
+	
+	private boolean isTargetApproachAngleAccesible(final TacticalField newTacticalField, final BotID botID,
+			final IRatedPassTarget passTarget, final IVector2 ballPos)
+	{
+		double angle = ballPos.subtractNew(passTarget.getPos()).getAngle();
+		if (!OffensiveMath.isAngleAccessible(newTacticalField.getUnaccessibleBallAngles().get(botID), angle))
+		{
+			DrawableCircle dc = new DrawableCircle(Circle.createCircle(passTarget.getPos(), 50),
+					new Color(255, 0, 13, 109));
+			dc.setFill(true);
+			newTacticalField.getDrawableShapes().get(EAiShapesLayer.OFFENSIVE_ACCESSIBILITY).add(dc);
+			return false;
+		}
+		DrawableCircle dc = new DrawableCircle(Circle.createCircle(passTarget.getPos(), 50),
+				new Color(0, 255, 1, 109));
+		dc.setFill(true);
+		newTacticalField.getDrawableShapes().get(EAiShapesLayer.OFFENSIVE_ACCESSIBILITY).add(dc);
+		return true;
 	}
 	
 	
 	protected boolean isLowScoringChanceDirectGoalShootPossible(final TacticalField newTacticalField)
 	{
-		return newTacticalField.getBestGoalKickTarget() != null;
+		return newTacticalField.getBestGoalKickTarget().isPresent();
 	}
 	
 	
-	protected DynamicPosition getBestShootTarget(final TacticalField newTacticalField)
+	protected IVector2 calcShotOrigin(final BotID id, final BaseAiFrame baseAiFrame)
 	{
-		return newTacticalField.getBestGoalKickTarget()
-				.map(IRatedTarget::getTarget).orElse(new DynamicPosition(Geometry.getGoalTheir().getCenter()));
+		IVector2 origin = baseAiFrame.getWorldFrame().getBall().getPos();
+		if (!attackerCanNotKickOrCatchTheBall(baseAiFrame, id))
+		{
+			// if bot is catching ball, then set origin to its kicker pos
+			origin = baseAiFrame.getWorldFrame().getBot(id).getBotKickerPos();
+		}
+		return origin;
+	}
+	
+	
+	protected Optional<IRatedTarget> calcAndRateTarget(BaseAiFrame baseAiFrame, IVector2 origin)
+	{
+		final AngleRangeRater rater = AngleRangeRater.forGoal(Geometry.getGoalTheir());
+		rater.setObstacles(baseAiFrame.getWorldFrame().getFoeBots().values());
+		rater.setStraightBallConsultant(baseAiFrame.getWorldFrame().getBall().getStraightConsultant());
+		return rater.rate(origin);
+	}
+	
+	
+	protected Optional<IRatedTarget> calcAndRateTarget(BaseAiFrame baseAiFrame, IVector2 origin, double timeToKick)
+	{
+		final AngleRangeRater rater = AngleRangeRater.forGoal(Geometry.getGoalTheir());
+		rater.setObstacles(baseAiFrame.getWorldFrame().getFoeBots().values());
+		rater.setStraightBallConsultant(baseAiFrame.getWorldFrame().getBall().getStraightConsultant());
+		rater.setTimeToKick(timeToKick);
+		return rater.rate(origin);
 	}
 	
 	
@@ -100,6 +155,19 @@ public abstract class AOffensiveActionMove
 	}
 	
 	
+	protected OffensiveAction createProtectOffensiveAction(KickTarget protectTarget)
+	{
+		return new OffensiveAction(EOffensiveActionMove.PROTECT_MOVE, EOffensiveAction.PROTECT, protectTarget);
+	}
+	
+	
+	protected OffensiveAction createOffensiveAction(EOffensiveAction action, IFinisherMove finisher,
+			KickTarget kickTarget)
+	{
+		return new OffensiveAction(getMove(), getViabilityScore(), action, kickTarget, finisher);
+	}
+	
+	
 	/**
 	 * @param id
 	 * @param newTacticalField
@@ -112,12 +180,13 @@ public abstract class AOffensiveActionMove
 	}
 	
 	
-	protected boolean attackerCanNotKickOrCatchTheBall(BaseAiFrame aiFrame)
+	protected boolean attackerCanNotKickOrCatchTheBall(BaseAiFrame aiFrame, BotID id)
 	{
 		return aiFrame.getPrevFrame().getPlayStrategy()
 				.getActiveRoles(ERole.ATTACKER)
 				.stream()
 				.map(a -> (AttackerRole) a)
+				.filter(e -> e.getBotID().equals(id))
 				.noneMatch(AttackerRole::canKickOrCatchTheBall);
 	}
 	

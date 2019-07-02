@@ -10,8 +10,8 @@ import java.util.stream.Collectors;
 import edu.tigers.sumatra.bot.ERobotMode;
 import edu.tigers.sumatra.bot.RobotInfo;
 import edu.tigers.sumatra.botmanager.bots.ABot;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
 import edu.tigers.sumatra.botparams.BotParamsProvider;
 import edu.tigers.sumatra.botparams.EBotParamLabel;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -91,7 +91,7 @@ public class RobotInfoProvider implements IRobotInfoProvider
 	
 	private RobotInfo botToRobotInfo(final ABot bot)
 	{
-		assert lastWFTimestamp > 0;
+		assert lastWFTimestamp > 0 : "lastWFTimestamp: " + lastWFTimestamp;
 		return RobotInfo.newBuilder()
 				.withTimestamp(lastWFTimestamp)
 				.withBotId(bot.getBotId())

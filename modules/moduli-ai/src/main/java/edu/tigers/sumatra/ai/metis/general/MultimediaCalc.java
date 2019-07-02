@@ -3,231 +3,195 @@
  */
 package edu.tigers.sumatra.ai.metis.general;
 
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import com.github.g3force.configurable.Configurable;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.Referee.SSL_Referee.Command;
-import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
-import edu.tigers.sumatra.ai.metis.TacticalField;
-import edu.tigers.sumatra.ai.metis.offense.OffensiveMath;
-import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
-import edu.tigers.sumatra.ai.pandora.roles.ARole;
-import edu.tigers.sumatra.botmanager.commands.MultimediaControl;
-import edu.tigers.sumatra.botmanager.commands.other.ESong;
+import edu.tigers.sumatra.botmanager.botskills.data.ELedColor;
+import edu.tigers.sumatra.botmanager.botskills.data.ESong;
+import edu.tigers.sumatra.botmanager.botskills.data.MultimediaControl;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.data.GameState;
+import edu.tigers.sumatra.referee.gameevent.EGameEvent;
+import edu.tigers.sumatra.referee.gameevent.Goal;
+import edu.tigers.sumatra.time.TimestampTimer;
 
 
 /**
- * @author MarkG
+ * Control the multimedia features of our robots.
  */
 public class MultimediaCalc extends ACalculator
 {
-	private static final long TOGGLE_TIME = 550_000_000L;
-	
-	@Configurable(comment = "time in seconds", defValue = "3.0")
-	private static double cheeringStopTimer = 3.0;
-	
-	
-	private long toggleTimer = 0;
-	
-	private int timeoutLedStatus = 0;
-	private boolean toggler = false;
-	
-	private long cheeringTimer = 0;
-	
-	
+	private static final Logger log = LogManager.getLogger(MultimediaCalc.class);
+
+	private final Map<BotID, MultimediaControl> multimediaControls = new HashMap<>();
+	private final TimestampTimer timeoutTimer = new TimestampTimer(0.3);
+	private final TimestampTimer cheeringTimer = new TimestampTimer(3.0);
+	private BotID currentTimeoutBot = null;
+	private boolean startedCheering = false;
+
+
 	@Override
-	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+	public void doCalc()
 	{
-		if (toggleTimer == 0)
-		{
-			toggleTimer = baseAiFrame.getWorldFrame().getTimestamp();
-		}
-		Map<BotID, MultimediaControl> multimediaControls = new HashMap<>();
-		
-		GameState gameState = newTacticalField.getGameState();
-		
+		GameState gameState = getNewTacticalField().getGameState();
+		multimediaControls.clear();
+
 		if (gameState.getState() == EGameState.TIMEOUT)
 		{
-			setTimeoutLeds(newTacticalField, baseAiFrame, multimediaControls);
+			handleTimeout();
 		} else
 		{
-			setLedsByPlay(baseAiFrame, multimediaControls);
+			handleRegularPlays();
 		}
-		
-		playSongWhenInsane(baseAiFrame, multimediaControls);
-		
-		cheerWhenWeShootAGoal(multimediaControls);
-		newTacticalField.setMultimediaControl(multimediaControls);
+
+		playSongWhenInsane();
+
+		cheerWhenWeShootAGoal();
+		getNewTacticalField().setMultimediaControl(multimediaControls);
 	}
-	
-	
-	private void playSongWhenInsane(
-			final BaseAiFrame baseAiFrame,
-			final Map<BotID, MultimediaControl> multimediaControls)
+
+
+	private void playSongWhenInsane()
 	{
-		boolean insane = OffensiveMath.isKeeperInsane(getBall(), getAiFrame().getGamestate());
-		for (BotID key : baseAiFrame.getWorldFrame().tigerBotsAvailable.keySet())
+		if (getNewTacticalField().isInsaneKeeper())
 		{
-			final MultimediaControl control = multimediaControls.getOrDefault(key,
-					new MultimediaControl());
-			if (insane)
-			{
-				control.setSong(ESong.FINAL_COUNTDOWN);
-			} else if (control.getSong() == ESong.FINAL_COUNTDOWN)
-			{
-				control.setSong(ESong.NONE);
-			}
-			multimediaControls.put(key, control);
+			allAssignedBots().forEach(id -> getControl(id).setSong(ESong.FINAL_COUNTDOWN));
 		}
 	}
-	
-	
-	private void setLedsByPlay(final BaseAiFrame baseAiFrame, final Map<BotID, MultimediaControl> multimediaControls)
+
+
+	private MultimediaControl getControl(BotID botID)
 	{
-		List<APlay> plays = new ArrayList<>(baseAiFrame.getPrevFrame().getPlayStrategy().getActivePlays());
-		for (APlay play : plays)
-		{
-			for (ARole role : play.getRoles())
-			{
-				final MultimediaControl control = multimediaControls.getOrDefault(role.getBotID(),
-						new MultimediaControl());
-				setLedByPlay(play, control);
-				multimediaControls.put(role.getBotID(), control);
-			}
-		}
+		return multimediaControls.computeIfAbsent(botID, id -> new MultimediaControl());
 	}
-	
-	
-	private void setTimeoutLeds(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame,
-			final Map<BotID, MultimediaControl> multimediaControls)
+
+
+	private void handleRegularPlays()
 	{
-		List<ARole> roles = new ArrayList<>(baseAiFrame.getPrevFrame().getPlayStrategy().getActiveRoles().values());
-		roles.sort(Comparator.comparing(ARole::getBotID));
-		int i = 0;
-		for (ARole role : roles)
-		{
-			final MultimediaControl control = multimediaControls.getOrDefault(role.getBotID(),
-					new MultimediaControl());
-			
-			switch (newTacticalField.getGameState().getState())
-			{
-				case TIMEOUT:
-				case HALT:
-					handleTimeout(baseAiFrame, i++, control);
-					break;
-				default:
-					break;
-			}
-			
-			multimediaControls.put(role.getBotID(), control);
-		}
+		allActiveBots().forEach(id -> getControl(id).setLedColor(ELedColor.OFF));
+		botsByPlay(EPlay.OFFENSIVE).forEach(id -> getControl(id).setLedColor(ELedColor.SLIGHTLY_ORANGE_YELLOW));
+		botsByPlay(EPlay.SUPPORT).forEach(id -> getControl(id).setLedColor(ELedColor.WHITE));
+		botsByPlay(EPlay.DEFENSIVE).forEach(id -> getControl(id).setLedColor(ELedColor.LIGHT_BLUE));
+		botsByPlay(EPlay.KEEPER).forEach(id -> getControl(id).setLedColor(ELedColor.BLUE));
+		botsByPlay(EPlay.BALL_PLACEMENT).forEach(id -> getControl(id).setLedColor(ELedColor.PURPLE));
+		attacker().ifPresent(id -> getControl(id).setLedColor(ELedColor.RED));
+		botsByPlay(EPlay.KICKOFF).forEach(id -> getControl(id).setLedColor(ELedColor.RED));
+		crucialDefender().forEach(id -> getControl(id).setLedColor(ELedColor.GREEN));
 	}
-	
-	
-	private void setLedByPlay(final APlay play, final MultimediaControl control)
+
+
+	private Set<BotID> crucialDefender()
 	{
-		if (play.getType() == EPlay.OFFENSIVE)
-		{
-			control.setLeftGreen(false);
-			control.setLeftRed(true);
-			control.setRightGreen(false);
-			control.setRightRed(true);
-		} else if (play.getType() == EPlay.SUPPORT)
-		{
-			control.setLeftGreen(true);
-			control.setLeftRed(true);
-			control.setRightGreen(true);
-			control.setRightRed(true);
-		} else if (play.getType() == EPlay.DEFENSIVE)
-		{
-			control.setLeftGreen(true);
-			control.setLeftRed(false);
-			control.setRightGreen(true);
-			control.setRightRed(false);
-		} else
-		{
-			control.setLeftGreen(false);
-			control.setLeftRed(false);
-			control.setRightGreen(false);
-			control.setRightRed(false);
-		}
+		return getNewTacticalField().getCrucialDefender();
 	}
-	
-	
-	private void handleTimeout(final BaseAiFrame baseAiFrame, final int i, final MultimediaControl control)
+
+
+	private Optional<BotID> attacker()
 	{
-		if (timeoutLedStatus == i)
+		return getNewTacticalField().getOffensiveStrategy().getAttackerBot();
+	}
+
+
+	private Set<BotID> botsByPlay(final EPlay support)
+	{
+		return getNewTacticalField().getDesiredBotMap().getOrDefault(support, Collections.emptySet());
+	}
+
+
+	private void handleTimeout()
+	{
+		if (currentTimeoutBot == null)
 		{
-			if (!toggler)
+			currentTimeoutBot = BotID.createBotId(0, getAiFrame().getTeamColor());
+		}
+
+		timeoutTimer.update(getWFrame().getTimestamp());
+		if (timeoutTimer.isTimeUp(getWFrame().getTimestamp()))
+		{
+			timeoutTimer.reset();
+			currentTimeoutBot = nextBot();
+		}
+
+		for (BotID botID : allAssignedBots())
+		{
+			if (botID == currentTimeoutBot)
 			{
-				toggler = true;
-				control.setLeftGreen(false);
-				control.setLeftRed(false);
-				control.setRightGreen(false);
-				control.setRightRed(true);
+				getControl(botID).setLedColor(ELedColor.RED);
 			} else
 			{
-				toggler = false;
-				control.setLeftGreen(false);
-				control.setLeftRed(true);
-				control.setRightGreen(false);
-				control.setRightRed(false);
+				getControl(botID).setLedColor(ELedColor.SLIGHTLY_ORANGE_YELLOW);
+			}
+		}
+	}
+
+
+	private Set<BotID> allAssignedBots()
+	{
+		return getNewTacticalField().getDesiredBotMap().values().stream().flatMap(Collection::stream)
+				.collect(Collectors.toSet());
+	}
+
+
+	private Set<BotID> allActiveBots()
+	{
+		return getWFrame().getTigerBotsAvailable().keySet();
+	}
+
+
+	private BotID nextBot()
+	{
+		final Set<BotID> timeoutBots = allAssignedBots();
+		BotID id = currentTimeoutBot;
+		for (int i = 0; i < BotID.BOT_ID_MAX; i++)
+		{
+			final int number = (id.getNumber() + 1) % (BotID.BOT_ID_MAX + 1);
+			id = BotID.createBotId(number, getAiFrame().getTeamColor());
+			if (timeoutBots.contains(id))
+			{
+				return id;
+			}
+		}
+		return id;
+	}
+
+
+	private void cheerWhenWeShootAGoal()
+	{
+		final Optional<Goal> goalEvent = getAiFrame().getRefereeMsg().getGameEvents().stream()
+				.filter(e -> e.getType() == EGameEvent.GOAL)
+				.map(e -> (Goal) e)
+				.filter(goal -> goal.getTeam() == getAiFrame().getTeamColor())
+				.findFirst();
+		if (goalEvent.isPresent())
+		{
+			if (!startedCheering)
+			{
+				startedCheering = true;
+				log.debug("Starting cheering song");
+				cheeringTimer.start(getWFrame().getTimestamp());
 			}
 		} else
 		{
-			control.setLeftGreen(false);
-			control.setLeftRed(false);
-			control.setRightGreen(false);
-			control.setRightRed(false);
+			startedCheering = false;
 		}
-		if (((baseAiFrame.getWorldFrame().getTimestamp() - toggleTimer) > TOGGLE_TIME) && (!toggler))
+		if (cheeringTimer.isTimeUp(getWFrame().getTimestamp()))
 		{
-			timeoutLedStatus++;
-			if (timeoutLedStatus == baseAiFrame.getPrevFrame().getPlayStrategy().getActiveRoles().size())
-			{
-				timeoutLedStatus = 0;
-			}
-			toggleTimer = baseAiFrame.getWorldFrame().getTimestamp();
-		}
-	}
-	
-	
-	private void cheerWhenWeShootAGoal(final Map<BotID, MultimediaControl> multimediaControls)
-	{
-		if (getAiFrame().isNewRefereeMsg())
+			log.debug("Stop cheering song");
+			cheeringTimer.reset();
+		} else if (cheeringTimer.isRunning())
 		{
-			ETeamColor color = getWFrame().getTeamColor();
-			if ((color == ETeamColor.YELLOW && getAiFrame().getRefereeMsg().getCommand() == Command.GOAL_YELLOW) ||
-					(color == ETeamColor.BLUE && getAiFrame().getRefereeMsg().getCommand() == Command.GOAL_BLUE))
-			{
-				cheeringTimer = getWFrame().getTimestamp();
-				for (BotID key : getWFrame().tigerBotsAvailable.keySet())
-				{
-					multimediaControls.putIfAbsent(key, new MultimediaControl());
-					multimediaControls.get(key).setSong(ESong.CHEERING);
-				}
-			}
-		}
-		if ((((getWFrame().getTimestamp() - cheeringTimer) * 1e-9) > cheeringStopTimer)
-				&& (cheeringTimer != 0))
-		{
-			for (BotID key : getWFrame().tigerBotsAvailable.keySet())
-			{
-				multimediaControls.putIfAbsent(key, new MultimediaControl());
-				multimediaControls.get(key).setSong(ESong.NONE);
-			}
-			cheeringTimer = 0;
+			allActiveBots().forEach(id -> getControl(id).setSong(ESong.CHEERING));
 		}
 	}
 }

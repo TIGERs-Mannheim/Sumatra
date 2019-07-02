@@ -11,17 +11,15 @@
     <parent>
         <groupId>edu.tigers.sumatra</groupId>
         <artifactId>sumatra-parent</artifactId>
-        <version>6.0</version>
+        <version>2019-SNAPSHOT</version>
         <relativePath>../sumatra-parent/pom.xml</relativePath>
     </parent>
 
+    <properties>
+        <ssl.game.controller.version>v1.1.1</ssl.game.controller.version>
+    </properties>
 
     <dependencies>
-
-        <dependency>
-            <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>sumatra-model</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
@@ -34,7 +32,7 @@
         </dependency>
 
         <dependency>
-            <groupId>edu.tigers.moduli</groupId>
+            <groupId>com.github.TIGERs-Mannheim</groupId>
             <artifactId>moduli</artifactId>
         </dependency>
 
@@ -68,6 +66,52 @@
             <artifactId>moduli-geometry</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.java-websocket</groupId>
+            <artifactId>Java-WebSocket</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-configuration</groupId>
+            <artifactId>commons-configuration</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.g3force</groupId>
+            <artifactId>instanceables</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -78,4 +122,104 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>os-windows</id>
+            <activation>
+                <os>
+                    <family>Windows</family>
+                    <arch>amd64</arch>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.googlecode.maven-download-plugin</groupId>
+                        <artifactId>download-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>ssl-game-controller</id>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>wget</goal>
+                                </goals>
+                                <configuration>
+                                    <url>
+                                        https://github.com/RoboCup-SSL/ssl-game-controller/releases/download/${ssl.game.controller.version}/ssl-game-controller_${ssl.game.controller.version}_windows_amd64.exe
+                                    </url>
+                                    <outputDirectory>${project.build.directory}/ssl-game-controller</outputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>os-linux</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <arch>amd64</arch>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.googlecode.maven-download-plugin</groupId>
+                        <artifactId>download-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>ssl-game-controller</id>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>wget</goal>
+                                </goals>
+                                <configuration>
+                                    <url>
+                                        https://github.com/RoboCup-SSL/ssl-game-controller/releases/download/${ssl.game.controller.version}/ssl-game-controller_${ssl.game.controller.version}_linux_amd64
+                                    </url>
+                                    <outputDirectory>${project.build.directory}/ssl-game-controller</outputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>os-mac</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                    <arch>x86_64</arch>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.googlecode.maven-download-plugin</groupId>
+                        <artifactId>download-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>ssl-game-controller</id>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>wget</goal>
+                                </goals>
+                                <configuration>
+                                    <url>
+                                        https://github.com/RoboCup-SSL/ssl-game-controller/releases/download/${ssl.game.controller.version}/ssl-game-controller_${ssl.game.controller.version}_darwin_amd64
+                                    </url>
+                                    <outputDirectory>${project.build.directory}/ssl-game-controller</outputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

@@ -15,8 +15,6 @@ import com.github.g3force.configurable.Configurable;
  */
 public class RuleConstraints
 {
-	@Configurable(comment = "Bots per team in standard game", defValue = "8")
-	private static int botsPerTeam = 8;
 	@Configurable(comment = "Max allowed ball speed", defValue = "6.5")
 	private static double maxBallSpeed = 6.5;
 	@Configurable(comment = "Stop radius around ball", defValue = "500.0")
@@ -27,8 +25,8 @@ public class RuleConstraints
 	private static double stopSpeed = 1.5;
 	@Configurable(comment = "Distance between bots and penalty area in standard situations", defValue = "200.0")
 	private static double botToPenaltyAreaDistanceStandard = 200;
-	@Configurable(comment = "Ball placement accuracy tolerance of referee", defValue = "100.0")
-	private static double ballPlacementTolerance = 100;
+	@Configurable(comment = "Ball placement accuracy tolerance of referee", defValue = "150.0")
+	private static double ballPlacementTolerance = 150;
 	@Configurable(comment = "The max allowed robot height", defValue = "150.0")
 	private static double maxRobotHeight = 150;
 	
@@ -40,15 +38,6 @@ public class RuleConstraints
 	
 	private RuleConstraints()
 	{
-	}
-	
-	
-	/**
-	 * @return the allowed number of bots per team
-	 */
-	public static int getBotsPerTeam()
-	{
-		return botsPerTeam;
 	}
 	
 	

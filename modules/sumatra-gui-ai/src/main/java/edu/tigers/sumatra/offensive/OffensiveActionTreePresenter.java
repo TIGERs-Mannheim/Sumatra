@@ -6,6 +6,8 @@ package edu.tigers.sumatra.offensive;
 import java.awt.Component;
 import java.util.Map;
 
+import edu.tigers.sumatra.trees.EOffensiveSituation;
+import edu.tigers.sumatra.trees.OffensiveActionTree;
 import org.apache.log4j.Logger;
 
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
@@ -14,8 +16,6 @@ import edu.tigers.sumatra.ai.AAgent;
 import edu.tigers.sumatra.ai.Agent;
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
 import edu.tigers.sumatra.ai.VisualizationFrame;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionTree;
-import edu.tigers.sumatra.ai.metis.offense.action.situation.EOffensiveSituation;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.offensive.view.OffensiveActionTreePanel;
 import edu.tigers.sumatra.views.ASumatraViewPresenter;
@@ -23,7 +23,7 @@ import edu.tigers.sumatra.views.ISumatraView;
 
 
 /**
- * OffensiveActionTree Presenter
+ * edu.tigers.sumatra.trees.OffensiveActionTree Presenter
  *
  * @author Marius Messerschmidt <marius.messserschmidt@dlr.de>
  */

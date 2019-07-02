@@ -18,6 +18,7 @@ import edu.tigers.sumatra.ai.metis.defense.DefenseMath;
 import edu.tigers.sumatra.ai.metis.general.ChipKickReasonableDecider;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveMath;
 import edu.tigers.sumatra.ai.metis.targetrater.AngleRangeRater;
+import edu.tigers.sumatra.ai.metis.targetrater.IPassRater;
 import edu.tigers.sumatra.ai.metis.targetrater.IRatedTarget;
 import edu.tigers.sumatra.ai.metis.targetrater.PassInterceptionRater;
 import edu.tigers.sumatra.ai.pandora.roles.support.behaviors.PassReceiver;
@@ -94,23 +95,26 @@ public class SupportPositionRatingCalc extends ACalculator
 	private double passScore(final IVector2 passOrigin, final IVector2 passTarget)
 	{
 		double passDistance = getWFrame().getBall().getPos().distanceTo(passTarget);
+		final double maxChipSpeed = getWFrame().getBot(passPlayerID).getRobotInfo().getBotParams().getKickerSpecs()
+				.getMaxAbsoluteChipVelocity();
 		IBotIDMap<ITrackedBot> obstacles = new BotIDMap<>(getWFrame().getBots());
 		obstacles.remove(passPlayerID);
 		ChipKickReasonableDecider chipDecider = new ChipKickReasonableDecider(
 				getWFrame().getBall().getPos(),
 				passTarget,
 				obstacles.values(),
-				OffensiveMath.passSpeedChip(passDistance));
+				OffensiveMath.passSpeedChip(passDistance, maxChipSpeed));
 		
 		List<ITrackedBot> consideredBots = getWFrame().getFoeBots().values().stream()
 				.filter(b -> b.getBotId() != getAiFrame().getKeeperFoeId())
 				.collect(Collectors.toList());
 		
+		IPassRater passRater = new PassInterceptionRater(consideredBots);
 		if (chipDecider.isChipKickReasonable())
 		{
-			return PassInterceptionRater.rateChippedPass(passOrigin, passTarget, consideredBots);
+			return passRater.rateChippedPass(passOrigin, passTarget, maxChipSpeed);
 		}
-		return PassInterceptionRater.rateStraightPass(passOrigin, passTarget, consideredBots);
+		return passRater.rateStraightPass(passOrigin, passTarget);
 	}
 	
 	

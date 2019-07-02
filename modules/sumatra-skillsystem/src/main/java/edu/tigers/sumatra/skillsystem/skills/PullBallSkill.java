@@ -7,7 +7,7 @@ package edu.tigers.sumatra.skillsystem.skills;
 import com.github.g3force.configurable.Configurable;
 
 import edu.tigers.sumatra.bot.params.IBotMovementLimits;
-import edu.tigers.sumatra.botmanager.commands.botskills.data.KickerDribblerCommands;
+import edu.tigers.sumatra.botmanager.botskills.data.KickerDribblerCommands;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -40,16 +40,19 @@ public class PullBallSkill extends AMoveSkill
 	private static double dribblerSpeed = 10000;
 	@Configurable(comment = "Target detection precision", defValue = "5.0")
 	private static double botPositioningTolerance = 5;
-	
+	@Configurable(comment = "Target detection precision", defValue = "0.3")
+	private static double ballPlacedWaitTime = 0.3;
+
 	private final IVector2 target;
 	private final BallReleaseState ballReleaseState = new BallReleaseState();
 	private final MoveToBallState moveToBallState = new MoveToBallState();
-	
+	private final TimestampTimer ballPlacedTimer = new TimestampTimer(ballPlacedWaitTime);
+
 	private double newDribblerSpeed = 0;
 	private double targetOrientation;
 	private double chillVel = defaultChillVel;
-	
-	
+
+
 	/**
 	 * @param target new ball position
 	 */
@@ -57,46 +60,54 @@ public class PullBallSkill extends AMoveSkill
 	{
 		super(ESkill.PULL_BALL);
 		this.target = target;
-		
+
 		final BallPlacementState ballPlacementState = new BallPlacementState();
 		final GetBallContactState ballContactState = new GetBallContactState();
-		
+
 		setInitialState(moveToBallState);
-		
+
 		addTransition(EEvent.MOVE_TO_BALL, moveToBallState);
 		addTransition(EEvent.GET_BALL_CONTACT, ballContactState);
 		addTransition(EEvent.PLACE_BALL, ballPlacementState);
 		addTransition(EEvent.BALL_PLACED, ballReleaseState);
 	}
-	
-	
+
+
 	public void setChillVel(final double chillVel)
 	{
 		this.chillVel = chillVel;
 	}
-	
-	
+
+
 	private boolean isBallPlaced(final double offset)
 	{
-		return getBall().getPos().distanceTo(target) < placementTolerance + offset;
+		final boolean placed = getBall().getPos().distanceTo(target) < placementTolerance + offset;
+		if (placed)
+		{
+			ballPlacedTimer.update(getWorldFrame().getTimestamp());
+		} else
+		{
+			ballPlacedTimer.reset();
+		}
+		return ballPlacedTimer.isTimeUp(getWorldFrame().getTimestamp());
 	}
-	
-	
+
+
 	public boolean hasReleasedBall()
 	{
 		return getCurrentState() == moveToBallState
 				|| (getCurrentState() == ballReleaseState
 						&& ballReleaseState.released);
 	}
-	
-	
+
+
 	@Override
 	protected void updateKickerDribbler(final KickerDribblerCommands kickerDribblerOutput)
 	{
 		kickerDribblerOutput.setDribblerSpeed(newDribblerSpeed);
 	}
-	
-	
+
+
 	private enum EEvent implements IEvent
 	{
 		MOVE_TO_BALL,
@@ -104,31 +115,31 @@ public class PullBallSkill extends AMoveSkill
 		BALL_PLACED,
 		PLACE_BALL
 	}
-	
+
 	private class MoveToBallState extends MoveToState
 	{
 		protected MoveToBallState()
 		{
 			super(PullBallSkill.this);
 		}
-		
-		
+
+
 		@Override
 		public void doEntryActions()
 		{
 			super.doEntryActions();
-			
+
 			getMoveCon().setBotsObstacle(true);
 			getMoveCon().setDestinationOutsideFieldAllowed(true);
 			getMoveCon().setPenaltyAreaAllowedOur(true);
 			getMoveCon().setPenaltyAreaAllowedTheir(true);
 			getMoveCon().setGoalPostObstacle(true);
 			getMoveCon().setBallObstacle(false);
-			
+
 			newDribblerSpeed = 0;
 		}
-		
-		
+
+
 		@Override
 		public void doUpdate()
 		{
@@ -156,7 +167,7 @@ public class PullBallSkill extends AMoveSkill
 			}
 		}
 	}
-	
+
 	private class GetBallContactState extends AState
 	{
 		private IVector2 lastBallPos;
@@ -168,14 +179,14 @@ public class PullBallSkill extends AMoveSkill
 				.withLimit(50.0)
 				.withChargeRate(30.0)
 				.build();
-		
-		
+
+
 		private double getTargetOrientation(final IVector2 dest)
 		{
 			return getBall().getPos().subtractNew(dest).getAngle(0);
 		}
-		
-		
+
+
 		@Override
 		public void doEntryActions()
 		{
@@ -187,8 +198,8 @@ public class PullBallSkill extends AMoveSkill
 			newDribblerSpeed = dribblerSpeed;
 			chargingDistanceToBall.reset();
 		}
-		
-		
+
+
 		@Override
 		public void doUpdate()
 		{
@@ -196,7 +207,7 @@ public class PullBallSkill extends AMoveSkill
 			{
 				getMoveCon().getMoveConstraints().setAccMax(chillAcc);
 			}
-			
+
 			chargingDistanceToBall.update(getWorldFrame().getTimestamp());
 			double dist = chargingDistanceToBall.getValue();
 			IVector2 dest = LineMath.stepAlongLine(lastBallPos, getPos(), getBot().getCenter2DribblerDist() - dist);
@@ -221,32 +232,32 @@ public class PullBallSkill extends AMoveSkill
 			}
 		}
 	}
-	
+
 	private class BallPlacementState extends AState
 	{
 		private final TimestampTimer timeoutTimer = new TimestampTimer(1.5);
 		private IVector2 dest;
 		private double nearBallTol = Geometry.getBotRadius() + Geometry.getBallRadius() + botPositioningTolerance;
-		
-		
+
+
 		@Override
 		public void doEntryActions()
 		{
 			getMoveCon().getMoveConstraints().setVelMax(chillVel);
-			
+
 			dest = calcDest();
 			newDribblerSpeed = dribblerSpeed;
 			timeoutTimer.reset();
 		}
-		
-		
+
+
 		private IVector2 calcDest()
 		{
 			return LineMath.stepAlongLine(target, getBall().getPos(),
 					-(getTBot().getCenter2DribblerDist() + Geometry.getBallRadius() + 5));
 		}
-		
-		
+
+
 		@Override
 		public void doUpdate()
 		{
@@ -254,7 +265,7 @@ public class PullBallSkill extends AMoveSkill
 			{
 				getMoveCon().getMoveConstraints().setAccMax(chillAcc);
 			}
-			
+
 			timeoutTimer.update(getWorldFrame().getTimestamp());
 			setTargetPose(dest, targetOrientation);
 			if (getBall().getVel().getLength2() < 0.1)
@@ -272,14 +283,14 @@ public class PullBallSkill extends AMoveSkill
 				timeoutTimer.reset();
 			}
 		}
-		
-		
+
+
 		private boolean isNearBall()
 		{
 			return getBall().getPos().distanceTo(getPos()) < nearBallTol;
 		}
-		
-		
+
+
 		@Override
 		public void doExitActions()
 		{
@@ -288,13 +299,13 @@ public class PullBallSkill extends AMoveSkill
 			getMoveCon().getMoveConstraints().setAccMax(moveLimits.getAccMax());
 		}
 	}
-	
+
 	private class BallReleaseState extends AState
 	{
 		private final TimestampTimer waitTimer = new TimestampTimer(waitTimeBeforeRelease);
 		private boolean released = false;
-		
-		
+
+
 		@Override
 		public void doEntryActions()
 		{
@@ -302,8 +313,8 @@ public class PullBallSkill extends AMoveSkill
 			newDribblerSpeed = 0;
 			released = false;
 		}
-		
-		
+
+
 		@Override
 		public void doUpdate()
 		{
@@ -321,8 +332,8 @@ public class PullBallSkill extends AMoveSkill
 				triggerEvent(EEvent.MOVE_TO_BALL);
 			}
 		}
-		
-		
+
+
 		@Override
 		public void doExitActions()
 		{

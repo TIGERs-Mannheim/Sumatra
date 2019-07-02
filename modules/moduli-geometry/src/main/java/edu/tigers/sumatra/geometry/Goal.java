@@ -4,8 +4,7 @@
 
 package edu.tigers.sumatra.geometry;
 
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.v2.ILine;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
@@ -29,6 +28,7 @@ public class Goal
 	private final Vector2f leftPost;
 	private final Vector2f rightPost;
 	private final ILine line;
+	private final ILineSegment goalLine;
 	private final ILineSegment lineSegment;
 	private final IRectangle rectangle;
 	
@@ -47,7 +47,9 @@ public class Goal
 		
 		leftPost = Vector2f.fromXY(center.x(), center.y() + (width / 2.0));
 		rightPost = Vector2f.fromXY(center.x(), center.y() - (width / 2.0));
-		line = Line.fromPoints(leftPost, rightPost);
+		line = Lines.lineFromPoints(leftPost, rightPost);
+		goalLine = Lines.segmentFromPoints(Vector2.fromXY(center.x(), -Geometry.getFieldWidth() / 2.0),
+				Vector2.fromXY(center.x(), Geometry.getFieldWidth() / 2.0));
 		lineSegment = Lines.segmentFromPoints(leftPost, rightPost);
 		rectangle = Rectangle.fromPoints(leftPost,
 				rightPost.addNew(Vector2.fromX(Math.signum(center.x()) * depth)));
@@ -107,7 +109,7 @@ public class Goal
 	
 	
 	/**
-	 * @return the goal line from left to right post
+	 * @return the unbound goal line
 	 */
 	public ILine getLine()
 	{
@@ -116,7 +118,16 @@ public class Goal
 	
 	
 	/**
-	 * @return the goal line from left to right post
+	 * @return the goal line segment from left to right field corner
+	 */
+	public ILineSegment getGoalLine()
+	{
+		return goalLine;
+	}
+	
+	
+	/**
+	 * @return the line segment from left to right post
 	 */
 	public ILineSegment getLineSegment()
 	{

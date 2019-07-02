@@ -1,0 +1,21 @@
+syntax = "proto3";
+package edu.tigers.sumatra.sim.net;
+
+import "SimState.proto";
+import "SimCommon.proto";
+import "SimReferee.proto";
+
+message SimRequest {
+    int64 timestamp = 1;
+    int64 frameId = 2;
+    repeated SimBotState botState = 3;
+    SimBallState ballState = 4;
+    SimKickEvent lastKickEvent = 5;
+    SimReferee refereeMessage = 6;
+}
+
+message SimKickEvent {
+    Vector2 pos = 1;
+    BotId kickingbot = 2;
+    int64 timestamp = 3;
+}

@@ -4,15 +4,17 @@
 package edu.tigers.sumatra.view.referee;
 
 import java.awt.BorderLayout;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.swing.JMenu;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 
+import edu.tigers.sumatra.components.BetterScrollPane;
 import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.util.MigLayoutResizeListener;
 import edu.tigers.sumatra.views.ISumatraView;
 import net.miginfocom.swing.MigLayout;
 
@@ -42,6 +44,7 @@ public class RefereePanel extends JPanel implements ISumatraView
 		
 		JPanel componentPanel = new JPanel();
 		componentPanel.setLayout(new MigLayout("wrap 2", "[fill]10[fill]", ""));
+		new MigLayoutResizeListener(this, componentPanel, 2);
 		
 		showRefereeMsgPanel = new ShowRefereeMsgPanel();
 		commonCommandsPanel = new CommonCommandsPanel();
@@ -55,8 +58,10 @@ public class RefereePanel extends JPanel implements ISumatraView
 		componentPanel.add(teamsPanel.get(ETeamColor.YELLOW));
 		componentPanel.add(teamsPanel.get(ETeamColor.BLUE));
 		
-		JScrollPane scrollPane = new JScrollPane(componentPanel);
+		BetterScrollPane scrollPane = new BetterScrollPane(componentPanel);
 		add(scrollPane, BorderLayout.CENTER);
+
+		setEnable(false);
 	}
 	
 	
@@ -74,6 +79,7 @@ public class RefereePanel extends JPanel implements ISumatraView
 	 */
 	public void setEnable(final boolean enable)
 	{
+		showRefereeMsgPanel.setEnabled(enable);
 		commonCommandsPanel.setEnable(enable);
 		changeStatePanel.setEnable(enable);
 		teamsPanel.values().forEach(t -> t.setEnable(enable));
@@ -83,7 +89,7 @@ public class RefereePanel extends JPanel implements ISumatraView
 	@Override
 	public List<JMenu> getCustomMenus()
 	{
-		return null;
+		return Collections.emptyList();
 	}
 	
 	

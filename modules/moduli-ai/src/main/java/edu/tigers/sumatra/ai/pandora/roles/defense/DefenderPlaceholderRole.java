@@ -6,7 +6,6 @@ package edu.tigers.sumatra.ai.pandora.roles.defense;
 
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
 import edu.tigers.sumatra.statemachine.AState;
@@ -43,12 +42,6 @@ public class DefenderPlaceholderRole extends ADefenseRole
 		this.target = target;
 	}
 	
-	
-	@Override
-	public ILineSegment getProtectionLine(final ILineSegment threatLine)
-	{
-		return threatLine;
-	}
 	
 	private class MoveState extends AState
 	{

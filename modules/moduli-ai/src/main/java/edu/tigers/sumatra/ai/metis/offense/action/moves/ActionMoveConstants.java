@@ -2,9 +2,7 @@
  * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
-package edu.tigers.sumatra.ai.metis.offense.action.moves;
-
-import com.github.g3force.configurable.ConfigRegistration;
+package edu.tigers.sumatra.ai.metis.offense.action.moves;import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 
 import edu.tigers.sumatra.model.SumatraModel;
@@ -13,7 +11,7 @@ import edu.tigers.sumatra.model.SumatraModel;
 /**
  * @author MarkG <Mark.Geiger@dlr.de>
  *         Constants for Offensive ActionMove viabilities. This values can be used to strongly direct the behaviour of
- *         the OffensiveRole. A lower value will result in a lower likelihood for the given OffensiveAction to be
+ *         the OffensiveRole. A lower value will result in a lower likelihood for the given edu.tigers.sumatra.ai.metis.offense.action.moves.OffensiveAction to be
  *         executed.
  */
 public class ActionMoveConstants
@@ -28,8 +26,8 @@ public class ActionMoveConstants
 	@Configurable(defValue = "1.0")
 	private static double viabilityMultiplierDirectKick = 1.0;
 	
-	@Configurable(defValue = "0.3")
-	private static double viabilityMultiplierKickInsBlaue = 0.3;
+	@Configurable(defValue = "0.1")
+	private static double viabilityMultiplierKickInsBlaue = 0.1;
 	
 	@Configurable(defValue = "1.0")
 	private static double viabilityMultiplierLowChanceDirectKick = 1.0;

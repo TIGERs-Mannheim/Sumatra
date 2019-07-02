@@ -4,6 +4,36 @@
 
 package edu.tigers.sumatra.persistence;
 
+import com.google.common.collect.Sets;
+import com.joey.utils.IObjectProfileNode;
+import com.joey.utils.ObjectProfileFilters;
+import com.joey.utils.ObjectProfileVisitors;
+import com.joey.utils.ObjectProfiler;
+import edu.tigers.autoreferee.EAutoRefShapesLayer;
+import edu.tigers.sumatra.ai.BerkeleyAiFrame;
+import edu.tigers.sumatra.ai.VisualizationFrame;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.offense.action.situation.OffensiveActionTreePath;
+import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveAnalysedFrame;
+import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
+import edu.tigers.sumatra.ai.metis.statistics.MatchStats;
+import edu.tigers.sumatra.drawable.IShapeLayer;
+import edu.tigers.sumatra.drawable.ShapeMap;
+import edu.tigers.sumatra.export.CSVExporter;
+import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.loganalysis.ELogAnalysisShapesLayer;
+import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.persistence.log.BerkeleyLogEvent;
+import edu.tigers.sumatra.sim.SimKickEvent;
+import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
+import edu.tigers.sumatra.trees.OffensiveActionTree;
+import edu.tigers.sumatra.vision.data.EVisionFilterShapesLayer;
+import edu.tigers.sumatra.wp.BerkeleyShapeMapFrame;
+import edu.tigers.sumatra.wp.data.BerkeleyCamDetectionFrame;
+import edu.tigers.sumatra.wp.vis.EWpShapesLayer;
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Level;
+
 import java.io.PrintWriter;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -13,31 +43,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Level;
-
-import com.google.common.collect.Sets;
-import com.vladium.utils.IObjectProfileNode;
-import com.vladium.utils.ObjectProfileFilters;
-import com.vladium.utils.ObjectProfileVisitors;
-import com.vladium.utils.ObjectProfiler;
-
-import edu.tigers.autoreferee.EAutoRefShapesLayer;
-import edu.tigers.sumatra.ai.BerkeleyAiFrame;
-import edu.tigers.sumatra.ai.VisualizationFrame;
-import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
-import edu.tigers.sumatra.drawable.IShapeLayer;
-import edu.tigers.sumatra.drawable.ShapeMap;
-import edu.tigers.sumatra.export.CSVExporter;
-import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.persistence.log.BerkeleyLogEvent;
-import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
-import edu.tigers.sumatra.vision.data.EVisionFilterShapesLayer;
-import edu.tigers.sumatra.wp.BerkeleyShapeMapFrame;
-import edu.tigers.sumatra.wp.data.BerkeleyCamDetectionFrame;
-import edu.tigers.sumatra.wp.vis.EWpShapesLayer;
 
 
 /**
@@ -137,14 +142,24 @@ public class BerkeleySizeAnalyzer
 	
 	private void frameSizeByClass()
 	{
-		Set<Class<?>> frameClasses = Sets.newHashSet(BerkeleyAiFrame.class, BerkeleyCamDetectionFrame.class,
-				BerkeleyShapeMapFrame.class, BerkeleyLogEvent.class);
+		Set<Class<?>> frameClasses = Sets.newHashSet(
+				BerkeleyAiFrame.class,
+				BerkeleyCamDetectionFrame.class,
+				BerkeleyShapeMapFrame.class,
+				BerkeleyLogEvent.class,
+				VisualizationFrame.class,
+				MatchStats.class,
+				OffensiveStrategy.class,
+				OffensiveAnalysedFrame.class,
+				OffensiveActionTreePath.class,
+				OffensiveActionTree.class,
+				SimKickEvent.class);
 		for (Class<?> clazz : frameClasses)
 		{
 			Summer summer = new Summer();
 			processAllFrames(db, clazz, f -> processObject(f, summer));
-			System.out.printf("%30s: %10d %10d %10d\n", clazz.getName(), summer.sum, summer.count,
-					summer.sum / summer.count);
+			System.out.printf("\n%30s: %10d %10d %10d\n", clazz.getName(), summer.sum, summer.count,
+					summer.count > 0 ? summer.sum / summer.count : 0);
 		}
 	}
 	
@@ -206,6 +221,7 @@ public class BerkeleySizeAnalyzer
 		all.addAll(Arrays.asList(EWpShapesLayer.values()));
 		all.addAll(Arrays.asList(EVisionFilterShapesLayer.values()));
 		all.addAll(Arrays.asList(EAutoRefShapesLayer.values()));
+		all.addAll(Arrays.asList(ELogAnalysisShapesLayer.values()));
 		return all;
 	}
 	
@@ -264,8 +280,11 @@ public class BerkeleySizeAnalyzer
 	
 	private void processObject(Object object, Summer summer)
 	{
-		summer.sum += getSizeInBytes(object);
-		summer.count++;
+		if (object != null)
+		{
+			summer.sum += getSizeInBytes(object);
+			summer.count++;
+		}
 	}
 	
 	

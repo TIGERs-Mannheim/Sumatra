@@ -260,4 +260,10 @@ final class Line extends AUnboundedLine implements ILine
 		return Optional.empty();
 	}
 	
+	
+	@Override
+	public String toString()
+	{
+		return "Line(" + supportVector() + " + s * " + directionVector() + ")";
+	}
 }

@@ -3,7 +3,8 @@
  */
 package edu.tigers.sumatra.util;
 
-import java.awt.*;
+import java.awt.KeyEventDispatcher;
+import java.awt.KeyboardFocusManager;
 import java.awt.event.KeyEvent;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -110,6 +111,8 @@ public final class GlobalShortcuts
 		REFBOX_DIRECT_YELLOW(KeyEvent.VK_NUMPAD7, "NUMPAD7", EKeyModifier.CTRL),
 		/** */
 		REFBOX_DIRECT_BLUE(KeyEvent.VK_NUMPAD9, "NUMPAD9", EKeyModifier.CTRL),
+		
+		AUTOREF_TOGGLE(KeyEvent.VK_F12, "F12"),
 		
 		;
 		

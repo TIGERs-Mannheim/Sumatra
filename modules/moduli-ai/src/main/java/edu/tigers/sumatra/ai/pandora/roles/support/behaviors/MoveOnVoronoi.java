@@ -111,7 +111,12 @@ public class MoveOnVoronoi extends ASupportBehavior
 				.findFirst();
 		
 	}
-	
+
+	@Override
+	public boolean getIsActive()
+	{
+		return MoveOnVoronoi.isActive();
+	}
 	
 	public static boolean isActive()
 	{

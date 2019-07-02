@@ -9,9 +9,9 @@ import java.awt.Color;
 import com.github.g3force.configurable.Configurable;
 
 import edu.tigers.sumatra.bot.State;
-import edu.tigers.sumatra.botmanager.commands.botskills.data.KickerDribblerCommands;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
+import edu.tigers.sumatra.botmanager.botskills.data.KickerDribblerCommands;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.DrawablePoint;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -36,20 +36,20 @@ import edu.tigers.sumatra.wp.data.DynamicPosition;
  */
 public class SingleTouchKickSkill extends ATouchKickSkill
 {
-	@Configurable(comment = "Speed in chill mode")
-	private static double chillVel = 1;
+	@Configurable(comment = "Speed in chill mode", defValue = "2.0")
+	private static double chillVel = 2.0;
 	
-	@Configurable(comment = "Acceleration in chill model")
-	private static double chillAcc = 2;
+	@Configurable(comment = "Acceleration in chill model", defValue = "2.0")
+	private static double chillAcc = 2.0;
 	
-	@Configurable(comment = "The distance between kicker and ball to keep before kicking the ball", defValue = "15")
+	@Configurable(comment = "The distance between kicker and ball to keep before kicking the ball", defValue = "15.0")
 	private static double minDistBeforeKick = 15;
 	
-	@Configurable
+	@Configurable(defValue = "120.0")
 	private static double maxAroundBallMargin = 120;
 	
 	@Configurable(defValue = "0.1", comment = "The approximate tolerance when the angle is considered to be reached")
-	private static double roughAngleTolerance = 0.1;
+	private static double roughAngleTolerance = 0.3;
 	
 	@Configurable(defValue = "1.0", comment = "The max time to wait until angle is considered reached while within tolerance")
 	private static double maxTimeTargetAngleReached = 1.0;
@@ -100,12 +100,13 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 	{
 		super.updateKickerDribbler(kickerDribblerOutput);
 		
+		double kickSpeed = KickParams.limitKickSpeed(kickParams.getKickSpeed());
 		if (!isReadyAndFocussed())
 		{
-			kickerDribblerOutput.setKick(kickParams.getKickSpeed(), kickParams.getDevice(), EKickerMode.DISARM);
+			kickerDribblerOutput.setKick(kickSpeed, kickParams.getDevice(), EKickerMode.DISARM);
 		} else
 		{
-			kickerDribblerOutput.setKick(kickParams.getKickSpeed(), kickParams.getDevice(), EKickerMode.ARM);
+			kickerDribblerOutput.setKick(kickSpeed, kickParams.getDevice(), EKickerMode.ARM);
 		}
 	}
 	
@@ -118,7 +119,7 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 	
 	private boolean isReadyAndFocussed()
 	{
-		double targetOrientation = target.subtractNew(getBallPos()).getAngle(getAngle());
+		double targetOrientation = target.getPos().subtractNew(getBallPos()).getAngle(getAngle());
 		return isReadyForKick()
 				&& isOrientationReached(targetOrientation);
 	}
@@ -198,7 +199,7 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 					.getAroundBallDest();
 			dist2Ball = getMinMargin(dest);
 			
-			positionValidator.update(getWorldFrame(), getMoveCon(), getTBot());
+			positionValidator.update(getWorldFrame(), getMoveCon());
 			dest = positionValidator.movePosOutOfPenAreaWrtBall(dest);
 			
 			getMoveCon().updateDestination(dest);
@@ -207,7 +208,7 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 			super.doUpdate();
 			
 			getShapes().get(ESkillShapesLayer.KICK_SKILL)
-					.add(new DrawableLine(Line.fromPoints(getBall().getPos(), target),
+					.add(new DrawableLine(Line.fromPoints(getBall().getPos(), target.getPos()),
 							getBotId().getTeamColor().getColor()));
 			getShapes().get(ESkillShapesLayer.KICK_SKILL_DEBUG).add(new DrawableLine(
 					Line.fromDirection(dest, Vector2.fromAngle(targetOrientation).scaleTo(5000)), Color.RED));
@@ -216,7 +217,7 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 		
 		protected double getTargetOrientation()
 		{
-			double finalTargetOrientation = target.subtractNew(getBallPos()).getAngle(0);
+			double finalTargetOrientation = target.getPos().subtractNew(getBallPos()).getAngle(0);
 			
 			double currentDirection = getBallPos().subtractNew(getPos()).getAngle(0);
 			double diff = AngleMath.difference(finalTargetOrientation, currentDirection);
@@ -241,7 +242,7 @@ public class SingleTouchKickSkill extends ATouchKickSkill
 		
 		private IVector2 getDestination(double margin)
 		{
-			return LineMath.stepAlongLine(getBallPos(), target, -getDistance(margin));
+			return LineMath.stepAlongLine(getBallPos(), target.getPos(), -getDistance(margin));
 		}
 		
 		

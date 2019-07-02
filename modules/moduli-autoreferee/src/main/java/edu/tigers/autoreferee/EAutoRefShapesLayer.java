@@ -13,16 +13,12 @@ import edu.tigers.sumatra.drawable.IShapeLayer;
 @SuppressWarnings("squid:S1192") // duplicated strings not avoidable here
 public enum EAutoRefShapesLayer implements IShapeLayer
 {
-	/**  */
 	ENGINE("Engine", "AutoReferee", true),
-	/**  */
 	LAST_BALL_CONTACT("Ball Contact", "AutoReferee", true),
-	/**  */
 	LAST_BALL_CONTACT_EXT("Ball Contact ext", "AutoReferee", false),
-	/**  */
 	BALL_LEFT_FIELD("Ball Left Field", "AutoReferee", true),
-	/** */
-	ALLOWED_DISTANCES("Allowed Distances", "AutoReferee", true);
+	ALLOWED_DISTANCES("Allowed Distances", "AutoReferee", true),
+	PUSHING("Pushing Detector", "AutoReferee", true);
 	
 	private final String id;
 	private final String name;

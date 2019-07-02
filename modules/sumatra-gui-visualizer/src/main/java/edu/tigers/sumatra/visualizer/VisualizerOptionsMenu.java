@@ -62,6 +62,7 @@ public class VisualizerOptionsMenu extends JMenuBar
 		pActions.add(btnReset);
 		
 		addMenuEntry(EVisualizerOptions.FANCY);
+		addMenuEntry(EVisualizerOptions.DARK);
 		
 		JMenu pShortcuts = new JMenu("Shortcuts");
 		add(pShortcuts);

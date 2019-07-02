@@ -15,6 +15,7 @@ import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.tube.ITube;
 import edu.tigers.sumatra.math.tube.Tube;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -23,14 +24,11 @@ import edu.tigers.sumatra.math.vector.Vector2f;
 
 /**
  * A Tube with a color
- *
- * @author Ulrike Leipscher <ulrike.leipscher@dlr.de>.
  */
-@Persistent(version = 1)
+@Persistent(version = 2)
 public class DrawableTube extends ADrawableWithStroke
 {
-	
-	private Tube tube;
+	private ITube tube;
 	private boolean fill;
 	
 	
@@ -42,6 +40,7 @@ public class DrawableTube extends ADrawableWithStroke
 	{
 		tube = Tube.create(Vector2f.ZERO_VECTOR, Vector2f.ZERO_VECTOR, 1);
 	}
+	
 	
 	/**
 	 * @param tube
@@ -56,7 +55,7 @@ public class DrawableTube extends ADrawableWithStroke
 	 * @param tube
 	 * @param color
 	 */
-	public DrawableTube(final Tube tube, final Color color)
+	public DrawableTube(final ITube tube, final Color color)
 	{
 		this.tube = tube;
 		setColor(color);
@@ -120,5 +119,4 @@ public class DrawableTube extends ADrawableWithStroke
 	{
 		this.fill = fill;
 	}
-	
 }

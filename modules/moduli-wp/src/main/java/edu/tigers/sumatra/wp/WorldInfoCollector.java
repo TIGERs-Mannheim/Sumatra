@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -67,14 +68,12 @@ import edu.tigers.sumatra.wp.util.IRobotInfoProvider;
 
 /**
  * This module collects some AI-independent world information, like filtered camera data and vision data
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class WorldInfoCollector extends AWorldPredictor
 		implements IRefereeObserver, IVisionFilterObserver, ICamFrameObserver
 {
 	private static final Logger log = Logger.getLogger(WorldInfoCollector.class.getName());
-	
+
 	@Configurable(comment = "Use robot feedback for position and velocity.", defValue = "true")
 	private static boolean preferRobotFeedback = true;
 	@Configurable(comment = "Prefer the state of the current trajectory that the bot executes", defValue = "true")
@@ -83,7 +82,7 @@ public class WorldInfoCollector extends AWorldPredictor
 	private static double maxPositionDiff = 100.0;
 	@Configurable(comment = "Add a faked ball. Set pos,vel,acc in code.", defValue = "false")
 	private static boolean fakeBall = false;
-	
+
 	private final BerkeleyAutoPauseHook berkeleyAutoPauseHook = new BerkeleyAutoPauseHook();
 	private GameStateCalculator gameStateCalculator;
 	private WorldFrameVisualization worldFrameVisualization;
@@ -92,18 +91,19 @@ public class WorldInfoCollector extends AWorldPredictor
 	private BotStateFromTrajectoryCalculator botStateFromTrajectoryCalculator;
 	private AVisionFilter visionFilter;
 	private IRobotInfoProvider robotInfoProvider = new DefaultRobotInfoProvider();
-	
+	private AReferee referee;
+
 	private long lastWFTimestamp;
 	private RefereeMsg latestRefereeMsg;
 	private IKickEvent lastKickEvent;
 	private TimestampBasedBuffer<ITrackedBall> ballBuffer = new TimestampBasedBuffer<>(0.1);
-	
+
 	static
 	{
 		ConfigRegistration.registerClass("wp", WorldInfoCollector.class);
 	}
-	
-	
+
+
 	private Map<BotID, BotState> getFilteredBotStates(final Collection<FilteredVisionBot> visionBots)
 	{
 		return visionBots.stream()
@@ -111,8 +111,8 @@ public class WorldInfoCollector extends AWorldPredictor
 						FilteredVisionBot::getBotID,
 						FilteredVisionBot::toBotState));
 	}
-	
-	
+
+
 	private Map<BotID, BotState> getInternalBotStates(final Collection<RobotInfo> robotInfo)
 	{
 		return robotInfo.stream()
@@ -123,8 +123,8 @@ public class WorldInfoCollector extends AWorldPredictor
 						BotState::getBotID,
 						Function.identity()));
 	}
-	
-	
+
+
 	private BotState select(BotState filterState, BotState internalState)
 	{
 		if (filterState == null)
@@ -139,29 +139,33 @@ public class WorldInfoCollector extends AWorldPredictor
 		}
 		return filterState;
 	}
-	
-	
+
+
 	private long getLastBallContact(final RobotInfo robotInfo, final Pose pose)
 	{
 		return ballContactCalculator.ballContact(robotInfo, pose, robotInfo.getCenter2DribblerDist());
 	}
-	
-	
+
+
 	private TrackedBot createTrackedBot(RobotInfo robotInfo, Map<BotID, BotState> filteredBotStates,
 			BotState filterState, BotState internalState)
 	{
 		BotState currentBotState = select(filterState, internalState);
+		if (currentBotState == null)
+		{
+			return null;
+		}
 		Optional<BotState> trajState = botStateFromTrajectoryCalculator.getState(robotInfo);
 		boolean similar = trajState.map(s -> isSimilar(s, currentBotState)).orElse(false);
 		if (trajState.isPresent() && (!similar || botCollidingWithOtherBot(filteredBotStates, trajState.get())))
 		{
 			botStateFromTrajectoryCalculator.reset(robotInfo.getBotId());
 		}
-		
+
 		BotState botState = similar && preferTrajState
 				? botStateFromTrajectoryCalculator.getLatestState(robotInfo.getBotId()).orElse(currentBotState)
 				: currentBotState;
-		
+
 		return TrackedBot.newBuilder()
 				.withBotId(botState.getBotID())
 				.withTimestamp(lastWFTimestamp)
@@ -172,50 +176,51 @@ public class WorldInfoCollector extends AWorldPredictor
 				.withLastBallContact(getLastBallContact(robotInfo, botState.getPose()))
 				.build();
 	}
-	
-	
+
+
 	private boolean botCollidingWithOtherBot(final Map<BotID, BotState> filteredBotStates, final BotState trajState)
 	{
 		return filteredBotStates.values().stream()
 				.filter(b -> !b.getBotID().equals(trajState.getBotID()))
 				.anyMatch(s -> s.getPos().distanceTo(trajState.getPos()) < Geometry.getBotRadius() * 2);
 	}
-	
-	
+
+
 	private boolean isSimilar(final BotState trajState, final BotState currentState)
 	{
 		return trajState.getPos().distanceToSqr(currentState.getPos()) < SumatraMath.square(maxPositionDiff);
 	}
-	
-	
+
+
 	private IBotIDMap<ITrackedBot> collectTrackedBots(
 			final List<FilteredVisionBot> filteredVisionBots,
 			final Collection<RobotInfo> robotInfo)
 	{
 		Map<BotID, BotState> filteredBotStates = getFilteredBotStates(filteredVisionBots);
 		Map<BotID, BotState> internalBotStates = getInternalBotStates(robotInfo);
-		
+
 		Map<BotID, ITrackedBot> trackedBots = robotInfo.stream()
 				.map(r -> createTrackedBot(r, filteredBotStates, filteredBotStates.get(r.getBotId()),
 						internalBotStates.get(r.getBotId())))
+				.filter(Objects::nonNull)
 				.collect(Collectors.toMap(ITrackedBot::getBotId, Function.identity()));
 		return new BotIDMap<>(trackedBots);
 	}
-	
-	
+
+
 	private Map<BotID, RobotInfo> collectRobotInfo(final List<FilteredVisionBot> filteredVisionBots)
 	{
 		Set<BotID> allRelevantBots = new HashSet<>(robotInfoProvider.getConnectedBotIds());
 		filteredVisionBots.stream().map(FilteredVisionBot::getBotID).forEach(allRelevantBots::add);
-		
+
 		return allRelevantBots.stream()
 				.map(robotInfoProvider::getRobotInfo)
 				.collect(Collectors.toMap(
 						RobotInfo::getBotId,
 						Function.identity()));
 	}
-	
-	
+
+
 	private IKickEvent getKickEvent(final FilteredVisionFrame filteredVisionFrame)
 	{
 		if (filteredVisionFrame.getKickEvent().isPresent())
@@ -227,65 +232,66 @@ public class WorldInfoCollector extends AWorldPredictor
 		}
 		return lastKickEvent;
 	}
-	
-	
+
+
 	private void visualize(final WorldFrameWrapper wfw)
 	{
 		ShapeMap shapeMap = new ShapeMap();
 		worldFrameVisualization.process(wfw, shapeMap);
 		notifyNewShapeMap(lastWFTimestamp, shapeMap, "WP");
 	}
-	
-	
+
+
 	private BallKickFitState getKickFitState(final FilteredVisionFrame filteredVisionFrame)
 	{
 		if (filteredVisionFrame.getKickFitState().isPresent())
 		{
 			return new BallKickFitState(filteredVisionFrame.getKickFitState().get(), filteredVisionFrame.getTimestamp());
 		}
-		
+
 		return null;
 	}
-	
-	
+
+
 	private void processFilteredVisionFrame(final FilteredVisionFrame filteredVisionFrame)
 	{
 		lastWFTimestamp = filteredVisionFrame.getTimestamp();
+		referee.setCurrentTime(lastWFTimestamp);
 		robotInfoProvider.setLastWFTimestamp(lastWFTimestamp);
-		
+
 		ballContactCalculator.setBallPos(filteredVisionFrame.getBall().getPos().getXYVector());
-		
+
 		Map<BotID, RobotInfo> robotInfo = collectRobotInfo(filteredVisionFrame.getBots());
 		visionFilter.setRobotInfoMap(robotInfo);
-		
+
 		IBotIDMap<ITrackedBot> bots = collectTrackedBots(filteredVisionFrame.getBots(), robotInfo.values());
-		
+
 		ITrackedBall ball = getTrackedBall(filteredVisionFrame);
 		ballBuffer.add(ball);
-		
+
 		IKickEvent kickEvent = getKickEvent(filteredVisionFrame);
 		BallKickFitState kickFitState = getKickFitState(filteredVisionFrame);
-		
+
 		long frameNumber = filteredVisionFrame.getId();
 		SimpleWorldFrame swf = new SimpleWorldFrame(bots, ball, kickEvent, kickFitState, frameNumber, lastWFTimestamp);
-		
+
 		GameState gameState = gameStateCalculator.getNextGameState(latestRefereeMsg, ball.getPos());
-		
+
 		WorldFrameWrapper wfw = new WorldFrameWrapper(swf, latestRefereeMsg, gameState);
 		consumers.forEach(c -> c.onNewWorldFrame(wfw));
 		observers.forEach(c -> c.onNewWorldFrame(wfw));
-		
+
 		visualize(wfw);
 	}
-	
-	
+
+
 	private ITrackedBall getTrackedBall(final FilteredVisionFrame filteredVisionFrame)
 	{
 		FilteredVisionBall filteredVisionBall = fakeBall ? fakeBall() : filteredVisionFrame.getBall();
 		return TrackedBall.fromFilteredVisionBall(lastWFTimestamp, filteredVisionBall);
 	}
-	
-	
+
+
 	private FilteredVisionBall fakeBall()
 	{
 		return FilteredVisionBall.Builder.create()
@@ -297,40 +303,33 @@ public class WorldInfoCollector extends AWorldPredictor
 				.withLastVisibleTimestamp(lastWFTimestamp)
 				.build();
 	}
-	
-	
+
+
 	@Override
 	public final void initModule()
 	{
-		// nothing to do
+		Geometry.refresh();
+		clearObservers();
+
+		reset();
+
+		registerToVisionFilterModule();
+		registerToRefereeModule();
+		registerToCamModule();
+		registerToRecordManagerModule();
+
+		BallFactory.updateConfigs();
+		ShapeMap.setPersistDebugShapes(!SumatraModel.getInstance().isProductive());
 	}
-	
-	
+
+
 	@Override
 	public final void deinitModule()
 	{
 		// nothing to do
 	}
-	
-	
-	@Override
-	public final void startModule()
-	{
-		Geometry.refresh();
-		clearObservers();
-		
-		initState();
-		
-		registerToVisionFilterModule();
-		registerToRefereeModule();
-		registerToCamModule();
-		registerToRecordManagerModule();
-		
-		BallFactory.updateConfigs();
-		ShapeMap.setPersistDebugShapes(!SumatraModel.getInstance().isProductive());
-	}
-	
-	
+
+
 	@Override
 	public final void stopModule()
 	{
@@ -339,8 +338,8 @@ public class WorldInfoCollector extends AWorldPredictor
 		unregisterFromCamModule();
 		unregisterToRecordManagerModule();
 	}
-	
-	
+
+
 	private void registerToRecordManagerModule()
 	{
 		if (SumatraModel.getInstance().isModuleLoaded(RecordManager.class))
@@ -349,8 +348,8 @@ public class WorldInfoCollector extends AWorldPredictor
 			recordManager.addHook(berkeleyAutoPauseHook);
 		}
 	}
-	
-	
+
+
 	private void unregisterToRecordManagerModule()
 	{
 		if (SumatraModel.getInstance().isModuleLoaded(RecordManager.class))
@@ -359,60 +358,59 @@ public class WorldInfoCollector extends AWorldPredictor
 			recordManager.removeHook(berkeleyAutoPauseHook);
 		}
 	}
-	
-	
+
+
 	private void registerToVisionFilterModule()
 	{
 		visionFilter = SumatraModel.getInstance().getModule(AVisionFilter.class);
 		visionFilter.addObserver(this);
 	}
-	
-	
+
+
 	private void unregisterFromVisionFilterModule()
 	{
 		if (visionFilter != null)
 		{
 			visionFilter.removeObserver(this);
-			visionFilter = null;
 		}
 	}
-	
-	
+
+
 	private void registerToRefereeModule()
 	{
-		AReferee referee = SumatraModel.getInstance().getModule(AReferee.class);
+		referee = SumatraModel.getInstance().getModule(AReferee.class);
 		referee.addObserver(this);
 	}
-	
-	
+
+
 	private void unregisterFromRefereeModule()
 	{
-		AReferee referee = SumatraModel.getInstance().getModule(AReferee.class);
 		referee.removeObserver(this);
 	}
-	
-	
+
+
 	private void registerToCamModule()
 	{
-		if (!"SUMATRA".equals(SumatraModel.getInstance().getEnvironment()))
+		if (!SumatraModel.getInstance().isSimulation())
 		{
 			ACam cam = SumatraModel.getInstance().getModule(ACam.class);
 			cam.addObserver(this);
 		}
 	}
-	
-	
+
+
 	private void unregisterFromCamModule()
 	{
-		if (!"SUMATRA".equals(SumatraModel.getInstance().getEnvironment()))
+		if (!SumatraModel.getInstance().isSimulation())
 		{
 			ACam cam = SumatraModel.getInstance().getModule(ACam.class);
 			cam.removeObserver(this);
 		}
 	}
-	
-	
-	private void initState()
+
+
+	@Override
+	public void reset()
 	{
 		gameStateCalculator = new GameStateCalculator();
 		worldFrameVisualization = new WorldFrameVisualization();
@@ -423,8 +421,8 @@ public class WorldInfoCollector extends AWorldPredictor
 		latestRefereeMsg = new RefereeMsg();
 		lastKickEvent = null;
 	}
-	
-	
+
+
 	private void clearObservers()
 	{
 		if (!observers.isEmpty())
@@ -438,16 +436,16 @@ public class WorldInfoCollector extends AWorldPredictor
 			consumers.clear();
 		}
 	}
-	
-	
+
+
 	@Override
 	public void onNewFilteredVisionFrame(final FilteredVisionFrame filteredVisionFrame)
 	{
 		processFilteredVisionFrame(filteredVisionFrame);
 		notifyNewShapeMap(lastWFTimestamp, filteredVisionFrame.getShapeMap(), "VISION_FILTER");
 	}
-	
-	
+
+
 	@Override
 	public void onNewRefereeMsg(final Referee.SSL_Referee refMsg)
 	{
@@ -459,8 +457,8 @@ public class WorldInfoCollector extends AWorldPredictor
 		updateTeamOnPositiveHalf(refMsg);
 		latestRefereeMsg = new RefereeMsg(ts, refMsg);
 	}
-	
-	
+
+
 	private void updateTeamOnPositiveHalf(final Referee.SSL_Referee refMsg)
 	{
 		if (refMsg.hasBlueTeamOnPositiveHalf())
@@ -468,8 +466,8 @@ public class WorldInfoCollector extends AWorldPredictor
 			Geometry.setNegativeHalfTeam(refMsg.getBlueTeamOnPositiveHalf() ? ETeamColor.YELLOW : ETeamColor.BLUE);
 		}
 	}
-	
-	
+
+
 	@Override
 	public void onNewCamDetectionFrame(final CamDetectionFrame camDetectionFrame)
 	{
@@ -477,8 +475,8 @@ public class WorldInfoCollector extends AWorldPredictor
 		ExtendedCamDetectionFrame eFrame = new ExtendedCamDetectionFrame(camDetectionFrame, ball);
 		observers.forEach(o -> o.onNewCamDetectionFrame(eFrame));
 	}
-	
-	
+
+
 	@Override
 	public void onClearCamFrame()
 	{
@@ -489,8 +487,8 @@ public class WorldInfoCollector extends AWorldPredictor
 		worldFrameVisualization.reset();
 		latestRefereeMsg = new RefereeMsg();
 	}
-	
-	
+
+
 	@Override
 	public void setRobotInfoProvider(final IRobotInfoProvider robotInfoProvider)
 	{

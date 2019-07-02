@@ -6,19 +6,18 @@ package edu.tigers.sumatra.math.circle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.v2.ILine;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 
 
-/**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- */
 public class CircleMathTest
 {
 	@Test
@@ -54,25 +53,20 @@ public class CircleMathTest
 		ICircle circle = Circle.createCircle(Vector2.fromXY(-300, 200), 100);
 		ILine line;
 		
-		line = Line.fromPoints(Vector2.fromXY(400, 400), Vector2.fromXY(0, 300));
-		assertThat(CircleMath.lineIntersectionsCircle(circle, line).get(0).distanceTo(Vector2.fromXY(-400, 200)) < 1e-3)
-				.isTrue();
-		assertThat(CircleMath.lineIntersectionsCircle(circle, line).get(1)
-				.distanceTo(Vector2.fromXY(-211.765, 247.059)) < 1e-3).isTrue();
+		line = Lines.lineFromPoints(Vector2.fromXY(400, 400), Vector2.fromXY(0, 300));
+		Assertions.assertThat(CircleMath.lineIntersections(circle, line))
+				.containsExactlyInAnyOrder(Vector2.fromXY(-400, 200), Vector2.fromXY(-211.765, 247.059));
 		
-		line = Line.fromPoints(Vector2.fromXY(-700, 500), Vector2.fromXY(-500, 300));
-		assertThat(CircleMath.lineIntersectionsCircle(circle, line).get(0).distanceTo(Vector2.fromXY(-300, 100)) < 1e-3)
-				.isTrue();
-		assertThat(CircleMath.lineIntersectionsCircle(circle, line).get(1).distanceTo(Vector2.fromXY(-400, 200)) < 1e-3)
-				.isTrue();
+		line = Lines.lineFromPoints(Vector2.fromXY(-700, 500), Vector2.fromXY(-500, 300));
+		Assertions.assertThat(CircleMath.lineIntersections(circle, line))
+				.containsExactlyInAnyOrder(Vector2.fromXY(-300, 100), Vector2.fromXY(-400, 200));
 		
-		line = Line.fromPoints(Vector2.fromXY(-400, 600), Vector2.fromXY(-400, 100));
-		assertThat(CircleMath.lineIntersectionsCircle(circle, line).get(0).distanceTo(Vector2.fromXY(-400, 200)) < 1e-3)
-				.isTrue();
-		assertThat(CircleMath.lineIntersectionsCircle(circle, line).size() == 1).isTrue();
+		line = Lines.lineFromPoints(Vector2.fromXY(-400, 600), Vector2.fromXY(-400, 100));
+		Assertions.assertThat(CircleMath.lineIntersections(circle, line))
+				.containsExactlyInAnyOrder(Vector2.fromXY(-400, 200));
 		
-		line = Line.fromPoints(Vector2.fromXY(100, 200), Vector2.fromXY(0, 100));
-		assertThat(CircleMath.lineIntersectionsCircle(circle, line).isEmpty()).isTrue();
+		line = Lines.lineFromPoints(Vector2.fromXY(100, 200), Vector2.fromXY(0, 100));
+		Assertions.assertThat(CircleMath.lineIntersections(circle, line)).isEmpty();
 	}
 	
 	
@@ -80,27 +74,22 @@ public class CircleMathTest
 	public void lineSegmentIntersections()
 	{
 		ICircle circle = Circle.createCircle(Vector2.fromXY(200, -200), 100);
-		ILine line;
+		ILineSegment line;
 		
-		line = Line.fromPoints(Vector2.fromXY(0, 0), Vector2.fromXY(200, -200));
-		assertThat(CircleMath.lineSegmentIntersections(circle, line).get(0)
-				.distanceTo(Vector2.fromXY(129.289, -129.289)) < 1e-3).isTrue();
-		assertThat(CircleMath.lineSegmentIntersections(circle, line).size() == 1).isTrue();
+		line = Lines.segmentFromPoints(Vector2.fromXY(0, 0), Vector2.fromXY(200, -200));
+		Assertions.assertThat(CircleMath.lineIntersections(circle, line))
+				.containsExactlyInAnyOrder(Vector2.fromXY(129.289, -129.289));
 		
-		line = Line.fromPoints(Vector2.fromXY(200, 0), Vector2.fromXY(0, -400));
-		assertThat(CircleMath.lineSegmentIntersections(circle, line).get(0).distanceTo(Vector2.fromXY(100, -200)) < 1e-3)
-				.isTrue();
-		assertThat(CircleMath.lineSegmentIntersections(circle, line).get(1).distanceTo(Vector2.fromXY(140, -120)) < 1e-3)
-				.isTrue();
+		line = Lines.segmentFromPoints(Vector2.fromXY(200, 0), Vector2.fromXY(0, -400));
+		Assertions.assertThat(CircleMath.lineIntersections(circle, line))
+				.containsExactlyInAnyOrder(Vector2.fromXY(100, -200), Vector2.fromXY(140, -120));
 		
-		line = Line.fromPoints(Vector2.fromXY(400, -300), Vector2.fromXY(0, -300));
-		assertThat(CircleMath.lineSegmentIntersections(circle, line).get(0).distanceTo(Vector2.fromXY(200, -300)) < 1e-3)
-				.isTrue();
-		assertThat(CircleMath.lineSegmentIntersections(circle, line).size() == 1).isTrue();
+		line = Lines.segmentFromPoints(Vector2.fromXY(400, -300), Vector2.fromXY(0, -300));
+		Assertions.assertThat(CircleMath.lineIntersections(circle, line))
+				.containsExactlyInAnyOrder(Vector2.fromXY(200, -300));
 		
-		line = Line.fromPoints(Vector2.fromXY(100, -100), Vector2.fromXY(0, 0));
-		assertThat(CircleMath.lineSegmentIntersections(circle, line).isEmpty()).isTrue();
-		
+		line = Lines.segmentFromPoints(Vector2.fromXY(100, -100), Vector2.fromXY(0, 0));
+		Assertions.assertThat(CircleMath.lineIntersections(circle, line)).isEmpty();
 	}
 	
 	
@@ -306,19 +295,16 @@ public class CircleMathTest
 		IVector2 center = Vector2.fromXY(-200, 100);
 		IArc arc = Arc.createArc(center, 300, Math.PI, 3 * Math.PI / 4);
 		
-		line = Line.fromPoints(Vector2.fromXY(-800, 200), Vector2.fromXY(200, -200));
-		assertThat(CircleMath.lineIntersectionsArc(arc, line).get(0).distanceTo(Vector2.fromXY(2.762, -121.105)) < 1e-3)
-				.isTrue();
-		assertThat(CircleMath.lineIntersectionsArc(arc, line).get(1).distanceTo(Vector2.fromXY(-499.314, 79.726)) < 1e-3)
-				.isTrue();
+		line = Lines.lineFromPoints(Vector2.fromXY(-800, 200), Vector2.fromXY(200, -200));
+		Assertions.assertThat(CircleMath.lineIntersections(arc, line))
+				.containsExactlyInAnyOrder(Vector2.fromXY(2.762, -121.105), Vector2.fromXY(-499.314, 79.726));
 		
-		line = Line.fromPoints(Vector2.fromXY(-800, -200), Vector2.fromXY(200, 200));
-		assertThat(CircleMath.lineIntersectionsArc(arc, line).get(0).distanceTo(Vector2.fromXY(-453.009, -61.204)) < 1e-3)
-				.isTrue();
-		assertThat(CircleMath.lineIntersectionsArc(arc, line).size() == 1).isTrue();
+		line = Lines.lineFromPoints(Vector2.fromXY(-800, -200), Vector2.fromXY(200, 200));
+		Assertions.assertThat(CircleMath.lineIntersections(arc, line))
+				.containsExactlyInAnyOrder(Vector2.fromXY(-453.009, -61.204));
 		
-		line = Line.fromPoints(Vector2.fromXY(200, -200), Vector2.fromXY(-400, 100));
-		assertThat(CircleMath.lineIntersectionsArc(arc, line).isEmpty()).isTrue();
+		line = Lines.lineFromPoints(Vector2.fromXY(200, -200), Vector2.fromXY(-400, 100));
+		Assertions.assertThat(CircleMath.lineIntersections(arc, line)).isEmpty();
 	}
 	
 	

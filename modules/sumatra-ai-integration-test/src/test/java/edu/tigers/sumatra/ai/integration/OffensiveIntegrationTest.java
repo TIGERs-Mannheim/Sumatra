@@ -69,11 +69,10 @@ public class OffensiveIntegrationTest extends AAiIntegrationTest
 		nextFrame();
 		setRefereeMsg(RefereeMsgBuilder.aRefereeMsg().withCommand(Referee.SSL_Referee.Command.NORMAL_START).build());
 		setGameState(GameState.RUNNING);
-		nextFrame();
-		nextFrame();
-		nextFrame();
-		nextFrame();
-		nextFrame();
+		for (int i = 0; i < 10; i++)
+		{
+			nextFrame();
+		}
 		
 		BotID id = BotID.createBotId(1, ETeamColor.YELLOW);
 		BotID mainOffensive = getMetisAiFrame().getTacticalField().getOffensiveStrategy().getAttackerBot()
@@ -89,19 +88,19 @@ public class OffensiveIntegrationTest extends AAiIntegrationTest
 		OffensiveAction action = getMetisAiFrame().getTacticalField().getOffensiveActions().get(id);
 		Assert.assertEquals(action.getAction(), EOffensiveAction.PASS);
 		BotID passID = BotID.createBotId(2, ETeamColor.YELLOW);
-		assertThat(action.getPassTarget().orElseThrow(IllegalStateException::new).getBotId()).isEqualTo(passID);
+		assertThat(action.getRatedPassTarget().orElseThrow(IllegalStateException::new).getBotId()).isEqualTo(passID);
 		
 		// the scoring of the pass target should be greater 0.5, because the goal is free :D
-		assertThat(action.getPassTarget().orElseThrow(IllegalStateException::new).getScore()).isGreaterThan(0.5);
+		assertThat(action.getRatedPassTarget().orElseThrow(IllegalStateException::new).getScore()).isGreaterThan(0.5);
 		
 		action = getMetisAiFrame().getTacticalField().getOffensiveActions().get(passID);
 		Assert.assertNotNull(action);
 		
 		// the best pass receiving robot should not try to pass to itself
 		// but having no passTarget is also okay !
-		if (action.getPassTarget().isPresent())
+		if (action.getRatedPassTarget().isPresent())
 		{
-			Assert.assertNotEquals(action.getPassTarget().get().getBotId(), passID);
+			Assert.assertNotEquals(action.getRatedPassTarget().get().getBotId(), passID);
 		}
 		
 		assertNoErrorLog();

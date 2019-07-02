@@ -3,27 +3,19 @@
  */
 package edu.tigers.sumatra.botmanager.bots;
 
-import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.bot.EBotType;
 import edu.tigers.sumatra.bot.ERobotMode;
-import edu.tigers.sumatra.bot.params.BotParams;
-import edu.tigers.sumatra.bot.params.IBotParams;
 import edu.tigers.sumatra.botmanager.basestation.DummyBaseStation;
+import edu.tigers.sumatra.botparams.EBotParamLabel;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.ETeamColor;
 
 
 /**
  * Dummy stub class for bots to prevent using null
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-@Persistent
 public class DummyBot extends ABot
 {
-	private boolean avail2Ai = false;
-	
-	
 	/**
 	 * Default constructor.
 	 */
@@ -42,31 +34,6 @@ public class DummyBot extends ABot
 	}
 	
 	
-	/**
-	 * @param aBot
-	 */
-	public DummyBot(final ABot aBot)
-	{
-		super(aBot, EBotType.UNKNOWN);
-	}
-	
-	
-	@Override
-	public boolean isAvailableToAi()
-	{
-		return avail2Ai;
-	}
-	
-	
-	/**
-	 * @param avail2Ai the avail2Ai to set
-	 */
-	public final void setAvail2Ai(final boolean avail2Ai)
-	{
-		this.avail2Ai = avail2Ai;
-	}
-	
-	
 	@Override
 	public boolean isBarrierInterrupted()
 	{
@@ -74,34 +41,10 @@ public class DummyBot extends ABot
 	}
 	
 	
-	/**
-	 * @return
-	 */
 	@Override
 	public double getCenter2DribblerDist()
 	{
-		return 90;
-	}
-	
-	
-	@Override
-	public void start()
-	{
-		// nothing
-	}
-	
-	
-	@Override
-	public void stop()
-	{
-		// nothing
-	}
-	
-	
-	@Override
-	public double getDribblerSpeed()
-	{
-		return 0;
+		return 75;
 	}
 	
 	
@@ -109,6 +52,13 @@ public class DummyBot extends ABot
 	public int getHardwareId()
 	{
 		return getBotId().getNumberWithColorOffsetBS();
+	}
+	
+	
+	@Override
+	public double getDribblerTemp()
+	{
+		return 0;
 	}
 	
 	
@@ -131,16 +81,20 @@ public class DummyBot extends ABot
 	{
 		return ERobotMode.READY;
 	}
-
+	
+	
 	@Override
-	public boolean isOK() {
+	public boolean isOK()
+	{
 		return true;
 	}
-
-
+	
+	
 	@Override
-	public IBotParams getBotParams()
+	public EBotParamLabel getBotParamLabel()
 	{
-		return new BotParams();
+		return getBotId().getTeamColor() == ETeamColor.YELLOW
+				? EBotParamLabel.SIMULATION_YELLOW
+				: EBotParamLabel.SIMULATION_BLUE;
 	}
 }

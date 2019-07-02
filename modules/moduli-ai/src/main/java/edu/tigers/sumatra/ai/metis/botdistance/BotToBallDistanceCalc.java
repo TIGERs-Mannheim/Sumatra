@@ -4,75 +4,70 @@
 package edu.tigers.sumatra.ai.metis.botdistance;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 
-import edu.tigers.sumatra.ai.BaseAiFrame;
+import com.github.g3force.configurable.Configurable;
+
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.TacticalField;
-import edu.tigers.sumatra.ids.BotIDMapConst;
 import edu.tigers.sumatra.ids.ETeam;
-import edu.tigers.sumatra.ids.IBotIDMap;
-import edu.tigers.sumatra.math.vector.VectorMath;
+import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
-import edu.tigers.sumatra.wp.data.WorldFrame;
 
 
 /**
  * This {@link ACalculator} implementation calculates the distances of each bot to the ball, sorts the results and
  * stores them to {@link TacticalField#getTigersToBallDist()} or
  * {@link TacticalField#getEnemiesToBallDist()} resp.
- * 
- * @author Gero
  */
 public class BotToBallDistanceCalc extends ACalculator
 {
+	@Configurable(comment = "Lookahead for ball position", defValue = "0.3")
+	private static double ballLookahead = 0.3;
+
 	private final ETeam team;
-	
-	
-	/**
-	 * @param team
-	 */
+
+
 	public BotToBallDistanceCalc(final ETeam team)
 	{
 		ETeam.assertOneTeam(team);
 		this.team = team;
 	}
-	
-	
+
+
 	@Override
-	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+	public void doCalc()
 	{
-		WorldFrame wFrame = baseAiFrame.getWorldFrame();
-		IBotIDMap<? extends ITrackedBot> bots = getBots(wFrame);
-		
-		
-		final List<BotDistance> distances = new ArrayList<>(bots.size());
-		for (ITrackedBot bot : bots.values())
+		final List<BotDistance> distances = new ArrayList<>();
+		for (ITrackedBot bot : getBots())
 		{
-			final double distanceToBall = VectorMath.distancePP(bot.getPos(), wFrame.getBall().getPos());
+			IVector2 ballPos = getWFrame().getBall().getPos();
+			IVector2 predBallPos = getWFrame().getBall().getTrajectory().getPosByTime(ballLookahead).getXYVector();
+			double distanceToBall = Lines.segmentFromPoints(ballPos, predBallPos).distanceTo(bot.getBotKickerPos());
 			distances.add(new BotDistance(bot, distanceToBall));
 		}
-		
+
 		distances.sort(Comparator.comparingDouble(BotDistance::getDist));
-		
+
 		if (team == ETeam.TIGERS)
 		{
-			newTacticalField.setTigersToBallDist(distances);
+			getNewTacticalField().setTigersToBallDist(distances);
 		} else
 		{
-			newTacticalField.setEnemiesToBallDist(distances);
+			getNewTacticalField().setEnemiesToBallDist(distances);
 		}
-		
 	}
-	
-	
-	private BotIDMapConst<? extends ITrackedBot> getBots(final WorldFrame wf)
+
+
+	private Collection<ITrackedBot> getBots()
 	{
 		if (team == ETeam.TIGERS)
 		{
-			return wf.getTigerBotsVisible();
+			return getWFrame().getTigerBotsVisible().values();
 		}
-		return wf.getFoeBots();
+		return getWFrame().getFoeBots().values();
 	}
 }

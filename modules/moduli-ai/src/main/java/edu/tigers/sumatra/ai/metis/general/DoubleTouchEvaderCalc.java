@@ -28,22 +28,22 @@ import edu.tigers.sumatra.referee.data.GameState;
  */
 public class DoubleTouchEvaderCalc extends ACalculator
 {
-	
+
 	private static final Set<EGameState> VALID_PREVIOUS_STATES = Collections.unmodifiableSet(EnumSet.of(
 			EGameState.KICKOFF, EGameState.DIRECT_FREE, EGameState.INDIRECT_FREE));
-	
+
 	private IVector2 ballKickPos = null;
 	private BotID kickerID = BotID.noBot();
 	private boolean passedValidPrevState = false;
-	
-	
+
+
 	@Override
 	public boolean isCalculationNecessary(final TacticalField tacticalField, final BaseAiFrame aiFrame)
 	{
 		return aiFrame.getGamestate().getState() == EGameState.RUNNING;
 	}
-	
-	
+
+
 	@Override
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
@@ -66,11 +66,11 @@ public class DoubleTouchEvaderCalc extends ACalculator
 			}
 		}
 	}
-	
-	
+
+
 	private void drawShape(ITacticalField tacticalField)
 	{
-		if (!kickerID.equals(BotID.noBot()))
+		if (getWFrame().getBots().containsKey(kickerID))
 		{
 			tacticalField.getDrawableShapes().get(EAiShapesLayer.AI_BALL_POSSESSION)
 					.add(new DrawableCircle(
@@ -78,8 +78,8 @@ public class DoubleTouchEvaderCalc extends ACalculator
 							Color.cyan));
 		}
 	}
-	
-	
+
+
 	private void reset()
 	{
 		ballKickPos = null;

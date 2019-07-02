@@ -17,13 +17,13 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -37,7 +37,9 @@ import javax.swing.event.ChangeListener;
 
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.sim.SimulationParameters;
+import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.sim.SumatraSimulator;
 import edu.tigers.sumatra.util.ImageScaler;
 import edu.tigers.sumatra.views.ISumatraView;
 
@@ -55,11 +57,13 @@ public class SimulationPanel extends JPanel implements ISumatraView
 	
 	private final JToggleButton btnPauseSim;
 	private final JSlider sliderSpeed;
-	private final JLabel labelSpeed;
+	private final JLabel lblSpeed;
 	private final JButton btnLoadSnapshot;
 	private final JFileChooser fcOpenSnapshot;
 	private final JLabel lblTime;
-	private final JCheckBox chkSyncWithAi;
+	private final JLabel lblRelativeTime;
+	
+	private final SimulationBotMgrPanel botMgrPanel;
 	
 	private boolean paused = false;
 	
@@ -110,14 +114,13 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		sliderSpeed.setPaintTicks(true);
 		sliderSpeed.addChangeListener(new SpeedListener());
 		
-		labelSpeed = new JLabel("x1");
-		labelSpeed.setPreferredSize(new Dimension(30, labelSpeed.getMaximumSize().height));
+		lblSpeed = new JLabel("x1");
+		lblSpeed.setPreferredSize(new Dimension(20, lblSpeed.getMaximumSize().height));
 		
-		chkSyncWithAi = new JCheckBox("Sync", false);
-		chkSyncWithAi.setToolTipText("Sync speed with AI such that AI can process each WF.");
-		chkSyncWithAi.addActionListener(new SyncWithAiAction());
+		lblRelativeTime = new JLabel("(x1)");
+		lblRelativeTime.setPreferredSize(new Dimension(60, lblRelativeTime.getMaximumSize().height));
 		
-		lblTime = new JLabel("0");
+		lblTime = new JLabel("-");
 		lblTime.setPreferredSize(new Dimension(100, lblTime.getMaximumSize().height));
 		
 		btnLoadSnapshot = new JButton();
@@ -156,6 +159,7 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		btnPasteSnapshot.addActionListener(pasteAction);
 		registerShortcut(btnPasteSnapshot, KeyStroke.getKeyStroke(KeyEvent.VK_V, KeyEvent.CTRL_DOWN_MASK), pasteAction);
 		
+		botMgrPanel = new SimulationBotMgrPanel();
 		
 		add(btnPauseSim);
 		add(btnStepBwd);
@@ -165,10 +169,10 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		add(btnCopySnapshot);
 		add(btnPasteSnapshot);
 		add(sliderSpeed);
-		add(labelSpeed);
-		add(chkSyncWithAi);
+		add(lblSpeed);
+		add(lblRelativeTime);
 		add(lblTime);
-		
+		add(botMgrPanel);
 		String path = null;
 		try
 		{
@@ -204,8 +208,20 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		long timestampMs = (long) (timestamp / 1e6);
 		Date date = new Date(timestampMs);
 		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss,SSS");
+		sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 		String txt = sdf.format(date);
 		EventQueue.invokeLater(() -> lblTime.setText(txt));
+	}
+	
+	
+	/**
+	 * Update the relative time label
+	 *
+	 * @param relTime
+	 */
+	public void updateRelativeTime(final double relTime)
+	{
+		EventQueue.invokeLater(() -> lblRelativeTime.setText(String.format("(x%4.2f)", relTime)));
 	}
 	
 	
@@ -217,7 +233,29 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		EventQueue.invokeLater(() -> {
 			sliderSpeed.setValue(0);
 			btnPauseSim.setSelected(false);
+			paused = false;
 		});
+		
+		resetBotMgrPanel();
+	}
+	
+	
+	private void resetBotMgrPanel()
+	{
+		if (!SumatraModel.getInstance().getModuleOpt(SumatraSimulator.class).isPresent())
+		{
+			for (BotID botID : BotID.getAll())
+			{
+				botMgrPanel.setBotAvailable(botID, false);
+			}
+		} else
+		{
+			for (BotID botID : BotID.getAll())
+			{
+				botMgrPanel.setBotAvailable(botID,
+						SumatraModel.getInstance().getModule(SumatraSimulator.class).isBotRegistered(botID));
+			}
+		}
 	}
 	
 	
@@ -239,6 +277,12 @@ public class SimulationPanel extends JPanel implements ISumatraView
 	}
 	
 	
+	public SimulationBotMgrPanel getBotMgrPanel()
+	{
+		return botMgrPanel;
+	}
+	
+	
 	@Override
 	public List<JMenu> getCustomMenus()
 	{
@@ -251,12 +295,6 @@ public class SimulationPanel extends JPanel implements ISumatraView
 	 */
 	public interface ISimulationPanelObserver
 	{
-		/**
-		 * @param params
-		 */
-		void onRunSimulation(SimulationParameters params);
-		
-		
 		/**
 		 * Pause
 		 */
@@ -288,12 +326,6 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		
 		
 		/**
-		 * Reset
-		 */
-		void onReset();
-		
-		
-		/**
 		 * @param path
 		 */
 		void onLoadSnapshot(String path);
@@ -303,14 +335,6 @@ public class SimulationPanel extends JPanel implements ISumatraView
 		 * Save current situation as snapshot
 		 */
 		void onSaveSnapshot();
-		
-		
-		/**
-		 * Sync speed with AI threads.
-		 * 
-		 * @param sync
-		 */
-		void onSyncWithAi(boolean sync);
 		
 		
 		/**
@@ -359,15 +383,15 @@ public class SimulationPanel extends JPanel implements ISumatraView
 			
 			if (speed < 0)
 			{
-				labelSpeed.setText(String.format("x1/%d", -(speed - 1)));
+				lblSpeed.setText(String.format("x1/%d", -(speed - 1)));
 				simSpeed = 1.0 / -(speed - 1);
 			} else if (speed == 0)
 			{
-				labelSpeed.setText("x1");
+				lblSpeed.setText("x1");
 				simSpeed = 1;
 			} else
 			{
-				labelSpeed.setText(String.format("x%d", speed + 1));
+				lblSpeed.setText(String.format("x%d", speed + 1));
 				simSpeed = speed + 1.0;
 			}
 			for (ISimulationPanelObserver o : observers)
@@ -434,6 +458,7 @@ public class SimulationPanel extends JPanel implements ISumatraView
 			{
 				o.onPasteSnapshot();
 			}
+			resetBotMgrPanel();
 		}
 	}
 	
@@ -459,18 +484,7 @@ public class SimulationPanel extends JPanel implements ISumatraView
 						log.error("", e1);
 					}
 				}
-			}
-		}
-	}
-	
-	private class SyncWithAiAction extends AbstractAction
-	{
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			for (ISimulationPanelObserver o : observers)
-			{
-				o.onSyncWithAi(chkSyncWithAi.isSelected());
+				resetBotMgrPanel();
 			}
 		}
 	}

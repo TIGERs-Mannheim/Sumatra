@@ -110,7 +110,12 @@ public class PassReceiver extends ASupportBehavior
 		// update destination
 		getRole().getCurrentSkill().getMoveCon().updateDestination(dest);
 	}
-	
+
+	@Override
+	public boolean getIsActive()
+	{
+		return PassReceiver.isActive();
+	}
 	
 	public static boolean isActive()
 	{

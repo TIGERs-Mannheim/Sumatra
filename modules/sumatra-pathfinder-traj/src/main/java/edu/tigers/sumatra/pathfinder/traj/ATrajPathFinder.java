@@ -11,52 +11,53 @@ import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.pathfinder.ITrajPathFinder;
-import edu.tigers.sumatra.pathfinder.TrajPathFinderInput;
+import edu.tigers.sumatra.pathfinder.IPathFinder;
+import edu.tigers.sumatra.pathfinder.PathFinderInput;
 import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
 import edu.tigers.sumatra.pathfinder.obstacles.ObstacleGenerator;
 import edu.tigers.sumatra.trajectory.TrajectoryWithTime;
 
 
 /**
- * Abstract base for trajectory path finders
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Abstract base for trajectory path finders. It mainly implements the logic to create trajectory paths and collisions,
+ * but not the actual algorithm to find the best path.
  */
-public abstract class ATrajPathFinder implements ITrajPathFinder
+public abstract class ATrajPathFinder implements IPathFinder
 {
-	@Configurable(defValue = "2.0")
+	@Configurable(defValue = "2.0", comment = "Lookahead [s] for collision detection. Collisions after this time are not considered. Shorter paths are still checked for collisions until this lookahead.")
 	private static double collisionLookahead = 2.0;
-	
+
+	@Configurable(defValue = "5.0", comment = "Fixed penalty to add to a path with a collision")
+	private static double collisionPenalty = 5.0;
+
 	static
 	{
 		ConfigRegistration.registerClass("sisyphus", ATrajPathFinder.class);
 	}
-	
-	protected TrajPathGen gen = new TrajPathGen();
+
 	private TrajectoryWithTime<IVector2> lastTraj = null;
-	
-	
+
+
 	/**
 	 * @param input all necessary input data for planning the path
 	 * @return a path if one was found
 	 */
 	@Override
-	public PathCollision calcPath(final TrajPathFinderInput input)
+	public TrajPathCollision calcPath(final PathFinderInput input)
 	{
-		PathCollision pathCollision = generatePath(input);
+		TrajPathCollision pathCollision = generatePath(input);
 		lastTraj = new TrajectoryWithTime<>(pathCollision.getTrajPath(), input.getTimestamp());
 		return pathCollision;
 	}
-	
-	
+
+
 	private double getCollisionLookahead()
 	{
 		return collisionLookahead;
 	}
-	
-	
-	protected IVector2 getDirection(final TrajPathFinderInput input)
+
+
+	protected IVector2 getDirection(final PathFinderInput input)
 	{
 		IVector2 toDest = input.getDest().subtractNew(input.getPos());
 		IVector2 dir = toDest;
@@ -66,21 +67,21 @@ public abstract class ATrajPathFinder implements ITrajPathFinder
 		}
 		return dir;
 	}
-	
-	
-	protected PathCollision getPath(final TrajPathFinderInput input, final IVector2 dest)
+
+
+	protected TrajPathCollision getPath(final PathFinderInput input, final IVector2 dest)
 	{
 		IVector2 pos = input.getPos();
 		IVector2 vel = input.getVel();
-		TrajPathV2 path = gen.pathTo(input.getMoveConstraints(), pos, vel, dest);
+		TrajPath path = TrajPath.with(input.getMoveConstraints(), pos, vel, dest);
 		return getCollision(input, path, null, 0);
 	}
-	
-	
-	protected abstract PathCollision generatePath(TrajPathFinderInput input);
-	
-	
-	private double getFirstNonCollisionTime(final TrajPathV2 curPath,
+
+
+	protected abstract TrajPathCollision generatePath(PathFinderInput input);
+
+
+	private double getFirstNonCollisionTime(final TrajPath curPath,
 			final List<IObstacle> obstacles)
 	{
 		double t = 0;
@@ -98,14 +99,14 @@ public abstract class ATrajPathFinder implements ITrajPathFinder
 		}
 		return tUpper;
 	}
-	
-	
-	private double getLastNonCollisionTime(final TrajPathV2 curPath,
+
+
+	private double getLastNonCollisionTime(final TrajPath curPath,
 			final List<IObstacle> obstacles)
 	{
 		int i = 0;
 		double tUpper = Math.max(getCollisionLookahead(), curPath.getTotalTime());
-		
+
 		double t = tUpper;
 		while (t >= 0)
 		{
@@ -120,9 +121,9 @@ public abstract class ATrajPathFinder implements ITrajPathFinder
 		}
 		return 0;
 	}
-	
-	
-	private TimeCollision getFirstCollisionTime(final TrajPathFinderInput input, final TrajPathV2 curPath,
+
+
+	private TimeCollision getFirstCollisionTime(final PathFinderInput input, final TrajPath curPath,
 			final double tStart, final double tEnd)
 	{
 		double t = tStart;
@@ -140,9 +141,9 @@ public abstract class ATrajPathFinder implements ITrajPathFinder
 		}
 		return new TimeCollision(Double.POSITIVE_INFINITY, null);
 	}
-	
-	
-	private Optional<IObstacle> firstCollidingObstacle(final TrajPathV2 curPath, final List<IObstacle> obstacles,
+
+
+	private Optional<IObstacle> firstCollidingObstacle(final TrajPath curPath, final List<IObstacle> obstacles,
 			final double t)
 	{
 		IVector2 pos = curPath.getPositionMM(t);
@@ -157,16 +158,16 @@ public abstract class ATrajPathFinder implements ITrajPathFinder
 		}
 		return Optional.empty();
 	}
-	
-	
-	protected PathCollision getCollision(final TrajPathFinderInput input, final TrajPathV2 curPath,
-			final PathCollision cachedCollision, final double tCachedOffset)
+
+
+	protected TrajPathCollision getCollision(final PathFinderInput input, final TrajPath curPath,
+			final TrajPathCollision cachedCollision, final double tCachedOffset)
 	{
 		assert curPath != null;
-		PathCollision pCollision = new PathCollision();
+		TrajPathCollision pCollision = new TrajPathCollision();
 		pCollision.setTrajPath(curPath);
 		pCollision.setCollisionLookahead(getCollisionLookahead());
-		
+
 		double firstNonCollisionTime;
 		if ((cachedCollision != null) && (cachedCollision.getCollisionDurationFront() < tCachedOffset))
 		{
@@ -176,14 +177,15 @@ public abstract class ATrajPathFinder implements ITrajPathFinder
 			firstNonCollisionTime = getFirstNonCollisionTime(curPath, input.getObstacles());
 		}
 		pCollision.setCollisionDurationFront(firstNonCollisionTime);
-		
+
 		double tEnd = curPath.getTotalTime();
 		double lastNonCollisionTime = getLastNonCollisionTime(curPath, input.getObstacles());
 		pCollision.setCollisionDurationBack(Math.max(0, tEnd - lastNonCollisionTime));
-		
+
 		if ((cachedCollision != null) && (cachedCollision.getFirstCollisionTime() < tCachedOffset))
 		{
 			pCollision.setFirstCollisionTime(cachedCollision.getFirstCollisionTime());
+			pCollision.setCollider(cachedCollision.getCollider().orElse(null));
 		} else
 		{
 			TimeCollision timeCollision = getFirstCollisionTime(
@@ -197,23 +199,29 @@ public abstract class ATrajPathFinder implements ITrajPathFinder
 		pCollision.setPenaltyScore(ratePathCollision(pCollision));
 		return pCollision;
 	}
-	
-	
-	private double ratePathCollision(PathCollision p)
+
+
+	private double ratePathCollision(TrajPathCollision p)
 	{
+		// the longer the path, the more penalty is added
 		double penalty = p.getTrajPath().getTotalTime();
-		
+
 		if (p.hasCollision())
 		{
-			penalty += 2;
+			penalty += collisionPenalty;
+		} else if (p.getTrajPath().getTotalTime() >= collisionLookahead)
+		{
+			final IVector2 lookaheadPos = p.getTrajPath().getPosition(collisionLookahead);
+			final IVector2 finalPos = p.getTrajPath().getPosition(p.getTrajPath().getTotalTime());
+			penalty += lookaheadPos.distanceTo(finalPos);
 		}
-		
+
 		if (p.hasIntermediateCollision())
 		{
 			// more penalty, the sooner the collision will happen
 			penalty += Math.max(0, collisionLookahead - p.getFirstCollisionTime());
 		}
-		
+
 		if (!p.isAlwaysColliding())
 		{
 			// adding a penalty to front collision produces paths that first try to leave the obstacle
@@ -221,16 +229,16 @@ public abstract class ATrajPathFinder implements ITrajPathFinder
 			// around
 			penalty += 3 * p.getCollisionDurationFront();
 		}
-		
+
 		return penalty;
 	}
-	
+
 	private static final class TimeCollision
 	{
 		double t;
 		IObstacle obstacle;
-		
-		
+
+
 		public TimeCollision(final double t, final IObstacle obstacle)
 		{
 			this.t = t;

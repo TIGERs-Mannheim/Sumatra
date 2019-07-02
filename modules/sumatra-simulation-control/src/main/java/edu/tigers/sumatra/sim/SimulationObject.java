@@ -5,6 +5,7 @@
 package edu.tigers.sumatra.sim;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
 
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
@@ -12,15 +13,15 @@ import edu.tigers.sumatra.math.vector.Vector3;
 
 /**
  * Container for a simulation object (robot, ball)
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class SimulationObject
 {
+	/** [mm,mm,mm] */
 	private IVector3 pos = Vector3.zero();
+	/** [m/s,m/s,rad/s] */
 	private IVector3 vel = Vector3.zero();
-	
-	
+
+
 	/**
 	 * Default
 	 */
@@ -28,26 +29,26 @@ public class SimulationObject
 	{
 		// empty
 	}
-	
-	
+
+
 	/**
-	 * @return the pos
+	 * @return the pos [mm,mm,mm|rad]
 	 */
 	public final IVector3 getPos()
 	{
 		return pos;
 	}
-	
-	
+
+
 	/**
-	 * @param pos the pos to set
+	 * @param pos the pos to set [mm,mm,mm|rad]
 	 */
 	public final void setPos(final IVector3 pos)
 	{
 		this.pos = pos;
 	}
-	
-	
+
+
 	/**
 	 * @return the vel
 	 */
@@ -55,8 +56,8 @@ public class SimulationObject
 	{
 		return vel;
 	}
-	
-	
+
+
 	/**
 	 * @param vel the vel to set
 	 */
@@ -64,12 +65,12 @@ public class SimulationObject
 	{
 		this.vel = vel;
 	}
-	
-	
+
+
 	@Override
 	public String toString()
 	{
-		return new ToStringBuilder(this)
+		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
 				.append("pos", pos)
 				.append("vel", vel)
 				.toString();

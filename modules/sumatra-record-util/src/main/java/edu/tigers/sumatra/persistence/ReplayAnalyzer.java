@@ -67,7 +67,7 @@ public class ReplayAnalyzer
 		db.add(BerkeleyLogEvent.class, new BerkeleyAccessor<>(BerkeleyLogEvent.class, true));
 		db.open();
 		
-		ASkillSystem skillSystem = GenericSkillSystem.forSimulation();
+		ASkillSystem skillSystem = GenericSkillSystem.forAnalysis();
 		agents.put(ETeamColor.YELLOW, new Ai(EAiTeam.YELLOW, skillSystem));
 		agents.put(ETeamColor.BLUE, new Ai(EAiTeam.BLUE, skillSystem));
 		

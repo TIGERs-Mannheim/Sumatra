@@ -15,7 +15,7 @@ import org.apache.commons.lang.StringUtils;
 import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.bot.EFeature;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.skillsystem.ESkill;
 import edu.tigers.sumatra.statemachine.IState;
 

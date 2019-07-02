@@ -2,9 +2,7 @@
  * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
-package edu.tigers.sumatra.ai.metis.offense.action.moves;
-
-import com.github.g3force.instanceables.IInstanceableEnum;
+package edu.tigers.sumatra.ai.metis.offense.action.moves;import com.github.g3force.instanceables.IInstanceableEnum;
 import com.github.g3force.instanceables.InstanceableClass;
 
 
@@ -25,6 +23,10 @@ public enum EOffensiveActionMove implements IInstanceableEnum
 	 * Direct kick on the enemy goal
 	 */
 	GOAL_KICK(new InstanceableClass(GoalKickActionMove.class)),
+	/**
+	 * Do a finishing move to kick on the enemy goal
+	 */
+	FINISHER_GOAL_KICK(new InstanceableClass(FinisherGoalKickActionMove.class)),
 	/**
 	 * Free the ball when its dangerous and near our penalty area
 	 */
@@ -49,7 +51,15 @@ public enum EOffensiveActionMove implements IInstanceableEnum
 	 * Pass to some free spot on the field, no robot as pass Target
 	 */
 	KICK_INS_BLAUE(new InstanceableClass(KickInsBlaueActionMove.class)),
-	
+	/**
+	 * If theres nothing good to do, then protect the ball
+	 */
+	PROTECT_MOVE(new InstanceableClass(ProtectActionMove.class)),
+	/**
+	 * Receive the ball
+	 */
+	RECEIVE_BALL(new InstanceableClass(ReceiveBallActionMove.class)),
+
 	;
 	
 	

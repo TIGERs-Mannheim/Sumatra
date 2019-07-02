@@ -48,7 +48,7 @@ public class BestGoalShotRaterCalc extends ACalculator
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
 		final AngleRangeRater rater = AngleRangeRater.forGoal(Geometry.getGoalTheir());
-		rater.setObstacles(baseAiFrame.getWorldFrame().getBots().values());
+		rater.setObstacles(baseAiFrame.getWorldFrame().getFoeBots().values());
 		rater.setStraightBallConsultant(baseAiFrame.getWorldFrame().getBall().getStraightConsultant());
 		
 		List<IDrawableShape> directShotShapes = newTacticalField.getDrawableShapes()
@@ -63,7 +63,7 @@ public class BestGoalShotRaterCalc extends ACalculator
 			
 			if (ratedTarget.isPresent() && ratedTarget.get().getScore() > 0.01)
 			{
-				ILineSegment line = Lines.segmentFromPoints(bot.getBotKickerPos(), ratedTarget.get().getTarget());
+				ILineSegment line = Lines.segmentFromPoints(bot.getBotKickerPos(), ratedTarget.get().getTarget().getPos());
 				DrawableLine drawableLine = new DrawableLine(line, colorPicker.getColor(ratedTarget.get().getScore()));
 				directShotShapes.add(drawableLine);
 			}
@@ -73,7 +73,7 @@ public class BestGoalShotRaterCalc extends ACalculator
 		Optional<IRatedTarget> ballTarget = rater.rate(getBall().getPos());
 		if (ballTarget.isPresent())
 		{
-			ILineSegment line = Lines.segmentFromPoints(getBall().getPos(), ballTarget.get().getTarget());
+			ILineSegment line = Lines.segmentFromPoints(getBall().getPos(), ballTarget.get().getTarget().getPos());
 			DrawableLine drawableLine = new DrawableLine(line, colorPicker.getColor(ballTarget.get().getScore()));
 			directShotShapes.add(drawableLine);
 		}

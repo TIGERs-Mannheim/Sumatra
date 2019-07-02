@@ -5,6 +5,7 @@
 package edu.tigers.sumatra.skillsystem.skills;
 
 import java.util.Optional;
+import java.util.Random;
 
 import org.apache.log4j.Logger;
 
@@ -18,6 +19,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.skillsystem.ESkill;
+import edu.tigers.sumatra.time.TimestampTimer;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 
 
@@ -28,11 +30,22 @@ public class PenaltyKeeperSkill extends AMoveSkill
 {
 	private static final Logger log = Logger.getLogger(PenaltyKeeperSkill.class.getName());
 	
-	@Configurable(comment = "Move sidewards, because it is faster?")
+	@Configurable(comment = "Move sidewards, because it is faster?", defValue = "false")
 	private static boolean moveSidewards = false;
 	
-	private DynamicPosition dynShooterPos;
+	@Configurable(comment = "Selects how the keeper should select its target during penalty", defValue = "LEGACY")
+	private static ETargetSelectionMode penaltyKeeperMode = ETargetSelectionMode.LEGACY;
 	
+	@Configurable(comment = "How much space should there be between the both positions and the goal posts. (Only with PERIODIC/RANDOM", defValue = "90.0")
+	private static double distanceToGoalPosts = 90;
+	
+	@Configurable(comment = "How long should the RANDOM keeper wait until he chooses a new side [s]", defValue = "0.15")
+	private static double randomTimeDelay = 0.15;
+	
+	private DynamicPosition dynShooterPos;
+	private IVector2 dest = null;
+	
+	private TimestampTimer timer = new TimestampTimer(1);
 	
 	/**
 	 * @param dynShooterPos
@@ -43,19 +56,86 @@ public class PenaltyKeeperSkill extends AMoveSkill
 		this.dynShooterPos = dynShooterPos;
 		
 		getMoveCon().getMoveConstraints().setAccMax(6);
+		timer.setDuration(randomTimeDelay);
 	}
-	
 	
 	@Override
 	protected void beforeStateUpdate()
 	{
-		IVector2 dest = calcDefendingDestination();
+		IVector2 nextDest = calcDefendingDestination();
 		double targetAngle = calcDefendingOrientation();
-		setTargetPose(dest, targetAngle, getMoveCon().getMoveConstraints());
+		if (nextDest != null)
+		{
+			setTargetPose(nextDest, targetAngle, getMoveCon().getMoveConstraints());
+			dest = nextDest;
+		}
+		
 	}
 	
 	
 	private IVector2 calcDefendingDestination()
+	{
+		if (penaltyKeeperMode == ETargetSelectionMode.LEGACY)
+		{
+			return calcLegacyPosition();
+		} else if (penaltyKeeperMode == ETargetSelectionMode.PERIODIC)
+		{
+			return calcPeriodicPosition();
+		} else if (penaltyKeeperMode == ETargetSelectionMode.RANDOM)
+		{
+			return calcRandomPosition();
+		}
+		return null;
+	}
+	
+	
+	private IVector2 calcPeriodicPosition()
+	{
+		IVector2 posLeft = Geometry.getGoalOur().getLeftPost().subtractNew(Vector2f.fromXY(0, distanceToGoalPosts));
+		IVector2 posRight = Geometry.getGoalOur().getRightPost().addNew(Vector2f.fromXY(0, distanceToGoalPosts));
+		
+		if (getTBot().getPos().distanceTo(posLeft) < Geometry.getBotRadius())
+		{
+			return posRight;
+		} else if (getTBot().getPos().distanceTo(posRight) < Geometry.getBotRadius())
+		{
+			return posLeft;
+		} else if (dest == null)
+		{
+			return posRight;
+		}
+		return null;
+	}
+	
+	
+	private IVector2 calcRandomPosition()
+	{
+		IVector2 posLeft = Geometry.getGoalOur().getLeftPost().subtractNew(Vector2f.fromXY(0, distanceToGoalPosts));
+		IVector2 posRight = Geometry.getGoalOur().getRightPost().addNew(Vector2f.fromXY(0, distanceToGoalPosts));
+		
+		long ts = getWorldFrame().getTimestamp();
+		timer.update(ts);
+		if (timer.isTimeUp(ts))
+		{
+			timer.reset();
+			timer.setDuration(randomTimeDelay);
+			double distToLeft = getTBot().getPos().distanceTo(posLeft);
+			double pLeft = distToLeft / posLeft.distanceTo(posRight);
+			Random rand = new Random(ts);
+			if (rand.nextDouble() <= pLeft)
+			{
+				return posLeft;
+			} else
+			{
+				return posRight;
+			}
+		}
+		
+		return null;
+	}
+	
+	
+	private IVector2 calcLegacyPosition()
 	{
 		dynShooterPos.update(getWorldFrame());
 		
@@ -63,7 +143,7 @@ public class PenaltyKeeperSkill extends AMoveSkill
 		IVector2 ballPos = getWorldFrame().getBall().getPos();
 		if (dynShooterPos != null)
 		{
-			direction = Vector2.copy(ballPos.subtractNew(dynShooterPos));
+			direction = Vector2.copy(ballPos.subtractNew(dynShooterPos.getPos()));
 		} else
 		{
 			// in case no enemy bot exists
@@ -95,6 +175,14 @@ public class PenaltyKeeperSkill extends AMoveSkill
 		
 		log.warn("No line intersection found. Shooting line parallel to goal line?");
 		return getPos();
+	}
+	
+	
+	private enum ETargetSelectionMode
+	{
+		LEGACY,
+		PERIODIC,
+		RANDOM
 	}
 	
 	

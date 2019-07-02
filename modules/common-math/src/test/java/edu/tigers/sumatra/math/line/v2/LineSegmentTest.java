@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.line.v2;
@@ -37,8 +37,7 @@ public class LineSegmentTest extends AbstractLineTest
 	{
 		IVector2 start = Vector2.fromXY(1, 2);
 		IVector2 end = Vector2.fromXY(21, 42);
-		IVector2 displacement = end.subtractNew(start);
-		IVector2 dV = displacement.normalizeNew();
+		IVector2 dV = end.subtractNew(start);
 		
 		ILineSegment segment = LineSegment.fromPoints(start, end);
 		
@@ -47,8 +46,6 @@ public class LineSegmentTest extends AbstractLineTest
 		assertThat(segment.getEnd(), is(end));
 		
 		assertThat(segment.directionVector(), is(dV));
-		
-		assertThat(segment.getDisplacement(), is(displacement));
 	}
 	
 	
@@ -60,7 +57,6 @@ public class LineSegmentTest extends AbstractLineTest
 		
 		assertThat(segment.getStart(), is(point));
 		assertThat(segment.getEnd(), is(point));
-		assertThat(segment.getDisplacement(), is(Vector2f.ZERO_VECTOR));
 		assertThat(segment.directionVector(), is(Vector2f.ZERO_VECTOR));
 	}
 	
@@ -75,9 +71,8 @@ public class LineSegmentTest extends AbstractLineTest
 		
 		assertThat(segment.getStart(), is(start));
 		assertThat(segment.getEnd(), is(start.addNew(displacement)));
-		assertThat(segment.directionVector().isParallelTo(displacement), is(true));
-		assertThat(segment.getDisplacement(), is(displacement));
-		assertThat(segment.getDisplacement() != displacement, is(true));
+		assertThat(segment.directionVector(), is(displacement));
+		assertThat(segment.directionVector() != displacement, is(true));
 	}
 	
 	
@@ -92,7 +87,6 @@ public class LineSegmentTest extends AbstractLineTest
 		assertThat(segment.getStart(), is(start));
 		assertThat(segment.getEnd(), is(start));
 		assertThat(segment.directionVector(), is(Vector2f.ZERO_VECTOR));
-		assertThat(segment.getDisplacement(), is(Vector2f.ZERO_VECTOR));
 	}
 	
 	
@@ -159,7 +153,7 @@ public class LineSegmentTest extends AbstractLineTest
 	{
 		EqualsVerifier.forClass(LineSegment.class)
 				.suppress(Warning.NULL_FIELDS)
-				.withIgnoredFields("directionVector", "displacement")
+				.withIgnoredFields("directionVector")
 				.verify();
 	}
 	
@@ -215,7 +209,6 @@ public class LineSegmentTest extends AbstractLineTest
 		IHalfLine line = segment.toHalfLine();
 		
 		assertThat(line.supportVector(), is(segment.getStart()));
-		assertThat(line.directionVector().getLength(), closeTo(1.0d, ACCURACY));
 		assertThat(line.directionVector(), is(segment.directionVector()));
 	}
 	
@@ -230,7 +223,6 @@ public class LineSegmentTest extends AbstractLineTest
 		ILine line = segment.toLine();
 		
 		assertThat(line.supportVector(), is(segment.getStart()));
-		assertThat(line.directionVector().getLength(), closeTo(1.0d, ACCURACY));
 		assertThat(line.directionVector().isParallelTo(segment.directionVector()), is(true));
 	}
 	

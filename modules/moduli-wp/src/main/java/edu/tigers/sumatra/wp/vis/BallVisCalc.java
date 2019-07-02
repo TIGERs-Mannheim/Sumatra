@@ -16,7 +16,6 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
-import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
@@ -40,7 +39,7 @@ public class BallVisCalc implements IWpCalc
 		
 		ICircle ballCircle = Circle.createCircle(ball.getPos(), RuleConstraints.getStopRadius());
 		IDrawableShape crossHair = AnimatedCrosshair.aCrosshairWithContinuousRotation(ballCircle, 1.5f, Color.RED);
-		shapeMap.get(EWpShapesLayer.BALL).add(crossHair);
+		shapeMap.get(EWpShapesLayer.BALL_HIGHLIGHTER).add(crossHair);
 		
 		DrawableCircle point = new DrawableCircle(ball.getPos(), heightFactor * Geometry.getBallRadius(), Color.ORANGE);
 		point.setFill(true);
@@ -52,7 +51,7 @@ public class BallVisCalc implements IWpCalc
 			shapeMap.get(EWpShapesLayer.BALL_PREDICTION).add(land);
 		}
 		
-		for (ILine line : ball.getTrajectory().getTravelLinesInterceptable())
+		for (ILineSegment line : ball.getTrajectory().getTravelLinesInterceptable())
 		{
 			if (line.directionVector().getLength2() > 1)
 			{
@@ -73,7 +72,8 @@ public class BallVisCalc implements IWpCalc
 		if (wfw.getSimpleWorldFrame().getKickEvent().isPresent())
 		{
 			shapeMap.get(EWpShapesLayer.BALL_PREDICTION)
-					.add(new DrawablePoint(wfw.getSimpleWorldFrame().getKickEvent().get().getPosition(), Color.red).withSize(50));
+					.add(new DrawablePoint(wfw.getSimpleWorldFrame().getKickEvent().get().getPosition(), Color.red)
+							.withSize(50));
 		}
 	}
 }

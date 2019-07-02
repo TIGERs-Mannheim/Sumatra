@@ -14,16 +14,17 @@ import com.sleepycat.persist.model.Persistent;
 @Persistent
 public class BotMovementLimits implements IBotMovementLimits
 {
-	private double	velMax		= 2;
-	private double	accMax		= 3;
-	private double	jerkMax		= 20;
+	private double velMax = 2;
+	private double accMax = 3;
+	private double brkMax = 6;
+	private double jerkMax = 20;
 	
-	private double	velMaxW		= 20;
-	private double	accMaxW		= 50;
-	private double	jerkMaxW		= 1000;
+	private double velMaxW = 20;
+	private double accMaxW = 50;
+	private double jerkMaxW = 1000;
 	
-	private double	velMaxFast	= 3;
-	private double	accMaxFast	= 4;
+	private double velMaxFast = 3;
+	private double accMaxFast = 4;
 	
 	
 	/**
@@ -43,6 +44,7 @@ public class BotMovementLimits implements IBotMovementLimits
 	{
 		velMax = limits.getVelMax();
 		accMax = limits.getAccMax();
+		brkMax = limits.getBrkMax();
 		jerkMax = limits.getJerkMax();
 		velMaxW = limits.getVelMaxW();
 		accMaxW = limits.getAccMaxW();
@@ -87,6 +89,19 @@ public class BotMovementLimits implements IBotMovementLimits
 	public void setAccMax(final double accMax)
 	{
 		this.accMax = accMax;
+	}
+	
+	
+	@Override
+	public double getBrkMax()
+	{
+		return brkMax;
+	}
+	
+	
+	public void setBrkMax(final double brkMax)
+	{
+		this.brkMax = brkMax;
 	}
 	
 	

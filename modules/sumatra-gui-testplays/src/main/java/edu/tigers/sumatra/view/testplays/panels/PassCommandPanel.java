@@ -4,11 +4,13 @@
 
 package edu.tigers.sumatra.view.testplays.panels;
 
-import javax.swing.*;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JTextField;
 
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
 import org.apache.commons.lang.StringUtils;
 
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.testplays.commands.PassCommand;
 
 

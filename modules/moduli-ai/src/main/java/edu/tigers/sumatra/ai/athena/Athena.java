@@ -5,6 +5,7 @@ package edu.tigers.sumatra.ai.athena;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.log4j.Logger;
@@ -18,6 +19,7 @@ import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.model.SumatraModel;
@@ -148,8 +150,14 @@ public class Athena
 			if (numBots != roles.size())
 			{
 				log.warn("Assigned role number does not match number of bots: numBots=" + numBots + ", numRoles="
-						+ roles.size());
-				log.warn("Roles: " + roles);
+						+ roles.size() + " | Roles: " + roles);
+			} else
+			{
+				Set<BotID> uniqueSetOfBots = roles.stream().map(ARole::getBotID).collect(Collectors.toSet());
+				if (uniqueSetOfBots.size() != numBots)
+				{
+					log.warn("Bot ids are assigned multiple times: " + roles);
+				}
 			}
 		}
 	}

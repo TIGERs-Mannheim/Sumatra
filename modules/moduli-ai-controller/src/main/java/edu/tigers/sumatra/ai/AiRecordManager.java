@@ -3,8 +3,6 @@
  */
 package edu.tigers.sumatra.ai;
 
-import com.sleepycat.persist.evolve.Mutations;
-
 import edu.tigers.sumatra.gamelog.SSLGameLogRecorder;
 import edu.tigers.sumatra.persistence.BerkeleyAccessor;
 import edu.tigers.sumatra.persistence.BerkeleyAsyncRecorder;
@@ -20,14 +18,12 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
 /**
  * Manager for central control of recordings
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class AiRecordManager extends RecordManager
 {
 	private SSLGameLogRecorder gamelogRecorder = new SSLGameLogRecorder();
-	
-	
+
+
 	@Override
 	protected void onNewBerkeleyDb(final BerkeleyDb db)
 	{
@@ -36,14 +32,11 @@ public class AiRecordManager extends RecordManager
 		db.add(BerkeleyCamDetectionFrame.class, new BerkeleyAccessor<>(BerkeleyCamDetectionFrame.class, true));
 		db.add(BerkeleyShapeMapFrame.class, new BerkeleyAccessor<>(BerkeleyShapeMapFrame.class, true));
 		db.add(WorldFrameWrapper.class, new BerkeleyAccessor<>(WorldFrameWrapper.class, true));
-		
-		Mutations mutations = new Mutations();
-		// add future mutations here
-		
-		db.getEnv().getStoreConfig().setMutations(mutations);
+
+		db.getEnv().getStoreConfig().setMutations(getMutations());
 	}
-	
-	
+
+
 	@Override
 	protected void onNewBerkeleyRecorder(final BerkeleyAsyncRecorder recorder)
 	{
@@ -53,16 +46,16 @@ public class AiRecordManager extends RecordManager
 		recorder.add(new WfwBerkeleyRecorder(recorder.getDb()));
 		recorder.add(new ShapeMapBerkeleyRecorder(recorder.getDb()));
 	}
-	
-	
+
+
 	@Override
 	protected void startRecording()
 	{
 		super.startRecording();
 		gamelogRecorder.start();
 	}
-	
-	
+
+
 	@Override
 	protected void stopRecording()
 	{

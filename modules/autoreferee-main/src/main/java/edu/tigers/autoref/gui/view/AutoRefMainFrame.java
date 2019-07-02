@@ -4,6 +4,7 @@
 package edu.tigers.autoref.gui.view;
 
 import java.awt.event.KeyEvent;
+import java.nio.file.Path;
 
 import javax.swing.ImageIcon;
 import javax.swing.JMenu;
@@ -19,6 +20,7 @@ import edu.tigers.sumatra.AMainFrame;
 import edu.tigers.sumatra.config.ConfigEditorView;
 import edu.tigers.sumatra.persistence.BerkeleyDb;
 import edu.tigers.sumatra.presenter.log.LogView;
+import edu.tigers.sumatra.presenter.referee.RefereeView;
 import edu.tigers.sumatra.view.replay.ReplayLoadMenu;
 import net.infonode.docking.RootWindow;
 import net.infonode.docking.properties.RootWindowProperties;
@@ -40,7 +42,7 @@ public class AutoRefMainFrame extends AMainFrame implements ReplayLoadMenu.IRepl
 	 */
 	public AutoRefMainFrame()
 	{
-		setTitle("Autoreferee");
+		setTitle("TIGERs AutoReferee 2019");
 		
 		replayMenu.addObserver(this);
 		replayMenu.setMnemonic(KeyEvent.VK_R);
@@ -58,6 +60,7 @@ public class AutoRefMainFrame extends AMainFrame implements ReplayLoadMenu.IRepl
 		addView(autoRefView);
 		addView(gameLogView);
 		addView(new BallSpeedView());
+		addView(new RefereeView());
 		
 		updateViewMenu();
 		fillMenuBar();
@@ -113,5 +116,12 @@ public class AutoRefMainFrame extends AMainFrame implements ReplayLoadMenu.IRepl
 	public void onOpenReplay(final BerkeleyDb db)
 	{
 		new AutoRefReplayPresenter().start(db, 0);
+	}
+	
+	
+	@Override
+	public void onCompressReplay(final Path path)
+	{
+		startReplayCompressionThread(path);
 	}
 }

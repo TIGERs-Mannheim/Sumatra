@@ -1,18 +1,17 @@
-<?xml version="1.0" encoding="ISO-8859-1" ?>
-<!--
-  ~ Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
-  -->
-
+<?xml version="1.0" encoding="UTF-8" ?>
 <centralSoftware>
+
+    <!--
+    This configuration is used for sumatra trainer, which is currently not maintained and might be replaced soon.
+    -->
+
     <globalConfiguration>
         <environment>SUMATRA</environment>
+        <simulation>true</simulation>
     </globalConfiguration>
 
     <module id="edu.tigers.sumatra.vision.AVisionFilter">
         <implementation>edu.tigers.sumatra.sim.SumatraSimulator</implementation>
-
-        <dependency>edu.tigers.sumatra.timer.ATimer</dependency>
-        <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
     </module>
 
 
@@ -20,8 +19,6 @@
         <implementation>edu.tigers.sumatra.wp.WorldInfoCollector</implementation>
 
         <dependency>edu.tigers.sumatra.referee.AReferee</dependency>
-        <dependency>edu.tigers.sumatra.timer.ATimer</dependency>
-        <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
     </module>
 
 
@@ -31,19 +28,15 @@
 
 
     <module id="edu.tigers.autoreferee.module.AutoRefModule">
-        <properties>
-            <remoteControlType>LOCAL_MOCK</remoteControlType>
-            <log2file>false</log2file>
-        </properties>
+        <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
     </module>
 
 
     <module id="edu.tigers.sumatra.botmanager.ABotManager">
-        <implementation>edu.tigers.sumatra.botmanager.BotManager</implementation>
+        <implementation>edu.tigers.sumatra.botmanager.sim.SimBotManager</implementation>
 
         <properties>
-            <basestation-impl>edu.tigers.sumatra.sim.SumatraBaseStation
-            </basestation-impl>
+            <basestation-impl>edu.tigers.sumatra.botmanager.sim.SumatraBaseStation</basestation-impl>
         </properties>
 
         <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
@@ -62,12 +55,6 @@
 
         <dependency>edu.tigers.sumatra.skillsystem.ASkillSystem</dependency>
         <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
-        <dependency>edu.tigers.sumatra.timer.ATimer</dependency>
-    </module>
-
-
-    <module id="edu.tigers.sumatra.timer.ATimer">
-        <implementation>edu.tigers.sumatra.timer.SumatraTimer</implementation>
     </module>
 
     <module id="edu.tigers.sumatra.persistence.RecordManager">
@@ -75,4 +62,5 @@
     </module>
 
     <module id="edu.tigers.sumatra.botparams.BotParamsManager"/>
+    <module id="edu.tigers.sumatra.trees.OffensiveTreeProvider"/>
 </centralSoftware>

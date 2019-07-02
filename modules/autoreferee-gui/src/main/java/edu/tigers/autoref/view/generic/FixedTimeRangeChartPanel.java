@@ -3,11 +3,13 @@
  */
 package edu.tigers.autoref.view.generic;
 
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Graphics;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.swing.*;
+import javax.swing.JPanel;
 
 import info.monitorenter.gui.chart.Chart2D;
 import info.monitorenter.gui.chart.IAxis;
@@ -36,6 +38,7 @@ public class FixedTimeRangeChartPanel extends JPanel
 	
 	private Chart2D							mainChart			= new Chart2D();
 	private Trace2DLtd						mainTrace			= new Trace2DLtd();
+	private Trace2DLtd initialVelTrace = new Trace2DLtd();
 	private Map<String, Trace2DSimple>	horizontalLines	= new HashMap<>();
 	
 	private boolean							highlightHead		= true;
@@ -76,6 +79,11 @@ public class FixedTimeRangeChartPanel extends JPanel
 		mainTrace.setName(null);
 		mainChart.addTrace(mainTrace);
 		
+		initialVelTrace.setTracePainter(new NoCarriageReturnLinePainter());
+		initialVelTrace.setName(null);
+		initialVelTrace.setColor(Color.GREEN);
+		mainChart.addTrace(initialVelTrace);
+		
 		headTrace.setName(null);
 		headTrace.setTracePainter(new TracePainterDisc(12));
 		mainChart.addTrace(headTrace);
@@ -101,6 +109,19 @@ public class FixedTimeRangeChartPanel extends JPanel
 		}
 	}
 	
+	
+	/**
+	 * Add a new data point to the chart
+	 *
+	 * @param timestamp in nanoseconds
+	 * @param y
+	 */
+	public void addInitialVelPoint(final long timestamp, final double y)
+	{
+		double x = (timestamp % timeRange) / 1e9;
+		initialVelTrace.addPoint(x, y);
+		
+	}
 	
 	/**
 	 * Set the displayed y range
@@ -177,6 +198,7 @@ public class FixedTimeRangeChartPanel extends JPanel
 	public void setPointBufferSize(final int bufSize)
 	{
 		mainTrace.setMaxSize(bufSize);
+		initialVelTrace.setMaxSize(bufSize);
 	}
 	
 	

@@ -8,7 +8,8 @@ import java.awt.EventQueue;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 
-import edu.tigers.sumatra.referee.data.RefBoxRemoteControlFactory;
+import edu.tigers.sumatra.Referee;
+import edu.tigers.sumatra.referee.control.GcEventFactory;
 import net.miginfocom.swing.MigLayout;
 
 
@@ -35,10 +36,12 @@ public class CommonCommandsPanel extends ARefBoxRemoteControlGeneratorPanel
 		forceStart = new JButton("Force Start");
 		normalStart = new JButton("Normal Start");
 		
-		halt.addActionListener(e -> notifyNewControlRequest(RefBoxRemoteControlFactory.fromHalt()));
-		stop.addActionListener(e -> notifyNewControlRequest(RefBoxRemoteControlFactory.fromStop()));
-		forceStart.addActionListener(e -> notifyNewControlRequest(RefBoxRemoteControlFactory.fromForceStart()));
-		normalStart.addActionListener(e -> notifyNewControlRequest(RefBoxRemoteControlFactory.fromNormalStart()));
+		halt.addActionListener(e -> sendGameControllerEvent(GcEventFactory.command(Referee.SSL_Referee.Command.HALT)));
+		stop.addActionListener(e -> sendGameControllerEvent(GcEventFactory.command(Referee.SSL_Referee.Command.STOP)));
+		forceStart.addActionListener(
+				e -> sendGameControllerEvent(GcEventFactory.command(Referee.SSL_Referee.Command.FORCE_START)));
+		normalStart.addActionListener(
+				e -> sendGameControllerEvent(GcEventFactory.command(Referee.SSL_Referee.Command.NORMAL_START)));
 		
 		add(halt);
 		add(stop);

@@ -13,7 +13,9 @@ import javax.swing.Timer;
 import org.apache.log4j.Logger;
 
 import edu.tigers.moduli.IModuliStateObserver;
+import edu.tigers.moduli.exceptions.DependencyException;
 import edu.tigers.moduli.exceptions.InitModuleException;
+import edu.tigers.moduli.exceptions.LoadModulesException;
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.moduli.exceptions.StartModuleException;
 import edu.tigers.moduli.listenerVariables.ModulesState;
@@ -22,13 +24,14 @@ import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
 import edu.tigers.sumatra.ai.VisualizationFrame;
 import edu.tigers.sumatra.ai.athena.EAIControlState;
 import edu.tigers.sumatra.clock.FpsCounter;
-import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.model.ModuliStateAdapter;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.persistence.IRecordObserver;
 import edu.tigers.sumatra.persistence.RecordManager;
+import edu.tigers.sumatra.referee.AReferee;
 import edu.tigers.sumatra.referee.IRefereeObserver;
+import edu.tigers.sumatra.referee.control.GcEventFactory;
 import edu.tigers.sumatra.telegram.TelegramNotificationController;
 import edu.tigers.sumatra.util.GlobalShortcuts;
 import edu.tigers.sumatra.util.GlobalShortcuts.EShortcut;
@@ -204,12 +207,17 @@ public class ToolbarPresenter implements IModuliStateObserver, IToolbarObserver,
 		private void startModules()
 		{
 			String moduliConfig = SumatraModel.getInstance().getCurrentModuliConfig();
-			onLoadModuliConfig(moduliConfig);
+			
 			try
 			{
+				onLoadModuliConfig(moduliConfig);
 				log.trace("Start modules");
 				SumatraModel.getInstance().startModules();
 				log.trace("Finished start modules");
+			} catch (final LoadModulesException | DependencyException err)
+			{
+				log.error("Cannot load modules: ", err);
+				SumatraModel.getInstance().getModulesState().set(ModulesState.RESOLVED);
 			} catch (final InitModuleException err)
 			{
 				log.error("Cannot init modules: ", err);
@@ -225,10 +233,10 @@ public class ToolbarPresenter implements IModuliStateObserver, IToolbarObserver,
 		/**
 		 * @param filename
 		 */
-		private void onLoadModuliConfig(final String filename)
+		private void onLoadModuliConfig(final String filename) throws LoadModulesException, DependencyException
 		{
 			final String selFilename;
-			if (!new File(SumatraModel.MODULI_CONFIG_PATH + "/" + filename).exists())
+			if (!new File(SumatraModel.MODULI_CONFIG_PATH + File.separator + filename).exists())
 			{
 				log.warn("Could not find moduli config: " + filename);
 				selFilename = SumatraModel.MODULI_CONFIG_FILE_DEFAULT;
@@ -241,7 +249,7 @@ public class ToolbarPresenter implements IModuliStateObserver, IToolbarObserver,
 			SumatraModel.getInstance().setCurrentModuliConfig(selFilename);
 			
 			// --- load modules into Sumatra ---
-			SumatraModel.getInstance().loadModulesSafe(selFilename);
+			SumatraModel.getInstance().loadModulesOfConfig(selFilename);
 		}
 	}
 	
@@ -264,7 +272,8 @@ public class ToolbarPresenter implements IModuliStateObserver, IToolbarObserver,
 	@Override
 	public void onSwitchSides()
 	{
-		Geometry.setNegativeHalfTeam(Geometry.getNegativeHalfTeam().opposite());
+		SumatraModel.getInstance().getModule(AReferee.class).sendGameControllerEvent(
+				GcEventFactory.triggerSwitchSides());
 	}
 	
 	

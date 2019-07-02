@@ -14,3 +14,13 @@
 **/Sumatra.log
 sonarlint
 **/target/
+s101plugin.properties
+repository
+.idea/artifacts
+history.json
+gc-state*
+
+doc/**/*.html
+doc/**/*-guide.pdf
+doc/**/images/diag-*
+doc/**/.asciidoctor/

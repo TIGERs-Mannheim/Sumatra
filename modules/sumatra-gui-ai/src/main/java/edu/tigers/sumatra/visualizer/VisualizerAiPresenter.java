@@ -44,38 +44,41 @@ public class VisualizerAiPresenter extends VisualizerPresenter
 {
 	@SuppressWarnings("unused")
 	private static final Logger log = Logger.getLogger(VisualizerAiPresenter.class.getName());
-	
+
 	@Configurable(comment = "Enter penalty area when moving bot with point'n click")
 	private static boolean moveToPenAreaAllowed = false;
-	
+
 	@Configurable(comment = "Use fastPosMove for point'n click", defValue = "false")
 	private static boolean useFastPosMove = false;
-	
+
+	@Configurable(comment = "Ball is obstacle for point'n click", defValue = "true")
+	private static boolean ballObstacle = true;
+
 	static
 	{
 		ConfigRegistration.registerClass("user", VisualizerAiPresenter.class);
 	}
-	
+
 	private MovementCon moveCon = new MovementCon();
 	private ASkillSystem skillsystem = null;
 	private ABotManager botManager = null;
 	private IVisualizerObserver visObserver = null;
 	private boolean mouseMoveUpdateDestinationMode = false;
-	
-	
+
+
 	@Override
 	public void onRobotClick(final BotID botId)
 	{
 		super.onRobotClick(botId);
 		mouseMoveUpdateDestinationMode = false;
-		
+
 		if (visObserver != null)
 		{
 			visObserver.onRobotClick(botId);
 		}
 	}
-	
-	
+
+
 	@Override
 	public void onHideBotFromRcmClicked(final BotID botId, final boolean hide)
 	{
@@ -92,8 +95,8 @@ public class VisualizerAiPresenter extends VisualizerPresenter
 			}
 		}
 	}
-	
-	
+
+
 	@Override
 	public void onMouseMoved(final IVector2 pos, final MouseEvent e)
 	{
@@ -108,15 +111,15 @@ public class VisualizerAiPresenter extends VisualizerPresenter
 			}
 		}
 	}
-	
-	
+
+
 	@Override
 	public void onRobotSelected(final IVector2 posIn, final MouseEvent e)
 	{
 		boolean ctrl = e.isControlDown();
 		boolean shift = e.isShiftDown();
 		BotID selectedRobotId = getSelectedRobotId();
-		
+
 		if (skillsystem != null && !selectedRobotId.isUninitializedID())
 		{
 			AMoveSkill skill = AMoveToSkill.createMoveToSkill();
@@ -125,14 +128,15 @@ public class VisualizerAiPresenter extends VisualizerPresenter
 			moveCon.setPenaltyAreaAllowedTheir(moveToPenAreaAllowed);
 			moveCon.setIgnoreGameStateObstacles(true);
 			moveCon.setFastPosMode(useFastPosMove);
-			
+			moveCon.setBallObstacle(ballObstacle);
+
 			final DynamicPosition ballPos = new DynamicPosition(BallID.instance());
 			IVector2 pos = posIn;
 			if (Geometry.getNegativeHalfTeam() != selectedRobotId.getTeamColor())
 			{
 				pos = Vector2.fromXY(-posIn.x(), -posIn.y());
 			}
-			
+
 			mouseMoveUpdateDestinationMode = false;
 			if (ctrl && shift)
 			{
@@ -154,7 +158,7 @@ public class VisualizerAiPresenter extends VisualizerPresenter
 			{
 				moveCon.updateDestination(pos);
 				skillsystem.execute(selectedRobotId, skill);
-				
+
 				if (visObserver != null)
 				{
 					visObserver.onMoveClick(selectedRobotId, pos);
@@ -162,8 +166,8 @@ public class VisualizerAiPresenter extends VisualizerPresenter
 			}
 		}
 	}
-	
-	
+
+
 	private void activate()
 	{
 		if (SumatraModel.getInstance().isModuleLoaded(AAgent.class))
@@ -180,19 +184,19 @@ public class VisualizerAiPresenter extends VisualizerPresenter
 				onBotAdded(bot);
 			}
 		}
-		
+
 		if (SumatraModel.getInstance().isModuleLoaded(ASkillSystem.class))
 		{
 			skillsystem = SumatraModel.getInstance().getModule(ASkillSystem.class);
 		}
-		
+
 		if (SumatraModel.getInstance().isModuleLoaded(GuiNotificationsController.class))
 		{
 			visObserver = SumatraModel.getInstance().getModule(GuiNotificationsController.class);
 		}
 	}
-	
-	
+
+
 	private void deactivate()
 	{
 		if (SumatraModel.getInstance().isModuleLoaded(AAgent.class))
@@ -200,18 +204,18 @@ public class VisualizerAiPresenter extends VisualizerPresenter
 			SumatraModel.getInstance().getModule(AAgent.class)
 					.removeVisObserver(this);
 		}
-		
+
 		if (botManager != null)
 		{
 			botManager.removeObserver(this);
 		}
-		
+
 		skillsystem = null;
 		botManager = null;
 		visObserver = null;
 	}
-	
-	
+
+
 	@Override
 	public void onModuliStateChanged(final ModulesState state)
 	{
@@ -224,8 +228,8 @@ public class VisualizerAiPresenter extends VisualizerPresenter
 			deactivate();
 		}
 	}
-	
-	
+
+
 	@Override
 	public void updateRobotsPanel()
 	{
@@ -238,22 +242,22 @@ public class VisualizerAiPresenter extends VisualizerPresenter
 		}
 		super.updateRobotsPanel();
 	}
-	
-	
+
+
 	@Override
 	public void onBotAdded(final ABot bot)
 	{
 		onBotAddedInternal(bot);
 	}
-	
-	
+
+
 	@Override
 	public void onBotRemoved(final ABot bot)
 	{
 		onBotRemovedInternal(bot);
 	}
-	
-	
+
+
 	private void onBotAddedInternal(final IBot bot)
 	{
 		BotStatus status = getPanel().getRobotsPanel().getBotStatus(bot.getBotId());
@@ -264,8 +268,8 @@ public class VisualizerAiPresenter extends VisualizerPresenter
 		status.setBotFeatures(bot.getBotFeatures());
 		status.setRobotMode(bot.getRobotMode());
 	}
-	
-	
+
+
 	private void onBotRemovedInternal(final IBot bot)
 	{
 		BotStatus status = getPanel().getRobotsPanel().getBotStatus(bot.getBotId());

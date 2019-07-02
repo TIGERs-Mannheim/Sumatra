@@ -14,15 +14,8 @@ import edu.tigers.sumatra.views.ESumatraViewType;
 import edu.tigers.sumatra.views.ISumatraViewPresenter;
 
 
-/**
- * @author "Lukas Magel"
- */
 public class GameLogView extends ASumatraView
 {
-	
-	/**
-	 * 
-	 */
 	public GameLogView()
 	{
 		super(ESumatraViewType.AUTOREFEREE_GAME_LOG);
@@ -34,5 +27,4 @@ public class GameLogView extends ASumatraView
 	{
 		return new GameLogPresenter();
 	}
-	
 }

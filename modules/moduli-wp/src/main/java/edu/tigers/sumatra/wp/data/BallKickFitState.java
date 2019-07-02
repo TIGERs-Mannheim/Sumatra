@@ -82,4 +82,13 @@ public class BallKickFitState
 	{
 		return kickTimestamp;
 	}
+	
+	
+	/**
+	 * @return the absolute kick speed
+	 */
+	public double getAbsoluteKickSpeed()
+	{
+		return kickVel.getLength();
+	}
 }

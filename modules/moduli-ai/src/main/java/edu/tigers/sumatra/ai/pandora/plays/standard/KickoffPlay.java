@@ -4,16 +4,10 @@
 
 package edu.tigers.sumatra.ai.pandora.plays.standard;
 
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
 import edu.tigers.sumatra.ai.metis.MetisAiFrame;
-import edu.tigers.sumatra.ai.metis.support.IPassTarget;
+import edu.tigers.sumatra.ai.metis.support.passtarget.IPassTarget;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
@@ -26,6 +20,11 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.referee.data.GameState;
+
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -48,13 +47,7 @@ public class KickoffPlay extends APlay
 			(-Geometry.getFieldWidth() / 2.0)
 					+ Geometry.getBotRadius() + distanceToSideLine);
 	
-	private Map<ESides, MoveRole>	movers					= new EnumMap<>(ESides.class);
-	
-	private enum ESides
-	{
-		LEFT,
-		RIGHT
-	}
+	private Map<ESides, MoveRole> movers = new EnumMap<>(ESides.class);
 	
 	
 	/**
@@ -104,15 +97,16 @@ public class KickoffPlay extends APlay
 	@Override
 	protected void doUpdate(final AthenaAiFrame frame)
 	{
-		if (getRoles().size() != 3)
-		{
-			return;
-		}
-		
 		sortMovers();
 		
-		movers.get(ESides.LEFT).getMoveCon().updateDestination(movePointLeftBase);
-		movers.get(ESides.RIGHT).getMoveCon().updateDestination(movePointRightBase);
+		if (movers.containsKey(ESides.LEFT))
+		{
+			movers.get(ESides.LEFT).getMoveCon().updateDestination(movePointLeftBase);
+		}
+		if (movers.containsKey(ESides.RIGHT))
+		{
+			movers.get(ESides.RIGHT).getMoveCon().updateDestination(movePointRightBase);
+		}
 		
 		Map<BotID, IPassTarget> bestPositions = frame.getTacticalField().getKickoffStrategy().getBestMovementPositions();
 		
@@ -120,7 +114,7 @@ public class KickoffPlay extends APlay
 		{
 			if (bestPositions.containsKey(mover.getBotID()))
 			{
-				mover.getMoveCon().updateDestination(bestPositions.get(mover.getBotID()).getKickerPos());
+				mover.getMoveCon().updateDestination(bestPositions.get(mover.getBotID()).getPos());
 			}
 		}
 		
@@ -148,17 +142,35 @@ public class KickoffPlay extends APlay
 			}
 		}
 		
-		double firstDistanceRight = VectorMath.distancePP(movePointRightBase, moveRoles.get(0).getPos());
-		double secondDistanceRight = VectorMath.distancePP(movePointRightBase, moveRoles.get(1).getPos());
-		
-		if (firstDistanceRight < secondDistanceRight)
+		int numRoles = moveRoles.size();
+		if (numRoles > 0)
 		{
-			movers.put(ESides.RIGHT, moveRoles.get(0));
-			movers.put(ESides.LEFT, moveRoles.get(1));
-		} else
-		{
-			movers.put(ESides.RIGHT, moveRoles.get(1));
-			movers.put(ESides.LEFT, moveRoles.get(0));
+			double firstDistanceRight = VectorMath.distancePP(movePointRightBase, moveRoles.get(0).getPos());
+			double secondDistanceRight = firstDistanceRight;
+			if (numRoles > 1)
+			{
+				secondDistanceRight = VectorMath.distancePP(movePointRightBase, moveRoles.get(1).getPos());
+			}
+			
+			if (firstDistanceRight <= secondDistanceRight)
+			{
+				movers.put(ESides.RIGHT, moveRoles.get(0));
+				if (numRoles > 1)
+				{
+					movers.put(ESides.LEFT, moveRoles.get(1));
+				}
+			} else
+			{
+				movers.put(ESides.RIGHT, moveRoles.get(1));
+				movers.put(ESides.LEFT, moveRoles.get(0));
+			}
 		}
+	}
+	
+	
+	private enum ESides
+	{
+		LEFT,
+		RIGHT
 	}
 }

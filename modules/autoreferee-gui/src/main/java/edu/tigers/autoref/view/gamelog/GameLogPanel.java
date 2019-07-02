@@ -24,45 +24,28 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableRowSorter;
 
-import org.apache.log4j.Logger;
-
 import edu.tigers.autoref.model.gamelog.GameLogRowFilter;
 import edu.tigers.autoref.model.gamelog.GameLogTableModel;
-import edu.tigers.autoreferee.engine.log.GameLog;
+import edu.tigers.autoreferee.engine.log.ELogEntryType;
 import edu.tigers.autoreferee.engine.log.GameLogEntry;
-import edu.tigers.autoreferee.engine.log.GameLogEntry.ELogEntryType;
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.components.EnumCheckBoxPanel;
-import edu.tigers.sumatra.components.IEnumPanel;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.persistence.RecordManager;
 import edu.tigers.sumatra.views.ISumatraView;
 
 
 /**
- * Panel class which displays a {@link JTable} instance to display entries of a {@link GameLog}. Use it in conjunction
- * with the {@link GameLogTableModel} class.
- * 
- * @author "Lukas Magel"
+ * Show the game log of the autoRef.
  */
-public class GameLogPanel extends JPanel implements IGameLogPanel, ISumatraView
+public class GameLogPanel extends JPanel implements ISumatraView
 {
-	private static final Logger log = Logger.getLogger(GameLogPanel.class.getName());
-	
-	/**  */
-	private static final long serialVersionUID = 3266769602344203080L;
-	
-	
-	private EnumCheckBoxPanel<ELogEntryType> logTypePanel;
+	private final EnumCheckBoxPanel<ELogEntryType> logTypePanel;
 	private JTable entryTable = new JTable();
 	private GameLogRowFilter filter = new GameLogRowFilter();
 	private TableRowSorter<GameLogTableModel> sorter = new TableRowSorter<>();
 	
 	
-	/**
-	 * New panel
-	 */
-	public GameLogPanel()
+	public GameLogPanel(final GameLogTableModel tableModel)
 	{
 		logTypePanel = new EnumCheckBoxPanel<>(ELogEntryType.class, null, BoxLayout.LINE_AXIS);
 		
@@ -72,15 +55,6 @@ public class GameLogPanel extends JPanel implements IGameLogPanel, ISumatraView
 		sorter.setRowFilter(filter);
 		entryTable.setRowSorter(sorter);
 		
-		setupGUI();
-	}
-	
-	
-	private void setupGUI()
-	{
-		/*
-		 * Layout the component
-		 */
 		setLayout(new BorderLayout());
 		JScrollPane scrollPane = new JScrollPane(entryTable);
 		add(scrollPane, BorderLayout.CENTER);
@@ -92,6 +66,8 @@ public class GameLogPanel extends JPanel implements IGameLogPanel, ISumatraView
 		popupMenu.add(replayItem);
 		entryTable.setComponentPopupMenu(popupMenu);
 		popupMenu.addPopupMenuListener(new RowPopupMenuListener(popupMenu));
+		
+		setTableModel(tableModel);
 	}
 	
 	
@@ -109,14 +85,7 @@ public class GameLogPanel extends JPanel implements IGameLogPanel, ISumatraView
 			startTime = value.getTimestamp() - TimeUnit.SECONDS.toNanos(3);
 		}
 		
-		try
-		{
-			RecordManager recordManager = SumatraModel.getInstance().getModule(RecordManager.class);
-			recordManager.notifyViewReplay(startTime);
-		} catch (ModuleNotFoundException e)
-		{
-			log.debug("There is no record manager. Wont't add observer", e);
-		}
+		SumatraModel.getInstance().getModuleOpt(RecordManager.class).ifPresent(m -> m.notifyViewReplay(startTime));
 	}
 	
 	private class RowPopupMenuListener implements PopupMenuListener
@@ -163,8 +132,7 @@ public class GameLogPanel extends JPanel implements IGameLogPanel, ISumatraView
 	 * 
 	 * @param model
 	 */
-	@Override
-	public void setTableModel(final GameLogTableModel model)
+	private void setTableModel(final GameLogTableModel model)
 	{
 		sorter.setModel(model);
 		entryTable.setModel(model);
@@ -179,7 +147,6 @@ public class GameLogPanel extends JPanel implements IGameLogPanel, ISumatraView
 	 * 
 	 * @param types
 	 */
-	@Override
 	public void setActiveLogTypes(final Set<ELogEntryType> types)
 	{
 		filter.setIncludedTypes(types);
@@ -195,12 +162,9 @@ public class GameLogPanel extends JPanel implements IGameLogPanel, ISumatraView
 	/**
 	 * This class tries to automatically scroll down to new entries in the table if the table is already scrolled all the
 	 * way to the bottom
-	 * 
-	 * @author "Lukas Magel"
 	 */
 	private class ScrollDownModelListener implements TableModelListener
 	{
-		
 		@Override
 		public void tableChanged(final TableModelEvent e)
 		{
@@ -216,12 +180,10 @@ public class GameLogPanel extends JPanel implements IGameLogPanel, ISumatraView
 						() -> entryTable.scrollRectToVisible(entryTable.getCellRect(entryTable.getRowCount() - 1, 0, true)));
 			}
 		}
-		
 	}
 	
 	
-	@Override
-	public IEnumPanel<ELogEntryType> getLogTypePanel()
+	public EnumCheckBoxPanel<ELogEntryType> getLogTypePanel()
 	{
 		return logTypePanel;
 	}

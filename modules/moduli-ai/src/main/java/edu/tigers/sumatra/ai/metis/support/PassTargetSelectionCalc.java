@@ -4,16 +4,16 @@
 
 package edu.tigers.sumatra.ai.metis.support;
 
-import java.awt.Color;
-import java.util.ArrayList;
-import java.util.List;
-
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.ai.metis.support.passtarget.EScoreMode;
+import edu.tigers.sumatra.ai.metis.support.passtarget.IPassTarget;
+import edu.tigers.sumatra.ai.metis.support.passtarget.IRatedPassTarget;
+import edu.tigers.sumatra.ai.metis.support.passtarget.RatedPassTarget;
+import edu.tigers.sumatra.ai.metis.support.passtarget.RatedPassTargetNoScore;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
@@ -24,89 +24,187 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 
 /**
- * This class select the best Pass Targets, which are prior rated by PassTargetRatingCalc
+ * This class selects the best Pass Targets and chooses the right score mode
  */
 public class PassTargetSelectionCalc extends ACalculator
 {
 	@Configurable(defValue = "5", comment = "How many pass targets to select per bot")
 	private static int maxPassTargetsPerBot = 5;
 	
+	@Configurable(defValue = "0.4", comment = "PassScore threshold in which selection mode is changed to pressure")
+	private static double pressureScoreThreshold = 0.4;
+	
+	@Configurable(defValue = "0.15", comment = "Reflector threshold above which reflector scores are accepted")
+	private static double reflectorScoreThreshold = 0.15;
+	
+	@Configurable(defValue = "15")
+	private static int minPressureScoreTargetFilter = 15;
+	
 	
 	@Override
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
-		List<IPassTarget> selectedPassTargets = new ArrayList<>();
-		newTacticalField.getAllPassTargets().stream()
-				.sorted()
-				.filter(passTarget -> selectedPassTargets.stream()
-						.noneMatch(pt -> pt.isSimilarTo(passTarget) && pt.getBotId() == passTarget.getBotId()))
-				.filter(passTarget -> selectedPassTargets.stream()
-						.filter(pt -> pt.getBotId().equals(passTarget.getBotId()))
-						.count() < maxPassTargetsPerBot)
-				.forEach(selectedPassTargets::add);
-		selectedPassTargets.sort(Comparable::compareTo);
-		newTacticalField.setPassTargetsRanked(selectedPassTargets);
-		drawPassTargets(selectedPassTargets);
+		final List<RatedPassTargetNoScore> positiveGoalScorePassTargets = getNewTacticalField()
+				.getAllRatedPassTargetsNoScore()
+				.stream()
+				.filter(e -> e.getPassTargetRating().getGoalKickScore() > reflectorScoreThreshold)
+				.sorted(byGoalKickScore())
+				.collect(Collectors.toList());
+		
+		if (positiveGoalScorePassTargets.isEmpty())
+		{
+			final List<RatedPassTargetNoScore> passTargets = getNewTacticalField().getAllRatedPassTargetsNoScore().stream()
+					.sorted(byPassScore())
+					.collect(Collectors.toList());
+			
+			final List<RatedPassTargetNoScore> selectedTargetsSortedByPassScore = bestPassTargetsForEachBot(passTargets)
+					.stream()
+					.sorted(byPassScore())
+					.collect(Collectors.toList());
+			
+			if (!selectedTargetsSortedByPassScore.isEmpty()
+					&& selectedTargetsSortedByPassScore.get(0).getPassTargetRating().getPassScore() > pressureScoreThreshold)
+			{
+				// sort by pressure score
+				final List<RatedPassTargetNoScore> lowerThresh = selectedTargetsSortedByPassScore.stream()
+						.filter(e -> e.getPassTargetRating().getPassScore() <= pressureScoreThreshold)
+						.sorted(byPressureScore())
+						.collect(Collectors.toList());
+				
+				final List<RatedPassTargetNoScore> sortedByPressureScoreFiltered = selectedTargetsSortedByPassScore.stream()
+						.filter(e -> e.getPassTargetRating().getPassScore() > pressureScoreThreshold)
+						.sorted(byPressureScore())
+						.collect(Collectors.toList());
+				
+				while (sortedByPressureScoreFiltered.size() < minPressureScoreTargetFilter && !lowerThresh.isEmpty())
+				{
+					sortedByPressureScoreFiltered.add(lowerThresh.remove(0));
+				}
+				
+				final List<IRatedPassTarget> finalPassTargets = sortedByPressureScoreFiltered.stream()
+						.map(e -> new RatedPassTarget(e, EScoreMode.SCORE_BY_PASS))
+						.collect(Collectors.toList());
+				getNewTacticalField().setRatedPassTargetsRanked(finalPassTargets);
+				drawPassTargets(finalPassTargets, 125, 125);
+			} else
+			{
+				// sort by Pass Score
+				final List<IRatedPassTarget> finalPassTargets = selectedTargetsSortedByPassScore.stream()
+						.map(e -> new RatedPassTarget(e, EScoreMode.SCORE_BY_PASS))
+						.collect(Collectors.toList());
+				getNewTacticalField().setRatedPassTargetsRanked(finalPassTargets);
+				drawPassTargets(finalPassTargets, 0, 0);
+			}
+		} else
+		{
+			// sort by goal Score
+			final List<RatedPassTargetNoScore> selectedPassTargets = bestPassTargetsForEachBot(
+					positiveGoalScorePassTargets)
+							.stream()
+							.sorted(byGoalKickScore())
+							.collect(Collectors.toList());
+			
+			final List<IRatedPassTarget> finalPassTargets = selectedPassTargets.stream()
+					.map(e -> new RatedPassTarget(e, EScoreMode.SCORE_BY_GOAL_KICK))
+					.collect(Collectors.toList());
+			getNewTacticalField().setRatedPassTargetsRanked(finalPassTargets);
+			drawPassTargets(finalPassTargets, 255, 0);
+		}
 	}
 	
 	
-	private void drawPassTargets(final List<IPassTarget> passTargets)
+	private Comparator<RatedPassTargetNoScore> byPressureScore()
 	{
-		Color pink = new Color(255, 0, 170, 100);
-		Color magenta = new Color(255, 120, 100, 120);
-		Color blue = new Color(20, 20, 220, 150);
+		return Comparator.comparingDouble((RatedPassTargetNoScore rt) -> rt.getPassTargetRating().getPressureScore())
+				.reversed();
+	}
+	
+	
+	private Comparator<RatedPassTargetNoScore> byPassScore()
+	{
+		return Comparator.comparingDouble((RatedPassTargetNoScore rt) -> rt.getPassTargetRating().getPassScore())
+				.reversed();
+	}
+	
+	
+	private Comparator<RatedPassTargetNoScore> byGoalKickScore()
+	{
+		return Comparator.comparingDouble((RatedPassTargetNoScore rt) -> rt.getPassTargetRating().getGoalKickScore())
+				.reversed();
+	}
+	
+	
+	private List<RatedPassTargetNoScore> bestPassTargetsForEachBot(List<RatedPassTargetNoScore> filteredPassTargets)
+	{
+		Map<BotID, List<RatedPassTargetNoScore>> passTargetBotMap = new HashMap<>();
+		for (RatedPassTargetNoScore pt : filteredPassTargets)
+		{
+			final List<RatedPassTargetNoScore> botPassTargets = passTargetBotMap.computeIfAbsent(pt.getBotId(),
+					id -> new ArrayList<>(maxPassTargetsPerBot));
+			if (botPassTargets.size() < maxPassTargetsPerBot)
+			{
+				botPassTargets.add(pt);
+			}
+		}
+		return passTargetBotMap.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
+	}
+	
+	
+	private void drawPassTargets(final List<IRatedPassTarget> passTargets, final int colorRed, final int colorGreen)
+	{
+		Color pink = new Color(colorRed, colorGreen, 170, 130);
+		Color magenta = new Color(colorRed, colorGreen + 120, 100, 150);
+		Color blue = new Color(colorRed, colorGreen + 20, 220, 180);
 		
 		passTargets.forEach(this::drawLinesToPassTargets);
 		
-		List<BotID> seenBots = new ArrayList<>();
+		Set<BotID> seenBots = new HashSet<>();
 		int i = 1;
-		for (IPassTarget target : passTargets)
+		for (IRatedPassTarget target : passTargets)
 		{
 			BotID botId = target.getBotId();
 			
 			final Color color;
 			if (i == 1)
 			{
-				seenBots.add(botId);
 				color = blue;
+			} else if (!seenBots.contains(botId))
+			{
+				color = pink;
 			} else
 			{
-				if (!seenBots.contains(botId))
-				{
-					seenBots.add(botId);
-					color = pink;
-				} else
-				{
-					color = magenta;
-				}
+				color = magenta;
 			}
+			seenBots.add(botId);
 			
-			DrawableCircle dTargetCircle = new DrawableCircle(target.getKickerPos(), 30, color);
+			DrawableCircle dTargetCircle = new DrawableCircle(target.getPos(), 30, color);
 			dTargetCircle.setFill(true);
 			getShapes().add(dTargetCircle);
 			
-			DrawableAnnotation dNumber = new DrawableAnnotation(target.getKickerPos(), Integer.toString(i), Color.black);
+			DrawableAnnotation dNumber = new DrawableAnnotation(target.getPos(), Integer.toString(i), Color.black);
 			dNumber.withFontHeight(30);
 			dNumber.withCenterHorizontally(true);
 			getShapes().add(dNumber);
 			
-			DrawableAnnotation dScore = new DrawableAnnotation(target.getKickerPos(),
-					scoreToStr(target.getScore()),
-					Color.black);
+			DrawableAnnotation dScore = new DrawableAnnotation(target.getPos(),
+					"s:" + scoreToStr(target.getScore()), Color.black);
 			dScore.withFontHeight(10);
 			dScore.withCenterHorizontally(true);
 			dScore.withOffset(Vector2.fromXY(0, -20));
 			getShapes().add(dScore);
-			
-			DrawableAnnotation dPassGoalKickScore = new DrawableAnnotation(target.getKickerPos(),
-					scoreToStr(target.getPassScore()) + "|" + scoreToStr(target.getGoalKickScore()),
-					Color.black);
-			dPassGoalKickScore.withFontHeight(10);
-			dPassGoalKickScore.withCenterHorizontally(true);
-			dPassGoalKickScore.withOffset(Vector2.fromXY(0, 20));
-			getShapes().add(dPassGoalKickScore);
 			
 			i++;
 		}
@@ -115,7 +213,7 @@ public class PassTargetSelectionCalc extends ACalculator
 	
 	private String scoreToStr(final double passScore)
 	{
-		return Long.toString(Math.round(passScore * 1000));
+		return Long.toString(Math.round(passScore * 100));
 	}
 	
 	
@@ -130,10 +228,10 @@ public class PassTargetSelectionCalc extends ACalculator
 		ITrackedBot bot = getWFrame().getTiger(target.getBotId());
 		IVector2 kickerPos = bot.getBotKickerPos();
 		
-		if (!kickerPos.equals(target.getKickerPos()))
+		if (!kickerPos.equals(target.getPos()))
 		{
 			getShapes().add(
-					new DrawableLine(Line.fromPoints(kickerPos, target.getKickerPos()), new Color(55, 55, 55, 70)));
+					new DrawableLine(Line.fromPoints(kickerPos, target.getPos()), new Color(55, 55, 55, 70)));
 		}
 	}
 }

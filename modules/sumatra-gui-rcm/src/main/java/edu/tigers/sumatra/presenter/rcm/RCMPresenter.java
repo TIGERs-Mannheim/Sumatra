@@ -43,8 +43,6 @@ import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.natives.NativesLoader;
-import edu.tigers.sumatra.natives.OsDetector;
 import edu.tigers.sumatra.proto.AiControlAvailableProtos;
 import edu.tigers.sumatra.proto.BotActionCommandProtos;
 import edu.tigers.sumatra.proto.BotColorIdProtos;
@@ -62,7 +60,7 @@ import edu.tigers.sumatra.rcm.ICommandInterpreter;
 import edu.tigers.sumatra.rcm.IRCMObserver;
 import edu.tigers.sumatra.rcm.RcmActionMap.ERcmControllerConfig;
 import edu.tigers.sumatra.referee.AReferee;
-import edu.tigers.sumatra.referee.data.RefBoxRemoteControlFactory;
+import edu.tigers.sumatra.referee.control.GcEventFactory;
 import edu.tigers.sumatra.skillsystem.ESkill;
 import edu.tigers.sumatra.thread.NamedThreadFactory;
 import edu.tigers.sumatra.view.rcm.IMessagingGUIObserver;
@@ -125,7 +123,7 @@ public class RCMPresenter extends ASumatraViewPresenter implements IMessagingGUI
 		// set library path for jinput
 		final String curDir = System.getProperty("user.dir");
 		System.setProperty("net.java.games.input.librarypath",
-				curDir + "/lib/native/" + NativesLoader.getDefaultFolderMap().get(OsDetector.detectOs()));
+				curDir + "/modules/sumatra-rcm/target/natives");
 	}
 	
 	
@@ -814,7 +812,7 @@ public class RCMPresenter extends ASumatraViewPresenter implements IMessagingGUI
 					throw new IllegalStateException();
 			}
 			
-			refBox.handleControlRequest(RefBoxRemoteControlFactory.fromCommand(cmd));
+			refBox.sendGameControllerEvent(GcEventFactory.command(cmd));
 		}
 		
 		

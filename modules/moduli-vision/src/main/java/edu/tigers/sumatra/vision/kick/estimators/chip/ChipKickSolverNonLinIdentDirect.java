@@ -3,11 +3,13 @@
  */
 package edu.tigers.sumatra.vision.kick.estimators.chip;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import org.apache.commons.math3.analysis.MultivariateFunction;
+import org.apache.commons.math3.exception.MathIllegalArgumentException;
 import org.apache.commons.math3.optim.InitialGuess;
 import org.apache.commons.math3.optim.MaxEval;
 import org.apache.commons.math3.optim.PointValuePair;
@@ -27,6 +29,8 @@ import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.vision.data.ChipBallTrajectory;
 import edu.tigers.sumatra.vision.data.KickSolverResult;
+import edu.tigers.sumatra.vision.kick.estimators.EBallModelIdentType;
+import edu.tigers.sumatra.vision.kick.estimators.IBallModelIdentResult;
 
 
 /**
@@ -73,18 +77,18 @@ public class ChipKickSolverNonLinIdentDirect extends AChipKickSolver
 	@Override
 	public Optional<KickSolverResult> solve(final List<CamBall> records)
 	{
-		Optional<ChipModelIdentResult> result = identModel(records);
+		Optional<IBallModelIdentResult> result = identModel(records);
 		if (!result.isPresent())
 		{
 			return Optional.empty();
 		}
 		
-		return Optional.of(new KickSolverResult(kickPosition, result.get().getKickVel(), kickTimestamp));
+		return Optional.of(new KickSolverResult(kickPosition, result.get().getKickVelocity(), kickTimestamp));
 	}
 	
 	
 	@SuppressWarnings("squid:S1166") // Exception from solver not logged
-	public Optional<ChipModelIdentResult> identModel(final List<CamBall> records)
+	public Optional<IBallModelIdentResult> identModel(final List<CamBall> records)
 	{
 		double[] result;
 		
@@ -104,7 +108,7 @@ public class ChipKickSolverNonLinIdentDirect extends AChipKickSolver
 					new CMAESOptimizer.PopulationSize(50));
 			
 			result = optimum.getPoint();
-		} catch (IllegalStateException e)
+		} catch (IllegalStateException | MathIllegalArgumentException e)
 		{
 			// victim did not survive
 			return Optional.empty();
@@ -113,7 +117,8 @@ public class ChipKickSolverNonLinIdentDirect extends AChipKickSolver
 		// we have a winner!
 		IVector3 kickVelEst = Vector3.fromXYZ(result[0], result[1], result[2]);
 		
-		return Optional.of(new ChipModelIdentResult(kickVelEst, result[3], result[4], result[5]));
+		return Optional.of(new ChipModelIdentResult(kickVelEst, kickPosition, kickTimestamp,
+				result[3], result[4], result[5]));
 	}
 	
 	private class ChipBallModel implements MultivariateFunction
@@ -154,9 +159,11 @@ public class ChipKickSolverNonLinIdentDirect extends AChipKickSolver
 		}
 	}
 	
-	public static class ChipModelIdentResult
+	public static class ChipModelIdentResult implements IBallModelIdentResult
 	{
 		private final IVector3 kickVel;
+		private final IVector2 kickPos;
+		private final long kickTimestamp;
 		private final double dampingXYFirstHop;
 		private final double dampingXYOtherHops;
 		private final double dampingZ;
@@ -164,24 +171,68 @@ public class ChipKickSolverNonLinIdentDirect extends AChipKickSolver
 		
 		/**
 		 * @param kickVel
+		 * @param kickPos
+		 * @param kickTimestamp
 		 * @param dampingXYFirstHop
 		 * @param dampingXYOtherHops
 		 * @param dampingZ
 		 */
-		public ChipModelIdentResult(final IVector3 kickVel, final double dampingXYFirstHop,
-				final double dampingXYOtherHops,
-				final double dampingZ)
+		public ChipModelIdentResult(final IVector3 kickVel, final IVector2 kickPos, final long kickTimestamp,
+				final double dampingXYFirstHop,
+				final double dampingXYOtherHops, final double dampingZ)
 		{
 			this.kickVel = kickVel;
+			this.kickPos = kickPos;
+			this.kickTimestamp = kickTimestamp;
 			this.dampingXYFirstHop = dampingXYFirstHop;
 			this.dampingXYOtherHops = dampingXYOtherHops;
 			this.dampingZ = dampingZ;
 		}
 		
 		
-		public IVector3 getKickVel()
+		public static String[] getParameterNames()
+		{
+			return new String[] { "dampXYFirst", "dampXYOther", "dampZ" };
+		}
+		
+		
+		@Override
+		public EBallModelIdentType getType()
+		{
+			return EBallModelIdentType.CHIP_FIXED_LOSS_PLUS_ROLLING;
+		}
+		
+		
+		@Override
+		public Map<String, Double> getModelParameters()
+		{
+			Map<String, Double> params = new HashMap<>();
+			params.put("dampXYFirst", dampingXYFirstHop);
+			params.put("dampXYOther", dampingXYOtherHops);
+			params.put("dampZ", dampingZ);
+			
+			return params;
+		}
+		
+		
+		@Override
+		public IVector3 getKickVelocity()
 		{
 			return kickVel;
+		}
+		
+		
+		@Override
+		public IVector2 getKickPosition()
+		{
+			return kickPos;
+		}
+		
+		
+		@Override
+		public long getKickTimestamp()
+		{
+			return kickTimestamp;
 		}
 		
 		

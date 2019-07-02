@@ -15,8 +15,8 @@ import org.apache.log4j.Logger;
 
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.moduli.listenerVariables.ModulesState;
-import edu.tigers.sumatra.MessagesRobocupSslGameEvent.SSL_Referee_Game_Event.GameEventType;
 import edu.tigers.sumatra.Referee.SSL_Referee.Command;
+import edu.tigers.sumatra.SslGameEvent;
 import edu.tigers.sumatra.cam.ACam;
 import edu.tigers.sumatra.cam.LogfileVisionCam;
 import edu.tigers.sumatra.cam.LogfileVisionCam.ILogfileVisionCamObserver;
@@ -210,7 +210,7 @@ public class LogfilePresenter extends ASumatraViewPresenter implements ILogfileP
 	
 	
 	@Override
-	public void onSeekToGameEvent(final List<GameEventType> gameEventTypes)
+	public void onSeekToGameEvent(final List<SslGameEvent.GameEventType> gameEventTypes)
 	{
 		LogfileVisionCam cam = getLogfileCam();
 		
@@ -230,8 +230,8 @@ public class LogfilePresenter extends ASumatraViewPresenter implements ILogfileP
 				.withRemoveIdleFrames(removeIdle)
 				.merge();
 	}
-	
-	
+
+
 	private class DataRefresher extends Timer implements ActionListener, ILogfileVisionCamObserver
 	{
 		private static final long serialVersionUID = 8597026135355238868L;

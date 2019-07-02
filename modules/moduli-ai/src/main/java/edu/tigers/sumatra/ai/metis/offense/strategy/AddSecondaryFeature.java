@@ -4,18 +4,18 @@
 
 package edu.tigers.sumatra.ai.metis.offense.strategy;
 
-import java.awt.Color;
-import java.text.DecimalFormat;
-
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.metis.defense.DefenseMath;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveMath;
-import edu.tigers.sumatra.ai.metis.support.IPassTarget;
+import edu.tigers.sumatra.ai.metis.support.passtarget.IPassTarget;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+
+import java.awt.Color;
+import java.text.DecimalFormat;
 
 
 /**
@@ -49,15 +49,19 @@ public class AddSecondaryFeature extends AOffensiveStrategyFeature
 		ITrackedBot attackerBot = getWFrame().getBot(attacker);
 		double kickSpeed = OffensiveMath.passSpeedStraight(
 				attackerBot.getBotKickerPos(),
-				passTarget.getKickerPos(),
-				DefenseMath.getBisectionGoal(passTarget.getKickerPos()));
-		double passDistance = getBall().getPos().distanceTo(passTarget.getKickerPos());
+				passTarget.getPos(),
+				DefenseMath.getBisectionGoal(passTarget.getPos()));
+		double passDistance = getBall().getPos().distanceTo(passTarget.getPos());
 		double ballTravelTime = getBall().getStraightConsultant().getTimeForKick(passDistance, kickSpeed);
 		
-		double shootTime = newTacticalField.getBallInterceptions().get(attacker).getBallContactTime();
+		double shootTime = 1;
+		if (!attackerBot.getBotId().equals(getAiFrame().getKeeperId()))
+		{
+			shootTime = newTacticalField.getBallInterceptions().get(attacker).getBallContactTime();
+		}
 		double totalTime = shootTime + ballTravelTime;
 		DrawableAnnotation dt = new DrawableAnnotation(
-				passTarget.getKickerPos().addNew(Vector2.fromXY(200, 0)),
+				passTarget.getPos().addNew(Vector2.fromXY(200, 0)),
 				"totalTime: " + DF.format(totalTime) +
 						"\nshootTime: " + DF.format(shootTime) +
 						"\nballTime: " + DF.format(ballTravelTime) +
@@ -71,7 +75,10 @@ public class AddSecondaryFeature extends AOffensiveStrategyFeature
 				&& !newTacticalField.getCrucialDefender().contains(passReceiver)
 				&& passReceiver != attacker)
 		{
-			strategy.addDesiredBot(passReceiver);
+			if (!strategy.getDesiredBots().contains(passReceiver))
+			{
+				strategy.addDesiredBot(passReceiver);
+			}
 			strategy.putPlayConfiguration(passReceiver, EOffensiveStrategy.RECEIVE_PASS);
 		}
 	}

@@ -3,73 +3,71 @@
  */
 package edu.tigers.autoref.model.gamelog;
 
-import java.awt.EventQueue;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import javax.swing.JTable;
+import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
 
-import edu.tigers.autoreferee.engine.log.GameLog;
-import edu.tigers.autoreferee.engine.log.GameLog.IGameLogObserver;
 import edu.tigers.autoreferee.engine.log.GameLogEntry;
-import edu.tigers.autoreferee.engine.log.IGameLog;
 
 
 /**
- * {@link TableModel} implementation which links a {@link JTable} with a {@link GameLog} instance. It currently returns
- * the log entry for every column of an arbitrary row. The {@link TableCellRenderer} is responsible for rendering the
- * entry for each column.
- * 
- * @author "Lukas Magel"
+ * {@link TableModel} implementation which links a {@link JTable} with a list of {@link GameLogEntry} instances.
+ * It returns the log entry for every column of an arbitrary row. The {@link TableCellRenderer} is responsible for
+ * rendering the entry for each column.
  */
-public class GameLogTableModel extends AbstractTableModel implements IGameLogObserver
+public class GameLogTableModel extends AbstractTableModel
 {
-	
-	/**  */
 	private static final long serialVersionUID = -8160241136867692587L;
-	private static final List<String> columns;
+	private static final List<String> COLUMNS = Collections
+			.unmodifiableList(Arrays.asList("Time", "Game Time", "Type", "Event"));
 	
-	private final IGameLog gameLog;
+	private final List<GameLogEntry> entries = new ArrayList<>();
 	
 	
-	static
+	public void add(GameLogEntry entry)
 	{
-		columns = Collections.unmodifiableList(Arrays.asList("Time", "Game Time", "Type", "Event"));
+		SwingUtilities.invokeLater(() -> {
+			entries.add(entry);
+			int id = entries.size() - 1;
+			fireTableRowsInserted(id, id);
+		});
 	}
 	
 	
-	/**
-	 * @param log
-	 */
-	public GameLogTableModel(final IGameLog log)
+	public void onClear()
 	{
-		gameLog = log;
-		gameLog.addObserver(this);
+		SwingUtilities.invokeLater(() -> {
+			entries.clear();
+			fireTableDataChanged();
+		});
 	}
 	
 	
 	@Override
 	public int getRowCount()
 	{
-		return gameLog.getEntries().size();
+		return entries.size();
 	}
 	
 	
 	@Override
 	public int getColumnCount()
 	{
-		return columns.size();
+		return COLUMNS.size();
 	}
 	
 	
 	@Override
 	public String getColumnName(final int column)
 	{
-		return columns.get(column);
+		return COLUMNS.get(column);
 	}
 	
 	
@@ -88,27 +86,24 @@ public class GameLogTableModel extends AbstractTableModel implements IGameLogObs
 		 * format each cell.
 		 * It is responsible for displaying the correct data in each column.
 		 */
-		return getEntry(rowIndex);
+		return entries.get(rowIndex);
 	}
 	
 	
-	@Override
-	public void onNewEntry(final int id, final GameLogEntry entry)
+	/**
+	 * Remove entries that have a larger timestamp that the given one.
+	 * This will clear events when going backwards in time in a replay window.
+	 * 
+	 * @param timestamp
+	 */
+	public void removeTooRecentEntries(final long timestamp)
 	{
-		EventQueue.invokeLater(() -> fireTableRowsInserted(id, id));
+		SwingUtilities.invokeLater(() -> {
+			boolean removed = entries.removeIf(e -> e.getTimestamp() > timestamp);
+			if (removed)
+			{
+				fireTableDataChanged();
+			}
+		});
 	}
-	
-	
-	@Override
-	public void onClear()
-	{
-		EventQueue.invokeLater(this::fireTableDataChanged);
-	}
-	
-	
-	private GameLogEntry getEntry(final int rowIndex)
-	{
-		return gameLog.getEntries().get(rowIndex);
-	}
-	
 }

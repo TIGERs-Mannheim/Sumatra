@@ -4,16 +4,16 @@
 package edu.tigers.sumatra.referee.source;
 
 /**
- * @author AndreR <andre@ryll.cc>
+ * Possible referee message sources
  */
 public enum ERefereeMessageSource
 {
-	/** Official refbox on network */
+	/** Game-controller on network (either from inside Sumatra or from extern) */
 	NETWORK,
-	
-	/** Internal refbox */
-	INTERNAL_REFBOX,
 	
 	/** Information via SSL gamelog file */
 	INTERNAL_FORWARDER,
+	
+	/** Direct TCP connection to game-controller */
+	CI,
 }

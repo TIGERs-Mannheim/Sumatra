@@ -10,7 +10,9 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.github.g3force.configurable.Configurable;
@@ -22,16 +24,27 @@ import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.metis.defense.DefenseMath;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveMath;
+import edu.tigers.sumatra.ai.metis.support.passtarget.IPassTarget;
+import edu.tigers.sumatra.ai.metis.support.passtarget.PassTarget;
+import edu.tigers.sumatra.ai.pandora.plays.EPlay;
+import edu.tigers.sumatra.ai.pandora.roles.ARole;
+import edu.tigers.sumatra.ai.pandora.roles.ERole;
+import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
+import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
+import edu.tigers.sumatra.drawable.DrawablePoint;
+import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.line.v2.IHalfLine;
+import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
+import edu.tigers.sumatra.wp.data.DynamicPosition;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
@@ -40,102 +53,177 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class PassTargetGenerationCalc extends ACalculator
 {
-	@Configurable(defValue = "500.0", comment = "The radius [mm] from the bot to create pass targets.")
-	private static double passTargetRadius = 500.0;
-	
-	@Configurable(defValue = "5", comment = "How many pass targets to store per bot")
-	private static int maxNewPassTargetsPerBot = 5;
-	
-	@Configurable(defValue = "5", comment = "How many pass targets should be generate per bot (iterations)")
-	private static int maxNewPassTargetsPerBotToGenerate = 5;
-	
-	@Configurable(defValue = "0.5", comment = "Lookahead [s] to use to shift the center position")
-	private static double lookAHeadForPassTargetGeneration = 0.5;
-	
+	@Configurable(defValue = "2", comment = "How many pass targets to store per bot")
+	private static int maxNewPassTargetsPerBot = 2;
+
+	@Configurable(defValue = "10", comment = "How many pass targets should be generate per bot (iterations)")
+	private static int maxNewPassTargetsPerBotToGenerate = 10;
+
 	@Configurable(defValue = "1500.0", comment = "Safety distance to keep to penalty area")
 	private static double safetyDistanceToPenaltyArea = 1500.0;
-	
+
 	@Configurable(defValue = "1500.0", comment = " Min distance from passtarget to Ball")
 	private static double minDistanceToBall = 1500.0;
-	
-	@Configurable(defValue = "1000.0")
-	private static double minDistanceToOurPenaltyArea = 1000.0;
-	
-	@Configurable(defValue = "0.2")
-	private static double timeReachSafety = 0.2;
-	
+
+	@Configurable(defValue = "0.2", comment = "Additional time [s] to add to the time the bot reaches a pass target")
+	private static double additionalTimeToReachSafety = 0.2;
+
+	@Configurable(defValue = "1.5", comment = "Min allowed duration [s] until the ball enters our own penalty area")
+	private static double minPassDurationUntilReachingPenaltyArea = 1.5;
+
+	@Configurable(defValue = "0.3", comment = "Offset [s] applied to 'timeUntilPassReachedPos'")
+	private static double timeUntilPassReachedOffset = 0.3;
+
+	@Configurable(defValue = "1.0", comment = "Max lookahead [s] to use for estimating the pass target radius")
+	private static double maxDynamicPassTargetRadiusLookahead = 1.0;
+
+	@Configurable(defValue = "0.1", comment = "Min lookahead [s] to use for estimating the pass target radius")
+	private static double minDynamicPassTargetRadiusLookahead = 0.1;
+
 	private Random rnd;
-	private PointChecker pointChecker = new PointChecker();
-	private BotID lastAttackerId;
-	
-	private double penaltyAreaOurMargin = safetyDistanceToPenaltyArea;
-	
-	
-	public PassTargetGenerationCalc()
-	{
-		pointChecker.useRuleEnforcement();
-		pointChecker.useKickOffRuleEnforcement();
-		pointChecker.addFunction(this::keepMinDistanceToBall);
-		pointChecker.addFunction(this::keepMinDistanceToOurPenaltyArea);
-		pointChecker.addFunction(this::forbidPassingThroughOurPenaltyArea);
-	}
-	
-	
+	private Set<BotID> consideredBots;
+
+	private PointChecker pointChecker = new PointChecker()
+			.checkBallDistances()
+			.checkInsideField()
+			.checkNotInPenaltyAreas()
+			.checkConfirmWithKickOffRules()
+			.checkCustom(this::keepMinDistanceToBall)
+			.checkCustom(this::passIsNotReachingOurPenaltyAreaSoon)
+			.checkCustom(this::canBeReceivedOutsidePenArea);
+
+	private double timeUntilBallMeetsAttacker;
+	private IVector2 passOrigin;
+	private boolean attackerCanCatch;
+
+
 	@Override
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
-	{
-		updateGlobalFields();
-		
-		List<PassTarget> generatedPassTargets = new ArrayList<>();
-		generatedPassTargets.addAll(getPreviousPassTargets());
-		generatedPassTargets.addAll(generateNewOwnPassTargets());
-		newTacticalField.setAllPassTargets(generatedPassTargets);
-	}
-	
-	
-	private boolean keepMinDistanceToBall(final IVector2 point)
-	{
-		return Lines.segmentFromLine(getBall().getTrajectory().getTravelLine())
-				.distanceTo(point) > minDistanceToBall;
-	}
-	
-	
-	private boolean keepMinDistanceToOurPenaltyArea(final IVector2 point)
-	{
-		return !Geometry.getPenaltyAreaOur()
-				.withMargin(minDistanceToOurPenaltyArea)
-				.isPointInShape(point);
-	}
-	
-	
-	private void updateGlobalFields()
 	{
 		if (rnd == null)
 		{
 			rnd = new Random(getWFrame().getTimestamp());
 		}
-		lastAttackerId = lastAttackerId();
+		getNewTacticalField().getDrawableShapes().get(EAiShapesLayer.PASS_TARGET_GENERATION).add(
+				new DrawableCircle(getBall().getPos(), minDistanceToBall, Color.RED));
+		consideredBots = consideredBots();
+		updatePenaltyAreaMargin();
+		updateAttackerMetaData();
+
+		final List<PassTargetCandidate> candidates = new ArrayList<>(candidatesFromPreviousFrame());
+		candidates.addAll(newCandidates());
+		candidates.forEach(this::draw);
+
+		List<IPassTarget> passTargets = select(candidates);
+		newTacticalField.setAllPassTargets(passTargets);
+	}
+
+
+	private void updateAttackerMetaData()
+	{
+		final Optional<ITrackedBot> attacker = getAttacker();
+
+		attackerCanCatch = false;
+		if (attacker.isPresent())
+		{
+			passOrigin = attacker.get().getRobotInfo().getTrajectory()
+					.map(trajectory -> trajectory.getFinalDestination().getXYVector())
+					.orElse(getBall().getPos());
+			final ARole aRole = getAiFrame().getPrevFrame().getPlayStrategy().getActiveRoles()
+					.getWithNull(attacker.get().getBotId());
+			if (aRole != null && aRole.getType() == ERole.ATTACKER)
+			{
+				AttackerRole attackerRole = ((AttackerRole) aRole);
+				attackerCanCatch = attackerRole.canKickOrCatchTheBall();
+			}
+		} else
+		{
+			passOrigin = getBall().getPos();
+		}
+
+		timeUntilBallMeetsAttacker = getAttacker()
+				.map(this::timeUntilBallMeetsAttacker)
+				.orElse(0.0);
+	}
+
+
+	private double timeUntilBallMeetsAttacker(ITrackedBot attacker)
+	{
+		if (attackerCanCatch)
+		{
+			// attacker will intercept the ball on its ball travel line
+			return getWFrame().getBall().getTrajectory().getTimeByDist(distanceFromBotToBall(attacker));
+		}
+
+		return timeUntilBotAtBall(attacker);
+	}
+
+
+	private Set<BotID> consideredBots()
+	{
+		BotID lastAttackerId = lastAttackerId();
+		return getWFrame().getTigerBotsAvailable().values().stream()
+				.map(ITrackedBot::getBotId)
+				.filter(this::notTheKeeper)
+				.filter(this::notADefender)
+				.filter(this::notAnInterchangeBot)
+				.filter(id -> id != lastAttackerId)
+				.collect(Collectors.toSet());
+	}
+
+
+	private boolean notADefender(final BotID id)
+	{
+		return notInPlay(EPlay.DEFENSIVE, id);
+	}
+
+
+	private boolean notAnInterchangeBot(final BotID id)
+	{
+		return notInPlay(EPlay.INTERCHANGE, id);
+	}
+
+
+	private boolean notInPlay(final EPlay play, final BotID id)
+	{
+		return getAiFrame().getPrevFrame().getPlayStrategy().getActiveRoles(play).stream()
+				.noneMatch(bot -> bot.getBotID() == id);
+	}
+
+
+	private boolean notTheKeeper(final BotID id)
+	{
+		return id != getAiFrame().getKeeperId();
+	}
+
+
+	private boolean keepMinDistanceToBall(final IVector2 point)
+	{
+		return passOrigin.distanceTo(point) > minDistanceToBall;
+	}
+
+
+	private boolean canBeReceivedOutsidePenArea(final IVector2 point)
+	{
+		IVector2 receivePos = LineMath.stepAlongLine(point, passOrigin, -Geometry.getBotRadius());
+		return !Geometry.getPenaltyAreaTheir().withMargin(Geometry.getBotRadius()).isPointInShape(receivePos);
+	}
+
+
+	private void updatePenaltyAreaMargin()
+	{
 		double distBallToPenaltyArea = Geometry.getPenaltyAreaOur().distanceTo(getBall().getPos());
-		penaltyAreaOurMargin = min(safetyDistanceToPenaltyArea, distBallToPenaltyArea);
-		updatePointChecker();
-	}
-	
-	
-	private BotID lastAttackerId()
-	{
-		return getAiFrame().getPrevFrame().getTacticalField().getOffensiveStrategy().getAttackerBot()
-				.filter(this::botIsVisible)
-				.orElse(BotID.noBot());
-	}
-	
-	
-	private void updatePointChecker()
-	{
+		double penaltyAreaOurMargin = min(safetyDistanceToPenaltyArea, distBallToPenaltyArea);
 		pointChecker.setTheirPenAreaMargin(theirPenAreaMargin());
 		pointChecker.setOurPenAreaMargin(penaltyAreaOurMargin);
+
+		final List<IDrawableShape> penAreaShapes = Geometry.getPenaltyAreaOur().withMargin(penaltyAreaOurMargin)
+				.getDrawableShapes();
+		penAreaShapes.forEach(p -> p.setColor(Color.RED));
+		getNewTacticalField().getDrawableShapes().get(EAiShapesLayer.PASS_TARGET_GENERATION).addAll(penAreaShapes);
 	}
-	
-	
+
+
 	private double theirPenAreaMargin()
 	{
 		final double theirPenAreaMargin;
@@ -148,144 +236,266 @@ public class PassTargetGenerationCalc extends ACalculator
 		}
 		return theirPenAreaMargin;
 	}
-	
-	
-	private List<PassTarget> getPreviousPassTargets()
+
+
+	private BotID lastAttackerId()
 	{
-		return getAiFrame().getPrevFrame().getTacticalField().getPassTargetsRanked().stream()
-				.filter(target -> target.getBotId() != lastAttackerId)
-				.filter(p -> botIsVisible(p.getBotId()))
-				.map(PassTarget::new)
-				.map(this::withTimeReached)
-				.filter(this::isReachable)
-				.filter(this::isLegalPoint)
-				.filter(p -> p.getBotId() != getAiFrame().getKeeperId())
-				.filter(p -> p.getBotId() != lastAttackerId)
-				.filter(p -> !getNewTacticalField().getCrucialDefender().contains(p.getBotId()))
-				.filter(p -> p.getBotPos().distanceTo(getWFrame().getBot(p.getBotId()).getPos()) < passTargetRadius)
-				.collect(Collectors.toList());
+		return getAiFrame().getPrevFrame().getTacticalField().getOffensiveStrategy().getAttackerBot()
+				.filter(this::botIsVisible)
+				.orElse(BotID.noBot());
 	}
-	
-	
+
+
 	private boolean botIsVisible(final BotID botId)
 	{
 		return getWFrame().getBots().containsKey(botId);
 	}
-	
-	
-	private List<PassTarget> generateNewOwnPassTargets()
+
+
+	private List<PassTargetCandidate> candidatesFromPreviousFrame()
 	{
-		return getWFrame().getTigerBotsAvailable().values().stream()
-				.filter(p -> p.getBotId() != getAiFrame().getKeeperId())
-				.filter(p -> p.getBotId() != lastAttackerId)
-				.filter(p -> !getNewTacticalField().getCrucialDefender().contains(p.getBotId()))
+		return getAiFrame().getPrevFrame().getTacticalField().getRatedPassTargetsRanked().stream()
+				.filter(p -> consideredBots.contains(p.getBotId()))
+				.map(p -> createPassTargetCandidate(p.getPos(), p.getBotId()))
+				.map(PassTargetCandidate::withFromPrevFrame)
+				.collect(Collectors.toList());
+	}
+
+
+	private List<PassTargetCandidate> newCandidates()
+	{
+		return consideredBots.stream()
 				.map(this::passTargetsForBot)
 				.flatMap(Collection::stream)
 				.collect(Collectors.toList());
 	}
-	
-	
-	private PassTarget withTimeReached(final PassTarget passTarget)
+
+
+	private List<IPassTarget> select(final List<PassTargetCandidate> candidates)
 	{
-		ITrackedBot tBot = getWFrame().getBot(passTarget.getBotId());
-		if (tBot == null)
-		{
-			return passTarget;
-		}
-		double trajTime = TrajectoryGenerator.generatePositionTrajectory(tBot, passTarget.getBotPos()).getTotalTime();
-		long timeReached = getWFrame().getTimestamp() + (long) (trajTime * 1e9);
-		passTarget.setTimeReached(timeReached);
-		return passTarget;
+		return candidates.stream()
+				.filter(PassTargetCandidate::isLegal)
+				.filter(PassTargetCandidate::isReachable)
+				.map(c -> new PassTarget(new DynamicPosition(c.pos), c.botID))
+				.collect(Collectors.toList());
 	}
-	
-	
-	private List<PassTarget> passTargetsForBot(final ITrackedBot bot)
+
+
+	private PassTargetCandidate createPassTargetCandidate(final IVector2 pos, final BotID botID)
 	{
-		List<PassTarget> passTargets = new ArrayList<>();
-		
-		IVector2 shiftedCenterPosition = shiftedCenterPosition(bot);
-		
-		PassTarget curKickerPassTarget = new PassTarget(shiftedCenterPosition, bot.getBotId());
-		if (isLegalPoint(curKickerPassTarget))
+		PassTargetCandidate candidate = new PassTargetCandidate();
+		candidate.pos = pos;
+		candidate.botID = botID;
+		candidate.legal = isLegalPoint(pos, botID);
+		if (candidate.legal)
 		{
-			passTargets.add(curKickerPassTarget);
+			candidate.timeUntilBallReached = timeUntilPassReachedPos(pos);
+			candidate.timeUntilBotReached = timeUntilBotReached(pos, botID);
+			candidate.reachable = candidate.timeUntilBotReached < candidate.timeUntilBallReached;
 		}
-		
+		return candidate;
+	}
+
+
+	private double timeUntilBotReached(final IVector2 pos, final BotID botID)
+	{
+		ITrackedBot tBot = getWFrame().getBot(botID);
+		double timeReached = TrajectoryGenerator.generatePositionTrajectory(tBot, pos).getTotalTime();
+		return timeReached + additionalTimeToReachSafety;
+	}
+
+
+	private double timeUntilPassReachedPos(final IVector2 pos)
+	{
+		IVector2 redirectTarget = DefenseMath.getBisectionGoal(pos);
+		double kickSpeed = OffensiveMath.passSpeedStraight(
+				getBall().getPos(),
+				pos,
+				redirectTarget);
+		double passDistance = passOrigin.distanceTo(pos);
+		double passDuration = getWFrame().getBall().getStraightConsultant().getTimeForKick(passDistance, kickSpeed);
+
+		return timeUntilPassReachedOffset + passDuration + timeUntilBallMeetsAttacker;
+	}
+
+
+	private Optional<ITrackedBot> getAttacker()
+	{
+		return getAiFrame().getPrevFrame().getTacticalField().getOffensiveStrategy()
+				.getAttackerBot()
+				.map(botId -> getWFrame().getBot(botId));
+	}
+
+
+	private double distanceFromBotToBall(final ITrackedBot bot)
+	{
+		return bot.getBotKickerPos().distanceTo(getWFrame().getBall().getPos());
+	}
+
+
+	private double timeUntilBotAtBall(final ITrackedBot b)
+	{
+		return TrajectoryGenerator.generatePositionTrajectory(b, getWFrame().getBall().getPos()).getTotalTime();
+	}
+
+
+	private void draw(final PassTargetCandidate candidate)
+	{
+		Color pointColor;
+		if (!candidate.legal)
+		{
+			pointColor = Color.RED;
+		} else if (candidate.fromPrevFrame)
+		{
+			pointColor = Color.gray;
+		} else
+		{
+			pointColor = Color.black;
+		}
+
+		getNewTacticalField().getDrawableShapes().get(EAiShapesLayer.PASS_TARGET_GENERATION)
+				.add(new DrawablePoint(candidate.getPos(), pointColor));
+
+		if (candidate.legal)
+		{
+			getNewTacticalField().getDrawableShapes().get(EAiShapesLayer.PASS_TARGET_TIMING).add(
+					new DrawableAnnotation(candidate.getPos(),
+							String.format("ball %.2fs", candidate.timeUntilBallReached))
+									.withOffset(Vector2.fromXY(15, -6))
+									.withFontHeight(10));
+
+			Color color = candidate.reachable ? Color.GREEN : Color.RED;
+			getNewTacticalField().getDrawableShapes().get(EAiShapesLayer.PASS_TARGET_TIMING).add(
+					new DrawableAnnotation(candidate.getPos(),
+							String.format("bot %.2fs", candidate.timeUntilBotReached), color)
+									.withOffset(Vector2.fromXY(15, 6))
+									.withFontHeight(10));
+		}
+	}
+
+
+	private List<PassTargetCandidate> passTargetsForBot(final BotID botID)
+	{
+		List<PassTargetCandidate> passTargets = new ArrayList<>();
+
+		IVector2 shiftedCenterPosition = shiftedCenterPosition(botID);
+		final PassTargetCandidate kickerCandidate = createPassTargetCandidate(shiftedCenterPosition, botID);
+		passTargets.add(kickerCandidate);
+
+		double dynamicRadius;
+		if (kickerCandidate.legal)
+		{
+			dynamicRadius = dynamicPassTargetRadius(botID, kickerCandidate.timeUntilBallReached);
+		} else
+		{
+			dynamicRadius = dynamicPassTargetRadius(botID, 2.0);
+		}
+		getNewTacticalField().getDrawableShapes().get(EAiShapesLayer.PASS_TARGET_GENERATION).add(
+				new DrawableCircle(shiftedCenterPosition, dynamicRadius, Color.CYAN));
+
 		for (int i = 0; i < (maxNewPassTargetsPerBotToGenerate - 1)
 				&& passTargets.size() < maxNewPassTargetsPerBot; i++)
 		{
 			double angle = AngleMath.PI_TWO * rnd.nextDouble();
-			double radius = passTargetRadius * rnd.nextDouble();
+			double radius = dynamicRadius * rnd.nextDouble();
 			IVector2 targetPos = shiftedCenterPosition.addNew(Vector2.fromAngleLength(angle, radius));
-			PassTarget passTarget = new PassTarget(targetPos, bot.getBotId());
-			withTimeReached(passTarget);
-			
-			if (isLegalPoint(passTarget) && isReachable(passTarget))
-			{
-				passTargets.add(passTarget);
-			}
+			passTargets.add(createPassTargetCandidate(targetPos, botID));
 		}
-		
-		passTargets.forEach(p -> p.setBirth(getWFrame().getTimestamp()));
-		
-		getNewTacticalField().getDrawableShapes().get(EAiShapesLayer.PASS_TARGETS_DEBUG)
-				.add(new DrawableCircle(shiftedCenterPosition, passTargetRadius, Color.CYAN));
-		getNewTacticalField().getDrawableShapes().get(EAiShapesLayer.PASS_TARGETS_DEBUG)
-				.addAll(passTargets.stream()
-						.map(passTarget -> new DrawableCircle(passTarget.getKickerPos(), Geometry.getBallRadius(), Color.RED))
-						.collect(Collectors.toList()));
-		
+
 		return passTargets;
 	}
-	
-	
-	private IVector2 shiftedCenterPosition(final ITrackedBot bot)
+
+
+	private double dynamicPassTargetRadius(final BotID botID, final double timeUntilBallReached)
 	{
-		final double shiftLength = bot.getVel().getLength2() * lookAHeadForPassTargetGeneration * 1000;
-		return bot.getPos().addNew(bot.getVel().scaleToNew(shiftLength));
+		ITrackedBot bot = getWFrame().getBot(botID);
+		double ballTravelTime = SumatraMath.cap(timeUntilBallReached - additionalTimeToReachSafety,
+				minDynamicPassTargetRadiusLookahead,
+				maxDynamicPassTargetRadiusLookahead);
+		double botAccTime = ballTravelTime / 2;
+		double maxVel = bot.getMoveConstraints().getAccMax() * botAccTime;
+		return maxVel * botAccTime * 1000;
 	}
-	
-	
-	private boolean isLegalPoint(final IPassTarget target)
+
+
+	private IVector2 shiftedCenterPosition(final BotID botID)
 	{
-		return pointChecker.allMatch(getAiFrame(), target.getKickerPos()) &&
-				positionIsFreeFromBots(target.getKickerPos(), target.getBotId());
+		final ITrackedBot bot = getWFrame().getBot(botID);
+
+		final double vel = bot.getVel().getLength2();
+		double brakeTime = vel / bot.getMoveConstraints().getAccMax();
+		double brakeDistance = vel * brakeTime / 2;
+
+		final double shiftLength = brakeDistance * 1000;
+		return bot.getBotKickerPos().addNew(bot.getVel().scaleToNew(shiftLength));
 	}
-	
-	
-	private boolean isReachable(final IPassTarget target)
+
+
+	private boolean isLegalPoint(final IVector2 pos, final BotID botID)
 	{
-		return target.getTimeUntilReachedInS(getWFrame().getTimestamp()) + timeReachSafety < calcTimeForKick(target);
+		return pointChecker.allMatch(getAiFrame(), pos) && positionIsFreeFromBots(pos, botID);
 	}
-	
-	
-	private double calcTimeForKick(final IPassTarget passTarget)
-	{
-		double distance = getWFrame().getBall().getPos().distanceTo(passTarget.getKickerPos());
-		
-		IVector2 redirectTarget = DefenseMath.getBisectionGoal(passTarget.getKickerPos());
-		double kickSpeed = OffensiveMath.passSpeedStraight(
-				getBall().getPos(),
-				passTarget.getKickerPos(),
-				redirectTarget);
-		return getWFrame().getBall().getStraightConsultant().getTimeForKick(distance, kickSpeed);
-	}
-	
-	
+
+
 	private boolean positionIsFreeFromBots(IVector2 position, BotID botID)
 	{
+		IVector2 ownPos = getWFrame().getBot(botID).getPos();
 		return getWFrame().getBots().values().stream()
 				.filter(tBot -> !tBot.getBotId().equals(botID))
-				.map(tBot -> tBot.getPos().distanceTo(position))
+				.map(tBot -> Lines.segmentFromPoints(ownPos, position).distanceTo(tBot.getPos()))
 				.noneMatch(dist -> dist < Geometry.getBotRadius() * 2);
 	}
-	
-	
-	private boolean forbidPassingThroughOurPenaltyArea(IVector2 pos)
+
+
+	private boolean passIsNotReachingOurPenaltyAreaSoon(final IVector2 pos)
 	{
-		IHalfLine line = Lines.halfLineFromDirection(getBall().getPos(), pos.subtractNew(getBall().getPos()));
-		return Geometry.getPenaltyAreaOur().withMargin(penaltyAreaOurMargin).lineIntersections(line).stream()
-				.noneMatch(e -> getBall().getStraightConsultant().getTimeForKick(e.distanceTo(getBall().getPos()),
-						RuleConstraints.getMaxBallSpeed()) < 1.0);
+		return Geometry.getPenaltyAreaOur().withMargin(500).isPointInShape(getBall().getPos())
+				|| Geometry.getPenaltyAreaOur().lineIntersections(Lines.halfLineFromPoints(getBall().getPos(), pos))
+						.stream().noneMatch(p -> passTakesLessThan(p, minPassDurationUntilReachingPenaltyArea));
+	}
+
+
+	private boolean passTakesLessThan(final IVector2 pos, final double duration)
+	{
+		double passDistance = pos.distanceTo(getBall().getPos());
+		double passSpeed = OffensiveMath.passSpeedStraight(getBall().getPos(), pos, Geometry.getGoalTheir().getCenter());
+		return getBall().getStraightConsultant().getTimeForKick(passDistance, passSpeed) < duration;
+	}
+
+
+	private class PassTargetCandidate
+	{
+		IVector2 pos;
+		BotID botID;
+		double timeUntilBotReached = 0;
+		double timeUntilBallReached = 0;
+		boolean reachable = false;
+		boolean legal;
+		boolean fromPrevFrame = false;
+
+
+		PassTargetCandidate withFromPrevFrame()
+		{
+			fromPrevFrame = true;
+			return this;
+		}
+
+
+		private IVector2 getPos()
+		{
+			return pos;
+		}
+
+
+		private boolean isReachable()
+		{
+			return reachable;
+		}
+
+
+		private boolean isLegal()
+		{
+			return legal;
+		}
 	}
 }

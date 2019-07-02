@@ -1,0 +1,886 @@
+{
+  "actionTrees" : {
+    "DEFAULT_SITUATION" : {
+      "head" : {
+        "children" : {
+          "RECEIVE_BALL" : {
+            "children" : {
+              "KICK_INS_BLAUE" : {
+                "children" : {
+                  "KICK_INS_BLAUE" : {
+                    "children" : { },
+                    "type" : "KICK_INS_BLAUE",
+                    "weight" : 1.0
+                  },
+                  "RECEIVE_BALL" : {
+                    "children" : {
+                      "KICK_INS_BLAUE" : {
+                        "children" : {
+                          "RECEIVE_BALL" : {
+                            "children" : {
+                              "KICK_INS_BLAUE" : {
+                                "children" : {
+                                  "RECEIVE_BALL" : {
+                                    "children" : {
+                                      "KICK_INS_BLAUE" : {
+                                        "children" : { },
+                                        "type" : "KICK_INS_BLAUE",
+                                        "weight" : 1.0
+                                      }
+                                    },
+                                    "type" : "RECEIVE_BALL",
+                                    "weight" : 0.9807890682740757
+                                  }
+                                },
+                                "type" : "KICK_INS_BLAUE",
+                                "weight" : 0.9858130694107463
+                              },
+                              "GOAL_KICK" : {
+                                "children" : { },
+                                "type" : "GOAL_KICK",
+                                "weight" : 1.0
+                              }
+                            },
+                            "type" : "RECEIVE_BALL",
+                            "weight" : 1.0271295661403743
+                          },
+                          "KICK_INS_BLAUE" : {
+                            "children" : { },
+                            "type" : "KICK_INS_BLAUE",
+                            "weight" : 1.0
+                          }
+                        },
+                        "type" : "KICK_INS_BLAUE",
+                        "weight" : 1.0243387482871247
+                      },
+                      "GOAL_KICK" : {
+                        "children" : { },
+                        "type" : "GOAL_KICK",
+                        "weight" : 1.0
+                      },
+                      "STANDARD_PASS" : {
+                        "children" : { },
+                        "type" : "STANDARD_PASS",
+                        "weight" : 1.0
+                      }
+                    },
+                    "type" : "RECEIVE_BALL",
+                    "weight" : 0.9392014449778147
+                  }
+                },
+                "type" : "KICK_INS_BLAUE",
+                "weight" : 0.9283177520561848
+              },
+              "MOVE_BALL_TO_OPPONENT_HALF" : {
+                "children" : {
+                  "RECEIVE_BALL" : {
+                    "children" : {
+                      "KICK_INS_BLAUE" : {
+                        "children" : { },
+                        "type" : "KICK_INS_BLAUE",
+                        "weight" : 1.0
+                      },
+                      "MOVE_BALL_TO_OPPONENT_HALF" : {
+                        "children" : { },
+                        "type" : "MOVE_BALL_TO_OPPONENT_HALF",
+                        "weight" : 1.0
+                      }
+                    },
+                    "type" : "RECEIVE_BALL",
+                    "weight" : 1.0066164701282287
+                  },
+                  "MOVE_BALL_TO_OPPONENT_HALF" : {
+                    "children" : { },
+                    "type" : "MOVE_BALL_TO_OPPONENT_HALF",
+                    "weight" : 1.0
+                  }
+                },
+                "type" : "MOVE_BALL_TO_OPPONENT_HALF",
+                "weight" : 0.9340023450796965
+              },
+              "GOAL_KICK" : {
+                "children" : { },
+                "type" : "GOAL_KICK",
+                "weight" : 1.0
+              },
+              "STANDARD_PASS" : {
+                "children" : {
+                  "RECEIVE_BALL" : {
+                    "children" : {
+                      "KICK_INS_BLAUE" : {
+                        "children" : {
+                          "RECEIVE_BALL" : {
+                            "children" : {
+                              "KICK_INS_BLAUE" : {
+                                "children" : { },
+                                "type" : "KICK_INS_BLAUE",
+                                "weight" : 1.0
+                              },
+                              "GOAL_KICK" : {
+                                "children" : { },
+                                "type" : "GOAL_KICK",
+                                "weight" : 1.0
+                              }
+                            },
+                            "type" : "RECEIVE_BALL",
+                            "weight" : 0.98306407683903
+                          }
+                        },
+                        "type" : "KICK_INS_BLAUE",
+                        "weight" : 1.0512112431555576
+                      }
+                    },
+                    "type" : "RECEIVE_BALL",
+                    "weight" : 0.9968445150384725
+                  },
+                  "STANDARD_PASS" : {
+                    "children" : { },
+                    "type" : "STANDARD_PASS",
+                    "weight" : 1.0
+                  },
+                  "REDIRECT_GOAL_KICK" : {
+                    "children" : { },
+                    "type" : "REDIRECT_GOAL_KICK",
+                    "weight" : 1.0
+                  }
+                },
+                "type" : "STANDARD_PASS",
+                "weight" : 1.0236848971549748
+              },
+              "CLEARING_KICK" : {
+                "children" : {
+                  "RECEIVE_BALL" : {
+                    "children" : {
+                      "MOVE_BALL_TO_OPPONENT_HALF" : {
+                        "children" : { },
+                        "type" : "MOVE_BALL_TO_OPPONENT_HALF",
+                        "weight" : 1.0
+                      }
+                    },
+                    "type" : "RECEIVE_BALL",
+                    "weight" : 1.0057577967643738
+                  },
+                  "MOVE_BALL_TO_OPPONENT_HALF" : {
+                    "children" : {
+                      "MOVE_BALL_TO_OPPONENT_HALF" : {
+                        "children" : { },
+                        "type" : "MOVE_BALL_TO_OPPONENT_HALF",
+                        "weight" : 1.0
+                      }
+                    },
+                    "type" : "MOVE_BALL_TO_OPPONENT_HALF",
+                    "weight" : 1.0014270275831223
+                  }
+                },
+                "type" : "CLEARING_KICK",
+                "weight" : 1.0058351541581878
+              }
+            },
+            "type" : "RECEIVE_BALL",
+            "weight" : 0.8361162024191973
+          },
+          "KICK_INS_BLAUE" : {
+            "children" : {
+              "RECEIVE_BALL" : {
+                "children" : {
+                  "KICK_INS_BLAUE" : {
+                    "children" : {
+                      "RECEIVE_BALL" : {
+                        "children" : {
+                          "KICK_INS_BLAUE" : {
+                            "children" : {
+                              "RECEIVE_BALL" : {
+                                "children" : { },
+                                "type" : "RECEIVE_BALL",
+                                "weight" : 1.0
+                              }
+                            },
+                            "type" : "KICK_INS_BLAUE",
+                            "weight" : 0.9776890802918402
+                          }
+                        },
+                        "type" : "RECEIVE_BALL",
+                        "weight" : 1.0005202326289735
+                      },
+                      "KICK_INS_BLAUE" : {
+                        "children" : { },
+                        "type" : "KICK_INS_BLAUE",
+                        "weight" : 1.0
+                      },
+                      "REDIRECT_GOAL_KICK" : {
+                        "children" : { },
+                        "type" : "REDIRECT_GOAL_KICK",
+                        "weight" : 1.0
+                      }
+                    },
+                    "type" : "KICK_INS_BLAUE",
+                    "weight" : 0.9654484607560164
+                  },
+                  "MOVE_BALL_TO_OPPONENT_HALF" : {
+                    "children" : {
+                      "RECEIVE_BALL" : {
+                        "children" : {
+                          "KICK_INS_BLAUE" : {
+                            "children" : { },
+                            "type" : "KICK_INS_BLAUE",
+                            "weight" : 1.0
+                          }
+                        },
+                        "type" : "RECEIVE_BALL",
+                        "weight" : 0.9980677922566732
+                      }
+                    },
+                    "type" : "MOVE_BALL_TO_OPPONENT_HALF",
+                    "weight" : 0.970720178882281
+                  },
+                  "GOAL_KICK" : {
+                    "children" : { },
+                    "type" : "GOAL_KICK",
+                    "weight" : 1.0
+                  },
+                  "STANDARD_PASS" : {
+                    "children" : {
+                      "RECEIVE_BALL" : {
+                        "children" : {
+                          "STANDARD_PASS" : {
+                            "children" : { },
+                            "type" : "STANDARD_PASS",
+                            "weight" : 1.0
+                          }
+                        },
+                        "type" : "RECEIVE_BALL",
+                        "weight" : 0.9425842404417846
+                      }
+                    },
+                    "type" : "STANDARD_PASS",
+                    "weight" : 1.0615425152618687
+                  },
+                  "CLEARING_KICK" : {
+                    "children" : {
+                      "RECEIVE_BALL" : {
+                        "children" : { },
+                        "type" : "RECEIVE_BALL",
+                        "weight" : 1.0
+                      }
+                    },
+                    "type" : "CLEARING_KICK",
+                    "weight" : 0.9898859232664108
+                  }
+                },
+                "type" : "RECEIVE_BALL",
+                "weight" : 0.9885079198561324
+              },
+              "KICK_INS_BLAUE" : {
+                "children" : { },
+                "type" : "KICK_INS_BLAUE",
+                "weight" : 1.0
+              },
+              "GOAL_KICK" : {
+                "children" : { },
+                "type" : "GOAL_KICK",
+                "weight" : 1.0
+              },
+              "REDIRECT_GOAL_KICK" : {
+                "children" : { },
+                "type" : "REDIRECT_GOAL_KICK",
+                "weight" : 1.0
+              }
+            },
+            "type" : "KICK_INS_BLAUE",
+            "weight" : 1.1520208258441464
+          },
+          "MOVE_BALL_TO_OPPONENT_HALF" : {
+            "children" : {
+              "RECEIVE_BALL" : {
+                "children" : {
+                  "KICK_INS_BLAUE" : {
+                    "children" : {
+                      "RECEIVE_BALL" : {
+                        "children" : {
+                          "KICK_INS_BLAUE" : {
+                            "children" : { },
+                            "type" : "KICK_INS_BLAUE",
+                            "weight" : 1.0
+                          }
+                        },
+                        "type" : "RECEIVE_BALL",
+                        "weight" : 0.9901535918315252
+                      }
+                    },
+                    "type" : "KICK_INS_BLAUE",
+                    "weight" : 1.0134305944045385
+                  }
+                },
+                "type" : "RECEIVE_BALL",
+                "weight" : 1.0018445231986604
+              },
+              "STANDARD_PASS" : {
+                "children" : {
+                  "RECEIVE_BALL" : {
+                    "children" : {
+                      "KICK_INS_BLAUE" : {
+                        "children" : { },
+                        "type" : "KICK_INS_BLAUE",
+                        "weight" : 1.0
+                      }
+                    },
+                    "type" : "RECEIVE_BALL",
+                    "weight" : 0.995967232187589
+                  }
+                },
+                "type" : "STANDARD_PASS",
+                "weight" : 1.0537428299585978
+              }
+            },
+            "type" : "MOVE_BALL_TO_OPPONENT_HALF",
+            "weight" : 0.982643248798559
+          },
+          "LOW_CHANCE_GOAL_KICK" : {
+            "children" : { },
+            "type" : "LOW_CHANCE_GOAL_KICK",
+            "weight" : 1.0
+          },
+          "GOAL_KICK" : {
+            "children" : { },
+            "type" : "GOAL_KICK",
+            "weight" : 1.0
+          },
+          "STANDARD_PASS" : {
+            "children" : {
+              "RECEIVE_BALL" : {
+                "children" : {
+                  "KICK_INS_BLAUE" : {
+                    "children" : { },
+                    "type" : "KICK_INS_BLAUE",
+                    "weight" : 1.0
+                  },
+                  "GOAL_KICK" : {
+                    "children" : { },
+                    "type" : "GOAL_KICK",
+                    "weight" : 1.0
+                  },
+                  "STANDARD_PASS" : {
+                    "children" : {
+                      "RECEIVE_BALL" : {
+                        "children" : {
+                          "GOAL_KICK" : {
+                            "children" : { },
+                            "type" : "GOAL_KICK",
+                            "weight" : 1.0
+                          }
+                        },
+                        "type" : "RECEIVE_BALL",
+                        "weight" : 1.0031555364529292
+                      }
+                    },
+                    "type" : "STANDARD_PASS",
+                    "weight" : 1.0792890558640162
+                  }
+                },
+                "type" : "RECEIVE_BALL",
+                "weight" : 0.9876118626282452
+              },
+              "STANDARD_PASS" : {
+                "children" : { },
+                "type" : "STANDARD_PASS",
+                "weight" : 1.0
+              },
+              "REDIRECT_PASS" : {
+                "children" : {
+                  "RECEIVE_BALL" : {
+                    "children" : {
+                      "GOAL_KICK" : {
+                        "children" : { },
+                        "type" : "GOAL_KICK",
+                        "weight" : 1.0
+                      }
+                    },
+                    "type" : "RECEIVE_BALL",
+                    "weight" : 1.0007069045876693
+                  }
+                },
+                "type" : "REDIRECT_PASS",
+                "weight" : 1.0237802365076893
+              },
+              "REDIRECT_GOAL_KICK" : {
+                "children" : { },
+                "type" : "REDIRECT_GOAL_KICK",
+                "weight" : 1.0
+              }
+            },
+            "type" : "STANDARD_PASS",
+            "weight" : 1.1679753906275414
+          },
+          "REDIRECT_GOAL_KICK" : {
+            "children" : { },
+            "type" : "REDIRECT_GOAL_KICK",
+            "weight" : 1.0
+          },
+          "CLEARING_KICK" : {
+            "children" : {
+              "RECEIVE_BALL" : {
+                "children" : {
+                  "KICK_INS_BLAUE" : {
+                    "children" : { },
+                    "type" : "KICK_INS_BLAUE",
+                    "weight" : 1.0
+                  }
+                },
+                "type" : "RECEIVE_BALL",
+                "weight" : 1.000784107338776
+              }
+            },
+            "type" : "CLEARING_KICK",
+            "weight" : 0.9963122090866517
+          }
+        },
+        "type" : null,
+        "weight" : 1.0
+      }
+    },
+    "STANDARD_AGGRESSIVE" : {
+      "head" : {
+        "children" : {
+          "FORCED_PASS" : {
+            "children" : {
+              "RECEIVE_BALL" : {
+                "children" : {
+                  "KICK_INS_BLAUE" : {
+                    "children" : {
+                      "RECEIVE_BALL" : {
+                        "children" : { },
+                        "type" : "RECEIVE_BALL",
+                        "weight" : 1.0
+                      }
+                    },
+                    "type" : "KICK_INS_BLAUE",
+                    "weight" : 0.9619606057802836
+                  },
+                  "GOAL_KICK" : {
+                    "children" : { },
+                    "type" : "GOAL_KICK",
+                    "weight" : 1.0
+                  }
+                },
+                "type" : "RECEIVE_BALL",
+                "weight" : 0.9438830973350408
+              },
+              "FORCED_PASS" : {
+                "children" : {
+                  "RECEIVE_BALL" : {
+                    "children" : {
+                      "KICK_INS_BLAUE" : {
+                        "children" : { },
+                        "type" : "KICK_INS_BLAUE",
+                        "weight" : 1.0
+                      }
+                    },
+                    "type" : "RECEIVE_BALL",
+                    "weight" : 0.9926041066646576
+                  }
+                },
+                "type" : "FORCED_PASS",
+                "weight" : 1.01316330631574
+              },
+              "REDIRECT_PASS" : {
+                "children" : { },
+                "type" : "REDIRECT_PASS",
+                "weight" : 1.0
+              },
+              "REDIRECT_GOAL_KICK" : {
+                "children" : { },
+                "type" : "REDIRECT_GOAL_KICK",
+                "weight" : 1.0
+              }
+            },
+            "type" : "FORCED_PASS",
+            "weight" : 1.1203077934270098
+          },
+          "STANDARD_PASS" : {
+            "children" : {
+              "REDIRECT_GOAL_KICK" : {
+                "children" : { },
+                "type" : "REDIRECT_GOAL_KICK",
+                "weight" : 1.0
+              }
+            },
+            "type" : "STANDARD_PASS",
+            "weight" : 1.0507773164754317
+          }
+        },
+        "type" : null,
+        "weight" : 1.0
+      }
+    },
+    "STANDARD_DEFENSIVE" : {
+      "head" : {
+        "children" : {
+          "FORCED_PASS" : {
+            "children" : {
+              "RECEIVE_BALL" : {
+                "children" : {
+                  "KICK_INS_BLAUE" : {
+                    "children" : {
+                      "RECEIVE_BALL" : {
+                        "children" : {
+                          "KICK_INS_BLAUE" : {
+                            "children" : { },
+                            "type" : "KICK_INS_BLAUE",
+                            "weight" : 1.0
+                          }
+                        },
+                        "type" : "RECEIVE_BALL",
+                        "weight" : 0.9945522703377955
+                      }
+                    },
+                    "type" : "KICK_INS_BLAUE",
+                    "weight" : 1.0315726509871106
+                  },
+                  "GOAL_KICK" : {
+                    "children" : { },
+                    "type" : "GOAL_KICK",
+                    "weight" : 1.0
+                  },
+                  "STANDARD_PASS" : {
+                    "children" : {
+                      "RECEIVE_BALL" : {
+                        "children" : {
+                          "KICK_INS_BLAUE" : {
+                            "children" : {
+                              "RECEIVE_BALL" : {
+                                "children" : {
+                                  "KICK_INS_BLAUE" : {
+                                    "children" : { },
+                                    "type" : "KICK_INS_BLAUE",
+                                    "weight" : 1.0
+                                  }
+                                },
+                                "type" : "RECEIVE_BALL",
+                                "weight" : 1.0066742499669392
+                              }
+                            },
+                            "type" : "KICK_INS_BLAUE",
+                            "weight" : 1.005087458093961
+                          }
+                        },
+                        "type" : "RECEIVE_BALL",
+                        "weight" : 1.0050290121182432
+                      }
+                    },
+                    "type" : "STANDARD_PASS",
+                    "weight" : 1.0098988004624274
+                  }
+                },
+                "type" : "RECEIVE_BALL",
+                "weight" : 0.9577903221716011
+              },
+              "REDIRECT_PASS" : {
+                "children" : {
+                  "RECEIVE_BALL" : {
+                    "children" : {
+                      "KICK_INS_BLAUE" : {
+                        "children" : { },
+                        "type" : "KICK_INS_BLAUE",
+                        "weight" : 1.0
+                      }
+                    },
+                    "type" : "RECEIVE_BALL",
+                    "weight" : 0.993874869743983
+                  }
+                },
+                "type" : "REDIRECT_PASS",
+                "weight" : 1.0108195583025614
+              }
+            },
+            "type" : "FORCED_PASS",
+            "weight" : 1.123787438783792
+          },
+          "STANDARD_PASS" : {
+            "children" : {
+              "RECEIVE_BALL" : {
+                "children" : {
+                  "KICK_INS_BLAUE" : {
+                    "children" : { },
+                    "type" : "KICK_INS_BLAUE",
+                    "weight" : 1.0
+                  },
+                  "STANDARD_PASS" : {
+                    "children" : { },
+                    "type" : "STANDARD_PASS",
+                    "weight" : 1.0
+                  }
+                },
+                "type" : "RECEIVE_BALL",
+                "weight" : 0.9816207739692813
+              }
+            },
+            "type" : "STANDARD_PASS",
+            "weight" : 0.9579949790313531
+          },
+          "CLEARING_KICK" : {
+            "children" : {
+              "RECEIVE_BALL" : {
+                "children" : {
+                  "GOAL_KICK" : {
+                    "children" : { },
+                    "type" : "GOAL_KICK",
+                    "weight" : 1.0
+                  }
+                },
+                "type" : "RECEIVE_BALL",
+                "weight" : 1.0073755318498794
+              }
+            },
+            "type" : "CLEARING_KICK",
+            "weight" : 1.0401735317217833
+          }
+        },
+        "type" : null,
+        "weight" : 1.0
+      }
+    },
+    "CLOSE_COMBAT_AGGRESSIVE" : {
+      "head" : {
+        "children" : {
+          "RECEIVE_BALL" : {
+            "children" : {
+              "KICK_INS_BLAUE" : {
+                "children" : {
+                  "RECEIVE_BALL" : {
+                    "children" : {
+                      "KICK_INS_BLAUE" : {
+                        "children" : {
+                          "KICK_INS_BLAUE" : {
+                            "children" : {
+                              "RECEIVE_BALL" : {
+                                "children" : {
+                                  "KICK_INS_BLAUE" : {
+                                    "children" : { },
+                                    "type" : "KICK_INS_BLAUE",
+                                    "weight" : 1.0
+                                  }
+                                },
+                                "type" : "RECEIVE_BALL",
+                                "weight" : 1.0054207354784013
+                              }
+                            },
+                            "type" : "KICK_INS_BLAUE",
+                            "weight" : 1.01827572286129
+                          }
+                        },
+                        "type" : "KICK_INS_BLAUE",
+                        "weight" : 0.9951498329639434
+                      }
+                    },
+                    "type" : "RECEIVE_BALL",
+                    "weight" : 0.988160664293527
+                  }
+                },
+                "type" : "KICK_INS_BLAUE",
+                "weight" : 0.9790659132680727
+              },
+              "STANDARD_PASS" : {
+                "children" : {
+                  "RECEIVE_BALL" : {
+                    "children" : {
+                      "GOAL_KICK" : {
+                        "children" : { },
+                        "type" : "GOAL_KICK",
+                        "weight" : 1.0
+                      }
+                    },
+                    "type" : "RECEIVE_BALL",
+                    "weight" : 1.0032829344272614
+                  }
+                },
+                "type" : "STANDARD_PASS",
+                "weight" : 1.0634522449948254
+              }
+            },
+            "type" : "RECEIVE_BALL",
+            "weight" : 1.0707490926509093
+          },
+          "KICK_INS_BLAUE" : {
+            "children" : {
+              "RECEIVE_BALL" : {
+                "children" : {
+                  "KICK_INS_BLAUE" : {
+                    "children" : { },
+                    "type" : "KICK_INS_BLAUE",
+                    "weight" : 1.0
+                  },
+                  "GOAL_KICK" : {
+                    "children" : { },
+                    "type" : "GOAL_KICK",
+                    "weight" : 1.0
+                  }
+                },
+                "type" : "RECEIVE_BALL",
+                "weight" : 0.9981822290943343
+              },
+              "REDIRECT_GOAL_KICK" : {
+                "children" : { },
+                "type" : "REDIRECT_GOAL_KICK",
+                "weight" : 1.0
+              }
+            },
+            "type" : "KICK_INS_BLAUE",
+            "weight" : 1.1075044635916755
+          },
+          "GOAL_KICK" : {
+            "children" : { },
+            "type" : "GOAL_KICK",
+            "weight" : 1.0
+          },
+          "LOW_CHANCE_GOAL_KICK" : {
+            "children" : { },
+            "type" : "LOW_CHANCE_GOAL_KICK",
+            "weight" : 1.0
+          },
+          "STANDARD_PASS" : {
+            "children" : {
+              "RECEIVE_BALL" : {
+                "children" : {
+                  "KICK_INS_BLAUE" : {
+                    "children" : { },
+                    "type" : "KICK_INS_BLAUE",
+                    "weight" : 1.0
+                  }
+                },
+                "type" : "RECEIVE_BALL",
+                "weight" : 0.9632483224074045
+              },
+              "REDIRECT_GOAL_KICK" : {
+                "children" : { },
+                "type" : "REDIRECT_GOAL_KICK",
+                "weight" : 1.0
+              }
+            },
+            "type" : "STANDARD_PASS",
+            "weight" : 1.0878960138329499
+          }
+        },
+        "type" : null,
+        "weight" : 1.0
+      }
+    },
+    "CLOSE_COMBAT_DEFENSIVE" : {
+      "head" : {
+        "children" : {
+          "RECEIVE_BALL" : {
+            "children" : {
+              "KICK_INS_BLAUE" : {
+                "children" : { },
+                "type" : "KICK_INS_BLAUE",
+                "weight" : 1.0
+              },
+              "MOVE_BALL_TO_OPPONENT_HALF" : {
+                "children" : {
+                  "RECEIVE_BALL" : {
+                    "children" : {
+                      "MOVE_BALL_TO_OPPONENT_HALF" : {
+                        "children" : { },
+                        "type" : "MOVE_BALL_TO_OPPONENT_HALF",
+                        "weight" : 1.0
+                      }
+                    },
+                    "type" : "RECEIVE_BALL",
+                    "weight" : 1.0009078979492188
+                  }
+                },
+                "type" : "MOVE_BALL_TO_OPPONENT_HALF",
+                "weight" : 0.9882147021077854
+              }
+            },
+            "type" : "RECEIVE_BALL",
+            "weight" : 1.0540244232844003
+          },
+          "KICK_INS_BLAUE" : {
+            "children" : {
+              "RECEIVE_BALL" : {
+                "children" : {
+                  "KICK_INS_BLAUE" : {
+                    "children" : {
+                      "KICK_INS_BLAUE" : {
+                        "children" : {
+                          "KICK_INS_BLAUE" : {
+                            "children" : {
+                              "RECEIVE_BALL" : {
+                                "children" : {
+                                  "KICK_INS_BLAUE" : {
+                                    "children" : { },
+                                    "type" : "KICK_INS_BLAUE",
+                                    "weight" : 1.0
+                                  }
+                                },
+                                "type" : "RECEIVE_BALL",
+                                "weight" : 1.0276930975204621
+                              }
+                            },
+                            "type" : "KICK_INS_BLAUE",
+                            "weight" : 1.0152604951293223
+                          }
+                        },
+                        "type" : "KICK_INS_BLAUE",
+                        "weight" : 0.9983449081579844
+                      }
+                    },
+                    "type" : "KICK_INS_BLAUE",
+                    "weight" : 0.9916125516096751
+                  }
+                },
+                "type" : "RECEIVE_BALL",
+                "weight" : 1.0009246230125428
+              }
+            },
+            "type" : "KICK_INS_BLAUE",
+            "weight" : 1.0029561195445214
+          },
+          "MOVE_BALL_TO_OPPONENT_HALF" : {
+            "children" : {
+              "RECEIVE_BALL" : {
+                "children" : {
+                  "KICK_INS_BLAUE" : {
+                    "children" : {
+                      "RECEIVE_BALL" : {
+                        "children" : {
+                          "KICK_INS_BLAUE" : {
+                            "children" : {
+                              "RECEIVE_BALL" : {
+                                "children" : {
+                                  "GOAL_KICK" : {
+                                    "children" : { },
+                                    "type" : "GOAL_KICK",
+                                    "weight" : 1.0
+                                  }
+                                },
+                                "type" : "RECEIVE_BALL",
+                                "weight" : 0.9889952393285208
+                              }
+                            },
+                            "type" : "KICK_INS_BLAUE",
+                            "weight" : 0.9912630720710219
+                          }
+                        },
+                        "type" : "RECEIVE_BALL",
+                        "weight" : 1.0041899582640248
+                      }
+                    },
+                    "type" : "KICK_INS_BLAUE",
+                    "weight" : 1.016461896323187
+                  }
+                },
+                "type" : "RECEIVE_BALL",
+                "weight" : 1.0015328550811289
+              }
+            },
+            "type" : "MOVE_BALL_TO_OPPONENT_HALF",
+            "weight" : 1.0391463358496806
+          }
+        },
+        "type" : null,
+        "weight" : 1.0
+      }
+    }
+  }
+}

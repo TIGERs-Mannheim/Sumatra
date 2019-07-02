@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.wp.ball.trajectory.chipped;
 
@@ -15,6 +15,7 @@ import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.wp.ball.prediction.IChipBallConsultant;
+import edu.tigers.sumatra.wp.ball.trajectory.ABallTrajectory;
 import edu.tigers.sumatra.wp.ball.trajectory.BallFactory;
 import edu.tigers.sumatra.wp.ball.trajectory.chipped.FixedLossPlusRollingBallTrajectory.FixedLossPlusRollingParameters;
 
@@ -167,5 +168,26 @@ public class FixedLossPlusRollingConsultant implements IChipBallConsultant
 		double tHeight = (SumatraMath.sqrt((velZ * velZ) - (2.0 * g * heightInM)) + velZ) / g;
 		
 		return kickVel.x() * tHeight * 1000.0;
+	}
+	
+	
+	@Override
+	public double getTimeForKick(final double distance, final double kickSpeed)
+	{
+		IVector2 xyVect = BallFactory.createChipConsultant().absoluteKickVelToVector(kickSpeed * 1000);
+		IVector3 kickVel = Vector3.fromXYZ(0, xyVect.x(), xyVect.y());
+		final ABallTrajectory chipTraj = BallFactory.createTrajectoryFromChipKick(Vector2.zero(), kickVel);
+		return chipTraj.getTimeByDist(distance);
+	}
+	
+	
+	@Override
+	public double getVelForKick(final double distance, final double kickSpeed)
+	{
+		IVector2 xyVect = BallFactory.createChipConsultant().absoluteKickVelToVector(kickSpeed * 1000);
+		IVector3 kickVel = Vector3.fromXYZ(0, xyVect.x(), xyVect.y());
+		final ABallTrajectory chipTraj = BallFactory.createTrajectoryFromChipKick(Vector2.zero(), kickVel);
+		double time = chipTraj.getTimeByDist(distance);
+		return chipTraj.getVelByTime(time).getLength2();
 	}
 }

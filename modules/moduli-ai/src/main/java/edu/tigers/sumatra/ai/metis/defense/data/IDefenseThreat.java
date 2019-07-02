@@ -4,54 +4,57 @@
 
 package edu.tigers.sumatra.ai.metis.defense.data;
 
+import java.util.Optional;
+
+import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * A threat for the defense.
  */
 public interface IDefenseThreat
 {
 	/**
-	 * Get the line of this threat that should be defended.
-	 * 
-	 * @return
+	 * @return the line of this threat that should be defended.
 	 */
 	ILineSegment getThreatLine();
-	
-	
+
+
 	/**
-	 * Get some arbitrary score of this threat.
-	 * 
-	 * @return
+	 * @return the line of this threat on which the threat can be protected.
 	 */
-	double getScore();
-	
-	
+	Optional<ILineSegment> getProtectionLine();
+
+
 	/**
-	 * Threat position.
-	 * 
-	 * @return
+	 * @return Current position of this threat.
 	 */
-	default IVector2 getPos()
-	{
-		return getThreatLine().getStart();
-	}
-	
-	
+	IVector2 getPos();
+
+
 	/**
-	 * Velocity if this threat.
-	 * 
-	 * @return
+	 * @return Current velocity of this threat
 	 */
 	IVector2 getVel();
-	
-	
+
+
 	/**
-	 * Is this a bot?
-	 * 
-	 * @return
+	 * @return the object id of this threat
 	 */
-	boolean isBot();
+	AObjectID getObjectId();
+
+
+	/**
+	 * @return the type of this threat
+	 */
+	EDefenseThreatType getType();
+
+
+	/**
+	 * @param threat
+	 * @return true, if this is the same threat
+	 */
+	boolean sameAs(IDefenseThreat threat);
 }

@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.math.line.v2;
 
 import java.util.Optional;
 
-import edu.tigers.sumatra.math.IEuclideanDistance;
+import edu.tigers.sumatra.math.vector.IEuclideanDistance;
 import edu.tigers.sumatra.math.vector.IVector2;
 
 
@@ -22,7 +22,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
  * 
  * @author Lukas Magel
  */
-interface ILineBase extends IEuclideanDistance
+public interface ILineBase extends IEuclideanDistance
 {
 	/**
 	 * Returns true if this line instance is properly defined. Whether or not a line instance is valid depends on the
@@ -53,6 +53,16 @@ interface ILineBase extends IEuclideanDistance
 	 * 			The direction vector of this line instance which can have a length of zero
 	 */
 	IVector2 directionVector();
+	
+	
+	/**
+	 * Returns the support vector of this line. The support vector represents the starting point of the line, i.e. where
+	 * it is anchored. Please note that even a bounded line segment has a support vector which equals the start vector.
+	 *
+	 * @return
+	 * 			The support vector of this line instance which can have a length of zero
+	 */
+	IVector2 supportVector();
 	
 	
 	/**

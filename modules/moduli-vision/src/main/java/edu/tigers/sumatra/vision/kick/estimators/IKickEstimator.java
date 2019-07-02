@@ -56,4 +56,12 @@ public interface IKickEstimator
 	 * @return
 	 */
 	EKickEstimatorType getType();
+	
+	
+	/**
+	 * Do model identification.
+	 * 
+	 * @return
+	 */
+	Optional<IBallModelIdentResult> getModelIdentResult();
 }

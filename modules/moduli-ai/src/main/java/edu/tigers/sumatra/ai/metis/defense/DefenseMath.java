@@ -4,14 +4,8 @@
 
 package edu.tigers.sumatra.ai.metis.defense;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.IPenaltyArea;
 import edu.tigers.sumatra.math.SumatraMath;
@@ -24,8 +18,15 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.planarcurve.PlanarCurve;
+import edu.tigers.sumatra.planarcurve.PlanarCurveSegment;
 import edu.tigers.sumatra.wp.ball.prediction.IBallTrajectory;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -194,6 +195,19 @@ public final class DefenseMath
 	 *
 	 * @param botPos
 	 * @param ballPos
+	 * @return
+	 */
+	public static double calculateTDeflectEnemyGoal(final IVector2 botPos, final IVector2 ballPos)
+	{
+		return calculateTDeflect(botPos, ballPos, DefenseMath.getBisectionEnemyGoal(botPos));
+	}
+	
+	
+	/**
+	 * Time a bot needs to catch a ball and rotate to a new angle
+	 *
+	 * @param botPos
+	 * @param ballPos
 	 * @param target
 	 * @return
 	 */
@@ -224,6 +238,58 @@ public final class DefenseMath
 	
 	
 	/**
+	 * @param source position of the ball or a bot
+	 * @return bisector from source to in between the goal posts
+	 */
+	public static IVector2 getBisectionEnemyGoal(final IVector2 source)
+	{
+		final IVector2 postLeft = Geometry.getGoalTheir().getLeftPost();
+		final IVector2 postRight = Geometry.getGoalTheir().getRightPost();
+		
+		return TriangleMath.bisector(source, postLeft, postRight);
+	}
+	
+	
+	/**
+	 * Calculates a rating for each bot based on Planar Curves.
+	 * For the ball a planar curve is directly calculated from the trajectory.
+	 * A chipped ball's planar curve starts at the first touchdown location.<br>
+	 * The robot uses a planar curve segment that assumes it wants to stop as quickly as possible. Hence, its velocity is
+	 * used for a small lookahead.
+	 *
+	 * @param ballTrajectory the ball trajectory
+	 * @param bots bots to check
+	 * @param maxCheckDistance bots with a lead point distance to the ball travel line segment greater than this are
+	 *           skipped
+	 * @param passTarget passToTarget
+	 * @param tStart time after which the kick reaches its first touchdown point (can be zero for straight)
+	 * @return list of ratings (minimum distance between ball planar curve and bot brake planar curve)
+	 */
+	public static List<ReceiveData> calcReceiveRatingsForRestrictedStartAndEnd(
+			final IBallTrajectory ballTrajectory,
+			final Collection<ITrackedBot> bots,
+			final double maxCheckDistance,
+			final IVector2 passTarget, double tStart)
+	{
+		// if this is a chip kick we start the planar curve behind the first touchdown
+		double tEnd = ballTrajectory.getTimeByDist(ballTrajectory.getPosByTime(0.0).getXYVector().distanceTo(passTarget));
+		if (tStart > tEnd)
+		{
+			return Collections.emptyList();
+		}
+		
+		PlanarCurve ballCurve = ballTrajectory.getPlanarCurve().restrictToEnd(tEnd);
+		if (tStart > 1e-3)
+		{
+			ballCurve = simplifyBallCurve(ballCurve);
+		}
+		
+		// calculate receive ratings
+		return calculateReceiveRatings(ballTrajectory, bots, maxCheckDistance, ballCurve);
+	}
+	
+	
+	/**
 	 * Calculates a rating for each bot based on Planar Curves.
 	 * For the ball a planar curve is directly calculated from the trajectory.
 	 * A chipped ball's planar curve starts at the first touchdown location.<br>
@@ -236,23 +302,49 @@ public final class DefenseMath
 	 *           skipped
 	 * @return list of ratings (minimum distance between ball planar curve and bot brake planar curve)
 	 */
-	public static List<ReceiveData> calcReceiveRatingsFor(
+	public static List<ReceiveData> calcReceiveRatingsForRestrictedStart(
 			final IBallTrajectory ballTrajectory,
 			final Collection<ITrackedBot> bots,
 			final double maxCheckDistance)
 	{
-		// if this is a chip kick we start the planar curve behind the first touchdown
-		List<IVector2> touchdowns = ballTrajectory.getTouchdownLocations();
-		double tStart = 0.0;
-		if (!touchdowns.isEmpty())
-		{
-			tStart = Math.max(0.0, ballTrajectory.getTimeByPos(touchdowns.get(0)));
-		}
-		PlanarCurve ballCurve = ballTrajectory.getPlanarCurve().restrictToStart(tStart);
+		PlanarCurve ballCurve = ballTrajectory.getPlanarCurve();
+		ballCurve = simplifyBallCurve(ballCurve);
 		
 		// calculate receive ratings
-		List<ReceiveData> ratings = new ArrayList<>();
+		return calculateReceiveRatings(ballTrajectory, bots, maxCheckDistance, ballCurve);
+	}
+	
+	
+	/**
+	 * Calculates a rating for each bot based on Planar Curves.
+	 * For the ball a planar curve is directly calculated from the trajectory.
+	 * A chipped ball's planar curve starts at the first touchdown location.<br>
+	 * The robot uses a planar curve segment that assumes it wants to stop as quickly as possible. Hence, its velocity is
+	 * used for a small lookahead.
+	 *
+	 * @param ballTrajectory the ball trajectory
+	 * @param bots bots to check
+	 * @param maxCheckDistance bots with a lead point distance to the ball travel line segment greater than this are
+	 *           skipped
+	 * @return list of ratings (minimum distance between ball planar curve and bot brake planar curve)
+	 */
+	public static List<ReceiveData> calcReceiveRatingsNonRestricted(
+			final IBallTrajectory ballTrajectory,
+			final Collection<ITrackedBot> bots,
+			final double maxCheckDistance)
+	{
+		PlanarCurve ballCurve = ballTrajectory.getPlanarCurve();
 		
+		// calculate receive ratings
+		return calculateReceiveRatings(ballTrajectory, bots, maxCheckDistance, ballCurve);
+	}
+	
+	
+	private static List<ReceiveData> calculateReceiveRatings(final IBallTrajectory ballTrajectory,
+			final Collection<ITrackedBot> bots,
+			final double maxCheckDistance, final PlanarCurve ballCurve)
+	{
+		final List<ReceiveData> ratings = new ArrayList<>();
 		for (ITrackedBot bot : bots)
 		{
 			IVector2 botPos = bot.getBotKickerPos();
@@ -261,10 +353,22 @@ public final class DefenseMath
 			{
 				continue;
 			}
-			
 			ratings.add(new ReceiveData(bot, ballCurve, ballTrajectory.getPosByTime(0).getXYVector()));
 		}
 		return ratings;
+	}
+	
+	
+	private static PlanarCurve simplifyBallCurve(PlanarCurve ballCurve)
+	{
+		List<PlanarCurveSegment> segments = ballCurve.getSegments();
+		double t1 = segments.get(0).getStartTime();
+		double t2 = segments.get(0).getEndTime();
+		IVector2 pos = segments.get(0).getPosition(t2);
+		segments.remove(0);
+		segments.add(0, PlanarCurveSegment.fromPoint(pos, t1, t2));
+		ballCurve = new PlanarCurve(segments);
+		return ballCurve;
 	}
 	
 	/** Data holder for OpponentPassReceiverCalc */

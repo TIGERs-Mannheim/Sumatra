@@ -20,6 +20,9 @@ import edu.tigers.sumatra.MessagesRobocupSslWrapper.SSL_WrapperPacket;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.network.MulticastUDPTransmitter;
 import edu.tigers.sumatra.wp.AWorldPredictor;
@@ -33,9 +36,9 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
  */
 public class SSLVisionSender extends AModule implements IWorldFrameObserver
 {
-	
 	private static final Logger log = Logger.getLogger(SSLVisionSender.class.getName());
 	private static final String ADDRESS = "224.5.23.2";
+	private static final double GEOMETRY_BROADCAST_INTERVAL = 3;
 	
 	private MulticastUDPTransmitter transmitter;
 	private int frameNumber = 0;
@@ -98,7 +101,7 @@ public class SSLVisionSender extends AModule implements IWorldFrameObserver
 		SSL_DetectionFrame.Builder frame = SSL_DetectionFrame.newBuilder();
 		frame.setCameraId(0);
 		frame.setFrameNumber(frameNumber++);
-		double timestamp = System.currentTimeMillis() / 1000.0;
+		double timestamp = wFrameWrapper.getTimestamp() / 1e9;
 		frame.setTCapture(timestamp);
 		frame.setTSent(timestamp);
 		
@@ -134,58 +137,103 @@ public class SSLVisionSender extends AModule implements IWorldFrameObserver
 		}
 		wrapper.setDetection(frame);
 		
-		if ((System.nanoTime() - tLastGeometrySent) / 1e9 > 3)
+		if ((System.nanoTime() - tLastGeometrySent) / 1e9 > GEOMETRY_BROADCAST_INTERVAL)
 		{
-			SSL_GeometryData.Builder geometry = SSL_GeometryData.newBuilder();
-			SSL_GeometryFieldSize.Builder field = SSL_GeometryFieldSize.newBuilder();
-			field.setBoundaryWidth((int) Geometry.getBoundaryWidth());
-			field.setFieldLength((int) Geometry.getFieldLength());
-			field.setFieldWidth((int) Geometry.getFieldWidth());
-			field.setGoalDepth((int) Geometry.getGoalOur().getDepth());
-			field.setGoalWidth((int) Geometry.getGoalOur().getWidth());
-			
-			SSL_FieldLineSegment.Builder penAreaLineStretchLeft = SSL_FieldLineSegment.newBuilder();
-			Vector2f.Builder pl1 = Vector2f.newBuilder();
-			pl1.setX((float) Geometry.getPenaltyMarkOur().x());
-			pl1.setY((float) Geometry.getPenaltyAreaFrontLineLength() / 2);
-			Vector2f.Builder pl2 = Vector2f.newBuilder();
-			pl2.setX((float) Geometry.getPenaltyMarkOur().x());
-			pl2.setY((float) -Geometry.getPenaltyAreaFrontLineLength() / 2);
-			penAreaLineStretchLeft.setP1(pl1);
-			penAreaLineStretchLeft.setP2(pl2);
-			penAreaLineStretchLeft.setThickness(10);
-			penAreaLineStretchLeft.setName("LeftPenaltyStretch");
-			field.addFieldLines(penAreaLineStretchLeft);
-			
-			SSL_FieldLineSegment.Builder penAreaLineStretchRight = SSL_FieldLineSegment.newBuilder();
-			Vector2f.Builder pr1 = Vector2f.newBuilder();
-			pr1.setX((float) Geometry.getPenaltyMarkTheir().x());
-			pr1.setY((float) Geometry.getPenaltyAreaFrontLineLength() / 2);
-			Vector2f.Builder pr2 = Vector2f.newBuilder();
-			pr2.setX((float) Geometry.getPenaltyMarkTheir().x());
-			pr2.setY((float) -Geometry.getPenaltyAreaFrontLineLength() / 2);
-			penAreaLineStretchRight.setP1(pr1);
-			penAreaLineStretchRight.setP2(pr2);
-			penAreaLineStretchRight.setThickness(10);
-			penAreaLineStretchRight.setName("RightPenaltyStretch");
-			field.addFieldLines(penAreaLineStretchRight);
-			
-			MessagesRobocupSslGeometry.SSL_FieldCicularArc.Builder centerCircle = MessagesRobocupSslGeometry.SSL_FieldCicularArc
-					.newBuilder();
-			centerCircle.setCenter(Vector2f.newBuilder().setX(0).setY(0).build());
-			centerCircle.setA1(0);
-			centerCircle.setA2((float) AngleMath.PI_TWO);
-			centerCircle.setRadius((float) Geometry.getCenterCircle().radius());
-			centerCircle.setThickness(10);
-			centerCircle.setName("CenterCircle");
-			field.addFieldArcs(centerCircle);
-			
-			geometry.setField(field);
-			wrapper.setGeometry(geometry);
-			
+			wrapper.setGeometry(createGeometryMessage());
 			tLastGeometrySent = System.nanoTime();
 		}
 		
 		transmitter.send(wrapper.build().toByteArray());
+	}
+	
+	
+	private SSL_GeometryData.Builder createGeometryMessage()
+	{
+		SSL_GeometryData.Builder geometry = SSL_GeometryData.newBuilder();
+		SSL_GeometryFieldSize.Builder field = SSL_GeometryFieldSize.newBuilder();
+		field.setBoundaryWidth((int) Geometry.getBoundaryWidth());
+		field.setFieldLength((int) Geometry.getFieldLength());
+		field.setFieldWidth((int) Geometry.getFieldWidth());
+		field.setGoalDepth((int) Geometry.getGoalOur().getDepth());
+		field.setGoalWidth((int) Geometry.getGoalOur().getWidth());
+		
+		SSL_FieldLineSegment.Builder penAreaLineStretchLeft = SSL_FieldLineSegment.newBuilder();
+		Vector2f.Builder pl1 = Vector2f.newBuilder();
+		pl1.setX((float) Geometry.getPenaltyMarkOur().x());
+		pl1.setY((float) Geometry.getPenaltyAreaFrontLineLength() / 2);
+		Vector2f.Builder pl2 = Vector2f.newBuilder();
+		pl2.setX((float) Geometry.getPenaltyMarkOur().x());
+		pl2.setY((float) -Geometry.getPenaltyAreaFrontLineLength() / 2);
+		penAreaLineStretchLeft.setP1(pl1);
+		penAreaLineStretchLeft.setP2(pl2);
+		penAreaLineStretchLeft.setThickness(10);
+		penAreaLineStretchLeft.setName("LeftPenaltyStretch");
+		field.addFieldLines(penAreaLineStretchLeft);
+		
+		SSL_FieldLineSegment.Builder penAreaLineStretchRight = SSL_FieldLineSegment.newBuilder();
+		Vector2f.Builder pr1 = Vector2f.newBuilder();
+		pr1.setX((float) Geometry.getPenaltyMarkTheir().x());
+		pr1.setY((float) Geometry.getPenaltyAreaFrontLineLength() / 2);
+		Vector2f.Builder pr2 = Vector2f.newBuilder();
+		pr2.setX((float) Geometry.getPenaltyMarkTheir().x());
+		pr2.setY((float) -Geometry.getPenaltyAreaFrontLineLength() / 2);
+		penAreaLineStretchRight.setP1(pr1);
+		penAreaLineStretchRight.setP2(pr2);
+		penAreaLineStretchRight.setThickness(10);
+		penAreaLineStretchRight.setName("RightPenaltyStretch");
+		field.addFieldLines(penAreaLineStretchRight);
+		
+		Geometry.getPenaltyAreaOur().getRectangle().getEdges().stream()
+				.map(Lines::segmentFromLine)
+				.map(l -> createLineSegment("", l))
+				.forEach(field::addFieldLines);
+		
+		Geometry.getPenaltyAreaTheir().getRectangle().getEdges().stream()
+				.map(Lines::segmentFromLine)
+				.map(l -> createLineSegment("", l))
+				.forEach(field::addFieldLines);
+		
+		Geometry.getField().getEdges().stream()
+				.map(Lines::segmentFromLine)
+				.map(l -> createLineSegment("", l))
+				.forEach(field::addFieldLines);
+		field.addFieldLines(createLineSegment("HalfwayLine",
+				Lines.segmentFromPoints(
+						Vector2.fromY(Geometry.getFieldWidth() / 2),
+						Vector2.fromY(-Geometry.getFieldWidth() / 2))));
+		field.addFieldLines(createLineSegment("CenterLine",
+				Lines.segmentFromPoints(
+						Vector2.fromX(Geometry.getFieldLength() / 2),
+						Vector2.fromX(-Geometry.getFieldLength() / 2))));
+		
+		MessagesRobocupSslGeometry.SSL_FieldCicularArc.Builder centerCircle = MessagesRobocupSslGeometry.SSL_FieldCicularArc
+				.newBuilder();
+		centerCircle.setCenter(Vector2f.newBuilder().setX(0).setY(0).build());
+		centerCircle.setA1(0);
+		centerCircle.setA2((float) AngleMath.PI_TWO);
+		centerCircle.setRadius((float) Geometry.getCenterCircle().radius());
+		centerCircle.setThickness(10);
+		centerCircle.setName("CenterCircle");
+		field.addFieldArcs(centerCircle);
+		
+		geometry.setField(field);
+		return geometry;
+	}
+	
+	
+	private SSL_FieldLineSegment.Builder createLineSegment(final String name, final ILineSegment line)
+	{
+		SSL_FieldLineSegment.Builder lineSegment = SSL_FieldLineSegment.newBuilder();
+		Vector2f.Builder pr1 = Vector2f.newBuilder();
+		pr1.setX((float) line.getStart().x());
+		pr1.setY((float) line.getStart().y());
+		Vector2f.Builder pr2 = Vector2f.newBuilder();
+		pr2.setX((float) line.getEnd().x());
+		pr2.setY((float) line.getEnd().y());
+		lineSegment.setP1(pr1);
+		lineSegment.setP2(pr2);
+		lineSegment.setThickness(10);
+		lineSegment.setName(name);
+		return lineSegment;
 	}
 }

@@ -18,7 +18,8 @@ public class ObjectIdConverter implements IString2ValueConverter
 	@Override
 	public boolean supportedClass(final Class<?> impl)
 	{
-		return impl.equals(BotID.class)
+		return impl.equals(AObjectID.class)
+				|| impl.equals(BotID.class)
 				|| impl.equals(BallID.class)
 				|| impl.equals(UninitializedID.class);
 	}

@@ -4,238 +4,129 @@
 
 package edu.tigers.sumatra.ai.metis.defense;
 
-import java.awt.Color;
-import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.commons.math3.distribution.BetaDistribution;
-
-import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.ai.BaseAiFrame;
-import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreat;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
-import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
-import edu.tigers.sumatra.drawable.ValuedField;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.geometry.RuleConstraints;
-import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.Hysteresis;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
 /**
- * Rate opponent bot threats based on shooting angle and time to goal.
- * Calculations taken from: http://wiki.robocup.org/File:Small_Size_League_-_RoboCup_2016_-_TDP_CMDragons.pdf
+ * Rate opponent bot threats based on shooting angle to goal.
  */
-public class DefenseBotThreatCalc extends ACalculator
+public class DefenseBotThreatCalc extends ADefenseThreatCalc
 {
-	@Configurable(comment = "maximum x value for a foe bot to 'be in our half' (mm)", defValue = "50.0")
-	private static double minXValueOpp = 50.;
-	
-	@Configurable(comment = "Assumed vPass of the opponent (m/s)", defValue = "6.0")
-	private static double vPassOpponent = 6.;
-	
-	@Configurable(comment = "If the goal angle is greater than this, use shot times instead of the angle to compare (rad)", defValue = "0.5")
-	private static double maxAngleCompareAngle = 0.5;
-	
-	@Configurable(comment = "Use ER-Force 2017 ETDP threat rating.", defValue = "true")
-	private static boolean useERForceRating = true;
-	
-	@Configurable(comment = "Activate the bot threat grid", defValue = "false")
-	private static boolean isERForceBotThreatGridActivated = false;
-	
-	@Configurable(comment = "ER-Force volley shot threat weight", defValue = "5.0")
-	private static double erVolleyAngleWeight = 5.0;
-	
-	@Configurable(comment = "ER-Force travel angle threat weight", defValue = "1.0")
-	private static double erTravelAngleWeight = 1.0;
-	
-	@Configurable(comment = "ER-Force distance to goal weight", defValue = "1.0")
-	private static double erDistToGoalWeight = 1.0;
-	
-	
+	private final DefenseThreatRater defenseThreatRater = new DefenseThreatRater();
+	private final Map<BotID, Hysteresis> opponentDangerZoneHysteresis = new HashMap<>();
+
+
 	@Override
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
-		final List<DefenseBotThreat> angleComparedThreats = new ArrayList<>();
-		final List<DefenseBotThreat> timeComparedThreats = new ArrayList<>();
-		
-		final IVector2 ballPos = getBall().getPos();
-		final IVector2 goalCenter = Geometry.getGoalOur().getCenter();
-		
+		updateOpponentDangerZoneHystereses();
+
+		final List<DefenseBotThreat> threats = getWFrame().getFoeBots().values().stream()
+				.filter(this::movingInDangerZone)
+				.filter(this::noPassReceiver)
+				.filter(this::notCloseToBall)
+				.map(this::defenseBotThreat)
+				.sorted(Comparator.comparingDouble(DefenseBotThreat::getShootingAngle).reversed())
+				.collect(Collectors.toList());
+
+		newTacticalField.setDefenseBotThreats(threats);
+
+		drawBotThreads(threats);
+	}
+
+
+	private boolean notCloseToBall(final ITrackedBot bot)
+	{
+		return getNewTacticalField().getEnemiesToBallDist().stream()
+				.filter(d -> d.getDist() < 250)
+				.noneMatch(d -> d.getBot().getBotId() == bot.getBotId());
+	}
+
+
+	private boolean noPassReceiver(final ITrackedBot bot)
+	{
+		final DefenseBallThreat ballThreat = getNewTacticalField().getDefenseBallThreat();
+		return !ballThreat.getPassReceiver().isPresent()
+				|| (ballThreat.getPassReceiver().get().getBotId() != bot.getBotId());
+	}
+
+
+	private void updateOpponentDangerZoneHystereses()
+	{
 		for (ITrackedBot bot : getWFrame().getFoeBots().values())
 		{
-			IVector2 botPos = bot.getPosByTime(DefenseConstants.getLookaheadBotThreats(bot.getVel().getLength()));
-			
-			if (botPos.x() > minXValueOpp)
-			{
-				continue;
-			}
-			
-			if (useERForceRating)
-			{
-				double threatRating = getThreatRating(ballPos, goalCenter, botPos);
-				
-				DefenseBotThreat curThreat = new DefenseBotThreat(bot, threatRating, 0);
-				angleComparedThreats.add(curThreat);
-			} else
-			{
-				final double shootingAngle = calculateShootingAngle(botPos);
-				final double tPass = calculateTPass(botPos, ballPos);
-				final double tDeflect = calculateTDeflect(botPos, ballPos);
-				final double tKick = calculateTKick(botPos);
-				
-				DefenseBotThreat curThreat = new DefenseBotThreat(bot, shootingAngle,
-						tPass + tDeflect + tKick);
-				
-				if (shootingAngle > maxAngleCompareAngle)
-				{
-					timeComparedThreats.add(curThreat);
-				} else
-				{
-					angleComparedThreats.add(curThreat);
-				}
-			}
+			final Hysteresis hysteresis = opponentDangerZoneHysteresis.computeIfAbsent(bot.getBotId(),
+					botID -> new Hysteresis(0, 1));
+			hysteresis.setLowerThreshold(DefenseThreatRater.getDangerZoneX() - 100);
+			hysteresis.setUpperThreshold(DefenseThreatRater.getDangerZoneX() + 100);
+			hysteresis.update(predictedOpponentPos(bot).x());
 		}
-		
-		angleComparedThreats.sort(Comparator.comparingDouble(DefenseBotThreat::getShootingAngle).reversed());
-		timeComparedThreats.sort(Comparator.comparingDouble(DefenseBotThreat::getTGoal));
-		
-		timeComparedThreats.addAll(angleComparedThreats);
-		
-		newTacticalField.setDefenseBotThreats(timeComparedThreats);
-		
-		if (isERForceBotThreatGridActivated)
-		{
-			drawBotThreatGrid(newTacticalField, ballPos, goalCenter);
-		}
-		
-		final List<IDrawableShape> defenseShapes = newTacticalField.getDrawableShapes()
+	}
+
+
+	private DefenseBotThreat defenseBotThreat(ITrackedBot bot)
+	{
+		final ILineSegment threatLine = threatLine(bot);
+		final ILineSegment protectionLine = centerBackProtectionLine(threatLine, Geometry.getBotRadius() * 2);
+		double threatRating = defenseThreatRater.getThreatRating(getBall().getPos(), predictedOpponentPos(bot));
+		return new DefenseBotThreat(bot, threatLine, protectionLine, threatRating);
+	}
+
+
+	private boolean movingInDangerZone(final ITrackedBot bot)
+	{
+		return opponentDangerZoneHysteresis.get(bot.getBotId()).isLower();
+	}
+
+
+	private IVector2 predictedOpponentPos(final ITrackedBot bot)
+	{
+		return bot.getPosByTime(DefenseConstants.getLookaheadBotThreats(bot.getVel().getLength()));
+	}
+
+
+	private ILineSegment threatLine(final ITrackedBot bot)
+	{
+		IVector2 pointInGoal = DefenseMath.getBisectionGoal(predictedOpponentPos(bot));
+
+		return Lines.segmentFromPoints(bot.getPos(), pointInGoal);
+	}
+
+
+	private void drawBotThreads(final List<DefenseBotThreat> timeComparedThreats)
+	{
+		final List<IDrawableShape> defenseShapes = getNewTacticalField().getDrawableShapes()
 				.get(EAiShapesLayer.DEFENSE_BOT_THREATS);
-		
-		drawBotThreads(timeComparedThreats, defenseShapes);
-	}
-	
-	
-	private void drawBotThreatGrid(final TacticalField newTacticalField, final IVector2 ballPos,
-			final IVector2 goalCenter)
-	{
-		double width = Geometry.getFieldWidth();
-		double height = Geometry.getFieldLength();
-		
-		int numX = 400;
-		int numY = 200;
-		
-		List<Double> ratings = new ArrayList<>();
-		
-		for (int iy = 0; iy < numY; iy++)
-		{
-			for (int ix = 0; ix < numX; ix++)
-			{
-				double x = (-height / 2) + (ix * (height / (numX - 1)));
-				double y = (-width / 2) + (iy * (width / (numY - 1)));
-				
-				ratings.add(getThreatRating(ballPos, goalCenter, Vector2.fromXY(x, y)));
-			}
-		}
-		
-		double maxValue = ratings.stream().min((a, b) -> (int) Math.signum(b - a))
-				.orElseThrow(() -> new RuntimeException("Never!"));
-		ratings = ratings.stream().map(r -> SumatraMath.relative(r, 0, maxValue)).collect(Collectors.toList());
-		
-		double[] ratingsArray = ratings.stream().mapToDouble(Double::doubleValue).toArray();
-		
-		ValuedField field = new ValuedField(ratingsArray, numX, numY, 0);
-		
-		newTacticalField.getDrawableShapes().get(EAiShapesLayer.DEFENSE_BOT_THREADS_GRIT).add(field);
-	}
-	
-	
-	private double getThreatRating(final IVector2 ballPos, final IVector2 target, final IVector2 passTarget)
-	{
-		BetaDistribution beta = new BetaDistribution(4, 6);
-		
-		final IVector2 botPos = passTarget;
-		
-		double distGoal = minXValueOpp - Geometry.getGoalOur().getCenter().x();
-		double distanceToGoal = 1.0 - (Math.min(botPos.distanceTo(target), distGoal) / distGoal);
-		
-		IVector2 ballOpponent = Vector2.fromPoints(botPos, ballPos);
-		IVector2 opponentGoal = Vector2.fromPoints(botPos, target);
-		IVector2 ballGoal = Vector2.fromPoints(ballPos, target);
-		IVector2 goalOpponent = Vector2.fromPoints(target, opponentGoal);
-		
-		double volleyAngle = ballOpponent.angleToAbs(opponentGoal).orElse(0.0) / Math.PI;
-		volleyAngle = beta.density(volleyAngle) / 2.5; // scale to 1.0
-		double travelAngle = ballGoal.angleToAbs(goalOpponent).orElse(0.0) / Math.PI;
-		
-		return ((volleyAngle * erVolleyAngleWeight) + (travelAngle * erTravelAngleWeight)
-				+ (distanceToGoal * erDistToGoalWeight)) /
-				(erVolleyAngleWeight + erTravelAngleWeight + erDistToGoalWeight);
-	}
-	
-	
-	private void drawBotThreads(final List<DefenseBotThreat> timeComparedThreats,
-			final List<IDrawableShape> defenseShapes)
-	{
+
 		int threatId = 0;
 		for (DefenseBotThreat threat : timeComparedThreats)
 		{
 			DrawableAnnotation angle = new DrawableAnnotation(threat.getPos(),
-					String.format("-> %d <-%nAngle: %.2f%nTime: %.2f", threatId, threat.getShootingAngle(),
-							threat.getTGoal()),
+					String.format("-> %d <-%nAngle: %.2f", threatId++, threat.getShootingAngle()),
 					Vector2.fromY(200));
 			angle.withCenterHorizontally(true);
 			defenseShapes.add(angle);
-			
-			int col = 255 - Math.min(255, threatId * 40);
-			DrawableLine threatLine = new DrawableLine(threat.getThreatLine(), new Color(col, col, col));
-			defenseShapes.add(threatLine);
-			
-			++threatId;
+			drawThreat(threat);
 		}
-	}
-	
-	
-	/**
-	 * @return shooting angle of the bot to our goal [0, PI]
-	 */
-	private double calculateShootingAngle(final IVector2 botPos)
-	{
-		final IVector2 postLeft = Geometry.getGoalOur().getLeftPost();
-		final IVector2 postRight = Geometry.getGoalOur().getRightPost();
-		
-		final IVector2 bot2postLeft = postLeft.subtractNew(botPos);
-		final IVector2 bot2postRight = postRight.subtractNew(botPos);
-		
-		return bot2postLeft.angleToAbs(bot2postRight).orElse(0.0);
-	}
-	
-	
-	private double calculateTPass(final IVector2 botPos, final IVector2 ballPos)
-	{
-		return ballPos.subtractNew(botPos).getLength2() / (vPassOpponent * 1000);
-	}
-	
-	
-	private double calculateTDeflect(final IVector2 botPos, final IVector2 ballPos)
-	{
-		return DefenseMath.calculateTDeflect(botPos, ballPos);
-	}
-	
-	
-	private double calculateTKick(final IVector2 botPos)
-	{
-		final IVector2 goalOurCenter = Geometry.getGoalOur().getCenter();
-		
-		return goalOurCenter.subtractNew(botPos).getLength2() / (RuleConstraints.getMaxBallSpeed() * 1000);
 	}
 }

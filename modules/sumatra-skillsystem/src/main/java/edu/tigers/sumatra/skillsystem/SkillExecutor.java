@@ -7,18 +7,18 @@ package edu.tigers.sumatra.skillsystem;
 import java.util.List;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.bot.EBotType;
-import edu.tigers.sumatra.bot.IBot;
 import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.drawable.ShapeMap;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.EAiTeam;
+import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.skillsystem.skills.ISkill;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
@@ -27,50 +27,45 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
 /**
  * Execute skills for a single bot
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 class SkillExecutor implements Runnable, IWorldFrameObserver
 {
-	@SuppressWarnings("unused")
-	private static final Logger log = Logger
-			.getLogger(SkillExecutor.class.getName());
-	private final ABot bot;
-	private final NewSkillSync newSkillSync = new NewSkillSync()
-	{
-	};
-	private final BlockingDeque<WorldFrameWrapper> freshWorldFrames = new LinkedBlockingDeque<>(
-			1);
-	private ISkill currentSkill;
+	private static final Logger log = Logger.getLogger(SkillExecutor.class.getName());
+	private final BotID botID;
+	private final NewSkillSync newSkillSync = new NewSkillSync();
+	private final BlockingDeque<WorldFrameWrapper> freshWorldFrames = new LinkedBlockingDeque<>(1);
+	private ABot bot;
+	private CountDownLatch wfProcessedLatch = new CountDownLatch(1);
+	private ISkill currentSkill = new IdleSkill();
 	private ISkill newSkill = new IdleSkill();
 	private boolean active = true;
-	private List<ISkillExecuterPostHook> postHooks = new CopyOnWriteArrayList<>();
+	private List<ISkillExecutorPostHook> postHooks = new CopyOnWriteArrayList<>();
 	private Future<?> future = null;
-	private boolean processAllWorldFrames = false;
-	
-	private static final double BOT_MIN_UPDATE_RATE = 10;
+	private boolean notifiedBotRemoved = true;
 	
 	
-	/**
-	 * @param bot
-	 */
-	SkillExecutor(final ABot bot)
+	SkillExecutor(final BotID botID)
 	{
-		this.bot = bot;
-		currentSkill = new IdleSkill();
-		currentSkill.update(null, bot, new ShapeMap());
+		this.botID = botID;
 	}
 	
 	
-	/**
-	 * @param wf
-	 * @param timestamp
-	 * @param shapeMap
-	 */
-	public void update(final WorldFrameWrapper wf, final long timestamp, final ShapeMap shapeMap)
+	public void update(final WorldFrameWrapper wf, final ShapeMap shapeMap)
 	{
+		update(wf, shapeMap, bot);
+	}
+	
+	
+	private void update(final WorldFrameWrapper wf, final ShapeMap shapeMap, final ABot currentBot)
+	{
+		if (currentBot == null)
+		{
+			notifyBotRemoved();
+			return;
+		}
+		notifiedBotRemoved = false;
 		final ISkill nextSkill;
-		if ((wf != null) && !wf.getSimpleWorldFrame().getBots().containsKey(bot.getBotId()) &&
+		if (!wf.getSimpleWorldFrame().getBots().containsKey(botID) &&
 				(currentSkill.getType() != ESkill.IDLE))
 		{
 			nextSkill = new IdleSkill();
@@ -82,9 +77,22 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 				newSkill = null;
 			}
 		}
-		processNewSkill(nextSkill, wf, shapeMap);
-		executeSave(() -> currentSkill.update(wf, bot, shapeMap));
-		executeSave(() -> currentSkill.calcActions(timestamp));
+		processNewSkill(nextSkill, wf, currentBot, shapeMap);
+		executeSave(() -> currentSkill.update(wf, currentBot, shapeMap));
+		executeSave(() -> currentSkill.calcActions(wf.getTimestamp()));
+		executeSave(currentBot::sendMatchCommand);
+		shapeMap.setInverted(wf.getWorldFrame(EAiTeam.primary(botID.getTeamColor())).isInverted());
+		postHooks.forEach(h -> h.onSkillUpdated(currentBot, wf.getTimestamp(), shapeMap));
+	}
+	
+	
+	private void notifyBotRemoved()
+	{
+		if (!notifiedBotRemoved)
+		{
+			postHooks.forEach(o -> o.onRobotRemoved(botID));
+			notifiedBotRemoved = true;
+		}
 	}
 	
 	
@@ -100,7 +108,14 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 	}
 	
 	
-	private void processNewSkill(final ISkill skill, final WorldFrameWrapper wf, final ShapeMap shapeMap)
+	public void setNewBot(final ABot bot)
+	{
+		this.bot = bot;
+	}
+	
+	
+	private void processNewSkill(final ISkill skill, final WorldFrameWrapper wf, final ABot currentBot,
+			final ShapeMap shapeMap)
 	{
 		if (skill == null)
 		{
@@ -111,7 +126,7 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 		{
 			executeSave(currentSkill::calcExitActions);
 		}
-		executeSave(() -> skill.update(wf, bot, shapeMap));
+		executeSave(() -> skill.update(wf, currentBot, shapeMap));
 		executeSave(skill::calcEntryActions);
 		currentSkill = skill;
 	}
@@ -124,7 +139,7 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 			run.run();
 		} catch (Throwable err)
 		{
-			log.error("Exception in SkillExecutor " + bot.getBotId(), err);
+			log.error("Exception in SkillExecutor " + botID, err);
 		}
 	}
 	
@@ -138,46 +153,22 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 	}
 	
 	
-	/**
-	 * @return the bot
-	 */
-	public IBot getBot()
+	public BotID getBotID()
 	{
-		return bot;
+		return botID;
 	}
 	
 	
 	@Override
 	public void run()
 	{
-		Thread.currentThread().setName("SkillExecutor " + bot.getBotId());
-		WorldFrameWrapper lastWf = null;
+		Thread.currentThread().setName("SkillExecutor " + botID);
 		while (active)
 		{
 			try
 			{
-				long timeout = Long.MAX_VALUE;
-				if (bot.getType() == EBotType.TIGER_V3)
-				{
-					timeout = (long) (1000.0 / BOT_MIN_UPDATE_RATE);
-				}
-				WorldFrameWrapper wf = freshWorldFrames.poll(timeout, TimeUnit.MILLISECONDS);
-				long timestamp;
-				if (wf == null)
-				{
-					timestamp = System.nanoTime();
-				} else
-				{
-					timestamp = wf.getSimpleWorldFrame().getTimestamp();
-					lastWf = wf;
-				}
-				ShapeMap shapeMap = new ShapeMap();
-				update(lastWf, timestamp, shapeMap);
-				if (wf != null)
-				{
-					shapeMap.setInverted(wf.getWorldFrame(EAiTeam.primary(bot.getColor())).isInverted());
-				}
-				postHooks.forEach(h -> h.onSkillUpdated(bot, timestamp, shapeMap));
+				WorldFrameWrapper wf = freshWorldFrames.take();
+				update(wf, new ShapeMap(), bot);
 			} catch (InterruptedException err)
 			{
 				// ignore
@@ -186,7 +177,9 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 			{
 				log.fatal("Some fatal error occurred in skill executor.", err);
 			}
+			wfProcessedLatch.countDown();
 		}
+		postHooks.clear();
 		Thread.currentThread().setName("SkillExecutor not assigned");
 	}
 	
@@ -208,35 +201,31 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 		active = false;
 		future.cancel(true);
 		future = null;
+		wfProcessedLatch.countDown();
+	}
+	
+	
+	public void waitUntilWorldFrameProcessed()
+	{
+		try
+		{
+			wfProcessedLatch.await();
+		} catch (InterruptedException e)
+		{
+			Thread.currentThread().interrupt();
+		}
 	}
 	
 	
 	@Override
 	public void onNewWorldFrame(final WorldFrameWrapper wFrameWrapper)
 	{
-		if (active && processAllWorldFrames)
+		if (SumatraModel.getInstance().isSimulation())
 		{
-			try
-			{
-				freshWorldFrames.putFirst(wFrameWrapper);
-			} catch (InterruptedException e)
-			{
-				Thread.currentThread().interrupt();
-			}
-		} else
-		{
-			freshWorldFrames.pollLast();
-			freshWorldFrames.addFirst(wFrameWrapper);
+			wfProcessedLatch = new CountDownLatch(1);
 		}
-	}
-	
-	
-	/**
-	 * @param processAllWorldFrames
-	 */
-	public void setProcessAllWorldFrames(final boolean processAllWorldFrames)
-	{
-		this.processAllWorldFrames = processAllWorldFrames;
+		freshWorldFrames.pollLast();
+		freshWorldFrames.addFirst(wFrameWrapper);
 	}
 	
 	
@@ -251,22 +240,14 @@ class SkillExecutor implements Runnable, IWorldFrameObserver
 	 * @param hook
 	 */
 	@SuppressWarnings("squid:S2250") // Collection methods with O(n) performance should be used carefully
-	void addPostHook(final ISkillExecuterPostHook hook)
+	void addPostHook(final ISkillExecutorPostHook hook)
 	{
 		postHooks.add(hook);
 	}
 	
 	
-	/**
-	 * @param hook
-	 */
-	@SuppressWarnings("squid:S2250") // Collection methods with O(n) performance should be used carefully
-	void removePostHook(final ISkillExecuterPostHook hook)
-	{
-		postHooks.remove(hook);
-	}
-	
-	private interface NewSkillSync
+	@SuppressWarnings("squid:S2094") // empty class for named monitor class
+	private class NewSkillSync
 	{
 	}
 }

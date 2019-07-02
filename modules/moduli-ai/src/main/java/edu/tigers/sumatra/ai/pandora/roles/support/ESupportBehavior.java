@@ -10,9 +10,11 @@ import com.github.g3force.instanceables.InstanceableParameter;
 
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.support.behaviors.BreakthroughDefensive;
+import edu.tigers.sumatra.ai.pandora.roles.support.behaviors.DirectSupportRedirector;
 import edu.tigers.sumatra.ai.pandora.roles.support.behaviors.FakePassReceiver;
 import edu.tigers.sumatra.ai.pandora.roles.support.behaviors.MoveOnVoronoi;
 import edu.tigers.sumatra.ai.pandora.roles.support.behaviors.PassReceiver;
+import edu.tigers.sumatra.ai.pandora.roles.support.behaviors.PenaltyAreaAttacker;
 import edu.tigers.sumatra.ai.pandora.roles.support.behaviors.TestBehavior;
 import edu.tigers.sumatra.ai.pandora.roles.support.behaviors.repulsive.RepulsiveAttacker;
 import edu.tigers.sumatra.ai.pandora.roles.support.behaviors.repulsive.RepulsivePassReceiver;
@@ -21,9 +23,13 @@ import edu.tigers.sumatra.statemachine.IEvent;
 
 public enum ESupportBehavior implements IInstanceableEnum, IEvent
 {
+	DIRECT_REDIRECTOR(
+			new InstanceableClass(DirectSupportRedirector.class, new InstanceableParameter(ARole.class, "", ""))),
 	FAKE_PASS_RECEIVER(new InstanceableClass(FakePassReceiver.class,
 			new InstanceableParameter(ARole.class, "", ""))),
 	PASS_RECEIVER(new InstanceableClass(PassReceiver.class, new InstanceableParameter(ARole.class, "", ""))),
+	PENALTY_AREA_ATTACKER(
+			new InstanceableClass(PenaltyAreaAttacker.class, new InstanceableParameter(ARole.class, "", ""))),
 	BREAKTHROUGH_DEFENSIVE(
 			new InstanceableClass(BreakthroughDefensive.class, new InstanceableParameter(ARole.class, "", ""))),
 	REPULSIVE_PASS_RECEIVER(

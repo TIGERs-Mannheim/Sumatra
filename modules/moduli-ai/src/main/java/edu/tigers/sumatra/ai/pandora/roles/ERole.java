@@ -8,6 +8,7 @@ import com.github.g3force.instanceables.IInstanceableEnum;
 import com.github.g3force.instanceables.InstanceableClass;
 import com.github.g3force.instanceables.InstanceableParameter;
 
+import edu.tigers.sumatra.ai.metis.offense.finisher.EFinisherMove;
 import edu.tigers.sumatra.ai.pandora.roles.defense.CenterBackRole;
 import edu.tigers.sumatra.ai.pandora.roles.defense.DefenderPenAreaRole;
 import edu.tigers.sumatra.ai.pandora.roles.defense.DefenderPlaceholderRole;
@@ -31,6 +32,7 @@ import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
 import edu.tigers.sumatra.ai.pandora.roles.support.SupportRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.ChipInterceptRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.CrookedKickSamplerRole;
+import edu.tigers.sumatra.ai.pandora.roles.test.FinisherMoveTestRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.IdentifyBotModelRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.KickTestRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.MoveTestRole;
@@ -38,7 +40,7 @@ import edu.tigers.sumatra.ai.pandora.roles.test.RedirectTestRole;
 import edu.tigers.sumatra.ai.pandora.roles.test.StraightChipKickSamplerRole;
 import edu.tigers.sumatra.ai.pandora.roles.throwin.PrimaryBallPlacementRole;
 import edu.tigers.sumatra.ai.pandora.roles.throwin.SecondaryBallPlacementRole;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 
@@ -152,22 +154,20 @@ public enum ERole implements IInstanceableEnum
 	
 	CHIP_INTERCEPT(new InstanceableClass(ChipInterceptRole.class)),
 	
+	FINISHER_MOVE_TEST(new InstanceableClass(FinisherMoveTestRole.class,
+			new InstanceableParameter(EFinisherMove.class, "move", "EXAMPLE"))),
+	
 	;
 	
 	private final InstanceableClass clazz;
 	
 	
-	/**
-	 */
 	ERole(final InstanceableClass clazz)
 	{
 		this.clazz = clazz;
 	}
 	
 	
-	/**
-	 * @return the paramImpls
-	 */
 	@Override
 	public final InstanceableClass getInstanceableClass()
 	{

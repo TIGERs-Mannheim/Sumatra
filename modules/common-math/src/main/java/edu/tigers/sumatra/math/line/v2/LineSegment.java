@@ -4,6 +4,8 @@
 
 package edu.tigers.sumatra.math.line.v2;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import com.sleepycat.persist.model.Persistent;
@@ -25,11 +27,10 @@ final class LineSegment extends ALine implements ILineSegment
 	
 	/** this field is calculated on demand */
 	private transient IVector2 directionVector;
-	/** this field is calculated on demand */
-	private transient IVector2 displacement;
 	
 	
 	/** Used by berkely */
+	@SuppressWarnings("unused")
 	private LineSegment()
 	{
 		start = Vector2f.ZERO_VECTOR;
@@ -96,7 +97,7 @@ final class LineSegment extends ALine implements ILineSegment
 		{
 			return true;
 		}
-		if ((other == null) || !(other instanceof ILineSegment))
+		if (!(other instanceof ILineSegment))
 		{
 			return false;
 		}
@@ -131,27 +132,16 @@ final class LineSegment extends ALine implements ILineSegment
 	
 	
 	@Override
-	public IVector2 getDisplacement()
-	{
-		if (displacement == null)
-		{
-			displacement = end.subtractNew(start);
-		}
-		return displacement;
-	}
-	
-	
-	@Override
 	public IVector2 getCenter()
 	{
-		return start.addNew(getDisplacement().multiplyNew(0.5));
+		return start.addNew(directionVector().multiplyNew(0.5));
 	}
 	
 	
 	@Override
 	public double getLength()
 	{
-		return getDisplacement().getLength();
+		return directionVector().getLength();
 	}
 	
 	
@@ -160,7 +150,7 @@ final class LineSegment extends ALine implements ILineSegment
 	{
 		if (directionVector == null)
 		{
-			directionVector = getDisplacement().normalizeNew();
+			directionVector = end.subtractNew(start);
 		}
 		return directionVector;
 	}
@@ -227,5 +217,35 @@ final class LineSegment extends ALine implements ILineSegment
 			return getStart();
 		}
 		return LineMath.stepAlongLine(getStart(), getEnd(), stepSize);
+	}
+	
+	
+	@Override
+	public ILineSegment withMargin(final double margin)
+	{
+		IVector2 newStart = LineMath.stepAlongLine(getStart(), getEnd(), -margin);
+		IVector2 newEnd = LineMath.stepAlongLine(getEnd(), getStart(), -margin);
+		return Lines.segmentFromPoints(newStart, newEnd);
+	}
+	
+	
+	@Override
+	public String toString()
+	{
+		return "LineSegment(" + start + " -> " + end + ")";
+	}
+	
+	
+	@Override
+	public List<IVector2> getSteps(final double stepSize)
+	{
+		List<IVector2> steps = new ArrayList<>();
+		double len = getLength();
+		for (double step = 0; step < len; step += stepSize)
+		{
+			steps.add(stepAlongLine(step));
+		}
+		steps.add(stepAlongLine(len));
+		return steps;
 	}
 }

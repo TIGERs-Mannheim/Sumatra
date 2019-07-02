@@ -3,11 +3,19 @@
  */
 package edu.tigers.sumatra.referee.data;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
 
 import com.sleepycat.persist.model.Persistent;
 
+import edu.tigers.sumatra.Referee;
 import edu.tigers.sumatra.Referee.SSL_Referee;
 import edu.tigers.sumatra.Referee.SSL_Referee.Command;
 import edu.tigers.sumatra.Referee.SSL_Referee.Stage;
@@ -16,13 +24,15 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
+import edu.tigers.sumatra.referee.RefereeProtoUtil;
+import edu.tigers.sumatra.referee.gameevent.GameEventFactory;
+import edu.tigers.sumatra.referee.gameevent.IGameEvent;
 
 
 /**
  * Complete referee command
  */
-@Persistent(version = 1)
+@Persistent(version = 2)
 public class RefereeMsg
 {
 	/** in nanoseconds */
@@ -42,7 +52,12 @@ public class RefereeMsg
 	private final ETeamColor negativeHalfTeam;
 	private final IVector2 ballPlacementPos;
 	
-	private final GameEvent gameEvent;
+	private final Command nextCommand;
+	private final List<IGameEvent> gameEvents;
+	private final List<ProposedGameEvent> proposedGameEvents;
+	
+	/** in seconds */
+	private double currentActionTimeRemaining;
 	
 	
 	/**
@@ -59,9 +74,12 @@ public class RefereeMsg
 		stageTimeLeft = 0;
 		teamInfoYellow = new TeamInfo();
 		teamInfoBlue = new TeamInfo();
-		ballPlacementPos = Vector2f.ZERO_VECTOR;
+		ballPlacementPos = null;
 		negativeHalfTeam = Geometry.getNegativeHalfTeam();
-		gameEvent = new GameEvent();
+		nextCommand = null;
+		gameEvents = new ArrayList<>();
+		proposedGameEvents = new ArrayList<>();
+		currentActionTimeRemaining = 0;
 	}
 	
 	
@@ -90,11 +108,23 @@ public class RefereeMsg
 			ballPlacementPos = Vector2.fromXY(msgBallPos.getX(), msgBallPos.getY());
 		} else
 		{
-			ballPlacementPos = Vector2f.ZERO_VECTOR;
+			ballPlacementPos = null;
 		}
 		
 		negativeHalfTeam = Geometry.getNegativeHalfTeam();
-		gameEvent = new GameEvent(sslRefereeMsg.getGameEvent());
+		
+		nextCommand = sslRefereeMsg.hasNextCommand() ? sslRefereeMsg.getNextCommand() : null;
+		gameEvents = sslRefereeMsg.getGameEventsList().stream()
+				.map(GameEventFactory::fromProtobuf)
+				.filter(Optional::isPresent)
+				.map(Optional::get)
+				.collect(Collectors.toList());
+		proposedGameEvents = sslRefereeMsg.getProposedGameEventsList().stream()
+				.map(this::mapProposedGameEvent)
+				.filter(Optional::isPresent)
+				.map(Optional::get)
+				.collect(Collectors.toList());
+		currentActionTimeRemaining = sslRefereeMsg.getCurrentActionTimeRemaining() / 1e6;
 	}
 	
 	
@@ -116,7 +146,17 @@ public class RefereeMsg
 		teamInfoBlue = refereeMsg.teamInfoBlue;
 		negativeHalfTeam = refereeMsg.negativeHalfTeam;
 		ballPlacementPos = refereeMsg.getBallPlacementPosNeutral();
-		gameEvent = refereeMsg.gameEvent;
+		nextCommand = refereeMsg.nextCommand;
+		gameEvents = refereeMsg.gameEvents;
+		proposedGameEvents = refereeMsg.proposedGameEvents;
+		currentActionTimeRemaining = refereeMsg.currentActionTimeRemaining;
+	}
+	
+	
+	private Optional<ProposedGameEvent> mapProposedGameEvent(Referee.ProposedGameEvent event)
+	{
+		return GameEventFactory.fromProtobuf(event.getGameEvent())
+				.map(ge -> new ProposedGameEvent(ge, event.getValidUntil(), event.getProposerId()));
 	}
 	
 	
@@ -146,6 +186,16 @@ public class RefereeMsg
 	public final Command getCommand()
 	{
 		return command;
+	}
+	
+	
+	public ETeamColor getTeamFromCommand()
+	{
+		if (command != null)
+		{
+			return RefereeProtoUtil.teamForCommand(command);
+		}
+		return ETeamColor.NEUTRAL;
 	}
 	
 	
@@ -299,12 +349,6 @@ public class RefereeMsg
 	}
 	
 	
-	public GameEvent getGameEvent()
-	{
-		return gameEvent;
-	}
-	
-	
 	private <T> Map<ETeamColor, T> buildMap(final T blue, final T yellow)
 	{
 		Map<ETeamColor, T> map = new EnumMap<>(ETeamColor.class);
@@ -314,21 +358,62 @@ public class RefereeMsg
 	}
 	
 	
+	public Command getNextCommand()
+	{
+		return nextCommand;
+	}
+	
+	
+	public ETeamColor getTeamFromNextCommand()
+	{
+		if (nextCommand != null)
+		{
+			return RefereeProtoUtil.teamForCommand(nextCommand);
+		}
+		return ETeamColor.NEUTRAL;
+	}
+	
+	
+	public List<IGameEvent> getGameEvents()
+	{
+		return gameEvents;
+	}
+	
+	
+	public List<ProposedGameEvent> getProposedGameEvents()
+	{
+		return proposedGameEvents;
+	}
+	
+	
+	/**
+	 * @return [s]
+	 */
+	public double getCurrentActionTimeRemaining()
+	{
+		return currentActionTimeRemaining;
+	}
+	
+	
 	@Override
 	public String toString()
 	{
-		return "RefereeMsg{" +
-				"frameTimestamp=" + frameTimestamp +
-				", command=" + command +
-				", cmdTimestamp=" + cmdTimestamp +
-				", cmdCounter=" + cmdCounter +
-				", packetTimestamp=" + packetTimestamp +
-				", stage=" + stage +
-				", stageTimeLeft=" + stageTimeLeft +
-				", teamInfoYellow=" + teamInfoYellow +
-				", teamInfoBlue=" + teamInfoBlue +
-				", negativeHalfTeam=" + negativeHalfTeam +
-				", ballPlacementPos=" + ballPlacementPos +
-				'}';
+		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+				.append("frameTimestamp", frameTimestamp)
+				.append("command", command)
+				.append("cmdTimestamp", cmdTimestamp)
+				.append("cmdCounter", cmdCounter)
+				.append("packetTimestamp", packetTimestamp)
+				.append("stage", stage)
+				.append("stageTimeLeft", stageTimeLeft)
+				.append("teamInfoYellow", teamInfoYellow)
+				.append("teamInfoBlue", teamInfoBlue)
+				.append("negativeHalfTeam", negativeHalfTeam)
+				.append("ballPlacementPos", ballPlacementPos)
+				.append("nextCommand", nextCommand)
+				.append("gameEvents", gameEvents)
+				.append("proposedGameEvents", proposedGameEvents)
+				.append("currentActionTimeRemaining", currentActionTimeRemaining)
+				.toString();
 	}
 }

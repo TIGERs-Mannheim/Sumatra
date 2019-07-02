@@ -16,14 +16,15 @@ import java.util.stream.Collectors;
 
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.botmanager.commands.MultimediaControl;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillLocalVelocity;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillMotorsOff;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillWheelVelocity;
-import edu.tigers.sumatra.botmanager.commands.botskills.data.KickerDribblerCommands;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
-import edu.tigers.sumatra.botmanager.commands.other.ESong;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillLocalVelocity;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillMotorsOff;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillWheelVelocity;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
+import edu.tigers.sumatra.botmanager.botskills.data.ELedColor;
+import edu.tigers.sumatra.botmanager.botskills.data.ESong;
+import edu.tigers.sumatra.botmanager.botskills.data.KickerDribblerCommands;
+import edu.tigers.sumatra.botmanager.botskills.data.MultimediaControl;
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.data.collector.ITimeSeriesDataCollectorObserver;
 import edu.tigers.sumatra.data.collector.TimeSeriesDataCollector;
@@ -190,8 +191,9 @@ public class KickSampleSkill extends AMoveSkill implements ITimeSeriesDataCollec
 			setTargetPose(waitPos, targetAngle);
 			getBot().setCurrentTrajectory(null);
 			
-			MultimediaControl mmc = new MultimediaControl(true, false, true, false);
-			mmc.setSong(ESong.NONE);
+			MultimediaControl mmc = new MultimediaControl()
+					.setSong(ESong.NONE)
+					.setLedColor(ELedColor.GREEN);
 			setMultimediaControl(mmc);
 		}
 		
@@ -216,13 +218,14 @@ public class KickSampleSkill extends AMoveSkill implements ITimeSeriesDataCollec
 	
 	private class WaitForBallState extends AState implements IWorldFrameObserver
 	{
+		private static final double CONSECUTIVE_SAMPLES_REQUIRED = 20;
+		
 		private Map<Integer, List<IVector2>> ballCamMap = new ConcurrentHashMap<>();
 		private List<IVector2> ballPositions = new ArrayList<>();
 		private int validBallDetections = 0;
 		
 		private double freeBallRadius = 1000.0;
 		private double ballAtBotRadius = 190.0;
-		private double consecutiveSamplesRequired = 20;
 		
 		
 		@Override
@@ -269,7 +272,7 @@ public class KickSampleSkill extends AMoveSkill implements ITimeSeriesDataCollec
 				validBallDetections = 0;
 			}
 			
-			if (validBallDetections > consecutiveSamplesRequired)
+			if (validBallDetections > CONSECUTIVE_SAMPLES_REQUIRED)
 			{
 				// 20 consecutive runs with a single ball, we can go on
 				// give the WP a ball hint to make the ball in front of the robot the tracked ball
@@ -319,7 +322,7 @@ public class KickSampleSkill extends AMoveSkill implements ITimeSeriesDataCollec
 	
 	private class SampleBallPosState extends AState
 	{
-		private long sampleTimeMs = 2000; // [ms]
+		private static final long SAMPLE_TIME_MS = 2000; // [ms]
 		private long startTime;
 		private ExponentialMovingAverageFilter2D ballPosFilter = new ExponentialMovingAverageFilter2D(0.98);
 		
@@ -335,8 +338,9 @@ public class KickSampleSkill extends AMoveSkill implements ITimeSeriesDataCollec
 		@Override
 		public void doUpdate()
 		{
-			MultimediaControl mmc = new MultimediaControl(false, true, false, true);
-			mmc.setSong(ESong.CHEERING);
+			MultimediaControl mmc = new MultimediaControl()
+					.setSong(ESong.CHEERING)
+					.setLedColor(ELedColor.RED);
 			setMultimediaControl(mmc);
 			
 			ballPosFilter.update(getBall().getPos());
@@ -346,7 +350,7 @@ public class KickSampleSkill extends AMoveSkill implements ITimeSeriesDataCollec
 				triggerEvent(EEvent.BALL_MOVED);
 			}
 			
-			if (((getWorldFrame().getTimestamp() - startTime) * 1e-6) > sampleTimeMs)
+			if (((getWorldFrame().getTimestamp() - startTime) * 1e-6) > SAMPLE_TIME_MS)
 			{
 				triggerEvent(EEvent.TIME_PASSED);
 			}
@@ -363,7 +367,7 @@ public class KickSampleSkill extends AMoveSkill implements ITimeSeriesDataCollec
 	private class MoveToKickPosState extends AState
 	{
 		private IVector2 runUpPos;
-		private long waiteTimeMs = 2000; // [ms]
+		private static final long WAITE_TIME_MS = 2000; // [ms]
 		private long startWaitTime = 0;
 		
 		
@@ -379,8 +383,9 @@ public class KickSampleSkill extends AMoveSkill implements ITimeSeriesDataCollec
 			setTargetPose(runUpPos, targetAngle);
 			getBot().setCurrentTrajectory(null);
 			
-			MultimediaControl mmc = new MultimediaControl(false, true, false, true);
-			mmc.setSong(ESong.CHEERING);
+			MultimediaControl mmc = new MultimediaControl()
+					.setSong(ESong.CHEERING)
+					.setLedColor(ELedColor.RED);
 			setMultimediaControl(mmc);
 		}
 		
@@ -395,7 +400,7 @@ public class KickSampleSkill extends AMoveSkill implements ITimeSeriesDataCollec
 				startWaitTime = getWorldFrame().getTimestamp();
 			}
 			
-			if ((startWaitTime > 0) && (((getWorldFrame().getTimestamp() - startWaitTime) * 1e-6) > waiteTimeMs))
+			if ((startWaitTime > 0) && (((getWorldFrame().getTimestamp() - startWaitTime) * 1e-6) > WAITE_TIME_MS))
 			{
 				triggerEvent(EEvent.AT_TARGET);
 			}
@@ -411,7 +416,7 @@ public class KickSampleSkill extends AMoveSkill implements ITimeSeriesDataCollec
 	
 	private class RunUpKickState extends AState
 	{
-		private long sampleTimeMs = 2000; // [ms]
+		private static final long SAMPLE_TIME_MS = 2000; // [ms]
 		private long startTime;
 		
 		
@@ -448,7 +453,7 @@ public class KickSampleSkill extends AMoveSkill implements ITimeSeriesDataCollec
 				getMatchCtrl().setSkill(new BotSkillMotorsOff());
 			}
 			
-			if (((getWorldFrame().getTimestamp() - startTime) * 1e-6) > sampleTimeMs)
+			if (((getWorldFrame().getTimestamp() - startTime) * 1e-6) > SAMPLE_TIME_MS)
 			{
 				triggerEvent(EEvent.TIME_PASSED);
 			}

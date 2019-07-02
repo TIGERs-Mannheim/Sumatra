@@ -25,11 +25,7 @@ import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
 
 
 /**
- * This is a condition which can be used to check if a role/bot has reached its destination
- * and its view angle.
- * 
- * @author Oliver Steinbrecher
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * This is a condition which can be used to check if a role/bot has reached its destination and its view angle.
  */
 public class MovementCon
 {
@@ -53,6 +49,7 @@ public class MovementCon
 	private double dribblerSpeed = 0;
 	private boolean ignoreGameStateObstacles = false;
 	private Set<BotID> ignoredBots = new HashSet<>();
+	private Set<BotID> criticalFoeBots = new HashSet<>();
 	private List<IObstacle> customObstacles = Collections.emptyList();
 	
 	
@@ -80,7 +77,7 @@ public class MovementCon
 		if (lookAtTarget != null)
 		{
 			lookAtTarget.update(swf);
-			targetAngle = lookAtTarget.subtractNew(destination).getAngle(0);
+			targetAngle = lookAtTarget.getPos().subtractNew(destination).getAngle(0);
 		}
 		
 		if (!isInit)
@@ -113,10 +110,6 @@ public class MovementCon
 			{
 				log.warn("Destination is inside PenaltyArea: " + destination, new Exception());
 			}
-			if (destination.equals(lookAtTarget))
-			{
-				log.warn("lookAtTarget is equal to destination: " + lookAtTarget, new Exception());
-			}
 			if (!destinationOutsideFieldAllowed && !Geometry.getFieldWReferee().isPointInShape(destination,
 					Geometry.getBotRadius() - marginOffset))
 			{
@@ -146,10 +139,6 @@ public class MovementCon
 	public void updateLookAtTarget(final DynamicPosition lookAtTarget)
 	{
 		this.lookAtTarget = lookAtTarget;
-		if (SumatraModel.getInstance().isTestMode() && (destination != null) && destination.equals(lookAtTarget))
-		{
-			log.warn("lookAtTarget is equal to destination: " + lookAtTarget, new Exception());
-		}
 	}
 	
 	
@@ -406,19 +395,20 @@ public class MovementCon
 	{
 		moveConstraints.setFastMove(fastPosMode);
 	}
-
+	
+	
 	public IVector2 getPrimaryDirection()
 	{
 		return moveConstraints.getPrimaryDirection();
 	}
-
-
+	
+	
 	public void setPrimaryDirection(final IVector2 primaryDirection)
 	{
 		moveConstraints.setPrimaryDirection(primaryDirection);
 	}
-
-
+	
+	
 	public boolean isIgnoreGameStateObstacles()
 	{
 		return ignoreGameStateObstacles;
@@ -464,5 +454,23 @@ public class MovementCon
 	public void setCustomObstacles(final List<IObstacle> customObstacles)
 	{
 		this.customObstacles = customObstacles;
+	}
+	
+	
+	public boolean isDestinationOutsideFieldAllowed()
+	{
+		return destinationOutsideFieldAllowed;
+	}
+	
+	
+	public Set<BotID> getCriticalFoeBots()
+	{
+		return criticalFoeBots;
+	}
+	
+	
+	public void setCriticalFoeBots(final Set<BotID> criticalFoeBots)
+	{
+		this.criticalFoeBots = criticalFoeBots;
 	}
 }

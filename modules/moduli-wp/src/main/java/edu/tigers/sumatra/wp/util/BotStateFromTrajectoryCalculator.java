@@ -87,7 +87,6 @@ public class BotStateFromTrajectoryCalculator
 	
 	private State trajectoryToState(final ITrajectory<IVector3> traj)
 	{
-		IVector3 pose = traj.getPositionMM(0.0);
-		return State.of(Pose.from(pose.getXYVector(), pose.z()), traj.getVelocity(0.0));
+		return State.of(Pose.from(traj.getPositionMM(0.0)), traj.getVelocity(0.0));
 	}
 }

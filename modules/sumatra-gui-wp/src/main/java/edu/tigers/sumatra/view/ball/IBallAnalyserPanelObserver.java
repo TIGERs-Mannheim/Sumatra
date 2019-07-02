@@ -39,18 +39,6 @@ public interface IBallAnalyserPanelObserver
 	/**
 	 * @param selectedFiles
 	 */
-	void onCreateBallModel(List<String> selectedFiles);
-	
-	
-	/**
-	 * @param selectedFiles
-	 */
-	void onCreateBallAndKickModel(List<String> selectedFiles);
-	
-	
-	/**
-	 * @param selectedFiles
-	 */
 	void onPlotCrookedKick(List<String> selectedFiles);
 	
 	

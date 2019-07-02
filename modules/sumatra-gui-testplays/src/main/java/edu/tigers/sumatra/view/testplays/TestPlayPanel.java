@@ -27,24 +27,9 @@ import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
-import edu.tigers.sumatra.view.testplays.panels.ACommandDetailsPanel;
-import edu.tigers.sumatra.view.testplays.panels.CommandPanel;
-import edu.tigers.sumatra.view.testplays.panels.KickCommandPanel;
-import edu.tigers.sumatra.view.testplays.panels.PassCommandPanel;
-import edu.tigers.sumatra.view.testplays.panels.PathCommandPanel;
-import edu.tigers.sumatra.view.testplays.panels.ReceiveCommandPanel;
-import edu.tigers.sumatra.view.testplays.panels.SyncCommandPanel;
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.view.testplays.panels.ACommandDetailsPanel;
-import edu.tigers.sumatra.view.testplays.panels.CommandPanel;
-import edu.tigers.sumatra.view.testplays.panels.KickCommandPanel;
-import edu.tigers.sumatra.view.testplays.panels.PassCommandPanel;
-import edu.tigers.sumatra.view.testplays.panels.PathCommandPanel;
-import edu.tigers.sumatra.view.testplays.panels.ReceiveCommandPanel;
-import edu.tigers.sumatra.view.testplays.panels.RedirectCommandPanel;
-import edu.tigers.sumatra.view.testplays.panels.SyncCommandPanel;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.testplays.ITestPlayDataObserver;
 import edu.tigers.sumatra.testplays.TestPlayManager;
@@ -57,6 +42,14 @@ import edu.tigers.sumatra.testplays.commands.ReceiveCommand;
 import edu.tigers.sumatra.testplays.commands.RedirectCommand;
 import edu.tigers.sumatra.testplays.commands.SynchronizeCommand;
 import edu.tigers.sumatra.testplays.util.Point;
+import edu.tigers.sumatra.view.testplays.panels.ACommandDetailsPanel;
+import edu.tigers.sumatra.view.testplays.panels.CommandPanel;
+import edu.tigers.sumatra.view.testplays.panels.KickCommandPanel;
+import edu.tigers.sumatra.view.testplays.panels.PassCommandPanel;
+import edu.tigers.sumatra.view.testplays.panels.PathCommandPanel;
+import edu.tigers.sumatra.view.testplays.panels.ReceiveCommandPanel;
+import edu.tigers.sumatra.view.testplays.panels.RedirectCommandPanel;
+import edu.tigers.sumatra.view.testplays.panels.SyncCommandPanel;
 import edu.tigers.sumatra.views.ISumatraView;
 
 
@@ -66,18 +59,18 @@ import edu.tigers.sumatra.views.ISumatraView;
 public class TestPlayPanel extends JPanel implements ISumatraView
 {
 	
-	private static final String					NO_ROLE_SELECTED	= "You have to select a role first";
+	private static final String NO_ROLE_SELECTED = "You have to select a role first";
 	
-	private JList										roleList;
-	private JList										commandList;
-	private JComboBox<ACommand.CommandType>	commandTypeChooser;
-	private JFileChooser								fileChooser;
-	private CommandPanel commandPanel		= new CommandPanel();
-	private JTextField								tfCommandListTitle;
+	private JList roleList;
+	private JList commandList;
+	private JComboBox<ACommand.CommandType> commandTypeChooser;
+	private JFileChooser fileChooser;
+	private CommandPanel commandPanel = new CommandPanel();
+	private JTextField tfCommandListTitle;
 	
-	private final CommandListModel				commandListModel	= new CommandListModel();
+	private final CommandListModel commandListModel = new CommandListModel();
 	
-	private static final Logger					log					= Logger.getLogger(TestPlayManager.class.getName());
+	private static final Logger log = Logger.getLogger(TestPlayManager.class.getName());
 	
 	
 	/**
@@ -380,7 +373,12 @@ public class TestPlayPanel extends JPanel implements ISumatraView
 			}
 			
 			ACommand command;
-			switch ((ACommand.CommandType) commandTypeChooser.getSelectedItem())
+			final ACommand.CommandType selectedItem = (ACommand.CommandType) commandTypeChooser.getSelectedItem();
+			if (selectedItem == null)
+			{
+				return;
+			}
+			switch (selectedItem)
 			{
 				case PATH:
 					command = new PathCommand();
@@ -390,7 +388,8 @@ public class TestPlayPanel extends JPanel implements ISumatraView
 					break;
 				case KICK:
 					command = new KickCommand(
-							new Point(Geometry.getGoalTheir().getCenter().x(), Geometry.getGoalTheir().getCenter().y()), 2.0, EKickerDevice.STRAIGHT);
+							new Point(Geometry.getGoalTheir().getCenter().x(), Geometry.getGoalTheir().getCenter().y()), 2.0,
+							EKickerDevice.STRAIGHT);
 					break;
 				case PASS:
 					command = new PassCommand();

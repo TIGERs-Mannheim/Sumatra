@@ -6,7 +6,7 @@ package edu.tigers.sumatra.ai.metis;
 
 import java.util.List;
 
-import edu.tigers.sumatra.ai.metis.support.IPassTarget;
+import edu.tigers.sumatra.ai.metis.support.passtarget.IPassTarget;
 
 
 public interface IAiInfoFromPrevFrame

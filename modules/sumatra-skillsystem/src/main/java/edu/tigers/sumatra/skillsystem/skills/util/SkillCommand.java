@@ -5,8 +5,9 @@
 package edu.tigers.sumatra.skillsystem.skills.util;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
 
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.math.vector.IVector2;
 
 
@@ -21,11 +22,19 @@ public class SkillCommand
 	private Integer dribbleSpeed = null;
 	private Double kickSpeed = null;
 	private EKickerDevice kickerDevice = null;
+	private Double accMaxXY = null;
+	private Double accMaxW = null;
 	
 	
 	public SkillCommand(final double time)
 	{
 		this.time = time;
+	}
+	
+	
+	public static SkillCommand command(final double time)
+	{
+		return new SkillCommand(time);
 	}
 	
 	
@@ -95,10 +104,83 @@ public class SkillCommand
 	}
 	
 	
+	public Double getAccMaxXY()
+	{
+		return accMaxXY;
+	}
+	
+	
+	public void setAccMaxXY(final Double accMaxXY)
+	{
+		this.accMaxXY = accMaxXY;
+	}
+	
+	
+	public Double getAccMaxW()
+	{
+		return accMaxW;
+	}
+	
+	
+	public void setAccMaxW(final Double accMaxW)
+	{
+		this.accMaxW = accMaxW;
+	}
+	
+	
+	public SkillCommand withXyVel(final IVector2 xyVel)
+	{
+		this.xyVel = xyVel;
+		return this;
+	}
+	
+	
+	public SkillCommand withAVel(final Double aVel)
+	{
+		this.aVel = aVel;
+		return this;
+	}
+	
+	
+	public SkillCommand withDribbleSpeed(final Integer dribbleSpeed)
+	{
+		this.dribbleSpeed = dribbleSpeed;
+		return this;
+	}
+	
+	
+	public SkillCommand withKickSpeed(final Double kickSpeed)
+	{
+		this.kickSpeed = kickSpeed;
+		return this;
+	}
+	
+	
+	public SkillCommand withKickerDevice(final EKickerDevice kickerDevice)
+	{
+		this.kickerDevice = kickerDevice;
+		return this;
+	}
+	
+	
+	public SkillCommand withAccMaxXY(final Double accMaxXY)
+	{
+		this.accMaxXY = accMaxXY;
+		return this;
+	}
+	
+	
+	public SkillCommand withAccMaxW(final Double accMaxW)
+	{
+		this.accMaxW = accMaxW;
+		return this;
+	}
+	
+	
 	@Override
 	public String toString()
 	{
-		return new ToStringBuilder(this)
+		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
 				.append("time", time)
 				.append("xyVel", xyVel)
 				.append("aVel", aVel)

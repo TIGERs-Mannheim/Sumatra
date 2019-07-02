@@ -50,8 +50,8 @@ public class DrawableBot implements IDrawableShape
 				Line.fromDirection(pos, Vector2.fromAngle(orientation).scaleTo(center2DribbleDist)),
 				color);
 	}
-	
-	
+
+
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{

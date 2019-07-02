@@ -1,0 +1,4 @@
+[[section-deployment-view]]
+:imagesdir: ./images
+
+== Used Infrastructure

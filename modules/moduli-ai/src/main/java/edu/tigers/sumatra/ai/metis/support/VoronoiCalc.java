@@ -58,6 +58,7 @@ public class VoronoiCalc extends ACalculator
 		return MoveOnVoronoi.isActive();
 	}
 	
+	
 	@Override
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
@@ -133,9 +134,11 @@ public class VoronoiCalc extends ACalculator
 	private List<ICircle> filterCircles(List<ICircle> circles)
 	{
 		List<ICircle> validCircles = new ArrayList<>();
-		PointChecker pointChecker = new PointChecker();
-		pointChecker.useRuleEnforcement();
-		pointChecker.useKickOffRuleEnforcement();
+		PointChecker pointChecker = new PointChecker()
+				.checkNotInPenaltyAreas()
+				.checkInsideField()
+				.checkBallDistances()
+				.checkConfirmWithKickOffRules();
 		for (ICircle circle : circles)
 		{
 			if (circle.radius() > minRadius && pointChecker.allMatch(getAiFrame(), circle.center())

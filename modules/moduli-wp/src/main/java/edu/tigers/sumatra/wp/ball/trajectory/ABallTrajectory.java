@@ -10,8 +10,7 @@ import java.util.List;
 
 import org.apache.commons.lang.Validate;
 
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.v2.IHalfLine;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector;
@@ -191,10 +190,10 @@ public abstract class ABallTrajectory implements IBallTrajectory
 	
 	
 	@Override
-	public ILine getTravelLine()
+	public IHalfLine getTravelLine()
 	{
 		IVector2 finalPos = getPosByTime(getTimeAtRest() - tKickToNow).getXYVector();
-		return Line.fromPoints(getPosByTime(0).getXYVector(), finalPos);
+		return Lines.halfLineFromPoints(getPosByTime(0).getXYVector(), finalPos);
 	}
 	
 	
@@ -214,9 +213,9 @@ public abstract class ABallTrajectory implements IBallTrajectory
 	
 	
 	@Override
-	public List<ILine> getTravelLinesInterceptable()
+	public List<ILineSegment> getTravelLinesInterceptable()
 	{
-		return Collections.singletonList(getTravelLine());
+		return Collections.singletonList(getTravelLineSegment());
 	}
 	
 	

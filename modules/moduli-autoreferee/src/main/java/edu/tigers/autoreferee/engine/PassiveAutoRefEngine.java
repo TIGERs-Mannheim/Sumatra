@@ -8,36 +8,26 @@
  */
 package edu.tigers.autoreferee.engine;
 
+import java.util.Set;
+
 import edu.tigers.autoreferee.IAutoRefFrame;
+import edu.tigers.autoreferee.engine.detector.EGameEventDetectorType;
 
 
 /**
- * @author "Lukas Magel"
+ * The passive autoRef engine does not communicate with the game-controller.
  */
-public class PassiveAutoRefEngine extends AbstractAutoRefEngine
+public class PassiveAutoRefEngine extends AutoRefEngine
 {
-	
-	@Override
-	public void stop()
+	public PassiveAutoRefEngine(final Set<EGameEventDetectorType> activeDetectors)
 	{
+		super(activeDetectors);
 	}
 	
 	
 	@Override
-	public AutoRefMode getMode()
+	public void process(final IAutoRefFrame frame)
 	{
-		return AutoRefMode.PASSIVE;
-	}
-	
-	
-	@Override
-	public synchronized void process(final IAutoRefFrame frame)
-	{
-		if (engineState == EEngineState.PAUSED)
-		{
-			return;
-		}
-		super.process(frame);
-		logGameEvents(getGameEvents(frame));
+		processEngine(frame).forEach(this::processGameEvent);
 	}
 }

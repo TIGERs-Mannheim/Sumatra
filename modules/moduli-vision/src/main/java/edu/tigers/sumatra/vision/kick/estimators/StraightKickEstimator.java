@@ -39,7 +39,6 @@ import edu.tigers.sumatra.vision.data.StraightBallTrajectory;
 import edu.tigers.sumatra.vision.kick.estimators.straight.StraightKickSolverLin3;
 import edu.tigers.sumatra.vision.kick.estimators.straight.StraightKickSolverNonLin3Direct;
 import edu.tigers.sumatra.vision.kick.estimators.straight.StraightKickSolverNonLinIdentDirect;
-import edu.tigers.sumatra.vision.kick.estimators.straight.StraightKickSolverNonLinIdentDirect.StraightModelIdentResult;
 
 
 /**
@@ -70,9 +69,6 @@ public class StraightKickEstimator implements IKickEstimator
 	
 	@Configurable(comment = "Max number of records to keep over all cameras", defValue = "50")
 	private static int maxNumberOfRecords = 50;
-	
-	@Configurable(comment = "Enable straight model identification solver", defValue = "false")
-	private boolean doModelIdentification = false;
 	
 	static
 	{
@@ -213,11 +209,9 @@ public class StraightKickEstimator implements IKickEstimator
 			return false;
 		}
 		
-		boolean done = false;
-		
 		if (fitResult.getAvgDistance() > maxFittingError)
 		{
-			done = true;
+			return true;
 		}
 		
 		IVector2 posNow = fitResult.getState(timestamp).getPos().getXYVector();
@@ -227,29 +221,33 @@ public class StraightKickEstimator implements IKickEstimator
 		
 		if (minDistToRobot < Geometry.getBotRadius())
 		{
-			done = true;
+			return true;
 		}
 		
-		if (!Geometry.getField().withMargin(100).isPointInShape(posNow))
-		{
-			done = true;
-		}
-		
-		if (done && doModelIdentification)
-		{
-			doModelIdentification();
-		}
-		
-		return done;
+		return !Geometry.getField().withMargin(100).isPointInShape(posNow);
 	}
 	
 	
-	private void doModelIdentification()
+	@Override
+	public Optional<IBallModelIdentResult> getModelIdentResult()
 	{
+		if (allRecords.size() < 20)
+		{
+			return Optional.empty();
+		}
+		
+		long timeAfterKick = allRecords.get(0).gettCapture() + 500_000_000;
+		
+		// keep all records directly after the kick and within the field (-10cm)
+		List<CamBall> usedRecords = allRecords.stream()
+				.filter(r -> (r.gettCapture() < timeAfterKick)
+						|| Geometry.getField().withMargin(-100).isPointInShape(r.getFlatPos()))
+				.collect(Collectors.toList());
+		
 		// solve to estimate all parameters
 		StraightKickSolverNonLinIdentDirect identSolver = new StraightKickSolverNonLinIdentDirect();
 		
-		Optional<StraightModelIdentResult> result = identSolver.identModel(allRecords);
+		Optional<IBallModelIdentResult> result = identSolver.identModel(usedRecords);
 		if (result.isPresent())
 		{
 			log.info("Straight Model:" + System.lineSeparator() + result.get());
@@ -257,6 +255,8 @@ public class StraightKickEstimator implements IKickEstimator
 		{
 			log.info("Straight model identification failed.");
 		}
+		
+		return result;
 	}
 	
 	

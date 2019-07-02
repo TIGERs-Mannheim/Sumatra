@@ -142,4 +142,10 @@ public class FakePassReceiver extends ASupportBehavior
 		shapes.add(dest);
 		shapes.add(line);
 	}
+
+	@Override
+	public boolean getIsActive()
+	{
+		return FakePassReceiver.isActive;
+	}
 }

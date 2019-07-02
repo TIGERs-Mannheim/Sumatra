@@ -8,8 +8,8 @@ import com.github.g3force.instanceables.IInstanceableEnum;
 import com.github.g3force.instanceables.InstanceableClass;
 import com.github.g3force.instanceables.InstanceableParameter;
 
-import edu.tigers.sumatra.botmanager.commands.EBotSkill;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
+import edu.tigers.sumatra.botmanager.botskills.EBotSkill;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.skillsystem.skills.ASkill;
 import edu.tigers.sumatra.skillsystem.skills.ApproachAndStopBallSkill;
@@ -21,6 +21,7 @@ import edu.tigers.sumatra.skillsystem.skills.CriticalKeeperSkill;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
 import edu.tigers.sumatra.skillsystem.skills.InterceptionSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveOnPenaltyAreaSkill;
+import edu.tigers.sumatra.skillsystem.skills.MoveOnThreatLineSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveToTrajSkill;
 import edu.tigers.sumatra.skillsystem.skills.PenaltyKeeperSkill;
 import edu.tigers.sumatra.skillsystem.skills.PenaltyShootSkill;
@@ -33,6 +34,7 @@ import edu.tigers.sumatra.skillsystem.skills.RotationSkill;
 import edu.tigers.sumatra.skillsystem.skills.RunUpChipSkill;
 import edu.tigers.sumatra.skillsystem.skills.SingleTouchKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
+import edu.tigers.sumatra.skillsystem.skills.test.AutoKickSampleSkill;
 import edu.tigers.sumatra.skillsystem.skills.test.IdentDelaysSkill;
 import edu.tigers.sumatra.skillsystem.skills.test.IdentMotorSkill;
 import edu.tigers.sumatra.skillsystem.skills.test.KickSampleSkill;
@@ -66,10 +68,10 @@ public enum ESkill implements IInstanceableEnum
 			new InstanceableParameter(Double.TYPE, "kickSpeed", "6.5"))),
 	
 	RECEIVE_BALL(new InstanceableClass(ReceiveBallSkill.class,
-			new InstanceableParameter(IVector2.class, "receivingPosition", "0,0"))),
+			new InstanceableParameter(DynamicPosition.class, "receivingPosition", "0,0"))),
 	
 	REDIRECT_BALL(new InstanceableClass(RedirectBallSkill.class,
-			new InstanceableParameter(IVector2.class, "receivingPosition", "0,0"),
+			new InstanceableParameter(DynamicPosition.class, "receivingPosition", "0,0"),
 			new InstanceableParameter(DynamicPosition.class, "target", "6000,0"),
 			new InstanceableParameter(EKickerDevice.class, "device", "STRAIGHT"),
 			new InstanceableParameter(Double.TYPE, "kickSpeed", "6.5"))),
@@ -105,14 +107,19 @@ public enum ESkill implements IInstanceableEnum
 	
 	MOVE_ON_PENALTY_AREA(new InstanceableClass(MoveOnPenaltyAreaSkill.class,
 			new InstanceableParameter(DynamicPosition.class, "target", "0,0"))),
-	
+
+	MOVE_ON_THREAT_LINE(new InstanceableClass(MoveOnThreatLineSkill.class,
+			new InstanceableParameter(DynamicPosition.class, "coverPoint", "0,0"),
+			new InstanceableParameter(DynamicPosition.class, "dangerSpot", "1000,0"))),
+
+
 	COMMAND_LIST(new InstanceableClass(CommandListSkill.class,
 			new InstanceableParameter(String.class, "commandSequence", "0 vy 0.5|0 kd c|1.0 k 5|1.1 noop"))),
-	
+
 	// The Keeper skill
-	
+
 	CRITICAL_KEEPER(new InstanceableClass(CriticalKeeperSkill.class)),
-	
+
 	// ************************
 	// *** utility skills
 	// ************************
@@ -144,7 +151,13 @@ public enum ESkill implements IInstanceableEnum
 			new InstanceableParameter(IVector2.class, "kickPos", "0,0"),
 			new InstanceableParameter(Double.TYPE, "targetAngle", "0"),
 			new InstanceableParameter(EKickerDevice.class, "device", "STRAIGHT"),
-			new InstanceableParameter(Double.TYPE, "durationMs", "10.0"))),
+			new InstanceableParameter(Double.TYPE, "durationMs", "10.0"),
+			new InstanceableParameter(Double.TYPE, "rightOffset", "0.0"))),
+
+	AUTO_KICK_SAMPLE(new InstanceableClass(AutoKickSampleSkill.class,
+			new InstanceableParameter(DynamicPosition.class, "target", "0,0"),
+			new InstanceableParameter(EKickerDevice.class, "device", "STRAIGHT"),
+			new InstanceableParameter(Double.TYPE, "kickDuration", "0"))),
 	
 	// ************************
 	// *** generic skills
@@ -153,7 +166,7 @@ public enum ESkill implements IInstanceableEnum
 	IDLE(new InstanceableClass(IdleSkill.class)),
 	
 	MOVE_TO_TRAJ(new InstanceableClass(MoveToTrajSkill.class)),
-	
+
 	;
 	
 	

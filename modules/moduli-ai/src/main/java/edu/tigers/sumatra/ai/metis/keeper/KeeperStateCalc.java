@@ -4,6 +4,7 @@
 
 package edu.tigers.sumatra.ai.metis.keeper;
 
+import java.awt.Color;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -13,12 +14,16 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.math.AiMath;
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveRedirectorMath;
+import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.Goal;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
@@ -27,10 +32,10 @@ import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.rectangle.Rectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.ITrackedObject;
+
 
 
 /**
@@ -59,6 +64,10 @@ public class KeeperStateCalc extends ACalculator
 	@Configurable(comment = "Speed limit of ball of PullBackState", defValue = "0.1")
 	private static double pullBackDecisionVelocity = 0.1;
 	
+	@Configurable(comment = "Speed limit of ball of PullBackState while pulling the ball", defValue = "2.0")
+	private static double pullBackDecisionVelocityDuringPull = 2.0;
+	
+	
 	@Configurable(comment = "Ball declared as shooted after kick event", defValue = "500")
 	private static long maxKickTime = 500;
 	
@@ -68,11 +77,9 @@ public class KeeperStateCalc extends ACalculator
 	@Configurable(comment = "Check to use pullback when ball is lying close to goal posts", defValue = "true")
 	private static boolean usePullWhenBallAtGoalPost = true;
 	
-	private TacticalField newTacticalField;
-	private BaseAiFrame baseAiFrame;
 	private boolean isFOENearBall;
+	private boolean isFOEUnblocked;
 	private long lastTimeKicked = 0;
-	
 	
 	public static double getPullBackDecisionVelocity()
 	{
@@ -89,7 +96,7 @@ public class KeeperStateCalc extends ACalculator
 	@Override
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
-		updateGlobalFields(newTacticalField, baseAiFrame);
+		updateGlobalFields();
 		if (isKeeperSet())
 		{
 			setNextKeeperState();
@@ -97,18 +104,17 @@ public class KeeperStateCalc extends ACalculator
 	}
 	
 	
-	private void updateGlobalFields(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+	private void updateGlobalFields()
 	{
-		this.newTacticalField = newTacticalField;
-		this.baseAiFrame = baseAiFrame;
 		isFOENearBall = isFOENearBall();
+		isFOEUnblocked = isFOEUnblocked();
 	}
 	
 	
 	private boolean isKeeperSet()
 	{
-		return (baseAiFrame.getKeeperId() != null)
-				&& baseAiFrame.getWorldFrame().getBots().containsKey(baseAiFrame.getKeeperId());
+		return (getAiFrame().getKeeperId() != null)
+				&& getAiFrame().getWorldFrame().getBots().containsKey(getAiFrame().getKeeperId());
 	}
 	
 	
@@ -116,20 +122,14 @@ public class KeeperStateCalc extends ACalculator
 	{
 		// The order in if else represents the priority of the states
 		EKeeperState nextState;
-		newTacticalField.setBotInterferingKeeperChip(isBotInterferingChip());
-		if (newTacticalField.getGameState().isBallPlacement())
+		getNewTacticalField().setBotInterferingKeeperChip(isBotInterferingChip());
+		if (getNewTacticalField().getGameState().isStoppedGame())
 		{
-			nextState = EKeeperState.BALL_PLACEMENT;
+			nextState = EKeeperState.STOPPED;
 		} else if (isKeeperOutSideOfPenaltyArea())
 		{
 			nextState = EKeeperState.MOVE_TO_PENALTY_AREA;
-		} else if (newTacticalField.getGameState().isStoppedGame())
-		{
-			nextState = EKeeperState.STOPPED;
-		} else if (isSomeoneShootingAtOurGoal())
-		{
-			nextState = EKeeperState.CRITICAL;
-		} else if (isFOERedirecting())
+		} else if (isSomeoneShootingAtOurGoal() || isFOERedirecting())
 		{
 			nextState = EKeeperState.CRITICAL;
 		} else if (isPullBackPossible())
@@ -142,7 +142,7 @@ public class KeeperStateCalc extends ACalculator
 		{
 			nextState = EKeeperState.CRITICAL;
 		}
-		newTacticalField.setKeeperState(nextState);
+		getNewTacticalField().setKeeperState(nextState);
 	}
 	
 	
@@ -154,16 +154,16 @@ public class KeeperStateCalc extends ACalculator
 	
 	private boolean isChipFastFeasible()
 	{
-		boolean wasInPullBack = baseAiFrame.getPrevFrame().getTacticalField().getKeeperState() == EKeeperState.PULL_BACK;
-		final double penAreaMarginForSafeChip = -250;
-		boolean ballFarEnoughInsidePenArea = Geometry.getPenaltyAreaOur().getRectangle()
+		boolean wasInPullBack = getAiFrame().getPrevFrame().getTacticalField().getKeeperState() == EKeeperState.PULL_BACK;
+		final double penAreaMarginForSafeChip = -200;
+		boolean ballFarEnoughInsidePenArea = Geometry.getPenaltyAreaOur()
 				.withMargin(wasInPullBack ? penAreaMarginForSafeChip : chipKickDecisionDistance)
 				.isPointInShape(getBall().getPos());
 		boolean pullBackFinished = !wasInPullBack || getBall().getPos()
 				.distanceTo(getWFrame().getTiger(getAiFrame().getKeeperId()).getPos()) > 2 * Geometry.getBallRadius()
 						+ Geometry.getBotRadius();
 		return pullBackFinished && ballFarEnoughInsidePenArea && isChipExecutable()
-				&& !newTacticalField.isBotInterferingKeeperChip();
+				&& !getNewTacticalField().isBotInterferingKeeperChip();
 	}
 	
 	
@@ -197,23 +197,70 @@ public class KeeperStateCalc extends ACalculator
 	private boolean isPullBackPossible()
 	
 	{
-		boolean isFoeDangerous = isFOENearBall && !Geometry.getPenaltyAreaOur().isPointInShape(getBall().getPos());
+		boolean isFoeDangerous = isFOENearBall && isFOEUnblocked
+				&& !Geometry.getPenaltyAreaOur().isPointInShape(getBall().getPos());
+		
+		double speedLimit = getAiFrame().getPrevFrame().getTacticalField().getKeeperState() == EKeeperState.PULL_BACK
+				? pullBackDecisionVelocityDuringPull
+				: pullBackDecisionVelocity;
+		
 		return isBallCloseToPenaltyArea(chipKickDecisionDistance) && !isFoeDangerous
-				&& isBallStill(pullBackDecisionVelocity) && isBotNotBetweenBallAndKeeper();
+				&& isBallStill(speedLimit) && isBotNotBetweenBallAndKeeper();
 	}
 	
 	
 	private boolean isFOENearBall()
 	{
-		BotDistance foeBot = newTacticalField.getEnemyClosestToBall();
+		BotDistance foeBot = getNewTacticalField().getEnemyClosestToBall();
 		return (foeBot != BotDistance.NULL_BOT_DISTANCE)
 				&& (VectorMath.distancePP(foeBot.getBot().getPos(), getBall().getPos()) < foeBotBallPossessionDistance);
 	}
 	
 	
+	private boolean isFOEUnblocked()
+	{
+		if (getNewTacticalField().getEnemyClosestToBall() == BotDistance.NULL_BOT_DISTANCE)
+		{
+			return false;
+		}
+		
+		IVector2 closestEnemy = getNewTacticalField().getEnemyClosestToBall().getBot().getBotKickerPos();
+		boolean unblocked = false;
+		
+		ILineSegment goalLine = Lines.segmentFromPoints(
+				Geometry.getGoalOur().getLeftPost(),
+				Geometry.getGoalOur().getRightPost());
+		for (IVector2 goalLinePos : goalLine.getSteps(Geometry.getBallRadius() * 2))
+		{
+			ILineSegment testLine = Lines.segmentFromPoints(goalLinePos, closestEnemy);
+			boolean testLineBlocked = false;
+			for (ITrackedBot tigerBot : getWFrame().getTigerBotsAvailable().values())
+			{
+				ICircle botApproximation = Circle.createCircle(tigerBot.getPos(), Geometry.getBotRadius());
+				if (tigerBot.getBotId() != getAiFrame().getKeeperId() && botApproximation.isIntersectingWithLine(testLine))
+				{
+					testLineBlocked = true;
+					break;
+				}
+			}
+			
+			getNewTacticalField().getDrawableShapes().get(EAiShapesLayer.AI_KEEPER)
+					.add(new DrawableLine(testLine, testLineBlocked ? Color.GREEN : Color.RED));
+			if (!testLineBlocked)
+			{
+				unblocked = true;
+			}
+			
+		}
+		
+		
+		return unblocked;
+	}
+	
+	
 	private boolean isKeeperOutSideOfPenaltyArea()
 	{
-		IVector2 keeperPos = baseAiFrame.getWorldFrame().getBot(baseAiFrame.getKeeperId()).getPos();
+		IVector2 keeperPos = getAiFrame().getWorldFrame().getBot(getAiFrame().getKeeperId()).getPos();
 		return !(Geometry.getPenaltyAreaOur().withMargin(chipKickDecisionDistance).isPointInShapeOrBehind(keeperPos)
 				|| isKeeperPreparingChip());
 	}
@@ -221,7 +268,7 @@ public class KeeperStateCalc extends ACalculator
 	
 	private boolean isKeeperPreparingChip()
 	{
-		return baseAiFrame.getPrevFrame().getTacticalField().getKeeperState() == EKeeperState.CHIP_FAST
+		return getAiFrame().getPrevFrame().getTacticalField().getKeeperState() == EKeeperState.CHIP_FAST
 				&& Geometry.getPenaltyAreaOur().isPointInShape(getBall().getPos());
 	}
 	
@@ -283,11 +330,11 @@ public class KeeperStateCalc extends ACalculator
 	{
 		double minDistance = getBall().getChipConsultant()
 				.getMinimumDistanceToOverChip(getBall().getChipConsultant().getInitVelForDistAtTouchdown(1000, 0), 160);
-		List<BotDistance> tigersBotDistance = newTacticalField.getTigersToBallDist().stream()
+		List<BotDistance> tigersBotDistance = getNewTacticalField().getTigersToBallDist().stream()
 				.filter(botDistance -> !botDistance.getBot().getBotId().equals(getAiFrame().getKeeperId()))
 				.filter(botDistance -> botDistance.getDist() - Geometry.getBotRadius() < minDistance)
 				.collect(Collectors.toList());
-		List<BotDistance> foeBotDistance = newTacticalField.getEnemiesToBallDist().stream()
+		List<BotDistance> foeBotDistance = getNewTacticalField().getEnemiesToBallDist().stream()
 				.filter(botDistance -> (botDistance.getDist() - Geometry.getBotRadius()) < minDistance)
 				.collect(Collectors.toList());
 		ILine keeperBallLine = Line.fromPoints(getWFrame().getBot(getAiFrame().getKeeperId()).getPos(),
@@ -300,25 +347,25 @@ public class KeeperStateCalc extends ACalculator
 	
 	private boolean isFOERedirecting()
 	{
-		BotID redirectFOEBotId = OffensiveRedirectorMath.getBestRedirector(baseAiFrame.getWorldFrame(),
-				baseAiFrame.getWorldFrame().getFoeBots());
+		BotID redirectFOEBotId = OffensiveRedirectorMath.getBestRedirector(getAiFrame().getWorldFrame(),
+				getAiFrame().getWorldFrame().getFoeBots());
 		IVector2 redirectFOEBot = null;
 		if (redirectFOEBotId.isBot())
 		{
-			redirectFOEBot = baseAiFrame.getWorldFrame().getFoeBot(redirectFOEBotId).getPos();
+			redirectFOEBot = getAiFrame().getWorldFrame().getFoeBot(redirectFOEBotId).getPos();
 		}
 		
 		return (redirectFOEBot != null)
-				&& (AiMath.p2pVisibility(baseAiFrame.getWorldFrame().getBots().values(), redirectFOEBot,
-						Geometry.getGoalOur().getCenter(), baseAiFrame.getKeeperId()))
+				&& (AiMath.p2pVisibility(getAiFrame().getWorldFrame().getBots().values(), redirectFOEBot,
+						Geometry.getGoalOur().getCenter(), getAiFrame().getKeeperId()))
 				&& (getBall().getVel().getLength() > chipKickDecisionVelocity);
 	}
 	
 	
 	private boolean isSomeoneShootingAtOurGoal()
 	{
-		Optional<IVector2> intersect = getBall().getTrajectory().getTravelLine()
-				.intersectionWith(Line.fromDirection(Geometry.getGoalOur().getCenter(), Vector2f.Y_AXIS));
+		Optional<IVector2> intersect = getBall().getTrajectory().getTravelLine().intersectSegment(Geometry.getGoalOur()
+				.withMargin(0, Geometry.getGoalOur().getWidth() / 2.0).getLineSegment());
 		
 		if (intersect.isPresent())
 		{
@@ -328,10 +375,8 @@ public class KeeperStateCalc extends ACalculator
 			boolean isBallVelocityIntersectingTheGoalLine = Math.abs(intersect.get().y()) < Math
 					.abs(Geometry.getGoalOur().getLeftPost().y() + goalAreaOffset);
 			
-			if (getWFrame().getKickEvent().isPresent())
-			{
-				lastTimeKicked = getWFrame().getKickEvent().get().getTimestamp();
-			}
+			getWFrame().getKickEvent().ifPresent(kickEvent -> lastTimeKicked = kickEvent.getTimestamp());
+			
 			boolean isBallKicked = (lastTimeKicked - getWFrame().getTimestamp()) < maxKickTime;
 			boolean isBallLeavingFOE = !isFOENearBall || isBallKicked;
 			boolean wasKeeperInPullBackState = getAiFrame().getPrevFrame().getTacticalField()

@@ -4,34 +4,40 @@
 
 package edu.tigers.sumatra.ai.pandora.roles.support;
 
+import com.github.g3force.configurable.Configurable;
+import com.github.g3force.instanceables.InstanceableClass;
+import edu.tigers.sumatra.ai.metis.offense.OffensiveMath;
+import edu.tigers.sumatra.ai.pandora.plays.EPlay;
+import edu.tigers.sumatra.ai.pandora.plays.match.SupportPlay;
+import edu.tigers.sumatra.ai.pandora.roles.ARole;
+import edu.tigers.sumatra.ai.pandora.roles.ERole;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.IPenaltyArea;
+import edu.tigers.sumatra.wp.data.ITrackedBot;
+import org.apache.log4j.Logger;
+
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.log4j.Logger;
-
-import com.github.g3force.instanceables.InstanceableClass;
-
-import edu.tigers.sumatra.ai.pandora.plays.EPlay;
-import edu.tigers.sumatra.ai.pandora.roles.ARole;
-import edu.tigers.sumatra.ai.pandora.roles.ERole;
-import edu.tigers.sumatra.ai.pandora.roles.support.behaviors.BreakthroughDefensive;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
-
 
 /**
- * Highly "coachable" supporter role, trigger different support behavior with different states
+ * Highly "coachable" supporter role, trigger different support behavior with different states.
+ * The assignment of the behaviors happens in {@link SupportPlay}.
  */
 public class SupportRole extends ARole
 {
 	private static Logger logger = Logger.getLogger(SupportRole.class);
 	
-	private EnumMap<ESupportBehavior, ASupportBehavior> behaviors;
+	@Configurable(comment = "[m/s]", defValue = "2.0")
+	private static double maxVelInReceiverArc = 2.;
+
+	private IPenaltyArea area = Geometry.getPenaltyAreaTheir().withMargin(Geometry.getBotRadius() + 20);
+
+	private final EnumMap<ESupportBehavior, ASupportBehavior> behaviors = new EnumMap<>(ESupportBehavior.class);
 	private ESupportBehavior currentBehavior;
-	private Map<SupportRole, EnumMap<ESupportBehavior, Double>> viabilityMap;
 	
 	
 	/**
@@ -47,7 +53,6 @@ public class SupportRole extends ARole
 	
 	private void initBehaviors()
 	{
-		behaviors = new EnumMap<>(ESupportBehavior.class);
 		for (ESupportBehavior b : ESupportBehavior.values())
 		{
 			try
@@ -74,7 +79,13 @@ public class SupportRole extends ARole
 	@Override
 	public void beforeUpdate()
 	{
-		ESupportBehavior selectedBehavior = selectBehavior();
+		checkRedirect();
+	}
+	
+	
+	public void selectBehavior(ESupportBehavior selectedBehavior)
+	{
+		
 		if (currentBehavior == null || currentBehavior != selectedBehavior)
 		{
 			currentBehavior = selectedBehavior;
@@ -83,71 +94,32 @@ public class SupportRole extends ARole
 	}
 	
 	
-	private ESupportBehavior selectBehavior()
+	private void checkRedirect()
 	{
+		boolean isPassable = getAiFrame().getTacticalField().getOffensiveShadows().stream()
+				.anyMatch(a -> a.isPointInShape(getPos()));
 		
-		ESupportBehavior selectedBehaviour = ESupportBehavior.TEST;
-		EnumMap<ESupportBehavior, Double> viability = viabilityMap.get(this);
-		for (Map.Entry<ESupportBehavior, Double> entry : viability.entrySet())
+		if (isPassable)
 		{
-			if (entry.getValue() > 0 && isConformWithSpecialBehaviourSelectionRules(entry.getKey(), entry.getValue()))
-			{
-				selectedBehaviour = entry.getKey();
-				break;
-				
-			}
-		}
-		return selectedBehaviour;
-	}
-	
-	
-	private boolean isConformWithSpecialBehaviourSelectionRules(ESupportBehavior behaviour, double viability)
-	{
-		boolean isConformWithSpecialRules = true;
-		if (behaviour == ESupportBehavior.BREAKTHROUGH_DEFENSIVE)
+			getCurrentSkill().getMoveCon().getMoveConstraints().setVelMax(maxVelInReceiverArc);
+		} else
 		{
-			isConformWithSpecialRules = isConformWithBreakthroughDefense(viability);
+			getCurrentSkill().getMoveCon().getMoveConstraints()
+					.setVelMax(getBot().getMoveConstraints().getVelMax());
 		}
-		return isConformWithSpecialRules;
-	}
-	
-	
-	private boolean isConformWithBreakthroughDefense(double viability)
-	{
-		List<Double> interceptorViability = getOtherPenaltyAreaInterceptorViability(viabilityMap).stream()
-				.sorted(Comparator.reverseOrder())
-				.limit(BreakthroughDefensive.getMaxNumberAtPenaltyArea())
-				.collect(Collectors.toList());
-		return !interceptorViability.isEmpty()
-				&& interceptorViability.get(interceptorViability.size() - 1) < viability;
-	}
-	
-	
-	private List<Double> getOtherPenaltyAreaInterceptorViability(
-			Map<SupportRole, EnumMap<ESupportBehavior, Double>> viabilityMap)
-	{
-		List<Double> interceptorViability = new ArrayList<>();
-		for (Map.Entry<SupportRole, EnumMap<ESupportBehavior, Double>> entry : viabilityMap.entrySet())
-		{
-			if (entry.getKey() != this)
-			{
-				interceptorViability.add(entry.getValue().get(ESupportBehavior.BREAKTHROUGH_DEFENSIVE));
-			}
-		}
-		return interceptorViability;
 	}
 	
 	
 	/**
-	 * This Method is called by the play before role update.
-	 * It is necessary because the role update need the viability of the other supporters in some cases
+	 * Calculates the viability of all behaviours. Called by the Play
+	 *
+	 * @return A map containing the calculated viabilities for the role
 	 */
-	public void exchangeViability(Map<SupportRole, EnumMap<ESupportBehavior, Double>> viabilityMap)
+	public Map<ESupportBehavior, Double> calculateViabilities()
 	{
-		this.viabilityMap = viabilityMap;
-		EnumMap<ESupportBehavior, Double> viability = new EnumMap<>(ESupportBehavior.class);
-		behaviors.forEach((e, b) -> viability.put(e, b.calculateViability()));
-		viabilityMap.put(this, viability);
+		EnumMap<ESupportBehavior, Double> viabilities = new EnumMap<>(ESupportBehavior.class);
+		behaviors.forEach((e, b) -> viabilities.put(e, b.calculateViability()));
+		return viabilities;
 	}
 	
 	
@@ -159,4 +131,42 @@ public class SupportRole extends ARole
 	}
 	
 	
+	/**
+	 * This should return the same results on any instance of a SupportRole
+	 *
+	 * @return A list of all inactive Behaviors
+	 */
+	public List<ESupportBehavior> getInactiveBehaviors()
+	{
+		List<ESupportBehavior> ret = new ArrayList<>();
+		
+		for (Map.Entry<ESupportBehavior, ASupportBehavior> behavior : this.behaviors.entrySet())
+		{
+			if (!behavior.getValue().getIsActive())
+			{
+				ret.add(behavior.getKey());
+			}
+		}
+		
+		return ret;
+	}
+
+	public ESupportBehavior getCurrentBehavior()
+	{
+		return currentBehavior;
+	}
+	
+	
+	@Override
+	protected void afterUpdate()
+	{
+		super.afterUpdate();
+		
+		// determine critical foe bots
+		getCurrentSkill().getMoveCon().setCriticalFoeBots(
+				getWFrame().getFoeBots().values().stream()
+						.filter(b -> OffensiveMath.isBotCritical(b.getPos(), area))
+						.map(ITrackedBot::getBotId)
+						.collect(Collectors.toSet()));
+	}
 }

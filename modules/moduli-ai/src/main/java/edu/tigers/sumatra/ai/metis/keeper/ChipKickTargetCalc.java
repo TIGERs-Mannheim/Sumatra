@@ -44,8 +44,8 @@ import edu.tigers.sumatra.wp.data.WorldFrame;
  */
 public class ChipKickTargetCalc extends ACalculator
 {
-	@Configurable(comment = "minimal chipKick distance for calculation of pass targets ", defValue = "2000")
-	private static int radius = 2000;
+	@Configurable(comment = "minimal chipKick distance for calculation of pass targets ", defValue = "3000")
+	private static int radius = 3000;
 	
 	@Configurable(comment = "amount of possible pass directions for keeper in chipFastState", defValue = "5")
 	private static int nSegments = 5;
@@ -53,8 +53,8 @@ public class ChipKickTargetCalc extends ACalculator
 	@Configurable(comment = "max difference to radius for lastTarget that is still tolerated", defValue = "500")
 	private static int maxRadiusOffset = 500;
 	
-	@Configurable(comment = "positive angle (in deg) which the arc should have where possible targets will be", defValue = "90")
-	private static int arcAngle = 90;
+	@Configurable(comment = "positive angle (in deg) which the arc should have where possible targets will be", defValue = "75")
+	private static int arcAngle = 75;
 	
 	@Configurable(comment = "hysteresis for choosing new chipKickTarget", defValue = "1.2")
 	private static double hysteresis = 1.2;
@@ -121,7 +121,7 @@ public class ChipKickTargetCalc extends ACalculator
 				.min(Comparator
 						.comparingDouble(bot -> TrajectoryGenerator.generatePositionTrajectory(bot, target).getTotalTime()))
 				.orElse(null);
-		if (fastestBotMap != null && fastestTiger != null)
+		if (fastestTiger != null)
 		{
 			minTigerArrivalTime = TrajectoryGenerator.generatePositionTrajectory(fastestTiger, target).getTotalTime();
 			fastestBotMap.put(target, fastestTiger);

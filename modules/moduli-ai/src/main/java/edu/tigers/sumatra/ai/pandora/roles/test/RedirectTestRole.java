@@ -18,11 +18,13 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.data.collector.ITimeSeriesDataCollectorObserver;
 import edu.tigers.sumatra.data.collector.TimeSeriesDataCollector;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.ids.ETeam;
 import edu.tigers.sumatra.math.botshape.BotShape;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -30,11 +32,11 @@ import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.sampler.ParameterPermutator;
 import edu.tigers.sumatra.skillsystem.skills.AMoveSkill;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
-import edu.tigers.sumatra.skillsystem.skills.ATouchKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.ReceiveBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.RedirectBallSkill;
 import edu.tigers.sumatra.skillsystem.skills.SingleTouchKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
+import edu.tigers.sumatra.skillsystem.skills.test.AutoKickSampleSkill;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
@@ -64,7 +66,7 @@ public class RedirectTestRole extends ARole
 	private static boolean collectData = false;
 	
 	@Configurable(comment = "If != 0 use this fixed kickSpeed for passes", defValue = "0.0")
-	private static double desiredPassKickSpeed = 0;
+	private static double desiredPassKickSpeedDefault = 0;
 	
 	@Configurable(comment = "If != 0 use this fixed kickSpeed for redirects", defValue = "0.0")
 	private static double desiredRedirectKickSpeed = 0;
@@ -78,7 +80,7 @@ public class RedirectTestRole extends ARole
 	private final IState waitState = new WaitState();
 	private final IState passState = new PassState();
 	private final IState redirectState = new RedirectState();
-	private boolean kickWithChill = false;
+	private EKickMode kickMode = EKickMode.NORMAL;
 	
 	@Configurable(defValue = "false")
 	private static boolean sampleRedirectSpeed = false;
@@ -100,6 +102,8 @@ public class RedirectTestRole extends ARole
 	
 	private final ParameterPermutator parameterPermutator = new ParameterPermutator();
 	private DynamicPosition currentTarget;
+	private double desiredPassKickSpeed = desiredPassKickSpeedDefault;
+	private EKickerDevice kickerDevice = EKickerDevice.STRAIGHT;
 	
 	
 	public RedirectTestRole()
@@ -143,6 +147,13 @@ public class RedirectTestRole extends ARole
 		RECEIVE
 	}
 	
+	public enum EKickMode
+	{
+		NORMAL,
+		CHILL,
+		SAMPLE,
+	}
+	
 	
 	@Override
 	protected void beforeUpdate()
@@ -158,6 +169,18 @@ public class RedirectTestRole extends ARole
 	public final void setDesiredOrientation(final double desiredOrientation)
 	{
 		this.desiredOrientation = desiredOrientation;
+	}
+	
+	
+	public void setDesiredPassKickSpeed(final double desiredPassKickSpeed)
+	{
+		this.desiredPassKickSpeed = desiredPassKickSpeed;
+	}
+	
+	
+	public void setKickerDevice(final EKickerDevice kickerDevice)
+	{
+		this.kickerDevice = kickerDevice;
 	}
 	
 	
@@ -241,10 +264,10 @@ public class RedirectTestRole extends ARole
 		KickParams kickParams;
 		if (desiredRedirectKickSpeed > 0)
 		{
-			kickParams = KickParams.straight(desiredRedirectKickSpeed);
+			kickParams = KickParams.of(kickerDevice, desiredRedirectKickSpeed);
 		} else
 		{
-			double distance = target.distanceTo(getBall().getPos());
+			double distance = target.getPos().distanceTo(getBall().getPos());
 			double kickSpeed = getBall().getStraightConsultant().getInitVelForDist(distance, passEndVel);
 			kickParams = KickParams.straight(kickSpeed);
 		}
@@ -297,9 +320,9 @@ public class RedirectTestRole extends ARole
 	}
 	
 	
-	public void setKickWithChill(final boolean kickWithChill)
+	public void setKickMode(final EKickMode kickMode)
 	{
-		this.kickWithChill = kickWithChill;
+		this.kickMode = kickMode;
 	}
 	
 	
@@ -325,7 +348,7 @@ public class RedirectTestRole extends ARole
 			{
 				IVector2 nextTarget = getBall().getPos().subtractNew(desiredDestination)
 						.turn(-desiredRedirectAngle)
-						.scaleTo(desiredDestination.distanceTo(target))
+						.scaleTo(desiredDestination.distanceTo(target.getPos()))
 						.add(desiredDestination);
 				currentTarget = new DynamicPosition(nextTarget);
 			} else
@@ -367,8 +390,8 @@ public class RedirectTestRole extends ARole
 			shapes.add(new DrawableCircle(Circle.createCircle(getPos(), 150), Color.cyan));
 			if (currentTarget != null)
 			{
-				shapes.add(new DrawableCircle(Circle.createCircle(currentTarget, 120), Color.magenta));
-				shapes.add(new DrawableCircle(Circle.createCircle(currentTarget, 150), Color.magenta));
+				shapes.add(new DrawableCircle(Circle.createCircle(currentTarget.getPos(), 120), Color.magenta));
+				shapes.add(new DrawableCircle(Circle.createCircle(currentTarget.getPos(), 150), Color.magenta));
 			}
 		}
 		
@@ -394,7 +417,6 @@ public class RedirectTestRole extends ARole
 			skill = AMoveToSkill.createMoveToSkill();
 			skill.getMoveCon().setPenaltyAreaAllowedOur(true);
 			skill.getMoveCon().setPenaltyAreaAllowedTheir(true);
-			skill.getMoveCon().setBallObstacle(false);
 			setNewSkill(skill);
 		}
 		
@@ -430,13 +452,20 @@ public class RedirectTestRole extends ARole
 			
 			KickParams kickParams = getKickParams(desiredPassKickSpeed);
 			
-			ATouchKickSkill skill;
-			if (kickWithChill)
+			AMoveSkill skill;
+			switch (kickMode)
 			{
-				skill = new SingleTouchKickSkill(target, kickParams);
-			} else
-			{
-				skill = new TouchKickSkill(target, kickParams);
+				case NORMAL:
+					skill = new TouchKickSkill(target, kickParams);
+					break;
+				case CHILL:
+					skill = new SingleTouchKickSkill(target, kickParams);
+					break;
+				case SAMPLE:
+					skill = new AutoKickSampleSkill(target, kickParams.getDevice(), kickParams.getKickSpeed());
+					break;
+				default:
+					throw new IllegalArgumentException();
 			}
 			
 			skill.getMoveCon().setPenaltyAreaAllowedOur(true);
@@ -458,9 +487,6 @@ public class RedirectTestRole extends ARole
 	
 	private class ReceiveState extends AState
 	{
-		private ReceiveBallSkill skill;
-		
-		
 		@Override
 		public void doEntryActions()
 		{
@@ -468,7 +494,8 @@ public class RedirectTestRole extends ARole
 			{
 				desiredDestination = getPos();
 			}
-			skill = new ReceiveBallSkill(desiredDestination);
+			ReceiveBallSkill skill = new ReceiveBallSkill(desiredDestination);
+			skill.setConsideredPenAreas(ETeam.UNKNOWN);
 			skill.getMoveCon().setPenaltyAreaAllowedOur(true);
 			skill.getMoveCon().setPenaltyAreaAllowedTheir(true);
 			setNewSkill(skill);

@@ -15,7 +15,8 @@ import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.botshape.BotShape;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector3;
@@ -68,7 +69,7 @@ public class RobotCollisionShape
 		// check if outside of bot anyway (bounding circle)
 		if (!BotShape.fromFullSpecification(pos, radius, center2Dribbler, orient).isPointInShape(ballPos))
 		{
-			return new CollisionResult(ballPos, ECollisionLocation.NONE, null);
+			return new CollisionResult(ECollisionLocation.NONE, null);
 		}
 		
 		if (ballVelUsed.getLength2() < 10)
@@ -80,12 +81,12 @@ public class RobotCollisionShape
 			ballVelUsed = ballPos.subtractNew(outside);
 		}
 		
-		Line frontLine = BotMath.getDribblerFrontLine(Vector3.from2d(pos, orient), radius + ballRadius,
+		ILineSegment frontLine = BotMath.getDribblerFrontLine(Vector3.from2d(pos, orient), radius + ballRadius,
 				center2Dribbler + ballRadius);
 		
-		Line ballVelLine = Line.fromDirection(ballPos, ballVelUsed.multiplyNew(-1.0).scaleTo(radius * 5.0));
+		ILineSegment ballVelLine = Lines.segmentFromOffset(ballPos, ballVelUsed.multiplyNew(-1.0).scaleTo(radius * 5.0));
 		
-		Optional<IVector2> frontIntersect = frontLine.intersectionOfSegments(ballVelLine);
+		Optional<IVector2> frontIntersect = frontLine.intersectSegment(ballVelLine);
 		
 		if (frontIntersect.isPresent())
 		{
@@ -94,7 +95,7 @@ public class RobotCollisionShape
 			if (collisionAngleAbs > AngleMath.PI_HALF)
 			{
 				// ball is rolling away from robot => no real front collision with reflection
-				return new CollisionResult(frontIntersect.get(), ECollisionLocation.CIRCLE, null);
+				return new CollisionResult(ECollisionLocation.CIRCLE, null);
 			}
 			
 			double outVelAbs = ballVelUsed.getLength2()
@@ -103,11 +104,11 @@ public class RobotCollisionShape
 			Vector2 outVel = Vector2.fromAngle(orient).multiply(-1.0).turn(-collisionAngle).multiply(-1.0)
 					.scaleTo(outVelAbs);
 			
-			return new CollisionResult(frontIntersect.get(), ECollisionLocation.FRONT, outVel);
+			return new CollisionResult(ECollisionLocation.FRONT, outVel);
 		}
 		
 		ICircle botCircle = Circle.createCircle(pos, radius + ballRadius);
-		List<IVector2> intersect = botCircle.lineSegmentIntersections(ballVelLine);
+		List<IVector2> intersect = botCircle.lineIntersections(ballVelLine);
 		
 		if (!intersect.isEmpty())
 		{
@@ -117,7 +118,7 @@ public class RobotCollisionShape
 			if (collisionAngleAbs > AngleMath.PI_HALF)
 			{
 				// ball is rolling away from robot
-				return new CollisionResult(intersect.get(0), ECollisionLocation.CIRCLE, null);
+				return new CollisionResult(ECollisionLocation.CIRCLE, null);
 			}
 			
 			double outVelAbs = ballVelUsed.getLength2()
@@ -126,45 +127,34 @@ public class RobotCollisionShape
 			Vector2 outVel = Vector2.fromPoints(intersectCircle, pos).turn(-collisionAngle).multiply(-1.0)
 					.scaleTo(outVelAbs);
 			
-			return new CollisionResult(intersectCircle, ECollisionLocation.CIRCLE, outVel);
+			return new CollisionResult(ECollisionLocation.CIRCLE, outVel);
 		}
 		
 		// this should actually not happen
 		Validate.isTrue(false);
 		
-		return new CollisionResult(ballPos, ECollisionLocation.NONE, null);
+		return new CollisionResult(ECollisionLocation.NONE, null);
 	}
 	
 	
 	/**
 	 * Collision result.
-	 * 
-	 * @author AndreR <andre@ryll.cc>
 	 */
 	public static class CollisionResult
 	{
-		private final IVector2 outsidePos;
 		private final ECollisionLocation location;
 		private final IVector2 ballReflectedVel;
 		
 		
 		/**
-		 * @param outsidePos
 		 * @param location
 		 * @param ballReflectedVel
 		 */
-		private CollisionResult(final IVector2 outsidePos, final ECollisionLocation location,
+		private CollisionResult(final ECollisionLocation location,
 				final IVector2 ballReflectedVel)
 		{
-			this.outsidePos = outsidePos;
 			this.location = location;
 			this.ballReflectedVel = ballReflectedVel;
-		}
-		
-		
-		public IVector2 getOutsidePos()
-		{
-			return outsidePos;
 		}
 		
 		
@@ -185,8 +175,6 @@ public class RobotCollisionShape
 	
 	/**
 	 * Collision location.
-	 * 
-	 * @author AndreR <andre@ryll.cc>
 	 */
 	public enum ECollisionLocation
 	{

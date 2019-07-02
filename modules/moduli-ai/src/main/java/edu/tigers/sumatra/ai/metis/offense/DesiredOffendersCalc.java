@@ -12,8 +12,8 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
 import edu.tigers.sumatra.ai.BaseAiFrame;
-import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.ai.metis.general.ADesiredBotCalc;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ids.BotID;
 
@@ -21,10 +21,16 @@ import edu.tigers.sumatra.ids.BotID;
 /**
  * Find the desired bots for offense
  */
-public class DesiredOffendersCalc extends ACalculator
+public class DesiredOffendersCalc extends ADesiredBotCalc
 {
 	private static Logger log = LogManager.getLogger(DesiredOffendersCalc.class);
 	private boolean invalidNumberWarned = false;
+	
+	
+	public DesiredOffendersCalc()
+	{
+		super(EPlay.OFFENSIVE);
+	}
 	
 	
 	@Override
@@ -39,6 +45,6 @@ public class DesiredOffendersCalc extends ACalculator
 			log.warn("Invalid number of offensive bots (allowed: " + numOffenders + ") actual: "
 					+ Arrays.toString(desiredBots.toArray()));
 		}
-		tacticalField.addDesiredBots(EPlay.OFFENSIVE, desiredBots);
+		addDesiredBots(desiredBots);
 	}
 }

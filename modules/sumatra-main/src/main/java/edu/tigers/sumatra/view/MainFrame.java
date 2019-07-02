@@ -8,6 +8,7 @@ import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.nio.file.Path;
 import java.util.List;
 
 import javax.swing.ButtonGroup;
@@ -28,16 +29,17 @@ import edu.tigers.autoref.view.main.AutoRefView;
 import edu.tigers.sumatra.AMainFrame;
 import edu.tigers.sumatra.IMainFrameObserver;
 import edu.tigers.sumatra.aicenter.AICenterView;
+import edu.tigers.sumatra.botcenter.view.BotCenterView;
 import edu.tigers.sumatra.botoverview.BotOverviewView;
 import edu.tigers.sumatra.botparams.view.BotParamsView;
 import edu.tigers.sumatra.config.ConfigEditorView;
+import edu.tigers.sumatra.kick.view.BallKickIdentView;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.offensive.OffensiveActionTreeView;
 import edu.tigers.sumatra.offensive.OffensiveStatisticsView;
 import edu.tigers.sumatra.offensive.OffensiveStrategyView;
 import edu.tigers.sumatra.persistence.BerkeleyDb;
 import edu.tigers.sumatra.presenter.ball.BallAnalyserView;
-import edu.tigers.sumatra.presenter.botcenter.BotCenterView;
 import edu.tigers.sumatra.presenter.log.LogView;
 import edu.tigers.sumatra.presenter.logfile.LogfileView;
 import edu.tigers.sumatra.presenter.rcm.RcmView;
@@ -47,9 +49,11 @@ import edu.tigers.sumatra.presenter.testplays.TestPlaysControlView;
 import edu.tigers.sumatra.presenter.timer.TimerView;
 import edu.tigers.sumatra.replay.AiReplayPresenter;
 import edu.tigers.sumatra.statistics.StatisticsView;
+import edu.tigers.sumatra.support.SupportBehaviorsView;
 import edu.tigers.sumatra.util.ShortcutsDialog;
 import edu.tigers.sumatra.view.replay.ReplayLoadMenu;
 import edu.tigers.sumatra.view.replay.ReplayLoadMenu.IReplayLoadMenuObserver;
+import edu.tigers.sumatra.view.skills.SkillsView;
 import edu.tigers.sumatra.view.toolbar.ToolBar;
 import edu.tigers.sumatra.views.ASumatraView;
 import edu.tigers.sumatra.visualizer.VisualizerAiView;
@@ -63,14 +67,14 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 	@SuppressWarnings("unused")
 	private static final Logger log = Logger.getLogger(MainFrame.class.getName());
 	private static final long serialVersionUID = -6858464942004450029L;
-	
+
 	private final JMenu moduliMenu = new JMenu("Moduli");
 	private final JMenu lookAndFeelMenu = new JMenu("Look & Feel");
 	private final ReplayLoadMenu replayMenu = new ReplayLoadMenu();
-	
+
 	private final transient ToolBar toolBar = new ToolBar();
-	
-	
+
+
 	/**
 	 * Constructor of GuiView.
 	 */
@@ -78,13 +82,13 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 	{
 		log.trace("Create mainframe");
 		this.add(toolBar.getToolbar(), BorderLayout.NORTH);
-		setTitle("TIGERs Mannheim - Sumatra V " + SumatraModel.getVersion());
-		
+		setTitle("TIGERs Mannheim - Sumatra " + SumatraModel.getVersion());
+
 		moduliMenu.setMnemonic(KeyEvent.VK_M);
 		replayMenu.addObserver(this);
 		replayMenu.setMnemonic(KeyEvent.VK_R);
 		lookAndFeelMenu.setMnemonic(KeyEvent.VK_F);
-		
+
 		addView(new LogView(true));
 		addView(new AICenterView());
 		addView(new BotCenterView());
@@ -106,23 +110,26 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 		addView(new OffensiveStatisticsView());
 		addView(new BotParamsView());
 		addView(new OffensiveActionTreeView());
-		
+		addView(new BallKickIdentView());
+        addView(new SupportBehaviorsView());
+		addView(new SkillsView());
+
 		updateViewMenu();
-		
+
 		fillMenuBar();
 		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 	}
-	
-	
+
+
 	/**
 	 * @param names
 	 */
 	public void setMenuModuliItems(final List<String> names)
 	{
 		moduliMenu.removeAll();
-		
+
 		final ButtonGroup group = new ButtonGroup();
-		
+
 		for (final String name : names)
 		{
 			final JRadioButtonMenuItem item = new JRadioButtonMenuItem(name);
@@ -131,8 +138,8 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 			moduliMenu.add(item);
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param enabled
 	 */
@@ -143,8 +150,8 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 			moduliMenu.getItem(i).setEnabled(enabled);
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param name
 	 */
@@ -160,8 +167,8 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 			}
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param name
 	 */
@@ -176,20 +183,20 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 			}
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param lafName
 	 */
 	public void setLookAndFeel(final String lafName)
 	{
 		final JFrame frame = this;
-		
+
 		// update visible components
 		final int state = getExtendedState();
 		SwingUtilities.updateComponentTreeUI(frame);
 		setExtendedState(state);
-		
+
 		// update menu
 		for (int i = 0; i < lookAndFeelMenu.getItemCount(); i++)
 		{
@@ -199,7 +206,7 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 				item.setSelected(true);
 			}
 		}
-		
+
 		// update all views (including non-visible)
 		for (final ASumatraView view : getViews())
 		{
@@ -209,8 +216,8 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 			}
 		}
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -218,8 +225,8 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 	{
 		return toolBar;
 	}
-	
-	
+
+
 	/**
 	 * Creates the frame menu bar.
 	 */
@@ -227,27 +234,27 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 	{
 		// JMenuBar on the macOS menu bar
 		System.setProperty("apple.laf.useScreenMenuBar", "true");
-		
+
 		// File Menu
 		JMenu sumatraMenu = new JMenu("Sumatra");
 		sumatraMenu.setMnemonic(KeyEvent.VK_S);
-		
+
 		JMenuItem exitMenuItem = new JMenuItem("Exit");
 		exitMenuItem.addActionListener(new Exit());
 		exitMenuItem.setToolTipText("Exits the application");
 		exitMenuItem.setMnemonic(KeyEvent.VK_E);
-		
+
 		final JMenuItem shortcutMenuItem = new JMenuItem("Shortcuts");
 		shortcutMenuItem.addActionListener(new ShortcutActionListener());
-		
+
 		JMenuItem aboutMenuItem = new JMenuItem("About");
 		aboutMenuItem.addActionListener(new AboutBox());
 		aboutMenuItem.setToolTipText("Information about Sumatra");
-		
+
 		sumatraMenu.add(shortcutMenuItem);
 		sumatraMenu.add(aboutMenuItem);
 		sumatraMenu.add(exitMenuItem);
-		
+
 		// look and feel menu
 		final ButtonGroup group = new ButtonGroup();
 		final LookAndFeelInfo[] lafs = UIManager.getInstalledLookAndFeels();
@@ -262,15 +269,15 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 				item.setSelected(true);
 			}
 		}
-		
+
 		getJMenuBar().add(sumatraMenu);
 		getJMenuBar().add(moduliMenu);
 		super.addMenuItems();
 		getJMenuBar().add(lookAndFeelMenu);
 		getJMenuBar().add(replayMenu);
 	}
-	
-	
+
+
 	private class AboutBox implements ActionListener
 	{
 		@Override
@@ -282,13 +289,13 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 			}
 		}
 	}
-	
-	
+
+
 	private static class LoadConfig implements ActionListener
 	{
 		private final String configName;
-		
-		
+
+
 		/**
 		 * @param c
 		 */
@@ -296,21 +303,21 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 		{
 			configName = c;
 		}
-		
-		
+
+
 		@Override
 		public void actionPerformed(final ActionEvent arg0)
 		{
 			SumatraModel.getInstance().setCurrentModuliConfig(configName);
 		}
 	}
-	
-	
+
+
 	private class SetLookAndFeel implements ActionListener
 	{
 		private final LookAndFeelInfo info;
-		
-		
+
+
 		/**
 		 * @param i
 		 */
@@ -318,8 +325,8 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 		{
 			info = i;
 		}
-		
-		
+
+
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
@@ -329,7 +336,7 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 			}
 		}
 	}
-	
+
 	private static class ShortcutActionListener implements ActionListener
 	{
 		@Override
@@ -338,11 +345,18 @@ public class MainFrame extends AMainFrame implements IReplayLoadMenuObserver
 			new ShortcutsDialog().setVisible(true);
 		}
 	}
-	
-	
+
+
 	@Override
 	public void onOpenReplay(final BerkeleyDb db)
 	{
 		new AiReplayPresenter().start(db, 0);
+	}
+	
+	
+	@Override
+	public void onCompressReplay(final Path path)
+	{
+		startReplayCompressionThread(path);
 	}
 }

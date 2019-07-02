@@ -4,111 +4,98 @@
 
 package edu.tigers.sumatra.ai.metis.ballresponsibility;
 
-import edu.tigers.sumatra.ai.BaseAiFrame;
+import java.awt.Color;
+
+import com.github.g3force.configurable.Configurable;
+
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
-import edu.tigers.sumatra.ai.metis.TacticalField;
-import edu.tigers.sumatra.ai.metis.support.IPassTarget;
 import edu.tigers.sumatra.drawable.DrawableBorderText;
-import edu.tigers.sumatra.drawable.DrawableTriangle;
-import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.drawable.DrawableRectangle;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.IPenaltyArea;
-import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
-import edu.tigers.sumatra.math.triangle.ITriangle;
-import edu.tigers.sumatra.math.triangle.Triangle;
-import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-
-import java.awt.Color;
-import java.util.List;
-import java.util.Optional;
 
 
 /**
- * Determine who is responsible for handling the ball
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Determine who is responsible for handling the ball.
  */
 public class BallResponsibilityCalc extends ACalculator
 {
+	@Configurable(defValue = "200.0")
+	private static double marginForNoOffensiveWhenBallNearOurPen = 200;
+
+	@Configurable(defValue = "150.0")
+	private static double hysteresisForNoOffensiveWhenBallNearOurPen = 150;
+
+	@Configurable(defValue = "20.0")
+	private static double marginForNoOffensiveWhenBallNearEnemyPen = 20;
+
+	@Configurable(defValue = "50.0")
+	private static double hysteresisForNoOffensiveWhenBallNearEnemyPen = 50;
+
+	@Configurable(defValue = "false")
+	private static boolean noOffensiveWhenBallInEnemyPenArea = false;
+
+
+	private boolean isDefensiveSituationOld = false;
+	private boolean isNearEnemyPenOld = false;
+
+
 	@Override
-	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+	public void doCalc()
 	{
-		List<IPassTarget> handledPassTargets = newTacticalField.getAiInfoFromPrevFrame().getActivePassTargets();
-		if (ballNearOurPenArea()
-				&& !newTacticalField.getGameState().isStandardSituationForUs()
-				&& criticalBallMovement()
-				&& handledPassTargets.isEmpty())
-		{
-			newTacticalField.setBallResponsibility(EBallResponsibility.DEFENSE);
-		} else
-		{
-			newTacticalField.setBallResponsibility(EBallResponsibility.OFFENSE);
-		}
-		
-		double teamOffset = baseAiFrame.getTeamColor() == ETeamColor.BLUE ? 13 : 0;
+		EBallResponsibility responsibility = ballIsOrWillStopInsidePenaltyArea()
+				? EBallResponsibility.DEFENSE
+				: EBallResponsibility.OFFENSE;
+		getNewTacticalField().setBallResponsibility(responsibility);
+
+		double teamOffset = getAiFrame().getTeamColor() == ETeamColor.BLUE ? 13 : 0;
 		getNewTacticalField().getDrawableShapes().get(EAiShapesLayer.AI_BALL_RESPONSIBILITY)
 				.add(new DrawableBorderText(Vector2.fromXY(10, 100 + teamOffset),
-						"Ball Responsibility: " + newTacticalField.getBallResponsibility(),
-						baseAiFrame.getTeamColor().getColor()));
+						"Ball Responsibility: " + responsibility,
+						getAiFrame().getTeamColor().getColor()));
 	}
-	
-	
-	private boolean ballNearOurPenArea()
+
+
+	private boolean ballIsOrWillStopInsidePenaltyArea()
 	{
-		double margin = Geometry.getBotRadius() * 4;
-		if (getAiFrame().getGamestate().isStoppedGame())
+		// check for our penArea
+		boolean defSituation;
+		double margin = marginForNoOffensiveWhenBallNearOurPen;
+		if (isDefensiveSituationOld)
 		{
-			margin += RuleConstraints.getStopRadius() * 2;
+			margin += hysteresisForNoOffensiveWhenBallNearOurPen;
 		}
-		
-		if (getAiFrame().getPrevFrame().getTacticalField()
-				.getBallResponsibility() == EBallResponsibility.DEFENSE)
+		defSituation = ballStaysInsidePenArea(Geometry.getPenaltyAreaOur().withMargin(margin));
+		isDefensiveSituationOld = defSituation;
+
+		// check for opponent penArea.
+		boolean inEnemyPen = false;
+		if (noOffensiveWhenBallInEnemyPenArea)
 		{
-			// hysteresis
-			margin += 100;
+			margin = marginForNoOffensiveWhenBallNearEnemyPen;
+			if (isNearEnemyPenOld)
+			{
+				margin += hysteresisForNoOffensiveWhenBallNearEnemyPen;
+			}
+			inEnemyPen = ballStaysInsidePenArea(Geometry.getPenaltyAreaTheir().withMargin(margin));
+			isNearEnemyPenOld = inEnemyPen;
 		}
-		
-		IPenaltyArea penaltyArea = Geometry.getPenaltyAreaOur().withMargin(margin);
-		boolean nearPenArea = Geometry.getPenaltyAreaOur().isPointInShape(getBall().getPos(), margin);
-		if (nearPenArea)
-		{
-			final List<IDrawableShape> drawableShapes = penaltyArea.getDrawableShapes();
-			drawableShapes.forEach(d -> d.setFill(true));
-			drawableShapes.forEach(d -> d.setColor(new Color(255, 0, 0, 100)));
-			getNewTacticalField().getDrawableShapes().get(EAiShapesLayer.AI_BALL_RESPONSIBILITY).addAll(drawableShapes);
-		}
-		return nearPenArea;
+
+		return defSituation || inEnemyPen;
 	}
-	
-	
-	private boolean criticalBallMovement()
+
+
+	private boolean ballStaysInsidePenArea(IPenaltyArea area)
 	{
-		if (getBall().getVel().getLength2() < 1
-				|| getAiFrame().getPrevFrame().getTacticalField().getBallResponsibility() == EBallResponsibility.DEFENSE)
-		{
-			return true;
-		}
-		
-		ILineSegment penAreaGoalLine = Lines.segmentFromPoints(
-				Vector2.fromXY(-Geometry.getFieldLength() / 2, Geometry.getFieldWidth() / 2),
-				Vector2.fromXY(-Geometry.getFieldLength() / 2, -Geometry.getFieldWidth() / 2));
-		
-		final Optional<IVector2> intersection = penAreaGoalLine
-				.intersectHalfLine(Lines.halfLineFromDirection(getBall().getPos(), getBall().getVel()));
-		if (intersection.isPresent())
-		{
-			ITriangle triangle = Triangle.fromCorners(
-					getBall().getPos(),
-					penAreaGoalLine.getStart(),
-					penAreaGoalLine.getEnd());
-			getNewTacticalField().getDrawableShapes().get(EAiShapesLayer.AI_BALL_RESPONSIBILITY)
-					.add(new DrawableTriangle(triangle, new Color(255, 0, 0, 150)));
-		}
-		return intersection.isPresent();
+		boolean isAndWillStopInsidePenArea = area.isPointInShape(getBall().getPos())
+				&& area.isPointInShapeOrBehind(getBall().getTrajectory().getPosByVel(0).getXYVector());
+
+		DrawableRectangle dr = new DrawableRectangle(area.getRectangle(), new Color(4, 100, 156, 100));
+		dr.setFill(isAndWillStopInsidePenArea);
+		getNewTacticalField().getDrawableShapes().get(EAiShapesLayer.AI_BALL_RESPONSIBILITY).add(dr);
+		return isAndWillStopInsidePenArea;
 	}
 }

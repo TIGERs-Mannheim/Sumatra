@@ -23,124 +23,124 @@ public interface ITrackedBot extends ITrackedObject, IExportable
 {
 	@Override
 	ITrackedBot mirrored();
-	
-	
+
+
 	/**
 	 * @param t
 	 * @return
 	 */
 	IVector2 getPosByTime(double t);
-	
-	
+
+
 	/**
 	 * @param t
 	 * @return
 	 */
 	IVector2 getVelByTime(double t);
-	
-	
+
+
 	/**
 	 * @param t
 	 * @return
 	 */
 	double getAngleByTime(double t);
-	
-	
+
+
 	/**
 	 * @return the ballContact
 	 */
 	boolean hasBallContact();
-	
-	
+
+
 	/**
 	 * @param horizon the time horizon in seconds
 	 * @return true, if the ball had ball contact within given horizon
 	 */
 	boolean hadBallContact(double horizon);
-	
-	
+
+
 	/**
 	 * @return the last time when ball contact was reported
 	 */
 	long getLastBallContact();
-	
-	
+
+
 	/**
 	 * @return
 	 */
 	double getCenter2DribblerDist();
-	
-	
+
+
 	/**
 	 * @return the bot shape of this bot
 	 */
 	IBotShape getBotShape();
-	
-	
+
+
 	/**
 	 * Calculates the position of the dribbler/kicker of the given bot.
 	 * Use this position for ball receivers, etc.
-	 * 
+	 *
 	 * @return
 	 */
 	IVector2 getBotKickerPos();
-	
-	
+
+
 	/**
 	 * @return id of the bot
 	 */
 	BotID getBotId();
-	
-	
+
+
 	/**
 	 * @return
 	 */
 	ETeamColor getTeamColor();
-	
-	
+
+
 	/**
-	 * @return the angle
+	 * @return the angle [rad]
 	 */
 	double getOrientation();
-	
-	
+
+
 	/**
-	 * @return the aVel
+	 * @return the aVel [rad/s]
 	 */
 	double getAngularVel();
-	
-	
+
+
 	/**
 	 * @return
 	 */
 	RobotInfo getRobotInfo();
-	
-	
+
+
 	/**
 	 * @param t
 	 * @return
 	 */
 	IVector2 getBotKickerPosByTime(double t);
-	
-	
+
+
 	/**
 	 * @return
 	 */
 	MoveConstraints getMoveConstraints();
-	
-	
+
+
 	/**
 	 * @return the current robot state
 	 */
 	State getBotState();
-	
-	
+
+
 	/**
 	 * @return the current robot state as reported by the vision filter
 	 */
 	Optional<State> getFilteredState();
-	
-	
+
+
 	/**
 	 * @return the buffered state of the current trajectory, synchronized with the filtered state
 	 */

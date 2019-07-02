@@ -9,34 +9,19 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-
-import edu.tigers.autoreferee.module.AutoRefModule;
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
-import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.ids.IBotIDMap;
-import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
 /**
- * @author "Lukas Magel"
+ * Utility class for the autoRef
  */
 public final class AutoRefUtil
 {
-	
-	private static Logger log = LogManager.getLogger(AutoRefUtil.class);
-	
-	
 	private AutoRefUtil()
 	{
 		// Hide constructor
@@ -44,8 +29,6 @@ public final class AutoRefUtil
 	
 	/**
 	 * A Predicate implementation that filters ITrackedBot instances by their color
-	 * 
-	 * @author "Lukas Magel"
 	 */
 	public static class ColorFilter implements Predicate<ITrackedBot>
 	{
@@ -88,31 +71,6 @@ public final class AutoRefUtil
 		}
 	}
 	
-	/**
-	 * @author "Lukas Magel"
-	 */
-	public static class ToBotIDMapper implements Function<ITrackedBot, BotID>
-	{
-		private static final ToBotIDMapper INSTANCE = new ToBotIDMapper();
-		
-		
-		@Override
-		public BotID apply(final ITrackedBot bot)
-		{
-			return bot.getBotId();
-		}
-		
-		
-		/**
-		 * @return
-		 */
-		public static ToBotIDMapper get()
-		{
-			return INSTANCE;
-		}
-		
-	}
-	
 	
 	/**
 	 * Filter the supplied collection of bots by their team color
@@ -139,56 +97,5 @@ public final class AutoRefUtil
 	public static List<ITrackedBot> filterByColor(final IBotIDMap<ITrackedBot> bots, final ETeamColor color)
 	{
 		return filterByColor(bots.values(), color);
-	}
-	
-	
-	/**
-	 * @param bots
-	 * @return
-	 */
-	public static Set<BotID> mapToID(final Collection<ITrackedBot> bots)
-	{
-		return bots.stream()
-				.map(ToBotIDMapper.get())
-				.collect(Collectors.toSet());
-	}
-	
-	
-	/**
-	 * @param bots
-	 * @return
-	 */
-	public static Set<BotID> mapToID(final IBotIDMap<ITrackedBot> bots)
-	{
-		return mapToID(bots.values());
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public static Optional<AutoRefModule> getAutoRefModule()
-	{
-		try
-		{
-			AutoRefModule autoRef = SumatraModel.getInstance().getModule(AutoRefModule.class);
-			return Optional.of(autoRef);
-		} catch (ModuleNotFoundException e)
-		{
-			log.info("AutoReferee not available", e);
-		}
-		return Optional.empty();
-	}
-	
-	
-	/**
-	 * Execute the specified consumer on the autoreferee module if it is present
-	 * 
-	 * @param consumer
-	 */
-	public static void ifAutoRefModulePresent(final Consumer<? super AutoRefModule> consumer)
-	{
-		Optional<AutoRefModule> module = getAutoRefModule();
-		module.ifPresent(consumer);
 	}
 }

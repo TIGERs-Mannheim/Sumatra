@@ -52,9 +52,10 @@ public class FieldPanel extends JPanel implements IFieldPanel
 			.getLogger(FieldPanel.class.getName());
 	
 	/** color of field background */
-	private static final Color FIELD_COLOR = new Color(0, 180, 30);
+	private static final Color FIELD_COLOR = new Color(0, 160, 30);
+	private static final Color FIELD_COLOR_DARK = new Color(77, 77, 77);
 	/** color of field background */
-	private static final Color FIELD_COLOR_REFEREE = new Color(0, 150, 30);
+	private static final Color FIELD_COLOR_REFEREE = new Color(93, 93, 93);
 	private static final String SCALE_FACTOR_PROPERTY = FieldPanel.class.getCanonicalName() + ".scaleFactor";
 	private static final String FIELD_ORIGIN_X_PROPERTY = FieldPanel.class.getCanonicalName() + ".fieldOriginX";
 	private static final String FIELD_ORIGIN_Y_PROPERTY = FieldPanel.class.getCanonicalName() + ".fieldOriginY";
@@ -87,6 +88,7 @@ public class FieldPanel extends JPanel implements IFieldPanel
 	
 	
 	private boolean fancyPainting = false;
+	private boolean darkMode = false;
 	
 	private final Set<String> showSources = new ConcurrentSkipListSet<>();
 	private final transient Map<String, ShapeMap> shapeMaps = new ConcurrentHashMap<>();
@@ -239,7 +241,7 @@ public class FieldPanel extends JPanel implements IFieldPanel
 			g2.scale(scaleFactor, scaleFactor);
 			
 			turnField(getFieldTurn(), -AngleMath.PI_HALF, g2);
-			g2.setColor(FIELD_COLOR);
+			g2.setColor(darkMode ? FIELD_COLOR_DARK : FIELD_COLOR);
 			g2.fillRect(0, 0, getFieldTotalWidth(), getFieldTotalHeight());
 			turnField(getFieldTurn(), AngleMath.PI_HALF, g2);
 			
@@ -582,6 +584,9 @@ public class FieldPanel extends JPanel implements IFieldPanel
 		{
 			case FANCY:
 				fancyPainting = isSelected;
+				break;
+			case DARK:
+				darkMode = isSelected;
 				break;
 			case TURN_NEXT:
 				turnNext();

@@ -5,7 +5,8 @@
 package edu.tigers.sumatra.testplays.commands;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
+
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.testplays.util.Point;
 
 

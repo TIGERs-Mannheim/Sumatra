@@ -70,7 +70,7 @@ public class AngleRangeRaterPassTargetTestCalc extends ACalculator
 	
 	private DrawableTriangle createDrawable(IVector2 start, ILineSegment targetLine, IRatedTarget range)
 	{
-		double baseAngle = range.getTarget().subtractNew(start).getAngle();
+		double baseAngle = range.getTarget().getPos().subtractNew(start).getAngle();
 		
 		Color color = colorPicker.getColor(range.getScore());
 		

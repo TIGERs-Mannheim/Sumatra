@@ -34,19 +34,19 @@ import org.apache.log4j.Logger;
  */
 public class MulticastUDPReceiver implements IReceiver
 {
-	private static final Logger				log						= Logger.getLogger(MulticastUDPReceiver.class.getName());
+	private static final Logger log = Logger.getLogger(MulticastUDPReceiver.class.getName());
 	
-	private static final int					SO_TIMEOUT				= 100;
-	private static final String[]				USELESS_PREFIXES		= { "tap", "tun", "ham", "WAN" };
-	private static final String[]				PREFERRED_PREFIXES	= { "lo", "eth", "enp" };
+	private static final int SO_TIMEOUT = 500;
+	private static final String[] USELESS_PREFIXES = { "tap", "tun", "ham", "WAN" };
+	private static final String[] PREFERRED_PREFIXES = { "eth", "enp" };
 	// Connection
-	private final List<MulticastSocket>		sockets					= new ArrayList<>();
-	private final Set<MulticastSocket>		socketsTimedOut		= new HashSet<>();
-	private final List<IReceiverObserver>	observers				= new CopyOnWriteArrayList<>();
-	private MulticastSocket						currentSocket			= null;
-	private InetAddress							group						= null;
+	private final List<MulticastSocket> sockets = new ArrayList<>();
+	private final Set<MulticastSocket> socketsTimedOut = new HashSet<>();
+	private final List<IReceiverObserver> observers = new CopyOnWriteArrayList<>();
+	private MulticastSocket currentSocket = null;
+	private InetAddress group = null;
 	/** The internal state-switch of this transmitter */
-	private boolean								readyToReceive			= false;
+	private boolean readyToReceive;
 	
 	
 	/**
@@ -169,35 +169,40 @@ public class MulticastUDPReceiver implements IReceiver
 	}
 	
 	
-	@SuppressWarnings("squid:S2095")
+	@SuppressWarnings("squid:S2095") // we do not want to close the multicast socket here
 	private void addSocket(final int port, final String groupStr, final NetworkInterface iface)
 	{
-		MulticastSocket socket;
 		try
 		{
-			socket = new MulticastSocket(new InetSocketAddress(port));
+			MulticastSocket socket = new MulticastSocket(new InetSocketAddress(port));
 			socket.setNetworkInterface(iface);
-			int i;
-			socket_loop: for (i = 0; i < sockets.size(); i++)
-			{
-				for (String prefix : PREFERRED_PREFIXES)
-				{
-					if (socket.getNetworkInterface().getDisplayName().contains(prefix))
-					{
-						break socket_loop;
-					}
-					if (sockets.get(i).getNetworkInterface().getDisplayName().contains(prefix))
-					{
-						continue socket_loop;
-					}
-				}
-			}
+			int i = findSocketIndex(socket);
 			sockets.add(i, socket);
 			joinNetworkGroup(socket, groupStr);
 		} catch (IOException err)
 		{
-			log.error("Could not create multicast socket on iface " + iface.getDisplayName() + " and port " + port, err);
+			log.info("Could not create multicast socket on iface " + iface.getDisplayName() + " and port " + port, err);
 		}
+	}
+	
+	
+	private int findSocketIndex(final MulticastSocket socket) throws SocketException
+	{
+		for (int i = 0; i < sockets.size(); i++)
+		{
+			for (String prefix : PREFERRED_PREFIXES)
+			{
+				if (socket.getNetworkInterface().getDisplayName().contains(prefix))
+				{
+					return i;
+				}
+				if (sockets.get(i).getNetworkInterface().getDisplayName().contains(prefix))
+				{
+					break;
+				}
+			}
+		}
+		return sockets.size();
 	}
 	
 	
@@ -256,29 +261,14 @@ public class MulticastUDPReceiver implements IReceiver
 			}
 		}
 		
-		boolean socketChanged = false;
-		boolean received = false;
-		while (!received && isReady())
+		while (isReady())
 		{
 			for (MulticastSocket socket : sockets)
 			{
 				try
 				{
-					socket.receive(store);
-					if (socketChanged)
-					{
-						sockets.remove(socket);
-						sockets.add(0, socket);
-						currentSocket = socket;
-						log.info("MulticastSocket changed to " + socket.getNetworkInterface().getDisplayName() + " "
-								+ socket.getLocalPort());
-						socketsTimedOut.remove(socket);
-					}
-					received = true;
-					break;
-				} catch (EOFException eof)
-				{
-					log.error("EOF error, buffer may be too small!", eof);
+					tryReceiving(store, socket);
+					return store;
 				} catch (SocketTimeoutException e)
 				{
 					if (!socketsTimedOut.contains(socket))
@@ -286,7 +276,6 @@ public class MulticastUDPReceiver implements IReceiver
 						log.debug("Socket timed out on iface " + socket.getNetworkInterface().getDisplayName(), e);
 						socketsTimedOut.add(socket);
 					}
-					socketChanged = true;
 				}
 			}
 		}
@@ -295,44 +284,57 @@ public class MulticastUDPReceiver implements IReceiver
 	}
 	
 	
+	private void tryReceiving(final DatagramPacket store, final MulticastSocket socket) throws IOException
+	{
+		// blocking receive with a timeout of SO_TIMEOUT
+		socket.receive(store);
+		
+		// we have received something
+		
+		socketsTimedOut.remove(socket);
+		if (socket != currentSocket)
+		{
+			sockets.remove(socket);
+			sockets.add(0, socket);
+			currentSocket = socket;
+			log.info("MulticastSocket changed to " + socket.getNetworkInterface().getDisplayName() + " "
+					+ socket.getLocalPort());
+		}
+	}
+	
+	
 	@Override
-	public void cleanup() throws IOException
+	public void cleanup()
 	{
 		// No-working state after this line...
 		readyToReceive = false;
 		
 		for (MulticastSocket socket : sockets)
 		{
-			if (socket == null)
-			{
-				continue;
-			}
 			if (!socket.isClosed())
 			{
-				try
-				{
-					if (group != null)
-					{
-						socket.leaveGroup(group);
-						log.debug("Multicast group left");
-					}
-				} catch (IOException err)
-				{
-					log.error("Error while leaving multicast group '" + group + "'!", err);
-				}
-				
+				leaveMulticastGroup(socket);
 				socket.close();
 			}
-			
-			log.debug("Socket closed");
 		}
 		observers.clear();
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
+	private void leaveMulticastGroup(final MulticastSocket socket)
+	{
+		try
+		{
+			if (group != null)
+			{
+				socket.leaveGroup(group);
+				log.debug("Multicast group left");
+			}
+		} catch (IOException err)
+		{
+			log.error("Error while leaving multicast group '" + group + "'!", err);
+		}
+	}
 	
 	
 	@Override

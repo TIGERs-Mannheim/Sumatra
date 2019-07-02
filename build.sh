@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 
-mvn clean install -DskipTests -Dmaven.javadoc.skip=true -Dmaven.repo.local=repository
+args="${@}"
+mvn install -Pfast -Dmaven.repo.local=repository ${args}

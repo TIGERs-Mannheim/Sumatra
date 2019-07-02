@@ -5,7 +5,7 @@
 package edu.tigers.sumatra.ai.pandora.roles.test;
 
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;

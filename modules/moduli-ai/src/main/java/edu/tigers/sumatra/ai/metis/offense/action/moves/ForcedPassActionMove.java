@@ -2,15 +2,13 @@
  * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
-package edu.tigers.sumatra.ai.metis.offense.action.moves;
-
-import edu.tigers.sumatra.ai.BaseAiFrame;
+package edu.tigers.sumatra.ai.metis.offense.action.moves;import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
 import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.KickTarget;
-import edu.tigers.sumatra.ai.metis.support.IPassTarget;
+import edu.tigers.sumatra.ai.metis.support.passtarget.IRatedPassTarget;
 import edu.tigers.sumatra.ids.BotID;
 
 
@@ -35,12 +33,12 @@ public class ForcedPassActionMove extends AOffensiveActionMove
 		}
 		
 		if ((newTacticalField.getGameState().isIndirectFreeForUs())
-				&& isPassPossible(id, newTacticalField))
+				&& isPassPossible(id, newTacticalField, baseAiFrame))
 		{
 			return EActionViability.TRUE;
 		}
 		
-		if (OffensiveConstants.isAlwaysForcePass() && isPassPossible(id, newTacticalField))
+		if (OffensiveConstants.isAlwaysForcePass() && isPassPossible(id, newTacticalField, baseAiFrame))
 		{
 			return EActionViability.TRUE;
 		}
@@ -53,9 +51,9 @@ public class ForcedPassActionMove extends AOffensiveActionMove
 	public OffensiveAction activateAction(final BotID id, final TacticalField newTacticalField,
 			final BaseAiFrame baseAiFrame)
 	{
-		IPassTarget passTarget = selectPassTarget(id, newTacticalField)
+		IRatedPassTarget passTarget = selectPassTarget(id, newTacticalField, baseAiFrame)
 				.orElseThrow(IllegalStateException::new);
-		final KickTarget kickTarget = new KickTarget(passTarget.getDynamicTarget(),
+		final KickTarget kickTarget = KickTarget.pass(passTarget.getDynamicPos(),
 				OffensiveConstants.getMaxPassEndVelRedirect(), KickTarget.ChipPolicy.ALLOW_CHIP);
 		return createOffensiveAction(EOffensiveAction.PASS, kickTarget)
 				.withPassTarget(passTarget);

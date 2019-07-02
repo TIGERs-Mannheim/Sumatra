@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.apache.log4j.spi.LoggingEvent;
 
 import edu.tigers.sumatra.persistence.BerkeleyDb;
@@ -20,15 +22,16 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
 public class ReplayLogController implements IReplayController
 {
+	private static final Logger log = Logger.getLogger(ReplayLogController.class.getName());
 	private static final long LOG_BUFFER_BEFORE = 500;
 	private static final long LOG_BUFFER_AFTER = 500;
 	private List<BerkeleyLogEvent> logEventBuffer = null;
 	private List<LoggingEvent> lastLogEventsPast = new LinkedList<>();
 	private List<LoggingEvent> lastLogEventsFuture = new LinkedList<>();
-	
+
 	private LogPresenter logPresenter;
-	
-	
+
+
 	public ReplayLogController(List<ASumatraView> sumatraViews)
 	{
 		for (ASumatraView view : sumatraViews)
@@ -39,23 +42,23 @@ public class ReplayLogController implements IReplayController
 			}
 		}
 	}
-	
-	
+
+
 	@Override
 	public void update(final BerkeleyDb db, final WorldFrameWrapper wfw)
 	{
 		initLogEventBuffer(db);
-		
+
 		if (logEventBuffer.isEmpty())
 		{
 			return;
 		}
-		
+
 		long unixTimestamp = wfw.getUnixTimestamp();
 		List<LoggingEvent> logEventsPast = new LinkedList<>();
 		List<LoggingEvent> logEventsFuture = new LinkedList<>();
 		updateLogEvents(unixTimestamp, logEventsPast, logEventsFuture);
-		
+
 		boolean reprint = isReprint(lastLogEventsPast, logEventsPast) || isReprint(lastLogEventsFuture, logEventsFuture);
 		if (reprint)
 		{
@@ -64,7 +67,9 @@ public class ReplayLogController implements IReplayController
 			{
 				logPresenter.append(event);
 			}
-			logPresenter.appendLine();
+			logPresenter.append(new LoggingEvent(this.getClass().getCanonicalName(), log, Level.FATAL,
+					"------------------------------------------------ Past to Future barrier ------------------------------------------------",
+					null));
 			for (LoggingEvent event : logEventsFuture)
 			{
 				logPresenter.append(event);
@@ -73,8 +78,8 @@ public class ReplayLogController implements IReplayController
 		lastLogEventsPast = logEventsPast;
 		lastLogEventsFuture = logEventsFuture;
 	}
-	
-	
+
+
 	private void updateLogEvents(final long curTime, final List<LoggingEvent> logEventsPast,
 			final List<LoggingEvent> logEventsFuture)
 	{
@@ -95,8 +100,8 @@ public class ReplayLogController implements IReplayController
 			}
 		}
 	}
-	
-	
+
+
 	private void initLogEventBuffer(final BerkeleyDb db)
 	{
 		if (logEventBuffer == null)
@@ -110,8 +115,8 @@ public class ReplayLogController implements IReplayController
 			}
 		}
 	}
-	
-	
+
+
 	private boolean isReprint(final List<LoggingEvent> lastLogEvents, final List<LoggingEvent> logEvents)
 	{
 		if (lastLogEvents.size() != logEvents.size())

@@ -113,7 +113,7 @@ public final class BallInterceptor
 		Optional<IVector2> fieldIntersection = ballTrajectory.getPlanarCurve()
 				.getIntersectionsWithRectangle(Geometry.getField())
 				.stream()
-				.filter(p -> ballTrajectory.getTravelLine().isPointOnLineSegment(p))
+				.filter(p -> ballTrajectory.getTravelLineSegment().isPointOnLine(p))
 				.findFirst();
 		if (fieldIntersection.isPresent())
 		{
@@ -164,7 +164,7 @@ public final class BallInterceptor
 	
 	private double getTimeForDestClosestToBallLine()
 	{
-		IVector2 closestDest = ballTrajectory.getTravelLine().nearestPointOnLineSegment(tBot.getBotKickerPos());
+		IVector2 closestDest = ballTrajectory.getTravelLineSegment().closestPointOnLine(tBot.getBotKickerPos());
 		double dist2ClosestDest = ballTrajectory.getPosByTime(0).getXYVector().distanceTo(closestDest);
 		double dist2Kicker = Math.max(0, dist2ClosestDest - Geometry.getBallRadius());
 		return Math.max(0, ballTrajectory.getTimeByDist(dist2Kicker));
@@ -179,7 +179,7 @@ public final class BallInterceptor
 				tBot.getCenter2DribblerDist(), tBot.getOrientation());
 		IVector2 botKickerPosAtTBall = botShape.getKickerCenterPos();
 		
-		double distToBallLine = ballTrajectory.getTravelLine().distanceTo(botKickerPosAtTBall);
+		double distToBallLine = ballTrajectory.getTravelLineSegment().distanceTo(botKickerPosAtTBall);
 		return distToBallLine < botShape.getKickerWidth() / 2.0;
 	}
 	

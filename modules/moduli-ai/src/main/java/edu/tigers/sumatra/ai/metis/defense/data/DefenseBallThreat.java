@@ -6,73 +6,111 @@ package edu.tigers.sumatra.ai.metis.defense.data;
 
 import java.util.Optional;
 
-import edu.tigers.sumatra.geometry.Geometry;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
+
+import edu.tigers.sumatra.ids.AObjectID;
+import edu.tigers.sumatra.ids.BallID;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * The ball threat for the defenders.
  */
 public class DefenseBallThreat implements IDefenseThreat
 {
-	private final IVector2 pos;
-	private final IVector2 endPos;
 	private final IVector2 vel;
+	private final ILineSegment threatLine;
+	private final ILineSegment protectionLine;
 	private final ITrackedBot passReceiver;
-	
-	
-	/**
-	 * @param pos
-	 * @param endPos
-	 * @param vel
-	 * @param passReceiver
-	 */
-	public DefenseBallThreat(final IVector2 pos, final IVector2 endPos, final IVector2 vel,
+
+
+	public DefenseBallThreat(
+			final IVector2 vel,
+			final ILineSegment threatLine,
+			final ILineSegment protectionLine,
 			final ITrackedBot passReceiver)
 	{
-		this.pos = pos;
-		this.endPos = Geometry.getField().nearestPointInside(endPos, pos);
+		this.threatLine = threatLine;
+		this.protectionLine = protectionLine;
 		this.vel = vel;
 		this.passReceiver = passReceiver;
 	}
-	
-	
+
+
+	@Override
+	public IVector2 getPos()
+	{
+		return threatLine.getStart();
+	}
+
+
 	@Override
 	public ILineSegment getThreatLine()
 	{
-		return Lines.segmentFromPoints(pos, endPos);
+		return threatLine;
 	}
-	
-	
+
+
 	@Override
-	public double getScore()
+	public Optional<ILineSegment> getProtectionLine()
 	{
-		return 0;
+		return Optional.ofNullable(protectionLine);
 	}
-	
-	
+
+
 	@Override
 	public IVector2 getVel()
 	{
 		return vel;
 	}
-	
-	
+
+
 	@Override
-	public boolean isBot()
+	public AObjectID getObjectId()
 	{
-		return false;
+		return BallID.instance();
 	}
-	
-	
+
+
 	/**
 	 * @return the passReceiver
 	 */
 	public Optional<ITrackedBot> getPassReceiver()
 	{
 		return Optional.ofNullable(passReceiver);
+	}
+
+
+	@Override
+	public EDefenseThreatType getType()
+	{
+		return EDefenseThreatType.BALL_TO_GOAL;
+	}
+
+
+	@Override
+	public String toString()
+	{
+		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+				.append("vel", vel)
+				.append("threatLine", threatLine)
+				.append("protectionLine", protectionLine)
+				.append("passReceiver", passReceiver)
+				.toString();
+	}
+
+
+	@Override
+	public boolean sameAs(final IDefenseThreat o)
+	{
+		if (this == o)
+		{
+			return true;
+		}
+
+		return o != null && getClass() == o.getClass();
 	}
 }

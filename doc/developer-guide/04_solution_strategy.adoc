@@ -1,0 +1,6 @@
+[[section-solution-strategy]]
+== Solution Strategy
+:imagesdir: ./images
+
+
+

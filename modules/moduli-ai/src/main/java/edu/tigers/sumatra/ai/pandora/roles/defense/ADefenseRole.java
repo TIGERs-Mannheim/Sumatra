@@ -6,8 +6,6 @@ package edu.tigers.sumatra.ai.pandora.roles.defense;
 
 import java.util.Optional;
 
-import org.apache.commons.lang.NotImplementedException;
-
 import com.github.g3force.configurable.Configurable;
 
 import edu.tigers.sumatra.ai.metis.defense.DefenseConstants;
@@ -18,7 +16,6 @@ import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.line.v2.IHalfLine;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.tube.ITube;
 import edu.tigers.sumatra.math.tube.Tube;
@@ -29,9 +26,9 @@ import edu.tigers.sumatra.skillsystem.skills.redirect.RedirectConsultantFactory;
 
 
 /**
- * @author Ulrike Leipscher <ulrike.leipscher@dlr.de>.
+ * Abstract defense role
  */
-public class ADefenseRole extends ARole implements IDefenderRole
+public abstract class ADefenseRole extends ARole implements IDefenderRole
 {
 	
 	@Configurable(comment = "Dribbling speed for defenders", defValue = "10000.0")
@@ -39,29 +36,19 @@ public class ADefenseRole extends ARole implements IDefenderRole
 	@Configurable(comment = "Kicker speed to chip the ball", defValue = "4.0")
 	private static double configurableKickSpeed = 4;
 	
-	
-	/**
-	 * @param type of the role
-	 */
+
 	public ADefenseRole(final ERole type)
 	{
 		super(type);
 	}
 	
-	
-	@Override
-	public ILineSegment getProtectionLine(final ILineSegment threatPos)
-	{
-		throw new NotImplementedException();
-	}
-	
-	
+
 	@Override
 	public IVector2 getValidPositionByIcing(final IVector2 pos)
 	{
-		if (getAiFrame().getTacticalField().isOpponentWillDoIcing())
+		if (getAiFrame().getTacticalField().isBallLeavingFieldGood())
 		{
-			ITube forbiddenZone = Tube.fromLine(getBall().getTrajectory().getTravelLine(),
+			ITube forbiddenZone = Tube.fromLineSegment(getBall().getTrajectory().getTravelLineSegment(),
 					RuleConstraints.getStopRadius());
 			if (forbiddenZone.isPointInShape(pos))
 			{
@@ -105,25 +92,16 @@ public class ADefenseRole extends ARole implements IDefenderRole
 		IHalfLine ballTravel = Lines.halfLineFromDirection(getBot().getPos(), Vector2.fromAngle(redirectTargetAngle));
 		
 		Optional<IVector2> target;
-		target = ballTravel.intersectSegment(Lines.segmentFromLine(Geometry.getGoalTheir().getLine()));
+		target = ballTravel.intersectSegment(Geometry.getGoalTheir().getLineSegment());
 		if (target.isPresent())
 		{
 			return RuleConstraints.getMaxBallSpeed();
 		}
-		target = ballTravel.intersectSegment(getGoalLineTheir());
+		target = ballTravel.intersectSegment(Geometry.getGoalTheir().getGoalLine());
 		if (target.isPresent())
 		{
 			return configurableKickSpeed;
 		}
 		return 0;
-	}
-	
-	
-	private ILineSegment getGoalLineTheir()
-	{
-		IVector2 goalCenter = Geometry.getGoalTheir().getCenter();
-		double fieldWidthHalfY = Geometry.getFieldWidth() / 2;
-		IVector2 halfField = Vector2.fromXY(0, fieldWidthHalfY);
-		return Lines.segmentFromPoints(goalCenter.subtractNew(halfField), goalCenter.addNew(halfField));
 	}
 }

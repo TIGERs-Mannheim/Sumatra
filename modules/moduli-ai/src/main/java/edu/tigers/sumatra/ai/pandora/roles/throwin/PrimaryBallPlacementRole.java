@@ -7,6 +7,7 @@ package edu.tigers.sumatra.ai.pandora.roles.throwin;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
+import edu.tigers.sumatra.ids.ETeam;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -28,98 +29,119 @@ import edu.tigers.sumatra.wp.data.DynamicPosition;
 public class PrimaryBallPlacementRole extends ABallPlacementRole
 {
 	private final ClearState clear = new ClearState();
-	
-	
+
+
 	public PrimaryBallPlacementRole()
 	{
 		super(ERole.PRIMARY_BALL_PLACEMENT);
 		final ReceiveState receive = new ReceiveState();
 		final PushState push = new PushState();
-		final PullState pull = new PullState();
+		final PrimaryPullState pull = new PrimaryPullState();
 		final PreparePushState preparePush = new PreparePushState();
 		final StopBallState stopBall = new StopBallState();
-		
+
 		setInitialState(stopBall);
-		
+
 		addTransition(EEvent.RECEIVE, receive);
 		addTransition(EEvent.PUSH, push);
 		addTransition(EEvent.CLEAR, clear);
 		addTransition(EEvent.PULL, pull);
 		addTransition(EEvent.PREPARE_PUSH, preparePush);
 		addTransition(EEvent.STOP_BALL, stopBall);
-		addTransition(pull, EEvent.DONE, clear);
+		addTransition(EEvent.DONE, clear);
 	}
-	
-	
+
+
 	@SuppressWarnings("unused") // used by UI
 	public PrimaryBallPlacementRole(final IVector2 placementPos)
 	{
 		this();
 		setPlacementPos(placementPos);
 	}
-	
-	
-	public boolean isBallCleared()
+
+
+	public boolean isBallStillHandled()
 	{
-		return getCurrentState() == clear && clear.isDestReached();
+		return getCurrentState() != clear || !clear.isDestReached();
 	}
-	
+
 	private class ClearState extends ClearBaseState
 	{
 		@Override
 		public void doUpdate()
 		{
 			super.doUpdate();
-			if (!isBallAtTarget())
+			if (isBallAtTarget())
 			{
-				if (isBallLying())
+				return;
+			}
+			if (ballIsLying())
+			{
+				if (isBallInsidePushRadius() || !hasCompanion())
 				{
-					if (isBallInsidePushRadius() || !hasCompanion())
+					if (favorPullingTheBall())
 					{
-						triggerEvent(EEvent.PUSH);
+						triggerEvent(EEvent.PULL);
 					} else
 					{
-						triggerEvent(EEvent.RECEIVE);
+						triggerEvent(EEvent.PUSH);
 					}
-				} else if (getBall().getVel().getLength2() > 0.4)
+				} else
 				{
-					triggerEvent(EEvent.STOP_BALL);
+					triggerEvent(EEvent.RECEIVE);
 				}
+			} else if (getBall().getVel().getLength2() > 0.4)
+			{
+				triggerEvent(EEvent.STOP_BALL);
 			}
 		}
 	}
-	
+
+	private class PrimaryPullState extends PullState
+	{
+		@Override
+		public void doUpdate()
+		{
+			super.doUpdate();
+			if (!isBallInsidePushRadius() && hasCompanion())
+			{
+				triggerEvent(EEvent.CLEAR);
+			}
+		}
+	}
+
 	private class ReceiveState extends AState
 	{
 		private ReceiveBallSkill skill;
-		
-		
+
+
 		@Override
 		public void doEntryActions()
 		{
 			skill = new ReceiveBallSkill(getPlacementPos());
 			setNewSkill(skill);
 			prepareMoveCon(skill.getMoveCon());
+			skill.setConsideredPenAreas(ETeam.UNKNOWN);
 		}
-		
-		
+
+
 		@Override
 		public void doUpdate()
 		{
 			if ((!isSecondaryRoleNeeded() && getBall().getVel().getLength2() < 0.7)
-					|| (skill.ballHasBeenReceived() && isBallAtTarget()))
+					|| (skill.ballHasBeenReceived()))
 			{
 				triggerEvent(EEvent.CLEAR);
 			}
 		}
 	}
-	
+
 	private class PreparePushState extends AState
 	{
 		private AMoveSkill skill = AMoveToSkill.createMoveToSkill();
 		private TimestampTimer destReachedTimer = new TimestampTimer(0.3);
-		
-		
+
+
 		@Override
 		public void doEntryActions()
 		{
@@ -128,26 +150,26 @@ public class PrimaryBallPlacementRole extends ABallPlacementRole
 			skill.getMoveCon().updateLookAtTarget(getBall());
 			setNewSkill(skill);
 		}
-		
-		
+
+
 		@Override
 		public void doUpdate()
 		{
 			IVector2 dest = LineMath.stepAlongLine(getBall().getPos(), getPlacementPos(), -Geometry.getBotRadius() * 3);
 			skill.getMoveCon().updateDestination(dest);
-			
-			if (dest.distanceTo(getPos()) < 50)
+
+			if (dest.distanceTo(getPos()) < hysteresisMargin)
 			{
 				destReachedTimer.update(getWFrame().getTimestamp());
 			} else
 			{
 				destReachedTimer.reset();
 			}
-			
+
 			if (!isBallInsidePushRadius() && hasCompanion())
 			{
 				triggerEvent(EEvent.RECEIVE);
-			} else if (!Geometry.getField().isPointInShape(getBall().getPos()))
+			} else if (favorPullingTheBall())
 			{
 				triggerEvent(EEvent.PULL);
 			} else if (destReachedTimer.isTimeUp(getWFrame().getTimestamp()))
@@ -159,37 +181,37 @@ public class PrimaryBallPlacementRole extends ABallPlacementRole
 			}
 		}
 	}
-	
+
 	private class PushState extends AState
 	{
-		private final TimestampTimer ballPlacedWaitTimer = new TimestampTimer(0.5);
-		
-		
+		private final TimestampTimer ballPlacedWaitTimer = new TimestampTimer(0.9);
+		PushAroundObstacleSkill skill;
+
+
 		@Override
 		public void doEntryActions()
 		{
 			DynamicPosition obstacle = new DynamicPosition(Vector2.fromXY(99999, 99999));
 			DynamicPosition target = new DynamicPosition(getPlacementPos());
-			PushAroundObstacleSkill skill = new PushAroundObstacleSkill(obstacle, target);
+			skill = new PushAroundObstacleSkill(obstacle, target);
 			prepareMoveCon(skill.getMoveCon());
 			setNewSkill(skill);
 		}
-		
-		
+
+
 		@Override
 		public void doUpdate()
 		{
-			if (isBallTooCloseToFieldBorder(50))
+			if (pullIsRequired())
 			{
 				triggerEvent(EEvent.PULL);
-			} else if (!isNearBall(RuleConstraints.getStopRadius() + 50))
+			} else if (!isNearBall(RuleConstraints.getStopRadius() + hysteresisMargin))
 			{
 				triggerEvent(EEvent.PREPARE_PUSH);
-			} else if (getPlacementPos().distanceTo(getBall().getPos()) > 200
-					&& getBall().getPos().distanceTo(getBot().getBotKickerPos()) > 150
+			} else if (ballNotNearPlacementPos()
+					&& ballNotNearBotKicker()
 					&& !getBot().hasBallContact()
-					&& getBall().getVel().angleToAbs(getPlacementPos().subtractNew(getBall().getPos()))
-							.orElse(0.0) > AngleMath.PI_QUART)
+					&& ballNotDirectedTowardsPlacementPos())
 			{
 				triggerEvent(EEvent.STOP_BALL);
 			} else if (isBallAtTarget())
@@ -204,29 +226,48 @@ public class PrimaryBallPlacementRole extends ABallPlacementRole
 				ballPlacedWaitTimer.reset();
 			}
 		}
-		
-		
+
+
+		private boolean ballNotDirectedTowardsPlacementPos()
+		{
+			return getBall().getVel().getLength2() > 0.1
+					&& getBall().getVel().angleToAbs(getPlacementPos().subtractNew(getBall().getPos()))
+							.orElse(0.0) > AngleMath.PI_QUART;
+		}
+
+
+		private boolean ballNotNearBotKicker()
+		{
+			return getBall().getPos().distanceTo(getBot().getBotKickerPos()) > 150;
+		}
+
+
+		private boolean ballNotNearPlacementPos()
+		{
+			return getPlacementPos().distanceTo(getBall().getPos()) > 200;
+		}
+
+
 		private boolean isNearBall(final double radius)
 		{
 			return getPos().distanceTo(getBall().getPos()) < radius;
 		}
 	}
-	
+
 	private class StopBallState extends AState
 	{
-		private final TimestampTimer ballStoppedWaitTimer = new TimestampTimer(0.2);
-		
-		
+		private final TimestampTimer ballStoppedWaitTimer = new TimestampTimer(0.3);
+
+
 		@Override
 		public void doEntryActions()
 		{
 			final ApproachAndStopBallSkill skill = new ApproachAndStopBallSkill();
 			prepareMoveCon(skill.getMoveCon());
 			setNewSkill(skill);
-			ballStoppedWaitTimer.start(1);
 		}
-		
-		
+
+
 		@Override
 		public void doUpdate()
 		{

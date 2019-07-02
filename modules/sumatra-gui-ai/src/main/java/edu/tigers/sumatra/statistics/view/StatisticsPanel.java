@@ -4,23 +4,6 @@
 
 package edu.tigers.sumatra.statistics.view;
 
-import edu.tigers.sumatra.ai.VisualizationFrame;
-import edu.tigers.sumatra.ai.metis.ballpossession.EBallPossession;
-import edu.tigers.sumatra.ai.metis.statistics.MatchStats;
-import edu.tigers.sumatra.ai.metis.statistics.MatchStats.EMatchStatistics;
-import edu.tigers.sumatra.ai.metis.statistics.StatisticData;
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.statistics.Percentage;
-import edu.tigers.sumatra.views.ISumatraView;
-import net.miginfocom.swing.MigLayout;
-
-import javax.swing.ButtonGroup;
-import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import javax.swing.SwingUtilities;
 import java.awt.Font;
 import java.awt.Panel;
 import java.awt.event.ActionEvent;
@@ -30,6 +13,23 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.swing.ButtonGroup;
+import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.SwingUtilities;
+
+import edu.tigers.sumatra.ai.VisualizationFrame;
+import edu.tigers.sumatra.ai.metis.ballpossession.EBallPossession;
+import edu.tigers.sumatra.ai.metis.statistics.EMatchStatistics;
+import edu.tigers.sumatra.ai.metis.statistics.MatchStats;
+import edu.tigers.sumatra.ai.metis.statistics.Percentage;
+import edu.tigers.sumatra.ai.metis.statistics.StatisticData;
+import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.views.ISumatraView;
+import net.miginfocom.swing.MigLayout;
 
 
 /**
@@ -146,7 +146,7 @@ public class StatisticsPanel extends JPanel implements ISumatraView
 			statistics.put(statistic.getDescriptor(), stats.getStatistics().get(statistic));
 		}
 		
-		Set<BotID> allBots = stats.getAllBots();
+		Set<Integer> allBots = stats.getAllBots();
 		statTable.setData(statistics, allBots);
 	}
 	

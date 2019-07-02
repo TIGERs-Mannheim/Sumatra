@@ -46,8 +46,6 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 	private final JButton btnSave = new JButton("Save");
 	private final JButton btnDelete = new JButton("Delete");
 	private final JButton btnPlot = new JButton("Plot");
-	private final JButton btnBallModel = new JButton("Update Ball Model");
-	private final JButton btnBallAndKickModel = new JButton("Calc Ball & Kick Model");
 	private final JButton btnCrookedKick = new JButton("Crooked Kick Plot");
 	private final JButton btnCopy = new JButton("Copy path");
 	private final JToggleButton btnRecord = new JToggleButton("Record");
@@ -59,7 +57,7 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 	
 	private List<String> selectedFiles = new ArrayList<>();
 	
-	private final List<IBallAnalyserPanelObserver> observers = new CopyOnWriteArrayList<IBallAnalyserPanelObserver>();
+	private final List<IBallAnalyserPanelObserver> observers = new CopyOnWriteArrayList<>();
 	
 	
 	/**
@@ -77,8 +75,6 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 		rightPanel.add(btnSave, "growx");
 		rightPanel.add(btnDelete, "growx");
 		rightPanel.add(btnPlot, "growx");
-		rightPanel.add(btnBallModel, "growx");
-		rightPanel.add(btnBallAndKickModel, "growx");
 		rightPanel.add(btnCrookedKick, "growx");
 		add(rightPanel, BorderLayout.EAST);
 		
@@ -100,8 +96,6 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 		btnSave.addActionListener(new SaveAction());
 		btnDelete.addActionListener(new DeleteAction());
 		btnPlot.addActionListener(new PlotAction());
-		btnBallModel.addActionListener(new BallModelAction());
-		btnBallAndKickModel.addActionListener(new BallAndKickModelAction());
 		btnCrookedKick.addActionListener(new CrookedKickAction());
 		btnCopy.addActionListener(new CopyAction());
 		btnRefresh.addActionListener(new RefreshAction());
@@ -195,8 +189,6 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 	public void setValidFileSelected(final boolean enabled)
 	{
 		btnDelete.setEnabled(enabled);
-		btnBallModel.setEnabled(enabled);
-		btnBallAndKickModel.setEnabled(enabled);
 		btnCrookedKick.setEnabled(enabled);
 		btnPlot.setEnabled(enabled);
 		btnCopy.setEnabled(enabled);
@@ -320,31 +312,6 @@ public class VisionAnalyserPanel extends JPanel implements ISumatraView
 			for (IBallAnalyserPanelObserver o : observers)
 			{
 				o.onPlot(selectedFiles);
-			}
-		}
-	}
-	
-	private class BallModelAction implements ActionListener
-	{
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			for (IBallAnalyserPanelObserver o : observers)
-			{
-				o.onCreateBallModel(selectedFiles);
-			}
-		}
-	}
-	
-	
-	private class BallAndKickModelAction implements ActionListener
-	{
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			for (IBallAnalyserPanelObserver o : observers)
-			{
-				o.onCreateBallAndKickModel(selectedFiles);
 			}
 		}
 	}

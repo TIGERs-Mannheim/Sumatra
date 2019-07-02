@@ -27,6 +27,12 @@ public abstract class ASupportBehavior extends AState
 	 * Calculates the viability [0,1], whether this behavior could be appropriate for the given bot in this situation.
 	 */
 	public abstract double calculateViability();
+
+	/**
+	 * Normally you want to return the static isActive configurable of the class
+	 * @return true if the behaviour is currently enabled
+	 */
+	public abstract boolean getIsActive();
 	
 	
 	protected ARole getRole()

@@ -10,7 +10,7 @@ import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.SumatraMath;
-import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 
@@ -91,7 +91,7 @@ public class Rectangle extends ARectangle
 	 * @param lineSegment start defines start and end point for this rectangle
 	 * @return new rectangle based on line segment
 	 */
-	public static Rectangle fromLineSegment(final ILine lineSegment)
+	public static Rectangle fromLineSegment(final ILineSegment lineSegment)
 	{
 		return fromPoints(lineSegment.getStart(), lineSegment.getEnd());
 	}

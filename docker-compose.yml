@@ -1,0 +1,29 @@
+version: '3'
+
+services:
+  simulator:
+    build: .
+    command: "--moduli sim_server --autoRef --maxSpeed --initialCommand PREPARE_KICKOFF_BLUE --waitForAis --playingTime 300 --timeout 3600"
+    volumes:
+      - ./config:/Sumatra/config
+      - ./target:/Sumatra/target
+
+  ai-yellow:
+    build: .
+    command: "--moduli sim_client --host simulator --aiYellow"
+    environment:
+      - SUMATRA_INFLUX_DB_PASSWORD=${SUMATRA_INFLUX_DB_PASSWORD}
+      - SUMATRA_INFLUX_DB_USERNAME=${SUMATRA_INFLUX_DB_USERNAME}
+    volumes:
+      - ./config:/Sumatra/config
+      - ./target:/Sumatra/target
+
+  ai-blue:
+    build: .
+    command: "--moduli sim_client --host simulator --aiBlue"
+    environment:
+      - SUMATRA_INFLUX_DB_PASSWORD=${SUMATRA_INFLUX_DB_PASSWORD}
+      - SUMATRA_INFLUX_DB_USERNAME=${SUMATRA_INFLUX_DB_USERNAME}
+    volumes:
+      - ./config:/Sumatra/config
+      - ./target:/Sumatra/target

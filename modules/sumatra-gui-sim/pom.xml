@@ -10,7 +10,7 @@
     <parent>
         <groupId>edu.tigers.sumatra</groupId>
         <artifactId>sumatra-parent</artifactId>
-        <version>6.0</version>
+        <version>2019-SNAPSHOT</version>
         <relativePath>../sumatra-parent/pom.xml</relativePath>
     </parent>
 
@@ -43,11 +43,7 @@
             <artifactId>moduli-vision-simulation</artifactId>
         </dependency>
         <dependency>
-            <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>moduli-vision</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>edu.tigers.moduli</groupId>
+            <groupId>com.github.TIGERs-Mannheim</groupId>
             <artifactId>moduli</artifactId>
         </dependency>
         <dependency>
@@ -57,6 +53,18 @@
         <dependency>
             <groupId>com.googlecode.json-simple</groupId>
             <artifactId>json-simple</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>common-math</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-geometry</artifactId>
         </dependency>
     </dependencies>
 </project>

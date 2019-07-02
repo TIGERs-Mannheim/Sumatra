@@ -40,13 +40,13 @@ public class EpicPenaltyShooterRole extends ARole
 	@Configurable(comment = "distance to penArea mark on preparation", defValue = "200.0")
 	private static double preDistance = 400;
 	
-	@Configurable(comment = "disables the shooter skill completely and uses KickSkill", defValue = "false")
+	@Configurable(comment = "If true: disable the analytic of the keepers movement", defValue = "false")
 	private static boolean ignoreKeeperMovement = false;
 	
 	@Configurable(defValue = "true")
 	private static boolean epic = true;
 	
-	private final Random random = new Random(0);
+	private Random rnd = null;
 	private IVector2 keeperInitialPos;
 	private boolean keeperHasMoved = false;
 	
@@ -73,6 +73,14 @@ public class EpicPenaltyShooterRole extends ARole
 		addTransition(testLeftState, EEvent.TESTEDLEFT, waitLeftState);
 		addTransition(waitLeftState, EEvent.WAITEDLEFT, shootState);
 		addTransition(shootState, EEvent.SHOTCENTER, noKeeperState);
+	}
+	
+	
+	@Override
+	protected void beforeFirstUpdate()
+	{
+		super.beforeFirstUpdate();
+		rnd = new Random(getWFrame().getTimestamp());
 	}
 	
 	// --------------------------------------------------------------------------
@@ -107,11 +115,6 @@ public class EpicPenaltyShooterRole extends ARole
 			skill.getMoveCon().setBallObstacle(true);
 			skill.getMoveCon().updateDestination(firstDestination);
 			setNewSkill(skill);
-			ITrackedBot bot = getAiFrame().getWorldFrame().getFoeBot(getAiFrame().getKeeperFoeId());
-			if (bot != null)
-			{
-				keeperInitialPos = bot.getPos();
-			}
 		}
 		
 		
@@ -122,7 +125,7 @@ public class EpicPenaltyShooterRole extends ARole
 					&& (getAiFrame().getRefereeMsg().getCommand() == Command.NORMAL_START)
 					&& (VectorMath.distancePP(firstDestination, getPos()) < 140))
 			{
-				if (keeperInitialPos != null)
+				if (isKeeperInGoal())
 				{
 					triggerEvent(EEvent.PREPARED);
 				} else
@@ -130,6 +133,30 @@ public class EpicPenaltyShooterRole extends ARole
 					triggerEvent(EEvent.SHOTCENTER);
 				}
 			}
+		}
+		
+		
+		private boolean isKeeperInGoal()
+		{
+			ITrackedBot bot = getAiFrame().getWorldFrame().getFoeBot(getAiFrame().getKeeperFoeId());
+			if (bot != null)
+			{
+				keeperInitialPos = bot.getPos();
+			} else
+			{
+				return false;
+			}
+			
+			if (keeperInitialPos == null)
+			{
+				return false;
+			}
+			
+			boolean inPenArea = Geometry.getPenaltyAreaTheir().isPointInShape(keeperInitialPos);
+			boolean inGoal = Geometry.getGoalTheir().isPointInShape(keeperInitialPos);
+			
+			return inGoal || inPenArea;
+			
 		}
 		
 		
@@ -183,7 +210,7 @@ public class EpicPenaltyShooterRole extends ARole
 		@Override
 		public void doEntryActions()
 		{
-			time = getWFrame().getTimestamp() + ((500 + random.nextInt(1000)) * 1_000_000L);
+			time = getWFrame().getTimestamp() + ((500 + rnd.nextInt(1000)) * 1_000_000L);
 		}
 		
 		
@@ -247,7 +274,7 @@ public class EpicPenaltyShooterRole extends ARole
 		@Override
 		public void doEntryActions()
 		{
-			time = getWFrame().getTimestamp() + ((500 + random.nextInt(1000)) * 1_000_000L);
+			time = getWFrame().getTimestamp() + ((500 + rnd.nextInt(1000)) * 1_000_000L);
 		}
 		
 		
@@ -292,7 +319,7 @@ public class EpicPenaltyShooterRole extends ARole
 		@Override
 		public void doUpdate()
 		{
-			if (backupShooter != null && (keeperHasMoved || ignoreKeeperMovement))
+			if ((backupShooter != null) && (keeperHasMoved || ignoreKeeperMovement))
 			{
 				ITrackedBot keeperFoe = getAiFrame().getWorldFrame().getBot(getAiFrame().getKeeperFoeId());
 				if (keeperFoe != null)
@@ -302,7 +329,7 @@ public class EpicPenaltyShooterRole extends ARole
 					if (keeperPosYCoordinate < 0)
 					{
 						backupShooter.setShootDirection(PenaltyShootSkill.ERotateDirection.CW);
-					} else if (keeperPosYCoordinate > 0)
+					} else
 					{
 						backupShooter.setShootDirection(PenaltyShootSkill.ERotateDirection.CCW);
 					}

@@ -25,21 +25,15 @@ import net.miginfocom.swing.MigLayout;
 
 /**
  * Slider for choosing log level
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class SlidePanel extends JPanel
 {
-	// class variables
-	private static final long serialVersionUID = 1L;
-	
-	private List<ISlidePanelObserver> observers = new CopyOnWriteArrayList<>();
-	
-	// object variables
-	private JSlider slider = null;
-	
 	private static final List<Level> LOG_LEVELS = new ArrayList<>();
-	
+
+	private final List<ISlidePanelObserver> observers = new CopyOnWriteArrayList<>();
+
+	private JSlider slider;
+
 	static
 	{
 		LOG_LEVELS.add(Level.FATAL);
@@ -49,19 +43,15 @@ public class SlidePanel extends JPanel
 		LOG_LEVELS.add(Level.DEBUG);
 		LOG_LEVELS.add(Level.TRACE);
 	}
-	
-	
-	/**
-	 * @param initialLevel
-	 */
-	// Dictionary needed by JSlider
-	@SuppressWarnings("squid:S1149")
+
+
+	@SuppressWarnings("squid:S1149") // Dictionary needed by JSlider
 	public SlidePanel(final Priority initialLevel)
 	{
 		final Dictionary<Integer, JLabel> levelTable = new Hashtable<>();
-		
+
 		setLayout(new MigLayout("fill, inset 0"));
-		
+
 		int initialLevelId = -1;
 		for (int i = 0; i < LOG_LEVELS.size(); i++)
 		{
@@ -75,35 +65,23 @@ public class SlidePanel extends JPanel
 		{
 			throw new IllegalStateException("Could not find default log level");
 		}
-		
+
 		slider = new JSlider(SwingConstants.HORIZONTAL, 0, LOG_LEVELS.size() - 1, initialLevelId);
 		slider.setSnapToTicks(true);
 		slider.setMajorTickSpacing(1);
 		slider.setLabelTable(levelTable);
 		slider.addChangeListener(new LevelChanged());
 		slider.setPreferredSize(new Dimension(130, 20));
-		
+
 		add(slider);
 	}
-	
-	
-	/**
-	 * @param o
-	 */
+
+
 	public void addObserver(final ISlidePanelObserver o)
 	{
 		observers.add(o);
 	}
-	
-	
-	/**
-	 * @param o
-	 */
-	public void removeObserver(final ISlidePanelObserver o)
-	{
-		observers.remove(o);
-	}
-	
+
 	protected class LevelChanged implements ChangeListener
 	{
 		@Override

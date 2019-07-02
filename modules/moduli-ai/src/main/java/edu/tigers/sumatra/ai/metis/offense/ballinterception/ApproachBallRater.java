@@ -21,45 +21,37 @@ import edu.tigers.sumatra.wp.data.WorldFrame;
 
 public class ApproachBallRater
 {
-	private final List<IDrawableShape> shapes = new ArrayList<>();
 	private final Hysteresis ballSpeedHysteresis = new Hysteresis(0.7, 1.0);
 	private final BallInterceptionRater ballInterceptionRater = new BallInterceptionRater();
 	
 	private boolean debug = false;
 	
 	
-	public BallInterception rate(final WorldFrame worldFrame, final BotID botID, final IVector2 target)
+	public BallInterception rate(final WorldFrame worldFrame, final BotID botID, final IVector2 target,
+			final BallInterception prevBallInterception)
 	{
 		ITrackedBot bot = worldFrame.getBot(botID);
-		shapes.clear();
 		ballSpeedHysteresis.update(worldFrame.getBall().getVel().getLength2());
 		
 		if (ballStoppedMoving())
 		{
+			List<IDrawableShape> shapes = new ArrayList<>();
 			BangBangTrajectory2D trajectory = TrajectoryGenerator.generatePositionTrajectory(bot,
 					worldFrame.getBall().getPos());
 			if (debug)
 			{
 				shapes.add(new DrawableTrajectoryPath(trajectory, Color.lightGray));
 			}
-			return new BallInterception(botID, true, trajectory.getTotalTime(), -1);
+			return new BallInterception(botID, true, trajectory.getTotalTime(), -1, shapes, null);
 		}
 		
-		BallInterception ballInterception = ballInterceptionRater.rate(worldFrame, botID, target);
-		shapes.addAll(ballInterceptionRater.getShapes());
-		return ballInterception;
+		return ballInterceptionRater.rate(worldFrame, botID, target, prevBallInterception);
 	}
 	
 	
 	private boolean ballStoppedMoving()
 	{
 		return ballSpeedHysteresis.isLower();
-	}
-	
-	
-	public List<IDrawableShape> getShapes()
-	{
-		return shapes;
 	}
 	
 	

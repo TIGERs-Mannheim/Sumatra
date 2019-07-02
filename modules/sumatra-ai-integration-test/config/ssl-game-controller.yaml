@@ -1,0 +1,55 @@
+timeAcquisitionMode: ci
+network:
+  publish-address: 224.5.23.1:12003
+  vision-address: 224.5.23.2:12006
+server:
+  auto-ref:
+    address: :12007
+    trusted-keys-dir: config/trusted_keys/auto_ref
+  team:
+    address: :12008
+    trusted-keys-dir: config/trusted_keys/team
+  ci:
+    address: :12009
+game:
+  yellow-card-duration: 2m
+  multiple-card-step: 3
+  multiple-foul-step: 3
+  multiple-placement-failures: 5
+  auto-ref-proposal-timeout: 5s
+  default-division: DivA
+  normal:
+    half-duration: 5m
+    half-time-duration: 5m
+    timeout-duration: 5m
+    timeouts: 4
+    break-after: 5m
+  overtime:
+    half-duration: 2m30s
+    half-time-duration: 2m
+    timeout-duration: 5m
+    timeouts: 2
+    break-after: 2m
+  team-choice-timeout: 200ms
+  default-geometry:
+    DivA:
+      field-length: 12.0
+      field-width: 9.0
+      defense-area-depth: 1.2
+      defense-area-width: 2.4
+      placement-offset-touch-line: 0.2
+      placement-offset-goal-line: 0.2
+      placement-offset-goal-line-goal-kick: 1.0
+      placement-offset-defense-area: 1.0
+    DivB:
+      field-length: 9.0
+      field-width: 6.0
+      defense-area-depth: 1.0
+      defense-area-width: 2.0
+      placement-offset-touch-line: 0.2
+      placement-offset-goal-line: 0.2
+      placement-offset-goal-line-goal-kick: 1.0
+      placement-offset-defense-area: 1.0
+  max-bots:
+    DivA: 8
+    DivB: 6

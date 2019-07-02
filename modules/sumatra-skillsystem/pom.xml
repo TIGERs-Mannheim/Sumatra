@@ -10,7 +10,7 @@
     <parent>
         <groupId>edu.tigers.sumatra</groupId>
         <artifactId>sumatra-parent</artifactId>
-        <version>6.0</version>
+        <version>2019-SNAPSHOT</version>
         <relativePath>../sumatra-parent/pom.xml</relativePath>
     </parent>
 
@@ -33,6 +33,11 @@
 
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-botmanager-tigers</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
             <artifactId>moduli-wp</artifactId>
         </dependency>
 
@@ -44,10 +49,11 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>com.google.code.matlabcontrol</groupId>
+            <groupId>com.github.TIGERs-Mannheim.matlabcontrol</groupId>
             <artifactId>matlabcontrol</artifactId>
         </dependency>
 
@@ -67,7 +73,7 @@
         </dependency>
 
         <dependency>
-            <groupId>edu.tigers.moduli</groupId>
+            <groupId>com.github.TIGERs-Mannheim</groupId>
             <artifactId>moduli</artifactId>
         </dependency>
 
@@ -125,6 +131,11 @@
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
             <artifactId>moduli-vision</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
         </dependency>
 
     </dependencies>

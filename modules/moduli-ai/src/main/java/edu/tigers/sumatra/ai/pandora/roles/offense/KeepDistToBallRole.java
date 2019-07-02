@@ -98,7 +98,7 @@ public class KeepDistToBallRole extends ARole
 		
 		private boolean isMoveTargetValid(final IVector2 moveTarget, final WorldFrame wFrame, final BotID key)
 		{
-			double marginPenalty = Geometry.getPenaltyAreaMargin() + 50;
+			double marginPenalty = Geometry.getBotRadius() + Geometry.getPenaltyAreaMargin();
 			if (!Geometry.getField().isPointInShape(moveTarget))
 			{
 				return false;

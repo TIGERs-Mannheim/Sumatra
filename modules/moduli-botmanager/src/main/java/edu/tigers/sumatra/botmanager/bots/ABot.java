@@ -4,21 +4,19 @@
 
 package edu.tigers.sumatra.botmanager.bots;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
-
-import com.github.g3force.configurable.IConfigObserver;
 
 import edu.tigers.sumatra.bot.BotState;
 import edu.tigers.sumatra.bot.EBotType;
 import edu.tigers.sumatra.bot.EFeature;
 import edu.tigers.sumatra.bot.EFeatureState;
 import edu.tigers.sumatra.bot.IBot;
+import edu.tigers.sumatra.bot.params.BotParams;
+import edu.tigers.sumatra.bot.params.IBotParams;
 import edu.tigers.sumatra.botmanager.basestation.IBaseStation;
-import edu.tigers.sumatra.botmanager.commands.ACommand;
-import edu.tigers.sumatra.botmanager.commands.MatchCommand;
+import edu.tigers.sumatra.botmanager.botskills.data.MatchCommand;
+import edu.tigers.sumatra.botparams.EBotParamLabel;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector3;
@@ -27,37 +25,23 @@ import edu.tigers.sumatra.trajectory.TrajectoryWithTime;
 
 /**
  * Bot base class.
- * 
- * @author AndreR
  */
-public abstract class ABot implements IBot, IConfigObserver
+public abstract class ABot implements IBot
 {
-	private static final String[] BOT_NAMES = { "Gandalf", "Alice", "Tigger",
-			"Poller",
-			"Q", "Eichbaum",
-			"This Bot",
-			"Black Betty",
-			"Trinity", "Neo",
-			"Bob",
-			"Yoda" };
+	private static final double KICKER_LEVEL_MAX = 200;
 	
 	private final BotID botId;
 	private final EBotType type;
-	private final transient IBaseStation baseStation;
+	private final IBaseStation baseStation;
 	private final Map<EFeature, EFeatureState> botFeatures;
-	private final transient MatchCommand matchCtrl = new MatchCommand();
-	private final transient List<IABotObserver> observers = new CopyOnWriteArrayList<>();
-	private transient TrajectoryWithTime<IVector3> curTrajectory = null;
-	private transient double kickerLevelMax = 200;
-	private transient String controlledBy = "";
-	private transient boolean hideFromRcm = false;
+	private final MatchCommand matchCtrl = new MatchCommand();
+	
+	private IBotParams botParams = new BotParams();
+	private TrajectoryWithTime<IVector3> curTrajectory = null;
+	private String controlledBy = "";
+	private boolean hideFromRcm = false;
 	
 	
-	/**
-	 * @param type
-	 * @param id
-	 * @param baseStation
-	 */
 	public ABot(final EBotType type, final BotID id, final IBaseStation baseStation)
 	{
 		botId = id;
@@ -67,50 +51,7 @@ public abstract class ABot implements IBot, IConfigObserver
 	}
 	
 	
-	protected ABot(final ABot aBot, final EBotType type)
-	{
-		botId = aBot.botId;
-		this.type = type;
-		botFeatures = aBot.botFeatures;
-		baseStation = aBot.baseStation;
-		kickerLevelMax = aBot.kickerLevelMax;
-	}
-	
-	
-	protected ABot()
-	{
-		botId = null;
-		type = null;
-		botFeatures = null;
-		baseStation = null;
-	}
-	
-	
-	/**
-	 * @param observer
-	 */
-	public void addObserver(final IABotObserver observer)
-	{
-		observers.add(observer);
-	}
-	
-	
-	/**
-	 * @param observer
-	 */
-	public void removeObserver(final IABotObserver observer)
-	{
-		observers.remove(observer);
-	}
-	
-	
-	private void notifyIncomingBotCommand(final ACommand cmd)
-	{
-		for (IABotObserver observer : observers)
-		{
-			observer.onIncommingBotCommand(cmd);
-		}
-	}
+	public abstract EBotParamLabel getBotParamLabel();
 	
 	
 	private Map<EFeature, EFeatureState> getDefaultFeatureStates()
@@ -127,46 +68,18 @@ public abstract class ABot implements IBot, IConfigObserver
 	
 	
 	/**
-	 * @param cmd
-	 */
-	public void execute(final ACommand cmd)
-	{
-	}
-	
-	
-	/**
 	 * This is called when the match command should be sent
 	 */
 	public void sendMatchCommand()
 	{
+		getBaseStation().acceptMatchCommand(getBotId(), getMatchCtrl());
 	}
-	
-	
-	/**
-	 * Start bot
-	 */
-	public abstract void start();
-	
-	
-	/**
-	 * Stop bot
-	 */
-	public abstract void stop();
 	
 	
 	@Override
 	public double getKickerLevelMax()
 	{
-		return kickerLevelMax;
-	}
-	
-	
-	/**
-	 * @param cmd
-	 */
-	public void onIncomingBotCommand(final ACommand cmd)
-	{
-		notifyIncomingBotCommand(cmd);
+		return KICKER_LEVEL_MAX;
 	}
 	
 	
@@ -260,17 +173,10 @@ public abstract class ABot implements IBot, IConfigObserver
 	}
 	
 	
-	@Override
-	public String getName()
-	{
-		return BOT_NAMES[getBotId().getNumber()];
-	}
-	
-	
 	/**
 	 * @return the baseStation
 	 */
-	public final IBaseStation getBaseStation()
+	public IBaseStation getBaseStation()
 	{
 		return baseStation;
 	}
@@ -299,15 +205,15 @@ public abstract class ABot implements IBot, IConfigObserver
 	}
 	
 	
-	/** Common Bot Observer */
-	@FunctionalInterface
-	public interface IABotObserver
+	@Override
+	public final IBotParams getBotParams()
 	{
-		/**
-		 * Called when a new command from the robot arrives.
-		 * 
-		 * @param cmd
-		 */
-		void onIncommingBotCommand(ACommand cmd);
+		return botParams;
+	}
+	
+	
+	public void setBotParams(final IBotParams botParams)
+	{
+		this.botParams = botParams;
 	}
 }

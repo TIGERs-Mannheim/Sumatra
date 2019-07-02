@@ -80,7 +80,7 @@ public class SecondaryBallPlacementRole extends ABallPlacementRole
 		
 		private boolean isPassToPrimary()
 		{
-			return isSecondaryRoleNeeded() && isBallLying();
+			return isSecondaryRoleNeeded() && ballIsLying();
 		}
 	}
 	
@@ -109,11 +109,12 @@ public class SecondaryBallPlacementRole extends ABallPlacementRole
 		{
 			DynamicPosition target = new DynamicPosition(
 					Geometry.getField().nearestPointInside(getPlacementPos(), -Geometry.getBotRadius()));
-			double distance = target.distanceTo(getBall().getPos());
+			double distance = target.getPos().distanceTo(getBall().getPos());
 			double kickSpeed = getBall().getStraightConsultant().getInitVelForDist(distance, passEndVel);
 			skill = new SingleTouchKickSkill(target, KickParams.straight(kickSpeed));
 			skill.setReadyForKick(false);
 			skill.getMoveCon().setBotsObstacle(true);
+			skill.getMoveCon().setGoalPostObstacle(true);
 			prepareMoveCon(skill.getMoveCon());
 			setNewSkill(skill);
 		}
@@ -125,10 +126,10 @@ public class SecondaryBallPlacementRole extends ABallPlacementRole
 			if (!isSecondaryRoleNeeded())
 			{
 				triggerEvent(EEvent.CLEAR);
-			} else if (isBallTooCloseToFieldBorder(50) && isBallLying())
+			} else if (pullIsRequired() && ballIsLying())
 			{
 				triggerEvent(EEvent.PULL);
-			} else if (!isBallLying() || isBallInsidePushRadius())
+			} else if (!ballIsLying() || isBallInsidePushRadius())
 			{
 				triggerEvent(EEvent.CLEAR);
 			}

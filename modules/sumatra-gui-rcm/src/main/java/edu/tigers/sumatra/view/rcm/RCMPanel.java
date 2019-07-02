@@ -10,6 +10,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -19,9 +20,6 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 
-import org.apache.log4j.Logger;
-
-import edu.tigers.sumatra.natives.OsDetector;
 import edu.tigers.sumatra.rcm.IRCMObserver;
 import edu.tigers.sumatra.views.ISumatraView;
 
@@ -33,25 +31,21 @@ import edu.tigers.sumatra.views.ISumatraView;
  */
 public final class RCMPanel extends JPanel implements ISumatraView
 {
-	private static final Logger					log						= Logger.getLogger(RCMPanel.class
-																								.getName());
-	
-	private static final long						serialVersionUID		= 7811945315539136091L;
+	private static final long serialVersionUID = 7811945315539136091L;
 	
 	// --- GUI components ---
-	private final JMenuBar							menuBar;
-	private final JMenuItem							iStartStop;
-	private final JMenuItem							iStartMessaging;
+	private final JMenuBar menuBar;
+	private final JMenuItem iStartStop;
+	private final JMenuItem iStartMessaging;
 	
-	private final JTabbedPane						controllerTabbedPane;
+	private final JTabbedPane controllerTabbedPane;
 	
 	// --- activity of startButton (start or stop pressed)
-	private boolean									startButton				= true;
-	private boolean									startMQTTButton		= true;
-	private boolean									startMessagingButton	= true;
+	private boolean startButton = true;
+	private boolean startMessagingButton = true;
 	
-	private final List<IMessagingGUIObserver>	observersMessaging	= new CopyOnWriteArrayList<IMessagingGUIObserver>();
-	private final List<IRCMObserver>				observers				= new CopyOnWriteArrayList<IRCMObserver>();
+	private final List<IMessagingGUIObserver> observersMessaging = new CopyOnWriteArrayList<>();
+	private final List<IRCMObserver> observers = new CopyOnWriteArrayList<>();
 	
 	
 	/**
@@ -74,15 +68,13 @@ public final class RCMPanel extends JPanel implements ISumatraView
 		JMenuItem iRefreshRcmKeep = new JMenuItem("Refresh+Keep connections");
 		JMenuItem iReloadControllers = new JMenuItem("Reload");
 		JMenuItem iReloadControllersKeep = new JMenuItem("Reload+Keep connections");
-		JMenuItem iStartBroker = new JMenuItem("Start MQTT broker (Windows only)");
-		iStartMessaging = new JMenuItem("Start messaging (BT+MQTT)");
+		iStartMessaging = new JMenuItem("Start messaging (BT)");
 		mRcm.add(iStartStop);
 		mRcm.add(iRefreshRcm);
 		mRcm.add(iRefreshRcmKeep);
 		mController.add(iReloadControllers);
 		mController.add(iReloadControllersKeep);
 		mMessaging.add(iStartMessaging);
-		mMessaging.add(iStartBroker);
 		
 		iStartStop.addActionListener(new StartStopAction());
 		iRefreshRcm.addActionListener(new RestartAction());
@@ -90,7 +82,6 @@ public final class RCMPanel extends JPanel implements ISumatraView
 		iReloadControllers.addActionListener(new UpdateControllerAction());
 		iReloadControllersKeep.addActionListener(new UpdateControllerKeepAction());
 		iStartMessaging.addActionListener(new StartStopMessagingAction());
-		iStartBroker.addActionListener(new StartStopMQTTAction());
 		
 		// --- one Tab for each Controller - set below ---
 		controllerTabbedPane = new JTabbedPane();
@@ -107,25 +98,7 @@ public final class RCMPanel extends JPanel implements ISumatraView
 	 */
 	public void addObserver(final IRCMObserver observer)
 	{
-			observers.add(observer);
-	}
-	
-	
-	/**
-	 * @param observer
-	 */
-	public void removeObserver(final IRCMObserver observer)
-	{
-			observers.remove(observer);
-	}
-	
-	
-	private void notifyStartStop(final boolean activeState)
-	{
-		for (IRCMObserver observer : observers)
-		{
-			observer.onStartStopButtonPressed(activeState);
-		}
+		observers.add(observer);
 	}
 	
 	
@@ -142,6 +115,7 @@ public final class RCMPanel extends JPanel implements ISumatraView
 			@Override
 			public void componentShown(final ComponentEvent e)
 			{
+				// nothing to do
 			}
 			
 			
@@ -155,12 +129,14 @@ public final class RCMPanel extends JPanel implements ISumatraView
 			@Override
 			public void componentMoved(final ComponentEvent e)
 			{
+				// nothing to do
 			}
 			
 			
 			@Override
 			public void componentHidden(final ComponentEvent e)
 			{
+				// nothing to do
 			}
 		});
 	}
@@ -219,52 +195,35 @@ public final class RCMPanel extends JPanel implements ISumatraView
 	@Override
 	public List<JMenu> getCustomMenus()
 	{
-		return null;
+		return Collections.emptyList();
 	}
 	
 	
 	@Override
 	public void onShown()
 	{
+		// nothing to do
 	}
 	
 	
 	@Override
 	public void onHidden()
 	{
+		// nothing to do
 	}
 	
 	
 	@Override
 	public void onFocused()
 	{
+		// nothing to do
 	}
 	
 	
 	@Override
 	public void onFocusLost()
 	{
-	}
-	
-	
-	/**
-	 * @param b
-	 */
-	private void notifyMessaging(final boolean b)
-	{
-			if (b)
-			{
-				for (IMessagingGUIObserver o : observersMessaging)
-				{
-					o.onConnect();
-				}
-			} else
-			{
-				for (IMessagingGUIObserver o : observersMessaging)
-				{
-					o.onDisconnect();
-				}
-			}
+		// nothing to do
 	}
 	
 	
@@ -273,17 +232,9 @@ public final class RCMPanel extends JPanel implements ISumatraView
 	 */
 	public void addMessgingGUIObserver(final IMessagingGUIObserver o)
 	{
-			observersMessaging.add(o);
+		observersMessaging.add(o);
 	}
 	
-	
-	/**
-	 * @param o
-	 */
-	public void removeMessgingGUIObserver(final IMessagingGUIObserver o)
-	{
-			observersMessaging.remove(o);
-	}
 	
 	/**
 	 * Restart controllers (send stop and start)
@@ -330,6 +281,15 @@ public final class RCMPanel extends JPanel implements ISumatraView
 		{
 			notifyStartStop(startButton);
 		}
+		
+		
+		private void notifyStartStop(final boolean activeState)
+		{
+			for (IRCMObserver observer : observers)
+			{
+				observer.onStartStopButtonPressed(activeState);
+			}
+		}
 	}
 	
 	/**
@@ -355,54 +315,26 @@ public final class RCMPanel extends JPanel implements ISumatraView
 				notifyMessaging(false);
 			}
 		}
-	}
-	
-	
-	/**
-	 * Starts MQTT Broker on Windows
-	 * 
-	 * @author Daniel Andres <andreslopez.daniel@gmail.com>
-	 */
-	private class StartStopMQTTAction implements ActionListener
-	{
-		private Process	p;
 		
 		
-		@Override
-		public void actionPerformed(final ActionEvent e)
+		private void notifyMessaging(final boolean b)
 		{
-			// --- start button shown ---
-			if (startMQTTButton)
+			if (b)
 			{
-				if (OsDetector.isWindows())
+				for (IMessagingGUIObserver o : observersMessaging)
 				{
-					try
-					{
-						p = Runtime.getRuntime().exec("../SumatraMessaging/mosquitto/mosquitto.exe");
-						log.info("MQTT broker started");
-					} catch (Exception err)
-					{
-						log.warn(
-								"Could not start MQTT broker. Note: You need to checkout SumatraMessaging to the same directory as Sumatra",
-								err);
-					}
-				} else
-				{
-					log.debug("MQTT broker is only on Windows");
-					return;
+					o.onConnect();
 				}
-				startMQTTButton = false;
 			} else
 			{
-				if (p != null)
+				for (IMessagingGUIObserver o : observersMessaging)
 				{
-					p.destroy();
-					log.info("MQTT broker stopped");
+					o.onDisconnect();
 				}
-				startMQTTButton = true;
 			}
 		}
 	}
+	
 	
 	private class UpdateControllerAction implements ActionListener
 	{

@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 04.06.2015
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.trajectory;
 
@@ -45,7 +40,7 @@ public class BangBangTrajectory1DTest
 	@Test
 	public void testCaseA()
 	{
-		BangBangTrajectory1D traj = new BangBangTrajectory1D(0, 0.5, 0.5, 2, 3);
+		BangBangTrajectory1D traj = new BangBangTrajectory1D(0f, 0.5f, 0.5f, 2, 3);
 		
 		checkTimeOrder(traj);
 		
@@ -71,7 +66,7 @@ public class BangBangTrajectory1DTest
 	@Test
 	public void testCaseB()
 	{
-		BangBangTrajectory1D traj = new BangBangTrajectory1D(0, 2.0, 0.5, 2, 3);
+		BangBangTrajectory1D traj = new BangBangTrajectory1D(0f, 2.0f, 0.5f, 2, 3);
 		
 		checkTimeOrder(traj);
 		
@@ -98,7 +93,7 @@ public class BangBangTrajectory1DTest
 	@Test
 	public void testCaseC()
 	{
-		BangBangTrajectory1D traj = new BangBangTrajectory1D(0, 2.0, 2.5, 2, 3);
+		BangBangTrajectory1D traj = new BangBangTrajectory1D(0f, 2.0f, 2.5f, 2, 3);
 		
 		checkTimeOrder(traj);
 		
@@ -122,7 +117,7 @@ public class BangBangTrajectory1DTest
 	@Test
 	public void testCaseD()
 	{
-		BangBangTrajectory1D traj = new BangBangTrajectory1D(0, 0.5, -1.0f, 2, 3);
+		BangBangTrajectory1D traj = new BangBangTrajectory1D(0f, 0.5f, -1.0f, 2, 3);
 		
 		checkTimeOrder(traj);
 		
@@ -148,7 +143,7 @@ public class BangBangTrajectory1DTest
 	@Test
 	public void testCaseE()
 	{
-		BangBangTrajectory1D traj = new BangBangTrajectory1D(0, 2.0, -1.0f, 2, 3);
+		BangBangTrajectory1D traj = new BangBangTrajectory1D(0f, 2.0f, -1.0f, 2, 3);
 		
 		checkTimeOrder(traj);
 		
@@ -172,7 +167,7 @@ public class BangBangTrajectory1DTest
 	@Test
 	public void testCaseF()
 	{
-		BangBangTrajectory1D traj = new BangBangTrajectory1D(0, 0.5, 3.0, 2, 3);
+		BangBangTrajectory1D traj = new BangBangTrajectory1D(0f, 0.5f, 3.0f, 2, 3);
 		
 		checkTimeOrder(traj);
 		
@@ -195,7 +190,7 @@ public class BangBangTrajectory1DTest
 	@Test
 	public void testCaseG()
 	{
-		BangBangTrajectory1D traj = new BangBangTrajectory1D(0, 0.5, 5.0, 2, 3);
+		BangBangTrajectory1D traj = new BangBangTrajectory1D(0f, 0.5f, 5.0f, 2, 3);
 		
 		checkTimeOrder(traj);
 		

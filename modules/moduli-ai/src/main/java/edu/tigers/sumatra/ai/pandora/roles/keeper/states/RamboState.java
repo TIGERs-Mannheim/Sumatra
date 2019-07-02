@@ -11,6 +11,7 @@ import edu.tigers.sumatra.geometry.Goal;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
+import edu.tigers.sumatra.skillsystem.skills.CriticalKeeperSkill;
 
 
 /**
@@ -39,7 +40,7 @@ public class RamboState extends AKeeperState
 	public void doEntryActions()
 	{
 		posSkill = AMoveToSkill.createMoveToSkill();
-		posSkill.getMoveCon().getMoveConstraints().setAccMax(KeeperRole.getKeeperAcc());
+		posSkill.getMoveCon().getMoveConstraints().setAccMax(CriticalKeeperSkill.getKeeperAcc());
 		posSkill.getMoveCon().setPenaltyAreaAllowedOur(true);
 		posSkill.getMoveCon().setDestinationOutsideFieldAllowed(true);
 		posSkill.getMoveCon().setBotsObstacle(false);

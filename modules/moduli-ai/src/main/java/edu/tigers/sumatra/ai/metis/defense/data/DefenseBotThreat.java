@@ -4,11 +4,11 @@
 
 package edu.tigers.sumatra.ai.metis.defense.data;
 
-import edu.tigers.sumatra.ai.metis.defense.DefenseConstants;
-import edu.tigers.sumatra.ai.metis.defense.DefenseMath;
+import java.util.Optional;
+
+import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
@@ -18,72 +18,94 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class DefenseBotThreat implements IDefenseThreat
 {
-	private ITrackedBot bot = null;
+	private final ITrackedBot bot;
+
+	private final ILineSegment threatLine;
+	private final ILineSegment protectionLine;
+
 	private final double shootingAngle;
-	private final double tGoal;
-	
-	
-	/**
-	 * @param bot
-	 * @param shootingAngle
-	 * @param tGoal
-	 */
-	public DefenseBotThreat(final ITrackedBot bot, final double shootingAngle,
-			final double tGoal)
+
+
+	public DefenseBotThreat(
+			final ITrackedBot bot,
+			final ILineSegment threatLine,
+			final ILineSegment protectionLine,
+			final double shootingAngle)
 	{
-		assert bot != null;
-		
 		this.bot = bot;
+		this.threatLine = threatLine;
+		this.protectionLine = protectionLine;
 		this.shootingAngle = shootingAngle;
-		this.tGoal = tGoal;
 	}
-	
+
+
+	@Override
+	public IVector2 getPos()
+	{
+		return threatLine.getStart();
+	}
+
 
 	public BotID getBotID()
 	{
 		return bot.getBotId();
 	}
-	
-	
+
+
 	public double getShootingAngle()
 	{
 		return shootingAngle;
 	}
-	
-	
-	public double getTGoal()
-	{
-		return tGoal;
-	}
-	
-	
+
+
 	@Override
 	public ILineSegment getThreatLine()
 	{
-		IVector2 pointInGoal = DefenseMath.getBisectionGoal(bot.getPosByTime(DefenseConstants
-				.getLookaheadBotThreats(bot.getVel().getLength())));
+		return threatLine;
+	}
 
-		return Lines.segmentFromPoints(bot.getPos(), pointInGoal);
-	}
-	
-	
+
 	@Override
-	public double getScore()
+	public Optional<ILineSegment> getProtectionLine()
 	{
-		return shootingAngle;
+		return Optional.ofNullable(protectionLine);
 	}
-	
-	
+
+
 	@Override
 	public IVector2 getVel()
 	{
 		return bot.getVel();
 	}
-	
-	
+
+
 	@Override
-	public boolean isBot()
+	public AObjectID getObjectId()
 	{
-		return true;
+		return getBotID();
+	}
+
+
+	@Override
+	public EDefenseThreatType getType()
+	{
+		return EDefenseThreatType.BOT_TO_GOAL;
+	}
+
+
+	@Override
+	public boolean sameAs(final IDefenseThreat o)
+	{
+		if (this == o)
+		{
+			return true;
+		}
+
+		if (o == null || getClass() != o.getClass())
+		{
+			return false;
+		}
+
+		return getObjectId() == o.getObjectId();
 	}
 }

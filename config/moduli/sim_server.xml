@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<centralSoftware>
+
+    <!--
+    This configuration is used for a standalone Sumatra simulator without any AIs.
+    -->
+
+    <globalConfiguration>
+        <environment>SUMATRA</environment>
+        <simulation>true</simulation>
+    </globalConfiguration>
+
+    <!--
+        <module id="edu.tigers.sumatra.cam.ACam">
+            <implementation>edu.tigers.sumatra.cam.SSLVisionCam</implementation>
+        </module>
+    -->
+    <!--
+        <module id="edu.tigers.sumatra.geometry.GeometryUpdater">
+            <dependency>edu.tigers.sumatra.cam.ACam</dependency>
+        </module>
+    -->
+
+    <module id="edu.tigers.sumatra.vision.AVisionFilter">
+        <implementation>edu.tigers.sumatra.sim.SumatraSimulator</implementation>
+
+        <dependency>edu.tigers.sumatra.referee.AReferee</dependency>
+        <!--<dependency>edu.tigers.sumatra.cam.ACam</dependency>-->
+    </module>
+
+
+    <module id="edu.tigers.sumatra.wp.AWorldPredictor">
+        <implementation>edu.tigers.sumatra.wp.WorldInfoCollector</implementation>
+
+        <dependency>edu.tigers.sumatra.referee.AReferee</dependency>
+        <dependency>edu.tigers.sumatra.vision.AVisionFilter</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.referee.AReferee">
+        <implementation>edu.tigers.sumatra.referee.Referee</implementation>
+
+        <properties>
+            <source>CI</source>
+            <port>11009</port>
+            <gameController>true</gameController>
+        </properties>
+    </module>
+
+
+    <module id="edu.tigers.autoreferee.module.AutoRefModule">
+        <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
+    </module>
+</centralSoftware>

@@ -4,25 +4,30 @@
 
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
-import java.awt.Color;
-
+import com.github.g3force.configurable.ConfigRegistration;
+import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
+import edu.tigers.sumatra.ai.metis.ITacticalField;
 import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
 import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.KickTarget;
-import edu.tigers.sumatra.drawable.DrawableAnnotation;
-import edu.tigers.sumatra.drawable.DrawableCircle;
-import edu.tigers.sumatra.drawable.DrawableTriangle;
+import edu.tigers.sumatra.ai.metis.support.passtarget.EScoreMode;
+import edu.tigers.sumatra.ai.metis.support.passtarget.IPassTarget;
+import edu.tigers.sumatra.ai.metis.support.passtarget.IPassTargetRating;
+import edu.tigers.sumatra.ai.metis.support.passtarget.IRatedPassTarget;
+import edu.tigers.sumatra.ai.metis.support.passtarget.PassTarget;
+import edu.tigers.sumatra.ai.metis.support.passtarget.PassTargetRatingFactory;
+import edu.tigers.sumatra.ai.metis.support.passtarget.PassTargetRatingFactoryInput;
+import edu.tigers.sumatra.ai.metis.support.passtarget.RatedPassTarget;
+import edu.tigers.sumatra.ai.metis.targetrater.EPassInterceptionRaterMode;
+import edu.tigers.sumatra.ai.metis.targetrater.PassInterceptionRater;
+import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.circle.ICircle;
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.wp.data.DynamicPosition;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
+
+import java.util.List;
 
 
 /**
@@ -30,8 +35,37 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class KickInsBlaueActionMove extends AOffensiveActionMove
 {
-	private double viability = 0.0;
+	@Configurable(comment = "Number of points of the grid in x-direction", defValue = "12")
+	protected static int pointNumberLength = 12;
+	@Configurable(comment = "Number of points of the grid in y-direction", defValue = "9")
+	protected static int pointNumberWidth = 9;
+	@Configurable(comment = "Minimum distance from grid points to penalty area for FAR_TO_GOAL modes [mm]", defValue = "1000.0")
+	protected static double marginAroundPenArea = 1000.0;
+	@Configurable(comment = "Maximum distance from gird points to enemy goal center for NEAR_TO_GOAL mode [mm]", defValue = "4000.0")
+	protected static double maxDistanceToGoalCenter = 4000.0;
+	@Configurable(comment = "Minimum kick distance [mm]", defValue = "1000.0")
+	protected static double minKickDistance = 1000.0;
+	@Configurable(comment = "Maximum kick distance [mm]", defValue = "4000.0")
+	protected static double maxKickDistance = 4000.0;
+	@Configurable(comment = "Minimum target PassScore [0;1]", defValue = "0.25")
+	protected static double minTgtPassScore = 0.25;
+	@Configurable(comment = "Time difference between Tiger and Foe at target grid point [s]", defValue = "0.5")
+	protected static double minTimeDifferenceAtTarget = 0.5;
+	@Configurable(comment = "Minimum time needed for backspin pass [s]", defValue = "9000.0")
+	// This high number is not a bug, it's a feature to deactivate the BackspinMode while it's developed
+	private static double minTimeForBackspin = 9000.0;
+	
+	private double score = 0.0;
 	private KickTarget kickTarget;
+	private AKickInsBlaueMode mode;
+	private final KickInsBlaueFilterParameters filterParameters = new KickInsBlaueFilterParameters();
+	private IRatedPassTarget ratedPassTarget;
+	private EScoreMode scoreMode;
+	
+	static
+	{
+		ConfigRegistration.registerClass("metis", KickInsBlaueActionMove.class);
+	}
 	
 	
 	public KickInsBlaueActionMove()
@@ -44,16 +78,36 @@ public class KickInsBlaueActionMove extends AOffensiveActionMove
 	public EActionViability isActionViable(final BotID id, final TacticalField newTacticalField,
 			final BaseAiFrame baseAiFrame)
 	{
-		boolean kickInsBlaue = calcKickInsBlaueParams(newTacticalField, baseAiFrame);
 		if (baseAiFrame.getGamestate().isStandardSituationForUs())
 		{
 			return EActionViability.FALSE;
+			
 		}
-		if (kickInsBlaue)
+		filterParameters.defaultCalc(id, baseAiFrame);
+		
+		mode = selectKickInsBlaueMode(baseAiFrame);
+		kickTarget = mode.create(id, newTacticalField, baseAiFrame, filterParameters).orElse(null);
+		drawShapes(id, newTacticalField, baseAiFrame, mode.getShapes());
+		
+		if (kickTarget != null)
 		{
+			
+			final IPassTarget passTarget = new PassTarget(kickTarget.getTarget(), id);
+			
+			final PassTargetRatingFactoryInput ratingFactoryInput = PassTargetRatingFactoryInput.fromAiFrame(baseAiFrame);
+			final PassTargetRatingFactory ratingFactory = new PassTargetRatingFactory();
+			final PassInterceptionRater rater = new PassInterceptionRater(
+					baseAiFrame.getWorldFrame().getFoeBots().values(), EPassInterceptionRaterMode.KICK_INS_BLAUE);
+			final IPassTargetRating rating = ratingFactory.ratingFromPassTargetAndInput(passTarget, rater,
+					ratingFactoryInput);
+			
+			ratedPassTarget = new RatedPassTarget(passTarget, rating, scoreMode);
+			score = ratedPassTarget.getScore();
 			return EActionViability.PARTIALLY;
 		}
+		score = 0.;
 		return EActionViability.FALSE;
+		
 	}
 	
 	
@@ -62,115 +116,46 @@ public class KickInsBlaueActionMove extends AOffensiveActionMove
 			final BaseAiFrame baseAiFrame)
 	{
 		assert kickTarget != null;
-		return createOffensiveAction(EOffensiveAction.KICK_INS_BLAUE, kickTarget);
+		
+
+		return (id == mode.getClosestTigerBot())
+				? createOffensiveAction(EOffensiveAction.KICK_INS_BLAUE, kickTarget)
+				: createOffensiveAction(EOffensiveAction.KICK_INS_BLAUE, kickTarget).withPassTarget(ratedPassTarget);
 	}
 	
 	
 	@Override
 	public double calcViabilityScore(final BotID id, final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
-		return viability * ActionMoveConstants.getViabilityMultiplierKickInsBlaue();
+		// Score calculation mainly in isActionViable method
+		return score * ActionMoveConstants.getViabilityMultiplierKickInsBlaue();
 	}
 	
 	
-	private boolean calcKickInsBlaueParams(final TacticalField newTacticalField,
-			final BaseAiFrame baseAiFrame)
+	private void drawShapes(final BotID id, final ITacticalField newTacticalField, final BaseAiFrame baseAiFrame,
+			List<IDrawableShape> shapes)
 	{
-		IVector2 baseTarget = Geometry.getPenaltyMarkTheir().addNew(Vector2.fromXY(-1000, 0));
-		IVector2 ballPos = baseAiFrame.getWorldFrame().getBall().getPos();
-		
-		IVector2 ballToTarget = baseTarget.subtractNew(ballPos);
-		IVector2 normal = ballToTarget.getNormalVector().normalizeNew();
-		
-		IVector2 h1 = ballPos.addNew(ballToTarget.scaleToNew(1600).addNew(normal.multiplyNew(250)));
-		IVector2 h2 = ballPos.addNew(ballToTarget.scaleToNew(1600).addNew(normal.multiplyNew(-250)));
-		
-		DrawableTriangle dt = new DrawableTriangle(ballPos, h1, h2, new Color(125, 30, 255, 10));
-		dt.setFill(true);
-		newTacticalField.getDrawableShapes().get(EAiShapesLayer.OFFENSIVE_KICK_INS_BLAUE).add(dt);
-		
-		IVector2 helperPos = ballPos.addNew(ballToTarget.scaleToNew(1600 + 350.0));
-		IVector2 a1 = ballPos.addNew(ballToTarget.scaleToNew(500).addNew(normal.multiplyNew(300)));
-		IVector2 a2 = ballPos.addNew(ballToTarget.scaleToNew(500).addNew(normal.multiplyNew(-300)));
-		DrawableTriangle dt2 = new DrawableTriangle(ballPos, a1, a2, new Color(0, 230, 255, 30));
-		dt2.setFill(true);
-		newTacticalField.getDrawableShapes().get(EAiShapesLayer.OFFENSIVE_KICK_INS_BLAUE).add(dt2);
-		
-		boolean freeShootingPos = isFreeShootingPos(baseAiFrame, dt2);
-		
-		boolean isFree = true;
-		double radius = 500;
-		ICircle whatSoEverCircleMark = Circle.createCircle(helperPos, radius);
-		boolean firstRun = true;
-		boolean freeOnFirst = false;
-		
-		while (isFree && (radius < 1500))
+		// Draw Shapes only for current attacker bot
+		if (baseAiFrame.getPrevFrame().getTacticalField().getOffensiveStrategy().getAttackerBot().orElse(BotID.noBot())
+				.equals(id))
 		{
-			for (BotID id : baseAiFrame.getWorldFrame().getFoeBots().keySet())
-			{
-				ITrackedBot bot = baseAiFrame.getWorldFrame().getFoeBot(id);
-				IVector2 botPos = bot.getPos();
-				if (whatSoEverCircleMark.isPointInShape(botPos) || dt.getTriangle().isPointInShape(botPos))
-				{
-					isFree = false;
-				}
-				if (!isFree)
-				{
-					radius = radius - 50;
-					break;
-				}
-			}
-			if (firstRun && isFree)
-			{
-				freeOnFirst = true;
-				firstRun = false;
-			}
-			radius = radius + 50;
-			whatSoEverCircleMark = Circle.createCircle(helperPos, radius);
+			newTacticalField.getDrawableShapes().get(EAiShapesLayer.OFFENSIVE_KICK_INS_BLAUE).addAll(shapes);
 		}
-		if (freeOnFirst)
-		{
-			isFree = true;
-		}
-		
-		// yeah.... to save some calc time.
-		viability = (radius - 500) / 1500.0;
-		
-		DrawableCircle dc = new DrawableCircle(whatSoEverCircleMark, new Color(125, 30, 255, 10));
-		dc.setFill(true);
-		newTacticalField.getDrawableShapes().get(EAiShapesLayer.OFFENSIVE_KICK_INS_BLAUE).add(dc);
-		
-		DrawableAnnotation dtext = new DrawableAnnotation(helperPos, "free of bots: " + isFree, Color.black);
-		newTacticalField.getDrawableShapes().get(EAiShapesLayer.OFFENSIVE_KICK_INS_BLAUE).add(dtext);
-		DrawableAnnotation dtext2 = new DrawableAnnotation(helperPos.addNew(Vector2.fromXY(100, 0)),
-				"can kick: " + freeShootingPos,
-				Color.black);
-		newTacticalField.getDrawableShapes().get(EAiShapesLayer.OFFENSIVE_KICK_INS_BLAUE).add(dtext2);
-		
-		kickTarget = new KickTarget(new DynamicPosition(helperPos, 0.4),
-				2.3,
-				KickTarget.ChipPolicy.ALLOW_CHIP);
-		return isFree && freeShootingPos;
 	}
 	
 	
-	private boolean isFreeShootingPos(final BaseAiFrame baseAiFrame, final DrawableTriangle dt2)
+	private AKickInsBlaueMode selectKickInsBlaueMode(final BaseAiFrame baseAiFrame)
 	{
-		boolean freeShootingPos = true;
-		
-		for (BotID id : baseAiFrame.getWorldFrame().getFoeBots().keySet())
+		if (baseAiFrame.getWorldFrame().getBall().getPos()
+				.distanceTo(Geometry.getGoalTheir().getCenter()) < maxDistanceToGoalCenter)
 		{
-			ITrackedBot bot = baseAiFrame.getWorldFrame().getFoeBot(id);
-			IVector2 botPos = bot.getPos();
-			if (dt2.getTriangle().isPointInShape(botPos))
-			{
-				freeShootingPos = false;
-			}
-			if (!freeShootingPos)
-			{
-				break;
-			}
+			scoreMode = EScoreMode.SCORE_BY_GOAL_KICK;
+			return new KickInsBlaueModeNear();
 		}
-		return freeShootingPos;
+		scoreMode = EScoreMode.SCORE_BY_PASS;
+		return (filterParameters.getMaxAllowedTime() > minTimeForBackspin)
+				? new KickInsBlaueModeFarBackspin()
+				: new KickInsBlaueModeFar();
 	}
 }
+

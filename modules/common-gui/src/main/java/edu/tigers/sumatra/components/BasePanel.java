@@ -3,52 +3,33 @@
  */
 package edu.tigers.sumatra.components;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
-import javax.swing.*;
+import javax.swing.JPanel;
 
 
 /**
  * Generic panel base class which groups commonly needed functionality like an observer mechanism as well as a method to
  * enabled/disable the panel and all of its components
  * 
- * @author Lukas Magel
- * @param <T>
+ * @param <T> the observer type
  */
-public abstract class BasePanel<T> extends JPanel implements IBasePanel<T>
+public abstract class BasePanel<T> extends JPanel
 {
-	
-	/**  */
-	private static final long	serialVersionUID	= 1L;
-	
-	private List<T>				observer				= new ArrayList<>();
+	private final List<T> observer = new CopyOnWriteArrayList<>();
 	
 	
-	/**
-	 * @param observer
-	 */
-	@Override
 	public void addObserver(final T observer)
 	{
 		this.observer.add(observer);
 	}
 	
 	
-	/**
-	 * @param observer
-	 */
-	@Override
 	public void removeObserver(final T observer)
 	{
 		this.observer.remove(observer);
-	}
-	
-	
-	protected List<T> getObserver()
-	{
-		return observer;
 	}
 	
 	

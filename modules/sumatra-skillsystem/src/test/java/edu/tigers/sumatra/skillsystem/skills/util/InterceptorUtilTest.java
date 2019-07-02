@@ -70,7 +70,7 @@ public class InterceptorUtilTest
 	{
 		double bestTime = Double.MAX_VALUE;
 		IVector2 bestDest = null;
-		for (double d = 0; d < line.getDisplacement().getLength2(); d += 1)
+		for (double d = 0; d < line.getLength(); d += 1)
 		{
 			IVector2 dest = line.getStart().addNew(line.directionVector().scaleToNew(d));
 			double time = TrajectoryGenerator.generatePositionTrajectory(moveConstraints, botPos, botVel, dest)
@@ -106,7 +106,7 @@ public class InterceptorUtilTest
 		}
 		
 		double max = 0;
-		for (double dist = startDist; dist < line.getDisplacement().getLength2(); dist += 1)
+		for (double dist = startDist; dist < line.getLength(); dist += 1)
 		{
 			IVector2 dest = line.getStart().addNew(line.directionVector().scaleToNew(dist));
 			double time = TrajectoryGenerator.generatePositionTrajectory(moveConstraints, botPos, botVel, dest)

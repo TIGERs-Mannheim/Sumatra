@@ -13,14 +13,14 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.data.BotAiInformation;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.bots.ABot;
-import edu.tigers.sumatra.botmanager.commands.botskills.AMoveBotSkill;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillFastGlobalPosition;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillGlobalPosition;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillGlobalVelocity;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillLocalForce;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillLocalVelocity;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillMotorsOff;
-import edu.tigers.sumatra.botmanager.commands.botskills.data.KickerDribblerCommands;
+import edu.tigers.sumatra.botmanager.botskills.AMoveBotSkill;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillFastGlobalPosition;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillGlobalPosition;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillGlobalVelocity;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillLocalForce;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillLocalVelocity;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillMotorsOff;
+import edu.tigers.sumatra.botmanager.botskills.data.KickerDribblerCommands;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableBot;
 import edu.tigers.sumatra.drawable.ShapeMap;
@@ -35,6 +35,7 @@ import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.skillsystem.ESkill;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
+import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.trajectory.ITrajectory;
 import edu.tigers.sumatra.trajectory.TrajectoryWithTime;
 import edu.tigers.sumatra.trajectory.TrajectoryXyw;
@@ -55,8 +56,8 @@ public abstract class AMoveSkill extends ASkill
 	@SuppressWarnings("unused")
 	private static final Logger log = Logger.getLogger(AMoveSkill.class.getName());
 	
-	@Configurable(comment = "This tolerance is subtracted from the default bot speed that is required on STOP", defValue = "0.0")
-	private static double stopSpeedTolerance = 0.0;
+	@Configurable(comment = "This tolerance is subtracted from the default bot speed that is required on STOP", defValue = "0.2")
+	private static double stopSpeedTolerance = 0.2;
 	
 	private WorldFrame worldFrame = null;
 	private GameState gameState = GameState.HALT;
@@ -243,6 +244,14 @@ public abstract class AMoveSkill extends ASkill
 	}
 	
 	
+	protected double adaptKickSpeed(IVector2 kickTarget, final double kickSpeed)
+	{
+		IVector2 targetVel = kickTarget.subtractNew(getTBot().getBotKickerPos()).scaleTo(kickSpeed);
+		double adaptedKickSpeed = targetVel.subtractNew(getTBot().getVel()).getLength2();
+		return KickParams.limitKickSpeed(adaptedKickSpeed);
+	}
+	
+	
 	@Override
 	public final void update(final WorldFrameWrapper wfw, final ABot bot, final ShapeMap shapeMap)
 	{
@@ -326,5 +335,11 @@ public abstract class AMoveSkill extends ASkill
 	public final ITrackedBall getBall()
 	{
 		return getWorldFrame().getBall();
+	}
+	
+	
+	public static double getStopSpeedTolerance()
+	{
+		return stopSpeedTolerance;
 	}
 }

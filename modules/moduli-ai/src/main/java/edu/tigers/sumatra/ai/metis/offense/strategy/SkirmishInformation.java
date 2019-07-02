@@ -22,19 +22,19 @@ public class SkirmishInformation
 		NONE
 	}
 	
-	private boolean				skirmishDetected				= false;
+	private boolean skirmishDetected = false;
 	
-	private double					skirmishIntensity				= 0;
+	private double skirmishIntensity = 0;
 	
-	private DynamicPosition		correctedTarget				= null;
+	private DynamicPosition correctedTarget = null;
 	
-	private ESkirmishStrategy	strategy							= ESkirmishStrategy.NONE;
+	private ESkirmishStrategy strategy = ESkirmishStrategy.NONE;
 	
-	private DynamicPosition		enemyPos							= null;
+	private DynamicPosition enemyPos = null;
 	
-	private IVector2				supportiveCircleCatchPos	= null;
+	private IVector2 supportiveCircleCatchPos = null;
 	
-	private boolean				startCircleMove				= false;
+	private boolean startCircleMove = false;
 	
 	
 	/**

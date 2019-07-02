@@ -10,7 +10,7 @@
 	<parent>
 		<groupId>edu.tigers.sumatra</groupId>
 		<artifactId>sumatra-parent</artifactId>
-        <version>6.0</version>
+        <version>2019-SNAPSHOT</version>
 		<relativePath>../sumatra-parent/pom.xml</relativePath>
 	</parent>
 
@@ -21,11 +21,6 @@
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
-
-        <dependency>
-			<groupId>edu.tigers.sumatra</groupId>
-            <artifactId>sumatra-model</artifactId>
-		</dependency>
 
 		<dependency>
 			<groupId>edu.tigers.sumatra</groupId>
@@ -38,7 +33,7 @@
         </dependency>
 
         <dependency>
-            <groupId>edu.tigers.moduli</groupId>
+            <groupId>com.github.TIGERs-Mannheim</groupId>
             <artifactId>moduli</artifactId>
 		</dependency>
 
@@ -70,11 +65,6 @@
         <dependency>
             <groupId>com.sleepycat</groupId>
             <artifactId>je</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-configuration</groupId>
-            <artifactId>commons-configuration</artifactId>
         </dependency>
 
         <dependency>

@@ -27,7 +27,7 @@ public class BallStabilizer
 		this.ball = ball;
 		this.bot = bot;
 		
-		if (ballPos != null && bot.hasBallContact())
+		if (ballPos != null && bot.hadBallContact(1.0))
 		{
 			ballPos = bot.getBotShape().withMargin(Geometry.getBallRadius()).getKickerLine()
 					.closestPointOnLine(ballPos);

@@ -9,6 +9,8 @@ import static org.assertj.core.api.Assertions.within;
 
 import java.util.List;
 
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import org.assertj.core.data.Percentage;
 import org.junit.Test;
 
@@ -220,6 +222,46 @@ public class RectangleTest
 		assertThat(rect.lineIntersections(
 				Line.fromDirection(Vector2.zero(), Vector2.fromXY(1, 1)))).containsExactlyInAnyOrder(
 						Vector2.fromXY(21, 21), Vector2.fromXY(-21, -21));
+		
+		assertThat(rect.lineIntersections(Lines.lineFromDirection(Vector2.zero(), Vector2.fromXY(1, 0))))
+				.containsExactlyInAnyOrder(Vector2.fromXY(21, 0), Vector2.fromXY(-21, 0));
+		assertThat(rect.lineIntersections(Lines.lineFromDirection(Vector2.zero(), Vector2.fromXY(0, 1))))
+				.containsExactlyInAnyOrder(Vector2.fromXY(0, 21), Vector2.fromXY(0, -21));
+		assertThat(rect.lineIntersections(Lines.lineFromDirection(Vector2.zero(), Vector2.fromXY(1, 1))))
+				.containsExactlyInAnyOrder(Vector2.fromXY(21, 21), Vector2.fromXY(-21, -21));
+		
+		assertThat(rect.lineIntersections(Lines.halfLineFromDirection(Vector2.zero(), Vector2.fromXY(1, 0))))
+				.containsExactly(Vector2.fromXY(21, 0));
+		assertThat(rect.lineIntersections(Lines.halfLineFromDirection(Vector2.zero(), Vector2.fromXY(0, -1))))
+				.containsExactly(Vector2.fromXY(0, -21));
+		assertThat(rect.lineIntersections(Lines.halfLineFromDirection(Vector2.zero(), Vector2.fromXY(1, 1))))
+				.containsExactly(Vector2.fromXY(21, 21));
+		assertThat(rect.lineIntersections(Lines.halfLineFromDirection(Vector2.fromXY(21.1, 0), Vector2.fromXY(-1, 0))))
+				.containsExactlyInAnyOrder(Vector2.fromXY(21, 0), Vector2.fromXY(-21, 0));
+		assertThat(rect.lineIntersections(Lines.halfLineFromDirection(Vector2.fromXY(0, -21.1), Vector2.fromXY(0, 1))))
+				.containsExactlyInAnyOrder(Vector2.fromXY(0, 21), Vector2.fromXY(0, -21));
+		assertThat(
+				rect.lineIntersections(Lines.halfLineFromDirection(Vector2.fromXY(21.1, 21.1), Vector2.fromXY(-1, -1))))
+						.containsExactlyInAnyOrder(Vector2.fromXY(21, 21), Vector2.fromXY(-21, -21));
+		
+		assertThat(rect.lineIntersections(Lines.segmentFromPoints(Vector2.zero(), Vector2.fromXY(21.1, 0))))
+				.containsExactly(Vector2.fromXY(21, 0));
+		assertThat(rect.lineIntersections(Lines.segmentFromPoints(Vector2.zero(), Vector2.fromXY(0, -21.1))))
+				.containsExactly(Vector2.fromXY(0, -21));
+		assertThat(rect.lineIntersections(Lines.segmentFromPoints(Vector2.zero(), Vector2.fromXY(21.1, 21.1))))
+				.containsExactly(Vector2.fromXY(21, 21));
+		assertThat(rect.lineIntersections(Lines.segmentFromPoints(Vector2.zero(), Vector2.fromXY(20.9, 0)))).isEmpty();
+		assertThat(rect.lineIntersections(Lines.segmentFromPoints(Vector2.zero(), Vector2.fromXY(0, -20.9)))).isEmpty();
+		assertThat(rect.lineIntersections(Lines.segmentFromPoints(Vector2.zero(), Vector2.fromXY(20.9, 20.9)))).isEmpty();
+		assertThat(rect.lineIntersections(Lines.segmentFromPoints(Vector2.fromXY(-21.1, 0), Vector2.fromXY(21.1, 0))))
+				.containsExactlyInAnyOrder(Vector2.fromXY(21, 0), Vector2.fromXY(-21, 0));
+		assertThat(rect.lineIntersections(Lines.segmentFromPoints(Vector2.fromXY(0, 21.1), Vector2.fromXY(0, -21.1))))
+				.containsExactlyInAnyOrder(Vector2.fromXY(0, 21), Vector2.fromXY(0, -21));
+		assertThat(
+				rect.lineIntersections(Lines.segmentFromPoints(Vector2.fromXY(-21.1, -21.1), Vector2.fromXY(21.1, 21.1))))
+						.containsExactlyInAnyOrder(Vector2.fromXY(21, 21), Vector2.fromXY(-21, -21));
+		
+		
 	}
 	
 	
@@ -241,6 +283,40 @@ public class RectangleTest
 		assertThat(edges.get(1).directionVector().getAngle()).isCloseTo(0.0, within(1e-4));
 		assertThat(edges.get(2).directionVector().getAngle()).isCloseTo(-AngleMath.PI_HALF, within(1e-4));
 		assertThat(edges.get(3).directionVector().getAngle()).isCloseTo(AngleMath.PI, within(1e-4));
+	}
+	
+	
+	@Test
+	public void testGetEdgesAsSegments()
+	{
+		Rectangle rect = Rectangle.fromCenter(Vector2.zero(), 42, 42);
+		
+		// Starting at topLeft, going counter clockwise.
+		List<ILineSegment> edges = rect.getEdgesAsSegments();
+		assertThat(edges.stream().map(ILineSegment::getStart))
+				.containsExactlyInAnyOrder(
+						Vector2.fromXY(21, 21),
+						Vector2.fromXY(21, -21),
+						Vector2.fromXY(-21, -21),
+						Vector2.fromXY(-21, 21));
+		
+		assertThat(edges.stream().map(ILineSegment::getEnd))
+				.containsExactlyInAnyOrder(
+						Vector2.fromXY(21, 21),
+						Vector2.fromXY(21, -21),
+						Vector2.fromXY(-21, -21),
+						Vector2.fromXY(-21, 21));
+		
+		List<ILine> edgesAsLines = rect.getEdges();
+		
+		assertThat(edges.get(0).directionVector().getAngle()).isCloseTo(edgesAsLines.get(0).directionVector().getAngle(),
+				within(1e-4));
+		assertThat(edges.get(1).directionVector().getAngle()).isCloseTo(edgesAsLines.get(1).directionVector().getAngle(),
+				within(1e-4));
+		assertThat(edges.get(2).directionVector().getAngle()).isCloseTo(edgesAsLines.get(2).directionVector().getAngle(),
+				within(1e-4));
+		assertThat(edges.get(3).directionVector().getAngle()).isCloseTo(edgesAsLines.get(3).directionVector().getAngle(),
+				within(1e-4));
 	}
 	
 	

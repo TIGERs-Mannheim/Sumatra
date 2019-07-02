@@ -10,6 +10,7 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.wp.ball.prediction.IChipBallConsultant;
@@ -141,7 +142,7 @@ public final class BallFactory
 	/**
 	 * Create a ball trajectory based on a kick
 	 * <br>
-	 * Consider using {@link #createTrajectoryFromChipKick(IVector2, IVector)} or
+	 * Consider using {@link #createTrajectoryFromChipKick(IVector2, IVector3)} or
 	 * {@link #createTrajectoryFromStraightKick(IVector2, IVector)}
 	 * 
 	 * @param kickPos [mm]
@@ -154,7 +155,7 @@ public final class BallFactory
 	{
 		if (chip)
 		{
-			return createTrajectoryFromChipKick(kickPos, kickVel);
+			return createTrajectoryFromChipKick(kickPos, kickVel.getXYZVector());
 		}
 		return createTrajectoryFromStraightKick(kickPos, kickVel);
 	}
@@ -194,13 +195,13 @@ public final class BallFactory
 	 * @param kickVel [mm/s]
 	 * @return
 	 */
-	public static ABallTrajectory createTrajectoryFromChipKick(final IVector2 kickPos, final IVector kickVel)
+	public static ABallTrajectory createTrajectoryFromChipKick(final IVector2 kickPos, final IVector3 kickVel)
 	{
 		final ABallTrajectory trajectory;
 		switch (ballModelTypeChip)
 		{
 			case FIXED_LOSS_PLUS_ROLLING:
-				trajectory = FixedLossPlusRollingBallTrajectory.fromKick(kickPos, kickVel.getXYZVector(),
+				trajectory = FixedLossPlusRollingBallTrajectory.fromKick(kickPos, kickVel,
 						0, new FixedLossPlusRollingParameters());
 				break;
 			default:

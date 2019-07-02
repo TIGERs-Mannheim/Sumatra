@@ -5,8 +5,7 @@ package edu.tigers.sumatra.bot.params;
 
 
 /**
- * 
- * @author AndreR <andre@ryll.cc> 
+ * @author AndreR <andre@ryll.cc>
  */
 public interface IBotMovementLimits
 {
@@ -21,6 +20,12 @@ public interface IBotMovementLimits
 	 * @return the accMax
 	 */
 	double getAccMax();
+	
+	
+	/**
+	 * @return the brkMax
+	 */
+	double getBrkMax();
 	
 	
 	/**
@@ -57,5 +62,4 @@ public interface IBotMovementLimits
 	 * @return the accMaxFast
 	 */
 	double getAccMaxFast();
-	
 }

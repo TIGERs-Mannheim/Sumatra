@@ -160,7 +160,9 @@ public class KickoffShooterRole extends ARole
 		{
 			return getAiFrame().getTacticalField().getBestGoalKickTarget()
 					.filter(s -> s.getScore() >= minimumScoreForDirectKick)
-					.map(IRatedTarget::getTarget).orElse(null);
+					.map(IRatedTarget::getTarget)
+					.map(DynamicPosition::getPos)
+					.orElse(null);
 		}
 		
 		

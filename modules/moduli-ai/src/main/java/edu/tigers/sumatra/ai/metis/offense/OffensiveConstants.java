@@ -25,9 +25,6 @@ public class OffensiveConstants
 	@Configurable(comment = "force pass in offensive Action", defValue = "false")
 	private static boolean alwaysForcePass = false;
 	
-	@Configurable(comment = "min score to directly shot at goal", defValue = "0.4")
-	private static double minDirectShotScore = 0.4;
-	
 	@Configurable(comment = "enable supportive Attacker", defValue = "true")
 	private static boolean enableSupportiveAttacker = true;
 	
@@ -49,6 +46,9 @@ public class OffensiveConstants
 	@Configurable(comment = "Minimum kick speed for passes", defValue = "2.0")
 	private static double minPassSpeed = 2.0;
 	
+	@Configurable(defValue = "0.4")
+	private static double minBotShouldDoGoalShotScore = 0.4;
+	
 	@Configurable(defValue = "0.9", comment = "Passes with a redirect angle [rad] below this will use max passEndVel")
 	private static double maxAngleForPassMaxSpeed = 0.9;
 	
@@ -64,15 +64,14 @@ public class OffensiveConstants
 	@Configurable(defValue = "true")
 	private static boolean isInterceptorEnabled = true;
 	
-	@Configurable(comment = "Should keeper be allowed to leave the penalty area", defValue = "false")
-	private static boolean enableInsanityMode = false;
-	
 	@Configurable(comment = "warning, this is storing large data in the tactical field!", defValue = "false")
 	private static boolean enableOffensiveStatistics = false;
 	
 	@Configurable(defValue = "false")
 	private static boolean enableNoSkirmishSupportiveAttacker = false;
 	
+	@Configurable(comment = "Ball speed at target", defValue = "1.33")
+	private static double ballSpeedAtTargetKickInsBlaue = 1.33;
 	
 	static
 	{
@@ -83,15 +82,6 @@ public class OffensiveConstants
 	private OffensiveConstants()
 	{
 		// hide public constructor
-	}
-	
-	
-	/**
-	 * @return the enableInsanityMode
-	 */
-	public static boolean isEnableInsanityMode()
-	{
-		return enableInsanityMode;
 	}
 	
 	
@@ -227,12 +217,6 @@ public class OffensiveConstants
 	}
 	
 	
-	public static double getMinDirectShotScore()
-	{
-		return minDirectShotScore;
-	}
-	
-	
 	public static boolean isAlwaysForcePass()
 	{
 		return alwaysForcePass;
@@ -242,5 +226,17 @@ public class OffensiveConstants
 	public static boolean isEnableNoSkirmishSupportiveAttacker()
 	{
 		return enableNoSkirmishSupportiveAttacker;
+	}
+	
+	
+	public static double getMinBotShouldDoGoalShotScore()
+	{
+		return minBotShouldDoGoalShotScore;
+	}
+	
+	
+	public static double getBallSpeedAtTargetKickInsBlaue()
+	{
+		return ballSpeedAtTargetKickInsBlaue;
 	}
 }

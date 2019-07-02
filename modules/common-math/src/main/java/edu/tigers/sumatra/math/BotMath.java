@@ -4,7 +4,8 @@
 
 package edu.tigers.sumatra.math;
 
-import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -59,7 +60,8 @@ public final class BotMath
 	 * @param center2DribblerDist Distance from center to dribbler.
 	 * @return Generated line
 	 */
-	public static Line getDribblerFrontLine(final IVector3 pos, final double radius, final double center2DribblerDist)
+	public static ILineSegment getDribblerFrontLine(final IVector3 pos, final double radius,
+			final double center2DribblerDist)
 	{
 		double theta = SumatraMath.acos((center2DribblerDist) / (radius));
 		IVector2 leftBotEdge = pos.getXYVector()
@@ -67,6 +69,6 @@ public final class BotMath
 		IVector2 rightBotEdge = pos.getXYVector()
 				.addNew(Vector2.fromAngle(pos.z() + theta).scaleTo(radius));
 		
-		return Line.fromPoints(leftBotEdge, rightBotEdge);
+		return Lines.segmentFromPoints(leftBotEdge, rightBotEdge);
 	}
 }

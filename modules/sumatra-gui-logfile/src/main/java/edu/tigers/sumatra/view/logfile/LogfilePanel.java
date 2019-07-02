@@ -37,9 +37,9 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.MessagesRobocupSslGameEvent.SSL_Referee_Game_Event.GameEventType;
 import edu.tigers.sumatra.Referee.SSL_Referee;
 import edu.tigers.sumatra.Referee.SSL_Referee.Command;
+import edu.tigers.sumatra.SslGameEvent;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.views.ISumatraView;
 import net.miginfocom.swing.MigLayout;
@@ -96,7 +96,7 @@ public class LogfilePanel extends JPanel implements ISumatraView
 		btnSkipToDirectIndirect.addActionListener(new SeekAction(new Command[] { Command.INDIRECT_FREE_YELLOW,
 				Command.INDIRECT_FREE_BLUE, Command.DIRECT_FREE_YELLOW, Command.DIRECT_FREE_BLUE }));
 		
-		JComboBox<GameEventType> cboGameEvent = new JComboBox<>(GameEventType.values());
+		JComboBox<SslGameEvent.GameEventType> cboGameEvent = new JComboBox<>(SslGameEvent.GameEventType.values());
 		JButton btnSeekGameEvent = new JButton();
 		btnSeekGameEvent.setAction(new SeekGameEventAction(cboGameEvent));
 		
@@ -135,10 +135,10 @@ public class LogfilePanel extends JPanel implements ISumatraView
 			fcSelectMergeFiles = new JFileChooser();
 		}
 		
-		fcOpenLogfile.setFileFilter(new FileNameExtensionFilter("Logfiles", "log"));
+		fcOpenLogfile.setFileFilter(new FileNameExtensionFilter("Logfiles", "log", "gz"));
 		
 		mergeToolAux = new MergeToolAuxPanel();
-		fcSelectMergeFiles.setFileFilter(new FileNameExtensionFilter("Logfiles", "log"));
+		fcSelectMergeFiles.setFileFilter(new FileNameExtensionFilter("Logfiles", "log", "gz"));
 		fcSelectMergeFiles.setAccessory(mergeToolAux);
 		fcSelectMergeFiles.setMultiSelectionEnabled(true);
 		fcSelectMergeFiles.setDialogTitle("Merge Tool");
@@ -283,7 +283,7 @@ public class LogfilePanel extends JPanel implements ISumatraView
 		 * 
 		 * @param gameEventTypes
 		 */
-		void onSeekToGameEvent(final List<GameEventType> gameEventTypes);
+		void onSeekToGameEvent(final List<SslGameEvent.GameEventType> gameEventTypes);
 		
 		
 		/**
@@ -487,10 +487,10 @@ public class LogfilePanel extends JPanel implements ISumatraView
 	{
 		/**  */
 		private static final long serialVersionUID = -961064147040314494L;
-		private final JComboBox<GameEventType> gameEventCombo;
+		private final JComboBox<SslGameEvent.GameEventType> gameEventCombo;
 		
 		
-		private SeekGameEventAction(final JComboBox<GameEventType> gameEventCombo)
+		private SeekGameEventAction(final JComboBox<SslGameEvent.GameEventType> gameEventCombo)
 		{
 			super("Next Game Event");
 			this.gameEventCombo = gameEventCombo;
@@ -502,7 +502,8 @@ public class LogfilePanel extends JPanel implements ISumatraView
 		{
 			for (ILogfilePanelObserver o : observers)
 			{
-				o.onSeekToGameEvent(Collections.singletonList((GameEventType) gameEventCombo.getSelectedItem()));
+				o.onSeekToGameEvent(
+						Collections.singletonList((SslGameEvent.GameEventType) gameEventCombo.getSelectedItem()));
 			}
 		}
 	}

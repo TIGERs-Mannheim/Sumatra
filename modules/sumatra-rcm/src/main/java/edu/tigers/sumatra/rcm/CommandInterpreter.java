@@ -12,17 +12,16 @@ import com.github.g3force.configurable.IConfigClient;
 import com.github.g3force.configurable.IConfigObserver;
 import com.github.g3force.instanceables.InstanceableClass.NotCreateableException;
 
-import edu.tigers.sumatra.proto.BotActionCommandProtos.BotActionCommand;
 import edu.tigers.sumatra.bot.EFeature;
 import edu.tigers.sumatra.bot.EFeatureState;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.bots.ABot;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillLocalVelocity;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillMotorsOff;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillWheelVelocity;
-import edu.tigers.sumatra.botmanager.commands.botskills.data.KickerDribblerCommands;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillLocalVelocity;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillMotorsOff;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillWheelVelocity;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
+import edu.tigers.sumatra.botmanager.botskills.data.KickerDribblerCommands;
 import edu.tigers.sumatra.control.motor.EMotorModel;
 import edu.tigers.sumatra.control.motor.IMotorModel;
 import edu.tigers.sumatra.control.motor.MatrixMotorModel;
@@ -32,6 +31,7 @@ import edu.tigers.sumatra.math.vector.IVectorN;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.proto.BotActionCommandProtos.BotActionCommand;
 
 
 /**
@@ -85,16 +85,21 @@ public class CommandInterpreter implements IConfigObserver, ICommandInterpreter
 	private static double rotateMin = 1;
 	@Configurable
 	private static double rotateMax = 10;
+	@Configurable
+	private static double maxDribblerTemp = 60.0;
+	@Configurable
+	private static double lowerDribblerTemp = 40.0;
 	
 	static
 	{
 		ConfigRegistration.registerClass("rcm", CommandInterpreter.class);
 	}
 	
-	private static IMotorModel mm = new MatrixMotorModel();
+	private IMotorModel mm = new MatrixMotorModel();
 	
 	private final ABot bot;
 	private boolean dribblerOn = false;
+	private boolean isDribblerOverheated = false;
 	private long lastForceKick = 0;
 	private long lastArmKick = 0;
 	private double speedMax = speedMaxLow;
@@ -140,8 +145,15 @@ public class CommandInterpreter implements IConfigObserver, ICommandInterpreter
 		}
 		
 		interpretMove(command);
+		if (bot.getDribblerTemp() < lowerDribblerTemp)
+		{
+			isDribblerOverheated = false;
+		} else if (bot.getDribblerTemp() > maxDribblerTemp)
+		{
+			isDribblerOverheated = true;
+		}
 		
-		if (command.hasDribble() && (command.getDribble() > 0.25))
+		if (command.hasDribble() && (command.getDribble() > 0.25) && !isDribblerOverheated)
 		{
 			dribblerOn = true;
 			final int rpm = (int) (command.getDribble() * maxDribbleSpeed);
@@ -155,6 +167,7 @@ public class CommandInterpreter implements IConfigObserver, ICommandInterpreter
 		
 		interpretKick(command);
 		
+		bot.sendMatchCommand();
 	}
 	
 	
@@ -275,6 +288,14 @@ public class CommandInterpreter implements IConfigObserver, ICommandInterpreter
 				- ((rotateDef - rotateMin) * command.getDecelerate());
 		
 		rotate = Math.signum(rotate) * rotate * rotate * rotateSpeed;
+		
+		if (bot.getBotFeatures().get(EFeature.V2016) == EFeatureState.WORKING)
+		{
+			mm.updateGeometry(30, 45, 0.076, 0.025);
+		} else
+		{
+			mm.updateGeometry(45, 45, 0.082, 0.0165);
+		}
 		
 		switch (moveType)
 		{
@@ -404,7 +425,7 @@ public class CommandInterpreter implements IConfigObserver, ICommandInterpreter
 	}
 	
 	
-	private static void updateMotorModel()
+	private void updateMotorModel()
 	{
 		if (mm.getType() != motorModelType)
 		{

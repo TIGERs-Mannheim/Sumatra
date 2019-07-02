@@ -16,9 +16,7 @@ import edu.tigers.sumatra.ai.pandora.roles.throwin.SecondaryBallPlacementRole;
 
 
 /**
- * Play that handles automated Ballplacement
- * 
- * @author Mark Geiger <Mark.Geiger@dlr.de>
+ * Play that handles automated ball placement
  */
 public class BallPlacementPlay extends APlay
 {
@@ -26,22 +24,22 @@ public class BallPlacementPlay extends APlay
 	{
 		super(EPlay.BALL_PLACEMENT);
 	}
-	
-	
+
+
 	@Override
 	protected ARole onRemoveRole(final MetisAiFrame frame)
 	{
 		return getLastRole();
 	}
-	
-	
+
+
 	@Override
 	protected ARole onAddRole()
 	{
 		return new PrimaryBallPlacementRole();
 	}
-	
-	
+
+
 	@Override
 	public void updateBeforeRoles(final AthenaAiFrame frame)
 	{
@@ -49,11 +47,26 @@ public class BallPlacementPlay extends APlay
 		if (getRoles().size() > 1 && getRoles().stream().noneMatch(r -> r instanceof SecondaryBallPlacementRole))
 		{
 			List<ARole> roles = getRoles();
-			boolean firstRoleCloserToBall = getWorldFrame().getBot(roles.get(0).getBotID()).getPos()
-					.distanceTo(getAiFrame().getGamestate().getBallPlacementPositionForUs()) < getWorldFrame()
-							.getBot(roles.get(1).getBotID()).getPos()
-							.distanceTo(getAiFrame().getGamestate().getBallPlacementPositionForUs());
-			switchRoles(roles.get(firstRoleCloserToBall ? 1 : 0), new SecondaryBallPlacementRole());
+			final int secondaryRoleIndex;
+			if (frame.getTacticalField().isInsaneKeeper()
+					&& roles.stream().anyMatch(r -> r.getBotID() == getAiFrame().getKeeperId()))
+			{
+				if (roles.get(1).getBotID() == getAiFrame().getKeeperId())
+				{
+					secondaryRoleIndex = 0;
+				} else
+				{
+					secondaryRoleIndex = 1;
+				}
+			} else
+			{
+				boolean firstRoleCloserToBall = getWorldFrame().getBot(roles.get(0).getBotID()).getPos()
+						.distanceTo(getAiFrame().getGamestate().getBallPlacementPositionForUs()) < getWorldFrame()
+								.getBot(roles.get(1).getBotID()).getPos()
+								.distanceTo(getAiFrame().getGamestate().getBallPlacementPositionForUs());
+				secondaryRoleIndex = firstRoleCloserToBall ? 1 : 0;
+			}
+			switchRoles(roles.get(secondaryRoleIndex), new SecondaryBallPlacementRole());
 		}
 		getRoles().stream().map(r -> (ABallPlacementRole) r).forEach(r -> r.setHasCompanion(getRoles().size() > 1));
 	}

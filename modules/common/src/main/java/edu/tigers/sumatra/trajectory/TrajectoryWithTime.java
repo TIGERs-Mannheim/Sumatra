@@ -12,11 +12,12 @@ import com.sleepycat.persist.model.Persistent;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * @param <RETURN_TYPE>
+ * Trajectory with timestamp
+ * 
+ * @param <T>
  */
 @Persistent
-public class TrajectoryWithTime<RETURN_TYPE> extends TrajWTimeImpl<RETURN_TYPE, ITrajectory<RETURN_TYPE>>
+public class TrajectoryWithTime<T> extends TrajWTimeImpl<T, ITrajectory<T>>
 {
 	@SuppressWarnings("unused")
 	private TrajectoryWithTime()
@@ -29,7 +30,7 @@ public class TrajectoryWithTime<RETURN_TYPE> extends TrajWTimeImpl<RETURN_TYPE, 
 	 * @param trajectory
 	 * @param tStart
 	 */
-	public TrajectoryWithTime(final ITrajectory<RETURN_TYPE> trajectory, final long tStart)
+	public TrajectoryWithTime(final ITrajectory<T> trajectory, final long tStart)
 	{
 		super(trajectory, tStart);
 	}

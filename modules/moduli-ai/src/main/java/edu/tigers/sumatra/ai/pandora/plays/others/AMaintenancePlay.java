@@ -92,6 +92,7 @@ public abstract class AMaintenancePlay extends APlay
 				
 			} while (!AiMath.isShapeFreeOfBots(shape, AiMath.getNonMovingBots(otherBots, 0.2), aRole.getBot()));
 			
+			moveRole.getMoveCon().setDestinationOutsideFieldAllowed(true);
 			moveRole.getMoveCon().updateDestination(dest);
 			moveRole.getMoveCon().updateTargetAngle(orientation * Math.PI / 180);
 			

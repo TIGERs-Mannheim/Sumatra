@@ -133,6 +133,7 @@ public class PollingService
 		double rotateRight = 0;
 		double accelerate = 0;
 		double decelerate = 0;
+		boolean stopbot;
 		
 		ICommandInterpreter interpreter = actionSender.getCmdInterpreter();
 		BotID botId = interpreter.getBot().getBotId();
@@ -221,6 +222,47 @@ public class PollingService
 			if (actionType == EActionType.EVENT)
 			{
 				handleEvent(botId, (ERcmEvent) actionEnum);
+				ERcmEvent action = (ERcmEvent) extComp.getMappedAction().getActionEnum();
+				stopbot = false;
+				switch (action)
+				{
+					case NEXT_BOT:
+						stopbot = true;
+						break;
+
+					case PREV_BOT:
+						stopbot = true;
+						break;
+
+					case UNASSIGNED:
+						stopbot = true;
+						break;
+
+					case UNASSIGN_BOT:
+						break;
+					case SPEED_MODE_TOGGLE:
+						break;
+					case SPEED_MODE_ENABLE:
+						break;
+					case SPEED_MODE_DISABLE:
+						break;
+					case CHARGE_BOT:
+						break;
+					case DISCHARGE_BOT:
+						break;
+				}
+
+				if (stopbot)
+				{
+					forward = 0;
+					backward = 0;
+					left = 0;
+					right = 0;
+					rotateLeft = 0;
+					rotateRight = 0;
+					accelerate = 0;
+					decelerate = 0;
+				}
 			} else if (actionType == EActionType.SKILL)
 			{
 				handleSkill(interpreter, botId, extComp);

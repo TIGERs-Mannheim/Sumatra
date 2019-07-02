@@ -4,14 +4,8 @@
 
 package edu.tigers.sumatra.ai.metis.general;
 
-import java.awt.Color;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
@@ -22,6 +16,8 @@ import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.quadrilateral.IQuadrilateral;
 import edu.tigers.sumatra.math.quadrilateral.Quadrilateral;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -29,6 +25,11 @@ import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.ball.trajectory.ABallTrajectory;
 import edu.tigers.sumatra.wp.ball.trajectory.BallFactory;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+
+import java.awt.Color;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 
 /**
@@ -38,20 +39,21 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
 public class ChipKickReasonableDecider
 {
 	
-	@Configurable(defValue = "35.0", comment = "Back width of chip kick detection quadliteral")
-	private static double quadliteralWidthOffsetBack = 35;
+	@Configurable(defValue = "37.0", comment = "Back width of chip kick detection quadliteral")
+	private static double quadliteralWidthOffsetBack = 37;
 	
-	@Configurable(defValue = "35.0", comment = "Front width of chip kick detection quadliteral")
-	private static double quadliteralWidthOffsetFront = 35;
+	@Configurable(defValue = "37.0", comment = "Front width of chip kick detection quadliteral")
+	private static double quadliteralWidthOffsetFront = 37;
 	
-	@Configurable(defValue = "0.2", comment = "time offset to estimate kickingRobot movement")
-	private static double chipKickDetectionTimeOffset = 0.2;
+	@Configurable(defValue = "0.3", comment = "time offset to estimate kickingRobot movement")
+	private static double chipKickDetectionTimeOffset = 0.3;
 	
 	@Configurable(defValue = "45.0", comment = "chip kick angle in deg")
 	private static double chipKickAngle = 45;
 	
 	
 	private final Collection<ITrackedBot> obstacles;
+	private final EChipDeciderMode mode;
 	
 	private IVector2 source;
 	private IVector2 target;
@@ -79,6 +81,27 @@ public class ChipKickReasonableDecider
 		this.target = target;
 		this.obstacles = obstacles;
 		this.initialKickVel = initialKickVel;
+		this.mode = EChipDeciderMode.DEFAULT;
+	}
+	
+	
+	/**
+	 * determines if a ball has to be chipped to go from source to target
+	 *
+	 * @param source from where to check
+	 * @param target shoot Target
+	 * @param initialKickVel vel [m/s]
+	 * @param obstacles to consider
+	 * @param mode ChipKickReasonableDecider mode
+	 */
+	public ChipKickReasonableDecider(final IVector2 source, final IVector2 target,
+			final Collection<ITrackedBot> obstacles, final double initialKickVel, final EChipDeciderMode mode)
+	{
+		this.source = source;
+		this.target = target;
+		this.obstacles = obstacles;
+		this.initialKickVel = initialKickVel;
+		this.mode = mode;
 	}
 	
 	
@@ -131,7 +154,7 @@ public class ChipKickReasonableDecider
 				robotHeight) + Geometry.getBotRadius();
 		double minDistFromFirstTouchdownToObstacleToOverchip;
 		List<IVector2> touchdowns = traj.getTouchdownLocations();
-		if (touchdowns.isEmpty())
+		if (touchdowns.isEmpty() && mode == EChipDeciderMode.DEFAULT)
 		{
 			// no touch down, so nothing can be overchipped
 			return false;
@@ -145,7 +168,8 @@ public class ChipKickReasonableDecider
 		minDistFromFirstTouchdownToObstacleToOverchip = dist
 				- BallFactory.createChipConsultant().getMaximumDistanceToOverChip(initialKickVel, robotHeight)
 				+ Geometry.getBotRadius();
-		if (dist - minDistFromBallToFirstObstacleToOverchip - minDistFromFirstTouchdownToObstacleToOverchip < 0)
+		if (dist - minDistFromBallToFirstObstacleToOverchip - minDistFromFirstTouchdownToObstacleToOverchip < 0
+				&& mode == EChipDeciderMode.DEFAULT)
 		{
 			// we cant overchip anything if the "chip above kickingRobot height is smaller 0"
 			return false;
@@ -154,7 +178,7 @@ public class ChipKickReasonableDecider
 		IQuadrilateral quad = createCheckingQuadliteral(sourceToTarget, minDistFromBallToFirstObstacleToOverchip, dist,
 				minDistFromFirstTouchdownToObstacleToOverchip);
 		double dist2Ball = source.distanceTo(target);
-		boolean chip = isQuadFreeOfObstacles(quad, dist2Ball);
+		boolean chip = areThereObstaclesInTheCheckingQuad(quad, dist2Ball);
 		
 		drawShapes(shapes, drawShapes, dist, quad, chip, dist2Ball);
 		return chip;
@@ -182,14 +206,18 @@ public class ChipKickReasonableDecider
 	}
 	
 	
-	private boolean isQuadFreeOfObstacles(final IQuadrilateral quad, final double dist2Ball)
+	private boolean areThereObstaclesInTheCheckingQuad(final IQuadrilateral quad, final double dist2Ball)
 	{
 		for (ITrackedBot bot : obstacles)
 		{
 			IVector2 futureBotPos = bot.getPosByTime(chipKickDetectionTimeOffset);
-			if ((quad.isPointInShape(bot.getPos())
-					|| quad.isPointInShape(futureBotPos))
-					&& dist2Ball > OffensiveConstants.getChipKickMinDistToTarget())
+			ILineSegment checkingLine = Lines.segmentFromPoints(bot.getPos(), futureBotPos);
+			
+			List<IVector2> intersections = quad.lineIntersections(checkingLine);
+			boolean isBotInTheWay = !intersections.isEmpty() || quad.isPointInShape(bot.getPos())
+					|| quad.isPointInShape(futureBotPos);
+			if (isBotInTheWay && (dist2Ball > OffensiveConstants.getChipKickMinDistToTarget()
+					|| mode == EChipDeciderMode.IGNORE_RANGE_CONSTRAINTS))
 			{
 				return true;
 			}

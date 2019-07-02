@@ -4,7 +4,7 @@
 
 package edu.tigers.sumatra.ai.metis;
 
-import edu.tigers.sumatra.ai.metis.support.IPassTarget;
+import edu.tigers.sumatra.ai.metis.support.passtarget.IPassTarget;
 
 
 public interface IAiInfoForNextFrame

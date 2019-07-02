@@ -1,0 +1,19 @@
+syntax = "proto3";
+package edu.tigers.sumatra.sim.net;
+
+import "SimCommon.proto";
+
+message SimBotState {
+    BotId botId = 1;
+    Vector3 pose = 2;
+    Vector3 vel = 3;
+    bool barrierInterrupted = 4;
+}
+
+message SimBallState {
+    Vector3 pose = 1;
+    Vector3 vel = 2;
+    Vector3 acc = 3;
+    bool chipped = 4;
+    double vSwitchToRoll = 5;
+}

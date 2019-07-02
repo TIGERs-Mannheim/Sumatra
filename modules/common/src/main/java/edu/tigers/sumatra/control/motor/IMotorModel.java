@@ -48,6 +48,20 @@ public interface IMotorModel
 	
 	
 	/**
+	 * Update robot geometry used for motor velocity computation.
+	 *
+	 * @param frontAngleDeg Angle from robot X axis to front wheels
+	 * @param backAngleDeg Angle from robot X axis to back wheels
+	 * @param botRadius Bot radius in [m] (wheel center point)
+	 * @param wheelRadius Wheel radius in [m]
+	 */
+	default void updateGeometry(final double frontAngleDeg, final double backAngleDeg, final double botRadius,
+			final double wheelRadius)
+	{
+	}
+	
+	
+	/**
 	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 	 * @return
 	 */

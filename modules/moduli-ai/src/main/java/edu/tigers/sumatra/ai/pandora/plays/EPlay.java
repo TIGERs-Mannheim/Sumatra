@@ -11,6 +11,7 @@ import edu.tigers.sumatra.ai.pandora.plays.match.KeeperPlay;
 import edu.tigers.sumatra.ai.pandora.plays.match.OffensivePlay;
 import edu.tigers.sumatra.ai.pandora.plays.match.SupportPlay;
 import edu.tigers.sumatra.ai.pandora.plays.others.AroundTheBallPlay;
+import edu.tigers.sumatra.ai.pandora.plays.others.AutoKickSamplePlay;
 import edu.tigers.sumatra.ai.pandora.plays.others.CheeringPlay;
 import edu.tigers.sumatra.ai.pandora.plays.others.ExchangePositioningPlay;
 import edu.tigers.sumatra.ai.pandora.plays.others.FormationMovingPlay;
@@ -26,6 +27,8 @@ import edu.tigers.sumatra.ai.pandora.plays.redirect.RedirectCirclePlay;
 import edu.tigers.sumatra.ai.pandora.plays.redirect.RedirectDynamicTrianglePlay;
 import edu.tigers.sumatra.ai.pandora.plays.redirect.RedirectRectanglePlay;
 import edu.tigers.sumatra.ai.pandora.plays.redirect.RedirectTrianglePlay;
+import edu.tigers.sumatra.ai.pandora.plays.redirect.ReproducibleKickLyingPlay;
+import edu.tigers.sumatra.ai.pandora.plays.redirect.ReproducibleKickRollingBallPlay;
 import edu.tigers.sumatra.ai.pandora.plays.redirect.ReproducibleRedirectPlay;
 import edu.tigers.sumatra.ai.pandora.plays.standard.BallPlacementPlay;
 import edu.tigers.sumatra.ai.pandora.plays.standard.KickoffPlay;
@@ -53,7 +56,7 @@ public enum EPlay implements IInstanceableEnum
 	KEEPER(new InstanceableClass(KeeperPlay.class), 1),
 	/**  */
 	ATTACKER_SHOOTOUT(new InstanceableClass(OneOnOneShootoutPlay.class), 1),
-    /**  */
+	/**  */
 	PENALTY_THEM(new InstanceableClass(PenaltyThemPlay.class), 5),
 	/**  */
 	PENALTY_WE(new InstanceableClass(PenaltyWePlay.class), 5),
@@ -86,17 +89,23 @@ public enum EPlay implements IInstanceableEnum
 	FORMATION_STATIC(new InstanceableClass(FormationStaticPlay.class)),
 	/**  */
 	FORMATION_MOVING(new InstanceableClass(FormationMovingPlay.class)),
-
+	
 	INTERCHANGE(new InstanceableClass(RobotInterchangePlay.class)),
-
+	
 	/**  */
 	POSITIONING_PLAY(new InstanceableClass(PositioningPlay.class)),
-
-	/** */
-    REPRODUCIBLE_REDIRECT(new InstanceableClass(ReproducibleRedirectPlay.class));
 	
-	private final InstanceableClass	clazz;
-	private int								priority;
+	REPRODUCIBLE_REDIRECT(new InstanceableClass(ReproducibleRedirectPlay.class)),
+	REPRODUCIBLE_KICK_LYING_BALL(new InstanceableClass(ReproducibleKickLyingPlay.class)),
+	REPRODUCIBLE_KICK_ROLLING_BALL(new InstanceableClass(ReproducibleKickRollingBallPlay.class)),
+	
+	AUTO_KICK_SAMPLE(new InstanceableClass(AutoKickSamplePlay.class)),
+	
+	
+	;
+	
+	private final InstanceableClass clazz;
+	private int priority;
 	
 	
 	/**

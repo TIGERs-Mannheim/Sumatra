@@ -28,9 +28,7 @@ import edu.tigers.sumatra.stream.StreamUtil;
 
 
 /**
- * Geometrical representation of a circle.
- * 
- * @author Malte
+ * Implementation of {@link ICircle}
  */
 @Persistent(version = 1)
 public class Circle extends ACircle

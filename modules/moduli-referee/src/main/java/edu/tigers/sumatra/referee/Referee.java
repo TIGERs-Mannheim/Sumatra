@@ -3,110 +3,90 @@
  */
 package edu.tigers.sumatra.referee;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.EnumMap;
+import java.util.Map;
 
-import com.github.g3force.configurable.ConfigRegistration;
-import com.github.g3force.configurable.Configurable;
-import com.github.g3force.configurable.IConfigClient;
-import com.github.g3force.configurable.IConfigObserver;
-
-import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest;
 import edu.tigers.sumatra.Referee.SSL_Referee;
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.referee.control.Event;
+import edu.tigers.sumatra.referee.control.GcEventFactory;
 import edu.tigers.sumatra.referee.source.ARefereeMessageSource;
+import edu.tigers.sumatra.referee.source.CiRefereeSyncedReceiver;
 import edu.tigers.sumatra.referee.source.DirectRefereeMsgForwarder;
 import edu.tigers.sumatra.referee.source.ERefereeMessageSource;
 import edu.tigers.sumatra.referee.source.IRefereeSourceObserver;
 import edu.tigers.sumatra.referee.source.NetworkRefereeReceiver;
-import edu.tigers.sumatra.referee.source.refbox.RefBox;
 
 
 /**
  * Implementation of {@link AReferee} which can use various referee message sources.
- *
- * @author AndreR <andre@ryll.cc>
  */
-public class Referee extends AReferee implements IConfigObserver, IRefereeSourceObserver
+public class Referee extends AReferee implements IRefereeSourceObserver
 {
-	private static final String CONFIG_CATEGORY = "user";
-	
-	@Configurable(spezis = { "SUMATRA", "", }, defValueSpezis = { "INTERNAL_REFBOX", "NETWORK" })
-	private static ERefereeMessageSource activeSource = ERefereeMessageSource.NETWORK;
-	
-	private final List<ARefereeMessageSource> msgSources = new ArrayList<>();
+	private final Map<ERefereeMessageSource, ARefereeMessageSource> msgSources = new EnumMap<>(
+			ERefereeMessageSource.class);
 	
 	private ARefereeMessageSource source;
-	
-	static
-	{
-		ConfigRegistration.registerClass(CONFIG_CATEGORY, Referee.class);
-	}
+	private SslGameControllerProcess sslGameControllerProcess;
+	private boolean controllable = false;
 	
 	
-	/**
-	 * Create new instance
-	 */
 	public Referee()
 	{
-		msgSources.add(new NetworkRefereeReceiver());
-		msgSources.add(new RefBox());
-		msgSources.add(new DirectRefereeMsgForwarder());
-	}
-	
-	
-	@Override
-	public void initModule()
-	{
-		ConfigRegistration.applySpezi(CONFIG_CATEGORY, SumatraModel.getInstance().getEnvironment());
-		ConfigRegistration.registerConfigurableCallback(CONFIG_CATEGORY, this);
-	}
-	
-	
-	@Override
-	public void afterApply(final IConfigClient configClient)
-	{
-		ConfigRegistration.applySpezi(CONFIG_CATEGORY, SumatraModel.getInstance().getEnvironment());
-		changeSource(activeSource);
-	}
-	
-	
-	private void changeSource(final ERefereeMessageSource newSource)
-	{
-		if (source != null)
-		{
-			source.stop();
-			source.removeObserver(this);
-		}
-		
-		source = msgSources.stream()
-				.filter(s -> s.getType() == newSource)
-				.findAny()
-				.orElse(source);
-		
-		if (source != null)
-		{
-			source.addObserver(this);
-			source.start();
-			
-			notifyRefereeMsgSourceChanged(source);
-		}
+		msgSources.put(ERefereeMessageSource.NETWORK, new NetworkRefereeReceiver());
+		msgSources.put(ERefereeMessageSource.INTERNAL_FORWARDER, new DirectRefereeMsgForwarder());
+		msgSources.put(ERefereeMessageSource.CI, new CiRefereeSyncedReceiver());
 	}
 	
 	
 	@Override
 	public void startModule()
 	{
-		source = msgSources.stream()
-				.filter(s -> s.getType() == activeSource)
-				.findAny()
-				.orElse(msgSources.get(0));
+		ERefereeMessageSource activeSource = ERefereeMessageSource
+				.valueOf(getSubnodeConfiguration().getString("source", ERefereeMessageSource.NETWORK.name()));
+		int port = getSubnodeConfiguration().getInt("port", 10003);
+		boolean useGameController = getSubnodeConfiguration().getBoolean("gameController", false);
+		
+		if (useGameController)
+		{
+			sslGameControllerProcess = new SslGameControllerProcess(getGameControllerUiPort());
+			new Thread(sslGameControllerProcess).start();
+			initGameController();
+		}
+		
+		((NetworkRefereeReceiver) msgSources.get(ERefereeMessageSource.NETWORK)).setPort(port);
+		((CiRefereeSyncedReceiver) msgSources.get(ERefereeMessageSource.CI)).setPort(port);
+		
+		source = msgSources.get(activeSource);
 		
 		source.addObserver(this);
 		source.start();
 		
+		controllable = useGameController;
+		
 		notifyRefereeMsgSourceChanged(source);
+	}
+	
+	
+	@Override
+	public void initGameController()
+	{
+		sslGameControllerProcess.getClientBlocking().ifPresent(this::initGameController);
+	}
+	
+	
+	private void initGameController(SslGameControllerClient client)
+	{
+		client.sendEvent(GcEventFactory.triggerResetMatch());
+		client.sendEvent(GcEventFactory.teamName(ETeamColor.BLUE, "BLUE AI"));
+		client.sendEvent(GcEventFactory.teamName(ETeamColor.YELLOW, "YELLOW AI"));
+		client.sendEvent(GcEventFactory.nextStage());
+	}
+	
+	
+	public int getGameControllerUiPort()
+	{
+		return getSubnodeConfiguration().getInt("gc-ui-port", 50543);
 	}
 	
 	
@@ -115,13 +95,10 @@ public class Referee extends AReferee implements IConfigObserver, IRefereeSource
 	{
 		source.stop();
 		source.removeObserver(this);
-	}
-	
-	
-	@Override
-	public void deinitModule()
-	{
-		// nothing to do
+		if (sslGameControllerProcess != null)
+		{
+			sslGameControllerProcess.stop();
+		}
 	}
 	
 	
@@ -133,11 +110,11 @@ public class Referee extends AReferee implements IConfigObserver, IRefereeSource
 	
 	
 	@Override
-	public void handleControlRequest(final SSL_RefereeRemoteControlRequest request)
+	public void sendGameControllerEvent(final Event event)
 	{
-		if (source != null)
+		if (sslGameControllerProcess != null)
 		{
-			source.handleControlRequest(request);
+			sslGameControllerProcess.getClient().ifPresent(c -> c.sendEvent(event));
 		}
 	}
 	
@@ -152,23 +129,20 @@ public class Referee extends AReferee implements IConfigObserver, IRefereeSource
 	@Override
 	public ARefereeMessageSource getSource(final ERefereeMessageSource type)
 	{
-		return msgSources.stream()
-				.filter(s -> s.getType() == type)
-				.findAny()
-				.orElse(null);
+		return msgSources.get(type);
 	}
 	
 	
 	@Override
-	public void setActiveSource(final ERefereeMessageSource type)
+	public boolean isControllable()
 	{
-		changeSource(type);
+		return controllable;
 	}
 	
 	
 	@Override
-	public void updateKeeperId(BotID keeperId)
+	public void setCurrentTime(long timestamp)
 	{
-		source.updateKeeperId(keeperId);
+		source.setCurrentTime(timestamp);
 	}
 }

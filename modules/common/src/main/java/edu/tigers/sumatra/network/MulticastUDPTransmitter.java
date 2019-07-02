@@ -7,10 +7,8 @@ package edu.tigers.sumatra.network;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
-import java.net.NetworkInterface;
 import java.net.NoRouteToHostException;
 import java.net.UnknownHostException;
 
@@ -20,105 +18,83 @@ import org.apache.log4j.Logger;
 /**
  * This class is an {@link ITransmitter} implementation capable of sending some {@code byte[]}-data via UDP to a
  * multicast-group.
- * 
- * @author Gero
  */
 public class MulticastUDPTransmitter implements ITransmitter<byte[]>
 {
+	private static final Logger log = Logger.getLogger(MulticastUDPTransmitter.class);
+	private final int targetPort;
+	private final InetAddress targetAddr;
 	
-	protected final Logger		log			= Logger.getLogger(getClass());
-	private final int				targetPort;
-	// Communication
-	private MulticastSocket		socket		= null;
-	private InetAddress			targetAddr	= null;
-	private DatagramPacket		tempPacket	= null;
-	
-	/** The internal state-switch of this transmitter */
-	private volatile boolean	readyToSend	= false;
+	private MulticastSocket socket = null;
+	private boolean lastSendFailed = false;
 	
 	
 	/**
-	 * @param targetAddr
-	 * @param targetPort
+	 * @param targetAddr multicast address to send to
+	 * @param targetPort network port to send to
 	 */
 	public MulticastUDPTransmitter(final String targetAddr, final int targetPort)
 	{
-		this(targetAddr, targetPort, null);
-	}
-	
-	
-	/**
-	 * @param targetAddr
-	 * @param targetPort
-	 * @param nif
-	 */
-	public MulticastUDPTransmitter(final String targetAddr, final int targetPort,
-			final NetworkInterface nif)
-	{
 		this.targetPort = targetPort;
-		
-		while (socket == null)
-		{
-			try
-			{
-				socket = new MulticastSocket();
-				socket.setReuseAddress(true);
-				
-				// Set nif
-				if (nif != null)
-				{
-					socket.setNetworkInterface(nif);
-				}
-			} catch (IOException err)
-			{
-				log.error("Error while creating MulticastSocket!", err);
-			}
-		}
+		this.targetAddr = addressByName(targetAddr);
 		
 		try
 		{
-			this.targetAddr = InetAddress.getByName(targetAddr);
+			socket = new MulticastSocket();
+		} catch (IOException err)
+		{
+			log.error("Error while creating MulticastSocket!", err);
+		}
+	}
+	
+	
+	private InetAddress addressByName(final String targetAddr)
+	{
+		try
+		{
+			return InetAddress.getByName(targetAddr);
 		} catch (UnknownHostException err)
 		{
 			log.error("The Host could not be found!", err);
 		}
-		
-		synchronized (this)
-		{
-			readyToSend = true;
-		}
+		return null;
 	}
 	
 	
 	@Override
-	public boolean send(final byte[] data)
+	public synchronized boolean send(final byte[] data)
 	{
-		// Synchronize access to socket as it belongs to the 'state'
-		DatagramSocket synchroninzedSocket;
-		synchronized (this)
+		if (socket == null)
 		{
-			if (!isReady())
+			if (!lastSendFailed)
 			{
 				log.error("Transmitter is not ready to send!");
-				return false;
+				lastSendFailed = true;
 			}
-			
-			synchroninzedSocket = this.socket;
+			return false;
 		}
 		
-		tempPacket = new DatagramPacket(data, data.length, targetAddr, targetPort);
+		DatagramPacket tempPacket = new DatagramPacket(data, data.length, targetAddr, targetPort);
 		
 		// Receive _outside_ the synchronized state, to prevent blocking of the state
 		try
 		{
-			synchroninzedSocket.send(tempPacket); // DatagramPacket is sent...
+			socket.send(tempPacket); // DatagramPacket is sent...
+			lastSendFailed = false;
 		} catch (NoRouteToHostException nrh)
 		{
 			log.warn("No route to host: '" + targetAddr + "'. Dropping packet...", nrh);
 			return false;
 		} catch (IOException err)
 		{
-			log.error("Error while sending data to: '" + targetAddr + ":" + targetPort + "'!", err);
+			if (!lastSendFailed)
+			{
+				log.error("Error while sending data to: '" + targetAddr + ":" + targetPort + "'. "
+						+ "If you are not in any network, multicast is not supported by default. "
+						+ "On Linux, you can enable multicast on the loopback interface by executing following commands as root: "
+						+ "route add -net 224.0.0.0 netmask 240.0.0.0 dev lo && ifconfig lo multicast", err);
+				lastSendFailed = true;
+			}
 			return false;
 		}
 		
@@ -127,54 +103,12 @@ public class MulticastUDPTransmitter implements ITransmitter<byte[]>
 	
 	
 	@Override
-	public synchronized void cleanup()
+	public synchronized void close()
 	{
-		readyToSend = false;
-		
-		targetAddr = null;
-		tempPacket = null;
-		
 		if (socket != null)
 		{
 			socket.close();
 			socket = null;
 		}
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	@Override
-	public synchronized int getLocalPort()
-	{
-		return readyToSend ? socket.getLocalPort() : UNDEFINED_PORT;
-	}
-	
-	
-	@Override
-	public synchronized InetAddress getLocalAddress()
-	{
-		return targetAddr;
-	}
-	
-	
-	@Override
-	public synchronized int getTargetPort()
-	{
-		return targetPort;
-	}
-	
-	
-	@Override
-	public synchronized boolean isReady()
-	{
-		return readyToSend;
-	}
-	
-	
-	synchronized MulticastSocket getSocket()
-	{
-		return socket;
 	}
 }

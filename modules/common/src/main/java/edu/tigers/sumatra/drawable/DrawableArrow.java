@@ -8,9 +8,12 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 
+import com.sleepycat.persist.model.Persistent;
+
 import edu.tigers.sumatra.math.vector.IVector2;
 
 
+@Persistent
 public class DrawableArrow implements IDrawableShape
 {
 	
@@ -18,6 +21,11 @@ public class DrawableArrow implements IDrawableShape
 	private IVector2 direction;
 	private Color color;
 	private int arrowSize = 25;
+	
+	
+	public DrawableArrow()
+	{
+	}
 	
 	
 	public DrawableArrow(IVector2 position, IVector2 direction, Color color)

@@ -9,23 +9,26 @@ import java.util.Optional;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.keeper.EKeeperState;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveMath;
-import edu.tigers.sumatra.ai.metis.support.IPassTarget;
-import edu.tigers.sumatra.ai.metis.support.PassTarget;
-import edu.tigers.sumatra.ai.metis.targetrater.PassInterceptionRater;
+import edu.tigers.sumatra.ai.metis.support.passtarget.IPassTarget;
+import edu.tigers.sumatra.ai.metis.support.passtarget.PassTarget;
 import edu.tigers.sumatra.ai.pandora.roles.keeper.KeeperRole;
+import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.AMoveSkill;
 import edu.tigers.sumatra.skillsystem.skills.RunUpChipSkill;
 import edu.tigers.sumatra.skillsystem.skills.SingleTouchKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
+import edu.tigers.sumatra.time.TimestampTimer;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
-import edu.tigers.sumatra.wp.data.ITrackedObject;
 
 
 /**
@@ -37,6 +40,7 @@ public class ChipFastState extends AKeeperState
 {
 	private IPassTarget pTarget = null;
 	private DynamicPosition target;
+	private final TimestampTimer timeoutTimer = new TimestampTimer(10);
 	
 	
 	/**
@@ -52,84 +56,55 @@ public class ChipFastState extends AKeeperState
 	public void doEntryActions()
 	{
 		final IVector2 ballPos = getWFrame().getBall().getPos();
-		
-		IVector2 chippingPosition = LineMath.stepAlongLine(getPos(), ballPos, 3000);
+		final AMoveSkill skill;
+		IVector2 chippingPosition = LineMath.stepAlongLine(ballPos, getPos(), -3000);
 		if (ballPos.x() <= getPos().x())
 		{
-			chippingPosition = Geometry.getCenter();
+			chippingPosition = ballPos.addNew(Vector2.fromX(4000));
 		}
-		final AMoveSkill skill;
 		if (isBallDangerous())
 		{
 			target = new DynamicPosition(chippingPosition, 0.6);
 			TouchKickSkill kickSkill = new TouchKickSkill(target,
 					KickParams.chip(getKickSpeed(chippingPosition)));
 			skill = kickSkill;
-		} else if (KeeperRole.isChipFarToPassTarget())
-		{
-			Optional<ITrackedBot> fallBackReceiver = getWFrame().getTigerBotsVisible().values().stream()
-					.filter(bot -> isPassTargetBehindPassLine(bot.getPos()))
-					.min((a, b) -> (int) (a.getPos().x() - b.getPos().x()));
-			IVector2 fallBack = fallBackReceiver.map(ITrackedObject::getPos).orElseGet(Geometry::getCenter);
-			
-			chippingPosition = findBestPassTargetForKeeper(ballPos).orElse(fallBack);
-			target = new DynamicPosition(chippingPosition);
-			skill = new RunUpChipSkill(target, getKickSpeed(chippingPosition));
 		} else
 		{
-			// chippingPosition
-			chippingPosition = getAiFrame().getTacticalField().getChipKickTarget();
+			IVector2 fallBack = getAiFrame().getTacticalField().getChipKickTarget();
+			chippingPosition = findBestPassTargetForKeeper().orElse(fallBack);
 			target = new DynamicPosition(chippingPosition);
-			skill = new SingleTouchKickSkill(target,
-					KickParams.chip(getKickSpeed(chippingPosition)));
-			if (KeeperRole.isPassTargetSet())
-			{
-				ITrackedBot bot = getAiFrame().getTacticalField().getChipKickTargetBot();
-				IVector2 newKickerPos = LineMath.stepAlongLine(ballPos, chippingPosition,
-						chippingPosition.distanceTo(ballPos) + Geometry.getBotRadius());
-				pTarget = bot != null ? new PassTarget(newKickerPos, bot.getBotId()) : null;
-			}
+			skill = KeeperRole.isUseRunUpChipSkill() ? new RunUpChipSkill(target, getKickSpeed(chippingPosition))
+					: new SingleTouchKickSkill(target, KickParams.chip(getKickSpeed(chippingPosition)));
 		}
 		skill.getMoveCon().setGoalPostObstacle(true);
 		skill.getMoveCon().setPenaltyAreaAllowedOur(true);
 		setNewSkill(skill);
+		timeoutTimer.reset();
+		timeoutTimer.update(getWFrame().getTimestamp());
 	}
 	
 	
 	private double getKickSpeed(final IVector2 chippingPosition)
 	{
 		double distance = chippingPosition.distanceTo(getWFrame().getBall().getPos());
-		return OffensiveMath.passSpeedChip(distance);
+		final double maxChipSpeed = getRole().getBot().getRobotInfo().getBotParams().getKickerSpecs()
+				.getMaxAbsoluteChipVelocity();
+		return OffensiveMath.passSpeedChip(distance, maxChipSpeed);
 	}
 	
 	
 	@Override
 	public void doUpdate()
 	{
-		if (!isBallDangerous() && !KeeperRole.isChipFarToPassTarget() && !isKeeperCloseToBall())
+		if (!isBallDangerous() && isKeeperFarFromBall() && !timeoutTimer.isTimeUp(getWFrame().getTimestamp()))
 		{
-			IVector2 chippingPos = getAiFrame().getTacticalField().getChipKickTarget();
-			target.update(new DynamicPosition(chippingPos));
-			if (KeeperRole.isPassTargetSet())
-			{
-				ITrackedBot bot = getAiFrame().getTacticalField().getChipKickTargetBot();
-				IVector2 newKickerPos = LineMath.stepAlongLine(getWFrame().getBall().getPos(), chippingPos,
-						chippingPos.distanceTo(getWFrame().getBall().getPos()) + Geometry.getBotRadius());
-				pTarget = bot != null ? new PassTarget(newKickerPos, bot.getBotId()) : null;
-			}
-		} else if (!isBallDangerous() && !isKeeperCloseToBall())
-		{
-			Optional<ITrackedBot> fallBackReceiver = getWFrame().getTigerBotsVisible().values().stream()
-					.filter(bot -> isPassTargetBehindPassLine(bot.getPos()))
-					.min((a, b) -> (int) (a.getPos().x() - b.getPos().x()));
-			IVector2 fallBack = fallBackReceiver.map(ITrackedObject::getPos).orElseGet(Geometry::getCenter);
-			
-			IVector2 chippingPosition = findBestPassTargetForKeeper(getWFrame().getBall().getPos()).orElse(fallBack);
-			target = new DynamicPosition(chippingPosition);
-			
-			DrawableLine line = new DrawableLine(Line.fromPoints(getWFrame().getBall().getPos(), target));
+			ITrackedBot fallBackReceiver = getAiFrame().getTacticalField().getChipKickTargetBot();
+			IVector2 fallBack = getAiFrame().getTacticalField().getChipKickTarget();
+			pTarget = fallBackReceiver != null ? new PassTarget(new DynamicPosition(fallBack), fallBackReceiver.getBotId()) : null;
+			IVector2 chippingPosition = findBestPassTargetForKeeper().orElse(fallBack);
+			target.setPos(chippingPosition);
+			DrawableLine line = new DrawableLine(Line.fromPoints(getWFrame().getBall().getPos(), target.getPos()));
 			getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.AI_KEEPER).add(line);
-			fallBackReceiver.ifPresent(iTrackedBot -> pTarget = new PassTarget(target, iTrackedBot.getBotId()));
 		}
 		if (pTarget != null)
 		{
@@ -138,21 +113,16 @@ public class ChipFastState extends AKeeperState
 	}
 	
 	
-	private Optional<IVector2> findBestPassTargetForKeeper(IVector2 ballPos)
+	private Optional<IVector2> findBestPassTargetForKeeper()
 	{
 		Optional<IVector2> chippingPosition = Optional.empty();
-		for (IPassTarget passTarget : getAiFrame().getTacticalField().getPassTargetsRanked())
+		for (IPassTarget passTarget : getAiFrame().getTacticalField().getRatedPassTargetsRanked())
 		{
-			if (isPassTargetBehindPassLine(passTarget.getKickerPos()))
+			if (isPassTargetBehindPassCircle(passTarget.getPos()))
 			{
-				double chipScore = 1 - PassInterceptionRater.getChipScoreForLineSegment(getWFrame().getBall(),
-						getWFrame().getFoeBots().values(), ballPos, passTarget.getKickerPos(), 0);
-				if (chipScore < KeeperRole.getMaxChipScore())
-				{
-					chippingPosition = Optional.of(passTarget.getKickerPos());
-					pTarget = passTarget;
-					break;
-				}
+				chippingPosition = Optional.of(passTarget.getPos());
+				pTarget = passTarget;
+				break;
 				
 			}
 		}
@@ -160,26 +130,32 @@ public class ChipFastState extends AKeeperState
 	}
 	
 	
-	private boolean isKeeperCloseToBall()
+	private boolean isKeeperFarFromBall()
 	{
-		return getPos().distanceTo(getWFrame().getBall().getPos()) < Geometry.getBallRadius() + Geometry.getBotRadius()
+		return getPos().distanceTo(getWFrame().getBall().getPos()) > Geometry.getBallRadius() + Geometry.getBotRadius()
 				+ 10;
 	}
 	
 	
 	private boolean isBallDangerous()
 	{
-		boolean isChipOK = !getAiFrame().getTacticalField().isBotInterferingKeeperChip();
 		boolean isEnemyCloseToBall = getAiFrame().getTacticalField().getEnemyClosestToBall().getDist() < KeeperRole
 				.getMinFOEBotDistToChill();
 		boolean isBallInPE = Geometry.getPenaltyAreaOur().isPointInShape(getWFrame().getBall().getPos());
-		return isChipOK && isEnemyCloseToBall && !isBallInPE;
+		return isEnemyCloseToBall && !isBallInPE;
 	}
 	
 	
-	private boolean isPassTargetBehindPassLine(IVector2 pos)
+	private boolean isPassTargetBehindPassCircle(IVector2 pos)
 	{
-		return pos.x() >= KeeperRole.getMinXPosOfPossiblePassTarget();
+		
+		ICircle passCircle = Circle.createCircle(Geometry.getGoalOur().getCenter(), KeeperRole.getPassCircleRadius());
+		if (Geometry.getPenaltyAreaOur().isPointInShape(getWFrame().getBall().getPos()))
+		{
+			getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.AI_KEEPER)
+					.add(new DrawableCircle(passCircle));
+		}
+		return !passCircle.isPointInShape(pos);
 	}
 	
 }

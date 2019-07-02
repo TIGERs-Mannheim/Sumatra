@@ -1,17 +1,11 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Sumatra Match" type="Application" factoryName="Application" singleton="true">
-    <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea" />
-    <option name="MAIN_CLASS_NAME" value="edu.tigers.sumatra.Sumatra" />
-    <option name="VM_PARAMETERS" value="-Dproductive=true -Xms512m -Xmx12G -server -Xnoclassgc -Xverify:none -Dsun.java2d.d3d=false -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true -XX:-OmitStackTraceInFastThrow -XX:+AggressiveOpts" />
-    <option name="PROGRAM_PARAMETERS" value="" />
-    <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
-    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
     <option name="ALTERNATIVE_JRE_PATH" value="openjdk-8" />
-    <option name="ENABLE_SWING_INSPECTOR" value="false" />
-    <option name="ENV_VARIABLES" />
-    <option name="PASS_PARENT_ENVS" value="true" />
+    <option name="MAIN_CLASS_NAME" value="edu.tigers.sumatra.Sumatra" />
     <module name="sumatra-main" />
-    <envs />
-    <method />
+    <option name="VM_PARAMETERS" value="-Dproductive=true -Xms512m -Xmx12G -server -Xnoclassgc -Xverify:none -Dsun.java2d.d3d=false -Djava.net.preferIPv4Stack=true -XX:-OmitStackTraceInFastThrow" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
   </configuration>
 </component>

@@ -41,12 +41,6 @@ public interface IBot
 	
 	
 	/**
-	 * @return
-	 */
-	double getDribblerSpeed();
-	
-	
-	/**
 	 * Each bot has its own hardware id that uniquely identifies a robot by hardware (mainboard)
 	 *
 	 * @return
@@ -82,6 +76,8 @@ public interface IBot
 	 * @return the color
 	 */
 	ETeamColor getColor();
+
+	double getDribblerTemp();
 	
 	
 	/**
@@ -109,12 +105,6 @@ public interface IBot
 	{
 		return getBotParams().getDimensions().getCenter2DribblerDist();
 	}
-	
-	
-	/**
-	 * @return
-	 */
-	String getName();
 	
 	
 	/**

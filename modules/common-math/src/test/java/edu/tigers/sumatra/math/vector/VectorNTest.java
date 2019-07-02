@@ -254,7 +254,7 @@ public class VectorNTest
 		assertThat(VectorN.from(0, 0, 0).isZeroVector()).isTrue();
 		assertThat(VectorN.from(1e-8, 0, 0).isZeroVector()).isTrue();
 		assertThat(VectorN.from(1e-8, 1e-8, 1e-8).isZeroVector()).isTrue();
-		assertThat(VectorN.from(1e-4, 0, 0).isZeroVector()).isFalse();
+		assertThat(VectorN.from(1e-2, 0, 0).isZeroVector()).isFalse();
 	}
 	
 	
@@ -300,7 +300,9 @@ public class VectorNTest
 		IVectorN vector1 = VectorN.from(0, 0, 2.5);
 		assertThat(vector1.toString()).isEqualTo("[0.000,0.000,2.500|l=2.500]");
 		IVectorN vector2 = VectorN.from(0, 0.001, 0);
-		assertThat(vector2.toString()).isEqualTo("[0.000,0.001,0.000|l=0.001|a=1.571]");
+		assertThat(vector2.toString()).isEqualTo("[0.000,0.001,0.000|l=0.001]");
+		IVectorN vector3 = VectorN.from(0, 0.01, 0);
+		assertThat(vector3.toString()).isEqualTo("[0.000,0.010,0.000|l=0.010|a=1.571]");
 	}
 	
 	

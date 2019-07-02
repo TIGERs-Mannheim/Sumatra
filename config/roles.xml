@@ -8,23 +8,31 @@
             <distanceBetweenBots>15</distanceBetweenBots>
         </CenterBackRole>
     </defense>
-    <keeper>
-        <KeeperRole>
-            <chipFarToPassTarget>true</chipFarToPassTarget>
-        </KeeperRole>
-    </keeper>
     <offense>
+        <DelayedAttackRole>
+            <ballDist>200</ballDist>
+            <useOld>true</useOld>
+        </DelayedAttackRole>
         <OneOnOneShooter>
+            <distanceToTarget>1000.0</distanceToTarget>
+            <enemyDistanceToGoal>2000.0</enemyDistanceToGoal>
             <enemyTimeToBallPrediction>1.5</enemyTimeToBallPrediction>
-            <maxEnemyDistanceToBall>600.0</maxEnemyDistanceToBall>
+            <maxEnemyDistanceToBall>3500.0</maxEnemyDistanceToBall>
+            <minEndSpeedPercent>0.7</minEndSpeedPercent>
+            <moveSpeedPercent>0.85</moveSpeedPercent>
+            <placementKickSpeed>0.8</placementKickSpeed>
         </OneOnOneShooter>
+        <OpponentInterceptionRole>
+            <smartDistanceCalcAllowedForInterceptor>true</smartDistanceCalcAllowedForInterceptor>
+        </OpponentInterceptionRole>
     </offense>
     <support>
         <behaviors>
             <repulsive>
                 <ARepulsiveBehavior>
                     <magnitudeFoeBot>-1500.0</magnitudeFoeBot>
-                    <sigmaTeamBot>1000.0</sigmaTeamBot>
+                    <magnitudeTeamBot>-1400</magnitudeTeamBot>
+                    <sigmaTeamBot>1250</sigmaTeamBot>
                 </ARepulsiveBehavior>
                 <RepulsivePassReceiver>
                     <radiusMeanBallDistance>2000.0</radiusMeanBallDistance>
@@ -32,4 +40,10 @@
             </repulsive>
         </behaviors>
     </support>
+    <test>
+        <RedirectTestRole>
+            <desiredPassKickSpeedDefault>4.0</desiredPassKickSpeedDefault>
+            <desiredRedirectKickSpeed>6.5</desiredRedirectKickSpeed>
+        </RedirectTestRole>
+    </test>
 </edu.tigers.sumatra.ai.pandora.roles>

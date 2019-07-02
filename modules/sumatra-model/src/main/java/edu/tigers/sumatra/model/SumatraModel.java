@@ -8,14 +8,18 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Appender;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import edu.tigers.moduli.Moduli;
+import edu.tigers.moduli.exceptions.DependencyException;
+import edu.tigers.moduli.exceptions.LoadModulesException;
 
 
 /**
@@ -28,44 +32,42 @@ import edu.tigers.moduli.Moduli;
  * The model make use of a Singleton - pattern,
  * so you can access the Model
  * with a simple SumatraModel.getInstance() .
- * 
+ *
  * @author bernhard
  */
 public final class SumatraModel extends Moduli
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
 	private static final Logger log = Logger.getLogger(SumatraModel.class.getName());
-	
+
 	// --- version ---
-	private static final String VERSION = "6.0";
-	
+	private static final String VERSION = getVersionNameFromManifest();
+
 	// --- singleton ---
 	private static final SumatraModel INSTANCE = new SumatraModel();
-	
+
 	/**
 	 * These {@link Properties} contain the information necessary for the application to run properly (e.g., file paths)
 	 */
 	private Properties userSettings = new Properties();
-	
+
 	// --- moduli config ---
 	private static final String KEY_MODULI_CONFIG = SumatraModel.class.getName() + ".moduliConfig";
 	/** */
 	public static final String MODULI_CONFIG_PATH = "./config/moduli/";
 	/**  */
-	public static final String MODULI_CONFIG_FILE_DEFAULT = "moduli_sumatra.xml";
-	
+	public static final String MODULI_CONFIG_FILE_DEFAULT = "sim.xml";
+
 	// Application Properties
 	private static final String CONFIG_SETTINGS_PATH = "./config/";
-	
-	
+
+
 	private boolean productive = false;
 	private boolean testMode = false;
-	
-	
+
+	private boolean simulation = false;
+	private String environment = "";
+
+
 	// --------------------------------------------------------------------------
 	// --- getInstance/constructor(s) -------------------------------------------
 	// --------------------------------------------------------------------------
@@ -87,19 +89,19 @@ public final class SumatraModel extends Moduli
 			testMode = Boolean.valueOf(test);
 		}
 	}
-	
-	
+
+
 	/**
 	 * getInstance() - Singleton-pattern.
-	 * 
+	 *
 	 * @return the "one-and-only" instance of CSModel
 	 */
 	public static SumatraModel getInstance()
 	{
 		return INSTANCE;
 	}
-	
-	
+
+
 	/**
 	 * Load application properties in two steps
 	 */
@@ -119,15 +121,43 @@ public final class SumatraModel extends Moduli
 			log.warn("Config: " + uf.getPath() + " could not be read, using default configs!", err);
 		}
 	}
-	
-	
-	@Override
-	public void loadModulesSafe(final String filename)
+
+
+	/**
+	 * Load modules of the given config file. The config path is appended by this method and must not be prepended.
+	 *
+	 * @param configFileName the config file name
+	 * @throws DependencyException
+	 * @throws LoadModulesException
+	 */
+	@SuppressWarnings("squid:S1160") // throwing two exceptions, because this is only a proxy method
+	public void loadModulesOfConfig(final String configFileName) throws DependencyException, LoadModulesException
 	{
-		super.loadModulesSafe(MODULI_CONFIG_PATH + filename);
+		super.loadModules(MODULI_CONFIG_PATH + configFileName);
+		updateInternalStateFromGlobalConfig();
 	}
-	
-	
+
+
+	/**
+	 * Load modules of the given config file. The config path is appended by this method and must not be prepended.
+	 * Catch exceptions and continue normally
+	 *
+	 * @param configFileName the config file name
+	 */
+	public void loadModulesOfConfigSafe(final String configFileName)
+	{
+		super.loadModulesSafe(MODULI_CONFIG_PATH + configFileName);
+		updateInternalStateFromGlobalConfig();
+	}
+
+
+	private void updateInternalStateFromGlobalConfig()
+	{
+		simulation = getGlobalConfiguration().getBoolean("simulation", false);
+		environment = getGlobalConfiguration().getString("environment");
+	}
+
+
 	/**
 	 * @return The {@link File} which represents the user-properties file
 	 */
@@ -135,11 +165,11 @@ public final class SumatraModel extends Moduli
 	{
 		final String userName = System.getProperty("user.name");
 		final String filename = CONFIG_SETTINGS_PATH + userName + ".props";
-		
+
 		return new File(filename);
 	}
-	
-	
+
+
 	// --------------------------------------------------------------------------
 	// --- moduli config --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -150,8 +180,8 @@ public final class SumatraModel extends Moduli
 	{
 		return userSettings.getProperty(SumatraModel.KEY_MODULI_CONFIG, MODULI_CONFIG_FILE_DEFAULT);
 	}
-	
-	
+
+
 	/**
 	 * @param currentModuliConfig the currentModuliConfig to set
 	 */
@@ -159,12 +189,12 @@ public final class SumatraModel extends Moduli
 	{
 		userSettings.setProperty(SumatraModel.KEY_MODULI_CONFIG, currentModuliConfig);
 	}
-	
-	
+
+
 	// --------------------------------------------------------------------------
 	// --- app properties -------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
+
 	/**
 	 * @return The applications {@link Properties}
 	 */
@@ -172,11 +202,11 @@ public final class SumatraModel extends Moduli
 	{
 		return userSettings;
 	}
-	
-	
+
+
 	/**
 	 * Calls {@link Properties#setProperty(String, String)}
-	 * 
+	 *
 	 * @param key
 	 * @param value
 	 * @return The value which was associated with the given key before
@@ -191,7 +221,7 @@ public final class SumatraModel extends Moduli
 		{
 			obj = userSettings.setProperty(key, value);
 		}
-		
+
 		if (obj == null)
 		{
 			// no previous item
@@ -202,14 +232,14 @@ public final class SumatraModel extends Moduli
 			log.warn("Object '" + obj + "' (which has been associated to '" + key + "') is no String!");
 			return null;
 		}
-		
+
 		return (String) obj;
 	}
-	
-	
+
+
 	/**
 	 * Calls {@link Properties#getProperty(String)}
-	 * 
+	 *
 	 * @param key
 	 * @return The String associated with the given key
 	 */
@@ -217,11 +247,11 @@ public final class SumatraModel extends Moduli
 	{
 		return userSettings.getProperty(key);
 	}
-	
-	
+
+
 	/**
 	 * Calls {@link Properties#getProperty(String)}
-	 * 
+	 *
 	 * @param key
 	 * @param def
 	 * @return The String associated with the given key
@@ -235,19 +265,19 @@ public final class SumatraModel extends Moduli
 		}
 		return val;
 	}
-	
-	
+
+
 	/**
 	 * Sumatra version
-	 * 
+	 *
 	 * @return
 	 */
 	public static String getVersion()
 	{
 		return VERSION;
 	}
-	
-	
+
+
 	/**
 	 * @return if we are in productive (match) mode
 	 */
@@ -255,14 +285,14 @@ public final class SumatraModel extends Moduli
 	{
 		return productive;
 	}
-	
-	
+
+
 	public void setTestMode(final boolean testMode)
 	{
 		this.testMode = testMode;
 	}
-	
-	
+
+
 	/**
 	 * @return if we are in test mode
 	 */
@@ -270,8 +300,8 @@ public final class SumatraModel extends Moduli
 	{
 		return testMode;
 	}
-	
-	
+
+
 	/**
 	 * save properties
 	 */
@@ -295,7 +325,7 @@ public final class SumatraModel extends Moduli
 				log.error("Could not create properties file: " + uf.getAbsolutePath(), e);
 			}
 		}
-		
+
 		FileOutputStream out = null;
 		try
 		{
@@ -305,7 +335,7 @@ public final class SumatraModel extends Moduli
 		{
 			log.warn("Could not write to " + uf.getPath() + ", configuration is not saved", err);
 		}
-		
+
 		if (out != null)
 		{
 			try
@@ -318,29 +348,60 @@ public final class SumatraModel extends Moduli
 			}
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param lvl
 	 */
 	public static void changeLogLevel(final Level lvl)
 	{
 		Appender appender = Logger.getRootLogger().getAppender("console");
-		if ((appender != null) && (appender instanceof ConsoleAppender))
+		if (appender instanceof ConsoleAppender)
 		{
 			((ConsoleAppender) appender).setThreshold(lvl);
 		}
 	}
-	
-	
+
+
 	/**
 	 * @return the current environment (Robocup, Lab, etc) as defined by moduli config
 	 */
 	public String getEnvironment()
 	{
-		if (getGlobalConfiguration() != null)
+		return environment;
+	}
+
+
+	public boolean isSimulation()
+	{
+		return simulation;
+	}
+
+
+	private static String getVersionNameFromManifest()
+	{
+		InputStream manifestStream = SumatraModel.class.getClassLoader()
+				.getResourceAsStream("edu/tigers/sumatra/model/metadata.properties");
+		if (manifestStream != null)
 		{
-			return getGlobalConfiguration().getString("environment");
+			try
+			{
+				final Properties properties = new Properties();
+				properties.load(manifestStream);
+
+				final String version = properties.getProperty("version", "unknown version")
+						.replaceAll("-SNAPSHOT", "");
+				final String gitHash = properties.getProperty("git.hash", "");
+				if (StringUtils.isNotBlank(gitHash))
+				{
+					return version + "_" + gitHash;
+				}
+				return version;
+			} catch (IOException e)
+			{
+				log.error("Could not read manifest", e);
+			}
+
 		}
 		return "";
 	}

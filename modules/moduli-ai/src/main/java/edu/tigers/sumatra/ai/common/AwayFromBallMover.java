@@ -23,14 +23,15 @@ import edu.tigers.sumatra.math.vector.Vector2;
 public class AwayFromBallMover
 {
 	private static final List<Double> DIRECTIONS = generateDirections();
-	private final PointChecker pointChecker = new PointChecker();
+	private final PointChecker pointChecker;
 	private double minDistanceToBall = defaultMinDistanceToBall();
 	
 	
-	public AwayFromBallMover()
+	public AwayFromBallMover(final PointChecker pointChecker)
 	{
-		pointChecker.useRuleEnforcement();
+		this.pointChecker = pointChecker;
 	}
+	
 	
 	private static List<Double> generateDirections()
 	{
@@ -42,12 +43,16 @@ public class AwayFromBallMover
 			angles.add(a);
 			angles.add(-a);
 		}
-
 		return angles;
 	}
 	
+	
 	public IVector2 findValidDest(final BaseAiFrame aiFrame, final IVector2 originalDest)
 	{
+		if (pointChecker.allMatch(aiFrame, originalDest))
+		{
+			return originalDest;
+		}
 		IVector2 ballPos = aiFrame.getWorldFrame().getBall().getPos();
 		double baseDirection = originalDest.subtractNew(ballPos).getAngle();
 		double distToBallOffset = 20;
@@ -64,17 +69,20 @@ public class AwayFromBallMover
 		return alteredDest.orElse(originalDest);
 	}
 	
+	
 	private double defaultMinDistanceToBall()
 	{
 		return Geometry.getBotRadius() + Geometry.getBallRadius()
 				+ RuleConstraints.getStopRadius();
 	}
 	
+	
 	private IVector2 dirToDest(final IVector2 ballPos, final double baseDirection, final double distToBall,
 			final Double dir)
 	{
 		return ballPos.addNew(Vector2.fromAngleLength(baseDirection + dir, distToBall));
 	}
+	
 	
 	public PointChecker getPointChecker()
 	{

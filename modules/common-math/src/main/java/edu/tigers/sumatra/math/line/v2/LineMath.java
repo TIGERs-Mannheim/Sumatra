@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.line.v2;
@@ -27,10 +27,6 @@ public final class LineMath
 	private static final Logger log = Logger
 			.getLogger(LineMath.class.getName());
 	private static final double ACCURACY = SumatraMath.getEqualTol();
-	
-	private static final GenericLineAccessor<ILine> lineAccessor = new StraightLineAccessor();
-	private static final GenericLineAccessor<IHalfLine> halfLineAccessor = new HalfLineAccessor();
-	private static final GenericLineAccessor<ILineSegment> lineSegmentAccessor = new LineSegmentAccessor();
 	
 	
 	@SuppressWarnings("unused")
@@ -68,10 +64,9 @@ public final class LineMath
 		
 		if (Double.isNaN(result.x()) || Double.isNaN(result.y()))
 		{
-			log.fatal("stepAlongLine: result contains NaNs. Very dangerous!!");
-			final String seperator = " / ";
-			log.fatal(start.toString() + seperator + end.toString() + seperator + distance + seperator + coefficient
-					+ seperator + xDistance + seperator + yDistance + seperator + result.toString());
+			log.warn(String.format("stepAlongLine(%s,%s,%s) = %s -> NaNs!", start, end, stepSize, result),
+					new Exception());
+			return Vector2f.zero();
 		}
 		
 		return result;
@@ -180,7 +175,7 @@ public final class LineMath
 	/**
 	 * Checks if a point lies in front of the line.<br>
 	 * The point is considered lying in front, if it is
-	 * within a 90 degree opening in each direction from
+	 * within a 90 degree opening on any side of
 	 * the direction vector.
 	 *
 	 * @param line a line
@@ -204,8 +199,8 @@ public final class LineMath
 	 */
 	static Vector2 closestPointOnLine(final ILine line, final IVector2 point)
 	{
-		double lambda = getLeadPointLambda(point, line, lineAccessor);
-		return getPointOnLineForLambda(line, lineAccessor, lambda);
+		double lambda = getLeadPointLambda(point, line);
+		return getPointOnLineForLambda(line, lambda);
 	}
 	
 	
@@ -220,10 +215,10 @@ public final class LineMath
 	 */
 	static Vector2 closestPointOnLineSegment(final ILineSegment line, final IVector2 point)
 	{
-		final double lambda = getLeadPointLambda(point, line, lineSegmentAccessor);
+		final double lambda = getLeadPointLambda(point, line);
 		if (isLambdaInRange(lambda, 0, 1))
 		{
-			return getPointOnLineForLambda(line, lineSegmentAccessor, lambda);
+			return getPointOnLineForLambda(line, lambda);
 		}
 		
 		final double dist1 = VectorMath.distancePPSqr(line.getStart(), point);
@@ -245,10 +240,10 @@ public final class LineMath
 	 */
 	static Vector2 closestPointOnHalfLine(final IHalfLine halfLine, final IVector2 point)
 	{
-		double lambda = getLeadPointLambda(point, halfLine, halfLineAccessor);
+		double lambda = getLeadPointLambda(point, halfLine);
 		if (isLambdaInRange(lambda, 0, Double.MAX_VALUE))
 		{
-			return getPointOnLineForLambda(halfLine, halfLineAccessor, lambda);
+			return getPointOnLineForLambda(halfLine, lambda);
 		}
 		return Vector2.copy(halfLine.supportVector());
 	}
@@ -268,8 +263,8 @@ public final class LineMath
 		{
 			return Optional.empty();
 		}
-		final double lambda = getLineIntersectionLambda(line1, lineAccessor, line2, lineAccessor);
-		return Optional.of(getPointOnLineForLambda(line1, lineAccessor, lambda));
+		final double lambda = getLineIntersectionLambda(line1, line2);
+		return Optional.of(getPointOnLineForLambda(line1, lambda));
 	}
 	
 	
@@ -287,12 +282,12 @@ public final class LineMath
 		{
 			return Optional.empty();
 		}
-		final double lambda = getLineIntersectionLambda(segment1, lineSegmentAccessor, segment2, lineSegmentAccessor);
-		final double delta = getLineIntersectionLambda(segment2, lineSegmentAccessor, segment1, lineSegmentAccessor);
+		final double lambda = getLineIntersectionLambda(segment1, segment2);
+		final double delta = getLineIntersectionLambda(segment2, segment1);
 		
 		if (isLambdaInRange(lambda, 0, 1) && isLambdaInRange(delta, 0, 1))
 		{
-			return Optional.of(getPointOnLineForLambda(segment1, lineSegmentAccessor, lambda));
+			return Optional.of(getPointOnLineForLambda(segment1, lambda));
 		}
 		return Optional.empty();
 	}
@@ -315,10 +310,10 @@ public final class LineMath
 			return Optional.empty();
 		}
 		
-		double lambda = getLineIntersectionLambda(lineSegment, lineSegmentAccessor, line, lineAccessor);
+		double lambda = getLineIntersectionLambda(lineSegment, line);
 		if (isLambdaInRange(lambda, 0, 1))
 		{
-			return Optional.of(getPointOnLineForLambda(lineSegment, lineSegmentAccessor, lambda));
+			return Optional.of(getPointOnLineForLambda(lineSegment, lambda));
 		}
 		return Optional.empty();
 	}
@@ -342,12 +337,12 @@ public final class LineMath
 			return Optional.empty();
 		}
 		
-		double halfLineLambda = getLineIntersectionLambda(halfLine, halfLineAccessor, lineSegment, lineSegmentAccessor);
-		double segmentLambda = getLineIntersectionLambda(lineSegment, lineSegmentAccessor, halfLine, halfLineAccessor);
+		double halfLineLambda = getLineIntersectionLambda(halfLine, lineSegment);
+		double segmentLambda = getLineIntersectionLambda(lineSegment, halfLine);
 		
 		if (isLambdaInRange(halfLineLambda, 0, Double.MAX_VALUE) && isLambdaInRange(segmentLambda, 0, 1))
 		{
-			return Optional.of(getPointOnLineForLambda(halfLine, halfLineAccessor, halfLineLambda));
+			return Optional.of(getPointOnLineForLambda(halfLine, halfLineLambda));
 		}
 		return Optional.empty();
 	}
@@ -369,11 +364,11 @@ public final class LineMath
 		{
 			return Optional.empty();
 		}
-		double lambda = getLineIntersectionLambda(halfLine, halfLineAccessor, line, lineAccessor);
+		double lambda = getLineIntersectionLambda(halfLine, line);
 		
 		if (isLambdaInRange(lambda, 0, Double.MAX_VALUE))
 		{
-			return Optional.of(getPointOnLineForLambda(halfLine, halfLineAccessor, lambda));
+			return Optional.of(getPointOnLineForLambda(halfLine, lambda));
 		}
 		return Optional.empty();
 	}
@@ -396,12 +391,12 @@ public final class LineMath
 		{
 			return Optional.empty();
 		}
-		double lambdaA = getLineIntersectionLambda(halfLineA, halfLineAccessor, halfLineB, halfLineAccessor);
-		double lambdaB = getLineIntersectionLambda(halfLineB, halfLineAccessor, halfLineA, halfLineAccessor);
+		double lambdaA = getLineIntersectionLambda(halfLineA, halfLineB);
+		double lambdaB = getLineIntersectionLambda(halfLineB, halfLineA);
 		
 		if (isLambdaInRange(lambdaA, 0, Double.MAX_VALUE) && isLambdaInRange(lambdaB, 0, Double.MAX_VALUE))
 		{
-			return Optional.of(getPointOnLineForLambda(halfLineA, halfLineAccessor, lambdaA));
+			return Optional.of(getPointOnLineForLambda(halfLineA, lambdaA));
 		}
 		return Optional.empty();
 	}
@@ -415,11 +410,10 @@ public final class LineMath
 	 * @param line a line
 	 * @return lambda
 	 */
-	private static <T extends ILineBase> double getLeadPointLambda(final IVector2 point,
-			final T line, final GenericLineAccessor<T> accessor)
+	private static double getLeadPointLambda(final IVector2 point, final ILineBase line)
 	{
-		IVector2 supportVector = accessor.getSupportVector(line);
-		IVector2 directionVector = accessor.getDirectionVector(line);
+		IVector2 supportVector = line.supportVector();
+		IVector2 directionVector = line.directionVector();
 		
 		final IVector2 ortho = Vector2f.fromXY(directionVector.y(), -directionVector.x());
 		if (directionVector.isParallelTo(ortho))
@@ -431,24 +425,16 @@ public final class LineMath
 	}
 	
 	
-	private static <T extends ILineBase, V extends ILineBase> double getLineIntersectionLambda(
-			final T lineA, final GenericLineAccessor<T> accesorA,
-			final V lineB, final GenericLineAccessor<V> accessorB)
+	private static double getLineIntersectionLambda(final ILineBase lineA, final ILineBase lineB)
 	{
-		IVector2 supportVectorA = accesorA.getSupportVector(lineA);
-		IVector2 directionVectorA = accesorA.getDirectionVector(lineA);
-		
-		IVector2 supportVectorB = accessorB.getSupportVector(lineB);
-		IVector2 directionVectorB = accessorB.getDirectionVector(lineB);
-		
-		return getLineIntersectionLambda(supportVectorA, directionVectorA, supportVectorB, directionVectorB);
+		return getLineIntersectionLambda(lineA.supportVector(), lineA.directionVector(),
+				lineB.supportVector(), lineB.directionVector());
 	}
 	
 	
 	/**
 	 * calculates the intersection-coefficient of the first line given as supportVector1 and directionVector1 and the
-	 * second line
-	 * build from supportVector2 and directionVector2.
+	 * second line build from supportVector2 and directionVector2.
 	 *
 	 * <pre>
 	 * :: Let the following variables be defined as:
@@ -545,88 +531,12 @@ public final class LineMath
 	}
 	
 	
-	private static <T extends ILineBase> Vector2 getPointOnLineForLambda(final T line,
-			final GenericLineAccessor<T> accessor,
-			final double lambda)
+	private static Vector2 getPointOnLineForLambda(final ILineBase line, final double lambda)
 	{
-		IVector2 supportVector = accessor.getSupportVector(line);
-		IVector2 directionVector = accessor.getDirectionVector(line);
-		
-		return getPointOnLineForLambda(supportVector, directionVector, lambda);
-	}
-	
-	
-	/**
-	 * returns point on line with support-vector s and direction vector d with the given lambda.
-	 * solves axpy of vector line function
-	 *
-	 * @param s support vector
-	 * @param d direction vector
-	 * @param lambda the lambda value
-	 * @return point on line
-	 */
-	private static Vector2 getPointOnLineForLambda(final IVector2 s, final IVector2 d, final double lambda)
-	{
+		IVector2 s = line.supportVector();
+		IVector2 d = line.directionVector();
 		final double xcut = s.x() + (d.x() * lambda);
 		final double ycut = s.y() + (d.y() * lambda);
 		return Vector2.fromXY(xcut, ycut);
-	}
-	
-	
-	private interface GenericLineAccessor<T extends ILineBase>
-	{
-		
-		IVector2 getSupportVector(T line);
-		
-		
-		IVector2 getDirectionVector(T line);
-	}
-	
-	private static final class StraightLineAccessor implements GenericLineAccessor<ILine>
-	{
-		@Override
-		public IVector2 getSupportVector(final ILine line)
-		{
-			return line.supportVector();
-		}
-		
-		
-		@Override
-		public IVector2 getDirectionVector(final ILine line)
-		{
-			return line.directionVector();
-		}
-	}
-	
-	private static final class HalfLineAccessor implements GenericLineAccessor<IHalfLine>
-	{
-		@Override
-		public IVector2 getSupportVector(final IHalfLine line)
-		{
-			return line.supportVector();
-		}
-		
-		
-		@Override
-		public IVector2 getDirectionVector(final IHalfLine line)
-		{
-			return line.directionVector();
-		}
-	}
-	
-	private static final class LineSegmentAccessor implements GenericLineAccessor<ILineSegment>
-	{
-		@Override
-		public IVector2 getSupportVector(final ILineSegment line)
-		{
-			return line.getStart();
-		}
-		
-		
-		@Override
-		public IVector2 getDirectionVector(final ILineSegment line)
-		{
-			return line.getDisplacement();
-		}
 	}
 }

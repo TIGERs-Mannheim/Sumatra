@@ -6,7 +6,7 @@ package edu.tigers.sumatra.ai.metis.offense.action;
 
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.ai.metis.support.IPassTarget;
+import edu.tigers.sumatra.ai.metis.support.passtarget.IPassTarget;
 
 
 /**

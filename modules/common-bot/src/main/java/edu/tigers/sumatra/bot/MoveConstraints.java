@@ -24,6 +24,7 @@ public class MoveConstraints implements IExportable
 {
 	private double velMax = 0;
 	private double accMax = 0;
+	private double brkMax = 0;
 	private double jerkMax = 0;
 	private double velMaxW = 0;
 	private double accMaxW = 0;
@@ -51,6 +52,7 @@ public class MoveConstraints implements IExportable
 	{
 		velMax = moveLimits.getVelMax();
 		accMax = moveLimits.getAccMax();
+		brkMax = moveLimits.getBrkMax();
 		jerkMax = moveLimits.getJerkMax();
 		velMaxW = moveLimits.getVelMaxW();
 		accMaxW = moveLimits.getAccMaxW();
@@ -70,6 +72,7 @@ public class MoveConstraints implements IExportable
 		velMax = o.velMax;
 		velMaxW = o.velMaxW;
 		accMax = o.accMax;
+		brkMax = o.brkMax;
 		accMaxW = o.accMaxW;
 		jerkMax = o.jerkMax;
 		jerkMaxW = o.jerkMaxW;
@@ -90,6 +93,7 @@ public class MoveConstraints implements IExportable
 		velMax = mergeDouble(velMax, o.velMax);
 		velMaxW = mergeDouble(velMaxW, o.velMaxW);
 		accMax = mergeDouble(accMax, o.accMax);
+		brkMax = mergeDouble(brkMax, o.brkMax);
 		accMaxW = mergeDouble(accMaxW, o.accMaxW);
 		jerkMax = mergeDouble(jerkMax, o.jerkMax);
 		jerkMaxW = mergeDouble(jerkMaxW, o.jerkMaxW);
@@ -116,6 +120,7 @@ public class MoveConstraints implements IExportable
 		return "MoveConstraints{" +
 				"velMax=" + velMax +
 				", accMax=" + accMax +
+				", brkMax=" + brkMax +
 				", jerkMax=" + jerkMax +
 				", velMaxW=" + velMaxW +
 				", accMaxW=" + accMaxW +
@@ -179,6 +184,16 @@ public class MoveConstraints implements IExportable
 	
 	
 	/**
+	 * @param velMaxFast the velMaxFast to set
+	 */
+	public void setVelMaxFast(final double velMaxFast)
+	{
+		assert velMax >= 0 : "vel: " + velMaxFast;
+		this.velMaxFast = velMaxFast;
+	}
+	
+	
+	/**
 	 * @return the velMaxW
 	 */
 	public double getVelMaxW()
@@ -217,6 +232,18 @@ public class MoveConstraints implements IExportable
 	{
 		assert accMax >= 0;
 		this.accMax = accMax;
+	}
+	
+	
+	public double getBrkMax()
+	{
+		return brkMax;
+	}
+	
+	
+	public void setBrkMax(final double brkMax)
+	{
+		this.brkMax = brkMax;
 	}
 	
 	

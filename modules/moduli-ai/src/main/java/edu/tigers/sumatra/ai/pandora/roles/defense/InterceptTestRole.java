@@ -63,7 +63,7 @@ public class InterceptTestRole extends ADefenseRole
 			if (toIntercept.getTrackedId().isBot())
 			{
 				getCurrentSkill().getMoveCon()
-						.setTheirBotsObstacle(toIntercept.distanceTo(getPos()) < 4 * Geometry.getBotRadius());
+						.setTheirBotsObstacle(toIntercept.getPos().distanceTo(getPos()) < 4 * Geometry.getBotRadius());
 			}
 			super.doUpdate();
 		}

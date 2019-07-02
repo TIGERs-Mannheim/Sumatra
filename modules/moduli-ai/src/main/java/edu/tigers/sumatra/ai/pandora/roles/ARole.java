@@ -4,9 +4,13 @@
 
 package edu.tigers.sumatra.ai.pandora.roles;
 
+import java.util.List;
+
 import org.apache.log4j.Logger;
 
 import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
+import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.drawable.IShapeLayer;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.model.SumatraModel;
@@ -222,7 +226,7 @@ public abstract class ARole
 			afterUpdate();
 		} catch (Exception err)
 		{
-			log.error("Exception on role update (" + getType() + ")", err);
+			log.error("Exception on role update (" + getBotID() + ", " + getType() + ")", err);
 		}
 	}
 	
@@ -373,6 +377,16 @@ public abstract class ARole
 	
 	
 	/**
+	 * @param identifier shape layer identifier
+	 * @return the respective list from the tactical field
+	 */
+	public final List<IDrawableShape> getShapes(final IShapeLayer identifier)
+	{
+		return getAiFrame().getTacticalField().getDrawableShapes().get(identifier);
+	}
+	
+	
+	/**
 	 * @return the currentSkill
 	 */
 	public final ISkill getCurrentSkill()
@@ -392,7 +406,7 @@ public abstract class ARole
 	
 	
 	/**
-	 * DO NOT call this from AI. This is used by SkillExecuter!
+	 * DO NOT call this from AI. This is used by SkillExecutor!
 	 * 
 	 * @return the newSkill
 	 */

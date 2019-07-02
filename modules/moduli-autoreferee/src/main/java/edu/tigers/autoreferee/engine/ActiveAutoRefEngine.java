@@ -3,315 +3,138 @@
  */
 package edu.tigers.autoreferee.engine;
 
-import static edu.tigers.sumatra.MessagesRobocupSslGameEvent.SSL_Referee_Game_Event.GameEventType.UNKNOWN;
+import java.net.InetAddress;
+import java.util.Set;
 
-import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
+import org.apache.log4j.Logger;
 
 import edu.tigers.autoreferee.IAutoRefFrame;
-import edu.tigers.autoreferee.engine.events.IGameEvent;
-import edu.tigers.autoreferee.engine.log.GameLog;
-import edu.tigers.autoreferee.engine.states.IAutoRefState;
-import edu.tigers.autoreferee.engine.states.IAutoRefStateContext;
-import edu.tigers.autoreferee.engine.states.impl.DummyAutoRefState;
-import edu.tigers.autoreferee.engine.states.impl.KickState;
-import edu.tigers.autoreferee.engine.states.impl.PlaceBallState;
-import edu.tigers.autoreferee.engine.states.impl.PrepareKickoffState;
-import edu.tigers.autoreferee.engine.states.impl.PreparePenaltyState;
-import edu.tigers.autoreferee.engine.states.impl.RunningState;
-import edu.tigers.autoreferee.engine.states.impl.StopState;
-import edu.tigers.autoreferee.remote.IRefboxRemote;
-import edu.tigers.sumatra.MessagesRobocupSslGameEvent.SSL_Referee_Game_Event;
-import edu.tigers.sumatra.Referee.SSL_Referee.Stage;
+import edu.tigers.autoreferee.engine.detector.EGameEventDetectorType;
+import edu.tigers.autoreferee.module.AutoRefModule;
+import edu.tigers.autoreferee.remote.AutoRefToGameControllerConnector;
+import edu.tigers.autoreferee.remote.GameEventResponse;
+import edu.tigers.sumatra.geometry.RuleConstraints;
+import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.referee.AReferee;
+import edu.tigers.sumatra.referee.control.GcEventFactory;
 import edu.tigers.sumatra.referee.data.EGameState;
-import edu.tigers.sumatra.referee.data.GameState;
+import edu.tigers.sumatra.referee.gameevent.IGameEvent;
 
 
-/**
- * @author "Lukas Magel"
- */
-public class ActiveAutoRefEngine extends AbstractAutoRefEngine
+public class ActiveAutoRefEngine extends AutoRefEngine
 {
-	private final IRefboxRemote remote;
-	private List<IAutoRefEngineObserver> engineObserver = new CopyOnWriteArrayList<>();
-	private IAutoRefState dummyState = null;
-	private Map<EGameState, IAutoRefState> refStates = new EnumMap<>(EGameState.class);
-	private FollowUpAction followUp = null;
-	private boolean doProceed = false;
+	private final Logger log = Logger.getLogger(ActiveAutoRefEngine.class.getName());
+	private static final String DEFAULT_REFEREE_HOST = "localhost";
+	private static final int DEFAULT_GC_AUTO_REF_PORT = 11007;
+	
+	private AutoRefToGameControllerConnector remote;
+	private Long lastTimeSentContinue;
 	
 	
-	/**
-	 * @param remote
-	 */
-	public ActiveAutoRefEngine(final IRefboxRemote remote)
+	public ActiveAutoRefEngine(final Set<EGameEventDetectorType> activeDetectors)
 	{
-		this.remote = remote;
-		setupStates();
-	}
-	
-	
-	private void setupStates()
-	{
-		refStates.put(EGameState.RUNNING, new RunningState());
-		refStates.put(EGameState.PREPARE_KICKOFF, new PrepareKickoffState());
-		refStates.put(EGameState.PREPARE_PENALTY, new PreparePenaltyState());
-		refStates.put(EGameState.BALL_PLACEMENT, new PlaceBallState());
-		
-		KickState kickState = new KickState();
-		putForAll(kickState, Arrays.asList(
-				EGameState.DIRECT_FREE, EGameState.INDIRECT_FREE,
-				EGameState.KICKOFF, EGameState.PENALTY));
-		
-		refStates.put(EGameState.STOP, new StopState());
-		
-		dummyState = new DummyAutoRefState();
-	}
-	
-	
-	private void putForAll(final IAutoRefState refState, final List<EGameState> states)
-	{
-		states.forEach(state -> refStates.put(state, refState));
+		super(activeDetectors);
 	}
 	
 	
 	@Override
-	public synchronized void stop()
+	public void start()
+	{
+		lastTimeSentContinue = null;
+		AReferee referee = SumatraModel.getInstance().getModule(AReferee.class);
+		String hostname = referee.getActiveSource().getRefBoxAddress()
+				.map(InetAddress::getHostAddress)
+				.orElse(DEFAULT_REFEREE_HOST);
+		int port = SumatraModel.getInstance().getModule(AutoRefModule.class)
+				.getSubnodeConfiguration().getInt("gameControllerPort", DEFAULT_GC_AUTO_REF_PORT);
+		remote = new AutoRefToGameControllerConnector(hostname, port);
+		remote.addGameEventResponseObserver(this::onGameControllerResponse);
+		remote.start();
+	}
+	
+	
+	@Override
+	public void stop()
 	{
 		remote.stop();
 	}
 	
 	
 	@Override
-	public synchronized void reset()
+	public void process(final IAutoRefFrame frame)
 	{
-		super.reset();
-		setFollowUp(null);
-		doProceed = false;
-		resetRefStates();
-	}
-	
-	
-	@Override
-	public synchronized void resume()
-	{
-		super.resume();
-		doProceed = false;
-		resetRefStates();
-	}
-	
-	
-	/**
-	 * proceed
-	 */
-	public synchronized void proceed()
-	{
-		doProceed = true;
-	}
-	
-	
-	@Override
-	public AutoRefMode getMode()
-	{
-		return AutoRefMode.ACTIVE;
-	}
-	
-	
-	private void resetRefStates()
-	{
-		refStates.values().forEach(IAutoRefState::reset);
-	}
-	
-	
-	private IAutoRefState getActiveState(final GameState gameState)
-	{
-		IAutoRefState state = refStates.get(gameState.getState());
-		if (state == null)
+		processEngine(frame).forEach(this::processGameEvent);
+		
+		if (SumatraModel.getInstance().isSimulation())
 		{
-			return dummyState;
+			handleContinue(frame);
 		}
-		return state;
 	}
 	
 	
-	@Override
-	public synchronized void process(final IAutoRefFrame frame)
+	private void handleContinue(final IAutoRefFrame frame)
 	{
-		if (engineState == EEngineState.PAUSED)
+		if (frame.getGameState().getState() == EGameState.HALT
+				&& canContinueGame(frame))
 		{
-			return;
-		}
-		
-		super.process(frame);
-		
-		IAutoRefState state = getActiveState(frame.getGameState());
-		RefStateContext ctx = new RefStateContext();
-		
-		List<IGameEvent> gameEvents = getGameEvents(frame);
-		
-		boolean canProceed = state.canProceed();
-		if (!gameEvents.isEmpty())
-		{
-			IGameEvent gameEvent = gameEvents.remove(0);
-			boolean accepted = false;
-			if (activeGameEvents.contains(gameEvent.getType()))
+			if (lastTimeSentContinue == null)
 			{
-				accepted = state.handleGameEvent(gameEvent, ctx);
+				lastTimeSentContinue = frame.getTimestamp();
 			}
-			gameLog.addEntry(gameEvent, accepted);
-			logGameEvents(gameEvents);
-		}
-		
-		state.update(frame, ctx);
-		
-		if (state.canProceed() != canProceed)
+			double timeSinceLastSentContinue = (frame.getTimestamp() - lastTimeSentContinue) / 1e9;
+			if (timeSinceLastSentContinue > 1)
+			{
+				log.info("Resuming from HALT");
+				SumatraModel.getInstance().getModule(AReferee.class)
+						.sendGameControllerEvent(GcEventFactory.triggerContinue());
+				lastTimeSentContinue = frame.getTimestamp();
+			}
+		} else
 		{
-			notifyStateChange(state.canProceed());
+			lastTimeSentContinue = null;
 		}
-		
-		doProceed = false;
+	}
+	
+	
+	private boolean canContinueGame(final IAutoRefFrame frame)
+	{
+		return ballPlaced(frame)
+				&& notTooManyBots(frame, ETeamColor.BLUE)
+				&& notTooManyBots(frame, ETeamColor.YELLOW);
+	}
+	
+	
+	private boolean ballPlaced(final IAutoRefFrame frame)
+	{
+		return frame.getGameState().getBallPlacementPositionNeutral() == null
+				|| frame.getWorldFrame().getBall().getPos()
+						.distanceTo(frame.getGameState().getBallPlacementPositionNeutral()) < RuleConstraints
+								.getBallPlacementTolerance();
+	}
+	
+	
+	private boolean notTooManyBots(final IAutoRefFrame frame, ETeamColor teamColor)
+	{
+		return frame.getWorldFrame().getBots().keySet().stream()
+				.filter(id -> id.getTeamColor() == teamColor)
+				.count() <= frame.getRefereeMsg().getTeamInfo(teamColor).getMaxAllowedBots();
 	}
 	
 	
 	@Override
-	protected void onGameStateChange(final GameState oldGameState, final GameState newGameState)
+	protected void processGameEvent(final IGameEvent gameEvent)
 	{
-		super.onGameStateChange(oldGameState, newGameState);
-		
-		IAutoRefState oldRefState = getActiveState(oldGameState);
-		IAutoRefState newRefState = getActiveState(newGameState);
-		if ((oldRefState != newRefState) && (newRefState != null))
-		{
-			newRefState.reset();
-		}
-		
-		notifyStateChange(false);
-		
-		if (newGameState.getState() == EGameState.RUNNING)
-		{
-			setFollowUp(null);
-			final SSL_Referee_Game_Event gameEvent = SSL_Referee_Game_Event.newBuilder()
-					.setGameEventType(UNKNOWN)
-					.build();
-			new RefStateContext().sendCommand(new RefboxRemoteCommand(gameEvent));
-		}
+		super.processGameEvent(gameEvent);
+		remote.sendEvent(gameEvent);
 	}
 	
 	
-	@Override
-	protected void onStageChange(final Stage oldStage, final Stage newStage)
+	private void onGameControllerResponse(GameEventResponse response)
 	{
-		super.onStageChange(oldStage, newStage);
-		
-		if ((oldStage == Stage.NORMAL_FIRST_HALF) || (oldStage == Stage.NORMAL_SECOND_HALF)
-				|| (oldStage == Stage.EXTRA_FIRST_HALF) || (oldStage == Stage.EXTRA_SECOND_HALF))
+		if (response.getResponse() != GameEventResponse.Response.OK)
 		{
-			setFollowUp(null);
-		}
-	}
-	
-	
-	/**
-	 * @param observer
-	 */
-	public void addObserver(final IAutoRefEngineObserver observer)
-	{
-		engineObserver.add(observer);
-	}
-	
-	
-	/**
-	 * @param observer
-	 */
-	public void removeObserver(final IAutoRefEngineObserver observer)
-	{
-		engineObserver.remove(observer);
-	}
-	
-	
-	private void setFollowUp(final FollowUpAction action)
-	{
-		followUp = action;
-		engineObserver.forEach(observer -> observer.onFollowUpChanged(followUp));
-		gameLog.addEntry(followUp);
-	}
-	
-	
-	private void notifyStateChange(final boolean canProceed)
-	{
-		engineObserver.forEach(obs -> obs.onStateChanged(canProceed));
-	}
-	
-	
-	/**
-	 * @author Lukas Magel
-	 */
-	public interface IAutoRefEngineObserver
-	{
-		
-		/**
-		 * @param proceedPossible
-		 */
-		void onStateChanged(final boolean proceedPossible);
-		
-		
-		/**
-		 * @param action
-		 */
-		void onFollowUpChanged(final FollowUpAction action);
-		
-	}
-	
-	private class RefStateContext implements IAutoRefStateContext
-	{
-		
-		private RefStateContext()
-		{
-		}
-		
-		
-		@Override
-		public void sendCommand(final RefboxRemoteCommand cmd)
-		{
-			gameLog.addEntry(cmd);
-			remote.sendCommand(cmd);
-		}
-		
-		
-		@Override
-		public FollowUpAction getFollowUpAction()
-		{
-			return followUp;
-		}
-		
-		
-		@Override
-		public void setFollowUpAction(final FollowUpAction action)
-		{
-			setFollowUp(action);
-		}
-		
-		
-		@Override
-		public boolean doProceed()
-		{
-			return doProceed;
-		}
-		
-		
-		@Override
-		public GameLog getGameLog()
-		{
-			return gameLog;
-		}
-		
-		
-		@Override
-		public AutoRefGlobalState getAutoRefGlobalState()
-		{
-			return autoRefGlobalState;
+			log.warn("Game-controller response was not OK: " + response);
 		}
 	}
 }

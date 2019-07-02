@@ -4,8 +4,6 @@
 
 package edu.tigers.autoreferee;
 
-import com.sleepycat.persist.evolve.Mutations;
-
 import edu.tigers.sumatra.persistence.BerkeleyAccessor;
 import edu.tigers.sumatra.persistence.BerkeleyAsyncRecorder;
 import edu.tigers.sumatra.persistence.BerkeleyDb;
@@ -20,7 +18,7 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
 public class AutoRefRecordManager extends RecordManager
 {
-	
+
 	@Override
 	protected void onNewBerkeleyDb(final BerkeleyDb db)
 	{
@@ -28,14 +26,11 @@ public class AutoRefRecordManager extends RecordManager
 		db.add(BerkeleyCamDetectionFrame.class, new BerkeleyAccessor<>(BerkeleyCamDetectionFrame.class, true));
 		db.add(BerkeleyShapeMapFrame.class, new BerkeleyAccessor<>(BerkeleyShapeMapFrame.class, true));
 		db.add(WorldFrameWrapper.class, new BerkeleyAccessor<>(WorldFrameWrapper.class, true));
-		
-		Mutations mutations = new Mutations();
-		// add future mutations here
-		
-		db.getEnv().getStoreConfig().setMutations(mutations);
+
+		db.getEnv().getStoreConfig().setMutations(getMutations());
 	}
-	
-	
+
+
 	@Override
 	protected void onNewBerkeleyRecorder(final BerkeleyAsyncRecorder recorder)
 	{
@@ -44,5 +39,5 @@ public class AutoRefRecordManager extends RecordManager
 		recorder.add(new WfwBerkeleyRecorder(recorder.getDb()));
 		recorder.add(new ShapeMapBerkeleyRecorder(recorder.getDb()));
 	}
-	
+
 }

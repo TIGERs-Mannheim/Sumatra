@@ -3,6 +3,8 @@
  */
 package edu.tigers.sumatra.math.line.v2;
 
+import java.util.List;
+
 import edu.tigers.sumatra.math.vector.IVector2;
 
 
@@ -34,17 +36,6 @@ public interface ILineSegment extends ILineBase
 	 * 			The vector to which the line extends
 	 */
 	IVector2 getEnd();
-	
-	
-	/**
-	 * Returns the displacement which is described by this segment. If {@code A} was the starting point and {@code B} the
-	 * end point of this line then the displacement would be defined as {@code (B - A)}.
-	 * 
-	 * @return
-	 * 			The displacement of this line segment. The vector has a length of zero if the line instance is not valid
-	 *         according to {@link #isValid()}.
-	 */
-	IVector2 getDisplacement();
 	
 	
 	/**
@@ -89,4 +80,31 @@ public interface ILineSegment extends ILineBase
 	 * 			The resulting vector if this segment is valid or one of the two support points if it is not valid.
 	 */
 	IVector2 stepAlongLine(double stepSize);
+	
+	
+	@Override
+	default IVector2 supportVector()
+	{
+		return getStart();
+	}
+	
+	
+	/**
+	 * Create a new line segment with a positive or negative margin.
+	 * If the margin is negative and the line segment length is less than |margin*2|, the behavior is undefined.
+	 * 
+	 * @param margin the margin to apply to both ends
+	 * @return a new line segment
+	 */
+	ILineSegment withMargin(double margin);
+	
+	
+	/**
+	 * Returns a list of points on a line. All points are separated by
+	 * stepSize. Start and end of the line are always in the list.
+	 *
+	 * @param stepSize abolute with of each steps
+	 * @return a list of positions on the line, all separated by stepSize
+	 */
+	List<IVector2> getSteps(double stepSize);
 }

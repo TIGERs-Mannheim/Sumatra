@@ -4,12 +4,15 @@
 package edu.tigers.sumatra.skillsystem.skills;
 
 
+import java.awt.Color;
 import java.util.List;
 
 import org.apache.commons.lang.Validate;
 
 import com.github.g3force.configurable.Configurable;
 
+import edu.tigers.sumatra.drawable.DrawableCircle;
+import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.math.AngleMath;
@@ -17,10 +20,12 @@ import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.CircleMath;
 import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.skillsystem.ESkill;
+import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 
 
 /**
@@ -55,6 +60,7 @@ public class InterceptionSkill extends AMoveSkill
 		double targetAngle = getBall().getPos().subtractNew(getPos()).getAngle();
 		
 		setTargetPose(dest, targetAngle, getMoveCon().getMoveConstraints());
+		getShapes().get(ESkillShapesLayer.KEEPER).add(new DrawableCircle(dest, 25, Color.CYAN));
 	}
 	
 	
@@ -77,9 +83,12 @@ public class InterceptionSkill extends AMoveSkill
 				+ Geometry.getBotRadius() + interceptionSkillSecurityDist);
 		
 		if (isMoveTargetValid(destination)
-				&& forbiddenCircle.isIntersectingWithLineSegment(Line.fromPoints(getPos(), destination)))
+				&& !forbiddenCircle.lineIntersections(Lines.segmentFromPoints(getPos(), destination)).isEmpty())
 		{
-			List<IVector2> circleIntersections = driveCircle.lineIntersections(Line.fromDirection(getPos(), ballPos));
+			DrawableLine drl = new DrawableLine(Line.fromDirection(getPos(), ballPos.subtractNew(getPos())), Color.CYAN);
+			getShapes().get(ESkillShapesLayer.PATH_DEBUG).add(drl);
+			List<IVector2> circleIntersections = driveCircle
+					.lineIntersections(Line.fromDirection(getPos(), ballPos.subtractNew(getPos())));
 			IVector2 nextCirclePoint = getNextCirclePoint(circleIntersections);
 			
 			IVector2 wayLeftTarget = CircleMath.stepAlongCircle(nextCirclePoint, ballPos, -AngleMath.PI / 8);

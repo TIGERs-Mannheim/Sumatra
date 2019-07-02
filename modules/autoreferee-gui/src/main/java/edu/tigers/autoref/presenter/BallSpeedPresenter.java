@@ -54,17 +54,17 @@ public class BallSpeedPresenter implements ISumatraViewPresenter, IWorldFrameObs
 		IBallSpeedPanelListener, ActionListener
 {
 	/** The period in ms at the end of which the chart is updated */
-	private static final int	CHART_UPDATE_PERIOD	= 50;
+	private static final int CHART_UPDATE_PERIOD = 50;
 	/** The absolute time range displayed in the chart in seconds */
-	private int						timeRange				= 20;
-	private boolean				pauseWhenNotRunning	= false;
-	private boolean				pauseRequested			= false;
-	private boolean				resumeRequested		= false;
-	private PauseState			chartState				= PauseState.RUNNING;
-	private long					curTime					= 0L;
-	private BallSpeedModel		model						= new BallSpeedModel();
-	private Timer					chartTimer;
-	private BallSpeedPanel		panel;
+	private int timeRange = 20;
+	private boolean pauseWhenNotRunning = false;
+	private boolean pauseRequested = false;
+	private boolean resumeRequested = false;
+	private PauseState chartState = PauseState.RUNNING;
+	private long curTime = 0L;
+	private BallSpeedModel model = new BallSpeedModel();
+	private Timer chartTimer;
+	private BallSpeedPanel panel;
 	
 	
 	/**
@@ -155,6 +155,7 @@ public class BallSpeedPresenter implements ISumatraViewPresenter, IWorldFrameObs
 		{
 			curTime += TimeUnit.MILLISECONDS.toNanos(CHART_UPDATE_PERIOD);
 			panel.addPoint(curTime, model.getLastBallSpeed());
+			panel.addInitialVelPoint(curTime, model.getLastEstimatedBallSpeed());
 		}
 	}
 	

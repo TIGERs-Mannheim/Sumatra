@@ -7,8 +7,6 @@ package edu.tigers.sumatra.trajectory;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -23,16 +21,20 @@ import edu.tigers.sumatra.trajectory.BangBangTrajectory1D.PosVelAcc;
  * 
  * @author AndreR
  */
-@Persistent
 public class BangBangTrajectory2D implements ITrajectory<IVector2>, IPlanarCurveProvider
 {
-	private BangBangTrajectory1D x;
-	private BangBangTrajectory1D y;
+	private static final double SYNC_ACCURACY = 0.001;
+	
+	private final BangBangTrajectory1D x;
+	private final BangBangTrajectory1D y;
+	private double alpha;
 	
 	
 	@SuppressWarnings("unused")
 	protected BangBangTrajectory2D()
 	{
+		x = new BangBangTrajectory1D();
+		y = new BangBangTrajectory1D();
 	}
 	
 	
@@ -53,10 +55,35 @@ public class BangBangTrajectory2D implements ITrajectory<IVector2>, IPlanarCurve
 	 * @param initialVel [m/s]
 	 * @param maxVel [m/s]
 	 * @param maxAcc [m/s^2]
+	 * @param alpha
 	 */
-	public BangBangTrajectory2D(final IVector2 initialPos, final IVector2 finalPos,
-			final IVector2 initialVel, final double maxVel, final double maxAcc)
+	BangBangTrajectory2D(final IVector2 initialPos,
+			final IVector2 finalPos,
+			final IVector2 initialVel,
+			final double maxVel,
+			final double maxAcc,
+			final double alpha)
 	{
+		this();
+		generateTrajectory(initialPos, finalPos, initialVel, maxVel, maxAcc, alpha);
+		this.alpha = alpha;
+	}
+	
+	
+	/**
+	 * @param initialPos [m]
+	 * @param finalPos [m]
+	 * @param initialVel [m/s]
+	 * @param maxVel [m/s]
+	 * @param maxAcc [m/s^2]
+	 */
+	public BangBangTrajectory2D(final IVector2 initialPos,
+			final IVector2 finalPos,
+			final IVector2 initialVel,
+			final double maxVel,
+			final double maxAcc)
+	{
+		this();
 		generateTrajectory(initialPos, finalPos, initialVel, maxVel, maxAcc, a -> a);
 	}
 	
@@ -132,6 +159,29 @@ public class BangBangTrajectory2D implements ITrajectory<IVector2>, IPlanarCurve
 	}
 	
 	
+	public double getAlpha()
+	{
+		return alpha;
+	}
+	
+	
+	/**
+	 * @param initialPos
+	 * @param finalPos
+	 * @param initialVel
+	 * @param maxVel
+	 * @param maxAcc
+	 */
+	public void updateTrajectory(final IVector2 initialPos,
+			final IVector2 finalPos,
+			final IVector2 initialVel,
+			final double maxVel,
+			final double maxAcc)
+	{
+		generateTrajectory(initialPos, finalPos, initialVel, maxVel, maxAcc, a -> a);
+	}
+	
+	
 	@Override
 	public String toString()
 	{
@@ -153,7 +203,7 @@ public class BangBangTrajectory2D implements ITrajectory<IVector2>, IPlanarCurve
 			final double acc, final AlphaProvider calc)
 	{
 		double inc = Math.PI / 8.0;
-		double alpha = Math.PI / 4.0;
+		alpha = Math.PI / 4.0;
 		
 		// binary search, some iterations (fixed)
 		while (inc > 1e-7)
@@ -161,19 +211,19 @@ public class BangBangTrajectory2D implements ITrajectory<IVector2>, IPlanarCurve
 			generateTrajectory(s0, s1, v0, vmax, acc, calc.getAlpha(alpha));
 			
 			double diff = Math.abs(x.getTotalTime() - y.getTotalTime());
-			if (diff < 0.0001)
+			if (diff < SYNC_ACCURACY)
 			{
 				break;
 			}
 			if (x.getTotalTime() > y.getTotalTime())
 			{
-				alpha = alpha - inc;
+				alpha -= inc;
 			} else
 			{
-				alpha = alpha + inc;
+				alpha += inc;
 			}
 			
-			inc *= 0.5;
+			inc *= 0.5f;
 		}
 	}
 	
@@ -181,11 +231,21 @@ public class BangBangTrajectory2D implements ITrajectory<IVector2>, IPlanarCurve
 	private void generateTrajectory(final IVector2 s0, final IVector2 s1, final IVector2 v0, final double vmax,
 			final double acc, final double alpha)
 	{
-		double cA = SumatraMath.cos(alpha);
-		double sA = SumatraMath.sin(alpha);
+		float cA = (float) SumatraMath.cos(alpha);
+		float sA = (float) SumatraMath.sin(alpha);
 		
-		x = new BangBangTrajectory1D(s0.x(), s1.x(), v0.x(), vmax * cA, acc * cA);
-		y = new BangBangTrajectory1D(s0.y(), s1.y(), v0.y(), vmax * sA, acc * sA);
+		x.initialPos = (float) s0.x();
+		x.finalPos = (float) s1.x();
+		x.initialVel = (float) v0.x();
+		x.maxVel = (float) vmax * cA;
+		x.maxAcc = (float) acc * cA;
+		x.generateTrajectory();
+		y.initialPos = (float) s0.y();
+		y.finalPos = (float) s1.y();
+		y.initialVel = (float) v0.y();
+		y.maxVel = (float) vmax * sA;
+		y.maxAcc = (float) acc * sA;
+		y.generateTrajectory();
 	}
 	
 	protected static class PosVelAcc2D
@@ -207,8 +267,8 @@ public class BangBangTrajectory2D implements ITrajectory<IVector2>, IPlanarCurve
 		List<PlanarCurveSegment> segments = new ArrayList<>();
 		
 		List<Double> tQuery = new ArrayList<>();
-		x.getParts().forEach(p -> tQuery.add(p.tEnd));
-		y.getParts().forEach(p -> tQuery.add(p.tEnd));
+		x.getParts().forEach(p -> tQuery.add((double) p.tEnd));
+		y.getParts().forEach(p -> tQuery.add((double) p.tEnd));
 		
 		tQuery.sort(Double::compare);
 		

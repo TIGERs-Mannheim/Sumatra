@@ -1,15 +1,16 @@
 /*
  * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
-import java.util.Optional;
-
 import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.KickTarget;
-import edu.tigers.sumatra.ai.metis.support.IPassTarget;
+import edu.tigers.sumatra.ai.metis.offense.finisher.IFinisherMove;
+import edu.tigers.sumatra.ai.metis.support.passtarget.IRatedPassTarget;
+
+import java.util.Optional;
 
 
 /**
@@ -23,8 +24,10 @@ public class OffensiveAction
 	private final EOffensiveAction action;
 	private final KickTarget kickTarget;
 	
-	private IPassTarget passTarget = null;
+	private IRatedPassTarget ratedPassTarget = null;
 	private boolean allowRedirect = false;
+	
+	private transient IFinisherMove finisherMove;
 	
 	
 	@SuppressWarnings("unused") // used by berkeley
@@ -34,6 +37,7 @@ public class OffensiveAction
 		viability = 0;
 		action = null;
 		kickTarget = null;
+		finisherMove = null;
 	}
 	
 	
@@ -47,9 +51,29 @@ public class OffensiveAction
 	}
 	
 	
-	OffensiveAction withPassTarget(final IPassTarget passTarget)
+	OffensiveAction(final EOffensiveActionMove move, final double viability, final EOffensiveAction action,
+			final KickTarget kickTarget, final IFinisherMove finisherMove)
 	{
-		this.passTarget = passTarget;
+		this.move = move;
+		this.viability = viability;
+		this.action = action;
+		this.kickTarget = kickTarget;
+		this.finisherMove = finisherMove;
+	}
+	
+	
+	public OffensiveAction(final EOffensiveActionMove move, final EOffensiveAction action, final KickTarget kickTarget)
+	{
+		this.move = move;
+		this.viability = 0;
+		this.action = action;
+		this.kickTarget = kickTarget;
+	}
+	
+	
+	OffensiveAction withPassTarget(final IRatedPassTarget passTarget)
+	{
+		this.ratedPassTarget = passTarget;
 		return this;
 	}
 	
@@ -88,9 +112,9 @@ public class OffensiveAction
 	}
 	
 	
-	public Optional<IPassTarget> getPassTarget()
+	public Optional<IRatedPassTarget> getRatedPassTarget()
 	{
-		return Optional.ofNullable(passTarget);
+		return Optional.ofNullable(ratedPassTarget);
 	}
 	
 	
@@ -98,4 +122,11 @@ public class OffensiveAction
 	{
 		return allowRedirect;
 	}
+	
+	
+	public IFinisherMove getFinisherMove()
+	{
+		return finisherMove;
+	}
+	
 }

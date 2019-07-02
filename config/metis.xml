@@ -1,10 +1,73 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <edu.tigers.sumatra.ai.metis base="edu.tigers.sumatra.ai.metis">
+    <general>
+        <ChipKickReasonableDecider>
+            <chipKickDetectionTimeOffset>0.25</chipKickDetectionTimeOffset>
+            <quadliteralWidthOffsetBack>65.0</quadliteralWidthOffsetBack>
+            <quadliteralWidthOffsetFront>40.0</quadliteralWidthOffsetFront>
+        </ChipKickReasonableDecider>
+    </general>
     <offense>
         <ballinterception>
             <BallInterceptionCalc>
                 <debug>true</debug>
             </BallInterceptionCalc>
         </ballinterception>
+        <OffensiveConstants>
+            <delayWaitTime>4.0</delayWaitTime>
+            <maxAngleForPassMaxSpeed>1.0</maxAngleForPassMaxSpeed>
+            <maximumReasonableRedirectAngle>1.2</maximumReasonableRedirectAngle>
+            <maxPassEndVelRedirect>4.0</maxPassEndVelRedirect>
+            <minBotShouldDoGoalShotScore>0.6</minBotShouldDoGoalShotScore>
+            <minPassDuration>0.7</minPassDuration>
+        </OffensiveConstants>
+        <OffensiveRedirectorMath>
+            <minDistForValidPass>1000</minDistForValidPass>
+        </OffensiveRedirectorMath>
+        <strategy>
+            <FindBestPrimaryFeature>
+                <ballContactTimeHysteresis>1.0</ballContactTimeHysteresis>
+                <maxActivePassTargetAge>2.0</maxActivePassTargetAge>
+                <maxActivePassTargetBonusTime>1.5</maxActivePassTargetBonusTime>
+            </FindBestPrimaryFeature>
+        </strategy>
     </offense>
+    <shootout>
+        <PenaltyPlacementTargetCalc>
+            <placementBaseX>1800.0</placementBaseX>
+            <placementDistanceToBorder>1000.0</placementDistanceToBorder>
+        </PenaltyPlacementTargetCalc>
+    </shootout>
+    <support>
+        <passtarget>
+            <PassTargetRatingFactory>
+                <optimalPassDuration>1.2</optimalPassDuration>
+            </PassTargetRatingFactory>
+        </passtarget>
+        <PassTargetGenerationCalc>
+            <additionalTimeToReachSafety>0.4</additionalTimeToReachSafety>
+        </PassTargetGenerationCalc>
+    </support>
+    <targetrater>
+        <AngleRangeRater>
+            <maxHorizon>1</maxHorizon>
+            <probablyAGoalAngle>0.12</probablyAGoalAngle>
+            <timeForBotToReact>0.35</timeForBotToReact>
+        </AngleRangeRater>
+        <PassInterceptionRater>
+            <passRatingUpperDist>2000.0</passRatingUpperDist>
+        </PassInterceptionRater>
+        <ReflectorRater>
+            <maxfirstPassDist>7000.0</maxfirstPassDist>
+            <maxPassShotDist>18000.0</maxPassShotDist>
+        </ReflectorRater>
+    </targetrater>
+    <test>
+        <DebugGridTestCalc>
+            <drawNumbers>true</drawNumbers>
+            <numX>100</numX>
+            <numY>75</numY>
+            <type>PASS_TARGET_RATING_PASS</type>
+        </DebugGridTestCalc>
+    </test>
 </edu.tigers.sumatra.ai.metis>

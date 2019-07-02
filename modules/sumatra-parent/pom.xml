@@ -7,39 +7,64 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>edu.tigers.sumatra</groupId>
     <artifactId>sumatra-parent</artifactId>
-    <version>6.0</version>
+    <version>2019-SNAPSHOT</version>
 
     <packaging>pom</packaging>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <moduli.version>1.3</moduli.version>
-        <protobuf.version>3.5.1</protobuf.version>
+        <protobuf.version>3.7.1</protobuf.version>
     </properties>
 
     <repositories>
         <repository>
+            <!-- main repository containing all dependencies. All other repositories are only for backup -->
             <id>tigers_public</id>
-            <url>http://tigers-mannheim.de/nexus/content/groups/public/</url>
+            <url>https://tigers-mannheim.de/nexus/content/groups/public/</url>
+        </repository>
+
+        <repository>
+            <!-- maven central contains most of the dependencies -->
+            <id>central</id>
+            <url>http://repo1.maven.org/maven2/</url>
+        </repository>
+
+        <repository>
+            <!-- jitpack is a maven repository that automatically builds github repos -->
+            <id>jitpack</id>
+            <url>https://jitpack.io/</url>
+        </repository>
+
+        <repository>
+            <!-- repo for oracles Berkeley DB for Java (com.sleepycat.je) -->
+            <id>oracle</id>
+            <url>http://download.oracle.com/maven</url>
         </repository>
     </repositories>
 
-
     <pluginRepositories>
         <pluginRepository>
+            <!-- main repository containing all dependencies. All other repositories are only for backup -->
             <id>tigers_public</id>
-            <url>http://tigers-mannheim.de/nexus/content/groups/public/</url>
+            <url>https://tigers-mannheim.de/nexus/content/groups/public/</url>
+        </pluginRepository>
+
+        <pluginRepository>
+            <!-- maven central contains most of the dependencies. It is provided by maven -->
+            <id>central</id>
+            <url>http://repo1.maven.org/maven2/</url>
+        </pluginRepository>
+
+        <pluginRepository>
+            <!-- maven-protoc-plugin -->
+            <id>bintray-sergei-ivanov</id>
+            <url>http://dl.bintray.com/sergei-ivanov/maven</url>
         </pluginRepository>
     </pluginRepositories>
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>edu.tigers.sumatra</groupId>
-                <artifactId>autoreferee</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
             <dependency>
                 <groupId>edu.tigers.sumatra</groupId>
                 <artifactId>autoreferee-gui</artifactId>
@@ -114,6 +139,18 @@
 
             <dependency>
                 <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-botmanager-sim</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-botmanager-tigers</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
                 <artifactId>moduli-bot-params</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -121,6 +158,12 @@
             <dependency>
                 <groupId>edu.tigers.sumatra</groupId>
                 <artifactId>moduli-cam</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-offensive-tree</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -204,12 +247,6 @@
 
             <dependency>
                 <groupId>edu.tigers.sumatra</groupId>
-                <artifactId>sumatra-grsim</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>edu.tigers.sumatra</groupId>
                 <artifactId>sumatra-gui-ai</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -223,6 +260,12 @@
             <dependency>
                 <groupId>edu.tigers.sumatra</groupId>
                 <artifactId>sumatra-gui-bot-params</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-gui-kick</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -300,18 +343,6 @@
 
             <dependency>
                 <groupId>edu.tigers.sumatra</groupId>
-                <artifactId>sumatra-record-util</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>edu.tigers.sumatra</groupId>
-                <artifactId>sumatra-multi-team-communication</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>edu.tigers.sumatra</groupId>
                 <artifactId>moduli-vision-simulation</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -358,6 +389,30 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>sumatra-gui-skills</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+	    
+	    <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+		<artifactId>moduli-team-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-statistics-saver</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>edu.tigers.sumatra</groupId>
+                <artifactId>moduli-log-analysis</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
             <!-- ########## external libs ################ -->
 
             <dependency>
@@ -375,25 +430,25 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
-                <version>2.9.2</version>
+                <version>2.9.9</version>
             </dependency>
 
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
-                <version>2.9.2</version>
+                <version>2.9.9</version>
             </dependency>
 
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.9.2</version>
+                <version>2.9.9</version>
             </dependency>
 
             <dependency>
-                <groupId>edu.tigers.moduli</groupId>
+                <groupId>com.github.TIGERs-Mannheim</groupId>
                 <artifactId>moduli</artifactId>
-                <version>2.0</version>
+                <version>2.2</version>
             </dependency>
 
             <dependency>
@@ -412,7 +467,7 @@
             <dependency>
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
-                <version>3.8.0</version>
+                <version>3.11.1</version>
             </dependency>
 
             <dependency>
@@ -436,14 +491,7 @@
             <dependency>
                 <groupId>nl.jqno.equalsverifier</groupId>
                 <artifactId>equalsverifier</artifactId>
-                <version>2.4</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>com.carrotsearch</groupId>
-                <artifactId>junit-benchmarks</artifactId>
-                <version>0.7.2</version>
+                <version>3.0.3</version>
                 <scope>test</scope>
             </dependency>
 
@@ -486,19 +534,19 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>23.4-jre</version>
+                <version>27.0.1-jre</version>
             </dependency>
 
             <dependency>
-                <groupId>idw-gpl</groupId>
-                <artifactId>idw-gpl</artifactId>
-                <version>1.6.1</version>
+                <groupId>com.github.TIGERs-Mannheim</groupId>
+                <artifactId>infonode</artifactId>
+                <version>1.7.0</version>
             </dependency>
 
             <dependency>
                 <groupId>com.miglayout</groupId>
                 <artifactId>miglayout-swing</artifactId>
-                <version>5.0</version>
+                <version>5.2</version>
             </dependency>
 
             <dependency>
@@ -510,7 +558,7 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-collections4</artifactId>
-                <version>4.1</version>
+                <version>4.2</version>
             </dependency>
 
             <dependency>
@@ -526,9 +574,9 @@
             </dependency>
 
             <dependency>
-                <groupId>com.google.code.matlabcontrol</groupId>
+                <groupId>com.github.TIGERs-Mannheim.matlabcontrol</groupId>
                 <artifactId>matlabcontrol</artifactId>
-                <version>4.1.0</version>
+                <version>4.1.2</version>
             </dependency>
 
             <dependency>
@@ -550,9 +598,15 @@
             </dependency>
 
             <dependency>
+                <groupId>com.github.TIGERs-Mannheim.jinput</groupId>
+                <artifactId>jinput</artifactId>
+                <version>2.0.9.4</version>
+            </dependency>
+            <dependency>
                 <groupId>net.java.jinput</groupId>
-                <artifactId>jinput-platform</artifactId>
-                <version>2.0.4-1</version>
+                <artifactId>jinput</artifactId>
+                <version>2.0.9</version>
+                <classifier>natives-all</classifier>
             </dependency>
 
             <dependency>
@@ -568,101 +622,109 @@
             </dependency>
 
             <dependency>
-                <groupId>com.vladium.utils</groupId>
-                <artifactId>objectprofiler</artifactId>
-                <version>1.0</version>
+                <groupId>com.github.TIGERs-Mannheim</groupId>
+                <artifactId>java-object-size-estimator</artifactId>
+                <version>v1.0</version>
             </dependency>
 
             <dependency>
                 <groupId>net.jafama</groupId>
                 <artifactId>jafama</artifactId>
-                <version>2.1.0</version>
+                <version>2.3.1</version>
             </dependency>
 
             <dependency>
-                <groupId>com.h2database</groupId>
-                <artifactId>h2</artifactId>
-                <version>1.4.191</version>
+                <groupId>commons-cli</groupId>
+                <artifactId>commons-cli</artifactId>
+                <version>1.4</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.java-websocket</groupId>
+                <artifactId>Java-WebSocket</artifactId>
+                <version>1.3.9</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.influxdb</groupId>
+                <artifactId>influxdb-java</artifactId>
+                <version>2.15</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
-
+    
     <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.7.0</version>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.20.1</version>
-                <configuration>
-                    <excludes>
-                        <exclude>**/*PerfTest.java</exclude>
-                        <exclude>**/*IntegrationTest.java</exclude>
-                    </excludes>
-                    <runOrder>alphabetical</runOrder>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>3.0.1</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.0.2</version>
-                <executions>
-                    <execution>
-                        <id>analyze</id>
-                        <goals>
-                            <goal>analyze-only</goal>
-                        </goals>
-                        <configuration>
-                            <failOnWarning>true</failOnWarning>
-                            <outputXML>true</outputXML>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-
-        <!-- optional plugins: -->
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>org.eclipse.m2e</groupId>
+                    <artifactId>lifecycle-mapping</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <lifecycleMappingMetadata>
+                            <pluginExecutions>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>org.apache.maven.plugins</groupId>
+                                        <artifactId>maven-dependency-plugin</artifactId>
+                                        <versionRange>[0.0,)</versionRange>
+                                        <goals>
+                                            <goal>copy-dependencies</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore/>
+                                    </action>
+                                </pluginExecution>
+                            </pluginExecutions>
+                        </lifecycleMappingMetadata>
+                    </configuration>
+                </plugin>
+            
+                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>3.0.0-M1</version>
-                    <executions>
-                        <execution>
-                            <id>attach-javadocs</id>
-                            <goals>
-                                <goal>jar</goal>
-                            </goals>
-                            <configuration>
-                                <additionalparam>-Xdoclint:none</additionalparam>
-                            </configuration>
-                        </execution>
-                    </executions>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>3.1.0</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.8.0</version>
+                    <configuration>
+                        <source>1.8</source>
+                        <target>1.8</target>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>2.22.1</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>3.1.1</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>com.googlecode.mavennatives</groupId>
+                    <artifactId>maven-nativedependencies-plugin</artifactId>
+                    <version>0.0.7</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.sonarsource.scanner.maven</groupId>
+                    <artifactId>sonar-maven-plugin</artifactId>
+                    <version>3.5.0.1254</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>versions-maven-plugin</artifactId>
+                    <version>2.7</version>
                 </plugin>
 
                 <plugin>
@@ -686,22 +748,89 @@
                 </plugin>
 
                 <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>versions-maven-plugin</artifactId>
-                    <version>2.5</version>
+                    <groupId>com.googlecode.maven-download-plugin</groupId>
+                    <artifactId>download-maven-plugin</artifactId>
+                    <version>1.4.1</version>
                 </plugin>
 
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>exec-maven-plugin</artifactId>
-                    <version>1.6.0</version>
+                    <artifactId>buildnumber-maven-plugin</artifactId>
+                    <version>1.4</version>
                 </plugin>
             </plugins>
         </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <reportsDirectory>${project.parent.basedir}/target/junitreport</reportsDirectory>
+                    <excludes>
+                        <exclude>**/*PerfTest.java</exclude>
+                        <exclude>**/*IntegrationTest.java</exclude>
+                    </excludes>
+                    <runOrder>alphabetical</runOrder>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>analyze</id>
+                        <goals>
+                            <goal>analyze-only</goal>
+                        </goals>
+                        <configuration>
+                            <failOnWarning>true</failOnWarning>
+                            <outputXML>true</outputXML>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>com.googlecode.mavennatives</groupId>
+                <artifactId>maven-nativedependencies-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>unpacknatives</id>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 
 
     <profiles>
+        <profile>
+            <!-- this profile disables some plugins that are not required to only build and run the software -->
+            <id>fast</id>
+            <properties>
+                <maven.test.skip>true</maven.test.skip>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>analyze</id>
+                                <!-- this disables plugin -->
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <profile>
             <id>os-windows</id>
             <activation>

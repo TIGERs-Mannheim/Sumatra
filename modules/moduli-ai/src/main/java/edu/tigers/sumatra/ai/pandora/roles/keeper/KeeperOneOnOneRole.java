@@ -10,9 +10,11 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.keeper.EKeeperState;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.ai.pandora.roles.keeper.states.CatchOverChipState;
-import edu.tigers.sumatra.ai.pandora.roles.keeper.states.InterceptAndGoOutState;
+import edu.tigers.sumatra.ai.pandora.roles.keeper.states.CriticalKeeperState;
 import edu.tigers.sumatra.ai.pandora.roles.keeper.states.RamboState;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.line.v2.ILine;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
 import edu.tigers.sumatra.referee.data.GameState;
@@ -41,7 +43,7 @@ public class KeeperOneOnOneRole extends KeeperRole
 	{
 		super(ERole.ONE_ON_ONE_KEEPER);
 		addTransition(KeeperOneOnOneEvents.RAMBO, new RamboState(this));
-		addTransition(KeeperOneOnOneEvents.INTERCEPT_AND_GO_OUT, new InterceptAndGoOutState(this));
+		addTransition(KeeperOneOnOneEvents.NORMAL, new CriticalKeeperState(this));
 		addTransition(KeeperOneOnOneEvents.CATCH, new CatchOverChipState(this));
 		addTransition(KeeperOneOnOneEvents.PREPARE_SHOOTOUT, new PreparePenaltyShootout());
 	}
@@ -56,8 +58,6 @@ public class KeeperOneOnOneRole extends KeeperRole
 	@Override
 	protected void beforeUpdate()
 	{
-		
-		
 		GameState gameState = getAiFrame().getTacticalField().getGameState();
 		double keeperRamboDistance = getAiFrame().getTacticalField().getKeeperRamboDistance();
 		
@@ -74,7 +74,7 @@ public class KeeperOneOnOneRole extends KeeperRole
 			triggerEvent(KeeperOneOnOneEvents.CATCH);
 		} else if (keeperState == EKeeperState.CRITICAL)
 		{
-			triggerEvent(KeeperOneOnOneEvents.INTERCEPT_AND_GO_OUT);
+			triggerEvent(KeeperOneOnOneEvents.NORMAL);
 		} else
 		{
 			triggerEvent(keeperState);
@@ -87,6 +87,13 @@ public class KeeperOneOnOneRole extends KeeperRole
 		boolean isBallCloseToGoal = Geometry.getPenaltyAreaOur().isPointInShape(getBall().getPos(), keeperRamboDistance);
 		boolean isNotShootingAtGoal = !getAiFrame().getTacticalField().getKeeperState()
 				.equals(EKeeperState.CRITICAL);
+		boolean isKeeperOnLine = false;
+		
+		if (!isNotShootingAtGoal)
+		{
+			ILine line = Lines.lineFromDirection(getBall().getPos(), getBall().getVel());
+			isKeeperOnLine = line.distanceTo(getPos()) < Geometry.getBotRadius() / 2.;
+		}
 		
 		ITrackedBot foe = getAiFrame().getTacticalField().getEnemyClosestToBall().getBot();
 		if (foe == null)
@@ -100,13 +107,13 @@ public class KeeperOneOnOneRole extends KeeperRole
 		boolean isBallInFrontOfKeeper = getPos().x() < getWFrame().getBall().getPos().x();
 		
 		boolean isRamboValid = (isBallCloseToGoal || isKeeperFaster) && isBallInFrontOfKeeper;
-		return isRamboValid && !isStopped && isNotShootingAtGoal;
+		return isRamboValid && !isStopped && (isNotShootingAtGoal || isKeeperOnLine);
 	}
 	
 	enum KeeperOneOnOneEvents implements IEvent
 	{
 		RAMBO,
-		INTERCEPT_AND_GO_OUT,
+		NORMAL,
 		CATCH,
 		PREPARE_SHOOTOUT
 	}
@@ -114,7 +121,7 @@ public class KeeperOneOnOneRole extends KeeperRole
 	private class PreparePenaltyShootout extends AState
 	{
 		AMoveToSkill posSkill;
-		
+
 		
 		@Override
 		public void doEntryActions()
@@ -126,6 +133,4 @@ public class KeeperOneOnOneRole extends KeeperRole
 			setNewSkill(posSkill);
 		}
 	}
-	
-	
 }

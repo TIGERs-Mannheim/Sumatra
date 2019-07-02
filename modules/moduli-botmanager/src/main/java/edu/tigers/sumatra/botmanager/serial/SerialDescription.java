@@ -12,11 +12,11 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
-import org.apache.commons.lang.ArrayUtils;
-
-import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
 
 
@@ -28,17 +28,11 @@ import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
  */
 public class SerialDescription
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	private final List<ASerialField>	cmdFields	= new ArrayList<>();
-	private final Class<?>				clazz;
-	private final Constructor<?>		ctor;
+	private final List<ASerialField> cmdFields = new ArrayList<>();
+	private final Class<?> clazz;
+	private final Constructor<?> ctor;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * Create a serial description for encoding/decoding byte arrays.
 	 * 
@@ -49,79 +43,102 @@ public class SerialDescription
 	{
 		this.clazz = clazz;
 		
-		int offset = 0;
-		
-		Object obj = null;
-		
 		try
 		{
 			ctor = clazz.getDeclaredConstructor();
 			ctor.setAccessible(true);
-			obj = ctor.newInstance();
 		} catch (Exception err)
 		{
 			throw new SerialException("Could not create instance of class: " + clazz.getName(), err);
 		}
 		
 		
-		Field[] fields = clazz.getDeclaredFields();
-		Class<?> superClass = clazz.getSuperclass();
-		if (!superClass.equals(ACommand.class))
-		{
-			Field[] superFields = superClass.getDeclaredFields();
-			fields = (Field[]) ArrayUtils.addAll(superFields, fields);
-		}
-		
+		loadFields(clazz);
+	}
+	
+	
+	private void loadFields(final Class<?> clazz) throws SerialException
+	{
+		Object instance = newInstance();
+		List<Field> fields = getAllFields(clazz);
+		int offset = 0;
 		for (Field f : fields)
 		{
-			SerialData annotation = f.getAnnotation(SerialData.class);
-			if (annotation == null)
-			{
-				continue;
-			}
-			
 			f.setAccessible(true);
-			Class<?> type = f.getType();
 			
-			if (type.isArray())
+			Optional<ASerialField> serialField = createSerialField(instance, offset, f);
+			if (serialField.isPresent())
 			{
-				int length = 0;
-				try
-				{
-					if (f.get(obj) != null)
-					{
-						length = Array.getLength(f.get(obj));
-					}
-				} catch (Exception err)
-				{
-					throw new SerialException("Could not get array length of serial field: " + f.getName(), err);
-				}
+				offset += serialField.get().getLength(instance);
+				cmdFields.add(serialField.get());
 				
-				if (annotation.type() == ESerialDataType.TAIL)
+				if (serialField.get().type == ESerialDataType.TAIL)
 				{
-					cmdFields.add(new SerialFieldTail(f, offset));
 					break;
 				}
-				
-				ASerialField serialField = new SerialFieldArray(f, annotation.type(), offset, length);
-				cmdFields.add(serialField);
-				
-				offset += serialField.getLength(obj);
-				
-			} else
-			{
-				ASerialField serialField = new SerialFieldValue(f, annotation.type(), offset);
-				cmdFields.add(serialField);
-				
-				offset += serialField.getLength(obj);
 			}
 		}
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
+	private List<Field> getAllFields(Class<?> clazz)
+	{
+		if (clazz.equals(Object.class))
+		{
+			return Collections.emptyList();
+		}
+		List<Field> fields = new ArrayList<>(Arrays.asList(clazz.getDeclaredFields()));
+		fields.addAll(getAllFields(clazz.getSuperclass()));
+		return fields;
+	}
+	
+	
+	private Optional<ASerialField> createSerialField(final Object instance, final int offset, final Field field)
+			throws SerialException
+	{
+		SerialData annotation = field.getAnnotation(SerialData.class);
+		if (annotation == null)
+		{
+			return Optional.empty();
+		}
+		
+		if (field.getType().isArray())
+		{
+			return Optional.of(getSerialFieldForArray(offset, instance, field, annotation));
+		}
+		return Optional.of(new SerialFieldValue(field, annotation.type(), offset));
+	}
+	
+	
+	private ASerialField getSerialFieldForArray(final int offset, final Object instance, final Field field,
+			final SerialData annotation) throws SerialException
+	{
+		if (annotation.type() == ESerialDataType.TAIL)
+		{
+			return new SerialFieldTail(field, offset);
+		}
+		
+		int length = getArrayLength(instance, field);
+		return new SerialFieldArray(field, annotation.type(), offset, length);
+	}
+	
+	
+	private int getArrayLength(final Object instance, final Field field) throws SerialException
+	{
+		try
+		{
+			if (field.get(instance) != null)
+			{
+				return Array.getLength(field.get(instance));
+			}
+			return 0;
+		} catch (Exception err)
+		{
+			throw new SerialException("Could not get array length of serial field: " + field.getName(), err);
+		}
+	}
+	
+	
 	/**
 	 * Get the serialized length of this object.
 	 * 
@@ -218,9 +235,4 @@ public class SerialDescription
 			throw new SerialException("Could not create new instance of: " + clazz.getName(), err);
 		}
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 }

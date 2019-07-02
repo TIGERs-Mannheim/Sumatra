@@ -12,22 +12,27 @@ import edu.tigers.sumatra.skillsystem.skills.ApproachAndStopBallSkill;
 
 public class ApproachAndStopBallState extends AOffensiveState
 {
+	private ApproachAndStopBallSkill skill;
+
+
 	public ApproachAndStopBallState(final ARole role)
 	{
 		super(role);
 	}
-	
-	
+
+
 	@Override
 	public void doEntryActions()
 	{
-		setNewSkill(new ApproachAndStopBallSkill());
+		skill = new ApproachAndStopBallSkill();
+		setNewSkill(skill);
 	}
-	
-	
+
+
 	@Override
 	public void doUpdate()
 	{
+		skill.setMarginToTheirPenArea(getMarginToTheirPenArea());
 		if (((ApproachAndStopBallSkill) getCurrentSkill()).ballStoppedByBot())
 		{
 			triggerEvent(EBallHandlingEvent.BALL_STOPPED_BY_BOT);
@@ -37,10 +42,13 @@ public class ApproachAndStopBallState extends AOffensiveState
 		} else if (ballMovesTowardsMe())
 		{
 			triggerEvent(EBallHandlingEvent.BALL_MOVES_TOWARDS_ME);
+		} else if (opponentInWay(150))
+		{
+			triggerEvent(EBallHandlingEvent.OPPONENT_BETWEEN_ME_AND_BALL);
 		}
 	}
-	
-	
+
+
 	private boolean ballMovesTowardsMe()
 	{
 		IVector2 base = getBall().getPos().addNew(getBall().getVel().scaleToNew(200));

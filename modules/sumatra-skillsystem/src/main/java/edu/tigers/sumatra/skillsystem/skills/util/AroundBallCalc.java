@@ -4,22 +4,19 @@
 
 package edu.tigers.sumatra.skillsystem.skills.util;
 
-import static java.lang.Math.abs;
-import static java.lang.Math.min;
-import static java.lang.Math.signum;
-
-import org.apache.commons.lang.Validate;
-
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+import org.apache.commons.lang.Validate;
+
+import static java.lang.Math.abs;
+import static java.lang.Math.min;
+import static java.lang.Math.signum;
 
 
 /**
@@ -76,9 +73,9 @@ public class AroundBallCalc
 			if (bot2Dest.isPointOnLineSegment(lp))
 			{
 				IVector2 ball2Lp = lp.subtractNew(getBallPos());
-				IVector2 offset = ball2Lp.scaleToNew(Geometry.getBotRadius() + maxMargin);
-				double dist = destination.distanceTo(getPos());
-				return LineMath.stepAlongLine(getPos(), getBallPos().addNew(offset), dist);
+				double relMargin = getRelativeMarginToBall();
+				double distance = getRequiredDistanceToBall(relMargin);
+				return getBallPos().addNew(ball2Lp.scaleToNew(distance));
 			}
 		}
 		

@@ -8,9 +8,7 @@ import java.awt.EventQueue;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 
-import edu.tigers.sumatra.Referee;
-import edu.tigers.sumatra.Referee.SSL_Referee.Stage;
-import edu.tigers.sumatra.referee.data.RefBoxRemoteControlFactory;
+import edu.tigers.sumatra.referee.control.GcEventFactory;
 import net.miginfocom.swing.MigLayout;
 
 
@@ -21,59 +19,32 @@ public class ChangeStatePanel extends ARefBoxRemoteControlGeneratorPanel
 {
 	private static final long serialVersionUID = -423240395071869217L;
 	
-	private final JButton firstHalf;
-	private final JButton halfTime;
-	private final JButton secondHalf;
-	private final JButton overtime1;
-	private final JButton overtime2;
-	private final JButton penaltyShootout;
+	private final JButton previousStage;
+	private final JButton nextStage;
 	private final JButton endGame;
 	
 	
 	/** Constructor */
 	public ChangeStatePanel()
 	{
-		setLayout(new MigLayout("wrap 2", "[fill]10[fill]"));
+		setLayout(new MigLayout("wrap 1", "[fill]10[fill]"));
 		
-		firstHalf = new JButton("First Half");
-		halfTime = new JButton("Half Time");
-		secondHalf = new JButton("Second Half");
-		overtime1 = new JButton("Overtime1");
-		overtime2 = new JButton("Overtime2");
-		penaltyShootout = new JButton("Penalty Shootout");
+		previousStage = new JButton("Previous Stage");
+		nextStage = new JButton("Next Stage");
 		endGame = new JButton("End Game");
 		
-		firstHalf.addActionListener(
-				e -> sendStage(Stage.NORMAL_FIRST_HALF_PRE));
-		halfTime.addActionListener(
-				e -> sendStage(Stage.NORMAL_HALF_TIME));
-		secondHalf.addActionListener(
-				e -> sendStage(Stage.NORMAL_SECOND_HALF_PRE));
-		overtime1.addActionListener(
-				e -> sendStage(Stage.EXTRA_FIRST_HALF_PRE));
-		overtime2.addActionListener(
-				e -> sendStage(Stage.EXTRA_SECOND_HALF_PRE));
-		penaltyShootout.addActionListener(
-				e -> sendStage(Stage.PENALTY_SHOOTOUT));
+		previousStage.addActionListener(
+				e -> sendGameControllerEvent(GcEventFactory.previousStage()));
+		nextStage.addActionListener(
+				e -> sendGameControllerEvent(GcEventFactory.nextStage()));
 		endGame.addActionListener(
-				e -> sendStage(Stage.POST_GAME));
+				e -> sendGameControllerEvent(GcEventFactory.endGame()));
 		
-		add(firstHalf);
-		add(halfTime);
-		add(secondHalf);
-		add(overtime1);
-		add(overtime2);
-		add(penaltyShootout);
+		add(previousStage);
+		add(nextStage);
 		add(endGame);
 		
 		setBorder(BorderFactory.createTitledBorder("Change State"));
-	}
-	
-	
-	private void sendStage(Stage stage)
-	{
-		notifyNewControlRequest(RefBoxRemoteControlFactory.fromStage(stage));
-		notifyNewControlRequest(RefBoxRemoteControlFactory.fromCommand(Referee.SSL_Referee.Command.HALT));
 	}
 	
 	
@@ -83,12 +54,8 @@ public class ChangeStatePanel extends ARefBoxRemoteControlGeneratorPanel
 	public void setEnable(final boolean enable)
 	{
 		EventQueue.invokeLater(() -> {
-			firstHalf.setEnabled(enable);
-			halfTime.setEnabled(enable);
-			secondHalf.setEnabled(enable);
-			overtime1.setEnabled(enable);
-			overtime2.setEnabled(enable);
-			penaltyShootout.setEnabled(enable);
+			previousStage.setEnabled(enable);
+			nextStage.setEnabled(enable);
 			endGame.setEnabled(enable);
 		});
 	}

@@ -4,9 +4,12 @@
 
 package edu.tigers.sumatra.ai.integration;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -21,7 +24,7 @@ import org.apache.log4j.spi.LoggingEvent;
 public class LogEventWatcher extends WriterAppender
 {
 	private Set<Level> watchedLevels = new HashSet<>();
-	private Map<Level, Integer> numEvents = new HashMap<>();
+	private Map<Level, List<LoggingEvent>> events = new HashMap<>();
 	
 	
 	/**
@@ -40,18 +43,19 @@ public class LogEventWatcher extends WriterAppender
 	{
 		if (watchedLevels.contains(event.getLevel()))
 		{
-			numEvents.put(event.getLevel(), numEvents.getOrDefault(event.getLevel(), 0) + 1);
+			final List<LoggingEvent> loggingEvents = events.computeIfAbsent(event.getLevel(), a -> new ArrayList<>());
+			loggingEvents.add(event);
 		}
 	}
 	
 	
 	/**
 	 * @param level the level to get the number of events for
-	 * @return the number of log events for the given log level that happened
+	 * @return the log events for the given log level that happened
 	 */
-	public int getNumEvents(final Level level)
+	public List<LoggingEvent> getEvents(final Level level)
 	{
-		return numEvents.getOrDefault(level, 0);
+		return events.getOrDefault(level, Collections.emptyList());
 	}
 	
 	
@@ -60,6 +64,6 @@ public class LogEventWatcher extends WriterAppender
 	 */
 	public void clear()
 	{
-		numEvents.clear();
+		events.clear();
 	}
 }

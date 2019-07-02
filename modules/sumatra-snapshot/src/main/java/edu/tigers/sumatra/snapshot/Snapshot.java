@@ -32,8 +32,8 @@ import edu.tigers.sumatra.ids.ETeamColor;
  */
 public class Snapshot
 {
-	private Map<BotID, SnapObject>	bots;
-	private SnapObject					ball;
+	private Map<BotID, SnapObject> bots;
+	private SnapObject ball;
 	
 	
 	/**

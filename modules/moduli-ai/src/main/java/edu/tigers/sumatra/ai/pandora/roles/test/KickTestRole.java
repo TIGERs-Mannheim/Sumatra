@@ -8,10 +8,8 @@ import com.github.g3force.configurable.Configurable;
 
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
-import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.skillsystem.skills.PullBallSkill;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
+import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.statemachine.AState;
@@ -24,8 +22,8 @@ import edu.tigers.sumatra.wp.data.DynamicPosition;
  */
 public class KickTestRole extends ARole
 {
-	@Configurable(comment = "Allow entering the penalty areas for testing purposes", defValue = "false")
-	private static boolean forceAllowPenAreas = false;
+	@Configurable(comment = "Allow entering the penalty areas for testing purposes", defValue = "true")
+	private static boolean allowPenAreas = true;
 	
 	private final DynamicPosition passTarget;
 	private final EKickerDevice kickerDevice;
@@ -43,10 +41,9 @@ public class KickTestRole extends ARole
 		this.kickSpeed = kickSpeed;
 		
 		final KickState kickState = new KickState();
-		final PlaceBallState placeBallState = new PlaceBallState();
 		
 		addTransition(EEvent.KICK, kickState);
-		addTransition(EEvent.PLACE_BALL, placeBallState);
+		addTransition(EEvent.WAIT, new WaitState());
 		
 		setInitialState(kickState);
 	}
@@ -54,59 +51,40 @@ public class KickTestRole extends ARole
 	private enum EEvent implements IEvent
 	{
 		KICK,
-		PLACE_BALL
+		WAIT
+	}
+	
+	
+	public void switchToKick()
+	{
+		triggerEvent(EEvent.KICK);
+	}
+	
+	
+	public void switchToWait()
+	{
+		triggerEvent(EEvent.WAIT);
 	}
 	
 	private class KickState extends AState
 	{
-		private TouchKickSkill skill;
-		
-		
 		@Override
 		public void doEntryActions()
 		{
-			skill = new TouchKickSkill(passTarget, KickParams.of(kickerDevice, kickSpeed));
+			TouchKickSkill skill = new TouchKickSkill(passTarget, KickParams.of(kickerDevice, kickSpeed));
 			setNewSkill(skill);
 			
-			if (forceAllowPenAreas)
-			{
-				skill.getMoveCon().setPenaltyAreaAllowedOur(true);
-				skill.getMoveCon().setPenaltyAreaAllowedTheir(true);
-			}
-		}
-		
-		
-		@Override
-		public void doUpdate()
-		{
-			if (!Geometry.getField().isPointInShape(getBall().getPos()) && getBall().getVel().getLength2() < 0.1)
-			{
-				triggerEvent(EEvent.PLACE_BALL);
-			}
+			skill.getMoveCon().setPenaltyAreaAllowedOur(allowPenAreas);
+			skill.getMoveCon().setPenaltyAreaAllowedTheir(allowPenAreas);
 		}
 	}
 	
-	private class PlaceBallState extends AState
+	private class WaitState extends AState
 	{
-		PullBallSkill skill;
-		
-		
 		@Override
 		public void doEntryActions()
 		{
-			IVector2 target = Geometry.getField().withMargin(-100).nearestPointInside(getBall().getPos());
-			skill = new PullBallSkill(target);
-			setNewSkill(skill);
-		}
-		
-		
-		@Override
-		public void doUpdate()
-		{
-			if (Geometry.getField().withMargin(-50).isPointInShape(getBall().getPos()) && skill.hasReleasedBall())
-			{
-				triggerEvent(EEvent.KICK);
-			}
+			setNewSkill(AMoveToSkill.createMoveToSkill());
 		}
 	}
 }

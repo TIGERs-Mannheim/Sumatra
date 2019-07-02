@@ -5,8 +5,10 @@
 package edu.tigers.sumatra.wp.vis;
 
 import java.awt.Color;
+import java.text.DecimalFormat;
 import java.util.List;
 
+import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.drawable.ShapeMap;
@@ -18,10 +20,11 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Generate shapes with velocities of ball and bots
  */
 public class VelocityVisCalc implements IWpCalc
 {
+	private DecimalFormat df = new DecimalFormat("0.0");
 	
 	
 	@Override
@@ -46,6 +49,10 @@ public class VelocityVisCalc implements IWpCalc
 				DrawableLine line = new DrawableLine(velLine, Color.cyan);
 				line.setStrokeWidth(20);
 				shapes.add(line);
+				final DrawableAnnotation annotation = new DrawableAnnotation(velLine.getEnd(),
+						df.format(bot.getVel().getLength2()));
+				annotation.setColor(Color.cyan);
+				shapes.add(annotation);
 			}
 		}
 	}

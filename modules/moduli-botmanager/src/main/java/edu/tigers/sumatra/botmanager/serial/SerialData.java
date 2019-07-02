@@ -26,7 +26,7 @@ public @interface SerialData
 	/**
 	 * Data type specification.
 	 */
-	public enum ESerialDataType
+	enum ESerialDataType
 	{
 		/** */
 		UINT8(1, 0, 255),
@@ -49,12 +49,12 @@ public @interface SerialData
 		/** */
 		EMBEDDED(0, 0, 0);
 		
-		private final int		length;
-		private final long	min;
-		private final long	max;
+		private final int length;
+		private final long min;
+		private final long max;
 		
 		
-		private ESerialDataType(final int length, final long min, final long max)
+		ESerialDataType(final int length, final long min, final long max)
 		{
 			this.length = length;
 			this.min = min;
@@ -93,5 +93,5 @@ public @interface SerialData
 	/**
 	 * Get the type of this annotation.
 	 */
-	public ESerialDataType type();
+	ESerialDataType type();
 }

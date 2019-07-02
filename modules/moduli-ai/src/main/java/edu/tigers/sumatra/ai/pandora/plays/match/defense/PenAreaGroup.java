@@ -10,7 +10,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
@@ -18,9 +20,8 @@ import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.ballresponsibility.EBallResponsibility;
-import edu.tigers.sumatra.ai.metis.defense.DefenseMath;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseThreatAssignment;
-import edu.tigers.sumatra.ai.metis.defense.data.EDefenseGroup;
+import edu.tigers.sumatra.ai.metis.defense.data.EDefenseThreatType;
 import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
@@ -30,26 +31,14 @@ import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.geometry.RuleConstraints;
-import edu.tigers.sumatra.ids.AObjectID;
-import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.I2DShape;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.circle.ICircle;
-import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.line.v2.Lines;
-import edu.tigers.sumatra.math.tube.ITube;
-import edu.tigers.sumatra.math.tube.Tube;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.referee.data.EGameState;
-import edu.tigers.sumatra.skillsystem.skills.MoveOnPenaltyAreaSkill;
-import edu.tigers.sumatra.skillsystem.skills.util.penarea.IDefensePenArea;
-import edu.tigers.sumatra.skillsystem.skills.util.penarea.PenAreaFactory;
-import edu.tigers.sumatra.wp.data.ITrackedBall;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
+import edu.tigers.sumatra.skillsystem.skills.util.PenAreaBoundary;
 
 
 /**
@@ -59,372 +48,355 @@ public class PenAreaGroup extends ADefenseGroup
 {
 	@Configurable(defValue = "5.0", comment = "Distance offset to add to bot radius to determine same cluster of bots")
 	private static double clusterDistanceOffset = 5.0;
-	
-	@Configurable(defValue = "50.0")
-	private static double penaltyAreaMargin = 50;
-	
-	@Configurable(defValue = "350.0")
+
+	@Configurable(defValue = "350.0", comment = "Distance when a bot is considered close enough that other bots can leave the protected target")
 	private static double interchangeDist = 350.0;
-	
-	@Configurable(comment = "Distance between the penalty area defenders times the ball radius", defValue = "0.5")
-	private static double distBetweenPenAreaBotsFactor = 0.5;
-	
+
+	@Configurable(comment = "Distance between the bots", defValue = "20.0")
+	private static double distBetweenBots = 20.0;
+
+	@Configurable(defValue = "10.0", comment = "Extra margin to default penArea margin (must be >0 to avoid bad pathplanning)")
+	private static double penAreaExtraMargin = 10.0;
+
+
 	static
 	{
 		ConfigRegistration.registerClass("plays", PenAreaGroup.class);
 	}
-	
-	private IDefensePenArea penArea = PenAreaFactory.buildWithMargin(0);
-	
-	private List<DefenseThreatAssignment> threats = new ArrayList<>();
+
 	private AthenaAiFrame aiFrame;
-	
-	
-	/**
-	 * @param defendingId an identifying id
-	 */
-	public PenAreaGroup(final AObjectID defendingId)
-	{
-		super(defendingId);
-	}
-	
-	
+	private PenAreaBoundary penAreaBoundary;
+
+
 	@Override
 	public void assignRoles()
 	{
-		for (SwitchableDefenderRole sRole : getRoles())
-		{
-			if (sRole.getOriginalRole().getType() != ERole.DEFENDER_PEN_AREA)
-			{
-				ARole newRole = new DefenderPenAreaRole();
-				sRole.setNewRole(newRole);
-			}
-		}
+		getRoles().stream()
+				.filter(sdr -> sdr.getOriginalRole().getType() != ERole.DEFENDER_PEN_AREA)
+				.forEach(sdr -> sdr.setNewRole(new DefenderPenAreaRole()));
 	}
-	
-	
+
+
 	@Override
 	public void updateRoles(final AthenaAiFrame aiFrame)
 	{
 		super.updateRoles(aiFrame);
 		this.aiFrame = aiFrame;
-		
-		List<DefenseThreatAssignment> threatAssignments = new ArrayList<>(threats);
-		List<TargetGroup> reducedTargets = reduceThreatAssignments(threatAssignments);
-		
-		threatAssignments.forEach(t -> getShapes(aiFrame).add(
-				new DrawableLine(t.getThreat().getThreatLine(), Color.black)));
-		threatAssignments.forEach(t -> getShapes(aiFrame).add(
-				new DrawableLine(Line.fromPoints(t.getThreat().getPos(), Geometry.getGoalOur().getRightPost()),
-						Color.black)));
-		threatAssignments.forEach(t -> getShapes(aiFrame).add(
-				new DrawableLine(Line.fromPoints(t.getThreat().getPos(), Geometry.getGoalOur().getLeftPost()),
-						Color.black)));
-		
-		reducedTargets.forEach(t -> getShapes(aiFrame).add(
-				new DrawableCircle(Circle.createCircle(t.centerDest, 30), Color.blue)));
-		reducedTargets.forEach(t -> t.moveDestinations.forEach(m -> getShapes(aiFrame).add(
-				new DrawableLine(Line.fromPoints(t.centerDest, m), Color.blue))));
-		
-		List<PenAreaSpaces> spaces = fillPenAreaSpaces(reducedTargets);
-		List<TargetGroup> allTargetsSorted = getAllSortedTargets(reducedTargets, spaces);
-		
-		spaces.forEach(s -> getShapes(aiFrame).add(
-				new DrawableLine(Line.fromPoints(s.start, s.end), Color.orange)));
-		spaces.forEach(s -> getShapes(aiFrame).add(
-				new DrawableAnnotation(Lines.segmentFromPoints(s.start, s.end).getCenter(), String.valueOf(s.numTargets),
-						Color.orange)));
-		
-		allTargetsSorted.forEach(t -> getShapes(aiFrame).add(
+		penAreaBoundary = PenAreaBoundary
+				.ownWithMargin(Geometry.getBotRadius() + Geometry.getPenaltyAreaMargin() + penAreaExtraMargin);
+
+		List<PenAreaThreatAssigment> threatAssignments = getDefenseThreatAssignments();
+
+		List<TargetGroup> reducedTargetGroups = reduceThreatAssignmentsToTargetGroups(threatAssignments);
+		drawReducedTargetGroups(reducedTargetGroups);
+
+		List<PenAreaSpaces> spaces = createPenAreaSpaces(reducedTargetGroups);
+		drawSpaces(spaces);
+
+		List<TargetGroup> allTargetGroups = addTargetsFromSpacesToTargetGroups(reducedTargetGroups, spaces);
+		drawAllSortedTargetGroups(allTargetGroups);
+
+		assignTargetGroupsToRoles(allTargetGroups);
+
+		assignActiveKicker();
+	}
+
+
+	private void drawAllSortedTargetGroups(final List<TargetGroup> allTargetsSorted)
+	{
+		allTargetsSorted.forEach(t -> getShapes().add(
 				new DrawableCircle(Circle.createCircle(t.centerDest, 60), Color.magenta)));
-		allTargetsSorted.forEach(t -> getShapes(aiFrame).add(
+		allTargetsSorted.forEach(t -> getShapes().add(
 				new DrawableAnnotation(t.centerDest, String.valueOf(t.priority), Color.magenta)
 						.withCenterHorizontally(true)));
-		
-		assignTargetGroupsToRoles(allTargetsSorted);
-		
-		keepDistanceToBallIfRequired(aiFrame);
-		
-		kickBallIfEnoughTime(aiFrame);
 	}
-	
-	
-	private void keepDistanceToBallIfRequired(final AthenaAiFrame aiFrame)
+
+
+	private void drawReducedTargetGroups(final List<TargetGroup> reducedTargets)
 	{
-		if (aiFrame.getGamestate().isDistanceToBallRequired() || aiFrame.getTacticalField().isOpponentWillDoIcing())
-		{
-			freeForbiddenArea(aiFrame);
-		}
-		if (aiFrame.getGamestate().getState() == EGameState.BALL_PLACEMENT)
-		{
-			freeBallPlacementCorridor(aiFrame);
-		}
+		reducedTargets.forEach(t -> getShapes().add(
+				new DrawableCircle(Circle.createCircle(t.centerDest, 30), Color.blue)));
+		reducedTargets.forEach(t -> t.moveDestinations.forEach(m -> getShapes().add(
+				new DrawableLine(Line.fromPoints(t.centerDest, m), Color.blue))));
+		reducedTargets.forEach(t -> t.moveDestinations.forEach(m -> getShapes().add(
+				new DrawableCircle(Circle.createCircle(m, 20), Color.blue))));
 	}
-	
-	
-	private List<TargetGroup> reduceThreatAssignments(final List<DefenseThreatAssignment> threatAssignments)
+
+
+	private void drawSpaces(final List<PenAreaSpaces> spaces)
 	{
-		List<TargetGroup> reducedTargets;
+		spaces.forEach(s -> getShapes().add(
+				new DrawableLine(Line.fromPoints(s.start, s.end), Color.orange)));
+		spaces.forEach(s -> getShapes().add(
+				new DrawableAnnotation(Lines.segmentFromPoints(s.start, s.end).getCenter(), String.valueOf(s.numTargets),
+						Color.orange)
+								.withCenterHorizontally(true)
+								.withOffset(Vector2.fromY(-100))));
+	}
+
+
+	/**
+	 * @return the defense threats that are designated to the penalty area or not assigned at all
+	 */
+	private List<PenAreaThreatAssigment> getDefenseThreatAssignments()
+	{
+		return aiFrame.getTacticalField().getDefenseThreatAssignments().stream()
+				.filter(dta -> dta.getThreat().getType() != EDefenseThreatType.BALL_TO_BOT)
+				.map(this::mapToThreatForThisGroup)
+				.filter(Optional::isPresent)
+				.map(Optional::get)
+				.collect(Collectors.toList());
+	}
+
+
+	private Optional<PenAreaThreatAssigment> mapToThreatForThisGroup(DefenseThreatAssignment assignment)
+	{
+		final Set<BotID> assignedBots = getRoles().stream()
+				.map(SwitchableDefenderRole::getOriginalRole)
+				.map(ARole::getBotID)
+				.filter(botID -> assignment.getBotIds().contains(botID))
+				.collect(Collectors.toSet());
+
+		if (!assignedBots.isEmpty())
+		{
+			return Optional.of(new PenAreaThreatAssigment(assignment.getThreat(), assignedBots));
+		}
+		return Optional.empty();
+	}
+
+
+	/**
+	 * Reduce the list of threat assignments until they match the available number of roles
+	 *
+	 * @param threatAssignments all threat assignments reported by Metis
+	 * @return the reduce list of target groups
+	 */
+	private List<TargetGroup> reduceThreatAssignmentsToTargetGroups(
+			final List<PenAreaThreatAssigment> threatAssignments)
+	{
+		List<PenAreaThreatAssigment> reducedAssignments = new ArrayList<>(threatAssignments);
 		do
 		{
-			List<DefenseThreatAssignment> targets = sortThreatAssignmentsByAngle(threatAssignments);
-			
-			List<List<DefenseThreatAssignment>> targetClusters = getTargetClusters(targets);
-			
-			reducedTargets = reduceClustersToTargets(targetClusters);
-			
+			List<PenAreaThreatAssigment> targets = sortThreatAssignments(reducedAssignments);
+			List<List<PenAreaThreatAssigment>> targetClusters = getTargetClusters(targets);
+			List<TargetGroup> reducedTargets = reduceClustersToTargets(targetClusters);
+
 			int nUsedBots = reducedTargets.stream().mapToInt(tg -> tg.moveDestinations.size()).sum();
-			
 			if (nUsedBots <= getRoles().size())
 			{
-				break;
+				return reducedTargets;
 			}
-			threatAssignments.remove(threatAssignments.size() - 1);
+			reducedAssignments.remove(reducedAssignments.size() - 1);
 		} while (true);
-		return reducedTargets;
 	}
-	
-	
-	private List<IDrawableShape> getShapes(AthenaAiFrame frame)
-	{
-		return frame.getTacticalField().getDrawableShapes().get(EAiShapesLayer.DEFENSE_PENALTY_AREA_GROUP);
-	}
-	
-	
+
+
 	/**
-	 * Move the target out of circle step by step towards goal until it is not in circle or the penArea is reached
-	 * 
-	 * @param target
-	 * @param circle
+	 * @param threats unsorted threat assignments
+	 * @return threat assignments sorted along the penalty area boundary from start to end
+	 */
+	private List<PenAreaThreatAssigment> sortThreatAssignments(final List<PenAreaThreatAssigment> threats)
+	{
+		return threats.stream()
+				.sorted((r1, r2) -> penAreaBoundary.compare(r1.threat.getPos(), r2.threat.getPos()))
+				.collect(Collectors.toList());
+	}
+
+
+	/**
+	 * Assign the target groups to the defenders
+	 *
+	 * @param allTargetGroups all target groups to assign
+	 */
+	private void assignTargetGroupsToRoles(final List<TargetGroup> allTargetGroups)
+	{
+		List<DefenderPenAreaRole> defenderRoles = sortedDefenders();
+		List<TargetGroup> allTargetsSorted = sortedTargetGroups(allTargetGroups);
+		List<TargetGroupAssignment> targetGroupAssignments = assignTargetGroups(allTargetsSorted, defenderRoles);
+
+		for (TargetGroupAssignment targetGroupAssignment : targetGroupAssignments)
+		{
+			assignTargetGroupToRole(targetGroupAssignment, allTargetsSorted, targetGroupAssignments);
+		}
+	}
+
+
+	/**
+	 * Assign a role to a target group
+	 *
+	 * @param targetGroupAssignment
+	 * @param allTargetsSorted
+	 * @param targetGroupAssignments
+	 */
+	private void assignTargetGroupToRole(
+			final TargetGroupAssignment targetGroupAssignment,
+			final List<TargetGroup> allTargetsSorted,
+			final List<TargetGroupAssignment> targetGroupAssignments)
+	{
+		final DefenderPenAreaRole role = targetGroupAssignment.role;
+		final IVector2 moveDest = targetGroupAssignment.moveDest;
+
+		Optional<TargetGroup> otherProtectedTargetGroup = otherProtectedTargetGroup(allTargetsSorted,
+				targetGroupAssignment, role);
+		if (otherProtectedTargetGroup.isPresent())
+		{
+			// the role is currently still protecting a more important threat in another target group
+			final IVector2 centerDest = otherProtectedTargetGroup.get().centerDest;
+			role.setDestination(centerDest);
+			getShapes().add(new DrawableLine(Line.fromPoints(role.getPos(), centerDest), Color.red));
+		} else if (isTargetProtected(targetGroupAssignments, targetGroupAssignment))
+		{
+			// apply the desired move destination
+			role.setDestination(moveDest);
+		} else
+		{
+			// Stay on centerDest until second bot is near its destination
+			final IVector2 centerDest = targetGroupAssignment.targetGroup.centerDest;
+			role.setDestination(centerDest);
+			getShapes().add(new DrawableLine(Line.fromPoints(role.getPos(), centerDest), Color.RED));
+		}
+		role.setPenAreaBoundary(penAreaBoundary);
+		getShapes().add(new DrawableLine(Line.fromPoints(role.getPos(), moveDest), Color.PINK));
+	}
+
+
+	/**
+	 * check if this role is currently protecting a threat in another target group
+	 *
+	 * @param allTargetsSorted
+	 * @param targetGroupAssignment
+	 * @param role
 	 * @return
 	 */
-	private IVector2 moveTargetOutOfCircle(IVector2 target, ICircle circle)
+	private Optional<TargetGroup> otherProtectedTargetGroup(
+			final List<TargetGroup> allTargetsSorted,
+			final TargetGroupAssignment targetGroupAssignment,
+			final DefenderPenAreaRole role)
 	{
-		IVector2 goal = Geometry.getGoalOur().getCenter();
-		IVector2 dir = goal.subtractNew(circle.center()).scaleTo(5);
-		IVector2 newTarget = target;
-		IDefensePenArea penaltyArea = PenAreaFactory.buildWithMargin(0);
-		while (circle.isPointInShape(newTarget))
-		{
-			IVector2 nextTarget = newTarget.addNew(dir);
-			if (penaltyArea.isPointInShape(nextTarget))
-			{
-				break;
-			}
-			newTarget = nextTarget;
-		}
-		return newTarget;
+		return allTargetsSorted.stream()
+				// not the one that is processed
+				.filter(targetGroup -> targetGroup != targetGroupAssignment.targetGroup)
+				// only those that are protected by the currently processed role
+				.filter(targetGroup -> targetGroup.isProtectedByPos(role.getPos()))
+				// only those that are more important than the one currently processed
+				.filter(targetGroup -> currentTargetIsMoreImportant(targetGroup, targetGroupAssignment.targetGroup))
+				// only those that are not already protected by their own role
+				.filter(targetGroup -> !targetGroup.isProtectedByPos(role.getPos()))
+				// one is enough, more is unlikely or impossible
+				.findFirst();
 	}
-	
-	
-	private void freeBallPlacementCorridor(final AthenaAiFrame aiFrame)
+
+
+	/**
+	 * Check if a target is currently protected by another bot
+	 *
+	 * @param targetGroupAssignments
+	 * @param targetGroupAssignment
+	 * @return
+	 */
+	private boolean isTargetProtected(final List<TargetGroupAssignment> targetGroupAssignments,
+			final TargetGroupAssignment targetGroupAssignment)
 	{
-		IVector2 placementPos = aiFrame.getGamestate().getBallPlacementPositionForUs();
-		double margin = RuleConstraints.getStopRadius() + 2 * Geometry.getBotRadius();
-		IVector2 ballPos = aiFrame.getWorldFrame().getBall().getPos();
-		ITube forbiddenZone = Tube.create(placementPos, ballPos, margin);
-		
-		List<DefenderPenAreaRole> roles = getRoles().stream()
-				.map(sRole -> (DefenderPenAreaRole) sRole.getNewRole()).collect(Collectors.toList());
-		
-		for (DefenderPenAreaRole role : roles)
-		{
-			if (forbiddenZone.isPointInShape(role.getPos()))
-			{
-				ILine line = Line.fromPoints(ballPos, placementPos);
-				IVector2 newPos = line.nearestPointOnLine(role.getPos())
-						.addNew(line.directionVector().getNormalVector().scaleToNew(margin));
-				newPos = (penArea.withMargin(penaltyAreaMargin).isPointInShape(newPos)
-						|| !Geometry.getField().isPointInShape(newPos))
-								? line.nearestPointOnLine(role.getPos()).addNew(
-										line.directionVector().getNormalVector().scaleToNew(-margin))
-								: newPos;
-				if (penArea.withMargin(penaltyAreaMargin).isPointInShape(newPos))
-				{
-					newPos = penArea.withMargin(penaltyAreaMargin).nearestPointOutside(newPos,
-							newPos.addNew(line.directionVector()));
-				}
-				role.setTarget(newPos);
-			}
-		}
+		return targetGroupAssignments.stream()
+				// other assignment
+				.filter(assignment -> assignment != targetGroupAssignment)
+				// with the same target group
+				.filter(assignment -> assignment.targetGroup == targetGroupAssignment.targetGroup)
+				// that already protect the target
+				.anyMatch(assignment -> assignment.protectedByAssignedRole);
 	}
-	
-	
-	private void freeForbiddenArea(final AthenaAiFrame aiFrame)
+
+
+	/**
+	 * Sort defenders along the penalty area boundary from start to end
+	 *
+	 * @return the sorted defenders
+	 */
+	private List<DefenderPenAreaRole> sortedDefenders()
 	{
-		double radius = RuleConstraints.getStopRadius() + Geometry.getBotRadius() + 10;
-		ICircle forbiddenCircle = Circle.createCircle(aiFrame.getWorldFrame().getBall().getPos(), radius);
-		
-		List<DefenderPenAreaRole> sortedRoles = getRoles().stream()
+		return getRoles().stream()
 				.map(sRole -> (DefenderPenAreaRole) sRole.getNewRole())
-				.sorted(Comparator
-						.comparingDouble(role -> getRoleToThreatAngle(role.getPos(), forbiddenCircle.center())))
+				.sorted((r1, r2) -> penAreaBoundary.compare(r1.getPos(), r2.getPos()))
 				.collect(Collectors.toList());
-		int numNegative = (int) sortedRoles.stream()
-				.filter(role -> getRoleToThreatAngle(role.getPos(), forbiddenCircle.center()) < 0).count();
-		
-		sortedRoles.forEach(role -> role.setTarget(moveTargetOutOfCircle(role.getTarget(), forbiddenCircle)));
-		
-		int startNegative = numNegative - 1;
-		if (startNegative >= 0 && forbiddenCircle.isPointInShape(sortedRoles.get(startNegative).getTarget()))
-		{
-			moveUp(startNegative, -1, forbiddenCircle, sortedRoles);
-		}
-		int startPositive = numNegative;
-		if (startPositive < sortedRoles.size()
-				&& forbiddenCircle.isPointInShape(sortedRoles.get(startPositive).getTarget()))
-		{
-			moveUp(startPositive, 1, forbiddenCircle, sortedRoles);
-		}
 	}
-	
-	
-	private void moveUp(int roleIdx, int dir, I2DShape obstacle, List<DefenderPenAreaRole> sortedRoles)
+
+
+	private List<TargetGroupAssignment> assignTargetGroups(
+			final List<TargetGroup> allTargetsSorted,
+			final List<DefenderPenAreaRole> defenderRoles)
 	{
-		IVector2 base = DefenseMath.getBisectionGoal(sortedRoles.get(roleIdx).getTarget());
-		double nextAngle = sortedRoles.get(roleIdx).getTarget().subtractNew(base).getAngle()
-				+ 0.05 * dir;
-		if (Math.abs(nextAngle) > AngleMath.PI_HALF)
-		{
-			return;
-		}
-		
-		IVector2 nextTarget = getTargetOnPenaltyArea(
-				base.addNew(Vector2.fromAngle(nextAngle).scaleTo(Geometry.getPenaltyAreaFrontLineLength())),
-				Geometry.getPenaltyAreaMargin() + 1);
-		
-		sortedRoles.get(roleIdx).setTarget(nextTarget);
-		int nextI = roleIdx + dir;
-		if (nextI >= 0 && nextI < sortedRoles.size())
-		{
-			DefenderPenAreaRole nextRole = sortedRoles.get(nextI);
-			IVector2 nextRoleTarget = nextRole.getTarget();
-			if (nextTarget.distanceTo(nextRoleTarget) < Geometry.getBotRadius() * 2)
-			{
-				moveUp(nextI, dir, obstacle, sortedRoles);
-			}
-		}
-		DefenderPenAreaRole currentRole = sortedRoles.get(roleIdx);
-		if (obstacle.isPointInShape(currentRole.getTarget()))
-		{
-			moveUp(roleIdx, dir, obstacle, sortedRoles);
-		}
-	}
-	
-	
-	public void setThreatAssignments(final List<DefenseThreatAssignment> threats)
-	{
-		this.threats = threats.stream().filter(a -> a.getDefenseGroup() == EDefenseGroup.PENALTY_AREA)
-				.collect(Collectors.toList());
-		this.threats.addAll(threats.stream()
-				.filter(a -> a.getDefenseGroup() == EDefenseGroup.UNASSIGNED)
-				.collect(Collectors.toList()));
-	}
-	
-	
-	private void assignTargetGroupsToRoles(final List<TargetGroup> allTargetsSorted)
-	{
-		List<DefenderPenAreaRole> defenderRoles = getRoles().stream()
-				.map(sRole -> (DefenderPenAreaRole) sRole.getNewRole())
-				.sorted(ANGLE_ROLE_COMPARATOR_REVERSED)
-				.collect(Collectors.toList());
-		
-		List<TargetGroupAssigned> assignedTargetGroups = new ArrayList<>();
+		List<TargetGroupAssignment> targetGroupAssignments = new ArrayList<>();
 		for (TargetGroup targetGroup : allTargetsSorted)
 		{
-			List<IVector2> remainingMoveDests = new ArrayList<>(targetGroup.moveDestinations);
-			for (int i = 0; i < targetGroup.moveDestinations.size(); i++)
+			for (IVector2 moveDest : targetGroup.moveDestinations)
 			{
-				TargetGroupAssigned targetGroupAssigned = new TargetGroupAssigned(targetGroup, defenderRoles.remove(0),
-						remainingMoveDests);
-				assignedTargetGroups.add(targetGroupAssigned);
+				final DefenderPenAreaRole role = defenderRoles.remove(0);
+				targetGroupAssignments.add(new TargetGroupAssignment(targetGroup, role, moveDest));
 			}
 		}
-		
-		for (TargetGroupAssigned nextTargetGroup : assignedTargetGroups)
-		{
-			DefenderPenAreaRole role = nextTargetGroup.role;
-			// check if this role is currently protecting another threat
-			Optional<TargetGroupAssigned> currentTarget = assignedTargetGroups.stream()
-					.filter(target -> target != nextTargetGroup)
-					.filter(target -> target.isProtectedByPos(role.getPos()))
-					.findFirst();
-			
-			IVector2 designatedTarget = nextTargetGroup.remainingMoveDests.remove(0);
-			if (currentTarget.isPresent() &&
-					currentTargetIsMoreImportant(currentTarget.get(), nextTargetGroup) &&
-					!currentTarget.get().isProtectedByAssignedRole())
-			{
-				role.setTarget(currentTarget.get().centerDest);
-				getShapes(aiFrame)
-						.add(new DrawableLine(Line.fromPoints(role.getPos(), currentTarget.get().centerDest), Color.red));
-				getShapes(aiFrame).add(new DrawableLine(Line.fromPoints(role.getPos(), designatedTarget), Color.yellow));
-			} else
-			{
-				role.setTarget(designatedTarget);
-				getShapes(aiFrame).add(new DrawableLine(Line.fromPoints(role.getPos(), designatedTarget), Color.green));
-			}
-		}
+		return targetGroupAssignments;
 	}
-	
-	
-	private boolean currentTargetIsMoreImportant(final TargetGroupAssigned currentTarget,
-			final TargetGroupAssigned nextTargetGroup)
+
+
+	private boolean currentTargetIsMoreImportant(final TargetGroup currentTarget, final TargetGroup nextTargetGroup)
 	{
 		return currentTarget.priority < nextTargetGroup.priority;
 	}
-	
-	
-	private List<TargetGroup> getAllSortedTargets(final List<TargetGroup> reducedTargetGroups,
-			final List<PenAreaSpaces> spaces)
+
+
+	/**
+	 * Spread new target groups equally on the given space
+	 *
+	 * @param space the space to spread on
+	 * @return the resulting target groups
+	 */
+	private List<TargetGroup> spreadTargetsOnSpace(final PenAreaSpaces space)
 	{
-		List<TargetGroup> targetGroups = new ArrayList<>(reducedTargetGroups);
-		int allTargetsCount = targetGroups.stream().mapToInt(targetGroup -> targetGroup.moveDestinations.size()).sum();
-		int remainingTargets = getRoles().size() - allTargetsCount;
-		
-		for (int i = 0; i < remainingTargets; i++)
-		{
-			spaces.sort(Comparator.comparingDouble(PenAreaSpaces::dist).reversed());
-			spaces.get(0).numTargets++;
-		}
-		
-		for (PenAreaSpaces space : spaces)
-		{
-			spreadTargetsOnSpace(targetGroups, space);
-		}
-		return sortClusteredThreadsByAngle(targetGroups);
-	}
-	
-	
-	private void spreadTargetsOnSpace(final List<TargetGroup> allTargets, final PenAreaSpaces space)
-	{
-		double angleStep = space.diff();
-		double lastAngle = space.startAngle();
+		double width = penAreaBoundary.distanceBetween(space.start, space.end);
+		double step = width / (space.numTargets + 1);
+
+		List<TargetGroup> groups = new ArrayList<>(space.numTargets);
+		IVector2 next = space.start;
 		for (int i = 0; i < space.numTargets; i++)
 		{
-			double angle = lastAngle + angleStep;
-			IVector2 dir = Geometry.getGoalOur().getCenter()
-					.addNew(Vector2.fromAngle(angle).scaleTo(Geometry.getPenaltyAreaFrontLineLength()));
-			IVector2 moveDest = getTargetOnPenaltyArea(dir);
-			
-			TargetGroup targetGroup = new TargetGroup(moveDest, 20);
-			allTargets.add(targetGroup);
-			lastAngle = angle;
+			next = penAreaBoundary.stepAlongBoundary(next, step).orElseThrow(IllegalStateException::new);
+			groups.add(new TargetGroup(next, 99));
 		}
+		return groups;
 	}
-	
-	
-	private List<PenAreaSpaces> fillPenAreaSpaces(
-			final List<TargetGroup> reducedTargets)
+
+
+	/**
+	 * Create penalty area spaces and fill them with the number of roles
+	 *
+	 * @param reducedTargetGroups current target groups
+	 * @return all spaces
+	 */
+	private List<PenAreaSpaces> createPenAreaSpaces(final List<TargetGroup> reducedTargetGroups)
 	{
-		List<IVector2> penAreaMarkers = new ArrayList<>(reducedTargets.size() + 2);
-		penAreaMarkers.addAll(reducedTargets.stream().map(g -> g.centerDest).collect(Collectors.toList()));
-		penAreaMarkers.add(Vector2.fromXY(Geometry.getGoalOur().getCenter().x(),
-				penArea.getFrontLineHalfLength() + penaltyAreaMargin));
-		penAreaMarkers.add(Vector2.fromXY(Geometry.getGoalOur().getCenter().x(),
-				-penArea.getFrontLineHalfLength() - penaltyAreaMargin));
-		penAreaMarkers.sort(ANGLE_POS_COMPARATOR);
-		
+		List<IVector2> penAreaMarkers = createPenAreaMarkers(reducedTargetGroups);
+		List<PenAreaSpaces> spaces = penAreaMarkersToSpaces(penAreaMarkers);
+		assignTargetsToSpaces(reducedTargetGroups, spaces);
+		return spaces;
+	}
+
+
+	private List<IVector2> createPenAreaMarkers(final List<TargetGroup> reducedTargetGroups)
+	{
+		List<IVector2> penAreaMarkers = new ArrayList<>(reducedTargetGroups.size() + 2);
+		penAreaMarkers.addAll(reducedTargetGroups.stream()
+				.map(g -> g.moveDestinations)
+				.flatMap(List::stream)
+				.collect(Collectors.toList()));
+		penAreaMarkers.add(penAreaBoundary.getStart());
+		penAreaMarkers.add(penAreaBoundary.getEnd());
+		penAreaMarkers.sort(penAreaBoundary);
+		return penAreaMarkers;
+	}
+
+
+	private List<PenAreaSpaces> penAreaMarkersToSpaces(final List<IVector2> penAreaMarkers)
+	{
 		List<PenAreaSpaces> spaces = new ArrayList<>();
 		IVector2 lastMarker = penAreaMarkers.remove(0);
 		for (IVector2 marker : penAreaMarkers)
@@ -432,48 +404,72 @@ public class PenAreaGroup extends ADefenseGroup
 			spaces.add(new PenAreaSpaces(lastMarker, marker));
 			lastMarker = marker;
 		}
-		
 		return spaces;
 	}
-	
-	
-	private List<DefenseThreatAssignment> sortThreatAssignmentsByAngle(final List<DefenseThreatAssignment> threats)
+
+
+	private void assignTargetsToSpaces(final List<TargetGroup> reducedTargetGroups, final List<PenAreaSpaces> spaces)
 	{
-		Comparator<DefenseThreatAssignment> comparator = Comparator.comparingDouble(
-				assignment -> getRoleToThreatAngle(assignment.getThreat().getPos(), Geometry.getCenter()));
-		return threats.stream()
-				.sorted(comparator.reversed())
-				.collect(Collectors.toList());
-	}
-	
-	
-	private List<TargetGroup> sortClusteredThreadsByAngle(final List<TargetGroup> threats)
-	{
-		Comparator<TargetGroup> comparator = Comparator
-				.comparingDouble(pat -> getRoleToThreatAngle(pat.centerDest, Geometry.getCenter()));
-		return threats.stream()
-				.sorted(comparator.reversed())
-				.collect(Collectors.toList());
-	}
-	
-	
-	private List<List<DefenseThreatAssignment>> getTargetClusters(final List<DefenseThreatAssignment> threatAssignments)
-	{
-		List<List<DefenseThreatAssignment>> targetClusters = new ArrayList<>();
-		for (DefenseThreatAssignment threatAssignment : threatAssignments)
+		int targetSum = reducedTargetGroups.stream().mapToInt(g -> g.moveDestinations.size()).sum();
+		int remainingTargets = getRoles().size() - targetSum;
+		for (int i = 0; i < remainingTargets; i++)
 		{
-			List<DefenseThreatAssignment> targetCluster;
-			IVector2 target = getTargetOnPenaltyArea(threatAssignment.getThreat());
+			spaces.sort(Comparator.comparingDouble(PenAreaSpaces::distByNumTargets).reversed());
+			spaces.get(0).numTargets++;
+		}
+	}
+
+
+	private List<TargetGroup> addTargetsFromSpacesToTargetGroups(
+			final List<TargetGroup> reducedTargetGroups,
+			final List<PenAreaSpaces> spaces)
+	{
+		List<TargetGroup> targetGroups = new ArrayList<>(reducedTargetGroups);
+		for (PenAreaSpaces space : spaces)
+		{
+			targetGroups.addAll(spreadTargetsOnSpace(space));
+		}
+		return targetGroups;
+	}
+
+
+	/**
+	 * Sort target groups along the penalty area boundary from start to end
+	 *
+	 * @param targetGroups the target groups to sort
+	 * @return the sorted target groups
+	 */
+	private List<TargetGroup> sortedTargetGroups(final List<TargetGroup> targetGroups)
+	{
+		return targetGroups.stream()
+				.sorted((r1, r2) -> penAreaBoundary.compare(r1.centerDest, r2.centerDest))
+				.collect(Collectors.toList());
+	}
+
+
+	/**
+	 * Build clusters of threats that are close together and should be protected only once on the penalty area
+	 *
+	 * @param threatAssignments
+	 * @return
+	 */
+	private List<List<PenAreaThreatAssigment>> getTargetClusters(final List<PenAreaThreatAssigment> threatAssignments)
+	{
+		List<List<PenAreaThreatAssigment>> targetClusters = new ArrayList<>();
+		for (PenAreaThreatAssigment threatAssignment : threatAssignments)
+		{
+			List<PenAreaThreatAssigment> targetCluster;
+			IVector2 target = getTargetOnPenaltyArea(threatAssignment.threat);
 			if (targetClusters.isEmpty())
 			{
 				targetCluster = new ArrayList<>();
 				targetClusters.add(targetCluster);
 			} else
 			{
-				List<DefenseThreatAssignment> lastTargetCluster = targetClusters.get(targetClusters.size() - 1);
-				DefenseThreatAssignment lastThreatAssignment = lastTargetCluster.get(lastTargetCluster.size() - 1);
-				IVector2 lastThreat = getTargetOnPenaltyArea(lastThreatAssignment.getThreat());
-				int nDefender = threatAssignment.getBotIds().size() + lastThreatAssignment.getBotIds().size();
+				List<PenAreaThreatAssigment> lastTargetCluster = targetClusters.get(targetClusters.size() - 1);
+				PenAreaThreatAssigment lastThreatAssignment = lastTargetCluster.get(lastTargetCluster.size() - 1);
+				IVector2 lastThreat = getTargetOnPenaltyArea(lastThreatAssignment.threat);
+				int nDefender = threatAssignment.assignedBots.size() + lastThreatAssignment.assignedBots.size();
 				double sameClusterDistance = (Geometry.getBotRadius() + clusterDistanceOffset) * nDefender;
 				if (target.distanceTo(lastThreat) < sameClusterDistance)
 				{
@@ -488,222 +484,254 @@ public class PenAreaGroup extends ADefenseGroup
 		}
 		return targetClusters;
 	}
-	
-	
-	private List<TargetGroup> reduceClustersToTargets(
-			final List<List<DefenseThreatAssignment>> targetClusters)
+
+
+	private List<TargetGroup> reduceClustersToTargets(final List<List<PenAreaThreatAssigment>> targetClusters)
 	{
-		List<TargetGroup> reducedTargets = new ArrayList<>();
-		int prio = 0;
-		for (List<DefenseThreatAssignment> targetCluster : targetClusters)
+		List<TargetGroup> reducedTargets = new ArrayList<>(targetClusters.size());
+		int priority = 0;
+		for (List<PenAreaThreatAssigment> targetCluster : targetClusters)
 		{
-			IVector2 first = targetCluster.get(0).getThreat().getPos();
-			IVector2 last = targetCluster.get(targetCluster.size() - 1).getThreat().getPos();
-			double distance = first.distanceTo(last);
-			IVector2 target = getTargetOnPenaltyArea(LineMath.stepAlongLine(first, last, distance / 2));
-			int numBots = targetCluster.stream().mapToInt(dta -> Math.max(dta.getBotIds().size(), 1)).sum();
-			int numThreats = targetCluster.size();
-			int numBotsToUse = numBots - numThreats + 1;
-			
-			IVector2 base = penArea.projectPointOnPenaltyAreaLine(target);
-			IVector2 dir = penArea.stepAlongPenArea(base, -Geometry.getBallRadius() * 2 * (numBotsToUse / 2.0))
-					.subtractNew(base)
-					.scaleTo(Geometry.getBotRadius() * 2 + distBetweenPenAreaBotsFactor * Geometry.getBallRadius());
-			double length = dir.getLength2() * (numBotsToUse - 1);
-			IVector2 firstSubTarget = target.subtractNew(dir.scaleToNew(length / 2));
-			List<IVector2> subTargets = new ArrayList<>();
-			for (int i = 0; i < numBotsToUse; i++)
-			{
-				IVector2 subTarget = firstSubTarget.addNew(dir.multiplyNew(i));
-				subTargets.add(subTarget);
-			}
-			TargetGroup targetGroup = new TargetGroup(target, subTargets, prio++);
-			reducedTargets.add(targetGroup);
+			int numBotsToUse = numBotsForCluster(targetCluster);
+			IVector2 target = targetOfCluster(targetCluster);
+			List<IVector2> subTargets = subTargetsAroundCenter(target, numBotsToUse);
+			reducedTargets.add(new TargetGroup(target, subTargets, priority++));
 		}
 		return reducedTargets;
 	}
-	
-	
-	private IVector2 getTargetOnPenaltyArea(IVector2 pointInsidePenArea)
+
+
+	private int numBotsForCluster(final List<PenAreaThreatAssigment> targetCluster)
 	{
-		IVector2 targetOnPenArea = penArea.withMargin(penaltyAreaMargin)
-				.nearestPointOutside(
-						DefenseMath.getBisectionGoal(pointInsidePenArea),
-						pointInsidePenArea);
-		
-		return nearOpponent(targetOnPenArea)
-				.map(ITrackedBot::getPos)
-				.map(this::validFinalDestination)
-				.filter(Optional::isPresent)
-				.map(Optional::get)
-				.orElse(targetOnPenArea);
+		return targetCluster.stream().mapToInt(dta -> dta.assignedBots.size()).sum();
 	}
-	
-	
-	private Optional<ITrackedBot> nearOpponent(final IVector2 intermediatePos)
+
+
+	private IVector2 targetOfCluster(final List<PenAreaThreatAssigment> targetCluster)
 	{
-		return aiFrame.getWorldFrame().getFoeBots().values().stream()
-				.filter(t -> t.getPos().distanceTo(intermediatePos) < MoveOnPenaltyAreaSkill.getMinDistToOpponent() + 5)
-				.min(Comparator.comparingDouble(t -> t.getPos().distanceTo(intermediatePos)));
+		return penAreaBoundary.projectPoint(centerOfThreats(targetCluster));
 	}
-	
-	
-	private Optional<IVector2> validFinalDestination(final IVector2 obstacle)
+
+
+	private IVector2 centerOfThreats(final List<PenAreaThreatAssigment> targetCluster)
 	{
-		IVector2 protectFromBallDest = LineMath.stepAlongLine(obstacle,
-				aiFrame.getWorldFrame().getBall().getPos(),
-				MoveOnPenaltyAreaSkill.getMinDistToOpponent() + 10);
-		if (penArea.withMargin(penaltyAreaMargin).isPointInShape(protectFromBallDest))
+		Optional<PenAreaThreatAssigment> ballAssignment = targetCluster.stream()
+				.filter(ta -> !ta.threat.getObjectId().isBot())
+				.findFirst();
+		if (ballAssignment.isPresent())
 		{
-			return Optional.empty();
+			// if the ball is part of the threat cluster, focus on the ball, not the center of all threats
+			return ballAssignment.get().threat.getPos();
 		}
-		return Optional.of(protectFromBallDest);
+		IVector2 first = targetCluster.get(0).threat.getPos();
+		IVector2 last = targetCluster.get(targetCluster.size() - 1).threat.getPos();
+		double distance = first.distanceTo(last);
+		return LineMath.stepAlongLine(first, last, distance / 2);
 	}
-	
-	
-	private IVector2 getTargetOnPenaltyArea(IVector2 pointInsidePenArea, double margin)
+
+
+	private List<IVector2> subTargetsAroundCenter(final IVector2 target, final int numBots)
 	{
-		return penArea.withMargin(margin).nearestPointOutside(
-				DefenseMath.getBisectionGoal(pointInsidePenArea),
-				pointInsidePenArea);
+		List<IVector2> subTargets = new ArrayList<>(numBots);
+		if (numBots == 0)
+		{
+			return subTargets;
+		} else if (numBots % 2 == 0)
+		{
+			double margin = Geometry.getBotRadius() + distBetweenBots / 2;
+			IVector2 nextNegative = nextOnChain(target, margin, -1);
+			subTargets.add(nextNegative);
+			subTargets.addAll(chainBotTargets(nextNegative, numBots / 2 - 1, -1));
+			subTargets.addAll(chainBotTargets(nextNegative, numBots / 2, 1));
+		} else
+		{
+			subTargets.add(target);
+			subTargets.addAll(chainBotTargets(target, (numBots - 1) / 2, -1));
+			subTargets.addAll(chainBotTargets(target, (numBots - 1) / 2, +1));
+		}
+		subTargets.sort(((p1, p2) -> penAreaBoundary.compare(p1, p2)));
+		return subTargets;
 	}
-	
-	
+
+
+	private List<IVector2> chainBotTargets(final IVector2 start, final int count, final int direction)
+	{
+		List<IVector2> chain = new ArrayList<>(count);
+		double margin = Geometry.getBotRadius() * 2 + distBetweenBots;
+		IVector2 last = start;
+		for (int i = 0; i < count; i++)
+		{
+			last = nextOnChain(last, margin, direction);
+			chain.add(last);
+		}
+		return chain;
+	}
+
+
+	private IVector2 nextOnChain(final IVector2 last, final double margin, final int direction)
+	{
+		Optional<IVector2> next = penAreaBoundary.nextTo(last, margin, direction);
+		if (next.isPresent())
+		{
+			return next.get();
+		} else if (direction > 0)
+		{
+			return penAreaBoundary.getEnd();
+		} else
+		{
+			return penAreaBoundary.getStart();
+		}
+	}
+
+
 	private IVector2 getTargetOnPenaltyArea(IDefenseThreat threat)
 	{
-		return penArea.withMargin(penaltyAreaMargin).nearestPointOutside(
+		return penAreaBoundary.projectPoint(
 				threat.getThreatLine().getEnd(),
 				threat.getThreatLine().getStart());
 	}
-	
-	
-	private void kickBallIfEnoughTime(AthenaAiFrame aiFrame)
+
+
+	private void assignActiveKicker()
 	{
-		Optional<DefenderPenAreaRole> selectedRole = getRoles().stream().map(SwitchableDefenderRole::getNewRole)
-				.map(role -> (DefenderPenAreaRole) role)
-				.filter(role -> isAllowedToKick(role, aiFrame))
-				.min(Comparator.comparingDouble(role -> botDistanceToBall(role, aiFrame.getWorldFrame().getBall())));
-		selectedRole.ifPresent(DefenderPenAreaRole::setAsActiveKicker);
+		if (!defendersAreAllowedToKick())
+		{
+			penAreaDefendersStream().forEach(r -> r.setAllowedToKickBall(false));
+			return;
+		}
+		boolean oneDefenderIsAllowedToKickTheBall = penAreaDefendersStream()
+				.anyMatch(DefenderPenAreaRole::isAllowedToKickBall);
+
+		if (!oneDefenderIsAllowedToKickTheBall)
+		{
+			penAreaDefendersStream()
+					.min(Comparator.comparingDouble(this::distanceToBall))
+					.ifPresent(r -> r.setAllowedToKickBall(true));
+		}
 	}
-	
-	
-	private boolean isAllowedToKick(DefenderPenAreaRole role, AthenaAiFrame aiFrame)
+
+
+	private boolean defendersAreAllowedToKick()
 	{
 		return aiFrame.getGamestate().isRunning()
-				&& role.enoughTimeToKickSafely(0)
-				&& aiFrame.getTacticalField().getBallResponsibility() == EBallResponsibility.DEFENSE
-				&& !penArea.withMargin(Geometry.getBotRadius() * 2)
-						.isPointInShape(aiFrame.getWorldFrame().getBall().getPos());
+				&& defenseResponsibleForBall()
+				&& notTooCloseToPenArea();
 	}
-	
-	
-	private double botDistanceToBall(ARole role, ITrackedBall ball)
+
+
+	private boolean defenseResponsibleForBall()
 	{
-		return role.getBot().getPos().distanceTo(ball.getPos());
+		return aiFrame.getTacticalField().getBallResponsibility() == EBallResponsibility.DEFENSE;
 	}
-	
-	
-	private static class PenAreaSpaces
+
+
+	private boolean notTooCloseToPenArea()
+	{
+		return !Geometry.getPenaltyAreaOur().withMargin(Geometry.getBotRadius() * 2)
+				.isPointInShape(aiFrame.getWorldFrame().getBall().getPos());
+	}
+
+
+	private double distanceToBall(final ARole role)
+	{
+		return role.getBot().getPos().distanceTo(aiFrame.getWorldFrame().getBall().getPos());
+	}
+
+
+	private Stream<DefenderPenAreaRole> penAreaDefendersStream()
+	{
+		return getRoles().stream().map(SwitchableDefenderRole::getNewRole)
+				.map(role -> (DefenderPenAreaRole) role);
+	}
+
+
+	private List<IDrawableShape> getShapes()
+	{
+		return aiFrame.getTacticalField().getDrawableShapes().get(EAiShapesLayer.DEFENSE_PENALTY_AREA_GROUP);
+	}
+
+	private class PenAreaSpaces
 	{
 		IVector2 start;
 		IVector2 end;
 		int numTargets = 0;
-		
-		
+
+
 		public PenAreaSpaces(final IVector2 start, final IVector2 end)
 		{
 			this.start = start;
 			this.end = end;
 		}
-		
-		
-		IVector2 goalCenter()
+
+
+		double distByNumTargets()
 		{
-			// make sure we do not reach 180deg
-			return Geometry.getGoalOur().getCenter().addNew(Vector2.fromX(-5));
-		}
-		
-		
-		double diff()
-		{
-			double endAngle = end.subtractNew(goalCenter()).getAngle();
-			return AngleMath.difference(endAngle, startAngle()) / (numTargets + 1);
-		}
-		
-		
-		double dist()
-		{
-			return Math.abs(diff());
-		}
-		
-		
-		double startAngle()
-		{
-			return start.subtractNew(goalCenter()).getAngle();
+			return penAreaBoundary.distanceBetween(start, end) / (numTargets + 1);
 		}
 	}
-	
+
 	private static class TargetGroup
 	{
 		final IVector2 centerDest;
 		final List<IVector2> moveDestinations;
 		/** smaller is more important */
 		final int priority;
-		
-		
+
+
 		TargetGroup(final IVector2 centerDest, final List<IVector2> moveDestinations, final int priority)
 		{
 			this.centerDest = centerDest;
 			this.moveDestinations = Collections.unmodifiableList(moveDestinations);
 			this.priority = priority;
 		}
-		
-		
+
+
 		TargetGroup(final IVector2 centerDest, final int priority)
 		{
 			this.centerDest = centerDest;
 			List<IVector2> moveDest = new ArrayList<>();
 			moveDest.add(centerDest);
-			this.moveDestinations = Collections.unmodifiableList(moveDest);
+			moveDestinations = Collections.unmodifiableList(moveDest);
 			this.priority = priority;
 		}
-		
-		
-		TargetGroup(TargetGroup targetGroup)
-		{
-			centerDest = targetGroup.centerDest;
-			moveDestinations = targetGroup.moveDestinations;
-			priority = targetGroup.priority;
-		}
-	}
-	
-	private static class TargetGroupAssigned extends TargetGroup
-	{
-		final DefenderPenAreaRole role;
-		final List<IVector2> remainingMoveDests;
-		final boolean protectedByAssignedRole;
-		
-		
-		TargetGroupAssigned(final TargetGroup targetGroup, final DefenderPenAreaRole role,
-				final List<IVector2> remainingMoveDests)
-		{
-			super(targetGroup);
-			this.role = role;
-			this.remainingMoveDests = remainingMoveDests;
-			protectedByAssignedRole = isProtectedByPos(role.getPos());
-		}
-		
-		
-		boolean isProtectedByAssignedRole()
-		{
-			return protectedByAssignedRole;
-		}
-		
-		
-		boolean isProtectedByPos(IVector2 pos)
+
+
+		boolean isProtectedByPos(final IVector2 pos)
 		{
 			return moveDestinations.stream().map(dest -> dest.distanceTo(pos))
 					.anyMatch(dist -> dist < interchangeDist);
+		}
+	}
+
+	private static class TargetGroupAssignment
+	{
+		final DefenderPenAreaRole role;
+		final TargetGroup targetGroup;
+		final IVector2 moveDest;
+		final boolean protectedByAssignedRole;
+
+
+		TargetGroupAssignment(final TargetGroup targetGroup, final DefenderPenAreaRole role, final IVector2 moveDest)
+		{
+			this.role = role;
+			this.targetGroup = targetGroup;
+			this.moveDest = moveDest;
+
+			protectedByAssignedRole = Lines.segmentFromPoints(targetGroup.centerDest, moveDest)
+					.distanceTo(role.getPos()) < Geometry.getBotRadius() * 2 + interchangeDist;
+		}
+	}
+
+	private static class PenAreaThreatAssigment
+	{
+		final IDefenseThreat threat;
+		final Set<BotID> assignedBots;
+
+
+		public PenAreaThreatAssigment(final IDefenseThreat threat, final Set<BotID> assignedBots)
+		{
+			this.threat = threat;
+			this.assignedBots = assignedBots;
 		}
 	}
 }

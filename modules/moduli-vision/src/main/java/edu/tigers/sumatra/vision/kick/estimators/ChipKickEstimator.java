@@ -41,7 +41,6 @@ import edu.tigers.sumatra.vision.kick.estimators.chip.ChipKickSolverLin3Offset;
 import edu.tigers.sumatra.vision.kick.estimators.chip.ChipKickSolverLin5Offset;
 import edu.tigers.sumatra.vision.kick.estimators.chip.ChipKickSolverNonLin3Direct;
 import edu.tigers.sumatra.vision.kick.estimators.chip.ChipKickSolverNonLinIdentDirect;
-import edu.tigers.sumatra.vision.kick.estimators.chip.ChipKickSolverNonLinIdentDirect.ChipModelIdentResult;
 
 
 /**
@@ -60,6 +59,9 @@ public class ChipKickEstimator implements IKickEstimator
 	private final Map<Integer, CamCalibration> camCalib;
 	private final List<CamBall> records = new ArrayList<>();
 	private final List<CamBall> allRecords = new ArrayList<>();
+	private final long kickEventTimestamp;
+	private boolean usesPriorKnowledge;
+	
 	private int pruneIndex = 0;
 	
 	private final ChipKickSolverLin3Offset solverLin3;
@@ -89,9 +91,6 @@ public class ChipKickEstimator implements IKickEstimator
 	@Configurable(comment = "Estimate kick position if the ball is visible on two cameras", defValue = "false")
 	private static boolean useKickPositionEstimator = false;
 	
-	@Configurable(comment = "Enable chip model identification solver", defValue = "false")
-	private boolean doModelIdentification = false;
-	
 	static
 	{
 		ConfigRegistration.registerClass("vision", ChipKickEstimator.class);
@@ -107,6 +106,7 @@ public class ChipKickEstimator implements IKickEstimator
 	public ChipKickEstimator(final Map<Integer, CamCalibration> camCalib, final KickEvent event)
 	{
 		this.camCalib = camCalib;
+		kickEventTimestamp = event.getTimestamp();
 		
 		solverLin3 = new ChipKickSolverLin3Offset(event.getPosition(), event.getTimestamp(), camCalib);
 		solverLin5 = new ChipKickSolverLin5Offset(event.getPosition(), event.getTimestamp(), camCalib);
@@ -118,6 +118,8 @@ public class ChipKickEstimator implements IKickEstimator
 		
 		records.addAll(camBalls);
 		allRecords.addAll(camBalls);
+		
+		usesPriorKnowledge = false;
 	}
 	
 	
@@ -143,6 +145,8 @@ public class ChipKickEstimator implements IKickEstimator
 		
 		currentTraj = new ChipBallTrajectory(event.getPosition(), kickVel, event.getTimestamp());
 		fitResult = new KickFitResult(new ArrayList<>(), 0, currentTraj);
+		
+		usesPriorKnowledge = true;
 	}
 	
 	
@@ -163,6 +167,11 @@ public class ChipKickEstimator implements IKickEstimator
 		
 		if (records.size() < minRecords)
 		{
+			if (usesPriorKnowledge)
+			{
+				computeFiteResult();
+			}
+			
 			return;
 		}
 		
@@ -196,6 +205,12 @@ public class ChipKickEstimator implements IKickEstimator
 		
 		currentTraj = new ChipBallTrajectory(kickPos, kickVel, kickTimestamp);
 		
+		computeFiteResult();
+	}
+	
+	
+	private void computeFiteResult()
+	{
 		List<IVector2> modelPoints = records.stream()
 				.map(r -> currentTraj.getStateAtTimestamp(r.gettCapture()).getPos()
 						.projectToGroundNew(getCameraPosition(r.getCameraId())))
@@ -203,7 +218,7 @@ public class ChipKickEstimator implements IKickEstimator
 		
 		double avgDist = IntStream.range(0, records.size())
 				.mapToDouble(i -> modelPoints.get(i).distanceTo(records.get(i).getFlatPos()))
-				.average().orElse(Double.MAX_VALUE);
+				.average().orElse(0.0);
 		
 		if (records.size() >= 10)
 		{
@@ -288,10 +303,12 @@ public class ChipKickEstimator implements IKickEstimator
 	{
 		if (records.isEmpty())
 		{
-			return false;
+			boolean kickWasSomeTimeAgo = ((timestamp - kickEventTimestamp) * 1e-9) > 0.2;
+			return usesPriorKnowledge && kickWasSomeTimeAgo;
 		}
 		
-		if (((records.get(records.size() - 1).gettCapture() - records.get(0).gettCapture()) * 1e-9) < 0.1)
+		long tCaptureLastRecord = records.get(records.size() - 1).gettCapture();
+		if (((tCaptureLastRecord - records.get(0).gettCapture()) * 1e-9) < 0.1)
 		{
 			// keep this estimator for at least 0.1s
 			return false;
@@ -307,16 +324,9 @@ public class ChipKickEstimator implements IKickEstimator
 			return false;
 		}
 		
-		return isDoneByFitResult(mergedRobots, timestamp);
-	}
-	
-	
-	private boolean isDoneByFitResult(final List<FilteredVisionBot> mergedRobots, final long timestamp)
-	{
-		boolean done = false;
 		if ((fitResult.getAvgDistance() > maxFittingError) || (avgDistLatest10 > maxFittingError))
 		{
-			done = true;
+			return true;
 		}
 		
 		FilteredVisionBall state = fitResult.getState(timestamp);
@@ -327,30 +337,39 @@ public class ChipKickEstimator implements IKickEstimator
 		
 		if ((minDistToRobot < Geometry.getBotRadius()) && !state.isChipped())
 		{
-			done = true;
+			return true;
 		}
 		
-		if (!Geometry.getField().withMargin(100).isPointInShape(posNow))
-		{
-			done = true;
-		}
-		
-		if (done && doModelIdentification)
-		{
-			doModelIdentification();
-		}
-		
-		return done;
+		return !Geometry.getField().withMargin(100).isPointInShape(posNow);
 	}
 	
 	
-	private void doModelIdentification()
+	@Override
+	public Optional<IBallModelIdentResult> getModelIdentResult()
 	{
+		if (allRecords.size() < 20)
+		{
+			return Optional.empty();
+		}
+		
+		if (solverNonLin == null)
+		{
+			return Optional.empty();
+		}
+		
+		long timeAfterKick = allRecords.get(0).gettCapture() + 500_000_000;
+		
+		// keep all records directly after the kick and within the field (-10cm)
+		List<CamBall> usedRecords = allRecords.stream()
+				.filter(r -> (r.gettCapture() < timeAfterKick)
+						|| Geometry.getField().withMargin(-100).isPointInShape(r.getFlatPos()))
+				.collect(Collectors.toList());
+		
 		// solve to estimate all parameters
 		ChipKickSolverNonLinIdentDirect identSolver = new ChipKickSolverNonLinIdentDirect(
 				solverNonLin.getKickPosition(), solverNonLin.getKickTimestamp(), camCalib, fitResult.getKickVel());
 		
-		Optional<ChipModelIdentResult> result = identSolver.identModel(allRecords);
+		Optional<IBallModelIdentResult> result = identSolver.identModel(usedRecords);
 		if (result.isPresent())
 		{
 			log.info("Chip Model:" + System.lineSeparator() + result.get());
@@ -358,6 +377,8 @@ public class ChipKickEstimator implements IKickEstimator
 		{
 			log.info("Chip model identification failed.");
 		}
+		
+		return result;
 	}
 	
 	
@@ -413,23 +434,5 @@ public class ChipKickEstimator implements IKickEstimator
 	public EKickEstimatorType getType()
 	{
 		return EKickEstimatorType.CHIP;
-	}
-	
-	
-	/**
-	 * @return the doModelIdentification
-	 */
-	public boolean isDoModelIdentification()
-	{
-		return doModelIdentification;
-	}
-	
-	
-	/**
-	 * @param doModelIdentification the doModelIdentification to set
-	 */
-	public void setDoModelIdentification(final boolean doModelIdentification)
-	{
-		this.doModelIdentification = doModelIdentification;
 	}
 }

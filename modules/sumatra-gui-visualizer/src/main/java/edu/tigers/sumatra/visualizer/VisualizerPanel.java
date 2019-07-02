@@ -39,7 +39,7 @@ public class VisualizerPanel extends JPanel implements ISumatraView
 		add(panel, BorderLayout.CENTER);
 		
 		// --- set layout ---
-		panel.setLayout(new MigLayout("fill, inset 0", "[min!][max][right]", "[top]"));
+		panel.setLayout(new MigLayout("fill, inset 0, gap 0", "[min!][max][right]", "[top]"));
 		
 		// --- init panels ---
 		robotsPanel = new RobotsPanel();

@@ -21,6 +21,10 @@ public final class AngleMath
 	/** */
 	public static final double PI_QUART = Math.PI / 4.0;
 	
+	public static final double DEG_180_IN_RAD = PI;
+	public static final double DEG_090_IN_RAD = PI_HALF;
+	public static final double DEG_045_IN_RAD = PI_QUART;
+	
 	private static final double DEG_RAD_FACTOR = 180;
 	private static final double DEG_TO_RAD = PI / DEG_RAD_FACTOR;
 	private static final double RAD_TO_DEG = DEG_RAD_FACTOR / PI;

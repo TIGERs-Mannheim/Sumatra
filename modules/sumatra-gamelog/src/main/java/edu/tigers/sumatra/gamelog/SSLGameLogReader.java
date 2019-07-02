@@ -3,18 +3,27 @@
  */
 package edu.tigers.sumatra.gamelog;
 
-import com.google.protobuf.AbstractMessage;
-import edu.tigers.sumatra.MessagesRobocupSslWrapper.SSL_WrapperPacket;
-import edu.tigers.sumatra.Referee.SSL_Referee;
-import org.apache.log4j.Logger;
-
 import java.io.DataInputStream;
 import java.io.EOFException;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.zip.GZIPInputStream;
+
+import com.google.common.primitives.Bytes;
+import edu.tigers.sumatra.LogLabelerData;
+import edu.tigers.sumatra.Referee;
+import org.apache.log4j.Logger;
+
+import com.google.protobuf.AbstractMessage;
+
+import edu.tigers.sumatra.MessagesRobocupSslWrapper.SSL_WrapperPacket;
+import edu.tigers.sumatra.Referee.SSL_Referee;
 
 
 /**
@@ -24,14 +33,29 @@ import java.util.Optional;
  */
 public class SSLGameLogReader
 {
-	private static final Logger			log						= Logger.getLogger(SSLGameLogReader.class.getName());
+	private static final Logger log = Logger.getLogger(SSLGameLogReader.class.getName());
 	
-	private String								headerString			= "";
-	private int									versionNumber			= 0;
+	private String headerString = "";
+	private int versionNumber = 0;
 	
-	private List<SSLGameLogfileEntry>	packets					= new ArrayList<>();
+	private List<SSLGameLogfileEntry> packets = new ArrayList<>();
 	
-	private ISSLGameLogfileObserver		loadCompleteObserver	= null;
+	private ISSLGameLogfileObserver loadCompleteObserver = null;
+	
+	private enum LogFileType
+	{
+		LOG_FILE("SSL_LOG_FILE"),
+		LABELER_FILE("SSL_LABELER_DATA"),
+		UNKNOWN("");
+		
+		private String header;
+		
+		
+		LogFileType(String header)
+		{
+			this.header = header;
+		}
+	}
 	
 	
 	/**
@@ -68,36 +92,29 @@ public class SSLGameLogReader
 	{
 		try (FileInputStream fileInStream = new FileInputStream(path))
 		{
-			DataInputStream fileStream = new DataInputStream(fileInStream);
-			
-			byte[] header = new byte[12];
-			fileStream.readFully(header);
-			headerString = new String(header);
-			
-			versionNumber = fileStream.readInt();
-			
-			log.info("Logfile header: " + headerString + ", Version: " + versionNumber);
-			
-			while (fileStream.available() > 0)
+			DataInputStream fileStream;
+			if (path.endsWith(".gz"))
 			{
-				long timestamp = fileStream.readLong();
-				EMessageType msgType = EMessageType.getMessageTypeConstant(fileStream.readInt());
-				int msgSize = fileStream.readInt();
-				
-				byte[] data = new byte[msgSize];
-				fileStream.readFully(data);
-				
-				switch (msgType)
-				{
-					case SSL_REFBOX_2013:
-						parseRefereeMsg(timestamp, data);
-						break;
-					case SSL_VISION_2014:
-						parseWrapperPacket(timestamp, data);
-						break;
-					default:
-						break;
-				}
+				final GZIPInputStream gzipInputStream = new GZIPInputStream(fileInStream);
+				fileStream = new DataInputStream(gzipInputStream);
+			} else
+			{
+				fileStream = new DataInputStream(fileInStream);
+			}
+			
+			
+			switch (getLogFileTypeFromHeader(fileStream))
+			{
+				case LOG_FILE:
+					readLogFile(fileStream);
+					break;
+				case LABELER_FILE:
+					readLogLabelerData(fileStream, path);
+					break;
+				default:
+				case UNKNOWN:
+					log.error("Logfile Type Unknown");
+					break;
 			}
 			
 			fileStream.close();
@@ -110,6 +127,115 @@ public class SSLGameLogReader
 		{
 			notifyLoadComplete(false);
 			log.error("Loading logfile failed", e1);
+		}
+	}
+	
+	
+	private LogFileType getLogFileTypeFromHeader(DataInputStream fileStream) throws IOException
+	{
+		byte[] nextBytes = new byte[4];
+		fileStream.readFully(nextBytes);
+		String startHeader = new String(nextBytes).toUpperCase();
+		
+		if (!"SSL_".equals(startHeader))
+		{
+			return LogFileType.UNKNOWN;
+		}
+		
+		List<Byte> middleHeaderBuilder = new ArrayList<>();
+		byte nextByte = fileStream.readByte();
+		while ((char) nextByte != '_')
+		{
+			middleHeaderBuilder.add(nextByte);
+			nextByte = fileStream.readByte();
+		}
+		
+		nextBytes = new byte[4];
+		fileStream.readFully(nextBytes);
+		String endHeader = new String(nextBytes).toUpperCase();
+		
+		headerString = startHeader + new String(Bytes.toArray(middleHeaderBuilder)).toUpperCase() + "_" + endHeader;
+		
+		Optional<LogFileType> optionalLogFileType = Arrays.stream(LogFileType.values())
+				.filter(logFileType -> logFileType.header.equals(headerString))
+				.findFirst();
+		
+		
+		versionNumber = fileStream.readInt();
+		log.info("Logfile header: " + headerString + ", Version: " + versionNumber);
+		
+		return optionalLogFileType.orElse(LogFileType.UNKNOWN);
+	}
+	
+	
+	private void readLogFile(DataInputStream fileStream) throws IOException
+	{
+		while (fileStream.available() > 0)
+		{
+			long timestamp = fileStream.readLong();
+			EMessageType msgType = EMessageType.getMessageTypeConstant(fileStream.readInt());
+			int msgSize = fileStream.readInt();
+			
+			byte[] data = new byte[msgSize];
+			fileStream.readFully(data);
+			
+			switch (msgType)
+			{
+				case SSL_REFBOX_2013:
+					parseRefereeMsg(timestamp, data);
+					break;
+				case SSL_VISION_2014:
+					parseWrapperPacket(timestamp, data);
+					break;
+				default:
+					break;
+			}
+		}
+	}
+	
+	
+	private void readLogLabelerData(DataInputStream fileStream, String path) throws IOException
+	{
+		int sizeMetadata;
+		File file = new File(path);
+		try (RandomAccessFile randomAccessLogFile = new RandomAccessFile(file, "r"))
+		{
+			randomAccessLogFile.seek(file.length() - 4);
+			sizeMetadata = randomAccessLogFile.readInt();
+		} catch (IOException ex)
+		{
+			throw new IOException("Log Labeler Data: Error on reading length of metadata block", ex);
+		}
+		
+		long frameBlockSizeLeft = file.length() - sizeMetadata - 24; // 20 Bytes Header + 4 Bytes metadata size
+		while (frameBlockSizeLeft > 0)
+		{
+			int msgSize = fileStream.readInt();
+			frameBlockSizeLeft -= 4 + msgSize;
+			
+			byte[] data = new byte[msgSize];
+			fileStream.readFully(data);
+			
+			LogLabelerData.LabelerFrameGroup frameGroup = LogLabelerData.LabelerFrameGroup.parseFrom(data);
+			
+			for (LogLabelerData.LabelerFrame labelerFrame : frameGroup.getFramesList())
+			{
+				long timestamp = labelerFrame.getTimestamp();
+				
+				switch (labelerFrame.getFrameCase())
+				{
+					case REFEREE_FRAME:
+						Referee.SSL_Referee sslRefereePacket = labelerFrame.getRefereeFrame();
+						packets.add(new SSLGameLogfileEntry(timestamp, sslRefereePacket));
+						break;
+					case VISION_FRAME:
+						SSL_WrapperPacket sslVisionPacket = labelerFrame.getVisionFrame();
+						packets.add(new SSLGameLogfileEntry(timestamp, sslVisionPacket));
+						break;
+					default:
+						break;
+				}
+			}
 		}
 	}
 	
@@ -202,9 +328,9 @@ public class SSLGameLogReader
 	 */
 	public class SSLGameLogfileEntry
 	{
-		private long							timestamp;
-		private final SSL_WrapperPacket	visionPacket;
-		private final SSL_Referee			refereePacket;
+		private long timestamp;
+		private final SSL_WrapperPacket visionPacket;
+		private final SSL_Referee refereePacket;
 		
 		
 		/**

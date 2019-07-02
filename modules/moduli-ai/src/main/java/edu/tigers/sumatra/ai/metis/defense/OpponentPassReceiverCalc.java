@@ -3,13 +3,7 @@
  */
 package edu.tigers.sumatra.ai.metis.defense;
 
-import java.awt.Color;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
@@ -21,6 +15,11 @@ import edu.tigers.sumatra.drawable.animated.AnimatedCrosshair;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.ball.prediction.IBallTrajectory;
+
+import java.awt.Color;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -62,11 +61,23 @@ public class OpponentPassReceiverCalc extends ACalculator
 	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
 	{
 		IBallTrajectory ballTrajectory = getBall().getTrajectory();
+
+		List<ReceiveData> ratings;
+		if (ballTrajectory.getTouchdownLocations().isEmpty())
+		{
+			ratings = DefenseMath.calcReceiveRatingsNonRestricted(
+					ballTrajectory,
+					getWFrame().getFoeBots().values(),
+					maxBotToBallTravelLineDistance);
+		} else {
+			// restrict start of curve
+			ratings = DefenseMath.calcReceiveRatingsForRestrictedStart(
+					ballTrajectory,
+					getWFrame().getFoeBots().values(),
+					maxBotToBallTravelLineDistance);
+		}
 		
-		List<ReceiveData> ratings = DefenseMath.calcReceiveRatingsFor(
-				ballTrajectory,
-				getWFrame().getFoeBots().values(),
-				maxBotToBallTravelLineDistance);
+
 		Optional<ReceiveData> bestReceiver = ratings.stream()
 				.filter(r -> r.getDistToBallCurve() < OpponentPassReceiverCalc.getValidReceiveDistance())
 				.min(Comparator.comparingDouble(ReceiveData::getDistToBall));

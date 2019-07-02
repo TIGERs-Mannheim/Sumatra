@@ -13,8 +13,6 @@ import org.apache.commons.lang.Validate;
 import edu.tigers.sumatra.geometry.BallParameters;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.SumatraMath;
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -31,6 +29,7 @@ import edu.tigers.sumatra.wp.data.BallTrajectoryState;
  */
 public class FixedLossPlusRollingBallTrajectory extends ABallTrajectory
 {
+	private static final double G = 9810;
 	private final FixedLossPlusRollingParameters params;
 	private final double initialSpin;
 	
@@ -74,7 +73,7 @@ public class FixedLossPlusRollingBallTrajectory extends ABallTrajectory
 	{
 		double pz1 = posNow.z();
 		double vz1 = velNow.z();
-		double g = 9810;
+		double g = G;
 		
 		IVector3 a = Vector3.fromXYZ(0, 0, -g);
 		
@@ -91,7 +90,7 @@ public class FixedLossPlusRollingBallTrajectory extends ABallTrajectory
 	@Override
 	public BallTrajectoryState getMilliStateAtTime(final double time)
 	{
-		Vector3 accNow = Vector3.fromXYZ(0, 0, -9810);
+		Vector3 accNow = Vector3.fromXYZ(0, 0, -G);
 		
 		if (time < 0)
 		{
@@ -111,15 +110,15 @@ public class FixedLossPlusRollingBallTrajectory extends ABallTrajectory
 		double spin = initialSpin;
 		
 		// go through hops while max. height is above 10mm
-		while (((velNow.z() * velNow.z()) / (2.0 * 9810)) > params.getMinHopHeight())
+		while (((velNow.z() * velNow.z()) / (2.0 * G)) > params.getMinHopHeight())
 		{
-			double tFly = (2 * velNow.z()) / 9810;
+			double tFly = (2 * velNow.z()) / G;
 			
 			if ((tNow + tFly) > time)
 			{
 				double t = time - tNow;
-				posNow.add(velNow.multiplyNew(t)).add(Vector3.fromXYZ(0, 0, -0.5 * 9810 * t * t));
-				velNow.add(Vector3.fromXYZ(0, 0, -9810 * t));
+				posNow.add(velNow.multiplyNew(t)).add(Vector3.fromXYZ(0, 0, -0.5 * G * t * t));
+				velNow.add(Vector3.fromXYZ(0, 0, -G * t));
 				
 				return aBallState()
 						.withPos(posNow)
@@ -186,9 +185,9 @@ public class FixedLossPlusRollingBallTrajectory extends ABallTrajectory
 		double spin = initialSpin;
 		
 		// go through hops while max. height is above minHopHeight
-		while (((velNow.z() * velNow.z()) / (2.0 * 9810)) > params.getMinHopHeight())
+		while (((velNow.z() * velNow.z()) / (2.0 * G)) > params.getMinHopHeight())
 		{
-			double tFly = (2 * velNow.z()) / 9810;
+			double tFly = (2 * velNow.z()) / G;
 			
 			PlanarCurveSegment fly = PlanarCurveSegment.fromFirstOrder(posNow.getXYVector(),
 					velNow.getXYVector(), tNow, tNow + tFly);
@@ -226,9 +225,9 @@ public class FixedLossPlusRollingBallTrajectory extends ABallTrajectory
 		double spin = initialSpin;
 		
 		// go through hops while max. height is above 10mm
-		while (((velNow.z() * velNow.z()) / (2.0 * 9810)) > params.getMinHopHeight())
+		while (((velNow.z() * velNow.z()) / (2.0 * G)) > params.getMinHopHeight())
 		{
-			double tFly = (2 * velNow.z()) / 9810;
+			double tFly = (2 * velNow.z()) / G;
 			
 			velNow = velNow.multiplyNew(getDamping(spin));
 			tNow += tFly;
@@ -255,9 +254,9 @@ public class FixedLossPlusRollingBallTrajectory extends ABallTrajectory
 		double spin = initialSpin;
 		
 		// go through hops while max. height is above 10mm
-		while (((velNow.z() * velNow.z()) / (2.0 * 9810)) > params.getMinHopHeight())
+		while (((velNow.z() * velNow.z()) / (2.0 * G)) > params.getMinHopHeight())
 		{
-			double tFly = (2 * velNow.z()) / 9810;
+			double tFly = (2 * velNow.z()) / G;
 			
 			double partLength = velNow.multiplyNew(tFly).getLength2();
 			
@@ -306,14 +305,14 @@ public class FixedLossPlusRollingBallTrajectory extends ABallTrajectory
 		double spin = initialSpin;
 		
 		// go through hops while max. height is above 10mm
-		while (((velNow.z() * velNow.z()) / (2.0 * 9810)) > params.getMinHopHeight())
+		while (((velNow.z() * velNow.z()) / (2.0 * G)) > params.getMinHopHeight())
 		{
 			if (velNow.getLength2() < velocity)
 			{
 				return tNow;
 			}
 			
-			double tFly = (2 * velNow.z()) / 9810;
+			double tFly = (2 * velNow.z()) / G;
 			velNow = velNow.multiplyNew(getDamping(spin));
 			tNow += tFly;
 			
@@ -353,9 +352,9 @@ public class FixedLossPlusRollingBallTrajectory extends ABallTrajectory
 		double spin = initialSpin;
 		
 		// go through hops while max. height is above minHeight
-		while (((velNow.z() * velNow.z()) / (2.0 * 9810)) > params.getMinHopHeight())
+		while (((velNow.z() * velNow.z()) / (2.0 * G)) > params.getMinHopHeight())
 		{
-			double tFly = (2 * velNow.z()) / 9810;
+			double tFly = (2 * velNow.z()) / G;
 			
 			posNow.add(velNow.multiplyNew(tFly));
 			posNow.set(2, 0);
@@ -385,11 +384,11 @@ public class FixedLossPlusRollingBallTrajectory extends ABallTrajectory
 	
 	
 	@Override
-	public List<ILine> getTravelLinesInterceptable()
+	public List<ILineSegment> getTravelLinesInterceptable()
 	{
-		final double g = 9810;
+		final double g = G;
 		final double h = params.getMaxInterceptableHeight();
-		List<ILine> lines = new ArrayList<>();
+		List<ILineSegment> lines = new ArrayList<>();
 		Vector3 posNow = Vector3.copy(kickPos.getXYZVector());
 		Vector3 velNow = Vector3.copy(kickVel.getXYZVector());
 		double tNow = 0;
@@ -411,7 +410,7 @@ public class FixedLossPlusRollingBallTrajectory extends ABallTrajectory
 			
 			if ((tNow + t1) > tKickToNow)
 			{
-				lines.add(Line.fromPoints(p2, p1));
+				lines.add(Lines.segmentFromPoints(p2, p1));
 			}
 			
 			t2 = (SumatraMath.sqrt((vz * vz) - (2 * g * h)) + vz) / g;
@@ -432,7 +431,7 @@ public class FixedLossPlusRollingBallTrajectory extends ABallTrajectory
 		}
 		
 		IVector2 p1 = getPosByVel(0).getXYVector();
-		lines.add(Line.fromPoints(p2, p1));
+		lines.add(Lines.segmentFromPoints(p2, p1));
 		
 		return lines;
 	}

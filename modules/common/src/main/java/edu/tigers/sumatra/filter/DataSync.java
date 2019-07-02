@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
 import org.apache.log4j.Logger;
 
 
@@ -125,7 +126,7 @@ public class DataSync<T>
 		@Override
 		public String toString()
 		{
-			return new ToStringBuilder(this)
+			return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
 					.append("timestamp", timestamp)
 					.append("data", data)
 					.toString();
@@ -160,7 +161,7 @@ public class DataSync<T>
 		@Override
 		public String toString()
 		{
-			return new ToStringBuilder(this)
+			return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
 					.append("first", first)
 					.append("second", second)
 					.toString();

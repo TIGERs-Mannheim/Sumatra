@@ -10,19 +10,22 @@
     <parent>
         <groupId>edu.tigers.sumatra</groupId>
         <artifactId>sumatra-parent</artifactId>
-        <version>6.0</version>
+        <version>2019-SNAPSHOT</version>
         <relativePath>../sumatra-parent/pom.xml</relativePath>
     </parent>
 
     <dependencies>
+
         <dependency>
-            <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>moduli-botmanager</artifactId>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>moduli-cam</artifactId>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -37,22 +40,12 @@
 
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>moduli-bot-params</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>edu.tigers.sumatra</groupId>
             <artifactId>moduli-referee</artifactId>
         </dependency>
 
         <dependency>
             <groupId>commons-lang</groupId>
             <artifactId>commons-lang</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.github.g3force</groupId>
-            <artifactId>configurable</artifactId>
         </dependency>
 
         <dependency>
@@ -76,11 +69,6 @@
         </dependency>
 
         <dependency>
-            <groupId>edu.tigers.moduli</groupId>
-            <artifactId>moduli</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>edu.tigers.sumatra</groupId>
             <artifactId>common</artifactId>
         </dependency>
@@ -95,5 +83,29 @@
             <artifactId>je</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.g3force</groupId>
+            <artifactId>configurable</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-configuration</groupId>
+            <artifactId>commons-configuration</artifactId>
+        </dependency>
+
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.google.protobuf.tools</groupId>
+                <artifactId>maven-protoc-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 </project>

@@ -7,15 +7,16 @@ import com.sleepycat.persist.model.Persistent;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Trajectory with timestamp
+ * 
  * @param <R>
  * @param <T>
  */
 @Persistent
 public class TrajWTimeImpl<R, T extends ITrajectory<R>>
 {
-	private final T		trajectory;
-	private final long	tStart;
+	private final T trajectory;
+	private final long tStart;
 	
 	
 	@SuppressWarnings("unused")

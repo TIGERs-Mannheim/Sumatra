@@ -5,7 +5,6 @@
 package edu.tigers.sumatra.ai.pandora.roles.defense.states;
 
 import java.awt.Color;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang.Validate;
@@ -26,14 +25,13 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.util.InterceptorUtil;
-import edu.tigers.sumatra.skillsystem.skills.util.penarea.PenAreaFactory;
+import edu.tigers.sumatra.skillsystem.skills.util.PenAreaBoundary;
 import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 
 
 /**
- * @author Ulrike Leipscher <ulrike.leipscher@dlr.de>
- *         State used by Defender roles. Allows interception of given line defined by two dynamic positions.
+ * State used by Defender roles. Allows interception of given line defined by two dynamic positions.
  */
 public class InterceptState extends AState
 {
@@ -65,7 +63,7 @@ public class InterceptState extends AState
 		Validate.notNull(toIntercept);
 		Validate.notNull(toProtect);
 		if (toIntercept.getTrackedId().equals(toProtect.getTrackedId())
-				&& toIntercept.getXYVector().equals(toProtect.getXYVector()))
+				&& toIntercept.getPos().equals(toProtect.getPos()))
 		{
 			throw new IllegalArgumentException("toIntercept and toProtect should not be the same DynamicPosition");
 		}
@@ -104,12 +102,12 @@ public class InterceptState extends AState
 		{
 			toIntercept.setLookahead(lookahead);
 			toIntercept.update(parent.getWFrame());
-			threat = toIntercept;
+			threat = toIntercept.getPos();
 			toProtect.setLookahead(lookahead);
 			toProtect.update(parent.getWFrame());
-			if (toIntercept.getXYVector().equals(toProtect.getXYVector()))
+			if (toIntercept.getPos().equals(toProtect.getPos()))
 			{
-				toProtect.setPos(DefenseMath.getBisectionGoal(toIntercept).addNew(Vector2.fromX(1)));
+				toProtect.setPos(DefenseMath.getBisectionGoal(toIntercept.getPos()).addNew(Vector2.fromX(1)));
 			}
 			
 			interceptLine = getLineToIntercept();
@@ -130,9 +128,10 @@ public class InterceptState extends AState
 	private ILineSegment getLineToIntercept()
 	{
 		IVector2 end = isBotOrBall(toProtect)
-				? LineMath.stepAlongLine(toProtect, toIntercept, Geometry.getBotRadius() * 3) : toProtect;
-		IVector2 start = isBotOrBall(toIntercept) ? LineMath.stepAlongLine(toIntercept, end,
-				Geometry.getBotRadius() * 3) : toIntercept;
+				? LineMath.stepAlongLine(toProtect.getPos(), toIntercept.getPos(), Geometry.getBotRadius() * 3)
+				: toProtect.getPos();
+		IVector2 start = isBotOrBall(toIntercept) ? LineMath.stepAlongLine(toIntercept.getPos(), end,
+				Geometry.getBotRadius() * 3) : toIntercept.getPos();
 		return Lines.segmentFromPoints(start, end);
 	}
 	
@@ -145,58 +144,30 @@ public class InterceptState extends AState
 	
 	private IVector2 getClosestPosInAllowedArea(IVector2 pos, IVector2 toIntercept)
 	{
-		IVector2 newPos = PenAreaFactory.buildWithMargin(DefenseConstants.getMinGoOutDistance())
-				.nearestPointOutside(pos, toIntercept);
+		IVector2 newPos = pos;
+		if (Geometry.getPenaltyAreaOur().withMargin(DefenseConstants.getMinGoOutDistance()).isPointInShapeOrBehind(pos))
+		{
+			newPos = PenAreaBoundary.ownWithMargin(DefenseConstants.getMinGoOutDistance()).projectPoint(pos, toIntercept);
+		}
 		return Geometry.getField().nearestPointInside(newPos, -2 * Geometry.getBotRadius());
 	}
 	
 	
 	private void drawShapes(ILineSegment interceptLine, IVector2 newPos)
 	{
-		List<IDrawableShape> shapes = new ArrayList<>();
+		List<IDrawableShape> shapes = parent.getAiFrame().getTacticalField().getDrawableShapes()
+				.get(EAiShapesLayer.DEFENSE_INTERCEPT_STATE);
 		shapes.add(new DrawableLine(interceptLine));
 		shapes.add(new DrawableCircle(Circle.createCircle(newPos, Geometry.getBotRadius()), Color.GREEN));
-		parent.getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.DEFENSE_INTERCEPT_STATE)
-				.addAll(shapes);
 	}
 	
-	
-	// --------------------------------------------------------------------------
-	// --- GETTER and SETTER-----------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	protected void setToIntercept(final DynamicPosition toIntercept)
-	{
-		Validate.notNull(toIntercept);
-		this.toIntercept = toIntercept;
-	}
-	
-	
-	protected void setToProtect(final DynamicPosition toProtect)
-	{
-		Validate.notNull(toProtect);
-		this.toProtect = toProtect;
-	}
-	
-	
-	protected double getLookahead()
-	{
-		return lookahead;
-	}
-	
-	
+
 	protected void setLookahead(final double lookahead)
 	{
 		this.lookahead = lookahead;
 	}
 	
-	
-	protected ILineSegment getInterceptionLine()
-	{
-		return interceptLine;
-	}
-	
-	
+
 	protected void setInterceptLine(final ILineSegment interceptLine)
 	{
 		this.interceptLine = interceptLine;

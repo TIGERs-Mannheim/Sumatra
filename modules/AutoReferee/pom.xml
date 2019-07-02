@@ -1,0 +1,70 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<name>Autoreferee</name>
+	<artifactId>autoreferee</artifactId>
+	<groupId>edu.tigers.sumatra</groupId>
+	<version>2019</version>
+	<packaging>pom</packaging>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
+	<modules>
+		<module>modules/common</module>
+		<module>modules/common-bot</module>
+		<module>modules/common-gui</module>
+		<module>modules/common-gui-config</module>
+		<module>modules/common-math</module>
+
+		<module>modules/moduli-autoreferee</module>
+		<module>modules/moduli-cam</module>
+		<module>modules/moduli-referee</module>
+		<module>modules/moduli-wp</module>
+		<module>modules/moduli-geometry</module>
+		<module>modules/moduli-vision</module>
+		<module>modules/moduli-record</module>
+		<module>modules/moduli-game-controller-protocol</module>
+
+		<module>modules/sumatra-gui-log</module>
+		<module>modules/sumatra-gui-visualizer</module>
+		<module>modules/sumatra-gui-replay</module>
+		<module>modules/sumatra-gui-referee</module>
+		<module>modules/sumatra-parent</module>
+		<module>modules/sumatra-model</module>
+		<module>modules/sumatra-snapshot</module>
+
+		<module>modules/autoreferee-gui</module>
+		<module>modules/autoreferee-main</module>
+	</modules>
+
+	<scm>
+		<connection>scm:git:https://gitlab.tigers-mannheim.de/open-source/AutoReferee.git
+		</connection>
+		<developerConnection>scm:git:https://gitlab.tigers-mannheim.de/open-source/AutoReferee.git
+		</developerConnection>
+		<url>scm:git:https://gitlab.tigers-mannheim.de/open-source/AutoReferee.git</url>
+	</scm>
+
+	<build>
+		<pluginManagement>
+			<plugins>
+
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>sonar-maven-plugin</artifactId>
+					<version>2.6</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>2.17</version>
+				</plugin>
+
+			</plugins>
+		</pluginManagement>
+	</build>
+
+</project>

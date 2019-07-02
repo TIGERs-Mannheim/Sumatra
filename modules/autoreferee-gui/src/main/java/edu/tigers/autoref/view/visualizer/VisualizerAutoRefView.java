@@ -9,14 +9,8 @@ import edu.tigers.sumatra.views.ISumatraViewPresenter;
 import edu.tigers.sumatra.visualizer.VisualizerPresenter;
 
 
-/**
- * @author Lukas Magel
- */
 public class VisualizerAutoRefView extends ASumatraView
 {
-	
-	/**
-	 */
 	public VisualizerAutoRefView()
 	{
 		super(ESumatraViewType.VISUALIZER);
@@ -28,6 +22,4 @@ public class VisualizerAutoRefView extends ASumatraView
 	{
 		return new VisualizerPresenter();
 	}
-	
-	
 }

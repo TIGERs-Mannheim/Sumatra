@@ -4,8 +4,8 @@
 
 package edu.tigers.sumatra.sim;
 
-import static org.assertj.core.api.Assertions.fail;
-
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -19,17 +19,26 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 public class SimTimeBlocker implements IWorldFrameObserver
 {
 	private final CountDownLatch latch = new CountDownLatch(1);
-	private final double duration;
+	private final double maxDuration;
+	private Long latestTime;
 	private Long startTime;
+	private final List<IStopCondition> stopConditions = new ArrayList<>();
 	
 	
-	public SimTimeBlocker(final double duration)
+	public SimTimeBlocker(final double maxDuration)
 	{
-		this.duration = duration;
+		this.maxDuration = maxDuration;
 	}
 	
 	
-	public void start()
+	public SimTimeBlocker addStopCondition(IStopCondition condition)
+	{
+		stopConditions.add(condition);
+		return this;
+	}
+	
+	
+	private void start()
 	{
 		try
 		{
@@ -38,12 +47,12 @@ public class SimTimeBlocker implements IWorldFrameObserver
 			wic.addObserver(this);
 		} catch (ModuleNotFoundException e)
 		{
-			fail("Could not find module.", e);
+			throw new IllegalStateException("WP module must be present", e);
 		}
 	}
 	
 	
-	public void stop()
+	private void stop()
 	{
 		try
 		{
@@ -52,7 +61,7 @@ public class SimTimeBlocker implements IWorldFrameObserver
 			wic.removeObserver(this);
 		} catch (ModuleNotFoundException e)
 		{
-			fail("Could not find module.", e);
+			throw new IllegalStateException("WP module must be present", e);
 		}
 	}
 	
@@ -77,16 +86,28 @@ public class SimTimeBlocker implements IWorldFrameObserver
 	@Override
 	public void onNewWorldFrame(final WorldFrameWrapper wFrameWrapper)
 	{
-		long timestamp = wFrameWrapper.getSimpleWorldFrame().getTimestamp();
+		latestTime = wFrameWrapper.getSimpleWorldFrame().getTimestamp();
 		if (startTime == null)
 		{
-			startTime = timestamp;
+			startTime = latestTime;
 		}
-		if ((timestamp - startTime) / 1e9 > duration)
+		boolean stop = stopConditions.stream().anyMatch(c -> c.stopSimulation(wFrameWrapper));
+		if (stop || getDuration() > maxDuration)
 		{
 			latch.countDown();
 			stop();
-			
 		}
+	}
+	
+	
+	public double getDuration()
+	{
+		return (latestTime - startTime) / 1e9;
+	}
+	
+	@FunctionalInterface
+	public interface IStopCondition
+	{
+		boolean stopSimulation(final WorldFrameWrapper wfw);
 	}
 }

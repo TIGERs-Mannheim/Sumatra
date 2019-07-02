@@ -25,10 +25,11 @@ public class NamedThreadFactory implements ThreadFactory
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
 	
-	private final String							name;
-	private final UncaughtExceptionHandler	handler;
+	private final String name;
+	private final UncaughtExceptionHandler handler;
+	private final int priority;
 	
-	private int										counter	= 0;
+	private int counter = 0;
 	
 	
 	// --------------------------------------------------------------------------
@@ -39,11 +40,34 @@ public class NamedThreadFactory implements ThreadFactory
 	 * @param name name of the thread
 	 * @param handler this handler will be called on any uncaught exception, but note that this does not work for
 	 *           execution services!
+	 * @param priority Priority of the created thread.
 	 */
-	public NamedThreadFactory(final String name, final UncaughtExceptionHandler handler)
+	public NamedThreadFactory(final String name, final UncaughtExceptionHandler handler, final int priority)
 	{
 		this.name = name;
 		this.handler = handler;
+		this.priority = priority;
+	}
+	
+	
+	/**
+	 * @param name name of the thread
+	 * @param handler this handler will be called on any uncaught exception, but note that this does not work for
+	 *           execution services!
+	 */
+	public NamedThreadFactory(final String name, final UncaughtExceptionHandler handler)
+	{
+		this(name, handler, Thread.NORM_PRIORITY);
+	}
+	
+	
+	/**
+	 * @param name name of the thread
+	 * @param priority Priority of the created thread.
+	 */
+	public NamedThreadFactory(final String name, final int priority)
+	{
+		this(name, null, priority);
 	}
 	
 	
@@ -69,6 +93,7 @@ public class NamedThreadFactory implements ThreadFactory
 			postFix = "-" + counter;
 		}
 		Thread thread = new Thread(r, name + postFix);
+		thread.setPriority(priority);
 		if (handler != null)
 		{
 			thread.setUncaughtExceptionHandler(handler);

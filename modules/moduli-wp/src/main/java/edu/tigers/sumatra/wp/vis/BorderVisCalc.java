@@ -23,12 +23,10 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Generate field lines
  */
 public class BorderVisCalc implements IWpCalc
 {
-	
-	
 	@Override
 	public void process(final WorldFrameWrapper wfw, final ShapeMap shapeMap)
 	{
@@ -38,6 +36,18 @@ public class BorderVisCalc implements IWpCalc
 		shapes.add(new DrawableCircle(Geometry.getCenterCircle(), Color.WHITE));
 		shapes.add(new DrawableLine(Line.fromPoints(Vector2.fromXY(0, -Geometry.getFieldWidth() / 2.0),
 				Vector2.fromXY(0, Geometry.getFieldWidth() / 2.0)), Color.WHITE));
+		
+		List<IDrawableShape> additionalShapes = shapeMap.get(EWpShapesLayer.FIELD_BORDERS_ADDITIONAL);
+		additionalShapes.add(new DrawableLine(Line.fromPoints(Vector2.fromXY(-Geometry.getFieldLength() / 2, 0),
+				Vector2.fromXY(Geometry.getFieldLength() / 2.0, 0)), Color.WHITE));
+		additionalShapes.add(new DrawableLine(
+				Line.fromPoints(Vector2.fromXY(-Geometry.getFieldLength() / 4, -Geometry.getFieldWidth() / 2.0),
+						Vector2.fromXY(-Geometry.getFieldLength() / 4, Geometry.getFieldWidth() / 2.0)),
+				Color.WHITE));
+		additionalShapes.add(new DrawableLine(
+				Line.fromPoints(Vector2.fromXY(Geometry.getFieldLength() / 4, -Geometry.getFieldWidth() / 2.0),
+						Vector2.fromXY(Geometry.getFieldLength() / 4, Geometry.getFieldWidth() / 2.0)),
+				Color.WHITE));
 		
 		shapes.addAll(Geometry.getPenaltyAreaOur().getDrawableShapes());
 		shapes.addAll(Geometry.getPenaltyAreaTheir().getDrawableShapes());

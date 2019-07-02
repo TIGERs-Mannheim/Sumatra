@@ -1,8 +1,13 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder;
+
+import java.util.Optional;
+
+import com.github.g3force.configurable.ConfigRegistration;
+import com.github.g3force.configurable.Configurable;
 
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -13,13 +18,33 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Generate BangBang trajectories
  */
-public class TrajectoryGenerator
+public final class TrajectoryGenerator
 {
-	/**
-	 * 
-	 */
+	private static final double MAX_LUT_POS = 18.0;
+	private static final double MAX_LUT_VEL = 8.0;
+	private static final int LUT_TRIGGER_LIMIT = 200_000;
+	
+	private static final TrajectoryBooster BOOSTER;
+	
+	@Configurable(comment = "Use trajectory booster, which uses a LUT too boost generation - warning: accuracy is too low! Note: Needs a Sumatra restart.", defValue = "false")
+	private static boolean useTrajectoryBooster = false;
+	
+	static
+	{
+		ConfigRegistration.registerClass("sisyphus", TrajectoryGenerator.class);
+		
+		if (useTrajectoryBooster)
+		{
+			BOOSTER = new TrajectoryBooster(MAX_LUT_POS, MAX_LUT_VEL, LUT_TRIGGER_LIMIT);
+		} else
+		{
+			BOOSTER = null;
+		}
+	}
+	
+	
 	private TrajectoryGenerator()
 	{
 	}
@@ -62,46 +87,43 @@ public class TrajectoryGenerator
 			final IVector2 curVel,
 			final IVector2 dest)
 	{
+		IVector2 curPosM = curPos.multiplyNew(1e-3f);
+		IVector2 destM = dest.multiplyNew(1e-3f);
+		IVector2 limitedVel = curVel;
+		if (limitedVel.getLength2() > moveConstraints.getVelMax())
+		{
+			limitedVel = curVel.scaleToNew(moveConstraints.getVelMax());
+		}
+		
 		if (moveConstraints.getPrimaryDirection().isZeroVector())
 		{
+			if (BOOSTER != null)
+			{
+				Optional<BangBangTrajectory2D> boostedTraj = BOOSTER.query(moveConstraints, curPosM, limitedVel, destM);
+				if (boostedTraj.isPresent())
+				{
+					return boostedTraj.get();
+				}
+			}
+			
 			return new BangBangTrajectory2D(
-					curPos.multiplyNew(1e-3f),
-					dest.multiplyNew(1e-3f),
-					curVel,
+					curPosM,
+					destM,
+					limitedVel,
 					moveConstraints.getVelMax(),
 					moveConstraints.getAccMax());
 		}
 		
 		return new BangBangTrajectory2DAsync(
-				curPos.multiplyNew(1e-3f),
-				dest.multiplyNew(1e-3f),
-				curVel,
+				curPosM,
+				destM,
+				limitedVel,
 				moveConstraints.getVelMax(),
 				moveConstraints.getAccMax(),
 				moveConstraints.getPrimaryDirection());
 	}
 	
 	
-	/**
-	 * @param bot
-	 * @param targetAngle
-	 * @return
-	 */
-	public static BangBangTrajectory1DOrient generateRotationTrajectory(
-			final ITrackedBot bot,
-			final double targetAngle)
-	{
-		MoveConstraints mc = new MoveConstraints(bot.getRobotInfo().getBotParams().getMovementLimits());
-		return generateRotationTrajectory(bot.getOrientation(), bot.getAngularVel(), targetAngle, mc);
-	}
-	
-	
-	/**
-	 * @param bot
-	 * @param targetAngle
-	 * @param moveConstraints
-	 * @return
-	 */
 	public static BangBangTrajectory1DOrient generateRotationTrajectory(
 			final ITrackedBot bot,
 			final double targetAngle,
@@ -111,21 +133,15 @@ public class TrajectoryGenerator
 	}
 	
 	
-	/**
-	 * @param curOrientation
-	 * @param curAVel
-	 * @param targetAngle
-	 * @param moveConstraints
-	 * @return
-	 */
-	public static BangBangTrajectory1DOrient generateRotationTrajectory(
+	private static BangBangTrajectory1DOrient generateRotationTrajectory(
 			final double curOrientation,
 			final double curAVel,
 			final double targetAngle,
 			final MoveConstraints moveConstraints)
 	{
-		return new BangBangTrajectory1DOrient(curOrientation, targetAngle, curAVel, moveConstraints.getVelMaxW(),
-				moveConstraints.getAccMaxW());
+		return new BangBangTrajectory1DOrient((float) curOrientation, (float) targetAngle, (float) curAVel,
+				(float) moveConstraints.getVelMaxW(),
+				(float) moveConstraints.getAccMaxW());
 	}
 	
 	
@@ -137,6 +153,6 @@ public class TrajectoryGenerator
 	 */
 	public static BangBangTrajectory1DOrient generateRotationTrajectoryStub(final double pos)
 	{
-		return new BangBangTrajectory1DOrient(pos, pos, 0, 10, 10);
+		return new BangBangTrajectory1DOrient((float) pos, (float) pos, 0f, 10f, 10f);
 	}
 }

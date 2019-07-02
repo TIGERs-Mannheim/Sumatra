@@ -61,7 +61,7 @@ public class AiManager
 	 */
 	public void start()
 	{
-		timer = SumatraModel.getInstance().getModule(ATimer.class);
+		timer = SumatraModel.getInstance().getModuleOpt(ATimer.class).orElse(null);
 		wp = SumatraModel.getInstance().getModule(AWorldPredictor.class);
 		
 		assert executor == null;
@@ -76,7 +76,7 @@ public class AiManager
 	public void stop()
 	{
 		aiProcessor.running = false;
-		executor.shutdownNow();
+		executor.shutdown();
 		
 		try
 		{
@@ -87,6 +87,7 @@ public class AiManager
 			Thread.currentThread().interrupt();
 		}
 		
+		freshWorldFrames.clear();
 		executor = null;
 		wp = null;
 		timer = null;
@@ -151,12 +152,13 @@ public class AiManager
 			}
 			ai.stop();
 			agent.notifyAIStopped(ai.getAiTeam());
+			wp.notifyClearShapeMap(ai.getAiTeam().getTeamColor().name());
 		}
 		
 		
 		private void process() throws InterruptedException
 		{
-			WorldFrameWrapper wfw = freshWorldFrames.takeLast();
+			WorldFrameWrapper wfw = freshWorldFrames.pollLast(15, TimeUnit.MILLISECONDS);
 			if (wfw == null)
 			{
 				return;
@@ -172,7 +174,10 @@ public class AiManager
 			}
 			skipCounter = 0;
 			
-			timer.start(aiName, id);
+			if (timer != null)
+			{
+				timer.start(aiName, id);
+			}
 			
 			AIInfoFrame frame = ai.processWorldFrame(wfw);
 			if (frame != null)
@@ -189,7 +194,11 @@ public class AiManager
 					log.error("Error during AI frame publishing", err);
 				}
 			}
-			timer.stop(aiName, id);
+			
+			if (timer != null)
+			{
+				timer.stop(aiName, id);
+			}
 		}
 	}
 }

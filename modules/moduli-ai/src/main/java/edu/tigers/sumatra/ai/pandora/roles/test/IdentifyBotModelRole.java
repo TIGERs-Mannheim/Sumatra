@@ -6,20 +6,21 @@ package edu.tigers.sumatra.ai.pandora.roles.test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.log4j.Logger;
 
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.ABotManager;
 import edu.tigers.sumatra.botmanager.BotWatcher;
-import edu.tigers.sumatra.botmanager.bots.ABot;
-import edu.tigers.sumatra.botmanager.commands.EBotSkill;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillLocalForce;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillLocalVelocity;
-import edu.tigers.sumatra.botmanager.commands.botskills.EDataAcquisitionMode;
+import edu.tigers.sumatra.botmanager.TigersBotManager;
+import edu.tigers.sumatra.botmanager.bots.TigerBot;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillLocalForce;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillLocalVelocity;
+import edu.tigers.sumatra.botmanager.botskills.EBotSkill;
+import edu.tigers.sumatra.botmanager.botskills.EDataAcquisitionMode;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -91,7 +92,7 @@ public class IdentifyBotModelRole extends ARole
 	protected void beforeFirstUpdate()
 	{
 		super.beforeFirstUpdate();
-		bw = new BotWatcher(getABot(), EDataAcquisitionMode.BOT_MODEL_V2);
+		getABot().ifPresent(bot -> bw = new BotWatcher(bot, EDataAcquisitionMode.BOT_MODEL_V2));
 	}
 	
 	
@@ -105,18 +106,17 @@ public class IdentifyBotModelRole extends ARole
 	}
 	
 	
-	private ABot getABot()
+	private Optional<TigerBot> getABot()
 	{
-		ABot aBot = null;
-		try
+		if (SumatraModel.getInstance().isModuleLoaded(ABotManager.class))
 		{
 			ABotManager botManager = SumatraModel.getInstance().getModule(ABotManager.class);
-			aBot = botManager.getBots().get(getBotID());
-		} catch (ModuleNotFoundException e)
-		{
-			log.error("Could not find botManager module", e);
+			if (botManager instanceof TigersBotManager)
+			{
+				return ((TigersBotManager) botManager).getTigerBot(getBotID());
+			}
 		}
-		return aBot;
+		return Optional.empty();
 	}
 	
 	
@@ -222,7 +222,7 @@ public class IdentifyBotModelRole extends ARole
 	private class MoveStateXY extends PrepareState
 	{
 		private double vMax;
-		private boolean rollout = false;
+		private boolean rollout;
 		
 		
 		private MoveStateXY(final IVector2 dest, final double orientation, final double vMax, final boolean rollout)
@@ -337,7 +337,7 @@ public class IdentifyBotModelRole extends ARole
 				mp = MatlabConnection.getMatlabProxy();
 				mp.eval("addpath('identification')");
 				Object[] values = mp.returningFeval("identifyBotModelV2", 1,
-						dataFiles.toArray(new Object[dataFiles.size()]));
+						dataFiles.toArray());
 				double[] params = (double[]) values[0];
 				
 				double[] friction = new double[4];

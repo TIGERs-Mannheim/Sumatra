@@ -37,10 +37,10 @@ public class PushAroundObstacleSkill extends AMoveSkill
 {
 	@Configurable(comment = "Push dist", defValue = "10.0")
 	private static double pushDist = 10;
-	@Configurable(comment = "Max velocity when pushing", defValue = "1.5")
-	private static double pushVel = 1.5;
-	@Configurable(comment = "Max acceleration when pushing", defValue = "1.5")
-	private static double pushAcc = 1.5;
+	@Configurable(comment = "Max velocity when pushing", defValue = "1.2")
+	private static double pushVel = 1.2;
+	@Configurable(comment = "Max acceleration when pushing", defValue = "0.8")
+	private static double pushAcc = 0.8;
 	@Configurable(comment = "dribbler speed for Pullback", defValue = "4000")
 	private static int dribblerSpeed = 4000;
 	
@@ -83,7 +83,7 @@ public class PushAroundObstacleSkill extends AMoveSkill
 	{
 		private double targetOrientation;
 		private IVector2 desiredDestination;
-		private TimestampTimer releaseBallTimer = new TimestampTimer(0.2);
+		private TimestampTimer releaseBallTimer = new TimestampTimer(0.5);
 		private int currentDribbleSpeed;
 		
 		
@@ -116,10 +116,10 @@ public class PushAroundObstacleSkill extends AMoveSkill
 			desiredDestination = getIdealDestination();
 			targetOrientation = calcTargetOrientation();
 			
-			AroundObstacleCalc aroundObstacleCalc = new AroundObstacleCalc(obstacle, getBallPos(), getTBot());
+			AroundObstacleCalc aroundObstacleCalc = new AroundObstacleCalc(obstacle.getPos(), getBallPos(), getTBot());
 			IVector2 dest = desiredDestination;
 			
-			if (target.distanceTo(getBallPos()) > 50)
+			if (target.getPos().distanceTo(getBallPos()) > 50)
 			{
 				if (aroundObstacleCalc.isAroundObstacleNeeded(dest))
 				{
@@ -130,7 +130,7 @@ public class PushAroundObstacleSkill extends AMoveSkill
 				dest = aroundObstacleCalc.avoidObstacle(dest);
 			} else
 			{
-				dest = LineMath.stepAlongLine(target, desiredDestination,
+				dest = LineMath.stepAlongLine(target.getPos(), desiredDestination,
 						Geometry.getBallRadius() + getTBot().getCenter2DribblerDist());
 			}
 			
@@ -150,13 +150,18 @@ public class PushAroundObstacleSkill extends AMoveSkill
 		
 		private void updateDribbler()
 		{
-			if (target.distanceTo(getBallPos()) < 50)
+			if (target.getPos().distanceTo(getBallPos()) < 50)
 			{
 				releaseBallTimer.update(getWorldFrame().getTimestamp());
 				if (releaseBallTimer.isTimeUp(getWorldFrame().getTimestamp()))
 				{
 					currentDribbleSpeed = 0;
 				}
+			} else if (Math
+					.abs(AngleMath.difference(getAngle(), target.getPos().subtractNew(getBallPos()).getAngle())) > 0.4)
+			{
+				currentDribbleSpeed = 0;
+				releaseBallTimer.reset();
 			} else
 			{
 				currentDribbleSpeed = dribblerSpeed;
@@ -182,21 +187,21 @@ public class PushAroundObstacleSkill extends AMoveSkill
 		
 		private double getPushDist()
 		{
-			double dist2Target = getBallPos().distanceTo(target);
+			double dist2Target = getBallPos().distanceTo(target.getPos());
 			if (getBallPos().distanceTo(getPos()) > Geometry.getBotRadius() + 50)
 			{
 				return Math.min(dist2Target, pushDist);
 			}
 			double requiredRotation = getRequiredRotation();
 			double relRotation = 1 - relative(requiredRotation, 0, 0.7);
-			double push = (relRotation * relRotation) * 800 + pushDist;
+			double push = (relRotation * relRotation) * 500;
 			return Math.min(dist2Target, push);
 		}
 		
 		
 		private double getRequiredRotation()
 		{
-			IVector2 ballToIdealDest = getBallPos().subtractNew(target);
+			IVector2 ballToIdealDest = getBallPos().subtractNew(target.getPos());
 			IVector2 ballToBot = getPos().subtractNew(getBallPos());
 			return ballToIdealDest.angleToAbs(ballToBot).orElse(0.0);
 		}
@@ -210,20 +215,20 @@ public class PushAroundObstacleSkill extends AMoveSkill
 		
 		private IVector2 getIdealDestination()
 		{
-			double dist2Target = getBallPos().distanceTo(target);
+			double dist2Target = getBallPos().distanceTo(target.getPos());
 			if (dist2Target < 50 && desiredDestination != null)
 			{
 				return desiredDestination;
 			}
 			double dist = Math.min(dist2Target, pushDist);
-			return LineMath.stepAlongLine(getBallPos(), target,
+			return LineMath.stepAlongLine(getBallPos(), target.getPos(),
 					-(getTBot().getCenter2DribblerDist() + Geometry.getBallRadius() - dist));
 		}
 		
 		
 		private double calcTargetOrientation()
 		{
-			IVector2 botAngleDirection = target.subtractNew(getBallPos());
+			IVector2 botAngleDirection = target.getPos().subtractNew(getBallPos());
 			if (botAngleDirection.getLength2() < 50)
 			{
 				botAngleDirection = getBallPos().subtractNew(desiredDestination);

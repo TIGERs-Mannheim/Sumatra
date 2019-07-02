@@ -5,9 +5,11 @@ package edu.tigers.sumatra.vision;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.queue.CircularFifoQueue;
@@ -29,12 +31,14 @@ import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.Vector3f;
 import edu.tigers.sumatra.vision.data.FilteredVisionBall;
 import edu.tigers.sumatra.vision.data.FilteredVisionBot;
+import edu.tigers.sumatra.vision.data.IBallModelIdentificationObserver;
 import edu.tigers.sumatra.vision.data.KickEvent;
 import edu.tigers.sumatra.vision.data.StraightBallTrajectory;
 import edu.tigers.sumatra.vision.kick.detectors.EarlyKickDetector;
 import edu.tigers.sumatra.vision.kick.detectors.KickDetector;
 import edu.tigers.sumatra.vision.kick.estimators.ChipKickEstimator;
 import edu.tigers.sumatra.vision.kick.estimators.EKickEstimatorType;
+import edu.tigers.sumatra.vision.kick.estimators.IBallModelIdentResult;
 import edu.tigers.sumatra.vision.kick.estimators.IKickEstimator;
 import edu.tigers.sumatra.vision.kick.estimators.KickFitResult;
 import edu.tigers.sumatra.vision.kick.estimators.StraightKickEstimator;
@@ -58,11 +62,17 @@ public class BallFilterPreprocessor
 	private final KickDetectors kickDetectors = new KickDetectors();
 	private final KickEstimators kickEstimators = new KickEstimators();
 	
+	private final List<IBallModelIdentificationObserver> observers = new CopyOnWriteArrayList<>();
+	
 	@Configurable(comment = "Minimum search radius for cam balls around last known position [mm]")
 	private static double minSearchRadius = 300;
 	
 	@Configurable(defValue = "0.2", comment = "Factor by which a estimator must be better than the last one to use it")
 	private static double estimatorSwitchHysteresis = 0.2;
+	
+	@Configurable(comment = "Enable model identification solver", defValue = "false")
+	private boolean doModelIdentification = false;
+	
 	
 	static
 	{
@@ -96,6 +106,24 @@ public class BallFilterPreprocessor
 	
 	
 	/**
+	 * @param observer
+	 */
+	public void addObserver(final IBallModelIdentificationObserver observer)
+	{
+		observers.add(observer);
+	}
+	
+	
+	/**
+	 * @param observer
+	 */
+	public void removeObserver(final IBallModelIdentificationObserver observer)
+	{
+		observers.remove(observer);
+	}
+	
+	
+	/**
 	 * Clear all internal states.
 	 */
 	public void clear()
@@ -103,6 +131,15 @@ public class BallFilterPreprocessor
 		ballTrackerMerger.reset();
 		kickDetectors.reset();
 		kickEstimators.reset();
+	}
+	
+	
+	/**
+	 * @param doModelIdentification the doModelIdentification to set
+	 */
+	public void setDoModelIdentification(final boolean doModelIdentification)
+	{
+		this.doModelIdentification = doModelIdentification;
 	}
 	
 	
@@ -116,6 +153,7 @@ public class BallFilterPreprocessor
 		
 		return shapes;
 	}
+	
 	
 	private class KickEstimators
 	{
@@ -132,6 +170,12 @@ public class BallFilterPreprocessor
 		}
 		
 		
+		private void notifyBallModelIdentificationResult(final IBallModelIdentResult ident)
+		{
+			observers.forEach(o -> o.onBallModelIdentificationResult(ident));
+		}
+		
+		
 		private FilteredVisionBall process(final KickEvent kickEvent, final MergedBall ball,
 				final List<FilteredVisionBot> mergedRobots, final Map<BotID, RobotInfo> robotInfos,
 				final long timestamp)
@@ -143,6 +187,19 @@ public class BallFilterPreprocessor
 			}
 			
 			// run completed check
+			for (Iterator<IKickEstimator> iter = estimators.iterator(); iter.hasNext();)
+			{
+				IKickEstimator est = iter.next();
+				if (est.isDone(mergedRobots, timestamp))
+				{
+					if (doModelIdentification)
+					{
+						Optional<IBallModelIdentResult> identResult = est.getModelIdentResult();
+						identResult.ifPresent(this::notifyBallModelIdentificationResult);
+					}
+					iter.remove();
+				}
+			}
 			estimators.removeIf(k -> k.isDone(mergedRobots, timestamp));
 			
 			// add event to history for visualization

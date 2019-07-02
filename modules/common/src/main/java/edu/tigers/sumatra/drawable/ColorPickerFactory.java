@@ -188,8 +188,8 @@ public final class ColorPickerFactory
 			@Override
 			public Color getColor(final double relValue)
 			{
-				Validate.isTrue(relValue >= 0);
-				Validate.isTrue(relValue <= 1);
+				Validate.isTrue(relValue >= 0, "relValue must be greater or equal to zero: ", relValue);
+				Validate.isTrue(relValue <= 1, "relValue must be smaller or equal to one: ", relValue);
 				int red = (int) ((color2.getRed() * relValue) + (color1.getRed() * (1 - relValue)));
 				int green = (int) ((color2.getGreen() * relValue) + (color1.getGreen() * (1 - relValue)));
 				int blue = (int) ((color2.getBlue() * relValue) + (color1.getBlue() * (1 - relValue)));

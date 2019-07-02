@@ -1,0 +1,7 @@
+= Sumatra User Guide
+
+== Introduction
+
+== Getting Started
+
+== Common Scenarios

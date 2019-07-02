@@ -1,0 +1,27 @@
+syntax = "proto3";
+package edu.tigers.sumatra.sim.net;
+
+enum TeamColor {
+    YELLOW = 0;
+    BLUE = 1;
+}
+
+message BotId {
+    int32 id = 1;
+    TeamColor color = 2;
+}
+
+message Vector3 {
+    double x = 1;
+    double y = 2;
+    double z = 3;
+}
+
+message Vector2 {
+    double x = 1;
+    double y = 2;
+}
+
+message VectorN {
+    repeated double x = 1;
+}

@@ -54,8 +54,7 @@ import edu.tigers.sumatra.lookandfeel.LookAndFeelStateAdapter;
  * Basically the first column of a {@link JTable} is rendered by an underlying
  * {@link JTree}. The model is an implementation of a special interface
  * {@link ITreeTableModel} / {@link ATreeTableModel}. The {@link JTable}
- * accesses the models data through the {@link TreeTableModelAdapter}. The
- * {@link JTreeTable} also features {@link ACellEditor}.<br/>
+ * accesses the models data through the {@link TreeTableModelAdapter}.<br/>
  * <br/>
  * Although the whole thing is a little more complex then usual it works quite
  * well! ^^

@@ -1,0 +1,40 @@
+syntax = "proto3";
+package edu.tigers.sumatra.sim.net;
+
+import "SimCommon.proto";
+
+message SimBotAction {
+    BotId botId = 1;
+
+    Vector3 targetPos = 2;
+    Vector3 targetVelLocal = 3;
+    VectorN targetWheelVel = 4;
+    Vector2 primaryDirection = 5;
+
+    DriveMode modeXy = 6;
+    DriveMode modeW = 7;
+
+    DriveLimits driveLimits = 8;
+    bool strictVelocityLimit = 9;
+
+    double kickSpeed = 10;
+    bool chip = 11;
+    bool disarm = 12;
+    double dribbleRpm = 13;
+}
+
+message DriveLimits {
+    double velMax = 1;
+    double accMax = 2;
+    double jerkMax = 3;
+    double velMaxW = 4;
+    double accMaxW = 5;
+    double jerkMaxW = 6;
+}
+
+enum DriveMode {
+    OFF = 0;
+    WHEEL_VEL = 1;
+    LOCAL_VEL = 2;
+    GLOBAL_POS = 3;
+}

@@ -8,17 +8,17 @@
  */
 package edu.tigers.sumatra.skillsystem.skills;
 
-import edu.tigers.sumatra.botmanager.commands.botskills.ABotSkill;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillMotorsOff;
+import edu.tigers.sumatra.botmanager.botskills.ABotSkill;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillMotorsOff;
 import edu.tigers.sumatra.skillsystem.ESkill;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class BotSkillWrapperSkill extends ASkill
 {
 	private ABotSkill skill;
+	private boolean keepKickerDribbler = false;
 	
 	
 	/**
@@ -43,6 +43,10 @@ public class BotSkillWrapperSkill extends ASkill
 	@Override
 	protected void doCalcActionsBeforeStateUpdate()
 	{
+		if (keepKickerDribbler)
+		{
+			skill.setKickerDribbler(getMatchCtrl().getSkill().getKickerDribbler());
+		}
 		getMatchCtrl().setSkill(skill);
 	}
 	
@@ -62,5 +66,11 @@ public class BotSkillWrapperSkill extends ASkill
 	public final void setSkill(final ABotSkill skill)
 	{
 		this.skill = skill;
+	}
+	
+	
+	public void setKeepKickerDribbler(final boolean keepKickerDribbler)
+	{
+		this.keepKickerDribbler = keepKickerDribbler;
 	}
 }

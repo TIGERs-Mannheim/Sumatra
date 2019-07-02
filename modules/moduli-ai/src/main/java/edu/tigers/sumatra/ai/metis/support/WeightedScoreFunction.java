@@ -4,6 +4,8 @@
 
 package edu.tigers.sumatra.ai.metis.support;
 
+import edu.tigers.sumatra.ai.metis.support.passtarget.IPassTarget;
+
 import static java.lang.Math.pow;
 
 import java.util.function.Function;

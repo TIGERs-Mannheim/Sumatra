@@ -9,11 +9,10 @@ import java.util.Map;
 
 import com.sleepycat.persist.model.Persistent;
 
+import edu.tigers.sumatra.ai.athena.IPlayStrategy;
 import edu.tigers.sumatra.ai.data.BotAiInformation;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionTree;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionTreePath;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.OffensiveAction;
-import edu.tigers.sumatra.ai.metis.offense.action.situation.EOffensiveSituation;
+import edu.tigers.sumatra.ai.metis.offense.action.situation.OffensiveActionTreePath;
 import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveAnalysedFrame;
 import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveStatisticsFrame;
 import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
@@ -21,10 +20,12 @@ import edu.tigers.sumatra.ai.metis.statistics.MatchStats;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.trees.EOffensiveSituation;
+import edu.tigers.sumatra.trees.OffensiveActionTree;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Data container that is send to the UI and that is stored in the Berkeley DB.
  */
 @Persistent(version = 5)
 public class VisualizationFrame
@@ -41,7 +42,8 @@ public class VisualizationFrame
 	private final OffensiveStatisticsFrame offensiveStatisticsFrameRaw;
 	private final Map<EOffensiveSituation, OffensiveActionTree> actionTrees;
 	private final OffensiveActionTreePath currentPath;
-	
+	private final transient IPlayStrategy playStrategy;
+
 	
 	@SuppressWarnings("unused")
 	private VisualizationFrame()
@@ -54,6 +56,7 @@ public class VisualizationFrame
 		offensiveStatisticsFrameRaw = null;
 		actionTrees = null;
 		currentPath = null;
+		playStrategy = null;
 	}
 	
 	
@@ -70,8 +73,9 @@ public class VisualizationFrame
 		aiInfos.putAll(aiFrame.getAresData().getBotAiInformation());
 		offensiveStatisticsFrame = aiFrame.getTacticalField().getAnalyzedOffensiveStatisticsFrame();
 		offensiveStatisticsFrameRaw = aiFrame.getTacticalField().getOffensiveStatistics();
-		actionTrees = aiFrame.getTacticalField().getActionTrees();
+		actionTrees = aiFrame.getTacticalField().getActionTrees().getActionTrees();
 		currentPath = aiFrame.getTacticalField().getCurrentPath();
+		playStrategy = aiFrame.getPlayStrategy();
 	}
 	
 	
@@ -90,6 +94,7 @@ public class VisualizationFrame
 		offensiveStatisticsFrameRaw = aiFrame.getOffensiveStatisticsFrameRaw();
 		actionTrees = aiFrame.getActionTrees();
 		currentPath = aiFrame.getCurrentPath();
+		playStrategy = aiFrame.getPlayStrategy();
 	}
 	
 	
@@ -184,4 +189,6 @@ public class VisualizationFrame
 	{
 		return currentPath;
 	}
+
+	public IPlayStrategy getPlayStrategy() { return playStrategy; }
 }

@@ -13,6 +13,8 @@ import org.apache.log4j.Logger;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
+import com.sleepycat.persist.evolve.Mutations;
+import com.sleepycat.persist.evolve.Renamer;
 
 import edu.tigers.moduli.AModule;
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
@@ -36,19 +38,30 @@ public class RecordManager extends AModule implements IRefereeObserver
 	private final List<IBerkeleyRecorderHook> hooks = new CopyOnWriteArrayList<>();
 	private long lastCommandCounter = -1;
 	private BerkeleyAsyncRecorder recorder = null;
-	
+
 	@Configurable(defValue = "false", comment = "Automatically compress recordings after they were closed")
 	private static boolean compressOnClose = false;
-	
+
 	@Configurable(defValue = "true", comment = "Automatically record game in productive/match mode (-Dproductive=true)")
 	private static boolean autoRecord = true;
-	
+
 	static
 	{
 		ConfigRegistration.registerClass("user", RecordManager.class);
 	}
-	
-	
+
+
+	protected Mutations getMutations()
+	{
+		Mutations mutations = new Mutations();
+		mutations.addRenamer(new Renamer("edu.tigers.sumatra.referee.gameevent.AttackerInDefenseArea", 0,
+				"edu.tigers.sumatra.referee.gameevent.AttackerTouchedBallInDefenseArea"));
+		// add future mutations here
+
+		return mutations;
+	}
+
+
 	/**
 	 * @param observer
 	 */
@@ -56,8 +69,8 @@ public class RecordManager extends AModule implements IRefereeObserver
 	{
 		observers.add(observer);
 	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -65,20 +78,20 @@ public class RecordManager extends AModule implements IRefereeObserver
 	{
 		observers.remove(observer);
 	}
-	
-	
+
+
 	public void addHook(IBerkeleyRecorderHook hook)
 	{
 		hooks.add(hook);
 	}
-	
-	
+
+
 	public void removeHook(IBerkeleyRecorderHook hook)
 	{
 		hooks.remove(hook);
 	}
-	
-	
+
+
 	private void notifyStartStopRecord(final boolean recording)
 	{
 		for (IRecordObserver observer : observers)
@@ -86,20 +99,20 @@ public class RecordManager extends AModule implements IRefereeObserver
 			observer.onStartStopRecord(recording);
 		}
 	}
-	
-	
+
+
 	public void pauseRecorder()
 	{
 		recorder.pause();
 	}
-	
-	
+
+
 	public void resumeRecorder()
 	{
 		recorder.resume();
 	}
-	
-	
+
+
 	private boolean isPreStage(final Referee.SSL_Referee refMsg)
 	{
 		switch (refMsg.getStage())
@@ -113,8 +126,8 @@ public class RecordManager extends AModule implements IRefereeObserver
 				return false;
 		}
 	}
-	
-	
+
+
 	private boolean isGameStage(final Referee.SSL_Referee refMsg)
 	{
 		switch (refMsg.getStage())
@@ -129,8 +142,8 @@ public class RecordManager extends AModule implements IRefereeObserver
 				return false;
 		}
 	}
-	
-	
+
+
 	private boolean isNoGameStage(final Referee.SSL_Referee refMsg)
 	{
 		switch (refMsg.getStage())
@@ -145,8 +158,8 @@ public class RecordManager extends AModule implements IRefereeObserver
 				return false;
 		}
 	}
-	
-	
+
+
 	@Override
 	public void onNewRefereeMsg(final Referee.SSL_Referee refMsg)
 	{
@@ -157,8 +170,8 @@ public class RecordManager extends AModule implements IRefereeObserver
 			lastCommandCounter = refMsg.getCommandCounter();
 		}
 	}
-	
-	
+
+
 	private void startStopRecording(final Referee.SSL_Referee refMsg)
 	{
 		if (!isRecording() &&
@@ -171,22 +184,22 @@ public class RecordManager extends AModule implements IRefereeObserver
 			stopRecording();
 		}
 	}
-	
-	
+
+
 	@Override
 	public void initModule()
 	{
 		// nothing to do
 	}
-	
-	
+
+
 	@Override
 	public void deinitModule()
 	{
 		// nothing to do
 	}
-	
-	
+
+
 	@Override
 	public void startModule()
 	{
@@ -199,8 +212,8 @@ public class RecordManager extends AModule implements IRefereeObserver
 			log.error("Could not find Referee module", e);
 		}
 	}
-	
-	
+
+
 	@Override
 	public void stopModule()
 	{
@@ -213,8 +226,8 @@ public class RecordManager extends AModule implements IRefereeObserver
 			log.error("Could not find Referee module", e);
 		}
 	}
-	
-	
+
+
 	/**
 	 * Toggle recording state
 	 */
@@ -228,8 +241,8 @@ public class RecordManager extends AModule implements IRefereeObserver
 			stopRecording();
 		}
 	}
-	
-	
+
+
 	protected void startRecording()
 	{
 		if (recorder != null)
@@ -244,8 +257,8 @@ public class RecordManager extends AModule implements IRefereeObserver
 		hooks.forEach(IBerkeleyRecorderHook::start);
 		notifyStartStopRecord(true);
 	}
-	
-	
+
+
 	protected void stopRecording()
 	{
 		if (recorder == null)
@@ -259,11 +272,11 @@ public class RecordManager extends AModule implements IRefereeObserver
 		}
 		notifyStartStopRecord(false);
 	}
-	
-	
+
+
 	/**
 	 * Open or create a berkeley database with default accessors attached
-	 * 
+	 *
 	 * @param dbPath at this location
 	 * @return a new unopened handle
 	 */
@@ -273,11 +286,11 @@ public class RecordManager extends AModule implements IRefereeObserver
 		onNewBerkeleyDb(db);
 		return db;
 	}
-	
-	
+
+
 	/**
 	 * Create a new berkeley database with default accessors attached
-	 * 
+	 *
 	 * @return a new empty database
 	 */
 	private BerkeleyDb newBerkeleyDb()
@@ -286,8 +299,8 @@ public class RecordManager extends AModule implements IRefereeObserver
 		onNewBerkeleyDb(db);
 		return db;
 	}
-	
-	
+
+
 	/**
 	 * @return the current DB path
 	 */
@@ -299,33 +312,33 @@ public class RecordManager extends AModule implements IRefereeObserver
 		}
 		return recorder.getDb().getDbPath();
 	}
-	
-	
+
+
 	/**
 	 * This is called when a new berkeley db will be created
-	 * 
+	 *
 	 * @param db
 	 */
 	protected void onNewBerkeleyDb(BerkeleyDb db)
 	{
 		db.add(BerkeleyLogEvent.class, new BerkeleyAccessor<>(BerkeleyLogEvent.class, false));
 	}
-	
-	
+
+
 	/**
 	 * This is called when a new berkeley recorder will be created
-	 * 
+	 *
 	 * @param recorder
 	 */
 	protected void onNewBerkeleyRecorder(BerkeleyAsyncRecorder recorder)
 	{
 		recorder.add(new BerkeleyLogRecorder(recorder.getDb()));
 	}
-	
-	
+
+
 	/**
 	 * Notify UI to view a replay window
-	 * 
+	 *
 	 * @param startTime
 	 */
 	public void notifyViewReplay(long startTime)
@@ -351,8 +364,8 @@ public class RecordManager extends AModule implements IRefereeObserver
 			observer.onViewReplay(db, startTime);
 		}
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */

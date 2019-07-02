@@ -14,10 +14,11 @@ import edu.tigers.sumatra.wp.data.WorldFrame;
 /**
  * abstract superclass for every subordinal calculator of the Analyzer
  */
-public abstract class ACalculator implements ICalculator
+public abstract class ACalculator
 {
 	private static final Logger log = LogManager.getLogger(ACalculator.class);
 	private boolean active = true;
+	private boolean started = false;
 	private Exception lastException = null;
 	private BaseAiFrame curAiFrame = null;
 	private TacticalField newTacticalField = null;
@@ -35,14 +36,26 @@ public abstract class ACalculator implements ICalculator
 		curAiFrame = baseAiFrame;
 		this.newTacticalField = newTacticalField;
 		executionStatusLastFrame = false;
-		if (!active || !isCalculationNecessary(newTacticalField, baseAiFrame))
+		if (!active && started)
+		{
+			stop();
+			started = false;
+		}
+		
+		if (!started)
+		{
+			start();
+			started = true;
+		}
+		
+		if (!active || !isCalculationNecessary())
 		{
 			return;
 		}
 		
 		try
 		{
-			doCalc(newTacticalField, baseAiFrame);
+			doCalc();
 			executionStatusLastFrame = true;
 			lastException = null;
 		} catch (Exception err)
@@ -53,6 +66,84 @@ public abstract class ACalculator implements ICalculator
 				log.error("Error in calculator " + getClass().getSimpleName(), err);
 			}
 			lastException = err;
+		}
+	}
+	
+	
+	/**
+	 * Do the calculations.
+	 * Please use {@link #doCalc()} instead of this method.
+	 * 
+	 * @param newTacticalField
+	 * @param baseAiFrame
+	 */
+	protected void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+	{
+	}
+	
+	
+	/**
+	 * Do the calculations.
+	 */
+	protected void doCalc()
+	{
+		doCalc(getNewTacticalField(), getAiFrame());
+	}
+	
+	
+	/**
+	 * Specifies if the doCalc method has to be executed.
+	 * Please use {@link #isCalculationNecessary()} instead of this method.
+	 *
+	 * @param tacticalField
+	 * @param aiFrame
+	 * @return
+	 */
+	@SuppressWarnings("squid:S1172") // ignore unused parameters
+	protected boolean isCalculationNecessary(TacticalField tacticalField, BaseAiFrame aiFrame)
+	{
+		return true;
+	}
+	
+	
+	/**
+	 * Specifies if the doCalc method has to be executed
+	 *
+	 * @return
+	 */
+	protected boolean isCalculationNecessary()
+	{
+		return isCalculationNecessary(getNewTacticalField(), getAiFrame());
+	}
+	
+	
+	/**
+	 * Called when calculator gets activated or AI gets started
+	 */
+	protected void start()
+	{
+		// can be overwritten
+	}
+	
+	
+	/**
+	 * Called when calculator gets deactivated or AI gets stopped
+	 */
+	protected void stop()
+	{
+		// can be overwritten
+	}
+	
+	
+	/**
+	 * Tear down this calculator by calling stop() if required
+	 */
+	public final void tearDown()
+	{
+		if (started)
+		{
+			stop();
+			started = false;
 		}
 	}
 	

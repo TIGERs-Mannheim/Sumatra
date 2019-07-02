@@ -11,35 +11,32 @@ import java.util.Set;
 
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.statistics.MarkovChain;
-import edu.tigers.sumatra.statistics.Percentage;
-
 
 /**
- * @author Phillipp Mevenkamp <phillippmevenkamp@gmail.com>
+ * Statistics for a single metric with optional per-bot values.
  */
 @Persistent(version = 2)
 public class StatisticData
 {
-	private Map<BotID, ?> botSpecificStatistics;
-	private Object generalStatistic;
+	private final Map<Integer, ?> botSpecificStatistics;
+	private final Object generalStatistic;
 	
 	
 	@SuppressWarnings("unused")
 	private StatisticData()
 	{
+		botSpecificStatistics = new HashMap<>();
+		generalStatistic = null;
 	}
 	
 	
 	/**
-	 * This is the constructor for the StatisticsData class.
-	 * This class should be used to store data for statistics in a generic way.
+	 * Create instance with bot-specific data.
 	 * 
 	 * @param botSpecificStatistics The statistics that are different for every bot
 	 * @param generalStatistic The general statistic, this should be in the most cases the sum of the single Counts
 	 */
-	public StatisticData(final Map<BotID, ?> botSpecificStatistics, final Object generalStatistic)
+	public StatisticData(final Map<Integer, ?> botSpecificStatistics, final Object generalStatistic)
 	{
 		this.botSpecificStatistics = botSpecificStatistics;
 		this.generalStatistic = generalStatistic;
@@ -47,33 +44,21 @@ public class StatisticData
 	
 	
 	/**
-	 * This constructor will create a statistic data from a map of markov chains
+	 * Create instance without bot-specific data.
 	 * 
-	 * @param mappedChain The map of chains that should be transitioned to statistic
-	 * @param stateOne The state that is the beginning
-	 * @param stateTwo The state that is the end
+	 * @param generalStatistic The general statistic, this should be in the most cases the sum of the single Counts
 	 */
-	public <T> StatisticData(final Map<BotID, MarkovChain<T>> mappedChain, final T stateOne, final T stateTwo)
+	public StatisticData(final Object generalStatistic)
 	{
-		Integer sumTransitions = 0;
-		Map<BotID, Integer> tempList = new HashMap<>();
-		
-		for (Map.Entry<BotID, MarkovChain<T>> entry : mappedChain.entrySet())
-		{
-			Integer botTransitions = entry.getValue().getAbsoluteCountTransitions(stateOne, stateTwo);
-			tempList.put(entry.getKey(), botTransitions);
-			sumTransitions += botTransitions;
-		}
-		
-		botSpecificStatistics = tempList;
-		generalStatistic = sumTransitions;
+		this.botSpecificStatistics = new HashMap<>();
+		this.generalStatistic = generalStatistic;
 	}
 	
 	
 	/**
 	 * @return all bot ids that are referenced in this statistics
 	 */
-	public Set<BotID> getContainedBotIds()
+	public Set<Integer> getContainedBotIds()
 	{
 		return botSpecificStatistics.keySet();
 	}
@@ -84,13 +69,13 @@ public class StatisticData
 	 * 
 	 * @return Textual representation
 	 */
-	public Map<BotID, String> getTextualRepresentationOfBotStatistics()
+	public Map<Integer, String> formattedBotStatistics()
 	{
-		Map<BotID, String> textualRepresentation = new HashMap<>();
+		Map<Integer, String> textualRepresentation = new HashMap<>();
 		
-		for (Map.Entry<BotID, ?> entry : botSpecificStatistics.entrySet())
+		for (Map.Entry<Integer, ?> entry : botSpecificStatistics.entrySet())
 		{
-			textualRepresentation.put(entry.getKey(), getTextualRepresentation(entry.getValue()));
+			textualRepresentation.put(entry.getKey(), format(entry.getValue()));
 		}
 		
 		return textualRepresentation;
@@ -102,25 +87,45 @@ public class StatisticData
 	 * 
 	 * @return The String that represents the general information
 	 */
-	public String getTextualRepresenationOfGeneralStatistic()
+	public String formattedGeneralStatistic()
 	{
-		return getTextualRepresentation(generalStatistic);
+		return format(generalStatistic);
 	}
 	
 	
-	private String getTextualRepresentation(final Object o)
+	public Object getGeneralStatistics()
+	{
+		if (generalStatistic == null)
+		{
+			return "";
+		}
+		if (generalStatistic.getClass().equals(Percentage.class))
+		{
+			return ((Percentage) generalStatistic).getPercent();
+		}
+		return generalStatistic;
+	}
+	
+	
+	private String format(final Object o)
 	{
 		if (o == null)
 		{
-			return null;
+			return "";
 		}
 		
-		if (o instanceof Percentage)
+		if (o.getClass().equals(Percentage.class))
 		{
 			DecimalFormat df = new DecimalFormat("###.#%");
 			
 			return df.format(((Percentage) o).getPercent());
 		}
+		
+		if (o.getClass().equals(Double.class))
+		{
+			return String.format("%.2f", (Double) o);
+		}
+		
 		return o.toString();
 	}
 }

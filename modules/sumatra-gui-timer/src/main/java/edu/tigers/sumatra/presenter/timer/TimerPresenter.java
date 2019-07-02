@@ -6,20 +6,19 @@ package edu.tigers.sumatra.presenter.timer;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Optional;
 
 import javax.swing.Timer;
 
-import edu.tigers.sumatra.view.timer.TimerChartPanel;
-import edu.tigers.sumatra.view.timer.TimerPanel;
 import org.apache.log4j.Logger;
 
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.timer.ATimer;
 import edu.tigers.sumatra.timer.ITimerObserver;
 import edu.tigers.sumatra.timer.SumatraTimer;
 import edu.tigers.sumatra.timer.TimerInfo;
+import edu.tigers.sumatra.view.timer.TimerChartPanel;
+import edu.tigers.sumatra.view.timer.TimerPanel;
 import edu.tigers.sumatra.views.ASumatraViewPresenter;
 import edu.tigers.sumatra.views.ISumatraView;
 
@@ -60,25 +59,18 @@ public class TimerPresenter extends ASumatraViewPresenter implements ITimerObser
 		switch (state)
 		{
 			case ACTIVE:
-			{
-				try
+				final Optional<SumatraTimer> timerOpt = SumatraModel.getInstance().getModuleOpt(SumatraTimer.class);
+				if (timerOpt.isPresent())
 				{
-					timer = (SumatraTimer) SumatraModel.getInstance().getModule(ATimer.class);
+					timer = timerOpt.get();
 					timer.addObserver(this);
 					
-				} catch (final ModuleNotFoundException err)
-				{
-					log.error("Timer Module not found!", err);
+					updateTimer = new Timer(TIMER_UPDATE_RATE, new Runner());
+					updateTimer.start();
 				}
-				
-				updateTimer = new Timer(TIMER_UPDATE_RATE, new Runner());
-				updateTimer.start();
-				
 				break;
-			}
 			
 			case RESOLVED:
-			{
 				if (updateTimer != null)
 				{
 					updateTimer.stop();
@@ -89,9 +81,8 @@ public class TimerPresenter extends ASumatraViewPresenter implements ITimerObser
 				}
 				
 				chartPanel.clearChart();
-				
 				break;
-			}
+			
 			default:
 		}
 		
@@ -110,6 +101,10 @@ public class TimerPresenter extends ASumatraViewPresenter implements ITimerObser
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
+			if (timer == null)
+			{
+				return;
+			}
 			try
 			{
 				TimerInfo info = timer.getTimerInfo();

@@ -4,9 +4,15 @@
 
 package edu.tigers.sumatra.ai.pandora.roles.offense.attacker;
 
+import edu.tigers.sumatra.ai.metis.offense.OffensiveMath;
 import edu.tigers.sumatra.ai.metis.offense.action.situation.EOffensiveExecutionStatus;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.IPenaltyArea;
+import edu.tigers.sumatra.wp.data.ITrackedBot;
+
+import java.util.stream.Collectors;
 
 
 /**
@@ -15,7 +21,10 @@ import edu.tigers.sumatra.ai.pandora.roles.ERole;
 public class AttackerRole extends ARole
 {
 	
+	private String oldState = "";
 	
+	private IPenaltyArea area = Geometry.getPenaltyAreaTheir().withMargin(Geometry.getBotRadius() + 20);
+
 	public AttackerRole()
 	{
 		super(ERole.ATTACKER);
@@ -29,9 +38,11 @@ public class AttackerRole extends ARole
 		ProtectBallState protectBallState = new ProtectBallState(this);
 		SingleTouchKickState singleTouchKickState = new SingleTouchKickState(this);
 		RunUpChipKickState runUpChipKickState = new RunUpChipKickState(this);
+		FinisherMoveState finisherMoveState = new FinisherMoveState(this);
 		
 		addTransition(EBallHandlingEvent.BALL_MOVES, approachBallLineState);
 		addTransition(EBallHandlingEvent.BALL_MOVES_TOWARDS_ME, approachBallLineState);
+		addTransition(EBallHandlingEvent.OPPONENT_BETWEEN_ME_AND_BALL, approachBallLineState);
 		
 		addTransition(EBallHandlingEvent.BALL_MOVES_AWAY_FROM_ME, approachAndStopBallSkill);
 		addTransition(EBallHandlingEvent.BALL_KICKED, approachAndStopBallSkill);
@@ -51,9 +62,13 @@ public class AttackerRole extends ARole
 		
 		addTransition(EBallHandlingEvent.BALL_POSSESSION_THREATENED, protectBallState);
 		addTransition(EBallHandlingEvent.BALL_POSSESSION_SAVE, touchKickState);
+		addTransition(EBallHandlingEvent.FOUND_SUITABLE_STRATEGY, touchKickState);
 		
 		addTransition(EBallHandlingEvent.FREE_KICK, singleTouchKickState);
 		addTransition(EBallHandlingEvent.SWITCH_TO_RUN_UP, runUpChipKickState);
+		
+		addTransition(EBallHandlingEvent.START_FINISHER_MOVE, finisherMoveState);
+		addTransition(EBallHandlingEvent.FINISHER_MOVE_EXECUTED, touchKickState);
 		
 		setInitialState(approachBallLineState);
 	}
@@ -70,10 +85,26 @@ public class AttackerRole extends ARole
 	
 	public EOffensiveExecutionStatus getExecutionStatus()
 	{
-		if (getPos().distanceTo(getBall().getPos()) > 200)
+		boolean switchedState = !oldState.equals(getCurrentState().getIdentifier());
+		oldState = getCurrentState().getIdentifier();
+		if (getPos().distanceTo(getBall().getPos()) > 200 || switchedState)
 		{
 			return EOffensiveExecutionStatus.GETTING_READY;
 		}
 		return EOffensiveExecutionStatus.IMMINENT;
+	}
+	
+	
+	@Override
+	protected void afterUpdate()
+	{
+		super.afterUpdate();
+		
+		// determine critical foe bots
+		getCurrentSkill().getMoveCon().setCriticalFoeBots(
+				getWFrame().getFoeBots().values().stream()
+						.filter(b -> OffensiveMath.isBotCritical(b.getPos(), area))
+						.map(ITrackedBot::getBotId)
+						.collect(Collectors.toSet()));
 	}
 }

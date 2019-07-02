@@ -4,11 +4,15 @@
 
 package edu.tigers.sumatra.math.line;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import edu.tigers.sumatra.math.AngleMath;
@@ -37,14 +41,22 @@ import edu.tigers.sumatra.math.vector.VectorMath;
 public class LineMathTest
 {
 	
-	private static final Random RANDOM_GENERATOR = new Random(0);
-	private static final double	TEST_ACCURACY		= 1e-4;
-	private static final double	TEST_ACCURACY_SQR	= TEST_ACCURACY * TEST_ACCURACY;
+	private Random random;
+	private static final double TEST_ACCURACY = 1e-3;
+	private static final double TEST_ACCURACY_SQR = TEST_ACCURACY * TEST_ACCURACY;
 	
 	
 	private Vector2 createRandomVector(final double scale)
 	{
-		return Vector2.fromXY(scale * RANDOM_GENERATOR.nextDouble(), scale * RANDOM_GENERATOR.nextDouble());
+		return Vector2.fromXY(scale * random.nextDouble(), scale * random.nextDouble());
+	}
+	
+	
+	@Before
+	public void before()
+	{
+		// we want a fresh random generator for each test, because the test case ordering is not defined
+		random = new Random(0);
 	}
 	
 	
@@ -102,7 +114,7 @@ public class LineMathTest
 	public void testDistancePPSqr()
 	{
 		
-		final IVector2 testpoints[][] = {
+		final IVector2[][] testpoints = {
 				{ createRandomVector(1e5), createRandomVector(1e5) },
 				{ createRandomVector(1e4), createRandomVector(1e4) },
 				{ createRandomVector(1e3), createRandomVector(1e3) },
@@ -176,8 +188,8 @@ public class LineMathTest
 			Assert.assertEquals(Math.abs(scalefactor * SumatraMath.sin(idx.get(i))), distanceX2, TEST_ACCURACY_SQR);
 			Assert.assertEquals(Math.abs(scalefactor * SumatraMath.cos(idx.get(i))), distanceY2, TEST_ACCURACY_SQR);
 			
-			Assert.assertTrue(distanceX == distanceX2);
-			Assert.assertTrue(distanceY == distanceY2);
+			assertThat(distanceX).isCloseTo(distanceX2, within(TEST_ACCURACY));
+			assertThat(distanceY).isCloseTo(distanceY2, within(TEST_ACCURACY));
 		}
 	}
 	
@@ -282,7 +294,7 @@ public class LineMathTest
 		
 		for (long i = 0; i < 1e6; ++i)
 		{
-			final double lambda = RANDOM_GENERATOR.nextDouble();
+			final double lambda = random.nextDouble();
 			intersectionTest(lambda * 100, intersectionL);
 			intersectionTest(lambda, intersectionP);
 		}
@@ -311,13 +323,13 @@ public class LineMathTest
 	@Test
 	public void testStepAlongLine()
 	{
-		for (double length = 0.0; length < 1000; length += 0.001)
+		for (double length = 0.0; length < 1000; length += 1)
 		{
-			final double s1 = RANDOM_GENERATOR.nextDouble() - 0.5;
-			final double s2 = RANDOM_GENERATOR.nextDouble() - 0.5;
-			final double r1 = RANDOM_GENERATOR.nextDouble();
-			final double r2 = RANDOM_GENERATOR.nextDouble();
-			Vector2 start = Vector2.fromXY(s1 * 1e6, s2 * 1e6);
+			final double s1 = random.nextDouble() - 0.5;
+			final double s2 = random.nextDouble() - 0.5;
+			final double r1 = random.nextDouble();
+			final double r2 = random.nextDouble();
+			Vector2 start = Vector2.fromXY(s1 * 1e4, s2 * 1e4);
 			if ((r1 + r2) < TEST_ACCURACY)
 			{
 				continue;
@@ -329,11 +341,9 @@ public class LineMathTest
 			{
 				final IVector2 result = LineMath.stepAlongLine(start, end, i);
 				final IVector2 expected = endD.scaleToNew(i).add(start);
-				Assert.assertTrue(expected.subtractNew(result).isZeroVector());
+				assertThat(result).isEqualTo(expected);
 			}
 		}
-		
-		
 	}
 	
 	
@@ -511,7 +521,7 @@ public class LineMathTest
 			
 			Vector2 point = Vector2.fromXY(2, 7); // TestPunkt
 			
-			Assert.assertEquals(circle.isPointInShape(point), false);
+			assertThat(circle.isPointInShape(point)).isFalse();
 		}
 		
 		

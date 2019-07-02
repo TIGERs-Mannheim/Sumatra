@@ -18,15 +18,15 @@ import edu.tigers.sumatra.wp.util.IRobotInfoProvider;
 /**
  * This is the base class for all prediction-implementations, providing basic connections to the predecessor/successor
  * in data-flow and an observable to spread messages.
- * 
+ *
  * @author Gero
  */
 public abstract class AWorldPredictor extends AModule implements ICamFrameObserver, IConfigObserver
 {
 	protected final List<IWorldFrameObserver> observers = new CopyOnWriteArrayList<>();
 	protected final List<IWorldFrameObserver> consumers = new CopyOnWriteArrayList<>();
-	
-	
+
+
 	/**
 	 * Add an observer for worldFrames.<br>
 	 * Observers are notified after all consumers.
@@ -40,8 +40,8 @@ public abstract class AWorldPredictor extends AModule implements ICamFrameObserv
 	{
 		observers.add(observer);
 	}
-	
-	
+
+
 	/**
 	 * @param observer that is registered atm.
 	 */
@@ -50,8 +50,8 @@ public abstract class AWorldPredictor extends AModule implements ICamFrameObserv
 	{
 		observers.remove(observer);
 	}
-	
-	
+
+
 	/**
 	 * Add a consumer for worldFrames.<br>
 	 * Consumers are notified <b>before</b> observers.
@@ -65,8 +65,8 @@ public abstract class AWorldPredictor extends AModule implements ICamFrameObserv
 	{
 		consumers.add(consumer);
 	}
-	
-	
+
+
 	/**
 	 * @param consumer that is registered atm.
 	 */
@@ -75,8 +75,8 @@ public abstract class AWorldPredictor extends AModule implements ICamFrameObserv
 	{
 		consumers.remove(consumer);
 	}
-	
-	
+
+
 	/**
 	 * Notify observers about a new shape map
 	 *
@@ -92,8 +92,8 @@ public abstract class AWorldPredictor extends AModule implements ICamFrameObserv
 			o.onNewShapeMap(timestamp, unmodifiableShapeMap, source);
 		}
 	}
-	
-	
+
+
 	public final void notifyClearShapeMap(String source)
 	{
 		for (IWorldFrameObserver o : observers)
@@ -101,7 +101,10 @@ public abstract class AWorldPredictor extends AModule implements ICamFrameObserv
 			o.onClearShapeMap(source);
 		}
 	}
-	
-	
+
+
 	public abstract void setRobotInfoProvider(IRobotInfoProvider robotInfoProvider);
+
+
+	public abstract void reset();
 }

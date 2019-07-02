@@ -4,6 +4,7 @@
 
 package edu.tigers.sumatra.presenter.replay;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -21,6 +22,8 @@ import edu.tigers.sumatra.Referee;
 import edu.tigers.sumatra.clock.ThreadUtil;
 import edu.tigers.sumatra.persistence.BerkeleyDb;
 import edu.tigers.sumatra.referee.data.RefereeMsg;
+import edu.tigers.sumatra.referee.gameevent.EGameEvent;
+import edu.tigers.sumatra.referee.gameevent.IGameEvent;
 import edu.tigers.sumatra.snapshot.SnapshotController;
 import edu.tigers.sumatra.thread.NamedThreadFactory;
 import edu.tigers.sumatra.view.replay.IReplayControlPanelObserver;
@@ -55,12 +58,15 @@ public class ReplayPresenter extends AMainPresenter
 	private VisualizerPresenter visualizerPresenter;
 	
 	private boolean skipStoppedGame = false;
-	private boolean searchKickoff = false;
+	private Referee.SSL_Referee.Command searchCommand = null;
+	private EGameEvent searchGameEvent = null;
 	private boolean skipBallPlacement = false;
 	
 	
 	/**
 	 * Default
+	 * 
+	 * @param mainFrame e.g. ReplayWindow.java
 	 */
 	public ReplayPresenter(AMainFrame mainFrame)
 	{
@@ -122,6 +128,7 @@ public class ReplayPresenter extends AMainPresenter
 	public void start(final BerkeleyDb db, long startTime)
 	{
 		this.db = db;
+		getMainFrame().setTitle(new File(db.getDbPath()).getName());
 		refreshThread = new RefreshThread(startTime);
 		visualizerPresenter.start();
 		executor.execute(refreshThread);
@@ -237,9 +244,16 @@ public class ReplayPresenter extends AMainPresenter
 	
 	
 	@Override
-	public void onSearchKickoff(final boolean enable)
+	public void onSearchCommand(final Referee.SSL_Referee.Command command)
 	{
-		this.searchKickoff = enable;
+		this.searchCommand = command;
+	}
+	
+	
+	@Override
+	public void onSearchGameEvent(final EGameEvent gameEvent)
+	{
+		this.searchGameEvent = gameEvent;
 	}
 	
 	
@@ -248,13 +262,14 @@ public class ReplayPresenter extends AMainPresenter
 	{
 		this.skipStoppedGame = enable;
 	}
-
+	
+	
 	@Override
 	public void onSetSkipBallPlacement(final boolean enable)
-    {
-        this.skipBallPlacement = enable;
-    }
-
+	{
+		this.skipBallPlacement = enable;
+	}
+	
 	
 	@Override
 	public void onSnapshot()
@@ -408,16 +423,18 @@ public class ReplayPresenter extends AMainPresenter
 			for (; t < recEndTime; t += 250_000_000)
 			{
 				boolean skipStop = !skipStoppedGame || !skipFrameStoppedGame(db.get(WorldFrameWrapper.class, t));
-				boolean kickoff = !searchKickoff || !skipFrameKickoff(db.get(WorldFrameWrapper.class, t));
+				boolean command = searchCommand == null || !skipFrameCommand(db.get(WorldFrameWrapper.class, t));
+				boolean gameEvent = searchGameEvent == null || !skipFrameGameEvent(db.get(WorldFrameWrapper.class, t));
 				boolean skipPlacement = !skipBallPlacement || !skipFrameBallPlacement(db.get(WorldFrameWrapper.class, t));
-
-				if (skipStop && kickoff && skipPlacement)
+				
+				if (skipStop && command && gameEvent && skipPlacement)
 				{
 					jumpAbsoluteTime(t);
 					break;
 				}
 			}
-			searchKickoff = false;
+			searchCommand = null;
+			searchGameEvent = null;
 		}
 		
 		
@@ -426,19 +443,27 @@ public class ReplayPresenter extends AMainPresenter
 			RefereeMsg refMsg = wfw.getRefereeMsg();
 			return refMsg != null && wfw.getGameState().isStoppedGame();
 		}
-
+		
+		
 		private boolean skipFrameBallPlacement(final WorldFrameWrapper wfw)
 		{
 			return wfw.getGameState().isBallPlacement();
 		}
 		
 		
-		private boolean skipFrameKickoff(final WorldFrameWrapper wfw)
+		private boolean skipFrameCommand(final WorldFrameWrapper wfw)
 		{
 			RefereeMsg refMsg = wfw.getRefereeMsg();
-			return (refMsg != null)
-					&& !((refMsg.getCommand() == Referee.SSL_Referee.Command.PREPARE_KICKOFF_BLUE)
-							|| (refMsg.getCommand() == Referee.SSL_Referee.Command.PREPARE_KICKOFF_YELLOW));
+			return refMsg != null && refMsg.getCommand() != searchCommand;
+		}
+		
+		
+		private boolean skipFrameGameEvent(final WorldFrameWrapper wfw)
+		{
+			RefereeMsg refMsg = wfw.getRefereeMsg();
+			return refMsg != null && refMsg.getGameEvents().stream()
+					.map(IGameEvent::getType)
+					.noneMatch(gameEvent -> gameEvent == searchGameEvent);
 		}
 		
 		

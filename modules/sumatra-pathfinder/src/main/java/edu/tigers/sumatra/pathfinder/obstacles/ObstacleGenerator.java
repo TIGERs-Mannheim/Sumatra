@@ -4,10 +4,10 @@
 
 package edu.tigers.sumatra.pathfinder.obstacles;
 
-import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import com.github.g3force.configurable.ConfigRegistration;
@@ -17,15 +17,12 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
-import edu.tigers.sumatra.math.rectangle.Rectangle;
 import edu.tigers.sumatra.math.tube.Tube;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.pathfinder.PathFinderPrioMap;
-import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.trajectory.TrajectoryWithTime;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
@@ -33,19 +30,19 @@ import edu.tigers.sumatra.wp.data.WorldFrame;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Generator for all the obstacles that are required during a regular match.
  */
 public class ObstacleGenerator
 {
 	private boolean usePenAreaOur = true;
 	private boolean usePenAreaTheir = false;
-	private boolean useGoalPostsOur = false;
-	private boolean useGoalPostsTheir = false;
+	private boolean useField = true;
+	private boolean useGoalPosts = false;
 	private boolean useTheirBots = true;
 	private boolean useOurBots = true;
 	private boolean useBall = true;
-	private boolean useFieldBorders = true;
 	private Set<BotID> ignoredBots = new HashSet<>();
+	private Set<BotID> criticalFoeBots = new HashSet<>();
 	
 	@Configurable(defValue = "200.0")
 	private static double defSecDistBall = 200;
@@ -56,30 +53,18 @@ public class ObstacleGenerator
 	@Configurable(defValue = "0.5")
 	private static double opponentBotTimeHorz = 0.5;
 	
+	@Configurable(defValue = "2.0", comment = "Assumed placement pass kick speed for obstacle")
+	private static double placementKickSpeed = 2.0;
+	
 	
 	private double secDistBall = defSecDistBall;
 	
 	private final transient List<IObstacle> obsGoalPostOur = new ArrayList<>();
 	private final transient List<IObstacle> obsGoalPostTheir = new ArrayList<>();
 	
-	private static List<Color> colorMap = new ArrayList<>(12);
-	
 	static
 	{
 		ConfigRegistration.registerClass("sisyphus", ObstacleGenerator.class);
-		
-		colorMap.add(Color.LIGHT_GRAY);
-		colorMap.add(Color.GRAY);
-		colorMap.add(Color.DARK_GRAY);
-		colorMap.add(Color.BLACK);
-		colorMap.add(Color.YELLOW);
-		colorMap.add(Color.MAGENTA);
-		colorMap.add(Color.CYAN);
-		colorMap.add(Color.ORANGE);
-		colorMap.add(Color.GREEN);
-		colorMap.add(Color.PINK);
-		colorMap.add(Color.BLUE);
-		colorMap.add(Color.RED);
 	}
 	
 	
@@ -99,51 +84,49 @@ public class ObstacleGenerator
 		IVector2 gplb = gpl.addNew(Vector2.fromXY(-Geometry.getGoalOur().getDepth(), 0));
 		IVector2 gpr = Geometry.getGoalOur().getRightPost();
 		IVector2 gprb = gpr.addNew(Vector2.fromXY(-Geometry.getGoalOur().getDepth(), 0));
-		obsGoalPostOur.add(new RectangleObstacle(Rectangle
-				.aroundLine(gpl, gplb, Geometry.getBotRadius())));
-		obsGoalPostOur.add(new RectangleObstacle(Rectangle
-				.aroundLine(gpr, gprb, Geometry.getBotRadius())));
-		obsGoalPostOur.add(new RectangleObstacle(Rectangle.aroundLine(gplb, gprb, Geometry
-				.getBotRadius())));
+		obsGoalPostOur.add(new TubeObstacle(Tube.create(gpl, gplb, Geometry.getBotRadius())));
+		obsGoalPostOur.add(new TubeObstacle(Tube.create(gpr, gprb, Geometry.getBotRadius())));
+		obsGoalPostOur.add(new TubeObstacle(Tube.create(gplb, gprb, Geometry.getBotRadius())));
 	}
 	
 	
 	private void createGoalPostTheir()
 	{
 		IVector2 gpl = Geometry.getGoalTheir().getLeftPost();
-		IVector2 gplb = gpl.addNew(Vector2.fromXY(Geometry.getGoalOur().getDepth(), 0));
+		IVector2 gplb = gpl.addNew(Vector2.fromXY(Geometry.getGoalTheir().getDepth(), 0));
 		IVector2 gpr = Geometry.getGoalTheir().getRightPost();
-		IVector2 gprb = gpr.addNew(Vector2.fromXY(Geometry.getGoalOur().getDepth(), 0));
-		obsGoalPostTheir.add(new RectangleObstacle(Rectangle.aroundLine(gpl, gplb, Geometry
-				.getBotRadius())));
-		obsGoalPostTheir.add(new RectangleObstacle(Rectangle.aroundLine(gpr, gprb, Geometry
-				.getBotRadius())));
-		obsGoalPostTheir.add(new RectangleObstacle(Rectangle.aroundLine(gplb, gprb, Geometry
-				.getBotRadius())));
+		IVector2 gprb = gpr.addNew(Vector2.fromXY(Geometry.getGoalTheir().getDepth(), 0));
+		obsGoalPostTheir.add(new TubeObstacle(Tube.create(gpl, gplb, Geometry.getBotRadius())));
+		obsGoalPostTheir.add(new TubeObstacle(Tube.create(gpr, gprb, Geometry.getBotRadius())));
+		obsGoalPostTheir.add(new TubeObstacle(Tube.create(gplb, gprb, Geometry.getBotRadius())));
 	}
 	
 	
-	private List<IObstacle> genOurBots(final WorldFrame wFrame, final BotID botId, final PathFinderPrioMap prioMap,
-			final IObstacle obs)
+	private List<IObstacle> genOurBots(
+			final WorldFrame wFrame,
+			final BotID botId,
+			final PathFinderPrioMap prioMap,
+			final MovingRobot self)
 	{
 		List<IObstacle> obstacles = new ArrayList<>();
 		for (ITrackedBot bot : wFrame.getTigerBotsVisible().values())
 		{
 			if (bot.getBotId().equals(botId) ||
 					ignoredBots.contains(bot.getBotId()) ||
-					!obs.isPointCollidingWithObstacle(bot.getPos(), tHorz))
+					!self.isPointInRobot(bot.getPos(), tHorz))
 			{
 				continue;
 			}
 			
-			double radius = 2 * Geometry.getBotRadius();
+			double radius = (2 * Geometry.getBotRadius()) - 10;
 			
 			final IObstacle botObs;
 			
 			if (!bot.getRobotInfo().getTrajectory().isPresent()
 					|| prioMap.isEqual(botId, bot.getBotId()))
 			{
-				botObs = new SimpleTimeAwareRobotObstacle(bot, radius);
+				Tube tube = Tube.create(bot.getPos(), bot.getPosByTime(opponentBotTimeHorz), radius);
+				botObs = new TubeObstacle(tube);
 			} else if (!prioMap.isPreferred(botId, bot.getBotId()))
 			{
 				TrajectoryWithTime<IVector3> trajectoryWithTime = new TrajectoryWithTime<>(
@@ -153,13 +136,13 @@ public class ObstacleGenerator
 						wFrame.getTimestamp(), radius);
 			} else
 			{
-				ITrackedBot self = wFrame.getTiger(botId);
-				double dist = self.getPos().distanceTo(bot.getPos());
+				ITrackedBot tBot = wFrame.getTiger(botId);
+				double dist = tBot.getPos().distanceTo(bot.getPos());
 				if (dist > 250)
 				{
 					radius = Geometry.getBotRadius();
 				}
-				botObs = new CircleObstacle(Circle.createCircle(bot.getPos(), radius));
+				botObs = new GenericCircleObstacle(Circle.createCircle(bot.getPos(), radius));
 			}
 			obstacles.add(botObs);
 		}
@@ -168,54 +151,54 @@ public class ObstacleGenerator
 	
 	
 	/**
-	 * @param wFrame
-	 * @param botId
-	 * @param prioMap
-	 * @param gameState
-	 * @return
+	 * Generate all required obstacles based on the current generator state and given input.
+	 *
+	 * @param wFrame the current world frame
+	 * @param botId the id of the bot that the obstacle are for
+	 * @param prioMap the prioMap to use
+	 * @param gameState the current game state
+	 * @return a list of the generated obstacles
 	 */
-	public List<IObstacle> generateObstacles(final WorldFrame wFrame,
+	public List<IObstacle> generateObstacles(
+			final WorldFrame wFrame,
 			final BotID botId,
 			final PathFinderPrioMap prioMap,
 			final GameState gameState)
 	{
 		ITrackedBot tBot = wFrame.getBot(botId);
-		IObstacle obs = getSelfInvertedObstacle(tBot);
+		MovingRobot self = new MovingRobot(tBot, tHorz, Geometry.getBotRadius());
 		
-		List<IObstacle> obstacles = generateStaticObstacles(obs, gameState);
-		
+		List<IObstacle> obstacles = generateStaticObstacles(self, gameState);
 		
 		if (useOurBots)
 		{
-			obstacles.addAll(genOurBots(wFrame, botId, prioMap, obs));
+			obstacles.addAll(genOurBots(wFrame, botId, prioMap, self));
 		}
-		
 		
 		if (useTheirBots)
 		{
 			for (ITrackedBot bot : wFrame.getFoeBots().values())
 			{
 				if (ignoredBots.contains(bot.getBotId()) ||
-						!obs.isPointCollidingWithObstacle(bot.getPos(), tHorz))
+						!self.isPointInRobot(bot.getPos(), tHorz))
 				{
 					continue;
 				}
 				
 				double radius = 2 * Geometry.getBotRadius();
 				Tube tube = Tube.create(bot.getPos(), bot.getPosByTime(opponentBotTimeHorz), radius);
-				obstacles.add(new TubeObstacle(tube));
+				TubeObstacle obstacle = new TubeObstacle(tube);
+				if (criticalFoeBots.contains(bot.getBotId()))
+				{
+					obstacle.setCritical(true);
+				}
+				obstacles.add(obstacle);
 			}
 		}
 		
-		if (useBall && obs.isPointCollidingWithObstacle(wFrame.getBall().getPos(), tHorz))
+		if (useBall && self.isPointInRobot(wFrame.getBall().getPos(), tHorz))
 		{
 			obstacles.add(new SimpleTimeAwareBallObstacle(wFrame.getBall(), secDistBall));
-		}
-		
-		Color color = getColorForBotId(botId);
-		for (IObstacle o : obstacles)
-		{
-			o.setColor(color);
 		}
 		
 		return obstacles;
@@ -228,97 +211,55 @@ public class ObstacleGenerator
 	}
 	
 	
-	/**
-	 * @param wFrame
-	 * @param gameState
-	 * @return
-	 */
 	public List<IObstacle> generateGameStateObstacles(final WorldFrame wFrame,
 			final GameState gameState)
 	{
 		List<IObstacle> obs = new ArrayList<>();
 		
-		if (gameState.getState() == EGameState.BALL_PLACEMENT
-				&& placementBotNearBall(wFrame))
+		if (gameState.isBallPlacement() || gameState.isDistanceToBallRequired())
 		{
-			IVector2 placementPos = gameState.getBallPlacementPositionForUs();
-			obs.add(new LineObstacle(Line.fromPoints(wFrame.getBall().getPos(), placementPos),
-					getEffectiveBotToBallDistanceOnStop()));
-		} else if (gameState.isDistanceToBallRequired())
-		{
-			obs.add(new CircleObstacle(Circle.createCircle(wFrame.getBall().getPos(),
-					getEffectiveBotToBallDistanceOnStop())));
+			IVector2 ballPos = wFrame.getBall().getPos();
+			IVector2 placementPos = Optional.ofNullable(gameState.getBallPlacementPositionForUs()).orElse(ballPos);
+			final SimpleTimeAwarePassObstacle obstacle = new SimpleTimeAwarePassObstacle(ballPos, placementKickSpeed,
+					placementPos,
+					getEffectiveBotToBallDistanceOnStop());
+			// make the obstacle critical to avoid DefenderTooCloseToBall violations
+			obstacle.setCritical(true);
+			obs.add(obstacle);
 		}
 		return obs;
 	}
 	
 	
-	private boolean placementBotNearBall(final WorldFrame wFrame)
-	{
-		return wFrame.getBots().values().stream()
-				.map(ITrackedBot::getPos)
-				.map(p -> p.distanceToSqr(wFrame.getBall().getPos()))
-				.sorted()
-				.findFirst()
-				.map(Math::sqrt)
-				.map(d -> d < 200)
-				.orElse(false);
-	}
-	
-	
-	/**
-	 * @param botId
-	 * @return
-	 */
-	private static Color getColorForBotId(final BotID botId)
-	{
-		return colorMap.get(botId.getNumber());
-	}
-	
-	
-	/**
-	 * @param tBot
-	 * @return
-	 */
-	private IObstacle getSelfInvertedObstacle(final ITrackedBot tBot)
-	{
-		return new MovingRobotObstacle(tBot, tHorz, Geometry.getBotRadius());
-	}
-	
-	
-	/**
-	 * @param obs
-	 * @return
-	 */
-	private List<IObstacle> generateStaticObstacles(final IObstacle obs, final GameState gameState)
+	private List<IObstacle> generateStaticObstacles(final MovingRobot self, final GameState gameState)
 	{
 		List<IObstacle> obstacles = new ArrayList<>();
 		
-		if (useFieldBorders)
+		if (useField)
 		{
-			double margin = Geometry.getBotRadius();
-			IRectangle rect = Geometry.getFieldWBorders().withMargin(-margin);
+			IRectangle rect = Geometry.getFieldWBorders().withMargin(-Geometry.getBotRadius());
 			obstacles.add(new FieldBorderObstacle(rect));
 		}
-		if (useGoalPostsOur &&
-				obs.isPointCollidingWithObstacle(Geometry.getGoalOur().getCenter(), tHorz))
+		
+		if (useGoalPosts)
 		{
-			obstacles.addAll(obsGoalPostOur);
-		}
-		if (useGoalPostsTheir &&
-				obs.isPointCollidingWithObstacle(Geometry.getGoalTheir().getCenter(), tHorz))
-		{
-			obstacles.addAll(obsGoalPostTheir);
+			if (self.isPointInRobot(Geometry.getGoalOur().getCenter(), tHorz))
+			{
+				obstacles.addAll(obsGoalPostOur);
+			} else if (self.isPointInRobot(Geometry.getGoalTheir().getCenter(), tHorz))
+			{
+				obstacles.addAll(obsGoalPostTheir);
+			}
 		}
 		if (usePenAreaOur)
 		{
-			double margin = Geometry.getPenaltyAreaMargin();
+			double margin = Geometry.getBotRadius() + Geometry.getPenaltyAreaMargin();
 			obstacles.add(new PenaltyAreaObstacle(Geometry.getPenaltyAreaOur().withMargin(margin)));
 		}
 		if (usePenAreaTheir)
 		{
 			double margin;
-			if (gameState.isStandardSituation())
+			if (gameState.isStandardSituation() || gameState.isStoppedGame())
 			{
 				margin = RuleConstraints.getBotToPenaltyAreaMarginStandard() + Geometry.getBotRadius();
 			} else
@@ -332,8 +273,10 @@ public class ObstacleGenerator
 	
 	
 	/**
-	 * @param vel
-	 * @return
+	 * Get the extra margin based on the current velocity
+	 *
+	 * @param vel current velocity
+	 * @return extra margin
 	 */
 	public static double getExtraMargin(final double vel)
 	{
@@ -366,9 +309,9 @@ public class ObstacleGenerator
 	/**
 	 * @param useGoalPosts the useGoalPosts to set
 	 */
-	public final void setUseGoalPostsOur(final boolean useGoalPosts)
+	public final void setUseGoalPosts(final boolean useGoalPosts)
 	{
-		useGoalPostsOur = useGoalPosts;
+		this.useGoalPosts = useGoalPosts;
 	}
 	
 	
@@ -391,39 +334,11 @@ public class ObstacleGenerator
 	
 	
 	/**
-	 * @param useBots the useBots to set
-	 */
-	public final void setUseBots(final boolean useBots)
-	{
-		useTheirBots = useBots;
-		useOurBots = useBots;
-	}
-	
-	
-	/**
 	 * @param useBall the useBall to set
 	 */
 	public final void setUseBall(final boolean useBall)
 	{
 		this.useBall = useBall;
-	}
-	
-	
-	/**
-	 * @param useGoalPostsTheir the useGoalPostsTheir to set
-	 */
-	public final void setUseGoalPostsTheir(final boolean useGoalPostsTheir)
-	{
-		this.useGoalPostsTheir = useGoalPostsTheir;
-	}
-	
-	
-	/**
-	 * @param useFieldBorders the useFieldBorders to set
-	 */
-	public final void setUseFieldBorders(final boolean useFieldBorders)
-	{
-		this.useFieldBorders = useFieldBorders;
 	}
 	
 	
@@ -439,5 +354,17 @@ public class ObstacleGenerator
 	public void setIgnoredBots(final Set<BotID> ignoredBots)
 	{
 		this.ignoredBots = ignoredBots;
+	}
+	
+	
+	public void setUseField(final boolean useField)
+	{
+		this.useField = useField;
+	}
+	
+	
+	public void setCriticalFoeBots(final Set<BotID> criticalFoeBots)
+	{
+		this.criticalFoeBots = criticalFoeBots;
 	}
 }

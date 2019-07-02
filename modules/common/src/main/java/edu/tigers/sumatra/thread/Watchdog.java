@@ -21,18 +21,21 @@ public class Watchdog
 	private boolean reset = false;
 	private int period;
 	private Thread watchdogThread = null;
+	private final String name;
 	
 	
 	/**
 	 * @param period
+	 * @param name
 	 */
-	public Watchdog(final int period)
+	public Watchdog(final int period, final String name)
 	{
 		this.period = period;
+		this.name = name;
 	}
 	
 	
-	private void addObserver(final IWatchdogObserver o)
+	public void addObserver(final IWatchdogObserver o)
 	{
 		observers.add(o);
 	}
@@ -57,15 +60,12 @@ public class Watchdog
 	
 	
 	/**
-	 * @param o
 	 */
-	public void start(final IWatchdogObserver o)
+	public void start()
 	{
 		stop();
 		
-		addObserver(o);
-		
-		watchdogThread = new Thread(new WatchdogRun(), "Watchdog " + o.getName());
+		watchdogThread = new Thread(new WatchdogRun(), "Watchdog " + name);
 		watchdogThread.start();
 	}
 	

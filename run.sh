@@ -1,28 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-EXEC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-if ! type mvn &> /dev/null; then
-	echo "Please add the maven executable to your \$PATH"
-	exit 1
+if [[ ! -d "modules/sumatra-main/target" ]]; then
+    echo "Make sure to run ./build.sh first! It must also be executed after a code update or you will run with the old version."
+    exit 1
 fi
 
-if [ ! -d "repository" ]; then
-    ./build.sh
-fi
+args="$@"
 
-cd $EXEC_DIR
+export CLASSPATH="modules/sumatra-main/target/lib/*"
+JAVA_OPTS="-Xms64m -Xmx4G -server -Xnoclassgc -Xverify:none -Dsun.java2d.d3d=false -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true -XX:-OmitStackTraceInFastThrow -XX:+AggressiveOpts"
 
-mvn -pl modules/sumatra-main exec:exec \
-    -Dmaven.repo.local=repository \
-    --no-snapshot-updates \
-    -Dexec.args=" \
-    -Xms128m -Xmx4G -server -Xnoclassgc -Xverify:none -Dsun.java2d.d3d=false -XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true -XX:-OmitStackTraceInFastThrow -XX:+AggressiveOpts \
-    -classpath %classpath \
-    edu.tigers.sumatra.Sumatra"
-
-if [ "$?" != "0" ]; then
-	echo
-	echo
-	echo "Launching the program failed. Did you build the application using 'mvn install'???'"
-fi
+java ${JAVA_OPTS} edu.tigers.sumatra.Sumatra $args

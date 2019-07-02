@@ -11,18 +11,18 @@ import edu.tigers.sumatra.math.SumatraMath;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Global constants for the defense. Try to keep this class small and only put constants here, if they
+ * really must used at different places.
  */
 public final class DefenseConstants
 {
-	
 	@Configurable(comment = "Minimum lookahead used for bots [s]", defValue = "0.1")
 	private static double minLookaheadBotThreats = 0.1;
 	
 	@Configurable(comment = "Maximum lookahead used for bots [s]", defValue = "0.2")
 	private static double maxLookaheadBotThreats = 0.2;
 	
-	@Configurable(comment = "Velocity which uses the maximum lookahead for the opposing teams bots[m/s]", defValue = "4.0")
+	@Configurable(comment = "Velocity [m/s] which uses the maximum lookahead for the opposing teams bots", defValue = "4.0")
 	private static double maxLookaheadBotThreatsVelocity = 4.0;
 	
 	@Configurable(comment = "Max distance from goal center to go out", defValue = "2800.0")
@@ -30,19 +30,6 @@ public final class DefenseConstants
 	
 	@Configurable(comment = "Min distance from penArea to go out", defValue = "400.0")
 	private static double minGoOutDistance = 400;
-	
-	@Configurable(comment = "Maximum bonus for currently assigned bot vs other bot", defValue = "1.0")
-	private static double maxSwitchSlackThreshold = 1.0;
-	
-	@Configurable(comment = "Minimum bonus for currently assigned bot vs other bot", defValue = "0.5")
-	private static double minSwitchSlackThreshold = 0.5;
-	
-	@Configurable(comment = "Ball velocity issuing the maximum switch slack threshold bonus", defValue = "4")
-	private static double maxSwitchSlackThresholdVelocity = 4;
-	
-	@Configurable(comment = "Ball velocity issuing the minimum switch slack threshold bonus", defValue = "0")
-	private static double minSwitchSlackThresholdVelocity = 0;
-	
 	
 	static
 	{
@@ -65,7 +52,7 @@ public final class DefenseConstants
 		double linearPart = maxLookaheadBotThreats - minLookaheadBotThreats;
 		double constantPart = minLookaheadBotThreats;
 		
-		return factor * linearPart + constantPart;
+		return (factor * linearPart) + constantPart;
 	}
 	
 	
@@ -79,29 +66,4 @@ public final class DefenseConstants
 	{
 		return minGoOutDistance;
 	}
-	
-	
-	public static double getMaxSwitchSlackThreshold()
-	{
-		return maxSwitchSlackThreshold;
-	}
-	
-	
-	public static double getMinSwitchSlackThreshold()
-	{
-		return minSwitchSlackThreshold;
-	}
-	
-	
-	public static double getMaxSwitchSlackThresholdVelocity()
-	{
-		return maxSwitchSlackThresholdVelocity;
-	}
-	
-	
-	public static double getMinSwitchSlackThresholdVelocity()
-	{
-		return minSwitchSlackThresholdVelocity;
-	}
-	
 }

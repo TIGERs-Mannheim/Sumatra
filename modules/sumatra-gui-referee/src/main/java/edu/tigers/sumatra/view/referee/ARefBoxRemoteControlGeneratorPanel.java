@@ -8,8 +8,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.JPanel;
 
-import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest;
-import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.referee.control.Event;
 
 
 /**
@@ -40,20 +39,11 @@ public abstract class ARefBoxRemoteControlGeneratorPanel extends JPanel
 	}
 	
 	
-	protected void notifyNewControlRequest(final SSL_RefereeRemoteControlRequest event)
+	protected void sendGameControllerEvent(final Event event)
 	{
 		for (IRefBoxRemoteControlRequestObserver observer : observers)
 		{
-			observer.onNewControlRequest(event);
-		}
-	}
-	
-	
-	protected void notifyGoalieChanged(final BotID keeperId)
-	{
-		for (IRefBoxRemoteControlRequestObserver observer : observers)
-		{
-			observer.onGoalieChanged(keeperId);
+			observer.sendGameControllerEvent(event);
 		}
 	}
 }

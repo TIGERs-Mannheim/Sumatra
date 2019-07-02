@@ -224,7 +224,7 @@ public class RobotsPanel extends JPanel
 	 * Generates List of buttons to draw existing bot panels on
 	 * also adds labels of broken features underneath its respective button
 	 */
-	private void addBots()
+	private synchronized void addBots()
 	{
 		
 		for (Map.Entry<BotID, BotStatus> entry : botStati.entrySet())
@@ -266,7 +266,7 @@ public class RobotsPanel extends JPanel
 	/**
 	 * remove all robot panels
 	 */
-	public void clearView()
+	public synchronized void clearView()
 	{
 		deselectRobots();
 		botStati.clear();

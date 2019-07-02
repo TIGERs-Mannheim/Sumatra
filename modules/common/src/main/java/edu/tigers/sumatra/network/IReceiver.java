@@ -1,6 +1,3 @@
-/**
- * 
- */
 package edu.tigers.sumatra.network;
 
 import java.io.IOException;
@@ -17,11 +14,6 @@ import java.net.DatagramSocket;
  */
 public interface IReceiver
 {
-	
-	/**  */
-	static final int	UNDEFINED_PORT	= -1;
-	
-	
 	/**
 	 * Receives a {@link DatagramPacket} from the network
 	 * 

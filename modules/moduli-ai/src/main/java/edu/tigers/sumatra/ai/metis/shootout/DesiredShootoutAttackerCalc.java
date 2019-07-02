@@ -8,8 +8,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import edu.tigers.sumatra.ai.BaseAiFrame;
-import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.ai.metis.general.ADesiredBotCalc;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ids.BotID;
 
@@ -17,8 +17,14 @@ import edu.tigers.sumatra.ids.BotID;
 /**
  * @author Sebastian Stein <sebastian-stein@gmx.de>
  */
-public class DesiredShootoutAttackerCalc extends ACalculator
+public class DesiredShootoutAttackerCalc extends ADesiredBotCalc
 {
+	public DesiredShootoutAttackerCalc()
+	{
+		super(EPlay.ATTACKER_SHOOTOUT);
+	}
+	
+	
 	@Override
 	public void doCalc(final TacticalField tacticalField, final BaseAiFrame aiFrame)
 	{
@@ -27,7 +33,7 @@ public class DesiredShootoutAttackerCalc extends ACalculator
 		
 		if (tacticalField.getPlayNumbers().getOrDefault(EPlay.ATTACKER_SHOOTOUT, 0) > 0)
 		{
-			tacticalField.addDesiredBots(EPlay.ATTACKER_SHOOTOUT, attackerList);
+			addDesiredBots(attackerList);
 		}
 	}
 }

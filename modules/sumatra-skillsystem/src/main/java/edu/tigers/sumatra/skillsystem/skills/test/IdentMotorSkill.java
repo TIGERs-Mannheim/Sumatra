@@ -10,10 +10,11 @@ import org.apache.log4j.Logger;
 
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.BotWatcher;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillLocalVelocity;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillMotorsOff;
-import edu.tigers.sumatra.botmanager.commands.botskills.EDataAcquisitionMode;
-import edu.tigers.sumatra.botmanager.commands.botskills.data.DriveLimits;
+import edu.tigers.sumatra.botmanager.bots.TigerBot;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillLocalVelocity;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillMotorsOff;
+import edu.tigers.sumatra.botmanager.botskills.EDataAcquisitionMode;
+import edu.tigers.sumatra.botmanager.botskills.data.DriveLimits;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.matlab.MatlabConnection;
@@ -53,9 +54,12 @@ public class IdentMotorSkill extends AMoveSkill
 	
 	
 	/**
+	 * UI constructor
+	 * 
 	 * @param maxSpeed
 	 * @param numSteps
 	 */
+	@SuppressWarnings("unused")
 	public IdentMotorSkill(final double maxSpeed, final int numSteps)
 	{
 		this();
@@ -83,7 +87,8 @@ public class IdentMotorSkill extends AMoveSkill
 		@Override
 		public void doEntryActions()
 		{
-			watch = new BotWatcher(getBot(), EDataAcquisitionMode.MOTOR_MODEL);
+			TigerBot tigerBot = (TigerBot) getBot();
+			watch = new BotWatcher(tigerBot, EDataAcquisitionMode.MOTOR_MODEL);
 			
 			tStart = getWorldFrame().getTimestamp();
 			

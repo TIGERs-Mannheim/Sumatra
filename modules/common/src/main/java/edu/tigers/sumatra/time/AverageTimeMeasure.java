@@ -5,7 +5,6 @@
 package edu.tigers.sumatra.time;
 
 import java.util.Deque;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.apache.commons.lang.Validate;
@@ -13,8 +12,6 @@ import org.apache.commons.lang.Validate;
 
 /**
  * Measure times and build an average over a defined duration (averagingTime=1s)
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class AverageTimeMeasure
 {
@@ -22,7 +19,6 @@ public class AverageTimeMeasure
 	private final Deque<Long> measureTimes = new ConcurrentLinkedDeque<>();
 	private double averagingTime = 1;
 	private Long tStart = null;
-	private Long tLastAvgTime = null;
 	
 	
 	/**
@@ -68,7 +64,12 @@ public class AverageTimeMeasure
 	 */
 	public double getLatestMeasureTime()
 	{
-		return measurements.peekLast() / 1e9;
+		final Long latest = measurements.peekLast();
+		if (latest == null)
+		{
+			return 0.0;
+		}
+		return latest / 1e9;
 	}
 	
 	
@@ -82,34 +83,11 @@ public class AverageTimeMeasure
 	
 	
 	/**
-	 * @return the average measure time, if last average time was returned more than <code>averagingTime</code> ago
-	 */
-	public Optional<Double> getNextAverageTime()
-	{
-		if (tLastAvgTime == null || (System.nanoTime() - tLastAvgTime) / 1e9 > averagingTime)
-		{
-			tLastAvgTime = System.nanoTime();
-			return Optional.of(getAverageTime());
-		}
-		return Optional.empty();
-	}
-	
-	
-	/**
 	 * @return the max measure time
 	 */
 	public double getMaxTime()
 	{
 		return measurements.stream().mapToDouble(d -> (double) d).max().orElse(0) / 1e9;
-	}
-	
-	
-	/**
-	 * @return the min measure time
-	 */
-	public double getMinTime()
-	{
-		return measurements.stream().mapToDouble(d -> (double) d).min().orElse(0);
 	}
 	
 	

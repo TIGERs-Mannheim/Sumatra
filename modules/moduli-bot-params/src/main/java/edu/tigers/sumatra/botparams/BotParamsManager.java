@@ -30,34 +30,18 @@ import edu.tigers.sumatra.botparams.BotParamsDatabase.IBotParamsDatabaseObserver
  */
 public class BotParamsManager extends AModule implements IBotParamsDatabaseObserver, BotParamsProvider
 {
+	private static final Logger log = Logger.getLogger(BotParamsManager.class.getName());
 	private static final String DATABASE_FILE = "config/botParamsDatabase.json";
 	
-	private BotParamsDatabase database = new BotParamsDatabase();
-	
-	private static final Logger log = Logger
-			.getLogger(BotParamsManager.class.getName());
-	
+	private BotParamsDatabase database;
 	private final List<IBotParamsManagerObserver> observers = new CopyOnWriteArrayList<>();
-	
-	
-	@Override
-	public void deinitModule()
-	{
-		// not used
-	}
 	
 	
 	@Override
 	public void initModule()
 	{
-		loadDatabase();
-	}
-	
-	
-	@Override
-	public void startModule()
-	{
-		// not used
+		database = loadDatabase();
+		database.addObserver(this);
 	}
 	
 	
@@ -106,28 +90,25 @@ public class BotParamsManager extends AModule implements IBotParamsDatabaseObser
 	}
 	
 	
-	private void loadDatabase()
+	private BotParamsDatabase loadDatabase()
 	{
 		File file = Paths.get(DATABASE_FILE).toFile();
-		if (!file.exists())
+		if (file.exists())
 		{
-			log.info("Initializing empty bot params database");
-			database = new BotParamsDatabase();
-		} else
-		{
+			log.debug("Open existing bot params database");
 			ObjectMapper mapper = new ObjectMapper();
 			mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 			
 			try
 			{
-				database = mapper.readValue(file, BotParamsDatabase.class);
+				return mapper.readValue(file, BotParamsDatabase.class);
 			} catch (IOException e)
 			{
-				log.error("", e);
+				log.error("Could not read from database: " + file, e);
 			}
 		}
-		
-		database.addObserver(this);
+		log.info("Initializing empty bot params database");
+		return new BotParamsDatabase();
 	}
 	
 	

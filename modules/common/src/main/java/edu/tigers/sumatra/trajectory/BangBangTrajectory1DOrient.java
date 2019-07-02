@@ -28,17 +28,18 @@ public class BangBangTrajectory1DOrient extends BangBangTrajectory1D
 	 * @param maxVel
 	 * @param maxAcc
 	 */
-	public BangBangTrajectory1DOrient(final double initialPos, final double finalPos, final double initialVel,
-			final double maxVel, final double maxAcc)
+	public BangBangTrajectory1DOrient(final float initialPos, final float finalPos, final float initialVel,
+			final float maxVel, final float maxAcc)
 	{
+		float sDiffShort = (float) AngleMath.difference(finalPos, initialPos);
 		this.initialPos = initialPos;
-		this.finalPos = finalPos;
+		this.finalPos = initialPos + sDiffShort;
 		this.initialVel = initialVel;
 		this.maxAcc = maxAcc;
 		this.maxVel = maxVel;
 		
-		double sDiffShort = AngleMath.difference(finalPos, initialPos);
-		generateTrajectory(initialPos, initialVel, initialPos + sDiffShort, maxVel, maxAcc);
+		init();
+		generateTrajectory();
 	}
 	
 	
@@ -52,7 +53,8 @@ public class BangBangTrajectory1DOrient extends BangBangTrajectory1D
 	@Override
 	public BangBangTrajectory1DOrient mirrored()
 	{
-		return new BangBangTrajectory1DOrient(AngleMath.mirror(initialPos), AngleMath.mirror(finalPos), -initialVel,
+		return new BangBangTrajectory1DOrient((float) AngleMath.mirror(initialPos), (float) AngleMath.mirror(finalPos),
+				-initialVel,
 				maxVel, maxAcc);
 	}
 }

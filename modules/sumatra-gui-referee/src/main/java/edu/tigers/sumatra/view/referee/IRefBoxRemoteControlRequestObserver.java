@@ -3,27 +3,15 @@
  */
 package edu.tigers.sumatra.view.referee;
 
-import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest;
-import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.referee.control.Event;
 
 
-/**
- * @author AndreR <andre@ryll.cc>
- */
 public interface IRefBoxRemoteControlRequestObserver
 {
 	/**
-	 * New control request.
+	 * New game controller event.
 	 * 
-	 * @param req
+	 * @param event
 	 */
-	void onNewControlRequest(SSL_RefereeRemoteControlRequest req);
-	
-	
-	/**
-	 * The goalie has changed
-	 *
-	 * @param keeperId
-	 */
-	void onGoalieChanged(BotID keeperId);
+	void sendGameControllerEvent(Event event);
 }

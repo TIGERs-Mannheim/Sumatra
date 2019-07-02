@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.time;
@@ -11,8 +11,8 @@ package edu.tigers.sumatra.time;
  */
 public class TimestampTimer
 {
-	private long	tStart	= 0;
-	private long	duration	= 0;
+	private long tStart = 0;
+	private long duration = 0;
 	
 	
 	/**
@@ -108,5 +108,14 @@ public class TimestampTimer
 	public double getDuration()
 	{
 		return duration / 1e9;
+	}
+	
+	
+	/**
+	 * @return true, if the timer is running (not reset)
+	 */
+	public boolean isRunning()
+	{
+		return tStart != 0;
 	}
 }

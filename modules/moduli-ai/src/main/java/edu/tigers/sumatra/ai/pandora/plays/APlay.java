@@ -6,6 +6,7 @@ package edu.tigers.sumatra.ai.pandora.plays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.log4j.Logger;
 
@@ -40,7 +41,7 @@ public abstract class APlay
 	 */
 	public APlay(final EPlay type)
 	{
-		roles = new ArrayList<>();
+		roles = new CopyOnWriteArrayList<>();
 		this.type = type;
 	}
 	
@@ -334,7 +335,7 @@ public abstract class APlay
 	}
 	
 	
-	protected WorldFrame getWorldFrame()
+	public WorldFrame getWorldFrame()
 	{
 		return aiFrame.getWorldFrame();
 	}

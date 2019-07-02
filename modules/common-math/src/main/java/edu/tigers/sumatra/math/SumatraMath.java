@@ -19,7 +19,7 @@ import net.jafama.FastMath;
  */
 public final class SumatraMath
 {
-	private static final double EQUAL_TOL = 1e-6;
+	private static final double EQUAL_TOL = 1e-3;
 	
 	
 	private SumatraMath()

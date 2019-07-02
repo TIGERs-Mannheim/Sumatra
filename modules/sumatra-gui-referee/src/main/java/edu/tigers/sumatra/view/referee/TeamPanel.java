@@ -13,13 +13,12 @@ import javax.swing.JSpinner;
 import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 
-import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest.CardInfo.CardType;
 import edu.tigers.sumatra.Referee.SSL_Referee;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.referee.data.RefBoxRemoteControlFactory;
+import edu.tigers.sumatra.referee.control.GcEventFactory;
 import net.miginfocom.swing.MigLayout;
 
 
@@ -42,9 +41,10 @@ public class TeamPanel extends ARefBoxRemoteControlGeneratorPanel
 	private final JLabel timeoutCount;
 	private final JButton place;
 	private final JTextField placementPos;
-	private final JSpinner goalieNumber;
+	private final JSpinner goalkeeperNumber;
 	
 	private final ETeamColor color;
+	private int goals = 0;
 	
 	
 	/**
@@ -70,16 +70,16 @@ public class TeamPanel extends ARefBoxRemoteControlGeneratorPanel
 		timeoutCount = new JLabel("4");
 		placementPos = new JTextField("0,0");
 		place = new JButton("Place Ball");
-		final SpinnerNumberModel model = new SpinnerNumberModel(0,0,Integer.MAX_VALUE,1);
-		goalieNumber = new JSpinner(model);
-		final JLabel goalieLabel = new JLabel("Goalie");
+		final SpinnerNumberModel model = new SpinnerNumberModel(0, 0, BotID.BOT_ID_MAX, 1);
+		goalkeeperNumber = new JSpinner(model);
+		final JLabel goalieLabel = new JLabel("Goalkeeper");
 		
-		timeoutBtn.addActionListener(e -> notifyNewControlRequest(RefBoxRemoteControlFactory.fromTimeout(color)));
-		direct.addActionListener(e -> notifyNewControlRequest(RefBoxRemoteControlFactory.fromDirect(color)));
-		indirect.addActionListener(e -> notifyNewControlRequest(RefBoxRemoteControlFactory.fromIndirect(color)));
-		penalty.addActionListener(e -> notifyNewControlRequest(RefBoxRemoteControlFactory.fromPenalty(color)));
-		kickoff.addActionListener(e -> notifyNewControlRequest(RefBoxRemoteControlFactory.fromKickoff(color)));
-		goal.addActionListener(e -> notifyNewControlRequest(RefBoxRemoteControlFactory.fromGoal(color)));
+		timeoutBtn.addActionListener(e -> sendGameControllerEvent(GcEventFactory.commandTimeout(color)));
+		direct.addActionListener(e -> sendGameControllerEvent(GcEventFactory.commandDirect(color)));
+		indirect.addActionListener(e -> sendGameControllerEvent(GcEventFactory.commandIndirect(color)));
+		penalty.addActionListener(e -> sendGameControllerEvent(GcEventFactory.commandPenalty(color)));
+		kickoff.addActionListener(e -> sendGameControllerEvent(GcEventFactory.commandKickoff(color)));
+		goal.addActionListener(e -> sendGameControllerEvent(GcEventFactory.goals(color, goals + 1)));
 		
 		place.addActionListener(e -> {
 			IVector2 pos;
@@ -92,16 +92,16 @@ public class TeamPanel extends ARefBoxRemoteControlGeneratorPanel
 				pos = null;
 			}
 			
-			notifyNewControlRequest(RefBoxRemoteControlFactory.fromBallPlacement(color, pos));
+			sendGameControllerEvent(GcEventFactory.ballPlacement(color, pos));
 		});
 		
 		yellow.addActionListener(
-				e -> notifyNewControlRequest(RefBoxRemoteControlFactory.fromCard(color, CardType.CARD_YELLOW)));
+				e -> sendGameControllerEvent(GcEventFactory.yellowCard(color)));
 		red.addActionListener(
-				e -> notifyNewControlRequest(RefBoxRemoteControlFactory.fromCard(color, CardType.CARD_RED)));
-
-		goalieNumber.addChangeListener(
-				e -> notifyGoalieChanged(BotID.createBotId((Integer) goalieNumber.getValue(), color)));
+				e -> sendGameControllerEvent(GcEventFactory.redCard(color)));
+		
+		goalkeeperNumber.addChangeListener(
+				e -> sendGameControllerEvent(GcEventFactory.goalkeeper(color, (Integer) goalkeeperNumber.getValue())));
 		
 		add(timeoutBtn);
 		add(goal);
@@ -117,7 +117,7 @@ public class TeamPanel extends ARefBoxRemoteControlGeneratorPanel
 		add(red);
 		add(placementPos);
 		add(place);
-		add(goalieNumber);
+		add(goalkeeperNumber);
 		add(goalieLabel);
 		
 		setBorder(
@@ -138,10 +138,12 @@ public class TeamPanel extends ARefBoxRemoteControlGeneratorPanel
 			{
 				timeoutTime = msg.getYellow().getTimeoutTime();
 				timeouts = msg.getYellow().getTimeouts();
+				goals = msg.getYellow().getScore();
 			} else
 			{
 				timeoutTime = msg.getBlue().getTimeoutTime();
 				timeouts = msg.getBlue().getTimeouts();
+				goals = msg.getBlue().getScore();
 			}
 			
 			// Timeouts yellow
@@ -172,7 +174,7 @@ public class TeamPanel extends ARefBoxRemoteControlGeneratorPanel
 			timeoutCount.setEnabled(enable);
 			place.setEnabled(enable);
 			placementPos.setEnabled(enable);
-			goalieNumber.setEnabled(enable);
+			goalkeeperNumber.setEnabled(enable);
 		});
 	}
 }

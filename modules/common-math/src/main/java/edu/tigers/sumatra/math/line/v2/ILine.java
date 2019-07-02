@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 17, 2016
- * Author(s): Lukas Magel
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.math.line.v2;
 
@@ -21,7 +16,7 @@ import java.util.Optional;
  *
  * @author Lukas Magel
  */
-public interface ILine extends IUnboundedLine
+public interface ILine extends ILineBase
 {
 	@Override
 	ILine copy();

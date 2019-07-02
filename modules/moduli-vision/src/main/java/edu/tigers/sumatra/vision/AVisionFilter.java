@@ -22,12 +22,11 @@ import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.vision.data.FilteredVisionFrame;
+import edu.tigers.sumatra.vision.kick.estimators.IBallModelIdentResult;
 
 
 /**
  * Module for processing raw vision data.
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public abstract class AVisionFilter extends AModule implements ICamFrameObserver
 {
@@ -55,7 +54,9 @@ public abstract class AVisionFilter extends AModule implements ICamFrameObserver
 	 *
 	 * @param camDetectionFrame detections from a single camera frame
 	 */
-	protected abstract void updateCamDetectionFrame(CamDetectionFrame camDetectionFrame);
+	protected void updateCamDetectionFrame(CamDetectionFrame camDetectionFrame)
+	{
+	}
 	
 	
 	/**
@@ -100,6 +101,17 @@ public abstract class AVisionFilter extends AModule implements ICamFrameObserver
 	
 	
 	/**
+	 * Send an identified ball model.
+	 * 
+	 * @param ident
+	 */
+	protected final void publishBallModelIdentification(final IBallModelIdentResult ident)
+	{
+		observers.forEach(o -> o.onBallModelIdentificationResult(ident));
+	}
+	
+	
+	/**
 	 * Reset the ball to a new position. Can be used to
 	 * select another ball, if multiple balls are detected (real filter)
 	 * 
@@ -118,6 +130,16 @@ public abstract class AVisionFilter extends AModule implements ICamFrameObserver
 	 * @param vel
 	 */
 	public void placeBall(final IVector3 pos, final IVector3 vel)
+	{
+	}
+	
+	
+	/**
+	 * Enable model identification functions (not real-time capable).
+	 * 
+	 * @param enable
+	 */
+	public void setModelIdentification(final boolean enable)
 	{
 	}
 	

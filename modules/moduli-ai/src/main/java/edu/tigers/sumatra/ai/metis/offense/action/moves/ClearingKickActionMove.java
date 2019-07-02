@@ -14,6 +14,7 @@ import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
 import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.KickTarget;
+import edu.tigers.sumatra.ai.metis.targetrater.IRatedTarget;
 import edu.tigers.sumatra.ai.metis.targetrater.MaxAngleKickRater;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
@@ -34,6 +35,7 @@ public class ClearingKickActionMove extends AOffensiveActionMove
 	@Configurable(defValue = "2.5")
 	private static double ballSpeedAtTarget = 2.5;
 	
+	
 	private double via = 0;
 	
 	
@@ -47,9 +49,9 @@ public class ClearingKickActionMove extends AOffensiveActionMove
 	public EActionViability isActionViable(final BotID id, final TacticalField newTacticalField,
 			final BaseAiFrame baseAiFrame)
 	{
-		if (Geometry.getFieldLength() / 2.0 - baseAiFrame.getWorldFrame().getBall().getPos().x() < 4000)
+		if (baseAiFrame.getWorldFrame().getBall().getPos().x() > 0 )
 		{
-			// No clearing kick far in enemies have, chance of shooting the ball out of field is to high.
+			// No clearing kick far in enemies half, chance of shooting the ball out of field is to high.
 			return EActionViability.FALSE;
 		}
 		boolean clear = isClearingShotNeeded(id, newTacticalField, baseAiFrame);
@@ -73,8 +75,11 @@ public class ClearingKickActionMove extends AOffensiveActionMove
 	{
 		// calculate good target here...
 		double danger = calcDangerScore(newTacticalField, baseAiFrame) * 0.3;
-		IVector2 bestShootTargt = getBestShootTarget(newTacticalField);
 		IVector2 ballPos = baseAiFrame.getWorldFrame().getBall().getPos();
+		IVector2 bestShootTargt = calcAndRateTarget(baseAiFrame, ballPos)
+				.map(IRatedTarget::getTarget)
+				.map(DynamicPosition::getPos)
+				.orElse(Geometry.getGoalTheir().getCenter());
 		IVector2 clearingDir = ballPos.subtractNew(Geometry.getGoalOur().getCenter()).scaleToNew(100 * (danger));
 		IVector2 targetDir = bestShootTargt.subtractNew(ballPos).scaleToNew(100 * (1 - danger));
 		IVector2 midDir = clearingDir.multiplyNew(1).addNew(targetDir).scaleToNew(3500);
@@ -90,7 +95,7 @@ public class ClearingKickActionMove extends AOffensiveActionMove
 		newTacticalField.getDrawableShapes().get(EAiShapesLayer.OFFENSIVE_CLEARING_KICK).add(dlMid);
 		
 		double passRange = 0.6;
-		KickTarget kickTarget = new KickTarget(new DynamicPosition(midTarget, passRange), ballSpeedAtTarget,
+		KickTarget kickTarget = KickTarget.pass(new DynamicPosition(midTarget, passRange), ballSpeedAtTarget,
 				KickTarget.ChipPolicy.ALLOW_CHIP);
 		
 		return createOffensiveAction(EOffensiveAction.CLEARING_KICK, kickTarget);

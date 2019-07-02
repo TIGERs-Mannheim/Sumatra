@@ -8,7 +8,7 @@ import static edu.tigers.sumatra.math.vector.Vector2f.ZERO_VECTOR;
 import java.util.HashMap;
 import java.util.Map;
 
-import edu.tigers.sumatra.ai.metis.support.IPassTarget;
+import edu.tigers.sumatra.ai.metis.support.passtarget.IPassTarget;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
 

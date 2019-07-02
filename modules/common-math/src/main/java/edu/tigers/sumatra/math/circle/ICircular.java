@@ -10,12 +10,9 @@ import edu.tigers.sumatra.math.vector.IVector2;
 
 /**
  * Interface to a circular object
- * 
- * @author nicolai.ommer
  */
 public interface ICircular extends I2DShape
 {
-	
 	/**
 	 * @return the radius of this circle
 	 */

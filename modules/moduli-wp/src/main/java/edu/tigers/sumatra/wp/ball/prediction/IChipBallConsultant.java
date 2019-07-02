@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.ball.prediction;
@@ -89,4 +89,24 @@ public interface IChipBallConsultant
 	 */
 	double botVelocityToChipFartherThanMaximumDistance(final double distance, final int numTouchdowns,
 			final double maxKickVel);
+	
+	
+	/**
+	 * Calculate the time for a chip kick to the specified target
+	 *
+	 * @param distance the pass distance [mm]
+	 * @param kickSpeed the initial absolute chip kick speed [m/s]
+	 * @return the duration of the kick until the ball reaches target
+	 */
+	double getTimeForKick(double distance, double kickSpeed);
+	
+	
+	/**
+	 * Calculate the absolute velocity of the ball after
+	 * 
+	 * @param distance
+	 * @param kickSpeed
+	 * @return
+	 */
+	double getVelForKick(double distance, double kickSpeed);
 }

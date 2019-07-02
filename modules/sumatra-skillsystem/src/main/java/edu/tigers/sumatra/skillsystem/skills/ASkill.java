@@ -12,9 +12,9 @@ import edu.tigers.sumatra.ai.data.BotAiInformation;
 import edu.tigers.sumatra.bot.EFeature;
 import edu.tigers.sumatra.bot.EFeatureState;
 import edu.tigers.sumatra.botmanager.bots.ABot;
-import edu.tigers.sumatra.botmanager.commands.IMatchCommand;
-import edu.tigers.sumatra.botmanager.commands.MultimediaControl;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
+import edu.tigers.sumatra.botmanager.botskills.data.IMatchCommand;
+import edu.tigers.sumatra.botmanager.botskills.data.MultimediaControl;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.model.SumatraModel;
@@ -40,7 +40,6 @@ public abstract class ASkill implements ISkill
 	private final ESkill skillName;
 	private final MovementCon moveCon = new MovementCon();
 	private final IStateMachine<IState> stateMachine = new StateMachine<>(IDLE_STATE);
-	private double dt = 1;
 	private boolean initialized = false;
 	private ABot bot;
 	private ShapeMap shapeMap = new ShapeMap();
@@ -144,7 +143,6 @@ public abstract class ASkill implements ISkill
 		doCalcActionsBeforeStateUpdate();
 		stateMachine.update();
 		doCalcActionsAfterStateUpdate();
-		bot.sendMatchCommand();
 		initialized = true;
 		averageTimeMeasure.stopMeasure();
 	}
@@ -217,6 +215,13 @@ public abstract class ASkill implements ISkill
 	
 	
 	@Override
+	public boolean isAssigned()
+	{
+		return bot != null;
+	}
+	
+	
+	@Override
 	public final boolean isInitialized()
 	{
 		return initialized;
@@ -226,15 +231,6 @@ public abstract class ASkill implements ISkill
 	protected final ShapeMap getShapes()
 	{
 		return shapeMap;
-	}
-	
-	
-	/**
-	 * @return dt since last update in [s]
-	 */
-	final double getDt()
-	{
-		return dt;
 	}
 	
 	

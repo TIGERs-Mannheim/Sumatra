@@ -23,15 +23,13 @@ import edu.tigers.sumatra.wp.vis.VelocityVisCalc;
 
 /**
  * Aggregate multiple calculators to collect all WP-related shapes
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class WorldFrameVisualization implements IRefereeObserver
 {
 	@SuppressWarnings("unused")
-	private static final Logger	log	= Logger.getLogger(WorldFrameVisualization.class.getName());
+	private static final Logger log = Logger.getLogger(WorldFrameVisualization.class.getName());
 	
-	private final List<IWpCalc>	calcs	= new ArrayList<>();
+	private final List<IWpCalc> calcs = new ArrayList<>();
 	
 	
 	/**
@@ -51,7 +49,7 @@ public class WorldFrameVisualization implements IRefereeObserver
 	/**
 	 * Reset any internal states
 	 */
-	public void reset()
+	public synchronized void reset()
 	{
 		for (IWpCalc calc : calcs)
 		{
@@ -66,7 +64,7 @@ public class WorldFrameVisualization implements IRefereeObserver
 	 * @param wfw world frame
 	 * @param shapeMap
 	 */
-	public void process(final WorldFrameWrapper wfw, final ShapeMap shapeMap)
+	public synchronized void process(final WorldFrameWrapper wfw, final ShapeMap shapeMap)
 	{
 		for (IWpCalc calc : calcs)
 		{

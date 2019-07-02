@@ -34,7 +34,7 @@ public interface ITrajectory<T> extends IMirrorable<ITrajectory<T>>
 	 * Get velocity at a certain time.
 	 * 
 	 * @param t time
-	 * @return velocity
+	 * @return velocity [m/s]
 	 */
 	T getVelocity(double t);
 	
@@ -43,7 +43,7 @@ public interface ITrajectory<T> extends IMirrorable<ITrajectory<T>>
 	 * Get acceleration at a certain time.
 	 * 
 	 * @param t time
-	 * @return acceleration
+	 * @return acceleration [m/s²]
 	 */
 	T getAcceleration(double t);
 	

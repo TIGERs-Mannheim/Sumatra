@@ -52,11 +52,7 @@ public abstract class ASkillSystem extends AModule
 	public abstract List<ISkill> getCurrentSkills(final ETeamColor teamColor);
 	
 	
-	/**
-	 * @param wfw
-	 * @param shapeMap
-	 */
-	public abstract void process(final WorldFrameWrapper wfw, final ShapeMap shapeMap);
+	public abstract ShapeMap process(final WorldFrameWrapper wfw, final ETeamColor teamColor);
 	
 	
 	@Override
@@ -124,10 +120,4 @@ public abstract class ASkillSystem extends AModule
 	{
 		observers.remove(observer);
 	}
-	
-	
-	/**
-	 * @param processAllWorldFrames
-	 */
-	public abstract void setProcessAllWorldFrames(final boolean processAllWorldFrames);
 }

@@ -9,8 +9,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import edu.tigers.sumatra.bot.MoveConstraints;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
 import edu.tigers.sumatra.data.collector.IExportable;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector3;

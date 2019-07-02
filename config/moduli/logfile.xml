@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<centralSoftware>
+
+    <!--
+    This configuration is used for the internal log file viewer.
+    When you start Sumatra with this configuration, you can use the log file view to select and play a log file.
+    -->
+
+    <globalConfiguration>
+        <environment>ROBOCUP</environment>
+    </globalConfiguration>
+
+
+    <module id="edu.tigers.sumatra.cam.ACam">
+        <implementation>edu.tigers.sumatra.cam.LogfileVisionCam</implementation>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.geometry.GeometryUpdater">
+        <dependency>edu.tigers.sumatra.cam.ACam</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.vision.AVisionFilter">
+        <implementation>edu.tigers.sumatra.vision.VisionFilterImpl</implementation>
+
+        <properties>
+            <useThreads>false</useThreads>
+        </properties>
+
+        <dependency>edu.tigers.sumatra.referee.AReferee</dependency>
+        <dependency>edu.tigers.sumatra.cam.ACam</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.wp.AWorldPredictor">
+        <implementation>edu.tigers.sumatra.wp.WorldInfoCollector</implementation>
+
+        <dependency>edu.tigers.sumatra.referee.AReferee</dependency>
+        <dependency>edu.tigers.sumatra.vision.AVisionFilter</dependency>
+        <dependency>edu.tigers.sumatra.timer.ATimer</dependency>
+        <dependency>edu.tigers.sumatra.cam.ACam</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.referee.AReferee">
+        <implementation>edu.tigers.sumatra.referee.Referee</implementation>
+
+        <properties>
+            <source>INTERNAL_FORWARDER</source>
+            <port>0</port>
+            <gameController>false</gameController>
+        </properties>
+    </module>
+
+
+    <module id="edu.tigers.autoreferee.module.AutoRefModule">
+        <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.skillsystem.ASkillSystem">
+        <implementation>edu.tigers.sumatra.skillsystem.DummySkillSystem</implementation>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.ai.AAgent">
+        <implementation>edu.tigers.sumatra.ai.Agent</implementation>
+
+        <dependency>edu.tigers.sumatra.skillsystem.ASkillSystem</dependency>
+        <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
+        <dependency>edu.tigers.sumatra.timer.ATimer</dependency>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.trees.OffensiveTreeProvider"/>
+
+
+    <module id="edu.tigers.sumatra.timer.ATimer">
+        <implementation>edu.tigers.sumatra.timer.SumatraTimer</implementation>
+    </module>
+
+
+    <module id="edu.tigers.sumatra.persistence.RecordManager">
+        <implementation>edu.tigers.sumatra.ai.AiRecordManager</implementation>
+    </module>
+
+    <module id="edu.tigers.sumatra.loganalysis.LogAnalysis" />
+</centralSoftware>

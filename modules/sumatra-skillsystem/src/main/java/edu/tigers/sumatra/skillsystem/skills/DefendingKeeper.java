@@ -25,7 +25,6 @@ import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.triangle.Triangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.statemachine.IEvent;
@@ -54,8 +53,8 @@ public class DefendingKeeper
 	@Configurable(comment = "Speed limit of ball of ChipKickState", defValue = "0.8")
 	private static double chipKickDecisionVelocity = 0.8;
 	
-	@Configurable(comment = "Additional area around PE where FOE with Ball are very dangerous (GoOutState is triggered)", defValue = "360.0")
-	private static double ballDangerZone = 360.0;
+	@Configurable(comment = "Additional area around PE where FOE with Ball are very dangerous (GoOutState is triggered)", defValue = "1000.0")
+	private static double ballDangerZone = 1000.0;
 	
 	@Configurable(comment = "Additional margin to PE where single Attacker is in", defValue = "2500.0")
 	private static double singleAttackerPenaltyAreaMargin = 2500.;
@@ -83,7 +82,7 @@ public class DefendingKeeper
 	}
 	
 	
-	protected DefendingKeeper(BotID keeperID, ASkill drawingSkill)
+	protected DefendingKeeper(final BotID keeperID, final ASkill drawingSkill)
 	{
 		this.keeperID = keeperID;
 		this.drawingSkill = drawingSkill;
@@ -120,23 +119,23 @@ public class DefendingKeeper
 	
 	private boolean isSomeoneShootingAtOurGoal()
 	{
-		Optional<IVector2> intersect = ball.getTrajectory().getTravelLine()
-				.intersectionWith(Line.fromDirection(Geometry.getGoalOur().getCenter(), Vector2f.Y_AXIS));
+		Optional<IVector2> intersect = ball.getTrajectory().getTravelLine().intersectSegment(Geometry.getGoalOur()
+				.withMargin(0, Geometry.getGoalOur().getWidth() / 2.0).getLineSegment());
 		
-		if (intersect.isPresent())
+		if (intersect.isPresent() && (ball.getVel().x() < 0))
 		{
 			double distToIntersection = intersect.get().distanceTo(ball.getPos());
 			double distWithTolerance = Math.max(0, distToIntersection - distToIntersectionTolerance);
 			boolean isBallFastEnough = ball.getTrajectory().getAbsVelByDist(distWithTolerance) > blockDecisionVelocity;
 			boolean isBallOnOurSite = ball.getPos().x() < 0;
 			boolean isBallVelocityIntersectingTheGoalLine = Math
-					.abs(intersect.get().y()) < Geometry.getGoalOur().getWidth() / 2 + goalAreaOffset;
+					.abs(intersect.get().y()) < ((Geometry.getGoalOur().getWidth() / 2) + goalAreaOffset);
 			
 			if (worldFrame.getKickEvent().isPresent())
 			{
 				lastTimeKicked = worldFrame.getKickEvent().get().getTimestamp();
 			}
-			boolean isBallKicked = (lastTimeKicked - worldFrame.getTimestamp()) / 1e9 < maxKickTime;
+			boolean isBallKicked = ((lastTimeKicked - worldFrame.getTimestamp()) / 1e9) < maxKickTime;
 			
 			boolean isBallLeavingOpponent = !isOpponentNearBall() || isBallKicked;
 			
@@ -175,7 +174,9 @@ public class DefendingKeeper
 					.anyMatch(b -> lineGoalFoeBot.isPointOnLineSegment(b.getPos(),
 							Geometry.getBotRadius() + Geometry.getBallRadius()));
 		} else
+		{
 			p2pVisibilityRedirectFoeGoal = false;
+		}
 		
 		return (redirectFOEBot != null)
 				&& (p2pVisibilityRedirectFoeGoal)
@@ -255,7 +256,7 @@ public class DefendingKeeper
 			{
 				filteredBots.add(botID);
 			}
-			if (drawingSkill != null && filteredBots.contains(botID))
+			if ((drawingSkill != null) && filteredBots.contains(botID))
 			{
 				drawRedirectorPos(pos);
 			}
@@ -269,7 +270,7 @@ public class DefendingKeeper
 	}
 	
 	
-	private void drawRedirectorTriangles(Triangle tri1, Triangle tri2, Triangle tri3)
+	private void drawRedirectorTriangles(final Triangle tri1, final Triangle tri2, final Triangle tri3)
 	{
 		
 		DrawableTriangle dtri1 = new DrawableTriangle(tri1, new Color(255, 0, 0, 20));
@@ -285,7 +286,7 @@ public class DefendingKeeper
 	}
 	
 	
-	private void drawRedirectorPos(IVector2 pos)
+	private void drawRedirectorPos(final IVector2 pos)
 	{
 		drawingSkill.getShapes().get(ESkillShapesLayer.KEEPER).add(new DrawableCircle(pos, 150, Color.CYAN));
 	}

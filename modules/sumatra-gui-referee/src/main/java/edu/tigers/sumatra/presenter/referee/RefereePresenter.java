@@ -8,18 +8,16 @@ import java.awt.Component;
 
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.view.referee.IRefBoxRemoteControlRequestObserver;
-import edu.tigers.sumatra.view.referee.RefereePanel;
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.moduli.listenerVariables.ModulesState;
-import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest;
 import edu.tigers.sumatra.Referee.SSL_Referee;
-import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.referee.AReferee;
 import edu.tigers.sumatra.referee.IRefereeObserver;
+import edu.tigers.sumatra.referee.control.Event;
 import edu.tigers.sumatra.referee.source.ARefereeMessageSource;
-import edu.tigers.sumatra.referee.source.ERefereeMessageSource;
+import edu.tigers.sumatra.view.referee.IRefBoxRemoteControlRequestObserver;
+import edu.tigers.sumatra.view.referee.RefereePanel;
 import edu.tigers.sumatra.views.ASumatraViewPresenter;
 import edu.tigers.sumatra.views.ISumatraView;
 
@@ -57,7 +55,7 @@ public class RefereePresenter extends ASumatraViewPresenter
 			refereePanel.getCommonCommandsPanel().addObserver(this);
 			refereePanel.getChangeStatePanel().addObserver(this);
 			refereePanel.getTeamsPanel().values().forEach(p -> p.addObserver(this));
-			refereePanel.setEnable(referee.getActiveSource().getType() == ERefereeMessageSource.INTERNAL_REFBOX);
+			onRefereeMsgSourceChanged(referee.getActiveSource());
 		} else if (state == ModulesState.RESOLVED)
 		{
 			if (referee != null)
@@ -84,7 +82,7 @@ public class RefereePresenter extends ASumatraViewPresenter
 	@Override
 	public void onRefereeMsgSourceChanged(final ARefereeMessageSource src)
 	{
-		refereePanel.setEnable(src.getType() == ERefereeMessageSource.INTERNAL_REFBOX);
+		refereePanel.setEnable(referee != null && referee.isControllable());
 	}
 	
 	
@@ -103,15 +101,8 @@ public class RefereePresenter extends ASumatraViewPresenter
 	
 	
 	@Override
-	public void onNewControlRequest(final SSL_RefereeRemoteControlRequest req)
+	public void sendGameControllerEvent(final Event event)
 	{
-		referee.handleControlRequest(req);
-	}
-	
-	
-	@Override
-	public void onGoalieChanged(final BotID keeperId)
-	{
-		referee.updateKeeperId(keeperId);
+		referee.sendGameControllerEvent(event);
 	}
 }

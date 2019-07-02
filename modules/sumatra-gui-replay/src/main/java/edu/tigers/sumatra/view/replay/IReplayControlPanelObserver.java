@@ -4,6 +4,10 @@
 
 package edu.tigers.sumatra.view.replay;
 
+import edu.tigers.sumatra.Referee;
+import edu.tigers.sumatra.referee.gameevent.EGameEvent;
+
+
 /**
  * Observer for {@link ReplayControlPanel}
  * 
@@ -51,18 +55,30 @@ public interface IReplayControlPanelObserver
 	 * @param enable
 	 */
 	void onSetSkipStop(final boolean enable);
-
+	
+	
 	/**
 	 * Enable ball placement skipping
+	 * 
 	 * @param enable
 	 */
 	void onSetSkipBallPlacement(final boolean enable);
 	
 	
 	/**
-	 * @param enable
+	 * Search for the next command of this type
+	 * 
+	 * @param command
 	 */
-	void onSearchKickoff(boolean enable);
+	void onSearchCommand(Referee.SSL_Referee.Command command);
+	
+	
+	/**
+	 * Search for the next game event of this type
+	 * 
+	 * @param gameEvent
+	 */
+	void onSearchGameEvent(final EGameEvent gameEvent);
 	
 	
 	/**

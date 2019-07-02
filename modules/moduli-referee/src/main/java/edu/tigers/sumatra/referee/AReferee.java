@@ -7,9 +7,9 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import edu.tigers.moduli.AModule;
-import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest;
 import edu.tigers.sumatra.Referee.SSL_Referee;
-import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.referee.control.Event;
+import edu.tigers.sumatra.referee.control.GcEventFactory;
 import edu.tigers.sumatra.referee.source.ARefereeMessageSource;
 import edu.tigers.sumatra.referee.source.ERefereeMessageSource;
 
@@ -49,11 +49,9 @@ public abstract class AReferee extends AModule
 	
 	
 	/**
-	 * Handle an external control request.
-	 * 
-	 * @param request
+	 * Send an event to the game controller. Use {@link GcEventFactory} to create new events
 	 */
-	public abstract void handleControlRequest(final SSL_RefereeRemoteControlRequest request);
+	public abstract void sendGameControllerEvent(Event event);
 	
 	
 	/**
@@ -97,17 +95,21 @@ public abstract class AReferee extends AModule
 	
 	
 	/**
-	 * Set a specific message source.
-	 * 
-	 * @param type
+	 * @return true, if the referee can be controlled locally
 	 */
-	public abstract void setActiveSource(final ERefereeMessageSource type);
+	public abstract boolean isControllable();
 	
 	
 	/**
-	 * Update a keeper id
-	 *
-	 * @param keeperId
+	 * Set the current time for the referee (the game-controller) if possible
+	 * 
+	 * @param timestamp
 	 */
-	public abstract void updateKeeperId(BotID keeperId);
+	public abstract void setCurrentTime(long timestamp);
+	
+	
+	/**
+	 * Reset and initialize the game controller.
+	 */
+	public abstract void initGameController();
 }

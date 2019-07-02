@@ -6,8 +6,6 @@ package edu.tigers.sumatra.math.circle;
 
 /**
  * An arc is a pizza peace of a circle.
- * 
- * @author nicolai.ommer
  */
 public interface IArc extends ICircular
 {

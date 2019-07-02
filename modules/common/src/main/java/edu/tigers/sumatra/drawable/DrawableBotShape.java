@@ -20,21 +20,19 @@ import edu.tigers.sumatra.math.vector.Vector2f;
 
 /**
  * Outline of a bot with orientation
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 @Persistent
 public class DrawableBotShape implements IDrawableShape
 {
-	private final IVector2 pos;
-	private final double angle;
+	protected final IVector2 pos;
+	protected final double angle;
+	private double center2DribblerDist;
+	protected double radius;
 	private Color fillColor = null;
 	private Color borderColor = Color.WHITE;
 	private Color fontColor = Color.black;
 	private String id = "";
-	
-	private double center2DribblerDist;
-	private double radius;
+	private boolean drawDirection = true;
 	
 	
 	@SuppressWarnings("unused")
@@ -44,12 +42,6 @@ public class DrawableBotShape implements IDrawableShape
 	}
 	
 	
-	/**
-	 * @param pos
-	 * @param angle
-	 * @param radius
-	 * @param center2DribblerDist
-	 */
 	public DrawableBotShape(final IVector2 pos, final double angle, final double radius,
 			final double center2DribblerDist)
 	{
@@ -92,10 +84,13 @@ public class DrawableBotShape implements IDrawableShape
 			g.draw(botShape);
 		}
 		
-		g.setColor(Color.RED);
-		final IVector2 kickerPos = tool.transformToGuiCoordinates(
-				BotShape.getKickerCenterPos(pos, angle, center2DribblerDist - 20), invert);
-		g.drawLine(drawingX + robotRadius, drawingY + robotRadius, (int) kickerPos.x(), (int) kickerPos.y());
+		if (drawDirection)
+		{
+			g.setColor(Color.RED);
+			final IVector2 kickerPos = tool.transformToGuiCoordinates(
+					BotShape.getKickerCenterPos(pos, angle, center2DribblerDist - 20), invert);
+			g.drawLine(drawingX + robotRadius, drawingY + robotRadius, (int) kickerPos.x(), (int) kickerPos.y());
+		}
 		
 		// --- check and determinate id-length for margin ---
 		int idX;
@@ -163,5 +158,11 @@ public class DrawableBotShape implements IDrawableShape
 	public final void setRadius(final double radius)
 	{
 		this.radius = radius;
+	}
+	
+	
+	public void setDrawDirection(final boolean drawDirection)
+	{
+		this.drawDirection = drawDirection;
 	}
 }

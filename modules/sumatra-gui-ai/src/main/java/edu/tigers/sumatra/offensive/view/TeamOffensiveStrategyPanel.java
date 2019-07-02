@@ -21,7 +21,8 @@ import javax.swing.table.DefaultTableCellRenderer;
 
 import edu.tigers.sumatra.ai.metis.offense.action.moves.OffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.strategy.EOffensiveStrategy;
-import edu.tigers.sumatra.ai.metis.support.IPassTarget;
+import edu.tigers.sumatra.ai.metis.support.passtarget.IPassTarget;
+import edu.tigers.sumatra.ai.metis.support.passtarget.IRatedPassTarget;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
@@ -160,7 +161,7 @@ public class TeamOffensiveStrategyPanel extends JPanel
 		String[][] commands = new String[1][1];
 		if (passTarget != null)
 		{
-			IVector2 position = passTarget.getKickerPos();
+			IVector2 position = passTarget.getPos();
 			commands[0][0] = "(" + position.x() + ", " + position.y() + ")";
 		} else
 		{
@@ -184,11 +185,11 @@ public class TeamOffensiveStrategyPanel extends JPanel
 			final BotID botID = entry.getKey();
 			actions[i][0] = botID.toString();
 			
-			IPassTarget passTarget = action.getPassTarget().orElse(null);
+			IRatedPassTarget passTarget = action.getRatedPassTarget().orElse(null);
 			if (passTarget != null)
 			{
-				actions[i][1] = "(" + (((int) (passTarget.getKickerPos().x() * 100)) / 100.0) + ", "
-						+ (((int) (passTarget.getKickerPos().y() * 100)) / 100.0) + ")";
+				actions[i][1] = "(" + (((int) (passTarget.getPos().x() * 100)) / 100.0) + ", "
+						+ (((int) (passTarget.getPos().y() * 100)) / 100.0) + ")";
 				actions[i][2] = passTarget.getBotId().toString();
 				actions[i][3] = Double.toString((int) (passTarget.getScore() * 1000) / 1000.0);
 			} else
@@ -201,7 +202,7 @@ public class TeamOffensiveStrategyPanel extends JPanel
 			DynamicPosition kickTarget = action.getKickTarget().getTarget();
 			if (kickTarget != null)
 			{
-				actions[i][4] = "(" + kickTarget.x() + ", " + kickTarget.y() + ")";
+				actions[i][4] = "(" + kickTarget.getPos().x() + ", " + kickTarget.getPos().y() + ")";
 			} else
 			{
 				actions[i][4] = null;

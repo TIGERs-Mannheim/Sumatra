@@ -4,59 +4,47 @@
 
 package edu.tigers.sumatra.skillsystem.skills;
 
-import java.awt.Color;
-
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.botmanager.commands.botskills.data.KickerDribblerCommands;
-import edu.tigers.sumatra.drawable.DrawableAnnotation;
-import edu.tigers.sumatra.drawable.DrawablePoint;
-import edu.tigers.sumatra.geometry.RuleConstraints;
-import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.Hysteresis;
-import edu.tigers.sumatra.math.botshape.BotShape;
+import edu.tigers.sumatra.botmanager.botskills.data.KickerDribblerCommands;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.skillsystem.ESkill;
-import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
-import edu.tigers.sumatra.skillsystem.skills.util.BallStabilizer;
-import edu.tigers.sumatra.skillsystem.skills.util.PositionValidator;
+import edu.tigers.sumatra.time.TimestampTimer;
+import edu.tigers.sumatra.wp.data.DynamicPosition;
 
 
-public class ReceiveBallSkill extends AMoveSkill
+public class ReceiveBallSkill extends ABallArrivalSkill
 {
-	@Configurable(comment = "Distance bot pos to ball [mm] to fix the target orientation of the bot.")
-	private static double distThresholdToFixOrientation = 200;
-	
-	@Configurable(comment = "Dribble speed during receive", defValue = "3000.0")
-	private static double dribbleSpeed = 3000;
-	
-	@Configurable(defValue = "1000.0")
-	private static double maxDistanceToReceivingPosition = 1000.0;
-	
-	private final IVector2 receivingPosition;
-	private final Hysteresis ballSpeedHysteresis = new Hysteresis(0.3, 0.6);
-	private final BallStabilizer ballStabilizer = new BallStabilizer();
-	private final PositionValidator positionValidator = new PositionValidator();
-	
-	
+
+	@Configurable(defValue = "135.0", comment = "Margin between penaltyarea and bot destination [mm]")
+	private static double marginBetweenDestAndPenArea = 135.0;
+
+	@Configurable(comment = "Dribble speed during receive", defValue = "6000.0")
+	private static double dribbleSpeed = 6000;
+
+
+	private final TimestampTimer receiveDelayTimer = new TimestampTimer(0.2);
+
+
 	public ReceiveBallSkill(final IVector2 receivingPosition)
 	{
-		super(ESkill.RECEIVE_BALL);
-		this.receivingPosition = receivingPosition;
-		
-		// initially, the ball is moving
-		ballSpeedHysteresis.update(RuleConstraints.getMaxBallSpeed());
-		
+		this(new DynamicPosition(receivingPosition));
+	}
+
+
+	public ReceiveBallSkill(final DynamicPosition receivingPosition)
+	{
+		super(ESkill.RECEIVE_BALL, receivingPosition);
+
 		setInitialState(new ReceiveState());
 	}
-	
-	
+
+
 	@Override
 	protected void updateKickerDribbler(final KickerDribblerCommands kickerDribblerOutput)
 	{
 		super.updateKickerDribbler(kickerDribblerOutput);
+
 		if (getTBot().hasBallContact())
 		{
 			kickerDribblerOutput.setDribblerSpeed(0);
@@ -65,161 +53,62 @@ public class ReceiveBallSkill extends AMoveSkill
 			kickerDribblerOutput.setDribblerSpeed(dribbleSpeed);
 		}
 	}
-	
-	
-	public boolean ballCanBeReceived()
+
+
+	/**
+	 * @return true, if the ball is moving towards the receiver and receiver can reach the receiving position
+	 */
+	public boolean ballCanBeReceivedAtReceivingPosition()
 	{
-		return !isInitialized() || (ballIsMoving() && receivingPositionIsReachable() && ballIsMovingTowardsMe());
+		return !isInitialized()
+				|| (ballIsMovingTowardsMe() && receivingPositionIsReachableByBall(receivingPosition.getPos()));
 	}
-	
-	
+
+
+	/**
+	 * @return true, if the bot is still in the process of receiving the ball. The skill should not be stopped now.
+	 */
+	public boolean receivingBall()
+	{
+		return receiveDelayTimer.isRunning() && !receiveDelayTimer.isTimeUp(getWorldFrame().getTimestamp());
+	}
+
+
+	/**
+	 * @return true, if the ball is in front of the receiver and stopped
+	 */
 	public boolean ballHasBeenReceived()
 	{
-		return isInitialized() && !ballIsMoving() && ballIsNearKicker();
-	}
-	
-	
-	private boolean receivingPositionIsReachable()
-	{
-		return getBall().getTrajectory().getTravelLineRolling()
-				.distanceTo(receivingPosition) < maxDistanceToReceivingPosition;
-	}
-	
-	
-	private boolean ballIsMoving()
-	{
-		return ballSpeedHysteresis.isUpper() && !getTBot().hasBallContact();
-	}
-	
-	
-	private boolean ballIsNearKicker()
-	{
-		return ballStabilizer.getBallPos().distanceTo(getTBot().getBotKickerPos()) < 100;
-	}
-	
-	
-	private boolean ballIsMovingTowardsMe()
-	{
-		return getPos().subtractNew(ballStabilizer.getBallPos()).angleToAbs(getBall().getVel())
-				.map(a -> a < AngleMath.PI_HALF).orElse(false);
-	}
-	
-	private class ReceiveState extends MoveToState
-	{
-		private IVector2 currentReceivingPosition;
-		private double currentTargetAngle;
-		
-		
-		private ReceiveState()
+		boolean received = isInitialized() && !ballIsMoving() && ballNearKicker();
+		if (received)
 		{
-			super(ReceiveBallSkill.this);
+			receiveDelayTimer.update(getWorldFrame().getTimestamp());
+			return receiveDelayTimer.isTimeUp(getWorldFrame().getTimestamp());
 		}
-		
-		
+		receiveDelayTimer.reset();
+		return false;
+	}
+
+
+	private class ReceiveState extends ABallArrivalState
+	{
 		@Override
-		public void doEntryActions()
-		{
-			super.doEntryActions();
-			getMoveCon().setBallObstacle(false);
-			
-			// init target orientation
-			currentTargetAngle = getBall().getPos().subtractNew(getPos()).getAngle();
-			moveToReceivingPosition();
-		}
-		
-		
-		@Override
-		public void doUpdate()
-		{
-			updateState();
-			
-			if (ballIsMoving())
-			{
-				moveToNearestPointOnBallLine();
-			} else if (!ballIsNearKicker())
-			{
-				moveToReceivingPosition();
-			}
-			
-			writeTargetPoseToMoveCon();
-			
-			drawShapes();
-			
-			super.doUpdate();
-		}
-		
-		
-		private void moveToReceivingPosition()
-		{
-			currentReceivingPosition = receivingPosition;
-		}
-		
-		
-		private void moveToNearestPointOnBallLine()
-		{
-			if (receivingPositionIsReachable())
-			{
-				IVector2 dest = getBall().getTrajectory().getTravelLine().leadPointOf(receivingPosition);
-				dest = positionValidator.movePosInFrontOfOpponent(dest);
-				dest = positionValidator.movePosInsideFieldWrtBallPos(dest);
-				dest = positionValidator.movePosOutOfPenAreaWrtBall(dest);
-				currentReceivingPosition = dest;
-			}
-		}
-		
-		
-		private void updateState()
-		{
-			ballSpeedHysteresis.update(getBall().getVel().getLength2());
-			ballStabilizer.update(getBall(), getTBot());
-			positionValidator.update(getWorldFrame(), getMoveCon(), getTBot());
-		}
-		
-		
-		private void drawShapes()
-		{
-			getShapes().get(ESkillShapesLayer.RECEIVE_BALL_SKILL)
-					.add(new DrawablePoint(ballStabilizer.getBallPos(), Color.green));
-			getShapes().get(ESkillShapesLayer.RECEIVE_BALL_SKILL)
-					.add(new DrawableAnnotation(getPos(), ballIsMoving() ? "ballMoving" : "ballNotMoving",
-							Vector2.fromX(100)));
-		}
-		
-		
-		private void writeTargetPoseToMoveCon()
-		{
-			currentTargetAngle = calcTargetAngle(currentReceivingPosition);
-			IVector2 dest = BotShape.getCenterFromKickerPos(currentReceivingPosition, currentTargetAngle,
-					getTBot().getCenter2DribblerDist());
-			
-			getMoveCon().updateDestination(dest);
-			getMoveCon().updateTargetAngle(currentTargetAngle);
-			if (getBall().getVel().getLength2() > 0.2)
-			{
-				getMoveCon().getMoveConstraints().setPrimaryDirection(getBall().getVel());
-			} else
-			{
-				getMoveCon().getMoveConstraints().setPrimaryDirection(Vector2f.ZERO_VECTOR);
-			}
-		}
-		
-		
-		private double calcTargetAngle(final IVector2 kickerPos)
+		protected double calcMyTargetAngle(final IVector2 kickerPos)
 		{
 			IVector2 ballPos = ballStabilizer.getBallPos();
-			double distBallBot = ballPos.distanceTo(kickerPos);
-			if (distBallBot < distThresholdToFixOrientation)
-			{
-				// just keep last position -> this is probably most safe to not push ball away again
-				return currentTargetAngle;
-			}
-			
 			IVector2 kickerToBall = ballPos.subtractNew(kickerPos);
 			if (kickerToBall.getLength2() > 50)
 			{
 				return kickerToBall.getAngle();
 			}
 			return ballPos.subtractNew(getPos()).getAngle(0);
+		}
+
+
+		@Override
+		protected double getMarginBetweenDestAndPenArea()
+		{
+			return marginBetweenDestAndPenArea;
 		}
 	}
 }

@@ -18,6 +18,7 @@ import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.v2.IHalfLine;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.line.v2.Lines;
+import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.rectangle.Rectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -206,7 +207,7 @@ public class PenaltyArea implements IPenaltyArea
 	@Override
 	public boolean isIntersectingWithLine(final ILine line)
 	{
-		return getRectangle().isIntersectingWithLine(line);
+		return !lineIntersections(line).isEmpty();
 	}
 	
 	
@@ -235,6 +236,20 @@ public class PenaltyArea implements IPenaltyArea
 	}
 	
 	
+	@Override
+	public IVector2 getNegCorner()
+	{
+		return getRectangle().getCorner(IRectangle.ECorner.BOTTOM_LEFT);
+	}
+	
+	
+	@Override
+	public IVector2 getPosCorner()
+	{
+		return getRectangle().getCorner(IRectangle.ECorner.TOP_LEFT);
+	}
+	
+	
 	private double getLength()
 	{
 		return getRectangle().yExtent();
@@ -260,5 +275,12 @@ public class PenaltyArea implements IPenaltyArea
 	public double distanceTo(final IVector2 point)
 	{
 		return nearestPointInside(point).distanceTo(point);
+	}
+	
+	
+	@Override
+	public double distanceToNearestPointOutside(final IVector2 pos)
+	{
+		return nearestPointOutside(pos).distanceTo(pos);
 	}
 }

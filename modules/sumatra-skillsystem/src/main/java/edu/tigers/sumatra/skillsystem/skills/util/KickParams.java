@@ -7,7 +7,7 @@ package edu.tigers.sumatra.skillsystem.skills.util;
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 
 
@@ -18,9 +18,10 @@ public class KickParams
 {
 	private EKickerDevice device;
 	private double kickSpeed;
+	private double dribbleSpeed;
 	
-	@Configurable(comment = "Offset to speed limit", defValue = "0.01")
-	private static double speedLimitOffset = 0.01;
+	@Configurable(comment = "Offset to speed limit", defValue = "0.2")
+	private static double speedLimitOffset = 0.2;
 	
 	static
 	{
@@ -28,10 +29,17 @@ public class KickParams
 	}
 	
 	
-	private KickParams(final EKickerDevice device, final double kickSpeed)
+	public KickParams(final EKickerDevice device, final double kickSpeed, final double dribbleSpeed)
 	{
 		this.device = device;
 		this.kickSpeed = kickSpeed;
+		this.dribbleSpeed = dribbleSpeed;
+	}
+	
+	
+	private KickParams(final EKickerDevice device, final double kickSpeed)
+	{
+		this(device, kickSpeed, 0);
 	}
 	
 	
@@ -65,9 +73,15 @@ public class KickParams
 	}
 	
 	
-	public static double limitKickSpeed(double adaptedKickSpeed)
+	public static double limitKickSpeed(final double kickSpeed)
 	{
-		return Math.max(0, Math.min(RuleConstraints.getMaxBallSpeed() - speedLimitOffset, adaptedKickSpeed));
+		return applyFixedOffset(Math.min(RuleConstraints.getMaxBallSpeed(), kickSpeed));
+	}
+	
+	
+	private static double applyFixedOffset(final double kickSpeed)
+	{
+		return Math.max(0, kickSpeed - speedLimitOffset);
 	}
 	
 	
@@ -92,6 +106,18 @@ public class KickParams
 	public double getKickSpeed()
 	{
 		return kickSpeed;
+	}
+	
+	
+	public double getDribbleSpeed()
+	{
+		return dribbleSpeed;
+	}
+	
+	
+	public void setDribbleSpeed(final double dribbleSpeed)
+	{
+		this.dribbleSpeed = dribbleSpeed;
 	}
 }
 

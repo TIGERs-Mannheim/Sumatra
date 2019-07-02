@@ -261,7 +261,7 @@ public class Vector3Test
 		assertThat(Vector3.fromXYZ(0, 0, 0).isZeroVector()).isTrue();
 		assertThat(Vector3.fromXYZ(1e-8, 0, 0).isZeroVector()).isTrue();
 		assertThat(Vector3.fromXYZ(1e-8, 1e-8, 1e-8).isZeroVector()).isTrue();
-		assertThat(Vector3.fromXYZ(1e-4, 0, 0).isZeroVector()).isFalse();
+		assertThat(Vector3.fromXYZ(1e-2, 0, 0).isZeroVector()).isFalse();
 	}
 	
 	
@@ -307,7 +307,7 @@ public class Vector3Test
 		IVector3 vector1 = Vector3.fromXYZ(0, 0, 2.5);
 		assertThat(vector1.toString()).isEqualTo("[0.000,0.000,2.500|l=2.500]");
 		IVector3 vector2 = Vector3.fromXYZ(0, 0.001, 0);
-		assertThat(vector2.toString()).isEqualTo("[0.000,0.001,0.000|l=0.001|a=1.571]");
+		assertThat(vector2.toString()).isEqualTo("[0.000,0.001,0.000|l=0.001]");
 	}
 	
 	

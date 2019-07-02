@@ -10,7 +10,7 @@
     <parent>
         <groupId>edu.tigers.sumatra</groupId>
         <artifactId>sumatra-parent</artifactId>
-        <version>6.0</version>
+        <version>2019-SNAPSHOT</version>
         <relativePath>../sumatra-parent/pom.xml</relativePath>
     </parent>
 
@@ -26,8 +26,13 @@
         </dependency>
 
         <dependency>
+            <groupId>com.github.TIGERs-Mannheim.jinput</groupId>
+            <artifactId>jinput</artifactId>
+        </dependency>
+        <dependency>
             <groupId>net.java.jinput</groupId>
-            <artifactId>jinput-platform</artifactId>
+            <artifactId>jinput</artifactId>
+            <classifier>natives-all</classifier>
         </dependency>
 
         <dependency>
@@ -76,7 +81,7 @@
         </dependency>
 
         <dependency>
-            <groupId>edu.tigers.moduli</groupId>
+            <groupId>com.github.TIGERs-Mannheim</groupId>
             <artifactId>moduli</artifactId>
         </dependency>
 
@@ -102,6 +107,29 @@
             <plugin>
                 <groupId>com.google.protobuf.tools</groupId>
                 <artifactId>maven-protoc-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>analyze</id>
+                        <goals>
+                            <goal>analyze-only</goal>
+                        </goals>
+                        <configuration>
+                            <ignoredUnusedDeclaredDependencies>
+                                <ignoredUnusedDeclaredDependencie>
+                                    com.github.TIGERs-Mannheim.jinput:jinput:*
+                                </ignoredUnusedDeclaredDependencie>
+                                <ignoredUnusedDeclaredDependency>
+                                    net.java.jinput:jinput:*
+                                </ignoredUnusedDeclaredDependency>
+                            </ignoredUnusedDeclaredDependencies>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

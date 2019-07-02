@@ -4,11 +4,7 @@
 
 package edu.tigers.sumatra.ai.pandora.roles.keeper.states;
 
-import com.github.g3force.configurable.ConfigRegistration;
-import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.ai.metis.keeper.EKeeperState;
-import edu.tigers.sumatra.ai.metis.keeper.KeeperStateCalc;
 import edu.tigers.sumatra.ai.pandora.roles.keeper.KeeperRole;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.line.LineMath;
@@ -24,16 +20,6 @@ import edu.tigers.sumatra.skillsystem.skills.PullBallSkill;
 
 public class PullBackState extends AKeeperState
 {
-	@Configurable(defValue = "2.0")
-	private static double maxVelDuringPull = 2.0;
-	
-	static
-	{
-		ConfigRegistration.registerClass("roles", PullBackState.class);
-	}
-	
-	private double pbDecisionVel = KeeperStateCalc.getPullBackDecisionVelocity();
-	
 	
 	/**
 	 * @param parent
@@ -47,7 +33,6 @@ public class PullBackState extends AKeeperState
 	@Override
 	public void doEntryActions()
 	{
-		KeeperStateCalc.setPullBackDecisionVelocity(maxVelDuringPull);
 		PullBallSkill placeSkill = new PullBallSkill(getDestination());
 		
 		placeSkill.setChillVel(
@@ -55,13 +40,6 @@ public class PullBackState extends AKeeperState
 		placeSkill.getMoveCon().setDestinationOutsideFieldAllowed(false);
 		placeSkill.getMoveCon().setGoalPostObstacle(true);
 		setNewSkill(placeSkill);
-	}
-	
-	
-	@Override
-	public void doExitActions()
-	{
-		KeeperStateCalc.setPullBackDecisionVelocity(pbDecisionVel);
 	}
 	
 	

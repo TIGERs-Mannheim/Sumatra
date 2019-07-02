@@ -5,49 +5,33 @@
 package edu.tigers.sumatra.ai.metis.defense.data;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 
-import edu.tigers.sumatra.ids.AObjectID;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
+
 import edu.tigers.sumatra.ids.BotID;
 
 
 /**
- * @author Sebastian Stein <sebastian-stein@gmx.de>
+ * Assignment of bot ids to a threat.
  */
 public class DefenseThreatAssignment
 {
-	private final AObjectID objectID;
 	private final IDefenseThreat threat;
-	private final int numDefenders;
-	private final Set<BotID> botIds = new HashSet<>();
-	private final EDefenseGroup defenseGroup;
-	private final boolean crucial;
+	private final Set<BotID> botIds;
 	
 	
 	/**
 	 * Creates a new DefenseThreatAssignment
 	 * 
-	 * @param objectID
 	 * @param threat
-	 * @param numDefenders
-	 * @param defenseGroup
-	 * @param crucial
+	 * @param botIds
 	 */
-	public DefenseThreatAssignment(final AObjectID objectID, final IDefenseThreat threat,
-			final int numDefenders, final EDefenseGroup defenseGroup, final boolean crucial)
+	public DefenseThreatAssignment(final IDefenseThreat threat, final Set<BotID> botIds)
 	{
-		this.objectID = objectID;
 		this.threat = threat;
-		this.numDefenders = numDefenders;
-		this.defenseGroup = defenseGroup;
-		this.crucial = crucial;
-	}
-	
-	
-	public AObjectID getObjectID()
-	{
-		return objectID;
+		this.botIds = Collections.unmodifiableSet(botIds);
 	}
 	
 	
@@ -57,40 +41,18 @@ public class DefenseThreatAssignment
 	}
 	
 	
-	public int getNumDefenders()
-	{
-		return numDefenders;
-	}
-	
-	
 	public Set<BotID> getBotIds()
 	{
-		return Collections.unmodifiableSet(botIds);
+		return botIds;
 	}
 	
 	
-	public EDefenseGroup getDefenseGroup()
+	@Override
+	public String toString()
 	{
-		return defenseGroup;
-	}
-	
-	
-	/**
-	 * Add bot ids that should be assigned
-	 * 
-	 * @param botId the bot id to add
-	 */
-	public void addBotId(final BotID botId)
-	{
-		botIds.add(botId);
-	}
-	
-	
-	/**
-	 * @return the crucial
-	 */
-	public boolean isCrucial()
-	{
-		return crucial;
+		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+				.append("threat", threat)
+				.append("botIds", botIds)
+				.toString();
 	}
 }

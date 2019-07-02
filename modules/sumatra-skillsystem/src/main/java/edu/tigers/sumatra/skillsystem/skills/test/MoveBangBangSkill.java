@@ -3,8 +3,8 @@
  */
 package edu.tigers.sumatra.skillsystem.skills.test;
 
-import edu.tigers.sumatra.botmanager.commands.EBotSkill;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillWheelVelocity;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillWheelVelocity;
+import edu.tigers.sumatra.botmanager.botskills.EBotSkill;
 import edu.tigers.sumatra.control.motor.AMotorModel;
 import edu.tigers.sumatra.control.motor.MatrixMotorModel;
 import edu.tigers.sumatra.math.AngleMath;

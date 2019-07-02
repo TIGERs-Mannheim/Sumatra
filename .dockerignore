@@ -1,0 +1,16 @@
+# ignore everything
+*
+
+# except
+!run.sh
+!build.sh
+!pom.xml
+!modules
+!.git
+
+# but also these
+**/target
+**/*.classpath
+**/*.project
+**/*.iml
+**/.settings

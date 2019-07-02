@@ -5,7 +5,7 @@
 package edu.tigers.sumatra.math;
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * The hysteresis switches a binary state based on two thresholds
  */
 public class Hysteresis
 {
@@ -25,6 +25,18 @@ public class Hysteresis
 		this.lowerThreshold = lowerThreshold;
 		this.upperThreshold = upperThreshold;
 		assert lowerThreshold < upperThreshold;
+	}
+	
+	
+	/**
+	 * Set the initial state to upper
+	 * 
+	 * @return this instance
+	 */
+	public Hysteresis initiallyInUpperState()
+	{
+		this.upper = true;
+		return this;
 	}
 	
 	

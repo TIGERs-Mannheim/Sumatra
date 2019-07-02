@@ -3,23 +3,33 @@
  */
 package edu.tigers.sumatra.offensive.view;
 
-import java.awt.*;
-import java.util.Map;
-
-import javax.swing.*;
-
-import org.apache.log4j.Logger;
-
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionTree;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionTreePath;
-import edu.tigers.sumatra.ai.metis.offense.action.situation.EOffensiveSituation;
+import edu.tigers.sumatra.ai.metis.offense.action.situation.OffensiveActionTreePath;
 import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.trees.EOffensiveSituation;
+import edu.tigers.sumatra.trees.OffensiveActionTree;
+import edu.tigers.sumatra.trees.OffensiveActionTreeMap;
+import edu.tigers.sumatra.trees.OffensiveTreeProvider;
 import edu.tigers.sumatra.views.ISumatraView;
 import net.miginfocom.swing.MigLayout;
+import org.apache.log4j.Logger;
+
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import java.awt.Font;
+import java.awt.Label;
+import java.awt.Point;
+import java.io.File;
+import java.util.Map;
+import java.util.Optional;
 
 
 /**
- * Main Panel for OffensiveActionTree
+ * Main Panel for edu.tigers.sumatra.trees.OffensiveActionTree
  *
  * @author Marius Messerschmidt <marius.messerschmidt@dlr.de>
  */
@@ -41,6 +51,10 @@ public class OffensiveActionTreePanel extends JPanel implements ISumatraView
 	
 	private transient Map<EOffensiveSituation, OffensiveActionTree> teamTreesYellow;
 	private transient Map<EOffensiveSituation, OffensiveActionTree> teamTreesBlue;
+	
+	private JComboBox<String> filesCombo = new JComboBox<>();
+	
+	private static final String BASIC_TREE_PATH = "./config/offensive-trees/";
 	
 	
 	public OffensiveActionTreePanel()
@@ -68,7 +82,78 @@ public class OffensiveActionTreePanel extends JPanel implements ISumatraView
 		add(outdatedLabel);
 		add(new Label("Tree: "), "span 1");
 		add(treeSelector, "wrap");
-		add(treeView, "dock center, span 3, wrap");
+		
+		JButton saveButton = new JButton("Save Tree as ...");
+		saveButton.addActionListener(e -> {
+			OffensiveActionTreeMap map;
+			if (teamYRadio.isSelected())
+			{
+				map = new OffensiveActionTreeMap(teamTreesYellow);
+			} else
+			{
+				map = new OffensiveActionTreeMap(teamTreesBlue);
+			}
+			String path = JOptionPane.showInputDialog("Save as: ");
+			if (!path.isEmpty())
+			{
+				map.saveTreeDataToFile(BASIC_TREE_PATH + path + ".json");
+			}
+			fillComboBox();
+		});
+		
+		add(saveButton);
+		add(new JLabel("Load Tree: "));
+		
+		fillComboBox();
+		add(filesCombo, "dock center");
+		JButton loadSelectedTree = new JButton("Load selected Tree");
+		add(loadSelectedTree, "wrap");
+		
+		loadSelectedTree.addActionListener(actionEvent -> selectTree());
+		
+		add(treeView, "dock center, span 4, wrap");
+	}
+	
+	
+	private void selectTree()
+	{
+		String path = BASIC_TREE_PATH + filesCombo.getSelectedItem();
+		Optional<OffensiveActionTreeMap> map = OffensiveActionTreeMap.loadTreeDataFromFile(path);
+		try
+		{
+			OffensiveTreeProvider treeProvider = SumatraModel.getInstance().getModule(OffensiveTreeProvider.class);
+			if (!map.isPresent())
+			{
+				return;
+			}
+			if (teamYRadio.isSelected())
+			{
+				treeProvider.updateTree(map.get(), ETeamColor.YELLOW);
+			} else
+			{
+				treeProvider.updateTree(map.get(), ETeamColor.BLUE);
+			}
+		} catch (Exception e)
+		{
+			log.warn("Can not load Tree model, Please start moduli first!", e);
+		}
+	}
+	
+	
+	private void fillComboBox()
+	{
+		filesCombo.removeAllItems();
+		File folder = new File(BASIC_TREE_PATH);
+		File[] listOfFiles = folder.listFiles();
+		if (listOfFiles != null)
+		{
+			for (File p : listOfFiles)
+			{
+				String[] path = p.getPath().split("/");
+				String name = path[path.length - 1];
+				filesCombo.addItem(name);
+			}
+		}
 	}
 	
 	

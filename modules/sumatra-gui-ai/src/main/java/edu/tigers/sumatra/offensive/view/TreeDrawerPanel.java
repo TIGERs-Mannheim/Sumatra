@@ -5,9 +5,9 @@
 package edu.tigers.sumatra.offensive.view;
 
 
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionTree;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionTreeNode;
-import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionTreePath;
+import edu.tigers.sumatra.trees.OffensiveActionTree;
+import edu.tigers.sumatra.trees.OffensiveActionTreeNode;
+import edu.tigers.sumatra.ai.metis.offense.action.situation.OffensiveActionTreePath;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.EOffensiveActionMove;
 import net.miginfocom.swing.MigLayout;
 
@@ -80,7 +80,7 @@ public class TreeDrawerPanel extends JPanel implements MouseWheelListener, Mouse
 		if (node == null)
 			return false;
 		
-		List<EOffensiveActionMove> lookUpList = new ArrayList<>();
+		List<String> lookUpList = new ArrayList<>();
 		
 		OffensiveActionTreeNode ptr = node;
 		while (ptr != null)
@@ -97,7 +97,7 @@ public class TreeDrawerPanel extends JPanel implements MouseWheelListener, Mouse
 		
 		for (int x = 0; x < lookUpList.size(); x++)
 		{
-			if (lookUpList.get(x) != currentPath.getCurrentPath().get(x))
+			if (!lookUpList.get(x).equals(currentPath.getCurrentPath().get(x).name()))
 				return false;
 		}
 		
@@ -111,8 +111,7 @@ public class TreeDrawerPanel extends JPanel implements MouseWheelListener, Mouse
 		double w = node.getWeight();
 		String type = "HEAD";
 		if (node.getType() != null)
-			type = node.getType().toString() + String.format("_(%.3f)", node.getWeight());
-		
+			type = node.getType() + String.format("_(%.3f)", node.getWeight()) + " - " + node.getNumOfUpdates();
 		if (w > 1)
 		{
 			g.setColor(new Color(0, (int) Math.min((w - 1) * 2000, 255), 0, 50));

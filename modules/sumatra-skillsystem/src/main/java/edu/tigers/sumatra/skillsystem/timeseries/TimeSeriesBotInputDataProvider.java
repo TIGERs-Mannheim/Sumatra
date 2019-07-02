@@ -13,10 +13,10 @@ import org.apache.log4j.Logger;
 
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.botmanager.bots.ABot;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillFastGlobalPosition;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillGlobalPosition;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillGlobalVelXyPosW;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillLocalVelocity;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillFastGlobalPosition;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillGlobalPosition;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillGlobalVelXyPosW;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillLocalVelocity;
 import edu.tigers.sumatra.data.collector.IExportable;
 import edu.tigers.sumatra.data.collector.ITimeSeriesDataProvider;
 import edu.tigers.sumatra.geometry.Geometry;

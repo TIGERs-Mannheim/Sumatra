@@ -2,9 +2,7 @@
  * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
-package edu.tigers.sumatra.ai.metis.offense.action.moves;
-
-import edu.tigers.sumatra.ai.BaseAiFrame;
+package edu.tigers.sumatra.ai.metis.offense.action.moves;import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
 import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
@@ -12,6 +10,7 @@ import edu.tigers.sumatra.ai.metis.offense.action.KickTarget;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 
 
@@ -44,7 +43,12 @@ public class MoveBallToOpponentHalfActionMove extends AOffensiveActionMove
 			final BaseAiFrame baseAiFrame)
 	{
 		// assuming that we can not reach the opponent goal anyway, we just kick with max speed
-		final KickTarget kickTarget = new KickTarget(new DynamicPosition(Geometry.getGoalTheir().getCenter(), 0.6),
+		IVector2 target = Geometry.getGoalTheir().getCenter();
+		double goalWidth = Geometry.getGoalTheir().getWidth()
+				* Math.signum(baseAiFrame.getWorldFrame().getBall().getPos().y());
+		IVector2 centerToGoalPost = Geometry.getGoalTheir().getRightPost().subtractNew(target);
+		target = target.addNew(centerToGoalPost.scaleToNew(goalWidth / 2.5));
+		final KickTarget kickTarget = KickTarget.pass(new DynamicPosition(target, 0.6),
 				RuleConstraints.getMaxBallSpeed(), KickTarget.ChipPolicy.ALLOW_CHIP);
 		return createOffensiveAction(EOffensiveAction.CLEARING_KICK, kickTarget);
 	}

@@ -9,22 +9,16 @@ import edu.tigers.sumatra.math.AngleMath;
 
 /**
  * Check if the target angle is reached by considering not only a fixed difference tolerance,
- * but also if either the current angle has crossed the target angle or the current angle is sufficiently long within
- * the tolerance.
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * but also if the current angle is sufficiently long within the tolerance.
  */
 public class TargetAngleReachedChecker
 {
 	private boolean reached = false;
-	private boolean lastSignPositive = true;
-	
+
 	private double outerAngleDiffTolerance;
 	private final ChargingValue angleDiffChargingValue;
-	
-	private boolean respectSign = true;
-	
-	
+
+
 	/**
 	 * Create a new checker.
 	 *
@@ -38,45 +32,44 @@ public class TargetAngleReachedChecker
 		angleDiffChargingValue = ChargingValue.aChargingValue().withDefaultValue(0).withChargeRate(chargeRate)
 				.withLimit(outerAngleDiffTolerance).build();
 	}
-	
-	
+
+
 	/**
 	 * Update with latest data
 	 *
 	 * @param targetAngle the desired target angle
 	 * @param currentAngle the current angle
 	 * @param curTimestamp the current timestamp of the frame
+	 * @return diff the current angle difference
 	 */
-	public void update(final double targetAngle, double currentAngle, long curTimestamp)
+	public double update(final double targetAngle, double currentAngle, long curTimestamp)
 	{
-		double diff = AngleMath.difference(targetAngle, currentAngle);
-		boolean curSignPositive = Math.signum(diff) > 0;
+		double diff = Math.abs(AngleMath.difference(targetAngle, currentAngle));
 		angleDiffChargingValue.update(curTimestamp);
-		if (Math.abs(diff) > outerAngleDiffTolerance)
+		if (diff > outerAngleDiffTolerance)
 		{
 			reached = false;
 			angleDiffChargingValue.reset();
-		} else if ((respectSign && lastSignPositive != curSignPositive) // crossed target orientation
-				|| Math.abs(diff) < angleDiffChargingValue.getValue()) // timeout
+		} else if (diff < getCurrentTolerance())
 		{
 			reached = true;
 		}
-		lastSignPositive = curSignPositive;
+		return diff;
 	}
-	
-	
+
+
+	public double getCurrentTolerance()
+	{
+		return angleDiffChargingValue.getValue();
+	}
+
+
 	public boolean isReached()
 	{
 		return reached;
 	}
-	
-	
-	public void setRespectSign(final boolean respectSign)
-	{
-		this.respectSign = respectSign;
-	}
-	
-	
+
+
 	public void setOuterAngleDiffTolerance(final double outerAngleDiffTolerance)
 	{
 		this.outerAngleDiffTolerance = outerAngleDiffTolerance;

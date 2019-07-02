@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.math.line.v2;
 
 import java.util.Optional;
@@ -77,5 +81,4 @@ abstract class ALine implements ILineBase
 		IVector2 closestPointOnLine = closestPointOnLine(point);
 		return point.distanceTo(closestPointOnLine);
 	}
-	
 }

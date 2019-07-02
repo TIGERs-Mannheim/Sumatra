@@ -22,11 +22,11 @@ import edu.tigers.sumatra.math.vector.Vector3;
  */
 public class VelocityXywRandomSampler implements IVelocityXywSampler
 {
-	private Random		rnd			= new Random();
-	private double		maxXyVel		= 1.5;
-	private double		maxWVel		= 5;
-	private final int	numSamples	= 50;
-	private int			i				= 0;
+	private Random rnd = new Random(42);
+	private double maxXyVel = 1.5;
+	private double maxWVel = 5;
+	private static final int NUM_SAMPLES = 50;
+	private int i = 0;
 	
 	
 	@Override
@@ -37,24 +37,18 @@ public class VelocityXywRandomSampler implements IVelocityXywSampler
 		double vel = rnd.nextDouble() * maxXyVel;
 		IVector2 xyVel = Vector2.fromAngle(angle).scaleTo(vel);
 		double aVel = (rnd.nextGaussian() * maxWVel) / 2.0;
-		IVector3 rndVel = Vector3.from2d(xyVel, aVel);
-		return rndVel;
+		return Vector3.from2d(xyVel, aVel);
 	}
 	
 	
-	/**
-	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
-	 * @return
-	 */
 	@Override
 	public int getNeededSamples()
 	{
-		return numSamples;
+		return NUM_SAMPLES;
 	}
 	
 	
 	/**
-	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 	 * @param seed
 	 */
 	public void setSeed(final long seed)
@@ -102,6 +96,6 @@ public class VelocityXywRandomSampler implements IVelocityXywSampler
 	@Override
 	public boolean hasNext()
 	{
-		return i < numSamples;
+		return i < NUM_SAMPLES;
 	}
 }

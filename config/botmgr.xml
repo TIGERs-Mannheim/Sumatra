@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<edu.tigers.sumatra.botmanager.basestation.TigersBaseStation
-        base="edu.tigers.sumatra.botmanager.basestation.TigersBaseStation">
-    <host:ROBOCUP>10.1.11.111</host:ROBOCUP>
+<edu.tigers.sumatra.botmanager.basestation.TigersBaseStation base="edu.tigers.sumatra.botmanager.basestation.TigersBaseStation">
+    <channel:LAB>80</channel:LAB>
+    <channel:ROBOCUP>80</channel:ROBOCUP>
+    <fixedRuntime>false</fixedRuntime>
+    <host:ROBOCUP>192.168.0.211</host:ROBOCUP>
     <host:ANDRE>192.168.1.210</host:ANDRE>
-    <host:LAB>192.168.1.210</host:LAB>
     <host:NICOLAI>192.168.178.210</host:NICOLAI>
+    <maxBots>10</maxBots>
 </edu.tigers.sumatra.botmanager.basestation.TigersBaseStation>

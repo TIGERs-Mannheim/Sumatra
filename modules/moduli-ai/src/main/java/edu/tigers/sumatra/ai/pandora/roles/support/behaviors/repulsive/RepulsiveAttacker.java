@@ -6,6 +6,7 @@ package edu.tigers.sumatra.ai.pandora.roles.support.behaviors.repulsive;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
@@ -40,6 +41,8 @@ public class RepulsiveAttacker extends ARepulsiveBehavior
 	private static double sigmaGoalAttraction = 200;
 	@Configurable(comment = "[mm]", defValue = "800.0")
 	private static double sigmaPenaltyAreaAttraction = 200;
+	@Configurable(comment = "[mm]", defValue = "800.0")
+	private static double sigmaAngleRangePoints = 200;
 	
 	// Force magnitudes
 	@Configurable(comment = "[mm]", defValue = "-3000.0")
@@ -48,6 +51,8 @@ public class RepulsiveAttacker extends ARepulsiveBehavior
 	private static double magnitudeGoalAttraction = 3000;
 	@Configurable(comment = "[mm]", defValue = "2000.0")
 	private static double magnitudePenaltyAreaAttraction = 2000;
+	@Configurable(comment = "[mm]", defValue = "2000.0")
+	private static double magnitudeAngleRangePoints = 2000;
 	
 	// special goal force variables
 	@Configurable(comment = "The target circle of the supporters", defValue = "2500.0")
@@ -77,6 +82,13 @@ public class RepulsiveAttacker extends ARepulsiveBehavior
 	
 	
 	@Override
+	public boolean getIsActive()
+	{
+		return RepulsiveAttacker.isActive;
+	}
+	
+	
+	@Override
 	protected List<Force> collectForces(ITrackedBot affectedBot, List<ITrackedBot> supporter,
 			List<ITrackedBot> opponents)
 	{
@@ -89,14 +101,29 @@ public class RepulsiveAttacker extends ARepulsiveBehavior
 		forces.addAll(getForceAttractGoalCircle());
 		forces.addAll(getForceRepelFromOffensiveGoalSight(affectedBot));
 		forces.addAll(getForceRepelFromPassLine(affectedBot));
-		forces.addAll(getForceRepelFromOldPosition());
+		forces.addAll(getAngleRangePositionForce());
 		return forces;
+	}
+	
+	
+	public static double getRadiusGoal()
+	{
+		return radiusGoal;
+	}
+	
+	
+	private List<Force> getAngleRangePositionForce()
+	{
+		return getRole().getAiFrame().getTacticalField().getSupportiveGoalPositions()
+				.stream().map(p -> new Force(p, sigmaAngleRangePoints, magnitudeAngleRangePoints))
+				.collect(Collectors.toList());
+		
 	}
 	
 	
 	private Force getForceAttractToPenaltyArea(ITrackedBot affectedBot)
 	{
-		IVector2 referencePoint = Geometry.getPenaltyAreaTheir().withMargin(Geometry.getBotRadius() * 1.5)
+		IVector2 referencePoint = Geometry.getPenaltyAreaTheir().withMargin(Geometry.getBotRadius() * 1.75)
 				.projectPointOnToPenaltyAreaBorder(affectedBot.getPos());
 		return new Force(referencePoint, sigmaPenaltyAreaAttraction, magnitudePenaltyAreaAttraction);
 	}

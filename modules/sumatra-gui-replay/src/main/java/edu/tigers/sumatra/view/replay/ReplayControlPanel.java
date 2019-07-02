@@ -15,6 +15,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.text.DecimalFormat;
+import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -38,6 +39,8 @@ import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import edu.tigers.sumatra.Referee;
+import edu.tigers.sumatra.referee.gameevent.EGameEvent;
 import edu.tigers.sumatra.util.ImageScaler;
 import edu.tigers.sumatra.views.ISumatraView;
 
@@ -173,9 +176,19 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		menuBar.add(replayMenu);
 		add(menuBar, BorderLayout.PAGE_START);
 		
-		addMenuAction(new KickoffAction());
-		addMenuCheckbox(new SkipStopAction());
-		addMenuCheckbox(new SkipBallPlacementAction());
+		JMenu jumpCommandMenu = new JMenu("Jump to Command");
+		menuBar.add(jumpCommandMenu);
+		Arrays.stream(Referee.SSL_Referee.Command.values())
+				.map(JumpCommandAction::new)
+				.forEach(jumpCommandMenu::add);
+		JMenu jumpGameEventMenu = new JMenu("Jump to Game Event");
+		menuBar.add(jumpGameEventMenu);
+		Arrays.stream(EGameEvent.values())
+				.map(JumpGameEventAction::new)
+				.forEach(jumpGameEventMenu::add);
+		
+		replayMenu.add(new SkipStopAction());
+		replayMenu.add(new SkipBallPlacementAction());
 		
 		JPanel topPanel = new JPanel();
 		topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.LINE_AXIS));
@@ -198,15 +211,6 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		bottomPanel.add(speedSlider);
 		
 		add(bottomPanel, BorderLayout.PAGE_END);
-	}
-	
-	
-	/**
-	 * @param action an action
-	 */
-	private void addMenuAction(Action action)
-	{
-		replayMenu.add(action);
 	}
 	
 	
@@ -514,15 +518,15 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 			}
 		}
 	}
-
+	
 	private class SkipBallPlacementAction extends AbstractAction
 	{
 		public SkipBallPlacementAction()
 		{
 			super("Skip Ball Placement");
 		}
-
-
+		
+		
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
@@ -534,11 +538,15 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		}
 	}
 	
-	private class KickoffAction extends AbstractAction
+	private class JumpCommandAction extends AbstractAction
 	{
-		public KickoffAction()
+		private final Referee.SSL_Referee.Command command;
+		
+		
+		public JumpCommandAction(Referee.SSL_Referee.Command command)
 		{
-			super("Next kickoff");
+			super(command.name());
+			this.command = command;
 		}
 		
 		
@@ -547,7 +555,29 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		{
 			for (IReplayControlPanelObserver o : observers)
 			{
-				o.onSearchKickoff(true);
+				o.onSearchCommand(command);
+			}
+		}
+	}
+	
+	private class JumpGameEventAction extends AbstractAction
+	{
+		private final EGameEvent gameEvent;
+		
+		
+		public JumpGameEventAction(EGameEvent gameEvent)
+		{
+			super(gameEvent.name());
+			this.gameEvent = gameEvent;
+		}
+		
+		
+		@Override
+		public void actionPerformed(final ActionEvent e)
+		{
+			for (IReplayControlPanelObserver o : observers)
+			{
+				o.onSearchGameEvent(gameEvent);
 			}
 		}
 	}

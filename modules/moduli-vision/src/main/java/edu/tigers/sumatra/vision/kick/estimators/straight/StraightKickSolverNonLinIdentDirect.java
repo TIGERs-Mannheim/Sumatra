@@ -4,6 +4,7 @@
 package edu.tigers.sumatra.vision.kick.estimators.straight;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,6 +23,11 @@ import org.apache.commons.math3.random.MersenneTwister;
 
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.vision.kick.estimators.EBallModelIdentType;
+import edu.tigers.sumatra.vision.kick.estimators.IBallModelIdentResult;
 
 
 /**
@@ -30,8 +36,18 @@ import edu.tigers.sumatra.geometry.Geometry;
 public class StraightKickSolverNonLinIdentDirect
 {
 	@SuppressWarnings("squid:S1166") // Exception from solver not logged
-	public Optional<StraightModelIdentResult> identModel(final List<CamBall> records)
+	public Optional<IBallModelIdentResult> identModel(final List<CamBall> records)
 	{
+		List<IVector2> groundPos = records.stream()
+				.map(CamBall::getFlatPos)
+				.collect(Collectors.toList());
+		
+		Optional<Line> kickLine = Line.fromPointsList(groundPos);
+		if (!kickLine.isPresent())
+		{
+			return Optional.empty();
+		}
+		
 		List<TimeVelocityPair> velocities = calculateVelocities(records);
 		
 		double accSlide = Geometry.getBallParameters().getAccSlide();
@@ -55,7 +71,9 @@ public class StraightKickSolverNonLinIdentDirect
 					new CMAESOptimizer.Sigma(new double[] { 10, 10, 1, 0.01 }),
 					new CMAESOptimizer.PopulationSize(50));
 			
-			return Optional.of(new StraightModelIdentResult(optimum.getPointRef()));
+			return Optional.of(new StraightModelIdentResult(
+					kickLine.get().directionVector(), records.get(0).getFlatPos(),
+					records.get(0).gettCapture(), optimum.getPointRef()));
 		} catch (IllegalStateException | MathIllegalArgumentException e)
 		{
 			return Optional.empty();
@@ -94,42 +112,78 @@ public class StraightKickSolverNonLinIdentDirect
 		return timestampVelocityList;
 	}
 	
-	public static class StraightModelIdentResult
+	public static class StraightModelIdentResult implements IBallModelIdentResult
 	{
-		private final double kickVel;
+		private final IVector3 kickVel;
+		private final IVector2 kickPos;
+		private final long kickTimestamp;
+		
 		private final double accSlide;
 		private final double accRoll;
 		private final double kSwitch;
 		
 		
 		/**
-		 * @param kickVel
-		 * @param accSlide
-		 * @param accRoll
-		 * @param kSwitch
+		 * @param kickDir
+		 * @param kickPos
+		 * @param kickTimestamp
+		 * @param params
 		 */
-		public StraightModelIdentResult(final double kickVel, final double accSlide, final double accRoll,
-				final double kSwitch)
+		public StraightModelIdentResult(final IVector2 kickDir, final IVector2 kickPos, final long kickTimestamp,
+				final double[] params)
 		{
-			this.kickVel = kickVel;
-			this.accSlide = accSlide;
-			this.accRoll = accRoll;
-			this.kSwitch = kSwitch;
-		}
-		
-		
-		private StraightModelIdentResult(final double[] params)
-		{
-			kickVel = params[0];
+			kickVel = kickDir.scaleToNew(params[0]).getXYZVector();
+			this.kickPos = kickPos;
+			this.kickTimestamp = kickTimestamp;
 			accSlide = params[1];
 			accRoll = params[2];
 			kSwitch = params[3];
 		}
 		
 		
-		public double getKickVel()
+		public static String[] getParameterNames()
+		{
+			return new String[] { "accSlide", "accRoll", "kSwitch" };
+		}
+		
+		
+		@Override
+		public EBallModelIdentType getType()
+		{
+			return EBallModelIdentType.STRAIGHT_TWO_PHASE;
+		}
+		
+		
+		@Override
+		public Map<String, Double> getModelParameters()
+		{
+			Map<String, Double> params = new HashMap<>();
+			params.put("accSlide", accSlide);
+			params.put("accRoll", accRoll);
+			params.put("kSwitch", kSwitch);
+			
+			return params;
+		}
+		
+		
+		@Override
+		public IVector3 getKickVelocity()
 		{
 			return kickVel;
+		}
+		
+		
+		@Override
+		public IVector2 getKickPosition()
+		{
+			return kickPos;
+		}
+		
+		
+		@Override
+		public long getKickTimestamp()
+		{
+			return kickTimestamp;
 		}
 		
 		

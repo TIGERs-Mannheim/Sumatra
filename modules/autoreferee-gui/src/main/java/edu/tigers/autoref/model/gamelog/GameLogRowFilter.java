@@ -14,39 +14,21 @@ import java.util.Set;
 
 import javax.swing.RowFilter;
 
+import edu.tigers.autoreferee.engine.log.ELogEntryType;
 import edu.tigers.autoreferee.engine.log.GameLogEntry;
-import edu.tigers.autoreferee.engine.log.GameLogEntry.ELogEntryType;
 
 
-/**
- * @author "Lukas Magel"
- */
 public class GameLogRowFilter extends RowFilter<GameLogTableModel, Integer>
 {
-	private Set<ELogEntryType>	includedTypes;
+	private Set<ELogEntryType> includedTypes;
 	
 	
-	/**
-	 * 
-	 */
 	public GameLogRowFilter()
 	{
 		includedTypes = new HashSet<>(Arrays.asList(ELogEntryType.values()));
 	}
 	
 	
-	/**
-	 * @param includedTypes
-	 */
-	public GameLogRowFilter(final Set<ELogEntryType> includedTypes)
-	{
-		this.includedTypes = includedTypes;
-	}
-	
-	
-	/**
-	 * @param types
-	 */
 	public void setIncludedTypes(final Set<ELogEntryType> types)
 	{
 		includedTypes = types;
@@ -59,5 +41,4 @@ public class GameLogRowFilter extends RowFilter<GameLogTableModel, Integer>
 		GameLogEntry logEntry = (GameLogEntry) entry.getValue(0);
 		return includedTypes.contains(logEntry.getType());
 	}
-	
 }

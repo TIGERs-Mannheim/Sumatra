@@ -21,14 +21,6 @@ import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
  */
 public class SerialFieldTail extends ASerialField
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * @param field Reflection Field
 	 * @param offset byte array offset
@@ -39,9 +31,6 @@ public class SerialFieldTail extends ASerialField
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	@Override
 	public void decode(final byte[] data, final Object obj) throws SerialException
 	{
@@ -96,9 +85,4 @@ public class SerialFieldTail extends ASerialField
 			throw new SerialException("Could not get tail " + field.getName() + " or it is not an array", err);
 		}
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 }

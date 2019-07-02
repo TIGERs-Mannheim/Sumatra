@@ -66,6 +66,7 @@ public class Ai
 	public void stop()
 	{
 		ares.getSkillSystem().emergencyStop(aiTeam.getTeamColor());
+		metis.stop();
 	}
 	
 	

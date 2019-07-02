@@ -285,10 +285,16 @@ public class ToolBar
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
-			for (IToolbarObserver observer : observers)
-			{
-				observer.onToggleRecord();
-			}
+			Thread t = new Thread(() -> {
+				btnRecSave.setEnabled(false);
+				for (IToolbarObserver observer : observers)
+				{
+					observer.onToggleRecord();
+				}
+				btnRecSave.setEnabled(true);
+			});
+			
+			t.start();
 		}
 	}
 	

@@ -8,6 +8,7 @@ import java.awt.Color;
 import java.util.List;
 import java.util.Objects;
 
+import edu.tigers.sumatra.drawable.DrawableBotPattern;
 import edu.tigers.sumatra.drawable.DrawableBotShape;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.drawable.ShapeMap;
@@ -41,6 +42,10 @@ public class BotVisCalc implements IWpCalc
 		wfw.getSimpleWorldFrame().getBots().values().stream().map(this::createBotBufferedTrajShape)
 				.filter(Objects::nonNull)
 				.forEach(bufferedTrajShapes::add);
+		
+		List<IDrawableShape> botPatternShapes = shapeMap.get(EWpShapesLayer.BOT_PATTERNS);
+		wfw.getSimpleWorldFrame().getBots().values().stream().map(this::createBotPattern)
+				.forEach(botPatternShapes::add);
 	}
 	
 	
@@ -104,6 +109,13 @@ public class BotVisCalc implements IWpCalc
 		shape.setFontColor(bot.getTeamColor() == ETeamColor.YELLOW ? Color.black : Color.white);
 		shape.setId(String.valueOf(bot.getBotId().getNumber()));
 		return shape;
+	}
+	
+	
+	private DrawableBotPattern createBotPattern(final ITrackedBot bot)
+	{
+		return new DrawableBotPattern(bot.getPos(), bot.getOrientation(), Geometry.getBotRadius(),
+				bot.getCenter2DribblerDist(), bot.getBotId());
 	}
 	
 	

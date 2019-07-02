@@ -12,7 +12,7 @@ import edu.tigers.sumatra.ids.ETeamColor;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * A Priority map that prioritizes bots before others in path planning
  */
 public class PathFinderPrioMap
 {

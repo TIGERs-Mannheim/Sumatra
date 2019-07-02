@@ -4,13 +4,11 @@
 
 package edu.tigers.sumatra.pathfinder.obstacles;
 
-import java.awt.Graphics2D;
+import java.awt.Color;
 
 import com.sleepycat.persist.model.Persistent;
 
-import edu.tigers.sumatra.drawable.ADrawable;
 import edu.tigers.sumatra.drawable.DrawableRectangle;
-import edu.tigers.sumatra.drawable.IDrawableTool;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.rectangle.Rectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -18,49 +16,37 @@ import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * An obstacle based on the field border (inverted rectangle obstacle)
  */
 @Persistent
-public class FieldBorderObstacle extends ADrawable implements IObstacle
+public class FieldBorderObstacle extends AObstacle
 {
-	private final IRectangle				field;
-	private transient DrawableRectangle	drawableRectangle;
-	
-	
-	/**
-	 * 
-	 */
+	private final IRectangle field;
+
+
 	@SuppressWarnings("unused")
 	private FieldBorderObstacle()
 	{
 		field = Rectangle.fromCenter(Vector2f.ZERO_VECTOR, 0, 0);
 	}
-	
-	
-	/**
-	 * @param field
-	 */
+
+
 	public FieldBorderObstacle(final IRectangle field)
 	{
 		this.field = field;
 	}
-	
-	
+
+
 	@Override
-	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
+	protected void initializeShapes()
 	{
-		if (drawableRectangle == null)
-		{
-			drawableRectangle = new DrawableRectangle(field, getColor());
-		}
-		drawableRectangle.paintShape(g, tool, invert);
+		shapes.add(new DrawableRectangle(field, Color.black));
 	}
-	
-	
+
+
 	@Override
-	public boolean isPointCollidingWithObstacle(final IVector2 point, final double t)
+	public boolean isPointCollidingWithObstacle(final IVector2 point, final double t, final double margin)
 	{
-		return !field.isPointInShape(point);
+		return !field.isPointInShape(point, margin);
 	}
-	
 }

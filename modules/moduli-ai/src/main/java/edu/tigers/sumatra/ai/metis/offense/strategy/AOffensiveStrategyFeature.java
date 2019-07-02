@@ -16,14 +16,16 @@ import edu.tigers.sumatra.wp.data.WorldFrame;
 public abstract class AOffensiveStrategyFeature
 {
 	private BaseAiFrame baseAiFrame;
+	private TacticalField tacticalField;
 	
 	
 	/**
 	 * Resetting some private parameters for next frame
 	 */
-	public void update(final BaseAiFrame baseAiFrame)
+	public void update(final BaseAiFrame baseAiFrame, final TacticalField tacticalField)
 	{
 		this.baseAiFrame = baseAiFrame;
+		this.tacticalField = tacticalField;
 	}
 	
 	
@@ -38,6 +40,12 @@ public abstract class AOffensiveStrategyFeature
 	protected BaseAiFrame getAiFrame()
 	{
 		return baseAiFrame;
+	}
+	
+	
+	protected TacticalField getTacticalField()
+	{
+		return tacticalField;
 	}
 	
 	

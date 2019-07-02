@@ -13,11 +13,11 @@ import org.apache.log4j.Logger;
 
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillLocalVelocity;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillLocalVelocity;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
+import edu.tigers.sumatra.math.vector.AVector;
 import edu.tigers.sumatra.math.vector.AVector2;
-import edu.tigers.sumatra.math.vector.AVector3;
 import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -63,22 +63,19 @@ public class CommandListSkill extends AMoveSkill
 	
 	
 	@SuppressWarnings("unused") // used by UI
-	public CommandListSkill(String commandList)
+	public CommandListSkill(final String commandList)
 	{
 		this();
 		parseCommandSequence(commandList);
-		this.commands.sort(Comparator.comparingDouble(SkillCommand::getTime));
+		commands.sort(Comparator.comparingDouble(SkillCommand::getTime));
 	}
 	
 	
-	public CommandListSkill(List<SkillCommand> commands)
+	public CommandListSkill(final List<SkillCommand> commands)
 	{
 		this();
 		this.commands.addAll(commands);
 		this.commands.sort(Comparator.comparingDouble(SkillCommand::getTime));
-		
-		setInitialState(new ExecutionState());
-		addTransition(EEvent.DONE, new DoneState());
 	}
 	
 	
@@ -126,7 +123,7 @@ public class CommandListSkill extends AMoveSkill
 				skillCommand.setaVel(Double.parseDouble(value));
 				break;
 			case "vxyw":
-				IVector vxyw = AVector3.valueOf(value);
+				IVector vxyw = AVector.valueOf(value);
 				skillCommand.setXyVel(vxyw.getXYVector());
 				skillCommand.setaVel(vxyw.get(2));
 				break;
@@ -193,12 +190,18 @@ public class CommandListSkill extends AMoveSkill
 		@Override
 		public void doUpdate()
 		{
+			double timeSinceLastVisible = (getWorldFrame().getTimestamp()
+					- getWorldFrame().getBall().getLastVisibleTimestamp()) * 1e-9;
+			if ((timeSinceLastVisible < 0.05) && (getTBot().getBotKickerPos().distanceTo(getBall().getPos()) > 50.0))
+			{
+				triggerEvent(EEvent.DONE);
+			}
+			
 			double timePassed = (getWorldFrame().getTimestamp() - tStart) / 1e9;
 			while (!commands.isEmpty()
-					&& commands.get(0).getTime() <= timePassed)
+					&& (commands.get(0).getTime() <= timePassed))
 			{
 				executeCommand(commands.remove(0));
-				
 			}
 			if (commands.isEmpty())
 			{
@@ -245,10 +248,18 @@ public class CommandListSkill extends AMoveSkill
 					skill.getKickerDribbler().setMode(EKickerMode.DISARM);
 				}
 			}
+			if (command.getAccMaxXY() != null)
+			{
+				skill.setAccMax(command.getAccMaxXY());
+			}
+			if (command.getAccMaxW() != null)
+			{
+				skill.setAccMaxW(command.getAccMaxW());
+			}
 		}
 		
 		
-		private void logCmd(SkillCommand skillCommand)
+		private void logCmd(final SkillCommand skillCommand)
 		{
 			if (logCommands)
 			{

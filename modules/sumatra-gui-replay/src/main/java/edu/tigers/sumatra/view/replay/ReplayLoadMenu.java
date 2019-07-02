@@ -8,11 +8,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
@@ -23,6 +26,8 @@ import javax.swing.JOptionPane;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.log4j.Logger;
 
 import edu.tigers.sumatra.model.SumatraModel;
@@ -111,28 +116,75 @@ public class ReplayLoadMenu extends JMenu
 			{
 				JMenu subMenu = new JMenu(file.getName());
 				menu.add(subMenu);
-				for (File d : dirs)
+				
+				subMenu.addMenuListener(new MenuListener()
 				{
-					addFileToMenu(d, subMenu);
-				}
+					private boolean itemsAdded = false;
+					
+					
+					@Override
+					public void menuSelected(final MenuEvent menuEvent)
+					{
+						if (!itemsAdded)
+						{
+							dirs.forEach(d -> addFileToMenu(d, subMenu));
+							itemsAdded = true;
+						}
+					}
+					
+					
+					@Override
+					public void menuDeselected(final MenuEvent menuEvent)
+					{
+						// no action
+					}
+					
+					
+					@Override
+					public void menuCanceled(final MenuEvent menuEvent)
+					{
+						// no action
+					}
+				});
 				return;
 			}
 		}
-		JMenuItem item = new JMenuItem(file.getName());
-		item.addActionListener(new ComboBoxListener(file.getAbsolutePath()));
-		menu.add(item);
+		JMenu subsubMenu = new JMenu(file.getName());
+		menu.add(subsubMenu);
+		
+		JMenuItem rename = new JMenuItem("rename");
+		JMenuItem run = new JMenuItem("run");
+		JMenuItem delete = new JMenuItem("delete");
+		JMenuItem zip = new JMenuItem("zip");
+		
+		subsubMenu.add(run);
+		subsubMenu.add(rename);
+		subsubMenu.add(zip);
+		subsubMenu.add(delete);
+		
+		if (file.getName().endsWith(".zip"))
+		{
+			zip.setEnabled(false);
+		}
+		
+		
+		run.addActionListener(new RunActionListener(file.getAbsolutePath()));
+		rename.addActionListener(new RenameActionListener(file.getAbsolutePath()));
+		delete.addActionListener(new DeleteActionListener(file.getAbsolutePath()));
+		zip.addActionListener(new ZipActionListener(file.getAbsolutePath()));
 	}
 	
 	
 	/**
 	 * Observer
 	 */
-	@FunctionalInterface
 	public interface IReplayLoadMenuObserver
 	{
 		void onOpenReplay(BerkeleyDb db);
+		
+		
+		void onCompressReplay(Path path);
 	}
-	
 	
 	private static class RecordDbFilter implements FileFilter
 	{
@@ -186,25 +238,103 @@ public class ReplayLoadMenu extends JMenu
 		}
 	}
 	
-	private class ComboBoxListener implements ActionListener
+	private class RunActionListener implements ActionListener
 	{
-		private final String fileName;
+		
+		private final String filename;
 		
 		
-		/**
-		 * 
-		 */
-		private ComboBoxListener(final String fileName)
+		public RunActionListener(String filename)
 		{
-			this.fileName = fileName;
+			this.filename = filename;
 		}
 		
 		
 		@Override
-		public void actionPerformed(final ActionEvent arg0)
+		public void actionPerformed(final ActionEvent e)
 		{
-			Thread loadThread = new Thread(new LoadDatabase(fileName), "LoadDatabase");
+			Thread loadThread = new Thread(new LoadDatabase(filename), "LoadDatabase");
 			loadThread.start();
+		}
+	}
+	
+	private class RenameActionListener implements ActionListener
+	{
+		
+		private final String filename;
+		
+		
+		public RenameActionListener(String filename)
+		{
+			this.filename = filename;
+		}
+		
+		
+		@Override
+		public void actionPerformed(final ActionEvent e)
+		{
+			File file = new File(filename);
+			String newName = (String) JOptionPane.showInputDialog(null,
+					"Change file name. Rename it to: ",
+					"Rename File", JOptionPane.PLAIN_MESSAGE, null, null,
+					file.getName());
+			if (newName != null && !(file.renameTo(new File(file.getParent() + File.separator + newName))))
+			{
+				log.error("Renaming file failed.");
+			}
+		}
+	}
+	
+	private class DeleteActionListener implements ActionListener
+	{
+		
+		final String filename;
+		
+		
+		public DeleteActionListener(final String absolutePath)
+		{
+			this.filename = absolutePath;
+		}
+		
+		
+		@Override
+		public void actionPerformed(final ActionEvent e)
+		{
+			
+			if (JOptionPane.showConfirmDialog(null, "Do you want to delete '" + filename + "'?", "Confirm deletion",
+					JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION)
+			{
+				log.info("Deleting '" + filename + "'...");
+				try
+				{
+					FileUtils.deleteDirectory(new File(filename));
+				} catch (IOException exception)
+				{
+					log.error("Replay deletion not successful!", exception);
+				}
+			}
+		}
+	}
+	
+	private class ZipActionListener implements ActionListener
+	{
+		
+		private final String filename;
+		
+		
+		public ZipActionListener(String filename)
+		{
+			this.filename = filename;
+		}
+		
+		
+		@Override
+		public void actionPerformed(final ActionEvent event)
+		{
+			for (IReplayLoadMenuObserver observer : observers)
+			{
+				observer.onCompressReplay(Paths.get(filename));
+			}
 		}
 	}
 	
@@ -240,28 +370,35 @@ public class ReplayLoadMenu extends JMenu
 		public void run()
 		{
 			setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-			BerkeleyDb db = null;
-			try
+			
+			Optional<RecordManager> recordManager = SumatraModel.getInstance().getModuleOpt(RecordManager.class);
+			if (recordManager.isPresent())
 			{
-				RecordManager recordManager = SumatraModel.getInstance().getModule(RecordManager.class);
-				db = recordManager.newBerkeleyDb(Paths.get(filename));
-				db.open();
-				BerkeleyDb dbOut = db;
-				observers.forEach(o -> o.onOpenReplay(dbOut));
-			} catch (Exception e)
-			{
-				log.error(
-						"An exception occurred while loading database.\nTo watch a replay, you need to have started the simulation at least once.",
-						e);
-				JOptionPane.showMessageDialog(ReplayLoadMenu.this,
-						"An exception occurred while loading database.\nTo watch a replay, you need to have started the simulation at least once.",
-						"Error",
-						JOptionPane.ERROR_MESSAGE);
-				if (db != null)
+				try
 				{
-					db.close();
+					@SuppressWarnings("squid:S2095") // DB will be closed automatically later
+					BerkeleyDb db = recordManager.get().newBerkeleyDb(Paths.get(filename));
+					db.open();
+					observers.forEach(o -> o.onOpenReplay(db));
+				} catch (Exception e)
+				{
+					log.error("An exception occurred while loading database. See stacktrace.", e);
+					JOptionPane.showMessageDialog(ReplayLoadMenu.this,
+							"An exception occurred while loading database:\n"
+									+ ExceptionUtils.getStackTrace(e),
+							"Error",
+							JOptionPane.ERROR_MESSAGE);
 				}
+			} else
+			{
+				JOptionPane.showMessageDialog(ReplayLoadMenu.this,
+						"To watch a replay, you need to start the moduli system at least once " +
+								"with a config that includes a record manager module, " +
+								"because the record manager depends on the config (autoRef vs. AI).",
+						"Missing RecordManager module",
+						JOptionPane.ERROR_MESSAGE);
 			}
+			
 			setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 		}
 	}

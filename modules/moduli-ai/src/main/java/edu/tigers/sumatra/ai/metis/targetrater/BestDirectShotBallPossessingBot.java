@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.targetrater;
@@ -207,7 +207,7 @@ public class BestDirectShotBallPossessingBot
 		{
 			FreeArea area = freeAreas.get(0);
 			
-			ILineSegment goalLine = Lines.segmentFromLine(goal.getLine());
+			ILineSegment goalLine = goal.getLineSegment();
 			IHalfLine shotLine = Lines.halfLineFromDirection(shotPos, Vector2.fromAngle(area.getBisectionAngle()));
 			
 			Optional<IVector2> pointInGoal = shotLine.intersectSegment(goalLine);

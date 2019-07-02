@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.targetrater;
@@ -23,6 +23,8 @@ import edu.tigers.sumatra.math.circle.CircleMath;
 import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.v2.IHalfLine;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.triangle.Triangle;
 import edu.tigers.sumatra.math.triangle.TriangleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -240,10 +242,10 @@ public final class MaxAngleKickRater
 	 */
 	private static List<ShadowPoint> getShadowOfBot(final IVector2 botPos, Goal targetGoal, final IVector2 origin)
 	{
-		List<ILine> lines = getTangents(botPos, origin);
+		List<IHalfLine> lines = getTangents(botPos, origin);
 		
-		ILine l1;
-		ILine l2;
+		IHalfLine l1;
+		IHalfLine l2;
 		
 		if (targetGoal == Geometry.getGoalTheir())
 		{
@@ -256,8 +258,8 @@ public final class MaxAngleKickRater
 		}
 		
 		// get projected point on extended goal line
-		IVector2 p1 = targetGoal.getLine().intersectionWith(l1).orElse(targetGoal.getLeftPost());
-		IVector2 p2 = targetGoal.getLine().intersectionWith(l2).orElse(targetGoal.getRightPost());
+		IVector2 p1 = targetGoal.getLine().intersectHalfLine(l1).orElse(targetGoal.getLeftPost());
+		IVector2 p2 = targetGoal.getLine().intersectHalfLine(l2).orElse(targetGoal.getRightPost());
 		
 		
 		// if the projected point is behind the direction of the line, the point will be set to the goal of the opposite
@@ -274,12 +276,12 @@ public final class MaxAngleKickRater
 		}
 		
 		// extend line to projected point
-		l1 = Line.fromPoints(l1.getStart(), p1);
-		l2 = Line.fromPoints(l2.getStart(), p2);
+		l1 = Lines.halfLineFromPoints(l1.supportVector(), p1);
+		l2 = Lines.halfLineFromPoints(l2.supportVector(), p2);
 		
 		// get point in actual goal range
-		IVector2 start = targetGoal.getLine().intersectionOfSegments(l1).orElse(targetGoal.getLeftPost());
-		IVector2 end = targetGoal.getLine().intersectionOfSegments(l2).orElse(targetGoal.getRightPost());
+		IVector2 start = targetGoal.getLineSegment().intersectHalfLine(l1).orElse(targetGoal.getLeftPost());
+		IVector2 end = targetGoal.getLineSegment().intersectHalfLine(l2).orElse(targetGoal.getRightPost());
 		
 		
 		List<ShadowPoint> returnList = new ArrayList<>();
@@ -294,17 +296,17 @@ public final class MaxAngleKickRater
 	/**
 	 * gets the the lines from origin to the tangential points a bot.
 	 */
-	private static List<ILine> getTangents(final IVector2 botPos, final IVector2 origin)
+	private static List<IHalfLine> getTangents(final IVector2 botPos, final IVector2 origin)
 	{
 		// calculate tangents
 		ICircle botMargin = Circle.createCircle(botPos, Geometry.getBotRadius());
 		List<IVector2> tan = CircleMath.tangentialIntersections(botMargin, origin);
 		
 		// line from ball to bot tangent
-		Line l1 = Line.fromPoints(origin, tan.get(1));
-		Line l2 = Line.fromPoints(origin, tan.get(0));
+		IHalfLine l1 = Lines.halfLineFromPoints(origin, tan.get(1));
+		IHalfLine l2 = Lines.halfLineFromPoints(origin, tan.get(0));
 		
-		List<ILine> list = new ArrayList<>();
+		List<IHalfLine> list = new ArrayList<>();
 		list.add(l1);
 		list.add(l2);
 		

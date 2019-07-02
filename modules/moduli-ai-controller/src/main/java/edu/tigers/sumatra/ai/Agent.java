@@ -30,15 +30,13 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 public class Agent extends AAgent
 {
 	private static final Logger log = Logger.getLogger(Agent.class.getName());
-	
+
 	private WorldFrameObserver worldFrameObserver = new WorldFrameObserver();
 	private ASkillSystem skillSystem;
-	
-	private boolean processAllWorldFrames = false;
-	
+
 	private Map<EAiTeam, AiManager> aiManagers = new EnumMap<>(EAiTeam.class);
-	
-	
+
+
 	@Override
 	public void startModule()
 	{
@@ -50,7 +48,7 @@ public class Agent extends AAgent
 		{
 			log.warn("No WP module found.", err);
 		}
-		
+
 		try
 		{
 			skillSystem = SumatraModel.getInstance().getModule(ASkillSystem.class);
@@ -58,18 +56,18 @@ public class Agent extends AAgent
 		{
 			log.error("Could not find skill system.", err);
 		}
-		
+
 		addAis();
 	}
-	
-	
+
+
 	private void addAis()
 	{
 		for (EAiTeam eAiTeam : EAiTeam.values())
 		{
 			boolean active = Boolean.parseBoolean(SumatraModel.getInstance().getUserProperty(
 					Agent.class.getCanonicalName() + "." + eAiTeam.name(),
-					Boolean.toString(eAiTeam.isActiveByDefault())));
+					"true"));
 			if (active)
 			{
 				AiManager aiManager = new AiManager(this, eAiTeam, skillSystem);
@@ -78,8 +76,8 @@ public class Agent extends AAgent
 			}
 		}
 	}
-	
-	
+
+
 	private void removeAis()
 	{
 		for (EAiTeam eAiTeam : EAiTeam.values())
@@ -96,8 +94,8 @@ public class Agent extends AAgent
 					String.valueOf(active));
 		}
 	}
-	
-	
+
+
 	@Override
 	public void stopModule()
 	{
@@ -109,19 +107,19 @@ public class Agent extends AAgent
 		{
 			log.warn("No WP module found.", err);
 		}
-		
+
 		removeAis();
 	}
-	
-	
+
+
 	@Override
 	public void reset()
 	{
 		removeAis();
 		addAis();
 	}
-	
-	
+
+
 	@Override
 	public void changeMode(final EAiTeam aiTeam, final EAIControlState mode)
 	{
@@ -141,11 +139,11 @@ public class Agent extends AAgent
 			}
 			aiManager.changeMode(mode);
 		}
-		
+
 		notifyAiModeChanged(aiTeam, mode);
 	}
-	
-	
+
+
 	@Override
 	public void changeMode(final EAIControlState mode)
 	{
@@ -159,8 +157,8 @@ public class Agent extends AAgent
 			}
 		}
 	}
-	
-	
+
+
 	@Override
 	public Optional<Ai> getAi(final EAiTeam selectedTeam)
 	{
@@ -171,14 +169,7 @@ public class Agent extends AAgent
 		}
 		return Optional.empty();
 	}
-	
-	
-	@Override
-	public void setProcessAllWorldFrames(final boolean processAllWorldFrames)
-	{
-		this.processAllWorldFrames = processAllWorldFrames;
-	}
-	
+
 	private class WorldFrameObserver implements IWorldFrameObserver
 	{
 		@Override
@@ -186,8 +177,9 @@ public class Agent extends AAgent
 		{
 			for (AiManager aiManager : aiManagers.values())
 			{
-				if (processAllWorldFrames)
+				if (SumatraModel.getInstance().isSimulation())
 				{
+					// process all frames, waiting and blocking if necessary
 					try
 					{
 						aiManager.getFreshWorldFrames().putFirst(wfWrapper);
@@ -203,5 +195,5 @@ public class Agent extends AAgent
 			}
 		}
 	}
-	
+
 }

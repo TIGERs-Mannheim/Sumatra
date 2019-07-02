@@ -7,7 +7,7 @@ package edu.tigers.sumatra.wp.ball.prediction;
 import java.util.List;
 
 import edu.tigers.sumatra.math.IMirrorable;
-import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.line.v2.IHalfLine;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -154,9 +154,9 @@ public interface IBallTrajectory extends IMirrorable<IBallTrajectory>, IPlanarCu
 	
 	
 	/**
-	 * @return a line from current ball pos to ball end pos
+	 * @return a halfLine from current ball pos to ball end pos
 	 */
-	ILine getTravelLine();
+	IHalfLine getTravelLine();
 	
 	
 	/**
@@ -176,7 +176,7 @@ public interface IBallTrajectory extends IMirrorable<IBallTrajectory>, IPlanarCu
 	/**
 	 * @return all segments of the travel line where the ball is interceptable (below robot height)
 	 */
-	List<ILine> getTravelLinesInterceptable();
+	List<ILineSegment> getTravelLinesInterceptable();
 	
 	
 	/**

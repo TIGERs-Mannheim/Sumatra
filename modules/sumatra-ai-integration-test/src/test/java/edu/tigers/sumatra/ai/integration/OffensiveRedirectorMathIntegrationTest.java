@@ -4,18 +4,9 @@
 
 package edu.tigers.sumatra.ai.integration;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import org.junit.Test;
-
 import edu.tigers.sumatra.ai.metis.general.ChipKickReasonableDecider;
 import edu.tigers.sumatra.ai.metis.offense.OffensiveRedirectorMath;
-import edu.tigers.sumatra.ai.metis.support.IPassTarget;
+import edu.tigers.sumatra.ai.metis.support.passtarget.IRatedPassTarget;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
@@ -23,6 +14,14 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 
 /**
@@ -40,7 +39,7 @@ public class OffensiveRedirectorMathIntegrationTest extends AAiIntegrationTest
 		loadSnapshot("snapshots/offensiveBestRedirectPass1.snap");
 		preTest();
 		
-		Optional<IPassTarget> receiver = calcReceiver();
+		Optional<IRatedPassTarget> receiver = calcReceiver();
 		
 		assertThat(receiver.isPresent()).isTrue();
 		receiver.ifPresent(
@@ -57,7 +56,7 @@ public class OffensiveRedirectorMathIntegrationTest extends AAiIntegrationTest
 		loadSnapshot("snapshots/offensiveBestRedirectPass2.snap");
 		preTest();
 		
-		Optional<IPassTarget> receiver = calcReceiver();
+		Optional<IRatedPassTarget> receiver = calcReceiver();
 		
 		assertThat(receiver.isPresent()).isTrue();
 		receiver.ifPresent(
@@ -120,7 +119,7 @@ public class OffensiveRedirectorMathIntegrationTest extends AAiIntegrationTest
 	}
 	
 	
-	private Optional<IPassTarget> calcReceiver()
+	private Optional<IRatedPassTarget> calcReceiver()
 	{
 		ITrackedBot sender = getAthenaAiFrame().getWorldFrame().getTiger(BotID.createBotId(1, ETeamColor.YELLOW));
 		Map<BotID, ITrackedBot> botMap = getAthenaAiFrame().getWorldFrame().getTigerBotsAvailable()
@@ -137,17 +136,9 @@ public class OffensiveRedirectorMathIntegrationTest extends AAiIntegrationTest
 	private void preTest()
 	{
 		setGameState(GameState.RUNNING);
-		nextFrame();
-		nextFrame();
-		nextFrame();
-		nextFrame();
-		nextFrame();
-		nextFrame();
-		nextFrame();
-		nextFrame();
-		nextFrame();
-		nextFrame();
-		nextFrame();
-		nextFrame();
+		for (int i = 0; i < 10; i++)
+		{
+			nextFrame();
+		}
 	}
 }

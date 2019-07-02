@@ -15,11 +15,9 @@ import edu.tigers.sumatra.referee.data.GameState;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class AiSampleIntegrationTest extends AAiIntegrationTest
 {
-	
 	private static final Logger log = Logger.getLogger(AiSampleIntegrationTest.class.getName());
 	
 	
@@ -75,6 +73,6 @@ public class AiSampleIntegrationTest extends AAiIntegrationTest
 	public void testLogger()
 	{
 		log.error("Fail!");
-		assertThat(logEventWatcher.getNumEvents(Level.ERROR)).isEqualTo(1);
+		assertThat(logEventWatcher.getEvents(Level.ERROR)).hasSize(1);
 	}
 }

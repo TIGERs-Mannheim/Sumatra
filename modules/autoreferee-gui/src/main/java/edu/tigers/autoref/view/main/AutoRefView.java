@@ -14,14 +14,8 @@ import edu.tigers.sumatra.views.ESumatraViewType;
 import edu.tigers.sumatra.views.ISumatraViewPresenter;
 
 
-/**
- * @author Lukas Magel
- */
 public class AutoRefView extends ASumatraView
 {
-	
-	/**
-	 */
 	public AutoRefView()
 	{
 		super(ESumatraViewType.AUTOREFEREE);
@@ -33,5 +27,4 @@ public class AutoRefView extends ASumatraView
 	{
 		return new AutoRefPresenter();
 	}
-	
 }

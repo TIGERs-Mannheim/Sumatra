@@ -4,24 +4,14 @@
 
 package edu.tigers.sumatra.ai.pandora.roles.defense;
 
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**
  * Common methods for all defender roles
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public interface IDefenderRole
 {
-	/**
-	 * @param threatLine
-	 * @return the current protection line
-	 */
-	ILineSegment getProtectionLine(final ILineSegment threatLine);
-	
-	
 	/**
 	 * if icing was detected, calc new position outside forbidden zone around ball travelline
 	 * 

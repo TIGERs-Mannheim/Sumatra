@@ -6,6 +6,7 @@ package edu.tigers.sumatra.ai.pandora.roles.keeper.states;
 
 import edu.tigers.sumatra.ai.metis.keeper.EKeeperState;
 import edu.tigers.sumatra.ai.pandora.roles.keeper.KeeperRole;
+import edu.tigers.sumatra.ids.ETeam;
 import edu.tigers.sumatra.skillsystem.skills.ReceiveBallSkill;
 
 
@@ -25,6 +26,7 @@ public class CatchOverChipState extends AKeeperState
 	public void doEntryActions()
 	{
 		ReceiveBallSkill receiverSkill = new ReceiveBallSkill(getPos());
+		receiverSkill.setConsideredPenAreas(ETeam.UNKNOWN);
 		receiverSkill.getMoveCon().setPenaltyAreaAllowedOur(true);
 		setNewSkill(receiverSkill);
 	}

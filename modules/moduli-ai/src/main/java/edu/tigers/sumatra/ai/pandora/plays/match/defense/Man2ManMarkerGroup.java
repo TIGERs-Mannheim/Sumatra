@@ -1,37 +1,36 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.plays.match.defense;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
 import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.ai.pandora.roles.defense.ManToManMarkerRole;
-import edu.tigers.sumatra.ids.AObjectID;
 
 
 /**
  * Manage a single Man2ManMarker
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class Man2ManMarkerGroup extends ADefenseGroup
 {
 	private final IDefenseThreat threat;
-	
-	
+
+
 	/**
-	 * @param defendingId an identifying id
 	 * @param threat the threat to protect
 	 */
-	public Man2ManMarkerGroup(final AObjectID defendingId, final IDefenseThreat threat)
+	public Man2ManMarkerGroup(final IDefenseThreat threat)
 	{
-		super(defendingId);
 		this.threat = threat;
 	}
-	
-	
+
+
 	@Override
 	public void assignRoles()
 	{
@@ -44,5 +43,17 @@ public class Man2ManMarkerGroup extends ADefenseGroup
 			}
 		}
 		// only one role is assumed, so no further reordering required
+	}
+
+
+	@Override
+	public void updateRoles(final AthenaAiFrame aiFrame)
+	{
+		super.updateRoles(aiFrame);
+
+		List<ManToManMarkerRole> allRoles = getRoles().stream()
+				.map(sdr -> (ManToManMarkerRole) sdr.getNewRole())
+				.collect(Collectors.toList());
+		allRoles.forEach(r -> r.setThreat(threat));
 	}
 }

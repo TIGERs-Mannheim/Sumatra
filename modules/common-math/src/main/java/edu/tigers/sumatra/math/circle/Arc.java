@@ -13,7 +13,7 @@ import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Implementation of {@link IArc}
  */
 @Persistent
 public class Arc extends AArc
@@ -74,16 +74,6 @@ public class Arc extends AArc
 			final double rotation)
 	{
 		return new Arc(center, radius, startAngle, rotation);
-	}
-	
-	
-	/**
-	 * @param arc
-	 * @return
-	 */
-	public static IArc copyArc(final IArc arc)
-	{
-		return new Arc(arc);
 	}
 	
 	

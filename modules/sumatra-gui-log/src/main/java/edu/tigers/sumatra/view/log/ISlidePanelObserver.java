@@ -8,8 +8,6 @@ import org.apache.log4j.Level;
 
 /**
  * Observes changes in log level slider.
- * 
- * @author AndreR
  */
 public interface ISlidePanelObserver
 {

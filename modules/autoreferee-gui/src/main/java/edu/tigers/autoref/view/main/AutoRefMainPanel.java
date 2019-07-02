@@ -8,89 +8,54 @@ import java.util.Arrays;
 
 import javax.swing.BoxLayout;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 
-import edu.tigers.autoreferee.engine.events.EGameEvent;
-import edu.tigers.autoreferee.engine.events.EGameEventDetectorType;
+import edu.tigers.autoreferee.engine.detector.EGameEventDetectorType;
+import edu.tigers.sumatra.components.BetterScrollPane;
 import edu.tigers.sumatra.components.EnumCheckBoxPanel;
-import edu.tigers.sumatra.components.IEnumPanel;
 import edu.tigers.sumatra.views.ISumatraView;
 import net.miginfocom.swing.MigLayout;
 
 
-/**
- * @author "Lukas Magel"
- */
-public class AutoRefMainPanel extends JPanel implements IAutoRefMainPanel, ISumatraView
+public class AutoRefMainPanel extends JPanel implements ISumatraView
 {
-	private static final long serialVersionUID = 1511856775227796442L;
-	
 	private StartStopPanel startStopPanel = new StartStopPanel();
-	private ActiveEnginePanel activeEnginePanel = new ActiveEnginePanel();
 	private EnumCheckBoxPanel<EGameEventDetectorType> gameEventDetectorPanel;
-	private EnumCheckBoxPanel<EGameEvent> gameEventPanel;
 	
 	
-	/**
-	 * 
-	 */
 	public AutoRefMainPanel()
 	{
 		gameEventDetectorPanel = new EnumCheckBoxPanel<>(EGameEventDetectorType.class, "Game Event Detectors",
 				BoxLayout.PAGE_AXIS);
-		gameEventPanel = new EnumCheckBoxPanel<>(EGameEvent.class, "Published Game Events",
-				BoxLayout.PAGE_AXIS);
+		gameEventDetectorPanel.addToggleAllButton();
 		
-		setupGUI();
-	}
-	
-	
-	private void setupGUI()
-	{
 		setLayout(new BorderLayout());
+		
+		add(startStopPanel, BorderLayout.NORTH);
+		
 		JPanel panel = new JPanel();
-		final JScrollPane scrollPane = new JScrollPane(panel);
+		final BetterScrollPane scrollPane = new BetterScrollPane(panel);
 		add(scrollPane, BorderLayout.CENTER);
 		
-		panel.setLayout(new MigLayout("", "[250][250]", "[][]"));
-		panel.add(startStopPanel, "grow, top");
-		panel.add(activeEnginePanel, "grow, top, wrap");
-		panel.add(gameEventPanel, "grow x, top");
-		panel.add(gameEventDetectorPanel, "grow x, top, wrap");
+		panel.setLayout(new MigLayout("", "", ""));
+		panel.add(gameEventDetectorPanel, "grow x, top");
 	}
 	
 	
-	@Override
-	public IStartStopPanel getStartStopPanel()
+	public StartStopPanel getStartStopPanel()
 	{
 		return startStopPanel;
 	}
 	
 	
-	@Override
-	public IActiveEnginePanel getEnginePanel()
-	{
-		return activeEnginePanel;
-	}
-	
-	
-	@Override
-	public IEnumPanel<EGameEventDetectorType> getGameEventDetectorPanel()
+	public EnumCheckBoxPanel<EGameEventDetectorType> getGameEventDetectorPanel()
 	{
 		return gameEventDetectorPanel;
 	}
 	
 	
 	@Override
-	public IEnumPanel<EGameEvent> getGameEventPanel()
+	public void setEnabled(final boolean enabled)
 	{
-		return gameEventPanel;
-	}
-	
-	
-	public void setPanelsEnabled(final boolean enabled)
-	{
-		Arrays.asList(startStopPanel, activeEnginePanel, gameEventDetectorPanel, gameEventPanel).forEach(
-				panel -> panel.setPanelEnabled(enabled));
+		Arrays.asList(getComponents()).forEach(c -> c.setEnabled(enabled));
 	}
 }

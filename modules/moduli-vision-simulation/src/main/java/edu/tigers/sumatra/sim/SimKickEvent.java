@@ -4,6 +4,9 @@
 
 package edu.tigers.sumatra.sim;
 
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
+
 import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.ids.BotID;
@@ -65,5 +68,16 @@ public class SimKickEvent implements IKickEvent
 	public IKickEvent mirrored()
 	{
 		return new SimKickEvent(pos.multiplyNew(-1), kickingBot, timestamp);
+	}
+	
+	
+	@Override
+	public String toString()
+	{
+		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+				.append("pos", pos)
+				.append("kickingBot", kickingBot)
+				.append("timestamp", timestamp)
+				.toString();
 	}
 }

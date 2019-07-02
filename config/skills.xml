@@ -1,31 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <edu.tigers.sumatra.skillsystem.skills base="edu.tigers.sumatra.skillsystem.skills">
+    <AMoveSkill>
+        <stopSpeedTolerance>0.4</stopSpeedTolerance>
+    </AMoveSkill>
+    <ApproachAndStopBallSkill>
+        <catchUpBallTargetVelDiff>0.6</catchUpBallTargetVelDiff>
+        <maxLookahead>0.6</maxLookahead>
+    </ApproachAndStopBallSkill>
     <CatchBallSkill>
         <isOverAccelerationActive>false</isOverAccelerationActive>
         <keeperBlockPreventionMargin>300.0</keeperBlockPreventionMargin>
         <maxAcc>3.0</maxAcc>
         <maxChipInterceptDist>500.0</maxChipInterceptDist>
     </CatchBallSkill>
-    <PenaltyKeeperSkill>
-        <moveSidewards>false</moveSidewards>
-    </PenaltyKeeperSkill>
-    <ProtectBallSkill>
-        <finalDist2Ball>10.0</finalDist2Ball>
-    </ProtectBallSkill>
-    <PushAroundObstacleSkill>
-        <dribblerSpeed>6000</dribblerSpeed>
-        <pushAcc>1.0</pushAcc>
-    </PushAroundObstacleSkill>
-    <ReceiveBallSkill>
-        <distThresholdToFixOrientation>200.0</distThresholdToFixOrientation>
-    </ReceiveBallSkill>
-    <RedirectBallSkill>
-        <distThresholdToFixOrientation>200.0</distThresholdToFixOrientation>
-    </RedirectBallSkill>
+    <PenaltyShootSkill>
+        <approachSpeed>0.15</approachSpeed>
+        <dribbleSpeed>8000.0</dribbleSpeed>
+        <slowMoveDist>200.0</slowMoveDist>
+        <targetAngle>14.0</targetAngle>
+    </PenaltyShootSkill>
     <SingleTouchKickSkill>
-        <chillAcc>2.0</chillAcc>
-        <chillVel>1.0</chillVel>
-        <maxAroundBallMargin>120.0</maxAroundBallMargin>
+        <roughAngleTolerance>0.3</roughAngleTolerance>
     </SingleTouchKickSkill>
     <test>
         <LatencyTestSkill>
@@ -33,6 +28,9 @@
             <maxSamples>100</maxSamples>
         </LatencyTestSkill>
     </test>
+    <TouchKickSkill>
+        <roughAngleTolerance>0.15</roughAngleTolerance>
+    </TouchKickSkill>
     <util>
         <AroundBallCalc>
             <shiftAngle>0.7</shiftAngle>

@@ -1,12 +1,7 @@
-/**
- * 
- */
 package edu.tigers.sumatra.network;
 
 
-import java.io.IOException;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
+import java.io.Closeable;
 
 
 /**
@@ -17,13 +12,8 @@ import java.net.InetAddress;
  * @author Gero
  * @param <D> The data type this transmitter is able to process
  */
-public interface ITransmitter<D>
+public interface ITransmitter<D> extends Closeable
 {
-	
-	/**  */
-	static final int	UNDEFINED_PORT	= -1;
-	
-	
 	/**
 	 * Sends data of type {@code <D>} to the network
 	 * 
@@ -31,36 +21,4 @@ public interface ITransmitter<D>
 	 * @return success?
 	 */
 	boolean send(D data);
-	
-	
-	/**
-	 * May throw a {@link IOException}, as implementations often call {@link DatagramSocket#close()}
-	 * 
-	 * @throws IOException
-	 */
-	void cleanup() throws IOException;
-	
-	
-	/**
-	 * @return The local port the implementation ist bound to
-	 */
-	int getLocalPort();
-	
-	
-	/**
-	 * @return The address the implementation sends the content to
-	 */
-	InetAddress getLocalAddress();
-	
-	
-	/**
-	 * @return The port the implementation sends the content to
-	 */
-	int getTargetPort();
-	
-	
-	/**
-	 * @return Whether the implementation is ready to send content or not
-	 */
-	boolean isReady();
 }

@@ -3,14 +3,7 @@
  */
 package edu.tigers.sumatra.ai.pandora.plays.match;
 
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.Map;
-
-import org.apache.log4j.Logger;
-
 import com.github.g3force.instanceables.InstanceableClass;
-
 import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
 import edu.tigers.sumatra.ai.metis.MetisAiFrame;
 import edu.tigers.sumatra.ai.metis.offense.strategy.EOffensiveStrategy;
@@ -20,6 +13,11 @@ import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
 import edu.tigers.sumatra.ids.BotID;
+import org.apache.log4j.Logger;
+
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.Map;
 
 
 /**
@@ -76,7 +74,7 @@ public class OffensivePlay extends APlay
 			ERole requiredRole = strategyToRoleMap.get(strategy);
 			if (requiredRole == null)
 			{
-				// not sure if I want to send a warning here default silently for now
+				log.warn("No valid Offensive Role strategy found, this is some serious garbage, better call Mark");
 				requiredRole = ERole.ATTACKER;
 			}
 			

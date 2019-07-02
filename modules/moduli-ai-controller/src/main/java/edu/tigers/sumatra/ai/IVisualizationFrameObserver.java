@@ -20,14 +20,6 @@ public interface IVisualizationFrameObserver
 	
 	
 	/**
-	 * @param frame
-	 */
-	default void onRecalculatedVisualizationFrame(final VisualizationFrame frame)
-	{
-	}
-	
-	
-	/**
 	 * @param teamColor
 	 */
 	default void onClearVisualizationFrame(final EAiTeam teamColor)

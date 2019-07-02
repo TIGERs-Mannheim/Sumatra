@@ -10,15 +10,15 @@
     <parent>
         <groupId>edu.tigers.sumatra</groupId>
         <artifactId>sumatra-parent</artifactId>
-        <version>6.0</version>
+        <version>2019-SNAPSHOT</version>
         <relativePath>../sumatra-parent/pom.xml</relativePath>
     </parent>
 
     <dependencies>
 
         <dependency>
-            <groupId>com.vladium.utils</groupId>
-            <artifactId>objectprofiler</artifactId>
+            <groupId>com.github.TIGERs-Mannheim</groupId>
+            <artifactId>java-object-size-estimator</artifactId>
         </dependency>
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
@@ -66,10 +66,6 @@
             <artifactId>common-math</artifactId>
         </dependency>
         <dependency>
-            <groupId>edu.tigers.sumatra</groupId>
-            <artifactId>moduli-geometry</artifactId>
-        </dependency>
-        <dependency>
             <groupId>commons-lang</groupId>
             <artifactId>commons-lang</artifactId>
         </dependency>
@@ -88,6 +84,18 @@
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
             <artifactId>moduli-vision</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-vision-simulation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-offensive-tree</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>moduli-log-analysis</artifactId>
         </dependency>
     </dependencies>
 </project>

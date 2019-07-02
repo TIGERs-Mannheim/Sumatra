@@ -5,6 +5,7 @@
 package edu.tigers.sumatra.geometry;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -51,21 +52,21 @@ public class Geometry
 	/**
 	 * Field Geometry
 	 */
-	@Configurable(spezis = { "GRSIM", "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE" })
+	@Configurable(spezis = { "NICOLAI", "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE" })
 	private static double fieldLength = 12000;
-	@Configurable(spezis = { "GRSIM", "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE" })
+	@Configurable(spezis = { "NICOLAI", "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE" })
 	private static double fieldWidth = 9000;
-	@Configurable(spezis = { "GRSIM", "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE" })
+	@Configurable(spezis = { "NICOLAI", "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE" })
 	private static double boundaryWidth = 350;
-	@Configurable(spezis = { "GRSIM", "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE" })
+	@Configurable(spezis = { "NICOLAI", "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE" })
 	private static double judgesBorderWidth = 425;
-	@Configurable(spezis = { "GRSIM", "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE" })
+	@Configurable(spezis = { "NICOLAI", "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE" })
 	private static double centerCircleRadius = 500;
-	@Configurable(spezis = { "GRSIM", "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE" })
+	@Configurable(spezis = { "NICOLAI", "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE" })
 	private static double goalWidth = 1200;
-	@Configurable(spezis = { "GRSIM", "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE" })
+	@Configurable(spezis = { "NICOLAI", "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE" })
 	private static double goalDepth = 180;
-	@Configurable(spezis = { "GRSIM", "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE" })
+	@Configurable(spezis = { "NICOLAI", "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE" })
 	private static double goalHeight = 155;
 	@Configurable(comment = "Name of the CenterCircle arc defined in SSL-Vision", defValue = "CenterCircle")
 	private static String centerCircleName = "CenterCircle";
@@ -76,13 +77,13 @@ public class Geometry
 	/**
 	 * Penalty Area
 	 */
-	@Configurable(spezis = { "GRSIM", "SUMATRA", "LAB", "TISCH",
+	@Configurable(spezis = { "NICOLAI", "SUMATRA", "LAB", "TISCH",
 			"ROBOCUP", "ANDRE" }, comment = "Distance (goal line - penalty mark)")
 	private static double distanceToPenaltyMark = 1200;
-	@Configurable(spezis = { "GRSIM", "SUMATRA", "LAB", "TISCH",
+	@Configurable(spezis = { "NICOLAI", "SUMATRA", "LAB", "TISCH",
 			"ROBOCUP", "ANDRE" }, comment = "depth of the penalty area.")
 	private static double penaltyAreaDepth = 1200;
-	@Configurable(spezis = { "GRSIM", "SUMATRA", "LAB", "TISCH", "ROBOCUP",
+	@Configurable(spezis = { "NICOLAI", "SUMATRA", "LAB", "TISCH", "ROBOCUP",
 			"ANDRE" }, comment = "the length of the short line of the penalty area, that is parallel to the goal line")
 	private static double penaltyAreaFrontLineLength = 2400;
 	@Configurable(defValue = "LeftPenaltyStretch", comment = "Name of the LeftPenaltyStretch line defined in SSL-Vision")
@@ -91,7 +92,7 @@ public class Geometry
 	private static String rightPenaltyStretchName = "RightPenaltyStretch";
 	@Configurable(defValue = "LeftFieldRightPenaltyArc")
 	private static String leftFieldRightPenaltyArcName = "LeftFieldRightPenaltyArc";
-	@Configurable(defValue = "false", spezis = { "SUMATRA" })
+	@Configurable(defValue = "false")
 	private static boolean legacyPenArea = false;
 	
 	/**
@@ -111,9 +112,10 @@ public class Geometry
 	/**
 	 * TIGERs internal
 	 */
-	@Configurable
-	private static double penaltyAreaMargin = 100;
-	@Configurable(spezis = { "GRSIM", "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE" })
+	@Configurable(defValue = "10.0")
+	private static double penaltyAreaMargin = 10.0;
+	
+	@Configurable(spezis = { "NICOLAI", "SUMATRA", "LAB", "TISCH", "ROBOCUP", "ANDRE" })
 	private static double boundaryOffset = 0;
 	
 	
@@ -378,6 +380,17 @@ public class Geometry
 	public static Goal getGoalTheir()
 	{
 		return instance.goalTheir;
+	}
+	
+	
+	/**
+	 * Return both goals
+	 * 
+	 * @return list of goals
+	 */
+	public static List<Goal> getGoals()
+	{
+		return Arrays.asList(instance.goalOur, instance.goalTheir);
 	}
 	
 	

@@ -14,7 +14,6 @@ import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
 
 
@@ -25,17 +24,11 @@ import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
  */
 public class SerialFieldArray extends ASerialField
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	private final int					length;
-	private SerialDescription		embedded	= null;
-	private static final Logger	log		= Logger.getLogger(SerialFieldArray.class.getName());
+	private static final Logger log = Logger.getLogger(SerialFieldArray.class.getName());
+	private final int length;
+	private final SerialDescription embedded;
 	
 	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * @param field Reflection Field
 	 * @param type ESerialDataType
@@ -53,20 +46,20 @@ public class SerialFieldArray extends ASerialField
 		if (type == ESerialDataType.EMBEDDED)
 		{
 			embedded = new SerialDescription(field.getType().getComponentType());
+		} else
+		{
+			embedded = null;
 		}
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
 	@Override
 	public void decode(final byte[] data, final Object obj) throws SerialException
 	{
 		Object value;
 		
 		int localOffset = offset;
-		Object array = null;
+		Object array;
 		
 		try
 		{
@@ -81,28 +74,28 @@ public class SerialFieldArray extends ASerialField
 			switch (type)
 			{
 				case UINT8:
-					value = ACommand.byteArray2UByte(data, localOffset);
+					value = SerialByteConverter.byteArray2UByte(data, localOffset);
 					break;
 				case UINT16:
-					value = ACommand.byteArray2UShort(data, localOffset);
+					value = SerialByteConverter.byteArray2UShort(data, localOffset);
 					break;
 				case UINT32:
-					value = ACommand.byteArray2UInt(data, localOffset);
+					value = SerialByteConverter.byteArray2UInt(data, localOffset);
 					break;
 				case INT8:
 					value = data[localOffset];
 					break;
 				case INT16:
-					value = ACommand.byteArray2Short(data, localOffset);
+					value = SerialByteConverter.byteArray2Short(data, localOffset);
 					break;
 				case INT32:
-					value = ACommand.byteArray2Int(data, localOffset);
+					value = SerialByteConverter.byteArray2Int(data, localOffset);
 					break;
 				case FLOAT16:
-					value = ACommand.byteArray2HalfFloat(data, localOffset);
+					value = SerialByteConverter.byteArray2HalfFloat(data, localOffset);
 					break;
 				case FLOAT32:
-					value = ACommand.byteArray2Float(data, localOffset);
+					value = SerialByteConverter.byteArray2Float(data, localOffset);
 					break;
 				case EMBEDDED:
 					value = embedded.decode(Arrays.copyOfRange(data, localOffset, data.length));
@@ -146,8 +139,8 @@ public class SerialFieldArray extends ASerialField
 				break;
 		}
 	}
-
-
+	
+	
 	private void validateInt(final Object array, final int pos)
 	{
 		long value = Array.getLong(array, pos);
@@ -164,7 +157,7 @@ public class SerialFieldArray extends ASerialField
 	{
 		byte[] embeddedData = new byte[1];
 		int localOffset = offset;
-		Object array = null;
+		Object array;
 		
 		try
 		{
@@ -184,23 +177,23 @@ public class SerialFieldArray extends ASerialField
 				{
 					case INT8:
 					case UINT8:
-						ACommand.byte2ByteArray(data, localOffset, Array.getInt(array, i));
+						SerialByteConverter.byte2ByteArray(data, localOffset, Array.getInt(array, i));
 						break;
 					case INT16:
 					case UINT16:
-						ACommand.short2ByteArray(data, localOffset, Array.getInt(array, i));
+						SerialByteConverter.short2ByteArray(data, localOffset, Array.getInt(array, i));
 						break;
 					case UINT32:
-						ACommand.int2ByteArray(data, localOffset, (int) Array.getLong(array, i));
+						SerialByteConverter.int2ByteArray(data, localOffset, (int) Array.getLong(array, i));
 						break;
 					case INT32:
-						ACommand.int2ByteArray(data, localOffset, Array.getInt(array, i));
+						SerialByteConverter.int2ByteArray(data, localOffset, Array.getInt(array, i));
 						break;
 					case FLOAT16:
-						ACommand.halfFloat2ByteArray(data, localOffset, Array.getDouble(array, i));
+						SerialByteConverter.halfFloat2ByteArray(data, localOffset, Array.getDouble(array, i));
 						break;
 					case FLOAT32:
-						ACommand.float2ByteArray(data, localOffset, Array.getDouble(array, i));
+						SerialByteConverter.float2ByteArray(data, localOffset, Array.getDouble(array, i));
 						break;
 					case EMBEDDED:
 						embeddedData = embedded.encode(Array.get(array, i));
@@ -235,8 +228,4 @@ public class SerialFieldArray extends ASerialField
 		
 		return type.getLength() * length;
 	}
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 }

@@ -4,6 +4,7 @@
 
 package edu.tigers.sumatra.wp.util;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -12,6 +13,7 @@ import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -54,6 +56,11 @@ public class BotLastTouchedBallCalculator
 	 */
 	public Set<BotID> currentlyTouchingBots()
 	{
+		if (wFrame.getBall().getPos3().z() > RuleConstraints.getMaxRobotHeight())
+		{
+			return Collections.emptySet();
+		}
+		
 		final IVector2 prevHeading = prevWFrame.getBall().getVel();
 		final IVector2 curHeading = wFrame.getBall().getVel();
 		

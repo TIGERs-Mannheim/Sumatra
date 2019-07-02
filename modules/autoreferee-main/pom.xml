@@ -10,7 +10,7 @@
     <parent>
         <groupId>edu.tigers.sumatra</groupId>
         <artifactId>sumatra-parent</artifactId>
-        <version>6.0</version>
+        <version>2019-SNAPSHOT</version>
         <relativePath>../sumatra-parent/pom.xml</relativePath>
     </parent>
 
@@ -41,8 +41,13 @@
         </dependency>
 
         <dependency>
-            <groupId>idw-gpl</groupId>
-            <artifactId>idw-gpl</artifactId>
+            <groupId>edu.tigers.sumatra</groupId>
+            <artifactId>sumatra-gui-referee</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.TIGERs-Mannheim</groupId>
+            <artifactId>infonode</artifactId>
         </dependency>
 
         <dependency>
@@ -51,7 +56,7 @@
         </dependency>
 
         <dependency>
-            <groupId>edu.tigers.moduli</groupId>
+            <groupId>com.github.TIGERs-Mannheim</groupId>
             <artifactId>moduli</artifactId>
         </dependency>
 
@@ -73,36 +78,28 @@
 
     <build>
         <plugins>
-            <!-- run Sumatra with mvn exec:java -->
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.1.0</version>
                 <configuration>
-                    <executable>java</executable>
-                    <workingDirectory>${project.basedir}/../..</workingDirectory>
-                    <arguments>
-                        <argument>-Dproductive=true</argument>
-                        <argument>-Xms128m</argument>
-                        <argument>-Xmx2G</argument>
-                        <argument>-server</argument>
-                        <argument>-Xnoclassgc</argument>
-                        <argument>-Xverify:none</argument>
-                        <argument>-Dsun.java2d.d3d=false</argument>
-                        <argument>-XX:+UseG1GC</argument>
-                        <argument>-Djava.net.preferIPv4Stack=true</argument>
-                        <argument>-XX:-OmitStackTraceInFastThrow</argument>
-                        <argument>-classpath</argument>
-                        <!-- automatically creates the classpath using all project dependencies,
-                             also adding the project build directory -->
-                        <classpath/>
-                        <argument>edu.tigers.autoref.AutoReferee</argument>
-                    </arguments>
+                    <outputDirectory>${project.build.directory}/lib</outputDirectory>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
+                    <execution>
+                        <phase>process-sources</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <includeScope>runtime</includeScope>
+                            <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                        </configuration>
+                    </execution>
                     <execution>
                         <id>analyze</id>
                         <goals>

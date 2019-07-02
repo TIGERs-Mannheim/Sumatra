@@ -17,9 +17,9 @@ import edu.tigers.sumatra.geometry.IPenaltyArea;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.botshape.BotShape;
-import edu.tigers.sumatra.math.line.ILine;
-import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.LineMath;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.pathfinder.MovementCon;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
@@ -144,7 +144,7 @@ public class CatchBallCalc
 			IVector2 desiredKickerDest = getKickerDestination(getBallTravelLine(), lastInterceptionDest);
 			IVector2 botDest = desiredKickerDest
 					.addNew(getBallTravelLine().directionVector().scaleToNew(getTBot().getCenter2DribblerDist()));
-			if (getBallTravelLine().isPointInFront(botDest))
+			if (getBallTravelLine().toHalfLine().isPointInFront(botDest))
 			{
 				return desiredKickerDest;
 			}
@@ -264,13 +264,13 @@ public class CatchBallCalc
 	 * @param newKickerDest
 	 * @return
 	 */
-	private IVector2 getKickerDestination(ILine ballLine, final IVector2 newKickerDest)
+	private IVector2 getKickerDestination(ILineSegment ballLine, final IVector2 newKickerDest)
 	{
-		IVector2 lp = ballLine.leadPointOf(newKickerDest);
-		if (externallySetDestination != null && ballLine.isPointInFront(externallySetDestination)
+		IVector2 lp = ballLine.closestPointOnLine(newKickerDest);
+		if (externallySetDestination != null && ballLine.toHalfLine().isPointInFront(externallySetDestination)
 				&& ballLine.distanceTo(externallySetDestination) < 200)
 		{
-			IVector2 lpDesired = ballLine.leadPointOf(externallySetDestination);
+			IVector2 lpDesired = ballLine.closestPointOnLine(externallySetDestination);
 			if (lp.distanceTo(getBall().getPos()) < lpDesired.distanceTo(getBall().getPos()))
 			{
 				return lpDesired;
@@ -297,14 +297,14 @@ public class CatchBallCalc
 	}
 	
 	
-	private IVector2 validateKickerPosNoCollision(IVector2 desiredKickerDest, ILine ballLine)
+	private IVector2 validateKickerPosNoCollision(IVector2 desiredKickerDest, ILineSegment ballLine)
 	{
 		Optional<ITrackedBot> collidingBot = getWorldFrame().getFoeBots().values().stream()
 				.filter(tBot -> tBot.getPos().distanceTo(desiredKickerDest) < Geometry.getBotRadius() * 2)
 				.findFirst();
 		if (collidingBot.isPresent())
 		{
-			IVector2 lp = ballLine.leadPointOf(collidingBot.get().getPos());
+			IVector2 lp = ballLine.closestPointOnLine(collidingBot.get().getPos());
 			return LineMath.stepAlongLine(lp, ballLine.getStart(), Geometry.getBotRadius() * 2);
 		}
 		return desiredKickerDest;
@@ -341,14 +341,14 @@ public class CatchBallCalc
 	}
 	
 	
-	private ILine getBallTravelLine()
+	private ILineSegment getBallTravelLine()
 	{
 		ITrackedBall ball = getBall();
 		if (ball.getVel().getLength() > 0.1)
 		{
-			return ball.getTrajectory().getTravelLinesInterceptable().get(0);
+			return ball.getTrajectory().getTravelLineSegment();
 		}
-		return Line.fromPoints(ball.getPos(), curKickerDest);
+		return Lines.segmentFromPoints(ball.getPos(), curKickerDest);
 	}
 	
 	

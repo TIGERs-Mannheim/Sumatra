@@ -4,14 +4,17 @@
 
 package edu.tigers.sumatra.view.testplays.panels;
 
-import java.awt.*;
+import java.awt.GridLayout;
 
-import javax.swing.*;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
 
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.log4j.Logger;
 
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.testplays.commands.KickCommand;
 import edu.tigers.sumatra.testplays.util.Point;
 

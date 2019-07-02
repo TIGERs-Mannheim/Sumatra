@@ -119,6 +119,15 @@ public class Metis implements IConfigObserver
 	}
 	
 	
+	/**
+	 * Stop all calculators
+	 */
+	public void stop()
+	{
+		calculators.values().forEach(ACalculator::stop);
+	}
+	
+	
 	@Override
 	public void afterApply(final IConfigClient configClient)
 	{

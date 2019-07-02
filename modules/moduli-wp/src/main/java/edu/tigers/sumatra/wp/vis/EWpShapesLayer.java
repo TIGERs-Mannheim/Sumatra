@@ -4,6 +4,8 @@
 
 package edu.tigers.sumatra.wp.vis;
 
+import static edu.tigers.sumatra.drawable.ShapeMap.EShapeLayerPersistenceType.ALWAYS_PERSIST;
+import static edu.tigers.sumatra.drawable.ShapeMap.EShapeLayerPersistenceType.DEBUG_PERSIST;
 import static edu.tigers.sumatra.drawable.ShapeMap.EShapeLayerPersistenceType.NEVER_PERSIST;
 
 import edu.tigers.sumatra.drawable.IShapeLayer;
@@ -11,32 +13,24 @@ import edu.tigers.sumatra.drawable.ShapeMap.EShapeLayerPersistenceType;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Shape layers for WP
  */
 @SuppressWarnings("squid:S1192") // duplicated strings
 public enum EWpShapesLayer implements IShapeLayer
 {
-	/**  */
 	FIELD_BORDERS("Field Borders", "Field", true),
-	/**  */
-	REFEREE("Referee", "Field", true, 1000, EShapeLayerPersistenceType.ALWAYS_PERSIST),
-	/**  */
+	FIELD_BORDERS_ADDITIONAL("Additional Field Borders", "Field", false, DEBUG_PERSIST),
+	REFEREE("Referee", "Field", true, 1000, ALWAYS_PERSIST),
 	BALL_BUFFER("Ball buffer", "Field", false, NEVER_PERSIST),
-	/**  */
 	BOT_BUFFER("Bot buffer", "Field", false, NEVER_PERSIST),
-	/**  */
 	BOTS("Bots", "Field", true),
-	/**  */
-	BOT_FEEDBACK("Bot Feedback", "Field", false, EShapeLayerPersistenceType.DEBUG_PERSIST),
-	/**  */
-	BOT_FILTER("Bot Filter", "Field", false, EShapeLayerPersistenceType.DEBUG_PERSIST),
-	/** */
-	BOT_BUFFERED_TRAJ("Bot Buffered Traj", "Field", false, EShapeLayerPersistenceType.DEBUG_PERSIST),
-	/**  */
+	BOT_FEEDBACK("Bot Feedback", "Field", false),
+	BOT_FILTER("Bot Filter", "Field", false),
+	BOT_BUFFERED_TRAJ("Bot Buffered Traj", "Field", false, DEBUG_PERSIST),
+	BOT_PATTERNS("Bot Patterns", "Field", false, DEBUG_PERSIST),
 	BALL("Ball", "Field", true),
-	/** */
+	BALL_HIGHLIGHTER("Ball highlighter", "Field", true),
 	BALL_PREDICTION("Ball prediction", "Field", false),
-	/**  */
 	VELOCITY("Velocities", "Field"),
 	
 	;
@@ -64,7 +58,7 @@ public enum EWpShapesLayer implements IShapeLayer
 		this.name = name;
 		this.category = category;
 		this.visible = visible;
-		this.persistenceType = EShapeLayerPersistenceType.ALWAYS_PERSIST;
+		this.persistenceType = ALWAYS_PERSIST;
 		orderId = 10 + ordinal();
 		id = EWpShapesLayer.class.getCanonicalName() + name;
 	}

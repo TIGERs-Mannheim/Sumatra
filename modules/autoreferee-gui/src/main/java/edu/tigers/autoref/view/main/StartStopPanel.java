@@ -4,169 +4,70 @@
 package edu.tigers.autoref.view.main;
 
 import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.Map;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
+import javax.swing.ButtonGroup;
+import javax.swing.ButtonModel;
+import javax.swing.JRadioButton;
 
-import edu.tigers.autoref.view.main.IStartStopPanel.IStartStopPanelObserver;
-import edu.tigers.autoreferee.engine.IAutoRefEngine.AutoRefMode;
-import edu.tigers.autoreferee.module.AutoRefState;
+import edu.tigers.autoreferee.engine.EAutoRefMode;
 import edu.tigers.sumatra.components.BasePanel;
-import net.miginfocom.swing.MigLayout;
 
 
-/**
- * @author Lukas Magel
- */
-public class StartStopPanel extends BasePanel<IStartStopPanelObserver> implements IStartStopPanel
+public class StartStopPanel extends BasePanel<StartStopPanel.IStartStopPanelObserver>
 {
+	private final Map<EAutoRefMode, ButtonModel> autoRefModeModels = new EnumMap<>(EAutoRefMode.class);
 	
-	/**  */
-	private static final long serialVersionUID = 1L;
-	
-	private JButton startButton = null;
-	private JButton stopButton = null;
-	private JButton pauseButton = null;
-	private JButton resumeButton = null;
-	private JComboBox<AutoRefMode> refModeBox = null;
+	private final ButtonGroup group = new ButtonGroup();
 	
 	
-	/**
-	 * Create new instance
-	 */
 	public StartStopPanel()
 	{
-		setLayout(new MigLayout("", "[16%][16%][16%][16%][16%][16%]", ""));
+		JRadioButton off = new JRadioButton("Off");
+		off.addActionListener(e -> autoRefModeChanged(EAutoRefMode.OFF));
+		group.add(off);
+		add(off);
 		
-		startButton = new JButton("Start");
-		startButton.setEnabled(false);
-		startButton.addActionListener(e -> informObserver(IStartStopPanelObserver::onStartButtonPressed));
+		JRadioButton passive = new JRadioButton("Passive");
+		passive.addActionListener(e -> autoRefModeChanged(EAutoRefMode.PASSIVE));
+		group.add(passive);
+		add(passive);
 		
-		stopButton = new JButton("Stop");
-		stopButton.setEnabled(false);
-		stopButton.addActionListener(e -> informObserver(IStartStopPanelObserver::onStopButtonPressed));
+		JRadioButton active = new JRadioButton("Active");
+		active.addActionListener(e -> autoRefModeChanged(EAutoRefMode.ACTIVE));
+		group.add(active);
+		add(active);
 		
-		pauseButton = new JButton("Pause");
-		pauseButton.setEnabled(false);
-		pauseButton.addActionListener(e -> informObserver(IStartStopPanelObserver::onPauseButtonPressed));
+		autoRefModeModels.put(EAutoRefMode.OFF, off.getModel());
+		autoRefModeModels.put(EAutoRefMode.PASSIVE, passive.getModel());
+		autoRefModeModels.put(EAutoRefMode.ACTIVE, active.getModel());
 		
-		resumeButton = new JButton("Resume");
-		resumeButton.setEnabled(false);
-		resumeButton.addActionListener(e -> informObserver(IStartStopPanelObserver::onResumeButtonPressed));
-		
-		
-		refModeBox = new JComboBox<>(AutoRefMode.values());
-		
-		add(refModeBox, "span 2, grow");
-		add(startButton, "span 2, grow");
-		add(stopButton, "span 2, grow, wrap");
-		add(pauseButton, "span 3, grow");
-		add(resumeButton, "span 3, grow");
-		
-		setBorder(BorderFactory.createTitledBorder("Start/Stop"));
+		setAutoRefMode(EAutoRefMode.OFF);
 	}
 	
 	
-	/**
-	 * @param enabled
-	 */
-	public void setModeBoxEnabled(final boolean enabled)
+	private void autoRefModeChanged(EAutoRefMode mode)
 	{
-		refModeBox.setEnabled(enabled);
+		informObserver(o -> o.changeMode(mode));
 	}
 	
 	
-	/**
-	 * @param enabled
-	 */
-	public void setStartButtonEnabled(final boolean enabled)
+	public void setAutoRefMode(EAutoRefMode mode)
 	{
-		startButton.setEnabled(enabled);
-	}
-	
-	
-	/**
-	 * @param enabled
-	 */
-	public void setStopButtonEnabled(final boolean enabled)
-	{
-		stopButton.setEnabled(enabled);
-	}
-	
-	
-	/**
-	 * @param enabled
-	 */
-	public void setPauseButtonEnabled(final boolean enabled)
-	{
-		pauseButton.setEnabled(enabled);
-	}
-	
-	
-	/**
-	 * @param enabled
-	 */
-	public void setResumeButtonEnabled(final boolean enabled)
-	{
-		resumeButton.setEnabled(enabled);
+		group.setSelected(autoRefModeModels.get(mode), true);
 	}
 	
 	
 	@Override
-	public AutoRefMode getModeSetting()
+	public void setEnabled(final boolean enabled)
 	{
-		return (AutoRefMode) refModeBox.getSelectedItem();
+		super.setEnabled(enabled);
+		Arrays.asList(getComponents()).forEach(c -> c.setEnabled(enabled));
 	}
 	
-	
-	@Override
-	public void setModeSetting(final AutoRefMode mode)
+	public interface IStartStopPanelObserver
 	{
-		refModeBox.setSelectedItem(mode);
-	}
-	
-	
-	@Override
-	public void setPanelEnabled(final boolean enabled)
-	{
-		if (!enabled)
-		{
-			Arrays.asList(startButton, pauseButton, resumeButton, stopButton, refModeBox)
-					.forEach(comp -> comp.setEnabled(false));
-		}
-	}
-	
-	
-	/**
-	 * @param state
-	 */
-	@Override
-	public void setState(final AutoRefState state)
-	{
-		boolean startEnabled = false;
-		boolean stopEnabled = false;
-		boolean pauseEnabled = false;
-		switch (state)
-		{
-			case RUNNING:
-				stopEnabled = true;
-				pauseEnabled = true;
-				break;
-			case PAUSED:
-				stopEnabled = true;
-				break;
-			case STOPPED:
-				startEnabled = true;
-				break;
-			default:
-				break;
-		}
-		
-		setStartButtonEnabled(startEnabled);
-		setStopButtonEnabled(stopEnabled);
-		setModeBoxEnabled(startEnabled);
-		setPauseButtonEnabled(stopEnabled && pauseEnabled);
-		setResumeButtonEnabled(stopEnabled && !pauseEnabled);
+		void changeMode(final EAutoRefMode mode);
 	}
 }

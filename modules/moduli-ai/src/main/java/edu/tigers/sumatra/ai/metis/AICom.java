@@ -3,10 +3,10 @@
  */
 package edu.tigers.sumatra.ai.metis;
 
+import edu.tigers.sumatra.ai.metis.support.passtarget.IPassTarget;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import edu.tigers.sumatra.ai.metis.support.IPassTarget;
 
 
 /**

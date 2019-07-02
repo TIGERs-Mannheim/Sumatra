@@ -67,30 +67,29 @@ public class SupportPositionGenerationCalc extends ACalculator
 	@Configurable(defValue = "1500.0", comment = "Safety distance to keep to penalty area")
 	private static double safetyDistanceToPenaltyArea = 1500.0;
 	
-	private PointChecker pointChecker = new PointChecker();
+	private final PointChecker pointChecker;
 	private List<IDrawableShape> shapes;
 	
 	private Set<BotID> desiredOffensiveBots = Collections.emptySet();
 	private Random rnd;
 	
 	
-	/**
-	 * default
-	 */
 	public SupportPositionGenerationCalc()
 	{
-		pointChecker.useRuleEnforcement();
-		pointChecker.useKickOffRuleEnforcement();
-		pointChecker.addFunction(point -> !Geometry.getPenaltyAreaOur().isPointInShape(point,
-				minDistanceToOurPenaltyArea));
-		pointChecker.addFunction(p -> p.distanceTo(getWFrame().getFoeBots().values().stream()
-				.map(ITrackedBot::getPos)
-				.min(Comparator.comparingDouble(p::distanceToSqr))
-				.orElse(Geometry.getCenter())) > Geometry.getBotRadius() * 2);
-		pointChecker.addFunction(p -> desiredOffensiveBots.stream()
-				.map(o -> getWFrame().getBot(o).getPos())
-				.allMatch(o -> o.distanceTo(p) > getMinSupporterDistance()));
-		
+		pointChecker = new PointChecker()
+				.checkBallDistances()
+				.checkInsideField()
+				.checkNotInPenaltyAreas()
+				.checkConfirmWithKickOffRules()
+				.checkCustom(point -> !Geometry.getPenaltyAreaOur().isPointInShape(point,
+						minDistanceToOurPenaltyArea))
+				.checkCustom(p -> p.distanceTo(getWFrame().getFoeBots().values().stream()
+						.map(ITrackedBot::getPos)
+						.min(Comparator.comparingDouble(p::distanceToSqr))
+						.orElse(Geometry.getCenter())) > Geometry.getBotRadius() * 2)
+				.checkCustom(p -> desiredOffensiveBots.stream()
+						.map(o -> getWFrame().getBot(o).getPos())
+						.allMatch(o -> o.distanceTo(p) > getMinSupporterDistance()));
 	}
 	
 	

@@ -4,7 +4,6 @@
 
 package edu.tigers.sumatra.ai.metis.general;
 
-import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -12,7 +11,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import edu.tigers.sumatra.ai.BaseAiFrame;
-import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ids.BotID;
@@ -21,17 +19,19 @@ import edu.tigers.sumatra.ids.BotID;
 /**
  * @author Sebastian Stein <sebastian-stein@gmx.de>
  */
-public class DesiredGameStateBotsCalc extends ACalculator
+public class DesiredGameStateBotsCalc extends ADesiredBotCalc
 {
+	
+	public DesiredGameStateBotsCalc()
+	{
+		super(EPlay.SUPPORT);
+	}
+	
 	
 	@Override
 	public void doCalc(final TacticalField tacticalField, final BaseAiFrame aiFrame)
 	{
-		Set<BotID> availableBots = new HashSet<>(aiFrame.getWorldFrame().getTigerBotsAvailable().keySet());
-		Set<BotID> assignedBots = tacticalField.getDesiredBotMap().values().stream().flatMap(Collection::stream)
-				.collect(Collectors.toSet());
-		availableBots.removeAll(assignedBots);
-		
+		Set<BotID> availableBots = getUnassignedBots();
 		Map<EPlay, Set<BotID>> desiredBots = new EnumMap<>(EPlay.class);
 		for (Map.Entry<EPlay, Integer> entry : tacticalField.getPlayNumbers().entrySet())
 		{
@@ -45,7 +45,7 @@ public class DesiredGameStateBotsCalc extends ACalculator
 		
 		for (Map.Entry<EPlay, Set<BotID>> entry : desiredBots.entrySet())
 		{
-			tacticalField.addDesiredBots(entry.getKey(), entry.getValue());
+			addDesiredBots(entry.getKey(), entry.getValue());
 		}
 		
 		exchangeDoubleAssignedBots(tacticalField, availableBots);
@@ -88,7 +88,7 @@ public class DesiredGameStateBotsCalc extends ACalculator
 			}
 			Set<BotID> resultingBots = availableBots.stream().limit(lostBots).collect(Collectors.toSet());
 			defenseBots.addAll(resultingBots);
-			tacticalField.addDesiredBots(EPlay.DEFENSIVE, defenseBots);
+			addDesiredBots(EPlay.DEFENSIVE, defenseBots);
 		}
 	}
 }

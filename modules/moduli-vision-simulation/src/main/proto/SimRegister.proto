@@ -1,0 +1,8 @@
+syntax = "proto3";
+package edu.tigers.sumatra.sim.net;
+
+import "SimCommon.proto";
+
+message SimRegister {
+    repeated TeamColor teamColor = 1;
+}

@@ -6,7 +6,7 @@
     <groupId>edu.tigers.sumatra</groupId>
     <artifactId>sumatra-trainer-server</artifactId>
     <packaging>war</packaging>
-    <version>1.0</version>
+    <version>2019-SNAPSHOT</version>
     <name>sumatra-trainer-server</name>
 
     <properties>
@@ -43,7 +43,7 @@
         <dependency>
             <groupId>edu.tigers.sumatra</groupId>
             <artifactId>common</artifactId>
-            <version>6.0</version>
+            <version>2019-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>

@@ -6,15 +6,15 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <name>Sumatra</name>
-    <artifactId>sumatra</artifactId>
+    <!-- The key can not be changed to edu.tigers.sumatra, because SonarQube can not update this key currently -->
     <groupId>com.dhbw.sumatra</groupId>
-    <version>6.0</version>
+    <artifactId>sumatra</artifactId>
     <packaging>pom</packaging>
 
     <parent>
         <groupId>edu.tigers.sumatra</groupId>
         <artifactId>sumatra-parent</artifactId>
-        <version>6.0</version>
+        <version>2019-SNAPSHOT</version>
         <relativePath>modules/sumatra-parent/pom.xml</relativePath>
     </parent>
 
@@ -34,6 +34,8 @@
         <module>modules/moduli-ai</module>
         <module>modules/moduli-autoreferee</module>
         <module>modules/moduli-botmanager</module>
+        <module>modules/moduli-botmanager-sim</module>
+        <module>modules/moduli-botmanager-tigers</module>
         <module>modules/moduli-bot-params</module>
         <module>modules/moduli-cam</module>
         <module>modules/moduli-game-notifications</module>
@@ -49,7 +51,9 @@
         <module>modules/moduli-geometry</module>
         <module>modules/moduli-cam-logfile</module>
         <module>modules/moduli-ai-controller</module>
-
+        <module>modules/moduli-offensive-tree</module>
+	<module>modules/moduli-team-client</module>
+        <module>modules/moduli-statistics-saver</module>
         <module>modules/autoreferee-gui</module>
         <module>modules/autoreferee-main</module>
 
@@ -83,98 +87,10 @@
         <module>modules/sumatra-gui-visualizer</module>
         <module>modules/sumatra-gui-wp</module>
         <module>modules/sumatra-gui-logfile</module>
+        <module>modules/sumatra-gui-kick</module>
+        <module>modules/sumatra-gui-skills</module>
 
         <module>modules/module-template</module>
-
+        <module>modules/moduli-log-analysis</module>
     </modules>
-
-    <scm>
-        <connection>scm:git:https://tigers-mannheim.de/git/Sumatra.git
-        </connection>
-        <developerConnection>scm:git:https://tigers-mannheim.de/git/Sumatra.git
-        </developerConnection>
-        <url>scm:git:https://tigers-mannheim.de/git/Sumatra.git</url>
-        <tag>HEAD</tag>
-    </scm>
-
-    <issueManagement>
-        <system>Trac</system>
-        <url>http://localhost/trac</url>
-    </issueManagement>
-
-    <build>
-        <pluginManagement>
-            <plugins>
-
-                <plugin>
-                    <groupId>org.sonarsource.scanner.maven</groupId>
-                    <artifactId>sonar-maven-plugin</artifactId>
-                    <version>3.4.0.905</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                </plugin>
-
-                <plugin>
-                    <groupId>ch.fortysix</groupId>
-                    <artifactId>maven-postman-plugin</artifactId>
-                    <version>0.1.8</version>
-                    <executions>
-                        <execution>
-                            <id>send a mail</id>
-                            <phase>package</phase>
-                            <goals>
-                                <goal>send-mail</goal>
-                            </goals>
-                            <inherited>false</inherited>
-                            <configuration>
-                                <skip>false</skip>
-                                <from>system@tigers-mannheim.de</from>
-                                <failonerror>false</failonerror>
-                                <mailhost>localhost</mailhost>
-                                <receivers>
-                                    <receiver>system@tigers-mannheim.de</receiver>
-                                </receivers>
-                                <surefireReportHtml>${project.build.directory}/site/surefire-report.html
-                                </surefireReportHtml>
-                                <subject>There are JUnit testcase failures or errors</subject>
-                                <groovyCondition>errors &gt; 0 || failures &gt; 0</groovyCondition>
-                                <htmlMessageFile>${project.build.directory}/site/surefire-report.html</htmlMessageFile>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-jxr-plugin</artifactId>
-            <version>2.5</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-report-plugin</artifactId>
-            <version>2.20.1</version>
-        </dependency>
-    </dependencies>
-
-    <reporting>
-        <outputDirectory>target/site</outputDirectory>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jxr-plugin</artifactId>
-                <version>2.5</version>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-report-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </reporting>
 </project>

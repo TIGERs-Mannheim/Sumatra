@@ -17,7 +17,6 @@ import javax.swing.JCheckBoxMenuItem;
 
 import edu.tigers.sumatra.ai.AIInfoFrame;
 import edu.tigers.sumatra.ai.Ai;
-import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
 import edu.tigers.sumatra.ai.VisualizationFrame;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.EAiTeam;
@@ -35,10 +34,11 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
 public class ReplayAiReCalcController implements IReplayController
 {
+	private static final String UPDATED_SUFFIX = "_UPDATED";
+	
 	private final List<IWorldFrameObserver> wFrameObservers = new ArrayList<>();
-	private final List<IVisualizationFrameObserver> visFrameObservers = new ArrayList<>();
 	private final Map<EAiTeam, Ai> ais = new EnumMap<>(EAiTeam.class);
-	private ASkillSystem skillSystem = GenericSkillSystem.forSimulation();
+	private ASkillSystem skillSystem = GenericSkillSystem.forAnalysis();
 	private long lastTimestamp = 0;
 	
 	
@@ -49,10 +49,6 @@ public class ReplayAiReCalcController implements IReplayController
 			if (view.getPresenter() instanceof IWorldFrameObserver)
 			{
 				wFrameObservers.add((IWorldFrameObserver) view.getPresenter());
-			}
-			if (view.getPresenter() instanceof IVisualizationFrameObserver)
-			{
-				visFrameObservers.add((IVisualizationFrameObserver) view.getPresenter());
 			}
 			if (view.getType() == ESumatraViewType.REPLAY_CONTROL)
 			{
@@ -77,19 +73,21 @@ public class ReplayAiReCalcController implements IReplayController
 			AIInfoFrame aiFrame = ai.processWorldFrame(wfw);
 			if (aiFrame != null)
 			{
-				ShapeMap skillShapeMap = new ShapeMap();
-				skillSystem.process(wfw, skillShapeMap);
-				aiFrame.getTacticalField().getDrawableShapes().setInverted(wfw.getWorldFrame(ai.getAiTeam()).isInverted());
+				final boolean inverted = wfw.getWorldFrame(ai.getAiTeam()).isInverted();
+				ShapeMap skillShapeMap = skillSystem.process(wfw, ai.getAiTeam().getTeamColor());
+				skillShapeMap.setInverted(inverted);
+				aiFrame.getTacticalField().getDrawableShapes().setInverted(inverted);
 				VisualizationFrame visFrame = new VisualizationFrame(aiFrame);
-				for (IVisualizationFrameObserver o : visFrameObservers)
-				{
-					o.onRecalculatedVisualizationFrame(visFrame);
-				}
+				
 				for (IWorldFrameObserver o : wFrameObservers)
 				{
-					o.onNewShapeMap(lastTimestamp, aiFrame.getTacticalField().getDrawableShapes(),
-							visFrame.getTeamColor().name() + "_UPDATED");
-					o.onNewShapeMap(lastTimestamp, skillShapeMap, "SKILLS_UPDATED");
+					final String teamName = visFrame.getTeamColor().name();
+					o.onNewShapeMap(lastTimestamp,
+							aiFrame.getTacticalField().getDrawableShapes(),
+							teamName + UPDATED_SUFFIX);
+					o.onNewShapeMap(lastTimestamp,
+							skillShapeMap,
+							"SKILLS_" + teamName + UPDATED_SUFFIX);
 				}
 			}
 		}
@@ -142,7 +140,7 @@ public class ReplayAiReCalcController implements IReplayController
 				{
 					for (IWorldFrameObserver o : wFrameObservers)
 					{
-						o.onClearShapeMap(teamColor.name() + "_UPDATED");
+						o.onClearShapeMap(teamColor.name() + UPDATED_SUFFIX);
 					}
 				}
 			}

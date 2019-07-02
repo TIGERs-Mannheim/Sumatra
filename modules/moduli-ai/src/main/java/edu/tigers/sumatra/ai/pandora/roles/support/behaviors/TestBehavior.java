@@ -34,6 +34,12 @@ public class TestBehavior extends ASupportBehavior
 		getRole().getCurrentSkill().getMoveCon().updateDestination(Geometry.getCenter());
 		
 	}
+
+	@Override
+	public boolean getIsActive()
+	{
+		return false;
+	}
 	
 	
 	@Override

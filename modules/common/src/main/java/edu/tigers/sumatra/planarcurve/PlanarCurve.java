@@ -3,17 +3,16 @@
  */
 package edu.tigers.sumatra.planarcurve;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-import org.apache.commons.lang.Validate;
-import org.apache.commons.math3.util.Pair;
-
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
+import org.apache.commons.lang.Validate;
+import org.apache.commons.math3.util.Pair;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 
 /**
@@ -189,7 +188,6 @@ public class PlanarCurve
 				min = dist;
 			}
 		}
-		
 		return min;
 	}
 	

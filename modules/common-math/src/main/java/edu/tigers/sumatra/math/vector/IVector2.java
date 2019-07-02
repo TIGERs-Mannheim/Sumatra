@@ -8,8 +8,6 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Function;
 
-import edu.tigers.sumatra.math.IEuclideanDistance;
-
 
 /**
  * Interface for a 2-dimensional vector

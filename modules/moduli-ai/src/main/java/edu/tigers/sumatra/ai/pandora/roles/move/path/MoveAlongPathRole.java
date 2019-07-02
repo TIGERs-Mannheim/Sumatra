@@ -338,7 +338,7 @@ public class MoveAlongPathRole extends ARole
 			}
 			
 			IVector2 destinationPoint = command.getDestination().createVector2();
-			if (getWFrame().getBall().getTrajectory().getTravelLine().nearestPointOnLine(destinationPoint)
+			if (getWFrame().getBall().getTrajectory().getTravelLine().closestPointOnLine(destinationPoint)
 					.distanceTo(destinationPoint) >= 100)
 			{
 				return false;
@@ -387,6 +387,11 @@ public class MoveAlongPathRole extends ARole
 		@Override
 		public void doUpdate()
 		{
+			if (foreignBot == null)
+			{
+				return;
+			}
+			
 			if (foreignBot.getPos().distanceTo(getWFrame().getBall().getPos()) <= Geometry.getBallRadius() + 200)
 			{
 				triggerEvent(EEvent.NEXT);
@@ -462,6 +467,7 @@ public class MoveAlongPathRole extends ARole
 		@Override
 		public void doUpdate()
 		{
+			getCurrentSkill().getMoveCon().setBallObstacle(false);
 			if (getPos().distanceTo(getWFrame().getBall().getPos()) <= Geometry.getBallRadius() + 100)
 			{
 				triggerEvent(EEvent.NEXT);
@@ -510,7 +516,7 @@ public class MoveAlongPathRole extends ARole
 			}
 			
 			IVector2 destinationPoint = command.getDestination().createVector2();
-			if (getWFrame().getBall().getTrajectory().getTravelLine().nearestPointOnLine(destinationPoint)
+			if (getWFrame().getBall().getTrajectory().getTravelLine().closestPointOnLine(destinationPoint)
 					.distanceTo(destinationPoint) >= 100)
 			{
 				return false;

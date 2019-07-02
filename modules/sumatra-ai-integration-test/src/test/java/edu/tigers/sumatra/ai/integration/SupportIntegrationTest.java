@@ -21,8 +21,6 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 public class SupportIntegrationTest extends AAiIntegrationTest
 {
-	
-	
 	@Test
 	public void testMoveOutOfGoalSight() throws Exception
 	{
@@ -36,7 +34,7 @@ public class SupportIntegrationTest extends AAiIntegrationTest
 		nextFrame();
 		ITrackedBot bot = getAthenaAiFrame().getWorldFrame().getBot(BotID.createBotId(7, ETeamColor.YELLOW));
 		SupportRole role = (SupportRole) getAthenaAiFrame().getPlayStrategy().getActiveRoles(ERole.SUPPORT).stream()
-				.filter(r -> r.getBotID() == bot.getBotId()).findFirst().orElseThrow(NoSuchFieldException::new);
+				.filter(r -> r.getBotID() == bot.getBotId()).findFirst().orElseThrow(IllegalStateException::new);
 		IVector2 destination = role.getCurrentSkill().getMoveCon().getDestination();
 		
 		
@@ -51,8 +49,5 @@ public class SupportIntegrationTest extends AAiIntegrationTest
 				Geometry.getGoalTheir().getRightPost(), Geometry.getGoalTheir().getLeftPost());
 		
 		assertThat(goalTriangle.withMargin(Geometry.getBotRadius()).isPointInShape(destination)).isFalse();
-		
 	}
-	
-	
 }

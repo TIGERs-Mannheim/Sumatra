@@ -9,23 +9,20 @@ import edu.tigers.sumatra.views.ISumatraViewPresenter;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * A Sumatra view for log messages.
  */
 public class LogView extends ASumatraView
 {
-	private final boolean	addAppender;
-	
-	
-	/**
-	 * @param addAppender
-	 */
+	private final boolean addAppender;
+
+
 	public LogView(final boolean addAppender)
 	{
 		super(ESumatraViewType.LOG);
 		this.addAppender = addAppender;
 	}
-	
-	
+
+
 	@Override
 	public ISumatraViewPresenter createPresenter()
 	{

@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Nov 17, 2016
- * Author(s): Lukas Magel
- * *********************************************************
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.math.line.v2;
 
@@ -17,13 +12,14 @@ import edu.tigers.sumatra.math.vector.IVector2;
  *
  * @author Lukas Magel
  */
-public interface IHalfLine extends IUnboundedLine
+public interface IHalfLine extends ILineBase
 {
 	@Override
 	IHalfLine copy();
-
+	
+	
 	/**
-	 * Returns true if the specified {@code point} is located in the direction of the half-line. For a half-line with
+	 * Returns true if the specified {@code point} is located in the direction of the line. For a line with
 	 * support vector A and direction vector B this is the case if the angle between B and (point - A) is less than 90
 	 * degrees.
 	 *
@@ -33,5 +29,4 @@ public interface IHalfLine extends IUnboundedLine
 	 *         direction of this half-line.
 	 */
 	boolean isPointInFront(IVector2 point);
-	
 }

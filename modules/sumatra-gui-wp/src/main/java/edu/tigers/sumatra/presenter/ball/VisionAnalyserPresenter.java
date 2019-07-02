@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -238,61 +237,6 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 		
 		
 		@Override
-		public void onCreateBallModel(final List<String> filenames)
-		{
-			MatlabProxy mp;
-			try
-			{
-				mp = MatlabConnection.getMatlabProxy();
-				mp.eval(LEARNING);
-				Object[] values = mp.returningFeval("learnBallModel", 1,
-						filenames.toArray(new Object[filenames.size()]));
-				double[] coeffs = (double[]) values[0];
-				double[] params = new double[coeffs.length];
-				System.arraycopy(coeffs, 0, params, 0, coeffs.length);
-				log.info("params: " + Arrays.toString(params));
-			} catch (MatlabConnectionException err)
-			{
-				log.error(err.getMessage(), err);
-			} catch (MatlabInvocationException err)
-			{
-				log.error(ERROR_EVALUATING_MATLAB_FUNCTION + err.getMessage(), err);
-			}
-		}
-		
-		
-		@Override
-		public void onCreateBallAndKickModel(final List<String> filenames)
-		{
-			MatlabProxy mp;
-			try
-			{
-				mp = MatlabConnection.getMatlabProxy();
-				mp.eval(LEARNING);
-				Object[] values = mp.returningFeval("learnBallAndKickModel", 1,
-						filenames.toArray(new Object[filenames.size()]));
-				double[] coeffs = (double[]) values[0];
-				double[] params = new double[coeffs.length];
-				System.arraycopy(coeffs, 0, params, 0, coeffs.length);
-				
-				double[] ballParams = new double[5];
-				System.arraycopy(params, 0, ballParams, 0, ballParams.length);
-				double[] kickParams = new double[6];
-				System.arraycopy(params, 5, kickParams, 0, kickParams.length);
-				
-				log.info("Ball params (aSlide aRoll cSwitch lossXY lossZ): " + Arrays.toString(ballParams));
-				log.info("Kick params (sOffset sFactor sGOF cOffset cFactor cGOF): " + Arrays.toString(kickParams));
-			} catch (MatlabConnectionException err)
-			{
-				log.error(err.getMessage(), err);
-			} catch (MatlabInvocationException err)
-			{
-				log.error("Error evaluating matlab function: " + err.getMessage(), err);
-			}
-		}
-		
-		
-		@Override
 		public void onNewSelectedFile(final List<String> filenames)
 		{
 			if (filenames.isEmpty())
@@ -348,7 +292,7 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 		{
 			for (Map.Entry<String, Object> entry : jsonObjects.entrySet())
 			{
-				if ("description".equals(entry.getKey()) || "numSamples".equals(entry.getKey()))
+				if (DESCRIPTION.equals(entry.getKey()) || "numSamples".equals(entry.getKey()))
 				{
 					continue;
 				}
@@ -413,7 +357,7 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				log.error(err.getMessage(), err);
 			} catch (MatlabInvocationException err)
 			{
-				log.error("Error evaluating matlab function: " + err.getMessage(), err);
+				log.error(ERROR_EVALUATING_MATLAB_FUNCTION + err.getMessage(), err);
 			}
 			
 		}

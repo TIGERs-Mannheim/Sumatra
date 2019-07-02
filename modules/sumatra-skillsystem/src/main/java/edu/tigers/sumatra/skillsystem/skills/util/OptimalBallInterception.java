@@ -78,7 +78,7 @@ public final class OptimalBallInterception
 		Optional<IVector2> fieldIntersection = ballTrajectory.getPlanarCurve()
 				.getIntersectionsWithRectangle(Geometry.getField())
 				.stream()
-				.filter(p -> ballTrajectory.getTravelLine().isPointOnLineSegment(p))
+				.filter(p -> ballTrajectory.getTravelLineSegment().isPointOnLine(p))
 				.findFirst();
 		return fieldIntersection.map(pos -> Math.min(tMax, ballTrajectory.getTimeByPos(pos))).orElse(tMax);
 	}
@@ -167,13 +167,13 @@ public final class OptimalBallInterception
 		private IBallTrajectory ballTrajectory;
 		private ITrackedBot tBot;
 		private MoveConstraints moveConstraints;
-
-
+		
+		
 		private Builder()
 		{
 		}
-
-
+		
+		
 		/**
 		 * Sets the {@code ballTrajectory} and returns a reference to this Builder so that the methods can be chained
 		 * together.
@@ -186,8 +186,8 @@ public final class OptimalBallInterception
 			this.ballTrajectory = ballTrajectory;
 			return this;
 		}
-
-
+		
+		
 		/**
 		 * Sets the {@code moveConstraints} and returns a reference to this Builder so that the methods can be chained
 		 * together.
@@ -200,8 +200,8 @@ public final class OptimalBallInterception
 			this.moveConstraints = moveConstraints;
 			return this;
 		}
-
-
+		
+		
 		/**
 		 * Set multiple fields based on the given tracked bots
 		 *
@@ -213,8 +213,8 @@ public final class OptimalBallInterception
 			this.tBot = tBot;
 			return this;
 		}
-
-
+		
+		
 		/**
 		 * Returns a {@code BallInterceptor} built from the parameters previously set.
 		 *

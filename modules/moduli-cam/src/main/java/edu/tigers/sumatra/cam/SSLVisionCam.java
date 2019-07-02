@@ -18,8 +18,6 @@ import com.github.g3force.configurable.IConfigObserver;
 
 import edu.tigers.sumatra.MessagesRobocupSslWrapper.SSL_WrapperPacket;
 import edu.tigers.sumatra.cam.data.CamGeometry;
-import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.network.IReceiver;
 import edu.tigers.sumatra.network.IReceiverObserver;
 import edu.tigers.sumatra.network.MulticastUDPReceiver;
 import edu.tigers.sumatra.network.NetworkUtility;
@@ -39,22 +37,21 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, I
 	private final byte[] bufferArr = new byte[BUFFER_SIZE];
 	
 	private Thread cam;
-	private IReceiver receiver;
+	private MulticastUDPReceiver receiver;
 	private boolean expectIOE = false;
 	
 	private final SSLVisionCamGeometryTranslator geometryTranslator = new SSLVisionCamGeometryTranslator();
 	
 	
 	@Configurable(defValue = "10006")
-	private int port = 10006;
+	private static int port = 10006;
 	
 	@Configurable(defValue = "224.5.23.2")
-	private String address = "224.5.23.2";
+	private static String address = "224.5.23.2";
 	
 	@Configurable(comment = "Enter a network address to limit network to a certain network interface")
-	private String network = "";
+	private static String network = "";
 	
-	private NetworkInterface nif;
 	private final TimeSync timeSync = new TimeSync();
 	
 	
@@ -65,42 +62,32 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, I
 	
 	
 	@Override
-	public void initModule()
-	{
-		// nothing to init
-	}
-	
-	
-	@Override
 	public void startModule()
 	{
-		ConfigRegistration.applySpezis(this, "user",
-				SumatraModel.getInstance().getGlobalConfiguration().getString("environment"));
-		// --- Choose network-interface
-		nif = NetworkUtility.chooseNetworkInterface(network, 3);
+		final NetworkInterface nif = NetworkUtility.chooseNetworkInterface(network, 3);
 		if (nif == null)
 		{
 			log.debug("No nif for vision-cam specified, will try all.");
+			receiver = new MulticastUDPReceiver(port, address);
 		} else
 		{
-			log.debug("Chose nif for vision-cam: " + nif.getDisplayName() + ".");
+			log.debug("Chose nif for vision-cam: " + nif.getDisplayName());
+			receiver = new MulticastUDPReceiver(port, address, nif);
 		}
-		if (getNif() == null)
-		{
-			MulticastUDPReceiver recv = new MulticastUDPReceiver(getPort(), getAddress());
-			recv.addObserver(this);
-			receiver = recv;
-		} else
-		{
-			MulticastUDPReceiver recv = new MulticastUDPReceiver(getPort(), getAddress(), getNif());
-			recv.addObserver(this);
-			receiver = recv;
-		}
+		receiver.addObserver(this);
 		
 		cam = new Thread(this, "SSLVisionCam");
 		cam.start();
 		
 		ConfigRegistration.registerConfigurableCallback("user", this);
+	}
+	
+	
+	@Override
+	public void stopModule()
+	{
+		cleanup();
+		ConfigRegistration.unregisterConfigurableCallback("user", this);
 	}
 	
 	
@@ -124,24 +111,6 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, I
 					break;
 				}
 				receiver.receive(packet);
-				
-				// At this point we got a problem: The DatagramPacket has a total length of BUFFER_SIZE (= 10000), but the
-				// actual data is smaller.
-				// We can't simply pass packet.getData() to the protobufs parseFrom(...)-method, because this array is 10000
-				// byte long, and it is
-				// not possible to detect the end of the actual message and thus not possible to read directly from it
-				// (InvalidProtocolBufferException)
-				// As the information about the actual message-length is provided in the packet (.getLength()), we got two
-				// options:
-				// - copy all data into a new array with length defined by packet.getLength() or
-				// - open a ByteArrayInputStream on packet.getData() from 0-packet.getLength()
-				// =)
-				// Copy data
-				// byte[] tempBuffer = new byte[packet.getLength()];
-				// for (int i = 0; i < packet.getLength(); i++)
-				// {
-				// tempBuffer[i] = packet.getData()[i];
-				// }
 				
 				final ByteArrayInputStream packetIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
 				
@@ -197,17 +166,6 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, I
 	}
 	
 	
-	// --------------------------------------------------------------------------
-	// --- deinit and stop ------------------------------------------------------
-	// --------------------------------------------------------------------------
-	@Override
-	public void stopModule()
-	{
-		cleanup();
-		ConfigRegistration.unregisterConfigurableCallback("user", this);
-	}
-	
-	
 	private void cleanup()
 	{
 		if (cam != null)
@@ -219,15 +177,7 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, I
 		if (receiver != null)
 		{
 			expectIOE = true;
-			
-			try
-			{
-				receiver.cleanup();
-			} catch (final IOException err)
-			{
-				log.debug("Socket closed...", err);
-			}
-			
+			receiver.cleanup();
 			receiver = null;
 		}
 	}
@@ -259,14 +209,5 @@ public class SSLVisionCam extends ACam implements Runnable, IReceiverObserver, I
 	public final String getAddress()
 	{
 		return address;
-	}
-	
-	
-	/**
-	 * @return the nif
-	 */
-	public final NetworkInterface getNif()
-	{
-		return nif;
 	}
 }

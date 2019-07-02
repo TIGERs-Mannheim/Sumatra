@@ -19,18 +19,14 @@ import edu.tigers.sumatra.ids.ETeamColor;
 
 /**
  * Table Model for {@link BotOverviewPanel}
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class BotOverviewTableModel extends AbstractTableModel
 {
-	/**  */
-	private static final long									serialVersionUID	= 4712760313475190867L;
-	private final SortedMap<BotID, BotOverviewColumn>	data					= new ConcurrentSkipListMap<>(
-			BotID.getComparator());
-	private BotID[]												sortedBots			= new BotID[0];
-	
-	
+	private static final long serialVersionUID = 4712760313475190867L;
+	private final SortedMap<BotID, BotOverviewColumn> data = new ConcurrentSkipListMap<>(BotID.getComparator());
+	private BotID[] sortedBots = new BotID[0];
+
+
 	/**
 	 * @param botId
 	 * @param columnData
@@ -51,8 +47,8 @@ public class BotOverviewTableModel extends AbstractTableModel
 		}
 		return col;
 	}
-	
-	
+
+
 	/**
 	 * @param botId
 	 */
@@ -65,24 +61,14 @@ public class BotOverviewTableModel extends AbstractTableModel
 			fireTableStructureChanged();
 		}
 	}
-	
-	
-	/**
-	 * @param botId
-	 * @return
-	 */
-	public BotOverviewColumn getBotOverviewColumn(final BotID botId)
-	{
-		return data.get(botId);
-	}
-	
-	
+
+
 	private void update()
 	{
-		sortedBots = data.keySet().toArray(new BotID[data.size()]);
+		sortedBots = data.keySet().toArray(new BotID[0]);
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -90,22 +76,22 @@ public class BotOverviewTableModel extends AbstractTableModel
 	{
 		return Arrays.asList(sortedBots);
 	}
-	
-	
+
+
 	@Override
 	public int getColumnCount()
 	{
 		return data.size() + 1;
 	}
-	
-	
+
+
 	@Override
 	public int getRowCount()
 	{
 		return EBotInformation.values().length;
 	}
-	
-	
+
+
 	@Override
 	public String getColumnName(final int col)
 	{
@@ -116,8 +102,8 @@ public class BotOverviewTableModel extends AbstractTableModel
 		return "Bot " + sortedBots[col - 1].getNumber() + " "
 				+ (sortedBots[col - 1].getTeamColor() == ETeamColor.YELLOW ? "Y" : "B");
 	}
-	
-	
+
+
 	@Override
 	public Object getValueAt(final int row, final int col)
 	{
@@ -127,8 +113,8 @@ public class BotOverviewTableModel extends AbstractTableModel
 		}
 		return data.get(sortedBots[col - 1]).getData().get(row);
 	}
-	
-	
+
+
 	@Override
 	public Class<?> getColumnClass(final int c)
 	{

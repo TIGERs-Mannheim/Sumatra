@@ -7,8 +7,12 @@ package edu.tigers.sumatra.math.quadrilateral;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import org.apache.commons.lang.Validate;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -120,5 +124,27 @@ public final class Quadrilateral extends AQuadrilateral
 		return new HashCodeBuilder(17, 37)
 				.append(corners)
 				.toHashCode();
+	}
+	
+	
+	@Override
+	public List<IVector2> lineIntersections(final ILine line)
+	{
+		IVector2 a = corners.get(0);
+		IVector2 b = corners.get(1);
+		IVector2 c = corners.get(2);
+		IVector2 d = corners.get(3);
+		ILineSegment ab = Lines.segmentFromPoints(a, b);
+		ILineSegment bc = Lines.segmentFromPoints(b, c);
+		ILineSegment cd = Lines.segmentFromPoints(c, d);
+		ILineSegment da = Lines.segmentFromPoints(d, a);
+		ILineSegment[] lines = new ILineSegment[] { ab, bc, cd, da };
+		List<IVector2> intersections = new ArrayList<>();
+		for (ILineSegment segment : lines)
+		{
+			Optional<IVector2> intersection = segment.intersectLine(Lines.lineFromLegacyLine(line));
+			intersection.ifPresent(intersections::add);
+		}
+		return intersections;
 	}
 }

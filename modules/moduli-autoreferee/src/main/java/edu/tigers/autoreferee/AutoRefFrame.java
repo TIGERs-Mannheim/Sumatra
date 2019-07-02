@@ -7,13 +7,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import edu.tigers.autoreferee.engine.calc.PossibleGoalCalc.PossibleGoal;
 import edu.tigers.autoreferee.generic.BotPosition;
-import edu.tigers.autoreferee.generic.TimedPosition;
 import edu.tigers.sumatra.drawable.ShapeMap;
-import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.referee.data.RefereeMsg;
+import edu.tigers.sumatra.wp.data.BallLeftFieldPosition;
 import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
 
@@ -31,10 +29,8 @@ public class AutoRefFrame implements IAutoRefFrame
 	private List<BotPosition> botsTouchingBall = Collections.emptyList();
 	
 	private boolean isBallInsideField = true;
-	private TimedPosition ballLeftFieldPos = new TimedPosition();
-	private IVector2 lastStopBallPos;
-	private List<GameState> stateHistory;
-	private PossibleGoal possibleGoal;
+	private BallLeftFieldPosition ballLeftFieldPos = null;
+	private List<GameState> stateHistory = Collections.emptyList();
 	
 	
 	public AutoRefFrame(final AutoRefFrame previousFrame, final WorldFrameWrapper worldFrameWrapper)
@@ -85,13 +81,13 @@ public class AutoRefFrame implements IAutoRefFrame
 	
 	
 	@Override
-	public Optional<TimedPosition> getBallLeftFieldPos()
+	public Optional<BallLeftFieldPosition> getBallLeftFieldPos()
 	{
 		return Optional.ofNullable(ballLeftFieldPos);
 	}
 	
 	
-	public void setBallLeftFieldPos(final TimedPosition getBallLeftFieldPos)
+	public void setBallLeftFieldPos(final BallLeftFieldPosition getBallLeftFieldPos)
 	{
 		ballLeftFieldPos = getBallLeftFieldPos;
 	}
@@ -107,19 +103,6 @@ public class AutoRefFrame implements IAutoRefFrame
 	public void setBallInsideField(final boolean value)
 	{
 		isBallInsideField = value;
-	}
-	
-	
-	@Override
-	public IVector2 getLastStopBallPosition()
-	{
-		return lastStopBallPos;
-	}
-	
-	
-	public void setLastStopBallPosition(final IVector2 pos)
-	{
-		lastStopBallPos = pos;
 	}
 	
 	
@@ -168,18 +151,5 @@ public class AutoRefFrame implements IAutoRefFrame
 	public ShapeMap getShapes()
 	{
 		return shapes;
-	}
-	
-	
-	@Override
-	public Optional<PossibleGoal> getPossibleGoal()
-	{
-		return Optional.ofNullable(possibleGoal);
-	}
-	
-	
-	public void setPossibleGoal(final PossibleGoal possibleGoal)
-	{
-		this.possibleGoal = possibleGoal;
 	}
 }

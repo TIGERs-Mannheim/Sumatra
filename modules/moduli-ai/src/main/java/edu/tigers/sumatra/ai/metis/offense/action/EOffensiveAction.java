@@ -23,6 +23,10 @@ public enum EOffensiveAction
 	PULL_BACK,
 	/** GOAL_SHOT: Simply shoot on goal, without any steps in between */
 	GOAL_SHOT,
+	/** FINISHER_KICK: do some nice IFinisher move to trick opponents */
+	FINISHER_KICK,
+	/** PROTECT: protect the ball and buy some time */
+	PROTECT,
 	/**
 	 * Everything related to redirecting, can be pass or goal_shot
 	 */

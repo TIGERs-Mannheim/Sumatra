@@ -7,6 +7,8 @@ package edu.tigers.sumatra;
 import java.awt.EventQueue;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 
 import javax.swing.UIManager;
@@ -15,13 +17,15 @@ import javax.swing.UnsupportedLookAndFeelException;
 
 import org.apache.log4j.Logger;
 
+import edu.tigers.autoreferee.engine.EAutoRefMode;
+import edu.tigers.autoreferee.module.AutoRefModule;
 import edu.tigers.moduli.IModuliStateObserver;
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.Referee.SSL_Referee.Command;
 import edu.tigers.sumatra.ai.AAgent;
 import edu.tigers.sumatra.ai.athena.EAIControlState;
-import edu.tigers.sumatra.botmanager.ABotManager;
+import edu.tigers.sumatra.botmanager.TigersBotManager;
 import edu.tigers.sumatra.lookandfeel.ILookAndFeelStateObserver;
 import edu.tigers.sumatra.lookandfeel.LookAndFeelStateAdapter;
 import edu.tigers.sumatra.model.ModuliStateAdapter;
@@ -30,7 +34,7 @@ import edu.tigers.sumatra.persistence.BerkeleyDb;
 import edu.tigers.sumatra.persistence.IRecordObserver;
 import edu.tigers.sumatra.persistence.RecordManager;
 import edu.tigers.sumatra.referee.AReferee;
-import edu.tigers.sumatra.referee.data.RefBoxRemoteControlFactory;
+import edu.tigers.sumatra.referee.control.GcEventFactory;
 import edu.tigers.sumatra.replay.AiReplayPresenter;
 import edu.tigers.sumatra.skillsystem.ASkillSystem;
 import edu.tigers.sumatra.util.GlobalShortcuts;
@@ -91,6 +95,7 @@ public class MainPresenter extends AMainPresenter implements IModuliStateObserve
 		ModuliStateAdapter.getInstance().addObserver(this);
 		
 		mainFrame.activate();
+		mainFrame.updateViewMenu();
 		
 		Runtime.getRuntime().addShutdownHook(new Thread(this::onExit));
 		
@@ -100,7 +105,7 @@ public class MainPresenter extends AMainPresenter implements IModuliStateObserve
 	
 	private void refreshModuliItems()
 	{
-		final ArrayList<String> filenames = new ArrayList<>();
+		final List<String> filenames = new ArrayList<>();
 		
 		// --- read all config-files from config-folder ---
 		final File dir = new File(SumatraModel.MODULI_CONFIG_PATH);
@@ -115,6 +120,7 @@ public class MainPresenter extends AMainPresenter implements IModuliStateObserve
 				}
 			}
 		}
+		Collections.sort(filenames);
 		
 		mainFrame.setMenuModuliItems(filenames);
 		mainFrame.selectModuliItem(SumatraModel.getInstance().getCurrentModuliConfig());
@@ -209,6 +215,7 @@ public class MainPresenter extends AMainPresenter implements IModuliStateObserve
 		GlobalShortcuts.unregisterAll(EShortcut.REFEREE_HALT);
 		GlobalShortcuts.unregisterAll(EShortcut.REFEREE_START);
 		GlobalShortcuts.unregisterAll(EShortcut.REFEREE_STOP);
+		GlobalShortcuts.unregisterAll(EShortcut.AUTOREF_TOGGLE);
 		
 		mainFrame.setModuliMenuEnabled(true);
 		deinitRecordManagerBinding();
@@ -220,10 +227,20 @@ public class MainPresenter extends AMainPresenter implements IModuliStateObserve
 		loadRefereeShortcuts();
 		loadRefboxShortcuts();
 		loadBotManagerShortcuts();
+		loadAutorefShortcuts();
 		mainFrame.setModuliMenuEnabled(false);
 		initRecordManagerBinding();
 	}
 	
+	
+	private void loadAutorefShortcuts()
+	{
+		GlobalShortcuts.register(EShortcut.AUTOREF_TOGGLE, () -> {
+			AutoRefModule autoref = SumatraModel.getInstance().getModule(AutoRefModule.class);
+			EAutoRefMode nextMode = autoref.getMode().next();
+			autoref.changeMode(nextMode);
+		});
+	}
 	
 	private void loadRefereeShortcuts()
 	{
@@ -232,14 +249,14 @@ public class MainPresenter extends AMainPresenter implements IModuliStateObserve
 			final AReferee refBox = SumatraModel.getInstance().getModule(AReferee.class);
 			
 			GlobalShortcuts.register(EShortcut.REFEREE_HALT,
-					() -> refBox.handleControlRequest(RefBoxRemoteControlFactory.fromCommand(Command.HALT)));
+					() -> refBox.sendGameControllerEvent(GcEventFactory.command(Command.HALT)));
 			GlobalShortcuts.register(EShortcut.REFEREE_STOP,
-					() -> refBox.handleControlRequest(RefBoxRemoteControlFactory.fromCommand(Command.STOP)));
+					() -> refBox.sendGameControllerEvent(GcEventFactory.command(Command.STOP)));
 			GlobalShortcuts.register(EShortcut.REFEREE_START,
-					() -> refBox.handleControlRequest(RefBoxRemoteControlFactory.fromCommand(Command.NORMAL_START)));
+					() -> refBox.sendGameControllerEvent(GcEventFactory.command(Command.NORMAL_START)));
 		} catch (final ModuleNotFoundException err)
 		{
-			log.error("RefBox Module not found", err);
+			log.error("Referee Module not found", err);
 		}
 	}
 	
@@ -251,53 +268,46 @@ public class MainPresenter extends AMainPresenter implements IModuliStateObserve
 			final AReferee refBox = SumatraModel.getInstance().getModule(AReferee.class);
 			
 			GlobalShortcuts.register(EShortcut.REFBOX_HALT,
-					() -> refBox.handleControlRequest(RefBoxRemoteControlFactory.fromCommand(Command.HALT)));
+					() -> refBox.sendGameControllerEvent(GcEventFactory.command(Command.HALT)));
 			GlobalShortcuts.register(EShortcut.REFBOX_STOP,
-					() -> refBox.handleControlRequest(RefBoxRemoteControlFactory.fromCommand(Command.STOP)));
+					() -> refBox.sendGameControllerEvent(GcEventFactory.command(Command.STOP)));
 			GlobalShortcuts.register(EShortcut.REFBOX_START_NORMAL,
-					() -> refBox.handleControlRequest(RefBoxRemoteControlFactory.fromCommand(Command.NORMAL_START)));
+					() -> refBox.sendGameControllerEvent(GcEventFactory.command(Command.NORMAL_START)));
 			GlobalShortcuts.register(EShortcut.REFBOX_START_FORCE,
-					() -> refBox.handleControlRequest(RefBoxRemoteControlFactory.fromCommand(Command.FORCE_START)));
+					() -> refBox.sendGameControllerEvent(GcEventFactory.command(Command.FORCE_START)));
 			GlobalShortcuts.register(EShortcut.REFBOX_KICKOFF_YELLOW,
 					() -> refBox
-							.handleControlRequest(RefBoxRemoteControlFactory.fromCommand(Command.PREPARE_KICKOFF_YELLOW)));
+							.sendGameControllerEvent(GcEventFactory.command(Command.PREPARE_KICKOFF_YELLOW)));
 			GlobalShortcuts.register(EShortcut.REFBOX_KICKOFF_BLUE,
 					() -> refBox
-							.handleControlRequest(RefBoxRemoteControlFactory.fromCommand(Command.PREPARE_KICKOFF_BLUE)));
+							.sendGameControllerEvent(GcEventFactory.command(Command.PREPARE_KICKOFF_BLUE)));
 			GlobalShortcuts.register(EShortcut.REFBOX_INDIRECT_YELLOW,
 					() -> refBox
-							.handleControlRequest(RefBoxRemoteControlFactory.fromCommand(Command.INDIRECT_FREE_YELLOW)));
+							.sendGameControllerEvent(GcEventFactory.command(Command.INDIRECT_FREE_YELLOW)));
 			GlobalShortcuts.register(EShortcut.REFBOX_INDIRECT_BLUE,
-					() -> refBox.handleControlRequest(RefBoxRemoteControlFactory.fromCommand(Command.INDIRECT_FREE_BLUE)));
+					() -> refBox.sendGameControllerEvent(GcEventFactory.command(Command.INDIRECT_FREE_BLUE)));
 			GlobalShortcuts.register(EShortcut.REFBOX_DIRECT_YELLOW,
-					() -> refBox.handleControlRequest(RefBoxRemoteControlFactory.fromCommand(Command.DIRECT_FREE_YELLOW)));
+					() -> refBox.sendGameControllerEvent(GcEventFactory.command(Command.DIRECT_FREE_YELLOW)));
 			GlobalShortcuts.register(EShortcut.REFBOX_DIRECT_BLUE,
-					() -> refBox.handleControlRequest(RefBoxRemoteControlFactory.fromCommand(Command.DIRECT_FREE_BLUE)));
+					() -> refBox.sendGameControllerEvent(GcEventFactory.command(Command.DIRECT_FREE_BLUE)));
 		} catch (final ModuleNotFoundException err)
 		{
-			log.error("RefBox Module not found", err);
+			log.error("Referee Module not found", err);
 		}
 	}
 	
 	
 	private void loadBotManagerShortcuts()
 	{
-		if (SumatraModel.getInstance().isModuleLoaded(ABotManager.class))
+		if (SumatraModel.getInstance().isModuleLoaded(TigersBotManager.class))
 		{
-			final ABotManager botManager = SumatraModel.getInstance().getModule(ABotManager.class);
-			GlobalShortcuts.register(EShortcut.CHARGE_ALL_BOTS, () -> {
-				if (botManager != null)
-				{
-					botManager.chargeAll();
-				}
-			});
 			
-			GlobalShortcuts.register(EShortcut.DISCHARGE_ALL_BOTS, () -> {
-				if (botManager != null)
-				{
-					botManager.dischargeAll();
-				}
-			});
+			GlobalShortcuts.register(EShortcut.CHARGE_ALL_BOTS,
+					() -> SumatraModel.getInstance().getModuleOpt(TigersBotManager.class)
+							.ifPresent(TigersBotManager::chargeAll));
+			GlobalShortcuts.register(EShortcut.DISCHARGE_ALL_BOTS,
+					() -> SumatraModel.getInstance().getModuleOpt(TigersBotManager.class)
+							.ifPresent(TigersBotManager::dischargeAll));
 		}
 	}
 	

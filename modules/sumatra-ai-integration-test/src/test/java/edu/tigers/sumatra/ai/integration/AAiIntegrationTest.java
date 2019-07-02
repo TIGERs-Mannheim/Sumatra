@@ -52,7 +52,7 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
  */
 public abstract class AAiIntegrationTest
 {
-	private static final String MODULI_CONFIG = "moduli_integration_test.xml";
+	private static final String MODULI_CONFIG = "integration_test.xml";
 	
 	private Metis metis;
 	private Athena athena;
@@ -84,8 +84,9 @@ public abstract class AAiIntegrationTest
 		Logger.getRootLogger().addAppender(logEventWatcher);
 		SumatraModel.getInstance().setTestMode(true);
 		SumatraModel.getInstance().setCurrentModuliConfig(MODULI_CONFIG);
-		SumatraModel.getInstance().loadModulesSafe(MODULI_CONFIG);
+		SumatraModel.getInstance().loadModulesOfConfigSafe(MODULI_CONFIG);
 		Geometry.refresh();
+		Geometry.setNegativeHalfTeam(ETeamColor.BLUE);
 	}
 	
 	
@@ -122,7 +123,7 @@ public abstract class AAiIntegrationTest
 	 */
 	protected void assertNoErrorLog()
 	{
-		assertThat(logEventWatcher.getNumEvents(Level.ERROR)).isZero();
+		assertThat(logEventWatcher.getEvents(Level.ERROR)).isEmpty();
 	}
 	
 	
@@ -131,7 +132,7 @@ public abstract class AAiIntegrationTest
 	 */
 	protected void assertNoWarnLog()
 	{
-		assertThat(logEventWatcher.getNumEvents(Level.WARN)).isZero();
+		assertThat(logEventWatcher.getEvents(Level.WARN)).isEmpty();
 	}
 	
 	
@@ -240,7 +241,7 @@ public abstract class AAiIntegrationTest
 						.withVel(entry.getValue().getVel().getXYVector())
 						.withOrientation(entry.getValue().getPos().z())
 						.withAngularVel(entry.getValue().getVel().z())
-						.withLastBallContact(0)
+						.withLastBallContact(-10000000)
 						.withBotInfo(RobotInfo.stubBuilder(entry.getKey(), timestamp).build())
 						.build())
 				.forEach(so -> bots.put(so.getBotId(), so));

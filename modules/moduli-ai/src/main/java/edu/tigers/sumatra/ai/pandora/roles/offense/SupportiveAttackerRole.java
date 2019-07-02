@@ -5,15 +5,24 @@
 package edu.tigers.sumatra.ai.pandora.roles.offense;
 
 import edu.tigers.sumatra.ai.math.AiMath;
+import edu.tigers.sumatra.ai.metis.offense.OffensiveMath;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.IPenaltyArea;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
 import edu.tigers.sumatra.statemachine.AState;
+import edu.tigers.sumatra.wp.data.ITrackedBot;
+
+import java.util.stream.Collectors;
 
 
 public class SupportiveAttackerRole extends ARole
 {
+	private IPenaltyArea area = Geometry.getPenaltyAreaTheir().withMargin(Geometry.getBotRadius() + 20);
+	
+	
 	public SupportiveAttackerRole()
 	{
 		super(ERole.SUPPORTIVE_ATTACKER);
@@ -53,5 +62,19 @@ public class SupportiveAttackerRole extends ARole
 		{
 			return getAiFrame().getTacticalField().getSkirmishInformation().getSupportiveCircleCatchPos();
 		}
+	}
+	
+	
+	@Override
+	protected void afterUpdate()
+	{
+		super.afterUpdate();
+		
+		// determine critical foe bots
+		getCurrentSkill().getMoveCon().setCriticalFoeBots(
+				getWFrame().getFoeBots().values().stream()
+						.filter(b -> OffensiveMath.isBotCritical(b.getPos(), area))
+						.map(ITrackedBot::getBotId)
+						.collect(Collectors.toSet()));
 	}
 }

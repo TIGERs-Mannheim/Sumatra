@@ -13,8 +13,7 @@ import org.apache.log4j.Logger;
 
 import com.github.g3force.configurable.ConfigRegistration;
 
-import edu.tigers.autoreferee.engine.IAutoRefEngine;
-import edu.tigers.autoreferee.engine.log.GameLogEntry;
+import edu.tigers.autoreferee.engine.EAutoRefMode;
 import edu.tigers.autoreferee.module.AutoRefModule;
 import edu.tigers.moduli.exceptions.InitModuleException;
 import edu.tigers.moduli.exceptions.StartModuleException;
@@ -59,14 +58,14 @@ public class SumatraTrainer
 	{
 		ConfigRegistration.setDefPath("../../config/");
 		SumatraModel.getInstance().setCurrentModuliConfig(MODULI_CONFIG);
-		SumatraModel.getInstance().loadModulesSafe(MODULI_CONFIG);
+		SumatraModel.getInstance().loadModulesOfConfigSafe(MODULI_CONFIG);
 		Geometry.refresh();
 		
 		try
 		{
 			SumatraModel.getInstance().startModules();
 			AutoRefModule autoRefModule = SumatraModel.getInstance().getModule(AutoRefModule.class);
-			autoRefModule.start(IAutoRefEngine.AutoRefMode.ACTIVE);
+			autoRefModule.changeMode(EAutoRefMode.ACTIVE);
 		} catch (InitModuleException | StartModuleException e)
 		{
 			logger.error(e);
@@ -98,7 +97,7 @@ public class SumatraTrainer
 						.withVel(Vector2.zero())
 						.withOrientation(0)
 						.withAngularVel(0)
-						.withLastBallContact(0)
+						.withLastBallContact(-10000000)
 						.withBotInfo(RobotInfo.stubBuilder(botID, timestamp).build())
 						.build();
 				bots.add(bot);
@@ -119,12 +118,12 @@ public class SumatraTrainer
 		SimulationParameters params = new SimulationParameters(initBots(), ball);
 		params.setRefereeCommand(Referee.SSL_Referee.Command.NORMAL_START);
 		SimulationHelper.loadSimulation(params);
-		SimulationHelper.stopSimulation();
+		SimulationHelper.pauseSimulation();
 		SimulationHelper.startSimulation();
 		
 		SimTimeBlocker simTimeBlocker = new SimTimeBlocker(duration);
 		simTimeBlocker.await();
-		SimulationHelper.stopSimulation();
+		SimulationHelper.pauseSimulation();
 	}
 	
 	
@@ -136,21 +135,14 @@ public class SumatraTrainer
 		if (agent.getAi(EAiTeam.YELLOW).isPresent())
 		{
 			results.add(new Result("yellowStats", agent.getAi(EAiTeam.YELLOW).get()
-					.getLatestAiFrame().getTacticalField().getMatchStatistics().toJSON()));
+					.getLatestAiFrame().getTacticalField().getMatchStatistics().toJSON().toJSONString()));
 			
 		}
 		if (agent.getAi(EAiTeam.BLUE).isPresent())
 		{
 			results.add(new Result("blueStats", agent.getAi(EAiTeam.BLUE).get()
-					.getLatestAiFrame().getTacticalField().getMatchStatistics().toJSON()));
+					.getLatestAiFrame().getTacticalField().getMatchStatistics().toJSON().toJSONString()));
 		}
-		
-		results.add(new Result("gamelog",
-				SumatraModel.getInstance().getModule(AutoRefModule.class).getEngine().getGameLog().getEntries()
-						.stream()
-						.map(GameLogEntry::toString)
-						.reduce((a, b) -> a + b).orElse("")));
-		
 		
 		return results;
 	}
@@ -158,8 +150,6 @@ public class SumatraTrainer
 	
 	private void shutdown()
 	{
-		AutoRefModule autoRefModule = SumatraModel.getInstance().getModule(AutoRefModule.class);
-		autoRefModule.stop();
 		SumatraModel.getInstance().stopModules();
 	}
 	

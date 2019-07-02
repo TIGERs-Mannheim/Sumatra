@@ -6,7 +6,7 @@ package edu.tigers.sumatra.skillsystem.skills;
 
 import edu.tigers.sumatra.ai.data.BotAiInformation;
 import edu.tigers.sumatra.botmanager.bots.ABot;
-import edu.tigers.sumatra.botmanager.commands.MultimediaControl;
+import edu.tigers.sumatra.botmanager.botskills.data.MultimediaControl;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.pathfinder.MovementCon;
@@ -63,6 +63,12 @@ public interface ISkill
 	 * @return
 	 */
 	BotID getBotId();
+	
+	
+	/**
+	 * @return
+	 */
+	boolean isAssigned();
 	
 	
 	/**

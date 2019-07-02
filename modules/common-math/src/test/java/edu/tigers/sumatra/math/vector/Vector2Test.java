@@ -428,7 +428,7 @@ public class Vector2Test
 		assertThat(Vector2.fromXY(0, 0).isZeroVector()).isTrue();
 		assertThat(Vector2.fromXY(1e-8, 0).isZeroVector()).isTrue();
 		assertThat(Vector2.fromXY(1e-8, 1e-8).isZeroVector()).isTrue();
-		assertThat(Vector2.fromXY(1e-4, 0).isZeroVector()).isFalse();
+		assertThat(Vector2.fromXY(1e-2, 0).isZeroVector()).isFalse();
 	}
 	
 	
@@ -474,7 +474,9 @@ public class Vector2Test
 		IVector2 vector1 = Vector2.fromXY(42, 0);
 		assertThat(vector1.toString()).isEqualTo("[42.000,0.000|l=42.000|a=0.000]");
 		IVector2 vector2 = Vector2.fromXY(0, 0.001);
-		assertThat(vector2.toString()).isEqualTo("[0.000,0.001|l=0.001|a=1.571]");
+		assertThat(vector2.toString()).isEqualTo("[0.000,0.001|l=0.001]");
+		IVector2 vector3 = Vector2.fromXY(0, 0.01);
+		assertThat(vector3.toString()).isEqualTo("[0.000,0.010|l=0.010|a=1.571]");
 	}
 	
 	

@@ -3,6 +3,7 @@
  */
 package edu.tigers.sumatra.aicenter;
 
+import edu.tigers.sumatra.aicenter.presenter.AICenterPresenter;
 import edu.tigers.sumatra.views.ASumatraView;
 import edu.tigers.sumatra.views.ESumatraViewType;
 import edu.tigers.sumatra.views.ISumatraViewPresenter;
@@ -20,8 +21,8 @@ public class AICenterView extends ASumatraView
 	{
 		super(ESumatraViewType.AI_CENTER);
 	}
-	
-	
+
+
 	@Override
 	public ISumatraViewPresenter createPresenter()
 	{

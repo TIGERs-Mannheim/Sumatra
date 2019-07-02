@@ -9,7 +9,10 @@ import java.util.Random;
 
 import edu.tigers.sumatra.export.IJsonString;
 import edu.tigers.sumatra.math.I2DShape;
+import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.line.v2.IHalfLine;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 
 
@@ -22,6 +25,46 @@ import edu.tigers.sumatra.math.vector.IVector2;
  */
 public interface IRectangle extends I2DShape, IJsonString
 {
+	/**
+	 * Find the line intersections with the edges
+	 *
+	 * @param line some unbounded line
+	 * @return all intersections. This can be zero to two intersections.
+	 */
+	List<IVector2> lineIntersections(edu.tigers.sumatra.math.line.v2.ILine line);
+	
+	
+	/**
+	 * Find the line intersections with the edges
+	 *
+	 * @param line some line segment
+	 * @return all intersections. This can be zero to two intersections.
+	 */
+	List<IVector2> lineIntersections(ILineSegment line);
+	
+	
+	/**
+	 * Find the line intersections with the edges
+	 *
+	 * @param line some half line
+	 * @return all intersections. This can be zero to two intersections.
+	 */
+	List<IVector2> lineIntersections(IHalfLine line);
+	
+	
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Find the line intersections on the outer curve. The goal line is not considered.
+	 * </p>
+	 *
+	 * @param line some legacy line (treated as a segment)
+	 * @return all intersections. This can be zero to two intersections.
+	 */
+	@Override
+	List<IVector2> lineIntersections(final ILine line);
+	
+	
 	/**
 	 * Absolute value of the length of the side
 	 * that is parallel to the Y-Axis.
@@ -73,6 +116,9 @@ public interface IRectangle extends I2DShape, IJsonString
 	IVector2 getRandomPointInShape(Random rnd);
 	
 	
+	boolean isCircleInShape(ICircle circle);
+	
+	
 	/**
 	 * Center of the rectangle
 	 * 
@@ -82,21 +128,66 @@ public interface IRectangle extends I2DShape, IJsonString
 	
 	
 	/**
+	 * Get a specified corner of the rectangle
+	 *
+	 * @param pos which corner
+	 * @return IVector2 of the position of the selected corner
+	 */
+	IVector2 getCorner(ECorner pos);
+	
+	
+	/**
 	 * Get all four points of the rectangle.
-	 * Starting at topLeft, going counter clockwise.
+	 * Starting at bottomLeft, going clockwise.
 	 * 
 	 * @return List of corner points.
 	 */
 	List<IVector2> getCorners();
 	
+	/**
+	 * Top -> posY
+	 * Right -> posX
+	 */
+	enum ECorner
+	{
+		BOTTOM_LEFT(0),
+		TOP_LEFT(1),
+		TOP_RIGHT(2),
+		BOTTOM_RIGHT(3);
+		
+		private int index;
+		
+		
+		ECorner(int index)
+		{
+			this.index = index;
+		}
+		
+		
+		public int getIndex()
+		{
+			return this.index;
+		}
+		
+	}
+	
 	
 	/**
-	 * Get the rectangle edges in counter-clockwise order.
+	 * Get the rectangle edges in clockwise order.
 	 * Starting with the left edge.
 	 * 
 	 * @return List of all edges
 	 */
 	List<ILine> getEdges();
+	
+	
+	/**
+	 * Get the rectangle edges in clockwise order.
+	 * Starting with the left edge.
+	 *
+	 * @return List of all edges
+	 */
+	List<ILineSegment> getEdgesAsSegments();
 	
 	
 	/**

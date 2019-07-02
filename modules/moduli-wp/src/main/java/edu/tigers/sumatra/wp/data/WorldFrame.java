@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import edu.tigers.sumatra.bot.RobotInfo;
+import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.BotIDMap;
 import edu.tigers.sumatra.ids.BotIDMapConst;
@@ -97,8 +98,10 @@ public class WorldFrame extends SimpleWorldFrame
 	
 	private BotIDMap<ITrackedBot> computeFoeBots(final SimpleWorldFrame simpleWorldFrame, final EAiTeam aiTeam)
 	{
+		
 		Map<BotID, ITrackedBot> foes = simpleWorldFrame.getBots().values().stream()
 				.filter(bot -> bot.getBotId().getTeamColor() == aiTeam.getTeamColor().opposite())
+				.filter(bot -> Geometry.getFieldWBorders().isPointInShape(bot.getPos()))
 				.map(bot -> {
 					RobotInfo info = RobotInfo.stub(bot.getBotId(), bot.getTimestamp());
 					return TrackedBot.newCopyBuilder(bot)

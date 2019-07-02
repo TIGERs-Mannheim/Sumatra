@@ -42,6 +42,7 @@ public class BallInterceptorTest
 		BotMovementLimits limits = new BotMovementLimits();
 		limits.setVelMax(3.0);
 		limits.setAccMax(3.0);
+		limits.setBrkMax(6.0);
 		limits.setJerkMax(50.0);
 		limits.setVelMaxFast(4.0);
 		limits.setAccMaxFast(3.5);
@@ -116,7 +117,8 @@ public class BallInterceptorTest
 		for (double t = 0; t < tEnd; t += 0.01)
 		{
 			IVector2 dest = ball.getTrajectory().getPosByTime(t).getXYVector();
-			BangBangTrajectory2D traj = TrajectoryGenerator.generatePositionTrajectory(moveConstraints, botPos, botVel,
+			BangBangTrajectory2D traj = TrajectoryGenerator.generatePositionTrajectory(moveConstraints, botPos,
+					botVel,
 					dest);
 			double tSlack = Math.abs(traj.getTotalTime() - t);
 			if (tSlack < minTSlack)

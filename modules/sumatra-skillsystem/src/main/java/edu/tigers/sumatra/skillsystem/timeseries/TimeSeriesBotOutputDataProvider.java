@@ -9,12 +9,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.apache.log4j.Logger;
-
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
-import edu.tigers.sumatra.botmanager.ABotManager;
-import edu.tigers.sumatra.botmanager.IBotManagerObserver;
-import edu.tigers.sumatra.botmanager.bots.ABot;
+import edu.tigers.sumatra.botmanager.TigersBotManager;
+import edu.tigers.sumatra.botmanager.bots.ITigerBotObserver;
+import edu.tigers.sumatra.botmanager.bots.TigerBot;
 import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.ECommand;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemMatchFeedback;
@@ -26,10 +23,8 @@ import edu.tigers.sumatra.model.SumatraModel;
 /**
  * Data provider for feedback from a (real) bot
  */
-public class TimeSeriesBotOutputDataProvider implements ITimeSeriesDataProvider, IBotManagerObserver
+public class TimeSeriesBotOutputDataProvider implements ITimeSeriesDataProvider, ITigerBotObserver
 {
-	private static final Logger log = Logger.getLogger(TimeSeriesBotOutputDataProvider.class.getName());
-	
 	private final Map<String, Collection<IExportable>> dataBuffers = new HashMap<>();
 	private final Collection<IExportable> botOutputs = new ConcurrentLinkedQueue<>();
 	
@@ -44,29 +39,21 @@ public class TimeSeriesBotOutputDataProvider implements ITimeSeriesDataProvider,
 	
 	
 	@Override
-	public void stop()
+	public void start()
 	{
-		try
+		if (SumatraModel.getInstance().isModuleLoaded(TigersBotManager.class))
 		{
-			ABotManager botManager = SumatraModel.getInstance().getModule(ABotManager.class);
-			botManager.removeObserver(this);
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("botManager module not found.", err);
+			SumatraModel.getInstance().getModule(TigersBotManager.class).addBotObserver(this);
 		}
 	}
 	
 	
 	@Override
-	public void start()
+	public void stop()
 	{
-		try
+		if (SumatraModel.getInstance().isModuleLoaded(TigersBotManager.class))
 		{
-			ABotManager botManager = SumatraModel.getInstance().getModule(ABotManager.class);
-			botManager.addObserver(this);
-		} catch (ModuleNotFoundException err)
-		{
-			log.error("botManager module not found.", err);
+			SumatraModel.getInstance().getModule(TigersBotManager.class).removeBotObserver(this);
 		}
 	}
 	
@@ -86,7 +73,7 @@ public class TimeSeriesBotOutputDataProvider implements ITimeSeriesDataProvider,
 	
 	
 	@Override
-	public void onIncomingBotCommand(final ABot bot, final ACommand command)
+	public void onIncomingBotCommand(final TigerBot bot, final ACommand command)
 	{
 		if (command.getType() == ECommand.CMD_SYSTEM_MATCH_FEEDBACK)
 		{

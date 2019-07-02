@@ -6,7 +6,7 @@ package edu.tigers.sumatra.math.line;
 
 import java.util.Optional;
 
-import edu.tigers.sumatra.math.IEuclideanDistance;
+import edu.tigers.sumatra.math.vector.IEuclideanDistance;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 

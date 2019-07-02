@@ -111,14 +111,6 @@ public abstract class AAgent extends AModule
 	
 	
 	/**
-	 * If true, process all incoming worldFrames, blocking the WP if necessary
-	 * 
-	 * @param processAllWorldFrames
-	 */
-	public abstract void setProcessAllWorldFrames(final boolean processAllWorldFrames);
-	
-	
-	/**
 	 * This function is used to notify the last {@link AIInfoFrame} to visualization observers.
 	 * 
 	 * @param lastAIInfoframe

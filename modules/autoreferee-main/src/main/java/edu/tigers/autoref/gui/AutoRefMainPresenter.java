@@ -55,7 +55,7 @@ public class AutoRefMainPresenter extends AMainPresenter
 			moduliFile = DEFAULT_MODULI_FILENAME;
 		}
 		
-		SumatraModel.getInstance().loadModulesSafe(moduliFile);
+		SumatraModel.getInstance().loadModulesOfConfigSafe(moduliFile);
 		try
 		{
 			SumatraModel.getInstance().startModules();

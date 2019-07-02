@@ -6,6 +6,7 @@ package edu.tigers.sumatra.persistence;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
@@ -24,6 +25,7 @@ import org.apache.log4j.Logger;
 import edu.tigers.sumatra.model.SumatraModel;
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
+import net.lingala.zip4j.model.FileHeader;
 
 
 /**
@@ -45,15 +47,47 @@ public class BerkeleyDb
 	{
 		if (dbPath.toString().endsWith(".zip"))
 		{
+			String folderName = determineFolderName(dbPath.toFile());
 			this.dbPath = Paths.get(dbPath.toString().substring(0, dbPath.toString().length() - 4));
-			if (!this.dbPath.toFile().exists())
+			if (!Files.exists(this.dbPath))
 			{
-				unpackDatabase(dbPath.toFile());
+				unpackDatabase(dbPath.toFile(), folderName);
+			} else
+			{
+				log.info("Database is already extracted, using: " + this.dbPath);
 			}
 		} else
 		{
 			this.dbPath = dbPath;
 		}
+	}
+	
+	
+	private String determineFolderName(final File file)
+	{
+		try
+		{
+			ZipFile zipFile = new ZipFile(file);
+			String topLevel = null;
+			for (Object obj : zipFile.getFileHeaders())
+			{
+				FileHeader fh = (FileHeader) obj;
+				String root = fh.getFileName().split("/")[0];
+				if (root.equals(topLevel) || topLevel == null)
+				{
+					topLevel = root;
+				} else
+				{
+					log.error("Recording contains more than one folder, this is invalid");
+					return file.getName();
+				}
+			}
+			return topLevel;
+		} catch (ZipException e)
+		{
+			log.error("Error while processing zip recording: ", e);
+		}
+		return file.getName();
 	}
 	
 	
@@ -163,17 +197,25 @@ public class BerkeleyDb
 	}
 	
 	
-	private void unpackDatabase(final File file)
+	private void unpackDatabase(final File file, final String folderName)
 	{
-		log.info("Unpacking database...");
+		log.info("Unpacking database: " + file);
 		try
 		{
 			ZipFile zipFile = new ZipFile(file);
 			zipFile.extractAll(dbPath.toFile().getParent());
+			
+			File extracted = Paths.get(dbPath.toFile().getParent(), folderName).toFile();
+			
+			Files.move(extracted.toPath(), Paths.get(dbPath.getParent().toString(), file.getName().replace(".zip", "")));
+			
 			log.info("Unpacking finished.");
 		} catch (ZipException e)
 		{
 			log.error("Unpacking failed.", e);
+		} catch (IOException e)
+		{
+			log.error("Could not move extracted replay: ", e);
 		}
 	}
 	

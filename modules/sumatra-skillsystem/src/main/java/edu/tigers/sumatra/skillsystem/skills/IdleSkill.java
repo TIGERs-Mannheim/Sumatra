@@ -3,7 +3,7 @@
  */
 package edu.tigers.sumatra.skillsystem.skills;
 
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillMotorsOff;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillMotorsOff;
 import edu.tigers.sumatra.skillsystem.ESkill;
 import edu.tigers.sumatra.statemachine.AState;
 

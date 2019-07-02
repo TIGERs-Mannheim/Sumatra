@@ -19,20 +19,30 @@ public enum EVisualizerOptions implements IShapeLayer
 	/**  */
 	TURN_NEXT("Visualizer", "horizontal field"),
 	/**  */
-	RESET_FIELD("Visualizer", "reset field"),;
+	RESET_FIELD("Visualizer", "reset field"),
+	/**  */
+	DARK("Visualizer", "dark mode", false);
 	
 	
 	private final String name;
 	private final String category;
+	private final boolean isVisibleByDefault;
+	
+	
+	EVisualizerOptions(final String category, final String name)
+	{
+		this(category, name, true);
+	}
 	
 	
 	/**
 	 * @param name this name will be shown to the user
 	 */
-	EVisualizerOptions(final String category, final String name)
+	EVisualizerOptions(final String category, final String name, final boolean isVisibleByDefault)
 	{
 		this.name = name;
 		this.category = category;
+		this.isVisibleByDefault = isVisibleByDefault;
 	}
 	
 	
@@ -63,6 +73,6 @@ public enum EVisualizerOptions implements IShapeLayer
 	@Override
 	public boolean isVisibleByDefault()
 	{
-		return true;
+		return isVisibleByDefault;
 	}
 }

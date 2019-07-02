@@ -6,6 +6,7 @@ package edu.tigers.sumatra.ai.metis.general;
 
 import java.awt.Color;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -55,10 +56,12 @@ public class BotBallContactCalc extends ACalculator
 		newTacticalField.getBotsLastTouchedBall().stream()
 				.filter(b -> !currentlyTouchingBots.contains(b))
 				.map(b -> getWFrame().getBot(b))
+				.filter(Objects::nonNull)
 				.forEach(b -> newTacticalField.getDrawableShapes().get(EAiShapesLayer.AI_BALL_CONTACT)
 						.add(new DrawableCircle(b.getPos(), 100, Color.BLUE)));
 		currentlyTouchingBots.stream()
 				.map(b -> getWFrame().getBot(b))
+				.filter(Objects::nonNull)
 				.forEach(b -> newTacticalField.getDrawableShapes().get(EAiShapesLayer.AI_BALL_CONTACT)
 						.add(new DrawableCircle(b.getPos(), 100, Color.RED)));
 	}

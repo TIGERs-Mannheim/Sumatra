@@ -11,14 +11,13 @@ import java.util.Optional;
 
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.botmanager.commands.botskills.data.KickerDribblerCommands;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerDevice;
-import edu.tigers.sumatra.botmanager.commands.other.EKickerMode;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
+import edu.tigers.sumatra.botmanager.botskills.data.KickerDribblerCommands;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.circle.CircleMath;
 import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.line.v2.ILine;
@@ -28,6 +27,7 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.ESkill;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
+import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.statemachine.IEvent;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 
@@ -59,8 +59,8 @@ public class RunUpChipSkill extends AMoveSkill
 		this.kickSpeed = kickSpeed;
 		setInitialState(new PrepareState());
 		addTransition(RunUpEvents.PREPARE, new PrepareState());
-		addTransition(RunUpEvents.RUN_UP, new RunUpState());
 		addTransition(RunUpEvents.START_POS, new MoveToStartPos());
+		addTransition(RunUpEvents.RUN_UP, new RunUpState());
 		addTransition(RunUpEvents.KICK, new KickState());
 	}
 	
@@ -73,7 +73,7 @@ public class RunUpChipSkill extends AMoveSkill
 		{
 			kickerDribblerOutput.setDribblerSpeed(dribberSpeed);
 		}
-		kickerDribblerOutput.setKick(kickSpeed, EKickerDevice.CHIP, EKickerMode.ARM);
+		kickerDribblerOutput.setKick(KickParams.limitKickSpeed(kickSpeed), EKickerDevice.CHIP, EKickerMode.ARM);
 	}
 	
 	
@@ -89,8 +89,8 @@ public class RunUpChipSkill extends AMoveSkill
 				Geometry.getBotRadius());
 		
 		ILine runway = Lines.lineFromPoints(getBall().getPos(), destination);
-		List<IVector2> interceptions = goalPostLeftCircle.lineSegmentIntersections(runway.toLegacyLine());
-		interceptions.addAll(CircleMath.lineIntersectionsCircle(goalPostRightCircle, runway.toLegacyLine()));
+		List<IVector2> interceptions = goalPostLeftCircle.lineIntersections(runway);
+		interceptions.addAll(goalPostRightCircle.lineIntersections(runway));
 		interceptions.addAll(goalBack.lineIntersections(runway.toLegacyLine()));
 		interceptions.addAll(
 				Geometry.getFieldWBorders().withMargin(-Geometry.getBotRadius()).lineIntersections(runway.toLegacyLine()));
@@ -124,7 +124,7 @@ public class RunUpChipSkill extends AMoveSkill
 	private void drawShapes()
 	{
 		List<IDrawableShape> shapes = getShapes().get(ESkillShapesLayer.KICK_SKILL);
-		shapes.add(new DrawableCircle(Circle.createCircle(this.target.getXYVector(), 50), Color.RED));
+		shapes.add(new DrawableCircle(Circle.createCircle(this.target.getPos(), 50), Color.RED));
 	}
 	
 	private enum RunUpEvents implements IEvent
@@ -157,13 +157,13 @@ public class RunUpChipSkill extends AMoveSkill
 		@Override
 		public void doUpdate()
 		{
-			IVector2 passDirection = target.getXYVector().subtract(getWorldFrame().getBall().getPos());
+			IVector2 passDirection = target.getPos().subtractNew(getWorldFrame().getBall().getPos());
 			double safetyLength = Geometry.getBotRadius();
 			if (getMoveCon().getMinDistToBall().isPresent())
 			{
 				safetyLength = getMoveCon().getMinDistToBall().get() + Geometry.getBotRadius();
 			}
-			IVector2 destination = LineMath.stepAlongLine(target.getXYVector(), getWorldFrame().getBall().getPos(),
+			IVector2 destination = LineMath.stepAlongLine(target.getPos(), getWorldFrame().getBall().getPos(),
 					passDirection.getLength2() + safetyLength);
 			destination = validateAndCorrectPosition(destination);
 			getMoveCon().updateDestination(destination);
@@ -204,17 +204,17 @@ public class RunUpChipSkill extends AMoveSkill
 		public void doUpdate()
 		{
 			double additionalLength = getRunUpLength();
-			double passLength = target.getXYVector().distanceTo(getBall().getPos());
+			double passLength = target.getPos().distanceTo(getBall().getPos());
 			if (additionalLength <= 0.001)
 			{
 				triggerEvent(RunUpEvents.KICK);
 				return;
 			}
-			IVector2 destination = LineMath.stepAlongLine(target.getXYVector(), getBall().getPos(),
+			IVector2 destination = LineMath.stepAlongLine(target.getPos(), getBall().getPos(),
 					passLength + additionalLength);
 			destination = validateAndCorrectPosition(destination);
 			getMoveCon().updateDestination(destination);
-			getMoveCon().updateTargetAngle(target.getXYVector().subtractNew(getBall().getPos()).getAngle());
+			getMoveCon().updateTargetAngle(target.getPos().subtractNew(getBall().getPos()).getAngle());
 			
 			double distanceToDestination = destination.distanceTo(getTBot().getPos());
 			double dAngle = Math.abs(getAngle() - getMoveCon().getTargetAngle());
@@ -230,7 +230,7 @@ public class RunUpChipSkill extends AMoveSkill
 		
 		private double getRunUpLength()
 		{
-			double distance = getBall().getPos().distanceTo(target.getXYVector());
+			double distance = getBall().getPos().distanceTo(target.getPos());
 			double maxVel = getBot().getBotParams().getKickerSpecs().getMaxAbsoluteChipVelocity();
 			double maxAcc = getMoveCon().getMoveConstraints().getAccMax();
 			int numTouchdowns = 2;
@@ -249,7 +249,7 @@ public class RunUpChipSkill extends AMoveSkill
 	
 	private class RunUpState extends MoveToState
 	{
-		
+		private IVector2 fixedTarget;
 		protected RunUpState()
 		{
 			super(RunUpChipSkill.this);
@@ -267,15 +267,16 @@ public class RunUpChipSkill extends AMoveSkill
 			getMoveCon().setPenaltyAreaAllowedOur(true);
 			getMoveCon().setPenaltyAreaAllowedTheir(true);
 			dribblerOn = true;
+			fixedTarget = target.getPos();
 		}
 		
 		
 		@Override
 		public void doUpdate()
 		{
-			getMoveCon().updateDestination(target.getXYVector());
-			getMoveCon().updateLookAtTarget(LineMath.stepAlongLine(getPos(), target.getXYVector(),
-					target.getXYVector().subtractNew(getPos()).getLength2() + Geometry.getBotRadius()));
+			getMoveCon().updateDestination(fixedTarget.getXYVector());
+			getMoveCon().updateLookAtTarget(LineMath.stepAlongLine(getPos(), fixedTarget.getXYVector(),
+					fixedTarget.getXYVector().subtractNew(getPos()).getLength2() + Geometry.getBotRadius()));
 			double maxAcc = getMoveCon().getMoveConstraints().getAccMax();
 			double maxVel = getMoveCon().getMoveConstraints().getVelMax();
 			double maxDistance = maxVel * maxVel / maxAcc;
@@ -320,13 +321,13 @@ public class RunUpChipSkill extends AMoveSkill
 		
 		protected double getTargetOrientation()
 		{
-			return target.subtractNew(getBall().getPos()).getAngle(0);
+			return target.getPos().subtractNew(getBall().getPos()).getAngle(0);
 		}
 		
 		
 		private IVector2 getDestination()
 		{
-			return LineMath.stepAlongLine(getBall().getPos(), target, -getTBot().getCenter2DribblerDist());
+			return LineMath.stepAlongLine(getBall().getPos(), target.getPos(), -getTBot().getCenter2DribblerDist());
 		}
 	}
 }

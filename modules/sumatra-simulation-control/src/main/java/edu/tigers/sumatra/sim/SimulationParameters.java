@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
 
 import edu.tigers.sumatra.Referee;
 import edu.tigers.sumatra.ids.BotID;
@@ -21,7 +22,6 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class SimulationParameters
 {
@@ -114,7 +114,7 @@ public class SimulationParameters
 	@Override
 	public String toString()
 	{
-		return new ToStringBuilder(this)
+		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
 				.append("initBots", initBots)
 				.append("initBall", initBall)
 				.append("refereeCommand", refereeCommand)

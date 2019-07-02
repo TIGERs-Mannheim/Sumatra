@@ -8,14 +8,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import edu.tigers.sumatra.RefboxRemoteControl.SSL_RefereeRemoteControlRequest;
 import edu.tigers.sumatra.Referee.SSL_Referee;
-import edu.tigers.sumatra.ids.BotID;
 
 
-/**
- * @author AndreR <andre@ryll.cc>
- */
 public abstract class ARefereeMessageSource
 {
 	private final List<IRefereeSourceObserver> observers = new CopyOnWriteArrayList<>();
@@ -56,20 +51,20 @@ public abstract class ARefereeMessageSource
 	}
 	
 	
-	/** Start source */
-	public abstract void start();
-	
-	
-	/** Stop source */
-	public abstract void stop();
+	/**
+	 * Start source
+	 */
+	public void start()
+	{
+	}
 	
 	
 	/**
-	 * Handle SSL Referee Remote Control Request.
-	 * 
-	 * @param request
+	 * Stop source
 	 */
-	public abstract void handleControlRequest(final SSL_RefereeRemoteControlRequest request);
+	public void stop()
+	{
+	}
 	
 	
 	/**
@@ -81,14 +76,13 @@ public abstract class ARefereeMessageSource
 	}
 	
 	
-	public void updateKeeperId(BotID keeperId)
-	{
-		// not implemented by default
-	}
-	
-	
 	public Optional<InetAddress> getRefBoxAddress()
 	{
 		return Optional.empty();
+	}
+	
+	
+	public void setCurrentTime(long timestamp)
+	{
 	}
 }

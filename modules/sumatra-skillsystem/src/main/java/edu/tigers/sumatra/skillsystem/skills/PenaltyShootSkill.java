@@ -7,8 +7,8 @@ import java.util.Random;
 
 import com.github.g3force.configurable.Configurable;
 
-import edu.tigers.sumatra.botmanager.commands.botskills.ABotSkill;
-import edu.tigers.sumatra.botmanager.commands.botskills.BotSkillPenaltyShooter;
+import edu.tigers.sumatra.botmanager.botskills.ABotSkill;
+import edu.tigers.sumatra.botmanager.botskills.BotSkillPenaltyShooter;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
@@ -120,7 +120,7 @@ public class PenaltyShootSkill extends AMoveSkill
 		@Override
 		public void doEntryActions()
 		{
-			targetPosition = getBall().getPos().subtractNew(Vector2.fromXY(slowMoveDist, 9));
+			targetPosition = getBall().getPos().subtractNew(Vector2.fromXY(slowMoveDist, 30));
 			targetOrientation = getBall().getPos().subtractNew(targetPosition).getAngle();
 			setTargetPose(targetPosition, targetOrientation);
 		}
@@ -146,7 +146,7 @@ public class PenaltyShootSkill extends AMoveSkill
 		public void doEntryActions()
 		{
 			Random random = new Random(getWorldFrame().getTimestamp());
-			double timeToShoot = (2 * random.nextDouble()) + 0.3;
+			double timeToShoot = (2 * random.nextDouble()) + 0.5;
 			botSkill = BotSkillPenaltyShooter.Builder.create()
 					.approachSpeed(approachSpeed)
 					.penaltyKickSpeed(penaltyKickSpeed)

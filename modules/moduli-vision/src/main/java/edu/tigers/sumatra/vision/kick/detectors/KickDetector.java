@@ -89,6 +89,12 @@ public class KickDetector implements IKickDetector
 	{
 		lastKnownBallPosition = mergedBall.getCamPos();
 		
+		boolean isVirtualBall = mergedBall.getLatestCamBall().map(b -> b.getConfidence() < 0.1).orElse(false);
+		if (isVirtualBall)
+		{
+			return null;
+		}
+		
 		FrameRecord rec = new FrameRecord(mergedBall, mergedRobots);
 		frameHistory.add(rec);
 		

@@ -12,11 +12,15 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+import edu.tigers.sumatra.math.line.v2.IHalfLine;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import org.json.simple.JSONObject;
 
 import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -80,6 +84,13 @@ abstract class ARectangle implements IRectangle
 	
 	
 	@Override
+	public IVector2 getCorner(final ECorner pos)
+	{
+		return getCorners().get(pos.getIndex());
+	}
+	
+	
+	@Override
 	public boolean isPointInShape(final IVector2 point, final double margin)
 	{
 		return withMargin(margin).isPointInShape(point);
@@ -91,6 +102,16 @@ abstract class ARectangle implements IRectangle
 	{
 		return SumatraMath.isBetween(point.x(), minX(), maxX())
 				&& SumatraMath.isBetween(point.y(), minY(), maxY());
+	}
+	
+	
+	@Override
+	public boolean isCircleInShape(final ICircle circle)
+	{
+		return SumatraMath.isBetween(circle.center().x() + circle.radius(), minX(), maxX())
+				&& SumatraMath.isBetween(circle.center().x() - circle.radius(), minX(), maxX())
+				&& SumatraMath.isBetween(circle.center().y() + circle.radius(), minY(), maxY())
+				&& SumatraMath.isBetween(circle.center().y() - circle.radius(), minY(), maxY());
 	}
 	
 	
@@ -210,15 +231,61 @@ abstract class ARectangle implements IRectangle
 	
 	
 	@Override
-	public List<IVector2> lineIntersections(final ILine line)
+	public List<ILineSegment> getEdgesAsSegments()
 	{
-		return getEdges().stream()
-				.map(edge -> edge.intersectionWith(line))
+		List<ILineSegment> lines = new ArrayList<>(4);
+		List<IVector2> corners = getCorners();
+		
+		for (int i = 0; i < 4; i++)
+		{
+			int j = (i + 1) % 4;
+			lines.add(Lines.segmentFromPoints(corners.get(i), corners.get(j)));
+		}
+		
+		return lines;
+	}
+	
+	
+	@Override
+	public List<IVector2> lineIntersections(final edu.tigers.sumatra.math.line.v2.ILine line)
+	{
+		return getEdgesAsSegments().stream()
+				.map(edge -> edge.intersectLine(line))
 				.filter(Optional::isPresent)
 				.map(Optional::get)
-				.filter(this::isPointInShape)
 				.distinct()
 				.collect(Collectors.toList());
+	}
+	
+	
+	@Override
+	public List<IVector2> lineIntersections(final ILineSegment line)
+	{
+		return getEdgesAsSegments().stream()
+				.map(edge -> edge.intersectSegment(line))
+				.filter(Optional::isPresent)
+				.map(Optional::get)
+				.distinct()
+				.collect(Collectors.toList());
+	}
+	
+	
+	@Override
+	public List<IVector2> lineIntersections(final IHalfLine line)
+	{
+		return getEdgesAsSegments().stream()
+				.map(edge -> edge.intersectHalfLine(line))
+				.filter(Optional::isPresent)
+				.map(Optional::get)
+				.distinct()
+				.collect(Collectors.toList());
+	}
+	
+	
+	@Override
+	public List<IVector2> lineIntersections(final ILine line)
+	{
+		return lineIntersections(Lines.lineFromLegacyLine(line));
 	}
 	
 	

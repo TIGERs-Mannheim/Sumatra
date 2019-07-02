@@ -9,17 +9,18 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 import org.apache.log4j.Logger;
 
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.botmanager.ABotManager;
 import edu.tigers.sumatra.botmanager.BotWatcher;
-import edu.tigers.sumatra.botmanager.bots.ABot;
-import edu.tigers.sumatra.botmanager.commands.EBotSkill;
-import edu.tigers.sumatra.botmanager.commands.botskills.EDataAcquisitionMode;
+import edu.tigers.sumatra.botmanager.TigersBotManager;
+import edu.tigers.sumatra.botmanager.bots.TigerBot;
+import edu.tigers.sumatra.botmanager.botskills.EBotSkill;
+import edu.tigers.sumatra.botmanager.botskills.EDataAcquisitionMode;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand.ConsoleCommandTarget;
 import edu.tigers.sumatra.data.collector.TimeSeriesDataCollector;
@@ -45,11 +46,10 @@ import matlabcontrol.MatlabProxy;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * A generic move test role that has different modes and can capture data
  */
 public class MoveTestRole extends ARole
 {
-	@SuppressWarnings("unused")
 	private static final Logger log = Logger.getLogger(MoveTestRole.class.getName());
 	
 	private final List<MotionResult> results = new ArrayList<>();
@@ -369,8 +369,7 @@ public class MoveTestRole extends ARole
 			double avgDist2Line = dists2Line.stream().mapToDouble(a -> a).average().getAsDouble();
 			double aDiff = AngleMath.difference(finalOrientation, destOrientation);
 			
-			List<Number> nbrs = new ArrayList<>();
-			nbrs.addAll(initPos.getNumberList());
+			List<Number> nbrs = new ArrayList<>(initPos.getNumberList());
 			nbrs.add(initOrientation);
 			nbrs.addAll(finalPos.getNumberList());
 			nbrs.add(finalOrientation);
@@ -399,18 +398,17 @@ public class MoveTestRole extends ARole
 	}
 	
 	
-	private ABot getBotMgrBot()
+	private Optional<TigerBot> getBotMgrBot()
 	{
-		ABot aBot = null;
-		try
+		if (SumatraModel.getInstance().isModuleLoaded(ABotManager.class))
 		{
 			ABotManager botManager = SumatraModel.getInstance().getModule(ABotManager.class);
-			aBot = botManager.getBots().get(getBotID());
-		} catch (ModuleNotFoundException e)
-		{
-			log.error("Could not find botManager module", e);
+			if (botManager instanceof TigersBotManager)
+			{
+				return ((TigersBotManager) botManager).getTigerBot(getBotID());
+			}
 		}
-		return aBot;
+		return Optional.empty();
 	}
 	
 	
@@ -419,21 +417,22 @@ public class MoveTestRole extends ARole
 	{
 		super.beforeFirstUpdate();
 		
-		ABot aBot = getBotMgrBot();
-		if (aBot != null)
+		getBotMgrBot().ifPresent(this::startWatcher);
+	}
+	
+	
+	private void startWatcher(final TigerBot tigerBot)
+	{
+		bw = new BotWatcher(tigerBot, EDataAcquisitionMode.BOT_MODEL);
+		bw.start();
+		
+		if (!logFileName.isEmpty())
 		{
-			bw = new BotWatcher(aBot, EDataAcquisitionMode.BOT_MODEL);
-			bw.start();
-			
-			if (!logFileName.isEmpty())
-			{
-				aBot.execute(new TigerSystemConsoleCommand(ConsoleCommandTarget.MAIN, "logfile " + logFileName));
-				
-				dataCollector = TimeSeriesDataCollectorFactory.createFullCollector("moveTest/" + logFileName);
-				dataCollector.setStopAutomatically(false);
-				dataCollector.setTimeout(600);
-				dataCollector.start();
-			}
+			tigerBot.execute(new TigerSystemConsoleCommand(ConsoleCommandTarget.MAIN, "logfile " + logFileName));
+			dataCollector = TimeSeriesDataCollectorFactory.createFullCollector("moveTest/" + logFileName);
+			dataCollector.setStopAutomatically(false);
+			dataCollector.setTimeout(600);
+			dataCollector.start();
 		}
 	}
 	
@@ -442,12 +441,6 @@ public class MoveTestRole extends ARole
 	protected void onCompleted()
 	{
 		super.onCompleted();
-		
-		ABot aBot = getBotMgrBot();
-		if (aBot == null)
-		{
-			return;
-		}
 		
 		if (bw != null)
 		{
@@ -471,7 +464,7 @@ public class MoveTestRole extends ARole
 		
 		if (!logFileName.isEmpty())
 		{
-			aBot.execute(new TigerSystemConsoleCommand(ConsoleCommandTarget.MAIN, "stoplog"));
+			getBotMgrBot().ifPresent(b -> b.execute(new TigerSystemConsoleCommand(ConsoleCommandTarget.MAIN, "stoplog")));
 			if (dataCollector != null)
 			{
 				dataCollector.stopExport();

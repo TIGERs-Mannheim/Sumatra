@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.line.v2;
@@ -86,13 +86,6 @@ final class HalfLine extends AUnboundedLine implements IHalfLine
 	
 	
 	@Override
-	public boolean isPointInFront(final IVector2 point)
-	{
-		return isValid() && LineMath.isPointInFront(this, point);
-	}
-	
-	
-	@Override
 	public IVector2 closestPointOnLine(final IVector2 point)
 	{
 		if (!isValid())
@@ -145,5 +138,19 @@ final class HalfLine extends AUnboundedLine implements IHalfLine
 			return LineMath.intersectionPointOfHalfLineAndSegment(this, segment);
 		}
 		return Optional.empty();
+	}
+	
+	
+	@Override
+	public boolean isPointInFront(final IVector2 point)
+	{
+		return isValid() && LineMath.isPointInFront(this, point);
+	}
+	
+	
+	@Override
+	public String toString()
+	{
+		return "Line(" + supportVector() + " + s * " + directionVector() + ")";
 	}
 }

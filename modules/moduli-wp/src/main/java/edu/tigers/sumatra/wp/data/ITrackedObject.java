@@ -15,19 +15,19 @@ import edu.tigers.sumatra.math.vector.Vector2f;
 public interface ITrackedObject extends IMirrorable<ITrackedObject>, ITimestampBased
 {
 	/**
-	 * @return the pos
+	 * @return the pos [mm,mm]
 	 */
 	IVector2 getPos();
 	
 	
 	/**
-	 * @return the vel
+	 * @return the vel [m/s, m/s]
 	 */
 	IVector2 getVel();
 	
 	
 	/**
-	 * @return the acc
+	 * @return the acc [m/s², m/s²]
 	 */
 	default IVector2 getAcc()
 	{
