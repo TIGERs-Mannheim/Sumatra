@@ -4,6 +4,7 @@
 package edu.tigers.sumatra.botmanager.bots;
 
 import edu.tigers.sumatra.bot.EBotType;
+import edu.tigers.sumatra.bot.EDribblerState;
 import edu.tigers.sumatra.bot.ERobotMode;
 import edu.tigers.sumatra.botmanager.basestation.DummyBaseStation;
 import edu.tigers.sumatra.botparams.EBotParamLabel;
@@ -56,9 +57,9 @@ public class DummyBot extends ABot
 	
 	
 	@Override
-	public double getDribblerTemp()
+	public EDribblerState getDribblerState()
 	{
-		return 0;
+		return EDribblerState.COLD;
 	}
 	
 	

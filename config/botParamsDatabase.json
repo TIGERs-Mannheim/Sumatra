@@ -1,7 +1,7 @@
 {
   "selectedParams":{
     "TIGER_V2016":"TIGERs v2016",
-    "TIGER_V2013":"TIGERs v2013",
+    "TIGER_V2020":"TIGERs v2020",
     "OPPONENT":"ER-Force",
     "SIMULATION_YELLOW":"Simulation",
     "SIMULATION_BLUE":"Simulation",
@@ -11,9 +11,9 @@
   "entries":{
     "TIGERs v2016":{
       "movementLimits":{
-        "velMax":3.0,
-        "accMax":2.5,
-        "brkMax":6.0,
+        "velMax":2.5,
+        "accMax":2.0,
+        "brkMax":4.0,
         "jerkMax":20.0,
         "velMaxW":20.0,
         "accMaxW":50.0,
@@ -28,9 +28,11 @@
       },
       "kickerSpecs":{
         "chipAngle":45.0,
-        "maxAbsoluteChipVelocity":5.0
-      },
-      "feedbackDelay":0.03
+        "maxAbsoluteChipVelocity":5.0,
+        "maxAbsoluteStraightVelocity":8.0,
+        "maxDribbleSpeed":10000.0,
+        "dribbleSpeedGain":0.8
+      }
     },
     "YELLOW":{
       "movementLimits":{
@@ -51,9 +53,11 @@
       },
       "kickerSpecs":{
         "chipAngle":45.0,
-        "maxAbsoluteChipVelocity":8.0
-      },
-      "feedbackDelay":0.0
+        "maxAbsoluteChipVelocity":8.0,
+        "maxAbsoluteStraightVelocity":8.0,
+        "maxDribbleSpeed":10000.0,
+        "dribbleSpeedGain":1.0
+      }
     },
     "Parsian":{
       "movementLimits":{
@@ -74,9 +78,11 @@
       },
       "kickerSpecs":{
         "chipAngle":45.0,
-        "maxAbsoluteChipVelocity":6.5
-      },
-      "feedbackDelay":0.0
+        "maxAbsoluteChipVelocity":6.5,
+        "maxAbsoluteStraightVelocity":8.0,
+        "maxDribbleSpeed":10000.0,
+        "dribbleSpeedGain":1.0
+      }
     },
     "BLUE":{
       "movementLimits":{
@@ -97,11 +103,13 @@
       },
       "kickerSpecs":{
         "chipAngle":45.0,
-        "maxAbsoluteChipVelocity":8.0
-      },
-      "feedbackDelay":0.0
+        "maxAbsoluteChipVelocity":8.0,
+        "maxAbsoluteStraightVelocity":8.0,
+        "maxDribbleSpeed":10000.0,
+        "dribbleSpeedGain":1.0
+      }
     },
-    "TIGERs v2013":{
+    "TIGERs v2020":{
       "movementLimits":{
         "velMax":3.0,
         "accMax":3.0,
@@ -111,93 +119,51 @@
         "accMaxW":50.0,
         "jerkMaxW":1000.0,
         "velMaxFast":4.5,
-        "accMaxFast":4.0
+        "accMaxFast":3.0
       },
       "dimensions":{
-        "center2DribblerDist":80.0,
+        "center2DribblerDist":71.5,
         "diameter":180.0,
-        "height":150.0
+        "height":143.0
       },
       "kickerSpecs":{
         "chipAngle":45.0,
-        "maxAbsoluteChipVelocity":8.0
-      },
-      "feedbackDelay":0.03
-    },
-    "Very Slow":{
-      "movementLimits":{
-        "velMax":1.0,
-        "accMax":2.0,
-        "brkMax":6.0,
-        "jerkMax":8.0,
-        "velMaxW":10.0,
-        "accMaxW":30.0,
-        "jerkMaxW":500.0,
-        "velMaxFast":1.5,
-        "accMaxFast":2.5
-      },
-      "dimensions":{
-        "center2DribblerDist":75.0,
-        "diameter":180.0,
-        "height":150.0
-      },
-      "kickerSpecs":{
-        "chipAngle":45.0,
-        "maxAbsoluteChipVelocity":5.0
-      },
-      "feedbackDelay":0.0
-    },
-    "Slow":{
-      "movementLimits":{
-        "velMax":2.0,
-        "accMax":2.0,
-        "brkMax":6.0,
-        "jerkMax":20.0,
-        "velMaxW":20.0,
-        "accMaxW":50.0,
-        "jerkMaxW":1000.0,
-        "velMaxFast":2.0,
-        "accMaxFast":2.0
-      },
-      "dimensions":{
-        "center2DribblerDist":75.0,
-        "diameter":180.0,
-        "height":150.0
-      },
-      "kickerSpecs":{
-        "chipAngle":45.0,
-        "maxAbsoluteChipVelocity":5.0
-      },
-      "feedbackDelay":0.0
+        "maxAbsoluteChipVelocity":8.0,
+        "maxAbsoluteStraightVelocity":8.0,
+        "maxDribbleSpeed":20000.0,
+        "dribbleSpeedGain":1.0
+      }
     },
     "Simulation":{
       "movementLimits":{
         "velMax":3.0,
-        "accMax":2.5,
+        "accMax":3.0,
         "brkMax":6.0,
         "jerkMax":20.0,
         "velMaxW":20.0,
         "accMaxW":50.0,
         "jerkMaxW":1000.0,
-        "velMaxFast":4.0,
-        "accMaxFast":3.5
+        "velMaxFast":3.5,
+        "accMaxFast":3.0
       },
       "dimensions":{
-        "center2DribblerDist":75.0,
+        "center2DribblerDist":71.5,
         "diameter":180.0,
-        "height":150.0
+        "height":143.0
       },
       "kickerSpecs":{
         "chipAngle":45.0,
-        "maxAbsoluteChipVelocity":5.0
-      },
-      "feedbackDelay":0.0
+        "maxAbsoluteChipVelocity":8.0,
+        "maxAbsoluteStraightVelocity":8.0,
+        "maxDribbleSpeed":10000.0,
+        "dribbleSpeedGain":1.0
+      }
     },
     "ER-Force":{
       "movementLimits":{
         "velMax":3.0,
         "accMax":3.0,
-        "brkMax":6.0,
+        "brkMax":3.0,
         "jerkMax":20.0,
         "velMaxW":20.0,
         "accMaxW":50.0,
@@ -212,9 +178,11 @@
       },
       "kickerSpecs":{
         "chipAngle":45.0,
-        "maxAbsoluteChipVelocity":6.5
-      },
-      "feedbackDelay":0.0
+        "maxAbsoluteChipVelocity":6.5,
+        "maxAbsoluteStraightVelocity":8.0,
+        "maxDribbleSpeed":10000.0,
+        "dribbleSpeedGain":1.0
+      }
     }
   }
 }

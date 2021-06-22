@@ -36,8 +36,7 @@ public class BallSpeedModel
 		lastBallSpeed = wFrameWrapper.getSimpleWorldFrame().getBall().getVel3().getLength();
 		lastEstimatedBallSpeed = wFrameWrapper.getSimpleWorldFrame().getKickFitState()
 				.map(BallKickFitState::getKickVel)
-				.map(IVector3::getLength).orElse(0.0)
-				/ 1000.0;
+				.map(IVector3::getLength).orElse(0.0);
 		
 		lastState = curState;
 		

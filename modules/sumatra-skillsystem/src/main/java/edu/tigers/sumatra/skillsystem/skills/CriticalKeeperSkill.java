@@ -1,15 +1,10 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
 
-import java.awt.Color;
-import java.util.List;
-import java.util.Optional;
-
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -24,30 +19,34 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.VectorDistanceComparator;
 import edu.tigers.sumatra.math.vector.VectorMath;
-import edu.tigers.sumatra.skillsystem.ESkill;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.skillsystem.skills.DefendingKeeper.ECriticalKeeperStates;
+import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.trajectory.BangBangTrajectoryMath;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+
+import java.awt.Color;
+import java.util.List;
+import java.util.Optional;
 
 
 /**
  * Skill Implementation for Time critical keeper skills. Used by CriticalKeeperState
  */
-public class CriticalKeeperSkill extends AMoveSkill
+public class CriticalKeeperSkill extends AMoveToSkill
 {
 	@Configurable(comment = "The radius to try intercepting the chip-kicked ball within", defValue = "500.0")
 	private static double maxChipInterceptDist = 500.0;
 
-	@Configurable(comment = "Max. Acceleration in Catch Skill", defValue = "3.0")
-	private static double maxAcc = 3.0;
+	@Configurable(comment = "Max. Acceleration in Catch Skill", defValue = "2.5")
+	private static double maxAcc = 2.5;
 
 	@Configurable(comment = "Over Acceleration", defValue = "false")
 	private static boolean isOverAccelerationActive = false;
 
-	@Configurable(comment = "Max acceleration of Keeper", defValue = "4.5")
-	private static double keeperAcc = 4.5;
+	@Configurable(comment = "Max acceleration of Keeper", defValue = "2.5")
+	private static double keeperAcc = 2.5;
 
 	@Configurable(comment = "Dist [mm] to GoalCenter in NormalBlockState", defValue = "500.0")
 	private static double distToGoalCenter = 500.0;
@@ -58,19 +57,13 @@ public class CriticalKeeperSkill extends AMoveSkill
 	@Configurable(comment = "Keeper's normal movement is circular", defValue = "true")
 	private static boolean isKeepersNormalMovementCircular = true;
 
-	@Configurable(comment = "Angle of Keeper towards the ball in NormalBlockState", defValue = "0.0")
-	private static double turnAngleOfKeeper = 0.0;
-
 
 	private ECriticalKeeperStates currentState = ECriticalKeeperStates.NORMAL;
-	private DefendingKeeper defendingKeeper;
+	private DefendingKeeper defendingKeeper = new DefendingKeeper(this);
 
 
-	public CriticalKeeperSkill(BotID keeperID)
+	public CriticalKeeperSkill()
 	{
-		super(ESkill.CRITICAL_KEEPER);
-		defendingKeeper = new DefendingKeeper(keeperID, this);
-
 		NormalBlock blockState = new NormalBlock();
 		setInitialState(blockState);
 
@@ -98,22 +91,16 @@ public class CriticalKeeperSkill extends AMoveSkill
 
 	private void prepareMoveCon()
 	{
-		getMoveCon().setPenaltyAreaAllowedOur(true);
+		getMoveCon().setPenaltyAreaOurObstacle(false);
 		getMoveCon().setBotsObstacle(false);
 		getMoveCon().setBallObstacle(false);
-		getMoveCon().setGoalPostObstacle(false);
+		getMoveCon().setGoalPostsObstacle(false);
 	}
 
 
-	private class InterceptBall extends MoveToState
+	private class InterceptBall extends AState
 	{
 		private double targetAngle = 0;
-
-
-		private InterceptBall()
-		{
-			super(CriticalKeeperSkill.this);
-		}
 
 
 		@Override
@@ -121,7 +108,7 @@ public class CriticalKeeperSkill extends AMoveSkill
 		{
 			targetAngle = getAngle();
 			prepareMoveCon();
-			getMoveCon().getMoveConstraints().setAccMax(maxAcc);
+			getMoveConstraints().setAccMax(maxAcc);
 			super.doEntryActions();
 		}
 
@@ -135,12 +122,12 @@ public class CriticalKeeperSkill extends AMoveSkill
 				return;
 			}
 
-			final IVector2 destination = getDestination();
+			final IVector2 destination = calcDestination();
 
-			updateTargetAngle(destination);
+			targetAngle = calcTargetAngle(destination);
 
-			getMoveCon().updateDestination(destination);
-			getMoveCon().updateTargetAngle(targetAngle);
+			updateDestination(destination);
+			updateTargetAngle(targetAngle);
 
 			super.doUpdate();
 			draw();
@@ -158,16 +145,17 @@ public class CriticalKeeperSkill extends AMoveSkill
 		}
 
 
-		private void updateTargetAngle(final IVector2 destination)
+		private double calcTargetAngle(final IVector2 destination)
 		{
 			if (VectorMath.distancePP(destination, getTBot().getPos()) < (Geometry.getBotRadius() / 2))
 			{
-				targetAngle = getWorldFrame().getBall().getPos().subtractNew(getPos()).getAngle();
+				return getWorldFrame().getBall().getPos().subtractNew(getPos()).getAngle();
 			}
+			return targetAngle;
 		}
 
 
-		private IVector2 getDestination()
+		private IVector2 calcDestination()
 		{
 			IVector2 leadPoint = findPointOnBallTraj();
 
@@ -240,8 +228,8 @@ public class CriticalKeeperSkill extends AMoveSkill
 
 		private IVector2 calcAcceleration(final IVector2 destination)
 		{
-			double acc = getMoveCon().getMoveConstraints().getAccMax();
-			double vel = getMoveCon().getMoveConstraints().getVelMax();
+			double acc = getMoveConstraints().getAccMax();
+			double vel = getMoveConstraints().getVelMax();
 			return BangBangTrajectoryMath.getVirtualDestinationToReachPositionInTime(getPos(), getVel(),
 					destination, acc, vel,
 					getWorldFrame().getBall().getTrajectory().getTimeByPos(
@@ -252,23 +240,17 @@ public class CriticalKeeperSkill extends AMoveSkill
 
 	}
 
-	private class CatchRedirect extends MoveToState
+	private class CatchRedirect extends AState
 	{
 		private boolean stayInGoOut = false;
-
-
-		private CatchRedirect()
-		{
-			super(CriticalKeeperSkill.this);
-		}
 
 
 		@Override
 		public void doEntryActions()
 		{
 			prepareMoveCon();
-			getMoveCon().setDestinationOutsideFieldAllowed(true);
-			getMoveCon().getMoveConstraints().setAccMax(keeperAcc);
+			getMoveCon().setFieldBorderObstacle(false);
+			getMoveConstraints().setAccMax(keeperAcc);
 			stayInGoOut = false;
 
 			super.doEntryActions();
@@ -284,15 +266,15 @@ public class CriticalKeeperSkill extends AMoveSkill
 
 			if (VectorMath.distancePP(getPos(), destination) < (Geometry.getBotRadius() / 2))
 			{
-				getMoveCon().updateLookAtTarget(redirectBot);
+				updateLookAtTarget(redirectBot);
 			}
 			if ((isKeeperBetweenRedirectAndGoalCenter(redirectBot) || stayInGoOut) && isGoOutUseful(redirectBot))
 			{
 				stayInGoOut = true;
 				destination = calcBestDefensivePositionInPE(redirectBot);
-				getMoveCon().updateLookAtTarget(redirectBot);
+				updateLookAtTarget(redirectBot);
 			}
-			getMoveCon().updateDestination(destination);
+			updateDestination(destination);
 			super.doUpdate();
 		}
 
@@ -300,14 +282,14 @@ public class CriticalKeeperSkill extends AMoveSkill
 		private IVector2 getRedirectBotPosition()
 		{
 			IVector2 redirectBot;
-			BotID redirectBotId = defendingKeeper.getBestRedirector(getWorldFrame().getFoeBots());
+			BotID redirectBotId = defendingKeeper.getBestRedirector(getWorldFrame().getOpponentBots());
 			if (redirectBotId.isBot())
 			{
-				redirectBot = getWorldFrame().getFoeBot(redirectBotId).getBotKickerPos();
+				redirectBot = getWorldFrame().getOpponentBot(redirectBotId).getBotKickerPos();
 			} else
 			{
-				// .getEnemyClosestToBall from tactical field
-				redirectBot = getWorldFrame().getFoeBots().values().stream().map(ITrackedBot::getBotKickerPos)
+				// .getOpponentClosestToBall from tactical field
+				redirectBot = getWorldFrame().getOpponentBots().values().stream().map(ITrackedBot::getBotKickerPos)
 						.min(new VectorDistanceComparator(getWorldFrame().getBall().getPos())).orElse(Vector2.fromXY(0, 0));
 			}
 			return redirectBot;
@@ -329,19 +311,13 @@ public class CriticalKeeperSkill extends AMoveSkill
 
 	}
 
-	private class GoOut extends MoveToState
+	private class GoOut extends AState
 	{
-		private GoOut()
-		{
-			super(CriticalKeeperSkill.this);
-		}
-
-
 		@Override
 		public void doEntryActions()
 		{
 			prepareMoveCon();
-			getMoveCon().getMoveConstraints().setAccMax(keeperAcc);
+			getMoveConstraints().setAccMax(keeperAcc);
 			super.doEntryActions();
 		}
 
@@ -357,8 +333,8 @@ public class CriticalKeeperSkill extends AMoveSkill
 			{
 				targetPosition = calcBestDefensivePositionInPE(getWorldFrame().getBall().getPos());
 			}
-			getMoveCon().updateDestination(targetPosition);
-			getMoveCon().updateTargetAngle(getPos().subtractNew(Geometry.getGoalOur().getCenter()).getAngle());
+			updateDestination(targetPosition);
+			updateTargetAngle(getPos().subtractNew(Geometry.getGoalOur().getCenter()).getAngle());
 
 			super.doUpdate();
 
@@ -397,19 +373,13 @@ public class CriticalKeeperSkill extends AMoveSkill
 
 	}
 
-	private class NormalBlock extends MoveToState
+	private class NormalBlock extends AState
 	{
-		private NormalBlock()
-		{
-			super(CriticalKeeperSkill.this);
-		}
-
-
 		@Override
 		public void doEntryActions()
 		{
 			prepareMoveCon();
-			getMoveCon().getMoveConstraints().setAccMax(keeperAcc);
+			getMoveConstraints().setAccMax(keeperAcc);
 			super.doEntryActions();
 		}
 
@@ -449,8 +419,8 @@ public class CriticalKeeperSkill extends AMoveSkill
 
 				destination = checkPosts(intersection.get());
 			}
-			getMoveCon().updateDestination(destination);
-			getMoveCon().updateLookAtTarget(getWorldFrame().getBall().getPos());
+			updateDestination(destination);
+			updateLookAtTarget(getWorldFrame().getBall().getPos());
 		}
 
 
@@ -486,15 +456,8 @@ public class CriticalKeeperSkill extends AMoveSkill
 			destination = setDestinationOutsideGoalPosts(destination);
 
 
-			getMoveCon().updateDestination(destination);
-			getMoveCon().updateTargetAngle(calcDefendingOrientation());
-		}
-
-
-		protected double calcDefendingOrientation()
-		{
-			return getWorldFrame().getBall().getPos().subtractNew(getPos()).getAngle()
-					+ turnAngleOfKeeper;
+			updateDestination(destination);
+			updateLookAtTarget(getBall());
 		}
 
 
@@ -597,7 +560,7 @@ public class CriticalKeeperSkill extends AMoveSkill
 		List<IVector2> intersectionsList = Geometry.getPenaltyAreaOur().lineIntersections(ballGoalCenter);
 
 		IVector2 intersection = intersectionsList.stream()
-				.max((a, b) -> VectorMath.distancePP(a, posToCover) < VectorMath.distancePP(b, posToCover) ? 1 : -1)
+				.min(new VectorDistanceComparator(posToCover))
 				.orElse(posToCover);
 
 		double stepSize = VectorMath.distancePP(goalCenter,
@@ -703,17 +666,5 @@ public class CriticalKeeperSkill extends AMoveSkill
 					Geometry.getBotRadius() + Geometry.getBallRadius()));
 		}
 		return coveringPosition;
-	}
-
-
-	public static double getKeeperAcc()
-	{
-		return keeperAcc;
-	}
-
-
-	public static double getTurnAngleOfKeeper()
-	{
-		return turnAngleOfKeeper;
 	}
 }

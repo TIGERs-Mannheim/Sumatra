@@ -3,21 +3,19 @@
  */
 package edu.tigers.sumatra.ai.athena;
 
-import edu.tigers.sumatra.ai.athena.PlayStrategy.Builder;
 import edu.tigers.sumatra.ai.metis.MetisAiFrame;
+
+import java.util.Collections;
 
 
 /**
  * Emergency mode
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class EmergencyModeAthenaAdapter extends AAthenaAdapter
+public class EmergencyModeAthenaAdapter implements IAthenaAdapter
 {
-	
 	@Override
-	public void doProcess(final MetisAiFrame metisAiFrame, final Builder playStrategyBuilder, final AIControl aiControl)
+	public PlayStrategy process(final MetisAiFrame metisAiFrame, final AthenaGuiInput athenaGuiInput)
 	{
-		clear(playStrategyBuilder);
+		return new PlayStrategy(Collections.emptySet());
 	}
 }

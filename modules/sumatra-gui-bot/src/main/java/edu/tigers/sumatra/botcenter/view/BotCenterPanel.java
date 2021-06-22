@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botcenter.view;
 
@@ -15,6 +15,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 
 import edu.tigers.sumatra.botcenter.view.basestation.BaseStationPanel;
+import edu.tigers.sumatra.botcenter.view.config.BotConfigOverviewPanel;
 import edu.tigers.sumatra.views.ISumatraView;
 
 

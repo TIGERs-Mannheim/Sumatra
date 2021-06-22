@@ -1,5 +1,5 @@
 syntax = "proto2";
-package edu.tigers.sumatra;
+option java_package = "edu.tigers.sumatra.cam.proto";
 
 import "messages_robocup_ssl_detection.proto";
 import "messages_robocup_ssl_geometry.proto";

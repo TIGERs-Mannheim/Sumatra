@@ -1,54 +1,82 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.bot;
+
+import com.sleepycat.persist.model.Persistent;
+import edu.tigers.sumatra.bot.params.IBotMovementLimits;
+import edu.tigers.sumatra.data.collector.IExportable;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
+import lombok.Data;
+import lombok.NonNull;
+import lombok.experimental.Accessors;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.sleepycat.persist.model.Persistent;
-
-import edu.tigers.sumatra.bot.params.IBotMovementLimits;
-import edu.tigers.sumatra.data.collector.IExportable;
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
-
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Constraints on the movement of robots.
  */
 @Persistent
-public class MoveConstraints implements IExportable
+@Data
+@Accessors(chain = true)
+public class MoveConstraints implements IExportable, IMoveConstraints
 {
-	private double velMax = 0;
-	private double accMax = 0;
-	private double brkMax = 0;
-	private double jerkMax = 0;
-	private double velMaxW = 0;
-	private double accMaxW = 0;
-	private double jerkMaxW = 0;
-	private double velMaxFast = 0;
-	private double accMaxFast = 0;
-	private boolean fastMove = false;
+	private double velMax;
+	private double accMax;
+	private double brkMax;
+	private double jerkMax;
+	private double velMaxW;
+	private double accMaxW;
+	private double jerkMaxW;
+	private double velMaxFast;
+	private double accMaxFast;
+
+	private boolean fastMove;
+	@NonNull // Primary direction must not be null. Set it to a Zero-Vector to disable it.
 	private IVector2 primaryDirection = Vector2f.ZERO_VECTOR;
-	
-	
+
+
 	/**
 	 * Create a dummy instance
 	 */
 	public MoveConstraints()
 	{
 	}
-	
-	
+
+
+	public MoveConstraints(MoveConstraints mc)
+	{
+		velMax = mc.velMax;
+		accMax = mc.accMax;
+		brkMax = mc.brkMax;
+		jerkMax = mc.jerkMax;
+		velMaxW = mc.velMaxW;
+		accMaxW = mc.accMaxW;
+		jerkMaxW = mc.jerkMaxW;
+		velMaxFast = mc.velMaxFast;
+		accMaxFast = mc.accMaxFast;
+		fastMove = mc.fastMove;
+		primaryDirection = mc.primaryDirection;
+	}
+
+
 	/**
 	 * Create move constraints from bot individual movement limits.
-	 * 
+	 *
 	 * @param moveLimits
 	 */
 	public MoveConstraints(final IBotMovementLimits moveLimits)
+	{
+		resetLimits(moveLimits);
+	}
+
+
+	public void resetLimits(final IBotMovementLimits moveLimits)
 	{
 		velMax = moveLimits.getVelMax();
 		accMax = moveLimits.getAccMax();
@@ -60,79 +88,23 @@ public class MoveConstraints implements IExportable
 		velMaxFast = moveLimits.getVelMaxFast();
 		accMaxFast = moveLimits.getAccMaxFast();
 	}
-	
-	
-	/**
-	 * Create a copy
-	 * 
-	 * @param o instance to copy
-	 */
-	public MoveConstraints(final MoveConstraints o)
+
+
+	public MoveConstraints limit(final IBotMovementLimits movementLimits)
 	{
-		velMax = o.velMax;
-		velMaxW = o.velMaxW;
-		accMax = o.accMax;
-		brkMax = o.brkMax;
-		accMaxW = o.accMaxW;
-		jerkMax = o.jerkMax;
-		jerkMaxW = o.jerkMaxW;
-		velMaxFast = o.velMaxFast;
-		accMaxFast = o.accMaxFast;
-		fastMove = o.fastMove;
-		primaryDirection = o.primaryDirection;
+		velMax = Math.min(velMax, movementLimits.getVelMax());
+		accMax = Math.min(accMax, movementLimits.getAccMax());
+		brkMax = Math.min(brkMax, movementLimits.getBrkMax());
+		jerkMax = Math.min(jerkMax, movementLimits.getJerkMax());
+		velMaxW = Math.min(velMaxW, movementLimits.getVelMaxW());
+		accMaxW = Math.min(accMaxW, movementLimits.getAccMaxW());
+		jerkMaxW = Math.min(jerkMaxW, movementLimits.getJerkMaxW());
+		velMaxFast = Math.min(velMaxFast, movementLimits.getVelMaxFast());
+		accMaxFast = Math.min(accMaxFast, movementLimits.getAccMaxFast());
+		return this;
 	}
-	
-	
-	/**
-	 * Apply all non-zero limits to this instance.
-	 * 
-	 * @param o a (partial) set of move constraints
-	 */
-	public void mergeWith(final MoveConstraints o)
-	{
-		velMax = mergeDouble(velMax, o.velMax);
-		velMaxW = mergeDouble(velMaxW, o.velMaxW);
-		accMax = mergeDouble(accMax, o.accMax);
-		brkMax = mergeDouble(brkMax, o.brkMax);
-		accMaxW = mergeDouble(accMaxW, o.accMaxW);
-		jerkMax = mergeDouble(jerkMax, o.jerkMax);
-		jerkMaxW = mergeDouble(jerkMaxW, o.jerkMaxW);
-		velMaxFast = mergeDouble(velMaxFast, o.velMaxFast);
-		accMaxFast = mergeDouble(accMaxFast, o.accMaxFast);
-		fastMove = o.fastMove;
-		primaryDirection = o.primaryDirection;
-	}
-	
-	
-	private double mergeDouble(final double current, final double newValue)
-	{
-		if (newValue > 0)
-		{
-			return newValue;
-		}
-		return current;
-	}
-	
-	
-	@Override
-	public String toString()
-	{
-		return "MoveConstraints{" +
-				"velMax=" + velMax +
-				", accMax=" + accMax +
-				", brkMax=" + brkMax +
-				", jerkMax=" + jerkMax +
-				", velMaxW=" + velMaxW +
-				", accMaxW=" + accMaxW +
-				", jerkMaxW=" + jerkMaxW +
-				", velMaxFast=" + velMaxFast +
-				", accMaxFast=" + accMaxFast +
-				", fastMove=" + fastMove +
-				", primaryDirection=" + primaryDirection +
-				'}';
-	}
-	
-	
+
+
 	@Override
 	public List<Number> getNumberList()
 	{
@@ -150,19 +122,17 @@ public class MoveConstraints implements IExportable
 		nbrs.add(primaryDirection.y());
 		return nbrs;
 	}
-	
-	
+
+
 	@Override
 	public List<String> getHeaders()
 	{
 		return Arrays.asList("velMax", "accMax", "jerkMax", "velMaxW", "accMaxW", "jerkMaxW", "velMaxFast", "accMaxFast",
 				"fastMove", "primaryDirectionX", "primaryDirectionY");
 	}
-	
-	
-	/**
-	 * @return the velMax
-	 */
+
+
+	@Override
 	public double getVelMax()
 	{
 		if (fastMove)
@@ -171,171 +141,57 @@ public class MoveConstraints implements IExportable
 		}
 		return velMax;
 	}
-	
-	
-	/**
-	 * @param velMax the velMax to set
-	 */
+
+
 	public void setVelMax(final double velMax)
 	{
 		assert velMax >= 0 : "vel: " + velMax;
 		this.velMax = velMax;
 	}
-	
-	
-	/**
-	 * @param velMaxFast the velMaxFast to set
-	 */
-	public void setVelMaxFast(final double velMaxFast)
-	{
-		assert velMax >= 0 : "vel: " + velMaxFast;
-		this.velMaxFast = velMaxFast;
-	}
-	
-	
-	/**
-	 * @return the velMaxW
-	 */
-	public double getVelMaxW()
-	{
-		return velMaxW;
-	}
-	
-	
-	/**
-	 * @param velMaxW the velMaxW to set
-	 */
+
+
 	public void setVelMaxW(final double velMaxW)
 	{
 		assert velMaxW >= 0;
 		this.velMaxW = velMaxW;
 	}
-	
-	
-	/**
-	 * @return the accMax
-	 */
+
+
+	@Override
 	public double getAccMax()
 	{
-		if (fastMove)
-		{
-			return accMaxFast;
-		}
 		return accMax;
 	}
-	
-	
-	/**
-	 * @param accMax the accMax to set
-	 */
-	public void setAccMax(final double accMax)
+
+
+	public MoveConstraints setAccMax(final double accMax)
 	{
 		assert accMax >= 0;
 		this.accMax = accMax;
+		return this;
 	}
-	
-	
-	public double getBrkMax()
-	{
-		return brkMax;
-	}
-	
-	
-	public void setBrkMax(final double brkMax)
-	{
-		this.brkMax = brkMax;
-	}
-	
-	
-	/**
-	 * @return the accMaxW
-	 */
-	public double getAccMaxW()
-	{
-		return accMaxW;
-	}
-	
-	
-	/**
-	 * @param accMaxW the accMaxW to set
-	 */
-	public void setAccMaxW(final double accMaxW)
+
+
+	public MoveConstraints setAccMaxW(final double accMaxW)
 	{
 		assert accMaxW >= 0;
 		this.accMaxW = accMaxW;
+		return this;
 	}
-	
-	
-	/**
-	 * @return the jerkMax
-	 */
-	public double getJerkMax()
-	{
-		return jerkMax;
-	}
-	
-	
-	/**
-	 * @param jerkMax the jerkMax to set
-	 */
-	public void setJerkMax(final double jerkMax)
+
+
+	public MoveConstraints setJerkMax(final double jerkMax)
 	{
 		assert jerkMax >= 0;
 		this.jerkMax = jerkMax;
+		return this;
 	}
-	
-	
-	/**
-	 * @return the jerkMaxW
-	 */
-	public double getJerkMaxW()
-	{
-		return jerkMaxW;
-	}
-	
-	
-	/**
-	 * @param jerkMaxW the jerkMaxW to set
-	 */
-	public void setJerkMaxW(final double jerkMaxW)
+
+
+	public MoveConstraints setJerkMaxW(final double jerkMaxW)
 	{
 		assert jerkMaxW >= 0;
 		this.jerkMaxW = jerkMaxW;
-	}
-	
-	
-	/**
-	 * Activate the fastPos move skill.<br>
-	 *
-	 * @param fastMove activate fast move skill
-	 */
-	public void setFastMove(final boolean fastMove)
-	{
-		this.fastMove = fastMove;
-	}
-	
-	
-	public boolean isFastMove()
-	{
-		return fastMove;
-	}
-	
-	
-	/**
-	 * @param primaryDirection
-	 */
-	public void setPrimaryDirection(final IVector2 primaryDirection)
-	{
-		assert primaryDirection != null;
-		this.primaryDirection = primaryDirection;
-	}
-	
-	
-	/**
-	 * @return the primaryDirection
-	 */
-	public IVector2 getPrimaryDirection()
-	{
-		return primaryDirection;
+		return this;
 	}
 }

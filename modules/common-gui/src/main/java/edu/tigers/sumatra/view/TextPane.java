@@ -1,16 +1,12 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2010, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 06.08.2010
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view;
 
-import java.awt.Font;
-import java.util.Deque;
-import java.util.LinkedList;
+import edu.tigers.sumatra.drawable.EFontSize;
+import edu.tigers.sumatra.util.ScalingUtil;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
@@ -18,8 +14,9 @@ import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
 import javax.swing.text.StyledDocument;
-
-import org.apache.log4j.Logger;
+import java.awt.Font;
+import java.util.Deque;
+import java.util.LinkedList;
 
 
 /**
@@ -27,7 +24,7 @@ import org.apache.log4j.Logger;
  */
 public class TextPane extends JScrollPane
 {
-	private static final Logger log = Logger.getLogger(TextPane.class.getName());
+	private static final Logger log = LogManager.getLogger(TextPane.class.getName());
 
 	private final JTextPane pane;
 	private final StyledDocument doc;
@@ -46,7 +43,7 @@ public class TextPane extends JScrollPane
 		DefaultCaret caret = (DefaultCaret) pane.getCaret();
 		caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 
-		pane.setFont(new Font("Verdana", Font.PLAIN, 12));
+		setFontSize(ScalingUtil.getFontSize(EFontSize.SMALL));
 		pane.setEditable(false);
 		pane.setOpaque(false);
 		pane.setFocusable(true);
@@ -57,10 +54,9 @@ public class TextPane extends JScrollPane
 	}
 
 
-	public void setText(final String text, final AttributeSet aset)
+	private void setFontSize(int fontSize)
 	{
-		clear();
-		append(text, aset);
+		pane.setFont(new Font("Verdana", Font.PLAIN, fontSize));
 	}
 
 
@@ -87,7 +83,10 @@ public class TextPane extends JScrollPane
 			if (entryLengths.size() > maxCapacity)
 			{
 				final Integer end = entryLengths.pollFirst();
-				doc.remove(0, end);
+				if (end != null)
+				{
+					doc.remove(0, end);
+				}
 			}
 
 			// Memorize the message-length
@@ -111,7 +110,10 @@ public class TextPane extends JScrollPane
 			if (entryLengths.size() > maxCapacity)
 			{
 				final Integer end = entryLengths.pollLast();
-				doc.remove(doc.getLength(), end);
+				if (end != null)
+				{
+					doc.remove(doc.getLength(), end);
+				}
 			}
 
 			// Memorize the message-length

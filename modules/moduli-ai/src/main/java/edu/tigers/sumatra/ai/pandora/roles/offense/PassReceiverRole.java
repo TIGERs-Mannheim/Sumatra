@@ -1,30 +1,26 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.offense;
 
-import java.awt.Color;
-
-import org.apache.log4j.Logger;
-
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
-import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
-import edu.tigers.sumatra.ai.metis.offense.OffensiveMath;
-import edu.tigers.sumatra.ai.metis.offense.action.moves.OffensiveAction;
-import edu.tigers.sumatra.ai.metis.support.passtarget.IPassTarget;
-import edu.tigers.sumatra.ai.metis.targetrater.IRatedTarget;
+import edu.tigers.sumatra.ai.metis.kicking.Kick;
+import edu.tigers.sumatra.ai.metis.kicking.Pass;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
+import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableArrow;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.math.line.LineMath;
-import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
+import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.redirect.RedirectConsultantFactory;
-import edu.tigers.sumatra.statemachine.AState;
-import edu.tigers.sumatra.wp.data.DynamicPosition;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.log4j.Log4j2;
+
+import java.awt.Color;
 
 
 /**
@@ -32,78 +28,108 @@ import edu.tigers.sumatra.wp.data.DynamicPosition;
  * It drives to the currently active pass target.
  * It will be overtaken by the attacker as soon as the pass is on its way
  */
+@Log4j2
 public class PassReceiverRole extends ARole
 {
-	private static final Logger log = Logger.getLogger(PassReceiverRole.class.getName());
-	
-	
+	@Getter
+	private Pass incomingPass;
+	@Getter
+	@Setter
+	private Kick outgoingKick;
+	@Setter
+	private boolean penaltyAreaObstacle;
+
+	@Getter
+	private double receivingPositionReachedIn;
+
+
 	public PassReceiverRole()
 	{
 		super(ERole.PASS_RECEIVER);
-		
+
 		setInitialState(new DefaultState());
 	}
-	
-	private class DefaultState extends AState
+
+
+	public void setIncomingPass(Pass incomingPass)
 	{
-		@Override
-		public void doEntryActions()
+		if (incomingPass == null || incomingPass.getReceiver() == getBotID())
 		{
-			setNewSkill(AMoveToSkill.createMoveToSkill());
-			getCurrentSkill().getMoveCon().setBallObstacle(false);
+			this.incomingPass = incomingPass;
+		} else
+		{
+			log.warn("Bot {} got a pass for another receiver: {}", getBotID(), incomingPass.getReceiver(),
+					new Exception(""));
 		}
-		
-		
-		@Override
-		public void doUpdate()
+	}
+
+
+	private class DefaultState extends RoleState<MoveToSkill>
+	{
+		private DefaultState()
 		{
-			getAiFrame().getTacticalField().getOffensiveStrategy().getActivePassTarget().ifPresent(this::updateTargetPose);
+			super(MoveToSkill::new);
 		}
-		
-		
-		private void updateTargetPose(final IPassTarget passTarget)
+
+
+		@Override
+		protected void onUpdate()
 		{
-			if (passTarget.getBotId() != getBotID())
+			if (incomingPass == null)
 			{
-				log.warn("PassTarget botId does not match pass receiver anymore: " + getBotID() + " changed to "
-						+ passTarget.getBotId());
+				skill.updateLookAtTarget(getBall());
+				getShapes(EAiShapesLayer.OFFENSIVE_PASSING).add(
+						new DrawableAnnotation(getPos(), "No incoming pass!")
+								.setColor(Color.magenta));
+				return;
 			}
-			
-			IVector2 dest = LineMath.stepAlongLine(passTarget.getPos(), getBall().getPos(),
-					-getBot().getCenter2DribblerDist() - Geometry.getBallRadius());
-			
-			// Calculate the correct target angle for receiving the ball
-			IVector2 ballVelAtReceive = getBot().getPos().subtractNew(getBall().getPos())
-					.scaleTo(OffensiveConstants.getMaxPassEndVelRedirect());
-			
-			OffensiveAction action = getAiFrame().getTacticalField().getOffensiveActions().get(getBotID());
-			IVector2 target = getAiFrame().getTacticalField().getBestGoalKickTargetForBot().get(getBotID())
-					.map(IRatedTarget::getTarget)
-					.map(DynamicPosition::getPos)
-					.orElse(Geometry.getGoalTheir().getCenter());
-			double vel = action.getKickTarget().getBallSpeedAtTarget();
-			
-			IVector2 desiredBallVel = target.subtractNew(getPos()).scaleTo(vel);
-			
-			double targetAngle = RedirectConsultantFactory.createDefault(ballVelAtReceive, desiredBallVel)
-					.getTargetAngle();
-			
-			IVector2 dir = Vector2.fromAngle(targetAngle);
-			DrawableArrow da = new DrawableArrow(getPos(), dir.scaleToNew(200), Color.WHITE);
-			getAiFrame().getTacticalField().getDrawableShapes().get(EAiShapesLayer.OFFENSIVE_PASSING).add(da);
-			
-			boolean lookAtBall = OffensiveMath.getRedirectAngle(getBall().getPos(), getBot().getBotKickerPos(),
-					target) >= OffensiveConstants
-							.getMaximumReasonableRedirectAngle();
-			
-			getCurrentSkill().getMoveCon().updateDestination(dest);
-			
-			if (lookAtBall)
+
+			var receivingPos = incomingPass.getKick().getTarget();
+			double targetAngle = getTargetAngle();
+			skill.updateTargetAngle(targetAngle);
+
+			var dest = receivingPos.subtractNew(
+					Vector2.fromAngleLength(targetAngle, getBot().getCenter2DribblerDist() + Geometry.getBallRadius()));
+			skill.updateDestination(dest);
+
+			skill.getMoveCon().setBallObstacle(dest.distanceTo(getPos()) > 500);
+			skill.getMoveCon().setPenaltyAreaOurObstacle(penaltyAreaObstacle);
+			skill.getMoveCon().setPenaltyAreaTheirObstacle(penaltyAreaObstacle);
+
+			receivingPositionReachedIn = skill.getDestinationReachedIn();
+			draw();
+		}
+
+
+		private double getTargetAngle()
+		{
+			if (outgoingKick != null)
 			{
-				getCurrentSkill().getMoveCon().updateLookAtTarget(getBall());
+				var incomingBallVel = incomingPass.getKick().getKickVel().getXYVector()
+						.scaleToNew(incomingPass.getReceivingSpeed());
+				var desiredBallVel = outgoingKick.getKickVel().getXYVector();
+				return RedirectConsultantFactory.createDefault().getTargetAngle(incomingBallVel, desiredBallVel);
 			} else
 			{
-				getCurrentSkill().getMoveCon().updateTargetAngle(targetAngle);
+				return incomingPass.getKick().getKickVel().getXYVector().multiplyNew(-1).getAngle();
+			}
+		}
+
+
+		private void draw()
+		{
+			var incomingPassLine = Lines
+					.segmentFromPoints(incomingPass.getKick().getSource(), incomingPass.getKick().getTarget());
+			getAiFrame().getShapeMap().get(EAiShapesLayer.OFFENSIVE_PASSING)
+					.add(new DrawableArrow(incomingPassLine.getStart(), incomingPassLine.directionVector(), Color.WHITE));
+
+			if (outgoingKick != null)
+			{
+				var outgoingKickLine = Lines.segmentFromPoints(
+						outgoingKick.getSource(),
+						outgoingKick.getTarget());
+				getAiFrame().getShapeMap().get(EAiShapesLayer.OFFENSIVE_PASSING)
+						.add(new DrawableArrow(outgoingKickLine.getStart(), outgoingKickLine.directionVector(), Color.WHITE));
 			}
 		}
 	}

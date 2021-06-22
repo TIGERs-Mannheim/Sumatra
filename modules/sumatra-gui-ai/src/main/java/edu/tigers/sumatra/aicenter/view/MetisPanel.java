@@ -3,8 +3,8 @@
  */
 package edu.tigers.sumatra.aicenter.view;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
+import edu.tigers.sumatra.components.RoundedNumberRenderer;
+import edu.tigers.sumatra.util.ScalingUtil;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -15,9 +15,9 @@ import javax.swing.JTable;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
-
-import edu.tigers.sumatra.ai.metis.ECalculator;
-import edu.tigers.sumatra.components.RoundedNumberRenderer;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Dimension;
 
 
 /**
@@ -26,20 +26,19 @@ import edu.tigers.sumatra.components.RoundedNumberRenderer;
 public class MetisPanel extends JPanel
 {
 	private static final long serialVersionUID = 9125108113440167202L;
-	public static final int COL_ACTIVE = 0;
-	public static final int COL_CALCULATOR = 1;
-	public static final int COL_TIME_REL = 2;
-	public static final int COL_TIME_AVG = 3;
-	public static final int COL_EXECUTED = 4;
+	public static final int COL_CALCULATOR = 0;
+	public static final int COL_TIME_REL = 1;
+	public static final int COL_TIME_AVG = 2;
+	public static final int COL_EXECUTED = 3;
 
 	private static final String[] COLUMN_NAMES = {
-			"active",
 			"calculator",
 			"time [% of metis]",
-			"avg. time [us]",
+			"avg. time [ms]",
 			"executed" };
 
 	private final JTable table;
+	private final MetisTableModel model;
 	private final JCheckBox automaticReorderingCheckBox = new JCheckBox("Automatic Reordering");
 	private final JButton resetButton = new JButton("Reset Averages");
 
@@ -47,17 +46,19 @@ public class MetisPanel extends JPanel
 	public MetisPanel()
 	{
 		setLayout(new BorderLayout());
-		TableModel model = new TableModel(COLUMN_NAMES, ECalculator.values().length);
+		model = new MetisTableModel(COLUMN_NAMES, 0);
 		table = new JTable(model);
 		table.setEnabled(false);
 		table.setAutoCreateRowSorter(true);
+		table.setRowHeight(ScalingUtil.getTableRowHeight());
+		table.setDefaultRenderer(Class.class, new ClassCellRenderer());
 
-		DefaultTableCellRenderer textRenderer = new DefaultTableCellRenderer();
-		RoundedNumberRenderer numberRenderer = new RoundedNumberRenderer();
-		textRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-		numberRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-		table.getColumnModel().getColumn(COL_TIME_AVG).setCellRenderer(numberRenderer);
-		table.getColumnModel().getColumn(COL_TIME_REL).setCellRenderer(numberRenderer);
+		RoundedNumberRenderer relNumberRenderer = new RoundedNumberRenderer("0.0");
+		RoundedNumberRenderer timeRenderer = new RoundedNumberRenderer("0.000");
+		relNumberRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+		timeRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+		table.getColumnModel().getColumn(COL_TIME_REL).setCellRenderer(relNumberRenderer);
+		table.getColumnModel().getColumn(COL_TIME_AVG).setCellRenderer(timeRenderer);
 
 
 		JScrollPane scrlPane = new JScrollPane(table);
@@ -98,14 +99,13 @@ public class MetisPanel extends JPanel
 	 */
 	public void reset()
 	{
-		int row = 0;
-		for (ECalculator eCalc : ECalculator.values())
-		{
-			table.getModel().setValueAt(eCalc.isInitiallyActive(), row, COL_ACTIVE);
-			table.getModel().setValueAt(eCalc.name(), row, COL_CALCULATOR);
-			table.getModel().setValueAt(0, row, COL_TIME_REL);
-			row++;
-		}
+		setRowCount(0);
+	}
+
+
+	public void setRowCount(int rows)
+	{
+		model.setRowCount(rows);
 	}
 
 
@@ -115,12 +115,13 @@ public class MetisPanel extends JPanel
 		table.setEnabled(active);
 	}
 
-	private static class TableModel extends DefaultTableModel
+
+	private static class MetisTableModel extends DefaultTableModel
 	{
 		private static final long serialVersionUID = -3700170198897729348L;
 
 
-		private TableModel(final Object[] columnNames, final int rowCount)
+		private MetisTableModel(final Object[] columnNames, final int rowCount)
 		{
 			super(columnNames, rowCount);
 		}
@@ -129,12 +130,12 @@ public class MetisPanel extends JPanel
 		@Override
 		public Class<?> getColumnClass(final int columnIndex)
 		{
-			if (columnIndex == COL_ACTIVE || columnIndex == COL_EXECUTED)
+			if (columnIndex == COL_EXECUTED)
 			{
 				return Boolean.class;
 			} else if (columnIndex == COL_CALCULATOR)
 			{
-				return String.class;
+				return Class.class;
 			} else if (columnIndex == COL_TIME_AVG || columnIndex == COL_TIME_REL)
 			{
 				return Float.class;
@@ -147,7 +148,26 @@ public class MetisPanel extends JPanel
 		@Override
 		public boolean isCellEditable(final int row, final int column)
 		{
-			return column == COL_ACTIVE;
+			return false;
+		}
+	}
+
+	private static class ClassCellRenderer extends DefaultTableCellRenderer
+	{
+		@Override
+		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
+				int row, int column)
+		{
+			super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+			Class<?> clazz = (Class<?>) value;
+			if (clazz == null)
+			{
+				setText("");
+			} else
+			{
+				setText(clazz.getSimpleName());
+			}
+			return this;
 		}
 	}
 }

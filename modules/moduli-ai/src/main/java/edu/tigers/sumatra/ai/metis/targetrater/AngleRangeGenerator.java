@@ -1,98 +1,94 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.targetrater;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.geometry.Goal;
+import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.circle.ICircle;
-import edu.tigers.sumatra.math.triangle.ITriangle;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.triangle.TriangleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.pathfinder.obstacles.MovingRobot;
-import edu.tigers.sumatra.wp.ball.prediction.IStraightBallConsultant;
+import edu.tigers.sumatra.math.vector.Vector2;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.Value;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 /**
  * Generate covered angles from an arbitrary triangular range
  */
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+@Value
 public class AngleRangeGenerator
 {
-	private IVector2 start;
-	private IVector2 endLeft;
-	private IVector2 endRight;
+	ILineSegment lineSegment;
 
-	private boolean extendTriangle = false;
 
-	private double kickSpeed;
-	private IStraightBallConsultant ballConsultant;
-	private Map<BotID, MovingRobot> movingRobots = new HashMap<>();
-	private Set<BotID> excludedBots = Collections.emptySet();
+	/**
+	 * Create the angle rater based on a goal
+	 *
+	 * @param goal
+	 * @return
+	 */
+	public static AngleRangeGenerator forGoal(Goal goal)
+	{
+		return new AngleRangeGenerator(goal.getLineSegment());
+	}
 
-	private double timeToKick = 0;
-	private double timeForBotToReact = 0;
+
+	/**
+	 * Create the angle rater based on an line segment
+	 *
+	 * @param lineSegment
+	 * @return
+	 */
+	public static AngleRangeGenerator forLineSegment(ILineSegment lineSegment)
+	{
+		return new AngleRangeGenerator(lineSegment);
+	}
 
 
 	/**
 	 * Generate the covered angles
 	 *
-	 * @return a list of all found covered angles within the given range
+	 * @return a list of all ranges covered by obstacles (in the 180° range around the range center)
 	 */
-	public List<AngleRange> findCoveredAngleRanges()
+	public List<AngleRange> findCoveredAngleRanges(IVector2 origin, List<ICircle> obstacles)
 	{
-		List<AngleRange> coveredAngles = new ArrayList<>();
+		IVector2 endCenter = TriangleMath.bisector(origin, lineSegment.getStart(), lineSegment.getEnd());
+		IVector2 originToEndCenter = endCenter.subtractNew(origin);
 
-		ITriangle triangle = createTriangle();
-		IVector2 endCenter = TriangleMath.bisector(start, endLeft, endRight);
-		IVector2 startToEndCenter = endCenter.subtractNew(start);
-
-		List<MovingRobot> robots = movingRobots.entrySet().stream()
-				.filter(entry -> !excludedBots.contains(entry.getKey()))
-				.map(Map.Entry::getValue)
+		return obstacles.stream()
+				.map(circle -> circle.tangentialIntersections(origin))
+				.map(intersections -> createRange(origin, originToEndCenter, intersections))
+				.filter(Optional::isPresent)
+				.map(Optional::get)
 				.collect(Collectors.toList());
-		for (MovingRobot movingRobot : robots)
-		{
-			double distBotToStart = movingRobot.getPos().distanceTo(start);
-			double timeBallToBot = ballConsultant.getTimeForKick(distBotToStart, kickSpeed) + timeToKick;
-			double horizon = Math.max(0, timeBallToBot - timeForBotToReact);
-			ICircle obstacleCircle = movingRobot.getMovingHorizon(horizon);
-			List<IVector2> intersections = obstacleCircle.tangentialIntersections(start);
-			if (triangle.isPointInShape(movingRobot.getPos())
-					|| intersections.stream().anyMatch(triangle::isPointInShape))
-			{
-				addAngleRange(coveredAngles, startToEndCenter, intersections);
-			}
-		}
-
-		return coveredAngles;
 	}
 
 
-	private void addAngleRange(final List<AngleRange> coveredAngles, final IVector2 startToEndCenter,
-			final List<IVector2> intersections)
+	private Optional<AngleRange> createRange(IVector2 origin, IVector2 originToEndCenter, List<IVector2> intersections)
 	{
-		Optional<Double> leftAngle = startToEndCenter.angleTo(intersections.get(1).subtractNew(start));
-		Optional<Double> rightAngle = startToEndCenter.angleTo(intersections.get(0).subtractNew(start));
-		if (leftAngle.isPresent() && rightAngle.isPresent())
-		{
-			if (rightAngle.get() < leftAngle.get())
-			{
-				coveredAngles.add(new AngleRange(rightAngle.get(), leftAngle.get()));
-			} else
-			{
-				coveredAngles.add(new AngleRange(leftAngle.get(), rightAngle.get()));
-			}
-		}
+		return Optional.of(AngleRange.fromAngles(
+				relativeAngle(origin, originToEndCenter, intersections.get(0)),
+				relativeAngle(origin, originToEndCenter, intersections.get(1))
+		)).filter(r -> r.getWidth() > 0 && r.getWidth() < AngleMath.DEG_180_IN_RAD);
+	}
+
+
+	private double relativeAngle(IVector2 origin, IVector2 startToEndCenter, IVector2 point)
+	{
+		IVector2 originToPoint = point.subtractNew(origin);
+		return startToEndCenter.angleTo(originToPoint).orElse(AngleMath.DEG_180_IN_RAD);
 	}
 
 
@@ -101,9 +97,9 @@ public class AngleRangeGenerator
 	 *
 	 * @return all uncovered angle ranges
 	 */
-	public List<AngleRange> findUncoveredAngleRanges()
+	public List<AngleRange> findUncoveredAngleRanges(IVector2 origin, List<ICircle> obstacles)
 	{
-		return findUncoveredAngleRanges(findCoveredAngleRanges(), getAngleRange());
+		return findUncoveredAngleRanges(findCoveredAngleRanges(origin, obstacles), getAngleRange(origin));
 	}
 
 
@@ -116,7 +112,7 @@ public class AngleRangeGenerator
 	 */
 	public List<AngleRange> findUncoveredAngleRanges(final List<AngleRange> coveredAngles, final AngleRange fullRange)
 	{
-		coveredAngles.sort(Comparator.comparingDouble(AngleRange::getRightAngle));
+		coveredAngles.sort(Comparator.comparingDouble(AngleRange::getRight));
 
 		List<AngleRange> uncoveredAngles = new ArrayList<>();
 		uncoveredAngles.add(fullRange);
@@ -138,106 +134,19 @@ public class AngleRangeGenerator
 	/**
 	 * @return the full angle range to be considered
 	 */
-	public AngleRange getAngleRange()
+	public AngleRange getAngleRange(IVector2 origin)
 	{
-		IVector2 start2rightEnd = endRight.subtractNew(start);
-		IVector2 start2leftEnd = endLeft.subtractNew(start);
-		double width = start2leftEnd.angleToAbs(start2rightEnd).orElse(0.0);
-		double rightAngle = -width / 2;
-		double leftAngle = width / 2;
-		return new AngleRange(rightAngle, leftAngle);
+		IVector2 origin2Start = lineSegment.getStart().subtractNew(origin);
+		IVector2 origin2End = lineSegment.getEnd().subtractNew(origin);
+		double width = origin2End.angleToAbs(origin2Start).orElse(0.0);
+		return AngleRange.width(width);
 	}
 
 
-	/**
-	 * @return a triangle from start, left and right end + margin for the ball
-	 */
-	private ITriangle createTriangle()
+	public Optional<IVector2> getPoint(IVector2 origin, double angle)
 	{
-		return AngleRaterMath.getTriangle(endLeft, endRight, extendTriangle, start);
-	}
-
-
-	public IVector2 getStart()
-	{
-		return start;
-	}
-
-
-	public void setStart(final IVector2 start)
-	{
-		this.start = start;
-	}
-
-
-	public IVector2 getEndLeft()
-	{
-		return endLeft;
-	}
-
-
-	public void setEndLeft(final IVector2 endLeft)
-	{
-		this.endLeft = endLeft;
-	}
-
-
-	public IVector2 getEndRight()
-	{
-		return endRight;
-	}
-
-
-	public void setEndRight(final IVector2 endRight)
-	{
-		this.endRight = endRight;
-	}
-
-
-	public void setKickSpeed(final double kickSpeed)
-	{
-		this.kickSpeed = kickSpeed;
-	}
-
-
-	public void setTimeToKick(final double timeToKick)
-	{
-		this.timeToKick = timeToKick;
-	}
-
-
-	public Map<BotID, MovingRobot> getMovingRobots()
-	{
-		return movingRobots;
-	}
-
-
-	public void setMovingRobots(final Map<BotID, MovingRobot> movingRobots)
-	{
-		this.movingRobots = movingRobots;
-	}
-
-
-	public void setBallConsultant(final IStraightBallConsultant ballConsultant)
-	{
-		this.ballConsultant = ballConsultant;
-	}
-
-
-	public void setTimeForBotToReact(final double timeForBotToReact)
-	{
-		this.timeForBotToReact = timeForBotToReact;
-	}
-
-
-	public void setExcludedBots(final Set<BotID> excludedBots)
-	{
-		this.excludedBots = excludedBots;
-	}
-
-
-	public void setExtendTriangle(final boolean extendTriangle)
-	{
-		this.extendTriangle = extendTriangle;
+		IVector2 endCenter = TriangleMath.bisector(origin, lineSegment.getStart(), lineSegment.getEnd());
+		double baseAngle = endCenter.subtractNew(origin).getAngle();
+		return lineSegment.intersectLine(Lines.lineFromDirection(origin, Vector2.fromAngle(baseAngle + angle)));
 	}
 }

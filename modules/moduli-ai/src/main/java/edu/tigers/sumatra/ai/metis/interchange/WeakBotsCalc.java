@@ -4,19 +4,18 @@
 
 package edu.tigers.sumatra.ai.metis.interchange;
 
-import java.awt.Color;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
-import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.drawable.animated.AnimatedCrosshair;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+import lombok.Getter;
+
+import java.awt.Color;
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 /**
@@ -24,15 +23,18 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class WeakBotsCalc extends ACalculator
 {
+	@Getter
+	private List<BotID> weakBots;
+
+
 	@Override
-	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+	public void doCalc()
 	{
-		List<BotID> weakBots = weakBots();
+		weakBots = weakBots();
 		weakBots.forEach(this::annotateRobotAnnoyingly);
-		newTacticalField.getBotInterchange().setWeakBots(weakBots);
 	}
-	
-	
+
+
 	private List<BotID> weakBots()
 	{
 		return getWFrame().getTigerBotsAvailable().values().stream()
@@ -41,8 +43,8 @@ public class WeakBotsCalc extends ACalculator
 				.map(ITrackedBot::getBotId)
 				.collect(Collectors.toList());
 	}
-	
-	
+
+
 	private void annotateRobotAnnoyingly(final BotID botId)
 	{
 		Color violet = new Color(0xff, 0x33, 0x99);
@@ -51,7 +53,7 @@ public class WeakBotsCalc extends ACalculator
 		IDrawableShape rotating = AnimatedCrosshair.aCrazyCrosshair(getWFrame().getBot(botId).getPos(),
 				(float) Geometry.getBotRadius(),
 				(float) Geometry.getBotRadius() + 100, 0.8f, Color.BLACK, violetAlpha, limeAlpha);
-		
-		getNewTacticalField().getDrawableShapes().get(EAiShapesLayer.AI_WEAK_BOT).add(rotating);
+
+		getShapes(EAiShapesLayer.AI_WEAK_BOT).add(rotating);
 	}
 }

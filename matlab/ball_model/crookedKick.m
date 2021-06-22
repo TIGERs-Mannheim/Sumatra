@@ -75,7 +75,7 @@ function [result, valid] = processFolder(folder)
     kickVel = max(log.wpBall.velAbs(1:i));
 
     endPos = ballPos(i, 1:2) - kickPos;
-    deviation = atan2(endPos(2), endPos(1)) - kickOrientation + pi;
+    deviation = atan2(endPos(2), endPos(1)) - kickOrientation;
     
     result = [offset deviation duration kickVel];
     valid = 1;

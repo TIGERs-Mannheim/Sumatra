@@ -1,11 +1,11 @@
+/*
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.ai.metis.defense;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import com.github.g3force.configurable.Configurable;
-
+import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallToBotThreat;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreat;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -19,11 +19,20 @@ import edu.tigers.sumatra.math.tube.ITube;
 import edu.tigers.sumatra.math.tube.Tube;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 
 /**
  * Calculate threats from ball to an opponent bot that should be man-marked.
  */
+@RequiredArgsConstructor
 public class DefenseBallToBotThreatCalc extends ADefenseThreatCalc
 {
 	@Configurable(comment = "minimal distance to ball (excluding bot+ball radii)", defValue = "100.0")
@@ -41,24 +50,38 @@ public class DefenseBallToBotThreatCalc extends ADefenseThreatCalc
 	@Configurable(defValue = "1", comment = "Number of man markers to assign")
 	private static int numMarkers = 1;
 
+	private final Supplier<List<DefenseBotThreat>> defenseBotThreats;
+	private final Supplier<BotDistance> opponentClosestToBall;
+
+	@Getter
+	private List<DefenseBallToBotThreat> defenseBallToBotThreats;
+
+
+	@Override
+	protected boolean isCalculationNecessary()
+	{
+		return enabled
+				&& opponentClosestToBall.get().getBotId().isBot()
+				&& getAiFrame().getGameState().isRunning();
+	}
+
+
+	@Override
+	protected void reset()
+	{
+		defenseBallToBotThreats = Collections.emptyList();
+	}
+
 
 	@Override
 	protected void doCalc()
 	{
-		if (!enabled
-				|| getNewTacticalField().getEnemiesToBallDist().isEmpty()
-				|| getAiFrame().getGamestate().isStandardSituationForUs()
-				|| getAiFrame().getGamestate().isBallPlacement())
-		{
-			return;
-		}
-
-		final BotID nearestOpponentToBall = getNewTacticalField().getEnemiesToBallDist().get(0).getBot().getBotId();
-		final List<DefenseBotThreat> consideredThreats = getNewTacticalField().getDefenseBotThreats().stream()
+		final BotID nearestOpponentToBall = opponentClosestToBall.get().getBotId();
+		final List<DefenseBotThreat> consideredThreats = defenseBotThreats.get().stream()
 				.filter(t -> t.getBotID() != nearestOpponentToBall)
 				.collect(Collectors.toList());
 
-		final List<DefenseBallToBotThreat> threats = new ArrayList<>();
+		defenseBallToBotThreats = new ArrayList<>();
 		int maxMarkers = Math.min(consideredThreats.size(), numMarkers);
 		for (int i = 0; i < maxMarkers; i++)
 		{
@@ -68,12 +91,12 @@ public class DefenseBallToBotThreatCalc extends ADefenseThreatCalc
 
 			if (threat.getProtectionLine().isPresent())
 			{
-				threats.add(threat);
+				defenseBallToBotThreats.add(threat);
 			}
 		}
 
-		getNewTacticalField().setDefenseBallToBotThreats(threats);
-		threats.forEach(this::drawThreat);
+		defenseBallToBotThreats = Collections.unmodifiableList(defenseBallToBotThreats);
+		defenseBallToBotThreats.forEach(this::drawThreat);
 	}
 
 
@@ -81,7 +104,7 @@ public class DefenseBallToBotThreatCalc extends ADefenseThreatCalc
 	{
 		final ILineSegment threatLine = threatLine(bot);
 		final ILineSegment protectionLine = protectionLine(threatLine);
-		return new DefenseBallToBotThreat(bot, threatLine, protectionLine, getBall().getVel());
+		return new DefenseBallToBotThreat(bot, getBall().getVel(), threatLine, protectionLine);
 	}
 
 
@@ -99,7 +122,7 @@ public class DefenseBallToBotThreatCalc extends ADefenseThreatCalc
 
 	private ILineSegment protectionLine(final ILineSegment threatLine)
 	{
-		final double minDistToBall = getAiFrame().getGamestate().isRunning()
+		final double minDistToBall = getAiFrame().getGameState().isRunning()
 				? minDistanceToBall
 				: Math.max(minDistanceToBall, RuleConstraints.getStopRadius());
 		final double startMargin = minDistToBall + Geometry.getBallRadius() + Geometry.getBotRadius();
@@ -160,8 +183,8 @@ public class DefenseBallToBotThreatCalc extends ADefenseThreatCalc
 
 	private boolean hindersBallPlacement(final ILineSegment threatDefendingLine)
 	{
-		final IVector2 placePos = getAiFrame().getGamestate().getBallPlacementPositionForUs();
-		if (getAiFrame().getGamestate().isBallPlacement() && placePos != null)
+		final IVector2 placePos = getAiFrame().getGameState().getBallPlacementPositionForUs();
+		if (getAiFrame().getGameState().isBallPlacement() && placePos != null)
 		{
 			final IVector2 ballPos = getBall().getPos();
 			final double radius = RuleConstraints.getStopRadius() + Geometry.getBotRadius();

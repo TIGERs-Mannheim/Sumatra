@@ -1,21 +1,19 @@
 package edu.tigers.sumatra.view.skills;
 
-import java.awt.Dimension;
-
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-
 import com.github.g3force.instanceables.InstanceablePanel;
-
 import edu.tigers.sumatra.botmanager.botskills.EBotSkill;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.skillsystem.ESkill;
 import edu.tigers.sumatra.views.ISumatraView;
 import net.miginfocom.swing.MigLayout;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import java.awt.Dimension;
 
 
 public class SkillsPanel extends JPanel implements ISumatraView

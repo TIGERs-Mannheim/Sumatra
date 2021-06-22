@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.util;
@@ -9,7 +9,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.data.collector.IExportable;
@@ -25,11 +26,11 @@ import edu.tigers.sumatra.wp.data.ExtendedCamDetectionFrame;
  */
 public class TimeSeriesVisionDataProvider implements ITimeSeriesDataProvider, IWorldFrameObserver
 {
-	private static final Logger log = Logger.getLogger(TimeSeriesVisionDataProvider.class.getName());
-	
+	private static final Logger log = LogManager.getLogger(TimeSeriesVisionDataProvider.class.getName());
+
 	private final Map<String, Collection<IExportable>> dataBuffers = new HashMap<>();
-	
-	
+
+
 	/**
 	 * Default constructor
 	 */
@@ -40,8 +41,8 @@ public class TimeSeriesVisionDataProvider implements ITimeSeriesDataProvider, IW
 		dataBuffers.put("rawBalls", new ConcurrentLinkedQueue<>());
 		dataBuffers.put("rawBots", new ConcurrentLinkedQueue<>());
 	}
-	
-	
+
+
 	@Override
 	public void stop()
 	{
@@ -54,8 +55,8 @@ public class TimeSeriesVisionDataProvider implements ITimeSeriesDataProvider, IW
 			log.error("WP module not found.", err);
 		}
 	}
-	
-	
+
+
 	@Override
 	public void start()
 	{
@@ -68,29 +69,29 @@ public class TimeSeriesVisionDataProvider implements ITimeSeriesDataProvider, IW
 			log.error("WP module not found.", err);
 		}
 	}
-	
-	
+
+
 	@Override
 	public boolean isDone()
 	{
 		return true;
 	}
-	
-	
+
+
 	@Override
 	public Map<String, Collection<IExportable>> getExportableData()
 	{
 		return dataBuffers;
 	}
-	
-	
+
+
 	@Override
 	public void onNewCamDetectionFrame(final ExtendedCamDetectionFrame frame)
 	{
 		processCamFrame(frame);
 	}
-	
-	
+
+
 	private void processCamFrame(final ExtendedCamDetectionFrame frame)
 	{
 		dataBuffers.get("frameInfo").add(new ExportableFrameInfo(frame.getFrameNumber(), frame.getCameraId(),

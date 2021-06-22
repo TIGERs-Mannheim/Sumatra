@@ -1,20 +1,21 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.support;
 
 import com.github.g3force.configurable.Configurable;
 import com.github.g3force.instanceables.InstanceableClass;
-import edu.tigers.sumatra.ai.metis.offense.OffensiveMath;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.plays.match.SupportPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
-import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.geometry.IPenaltyArea;
+import edu.tigers.sumatra.ai.pandora.roles.support.behaviors.repulsive.RepulsivePassReceiver;
+import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -29,28 +30,29 @@ import java.util.stream.Collectors;
  */
 public class SupportRole extends ARole
 {
-	private static Logger logger = Logger.getLogger(SupportRole.class);
-	
+	private static Logger logger = LogManager.getLogger(SupportRole.class);
+
 	@Configurable(comment = "[m/s]", defValue = "2.0")
 	private static double maxVelInReceiverArc = 2.;
 
-	private IPenaltyArea area = Geometry.getPenaltyAreaTheir().withMargin(Geometry.getBotRadius() + 20);
-
 	private final EnumMap<ESupportBehavior, ASupportBehavior> behaviors = new EnumMap<>(ESupportBehavior.class);
 	private ESupportBehavior currentBehavior;
-	
-	
+
+	private Map<BotID, RepulsivePassReceiver.CalcViabilityInfo> botViabilityForRepulsiveBehavior;
+
+
 	/**
 	 * Constructor. What else?
 	 */
-	public SupportRole()
+	public SupportRole(Map<BotID, RepulsivePassReceiver.CalcViabilityInfo> botViabilityForRepulsiveBehavior)
 	{
 		super(ERole.SUPPORT);
 		initBehaviors();
 		initStateMachine();
+		this.botViabilityForRepulsiveBehavior = botViabilityForRepulsiveBehavior;
 	}
-	
-	
+
+
 	private void initBehaviors()
 	{
 		for (ESupportBehavior b : ESupportBehavior.values())
@@ -64,8 +66,8 @@ public class SupportRole extends ARole
 			}
 		}
 	}
-	
-	
+
+
 	private void initStateMachine()
 	{
 		setInitialState(behaviors.get(ESupportBehavior.MOVE_VORONOI));
@@ -74,42 +76,48 @@ public class SupportRole extends ARole
 			addTransition(b, behaviors.get(b));
 		}
 	}
-	
-	
+
+
+	private MoveToSkill getSkill()
+	{
+		// we assume that all support behaviors use the MoveToSkill.
+		return (MoveToSkill) getCurrentSkill();
+	}
+
+
 	@Override
 	public void beforeUpdate()
 	{
 		checkRedirect();
 	}
-	
-	
+
+
 	public void selectBehavior(ESupportBehavior selectedBehavior)
 	{
-		
 		if (currentBehavior == null || currentBehavior != selectedBehavior)
 		{
 			currentBehavior = selectedBehavior;
 			triggerEvent(selectedBehavior);
 		}
 	}
-	
-	
+
+
 	private void checkRedirect()
 	{
 		boolean isPassable = getAiFrame().getTacticalField().getOffensiveShadows().stream()
 				.anyMatch(a -> a.isPointInShape(getPos()));
-		
+
+		double defVel = getBot().getMoveConstraints().getVelMax();
 		if (isPassable)
 		{
-			getCurrentSkill().getMoveCon().getMoveConstraints().setVelMax(maxVelInReceiverArc);
+			getSkill().setVelMax(Math.min(maxVelInReceiverArc, defVel));
 		} else
 		{
-			getCurrentSkill().getMoveCon().getMoveConstraints()
-					.setVelMax(getBot().getMoveConstraints().getVelMax());
+			getSkill().setVelMax(defVel);
 		}
 	}
-	
-	
+
+
 	/**
 	 * Calculates the viability of all behaviours. Called by the Play
 	 *
@@ -118,19 +126,25 @@ public class SupportRole extends ARole
 	public Map<ESupportBehavior, Double> calculateViabilities()
 	{
 		EnumMap<ESupportBehavior, Double> viabilities = new EnumMap<>(ESupportBehavior.class);
-		behaviors.forEach((e, b) -> viabilities.put(e, b.calculateViability()));
+		behaviors.forEach((e, b) -> viabilities.put(e, b.getViability()));
 		return viabilities;
 	}
-	
-	
+
+
 	public List<ITrackedBot> getCurrentSupportBots()
 	{
 		return getAiFrame().getPlayStrategy().getActiveRoles(EPlay.SUPPORT).stream()
 				.map(ARole::getBot)
 				.collect(Collectors.toList());
 	}
-	
-	
+
+
+	public Map<BotID, RepulsivePassReceiver.CalcViabilityInfo> getBotViabilityForRepulsiveBehavior()
+	{
+		return botViabilityForRepulsiveBehavior;
+	}
+
+
 	/**
 	 * This should return the same results on any instance of a SupportRole
 	 *
@@ -139,7 +153,7 @@ public class SupportRole extends ARole
 	public List<ESupportBehavior> getInactiveBehaviors()
 	{
 		List<ESupportBehavior> ret = new ArrayList<>();
-		
+
 		for (Map.Entry<ESupportBehavior, ASupportBehavior> behavior : this.behaviors.entrySet())
 		{
 			if (!behavior.getValue().getIsActive())
@@ -147,26 +161,13 @@ public class SupportRole extends ARole
 				ret.add(behavior.getKey());
 			}
 		}
-		
+
 		return ret;
 	}
+
 
 	public ESupportBehavior getCurrentBehavior()
 	{
 		return currentBehavior;
-	}
-	
-	
-	@Override
-	protected void afterUpdate()
-	{
-		super.afterUpdate();
-		
-		// determine critical foe bots
-		getCurrentSkill().getMoveCon().setCriticalFoeBots(
-				getWFrame().getFoeBots().values().stream()
-						.filter(b -> OffensiveMath.isBotCritical(b.getPos(), area))
-						.map(ITrackedBot::getBotId)
-						.collect(Collectors.toSet()));
 	}
 }

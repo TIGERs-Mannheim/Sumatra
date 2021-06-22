@@ -1,24 +1,23 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.presenter.replay;
-
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import edu.tigers.sumatra.persistence.BerkeleyDb;
 import edu.tigers.sumatra.views.ASumatraView;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.BerkeleyCamDetectionFrame;
-import edu.tigers.sumatra.wp.data.ExtendedCamDetectionFrame;
+
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 
 public class ReplayCamDetectionController implements IReplayController
 {
 	private final List<IWorldFrameObserver> wFrameObservers = new CopyOnWriteArrayList<>();
-	
-	
+
+
 	public ReplayCamDetectionController(List<ASumatraView> sumatraViews)
 	{
 		for (ASumatraView view : sumatraViews)
@@ -29,18 +28,17 @@ public class ReplayCamDetectionController implements IReplayController
 			}
 		}
 	}
-	
-	
+
+
 	@Override
 	public void update(final BerkeleyDb db, final long sumatraTimestampNs)
 	{
 		BerkeleyCamDetectionFrame camFrame = db.get(BerkeleyCamDetectionFrame.class, sumatraTimestampNs);
 		if (camFrame != null)
 		{
-			ExtendedCamDetectionFrame eFrame = camFrame.getCamFrame();
 			for (IWorldFrameObserver vp : wFrameObservers)
 			{
-				vp.onNewCamDetectionFrame(eFrame);
+				camFrame.getCamFrames().values().forEach(vp::onNewCamDetectionFrame);
 			}
 		}
 	}

@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botparams.presenter;
 
 import java.awt.Component;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.moduli.listenerVariables.ModulesState;
@@ -21,32 +22,31 @@ import edu.tigers.sumatra.views.ISumatraView;
 
 
 /**
- * @author AndreR <andre@ryll.cc>
+ * Presenter for bot parameter view.
  */
 public class BotParamsPresenter extends ASumatraViewPresenter
 		implements ISumatraView, ITeamEditorObserver, IBotParamsDatabaseObserver
 {
-	private static final Logger	log		= Logger
-			.getLogger(BotParamsPresenter.class.getName());
-	
-	private BotParamsManager		paramsManager;
-	private TeamEditor				editor	= new TeamEditor();
-	
-	
+	private static final Logger log = LogManager.getLogger(BotParamsPresenter.class.getName());
+
+	private BotParamsManager paramsManager;
+	private TeamEditor editor = new TeamEditor();
+
+
 	@Override
 	public Component getComponent()
 	{
 		return editor;
 	}
-	
-	
+
+
 	@Override
 	public ISumatraView getSumatraView()
 	{
 		return this;
 	}
-	
-	
+
+
 	@Override
 	public void onModuliStateChanged(final ModulesState state)
 	{
@@ -64,15 +64,15 @@ public class BotParamsPresenter extends ASumatraViewPresenter
 				break;
 		}
 	}
-	
-	
+
+
 	private void moduliStateChangedResolved()
 	{
 		editor.removeObserver(this);
 		editor.clear();
 	}
-	
-	
+
+
 	private void moduliStateChangedActive()
 	{
 		try
@@ -86,43 +86,43 @@ public class BotParamsPresenter extends ASumatraViewPresenter
 			log.error("Could not find bot params manager", err);
 		}
 	}
-	
-	
+
+
 	@Override
 	public void onTeamUpdated(final String teamName, final BotParams newParams)
 	{
 		paramsManager.getDatabase().updateEntry(teamName, newParams);
 	}
-	
-	
+
+
 	@Override
 	public void onTeamSelectedForLabel(final EBotParamLabel label, final String teamName)
 	{
 		paramsManager.getDatabase().setTeamForLabel(label, teamName);
 	}
-	
-	
+
+
 	@Override
 	public void onTeamAdded(final String teamName)
 	{
 		paramsManager.getDatabase().addEntry(teamName);
 	}
-	
-	
+
+
 	@Override
 	public void onTeamDeleted(final String teamName)
 	{
 		paramsManager.getDatabase().deleteEntry(teamName);
 	}
-	
-	
+
+
 	@Override
 	public void onEntryAdded(final String entry, final BotParams newParams)
 	{
 		editor.setDatabase(paramsManager.getDatabase());
 	}
-	
-	
+
+
 	@Override
 	public void onEntryUpdated(final String entry, final BotParams newParams)
 	{
@@ -132,8 +132,8 @@ public class BotParamsPresenter extends ASumatraViewPresenter
 			editor.setDatabase(paramsManager.getDatabase());
 		}
 	}
-	
-	
+
+
 	@Override
 	public void onBotParamLabelUpdated(final EBotParamLabel label, final String newEntry)
 	{

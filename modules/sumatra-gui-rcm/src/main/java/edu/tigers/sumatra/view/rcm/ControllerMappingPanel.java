@@ -1,58 +1,41 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view.rcm;
 
-import java.awt.Color;
-import java.awt.FlowLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-import java.util.List;
+import edu.tigers.sumatra.presenter.rcm.IRCMConfigChangedObserver;
+import edu.tigers.sumatra.rcm.ExtIdentifier;
+import edu.tigers.sumatra.rcm.RcmAction;
+import edu.tigers.sumatra.rcm.RcmActionMapping;
+import lombok.extern.log4j.Log4j2;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
-
-import org.apache.log4j.Logger;
-
-import edu.tigers.sumatra.presenter.rcm.IRCMConfigChangedObserver;
-import edu.tigers.sumatra.rcm.ExtIdentifier;
-import edu.tigers.sumatra.rcm.RcmAction;
-import edu.tigers.sumatra.rcm.RcmActionMapping;
+import java.awt.Color;
+import java.awt.FlowLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.util.List;
 
 
 /**
  * Panel for a single Controller mapping
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
+@Log4j2
 public class ControllerMappingPanel extends JPanel
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	/**  */
 	private static final long serialVersionUID = -8086651107326508468L;
-	private static final Logger log = Logger.getLogger(ControllerMappingPanel.class
-			.getName());
 	private final RcmActionMapping actionMapping;
 	private final List<IRCMConfigChangedObserver> observers;
-	
-	private final JComboBox<RcmAction> actionComboBox;
+
 	private final JPanel identifiersPanel = new JPanel();
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
+
+
 	/**
 	 * @param actionMapping
 	 * @param observers
@@ -61,46 +44,37 @@ public class ControllerMappingPanel extends JPanel
 	{
 		this.actionMapping = actionMapping;
 		this.observers = observers;
-		
-		actionComboBox = createActionList();
+
+		JComboBox<RcmAction> actionComboBox = createActionList();
 		updateIdentifiersPanel();
 		JButton btnAssign = new JButton("Assign");
 		btnAssign.addActionListener(new AssignListener());
-		
+
 		setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		identifiersPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		add(actionComboBox);
 		add(btnAssign);
 		add(identifiersPanel);
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
+
+
+
 	private JComboBox<RcmAction> createActionList()
 	{
-		JComboBox<RcmAction> comboBox = new JComboBox<RcmAction>();
+		JComboBox<RcmAction> comboBox = new JComboBox<>();
 		for (RcmAction e : RcmAction.getAllActions())
 		{
 			comboBox.addItem(e);
 		}
 		comboBox.setSelectedItem(actionMapping.getAction());
-		comboBox.addItemListener(new ItemListener()
-		{
-			
-			@Override
-			public void itemStateChanged(final ItemEvent e)
-			{
-				actionMapping.setAction((RcmAction) e.getItem());
-				notifyChanged();
-			}
+		comboBox.addItemListener(e -> {
+			actionMapping.setAction((RcmAction) e.getItem());
+			notifyChanged();
 		});
 		return comboBox;
 	}
-	
-	
+
+
 	private void updateIdentifiersPanel()
 	{
 		identifiersPanel.removeAll();
@@ -109,8 +83,8 @@ public class ControllerMappingPanel extends JPanel
 			identifiersPanel.add(createSingleIdPanel(extId));
 		}
 	}
-	
-	
+
+
 	private JPanel createSingleIdPanel(final ExtIdentifier extId)
 	{
 		JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
@@ -135,18 +109,8 @@ public class ControllerMappingPanel extends JPanel
 		panel.add(txtCharge);
 		return panel;
 	}
-	
-	
-	/**
-	 * @param mapping
-	 */
-	public void updateConfig(final RcmActionMapping mapping)
-	{
-		actionComboBox.setSelectedItem(mapping.getAction());
-		updateIdentifiersPanel();
-	}
-	
-	
+
+
 	private void notifyChanged()
 	{
 		for (IRCMConfigChangedObserver observer : observers)
@@ -154,17 +118,13 @@ public class ControllerMappingPanel extends JPanel
 			observer.onActionMappingChanged(actionMapping);
 		}
 	}
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
+
 	private class ChargeChangeListener implements FocusListener
 	{
 		private final JTextField txtField;
 		private final ExtIdentifier extId;
-		
-		
+
+
 		/**
 		 * @param txtField
 		 * @param extId
@@ -174,8 +134,8 @@ public class ControllerMappingPanel extends JPanel
 			this.txtField = txtField;
 			this.extId = extId;
 		}
-		
-		
+
+
 		private void check()
 		{
 			boolean valid = false;
@@ -187,7 +147,7 @@ public class ControllerMappingPanel extends JPanel
 			{
 				try
 				{
-					charge = Double.valueOf(txtField.getText());
+					charge = Double.parseDouble(txtField.getText());
 					if (charge >= 0)
 					{
 						valid = true;
@@ -197,7 +157,7 @@ public class ControllerMappingPanel extends JPanel
 					log.debug("No number in text field: " + txtField.getText(), err);
 				}
 			}
-			
+
 			if (valid)
 			{
 				txtField.setForeground(Color.black);
@@ -210,28 +170,28 @@ public class ControllerMappingPanel extends JPanel
 					extId.getParams().setChargeTime(charge);
 					notifyChanged();
 				}
-				
+
 			} else
 			{
 				txtField.setForeground(Color.red);
 			}
 		}
-		
-		
+
+
 		@Override
 		public void focusGained(final FocusEvent e)
 		{
 			// empty
 		}
-		
-		
+
+
 		@Override
 		public void focusLost(final FocusEvent e)
 		{
 			check();
 		}
 	}
-	
+
 	private class AssignListener implements ActionListener
 	{
 		@Override

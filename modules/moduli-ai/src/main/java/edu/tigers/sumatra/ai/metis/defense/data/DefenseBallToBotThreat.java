@@ -1,47 +1,36 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.defense.data;
-
-import java.util.Optional;
 
 import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+import lombok.Value;
+
+import java.util.Optional;
 
 
 /**
  * A bot threat to our goal.
  */
+@Value
 public class DefenseBallToBotThreat implements IDefenseThreat
 {
-	private final ITrackedBot bot;
-	private final IVector2 vel;
+	ITrackedBot bot;
+	IVector2 vel;
 
-	private final ILineSegment threatLine;
-	private final ILineSegment protectionLine;
-
-
-	public DefenseBallToBotThreat(
-			final ITrackedBot bot,
-			final ILineSegment threatLine,
-			final ILineSegment protectionLine,
-			final IVector2 vel)
-	{
-		this.bot = bot;
-		this.threatLine = threatLine;
-		this.protectionLine = protectionLine;
-		this.vel = vel;
-	}
+	ILineSegment threatLine;
+	ILineSegment protectionLine;
 
 
 	@Override
 	public IVector2 getPos()
 	{
-		return threatLine.getStart();
+		return threatLine.getEnd();
 	}
 
 

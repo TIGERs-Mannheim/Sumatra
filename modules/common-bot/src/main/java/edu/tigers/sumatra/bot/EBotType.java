@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.bot;
 
@@ -11,4 +11,5 @@ public enum EBotType
 	UNKNOWN,
 	TIGERS,
 	SUMATRA,
+	SIMULATOR,
 }

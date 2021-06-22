@@ -1,23 +1,26 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.common;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.function.Function;
-
-import edu.tigers.sumatra.Referee;
 import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
+import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.referee.data.RefereeMsg;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
 import edu.tigers.sumatra.wp.data.WorldFrame;
+import lombok.Setter;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
 
 
 /**
@@ -25,27 +28,41 @@ import edu.tigers.sumatra.wp.data.WorldFrame;
  */
 public class PointChecker
 {
-	private final Set<Function<IVector2, Boolean>> functions = new HashSet<>();
+	private static final double FIELD_MARGIN = 100;
+	private final Map<String, Function<IVector2, Boolean>> functions = new LinkedHashMap<>();
 
 	private WorldFrame worldFrame;
 	private GameState gameState;
 	private RefereeMsg refereeMsg;
+	private BotID botID;
 
-	private double theirPenAreaMargin = Geometry.getBotRadius() + RuleConstraints.getBotToPenaltyAreaMarginStandard()
-			+ 10;
+	@Setter
+	private double theirPenAreaMargin = Geometry.getBotRadius() + RuleConstraints.getBotToPenaltyAreaMarginStandard();
+	@Setter
 	private double ourPenAreaMargin = 200;
-	private double fieldMargin = 100;
 
 
 	/**
-	 * Points must not be in a forbidden area around the ball
+	 * Points must not be in a forbidden area around the ball and the ball placement position (including velocity)
 	 *
 	 * @return this
 	 */
 	public PointChecker checkBallDistances()
 	{
-		functions.add(this::isPointConformWithBallDistance);
-		functions.add(this::isPointConformWithBallPlacement);
+		functions.put("ballDistance", this::isPointConformWithBallDistance);
+		functions.put("ballPlacement", this::isPointConformWithBallPlacement);
+		return this;
+	}
+
+
+	/**
+	 * Points must not be in a forbidden area around the ball (ignoring ball velocity)
+	 *
+	 * @return this
+	 */
+	public PointChecker checkBallDistanceStatic()
+	{
+		functions.put("ballDistanceStatic", this::isPointConformWithBallDistanceStatic);
 		return this;
 	}
 
@@ -57,7 +74,7 @@ public class PointChecker
 	 */
 	public PointChecker checkInsideField()
 	{
-		functions.add(this::insideField);
+		functions.put("inField", this::insideField);
 		return this;
 	}
 
@@ -69,8 +86,8 @@ public class PointChecker
 	 */
 	public PointChecker checkNotInPenaltyAreas()
 	{
-		functions.add(this::outsideOurPenArea);
-		functions.add(this::outsideTheirPenArea);
+		functions.put("outsideOurPenArea", this::outsideOurPenArea);
+		functions.put("outsideTheirPenArea", this::outsideTheirPenArea);
 		return this;
 	}
 
@@ -82,7 +99,33 @@ public class PointChecker
 	 */
 	public PointChecker checkConfirmWithKickOffRules()
 	{
-		functions.add(this::isPointConformWithKickOffRules);
+		functions.put("kickoff", this::isPointConformWithKickOffRules);
+		return this;
+	}
+
+
+	/**
+	 * Check if the point is free of other bots.
+	 * Use {@link #allMatch(BaseAiFrame, IVector2, BotID)} to ignore the robot in question.
+	 *
+	 * @return this
+	 */
+	public PointChecker checkPointFreeOfBots()
+	{
+		functions.put("freeOfBots", this::isPointFreeOfBots);
+		return this;
+	}
+
+
+	/**
+	 * Check if the point is free of other bots.
+	 * Use {@link #allMatch(BaseAiFrame, IVector2, BotID)} to ignore the robot in question.
+	 *
+	 * @return this
+	 */
+	public PointChecker checkPointFreeOfBotsExceptFor(IVector2 freeOfBotsExceptionPoint)
+	{
+		functions.put("freeOfBotsExceptCompanions", p -> isPointFreeOfBotsExceptCompanions(p, freeOfBotsExceptionPoint));
 		return this;
 	}
 
@@ -95,8 +138,55 @@ public class PointChecker
 	 */
 	public PointChecker checkCustom(Function<IVector2, Boolean> function)
 	{
-		functions.add(function);
+		functions.put(function.toString(), function);
 		return this;
+	}
+
+
+	/**
+	 * Add a custom function
+	 *
+	 * @param id       the id that describes this function when visualizing
+	 * @param function the checker function
+	 * @return this
+	 */
+	public PointChecker checkCustom(String id, Function<IVector2, Boolean> function)
+	{
+		functions.put(id, function);
+		return this;
+	}
+
+
+	/**
+	 * Check all functions
+	 *
+	 * @param aiFrame
+	 * @param point
+	 * @return
+	 */
+	public boolean allMatch(BaseAiFrame aiFrame, IVector2 point, BotID botID)
+	{
+		return findFirstNonMatching(aiFrame, point, botID).isEmpty();
+	}
+
+
+	/**
+	 * Check all functions
+	 *
+	 * @param aiFrame
+	 * @param point
+	 * @return
+	 */
+	public Optional<String> findFirstNonMatching(BaseAiFrame aiFrame, IVector2 point, BotID botID)
+	{
+		this.worldFrame = aiFrame.getWorldFrame();
+		this.gameState = aiFrame.getGameState();
+		this.refereeMsg = aiFrame.getRefereeMsg();
+		this.botID = botID;
+		return functions.entrySet().stream()
+				.filter(e -> !e.getValue().apply(point))
+				.map(Map.Entry::getKey)
+				.findFirst();
 	}
 
 
@@ -109,16 +199,13 @@ public class PointChecker
 	 */
 	public boolean allMatch(BaseAiFrame aiFrame, IVector2 point)
 	{
-		this.worldFrame = aiFrame.getWorldFrame();
-		this.gameState = aiFrame.getGamestate();
-		this.refereeMsg = aiFrame.getRefereeMsg();
-		return functions.stream().allMatch(f -> f.apply(point));
+		return allMatch(aiFrame, point, BotID.noBot());
 	}
 
 
 	private boolean insideField(IVector2 point)
 	{
-		return Geometry.getField().isPointInShape(point, -fieldMargin);
+		return Geometry.getField().isPointInShape(point, -FIELD_MARGIN);
 	}
 
 
@@ -136,21 +223,30 @@ public class PointChecker
 
 	private boolean isPointConformWithBallDistance(IVector2 point)
 	{
-		return gameState.isRunning()
-				|| worldFrame.getBall().getTrajectory().getTravelLineSegment()
-						.distanceTo(point) >= RuleConstraints.getStopRadius()
-								+ Geometry.getBallRadius() + Geometry.getBotRadius() + 10;
+		double distance = RuleConstraints.getStopRadius() + Geometry.getBallRadius() + Geometry.getBotRadius();
+		double maxLength = RuleConstraints.getStopRadius();
+		double length = Math.min(maxLength, worldFrame.getBall().getTrajectory().getTravelLineSegment().getLength());
+		IVector2 offset = worldFrame.getBall().getVel().scaleToNew(length);
+		ILineSegment ballSegment = Lines.segmentFromOffset(worldFrame.getBall().getPos(), offset);
+		return gameState.isRunning() || ballSegment.distanceTo(point) >= distance;
+	}
 
+
+	private boolean isPointConformWithBallDistanceStatic(IVector2 point)
+	{
+		double distance = RuleConstraints.getStopRadius() + Geometry.getBallRadius() + Geometry.getBotRadius();
+		return gameState.isRunning()
+				|| worldFrame.getBall().getPos().distanceTo(point) >= distance;
 	}
 
 
 	private boolean isPointConformWithKickOffRules(IVector2 point)
 	{
-		Referee.SSL_Referee.Stage stage = refereeMsg.getStage();
-		boolean isPreStage = (stage == Referee.SSL_Referee.Stage.EXTRA_FIRST_HALF_PRE)
-				|| (stage == Referee.SSL_Referee.Stage.EXTRA_SECOND_HALF_PRE)
-				|| (stage == Referee.SSL_Referee.Stage.NORMAL_FIRST_HALF_PRE)
-				|| (stage == Referee.SSL_Referee.Stage.NORMAL_SECOND_HALF_PRE);
+		SslGcRefereeMessage.Referee.Stage stage = refereeMsg.getStage();
+		boolean isPreStage = (stage == SslGcRefereeMessage.Referee.Stage.EXTRA_FIRST_HALF_PRE)
+				|| (stage == SslGcRefereeMessage.Referee.Stage.EXTRA_SECOND_HALF_PRE)
+				|| (stage == SslGcRefereeMessage.Referee.Stage.NORMAL_FIRST_HALF_PRE)
+				|| (stage == SslGcRefereeMessage.Referee.Stage.NORMAL_SECOND_HALF_PRE);
 		boolean isKickoffState = gameState.isKickoffOrPrepareKickoff() || isPreStage;
 
 		boolean isInOurHalf = Geometry.getFieldHalfOur()
@@ -165,30 +261,32 @@ public class PointChecker
 
 	private boolean isPointConformWithBallPlacement(IVector2 point)
 	{
-		if (!gameState.isBallPlacement())
+		IVector2 ballPlacementPos = gameState.getBallPlacementPositionForUs();
+		if (ballPlacementPos == null)
 		{
 			return true;
 		}
-		ILineSegment placementLine = Lines.segmentFromPoints(worldFrame.getBall().getPos(),
-				gameState.getBallPlacementPositionForUs());
+		ILineSegment placementLine = Lines.segmentFromPoints(worldFrame.getBall().getPos(), ballPlacementPos);
 		return placementLine.distanceTo(point) > RuleConstraints.getStopRadius() + Geometry.getBotRadius() + 10;
 	}
 
 
-	public void setTheirPenAreaMargin(final double theirPenAreaMargin)
+	private boolean isPointFreeOfBots(final IVector2 point)
 	{
-		this.theirPenAreaMargin = theirPenAreaMargin;
+		double distance = Geometry.getBotRadius() * 2 + 10;
+		return worldFrame.getBots().values().stream()
+				.filter(bot -> bot.getBotId() != botID)
+				.noneMatch(bot -> bot.getPosByTime(1).distanceTo(point) < distance);
 	}
 
 
-	public void setOurPenAreaMargin(final double ourPenAreaMargin)
+	private boolean isPointFreeOfBotsExceptCompanions(final IVector2 point, IVector2 exceptionPoint)
 	{
-		this.ourPenAreaMargin = ourPenAreaMargin;
-	}
-
-
-	public void setFieldMargin(final double fieldMargin)
-	{
-		this.fieldMargin = fieldMargin;
+		if (point.equals(exceptionPoint))
+		{
+			// destination may be occupied by companion, but that's fine
+			return true;
+		}
+		return isPointFreeOfBots(point);
 	}
 }

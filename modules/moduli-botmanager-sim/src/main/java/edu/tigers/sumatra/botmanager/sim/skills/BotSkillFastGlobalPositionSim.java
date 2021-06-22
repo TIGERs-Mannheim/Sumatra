@@ -1,15 +1,15 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.sim.skills;
 
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.botskills.BotSkillFastGlobalPosition;
 import edu.tigers.sumatra.math.AngleMath;
-import edu.tigers.sumatra.math.BotMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.sim.dynamics.bot.EDriveMode;
+import lombok.Setter;
 
 
 /**
@@ -17,37 +17,38 @@ import edu.tigers.sumatra.sim.dynamics.bot.EDriveMode;
  */
 public class BotSkillFastGlobalPositionSim implements IBotSkillSim
 {
-	private boolean	backwardOnly	= true;
-	
-	private boolean	fastPosMode;
-	
-	
+	@Setter
+	private boolean backwardOnly = true;
+
+	private boolean fastPosMode;
+
+
 	@Override
 	public void init(final BotSkillInput input)
 	{
 		fastPosMode = false;
 	}
-	
-	
+
+
 	@Override
 	public BotSkillOutput execute(final BotSkillInput input)
 	{
 		BotSkillFastGlobalPosition skill = (BotSkillFastGlobalPosition) input.getSkill();
-		
+
 		Vector3 targetPos = Vector3.from2d(skill.getPos(), 0);
-		
+
 		double distToTarget = input.getState().getPose().getPos().distanceTo(skill.getPos()) * 1e-3;
-		double trajVelAbs = input.getState().getVel().getLength2();
-		
+		double trajVelAbs = input.getState().getVel().getLength2() * 1e-3;
+
 		EDriveMode driveModeZ;
 		double localVelZ = 0;
-		
+
 		if ((distToTarget < 0.05) && (trajVelAbs < 0.5))
 		{
 			// almost at target position
 			targetPos.set(2, skill.getOrientation());
 			driveModeZ = EDriveMode.GLOBAL_POS;
-			
+
 			fastPosMode = false;
 		} else
 		{
@@ -57,15 +58,13 @@ public class BotSkillFastGlobalPositionSim implements IBotSkillSim
 				driveModeZ = EDriveMode.LOCAL_VEL;
 			} else
 			{
-				IVector2 trajVelGlobal = BotMath.convertLocalBotVector2Global(
-						input.getState().getVel().getXYVector(),
-						input.getState().getPose().getOrientation());
-				
+				IVector2 trajVelGlobal = input.getState().getVel().getXYVector();
+
 				double velOrient = Math.atan2(trajVelGlobal.y(), trajVelGlobal.x());
 				double targetOrient = velOrient + Math.PI; // assume going backward first
 				double orientDiff = AngleMath
 						.normalizeAngle(targetOrient - AngleMath.normalizeAngle(input.getState().getPose().getOrientation()));
-				
+
 				if ((Math.abs(orientDiff) > AngleMath.PI_HALF) && !backwardOnly)
 				{
 					// more oriented with the front in driving direction, go forward
@@ -75,24 +74,24 @@ public class BotSkillFastGlobalPositionSim implements IBotSkillSim
 							.normalizeAngle(
 									targetOrient - AngleMath.normalizeAngle(input.getState().getPose().getOrientation()));
 				}
-				
+
 				if ((Math.abs(orientDiff) < 0.1) && !fastPosMode)
 				{
 					fastPosMode = true;
 				}
-				
+
 				targetPos.set(2, targetOrient);
 				driveModeZ = EDriveMode.GLOBAL_POS;
 			}
 		}
-		
+
 		MoveConstraints moveCon = skill.getMoveConstraints();
-		
+
 		if (fastPosMode)
 		{
-			moveCon.setAccMax(skill.getAccMaxFast());
+			moveCon.setAccMax(moveCon.getAccMaxFast());
 		}
-		
+
 		return BotSkillOutput.Builder.create()
 				.driveLimits(moveCon)
 				.targetPos(targetPos)
@@ -106,11 +105,4 @@ public class BotSkillFastGlobalPositionSim implements IBotSkillSim
 				.strictVelocityLimit(input.isStrictVelocityLimit())
 				.build();
 	}
-	
-	
-	public void setBackwardOnly(final boolean backwardOnly)
-	{
-		this.backwardOnly = backwardOnly;
-	}
-	
 }

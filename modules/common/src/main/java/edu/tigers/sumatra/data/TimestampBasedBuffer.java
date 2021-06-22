@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.data;
@@ -68,11 +68,7 @@ public class TimestampBasedBuffer<T extends ITimestampBased>
 	
 	public Optional<T> getOldest()
 	{
-		if (buffer.isEmpty())
-		{
-			return Optional.empty();
-		}
-		return Optional.of(buffer.get(0));
+		return buffer.stream().findFirst();
 	}
 	
 	
@@ -82,6 +78,6 @@ public class TimestampBasedBuffer<T extends ITimestampBased>
 		{
 			return Optional.empty();
 		}
-		return Optional.of(buffer.get(buffer.size()));
+		return Optional.of(buffer.get(buffer.size() - 1));
 	}
 }

@@ -1,20 +1,15 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Oct 7, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.network;
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Observer for network receivers.
  */
 public interface IReceiverObserver
 {
 	/**
-	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+	 * The interface timed out.
 	 */
-	void onInterfaceTimedOut();
+	void onSocketTimedOut();
 }

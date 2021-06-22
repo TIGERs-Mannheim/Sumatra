@@ -1,10 +1,8 @@
+:imagesdir: ../images
+
 [[section-system-scope-and-context]]
 == System Scope and Context
-:imagesdir: ./images
 
-=== Robocup Links
+TBD:
 
-link:ssl.robocup.org[Page of the SSL on the Robocup website]
-link:robocup-ssl.github.io/ssl-rules/sslrules.pdf[SSL Rules]
-link:discord.gg/hGbyah6[SSL Discord]
-
+* connection between SSL-Vision, SSL-game-controller, TIGERs BaseStation, etc.

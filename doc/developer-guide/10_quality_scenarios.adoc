@@ -1,14 +1,31 @@
+:imagesdir: ../images
+
 [[section-quality-scenarios]]
-:imagesdir: ./images
 == Quality Requirements
 
+=== Independent Maven Modules
 
+Sumatra is split into several modules to enforce a strict dependency hierarchy.
+We use Maven to build the modules and to maintain dependencies for each module.
 
+* The `maven-dependency-plugin` checks for required or unused dependencies and breaks the build accordingly.
+* UI code should always be separated from other code to be able to run Sumatra without a UI
+* Developers should always try to reduce the dependencies to an absolute minimum.
+* Modules starting with `common-` should not have dependencies to any other modules.
+* Modules that contain a moduli-module, should start with `moduli-`
+* Modules containing UI code should start with `sumatra-gui-*`
 
-=== Quality Tree
+==== Create new modules
 
+* New modules should be created in Sumatra/modules.
+* Make sure that you choose a name that fits with the others!
+* The folder should have the same name as the artifact.
+* Use the bash scripts in Sumatra/modules to create new modules.
 
+=== SonarQube
 
-=== Quality Scenarios
+<<section-sonar-qube,SonarQube>> is used for measuring code quality.
 
-
+False positives can be suppressed with `@SuppressWarning("<sonar-issue-id>")`.
+Please make sure this is really a false positive.
+If in doubt, ask your team colleagues.

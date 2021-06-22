@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 01.03.2011
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.communication.udp;
 
@@ -13,8 +8,6 @@ import edu.tigers.sumatra.botmanager.commands.ACommand;
 
 /**
  * Observer for UDP receiver.
- * 
- * @author AndreR
  */
 @FunctionalInterface
 public interface IReceiverUDPObserver

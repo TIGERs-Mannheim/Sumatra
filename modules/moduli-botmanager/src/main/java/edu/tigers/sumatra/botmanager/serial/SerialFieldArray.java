@@ -1,10 +1,5 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 24.10.2013
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.serial;
 
@@ -12,23 +7,24 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
 
 
 /**
  * Array serial data field.
- * 
+ *
  * @author AndreR
  */
 public class SerialFieldArray extends ASerialField
 {
-	private static final Logger log = Logger.getLogger(SerialFieldArray.class.getName());
+	private static final Logger log = LogManager.getLogger(SerialFieldArray.class.getName());
 	private final int length;
 	private final SerialDescription embedded;
-	
-	
+
+
 	/**
 	 * @param field Reflection Field
 	 * @param type ESerialDataType
@@ -40,9 +36,9 @@ public class SerialFieldArray extends ASerialField
 			throws SerialException
 	{
 		super(field, type, offset);
-		
+
 		this.length = length;
-		
+
 		if (type == ESerialDataType.EMBEDDED)
 		{
 			embedded = new SerialDescription(field.getType().getComponentType());
@@ -51,16 +47,16 @@ public class SerialFieldArray extends ASerialField
 			embedded = null;
 		}
 	}
-	
-	
+
+
 	@Override
 	public void decode(final byte[] data, final Object obj) throws SerialException
 	{
 		Object value;
-		
+
 		int localOffset = offset;
 		Object array;
-		
+
 		try
 		{
 			array = field.get(obj);
@@ -68,7 +64,7 @@ public class SerialFieldArray extends ASerialField
 		{
 			throw new SerialException("Could not get array Field: " + field.getName(), err);
 		}
-		
+
 		for (int i = 0; i < length; i++)
 		{
 			switch (type)
@@ -103,7 +99,7 @@ public class SerialFieldArray extends ASerialField
 				default:
 					throw new SerialException("Invalid call to decode for type: " + type);
 			}
-			
+
 			if (type == ESerialDataType.EMBEDDED)
 			{
 				localOffset += embedded.getLength(value);
@@ -111,7 +107,7 @@ public class SerialFieldArray extends ASerialField
 			{
 				localOffset += type.getLength();
 			}
-			
+
 			try
 			{
 				Array.set(array, i, value);
@@ -121,8 +117,8 @@ public class SerialFieldArray extends ASerialField
 			}
 		}
 	}
-	
-	
+
+
 	private void validateRange(final Object array, final int pos)
 	{
 		switch (type)
@@ -139,8 +135,8 @@ public class SerialFieldArray extends ASerialField
 				break;
 		}
 	}
-	
-	
+
+
 	private void validateInt(final Object array, final int pos)
 	{
 		long value = Array.getLong(array, pos);
@@ -150,15 +146,15 @@ public class SerialFieldArray extends ASerialField
 					+ "]" + " value is out of bounds (" + value + ")", new IllegalArgumentException());
 		}
 	}
-	
-	
+
+
 	@Override
 	public void encode(final byte[] data, final Object obj) throws SerialException
 	{
 		byte[] embeddedData = new byte[1];
 		int localOffset = offset;
 		Object array;
-		
+
 		try
 		{
 			array = field.get(obj);
@@ -166,13 +162,13 @@ public class SerialFieldArray extends ASerialField
 		{
 			throw new SerialException("Could not get array Field: " + field.getName(), err);
 		}
-		
+
 		try
 		{
 			for (int i = 0; i < length; i++)
 			{
 				validateRange(array, i);
-				
+
 				switch (type)
 				{
 					case INT8:
@@ -202,7 +198,7 @@ public class SerialFieldArray extends ASerialField
 					default:
 						throw new IllegalArgumentException("Invalid call to encode for type: " + type);
 				}
-				
+
 				if (type == ESerialDataType.EMBEDDED)
 				{
 					localOffset += embeddedData.length;
@@ -216,8 +212,8 @@ public class SerialFieldArray extends ASerialField
 			throw new SerialException("Could not get array field on: " + field.getName(), err);
 		}
 	}
-	
-	
+
+
 	@Override
 	public int getLength(final Object obj) throws SerialException
 	{
@@ -225,7 +221,7 @@ public class SerialFieldArray extends ASerialField
 		{
 			return embedded.getLength(obj) * length;
 		}
-		
+
 		return type.getLength() * length;
 	}
 }

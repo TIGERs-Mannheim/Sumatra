@@ -4,6 +4,12 @@
 
 package edu.tigers.sumatra.drawable;
 
+import com.sleepycat.persist.model.Persistent;
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -11,25 +17,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
-
-import com.sleepycat.persist.model.Persistent;
-
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Data structure that contains shapes, organized in layers.
  */
 @Persistent
 public class ShapeMap
 {
 	private final Map<String, ShapeLayer> categories;
-	
+
 	private static boolean persistDebugShapes = true;
-	
-	
+
+
 	/**
 	 * Create new empty shape map
 	 */
@@ -37,29 +36,23 @@ public class ShapeMap
 	{
 		this(new HashMap<>());
 	}
-	
-	
-	/**
-	 * Deep copy (shapes not copied)
-	 * 
-	 * @param o original map
-	 */
-	public ShapeMap(final ShapeMap o)
-	{
-		this(new HashMap<>());
-		for (ShapeLayer sl : o.categories.values())
-		{
-			categories.put(sl.identifier.getId(), new ShapeLayer(sl));
-		}
-	}
-	
-	
+
+
 	private ShapeMap(Map<String, ShapeLayer> map)
 	{
 		categories = map;
 	}
-	
-	
+
+
+	public void addAll(ShapeMap shapeMap)
+	{
+		for (ShapeLayer sl : shapeMap.categories.values())
+		{
+			categories.put(sl.identifier.getId(), new ShapeLayer(sl));
+		}
+	}
+
+
 	public static ShapeMap unmodifiableCopy(ShapeMap s)
 	{
 		Map<String, ShapeLayer> categories = new HashMap<>();
@@ -70,8 +63,8 @@ public class ShapeMap
 		}
 		return new ShapeMap(Collections.unmodifiableMap(categories));
 	}
-	
-	
+
+
 	/**
 	 * @param persistDebugShapes should debug shapes be persisted?
 	 */
@@ -79,8 +72,8 @@ public class ShapeMap
 	{
 		ShapeMap.persistDebugShapes = persistDebugShapes;
 	}
-	
-	
+
+
 	/**
 	 * Get list for layer and category
 	 *
@@ -91,8 +84,8 @@ public class ShapeMap
 	{
 		return categories.computeIfAbsent(identifier.getId(), k -> new ShapeLayer(identifier)).shapes;
 	}
-	
-	
+
+
 	/**
 	 * Remove all shapes that should not be persisted
 	 */
@@ -100,15 +93,15 @@ public class ShapeMap
 	{
 		categories.entrySet().removeIf(en -> !persist(en.getValue().identifier));
 	}
-	
-	
+
+
 	private boolean persist(IShapeLayer identifier)
 	{
 		return identifier.getPersistenceType() == EShapeLayerPersistenceType.ALWAYS_PERSIST ||
 				(persistDebugShapes && identifier.getPersistenceType() == EShapeLayerPersistenceType.DEBUG_PERSIST);
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -117,8 +110,8 @@ public class ShapeMap
 		return categories.values().stream().sorted().map(sl -> sl.identifier)
 				.collect(Collectors.toList());
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -127,8 +120,8 @@ public class ShapeMap
 		return categories.values().stream().sorted()
 				.collect(Collectors.toList());
 	}
-	
-	
+
+
 	/**
 	 * @param inverted
 	 */
@@ -136,8 +129,8 @@ public class ShapeMap
 	{
 		categories.values().forEach(sl -> sl.inverted = inverted);
 	}
-	
-	
+
+
 	@Override
 	public String toString()
 	{
@@ -145,7 +138,8 @@ public class ShapeMap
 				.append("categories", categories)
 				.toString();
 	}
-	
+
+
 	/**
 	 * Type of persistence for shape layers
 	 */
@@ -155,23 +149,23 @@ public class ShapeMap
 		NEVER_PERSIST,
 		DEBUG_PERSIST
 	}
-	
+
 	@Persistent
 	public static class ShapeLayer implements Comparable<ShapeLayer>
 	{
 		final IShapeLayer identifier;
 		final List<IDrawableShape> shapes;
 		boolean inverted = false;
-		
-		
+
+
 		@SuppressWarnings("unused")
 		private ShapeLayer()
 		{
 			identifier = null;
 			shapes = Collections.emptyList();
 		}
-		
-		
+
+
 		/**
 		 * @param identifier
 		 */
@@ -180,16 +174,16 @@ public class ShapeMap
 			this.identifier = identifier;
 			shapes = new ArrayList<>();
 		}
-		
-		
+
+
 		public ShapeLayer(final IShapeLayer identifier, final List<IDrawableShape> shapes, final boolean inverted)
 		{
 			this.identifier = identifier;
 			this.shapes = shapes;
 			this.inverted = inverted;
 		}
-		
-		
+
+
 		/**
 		 * @param o
 		 */
@@ -199,26 +193,26 @@ public class ShapeMap
 			shapes = new ArrayList<>(o.shapes);
 			inverted = o.inverted;
 		}
-		
-		
+
+
 		public IShapeLayer getIdentifier()
 		{
 			return identifier;
 		}
-		
-		
+
+
 		public List<IDrawableShape> getShapes()
 		{
 			return shapes;
 		}
-		
-		
+
+
 		public boolean isInverted()
 		{
 			return inverted;
 		}
-		
-		
+
+
 		@Override
 		public String toString()
 		{
@@ -228,32 +222,32 @@ public class ShapeMap
 					.append("inverted", inverted)
 					.toString();
 		}
-		
-		
+
+
 		@Override
 		public int compareTo(final ShapeLayer o)
 		{
 			return Integer.compare(identifier.getOrderId(), o.identifier.getOrderId());
 		}
-		
-		
+
+
 		@Override
 		public boolean equals(final Object o)
 		{
 			if (this == o)
 				return true;
-			
+
 			if (o == null || getClass() != o.getClass())
 				return false;
-			
+
 			final ShapeLayer that = (ShapeLayer) o;
-			
+
 			return new EqualsBuilder()
 					.append(identifier, that.identifier)
 					.isEquals();
 		}
-		
-		
+
+
 		@Override
 		public int hashCode()
 		{

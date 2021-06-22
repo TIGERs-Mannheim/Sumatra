@@ -1,43 +1,46 @@
 package edu.tigers.sumatra.ai.metis.offense;
 
+import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ids.BotID;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-
-import edu.tigers.sumatra.ai.metis.ACalculator;
-import edu.tigers.sumatra.ai.pandora.roles.ARole;
-import edu.tigers.sumatra.ai.pandora.roles.ERole;
-import edu.tigers.sumatra.ids.BotID;
+import java.util.function.Supplier;
 
 
+@RequiredArgsConstructor
 public class PotentialOffensiveBotsCalc extends ACalculator
 {
+	private final Supplier<Boolean> ballLeavingFieldGood;
+	private final Supplier<Set<BotID>> crucialDefenders;
+	private final Supplier<List<BotID>> botsToInterchange;
+
+	@Getter
+	private Set<BotID> potentialOffensiveBots;
+
+
 	@Override
 	protected void doCalc()
 	{
-		getNewTacticalField().setPotentialOffensiveBots(getPotentialOffensiveBotMap());
+		potentialOffensiveBots = getPotentialOffensiveBotMap();
 	}
 
 
 	private Set<BotID> getPotentialOffensiveBotMap()
 	{
-		if (getNewTacticalField().isBallLeavingFieldGood())
+		if (ballLeavingFieldGood.get())
 		{
 			return Collections.emptySet();
 		}
 
 		Set<BotID> bots = new HashSet<>(getAiFrame().getWorldFrame().getTigerBotsAvailable().keySet());
-		bots.removeAll(getNewTacticalField().getCrucialDefender());
-		bots.removeAll(getNewTacticalField().getBotInterchange().getDesiredInterchangeBots());
-
-		if (!getNewTacticalField().isInsaneKeeper()
-				&& getAiFrame().getPrevFrame().getPlayStrategy().getActiveRoles(ERole.ATTACKER)
-						.stream().map(ARole::getBotID)
-						.noneMatch(b -> b.equals(getAiFrame().getKeeperId())))
-		{
-			// if insane keeper has performed a pass, allow it to stay attacker until pass is performed
-			bots.remove(getAiFrame().getKeeperId());
-		}
+		bots.removeAll(crucialDefenders.get());
+		bots.removeAll(botsToInterchange.get());
+		bots.remove(getAiFrame().getKeeperId());
 
 		return bots;
 	}

@@ -18,7 +18,6 @@ import edu.tigers.sumatra.views.ISumatraViewPresenter;
 /**
  * This view shows information about all active support Behaviors
  *
- * @author Marius Messerschmidt <marius.messerschmidt@dlr.de>
  */
 public class SupportBehaviorsView extends ASumatraView
 {

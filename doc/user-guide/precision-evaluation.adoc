@@ -1,0 +1,34 @@
+== Precision Evaluation
+
+After calibration, you want to evaluate how well the system is performing.
+This section describes some ways to capture and verify data.
+
+=== Ball Model
+
+Use the Sumatra recording button to capture some straight and chip kicks.
+The ball must be kicked by a robot.
+It is not sufficient to just move the ball manually.
+This can be done using a test role or play like `ReproduciableKickLyingPlay` or with a game pad.
+
+The ball prediction is shown in the visualization layer Field -> Ball prediction.
+
+Check that the prediction is stable and correct.
+
+=== Robot Movement
+
+Robot movement can be best captured with the `MoveTestRole`.
+It captures data on the robot and in Sumatra.
+
+The captured data can be found in the "Vision" view and can be plotted with Matlab directly from Sumatra.
+If the robot has a SD-card attached, it will capture a log file locally.
+The log viewer can be found in the Firmware repository.
+
+=== Robot Kick Speed
+
+The robot kick speed can be tested with the `ReproduciableKickLyingPlay`.
+It will also print the precision in the log.
+
+=== Redirects
+
+Capture redirect data as described in the calibration section.
+Then, plot it using the matlab scripts in link:../../matlab/plotting/[].

@@ -1,10 +1,15 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.thread;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.extern.log4j.Log4j2;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -12,131 +17,62 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * The watchdog sets a variable that needs to be reset during each watchdog
  * period. If this is not done, the watchdog will call its observers and
  * terminate.
- * 
- * @author AndreR
  */
+@Log4j2
+@RequiredArgsConstructor
 public class Watchdog
 {
-	private final List<IWatchdogObserver> observers = new CopyOnWriteArrayList<>();
-	private boolean reset = false;
-	private int period;
-	private Thread watchdogThread = null;
+	private final long period;
 	private final String name;
-	
-	
-	/**
-	 * @param period
-	 * @param name
-	 */
-	public Watchdog(final int period, final String name)
-	{
-		this.period = period;
-		this.name = name;
-	}
-	
-	
-	public void addObserver(final IWatchdogObserver o)
-	{
-		observers.add(o);
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public int getPeriod()
-	{
-		return period;
-	}
-	
-	
-	/**
-	 * @param period
-	 */
-	public void setPeriod(final int period)
-	{
-		this.period = period;
-	}
-	
-	
-	/**
-	 */
+	private final Runnable callback;
+
+	@Setter
+	private boolean active = true;
+	private long lastPing;
+	private ScheduledExecutorService executorService;
+
+
 	public void start()
 	{
-		stop();
-		
-		watchdogThread = new Thread(new WatchdogRun(), "Watchdog " + name);
-		watchdogThread.start();
+		lastPing = System.nanoTime();
+		active = true;
+		this.executorService = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("Watchdog " + name));
+		this.executorService.scheduleWithFixedDelay(this::trigger, period, period, TimeUnit.MILLISECONDS);
 	}
-	
-	
+
+
+	public void stop()
+	{
+		if (executorService != null)
+		{
+			executorService.shutdown();
+		}
+	}
+
+
 	/**
 	 * reset the watchdog
 	 */
 	public void reset()
 	{
-		reset = true;
+		lastPing = System.nanoTime();
 	}
-	
-	
-	/**
-	 * stop the watchdog
-	 */
-	public void stop()
+
+
+	private void trigger()
 	{
-		if (watchdogThread != null)
+		if (!active)
 		{
-			watchdogThread.interrupt();
-			watchdogThread = null;
+			return;
 		}
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public boolean isActive()
-	{
-		return watchdogThread != null;
-	}
-	
-	
-	protected void timeout()
-	{
-		watchdogThread = null;
-		
-		for (final IWatchdogObserver o : observers)
+		long now = System.nanoTime();
+		long diff = now - lastPing;
+		if (diff > TimeUnit.MILLISECONDS.toNanos(period))
 		{
-			o.onWatchdogTimeout();
-		}
-	}
-	
-	protected class WatchdogRun implements Runnable
-	{
-		@SuppressWarnings("squid:S2583")
-		@Override
-		public void run()
-		{
-			while (!Thread.currentThread().isInterrupted())
-			{
-				reset = false;
-				
-				try
-				{
-					Thread.sleep(period);
-				} catch (final InterruptedException err)
-				{
-					Thread.currentThread().interrupt();
-				}
-				
-				if (!reset)
-				{
-					timeout();
-					Thread.currentThread().interrupt();
-				}
-			}
-			
-			observers.clear();
+			log.debug("Timed out. Now: {}ns, last ping: {}ns, diff: {}ns",
+					now, lastPing, diff);
+			callback.run();
+			reset();
 		}
 	}
 }

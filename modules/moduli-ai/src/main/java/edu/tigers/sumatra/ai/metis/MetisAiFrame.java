@@ -4,35 +4,29 @@
 package edu.tigers.sumatra.ai.metis;
 
 import edu.tigers.sumatra.ai.BaseAiFrame;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Singular;
+import lombok.Value;
+import lombok.experimental.Delegate;
+
+import java.util.Map;
 
 
 /**
  * This frame extends the {@link BaseAiFrame} with information gathered from Metis module.
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class MetisAiFrame extends BaseAiFrame
+
+@Value
+@Builder
+public class MetisAiFrame
 {
-	/** stores all tactical information added by metis' calculators. */
-	private final ITacticalField	tacticalField;
-	
-	
-	/**
-	 * @param baseAiFrame
-	 * @param tacticalInfo
-	 */
-	public MetisAiFrame(final BaseAiFrame baseAiFrame, final ITacticalField tacticalInfo)
-	{
-		super(baseAiFrame);
-		tacticalField = tacticalInfo;
-	}
-	
-	
-	/**
-	 * @return the tacticalInfo
-	 */
-	public ITacticalField getTacticalField()
-	{
-		return tacticalField;
-	}
+	@Delegate
+	@NonNull
+	BaseAiFrame baseAiFrame;
+	@NonNull
+	TacticalField tacticalField;
+
+	@Singular
+	Map<Class<? extends ACalculator>, CalculatorExecution> calculatorExecutions;
 }

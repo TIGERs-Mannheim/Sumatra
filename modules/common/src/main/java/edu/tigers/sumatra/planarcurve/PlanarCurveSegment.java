@@ -1,12 +1,11 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.planarcurve;
 
-import org.apache.commons.math3.util.Pair;
-
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
+import org.apache.commons.math3.util.Pair;
 
 
 /**
@@ -127,16 +126,33 @@ public class PlanarCurveSegment
 				posNow = pos;
 				break;
 		}
-		
+
 		return posNow;
 	}
-	
-	
+
+
+	/**
+	 * Velocity in [mm/s] at time t.
+	 *
+	 * @param t
+	 * @return
+	 */
+	public IVector2 getVelocity(final double t)
+	{
+		if (type == EPlanarCurveSegmentType.SECOND_ORDER)
+		{
+			return vel.addNew(acc.multiplyNew(t));
+		}
+
+		return vel;
+	}
+
+
 	/**
 	 * Split this curve segment at tSplit.<br>
 	 * Returns two segments: first from original segment to tSplit, second from tSplit to orignal tEnd.<br>
 	 * Splitting this segment beyond tEnd will return this and a new POINT segment from tEnd to tSplit.
-	 * 
+	 *
 	 * @param tSplit
 	 * @return
 	 */
@@ -180,26 +196,32 @@ public class PlanarCurveSegment
 				return new Pair<>(first, PlanarCurveSegment.fromPoint(pos, tSplit, endTime));
 		}
 	}
-	
-	
+
+
 	public double getEndTime()
 	{
 		return endTime;
 	}
-	
-	
+
+
 	public double getStartTime()
 	{
 		return startTime;
 	}
-	
-	
+
+
+	public double getDuration()
+	{
+		return endTime - startTime;
+	}
+
+
 	public EPlanarCurveSegmentType getType()
 	{
 		return type;
 	}
-	
-	
+
+
 	/**
 	 * Position at time 0.
 	 * 

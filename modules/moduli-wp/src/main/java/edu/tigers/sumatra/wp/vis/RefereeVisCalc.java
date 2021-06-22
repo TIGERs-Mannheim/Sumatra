@@ -1,19 +1,13 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.vis;
 
-import java.awt.Color;
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
 import edu.tigers.sumatra.drawable.DrawableBorderText;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawablePoint;
+import edu.tigers.sumatra.drawable.EFontSize;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -22,12 +16,19 @@ import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.referee.data.ProposedGameEvent;
+import edu.tigers.sumatra.referee.data.GameEventProposalGroup;
 import edu.tigers.sumatra.referee.data.RefereeMsg;
 import edu.tigers.sumatra.referee.data.TeamInfo;
 import edu.tigers.sumatra.referee.gameevent.IGameEvent;
 import edu.tigers.sumatra.wp.data.BallKickFitState;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
+
+import java.awt.Color;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 
 /**
@@ -35,13 +36,10 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
  */
 public class RefereeVisCalc implements IWpCalc
 {
-	private static final int FIRST_LINE = 11;
-	private static final int SECOND_LINE = 23;
-	private static final int THIRD_LINE = 35;
-	private static final int FOURTH_LINE = 47;
 	private final DecimalFormat df2 = new DecimalFormat("00");
 	private final DecimalFormat dfSeconds = new DecimalFormat("00.000");
 	private final DecimalFormat dfBallVel = new DecimalFormat("0.00");
+	private final double[] offsetsX = new double[8];
 
 
 	@Override
@@ -58,7 +56,8 @@ public class RefereeVisCalc implements IWpCalc
 		// Time
 		final long min = TimeUnit.MICROSECONDS.toMinutes(msg.getStageTimeLeft());
 		final long sec = TimeUnit.MICROSECONDS.toSeconds(msg.getStageTimeLeft()) - (60 * min);
-		String timeStr = df2.format(min) + ":" + df2.format(sec);
+		String timeStr =
+				(msg.getStageTimeLeft() < 0 ? "-" : "") + df2.format(Math.abs(min)) + ":" + df2.format(Math.abs(sec));
 
 		// Timeouts
 		String timeoutYellowStr = getTimeoutString(msg.getTeamInfoYellow());
@@ -70,65 +69,60 @@ public class RefereeVisCalc implements IWpCalc
 		String yellowCardBlueStr = getYellowCardString(msg.getTeamInfoBlue().getYellowCards(), msg.getTeamInfoBlue()
 				.getYellowCardsTimes());
 
-		int[] off = getOffsets();
-
-		// Modify the offset after the yellow cards string to grow with the number of timers to prevent overlaps
-		modifyOffset(off, 7, 52 + 38 * Math.max(msg.getTeamInfoYellow().getYellowCardsTimes().size(),
-				msg.getTeamInfoBlue().getYellowCardsTimes().size()));
-
-
 		double ballSpeed = wfw.getSimpleWorldFrame().getBall().getVel3().getLength();
 		double initBallSpeed = wfw.getSimpleWorldFrame().getKickFitState()
-				.map(BallKickFitState::getAbsoluteKickSpeed).orElse(0.0) / 1000.0;
+				.map(BallKickFitState::getAbsoluteKickSpeed).orElse(0.0);
 		double ballHeight = wfw.getSimpleWorldFrame().getBall().getPos3().z();
 		String ballVelStr = "Ball vel: " + dfBallVel.format(ballSpeed) + "| "
 				+ dfBallVel.format(initBallSpeed) + "; height: " + dfBallVel.format(ballHeight);
 
-		txtShapes.add(new DrawableBorderText(Vector2.fromXY(off[1], THIRD_LINE), ballVelStr,
+		initializeOffsets(msg);
+
+		txtShapes.add(new DrawableBorderText(getPosition(1, 2), ballVelStr,
 				ballSpeed <= RuleConstraints.getMaxBallSpeed() ? Color.white
 						: Color.red));
 
-		txtShapes.add(new DrawableBorderText(Vector2.fromXY(off[0], FIRST_LINE), msg.getStage().toString(),
+		txtShapes.add(new DrawableBorderText(getPosition(0, 0), msg.getStage().toString(),
 				Color.white));
-		txtShapes.add(new DrawableBorderText(Vector2.fromXY(off[0], SECOND_LINE), msg.getCommand().toString(),
+		txtShapes.add(new DrawableBorderText(getPosition(0, 1), msg.getCommand().toString(),
 				Color.white));
 		txtShapes
-				.add(new DrawableBorderText(Vector2.fromXY(off[0], THIRD_LINE), wfw.getGameState().getStateNameWithColor(),
+				.add(new DrawableBorderText(getPosition(0, 2), wfw.getGameState().getStateNameWithColor(),
 						Color.white));
 		if (msg.getCurrentActionTimeRemaining() >= 0)
 		{
 			txtShapes
-					.add(new DrawableBorderText(Vector2.fromXY(off[0], FOURTH_LINE),
+					.add(new DrawableBorderText(getPosition(0, 3),
 							dfSeconds.format(msg.getCurrentActionTimeRemaining()),
 							Color.white));
 		}
 
-		txtShapes.add(new DrawableBorderText(Vector2.fromXY(off[1], FIRST_LINE), timeStr, Color.white));
+		txtShapes.add(new DrawableBorderText(getPosition(1, 0), timeStr, Color.white));
 
 
 		// Team YELLOW
 		txtShapes
-				.add(new DrawableBorderText(Vector2.fromXY(off[2], FIRST_LINE),
+				.add(new DrawableBorderText(getPosition(2, 0),
 						String.valueOf(msg.getTeamInfoYellow().getScore()),
 						Color.yellow));
 		txtShapes
-				.add(new DrawableBorderText(Vector2.fromXY(off[4], FIRST_LINE),
+				.add(new DrawableBorderText(getPosition(4, 0),
 						msg.getTeamInfoYellow().getName(),
 						Color.yellow));
-		txtShapes.add(new DrawableBorderText(Vector2.fromXY(off[5], FIRST_LINE), timeoutYellowStr, Color.yellow));
-		txtShapes.add(new DrawableBorderText(Vector2.fromXY(off[6], FIRST_LINE), yellowCardYellowStr, Color.yellow));
+		txtShapes.add(new DrawableBorderText(getPosition(5, 0), timeoutYellowStr, Color.yellow));
+		txtShapes.add(new DrawableBorderText(getPosition(6, 0), yellowCardYellowStr, Color.yellow));
 
 
 		// Team BLUE
-		txtShapes.add(new DrawableBorderText(Vector2.fromXY(off[2], SECOND_LINE),
+		txtShapes.add(new DrawableBorderText(getPosition(2, 1),
 				String.valueOf(msg.getTeamInfoBlue().getScore()),
 				Color.blue));
-		
+
 		txtShapes.add(
-				new DrawableBorderText(Vector2.fromXY(off[4], SECOND_LINE),
+				new DrawableBorderText(getPosition(4, 1),
 						msg.getTeamInfoBlue().getName(), Color.blue));
-		txtShapes.add(new DrawableBorderText(Vector2.fromXY(off[5], SECOND_LINE), timeoutBlueStr, Color.blue));
-		txtShapes.add(new DrawableBorderText(Vector2.fromXY(off[6], SECOND_LINE), yellowCardBlueStr, Color.blue));
+		txtShapes.add(new DrawableBorderText(getPosition(5, 1), timeoutBlueStr, Color.blue));
+		txtShapes.add(new DrawableBorderText(getPosition(6, 1), yellowCardBlueStr, Color.blue));
 
 
 		String nextCommand = msg.getNextCommand() == null ? "" : msg.getNextCommand().name();
@@ -136,28 +130,26 @@ public class RefereeVisCalc implements IWpCalc
 		String nextStateAndCommand = "next: " + nextState + " (" + nextCommand + ")";
 		String gameEvents = "Events: " + msg.getGameEvents().stream().map(IGameEvent::getType).map(Enum::name)
 				.collect(Collectors.joining(","));
-		String proposedGameEvents = "Proposed: "
-				+ msg.getProposedGameEvents().stream().map(ProposedGameEvent::getGameEvent)
-						.map(IGameEvent::getType).map(Enum::name).collect(Collectors.joining(","));
-		
-		
-		txtShapes.add(new DrawableBorderText(Vector2.fromXY(off[7], FIRST_LINE), nextStateAndCommand, Color.white));
-		txtShapes.add(new DrawableBorderText(Vector2.fromXY(off[7], SECOND_LINE), gameEvents, Color.white));
-		txtShapes.add(new DrawableBorderText(Vector2.fromXY(off[7], THIRD_LINE), proposedGameEvents, Color.white));
+		String proposedGameEvents = "Proposed: " + proposedGameEventGroups(msg.getGameEventProposalGroups());
+
+
+		txtShapes.add(new DrawableBorderText(getPosition(7, 0), nextStateAndCommand, Color.white));
+		txtShapes.add(new DrawableBorderText(getPosition(7, 1), gameEvents, Color.white));
+		txtShapes.add(new DrawableBorderText(getPosition(7, 2), proposedGameEvents, Color.white));
 		txtShapes
-				.add(new DrawableBorderText(Vector2.fromXY(off[7], FOURTH_LINE), getSubstitutionString(msg), Color.WHITE));
+				.add(new DrawableBorderText(getPosition(7, 3), getSubstitutionString(msg), Color.WHITE));
 
 		for (DrawableBorderText txt : txtShapes)
 		{
-			txt.setFontSize(10);
+			txt.setFontSize(EFontSize.SMALL);
 		}
 
 		shapeMap.get(EWpShapesLayer.REFEREE).addAll(txtShapes);
 
 		paintShapes(shapeMap.get(EWpShapesLayer.REFEREE), wfw);
 	}
-	
-	
+
+
 	private String getSubstitutionString(RefereeMsg msg)
 	{
 		String substString = "";
@@ -177,33 +169,28 @@ public class RefereeVisCalc implements IWpCalc
 	}
 
 
-	private int[] getOffsets()
+	private void initializeOffsets(RefereeMsg msg)
 	{
-		int[] offsets = new int[8];
-		offsets[0] = 10;
-		offsets[1] = offsets[0] + 150;
-		offsets[2] = offsets[1] + 40;
-		offsets[3] = offsets[2] + 13;
-		offsets[4] = offsets[3] + 20;
-		offsets[5] = offsets[4] + 100;
-		offsets[6] = offsets[5] + 80;
-		offsets[7] = offsets[6] + 80;
-		return offsets;
+		offsetsX[0] = 1.0;
+		offsetsX[1] = offsetsX[0] + 15.0;
+		offsetsX[2] = offsetsX[1] + 4.0;
+		offsetsX[3] = offsetsX[2] + 1.3;
+		offsetsX[4] = offsetsX[3] + 2.0;
+		offsetsX[5] = offsetsX[4] + 10.0;
+		offsetsX[6] = offsetsX[5] + 8.0;
+		// Set the offset after the yellow cards string to grow with the number of timers to prevent overlaps
+		offsetsX[7] = offsetsX[6] + 5.2 +
+				3.8 * Math.max(msg.getTeamInfoYellow().getYellowCardsTimes().size(),
+						msg.getTeamInfoBlue().getYellowCardsTimes().size());
 	}
 
 
-	private void modifyOffset(int[] offsets, int pos, int offset)
+	private Vector2 getPosition(int column, int row)
 	{
-		int oldValue = offsets[pos];
-		if (pos != 0)
-		{
-			oldValue -= offsets[pos - 1];
-		}
-		int delta = offset - oldValue;
-		for (int i = pos; i < offsets.length; i++)
-		{
-			offsets[i] += delta;
-		}
+		return Vector2.fromXY(
+				offsetsX[column],
+				(row + 1.1));
+
 	}
 
 
@@ -333,5 +320,24 @@ public class RefereeVisCalc implements IWpCalc
 				break;
 		}
 		return marker;
+	}
+
+
+	private String proposedGameEventGroups(List<GameEventProposalGroup> groups)
+	{
+		return groups.stream()
+				.map(this::proposedGameEventGroup)
+				.collect(Collectors.joining(","));
+	}
+
+
+	private String proposedGameEventGroup(GameEventProposalGroup group)
+	{
+		return "[" +
+				group.getGameEvents().stream()
+						.map(IGameEvent::getType)
+						.map(Enum::name)
+						.collect(Collectors.joining(","))
+				+ "]";
 	}
 }

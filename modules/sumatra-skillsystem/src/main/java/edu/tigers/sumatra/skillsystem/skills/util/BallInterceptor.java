@@ -1,11 +1,22 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills.util;
 
-import java.util.Optional;
-
+import com.github.g3force.configurable.ConfigRegistration;
+import com.github.g3force.configurable.Configurable;
+import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
+import edu.tigers.sumatra.bot.MoveConstraints;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.botshape.BotShape;
+import edu.tigers.sumatra.math.botshape.IBotShape;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
+import edu.tigers.sumatra.trajectory.ITrajectory;
+import edu.tigers.sumatra.vision.data.IKickEvent;
+import edu.tigers.sumatra.wp.data.ITrackedBot;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang.Validate;
 import org.apache.commons.math3.exception.TooManyEvaluationsException;
 import org.apache.commons.math3.exception.TooManyIterationsException;
@@ -18,70 +29,54 @@ import org.apache.commons.math3.optim.univariate.SearchInterval;
 import org.apache.commons.math3.optim.univariate.UnivariateObjectiveFunction;
 import org.apache.commons.math3.optim.univariate.UnivariateOptimizer;
 import org.apache.commons.math3.optim.univariate.UnivariatePointValuePair;
-import org.apache.log4j.Logger;
 
-import com.github.g3force.configurable.ConfigRegistration;
-import com.github.g3force.configurable.Configurable;
-
-import edu.tigers.sumatra.bot.MoveConstraints;
-import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.math.botshape.BotShape;
-import edu.tigers.sumatra.math.botshape.IBotShape;
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
-import edu.tigers.sumatra.trajectory.BangBangTrajectory2D;
-import edu.tigers.sumatra.vision.data.IKickEvent;
-import edu.tigers.sumatra.wp.ball.prediction.IBallTrajectory;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
+import java.util.Optional;
 
 
 /**
  * Calculator class that determines the optimal time to intercept the ball.
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
+@Log4j2
 public final class BallInterceptor
 {
-	private static final Logger log = Logger.getLogger(BallInterceptor.class.getName());
-	
-	private final IBallTrajectory ballTrajectory;
-	private final ITrackedBot tBot;
-	private final MoveConstraints moveConstraints;
 	@Configurable(defValue = "0.2")
 	private static double tOffsetBase = 0.2;
-	
-	@Configurable(defValue = "0.5")
-	private static double closestTimeThreshold = 0.5;
-	
+
+	@Configurable(defValue = "0.8")
+	private static double closestTimeThreshold = 0.8;
+
 	@Configurable(defValue = "0.05")
 	private static double accStep = 0.05;
-	
+
 	@Configurable(defValue = "0.3")
 	private static double accOffset = 0.3;
 	@Configurable(defValue = "0.2")
 	private static double tOffsetYoungKick = 1.0;
-	@Configurable(defValue = "2.0")
-	private static double maxAcc = 2;
-	
-	@Configurable(defValue = "2.0")
-	private static double minAcc = 2;
+	@Configurable(defValue = "6.0")
+	private static double maxAcc = 6.0;
+
+	@Configurable(defValue = "2.3")
+	private static double minAcc = 2.3;
 	@Configurable(defValue = "0.5")
 	private static double minKickAge = 0.5;
+
 	private final double tOffset;
-	
-	
+	private final IBallTrajectory ballTrajectory;
+	private final ITrackedBot tBot;
+	private final MoveConstraints moveConstraints;
+
 	static
 	{
 		ConfigRegistration.registerClass("skills", BallInterceptor.class);
 	}
-	
-	
+
+
 	private BallInterceptor(final Builder builder)
 	{
 		ballTrajectory = builder.ballTrajectory;
 		tBot = builder.tBot;
 		moveConstraints = builder.moveConstraints;
-		
+
 		double kickAge = Optional.ofNullable(builder.kickEvent).map(t -> (tBot.getTimestamp() - t.getTimestamp()) / 1e9)
 				.orElse(minKickAge);
 		if (kickAge < minKickAge)
@@ -92,8 +87,8 @@ public final class BallInterceptor
 			tOffset = tOffsetBase;
 		}
 	}
-	
-	
+
+
 	/**
 	 * @return a new builder for this class
 	 */
@@ -101,8 +96,8 @@ public final class BallInterceptor
 	{
 		return new Builder();
 	}
-	
-	
+
+
 	/**
 	 * @return the time in future when the ball can best be intercepted
 	 */
@@ -119,14 +114,14 @@ public final class BallInterceptor
 		{
 			tMax = Math.min(tMax, ballTrajectory.getTimeByPos(fieldIntersection.get()));
 		}
-		
+
 		double tClosest = getTimeForDestClosestToBallLine();
-		
+
 		if (tClosest >= tMax)
 		{
 			return tMax;
 		}
-		
+
 		try
 		{
 			UnivariatePointValuePair result = optimizer.optimize(
@@ -142,8 +137,8 @@ public final class BallInterceptor
 			return tMax;
 		}
 	}
-	
-	
+
+
 	/**
 	 * @return the time in future when the ball can best be intercepted, or nothing if ball can hit kicker already
 	 */
@@ -160,8 +155,8 @@ public final class BallInterceptor
 		}
 		return Optional.of(optimalTime + tOffset);
 	}
-	
-	
+
+
 	private double getTimeForDestClosestToBallLine()
 	{
 		IVector2 closestDest = ballTrajectory.getTravelLineSegment().closestPointOnLine(tBot.getBotKickerPos());
@@ -169,21 +164,21 @@ public final class BallInterceptor
 		double dist2Kicker = Math.max(0, dist2ClosestDest - Geometry.getBallRadius());
 		return Math.max(0, ballTrajectory.getTimeByDist(dist2Kicker));
 	}
-	
-	
+
+
 	private boolean ballCanHitKicker(double tClosest)
 	{
 		IVector2 ballPos = ballTrajectory.getPosByTime(tClosest).getXYVector();
-		BangBangTrajectory2D traj = getBotTrajectory(ballPos);
+		ITrajectory<IVector2> traj = getBotTrajectory(ballPos);
 		IBotShape botShape = BotShape.fromFullSpecification(traj.getPositionMM(tClosest), Geometry.getBotRadius(),
 				tBot.getCenter2DribblerDist(), tBot.getOrientation());
 		IVector2 botKickerPosAtTBall = botShape.getKickerCenterPos();
-		
+
 		double distToBallLine = ballTrajectory.getTravelLineSegment().distanceTo(botKickerPosAtTBall);
 		return distToBallLine < botShape.getKickerWidth() / 2.0;
 	}
-	
-	
+
+
 	private boolean ballCanHitKickerWithDynAcc(double tClosest)
 	{
 		for (double acc = minAcc; acc < maxAcc; acc += accStep)
@@ -198,19 +193,19 @@ public final class BallInterceptor
 		moveConstraints.setAccMax(minAcc);
 		return false;
 	}
-	
-	
+
+
 	private double absSlackTime(final double tBall)
 	{
-		
+
 		IVector2 ballPos = ballTrajectory.getPosByTime(tBall).getXYVector();
-		BangBangTrajectory2D traj = getBotTrajectory(ballPos);
+		ITrajectory<IVector2> traj = getBotTrajectory(ballPos);
 		double slackTime = tBall - traj.getTotalTime();
 		return Math.abs(slackTime);
 	}
-	
-	
-	private BangBangTrajectory2D getBotTrajectory(final IVector2 ballPos)
+
+
+	private ITrajectory<IVector2> getBotTrajectory(final IVector2 ballPos)
 	{
 		// we assume here that the target orientation is equal to the current orientation for simplicity
 		// the trajectory time will not differ much, when the robot is far away. And if it is nearby,
@@ -222,8 +217,9 @@ public final class BallInterceptor
 		return TrajectoryGenerator.generatePositionTrajectory(moveConstraints, tBot.getPos(), tBot.getVel(),
 				botDest);
 	}
-	
-	private class Checker implements ConvergenceChecker<UnivariatePointValuePair>
+
+
+	private static class Checker implements ConvergenceChecker<UnivariatePointValuePair>
 	{
 		@Override
 		public boolean converged(final int iteration, final UnivariatePointValuePair previous,
@@ -232,8 +228,8 @@ public final class BallInterceptor
 			return false;
 		}
 	}
-	
-	
+
+
 	/**
 	 * {@code BallInterceptor} builder static inner class.
 	 */
@@ -243,13 +239,13 @@ public final class BallInterceptor
 		private ITrackedBot tBot;
 		private MoveConstraints moveConstraints;
 		private IKickEvent kickEvent;
-		
-		
+
+
 		private Builder()
 		{
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code ballTrajectory} and returns a reference to this Builder so that the methods can be chained
 		 * together.
@@ -262,8 +258,8 @@ public final class BallInterceptor
 			this.ballTrajectory = ballTrajectory;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code moveConstraints} and returns a reference to this Builder so that the methods can be chained
 		 * together.
@@ -276,11 +272,11 @@ public final class BallInterceptor
 			this.moveConstraints = moveConstraints;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Set multiple fields based on the given tracked bots
-		 * 
+		 *
 		 * @param tBot a tracked bot
 		 * @return a reference to this Builder
 		 */
@@ -289,8 +285,8 @@ public final class BallInterceptor
 			this.tBot = tBot;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code kickEvent} and returns a reference to this Builder so that the methods can be chained
 		 * together.
@@ -303,8 +299,8 @@ public final class BallInterceptor
 			this.kickEvent = kickEvent;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Returns a {@code BallInterceptor} built from the parameters previously set.
 		 *
@@ -318,8 +314,8 @@ public final class BallInterceptor
 			return new BallInterceptor(this);
 		}
 	}
-	
-	
+
+
 	/**
 	 * @return the min acc that is used
 	 */
@@ -327,8 +323,8 @@ public final class BallInterceptor
 	{
 		return minAcc;
 	}
-	
-	
+
+
 	/**
 	 * @return the max acc that is used
 	 */

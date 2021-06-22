@@ -1,92 +1,60 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.vision.kick.estimators;
 
-import java.util.List;
-
+import edu.tigers.sumatra.ball.BallState;
+import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
-import edu.tigers.sumatra.vision.data.ABallTrajectory;
-import edu.tigers.sumatra.vision.data.FilteredVisionBall;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Value;
+
+import java.util.List;
 
 
 /**
- * @author AndreR <andre@ryll.cc>
+ * Result of a fitted kick.
  */
+@Value
+@Builder(setterPrefix = "with", toBuilder = true)
+@AllArgsConstructor
 public class KickFitResult
 {
-	private final List<IVector2>	ground;
-	private final double				avgDistance;
-	private ABallTrajectory			trajectory;
-	
-	
-	/**
-	 * @param ground
-	 * @param avgDistance
-	 * @param trajectory
-	 */
-	public KickFitResult(final List<IVector2> ground, final double avgDistance, final ABallTrajectory trajectory)
-	{
-		this.ground = ground;
-		this.avgDistance = avgDistance;
-		this.trajectory = trajectory;
-	}
-	
-	
-	/**
-	 * @return the ground
-	 */
-	public List<IVector2> getGroundProjection()
-	{
-		return ground;
-	}
-	
-	
-	/**
-	 * @return the avgDistance
-	 */
-	public double getAvgDistance()
-	{
-		return avgDistance;
-	}
-	
-	
+	List<IVector2> groundProjection;
+	double avgDistance;
+	IBallTrajectory trajectory;
+	long kickTimestamp;
+	String solverName;
+
+
 	/**
 	 * @return the kickPos
 	 */
 	public IVector2 getKickPos()
 	{
-		return trajectory.getKickPos();
+		return trajectory.getInitialPos().getXYVector();
 	}
-	
-	
+
+
 	/**
 	 * @return the kickVel
 	 */
 	public IVector3 getKickVel()
 	{
-		return trajectory.getKickVel();
+		return trajectory.getInitialVel();
 	}
-	
-	
-	/**
-	 * @return
-	 */
-	public long getKickTimestamp()
-	{
-		return trajectory.getKickTimestamp();
-	}
-	
-	
+
+
 	/**
 	 * Get ball state at specific timestamp.
-	 * 
+	 *
 	 * @param timestamp
 	 * @return
 	 */
-	public FilteredVisionBall getState(final long timestamp)
+	public BallState getState(final long timestamp)
 	{
-		return trajectory.getStateAtTimestamp(timestamp);
+		return trajectory.getMilliStateAtTime((timestamp - kickTimestamp) * 1e-9);
 	}
 }

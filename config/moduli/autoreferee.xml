@@ -62,4 +62,13 @@
         <implementation>edu.tigers.autoreferee.AutoRefRecordManager</implementation>
     </module>
 
+    <module id="edu.tigers.sumatra.wp.exporter.VisionTrackerSender">
+        <implementation>edu.tigers.sumatra.wp.exporter.VisionTrackerSender</implementation>
+
+        <properties>
+            <address>224.5.23.2</address>
+            <port>10010</port>
+        </properties>
+    </module>
+
 </centralSoftware>

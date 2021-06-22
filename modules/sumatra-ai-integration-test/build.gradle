@@ -1,0 +1,67 @@
+/*
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ */
+
+plugins {
+    id 'sumatra.java-conventions'
+}
+
+sourceSets {
+    integrationTest {
+        java.srcDir "src/integrationTest/java"
+    }
+}
+
+dependencies {
+    integrationTestImplementation project(':common')
+    integrationTestImplementation project(':common-math')
+    integrationTestImplementation project(':common-bot')
+    integrationTestImplementation project(':sumatra-simulation-control')
+    integrationTestImplementation project(':sumatra-snapshot')
+    integrationTestImplementation project(':sumatra-model')
+    integrationTestImplementation project(':sumatra-skillsystem')
+    integrationTestImplementation project(':sumatra-pathfinder')
+    integrationTestImplementation project(':moduli-ai')
+    integrationTestImplementation project(':moduli-autoreferee')
+    integrationTestImplementation project(':moduli-geometry')
+    integrationTestImplementation project(':moduli-referee')
+    integrationTestImplementation project(':moduli-wp')
+    integrationTestImplementation project(':moduli-record')
+    integrationTestImplementation project(':moduli-ai-controller')
+    integrationTestRuntimeOnly project(':moduli-botmanager-sim')
+
+    integrationTestImplementation 'com.github.g3force:configurable:3.0'
+
+    integrationTestImplementation 'org.apache.logging.log4j:log4j-api:2.14.1'
+    integrationTestImplementation 'org.apache.logging.log4j:log4j-core:2.14.1'
+    integrationTestRuntimeOnly 'org.apache.logging.log4j:log4j-1.2-api:2.14.1'
+    integrationTestRuntimeOnly 'org.slf4j:slf4j-log4j12:1.7.30'
+
+    integrationTestImplementation 'junit:junit:4.13.2'
+    integrationTestImplementation 'org.assertj:assertj-core:3.19.0'
+
+    integrationTestAnnotationProcessor "org.projectlombok:lombok:1.18.20"
+    integrationTestImplementation "org.projectlombok:lombok:1.18.20"
+
+    integrationTestImplementation 'org.openjdk.jmh:jmh-core:1.31'
+    integrationTestAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.31'
+}
+
+task integrationTest(type: Test) {
+    description = "Run the integration tests"
+    group = "verification"
+
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+
+    // set a task input that changes every second -> the task will be rerun every time it is executed
+    // inspired by: https://blog.gradle.org/stop-rerunning-tests
+    inputs.property "integration.date", System.currentTimeSeconds()
+}
+
+task runPathPlanningBenchmark(type: JavaExec) {
+    group = "Execution"
+    description = "Run PathPlanningPerfTest"
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    main = "edu.tigers.sumatra.ai.integration.jmh.PathPlanningPerfTest"
+}

@@ -1,16 +1,17 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.drawable;
+
+import com.sleepycat.persist.model.Persistent;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
+import edu.tigers.sumatra.util.ScalingUtil;
 
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
-
-import com.sleepycat.persist.model.Persistent;
-
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -22,9 +23,9 @@ public class DrawableBorderText implements IDrawableShape
 	private final IVector2 pos;
 	private final String text;
 	private final Color color;
-	private int fontSize = 10;
-	
-	
+	private EFontSize fontSizeType = EFontSize.SMALL;
+
+
 	@SuppressWarnings("unused")
 	private DrawableBorderText()
 	{
@@ -32,8 +33,8 @@ public class DrawableBorderText implements IDrawableShape
 		text = "";
 		color = Color.red;
 	}
-	
-	
+
+
 	/**
 	 * @param pos
 	 * @param text
@@ -45,44 +46,37 @@ public class DrawableBorderText implements IDrawableShape
 		this.text = text;
 		this.color = color;
 	}
-	
-	
+
+
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
-		g.scale(1f / tool.getScaleFactor(), 1.0 / tool.getScaleFactor());
-		g.translate(-tool.getFieldOriginX(), -tool.getFieldOriginY());
-		
-		final IVector2 transPoint = pos;
+		final IVector2 transPoint = Vector2.fromXY(ScalingUtil.scale(pos.x()), ScalingUtil.scale(pos.y()));
 		int pointSize = 3;
 		final int drawingX = (int) transPoint.x() - (pointSize / 2);
 		final int drawingY = (int) transPoint.y() - (pointSize / 2);
-		
+
+		int fontSize = ScalingUtil.getFontSize(fontSizeType);
 		Font font = new Font("", Font.PLAIN, fontSize);
 		g.setFont(font);
 		g.setColor(color);
 		g.drawString(text, drawingX, drawingY);
-		
-		g.translate(tool.getFieldOriginX(), tool.getFieldOriginY());
-		g.scale(tool.getScaleFactor(), tool.getScaleFactor());
 	}
-	
-	
+
+
 	/**
-	 * @return the fontSize
+	 * @param fontSizeType the fontSize to set
 	 */
-	public final int getFontSize()
+	public final DrawableBorderText setFontSize(final EFontSize fontSizeType)
 	{
-		return fontSize;
+		this.fontSizeType = fontSizeType;
+		return this;
 	}
-	
-	
-	/**
-	 * @param fontSize the fontSize to set
-	 */
-	public final void setFontSize(final int fontSize)
+
+
+	@Override
+	public boolean isBorderText()
 	{
-		this.fontSize = fontSize;
+		return true;
 	}
-	
 }

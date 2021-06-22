@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
@@ -18,23 +18,21 @@ import edu.tigers.sumatra.math.vector.Vector2f;
 
 /**
  * Outline of a bot with orientation
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 @Persistent
 public class DrawableBot implements IDrawableShape
 {
-	private final DrawableCircle	circle;
-	private final DrawableLine		line;
-	
-	
+	private final DrawableCircle circle;
+	private final DrawableLine line;
+
+
 	@SuppressWarnings("unused")
 	private DrawableBot()
 	{
 		this(Vector2f.ZERO_VECTOR, 0, Color.RED, 90, 75);
 	}
-	
-	
+
+
 	/**
 	 * @param pos
 	 * @param orientation

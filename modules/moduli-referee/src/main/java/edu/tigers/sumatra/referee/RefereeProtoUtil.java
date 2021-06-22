@@ -1,7 +1,11 @@
+/*
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.referee;
 
-import edu.tigers.sumatra.Referee;
 import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
 
 
 /**
@@ -11,20 +15,20 @@ import edu.tigers.sumatra.ids.ETeamColor;
 @SuppressWarnings("squid:CallToDeprecatedMethod") // support of deprecated methods still desired
 public final class RefereeProtoUtil
 {
-	
+
 	private RefereeProtoUtil()
 	{
 	}
-	
-	
+
+
 	/**
 	 * Get the team for the given command
-	 * 
+	 *
 	 * @param command
 	 * @return
 	 */
 	@SuppressWarnings("squid:MethodCyclomaticComplexity") // false-positive on enum switch
-	public static ETeamColor teamForCommand(Referee.SSL_Referee.Command command)
+	public static ETeamColor teamForCommand(SslGcRefereeMessage.Referee.Command command)
 	{
 		switch (command)
 		{

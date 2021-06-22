@@ -1,79 +1,42 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.statemachine;
 
-import org.apache.log4j.Logger;
+import org.apache.commons.lang.Validate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import java.util.Deque;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
 
 
 /**
- * State machine. Primary used for roles
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Generic state machine.
+ *
  * @param <T>
  */
 public class StateMachine<T extends IState> implements IStateMachine<T>
 {
-	private static final Logger					log								= Logger.getLogger(StateMachine.class
-			.getName());
-	
-	private T											currentState					= null;
-	private T											initialState					= null;
-	private int											queueSize						= 1;
-	private final Map<IEvent, Map<IState, T>>	transitions						= new HashMap<>();
-	private final Deque<IEvent>					eventQueue						= new LinkedList<>();
-	private boolean									initialized						= false;
-	private boolean									doEntryActionsFirstState	= true;
-	private boolean									extendedLogging				= false;
-	
-	
-	/**
-	 * @param initialState first to be active
-	 */
-	public StateMachine(final T initialState)
+	private static final Logger log = LogManager.getLogger(StateMachine.class.getName());
+	private static final int MAX_STATE_CHANGES_PER_UPDATE = 15;
+
+	private final Map<IEvent, Map<IState, T>> transitions = new HashMap<>();
+	private String name = "StateMachine";
+	private T currentState = null;
+	private boolean initialStateInitialized = false;
+	private boolean extendedLogging = false;
+	private int stateChangesSinceUpdate = 0;
+
+
+	private T getNextState(IEvent event)
 	{
-		setInitialState(initialState);
-	}
-	
-	
-	/**
-	 * Default
-	 */
-	public StateMachine()
-	{
-		// nothing to do
-	}
-	
-	
-	private T getNextState(IEvent event, IState currentState)
-	{
+		Validate.notNull(currentState, "StateMachine not init");
 		Map<IState, T> subTransitions = transitions.computeIfAbsent(event, k -> new HashMap<>());
-		T nextState = subTransitions.get(currentState);
-		if (nextState == null)
-		{
-			nextState = subTransitions.get(null);
-			if (currentState != null && currentState.equals(nextState))
-			{
-				// ignore wildcard transition to itself
-				return null;
-			}
-		}
-		if (nextState == null)
-		{
-			// no transition for the event
-			String stateName = currentState == null ? "null" : currentState.getIdentifier();
-			extendedLogging(
-					() -> log.warn("No transition found for " + event + " in state " + stateName + ". Keep state"));
-		}
-		return nextState;
+		return subTransitions.getOrDefault(currentState, subTransitions.get(null));
 	}
-	
-	
+
+
 	private void extendedLogging(Runnable run)
 	{
 		if (extendedLogging)
@@ -81,86 +44,56 @@ public class StateMachine<T extends IState> implements IStateMachine<T>
 			run.run();
 		}
 	}
-	
-	
+
+
 	@Override
 	public void update()
 	{
-		if (currentState == null)
+		if (!initialStateInitialized && currentState != null)
 		{
-			// no initial state or done
-			return;
+			// initialize the very first state
+			currentState.doEntryActions();
+			initialStateInitialized = true;
 		}
-		initialized = true;
-		boolean stateChanged = false;
-		int stateTransitionsLeft = 10;
-		while (!stateChanged && !eventQueue.isEmpty())
-		{
-			IEvent newEvent = eventQueue.removeLast();
-			T newState = getNextState(newEvent, currentState);
-			if (newState != null)
-			{
-				if (currentState.equals(newState))
-				{
-					extendedLogging(() -> log.warn("Transition to itself. This doesn't sound reasonable?!"));
-				} else
-				{
-					changeState(newState);
-					// note: changeState may add events to eventQueue again!
-					stateTransitionsLeft--;
-					stateChanged = true;
-				}
-			}
-			if (stateTransitionsLeft <= 0)
-			{
-				log.warn("Possible endless loop detected! Too many transitions in one update.");
-				break;
-			}
-		}
-		if (!stateChanged)
-		{
-			if (doEntryActionsFirstState)
-			{
-				currentState.doEntryActions();
-			}
-			// no new events, simply update current
-			currentState.doUpdate();
-		}
-		doEntryActionsFirstState = false;
-	}
-	
-	
-	@SuppressWarnings("squid:S2583")
-	private void changeState(final T newState)
-	{
-		currentState.doExitActions();
-		if (newState == null)
-		{
-			// done
-			currentState = null;
-			return;
-		}
-		extendedLogging(() -> log.trace("Switch state from " + currentState + " to " + newState));
-		currentState = newState;
-		currentState.doEntryActions();
-		// currentState may got null, if the role was set to completed... :D
+		stateChangesSinceUpdate = 0;
 		if (currentState != null)
 		{
 			currentState.doUpdate();
 		}
 	}
-	
-	
+
+
 	@Override
-	public void restart()
+	public void changeState(final T newState)
 	{
-		if (initialState != null)
+		if (newState.equals(currentState))
 		{
-			changeState(initialState);
+			return;
 		}
+
+		extendedLogging(() -> log.trace("{}: Switch state from {} to {}", name, currentState, newState));
+
+		if (stateChangesSinceUpdate > MAX_STATE_CHANGES_PER_UPDATE)
+		{
+			log.warn("Number of allowed state changes exceeded. Possible state loop! Last change from {} to {}.",
+					currentState, newState, new Exception());
+			return;
+		}
+		stateChangesSinceUpdate++;
+
+		currentState.doExitActions();
+
+		// the order of the following statements matters:
+		// in both methods, one could trigger another state change, resulting in a recursive call of this method.
+		// by setting the currentState first, the last call to changeState will have priority
+		// by calling the methods on `newState` instead of `currentState`, it is guaranteed, that the new state
+		// is called, not a future currentState.
+		currentState = newState;
+		newState.doEntryActions();
+		newState.doUpdate();
 	}
-	
-	
+
+
 	@Override
 	public void stop()
 	{
@@ -170,83 +103,71 @@ public class StateMachine<T extends IState> implements IStateMachine<T>
 		}
 		currentState = null;
 	}
-	
-	
+
+
 	@Override
 	public void triggerEvent(final IEvent event)
 	{
-		if (event == null)
+		Validate.notNull(event);
+		extendedLogging(() -> log.trace("{}: New event: {}", name, event));
+
+		T newState = getNextState(event);
+		if (newState != null)
 		{
-			log.warn("trigger event is null!");
-			return;
-		}
-		extendedLogging(() -> log.trace("Event enqueued: " + event));
-		eventQueue.add(event);
-		while (eventQueue.size() > queueSize)
-		{
-			IEvent ev = eventQueue.removeFirst();
-			extendedLogging(() -> log.warn("Queue full. Event " + ev + " removed."));
+			changeState(newState);
 		}
 	}
-	
-	
-	@Override
-	public boolean valid()
-	{
-		if (currentState == null)
-		{
-			log.warn("StateMachine has no initial state!");
-			return false;
-		}
-		return true;
-	}
-	
-	
+
+
 	@Override
 	public final T getCurrentState()
 	{
 		return currentState;
 	}
-	
-	
+
+
 	@Override
 	public final void addTransition(final IState currentState, final IEvent event, final T state)
 	{
-		assert event != null;
-		assert state != null;
+		Validate.notNull(event);
+		Validate.notNull(state);
 		Map<IState, T> subTransitions = transitions.computeIfAbsent(event, k -> new HashMap<>());
 		T preState = subTransitions.put(currentState, state);
 		if (preState != null)
 		{
-			log.warn("Overwriting transition for event: " + event + " and state " + currentState + ". Change state from "
-					+ preState + " to "
-					+ state);
+			log.warn("{}: Overwriting transition for event: {} and state {}. Change state from {} to {}", name, event,
+					currentState, preState, state);
 		}
 	}
-	
-	
+
+
 	@Override
 	public final void setInitialState(final T currentState)
 	{
-		if (initialized)
+		if (this.currentState != null && initialStateInitialized)
 		{
 			throw new IllegalStateException("Already initialized");
 		}
 		this.currentState = currentState;
-		initialState = currentState;
 	}
-	
-	
+
+
 	@Override
 	public void setExtendedLogging(final boolean extendedLogging)
 	{
 		this.extendedLogging = extendedLogging;
 	}
-	
-	
+
+
 	@Override
-	public void setQueueSize(int queueSize)
+	public void setName(final String name)
 	{
-		this.queueSize = queueSize;
+		this.name = name;
+	}
+
+	@Override
+	public Map<IEvent, Map<IState, T>> getTransitions()
+	{
+		return transitions;
 	}
 }

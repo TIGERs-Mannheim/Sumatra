@@ -3,6 +3,7 @@
  */
 package edu.tigers.sumatra.botmanager.sim.skills;
 
+import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
@@ -20,26 +21,26 @@ public class BotSkillOutput
 {
 	/** --- DRIVE output -- */
 	private final SimBotAction action;
-	
-	
+
+
 	private BotSkillOutput(final Builder builder)
 	{
 		action = builder.action.build();
 	}
-	
+
 	/**
 	 * Builder
 	 */
 	public static final class Builder
 	{
 		private SimBotAction.Builder action = SimBotAction.Builder.create();
-		
-		
+
+
 		private Builder()
 		{
 		}
-		
-		
+
+
 		/**
 		 * @return new builder
 		 */
@@ -47,8 +48,8 @@ public class BotSkillOutput
 		{
 			return new Builder();
 		}
-		
-		
+
+
 		/**
 		 * @return
 		 */
@@ -57,8 +58,8 @@ public class BotSkillOutput
 			action.driveLimits(new MoveConstraints());
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param targetPos
 		 * @return this builder
@@ -68,8 +69,8 @@ public class BotSkillOutput
 			action.targetPos(targetPos);
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param targetVelLocal
 		 * @return this builder
@@ -79,8 +80,8 @@ public class BotSkillOutput
 			action.targetVelLocal(targetVelLocal);
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param targetWheelVel
 		 * @return this builder
@@ -90,8 +91,8 @@ public class BotSkillOutput
 			action.targetWheelVel(targetWheelVel);
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param primaryDirection
 		 * @return this builder
@@ -101,8 +102,8 @@ public class BotSkillOutput
 			action.primaryDirection(primaryDirection);
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param modeXY
 		 * @return this builder
@@ -112,8 +113,8 @@ public class BotSkillOutput
 			action.modeXY(modeXY);
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param modeW
 		 * @return this builder
@@ -123,8 +124,8 @@ public class BotSkillOutput
 			action.modeW(modeW);
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param dribblerRPM
 		 * @return this builder
@@ -134,8 +135,8 @@ public class BotSkillOutput
 			action.dribbleRpm(dribblerRPM);
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param kickDevice
 		 * @return this builder
@@ -145,8 +146,8 @@ public class BotSkillOutput
 			action.chip(kickDevice == EKickerDevice.CHIP);
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param kickMode
 		 * @return this builder
@@ -156,8 +157,8 @@ public class BotSkillOutput
 			action.disarm(kickMode == EKickerMode.DISARM);
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param kickSpeed
 		 * @return this builder
@@ -167,19 +168,19 @@ public class BotSkillOutput
 			action.kickSpeed(kickSpeed * 1000);
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param driveLimits
 		 * @return this builder
 		 */
-		public Builder driveLimits(final MoveConstraints driveLimits)
+		public Builder driveLimits(final IMoveConstraints driveLimits)
 		{
 			action.driveLimits(driveLimits);
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param strictVelocityLimit
 		 * @return this builder
@@ -189,8 +190,8 @@ public class BotSkillOutput
 			action.strictVelocityLimit(strictVelocityLimit);
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @return new instance
 		 */
@@ -199,8 +200,8 @@ public class BotSkillOutput
 			return new BotSkillOutput(this);
 		}
 	}
-	
-	
+
+
 	public SimBotAction getAction()
 	{
 		return action;

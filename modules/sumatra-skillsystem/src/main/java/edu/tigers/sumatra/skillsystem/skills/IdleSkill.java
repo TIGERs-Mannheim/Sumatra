@@ -1,35 +1,46 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.skillsystem.skills;
 
-import edu.tigers.sumatra.botmanager.botskills.BotSkillMotorsOff;
-import edu.tigers.sumatra.skillsystem.ESkill;
-import edu.tigers.sumatra.statemachine.AState;
+import com.github.g3force.configurable.Configurable;
+import edu.tigers.sumatra.botmanager.botskills.data.DriveLimits;
+import edu.tigers.sumatra.math.vector.Vector2;
 
 
 /**
  * Stops the bot and maintains update and feedback frequency
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class IdleSkill extends ASkill
+public class IdleSkill extends AMoveSkill
 {
-	/**
-	 * Default instance
-	 */
-	public IdleSkill()
+	@Configurable(defValue = "false", comment = "true: Brake fast, false: Slow down smoothly")
+	private static boolean emergencyBrake = false;
+
+
+	@Override
+	public void doEntryActions()
 	{
-		super(ESkill.IDLE);
-		setInitialState(new IdleState());
-	}
-	
-	private class IdleState extends AState
-	{
-		@Override
-		public void doEntryActions()
+		if (emergencyBrake)
 		{
-			getMatchCtrl().setSkill(new BotSkillMotorsOff());
+			var moveConstraints = defaultMoveConstraints();
+			moveConstraints.setAccMax(moveConstraints.getBrkMax());
+			moveConstraints.setAccMaxW(DriveLimits.MAX_ACC_W);
+			moveConstraints.setJerkMax(DriveLimits.MAX_JERK);
+			moveConstraints.setJerkMaxW(DriveLimits.MAX_JERK_W);
+			setLocalVelocity(Vector2.zero(), 0, moveConstraints);
+		} else
+		{
+			setMotorsOff();
+		}
+	}
+
+
+	@Override
+	public void doUpdate()
+	{
+		if (emergencyBrake && getVel().getLength2() < 0.1)
+		{
+			setMotorsOff();
 		}
 	}
 }

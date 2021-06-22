@@ -1,5 +1,3 @@
-.settings/org.sonar.ide.eclipse.core.prefs
-.settings/org.eclim.prefs
 *.lck
 *.bak
 *~
@@ -8,19 +6,20 @@
 .csync*
 /bin
 /logs
-/target
 /data
 *.iml
 **/Sumatra.log
 sonarlint
-**/target/
 s101plugin.properties
-repository
 .idea/artifacts
-history.json
-gc-state*
+*state-store.json.stream
 
 doc/**/*.html
 doc/**/*-guide.pdf
 doc/**/images/diag-*
 doc/**/.asciidoctor/
+
+.gradle
+build
+/sumatra
+temp

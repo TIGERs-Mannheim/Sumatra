@@ -1,12 +1,11 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.defense;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.math.SumatraMath;
 
 
@@ -44,14 +43,14 @@ public final class DefenseConstants
 	
 	/**
 	 * @param velocity velocity of the tracked object
-	 * @return lookahead in dependency on the lookahead
+	 * @return lookahead in dependency on the velocity
 	 */
 	public static double getLookaheadBotThreats(final double velocity)
 	{
-		double factor = SumatraMath.relative(velocity, 0, maxLookaheadBotThreatsVelocity);
-		double linearPart = maxLookaheadBotThreats - minLookaheadBotThreats;
-		double constantPart = minLookaheadBotThreats;
-		
+		final double factor = SumatraMath.relative(velocity, 0, maxLookaheadBotThreatsVelocity);
+		final double linearPart = maxLookaheadBotThreats - minLookaheadBotThreats;
+		final double constantPart = minLookaheadBotThreats;
+
 		return (factor * linearPart) + constantPart;
 	}
 	

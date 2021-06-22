@@ -1,25 +1,20 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
-
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import edu.tigers.sumatra.ai.data.BotAiInformation;
 import edu.tigers.sumatra.bot.EFeature;
 import edu.tigers.sumatra.bot.EFeatureState;
 import edu.tigers.sumatra.botmanager.bots.ABot;
+import edu.tigers.sumatra.botmanager.bots.TigerBot;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
 import edu.tigers.sumatra.botmanager.botskills.data.IMatchCommand;
 import edu.tigers.sumatra.botmanager.botskills.data.MultimediaControl;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.pathfinder.MovementCon;
-import edu.tigers.sumatra.skillsystem.ESkill;
 import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
 import edu.tigers.sumatra.statemachine.IState;
@@ -27,61 +22,71 @@ import edu.tigers.sumatra.statemachine.IStateMachine;
 import edu.tigers.sumatra.statemachine.StateMachine;
 import edu.tigers.sumatra.time.AverageTimeMeasure;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 
 /**
- * This is the base class for every skill, which provides subclasses with the newest data and handles their lifecycle
- *
- * @author Ryan, Gero
+ * This is the base class for every skill.
+ * In contains the core-features of skills, like state machine, time measurement, drawing, bot assignment.
+ * It does not contain any positioning data from vision. It could be used for basic skills that do not
+ * need vision and that only use custom bot skills. For all other purposes, use {@link AMoveSkill}.
  */
 public abstract class ASkill implements ISkill
 {
 	protected static final IState IDLE_STATE = new DefaultState();
-	private final ESkill skillName;
-	private final MovementCon moveCon = new MovementCon();
-	private final IStateMachine<IState> stateMachine = new StateMachine<>(IDLE_STATE);
+
+	private final IStateMachine<IState> stateMachine = new StateMachine<>();
+	@Getter
+	private final AverageTimeMeasure averageTimeMeasure = new AverageTimeMeasure();
+
+	@Getter
+	@Setter(AccessLevel.PROTECTED)
+	private ESkillState skillState = ESkillState.IN_PROGRESS;
+
 	private boolean initialized = false;
 	private ABot bot;
 	private ShapeMap shapeMap = new ShapeMap();
-	private AverageTimeMeasure averageTimeMeasure = new AverageTimeMeasure();
-	
-	
-	/**
-	 * @param skill skillName
-	 */
-	protected ASkill(final ESkill skill)
+
+
+	protected ASkill()
 	{
-		skillName = skill;
-		stateMachine.setExtendedLogging(SumatraModel.getInstance().isTestMode());
+		stateMachine.setInitialState(IDLE_STATE);
+		stateMachine.setExtendedLogging(!SumatraModel.getInstance().isProductive());
 		averageTimeMeasure.setAveragingTime(0.5);
 	}
-	
-	
+
+
 	/**
 	 * Add a transition.
 	 *
 	 * @param currentState the state for which the transition should be triggered, can be null for wildcard
-	 * @param event the event that triggers the transition
-	 * @param nextState the resulting state
+	 * @param event        the event that triggers the transition
+	 * @param nextState    the resulting state
 	 */
 	protected final void addTransition(final IState currentState, final IEvent event, final IState nextState)
 	{
 		stateMachine.addTransition(currentState, event, nextState);
 	}
-	
-	
+
+
 	/**
 	 * Add a wildcard transition
 	 *
-	 * @param event the event that triggers the transition
+	 * @param event     the event that triggers the transition
 	 * @param nextState the resulting state
 	 */
 	protected final void addTransition(final IEvent event, final IState nextState)
 	{
 		stateMachine.addTransition(null, event, nextState);
 	}
-	
-	
+
+
 	/**
 	 * Set the initial state to start with. This is mandatory for all roles!
 	 *
@@ -91,8 +96,8 @@ public abstract class ASkill implements ISkill
 	{
 		stateMachine.setInitialState(initialState);
 	}
-	
-	
+
+
 	/**
 	 * Go to next state
 	 *
@@ -102,22 +107,25 @@ public abstract class ASkill implements ISkill
 	{
 		stateMachine.triggerEvent(event);
 	}
-	
-	
-	@Override
-	public final IState getCurrentState()
+
+
+	/**
+	 * Go to specified state
+	 *
+	 * @param state to be switched to
+	 */
+	protected final void changeState(final IState state)
+	{
+		stateMachine.changeState(state);
+	}
+
+
+	protected final IState getCurrentState()
 	{
 		return stateMachine.getCurrentState();
 	}
-	
-	
-	@Override
-	public final ESkill getType()
-	{
-		return skillName;
-	}
-	
-	
+
+
 	/**
 	 * @return the matchCtrl
 	 */
@@ -125,18 +133,18 @@ public abstract class ASkill implements ISkill
 	{
 		return bot.getMatchCtrl();
 	}
-	
-	
+
+
 	@Override
 	public void update(final WorldFrameWrapper wfw, final ABot bot, final ShapeMap shapeMap)
 	{
 		this.bot = bot;
 		this.shapeMap = shapeMap;
 	}
-	
-	
+
+
 	@Override
-	public void calcActions(final long timestamp)
+	public final void calcActions(final long timestamp)
 	{
 		averageTimeMeasure.resetMeasure();
 		averageTimeMeasure.startMeasure();
@@ -146,51 +154,51 @@ public abstract class ASkill implements ISkill
 		initialized = true;
 		averageTimeMeasure.stopMeasure();
 	}
-	
-	
+
+
 	@Override
 	public final void calcExitActions()
 	{
 		stateMachine.stop();
 		onSkillFinished();
-		getBot().setCurrentTrajectory(null);
 	}
-	
-	
+
+
 	@Override
-	public void calcEntryActions()
+	public final void calcEntryActions()
 	{
+		stateMachine.setName("Skill " + getClass().getSimpleName() + " " + getBotId());
 		onSkillStarted();
 	}
-	
-	
+
+
 	protected void doCalcActionsBeforeStateUpdate()
 	{
 	}
-	
-	
+
+
 	protected void doCalcActionsAfterStateUpdate()
 	{
 	}
-	
-	
+
+
 	protected void onSkillStarted()
 	{
 	}
-	
-	
+
+
 	protected void onSkillFinished()
 	{
 	}
-	
-	
+
+
 	@Override
 	public final String toString()
 	{
-		return getType().toString();
+		return getClass().getSimpleName();
 	}
-	
-	
+
+
 	/**
 	 * @return the bot
 	 */
@@ -198,49 +206,35 @@ public abstract class ASkill implements ISkill
 	{
 		return bot;
 	}
-	
-	
-	@Override
-	public final MovementCon getMoveCon()
-	{
-		return moveCon;
-	}
-	
-	
+
+
 	@Override
 	public final BotID getBotId()
 	{
 		return bot.getBotId();
 	}
-	
-	
+
+
 	@Override
 	public boolean isAssigned()
 	{
 		return bot != null;
 	}
-	
-	
+
+
 	@Override
 	public final boolean isInitialized()
 	{
 		return initialized;
 	}
-	
-	
+
+
 	protected final ShapeMap getShapes()
 	{
 		return shapeMap;
 	}
-	
-	
-	@Override
-	public AverageTimeMeasure getAverageTimeMeasure()
-	{
-		return averageTimeMeasure;
-	}
-	
-	
+
+
 	/**
 	 * @param control the mediaControl
 	 */
@@ -249,47 +243,60 @@ public abstract class ASkill implements ISkill
 	{
 		getMatchCtrl().setMultimediaControl(control);
 	}
-	
-	
+
+
 	@Override
 	public BotAiInformation getBotAiInfo()
 	{
 		BotAiInformation aiInfo = new BotAiInformation();
-		
+
 		if (bot == null)
 		{
 			return aiInfo;
 		}
-		
+
 		aiInfo.setBallContact(bot.isBarrierInterrupted() ? "BARRIER" : "NO");
-		aiInfo.setBattery(bot.getBatteryRelative());
+		aiInfo.setBattery(bot.getBatteryAbsolute());
 		aiInfo.setVersion(bot.getVersionString());
-		aiInfo.setKickerCharge(bot.getKickerLevel() / bot.getKickerLevelMax());
+		aiInfo.setHwId(bot.getHardwareId());
+		aiInfo.setLastFeedback(bot.getLastFeedback());
+		aiInfo.setKickerCharge(bot.getKickerLevel());
 		Set<EFeature> brokenFeatures = bot.getBotFeatures().entrySet().stream()
 				.filter(entry -> entry.getValue() == EFeatureState.KAPUT)
 				.map(Map.Entry::getKey).collect(Collectors.toSet());
 		aiInfo.setBrokenFeatures(brokenFeatures);
-		
+
 		aiInfo.setVelocityLimit(getMatchCtrl().getSkill().getMoveConstraints().getVelMax());
-		aiInfo.setAccelerationLimit(getMatchCtrl().getSkill().getMoveConstraints().getAccMax());
+		aiInfo.setAccelerationLimit(getMatchCtrl().getSkill().getMoveConstraints().getAccMaxDerived());
 		aiInfo.setDribblerSpeed(getMatchCtrl().getSkill().getDribbleSpeed());
 		aiInfo.setKickerSpeed(
 				getMatchCtrl().getSkill().getMode() == EKickerMode.DISARM ? -1 : getMatchCtrl().getSkill().getKickSpeed());
 		aiInfo.setKickerDevice(getMatchCtrl().getSkill().getDevice());
 		aiInfo.setBotSkill(getMatchCtrl().getSkill().getType().name());
-		aiInfo.setSkill(getType());
-		IState skillState = getCurrentState();
-		aiInfo.setSkillState(skillState);
+		aiInfo.setPrimaryDirection(getMatchCtrl().getSkill().getMoveConstraints().getPrimaryDirection());
+		aiInfo.setSkill(getClass().getSimpleName());
+		aiInfo.setSkillState(getCurrentState());
+		aiInfo.setMaxProcTime(averageTimeMeasure.getMaxTime());
+		aiInfo.setAvgProcTime(averageTimeMeasure.getAverageTime());
+
+		if (bot.getClass().equals(TigerBot.class))
+		{
+			TigerBot tigerBot = (TigerBot) bot;
+			aiInfo.setNrfStats(tigerBot.getNrfStats());
+		}
 		return aiInfo;
 	}
-	
+
+
 	/**
 	 * Default idle state
-	 *
-	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 	 */
 	private static class DefaultState extends AState
 	{
 	}
-	
+
+	public Map<IEvent, Map<IState, IState>> getStateGraph()
+	{
+		return stateMachine.getTransitions();
+	}
 }

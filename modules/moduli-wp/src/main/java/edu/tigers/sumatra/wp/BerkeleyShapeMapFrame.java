@@ -15,60 +15,75 @@ import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;
 
 import edu.tigers.sumatra.drawable.ShapeMap;
+import edu.tigers.sumatra.drawable.ShapeMapSource;
 
 
-@Entity
+@Entity(version = 1)
 public class BerkeleyShapeMapFrame
 {
 	@PrimaryKey
 	private final long timestamp;
-	
-	private final Map<String, ShapeMap> shapeMaps = new HashMap<>();
-	
-	
+
+	/** Old map for compatibility to older DBs */
+	private Map<String, ShapeMap> shapeMaps = null;
+	private final Map<ShapeMapSource, ShapeMap> shapeMapsBySource = new HashMap<>();
+
+
 	@SuppressWarnings("unused")
 	private BerkeleyShapeMapFrame()
 	{
 		timestamp = 0;
 	}
-	
-	
+
+
 	public BerkeleyShapeMapFrame(final long timestamp)
 	{
 		this.timestamp = timestamp;
 	}
-	
-	
+
+
 	public long getTimestamp()
 	{
 		return timestamp;
 	}
-	
-	
-	public void putShapeMap(String source, ShapeMap shapeMap)
+
+
+	public void putShapeMap(ShapeMapSource source, ShapeMap shapeMap)
 	{
-		shapeMaps.put(source, shapeMap);
+		shapeMapsBySource.put(source, shapeMap);
 	}
-	
-	
-	public ShapeMap getShapeMap(String source)
+
+
+	public Map<ShapeMapSource, ShapeMap> getShapeMaps()
 	{
-		return shapeMaps.get(source);
+		if (shapeMaps != null)
+		{
+			// conversion
+			shapeMaps.forEach((key, value) -> shapeMapsBySource.put(toSource(key), value));
+			shapeMaps = null;
+		}
+		return Collections.unmodifiableMap(shapeMapsBySource);
 	}
-	
-	
-	public Map<String, ShapeMap> getShapeMaps()
+
+
+	private ShapeMapSource toSource(String name)
 	{
-		return Collections.unmodifiableMap(shapeMaps);
+		if (name.startsWith("Skill"))
+		{
+			return ShapeMapSource.of(name, "Skills");
+		}
+
+		return ShapeMapSource.of(name);
 	}
-	
-	
+
+
 	@Override
 	public String toString()
 	{
 		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
 				.append("timestamp", timestamp)
 				.append("shapeMaps", shapeMaps)
+				.append("shapeMapsBySource", shapeMapsBySource)
 				.toString();
 	}
 }

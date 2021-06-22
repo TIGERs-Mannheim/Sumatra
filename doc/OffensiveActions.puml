@@ -1,0 +1,31 @@
+Implicit decision making of the offensive actions
+
+@startuml
+start
+
+if (Ball is moving) then (yes)
+    if (Ball can be catched) then (yes)
+        :* Redirect Goal kick
+        * Clearing kick
+        * Pass
+        * Receive;
+    else (no)
+        :irrelevant,
+        need to get ball
+        control first;
+    endif
+else (no)
+:* Forced pass
+* Goal kick
+* Clearing kick
+* Pass
+* Low chance goal kick
+* Move ball to opponent half
+* Kick ins blaue
+* Protect;
+endif
+
+end
+@enduml
+
+

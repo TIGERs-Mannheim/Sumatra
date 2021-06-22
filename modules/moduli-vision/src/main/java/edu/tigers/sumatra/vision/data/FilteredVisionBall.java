@@ -1,111 +1,88 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.vision.data;
 
-import org.apache.commons.lang.Validate;
-
+import edu.tigers.sumatra.ball.BallState;
+import edu.tigers.sumatra.data.collector.IExportable;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Value;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 
 /**
  * Data structure for a filtered vision ball.
  * <br>
  * <b>WARNING: Units of this class are [mm], [mm/s], [mm/s^2] !!!</b>
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * @author AndreR <andre@ryll.cc>
  */
-public class FilteredVisionBall
+@Value
+@Builder(setterPrefix = "with")
+public class FilteredVisionBall implements IExportable
 {
-	private final IVector3 pos;
-	private final IVector3 vel;
-	private final IVector3 acc;
-	private final boolean chipped;
-	private final double vSwitch;
-	private final long lastVisibleTimestamp;
-	private final double spin;
-	
-	
-	private FilteredVisionBall(final Builder builder)
-	{
-		pos = builder.pos;
-		vel = builder.vel;
-		acc = builder.acc;
-		chipped = builder.chipped;
-		if (builder.vSwitch < 0)
-		{
-			vSwitch = vel.getLength2();
-		} else
-		{
-			vSwitch = builder.vSwitch;
-		}
-		lastVisibleTimestamp = builder.lastVisibleTimestamp;
-		spin = builder.spin;
-	}
-	
-	
+	@NonNull
+	Long timestamp;
+	@NonNull
+	BallState ballState;
+	@NonNull
+	Long lastVisibleTimestamp;
+
+
 	/**
 	 * Position in [mm]
-	 * 
+	 *
 	 * @return
 	 */
 	public IVector3 getPos()
 	{
-		return pos;
+		return ballState.getPos();
 	}
-	
-	
+
+
 	/**
 	 * Velocity in [mm/s]
-	 * 
+	 *
 	 * @return
 	 */
 	public IVector3 getVel()
 	{
-		return vel;
+		return ballState.getVel();
 	}
-	
-	
+
+
 	/**
 	 * Acceleration in [mm/s^2]
-	 * 
+	 *
 	 * @return
 	 */
 	public IVector3 getAcc()
 	{
-		return acc;
+		return ballState.getAcc();
 	}
-	
-	
-	public boolean isChipped()
-	{
-		return chipped;
-	}
-	
-	
+
+
 	public long getLastVisibleTimestamp()
 	{
 		return lastVisibleTimestamp;
 	}
-	
-	
-	public double getVSwitch()
+
+
+	public IVector2 getSpin()
 	{
-		return vSwitch;
+		return ballState.getSpin();
 	}
-	
-	
-	public double getSpin()
-	{
-		return spin;
-	}
-	
-	
+
+
 	/**
 	 * Extrapolate ball by using trajectory.
-	 * 
+	 *
 	 * @param timestampNow
 	 * @param timestampFuture
 	 * @return
@@ -116,182 +93,35 @@ public class FilteredVisionBall
 		{
 			return this;
 		}
-		
-		return getTrajectory(timestampNow).getStateAtTimestamp(timestampFuture);
+
+		long dt = timestampFuture - timestampNow;
+
+		return FilteredVisionBall.builder()
+				.withTimestamp(timestampFuture)
+				.withBallState(
+						Geometry.getBallFactory().createTrajectoryFromState(ballState).getMilliStateAtTime(dt * 1e-9))
+				.withLastVisibleTimestamp(getLastVisibleTimestamp() + dt)
+				.build();
 	}
-	
-	
-	/**
-	 * Get ball trajectory.
-	 * 
-	 * @param timestampNow
-	 * @return
-	 */
-	public ABallTrajectory getTrajectory(final long timestampNow)
-	{
-		ABallTrajectory trajectory;
-		if (chipped)
-		{
-			trajectory = new ChipBallTrajectory(timestampNow, this);
-		} else
-		{
-			long switchTimestamp = timestampNow;
-			if (acc.getLength2() > 1e-6)
-			{
-				switchTimestamp = timestampNow + (long) (((vel.getLength2() - vSwitch) / acc.getLength2()) * 1e9);
-			}
-			
-			trajectory = new StraightBallTrajectory(timestampNow, pos, vel, switchTimestamp);
-		}
-		
-		return trajectory;
-	}
-	
-	
+
+
 	@Override
-	public String toString()
+	public List<Number> getNumberList()
 	{
-		return "FilteredVisionBall{" +
-				", pos=" + pos +
-				", vel=" + vel +
-				", acc=" + acc +
-				'}';
+		List<Number> numbers = new ArrayList<>();
+		numbers.add(timestamp);
+		numbers.addAll(getPos().getNumberList());
+		numbers.addAll(getVel().multiplyNew(1e-3).getNumberList());
+		numbers.addAll(getAcc().multiplyNew(1e-3).getNumberList());
+		numbers.add(lastVisibleTimestamp);
+		return numbers;
 	}
-	
-	/**
-	 * Builder
-	 */
-	public static final class Builder
+
+
+	@Override
+	public List<String> getHeaders()
 	{
-		private IVector3 pos;
-		private IVector3 vel;
-		private IVector3 acc;
-		private Boolean chipped;
-		private double vSwitch = -1;
-		private long lastVisibleTimestamp = 0;
-		private double spin = 0;
-		
-		
-		private Builder()
-		{
-		}
-		
-		
-		/**
-		 * @return new builder
-		 */
-		public static Builder create()
-		{
-			return new Builder();
-		}
-		
-		
-		/**
-		 * @param base
-		 * @return new builder based on given base
-		 */
-		public static Builder create(final FilteredVisionBall base)
-		{
-			return new Builder()
-					.withPos(base.pos)
-					.withVel(base.vel)
-					.withAcc(base.acc)
-					.withIsChipped(base.chipped)
-					.withvSwitch(base.vSwitch)
-					.withSpin(base.spin)
-					.withLastVisibleTimestamp(base.lastVisibleTimestamp);
-		}
-		
-		
-		/**
-		 * @param pos of the ball in [mm]
-		 * @return this builder
-		 */
-		public Builder withPos(final IVector3 pos)
-		{
-			this.pos = pos;
-			return this;
-		}
-		
-		
-		/**
-		 * @param vel of the ball in [mm/2]
-		 * @return this builder
-		 */
-		public Builder withVel(final IVector3 vel)
-		{
-			this.vel = vel;
-			return this;
-		}
-		
-		
-		/**
-		 * @param acc of the ball in [mm/s^2]
-		 * @return this builder
-		 */
-		public Builder withAcc(final IVector3 acc)
-		{
-			this.acc = acc;
-			return this;
-		}
-		
-		
-		/**
-		 * @param chipped
-		 * @return this builder
-		 */
-		public Builder withIsChipped(final boolean chipped)
-		{
-			this.chipped = chipped;
-			return this;
-		}
-		
-		
-		/**
-		 * @param vSwitch velocity where the ball switches from slide to roll
-		 * @return this builder
-		 */
-		public Builder withvSwitch(final double vSwitch)
-		{
-			this.vSwitch = vSwitch;
-			return this;
-		}
-		
-		
-		/**
-		 * @param visibleTimestamp timestamp when the ball was really last seen by a camera/barrier
-		 * @return this builder
-		 */
-		public Builder withLastVisibleTimestamp(final long visibleTimestamp)
-		{
-			lastVisibleTimestamp = visibleTimestamp;
-			return this;
-		}
-		
-		
-		/**
-		 * @param spin forward/topspin of the ball, backspin is negative
-		 * @return this builder
-		 */
-		public Builder withSpin(final double spin)
-		{
-			this.spin = spin;
-			return this;
-		}
-		
-		
-		/**
-		 * @return new instance
-		 */
-		public FilteredVisionBall build()
-		{
-			Validate.notNull(pos);
-			Validate.notNull(vel);
-			Validate.notNull(acc);
-			Validate.notNull(chipped);
-			Validate.isTrue(Double.isFinite(vSwitch));
-			Validate.isTrue(Double.isFinite(spin));
-			return new FilteredVisionBall(this);
-		}
+		return Arrays.asList("timestamp", "pos_x", "pos_y", "pos_z", "vel_x", "vel_y", "vel_z", "acc_x", "acc_y", "acc_z",
+				"lastVisibleTimestamp");
 	}
 }

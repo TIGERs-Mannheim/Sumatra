@@ -1,50 +1,47 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense;
 
-import java.util.Arrays;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-
-import edu.tigers.sumatra.ai.BaseAiFrame;
-import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.metis.general.ADesiredBotCalc;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ids.BotID;
+import lombok.extern.log4j.Log4j2;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 
 /**
  * Find the desired bots for offense
  */
+@Log4j2
 public class DesiredOffendersCalc extends ADesiredBotCalc
 {
-	private static Logger log = LogManager.getLogger(DesiredOffendersCalc.class);
-	private boolean invalidNumberWarned = false;
-	
-	
-	public DesiredOffendersCalc()
+	private final Supplier<Map<EPlay, Integer>> playNumbers;
+	private final Supplier<List<BotID>> desiredOffenseBots;
+
+
+	public DesiredOffendersCalc(
+			Supplier<Map<EPlay, Set<BotID>>> desiredBotMap,
+			Supplier<Map<EPlay, Integer>> playNumbers,
+			Supplier<List<BotID>> desiredOffenseBots)
 	{
-		super(EPlay.OFFENSIVE);
+		super(desiredBotMap);
+		this.playNumbers = playNumbers;
+		this.desiredOffenseBots = desiredOffenseBots;
 	}
-	
-	
+
+
 	@Override
-	public void doCalc(final TacticalField tacticalField, final BaseAiFrame aiFrame)
+	public void doCalc()
 	{
-		int numOffenders = tacticalField.getPlayNumbers().getOrDefault(EPlay.OFFENSIVE, 0);
-		Set<BotID> desiredBots = tacticalField.getOffensiveStrategy().getDesiredBots().stream().limit(numOffenders)
-				.collect(Collectors.toSet());
-		if (desiredBots.size() != numOffenders && !invalidNumberWarned)
-		{
-			invalidNumberWarned = true;
-			log.warn("Invalid number of offensive bots (allowed: " + numOffenders + ") actual: "
-					+ Arrays.toString(desiredBots.toArray()));
-		}
-		addDesiredBots(desiredBots);
+		int numOffenders = playNumbers.get().getOrDefault(EPlay.OFFENSIVE, 0);
+		Set<BotID> desiredBots = desiredOffenseBots.get().stream().limit(numOffenders).collect(Collectors.toSet());
+		addDesiredBots(EPlay.OFFENSIVE, desiredBots);
 	}
 }

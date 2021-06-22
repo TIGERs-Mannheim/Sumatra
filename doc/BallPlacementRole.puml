@@ -1,0 +1,14 @@
+@startuml
+[*] --> clearBall
+clearBall-->receive: ball needs to be placed
+receive-->prepare: success
+receive-->stopBall: failure
+prepare-->getBallContact: success || skip prepare
+prepare-->pass: passMode != NONE
+stopBall-->prepare: failure || success
+getBallContact-->moveWithBall: success
+getBallContact-->clearBall: failure
+moveWithBall-->clearBall: success
+moveWithBall-->receive: failure
+pass-->clearBall: success || failure
+@enduml

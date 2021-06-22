@@ -1,226 +1,147 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.aicenter.view;
 
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
+import com.github.g3force.instanceables.InstanceablePanel;
+import edu.tigers.sumatra.ai.athena.EAIControlState;
+import edu.tigers.sumatra.ai.pandora.plays.EPlay;
+import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.util.ScalingUtil;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import net.miginfocom.swing.MigLayout;
 
-import javax.swing.DefaultCellEditor;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableColumn;
-
-import org.apache.log4j.Logger;
-
-import edu.tigers.sumatra.ai.athena.EAIControlState;
-import edu.tigers.sumatra.ai.pandora.plays.EPlay;
-import edu.tigers.sumatra.model.SumatraModel;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 
 /**
  * Control Plays and Roles
  */
+@Getter
 public class AthenaControlPanel extends JPanel
 {
-	private static final Logger log = Logger.getLogger(AthenaControlPanel.class.getName());
 	private static final long serialVersionUID = 8561402774656016979L;
-	public static final int NUM_ROWS = 7;
+	public static final int NUM_ROWS = 10;
 
 	private final JTable table;
+	private final JList<Integer> botIdList;
+	private final InstanceablePanel instanceablePanel;
+
 	private final JPanel buttonPanel = new JPanel();
-	private final JButton btnClearPlays = new JButton("Clear Plays");
-	private final JButton btnClearRoles = new JButton("Clear Roles");
-	private final JButton btnAddAllToSelected = new JButton("Add all to Selected");
+	private final JButton btnAssign = new JButton("Assign");
+	private final JButton btnUnassign = new JButton("Unassign");
+	private final JButton btnClearRoles = new JButton("Clear");
+
+	private final JButton btnRemovePlay = new JButton("Remove");
+	private final JButton btnClearPlays = new JButton("Clear");
 
 
 	public AthenaControlPanel()
 	{
-		setLayout(new BorderLayout());
+		setLayout(new MigLayout("filly", "", "[top]"));
 
-		TableModel model = new TableModel(getColumHeaders(), NUM_ROWS);
+		TableModel model = new TableModel(getColumnHeaders(), NUM_ROWS);
 		table = new JTable(model);
 		table.setEnabled(false);
-		clear();
+		table.setRowHeight(ScalingUtil.getTableRowHeight());
+		table.changeSelection(0, 0, false, false);
 
-		String[] playsData = new String[EPlay.values().length + 1];
-		EPlay[] ePlays = EPlay.values();
-		playsData[0] = "";
-		for (int i = 0; i < ePlays.length; i++)
-		{
-			playsData[i + 1] = ePlays[i].name();
-		}
-		JComboBox<String> playCombo = new JComboBox<>(playsData);
-		TableColumn playColumn = table.getColumnModel().getColumn(EColumn.PLAY.idx);
-		playColumn.setMinWidth(150);
-		playColumn.setCellEditor(new DefaultCellEditor(playCombo));
+		instanceablePanel = new InstanceablePanel(EPlay.values(), SumatraModel.getInstance().getUserSettings());
+		instanceablePanel.setShowCreate(true);
 
 		DefaultTableCellRenderer textRenderer = new DefaultTableCellRenderer();
 		textRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-		table.getColumnModel().getColumn(EColumn.DESIRED_BOTS.idx).setCellRenderer(textRenderer);
+		table.getColumnModel().getColumn(EColumn.BOTS.ordinal()).setCellRenderer(textRenderer);
 
-		JScrollPane scrlPane = new JScrollPane(table);
-		scrlPane.setPreferredSize(new Dimension(0, 0));
-		add(scrlPane, BorderLayout.CENTER);
+		botIdList = new JList<>(IntStream.range(0, BotID.BOT_ID_MAX + 1).boxed().toArray(Integer[]::new));
+		botIdList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 
-		buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
-		add(buttonPanel, BorderLayout.NORTH);
+		JScrollPane tableScrollPane = new JScrollPane(table);
+		tableScrollPane.setPreferredSize(new Dimension(400, 0));
 
-		buttonPanel.add(btnClearPlays);
+		JScrollPane botIdListScrollPane = new JScrollPane(botIdList);
+		botIdListScrollPane.setPreferredSize(new Dimension(100, 0));
+
+		JPanel controlPanel = new JPanel(new MigLayout());
+		controlPanel.add(instanceablePanel, "wrap");
+		controlPanel.add(buttonPanel, "wrap");
+
+		add(tableScrollPane, "growy");
+		add(botIdListScrollPane, "growy");
+		add(controlPanel);
+
+		buttonPanel.setLayout(new MigLayout());
+		buttonPanel.add(new JLabel("Plays:"), "wrap");
+		buttonPanel.add(btnRemovePlay);
+		buttonPanel.add(btnClearPlays, "wrap");
+
+		buttonPanel.add(new JLabel("Roles:"), "wrap");
+		buttonPanel.add(btnAssign);
+		buttonPanel.add(btnUnassign);
 		buttonPanel.add(btnClearRoles);
-		buttonPanel.add(btnAddAllToSelected);
 	}
 
 
-	public JTable getTable()
+	private String[] getColumnHeaders()
 	{
-		return table;
-	}
-
-
-	public JButton getBtnClearPlays()
-	{
-		return btnClearPlays;
-	}
-
-
-	public JButton getBtnClearRoles()
-	{
-		return btnClearRoles;
-	}
-	
-	
-	public JButton getBtnAddAllToSelected()
-	{
-		return btnAddAllToSelected;
-	}
-
-
-	private String[] getColumHeaders()
-	{
-		String[] header = new String[EColumn.values().length];
-		int i = 0;
-		for (EColumn col : EColumn.values())
-		{
-			header[i] = col.getTitle();
-			i++;
-		}
-		return header;
-	}
-
-
-	public void clear()
-	{
-		for (int j = 0; j < NUM_ROWS; j++)
-		{
-			clearRow(j);
-		}
-	}
-
-
-	public void clearRow(final int rowId)
-	{
-		for (int colIdx = 0; colIdx < (EColumn.values().length); colIdx++)
-		{
-			table.getModel().setValueAt(EColumn.values()[colIdx].defValue, rowId, colIdx);
-		}
+		return Arrays.stream(EColumn.values())
+				.map(EColumn::getTitle)
+				.collect(Collectors.toList())
+				.toArray(new String[] {});
 	}
 
 
 	public void setAiControlState(final EAIControlState mode)
 	{
-		switch (mode)
-		{
-			case EMERGENCY_MODE:
-			case MATCH_MODE:
-				table.setEnabled(false);
-				break;
-			case OFF:
-				clear();
-				table.setEnabled(false);
-				break;
-			case TEST_MODE:
-			default:
-				clear();
-				setDefaultPlays();
-				table.setEnabled(true);
-				break;
-		}
+		setEnabled(mode == EAIControlState.TEST_MODE);
 	}
 
 
-	private void setDefaultPlays()
+	@Override
+	public void setEnabled(final boolean enabled)
 	{
-		String defPlays = SumatraModel.getInstance().getUserProperty(AthenaControlPanel.class + ".plays");
-		if (defPlays == null)
+		super.setEnabled(enabled);
+		table.setEnabled(enabled);
+		instanceablePanel.setEnabled(enabled);
+		botIdList.setEnabled(enabled);
+		for (Component comp : buttonPanel.getComponents())
 		{
-			return;
-		}
-		String[] splitPlays = defPlays.split(",");
-		int i = 0;
-		for (String play : splitPlays)
-		{
-			try
-			{
-				EPlay ePlay = EPlay.valueOf(play);
-				table.getModel().setValueAt(ePlay.name(), i, EColumn.PLAY.idx);
-				i++;
-			} catch (IllegalArgumentException err)
-			{
-				log.debug("Could not convert to play: " + play, err);
-			}
+			comp.setEnabled(enabled);
 		}
 	}
 
 
+	@Getter
+	@AllArgsConstructor
 	public enum EColumn
 	{
-		PLAY(0, "Play", ""),
-		DESIRED_BOTS(1, "desiredBots", ""),
-		AI(2, "use AI", true),;
+		PLAY("Play", String.class, ""),
+		BOTS("Bots", String.class, ""),
+		;
 
-		private final int idx;
 		private final String title;
+		private final Class<?> columnClass;
 		private final Object defValue;
-
-
-		EColumn(final int idx, final String title, final Object defValue)
-		{
-			this.idx = idx;
-			this.title = title;
-			this.defValue = defValue;
-		}
-
-
-		public int getIdx()
-		{
-			return idx;
-		}
-
-
-		public String getTitle()
-		{
-			return title;
-		}
-
-
-		public Object getDefValue()
-		{
-			return defValue;
-		}
 	}
 
 	private static class TableModel extends DefaultTableModel
 	{
-		/**  */
 		private static final long serialVersionUID = -3700170198897729348L;
 
 
@@ -233,22 +154,14 @@ public class AthenaControlPanel extends JPanel
 		@Override
 		public Class<?> getColumnClass(final int columnIndex)
 		{
-			if (columnIndex == EColumn.AI.idx)
-			{
-				return Boolean.class;
-			}
-			return super.getColumnClass(columnIndex);
+			return EColumn.values()[columnIndex].columnClass;
 		}
-	}
 
 
-	@Override
-	public void setEnabled(final boolean enabled)
-	{
-		super.setEnabled(enabled);
-		for (Component comp : buttonPanel.getComponents())
+		@Override
+		public boolean isCellEditable(final int row, final int column)
 		{
-			comp.setEnabled(enabled);
+			return false;
 		}
 	}
 }

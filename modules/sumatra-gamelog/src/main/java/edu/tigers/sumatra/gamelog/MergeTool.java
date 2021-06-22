@@ -1,13 +1,14 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.gamelog;
 
-import edu.tigers.sumatra.Referee.SSL_Referee;
-import edu.tigers.sumatra.Referee.SSL_Referee.Command;
-import edu.tigers.sumatra.Referee.SSL_Referee.Stage;
 import edu.tigers.sumatra.gamelog.SSLGameLogReader.SSLGameLogfileEntry;
-import org.apache.log4j.Logger;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee.Command;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee.Stage;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -18,19 +19,19 @@ import java.util.stream.Collectors;
 
 /**
  * Tiny tool that can merge multiple logfiles.
- * 
+ *
  * @author AndreR <andre@ryll.cc>
  */
 public class MergeTool
 {
 	@SuppressWarnings("unused")
-	private static final Logger	log			= Logger.getLogger(MergeTool.class.getName());
-	
+	private static final Logger log = LogManager.getLogger(MergeTool.class.getName());
+
 	private List<String>				inputs;
 	private String						output;
 	private boolean					removeIdle	= false;
-	
-	
+
+
 	/**
 	 * @param inputs
 	 * @return
@@ -40,8 +41,8 @@ public class MergeTool
 		this.inputs = inputs;
 		return this;
 	}
-	
-	
+
+
 	/**
 	 * @param output
 	 * @return
@@ -51,8 +52,8 @@ public class MergeTool
 		this.output = output;
 		return this;
 	}
-	
-	
+
+
 	/**
 	 * @param removeIdle
 	 * @return
@@ -62,8 +63,8 @@ public class MergeTool
 		this.removeIdle = removeIdle;
 		return this;
 	}
-	
-	
+
+
 	/**
 	 * Merge files.
 	 */
@@ -71,8 +72,8 @@ public class MergeTool
 	{
 		new Thread(this::mergeBlocking, "Merge Tool").start();
 	}
-	
-	
+
+
 	/**
 	 * Merge files.
 	 */
@@ -82,9 +83,9 @@ public class MergeTool
 		{
 			return;
 		}
-		
+
 		log.info("Loading logfiles files");
-		
+
 		// load all logfiles, sort by timestamp, combine into single list
 		List<SSLGameLogfileEntry> fullLog = inputs.stream()
 				.map(i -> {
@@ -95,25 +96,25 @@ public class MergeTool
 				.sorted(Comparator.comparingLong(l -> l.get(0).getTimestamp()))
 				.flatMap(List::stream)
 				.collect(Collectors.toCollection(LinkedList::new));
-		
+
 		log.info("Loading done, processing idle stages...");
-		
+
 		if (removeIdle)
 		{
 			removeIdleStages(fullLog);
 		}
-		
+
 		log.info("Processing complete. Writing output file.");
-		
+
 		SSLGameLogWriter writer = new SSLGameLogWriter();
 		writer.openPath(output);
 		fullLog.forEach(writer::write);
 		writer.close();
-		
+
 		log.info("Write complete");
 	}
-	
-	
+
+
 	@SuppressWarnings("squid:ForLoopCounterChangedCheck")
 	private void removeIdleStages(final List<SSLGameLogfileEntry> fullLog)
 	{
@@ -122,7 +123,7 @@ public class MergeTool
 		for (int index = 0; index < fullLog.size(); index++)
 		{
 			SSLGameLogfileEntry entry = fullLog.get(index);
-			
+
 			if (entry.getRefereePacket().isPresent())
 			{
 				if (isIdle(entry.getRefereePacket().get()) && (idleStartIndex < 0))
@@ -130,7 +131,7 @@ public class MergeTool
 					// idle started
 					idleStartIndex = index;
 				}
-				
+
 				if (!isIdle(entry.getRefereePacket().get()) && (idleStartIndex > 0))
 				{
 					// idle ended
@@ -141,13 +142,13 @@ public class MergeTool
 					idleStartIndex = -1;
 				}
 			}
-			
+
 			entry.adjustTimestamp(timeOffset);
 		}
 	}
-	
-	
-	private boolean isIdle(final SSL_Referee ref)
+
+
+	private boolean isIdle(final Referee ref)
 	{
 		List<Stage> idleStages = new ArrayList<>();
 		idleStages.add(Stage.NORMAL_FIRST_HALF_PRE);
@@ -158,12 +159,12 @@ public class MergeTool
 		idleStages.add(Stage.NORMAL_HALF_TIME);
 		idleStages.add(Stage.PENALTY_SHOOTOUT_BREAK);
 		idleStages.add(Stage.POST_GAME);
-		
+
 		List<Command> idleCmds = new ArrayList<>();
 		idleCmds.add(Command.HALT);
 		idleCmds.add(Command.TIMEOUT_BLUE);
 		idleCmds.add(Command.TIMEOUT_YELLOW);
-		
+
 		return idleStages.contains(ref.getStage()) || idleCmds.contains(ref.getCommand());
 	}
 }

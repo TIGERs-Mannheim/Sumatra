@@ -1,33 +1,23 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view.referee;
 
-import java.awt.Desktop;
-import java.awt.Dimension;
-import java.awt.EventQueue;
-import java.awt.Font;
-import java.io.IOException;
-import java.net.URI;
-import java.text.DecimalFormat;
-import java.util.concurrent.TimeUnit;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee.Command;
+import net.miginfocom.swing.MigLayout;
 
 import javax.swing.DefaultListModel;
-import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
-
-import org.apache.log4j.Logger;
-
-import edu.tigers.sumatra.Referee.SSL_Referee;
-import edu.tigers.sumatra.Referee.SSL_Referee.Command;
-import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.natives.OsDetector;
-import edu.tigers.sumatra.referee.Referee;
-import net.miginfocom.swing.MigLayout;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+import java.awt.Font;
+import java.text.DecimalFormat;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -36,10 +26,9 @@ import net.miginfocom.swing.MigLayout;
 public class ShowRefereeMsgPanel extends JPanel
 {
 	private static final long serialVersionUID = -508393753936993622L;
-	private final Logger log = Logger.getLogger(ShowRefereeMsgPanel.class.getName());
 	private static final int MAX_COMMANDS = 50;
+	private static final String SPAN_2 = "span 2";
 
-	private final JButton openControllerButton;
 	private final DefaultListModel<Command> listModel = new DefaultListModel<>();
 	private Command lastCmd = null;
 	private final JLabel time;
@@ -54,9 +43,6 @@ public class ShowRefereeMsgPanel extends JPanel
 	{
 		setLayout(new MigLayout("wrap 2", "[fill]10[fill]"));
 
-		openControllerButton = new JButton("Open SSL Game Controller UI");
-		openControllerButton.addActionListener(a -> open());
-		add(openControllerButton, "span 2");
 
 		add(new JLabel("Stage:"));
 		stage = new JLabel();
@@ -82,48 +68,22 @@ public class ShowRefereeMsgPanel extends JPanel
 
 		// Commands
 		add(new JLabel("All Commands: "), "wrap");
-		final JList commandList = new JList<>(listModel);
+		final JList<?> commandList = new JList<>(listModel);
 		commandList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		commandList.setLayoutOrientation(JList.VERTICAL);
 		commandList.setVisibleRowCount(-1);
 
 		JScrollPane listScroller = new JScrollPane(commandList);
 		listScroller.setPreferredSize(new Dimension(commandList.getMaximumSize().width, this.getPreferredSize().height));
-		add(listScroller, "span 2");
+		add(listScroller, SPAN_2);
 	}
 
-
-	private void open()
-	{
-		String gameControllerAddress = "http://localhost:"
-				+ SumatraModel.getInstance().getModule(Referee.class).getGameControllerUiPort();
-		try
-		{
-			if (OsDetector.isUnix()
-					&& Runtime.getRuntime().exec(new String[] { "which", "xdg-open" }).getInputStream().read() != -1)
-			{
-				// Desktop#browse is not well supported with Linux, so try xdg-open first
-				Runtime.getRuntime().exec(new String[] { "xdg-open", gameControllerAddress });
-				return;
-			}
-			if (Desktop.isDesktopSupported())
-			{
-				Desktop.getDesktop().browse(URI.create(gameControllerAddress));
-			} else
-			{
-				log.warn("Opening web browser is not supported.");
-			}
-		} catch (IOException e)
-		{
-			log.warn("Could not execute command to open browser", e);
-		}
-	}
 
 
 	/**
 	 * @param msg
 	 */
-	public void update(final SSL_Referee msg)
+	public void update(final SslGcRefereeMessage.Referee msg)
 	{
 		// Information on Top
 		EventQueue.invokeLater(() -> {
@@ -149,13 +109,5 @@ public class ShowRefereeMsgPanel extends JPanel
 				listModel.add(0, msg.getCommand());
 			}
 		});
-	}
-
-
-	@Override
-	public void setEnabled(final boolean enable)
-	{
-		super.setEnabled(enable);
-		EventQueue.invokeLater(() -> openControllerButton.setEnabled(enable));
 	}
 }

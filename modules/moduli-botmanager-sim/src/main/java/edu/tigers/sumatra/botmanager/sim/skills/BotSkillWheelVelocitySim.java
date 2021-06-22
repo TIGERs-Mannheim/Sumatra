@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.sim.skills;
 
@@ -27,6 +27,7 @@ public class BotSkillWheelVelocitySim implements IBotSkillSim
 				.kickMode(skill.getMode())
 				.kickSpeed(skill.getKickSpeed())
 				.dribblerRPM(skill.getDribbleSpeed())
+				.strictVelocityLimit(input.isStrictVelocityLimit())
 				.build();
 	}
 }

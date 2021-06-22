@@ -1,12 +1,16 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.vision.kick.estimators.straight;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
+import edu.tigers.sumatra.cam.data.CamBall;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.vision.data.KickSolverResult;
+import edu.tigers.sumatra.vision.kick.estimators.IKickSolver;
 import org.apache.commons.math3.analysis.MultivariateFunction;
 import org.apache.commons.math3.optim.InitialGuess;
 import org.apache.commons.math3.optim.MaxEval;
@@ -16,14 +20,9 @@ import org.apache.commons.math3.optim.nonlinear.scalar.ObjectiveFunction;
 import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.NelderMeadSimplex;
 import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizer;
 
-import edu.tigers.sumatra.cam.data.CamBall;
-import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.IVector3;
-import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.vision.data.KickSolverResult;
-import edu.tigers.sumatra.vision.data.StraightBallTrajectory;
-import edu.tigers.sumatra.vision.kick.estimators.IKickSolver;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 /**
@@ -53,19 +52,19 @@ public class StraightKickSolverNonLin3Direct implements IKickSolver
 	public Optional<KickSolverResult> solve(final List<CamBall> records)
 	{
 		final long tZero = records.get(0).gettCapture();
-		
+
 		List<IVector2> groundPos = records.stream()
 				.map(CamBall::getFlatPos)
 				.collect(Collectors.toList());
-		
+
 		Optional<Line> kickLine = Line.fromPointsList(groundPos);
-		if (!kickLine.isPresent())
+		if (kickLine.isEmpty())
 		{
 			return Optional.empty();
 		}
-		
+
 		IVector2 dir = kickLine.get().directionVector().normalizeNew();
-		
+
 		double[] result;
 		try
 		{
@@ -95,16 +94,16 @@ public class StraightKickSolverNonLin3Direct implements IKickSolver
 			{
 				sum[i] /= points.length;
 			}
-			
+
 			result = sum;
 		}
-		
+
 		initialGuess = result;
-		
+
 		IVector2 kickPos = Vector2.fromXY(result[0], result[1]);
 		IVector3 kickVel = dir.scaleToNew(result[2]).getXYZVector();
-		
-		return Optional.of(new KickSolverResult(kickPos, kickVel, tZero));
+
+		return Optional.of(new KickSolverResult(kickPos, kickVel, tZero, getClass().getSimpleName()));
 	}
 	
 	private static class StraightBallModel implements MultivariateFunction
@@ -129,18 +128,19 @@ public class StraightKickSolverNonLin3Direct implements IKickSolver
 		{
 			final long tZero = records.get(0).gettCapture();
 			final IVector2 kickPos = Vector2.fromXY(point[0], point[1]);
-			final IVector3 kickVel = kickDir.scaleToNew(point[2]).getXYZVector();
-			
-			StraightBallTrajectory traj = new StraightBallTrajectory(kickPos, kickVel, tZero);
-			
+			final IVector2 kickVel = kickDir.scaleToNew(point[2]);
+
+			var traj = Geometry.getBallFactory()
+					.createTrajectoryFromKickedBallWithoutSpin(kickPos, kickVel.getXYZVector());
+
 			double error = 0;
 			for (CamBall ball : records)
 			{
-				IVector2 modelPos = traj.getStateAtTimestamp(ball.gettCapture()).getPos().getXYVector();
-				
+				IVector2 modelPos = traj.getMilliStateAtTime((ball.gettCapture() - tZero) * 1e-9).getPos().getXYVector();
+
 				error += modelPos.distanceTo(ball.getFlatPos());
 			}
-			
+
 			error /= records.size();
 			
 			return error;

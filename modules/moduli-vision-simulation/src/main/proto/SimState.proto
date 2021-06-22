@@ -5,15 +5,20 @@ import "SimCommon.proto";
 
 message SimBotState {
     BotId botId = 1;
+    // [mm,mm,rad]
     Vector3 pose = 2;
+    // [m/s,m/s,rad/s]
     Vector3 vel = 3;
     bool barrierInterrupted = 4;
 }
 
 message SimBallState {
+    // [mm,mm,mm]
     Vector3 pose = 1;
+    // [mm/s,mm/s,mm/s]
     Vector3 vel = 2;
+    // [mm/s²,mm/s²,mm/s²]
     Vector3 acc = 3;
-    bool chipped = 4;
-    double vSwitchToRoll = 5;
+    // [rad/s]
+    Vector2 spin = 4;
 }

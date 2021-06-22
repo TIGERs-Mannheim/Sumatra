@@ -104,6 +104,7 @@
         <module id="edu.tigers.sumatra.timer.ATimer">
             <implementation>edu.tigers.sumatra.timer.SumatraTimer</implementation>
         </module>
+    -->
 
 
         <module id="edu.tigers.sumatra.persistence.RecordManager">
@@ -111,6 +112,7 @@
         </module>
 
 
+    <!--
         <module id="edu.tigers.sumatra.guinotifications.GuiNotificationsController"/>
     -->
     <!--

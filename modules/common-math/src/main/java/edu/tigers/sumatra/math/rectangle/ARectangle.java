@@ -30,7 +30,7 @@ import edu.tigers.sumatra.math.vector.Vector2f;
 
 /**
  * This abstract class represents a rectangle. It is used i. e. to describe a part-rectangle of the field.
- * 
+ *
  * @author Oliver Steinbrecher <OST1988@aol.com>, MalteM
  */
 @Persistent
@@ -39,36 +39,36 @@ abstract class ARectangle implements IRectangle
 	ARectangle()
 	{
 	}
-	
-	
+
+
 	@Override
 	public double maxX()
 	{
 		return center().x() + (xExtent() / 2.0);
 	}
-	
-	
+
+
 	@Override
 	public double minX()
 	{
 		return center().x() - (xExtent() / 2.0);
 	}
-	
-	
+
+
 	@Override
 	public double maxY()
 	{
 		return center().y() + (yExtent() / 2.0);
 	}
-	
-	
+
+
 	@Override
 	public double minY()
 	{
 		return center().y() - (yExtent() / 2.0);
 	}
-	
-	
+
+
 	@Override
 	public List<IVector2> getCorners()
 	{
@@ -81,30 +81,35 @@ abstract class ARectangle implements IRectangle
 		corners.add(Vector2.fromXY(+halfWidth, -halfHeight).add(center()));
 		return corners;
 	}
-	
-	
+
+
 	@Override
 	public IVector2 getCorner(final ECorner pos)
 	{
 		return getCorners().get(pos.getIndex());
 	}
-	
-	
+
+
 	@Override
 	public boolean isPointInShape(final IVector2 point, final double margin)
 	{
-		return withMargin(margin).isPointInShape(point);
+		IVector2 relPoint = point.subtractNew(center());
+		double xw = xExtent() / 2.0 + margin;
+		double yw = yExtent() / 2.0 + margin;
+		return relPoint.x() >= -xw && relPoint.x() <= xw && relPoint.y() >= -yw && relPoint.y() <= yw;
 	}
-	
-	
+
+
 	@Override
 	public boolean isPointInShape(final IVector2 point)
 	{
-		return SumatraMath.isBetween(point.x(), minX(), maxX())
-				&& SumatraMath.isBetween(point.y(), minY(), maxY());
+		IVector2 relPoint = point.subtractNew(center());
+		double xw = xExtent() / 2.0;
+		double yw = yExtent() / 2.0;
+		return relPoint.x() >= -xw && relPoint.x() <= xw && relPoint.y() >= -yw && relPoint.y() <= yw;
 	}
-	
-	
+
+
 	@Override
 	public boolean isCircleInShape(final ICircle circle)
 	{
@@ -113,8 +118,8 @@ abstract class ARectangle implements IRectangle
 				&& SumatraMath.isBetween(circle.center().y() + circle.radius(), minY(), maxY())
 				&& SumatraMath.isBetween(circle.center().y() - circle.radius(), minY(), maxY());
 	}
-	
-	
+
+
 	@Override
 	public IVector2 nearestPointOutside(final IVector2 point)
 	{
@@ -122,39 +127,39 @@ abstract class ARectangle implements IRectangle
 		{
 			IVector2 nearestPoint;
 			double distance;
-			
+
 			// left
 			distance = Math.abs(point.x() - minX());
 			nearestPoint = Vector2f.fromXY(minX(), point.y());
-			
+
 			// right
 			if (distance > Math.abs(maxX() - point.x()))
 			{
 				distance = maxX() - point.x();
 				nearestPoint = Vector2f.fromXY(maxX(), point.y());
 			}
-			
+
 			// top
 			if (distance > Math.abs(point.y() - minY()))
 			{
 				distance = point.y() - minY();
 				nearestPoint = Vector2f.fromXY(point.x(), minY());
 			}
-			
+
 			// bottom
 			if (distance > Math.abs(maxY() - point.y()))
 			{
 				nearestPoint = Vector2f.fromXY(point.x(), maxY());
 			}
-			
+
 			return nearestPoint;
 		}
-		
+
 		// else return point
 		return point;
 	}
-	
-	
+
+
 	@Override
 	public IVector2 nearestPointInside(final IVector2 point)
 	{
@@ -169,7 +174,7 @@ abstract class ARectangle implements IRectangle
 		{
 			x = point.x();
 		}
-		
+
 		double y;
 		if (point.y() > maxY())
 		{
@@ -181,18 +186,18 @@ abstract class ARectangle implements IRectangle
 		{
 			y = point.y();
 		}
-		
+
 		return Vector2f.fromXY(x, y);
 	}
-	
-	
+
+
 	@Override
 	public IVector2 nearestPointInside(final IVector2 point, final double margin)
 	{
 		return withMargin(margin).nearestPointInside(point);
 	}
-	
-	
+
+
 	@Override
 	public IVector2 nearestPointInside(IVector2 point, IVector2 pointToBuildLine)
 	{
@@ -203,8 +208,8 @@ abstract class ARectangle implements IRectangle
 		return point.nearestToOpt(lineIntersections(Line.fromPoints(point, pointToBuildLine)))
 				.orElse(point);
 	}
-	
-	
+
+
 	@Override
 	public IVector2 getRandomPointInShape(final Random rnd)
 	{
@@ -212,40 +217,40 @@ abstract class ARectangle implements IRectangle
 		double y = (center().y() + (rnd.nextDouble() * yExtent())) - (yExtent() / 2);
 		return Vector2f.fromXY(x, y);
 	}
-	
-	
+
+
 	@Override
 	public List<ILine> getEdges()
 	{
 		List<ILine> lines = new ArrayList<>(4);
 		List<IVector2> corners = getCorners();
-		
+
 		for (int i = 0; i < 4; i++)
 		{
 			int j = (i + 1) % 4;
 			lines.add(Line.fromPoints(corners.get(i), corners.get(j)));
 		}
-		
+
 		return lines;
 	}
-	
-	
+
+
 	@Override
 	public List<ILineSegment> getEdgesAsSegments()
 	{
 		List<ILineSegment> lines = new ArrayList<>(4);
 		List<IVector2> corners = getCorners();
-		
+
 		for (int i = 0; i < 4; i++)
 		{
 			int j = (i + 1) % 4;
 			lines.add(Lines.segmentFromPoints(corners.get(i), corners.get(j)));
 		}
-		
+
 		return lines;
 	}
-	
-	
+
+
 	@Override
 	public List<IVector2> lineIntersections(final edu.tigers.sumatra.math.line.v2.ILine line)
 	{
@@ -256,8 +261,8 @@ abstract class ARectangle implements IRectangle
 				.distinct()
 				.collect(Collectors.toList());
 	}
-	
-	
+
+
 	@Override
 	public List<IVector2> lineIntersections(final ILineSegment line)
 	{
@@ -268,8 +273,8 @@ abstract class ARectangle implements IRectangle
 				.distinct()
 				.collect(Collectors.toList());
 	}
-	
-	
+
+
 	@Override
 	public List<IVector2> lineIntersections(final IHalfLine line)
 	{
@@ -280,22 +285,22 @@ abstract class ARectangle implements IRectangle
 				.distinct()
 				.collect(Collectors.toList());
 	}
-	
-	
+
+
 	@Override
 	public List<IVector2> lineIntersections(final ILine line)
 	{
 		return lineIntersections(Lines.lineFromLegacyLine(line));
 	}
-	
-	
+
+
 	@Override
 	public boolean isIntersectingWithLine(final ILine line)
 	{
 		return !lineIntersections(line).isEmpty();
 	}
-	
-	
+
+
 	@Override
 	public JSONObject toJSON()
 	{

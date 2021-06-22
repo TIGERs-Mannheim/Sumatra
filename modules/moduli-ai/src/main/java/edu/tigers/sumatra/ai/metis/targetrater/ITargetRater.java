@@ -1,12 +1,15 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.targetrater;
 
-import java.util.Optional;
-
+import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.math.vector.IVector2;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -16,9 +19,19 @@ public interface ITargetRater
 {
 	/**
 	 * Rate given point
-	 * 
+	 *
 	 * @param origin the starting point to measure from
 	 * @return the best target, if one exists
 	 */
 	Optional<IRatedTarget> rate(IVector2 origin);
+
+	/**
+	 * Generate shapes to visualize the work of the rater
+	 *
+	 * @return
+	 */
+	default List<IDrawableShape> createDebugShapes()
+	{
+		return Collections.emptyList();
+	}
 }

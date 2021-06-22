@@ -3,6 +3,25 @@
  */
 package edu.tigers.sumatra.botcenter.view.bots;
 
+import edu.tigers.sumatra.bot.EFeature;
+import edu.tigers.sumatra.bot.ERobotMode;
+import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemMatchFeedback;
+import info.monitorenter.gui.chart.Chart2D;
+import info.monitorenter.gui.chart.IAxis.AxisTitle;
+import info.monitorenter.gui.chart.ITrace2D;
+import info.monitorenter.gui.chart.rangepolicies.RangePolicyHighestValues;
+import info.monitorenter.gui.chart.rangepolicies.RangePolicyMinimumViewport;
+import info.monitorenter.gui.chart.traces.Trace2DLtd;
+import info.monitorenter.util.Range;
+import net.miginfocom.swing.MigLayout;
+
+import javax.swing.BorderFactory;
+import javax.swing.JCheckBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.JTextField;
+import javax.swing.JToggleButton;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -12,27 +31,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import javax.swing.BorderFactory;
-import javax.swing.JCheckBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JProgressBar;
-import javax.swing.JTextField;
-import javax.swing.JToggleButton;
-
-import edu.tigers.sumatra.bot.EFeature;
-import edu.tigers.sumatra.bot.ERobotMode;
-import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemMatchFeedback;
-import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerSystemPerformance;
-import info.monitorenter.gui.chart.Chart2D;
-import info.monitorenter.gui.chart.IAxis.AxisTitle;
-import info.monitorenter.gui.chart.ITrace2D;
-import info.monitorenter.gui.chart.rangepolicies.RangePolicyHighestValues;
-import info.monitorenter.gui.chart.rangepolicies.RangePolicyMinimumViewport;
-import info.monitorenter.gui.chart.traces.Trace2DLtd;
-import info.monitorenter.util.Range;
-import net.miginfocom.swing.MigLayout;
 
 
 /**
@@ -44,18 +42,18 @@ public class SystemMatchFeedbackPanel extends JPanel
 {
 	private static final long serialVersionUID = 2431222411313088184L;
 
-	private final JProgressBar kickerLevel = new JProgressBar(0, 200);
+	private final JProgressBar kickerLevel = new JProgressBar(0, 1000);
 	private final JTextField dribblerSpeed = new JTextField();
 	private final JTextField dribblerTemp = new JTextField();
 	private final JProgressBar batteryLevel = new JProgressBar(0, 1000);
 	private final JTextField robotMode = new JTextField();
 	private final JTextField kickCounter = new JTextField();
 	private final JTextField hardwareId = new JTextField();
-	private final JTextField velMaxLimits = new JTextField();
 	private final JCheckBox barrierInterrupted = new JCheckBox("Interrupted");
 	private final Map<EFeature, JCheckBox> features = new EnumMap<>(EFeature.class);
 	private final JTextField[] pos = new JTextField[3];
 	private final JTextField[] vel = new JTextField[3];
+	private final JTextField[] ball = new JTextField[3];
 
 	private static final int DATA_SIZE = 400;
 
@@ -129,48 +127,52 @@ public class SystemMatchFeedbackPanel extends JPanel
 		{
 			pos[i] = new JTextField();
 			vel[i] = new JTextField();
+			ball[i] = new JTextField();
 		}
 
-		final JPanel posPanel = new JPanel(new MigLayout("fill, wrap 2", "[50]10[100,fill]"));
-		posPanel.add(new JLabel("X:"));
-		posPanel.add(pos[0]);
-		posPanel.add(new JLabel("Y:"));
-		posPanel.add(pos[1]);
-		posPanel.add(new JLabel("W:"));
-		posPanel.add(pos[2]);
-		posPanel.setBorder(BorderFactory.createTitledBorder("Position"));
+		final JPanel statePanel = new JPanel(new MigLayout("fill, wrap 3", "[15]10[70,fill]10[80,fill]"));
+		statePanel.add(new JLabel("Position"), "skip");
+		statePanel.add(new JLabel("Velocity"));
+		statePanel.add(new JLabel("X:"));
+		statePanel.add(pos[0]);
+		statePanel.add(vel[0]);
+		statePanel.add(new JLabel("Y:"));
+		statePanel.add(pos[1]);
+		statePanel.add(vel[1]);
+		statePanel.add(new JLabel("W:"));
+		statePanel.add(pos[2]);
+		statePanel.add(vel[2]);
+		statePanel.setBorder(BorderFactory.createTitledBorder("Estimated State"));
 
-		final JPanel velPanel = new JPanel(new MigLayout("fill, wrap 2", "[50]10[100,fill]"));
-		velPanel.add(new JLabel("X:"));
-		velPanel.add(vel[0]);
-		velPanel.add(new JLabel("Y:"));
-		velPanel.add(vel[1]);
-		velPanel.add(new JLabel("W:"));
-		velPanel.add(vel[2]);
-		velPanel.setBorder(BorderFactory.createTitledBorder("Velocity"));
+		final JPanel ballPanel = new JPanel(new MigLayout("fill, wrap 2", "[20]10[80,fill]"));
+		ballPanel.add(new JLabel("X:"));
+		ballPanel.add(ball[0]);
+		ballPanel.add(new JLabel("Y:"));
+		ballPanel.add(ball[1]);
+		ballPanel.add(new JLabel("t:"));
+		ballPanel.add(ball[2]);
+		ballPanel.setBorder(BorderFactory.createTitledBorder("Ball Position"));
 
-		final JPanel kickerPanel = new JPanel(new MigLayout("fill, wrap 2", "[50]10[100,fill]"));
-		kickerPanel.add(new JLabel("Mode:"));
-		kickerPanel.add(robotMode);
-		kickerPanel.add(new JLabel("Battery:"));
-		kickerPanel.add(batteryLevel);
-		kickerPanel.add(new JLabel("Kicker:"));
-		kickerPanel.add(kickerLevel);
-		kickerPanel.add(new JLabel("Dribbler:"));
-		kickerPanel.add(dribblerSpeed);
-		kickerPanel.add(new JLabel("Dribbler Temp:"));
-		kickerPanel.add(dribblerTemp);
-		kickerPanel.add(new JLabel("Barrier:"));
-		kickerPanel.add(barrierInterrupted);
-		kickerPanel.add(new JLabel("Kick Counter:"));
-		kickerPanel.add(kickCounter);
-		kickerPanel.add(new JLabel("Hardware ID:"));
-		kickerPanel.add(hardwareId);
-		kickerPanel.add(new JLabel("Vel max lin/ang:"));
-		kickerPanel.add(velMaxLimits);
-		kickerPanel.setBorder(BorderFactory.createTitledBorder("System"));
+		final JPanel systemPanel = new JPanel(new MigLayout("fill, wrap 2", "[50]10[100,fill]"));
+		systemPanel.add(new JLabel("Mode:"));
+		systemPanel.add(robotMode);
+		systemPanel.add(new JLabel("Battery:"));
+		systemPanel.add(batteryLevel);
+		systemPanel.add(new JLabel("Kicker:"));
+		systemPanel.add(kickerLevel);
+		systemPanel.add(new JLabel("Dribbler:"));
+		systemPanel.add(dribblerSpeed);
+		systemPanel.add(new JLabel("Dribbler Temp:"));
+		systemPanel.add(dribblerTemp);
+		systemPanel.add(new JLabel("Barrier:"));
+		systemPanel.add(barrierInterrupted);
+		systemPanel.add(new JLabel("Kick Counter:"));
+		systemPanel.add(kickCounter);
+		systemPanel.add(new JLabel("Hardware ID:"));
+		systemPanel.add(hardwareId);
+		systemPanel.setBorder(BorderFactory.createTitledBorder("System"));
 
-		final JPanel featurePanel = new JPanel(new MigLayout("fill, wrap 2", "[75]10[75]"));
+		final JPanel featurePanel = new JPanel(new MigLayout("fill, wrap 2", "[75]10[75]", "[20]0"));
 		for (EFeature f : EFeature.values())
 		{
 			JCheckBox box = new JCheckBox(f.getName());
@@ -187,10 +189,10 @@ public class SystemMatchFeedbackPanel extends JPanel
 
 		final JPanel infoPanel = new JPanel(new MigLayout("fill, wrap 1"));
 
-		infoPanel.add(kickerPanel);
+		infoPanel.add(systemPanel);
 		infoPanel.add(featurePanel);
-		infoPanel.add(posPanel);
-		infoPanel.add(velPanel);
+		infoPanel.add(statePanel);
+		infoPanel.add(ballPanel);
 		infoPanel.add(chkBoxPanel);
 		infoPanel.add(btnCapture);
 
@@ -243,12 +245,12 @@ public class SystemMatchFeedbackPanel extends JPanel
 	{
 		robotMode.setText(status.getRobotMode().toString());
 		robotMode.setBackground(status.getRobotMode().getColor());
-		batteryLevel.setString(String.format(Locale.ENGLISH, "%.2f V", status.getBatteryLevel()));
+		batteryLevel.setString(String.format(Locale.ENGLISH, "%.1f V", status.getBatteryLevel()));
 		batteryLevel.setValue((int) (status.getBatteryPercentage() * 1000));
 		kickerLevel.setString(String.format(Locale.ENGLISH, "%d V", (int) status.getKickerLevel()));
-		kickerLevel.setValue((int) status.getKickerLevel());
+		kickerLevel.setValue((int) (status.getKickerPercentage() * 1000));
 		dribblerSpeed.setText(String.format(Locale.ENGLISH, "%d RPM", (int) status.getDribblerSpeed()));
-		dribblerTemp.setText(String.format(Locale.ENGLISH, "%.1f\u2103", status.getDribblerTemp()));
+		dribblerTemp.setText(status.getDribblerState().toString());
 		kickCounter.setText(String.format("%d", status.getKickCounter()));
 		hardwareId.setText(String.format("%d", status.getHardwareId()));
 		barrierInterrupted.setSelected(status.isBarrierInterrupted());
@@ -279,13 +281,21 @@ public class SystemMatchFeedbackPanel extends JPanel
 			velYTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getVelocity().y());
 			velWTrace.addPoint((System.nanoTime() - timeOffset) / 1000000000.0, status.getAngularVelocity());
 		}
+
+		if (status.isBallPositionValid())
+		{
+			ball[0].setText(String.format(Locale.ENGLISH, "%.3f m", status.getBallPosition().x()));
+			ball[1].setText(String.format(Locale.ENGLISH, "%.3f m", status.getBallPosition().y()));
+			ball[2].setText(String.format(Locale.ENGLISH, "%.3f s", status.getBallAge()));
+		}
+		else
+		{
+			ball[0].setText("-");
+			ball[1].setText("-");
+			ball[2].setText("-");
+		}
 	}
 
-
-	public void addPerformance(final TigerSystemPerformance perf)
-	{
-		velMaxLimits.setText(String.format("%.1f / %.1f", perf.getVelMax(), perf.getVelMaxW()));
-	}
 
 	private class CaptureActionListener implements ActionListener
 	{

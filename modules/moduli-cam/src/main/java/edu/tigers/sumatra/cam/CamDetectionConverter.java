@@ -1,20 +1,20 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.cam;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import edu.tigers.sumatra.MessagesRobocupSslDetection;
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.cam.data.CamDetectionFrame;
 import edu.tigers.sumatra.cam.data.CamRobot;
+import edu.tigers.sumatra.cam.proto.MessagesRobocupSslDetection;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector3;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -23,8 +23,8 @@ import edu.tigers.sumatra.math.vector.Vector3;
 public class CamDetectionConverter
 {
 	private long frameId = 0;
-	
-	
+
+
 	private static CamRobot convertRobot(
 			final MessagesRobocupSslDetection.SSL_DetectionRobot bot,
 			final ETeamColor color,
@@ -43,29 +43,27 @@ public class CamDetectionConverter
 				bot.getHeight(),
 				BotID.createBotId(bot.getRobotId(), color));
 	}
-	
-	
+
+
 	/**
 	 * @param detectionFrame SSL vision frame from a single camera
-	 * @param timeSync sync handle to convert timestamps
 	 * @return a cam detection frame based on the SSL vision frame
 	 */
-	public CamDetectionFrame convertDetectionFrame(final MessagesRobocupSslDetection.SSL_DetectionFrame detectionFrame,
-			final TimeSync timeSync)
+	public CamDetectionFrame convertDetectionFrame(final MessagesRobocupSslDetection.SSL_DetectionFrame detectionFrame)
 	{
-		long localCaptureNs = timeSync.sync(detectionFrame.getTCapture());
-		long localSentNs = timeSync.sync(detectionFrame.getTSent());
-		
+		long localCaptureNs = (long) (detectionFrame.getTCapture() * 1e9);
+		long localSentNs = (long) (detectionFrame.getTSent() * 1e9);
+
 		final List<CamBall> balls = new ArrayList<>();
 		final List<CamRobot> blues = new ArrayList<>();
 		final List<CamRobot> yellows = new ArrayList<>();
-		
+
 		for (final MessagesRobocupSslDetection.SSL_DetectionRobot bot : detectionFrame.getRobotsBlueList())
 		{
 			blues.add(convertRobot(bot, ETeamColor.BLUE, frameId, detectionFrame.getCameraId(),
 					localCaptureNs));
 		}
-		
+
 		// --- process team Yellow ---
 		for (final MessagesRobocupSslDetection.SSL_DetectionRobot bot : detectionFrame.getRobotsYellowList())
 		{
@@ -73,21 +71,21 @@ public class CamDetectionConverter
 					detectionFrame.getCameraId(),
 					localCaptureNs));
 		}
-		
+
 		// --- process ball ---
 		for (final MessagesRobocupSslDetection.SSL_DetectionBall ball : detectionFrame.getBallsList())
 		{
 			balls.add(convertBall(ball, localCaptureNs, detectionFrame.getCameraId(),
 					frameId));
 		}
-		
-		
+
+
 		return new CamDetectionFrame(localCaptureNs, localSentNs, detectionFrame.getCameraId(),
 				detectionFrame.getFrameNumber(),
 				frameId++, balls, yellows, blues);
 	}
-	
-	
+
+
 	private static CamBall convertBall(
 			final MessagesRobocupSslDetection.SSL_DetectionBall ball,
 			final long tCapture,
@@ -103,5 +101,5 @@ public class CamDetectionConverter
 				camId,
 				frameId);
 	}
-	
+
 }

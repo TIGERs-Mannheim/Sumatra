@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.cam.data;
 
@@ -18,7 +18,7 @@ import edu.tigers.sumatra.math.vector.Vector2f;
  * SSL_DetectionRobot from
  * protobuf-protocol, coming from
  * the SSL-Vision.
- * 
+ *
  * @author Gero
  */
 @Persistent
@@ -28,8 +28,8 @@ public class CamRobot extends ACamObject
 	private final IVector2 pos;
 	private final double orientation;
 	private final double height;
-	
-	
+
+
 	/**
 	 * Dummy constructor for persistence
 	 */
@@ -42,14 +42,14 @@ public class CamRobot extends ACamObject
 		orientation = 0;
 		height = 0;
 	}
-	
-	
+
+
 	/**
 	 * <p>
 	 * <i>(Being aware of EJ-SE Item 2; but we prefer performance over readability - at least in this case. Objects are
 	 * created at only one point in the system, but needs to be fast.</i>
 	 * </p>
-	 * 
+	 *
 	 * @param confidence
 	 * @param pixel
 	 * @param tCapture
@@ -77,11 +77,11 @@ public class CamRobot extends ACamObject
 		this.height = height;
 		this.botId = botId;
 	}
-	
-	
+
+
 	/**
 	 * New CamRobot with adjusted tCapture timestamp.
-	 * 
+	 *
 	 * @param orig
 	 * @param tCapture
 	 */
@@ -93,8 +93,8 @@ public class CamRobot extends ACamObject
 		height = orig.height;
 		botId = orig.botId;
 	}
-	
-	
+
+
 	@Override
 	public String toString()
 	{
@@ -119,8 +119,8 @@ public class CamRobot extends ACamObject
 		builder.append("]");
 		return builder.toString();
 	}
-	
-	
+
+
 	/**
 	 * @return the robotID
 	 */
@@ -128,8 +128,8 @@ public class CamRobot extends ACamObject
 	{
 		return botId.getNumber();
 	}
-	
-	
+
+
 	/**
 	 * @return the pos
 	 */
@@ -138,8 +138,8 @@ public class CamRobot extends ACamObject
 	{
 		return pos;
 	}
-	
-	
+
+
 	/**
 	 * @return the orientation
 	 */
@@ -147,17 +147,17 @@ public class CamRobot extends ACamObject
 	{
 		return orientation;
 	}
-	
-	
+
+
 	/**
-	 * @return the yExtent
+	 * @return the height
 	 */
 	public double getHeight()
 	{
 		return height;
 	}
-	
-	
+
+
 	@Override
 	public List<Number> getNumberList()
 	{
@@ -168,8 +168,8 @@ public class CamRobot extends ACamObject
 		numbers.add(getHeight());
 		return numbers;
 	}
-	
-	
+
+
 	@Override
 	public List<String> getHeaders()
 	{
@@ -180,8 +180,8 @@ public class CamRobot extends ACamObject
 		headers.add("height");
 		return headers;
 	}
-	
-	
+
+
 	/**
 	 * @return the botId
 	 */

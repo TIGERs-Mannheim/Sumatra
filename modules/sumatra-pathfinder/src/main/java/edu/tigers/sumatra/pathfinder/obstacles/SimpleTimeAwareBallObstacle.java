@@ -1,41 +1,34 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder.obstacles;
 
-import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.drawable.DrawableCircle;
+import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
-import edu.tigers.sumatra.wp.data.TrackedBall;
+
+import java.util.List;
 
 
 /**
  * A time-aware obstacle for the ball that is based on a tracked ball and its trajectory
  */
-@Persistent
 public class SimpleTimeAwareBallObstacle extends AObstacle
 {
 	private final ITrackedBall ball;
 	private final double radius;
 
 
-	@SuppressWarnings("unused")
-	private SimpleTimeAwareBallObstacle()
-	{
-		ball = TrackedBall.createStub();
-		radius = 0;
-	}
-
-
 	public SimpleTimeAwareBallObstacle(final ITrackedBall ball, final double radius)
 	{
 		this.ball = ball;
 		this.radius = radius;
+		setActivelyEvade(true);
+		setEmergencyBrakeFor(true);
 	}
 
 
@@ -47,13 +40,12 @@ public class SimpleTimeAwareBallObstacle extends AObstacle
 			return false;
 		}
 		IVector2 pos = ball.getTrajectory().getPosByTime(t).getXYVector();
-		ICircle circle = Circle.createCircle(pos, radius + margin);
-		return circle.isPointInShape(point);
+		return pos.distanceToSqr(point) <= SumatraMath.square(radius + margin);
 	}
 
 
 	@Override
-	protected void initializeShapes()
+	protected void initializeShapes(final List<IDrawableShape> shapes)
 	{
 		shapes.add(new DrawableCircle(Circle.createCircle(ball.getPos(), radius)));
 	}

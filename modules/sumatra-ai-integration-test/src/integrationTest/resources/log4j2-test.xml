@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Appenders>
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d %p [%t|%c{1}] %m%n"/>
+        </Console>
+        <SumatraAppender name="integrationTest"/>
+        <SumatraAppender name="berkeley"/>
+    </Appenders>
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="CONSOLE"/>
+            <AppenderRef ref="integrationTest"/>
+            <AppenderRef ref="berkeley"/>
+        </Root>
+        <Logger name="edu.tigers" level="trace" additivity="false">
+            <AppenderRef ref="CONSOLE"/>
+            <AppenderRef ref="integrationTest"/>
+            <AppenderRef ref="berkeley"/>
+        </Logger>
+    </Loggers>
+</Configuration>

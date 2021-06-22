@@ -3,12 +3,12 @@
  */
 package edu.tigers.sumatra.pathfinder;
 
+import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.ETeamColor;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.ETeamColor;
 
 
 /**
@@ -17,20 +17,12 @@ import edu.tigers.sumatra.ids.ETeamColor;
 public class PathFinderPrioMap
 {
 	private final Map<BotID, Integer> map = new HashMap<>();
-	
-	
-	/**
-	 * 
-	 */
-	private PathFinderPrioMap()
-	{
-	}
-	
-	
+
+
 	/**
 	 * Other team is preferred (we circumvent other bots).
 	 * Higher botIds are preferred
-	 * 
+	 *
 	 * @param myTeam
 	 * @return
 	 */
@@ -43,11 +35,11 @@ public class PathFinderPrioMap
 		}
 		return map;
 	}
-	
-	
+
+
 	/**
 	 * No other bot is preferred over botId
-	 * 
+	 *
 	 * @param botId
 	 * @return
 	 */
@@ -57,19 +49,19 @@ public class PathFinderPrioMap
 		map.map.put(botId, 1);
 		return map;
 	}
-	
-	
+
+
 	/**
 	 * No bot is preferred
-	 * 
+	 *
 	 * @return
 	 */
 	public static PathFinderPrioMap empty()
 	{
 		return new PathFinderPrioMap();
 	}
-	
-	
+
+
 	/**
 	 * @param botId
 	 * @param prio
@@ -78,8 +70,8 @@ public class PathFinderPrioMap
 	{
 		map.put(botId, prio);
 	}
-	
-	
+
+
 	/**
 	 * @param botId
 	 * @param otherBotId
@@ -95,8 +87,8 @@ public class PathFinderPrioMap
 		Integer otherPrio = map.get(otherBotId);
 		return otherPrio == null || prio > otherPrio;
 	}
-	
-	
+
+
 	/**
 	 * @param botId
 	 * @param otherBotId
@@ -110,10 +102,10 @@ public class PathFinderPrioMap
 			return false;
 		}
 		Integer otherPrio = map.get(otherBotId);
-		return otherPrio != null && prio.equals(otherPrio);
+		return prio.equals(otherPrio);
 	}
-	
-	
+
+
 	/**
 	 * @return all contained bot ids
 	 */

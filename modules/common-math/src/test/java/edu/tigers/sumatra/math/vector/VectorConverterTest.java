@@ -1,25 +1,23 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.vector;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ *
  */
 public class VectorConverterTest
 {
-	
+
 	private VectorConverter converter = new VectorConverter();
-	
-	
+
+
 	@Test
 	public void testSupportedClass()
 	{
@@ -28,8 +26,8 @@ public class VectorConverterTest
 		assertThat(converter.supportedClass(IVector3.class)).isTrue();
 		assertThat(converter.supportedClass(IVectorN.class)).isTrue();
 	}
-	
-	
+
+
 	@Test
 	public void testParseString()
 	{
@@ -38,21 +36,19 @@ public class VectorConverterTest
 		assertThat(converter.parseString(IVector3.class, "42;1337,3.14")).isEqualTo(Vector3.fromXYZ(42, 1337, 3.14));
 		assertThat(converter.parseString(IVectorN.class, "42;1337,3.14,-5")).isEqualTo(VectorN.from(42, 1337, 3.14, -5));
 	}
-	
-	
+
+
 	@Test
 	public void testParseStringInvalid()
 	{
-		Logger.getRootLogger().setLevel(Level.OFF);
-		assertThat(converter.parseString(IVector2.class, "42;133a7")).isEqualTo(Vector2.zero());
-		assertThat(converter.parseString(IVector3.class, "42;1337,3.a14")).isEqualTo(Vector3.zero());
-		assertThat(converter.parseString(IVectorN.class, "42;1337,3.14,-5a")).isEqualTo(VectorN.zero(0));
-		assertThat(converter.parseString(IVector.class, "4a2;1337")).isEqualTo(VectorN.zero(0));
+		assertThat(converter.parseString(IVector2.class, "42;133a7")).isNull();
+		assertThat(converter.parseString(IVector3.class, "42;1337,3.a14")).isNull();
+		assertThat(converter.parseString(IVectorN.class, "42;1337,3.14,-5a")).isNull();
+		assertThat(converter.parseString(IVector.class, "4a2;1337")).isNull();
 		assertThat(converter.parseString(Object.class, "")).isNull();
-		Logger.getRootLogger().setLevel(Level.WARN);
 	}
-	
-	
+
+
 	@Test
 	public void testToString()
 	{

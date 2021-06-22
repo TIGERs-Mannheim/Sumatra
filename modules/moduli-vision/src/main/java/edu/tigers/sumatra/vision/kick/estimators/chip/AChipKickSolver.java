@@ -3,13 +3,13 @@
  */
 package edu.tigers.sumatra.vision.kick.estimators.chip;
 
-import java.util.Map;
-
 import edu.tigers.sumatra.cam.data.CamCalibration;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.vision.kick.estimators.IKickSolver;
+
+import java.util.Map;
 
 
 /**

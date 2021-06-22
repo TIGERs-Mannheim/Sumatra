@@ -1,165 +1,70 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense.strategy;
 
-import java.awt.Color;
-import java.lang.reflect.InvocationTargetException;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.log4j.Logger;
-
-import com.github.g3force.configurable.ConfigRegistration;
-import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
-import edu.tigers.sumatra.ai.metis.IAiInfoFromPrevFrame;
-import edu.tigers.sumatra.ai.metis.support.passtarget.IPassTarget;
+import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
+import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveStatisticsFrame;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
-import edu.tigers.sumatra.drawable.DrawableCircle;
-import edu.tigers.sumatra.drawable.DrawableLine;
-import edu.tigers.sumatra.drawable.ShapeMap;
-import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.line.Line;
-import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+import java.awt.Color;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
 
 
 /**
  * Calculates the {@link OffensiveStrategy} for the overall attacking plan
  */
+@RequiredArgsConstructor
 public class OffensiveStrategyCalc extends ACalculator
 {
-	private static final Logger log = Logger.getLogger(OffensiveStrategyCalc.class.getName());
-
 	private static final Color COLOR = new Color(30, 100, 184);
 
 
-	@Configurable(defValue = "1300.0")
-	private static double minMarginToOurPenAreaForIntercept = 1300;
+	private final Supplier<EOffensiveStrategy> ballHandlingRobotsStrategy;
+	private final Supplier<OffensiveStatisticsFrame> offensiveStatisticsFrame;
+	private final Supplier<List<BotID>> ballHandlingBots;
+	private final Supplier<List<BotID>> passReceivers;
+	private final Supplier<List<BotID>> supportiveAttackers;
+	private final Supplier<List<BotID>> desiredOffenseBots;
 
-	private EnumMap<EOffensiveStrategyFeature, AOffensiveStrategyFeature> features = new EnumMap<>(
-			EOffensiveStrategyFeature.class);
-
-	static
-	{
-		for (EOffensiveStrategyFeature feature : EOffensiveStrategyFeature.values())
-		{
-			ConfigRegistration.registerClass("metis", feature.getInstanceableClass().getImpl());
-		}
-	}
-
-
-	/**
-	 * Calculates and fills the offensiveStrategy
-	 */
-	public OffensiveStrategyCalc()
-	{
-		for (EOffensiveStrategyFeature key : EOffensiveStrategyFeature.values())
-		{
-			try
-			{
-				features.put(key, (AOffensiveStrategyFeature) key.getInstanceableClass().getConstructor().newInstance());
-			} catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e)
-			{
-				log.error("Could not create offensive calc feature: " + key, e);
-			}
-		}
-	}
-
-
-	@Override
-	protected boolean isCalculationNecessary()
-	{
-		return offensiveBotRequired();
-	}
+	@Getter
+	private OffensiveStrategy strategy;
 
 
 	@Override
 	public void doCalc()
 	{
-		final OffensiveStrategy offensiveStrategy = new OffensiveStrategy();
-		final IPassTarget activePassTarget = getActivePassTarget(getNewTacticalField().getAiInfoFromPrevFrame());
-		offensiveStrategy.setActivePassTarget(activePassTarget);
+		Map<BotID, EOffensiveStrategy> strategyMap = new IdentityHashMap<>();
+		ballHandlingBots.get().forEach(bot -> strategyMap.put(bot, ballHandlingRobotsStrategy.get()));
+		supportiveAttackers.get().forEach(botID -> strategyMap.put(botID, EOffensiveStrategy.SUPPORTIVE_ATTACKER));
+		passReceivers.get().forEach(botID -> strategyMap.put(botID, EOffensiveStrategy.RECEIVE_PASS));
 
-		features.values().forEach(f -> f.update(getAiFrame(), getNewTacticalField()));
-		features.values().forEach(f -> f.doCalc(getNewTacticalField(), offensiveStrategy));
+		var attackerBot = ballHandlingBots.get().stream().findFirst().orElse(null);
+		strategy = new OffensiveStrategy(attackerBot, Collections.unmodifiableMap(strategyMap));
 
-		getNewTacticalField().setOffensiveStrategy(offensiveStrategy);
-		drawStrategy(offensiveStrategy, getNewTacticalField().getDrawableShapes());
+		statistics();
+		drawStrategy(strategy);
 	}
 
 
-	private boolean offensiveBotRequired()
+	private void drawStrategy(final OffensiveStrategy offensiveStrategy)
 	{
-		return !getNewTacticalField().getPotentialOffensiveBots().isEmpty()
-				&& !noOffensiveGameState()
-				&& !noInterceptorRequired();
-	}
-
-
-	private boolean noOffensiveGameState()
-	{
-		return getNewTacticalField().getGameState().isKickoffOrPrepareKickoff()
-				|| getNewTacticalField().getGameState().isPenaltyOrPreparePenalty()
-				|| getNewTacticalField().getGameState().isBallPlacementForUs()
-				|| getNewTacticalField().getGameState().isPenaltyShootout();
-	}
-
-
-	private boolean noInterceptorRequired()
-	{
-		return getAiFrame().getGamestate().isStandardSituationForThem()
-				&& tooNearToOurPenAreaForIntercept();
-	}
-
-
-	private boolean tooNearToOurPenAreaForIntercept()
-	{
-		return Geometry.getPenaltyAreaOur().isPointInShape(getBall().getPos(), minMarginToOurPenAreaForIntercept);
-	}
-
-
-	private IPassTarget getActivePassTarget(final IAiInfoFromPrevFrame aiInfoFromPrevFrame)
-	{
-		List<IPassTarget> handledPassTargets = aiInfoFromPrevFrame.getActivePassTargets();
-		IPassTarget activePassTarget = null;
-		if (!handledPassTargets.isEmpty())
-		{
-			activePassTarget = handledPassTargets.get(0);
-		}
-		return activePassTarget;
-	}
-
-
-	private void drawStrategy(final OffensiveStrategy offensiveStrategy, final ShapeMap shapesMap)
-	{
-		if (offensiveStrategy.getActivePassTarget().isPresent())
-		{
-			drawPassTarget(offensiveStrategy.getActivePassTarget().get(), shapesMap);
-		}
-
-		if (offensiveStrategy.getAttackerBot().isPresent())
-		{
-			ITrackedBot attacker = getWFrame().getBot(offensiveStrategy.getAttackerBot().get());
-			shapesMap.get(EAiShapesLayer.OFFENSIVE_STRATEGY_DEBUG).add(new DrawableAnnotation(attacker.getPos(),
-					offensiveStrategy.isAttackerIsAllowedToKick() ? "Ready" : "Waiting", COLOR)
-							.withCenterHorizontally(true)
-							.withOffset(Vector2.fromY(170)));
-		}
-
-		for (Map.Entry<BotID, EOffensiveStrategy> entry : offensiveStrategy.getCurrentOffensivePlayConfiguration()
-				.entrySet())
+		for (var entry : offensiveStrategy.getCurrentOffensivePlayConfiguration().entrySet())
 		{
 			ITrackedBot tBot = getWFrame().getBot(entry.getKey());
-			shapesMap.get(EAiShapesLayer.OFFENSIVE_STRATEGY_DEBUG)
+			getShapes(EAiShapesLayer.OFFENSIVE_STRATEGY_DEBUG)
 					.add(new DrawableAnnotation(tBot.getPos(), entry.getValue().name(), COLOR)
 							.withCenterHorizontally(true)
 							.withOffset(Vector2f.fromY(-170)));
@@ -167,13 +72,21 @@ public class OffensiveStrategyCalc extends ACalculator
 	}
 
 
-	private void drawPassTarget(final IPassTarget passTarget, final ShapeMap shapesMap)
+	private void statistics()
 	{
-		shapesMap.get(EAiShapesLayer.OFFENSIVE_STRATEGY).add(new DrawableCircle(
-				Circle.createCircle(passTarget.getPos(), 100), COLOR)
-						.withFill(true));
+		if (!OffensiveConstants.isEnableOffensiveStatistics())
+		{
+			return;
+		}
 
-		shapesMap.get(EAiShapesLayer.OFFENSIVE_STRATEGY)
-				.add(new DrawableLine(Line.fromPoints(getBall().getPos(), passTarget.getPos()), COLOR));
+		OffensiveStatisticsFrame sFrame = offensiveStatisticsFrame.get();
+		sFrame.setDesiredNumBots(desiredOffenseBots.get().size());
+		sFrame.setPrimaryOffensiveBot(ballHandlingBots.get().stream().findFirst().orElse(BotID.noBot()));
+
+		for (BotID key : getWFrame().getTigerBotsAvailable().keySet())
+		{
+			EOffensiveStrategy eStrat = strategy.getCurrentOffensivePlayConfiguration().get(key);
+			sFrame.getBotFrames().get(key).setActiveStrategy(eStrat);
+		}
 	}
 }

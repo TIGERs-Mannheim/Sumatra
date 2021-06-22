@@ -1,239 +1,55 @@
+:imagesdir: ../images
+
 [[section-concepts]]
-:imagesdir: ./images
 == Cross-cutting Concepts
+// https://docs.arc42.org/section-8/
 
-=== AI
+=== Under-the-hood
 
-From a high level standpoint the AI in a SSL Team is the middleware
-between the vision data and the robot control. The central vision
-software will send the processed vision data to the team software.
-Sumatra will take this input and will compute the strategy and the
-resulting robot comands. These will then be send to the robots.
+==== Configuration
 
-[plantuml]
-----
-package "Central Software" {
-	component [Vision] as vision
-	component [Referee] as referee
-}
+We use a custom configuration system called configurable to be able to quickly create and manage config parameters.
+The code was once part of Sumatra and was extracted to github later for reuse.
 
-package "Sumatra" {
-	component [Vision Filter] as vFilter
-	component [High Level Planning] as hl
-	component [Low Level (per robot) planning] as ll
-}
+Configs are defined in your code as class members and appear in the Config Editor where they can be changed on the fly.
+Additionally, they are saved in XML files.
 
-component [Base Station] as baseStation
+The lib is documented on github: https://github.com/g3force/configurable
 
-vision -right-> vFilter : 60 Hz, 4-8 cameras
-vFilter -right-> hl : 100 Hz
+===== Set AI-dependent configs
 
-referee -down-> hl
+You can define different values for each AI color in Metis, without any further definitions/registrations/etc.
 
-hl -right-> ll
+Simply define spezies with the team colors and an empty spezi as default (for real matches):
 
-ll -right-> baseStation : 100 Hz
-----
+```java
+@Configurable(spezis = { "", "YELLOW", "BLUE" }, defValueSpezis = { "true", "false", "true" })
+private boolean useManToManMarker = true;
+```
 
-On a lower level, the AI is seperated into various modules. Each
-of those modules will complete a further step of the `AIInfoFrame`.
-The modules are named after greek gods. Their interaction is
-illustrated in the following schematic:
+Why only in Metis?
+Because here we have a single instance for each calculator per AI that is not instantiated more than once.
+Plays, roles and skills on the other hand require an update on each new instantiation.
+See: `Metis#afterApply()`
 
-[plantuml]
-----
-package "Sumatra AI" {
-	component [WorldPredictor \n Referee] as WP
-	component [Metis] as ME
-	component [Athena] as AT
-	component [Ares] as AR
-	component [Pandora] as PA
-	component [Visualization] as VIS
-	
-	WP -right-> ME : WorldFrame \n BaseAiFrame
-	ME -right-> AT : TacticalField
-	AT -right-> AR : PlayStrategy
-	AT -down->  PA
+Keep in mind that making these configs persistent might confuse other developers, so consider setting the same default value for both AIs.
 
-	AR -right-> VIS : AresData \n (AllInfoFrame)
-}
-----
+==== Recording match data
 
-The following table explains the task of each of the above
-modules:
+We use the object database Oracle Berkeley DB Java Edition (http://www.oracle.com/technetwork/database/berkeleydb/overview/index-093405.html) for saving all the match data.
 
-[cols="1,3", options=header]
-|===
-|Module Name
-|Description
+Each recording is associated with one database.
+A database is a folder containing some metadata files and numerated data files.
+They are stored in `data/record/`.
 
-|`Metis`
-|Performs a tactical analysis of the current game state by
-running various calulators. Those calculators will compute
-every requiered information for further AI steps.
+All classes that should be persisted need to meet following requirements:
+* Must be annotated with `@com.sleepycat.persist.model.Persistent` (except for the few entities, which need `@Entity`)
+* Must have a no-args constructor which can be private
+* Fields that should not be persistent can be marked with `transient`
 
-|`Athena`
-|Asigns the plays and the roles to all bots.
+The database supports mutations if older databases need to be converted to an altered class structure.
+Some changes do not need a mutations at all.
+Sometimes, it is sufficient to increment the version in the class annotation.
+Mutations can be added here: `RecordManager#getMutations()`
 
-|`Pandora`
-|Contains the various plays and roles
-
-|`Ares`
-|Manages skill execution and other skill communication
-tasks. This also includes pathplanning. The different 
-skills however are implement in `edu.tigers.sumatra.skillsystem`.
-
-
-|===
-
-
-==== Keeper
-
-==== Defense
-
-[plantuml]
-----
-package "Metis Calculator" {
-	component [Calculating Threats] as ct
-	component [Priotitize] as p
-	component [Bot Assignment] as ba
-	ct -right-> p
-	p -right-> ba
-
-	note bottom of [ct]
-	Ball and Enemy Robots
-	end note
-}
-----
-
-The Defenders have the mission to prevent enemies from scoring goals. To
-do this, they are often as close to the penalty area as possible. The
-idea is to identify threats and to react to those. Right now there are
-two major threads implemented: The ball and the enemy robots. In principle
-the Defender tries to position itself between one or more threats and our
-goal.
-
-To achive the above goal, the defenders can choose between two major
-strategies:
-
-PenArea Defenders::
-Build a ring around our penalty area to prevent the enemies from
-shooting on our goal.
-
-Center Back::
-Position a robot between at least one threat and our goal to block
-the complete angle so that the enemy attacker cannot kick towards our
-goal
-
-Furthermore there is another strategy in Developement called Man-To-Man Marker,
-those will be added as soon as they are finnished.
-
-==== Supporter
-
-
-[plantuml]
-----
-component [SupportPlay] as play
-component [SupportRole(s)] as role
-component [ASupportBehavior(s)] as abehavior
-
-play <-right-> role : get viabilites
-play -right-> role : assign behaviors
-
-role <-right-> abehavior : get viability
-role -right-> abehavior : execute behavior
-
-note bottom of [play]
-	Manages all viabilitis of all roles
-	Asigns each role a behavior
-end note
-
-note bottom of [role]
-	Manages behaviors base on input from the play 
-end note
-
-note bottom of [abehavior]
-	Abstract base class of all behaviors
-	all behaviors extend this
-	manages the skills of the role
-end note
-----
-
-All roles that are neither a member of the offensive nor the defensive play
-(nor the keeper) belong to the SupportPlay. The main purpose of this play is
-to provide good pass targets for the attackers and the defenders. Furthermore
-they should disturb the enemies defense as much as possible.
-
-All supporters use the same *Role* (`SupportRole`). The play will assign a
-support behavior to each role. A behavior defines a "strategy" how a
-supporter should behave. For example the `BreakThroughDefense` behavior
-tries to find a hole in the enemies defense to receive the ball there. To
-assign the Behaviors, each behavior will calculate it's viability for each role.
-While choosing the behaviors, the play will align each role the behavior with
-the highest priority (further up in the `ESupportBehavior` enum) that 
-
-- has a viability > 0
-- is not disabled
-
-Some behaviors limit the number of roles that can have that behavior at the
-time. Then of course only the best N bots are choosen.
-
-===== Currently implemented SupportBehaviors
-
-The complete list of all SupportBehaviors can be found in the `ESupportBehavior`
-enum.
-
-[cols=3*,options=header]
-|===
-|Name
-|Description
-|Max Number of Bots
-
-|`DirectRedirector`
-| Redirect a pass
-| 1
-
-|`FakePassReciver`
-| If supporter is in the current pass line, act as if it would actually receive
-the pass, but move away so that another bot can receive the pass
-| Unlimited
-
-|`PassReceiver`
-| Supporter should receive a pass
-| Unlimited
-
-|`BreakThroughDefense`
-| Tries to position the supporter in a hole in the enemies defense near the
-pen area.
-| 1 (configurable)
-
-|`RepulsivePassReceiver`
-| Receive a pass but move (virtual) forces (emited by various objects on
-the field).
-| 2 (configurable)
-
-|`RepulsiveAttacker`
-| Should move the Supporter to a good attacker position. It calculates its
-targets through different (virtual) forces (emited by various objects on
-the field). It serves as the default behavior, if all other are not selected
-| Unlimited
-
-|`MoveOnVoroni`
-| The supporter should move to a position where there is much free space.
-To block this space most efficiently, it should move on a voroni diagram.
-| Unlimited, currently disabled
-
-|`TestBehavior`
-| Does nothing, just for test purpose.
-Is is disabled by default.
-| Unlimited (0 desired)
-
-|===
-
-
-==== Offense
-
-
-=== Utility Classes
-
-=== Hardware and Communication
+include::08_concepts_ai.adoc[]

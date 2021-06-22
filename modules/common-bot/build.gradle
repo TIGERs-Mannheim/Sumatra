@@ -1,0 +1,19 @@
+/*
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ */
+
+plugins {
+    id 'sumatra.java-conventions'
+    id 'java-library'
+}
+
+dependencies {
+    implementation project(':common')
+    implementation project(':common-math')
+
+    implementation 'commons-lang:commons-lang:2.6'
+    implementation 'com.sleepycat:je:18.3.12'
+
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.assertj:assertj-core:3.19.0'
+}

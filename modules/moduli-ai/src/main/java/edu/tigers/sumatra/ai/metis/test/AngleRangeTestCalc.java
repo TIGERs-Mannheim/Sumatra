@@ -1,33 +1,26 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.test;
 
-import java.awt.Color;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import edu.tigers.sumatra.ai.BaseAiFrame;
+import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
-import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.metis.targetrater.AngleRange;
 import edu.tigers.sumatra.ai.metis.targetrater.AngleRangeGenerator;
+import edu.tigers.sumatra.ai.metis.targetrater.MovingObstacleGen;
+import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableTriangle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.line.v2.ILine;
-import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.triangle.Triangle;
 import edu.tigers.sumatra.math.triangle.TriangleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
-import edu.tigers.sumatra.pathfinder.obstacles.MovingRobot;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
+
+import java.awt.Color;
+import java.util.List;
 
 
 /**
@@ -35,65 +28,59 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class AngleRangeTestCalc extends ACalculator
 {
+	@Configurable(defValue = "false")
+	private static boolean active = false;
+
+	@Configurable(comment = "Max time horizon to consider for moving robots", defValue = "2.0")
+	private static double maxHorizon = 2.0;
+
+	@Configurable(comment = "The time a robot needs to react to the ball movement", defValue = "0.3")
+	private static double timeForBotToReact = 0.3;
+
+	private final MovingObstacleGen movingObstacleGen = new MovingObstacleGen();
+
+
 	@Override
-	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+	protected boolean isCalculationNecessary()
 	{
-		AngleRangeGenerator angleRangeGenerator = new AngleRangeGenerator();
-		angleRangeGenerator.setBallConsultant(baseAiFrame.getWorldFrame().getBall().getStraightConsultant());
-		angleRangeGenerator.setStart(baseAiFrame.getWorldFrame().getBall().getPos());
-		angleRangeGenerator.setEndRight(Geometry.getGoalTheir().getRightPost());
-		angleRangeGenerator.setEndLeft(Geometry.getGoalTheir().getLeftPost());
-		angleRangeGenerator.setKickSpeed(6.5);
-		angleRangeGenerator.setTimeToKick(0);
-		angleRangeGenerator.setTimeForBotToReact(0.1);
-		double maxHorizon = 0.3;
-		Map<BotID, MovingRobot> movingRobots = baseAiFrame.getWorldFrame().getBots().values().stream()
-				.collect(Collectors.toMap(ITrackedBot::getBotId,
-						bot -> new MovingRobot(bot, maxHorizon, Geometry.getBotRadius() + Geometry.getBallRadius())));
-		angleRangeGenerator.setMovingRobots(movingRobots);
-
-		List<AngleRange> coveredAngleRanges = angleRangeGenerator.findCoveredAngleRanges();
-		AngleRange fullRange = angleRangeGenerator.getAngleRange();
-		List<AngleRange> uncoveredAngleRanges = angleRangeGenerator.findUncoveredAngleRanges(coveredAngleRanges,
-				fullRange);
-
-		List<IDrawableShape> shapes = newTacticalField.getDrawableShapes().get(EAiShapesLayer.TEST_ANGLE_RANGE_RATER);
-		coveredAngleRanges.stream().map(r -> createDrawable(angleRangeGenerator, r, 0)).forEach(shapes::add);
-		uncoveredAngleRanges.stream().map(r -> createDrawable(angleRangeGenerator, r, 200)).forEach(shapes::add);
+		return active;
 	}
 
 
-	private DrawableTriangle createDrawable(AngleRangeGenerator angleRangeGenerator, AngleRange range,
-			int g)
+	@Override
+	public void doCalc()
 	{
-		IVector2 start = angleRangeGenerator.getStart();
-		IVector2 endLeft = angleRangeGenerator.getEndLeft();
-		IVector2 endRight = angleRangeGenerator.getEndRight();
+		AngleRangeGenerator angleRangeGenerator = AngleRangeGenerator.forGoal(Geometry.getGoalTheir());
+		movingObstacleGen.setMaxHorizon(maxHorizon);
+		movingObstacleGen.setTimeForBotToReact(timeForBotToReact);
+		var start = getBall().getPos();
+		var obstacles = movingObstacleGen.generateCircles(getWFrame().getBots().values(), start, 0.0);
 
-		// line to create intersections with vectors from angles
-		ILine targetLine = Lines.lineFromPoints(endLeft, endRight);
+		var coveredAngleRanges = angleRangeGenerator.findCoveredAngleRanges(start, obstacles);
+		var fullRange = angleRangeGenerator.getAngleRange(start);
+		var uncoveredAngleRanges = angleRangeGenerator.findUncoveredAngleRanges(coveredAngleRanges, fullRange);
 
-		IVector2 endCenter = TriangleMath.bisector(start, endLeft, endRight);
-		double baseAngle = endCenter.subtractNew(start).getAngle();
+		List<IDrawableShape> shapes = getShapes(EAiShapesLayer.TEST_ANGLE_RANGE_RATER);
+		obstacles.stream().map(c -> new DrawableCircle(c, Color.magenta)).forEach(shapes::add);
+		coveredAngleRanges.stream().map(r -> createDrawable(angleRangeGenerator, r, new Color(255, 0, 8, 150)))
+				.forEach(shapes::add);
+		uncoveredAngleRanges.stream().map(r -> createDrawable(angleRangeGenerator, r, new Color(0, 255, 64, 150)))
+				.forEach(shapes::add);
+	}
 
-		double scoreChance = 1;
 
-		Color color = new Color((int) ((1 - scoreChance) * 255), g, (int) (scoreChance * 255), 50);
+	private DrawableTriangle createDrawable(AngleRangeGenerator angleRangeGenerator, AngleRange range, Color color)
+	{
+		IVector2 origin = getBall().getPos();
+		IVector2 start = angleRangeGenerator.getLineSegment().getStart();
+		IVector2 end = angleRangeGenerator.getLineSegment().getEnd();
 
-		IVector2 interceptionWithGoalLeft = targetLine.intersectLine(
-				Lines.lineFromDirection(angleRangeGenerator.getStart(),
-						Vector2.fromAngle(baseAngle + range.getRightAngle())))
-				.orElse(Vector2f.ZERO_VECTOR);
-		IVector2 interceptionWithGoalRight = targetLine.intersectLine(
-				Lines.lineFromDirection(angleRangeGenerator.getStart(),
-						Vector2.fromAngle(baseAngle + range.getLeftAngle())))
-				.orElse(Vector2f.ZERO_VECTOR);
+		IVector2 endCenter = TriangleMath.bisector(origin, end, start);
+		double baseAngle = endCenter.subtractNew(origin).getAngle();
 
-		DrawableTriangle triangle = new DrawableTriangle(Triangle
-				.fromCorners(angleRangeGenerator.getStart(), interceptionWithGoalLeft, interceptionWithGoalRight),
-				color);
-		triangle.setFill(true);
+		IVector2 p1 = origin.addNew(Vector2.fromAngleLength(baseAngle + range.getRight(), 10000));
+		IVector2 p2 = origin.addNew(Vector2.fromAngleLength(baseAngle + range.getLeft(), 10000));
 
-		return triangle;
+		return new DrawableTriangle(Triangle.fromCorners(origin, p1, p2), color).setFill(true);
 	}
 }

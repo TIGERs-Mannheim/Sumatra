@@ -1,0 +1,27 @@
+/*
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ */
+
+plugins {
+    id 'sumatra.java-conventions'
+    id 'java-library'
+}
+
+dependencies {
+    implementation project(':common-math')
+    implementation project(':common-gui')
+    implementation project(':sumatra-model')
+    implementation project(':sumatra-gui-visualizer')
+    implementation project(':moduli-autoreferee')
+    implementation project(':moduli-record')
+    implementation project(':moduli-referee')
+    implementation project(':moduli-wp')
+    implementation project(':moduli-geometry')
+
+    implementation 'com.github.TIGERs-Mannheim:moduli:4.1'
+    implementation 'com.github.g3force:configurable:3.0'
+
+    implementation 'commons-lang:commons-lang:2.6'
+    implementation 'com.miglayout:miglayout-swing:11.0'
+    implementation 'net.sf.jchart2d:jchart2d:3.3.2'
+}

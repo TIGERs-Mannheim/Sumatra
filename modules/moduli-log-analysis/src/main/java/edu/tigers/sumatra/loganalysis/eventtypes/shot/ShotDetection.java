@@ -4,7 +4,19 @@
 
 package edu.tigers.sumatra.loganalysis.eventtypes.shot;
 
+import static edu.tigers.sumatra.loganalysis.GameMemory.GameLogObject.BALL;
+
+import java.awt.Color;
+import java.util.EnumMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.github.g3force.instanceables.InstanceableClass;
+
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.drawable.ShapeMap;
@@ -23,64 +35,57 @@ import edu.tigers.sumatra.statemachine.StateMachine;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
-import org.apache.log4j.Logger;
-
-import java.awt.Color;
-import java.util.EnumMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
-import static edu.tigers.sumatra.loganalysis.GameMemory.GameLogObject.BALL;
 
 
 public class ShotDetection implements IEventTypeDetection<IShotEventType>
 {
-	private static final Logger log = Logger.getLogger(ShotDetection.class.getName());
-	
+	private static final Logger log = LogManager.getLogger(ShotDetection.class.getName());
+
 	private List<IDrawableShape> passingHistoryDraw = new LinkedList<>();
-	
-	private double toleranceBotToBallKick = 180d;
-	
-	
+
+	private static final double TOLERANCE_BOT_TO_BALL_KICK = 180d;
+
+
 	private ShotBuilder shotBuilder = new ShotBuilder();
-	
+
 	private LineDetection lineDetection = new LineDetection();
 	private KickDetection kickDetection = new KickDetection();
-	
+
 	// Memory last Values
 	private GameMemory memory;
-	
-	
+
+
 	// State param
 	private WorldFrameWrapper currentWorldFrame;
 	private ITrackedBot nextBotToBall;
 
 	private StateMachine<APassingDetectionState> detectionStateMachine;
-	
-	private IShotEventType detectedShot = null;
+	private APassingDetectionState defaultState;
 
-	
-	
+	private IShotEventType detectedShot = null;
+	private TypeDetectionFrame typeDetectionFrame;
+
+
 	public ShotDetection()
 	{
 		try
 		{
 			detectionStateMachine = new StateMachine<>();
-			
+
 			for (EPassingDetectionState enumState : EPassingDetectionState.values())
 			{
 				APassingDetectionState state = (APassingDetectionState) enumState.getInstanceableClass()
 						.newDefaultInstance();
-				
+
 				if (enumState == EPassingDetectionState.NO_PASS)
 				{
+					defaultState = state;
 					detectionStateMachine.setInitialState(state);
 				}
-				
+
 				detectionStateMachine.addTransition(null, enumState, state);
 			}
-			
+
 		} catch (InstanceableClass.NotCreateableException e)
 		{
 			log.error("Failed creating StateMachine - State could not be created: " + e.getMessage(), e);
@@ -88,20 +93,27 @@ public class ShotDetection implements IEventTypeDetection<IShotEventType>
 
 
 	}
-	
-	
+
+
 	@Override
 	public void nextFrameForDetection(TypeDetectionFrame typeDetectionFrame)
 	{
+		this.typeDetectionFrame = typeDetectionFrame;
 		memory = typeDetectionFrame.getMemory();
 		currentWorldFrame = typeDetectionFrame.getWorldFrameWrapper();
 		ShapeMap shapes = typeDetectionFrame.getShapeMap();
-		
-		nextBotToBall = typeDetectionFrame.getNextBotToBall();
+
+		if (typeDetectionFrame.getClosestBotToBall() == null)
+		{
+			resetDetection();
+			return;
+		}
+
+		nextBotToBall = typeDetectionFrame.getClosestBotToBall();
 
 		kickDetection.nextFrameForDetection(typeDetectionFrame);
 		lineDetection.nextFrameForDetection(typeDetectionFrame);
-		
+
 		if (currentWorldFrame.getGameState().isStop())
 		{
 			// Reset Passing
@@ -113,7 +125,7 @@ public class ShotDetection implements IEventTypeDetection<IShotEventType>
 					shotBuilder, kickDetection, lineDetection, this);
 			detectionStateMachine.getCurrentState().callNextFrameForDetection(passTypeDetectionFrame);
 		}
-		
+
 		// Draw last passes in the visualizer
 		for (IDrawableShape passing : passingHistoryDraw)
 		{
@@ -130,8 +142,10 @@ public class ShotDetection implements IEventTypeDetection<IShotEventType>
 		Color colorBall = passStateColorMap.getOrDefault(detectionStateMachine.getCurrentState().getId(), Color.MAGENTA);
 
 		IVector2 ballPos = currentWorldFrame.getSimpleWorldFrame().getBall().getPos();
-		shapes.get(ELogAnalysisShapesLayer.PASSING).add(new DrawableCircle(Circle.createCircle(ballPos, Geometry.getBallRadius()), colorBall));
+		shapes.get(ELogAnalysisShapesLayer.PASSING)
+				.add(new DrawableCircle(Circle.createCircle(ballPos, Geometry.getBallRadius()), colorBall));
 	}
+
 
 	@Override
 	public void resetDetection()
@@ -147,11 +161,11 @@ public class ShotDetection implements IEventTypeDetection<IShotEventType>
 		currentWorldFrame = null;
 		nextBotToBall = null;
 
-		detectionStateMachine.restart();
+		detectionStateMachine.changeState(defaultState);
 		detectedShot = null;
 	}
-	
-	
+
+
 	@Override
 	public IShotEventType getDetectedEventType()
 	{
@@ -161,7 +175,7 @@ public class ShotDetection implements IEventTypeDetection<IShotEventType>
 
 	public void setState(EPassingDetectionState newStateEnum)
 	{
-		
+
 		// if current detection state is null (first call)
 		if (detectionStateMachine.getCurrentState() == null)
 		{
@@ -169,33 +183,34 @@ public class ShotDetection implements IEventTypeDetection<IShotEventType>
 			detectionStateMachine.update();
 			return;
 		}
-		
-		
+
+
 		EPassingDetectionState newStateID = newStateEnum;
 		EPassingDetectionState curStateID = detectionStateMachine.getCurrentState().getId();
-		
+
 		if (newStateID != curStateID)
 		{
 			onDetectionStateChanged(curStateID, newStateID);
 		}
 	}
-	
-	
+
+
 	private void onDetectionStateChanged(EPassingDetectionState oldStateID, EPassingDetectionState newStateID)
 	{
 		boolean leaveDetectedPass = oldStateID.isPassActive() && !newStateID.isPassActive();
-		
+
 		if (leaveDetectedPass)
 		{
-			ITrackedBall passEndBall = (ITrackedBall)memory.get(BALL, 1);
+			ITrackedBall passEndBall = (ITrackedBall) memory.get(BALL, 1);
 			ITrackedBot receiver = null;
-			
-			boolean ballCloseToNextBot = nextBotToBall.getPos().distanceTo(passEndBall.getPos()) < toleranceBotToBallKick
+
+			boolean ballCloseToNextBot = nextBotToBall.getPos()
+					.distanceTo(passEndBall.getPos()) < TOLERANCE_BOT_TO_BALL_KICK
 					+ Geometry.getBallRadius();
 
 			boolean nextBotSameTeamShooter = false;
 
-			if(shotBuilder.getPasserBot() != null)
+			if (shotBuilder.getPasserBot() != null)
 			{
 				nextBotSameTeamShooter = nextBotToBall.getTeamColor() == shotBuilder.getPasserBot().getTeamColor();
 			}
@@ -208,23 +223,26 @@ public class ShotDetection implements IEventTypeDetection<IShotEventType>
 				receiver = nextBotToBall;
 			}
 
-			try {
+			try
+			{
 
-				//decide whether the shot is a goal shot or a pass and create its shot event type
-				detectedShot = shotBuilder.createShotEventType(currentWorldFrame.getTimestamp(), receiver, passEndBall.getPos());
+				// decide whether the shot is a goal shot or a pass and create its shot event type
+				detectedShot = shotBuilder.createShotEventType(typeDetectionFrame.getFrameId(), receiver,
+						passEndBall.getPos());
 
 				passingHistoryDraw.addAll(detectedShot.getDrawableShotShape());
 
 				shotBuilder.clear();
 
-			} catch (ShotBuilder.WrongBuilderStateException e) {
+			} catch (ShotBuilder.WrongBuilderStateException e)
+			{
 				log.error("Shot builder updates methods have not been called in right order", e);
 			}
 		}
-		
+
 		detectionStateMachine.triggerEvent(newStateID);
 		detectionStateMachine.update();
-		
+
 		log.info("PassingDetectionState: " + oldStateID + " > \t" + newStateID);
 	}
 }

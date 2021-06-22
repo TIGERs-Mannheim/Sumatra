@@ -1,14 +1,13 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view.log;
 
-import java.awt.Font;
-import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Arrays;
+import edu.tigers.sumatra.drawable.EFontSize;
+import edu.tigers.sumatra.presenter.log.LogPresenter;
+import edu.tigers.sumatra.util.ScalingUtil;
+import net.miginfocom.swing.MigLayout;
+import org.apache.logging.log4j.Level;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -16,11 +15,12 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
-
-import org.apache.log4j.Priority;
-
-import edu.tigers.sumatra.presenter.log.LogPresenter;
-import net.miginfocom.swing.MigLayout;
+import java.awt.Font;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 
 /**
@@ -29,7 +29,7 @@ import net.miginfocom.swing.MigLayout;
  */
 public class FilterPanel extends JPanel
 {
-	private final ArrayList<IFilterPanelObserver> observers = new ArrayList<>();
+	private final transient ArrayList<IFilterPanelObserver> observers = new ArrayList<>();
 
 	private final SlidePanel slidePanel;
 	private final JTextField text;
@@ -40,7 +40,7 @@ public class FilterPanel extends JPanel
 
 
 	@SuppressWarnings("squid:S1192") // duplicate string constants
-	public FilterPanel(final Priority initialLevel)
+	public FilterPanel(final Level initialLevel)
 	{
 		setLayout(new MigLayout("fill, inset 0", "[][][]", ""));
 		setBorder(BorderFactory.createEmptyBorder());
@@ -52,12 +52,12 @@ public class FilterPanel extends JPanel
 
 		final JButton reset = new JButton("Reset");
 		reset.addActionListener(new Reset());
-		reset.setFont(new Font("", Font.PLAIN, 10));
+		reset.setFont(new Font("", Font.PLAIN, ScalingUtil.getFontSize(EFontSize.MEDIUM)));
 		reset.setMargin(new Insets(0, 5, 0, 5));
 
 		freeze = new JToggleButton("Freeze");
 		freeze.addActionListener(new Freeze());
-		freeze.setFont(new Font("", Font.PLAIN, 10));
+		freeze.setFont(new Font("", Font.PLAIN, ScalingUtil.getFontSize(EFontSize.MEDIUM)));
 		freeze.setMargin(new Insets(0, 5, 0, 5));
 
 		lblNumFatals = new JLabel("0");

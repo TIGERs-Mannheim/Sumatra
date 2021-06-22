@@ -3,35 +3,29 @@
  */
 package edu.tigers.sumatra.ai.athena;
 
+import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.MetisAiFrame;
+import edu.tigers.sumatra.ai.metis.TacticalField;
+import lombok.Builder;
+import lombok.Value;
+import lombok.experimental.Delegate;
 
 
 /**
  * Ai frame for athena data, based on {@link MetisAiFrame}
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class AthenaAiFrame extends MetisAiFrame
+@Value
+@Builder
+public class AthenaAiFrame
 {
-	private final IPlayStrategy	playStrategy;
-	
-	
-	/**
-	 * @param metisAiFrame
-	 * @param playStrategy
-	 */
-	public AthenaAiFrame(final MetisAiFrame metisAiFrame, final IPlayStrategy playStrategy)
+	@Delegate
+	BaseAiFrame baseAiFrame;
+	MetisAiFrame metisAiFrame;
+	IPlayStrategy playStrategy;
+
+
+	public TacticalField getTacticalField()
 	{
-		super(metisAiFrame, metisAiFrame.getTacticalField());
-		this.playStrategy = playStrategy;
-	}
-	
-	
-	/**
-	 * @return the playStrategy
-	 */
-	public IPlayStrategy getPlayStrategy()
-	{
-		return playStrategy;
+		return metisAiFrame.getTacticalField();
 	}
 }

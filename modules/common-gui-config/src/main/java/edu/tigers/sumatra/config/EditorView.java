@@ -1,11 +1,7 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 27.11.2011
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.config;
 
 import edu.tigers.sumatra.treetable.ITreeTableModel;
@@ -22,91 +18,75 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
 import java.awt.event.ActionEvent;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 
 /**
  * A tab for one config in the ConfigEditor. It provides a tree-view of the xml-config with editing support and the
  * possibilities to save, load and switch config.
- * 
- * @author Gero
  */
 public class EditorView extends JPanel
 {
-	// --------------------------------------------------------------------------
-	// --- constants and variables ----------------------------------------------
-	// --------------------------------------------------------------------------
 	private static final long serialVersionUID = -7098099480668190062L;
-	
-	private static final boolean disableApply = false;
-	
+
+	private static final boolean DISABLE_APPLY = false;
+
 	private boolean wasLoaded = false;
-	
+
 	private final String configKey;
-	
-	
+
+
 	private transient ITreeTableModel model;
 	private final JTreeTable treetable;
-	
+
 	private final Action applyAction;
 	private final Action saveAction;
-	private final Action reloadAction;
-	
-	private final List<IConfigEditorViewObserver> observers = new LinkedList<IConfigEditorViewObserver>();
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructor ----------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 * @param title
-	 * @param configKey
-	 * @param config
-	 * @param editable
-	 */
+
+	private final List<IConfigEditorViewObserver> observers = new CopyOnWriteArrayList<>();
+
+
 	public EditorView(final String title, final String configKey, final HierarchicalConfiguration config,
 			final boolean editable)
 	{
 		super();
 		this.configKey = configKey;
-		
+
 		// Setup panel
 		setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
-		
+
 		// Setup upper part: Controls
 		JPanel controls = new JPanel();
 		controls.setLayout(new BoxLayout(controls, BoxLayout.LINE_AXIS));
 		controls.setBorder(BorderFactory.createTitledBorder(title));
 		controls.add(Box.createHorizontalGlue());
 		add(controls, "grow, top");
-		
+
 		// Controls: Apply, Save, Switch, Reload
 		// Apply
 		applyAction = new AbstractAction("Apply")
 		{
 			private static final long serialVersionUID = 1L;
-			
-			
+
+
 			@Override
 			public void actionPerformed(final ActionEvent e)
 			{
 				apply();
 			}
 		};
-		applyAction.setEnabled(!disableApply);
+		applyAction.setEnabled(!DISABLE_APPLY);
 		JButton applyBtn = new JButton(applyAction);
 		applyBtn.setToolTipText("Write current config to fields");
 		controls.add(applyBtn);
 		controls.add(Box.createHorizontalGlue());
-		
+
 		saveAction = new AbstractAction("Save")
 		{
 			private static final long serialVersionUID = 1L;
-			
-			
+
+
 			@Override
 			public void actionPerformed(final ActionEvent e)
 			{
@@ -118,12 +98,12 @@ public class EditorView extends JPanel
 		saveBtn.setToolTipText("Save current config to file");
 		controls.add(saveBtn);
 		controls.add(Box.createHorizontalGlue());
-		
-		reloadAction = new AbstractAction("Reload")
+
+		Action reloadAction = new AbstractAction("Reload")
 		{
 			private static final long serialVersionUID = 1L;
-			
-			
+
+
 			@Override
 			public void actionPerformed(final ActionEvent e)
 			{
@@ -135,39 +115,31 @@ public class EditorView extends JPanel
 		reloadBtn.setToolTipText("Load config by reading from file");
 		controls.add(reloadBtn);
 		controls.add(Box.createHorizontalGlue());
-		
+
 		controls.add(Box.createHorizontalGlue());
-		
+
 		// Setup lower part: The actual editor
 		JScrollPane scrollpane = new JScrollPane();
 		scrollpane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		scrollpane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 		add(scrollpane, "grow, top");
-		
-		
+
+
 		// Finally: Add model
 		model = new ConfigXMLTreeTableModel(config);
 		model.setEditable(editable);
 		treetable = new JTreeTable(model);
-		treetable.getModel().addTableModelListener(new TableModelListener()
-		{
-			@Override
-			public void tableChanged(final TableModelEvent event)
+		treetable.getModel().addTableModelListener(event -> {
+			if ((event.getType() == TableModelEvent.UPDATE) && (event.getFirstRow() == event.getLastRow()))
 			{
-				if ((event.getType() == TableModelEvent.UPDATE) && (event.getFirstRow() == event.getLastRow()))
-				{
-					markDirty();
-				}
+				markDirty();
 			}
 		});
 		scrollpane.add(treetable);
 		scrollpane.setViewportView(treetable);
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
+
+
 	/**
 	 * @param config
 	 * @param editable
@@ -177,43 +149,38 @@ public class EditorView extends JPanel
 		model = new ConfigXMLTreeTableModel(config);
 		model.setEditable(editable);
 		treetable.setTreeTableModel(model);
-		treetable.getModel().addTableModelListener(new TableModelListener()
-		{
-			@Override
-			public void tableChanged(final TableModelEvent event)
+		treetable.getModel().addTableModelListener(event -> {
+			if ((event.getType() == TableModelEvent.UPDATE) && (event.getFirstRow() == event.getLastRow()))
 			{
-				if ((event.getType() == TableModelEvent.UPDATE) && (event.getFirstRow() == event.getLastRow()))
-				{
-					markDirty();
-				}
+				markDirty();
 			}
 		});
 	}
-	
-	
+
+
 	private void markDirty()
 	{
 		// Enable Buttons only
 		applyAction.setEnabled(true);
 		saveAction.setEnabled(true);
 	}
-	
-	
+
+
 	private void save()
 	{
 		// Save
 		notifySavePressed(configKey);
-		
+
 		// Mark
 		saveAction.setEnabled(true);
 	}
-	
-	
+
+
 	public void initialReload()
 	{
 		if (wasLoaded)
 			return;
-		
+
 		reload();
 	}
 
@@ -222,21 +189,18 @@ public class EditorView extends JPanel
 		notifyReloadPressed(configKey);
 		wasLoaded = true;
 	}
-	
-	
+
+
 	private void apply()
 	{
 		// Apply
 		notifyApplyPressed(configKey);
-		
+
 		// Re-enable btn
-		applyAction.setEnabled(!disableApply);
+		applyAction.setEnabled(!DISABLE_APPLY);
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- observer -------------------------------------------------------------
-	// --------------------------------------------------------------------------
+
+
 	/**
 	 * @param newObserver
 	 */
@@ -244,8 +208,8 @@ public class EditorView extends JPanel
 	{
 		observers.add(newObserver);
 	}
-	
-	
+
+
 	/**
 	 * @param oldObserver
 	 * @return
@@ -254,8 +218,8 @@ public class EditorView extends JPanel
 	{
 		return observers.remove(oldObserver);
 	}
-	
-	
+
+
 	private void notifyApplyPressed(final String configKey)
 	{
 		for (final IConfigEditorViewObserver observer : observers)
@@ -263,8 +227,8 @@ public class EditorView extends JPanel
 			observer.onApplyPressed(configKey);
 		}
 	}
-	
-	
+
+
 	private boolean notifySavePressed(final String configKey)
 	{
 		boolean result = true;
@@ -275,8 +239,8 @@ public class EditorView extends JPanel
 		}
 		return result;
 	}
-	
-	
+
+
 	private void notifyReloadPressed(final String configKey)
 	{
 		for (final IConfigEditorViewObserver observer : observers)
@@ -284,8 +248,8 @@ public class EditorView extends JPanel
 			observer.onReloadPressed(configKey);
 		}
 	}
-	
-	
+
+
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------

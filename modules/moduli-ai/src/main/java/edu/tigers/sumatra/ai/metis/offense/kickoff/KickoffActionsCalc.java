@@ -1,165 +1,89 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.metis.offense.kickoff;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import com.github.g3force.configurable.Configurable;
-
-import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
-import edu.tigers.sumatra.ai.metis.TacticalField;
-import edu.tigers.sumatra.ai.metis.support.passtarget.IPassTarget;
-import edu.tigers.sumatra.ai.metis.support.passtarget.IRatedPassTarget;
-import edu.tigers.sumatra.ai.pandora.roles.ARole;
-import edu.tigers.sumatra.ai.pandora.roles.ERole;
+import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
+import edu.tigers.sumatra.ai.metis.pass.rating.RatedPass;
+import edu.tigers.sumatra.ai.metis.targetrater.GoalKick;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.math.vector.VectorMath;
-import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
-import edu.tigers.sumatra.referee.data.GameState;
-import edu.tigers.sumatra.trajectory.BangBangTrajectory2D;
-import edu.tigers.sumatra.wp.ball.prediction.IStraightBallConsultant;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
 
 
 /**
- * @author Phillipp Mevenkamp <phillippmevenkamp@gmail.com>
+ * Calculate the parameters for the kickoff.
  */
+@RequiredArgsConstructor
 public class KickoffActionsCalc extends ACalculator
 {
-	private IVector2 bestPosition = Vector2.fromXY(0, 0);
+	@Configurable(comment = "The minimum score of a direct shot to do it", defValue = "0.5")
+	private static double minimumScoreForDirectKick = 0.5;
 
-	private Map<BotID, IPassTarget> bestMovementPositionsForBots = new HashMap<>();
+	private final Supplier<Map<KickOrigin, RatedPass>> selectedPasses;
+	private final Supplier<GoalKick> goalKick;
 
-	private double startPassVelocity = 1.0;
-
-	@Configurable(comment = "The upper bound for time puffer to shoot the ball to the selected bot", defValue = "1.0")
-	private static double timePuffer = 1.0;
-
-	private static final double TIME_PUFFER_DIFF = 0.15;
+	@Getter
+	private KickoffStrategy kickoffStrategy;
 
 
 	@Override
-	public boolean isCalculationNecessary(final TacticalField tacticalField, final BaseAiFrame aiFrame)
+	public boolean isCalculationNecessary()
 	{
-		return tacticalField.getGameState().isKickoffOrPrepareKickoffForUs();
+		return getAiFrame().getGameState().isKickoffOrPrepareKickoffForUs();
 	}
 
 
 	@Override
-	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+	protected void reset()
 	{
-		final GameState gameState = newTacticalField.getGameState();
-		final boolean allowedToCalculate = gameState != null && gameState.isPrepareKickoffForUs();
-
-		if (allowedToCalculate)
-		{
-			calculateBestShotTargetfromPassTargets(baseAiFrame, newTacticalField.getRatedPassTargetsRanked());
-
-			calculateBestMovingPositionFromPassTargets(baseAiFrame, newTacticalField);
-		}
-
-		KickoffStrategy strategy = new KickoffStrategy();
-		strategy.setBestShotTarget(bestPosition);
-		strategy.setBestMovementPositions(bestMovementPositionsForBots);
-		strategy.setPassVelocity(startPassVelocity);
-		newTacticalField.setKickoffStrategy(strategy);
+		kickoffStrategy = new KickoffStrategy();
 	}
 
 
-	private void calculateBestShotTargetfromPassTargets(final BaseAiFrame baseAiFrame,
-			List<IRatedPassTarget> rankedPassTargets)
+	@Override
+	public void doCalc()
 	{
-		List<ARole> activeKickoffShooters = baseAiFrame.getPrevFrame().getPlayStrategy()
-				.getActiveRoles(ERole.KICKOFF_SHOOTER);
-
-		if (!activeKickoffShooters.isEmpty())
-		{
-			BotID currentKickoffShooter = activeKickoffShooters.get(0).getBotID();
-			if (!getWFrame().getBots().containsKey(currentKickoffShooter))
-			{
-				// kickoff shooter vanished
-				return;
-			}
-
-			final List<IPassTarget> rankedPassTargetsWithoutShooter = rankedPassTargets.stream()
-					.filter(target -> target.getBotId() != activeKickoffShooters.get(0).getBotID())
-					.collect(Collectors.toList());
-
-			if (!rankedPassTargetsWithoutShooter.isEmpty())
-			{
-				bestPosition = rankedPassTargetsWithoutShooter.get(0).getPos();
-			}
-
-			calculateEndPassVelocity(bestPosition, currentKickoffShooter, baseAiFrame);
-		} else
-		{
-			bestPosition = Geometry.getGoalTheir().getCenter();
-			startPassVelocity = 8.0;
-		}
+		kickoffStrategy = findStrategy();
 	}
 
 
-	private void calculateEndPassVelocity(IVector2 passTarget, BotID passTargetBot, BaseAiFrame aiFrame)
+	private KickoffStrategy findStrategy()
 	{
-		BangBangTrajectory2D trajectoryToTarget = TrajectoryGenerator.generatePositionTrajectory(
-				aiFrame.getWorldFrame().getTiger(passTargetBot),
-				passTarget);
-
-		final double timeForBallToGetToPosition = trajectoryToTarget.getTotalTime();
-
-		final double distanceForBallToTargetPosition = VectorMath.distancePP(passTarget,
-				Geometry.getCenter());
-
-		IStraightBallConsultant ballConsultant = getBall().getStraightConsultant();
-
-		// The maximum velocity
-		double kickVelocity = 2.7;
-		final int maximumSearchSteps = 15;
-		for (int i = 0; i < maximumSearchSteps; i++)
+		var bestGoalKick = goalKick.get();
+		if (bestGoalKick != null && bestGoalKick.getRatedTarget().getScore() >= minimumScoreForDirectKick)
 		{
-			final double timeForArrival = ballConsultant.getTimeForKick(distanceForBallToTargetPosition, kickVelocity);
-
-			final double timeDifference = timeForArrival - timeForBallToGetToPosition;
-
-			if (timeDifference > timePuffer - TIME_PUFFER_DIFF && timeDifference < timePuffer + TIME_PUFFER_DIFF)
-			{
-				break;
-			}
-
-			if (timeForArrival < timeForBallToGetToPosition)
-			{
-				kickVelocity -= 0.1;
-			} else
-			{
-				kickVelocity += 0.1;
-			}
+			return new KickoffStrategy(null, bestGoalKick.getKick(), bestMovingPosition());
 		}
-		startPassVelocity = kickVelocity;
+
+		var bestPass = selectedPasses.get().values().stream().findFirst().map(RatedPass::getPass).orElse(null);
+		if (bestPass != null)
+		{
+			return new KickoffStrategy(bestPass, bestPass.getKick(), bestMovingPosition());
+		}
+
+		if (bestGoalKick != null)
+		{
+			return new KickoffStrategy(null, bestGoalKick.getKick(), bestMovingPosition());
+		}
+		return new KickoffStrategy(null, null, bestMovingPosition());
 	}
 
 
-	private void calculateBestMovingPositionFromPassTargets(final BaseAiFrame baseAiFrame,
-			final TacticalField newTacticalField)
+	private List<IVector2> bestMovingPosition()
 	{
-		bestMovementPositionsForBots.clear();
-
-		final List<IRatedPassTarget> passTargetsRanked = newTacticalField.getRatedPassTargetsRanked();
-
-		for (BotID bot : baseAiFrame.getWorldFrame().getBots().keySet())
-		{
-			passTargetsRanked.stream()
-					.filter(pT -> pT.getBotId() == bot)
-					.findFirst()
-					.ifPresent(pT -> bestMovementPositionsForBots.put(bot, pT));
-		}
+		List<IVector2> bestMovementPositions = new ArrayList<>(2);
+		bestMovementPositions.add(Vector2.fromXY(-300, Math.min(1500, Geometry.getFieldWidth() * 0.4)));
+		bestMovementPositions.add(Vector2.fromXY(-500, -Math.min(1000, Geometry.getFieldWidth() * 0.3)));
+		return bestMovementPositions;
 	}
-
-
 }

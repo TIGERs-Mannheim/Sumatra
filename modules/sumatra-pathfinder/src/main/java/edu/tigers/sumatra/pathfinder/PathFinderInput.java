@@ -1,18 +1,20 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder;
 
+import edu.tigers.sumatra.bot.IMoveConstraints;
+import edu.tigers.sumatra.bot.State;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.Vector2f;
+import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
+import edu.tigers.sumatra.trajectory.ITrajectory;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
-import edu.tigers.sumatra.bot.MoveConstraints;
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
-import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
 /**
@@ -20,56 +22,66 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class PathFinderInput
 {
+	private static final double COLLISION_STEP_SIZE = 0.125;
+
 	private final long timestamp;
-	private MoveConstraints moveConstraints = null;
-	
+	private IMoveConstraints moveConstraints = null;
+
 	private IVector2 pos = Vector2f.ZERO_VECTOR;
 	private IVector2 vel = Vector2f.ZERO_VECTOR;
-	private double collisionStepSize = 0.125;
 	private IVector2 dest = Vector2f.ZERO_VECTOR;
 	private double orientation;
 	private List<IObstacle> obstacles = new ArrayList<>(0);
 	private double targetAngle;
 	private Random rnd;
 	private boolean debug = false;
-	
-	
+
+
 	/**
 	 * @param timestamp current time [ns]
 	 */
-	public PathFinderInput(final long timestamp)
+	private PathFinderInput(final long timestamp)
 	{
 		this.timestamp = timestamp;
 		rnd = new Random(timestamp);
 	}
-	
-	
+
+
 	/**
-	 * Create the input from a tracked bot and the current trajectory
-	 * 
+	 * Create the input from a tracked bot
+	 *
 	 * @param timestamp
-	 * @param tBot
+	 * @param state
 	 * @return
 	 */
-	public static PathFinderInput fromBotOrTrajectory(long timestamp, ITrackedBot tBot)
+	public static PathFinderInput fromBot(long timestamp, State state)
 	{
 		PathFinderInput input = new PathFinderInput(timestamp);
-		input.setTrackedBot(tBot);
+		input.setPos(state.getPos());
+		input.setOrientation(state.getOrientation());
+		input.setVel(state.getVel2());
 		return input;
 	}
-	
-	
+
+
 	/**
-	 * @param tBot
+	 * Create the input from the current trajectory
+	 *
+	 * @param timestamp
+	 * @param trajectory
+	 * @return
 	 */
-	private void setTrackedBot(final ITrackedBot tBot)
+	public static PathFinderInput fromTrajectory(long timestamp, ITrajectory<IVector3> trajectory)
 	{
-		pos = tBot.getPos();
-		orientation = tBot.getOrientation();
-		vel = tBot.getVel();
+		PathFinderInput input = new PathFinderInput(timestamp);
+		IVector3 pos3 = trajectory.getPositionMM(0);
+		input.setPos(pos3.getXYVector());
+		input.setOrientation(pos3.z());
+		input.setVel(trajectory.getVelocity(0).getXYVector());
+		return input;
 	}
-	
-	
+
+
 	/**
 	 * @return the pos
 	 */
@@ -77,8 +89,8 @@ public class PathFinderInput
 	{
 		return pos;
 	}
-	
-	
+
+
 	/**
 	 * @param pos the pos to set
 	 */
@@ -86,8 +98,8 @@ public class PathFinderInput
 	{
 		this.pos = pos;
 	}
-	
-	
+
+
 	/**
 	 * @return the vel
 	 */
@@ -95,8 +107,8 @@ public class PathFinderInput
 	{
 		return vel;
 	}
-	
-	
+
+
 	/**
 	 * @param vel the vel to set
 	 */
@@ -104,8 +116,8 @@ public class PathFinderInput
 	{
 		this.vel = vel;
 	}
-	
-	
+
+
 	/**
 	 * @return the dest
 	 */
@@ -113,8 +125,8 @@ public class PathFinderInput
 	{
 		return dest;
 	}
-	
-	
+
+
 	/**
 	 * @param dest the dest to set
 	 */
@@ -122,8 +134,8 @@ public class PathFinderInput
 	{
 		this.dest = dest;
 	}
-	
-	
+
+
 	/**
 	 * @return the obstacles
 	 */
@@ -131,8 +143,8 @@ public class PathFinderInput
 	{
 		return obstacles;
 	}
-	
-	
+
+
 	/**
 	 * @param obstacles the obstacles to set
 	 */
@@ -140,8 +152,8 @@ public class PathFinderInput
 	{
 		this.obstacles = obstacles;
 	}
-	
-	
+
+
 	/**
 	 * @return the orientation
 	 */
@@ -149,8 +161,8 @@ public class PathFinderInput
 	{
 		return targetAngle;
 	}
-	
-	
+
+
 	/**
 	 * @param orientation the orientation to set
 	 */
@@ -158,8 +170,8 @@ public class PathFinderInput
 	{
 		targetAngle = orientation;
 	}
-	
-	
+
+
 	/**
 	 * @return the orientation
 	 */
@@ -167,8 +179,8 @@ public class PathFinderInput
 	{
 		return orientation;
 	}
-	
-	
+
+
 	/**
 	 * @param orientation the orientation to set
 	 */
@@ -176,8 +188,8 @@ public class PathFinderInput
 	{
 		this.orientation = orientation;
 	}
-	
-	
+
+
 	/**
 	 * @return the timestamp
 	 */
@@ -185,8 +197,8 @@ public class PathFinderInput
 	{
 		return timestamp;
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -194,8 +206,8 @@ public class PathFinderInput
 	{
 		return rnd;
 	}
-	
-	
+
+
 	/**
 	 * @param rnd the rnd to set
 	 */
@@ -203,41 +215,35 @@ public class PathFinderInput
 	{
 		this.rnd = rnd;
 	}
-	
-	
-	public void setCollisionStepSize(final double collisionStepSize)
-	{
-		this.collisionStepSize = collisionStepSize;
-	}
-	
-	
+
+
 	/**
 	 * @return the collisionStepSize
 	 */
 	public double getCollisionStepSize()
 	{
-		return collisionStepSize;
+		return COLLISION_STEP_SIZE;
 	}
-	
-	
-	public MoveConstraints getMoveConstraints()
+
+
+	public IMoveConstraints getMoveConstraints()
 	{
 		return moveConstraints;
 	}
-	
-	
-	public void setMoveConstraints(final MoveConstraints moveConstraints)
+
+
+	public void setMoveConstraints(final IMoveConstraints mc)
 	{
-		this.moveConstraints = moveConstraints;
+		this.moveConstraints = mc;
 	}
-	
-	
+
+
 	public boolean isDebug()
 	{
 		return debug;
 	}
-	
-	
+
+
 	public void setDebug(final boolean debug)
 	{
 		this.debug = debug;

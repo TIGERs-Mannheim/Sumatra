@@ -15,13 +15,13 @@ import edu.tigers.sumatra.drawable.IShapeLayer;
 public enum EVisualizerOptions implements IShapeLayer
 {
 	/**  */
-	FANCY("Visualizer", "fancy drawing"),
+	FANCY("Visualizer", "Fancy drawing"),
 	/**  */
-	TURN_NEXT("Visualizer", "horizontal field"),
+	TURN_NEXT("Visualizer", "Horizontal field"),
 	/**  */
-	RESET_FIELD("Visualizer", "reset field"),
+	RESET_FIELD("Visualizer", "Reset field"),
 	/**  */
-	DARK("Visualizer", "dark mode", false);
+	DARK("Visualizer", "Dark mode", false);
 	
 	
 	private final String name;

@@ -1,55 +1,54 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
-
 import com.github.g3force.configurable.ConfigRegistration;
-
 import edu.tigers.sumatra.botmanager.ABotManager;
 import edu.tigers.sumatra.botmanager.IBotManagerObserver;
 import edu.tigers.sumatra.botmanager.bots.ABot;
+import edu.tigers.sumatra.botmanager.bots.DummyBot;
 import edu.tigers.sumatra.drawable.ShapeMap;
+import edu.tigers.sumatra.drawable.ShapeMapSource;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.skillsystem.skills.ISkill;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
-import edu.tigers.sumatra.skillsystem.skills.redirect.RedirectConsultantFactory;
-import edu.tigers.sumatra.thread.NamedThreadFactory;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
+import edu.tigers.sumatra.wp.util.BotStateTrajectorySync;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 
 /**
  * Generic skill system.
- *
- * @author AndreR
  */
 public class GenericSkillSystem extends ASkillSystem
 		implements IBotManagerObserver, IWorldFrameObserver, ISkillExecutorPostHook
 {
-	private static final String SKILLS_CATEGORY = "skills";
+	private static final String SKILLS_CONFIG_CATEGORY = "skills";
+	public static final String SKILL_CATEGORY = "Skills";
 
 	static
 	{
 		for (ESkill ec : ESkill.values())
 		{
-			ConfigRegistration.registerClass(SKILLS_CATEGORY, ec.getInstanceableClass().getImpl());
+			ConfigRegistration.registerClass(SKILLS_CONFIG_CATEGORY, ec.getInstanceableClass().getImpl());
 		}
 	}
 
 	private final Map<BotID, SkillExecutor> executors = new ConcurrentHashMap<>();
+	private final List<ISkillExecutorPostHook> skillExecutorPostHooks = new CopyOnWriteArrayList<>();
 
-	private ExecutorService service = null;
 	private AWorldPredictor wp;
 
 
@@ -68,6 +67,7 @@ public class GenericSkillSystem extends ASkillSystem
 	{
 		final GenericSkillSystem skillSystem = new GenericSkillSystem();
 		BotID.getAll().forEach(skillSystem::addSkillExecutor);
+		BotID.getAll().forEach(id -> skillSystem.onBotAdded(new DummyBot(id)));
 		return skillSystem;
 	}
 
@@ -83,11 +83,6 @@ public class GenericSkillSystem extends ASkillSystem
 	@Override
 	public void initModule()
 	{
-		String env = SumatraModel.getInstance().getEnvironment();
-		RedirectConsultantFactory.init();
-		ConfigRegistration.applySpezi(SKILLS_CATEGORY, "");
-		ConfigRegistration.applySpezi(SKILLS_CATEGORY, env);
-
 		SumatraModel.getInstance().getModuleOpt(ABotManager.class).ifPresent(o -> o.addObserver(this));
 		BotID.getAll().forEach(this::addSkillExecutor);
 	}
@@ -103,8 +98,8 @@ public class GenericSkillSystem extends ASkillSystem
 	@Override
 	public void startModule()
 	{
-		service = Executors.newCachedThreadPool(new NamedThreadFactory("SkillExecutor"));
-		executors.values().forEach(e -> e.start(service));
+		super.startModule();
+		executors.values().forEach(e -> e.start(getExecutorService()));
 
 		wp = SumatraModel.getInstance().getModule(AWorldPredictor.class);
 		wp.addConsumer(this);
@@ -124,7 +119,7 @@ public class GenericSkillSystem extends ASkillSystem
 		}
 
 		executors.values().forEach(SkillExecutor::stop);
-		service.shutdown();
+		super.stopModule();
 	}
 
 
@@ -175,6 +170,7 @@ public class GenericSkillSystem extends ASkillSystem
 	@Override
 	public void onBotRemoved(final ABot bot)
 	{
+		reset(bot.getBotId());
 		executors.get(bot.getBotId()).setNewBot(null);
 	}
 
@@ -208,15 +204,15 @@ public class GenericSkillSystem extends ASkillSystem
 
 
 	@Override
-	public ShapeMap process(final WorldFrameWrapper wfw, final ETeamColor teamColor)
+	public Map<BotID, ShapeMap> process(final WorldFrameWrapper wfw, final ETeamColor teamColor)
 	{
-		final ShapeMap shapeMap = new ShapeMap();
+		final Map<BotID, ShapeMap> shapeMaps = new HashMap<>();
 
 		executors.entrySet().stream()
 				.filter(e -> e.getKey().getTeamColor() == teamColor)
-				.forEach(e -> e.getValue().update(wfw, shapeMap));
+				.forEach(e -> e.getValue().update(wfw, shapeMaps.compute(e.getKey(), (b, v) -> new ShapeMap())));
 
-		return shapeMap;
+		return shapeMaps;
 	}
 
 
@@ -224,6 +220,10 @@ public class GenericSkillSystem extends ASkillSystem
 	public void onClearWorldFrame()
 	{
 		executors.values().forEach(SkillExecutor::onClearWorldFrame);
+		if (wp != null)
+		{
+			wp.notifyRemoveCategoryFromShapeMap(SKILL_CATEGORY);
+		}
 	}
 
 
@@ -231,13 +231,49 @@ public class GenericSkillSystem extends ASkillSystem
 	public void onSkillUpdated(final ABot bot, final long timestamp, final ShapeMap shapeMap)
 	{
 		notifyCommandSent(bot, timestamp);
-		wp.notifyNewShapeMap(timestamp, shapeMap, "Skill " + bot.getBotId());
+		if (wp != null)
+		{
+			wp.notifyNewShapeMap(timestamp, shapeMap,
+					ShapeMapSource.of(getShapeLayerName(bot.getBotId()), SKILL_CATEGORY));
+		}
+		skillExecutorPostHooks.forEach(hook -> hook.onSkillUpdated(bot, timestamp, shapeMap));
+	}
+
+
+	@Override
+	public void onTrajectoryUpdated(BotID botID, BotStateTrajectorySync sync)
+	{
+		skillExecutorPostHooks.forEach(hook -> hook.onTrajectoryUpdated(botID, sync));
+	}
+
+
+	public static String getShapeLayerName(BotID botId)
+	{
+		return "Skills for " + botId.getTeamColor() + " " + botId.getNumber();
 	}
 
 
 	@Override
 	public void onRobotRemoved(final BotID botID)
 	{
-		wp.notifyClearShapeMap("Skill " + botID);
+		if (wp != null)
+		{
+			wp.notifyRemoveSourceFromShapeMap(getShapeLayerName(botID));
+		}
+		skillExecutorPostHooks.forEach(hook -> hook.onRobotRemoved(botID));
+	}
+
+
+	@Override
+	public void addSkillExecutorPostHook(ISkillExecutorPostHook hook)
+	{
+		skillExecutorPostHooks.add(hook);
+	}
+
+
+	@Override
+	public void removeSkillExecutorPostHook(ISkillExecutorPostHook hook)
+	{
+		skillExecutorPostHooks.remove(hook);
 	}
 }

@@ -1,8 +1,16 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.model;
+
+import edu.tigers.moduli.Moduli;
+import edu.tigers.moduli.exceptions.DependencyException;
+import edu.tigers.moduli.exceptions.LoadModulesException;
+import edu.tigers.moduli.listenerVariables.ModulesState;
+import lombok.extern.log4j.Log4j2;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -10,16 +18,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Appender;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-
-import edu.tigers.moduli.Moduli;
-import edu.tigers.moduli.exceptions.DependencyException;
-import edu.tigers.moduli.exceptions.LoadModulesException;
 
 
 /**
@@ -32,13 +30,10 @@ import edu.tigers.moduli.exceptions.LoadModulesException;
  * The model make use of a Singleton - pattern,
  * so you can access the Model
  * with a simple SumatraModel.getInstance() .
- *
- * @author bernhard
  */
+@Log4j2
 public final class SumatraModel extends Moduli
 {
-	private static final Logger log = Logger.getLogger(SumatraModel.class.getName());
-
 	// --- version ---
 	private static final String VERSION = getVersionNameFromManifest();
 
@@ -52,25 +47,19 @@ public final class SumatraModel extends Moduli
 
 	// --- moduli config ---
 	private static final String KEY_MODULI_CONFIG = SumatraModel.class.getName() + ".moduliConfig";
-	/** */
 	public static final String MODULI_CONFIG_PATH = "./config/moduli/";
-	/**  */
-	public static final String MODULI_CONFIG_FILE_DEFAULT = "sim.xml";
+	private static final String MODULI_CONFIG_FILE_DEFAULT = "sim.xml";
 
 	// Application Properties
 	private static final String CONFIG_SETTINGS_PATH = "./config/";
 
 
 	private boolean productive = false;
-	private boolean testMode = false;
 
 	private boolean simulation = false;
 	private String environment = "";
 
 
-	// --------------------------------------------------------------------------
-	// --- getInstance/constructor(s) -------------------------------------------
-	// --------------------------------------------------------------------------
 	/**
 	 * Constructor from model.
 	 * Initializes data which is kept by the model.
@@ -78,16 +67,6 @@ public final class SumatraModel extends Moduli
 	private SumatraModel()
 	{
 		loadApplicationProperties();
-		String prod = System.getProperty("productive");
-		if (prod != null)
-		{
-			productive = Boolean.valueOf(prod);
-		}
-		String test = System.getProperty("testMode");
-		if (test != null)
-		{
-			testMode = Boolean.valueOf(test);
-		}
 	}
 
 
@@ -101,6 +80,22 @@ public final class SumatraModel extends Moduli
 		return INSTANCE;
 	}
 
+	public void startUp(final String moduliConfig)
+	{
+		try
+		{
+			if (getModulesState().get() == ModulesState.ACTIVE)
+			{
+				stopModules();
+			}
+			SumatraModel.getInstance().setCurrentModuliConfig(moduliConfig);
+			loadModulesOfConfig(getCurrentModuliConfig());
+			startModules();
+		} catch (Throwable e)
+		{
+			log.error("Could not start Sumatra.", e);
+		}
+	}
 
 	/**
 	 * Load application properties in two steps
@@ -133,7 +128,15 @@ public final class SumatraModel extends Moduli
 	@SuppressWarnings("squid:S1160") // throwing two exceptions, because this is only a proxy method
 	public void loadModulesOfConfig(final String configFileName) throws DependencyException, LoadModulesException
 	{
-		super.loadModules(MODULI_CONFIG_PATH + configFileName);
+		try
+		{
+			super.loadModules(MODULI_CONFIG_PATH + configFileName);
+		} catch (LoadModulesException e)
+		{
+			log.error("Could not load moduli config {}. Trying default one.", configFileName, e);
+			setCurrentModuliConfig(MODULI_CONFIG_FILE_DEFAULT);
+			super.loadModules(MODULI_CONFIG_PATH + MODULI_CONFIG_FILE_DEFAULT);
+		}
 		updateInternalStateFromGlobalConfig();
 	}
 
@@ -173,6 +176,8 @@ public final class SumatraModel extends Moduli
 	// --------------------------------------------------------------------------
 	// --- moduli config --------------------------------------------------------
 	// --------------------------------------------------------------------------
+
+
 	/**
 	 * @return the currentModuliConfig
 	 */
@@ -194,6 +199,7 @@ public final class SumatraModel extends Moduli
 	// --------------------------------------------------------------------------
 	// --- app properties -------------------------------------------------------
 	// --------------------------------------------------------------------------
+
 
 	/**
 	 * @return The applications {@link Properties}
@@ -229,7 +235,7 @@ public final class SumatraModel extends Moduli
 		}
 		if (!(obj instanceof String))
 		{
-			log.warn("Object '" + obj + "' (which has been associated to '" + key + "') is no String!");
+			log.warn("Object '{}' (which has been associated to '{}') is no String!", obj, key);
 			return null;
 		}
 
@@ -279,26 +285,22 @@ public final class SumatraModel extends Moduli
 
 
 	/**
+	 * Set if application should run in productive mode
+	 *
+	 * @param productive
+	 */
+	public void setProductive(final boolean productive)
+	{
+		this.productive = productive;
+	}
+
+
+	/**
 	 * @return if we are in productive (match) mode
 	 */
 	public final boolean isProductive()
 	{
 		return productive;
-	}
-
-
-	public void setTestMode(final boolean testMode)
-	{
-		this.testMode = testMode;
-	}
-
-
-	/**
-	 * @return if we are in test mode
-	 */
-	public final boolean isTestMode()
-	{
-		return testMode;
 	}
 
 
@@ -341,10 +343,10 @@ public final class SumatraModel extends Moduli
 			try
 			{
 				out.close();
-				log.trace("Saved configuration to: " + uf.getPath());
+				log.trace("Saved configuration to: {}", uf.getPath());
 			} catch (IOException e)
 			{
-				log.warn("Could not close " + uf.getPath() + ", configuration is not saved", e);
+				log.warn("Could not close {}, configuration is not saved", uf.getPath(), e);
 			}
 		}
 	}
@@ -355,11 +357,7 @@ public final class SumatraModel extends Moduli
 	 */
 	public static void changeLogLevel(final Level lvl)
 	{
-		Appender appender = Logger.getRootLogger().getAppender("console");
-		if (appender instanceof ConsoleAppender)
-		{
-			((ConsoleAppender) appender).setThreshold(lvl);
-		}
+		Configurator.setRootLevel(lvl);
 	}
 
 
@@ -388,15 +386,7 @@ public final class SumatraModel extends Moduli
 			{
 				final Properties properties = new Properties();
 				properties.load(manifestStream);
-
-				final String version = properties.getProperty("version", "unknown version")
-						.replaceAll("-SNAPSHOT", "");
-				final String gitHash = properties.getProperty("git.hash", "");
-				if (StringUtils.isNotBlank(gitHash))
-				{
-					return version + "_" + gitHash;
-				}
-				return version;
+				return properties.getProperty("version", "unknown version");
 			} catch (IOException e)
 			{
 				log.error("Could not read manifest", e);

@@ -1,21 +1,20 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Shape;
-import java.awt.geom.Arc2D;
-
 import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.circle.Arc;
 import edu.tigers.sumatra.math.circle.IArc;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
+
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.Shape;
+import java.awt.geom.Arc2D;
 
 
 /**
@@ -27,27 +26,29 @@ public class DrawableArc extends Arc implements IDrawableShape
 	private Color color;
 	private boolean fill = false;
 	private int arcType = Arc2D.PIE;
-	
-	
+
+
 	@SuppressWarnings("unused") // used by berkeley
 	protected DrawableArc()
 	{
 		super(Vector2f.ZERO_VECTOR, 1, 0, 1);
 		color = Color.black;
 	}
-	
-	
-	/**
-	 * @param arc
-	 * @param color
-	 */
+
+
+	public DrawableArc(final IArc arc)
+	{
+		super(arc);
+	}
+
+
 	public DrawableArc(final IArc arc, final Color color)
 	{
 		super(arc);
 		this.color = color;
 	}
-	
-	
+
+
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
@@ -55,7 +56,7 @@ public class DrawableArc extends Arc implements IDrawableShape
 		double radius = tool.scaleXLength(radius());
 		int drawingX = (int) (transBotPos.x() - radius);
 		int drawingY = (int) (transBotPos.y() - radius);
-		
+
 		double startAngle = AngleMath
 				.rad2deg((getStartAngle() + tool.getFieldTurn().getAngle()) - (AngleMath.PI_HALF * (invert ? -1 : 1)));
 		double extendAngle = AngleMath.rad2deg(getRotation());
@@ -68,22 +69,24 @@ public class DrawableArc extends Arc implements IDrawableShape
 			g.fill(arcShape);
 		}
 	}
-	
-	
+
+
 	@Override
-	public void setColor(final Color color)
+	public DrawableArc setColor(final Color color)
 	{
 		this.color = color;
+		return this;
 	}
-	
-	
+
+
 	@Override
-	public void setFill(final boolean fill)
+	public DrawableArc setFill(final boolean fill)
 	{
 		this.fill = fill;
+		return this;
 	}
-	
-	
+
+
 	public void setArcType(final int arcType)
 	{
 		if (arcType >= Arc2D.OPEN && arcType <= Arc2D.PIE)
@@ -94,5 +97,5 @@ public class DrawableArc extends Arc implements IDrawableShape
 			throw new IllegalArgumentException("invalid type for Arc: " + arcType);
 		}
 	}
-	
+
 }

@@ -1,17 +1,12 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.visualizer;
 
 
-import java.awt.event.MouseEvent;
-
-import org.apache.log4j.Logger;
-
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.ai.AAgent;
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
@@ -29,24 +24,24 @@ import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.pathfinder.MovementCon;
 import edu.tigers.sumatra.skillsystem.ASkillSystem;
-import edu.tigers.sumatra.skillsystem.skills.AMoveSkill;
-import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
+import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.SingleTouchKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
+import lombok.extern.log4j.Log4j2;
+
+import java.awt.event.MouseEvent;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Extended presenter for the visualizer with AI specific stuff.
  */
+@Log4j2
 public class VisualizerAiPresenter extends VisualizerPresenter
 		implements IVisualizationFrameObserver, IBotManagerObserver
 {
-	@SuppressWarnings("unused")
-	private static final Logger log = Logger.getLogger(VisualizerAiPresenter.class.getName());
-
-	@Configurable(comment = "Enter penalty area when moving bot with point'n click")
-	private static boolean moveToPenAreaAllowed = false;
+	@Configurable(comment = "Enter penalty area when moving bot with point'n click", defValue = "true")
+	private static boolean moveToPenAreaAllowed = true;
 
 	@Configurable(comment = "Use fastPosMove for point'n click", defValue = "false")
 	private static boolean useFastPosMove = false;
@@ -59,11 +54,11 @@ public class VisualizerAiPresenter extends VisualizerPresenter
 		ConfigRegistration.registerClass("user", VisualizerAiPresenter.class);
 	}
 
-	private MovementCon moveCon = new MovementCon();
 	private ASkillSystem skillsystem = null;
 	private ABotManager botManager = null;
 	private IVisualizerObserver visObserver = null;
 	private boolean mouseMoveUpdateDestinationMode = false;
+	private MoveToSkill skill;
 
 
 	@Override
@@ -100,14 +95,14 @@ public class VisualizerAiPresenter extends VisualizerPresenter
 	@Override
 	public void onMouseMoved(final IVector2 pos, final MouseEvent e)
 	{
-		if (mouseMoveUpdateDestinationMode)
+		if (mouseMoveUpdateDestinationMode && skill != null)
 		{
 			if (Geometry.getNegativeHalfTeam() != getSelectedRobotId().getTeamColor())
 			{
-				moveCon.updateDestination(Vector2.fromXY(-pos.x(), -pos.y()));
+				skill.updateDestination(Vector2.fromXY(-pos.x(), -pos.y()));
 			} else
 			{
-				moveCon.updateDestination(pos);
+				skill.updateDestination(pos);
 			}
 		}
 	}
@@ -118,16 +113,16 @@ public class VisualizerAiPresenter extends VisualizerPresenter
 	{
 		boolean ctrl = e.isControlDown();
 		boolean shift = e.isShiftDown();
+		boolean alt = e.isAltDown();
 		BotID selectedRobotId = getSelectedRobotId();
 
 		if (skillsystem != null && !selectedRobotId.isUninitializedID())
 		{
-			AMoveSkill skill = AMoveToSkill.createMoveToSkill();
-			moveCon = skill.getMoveCon();
-			moveCon.setPenaltyAreaAllowedOur(moveToPenAreaAllowed);
-			moveCon.setPenaltyAreaAllowedTheir(moveToPenAreaAllowed);
-			moveCon.setIgnoreGameStateObstacles(true);
-			moveCon.setFastPosMode(useFastPosMove);
+			skill = MoveToSkill.createMoveToSkill();
+			final MovementCon moveCon = skill.getMoveCon();
+			moveCon.setPenaltyAreaOurObstacle(!moveToPenAreaAllowed);
+			moveCon.setPenaltyAreaTheirObstacle(!moveToPenAreaAllowed);
+			skill.getMoveConstraints().setFastMove(useFastPosMove);
 			moveCon.setBallObstacle(ballObstacle);
 
 			final DynamicPosition ballPos = new DynamicPosition(BallID.instance());
@@ -138,31 +133,47 @@ public class VisualizerAiPresenter extends VisualizerPresenter
 			}
 
 			mouseMoveUpdateDestinationMode = false;
-			if (ctrl && shift)
+			if (getPanel().getRobotsPanel().getBotStatus(selectedRobotId).isVisible())
 			{
-				mouseMoveUpdateDestinationMode = true;
-				moveCon.updateDestination(pos);
-				skillsystem.execute(selectedRobotId, skill);
-			} else if (ctrl)
-			{
-				// move there and look at the ball
-				moveCon.updateDestination(pos);
-				moveCon.updateLookAtTarget(ballPos);
-				skillsystem.execute(selectedRobotId, skill);
-			} else if (shift)
-			{
-				SingleTouchKickSkill kickSkill = new SingleTouchKickSkill(new DynamicPosition(pos),
-						KickParams.maxStraight());
-				skillsystem.execute(selectedRobotId, kickSkill);
-			} else
-			{
-				moveCon.updateDestination(pos);
-				skillsystem.execute(selectedRobotId, skill);
+				handleClickMovement(ctrl, shift, alt, pos, selectedRobotId, ballPos);
+			}
+		}
+	}
 
-				if (visObserver != null)
-				{
-					visObserver.onMoveClick(selectedRobotId, pos);
-				}
+
+	private void handleClickMovement(
+			boolean ctrl,
+			boolean shift,
+			boolean alt,
+			IVector2 pos,
+			BotID selectedRobotId,
+			DynamicPosition ballPos
+	)
+	{
+		if (ctrl && shift)
+		{
+			mouseMoveUpdateDestinationMode = true;
+			skill.updateDestination(pos);
+			skillsystem.execute(selectedRobotId, skill);
+		} else if (ctrl)
+		{
+			// move there and look at the ball
+			skill.updateDestination(pos);
+			skill.updateLookAtTarget(ballPos);
+			skillsystem.execute(selectedRobotId, skill);
+		} else if (shift)
+		{
+			KickParams kickParams = alt ? KickParams.maxChip() : KickParams.maxStraight();
+			SingleTouchKickSkill kickSkill = new SingleTouchKickSkill(pos, kickParams);
+			skillsystem.execute(selectedRobotId, kickSkill);
+		} else
+		{
+			skill.updateDestination(pos);
+			skillsystem.execute(selectedRobotId, skill);
+
+			if (visObserver != null)
+			{
+				visObserver.onMoveClick(selectedRobotId, pos);
 			}
 		}
 	}

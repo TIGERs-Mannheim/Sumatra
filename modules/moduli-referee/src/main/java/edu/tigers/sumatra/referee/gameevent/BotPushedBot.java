@@ -1,28 +1,28 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.referee.gameevent;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
-
 import com.sleepycat.persist.model.Persistent;
-
-import edu.tigers.sumatra.SslGameEvent;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.referee.proto.SslGcGameEvent;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 
 
 @Persistent
+@Value
+@EqualsAndHashCode(callSuper = true)
 public class BotPushedBot extends AGameEvent
 {
-	private final ETeamColor team;
-	private final int violator;
-	private final int victim;
-	private final IVector2 location;
-	private final double pushedDistance;
+	ETeamColor team;
+	int violator;
+	int victim;
+	IVector2 location;
+	double pushedDistance;
 
 
 	@SuppressWarnings("unsued") // used by berkeley
@@ -41,7 +41,7 @@ public class BotPushedBot extends AGameEvent
 	 *
 	 * @param event a protobuf event
 	 */
-	public BotPushedBot(SslGameEvent.GameEvent event)
+	public BotPushedBot(SslGcGameEvent.GameEvent event)
 	{
 		super(event);
 		this.team = toTeamColor(event.getBotPushedBot().getByTeam());
@@ -91,9 +91,9 @@ public class BotPushedBot extends AGameEvent
 
 
 	@Override
-	public SslGameEvent.GameEvent toProtobuf()
+	public SslGcGameEvent.GameEvent toProtobuf()
 	{
-		SslGameEvent.GameEvent.Builder builder = SslGameEvent.GameEvent.newBuilder();
+		SslGcGameEvent.GameEvent.Builder builder = SslGcGameEvent.GameEvent.newBuilder();
 		builder.setType(getType().getProtoType());
 		builder.getBotPushedBotBuilder().setByTeam(getTeam(team)).setViolator(violator)
 				.setVictim(victim).setPushedDistance((float) pushedDistance / 1000.f)
@@ -104,45 +104,9 @@ public class BotPushedBot extends AGameEvent
 
 
 	@Override
-	public String toString()
+	public String getDescription()
 	{
 		return String.format("Bot %d %s pushed bot %d %s for %.2f mm @ %s", violator, team, victim, team.opposite(),
 				pushedDistance, formatVector(location));
-	}
-
-
-	@Override
-	public boolean equals(final Object o)
-	{
-		if (this == o)
-			return true;
-
-		if (o == null || getClass() != o.getClass())
-			return false;
-
-		final BotPushedBot that = (BotPushedBot) o;
-
-		return new EqualsBuilder()
-				.appendSuper(super.equals(o))
-				.append(violator, that.violator)
-				.append(victim, that.victim)
-				.append(pushedDistance, that.pushedDistance)
-				.append(team, that.team)
-				.append(location, that.location)
-				.isEquals();
-	}
-
-
-	@Override
-	public int hashCode()
-	{
-		return new HashCodeBuilder(17, 37)
-				.appendSuper(super.hashCode())
-				.append(team)
-				.append(violator)
-				.append(victim)
-				.append(location)
-				.append(pushedDistance)
-				.toHashCode();
 	}
 }

@@ -202,7 +202,7 @@ public final class CircleMath
 	 */
 	public static boolean isPointInCircle(ICircular circle, IVector2 point, double margin)
 	{
-		return point.distanceToSqr(circle.center()) <= Math.pow(circle.radius() + margin, 2);
+		return point.distanceToSqr(circle.center()) <= SumatraMath.square(circle.radius() + margin);
 	}
 	
 	

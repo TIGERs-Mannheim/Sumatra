@@ -1,45 +1,36 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jul 13, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.skillsystem.skills;
 
 import edu.tigers.sumatra.botmanager.botskills.ABotSkill;
 import edu.tigers.sumatra.botmanager.botskills.BotSkillMotorsOff;
-import edu.tigers.sumatra.skillsystem.ESkill;
+import lombok.Setter;
 
 
 /**
+ * Wrapper skill that takes a bot skill and executes it.
  */
 public class BotSkillWrapperSkill extends ASkill
 {
+	@Setter
 	private ABotSkill skill;
+	@Setter
 	private boolean keepKickerDribbler = false;
-	
-	
-	/**
-	 * @param botSkill
-	 */
+
+
 	public BotSkillWrapperSkill(final ABotSkill botSkill)
 	{
-		super(ESkill.BOT_SKILL_WRAPPER);
 		skill = botSkill;
 	}
-	
-	
-	/**
-	 */
+
+
 	public BotSkillWrapperSkill()
 	{
-		super(ESkill.BOT_SKILL_WRAPPER);
-		skill = new BotSkillMotorsOff();
+		this(new BotSkillMotorsOff());
 	}
-	
-	
+
+
 	@Override
 	protected void doCalcActionsBeforeStateUpdate()
 	{
@@ -48,29 +39,5 @@ public class BotSkillWrapperSkill extends ASkill
 			skill.setKickerDribbler(getMatchCtrl().getSkill().getKickerDribbler());
 		}
 		getMatchCtrl().setSkill(skill);
-	}
-	
-	
-	/**
-	 * @return the skill
-	 */
-	public final ABotSkill getSkill()
-	{
-		return skill;
-	}
-	
-	
-	/**
-	 * @param skill the skill to set
-	 */
-	public final void setSkill(final ABotSkill skill)
-	{
-		this.skill = skill;
-	}
-	
-	
-	public void setKeepKickerDribbler(final boolean keepKickerDribbler)
-	{
-		this.keepKickerDribbler = keepKickerDribbler;
 	}
 }

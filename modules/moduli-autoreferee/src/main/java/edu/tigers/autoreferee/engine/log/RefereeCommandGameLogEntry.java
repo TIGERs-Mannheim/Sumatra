@@ -1,17 +1,21 @@
+/*
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.autoreferee.engine.log;
 
-import edu.tigers.sumatra.Referee;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
 
 
 public class RefereeCommandGameLogEntry extends GameLogEntry
 {
-	private final Referee.SSL_Referee.Command command;
+	private final SslGcRefereeMessage.Referee.Command command;
 
 
 	public RefereeCommandGameLogEntry(
 			final long timestamp,
 			final GameTime gameTime,
-			final Referee.SSL_Referee.Command command)
+			final SslGcRefereeMessage.Referee.Command command)
 	{
 		super(ELogEntryType.RECEIVED_REFEREE_MSG, timestamp, gameTime);
 		this.command = command;

@@ -1,17 +1,18 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import edu.tigers.autoreferee.engine.calc.AllowedDistancesAutoRefVisCalc;
 import edu.tigers.autoreferee.engine.calc.BallLeftFieldAutoRefCalc;
 import edu.tigers.autoreferee.engine.calc.BotBallContactAutoRefCalc;
 import edu.tigers.autoreferee.engine.calc.GameStateHistoryAutoRefCalc;
 import edu.tigers.autoreferee.engine.calc.IAutoRefereeCalc;
+import edu.tigers.autoreferee.engine.calc.PassDetectionAutoRefCalc;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -29,6 +30,7 @@ public class AutoRefFramePreprocessor
 		calculators.add(new BotBallContactAutoRefCalc());
 		calculators.add(new GameStateHistoryAutoRefCalc());
 		calculators.add(new AllowedDistancesAutoRefVisCalc());
+		calculators.add(new PassDetectionAutoRefCalc());
 	}
 	
 	

@@ -1,15 +1,15 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.referee.data;
 
-import java.util.EnumMap;
-import java.util.Map;
-
-import edu.tigers.sumatra.Referee;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
+
+import java.util.EnumMap;
+import java.util.Map;
 
 
 /**
@@ -18,8 +18,8 @@ import edu.tigers.sumatra.math.vector.IVector2;
  */
 public class RefereeMsgBuilder
 {
-	private Map<ETeamColor, Referee.SSL_Referee.TeamInfo.Builder> teamBuilder = new EnumMap<>(ETeamColor.class);
-	private Referee.SSL_Referee.Builder messageBuilder = Referee.SSL_Referee.newBuilder();
+	private Map<ETeamColor, SslGcRefereeMessage.Referee.TeamInfo.Builder> teamBuilder = new EnumMap<>(ETeamColor.class);
+	private SslGcRefereeMessage.Referee.Builder messageBuilder = SslGcRefereeMessage.Referee.newBuilder();
 
 
 	private RefereeMsgBuilder()
@@ -32,7 +32,7 @@ public class RefereeMsgBuilder
 
 	private void initTeamInfo(ETeamColor teamColor)
 	{
-		Referee.SSL_Referee.TeamInfo.Builder builder = Referee.SSL_Referee.TeamInfo.newBuilder();
+		SslGcRefereeMessage.Referee.TeamInfo.Builder builder = SslGcRefereeMessage.Referee.TeamInfo.newBuilder();
 		builder.setGoalkeeper(0);
 		builder.setName(teamColor.name());
 		builder.setScore(0);
@@ -47,11 +47,11 @@ public class RefereeMsgBuilder
 	private void initMessage()
 	{
 		messageBuilder.setPacketTimestamp(System.currentTimeMillis());
-		messageBuilder.setCommand(Referee.SSL_Referee.Command.HALT);
+		messageBuilder.setCommand(SslGcRefereeMessage.Referee.Command.HALT);
 		messageBuilder.setCommandCounter(-1);
 		messageBuilder.setCommandTimestamp(0);
 		messageBuilder.setStageTimeLeft(300);
-		messageBuilder.setStage(Referee.SSL_Referee.Stage.NORMAL_FIRST_HALF);
+		messageBuilder.setStage(SslGcRefereeMessage.Referee.Stage.NORMAL_FIRST_HALF);
 	}
 
 
@@ -67,7 +67,7 @@ public class RefereeMsgBuilder
 	/**
 	 * @return a new referee message
 	 */
-	public Referee.SSL_Referee build()
+	public SslGcRefereeMessage.Referee build()
 	{
 		messageBuilder.setBlue(teamBuilder.get(ETeamColor.BLUE));
 		messageBuilder.setYellow(teamBuilder.get(ETeamColor.YELLOW));
@@ -83,7 +83,7 @@ public class RefereeMsgBuilder
 	{
 		if (pos != null)
 		{
-			Referee.SSL_Referee.Point.Builder point = Referee.SSL_Referee.Point.newBuilder();
+			SslGcRefereeMessage.Referee.Point.Builder point = SslGcRefereeMessage.Referee.Point.newBuilder();
 			point.setX((float) pos.x());
 			point.setY((float) pos.y());
 			messageBuilder.setDesignatedPosition(point);
@@ -99,7 +99,7 @@ public class RefereeMsgBuilder
 	 * @param command
 	 * @return this builder for chaining
 	 */
-	public RefereeMsgBuilder withCommand(Referee.SSL_Referee.Command command)
+	public RefereeMsgBuilder withCommand(SslGcRefereeMessage.Referee.Command command)
 	{
 		messageBuilder.setCommand(command);
 		return this;
@@ -166,7 +166,7 @@ public class RefereeMsgBuilder
 	 * @param stage
 	 * @return this builder for chaining
 	 */
-	public RefereeMsgBuilder withStage(Referee.SSL_Referee.Stage stage)
+	public RefereeMsgBuilder withStage(SslGcRefereeMessage.Referee.Stage stage)
 	{
 		messageBuilder.setStage(stage);
 		return this;

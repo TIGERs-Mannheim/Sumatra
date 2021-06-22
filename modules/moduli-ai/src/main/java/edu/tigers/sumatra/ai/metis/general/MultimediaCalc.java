@@ -1,20 +1,10 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.metis.general;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-
 import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.botmanager.botskills.data.ELedColor;
 import edu.tigers.sumatra.botmanager.botskills.data.ESong;
@@ -25,27 +15,45 @@ import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.referee.gameevent.EGameEvent;
 import edu.tigers.sumatra.referee.gameevent.Goal;
 import edu.tigers.sumatra.time.TimestampTimer;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 
 /**
  * Control the multimedia features of our robots.
  */
+@Log4j2
+@RequiredArgsConstructor
 public class MultimediaCalc extends ACalculator
 {
-	private static final Logger log = LogManager.getLogger(MultimediaCalc.class);
-
-	private final Map<BotID, MultimediaControl> multimediaControls = new HashMap<>();
 	private final TimestampTimer timeoutTimer = new TimestampTimer(0.3);
 	private final TimestampTimer cheeringTimer = new TimestampTimer(3.0);
 	private BotID currentTimeoutBot = null;
 	private boolean startedCheering = false;
 
+	private final Supplier<Set<BotID>> crucialDefender;
+	private final Supplier<OffensiveStrategy> offensiveStrategy;
+	private final Supplier<Map<EPlay, Set<BotID>>> desiredBotsMap;
+
+	@Getter
+	private Map<BotID, MultimediaControl> multimediaControls;
+
 
 	@Override
 	public void doCalc()
 	{
-		GameState gameState = getNewTacticalField().getGameState();
-		multimediaControls.clear();
+		GameState gameState = getAiFrame().getGameState();
+		multimediaControls = new IdentityHashMap<>();
 
 		if (gameState.getState() == EGameState.TIMEOUT)
 		{
@@ -55,19 +63,9 @@ public class MultimediaCalc extends ACalculator
 			handleRegularPlays();
 		}
 
-		playSongWhenInsane();
-
 		cheerWhenWeShootAGoal();
-		getNewTacticalField().setMultimediaControl(multimediaControls);
-	}
 
-
-	private void playSongWhenInsane()
-	{
-		if (getNewTacticalField().isInsaneKeeper())
-		{
-			allAssignedBots().forEach(id -> getControl(id).setSong(ESong.FINAL_COUNTDOWN));
-		}
+		multimediaControls = Collections.unmodifiableMap(multimediaControls);
 	}
 
 
@@ -85,27 +83,27 @@ public class MultimediaCalc extends ACalculator
 		botsByPlay(EPlay.DEFENSIVE).forEach(id -> getControl(id).setLedColor(ELedColor.LIGHT_BLUE));
 		botsByPlay(EPlay.KEEPER).forEach(id -> getControl(id).setLedColor(ELedColor.BLUE));
 		botsByPlay(EPlay.BALL_PLACEMENT).forEach(id -> getControl(id).setLedColor(ELedColor.PURPLE));
-		attacker().ifPresent(id -> getControl(id).setLedColor(ELedColor.RED));
-		botsByPlay(EPlay.KICKOFF).forEach(id -> getControl(id).setLedColor(ELedColor.RED));
+		attacker().ifPresent(id -> getControl(id).setLedColor(ELedColor.PURPLE));
+		botsByPlay(EPlay.KICKOFF).forEach(id -> getControl(id).setLedColor(ELedColor.PURPLE));
 		crucialDefender().forEach(id -> getControl(id).setLedColor(ELedColor.GREEN));
 	}
 
 
 	private Set<BotID> crucialDefender()
 	{
-		return getNewTacticalField().getCrucialDefender();
+		return crucialDefender.get();
 	}
 
 
 	private Optional<BotID> attacker()
 	{
-		return getNewTacticalField().getOffensiveStrategy().getAttackerBot();
+		return offensiveStrategy.get().getAttackerBot();
 	}
 
 
 	private Set<BotID> botsByPlay(final EPlay support)
 	{
-		return getNewTacticalField().getDesiredBotMap().getOrDefault(support, Collections.emptySet());
+		return desiredBotsMap.get().getOrDefault(support, Collections.emptySet());
 	}
 
 
@@ -127,7 +125,7 @@ public class MultimediaCalc extends ACalculator
 		{
 			if (botID == currentTimeoutBot)
 			{
-				getControl(botID).setLedColor(ELedColor.RED);
+				getControl(botID).setLedColor(ELedColor.PURPLE);
 			} else
 			{
 				getControl(botID).setLedColor(ELedColor.SLIGHTLY_ORANGE_YELLOW);
@@ -138,7 +136,7 @@ public class MultimediaCalc extends ACalculator
 
 	private Set<BotID> allAssignedBots()
 	{
-		return getNewTacticalField().getDesiredBotMap().values().stream().flatMap(Collection::stream)
+		return desiredBotsMap.get().values().stream().flatMap(Collection::stream)
 				.collect(Collectors.toSet());
 	}
 
@@ -170,7 +168,7 @@ public class MultimediaCalc extends ACalculator
 	{
 		final Optional<Goal> goalEvent = getAiFrame().getRefereeMsg().getGameEvents().stream()
 				.filter(e -> e.getType() == EGameEvent.GOAL)
-				.map(e -> (Goal) e)
+				.map(Goal.class::cast)
 				.filter(goal -> goal.getTeam() == getAiFrame().getTeamColor())
 				.findFirst();
 		if (goalEvent.isPresent())

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
@@ -9,96 +9,100 @@ import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.botmanager.botskills.data.MultimediaControl;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.pathfinder.MovementCon;
-import edu.tigers.sumatra.skillsystem.ESkill;
-import edu.tigers.sumatra.statemachine.IState;
-import edu.tigers.sumatra.time.AverageTimeMeasure;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.pathfinder.PathFinderPrioMap;
+import edu.tigers.sumatra.skillsystem.ASkillSystem;
+import edu.tigers.sumatra.trajectory.TrajectoryWithTime;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
+
+import java.util.concurrent.ExecutorService;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Interface to skills from outside of {@link ASkillSystem}.
  */
 public interface ISkill
 {
-	/**
-	 * @return
-	 */
-	ESkill getType();
-	
-	
 	/**
 	 * @param wfw
 	 * @param bot
 	 * @param shapeMap
 	 */
 	void update(WorldFrameWrapper wfw, ABot bot, final ShapeMap shapeMap);
-	
-	
+
+
 	/**
 	 * @param timestamp
 	 */
 	void calcActions(long timestamp);
-	
-	
+
+
 	/**
 	 * Called once upon end of this skill
 	 */
 	void calcExitActions();
-	
-	
+
+
 	/**
 	 * Called once upon start of this skill
 	 */
 	void calcEntryActions();
-	
-	
-	/**
-	 * @return
-	 */
-	MovementCon getMoveCon();
-	
-	
+
+
+	default void setPrioMap(final PathFinderPrioMap prioMap)
+	{
+		// ignore it by default
+	}
+
 	/**
 	 * @return
 	 */
 	BotID getBotId();
-	
-	
+
+
 	/**
 	 * @return
 	 */
 	boolean isAssigned();
-	
-	
-	/**
-	 * @return
-	 */
-	IState getCurrentState();
-	
-	
+
+
 	/**
 	 * @return
 	 */
 	boolean isInitialized();
-	
-	
-	/**
-	 * @return the average time measure with timing statistics
-	 */
-	AverageTimeMeasure getAverageTimeMeasure();
-	
-	
+
+
 	/**
 	 * @param control
 	 */
 	void setMultimediaControl(final MultimediaControl control);
-	
-	
+
+
 	/**
 	 * Create bot ai infos based on current state
 	 *
 	 * @return new bot ai info structure
 	 */
 	BotAiInformation getBotAiInfo();
+
+	/**
+	 * Set the executor service for path planning.
+	 *
+	 * @param executorService
+	 */
+	default void setExecutorService(ExecutorService executorService)
+	{
+	}
+
+	/**
+	 * @return the last applied trajectory
+	 */
+	default TrajectoryWithTime<IVector3> getCurrentTrajectory()
+	{
+		return null;
+	}
+
+	default void setCurrentTrajectory(TrajectoryWithTime<IVector3> trajectory)
+	{
+	}
 }

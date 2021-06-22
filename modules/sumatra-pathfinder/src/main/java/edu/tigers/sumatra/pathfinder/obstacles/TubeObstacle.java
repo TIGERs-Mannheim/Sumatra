@@ -1,31 +1,23 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder.obstacles;
 
-import com.sleepycat.persist.model.Persistent;
+import java.util.List;
 
 import edu.tigers.sumatra.drawable.DrawableTube;
+import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.math.tube.Tube;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
  * An obstacle in a tube shape
  */
-@Persistent
 public class TubeObstacle extends AObstacle
 {
 	private final Tube tube;
-
-
-	@SuppressWarnings("unused") // used by berkeley
-	private TubeObstacle()
-	{
-		tube = Tube.create(Vector2f.ZERO_VECTOR, Vector2f.ZERO_VECTOR, 0);
-	}
 
 
 	public TubeObstacle(final Tube tube)
@@ -42,7 +34,7 @@ public class TubeObstacle extends AObstacle
 
 
 	@Override
-	protected void initializeShapes()
+	protected void initializeShapes(final List<IDrawableShape> shapes)
 	{
 		shapes.add(new DrawableTube(tube));
 	}

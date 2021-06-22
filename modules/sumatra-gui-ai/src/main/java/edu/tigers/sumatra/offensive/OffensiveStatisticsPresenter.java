@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.offensive;
@@ -7,7 +7,8 @@ package edu.tigers.sumatra.offensive;
 import java.awt.Component;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.moduli.listenerVariables.ModulesState;
@@ -30,16 +31,16 @@ import edu.tigers.sumatra.views.ISumatraView;
 
 /**
  * OffensiveStrategy Presenter
- * 
+ *
  * @author Mark Geiger <Mark.Geiger@dlr.de>
  */
 public class OffensiveStatisticsPresenter extends ASumatraViewPresenter implements IVisualizationFrameObserver
 {
 	@SuppressWarnings("unused")
-	private static final Logger log = Logger.getLogger(OffensiveStatisticsPresenter.class.getName());
+	private static final Logger log = LogManager.getLogger(OffensiveStatisticsPresenter.class.getName());
 	private final OffensiveStatisticsPanel offensiveStrategyPanel;
-	
-	
+
+
 	/**
 	 * present offensive frames
 	 */
@@ -47,8 +48,8 @@ public class OffensiveStatisticsPresenter extends ASumatraViewPresenter implemen
 	{
 		offensiveStrategyPanel = new OffensiveStatisticsPanel();
 	}
-	
-	
+
+
 	@Override
 	public void onModuliStateChanged(final ModulesState state)
 	{
@@ -64,8 +65,8 @@ public class OffensiveStatisticsPresenter extends ASumatraViewPresenter implemen
 				break;
 		}
 	}
-	
-	
+
+
 	private void stop()
 	{
 		try
@@ -77,8 +78,8 @@ public class OffensiveStatisticsPresenter extends ASumatraViewPresenter implemen
 			log.error("Could not get agent module", err);
 		}
 	}
-	
-	
+
+
 	private void start()
 	{
 		try
@@ -90,22 +91,22 @@ public class OffensiveStatisticsPresenter extends ASumatraViewPresenter implemen
 			log.error("Could not get agent module", err);
 		}
 	}
-	
-	
+
+
 	@Override
 	public Component getComponent()
 	{
 		return offensiveStrategyPanel;
 	}
-	
-	
+
+
 	@Override
 	public ISumatraView getSumatraView()
 	{
 		return offensiveStrategyPanel;
 	}
-	
-	
+
+
 	@Override
 	public void onNewVisualizationFrame(final VisualizationFrame frame)
 	{
@@ -130,8 +131,8 @@ public class OffensiveStatisticsPresenter extends ASumatraViewPresenter implemen
 			}
 		}
 	}
-	
-	
+
+
 	private void handleFrame(final OffensiveAnalysedFrame oFrame, final TeamOffensiveStatisticsPanel strategyPanel)
 	{
 		strategyPanel.setMaxMinDesiredAVG(oFrame.getAvgDesiredRoles());
@@ -145,8 +146,8 @@ public class OffensiveStatisticsPresenter extends ASumatraViewPresenter implemen
 			}
 		}
 	}
-	
-	
+
+
 	private void handleCurrentFrameOnly(final OffensiveStatisticsFrame rawFrame,
 			final TeamOffensiveStatisticsPanel strategyPanel)
 	{
@@ -166,7 +167,7 @@ public class OffensiveStatisticsPresenter extends ASumatraViewPresenter implemen
 					strategyPanel.setPrimaryPercentage(e.getKey(), 0);
 				}
 			}
-			
+
 		}
 	}
 }

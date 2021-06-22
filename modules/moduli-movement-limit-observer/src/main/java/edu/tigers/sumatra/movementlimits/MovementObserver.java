@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.movementlimits;
@@ -11,7 +11,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TimerTask;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.github.g3force.configurable.Configurable;
 
@@ -35,19 +36,19 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
  */
 public class MovementObserver implements IWorldFrameObserver
 {
-	private static final Logger log = Logger.getLogger(MovementObserver.class);
-	
+	private static final Logger log = LogManager.getLogger(MovementObserver.class);
+
 	@Configurable(defValue = "0.5", comment = "alpha used in ExponentialMovingAverageFilter")
 	private static double alpha = 0.5;
-	
+
 	private Map<BotID, ExponentialMovingAverageFilter> history = new HashMap<>();
 	private EnumMap<ETeamColor, Double> maxObservedVelocities = new EnumMap<>(ETeamColor.class);
-	
+
 	private BotParamsManager botParamsManager;
-	
+
 	private boolean publishScheduled = false;
-	
-	
+
+
 	/**
 	 * Constructor.
 	 *
@@ -56,7 +57,7 @@ public class MovementObserver implements IWorldFrameObserver
 	public MovementObserver(BotParamsManager botParamsManager)
 	{
 		this.botParamsManager = botParamsManager;
-		
+
 		for (ETeamColor color : ETeamColor.yellowBlueValues())
 		{
 			final BotParams selectedParams = botParamsManager.getDatabase().getSelectedParams(teamToLabel(color));
@@ -64,8 +65,8 @@ public class MovementObserver implements IWorldFrameObserver
 			maxObservedVelocities.put(color, vel);
 		}
 	}
-	
-	
+
+
 	@Override
 	public void onNewWorldFrame(final WorldFrameWrapper wFrameWrapper)
 	{
@@ -77,25 +78,25 @@ public class MovementObserver implements IWorldFrameObserver
 			}
 		}
 	}
-	
-	
+
+
 	private void calcPerBot(final ITrackedBot bot)
 	{
 		history.putIfAbsent(bot.getBotId(), new ExponentialMovingAverageFilter(alpha, 0));
 		ExponentialMovingAverageFilter filter = history.get(bot.getBotId());
-		
+
 		updateAverage(bot, filter);
 		updateMaximum(bot, filter);
 	}
-	
-	
+
+
 	private void updateAverage(ITrackedBot bot, ExponentialMovingAverageFilter filter)
 	{
 		final double currentVelocity = bot.getVel().getLength();
 		filter.update(currentVelocity);
 	}
-	
-	
+
+
 	private void updateMaximum(final ITrackedBot bot, ExponentialMovingAverageFilter filter)
 	{
 		if (filter.getState() > maxObservedVelocities.get(bot.getTeamColor()))
@@ -104,8 +105,8 @@ public class MovementObserver implements IWorldFrameObserver
 			scheduleVelocityPublish();
 		}
 	}
-	
-	
+
+
 	private void scheduleVelocityPublish()
 	{
 		if (publishScheduled)
@@ -126,16 +127,16 @@ public class MovementObserver implements IWorldFrameObserver
 		}, 1000L);
 		publishScheduled = true;
 	}
-	
-	
+
+
 	private void publishNewVelocity(final ETeamColor teamColor)
 	{
 		final Double velMax = maxObservedVelocities.get(teamColor);
 		updateDatabase(teamColor, velMax);
 		log.debug("Observed new velocity of " + velMax + " m/s for team " + teamColor);
 	}
-	
-	
+
+
 	private void updateDatabase(final ETeamColor teamColor, double velMax)
 	{
 		EBotParamLabel label = teamToLabel(teamColor);
@@ -145,8 +146,8 @@ public class MovementObserver implements IWorldFrameObserver
 		String teamName = botParamsManager.getDatabase().getTeamStringForLabel(label);
 		botParamsManager.onEntryUpdated(teamName, currentParams);
 	}
-	
-	
+
+
 	private EBotParamLabel teamToLabel(ETeamColor color)
 	{
 		if (color == YELLOW)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.data.collector;
@@ -19,7 +19,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.Validate;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 
 import edu.tigers.sumatra.export.CSVExporter;
@@ -31,31 +32,31 @@ import edu.tigers.sumatra.thread.NamedThreadFactory;
  */
 public class TimeSeriesDataCollector implements Runnable
 {
-	private static final Logger log = Logger.getLogger(TimeSeriesDataCollector.class.getName());
+	private static final Logger log = LogManager.getLogger(TimeSeriesDataCollector.class.getName());
 	private final String baseFolder;
-	
+
 	private final List<ITimeSeriesDataCollectorObserver> observers = new CopyOnWriteArrayList<>();
 	private final List<ITimeSeriesDataProvider> dataProviders = new ArrayList<>();
 	private ScheduledExecutorService executorService;
-	
+
 	private long startTime;
 	private long time2Stop = 0;
 	private double timeout = 30;
 	private boolean processing = false;
-	
+
 	private boolean stopAutomatically = true;
-	
-	
+
+
 	private TimeSeriesDataCollector(String baseFolder)
 	{
 		Validate.notEmpty(baseFolder, "The file name must not be empty");
 		this.baseFolder = baseFolder;
 	}
-	
-	
+
+
 	/**
 	 * Create a collector with all known data providers
-	 * 
+	 *
 	 * @param baseFolder
 	 * @return
 	 */
@@ -66,11 +67,11 @@ public class TimeSeriesDataCollector implements Runnable
 		serviceLoader.forEach(collector::addDataProvider);
 		return collector;
 	}
-	
-	
+
+
 	/**
 	 * Create a collector without any initial data providers. Add your desired ones yourself.
-	 * 
+	 *
 	 * @param baseFolder
 	 * @return
 	 */
@@ -78,8 +79,8 @@ public class TimeSeriesDataCollector implements Runnable
 	{
 		return new TimeSeriesDataCollector(baseFolder);
 	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -87,8 +88,8 @@ public class TimeSeriesDataCollector implements Runnable
 	{
 		observers.add(observer);
 	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -96,8 +97,8 @@ public class TimeSeriesDataCollector implements Runnable
 	{
 		observers.remove(observer);
 	}
-	
-	
+
+
 	/**
 	 * @param dataProvider a data provider
 	 */
@@ -105,8 +106,8 @@ public class TimeSeriesDataCollector implements Runnable
 	{
 		dataProviders.add(dataProvider);
 	}
-	
-	
+
+
 	private void notifyPostProcessing(final String filename)
 	{
 		for (ITimeSeriesDataCollectorObserver observer : observers)
@@ -114,8 +115,8 @@ public class TimeSeriesDataCollector implements Runnable
 			observer.postProcessing(filename);
 		}
 	}
-	
-	
+
+
 	private void startExportData()
 	{
 		stop();
@@ -125,8 +126,8 @@ public class TimeSeriesDataCollector implements Runnable
 			new Thread(this, getClass().getSimpleName()).start();
 		}
 	}
-	
-	
+
+
 	/**
 	 * Stop collection of data before starting to export the data.<br>
 	 * This must not be called outside the collector!
@@ -137,11 +138,11 @@ public class TimeSeriesDataCollector implements Runnable
 		executorService.shutdown();
 		log.debug("Stopped");
 	}
-	
-	
+
+
 	/**
 	 * Starting collecting data
-	 * 
+	 *
 	 * @return true if successfully started
 	 */
 	public boolean start()
@@ -153,8 +154,9 @@ public class TimeSeriesDataCollector implements Runnable
 		log.debug("Started.");
 		return true;
 	}
-	
-	
+
+
+	@SuppressWarnings("squid:S1181") // Catch Throwable here intentionally
 	private void stopIfDone()
 	{
 		try
@@ -169,8 +171,8 @@ public class TimeSeriesDataCollector implements Runnable
 			startExportData();
 		}
 	}
-	
-	
+
+
 	protected boolean isDone()
 	{
 		if ((time2Stop != 0) && ((System.nanoTime() - time2Stop) > 0))
@@ -185,8 +187,8 @@ public class TimeSeriesDataCollector implements Runnable
 		}
 		return stopAutomatically && dataProviders.stream().allMatch(ITimeSeriesDataProvider::isDone);
 	}
-	
-	
+
+
 	/**
 	 * Stop after given delay
 	 *
@@ -196,8 +198,8 @@ public class TimeSeriesDataCollector implements Runnable
 	{
 		time2Stop = System.nanoTime() + (milliseconds * (long) 1e6);
 	}
-	
-	
+
+
 	/**
 	 * Stop export
 	 */
@@ -205,8 +207,8 @@ public class TimeSeriesDataCollector implements Runnable
 	{
 		stopDelayed(0);
 	}
-	
-	
+
+
 	@Override
 	public final void run()
 	{
@@ -214,8 +216,8 @@ public class TimeSeriesDataCollector implements Runnable
 		String fullFileName = exportMetadata();
 		notifyPostProcessing(fullFileName);
 	}
-	
-	
+
+
 	private String exportMetadata()
 	{
 		Map<String, Object> jsonMapping = new HashMap<>();
@@ -223,7 +225,7 @@ public class TimeSeriesDataCollector implements Runnable
 		jsonMapping.put("description", "no description available");
 		dataProviders.forEach(provider -> provider.onAddMetadata(jsonMapping));
 		observers.forEach(provider -> provider.onAddMetadata(jsonMapping));
-		
+
 		JSONObject jsonObj = new JSONObject(jsonMapping);
 		String fullFileName = baseFolder + "/info.json";
 		try
@@ -235,29 +237,29 @@ public class TimeSeriesDataCollector implements Runnable
 		}
 		return fullFileName;
 	}
-	
-	
+
+
 	private void exportCsvFiles(final String folder)
 	{
 		File dir = new File(folder);
 		if (dir.exists())
 		{
-			log.error("Target folder already exists: " + folder);
+			log.error("Target folder already exists: {}", folder);
 			return;
 		}
 		if (!dir.mkdirs())
 		{
-			log.error("Can not create target folder: " + folder);
+			log.error("Can not create target folder: {}", folder);
 			return;
 		}
-		
+
 		dataProviders.forEach(
 				provider -> provider.getExportableData()
 						.forEach(
-								(key, dataBuffer) -> CSVExporter.exportCollection(folder, key, new ArrayList<>(dataBuffer))));
+								(name, dataBuffer) -> CSVExporter.exportCollection(folder, name, new ArrayList<>(dataBuffer))));
 	}
-	
-	
+
+
 	/**
 	 * @param stopAutomatically the stopAutomatically to set
 	 */
@@ -265,8 +267,8 @@ public class TimeSeriesDataCollector implements Runnable
 	{
 		this.stopAutomatically = stopAutomatically;
 	}
-	
-	
+
+
 	/**
 	 * @param timeout the timeout to set
 	 */

@@ -1,332 +1,201 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.export;
 
-import java.io.BufferedWriter;
+import java.io.Closeable;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.lang.reflect.Field;
-import java.util.Arrays;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
-import java.util.LinkedList;
-import java.util.Queue;
 
-import org.apache.log4j.Logger;
+import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import edu.tigers.sumatra.data.collector.IExportable;
 
 
 /**
- * With {@link CSVExporter} you can export user-defined values to csv-files on disc
- * Usage:
- * create an instance
- * optionally set a header
- * add values as often as applicable
- * close the instance
- * 
- * <pre>
- * CSVExporter.createInstance(&quot;test&quot;, &quot;testexport&quot;, true);
- * CSVExporter exporter = CSVExporter.getInstance(&quot;test&quot;);
- * 
- * exporter.setHeader(&quot;first&quot;, &quot;second&quot;, &quot;third&quot;);
- * 
- * exporter.addValues(&quot;1&quot;, &quot;3&quot;, &quot;hallo&quot;);
- * exporter.addValues(&quot;3&quot;, &quot;44&quot;, &quot;goodbye&quot;);
- * 
- * exporter.close();
- * </pre>
- * 
- * calls to createInstance and addValues can be distributed to different classes
- * for example an instance is created in a role, but values are added from a skill
- * 
- * @author DanielW
+ * With {@link CSVExporter} you can export user-defined values to csv-files on disc.
  */
-public final class CSVExporter
+public final class CSVExporter implements Closeable
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	private static final Logger log = Logger.getLogger(CSVExporter.class.getName());
-	private boolean autoIncrement = false;
-	private final String fileName;
-	private final Queue<String> values = new LinkedList<>();
-	private final Queue<String> header = new LinkedList<>();
-	private String additionalInfo = "";
-	private File file;
-	private FileOutputStream fileOutputStream;
-	private BufferedWriter fileWriter;
-	private boolean writeHeader = false;
+	private static final Logger log = LogManager.getLogger(CSVExporter.class.getName());
+	private static final String EXTENSION = ".csv";
 	private static final String DELIMITER = ",";
-	private int headerSize = 0;
-	
-	private boolean isClosed = false;
-	private boolean append = false;
-	
-	
-	/**
-	 * @param fileName
-	 * @param autoIncrement
-	 * @param append
-	 */
-	public CSVExporter(final String fileName, final boolean autoIncrement, final boolean append)
+
+	private final Path folder;
+	private final String fileName;
+	private final EMode mode;
+
+	private int numHeaders = 0;
+	private FileWriter fileWriter;
+
+
+	public enum EMode
 	{
-		this.fileName = fileName;
-		this.autoIncrement = autoIncrement;
-		this.append = append;
+		EXACT_FILE_NAME,
+		APPEND_TO_EXISTING_FILE,
+		AUTO_INCREMENT_FILE_NAME,
+		APPEND_DATE,
+		PREPEND_DATE,
 	}
-	
-	
+
+
 	/**
-	 * @param fileName subtract-dir and name of exported file without .csv ending
-	 * @param autoIncrement
+	 * @param folder the target folder
+	 * @param baseFileName subtract-dir and name of exported file without .csv ending
+	 * @param mode the write mode
 	 */
-	public CSVExporter(final String fileName, final boolean autoIncrement)
+	public CSVExporter(final String folder, final String baseFileName, final EMode mode)
 	{
-		this(fileName, autoIncrement, false);
+		this.folder = Paths.get(folder);
+		this.mode = mode;
+		this.fileName = getFileName(baseFileName);
 	}
-	
-	
+
+
+	private String getFileName(final String baseFileName)
+	{
+		switch (mode)
+		{
+			case EXACT_FILE_NAME:
+			case APPEND_TO_EXISTING_FILE:
+				return baseFileName + EXTENSION;
+			case AUTO_INCREMENT_FILE_NAME:
+				int counter = 0;
+				while (folder.resolve(baseFileName + counter + EXTENSION).toFile().exists())
+				{
+					counter++;
+				}
+				return baseFileName + counter + EXTENSION;
+			case APPEND_DATE:
+			case PREPEND_DATE:
+				String dateStr = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-SSS").format(new Date());
+				if (StringUtils.isBlank(baseFileName))
+				{
+					return dateStr;
+				}
+				if (mode == EMode.PREPEND_DATE)
+				{
+					return dateStr + "_" + baseFileName + EXTENSION;
+				}
+				return baseFileName + "_" + dateStr + EXTENSION;
+		}
+		throw new IllegalStateException("Unhandled mode: " + mode);
+	}
+
+
 	/**
-	 * @param folder
-	 * @param key
-	 * @param list
+	 * @param folder the target folder
+	 * @param fileName the target file name
+	 * @param list the list of data entries
 	 */
-	public static void exportCollection(final String folder, final String key,
+	public static void exportCollection(
+			final String folder,
+			final String fileName,
 			final Collection<? extends IExportable> list)
 	{
-		CSVExporter exporter = new CSVExporter(folder + "/" + key, false);
-		if (!list.isEmpty())
-		{
-			IExportable firstElement = list.iterator().next();
-			Collection<String> header = firstElement.getHeaders();
-			if (header.size() == firstElement.getNumberList().size())
-			{
-				exporter.setHeader(header);
-			} else if (!header.isEmpty())
-			{
-				log.warn("Element size does not match header size: " + header.size() + " != "
-						+ firstElement.getNumberList().size());
-			}
-			list.forEach(nl -> exporter.addValues(nl.getNumberList()));
-		} else
-		{
-			exporter.persistRecord();
-		}
+		CSVExporter exporter = new CSVExporter(folder, fileName, EMode.EXACT_FILE_NAME);
+		list.stream().findAny().map(IExportable::getHeaders).ifPresent(exporter::setHeader);
+		list.stream().map(IExportable::getNumberList).forEach(exporter::addValues);
 		exporter.close();
 	}
-	
-	
+
+
 	/**
 	 * adds a new data set to a file.
-	 * 
-	 * @param values list of values. note: count of values has to match the header
-	 */
-	public void addValues(final Number... values)
-	{
-		this.values.clear();
-		for (final Number f : values)
-		{
-			this.values.add(String.valueOf(f));
-		}
-		persistRecord();
-	}
-	
-	
-	/**
-	 * adds a new data set to a file.
-	 * 
+	 *
 	 * @param values list of values. note: count of values has to match the header
 	 */
 	public void addValues(final Collection<? extends Number> values)
 	{
-		this.values.clear();
-		for (final Object f : values)
-		{
-			this.values.add(String.valueOf(f));
-		}
-		persistRecord();
-	}
-	
-	
-	/**
-	 * This method writes all content the fields of the given object into the file
-	 * 
-	 * @param bean
-	 * @throws IllegalAccessException If one of the fields of the given bean is not accessible
-	 */
-	public void addValuesBean(final Object bean) throws IllegalAccessException
-	{
-		values.clear();
-		
-		Field[] fields = bean.getClass().getDeclaredFields();
-		for (Field field : fields)
-		{
-			values.add(String.valueOf(field.get(bean)));
-		}
-		persistRecord();
-	}
-	
-	
-	/**
-	 * set the csv header (first row of the file)
-	 * as soon a header is set, it will be written to the file
-	 * 
-	 * @param header note: value count has to match header count
-	 */
-	public void setHeader(final String... header)
-	{
-		this.header.clear();
-		this.header.addAll(Arrays.asList(header));
-		writeHeader = true;
-		headerSize = this.header.size();
-	}
-	
-	
-	/**
-	 * set the csv header
-	 * 
-	 * @param header
-	 */
-	public void setHeader(Collection<String> header)
-	{
-		this.header.clear();
-		this.header.addAll(header);
-		writeHeader = true;
-		headerSize = this.header.size();
-	}
-	
-	
-	/**
-	 * This method uses reflection to get the available field names and fills a header with them
-	 * 
-	 * @param bean
-	 */
-	public void setHeaderBean(final Object bean)
-	{
-		header.clear();
-		
-		Field[] fields = bean.getClass().getDeclaredFields();
-		for (Field field : fields)
-		{
-			header.add(field.getName());
-		}
-		
-		writeHeader = true;
-		headerSize = header.size();
-	}
-	
-	
-	/**
-	 * The additional info will be printed above the header.
-	 * Header must be set
-	 * 
-	 * @param info
-	 */
-	public void setAdditionalInfo(final String info)
-	{
-		additionalInfo = info;
-	}
-	
-	
-	/**
-	 * do the actual persisting stuff
-	 */
-	private void persistRecord()
-	{
 		try
 		{
-			if (file == null)
+			if (fileWriter == null)
 			{
-				File dir = new File(fileName).getParentFile();
-				if (!dir.exists())
-				{
-					boolean created = dir.mkdirs();
-					if (!created)
-					{
-						log.warn("Could not create export dir: " + dir.getAbsolutePath());
-					}
-				}
-				int counter = 0;
-				if (autoIncrement)
-				{
-					while ((file = new File(fileName + counter + ".csv")).exists())
-					{
-						counter++;
-					}
-				} else
-				{
-					file = new File(fileName + ".csv");
-				}
-				
-				fileOutputStream = new FileOutputStream(file, append);
-				fileWriter = new BufferedWriter(new OutputStreamWriter(
-						fileOutputStream, "UTF-8"));
-				
-				if (writeHeader)
-				{
-					fileWriter.write("#Sumatra CSVExporter\n");
-					fileWriter.write("#" + new Date().toString() + "\n");
-					
-					if (!additionalInfo.isEmpty())
-					{
-						fileWriter.write("#" + additionalInfo + "\n");
-					}
-					
-					fileWriter.write(header.poll());
-					for (final String s : header)
-					{
-						fileWriter.write(DELIMITER + s);
-					}
-					fileWriter.write("\n");
-					fileWriter.flush();
-				}
-				
+				open();
 			}
-			if (writeHeader && (headerSize != values.size()))
+
+			if (numHeaders > 0 && numHeaders != values.size())
 			{
-				throw new CSVExporterException("object count on values must match header", null);
+				log.warn("Number of headers ({}) and number of values ({}) do not match. ", numHeaders, values.size());
 			}
-			if (!values.isEmpty())
-			{
-				fileWriter.write(values.poll());
-				for (final String s : values)
-				{
-					fileWriter.write(DELIMITER + s);
-				}
-				fileWriter.write("\n");
-				fileWriter.flush();
-			}
-		} catch (final FileNotFoundException err)
-		{
-			throw new CSVExporterException("file not found", err);
+			writeLine(values);
 		} catch (final IOException err)
 		{
-			throw new CSVExporterException("io error", err);
+			throw new CSVExporterException("Failed to add values to CSV file", err);
 		}
-		
 	}
-	
-	
+
+
 	/**
-	 * @return
+	 * set the csv headers
+	 *
+	 * @param headers
+	 */
+	public void setHeader(Collection<String> headers)
+	{
+		if (fileWriter != null)
+		{
+			throw new IllegalStateException("CSV file already opened. Can not change the headers anymore");
+		}
+
+		try
+		{
+			open();
+			writeLine(headers);
+			numHeaders = headers.size();
+		} catch (IOException e)
+		{
+			throw new CSVExporterException("Could not write headers to CSV file", e);
+		}
+	}
+
+
+	private void open() throws IOException
+	{
+		Files.createDirectories(folder);
+		File file = folder.resolve(fileName).toFile();
+		fileWriter = new FileWriter(file, mode == EMode.APPEND_TO_EXISTING_FILE);
+	}
+
+
+	private void writeLine(final Collection<?> values) throws IOException
+	{
+		if (values.isEmpty())
+		{
+			return;
+		}
+		fileWriter.write(StringUtils.join(values, DELIMITER));
+		fileWriter.write("\n");
+		fileWriter.flush();
+	}
+
+
+	/**
+	 * @return the absolute path to the csv file
 	 */
 	public String getAbsoluteFileName()
 	{
-		return new File(fileName + ".csv").getAbsolutePath();
+		return folder.resolve(fileName).toAbsolutePath().toString();
 	}
-	
-	
-	/**
-	 * closes the file stream.
-	 * do not forget to call this method when you are done
-	 */
+
+
+	public String getFileName()
+	{
+		return fileName;
+	}
+
+
+	@Override
 	public void close()
 	{
 		if (fileWriter != null)
@@ -334,44 +203,12 @@ public final class CSVExporter
 			try
 			{
 				fileWriter.close();
+				fileWriter = null;
 			} catch (final IOException err)
 			{
-				throw new CSVExporterException("io error while closing the file", err);
+				throw new CSVExporterException("Could not close CSV file", err);
 			}
 		}
-		if (fileOutputStream != null)
-		{
-			try
-			{
-				fileOutputStream.close();
-			} catch (final IOException err)
-			{
-				throw new CSVExporterException("io error while closing the file", err);
-			}
-		}
-		log.debug("Saved csv file to " + fileName);
-		isClosed = true;
+		log.debug("Saved csv file to {}", this::getAbsoluteFileName);
 	}
-	
-	
-	/**
-	 * @return
-	 */
-	public boolean isClosed()
-	{
-		return isClosed;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public boolean isEmpty()
-	{
-		return values.isEmpty();
-	}
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
 }

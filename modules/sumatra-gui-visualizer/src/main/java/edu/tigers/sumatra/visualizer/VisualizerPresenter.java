@@ -1,38 +1,17 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.visualizer;
 
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.event.MouseEvent;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
-import javax.swing.SwingUtilities;
-
-import org.apache.commons.lang.Validate;
-import org.apache.log4j.Logger;
-
 import edu.tigers.moduli.listenerVariables.ModulesState;
-import edu.tigers.sumatra.cam.data.CamBall;
-import edu.tigers.sumatra.cam.data.CamRobot;
 import edu.tigers.sumatra.clock.ThreadUtil;
-import edu.tigers.sumatra.drawable.DrawableBotShape;
-import edu.tigers.sumatra.drawable.DrawableCircle;
-import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.drawable.IShapeLayer;
 import edu.tigers.sumatra.drawable.ShapeMap;
+import edu.tigers.sumatra.drawable.ShapeMapSource;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.IBotIDMap;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
@@ -47,11 +26,21 @@ import edu.tigers.sumatra.views.ISumatraView;
 import edu.tigers.sumatra.vision.AVisionFilter;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
-import edu.tigers.sumatra.wp.ball.trajectory.chipped.FixedLossPlusRollingBallTrajectory.FixedLossPlusRollingParameters;
-import edu.tigers.sumatra.wp.ball.trajectory.chipped.FixedLossPlusRollingConsultant;
-import edu.tigers.sumatra.wp.data.ExtendedCamDetectionFrame;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang.Validate;
+
+import javax.swing.SwingUtilities;
+import java.awt.Component;
+import java.awt.event.MouseEvent;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -63,20 +52,18 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
  *
  * @author Bernhard, (Gero)
  */
+@Log4j2
 public class VisualizerPresenter extends ASumatraViewPresenter implements IRobotsPanelObserver, IFieldPanelObserver,
 		IWorldFrameObserver
 {
-	private static final Logger log = Logger.getLogger(VisualizerPresenter.class.getName());
-
 	private static final int VISUALIZATION_FPS = 24;
 
 	private final VisualizerPanel panel = new VisualizerPanel();
 	private final OptionsPanelPresenter optionsPanelPresenter;
-	private final Map<Integer, ExtendedCamDetectionFrame> camFrames = new ConcurrentHashMap<>();
 	private ScheduledExecutorService execService;
 	private WorldFrameWrapper lastWorldFrameWrapper = null;
 	private BotID selectedRobotId = BotID.noBot();
-	private final Map<String, ShapeMap> shapeMaps = new ConcurrentHashMap<>();
+	private final Map<ShapeMapSource, ShapeMap> shapeMaps = new ConcurrentHashMap<>();
 
 
 	/**
@@ -85,7 +72,6 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 	public VisualizerPresenter()
 	{
 		optionsPanelPresenter = new OptionsPanelPresenter(panel.getFieldPanel());
-		panel.getOptionsMenu().addMenuEntry(new VisionLayer());
 	}
 
 
@@ -109,10 +95,9 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 	{
 		double kickSpeed = lastWorldFrameWrapper.getSimpleWorldFrame().getBall().getChipConsultant()
 				.getInitVelForDistAtTouchdown(dist, numTouchdown);
-		IVector2 kickVector = new FixedLossPlusRollingConsultant(new FixedLossPlusRollingParameters())
-				.absoluteKickVelToVector(kickSpeed);
 		IVector2 ballPos = lastWorldFrameWrapper.getSimpleWorldFrame().getBall().getPos();
-		return Vector3.from2d(posIn.subtractNew(ballPos).scaleTo(kickVector.x()), kickVector.y());
+		return Geometry.getBallFactory().createChipConsultant()
+				.speedToVel(posIn.subtractNew(ballPos).getAngle(), kickSpeed);
 	}
 
 
@@ -148,7 +133,14 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 			}
 		} else if (ctrl)
 		{
-			vel = Vector3.from2d(posIn.subtractNew(ballPos).scaleTo(RuleConstraints.getMaxBallSpeed() - 0.001), 0);
+			if (alt)
+			{
+				vel = Geometry.getBallFactory().createChipConsultant()
+						.speedToVel(posIn.subtractNew(ballPos).getAngle(), RuleConstraints.getMaxBallSpeed() - 0.001);
+			} else
+			{
+				vel = Vector3.from2d(posIn.subtractNew(ballPos).scaleTo(RuleConstraints.getMaxBallSpeed() - 0.001), 0);
+			}
 		} else if (shift)
 		{
 			if (alt)
@@ -253,6 +245,7 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 			}
 		}
 
+		shapeMaps.clear();
 		panel.getRobotsPanel().clearView();
 		panel.getFieldPanel().setPanelVisible(false);
 		panel.getFieldPanel().clearField();
@@ -314,16 +307,28 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 
 
 	@Override
-	public void onNewShapeMap(final long timestamp, final ShapeMap shapeMap, final String source)
+	public void onNewShapeMap(final long timestamp, final ShapeMap shapeMap, final ShapeMapSource source)
 	{
 		shapeMaps.put(source, shapeMap);
 	}
 
 
 	@Override
-	public void onClearShapeMap(final String source)
+	public void onRemoveSourceFromShapeMap(final String source)
 	{
-		shapeMaps.put(source, new ShapeMap());
+		shapeMaps.keySet().stream()
+				.filter(k -> k.getName().equals(source))
+				.forEach(k -> shapeMaps.put(k, new ShapeMap()));
+	}
+
+
+	@Override
+	public void onRemoveCategoryFromShapeMap(final String... category)
+	{
+		List<String> categories = Arrays.asList(category);
+		shapeMaps.keySet().stream()
+				.filter(k -> k.getCategories().containsAll(categories))
+				.forEach(k -> shapeMaps.put(k, new ShapeMap()));
 	}
 
 
@@ -338,7 +343,7 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 		WorldFrameWrapper lastFrame = lastWorldFrameWrapper;
 		if (lastFrame != null)
 		{
-			IBotIDMap<ITrackedBot> tBotsMap = lastFrame.getSimpleWorldFrame().getBots();
+			Map<BotID, ITrackedBot> tBotsMap = lastFrame.getSimpleWorldFrame().getBots();
 			for (ITrackedBot tBot : tBotsMap.values())
 			{
 				BotStatus status = panel.getRobotsPanel().getBotStatus(tBot.getBotId());
@@ -365,12 +370,6 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 	}
 
 
-	@Override
-	public void onNewCamDetectionFrame(final ExtendedCamDetectionFrame frame)
-	{
-		camFrames.put(frame.getCameraId(), frame);
-	}
-
 
 	@Override
 	public void onClearWorldFrame()
@@ -380,11 +379,6 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 	}
 
 
-	@Override
-	public void onClearCamDetectionFrame()
-	{
-		camFrames.clear();
-	}
 
 
 	/**
@@ -403,6 +397,7 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 	{
 		return panel;
 	}
+
 
 	private class UpdaterSelfSchedule extends Updater
 	{
@@ -444,13 +439,12 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 		private void update()
 		{
 			shapeMaps.forEach(this::newShapeMap);
-			updateCamFrameShapes();
 			panel.getFieldPanel().paintOffline();
 			updateRobotsPanel();
 		}
 
 
-		private void newShapeMap(final String source, final ShapeMap shapeMap)
+		private void newShapeMap(final ShapeMapSource source, final ShapeMap shapeMap)
 		{
 			panel.getOptionsMenu().addSourceMenuIfNotPresent(source);
 			for (IShapeLayer sl : shapeMap.getAllShapeLayersIdentifiers())
@@ -459,63 +453,11 @@ public class VisualizerPresenter extends ASumatraViewPresenter implements IRobot
 			}
 			panel.getFieldPanel().setShapeMap(source, shapeMap);
 		}
+	}
 
 
-		private void updateCamFrameShapes()
-		{
-			List<IDrawableShape> shapes = new ArrayList<>();
-			List<ExtendedCamDetectionFrame> mergedFrames = new ArrayList<>(camFrames.values());
-			mergedFrames.sort((a, b) -> Long.compare(b.getBall().gettCapture(), a.getBall().gettCapture()));
-			for (ExtendedCamDetectionFrame mergedCamFrame : mergedFrames)
-			{
-				for (CamRobot bot : mergedCamFrame.getRobotsBlue())
-				{
-					shapes.add(createDrawableShape(bot, Color.BLUE));
-				}
-
-				for (CamRobot bot : mergedCamFrame.getRobotsYellow())
-				{
-					shapes.add(createDrawableShape(bot, Color.YELLOW));
-				}
-
-				Color ballsColor = new Color(50, 100, 20);
-				for (CamBall ball : mergedCamFrame.getBalls())
-				{
-					DrawableCircle ballCircle = new DrawableCircle(ball.getPos().getXYVector(), Geometry
-							.getBallRadius(), ballsColor);
-					ballCircle.setFill(true);
-					shapes.add(ballCircle);
-				}
-			}
-
-			if (!mergedFrames.isEmpty())
-			{
-				Color ballColor = new Color(50, 100, 200);
-				double age = (mergedFrames.get(0).gettCapture() - mergedFrames.get(0).getBall().gettCapture()) / 1e9;
-				double size = ((Geometry.getBallRadius() - 5) * (1 - Math.min(1, Math.max(0, age / 0.2)))) + 5;
-				DrawableCircle ballCircle = new DrawableCircle(mergedFrames.get(0).getBall().getPos().getXYVector(),
-						size, ballColor);
-				ballCircle.setFill(true);
-				shapes.add(ballCircle);
-			}
-
-			ShapeMap shapeMap = new ShapeMap();
-			IShapeLayer visionLayer = new VisionLayer();
-			shapeMap.get(visionLayer).addAll(shapes);
-			long timestamp = mergedFrames.stream().map(ExtendedCamDetectionFrame::gettCapture).findFirst().orElse(0L);
-			onNewShapeMap(timestamp, shapeMap, "CAM");
-		}
-
-
-		private DrawableBotShape createDrawableShape(final CamRobot bot, final Color color)
-		{
-			DrawableBotShape botShape = new DrawableBotShape(bot.getPos(), bot.getOrientation(),
-					Geometry.getBotRadius(), 75);
-			botShape.setFillColor(null);
-			botShape.setBorderColor(color);
-			botShape.setFontColor(Color.white);
-			botShape.setId(String.valueOf(bot.getRobotID()));
-			return botShape;
-		}
+	public static int getVisualizationFps()
+	{
+		return VISUALIZATION_FPS;
 	}
 }

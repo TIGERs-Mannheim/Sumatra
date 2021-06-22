@@ -1,9 +1,11 @@
+/*
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.pathfinder.obstacles;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import com.sleepycat.persist.model.Persistent;
 
 import edu.tigers.sumatra.drawable.IDrawableShape;
 
@@ -11,14 +13,14 @@ import edu.tigers.sumatra.drawable.IDrawableShape;
 /**
  * Base class for obstacles.
  */
-@Persistent
 public abstract class AObstacle implements IObstacle
 {
-	private transient boolean critical = false;
-	protected transient List<IDrawableShape> shapes;
+	private boolean emergencyBrakeFor = false;
+	private boolean activelyEvade = false;
+	private List<IDrawableShape> shapes;
 
 
-	protected abstract void initializeShapes();
+	protected abstract void initializeShapes(final List<IDrawableShape> shapes);
 
 
 	@Override
@@ -27,21 +29,34 @@ public abstract class AObstacle implements IObstacle
 		if (shapes == null)
 		{
 			shapes = new ArrayList<>();
-			initializeShapes();
+			initializeShapes(shapes);
 		}
 		return shapes;
 	}
 
 
 	@Override
-	public final boolean isCritical()
+	public final boolean isEmergencyBrakeFor()
 	{
-		return critical;
+		return emergencyBrakeFor;
 	}
 
 
-	public void setCritical(final boolean critical)
+	public void setEmergencyBrakeFor(final boolean emergencyBrakeFor)
 	{
-		this.critical = critical;
+		this.emergencyBrakeFor = emergencyBrakeFor;
+	}
+
+
+	@Override
+	public boolean isActivelyEvade()
+	{
+		return activelyEvade;
+	}
+
+
+	public void setActivelyEvade(final boolean activelyEvade)
+	{
+		this.activelyEvade = activelyEvade;
 	}
 }

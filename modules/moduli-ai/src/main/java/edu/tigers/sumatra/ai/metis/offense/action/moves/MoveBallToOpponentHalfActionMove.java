@@ -1,64 +1,80 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
-package edu.tigers.sumatra.ai.metis.offense.action.moves;import edu.tigers.sumatra.ai.BaseAiFrame;
-import edu.tigers.sumatra.ai.metis.TacticalField;
+package edu.tigers.sumatra.ai.metis.offense.action.moves;
+
+import com.github.g3force.configurable.ConfigRegistration;
+import com.github.g3force.configurable.Configurable;
+import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
+import edu.tigers.sumatra.ai.metis.kicking.PassFactory;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
 import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
-import edu.tigers.sumatra.ai.metis.offense.action.KickTarget;
+import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
 import edu.tigers.sumatra.geometry.Geometry;
-import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.wp.data.DynamicPosition;
+import lombok.RequiredArgsConstructor;
+
+import java.util.function.Supplier;
 
 
 /**
  * Get the ball to the opponent half by chipping it forward
  */
+@RequiredArgsConstructor
 public class MoveBallToOpponentHalfActionMove extends AOffensiveActionMove
 {
-	public MoveBallToOpponentHalfActionMove()
+	@Configurable(comment = "Viability for GoToOtherHalf", defValue = "0.22")
+	private static double defaultGoToOtherHalfViability = 0.22;
+
+	@Configurable(comment = "X-Value at which this action is activated", defValue = "500.0")
+	private static double decisionValueX = 500.0;
+
+	static
 	{
-		super(EOffensiveActionMove.MOVE_BALL_TO_OPPONENT_HALF);
+		ConfigRegistration.registerClass("metis", MoveBallToOpponentHalfActionMove.class);
 	}
-	
-	
-	@Override
-	public EActionViability isActionViable(final BotID id, final TacticalField newTacticalField,
-			final BaseAiFrame baseAiFrame)
+
+	private final Supplier<BotDistance> opponentClosestToBall;
+
+	private final PassFactory passFactory = new PassFactory();
+
+
+	private OffensiveActionViability calcViability()
 	{
-		if (baseAiFrame.getWorldFrame().getTigerBotsAvailable().values().stream()
-				.anyMatch(a -> Geometry.getFieldHalfTheir().isPointInShape(a.getPos())))
+		if (getBall().getPos().x() > decisionValueX || getBall().getVel().getLength2() > 0.3)
 		{
-			return EActionViability.FALSE;
+			return new OffensiveActionViability(EActionViability.FALSE, 0.0);
 		}
-		return EActionViability.PARTIALLY;
+		return new OffensiveActionViability(EActionViability.PARTIALLY, calcViabilityScore());
 	}
-	
-	
+
+
 	@Override
-	public OffensiveAction activateAction(final BotID id, final TacticalField newTacticalField,
-			final BaseAiFrame baseAiFrame)
+	public OffensiveAction calcAction(BotID botId)
 	{
-		// assuming that we can not reach the opponent goal anyway, we just kick with max speed
-		IVector2 target = Geometry.getGoalTheir().getCenter();
-		double goalWidth = Geometry.getGoalTheir().getWidth()
-				* Math.signum(baseAiFrame.getWorldFrame().getBall().getPos().y());
-		IVector2 centerToGoalPost = Geometry.getGoalTheir().getRightPost().subtractNew(target);
-		target = target.addNew(centerToGoalPost.scaleToNew(goalWidth / 2.5));
-		final KickTarget kickTarget = KickTarget.pass(new DynamicPosition(target, 0.6),
-				RuleConstraints.getMaxBallSpeed(), KickTarget.ChipPolicy.ALLOW_CHIP);
-		return createOffensiveAction(EOffensiveAction.CLEARING_KICK, kickTarget);
+		passFactory.update(getWFrame());
+		passFactory.setAimingTolerance(0.6);
+		var target = Geometry.getGoalTheir().getCenter();
+		var pass = passFactory.chip(getBall().getPos(), target, botId, BotID.noBot());
+		return OffensiveAction.builder()
+				.move(EOffensiveActionMove.MOVE_BALL_TO_OPPONENT_HALF)
+				.action(EOffensiveAction.CLEARING_KICK)
+				.viability(calcViability())
+				.pass(pass)
+				.build();
 	}
-	
-	
-	@Override
-	public double calcViabilityScore(final BotID id, final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+
+
+	private double calcViabilityScore()
 	{
-		return ActionMoveConstants.getDefaultGoToOtherHalfViability()
-				* ActionMoveConstants.getViabilityMultiplierGoToOtherHalf();
+		if (opponentClosestToBall.get().getDist() > 1500)
+		{
+			// only do kick to other half if in panic... otherwise rather wait for a suitable strategy, the protect
+			// should take over then
+			return 0.01;
+		}
+		return applyMultiplier(defaultGoToOtherHalfViability);
 	}
-	
 }

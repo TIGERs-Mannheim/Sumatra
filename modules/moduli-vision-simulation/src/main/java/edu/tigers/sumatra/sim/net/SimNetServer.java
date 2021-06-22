@@ -1,4 +1,25 @@
+/*
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.sim.net;
+
+import com.github.g3force.configurable.ConfigRegistration;
+import com.github.g3force.configurable.Configurable;
+import com.google.protobuf.InvalidProtocolBufferException;
+import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.sim.SimulatedBall;
+import edu.tigers.sumatra.sim.SimulatedBot;
+import edu.tigers.sumatra.sim.dynamics.bot.EDriveMode;
+import edu.tigers.sumatra.sim.dynamics.bot.SimBotAction;
+import edu.tigers.sumatra.sim.net.SimRefereeOuterClass.SimReferee;
+import edu.tigers.sumatra.sim.net.SimRegisterOuterClass.SimRegister;
+import edu.tigers.sumatra.sim.net.SimRequestOuterClass.SimRequest;
+import edu.tigers.sumatra.sim.net.SimResponseOuterClass.SimResponse;
+import edu.tigers.sumatra.thread.NamedThreadFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -14,52 +35,34 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.log4j.Logger;
-
-import com.github.g3force.configurable.ConfigRegistration;
-import com.github.g3force.configurable.Configurable;
-import com.google.protobuf.InvalidProtocolBufferException;
-
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.sim.SimulatedBall;
-import edu.tigers.sumatra.sim.SimulatedBot;
-import edu.tigers.sumatra.sim.dynamics.bot.EDriveMode;
-import edu.tigers.sumatra.sim.dynamics.bot.SimBotAction;
-import edu.tigers.sumatra.sim.net.SimRefereeOuterClass.SimReferee;
-import edu.tigers.sumatra.sim.net.SimRegisterOuterClass.SimRegister;
-import edu.tigers.sumatra.sim.net.SimRequestOuterClass.SimRequest;
-import edu.tigers.sumatra.sim.net.SimResponseOuterClass.SimResponse;
-import edu.tigers.sumatra.thread.NamedThreadFactory;
-
 
 /**
  * The SimNetServer is the network interface of the simulator on the server side
  */
 public class SimNetServer
 {
-	private static final Logger log = Logger.getLogger(SimNetServer.class);
-	
+	private static final Logger log = LogManager.getLogger(SimNetServer.class);
+
 	@Configurable(defValue = "14242", comment = "The listen port of the simulation server")
 	private static int port = 14242;
-	
+
 	static
 	{
 		ConfigRegistration.registerClass("user", SimNetServer.class);
 	}
-	
+
 	private ExecutorService service;
 	private final Listener listener = new Listener();
 	private boolean running = false;
-	
+
 	private final List<Socket> clientSockets = new CopyOnWriteArrayList<>();
 	private final Set<Socket> teamsStateSendTo = new HashSet<>();
 	private final Map<ETeamColor, Socket> registeredTeams = new EnumMap<>(ETeamColor.class);
-	
-	
+
+
 	private final List<ISimNetObserver> observers = new CopyOnWriteArrayList<>();
-	
-	
+
+
 	public void start()
 	{
 		running = true;
@@ -67,8 +70,8 @@ public class SimNetServer
 		service = Executors.newFixedThreadPool(2, new NamedThreadFactory("SimNetServer"));
 		service.submit(listener);
 	}
-	
-	
+
+
 	public void stop()
 	{
 		if (!running)
@@ -94,8 +97,8 @@ public class SimNetServer
 		service = null;
 		clientSockets.clear();
 	}
-	
-	
+
+
 	private void closeClientConnections()
 	{
 		clientSockets.forEach(this::closeClientSocket);
@@ -104,8 +107,8 @@ public class SimNetServer
 			log.error("All client sockets should have been gone.");
 		}
 	}
-	
-	
+
+
 	public void publish(edu.tigers.sumatra.sim.SimState simState)
 	{
 		if (!running)
@@ -115,29 +118,24 @@ public class SimNetServer
 		SimRequest.Builder stateBuilder = SimRequest.newBuilder()
 				.setTimestamp(simState.getSimTime())
 				.setFrameId(simState.getFrameId());
-		
+
 		if (simState.getLastKickEvent() != null)
 		{
 			stateBuilder.setLastKickEvent(LocalToProtoMapper.mapKickEvent(simState.getLastKickEvent()));
 		}
-		
+
 		for (SimulatedBot bot : simState.getSimulatedBots().values())
 		{
 			stateBuilder.addBotState(SimState.SimBotState.newBuilder()
 					.setBotId(LocalToProtoMapper.mapBotId(bot.getBotId()))
 					.setPose(LocalToProtoMapper.mapPose(bot.getState().getPose()))
-					.setVel(LocalToProtoMapper.mapVector3(bot.getState().getVel()))
+					.setVel(LocalToProtoMapper.mapVector3(bot.getState().getVel().multiplyNew(1e-3)))
 					.setBarrierInterrupted(bot.getState().isBarrierInterrupted()));
 		}
-		
+
 		SimulatedBall simulatedBall = simState.getSimulatedBall();
-		stateBuilder.setBallState(SimState.SimBallState.newBuilder()
-				.setPose(LocalToProtoMapper.mapVector3(simulatedBall.getState().getPos().getXYZVector()))
-				.setVel(LocalToProtoMapper.mapVector3(simulatedBall.getState().getVel().getXYZVector()))
-				.setAcc(LocalToProtoMapper.mapVector3(simulatedBall.getState().getAcc().getXYZVector()))
-				.setChipped(simulatedBall.getState().isChipped())
-				.setVSwitchToRoll(simulatedBall.getState().getvSwitchToRoll()));
-		
+		stateBuilder.setBallState(LocalToProtoMapper.mapBallState(simulatedBall.getState()));
+
 		try
 		{
 			if (simState.getLatestRefereeMessage() != null)
@@ -149,17 +147,17 @@ public class SimNetServer
 		{
 			log.warn("Could not convert referee message", e);
 		}
-		
+
 		SimRequest state = stateBuilder.build();
-		
+
 		// send and receive should always be performed after each other per client
 		// especially, receive must not be called for new clients, before send has been called
 		teamsStateSendTo.clear();
 		teamsStateSendTo.addAll(clientSockets);
 		service.submit(() -> sendToClients(state));
 	}
-	
-	
+
+
 	private void sendToClients(final SimRequest state)
 	{
 		for (Socket socket : teamsStateSendTo)
@@ -174,8 +172,8 @@ public class SimNetServer
 			}
 		}
 	}
-	
-	
+
+
 	public Map<BotID, SimBotAction> receive()
 	{
 		Map<BotID, SimBotAction> actions = new HashMap<>();
@@ -201,8 +199,8 @@ public class SimNetServer
 		}
 		return actions;
 	}
-	
-	
+
+
 	private Map<BotID, SimBotAction> mapActions(List<SimBotActionOuterClass.SimBotAction> actions)
 	{
 		Map<BotID, SimBotAction> actionMap = new HashMap<>();
@@ -237,8 +235,8 @@ public class SimNetServer
 		}
 		return actionMap;
 	}
-	
-	
+
+
 	private void closeClientSocket(final Socket socket)
 	{
 		try
@@ -251,19 +249,19 @@ public class SimNetServer
 		registeredTeams.values().removeIf(s -> s == socket);
 		clientSockets.removeIf(Socket::isClosed);
 	}
-	
+
 	private class Listener implements Runnable
 	{
 		private ServerSocket serverSocket;
-		
-		
+
+
 		@Override
 		public void run()
 		{
 			listen(serverSocket);
 		}
-		
-		
+
+
 		private void listen(final ServerSocket serverSocket)
 		{
 			log.info("Listening for remote simulation clients");
@@ -284,8 +282,8 @@ public class SimNetServer
 			}
 			log.info("Stop listening for remote simulation clients");
 		}
-		
-		
+
+
 		void start()
 		{
 			try
@@ -296,8 +294,8 @@ public class SimNetServer
 				log.error("Could not listen for simulation clients on port " + port, e);
 			}
 		}
-		
-		
+
+
 		void stop()
 		{
 			if (serverSocket != null)
@@ -311,8 +309,8 @@ public class SimNetServer
 				}
 			}
 		}
-		
-		
+
+
 		private void onNewClient(Socket socket) throws IOException
 		{
 			SimRegister simRegister = SimRegister.parseDelimitedFrom(socket.getInputStream());
@@ -328,30 +326,30 @@ public class SimNetServer
 			log.info("Someone registered for team colors " + simRegister.getTeamColorList());
 			simRegister.getTeamColorList().stream().map(ProtoToLocalMapper::mapTeamColor)
 					.forEach(t -> registeredTeams.put(t, socket));
-			
+
 			clientSockets.add(socket);
 			observers.forEach(ISimNetObserver::onNewClient);
 		}
 	}
-	
-	
+
+
 	public Set<ETeamColor> getConnectedClientTeams()
 	{
 		return registeredTeams.keySet();
 	}
-	
-	
+
+
 	public void addObserver(ISimNetObserver o)
 	{
 		observers.add(o);
 	}
-	
-	
+
+
 	public void removeObserver(ISimNetObserver o)
 	{
 		observers.remove(o);
 	}
-	
+
 	public interface ISimNetObserver
 	{
 		/**

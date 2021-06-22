@@ -1,18 +1,21 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botoverview;
-
-import java.awt.Component;
 
 import edu.tigers.sumatra.ai.Agent;
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
 import edu.tigers.sumatra.ai.VisualizationFrame;
 import edu.tigers.sumatra.botoverview.view.BotOverviewPanel;
+import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.util.UiThrottler;
 import edu.tigers.sumatra.views.ASumatraViewPresenter;
 import edu.tigers.sumatra.views.ISumatraView;
+
+import java.awt.Component;
+import java.util.EnumMap;
+import java.util.Map;
 
 
 /**
@@ -21,12 +24,14 @@ import edu.tigers.sumatra.views.ISumatraView;
 public class BotOverviewPresenter extends ASumatraViewPresenter implements IVisualizationFrameObserver
 {
 	private final BotOverviewPanel botOverviewPanel = new BotOverviewPanel();
-	private final UiThrottler visFrameThrottler = new UiThrottler(300);
+	private final Map<EAiTeam, UiThrottler> visFrameThrottler = new EnumMap<>(EAiTeam.class);
 
 
 	public BotOverviewPresenter()
 	{
-		visFrameThrottler.start();
+		visFrameThrottler.put(EAiTeam.YELLOW, new UiThrottler(300));
+		visFrameThrottler.put(EAiTeam.BLUE, new UiThrottler(300));
+		visFrameThrottler.values().forEach(UiThrottler::start);
 	}
 
 
@@ -61,6 +66,6 @@ public class BotOverviewPresenter extends ASumatraViewPresenter implements IVisu
 	@Override
 	public void onNewVisualizationFrame(final VisualizationFrame frame)
 	{
-		visFrameThrottler.execute(() -> botOverviewPanel.update(frame));
+		visFrameThrottler.get(frame.getAiTeam()).execute(() -> botOverviewPanel.update(frame));
 	}
 }

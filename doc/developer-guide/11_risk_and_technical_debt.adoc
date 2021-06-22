@@ -1,0 +1,9 @@
+:imagesdir: ../images
+
+[[section-risk-and-technical-debt]]
+== Risk and Technical Debt
+
+=== Naming
+
+There are several occurrences of 'opponent', which is rather used for opponents in war.
+Please use 'opponent' instead.

@@ -1,44 +1,26 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.rcm;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
 import java.util.Locale;
 
 
 /**
  * Parameters for ExtIdentifier
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
+@Data
+@AllArgsConstructor
 public class ExtIdentifierParams
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	private double	minValue;
-	private double	maxValue;
-	private double	chargeTime;
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	/**
-	 * @param minValue
-	 * @param maxValue
-	 * @param chargeTime
-	 */
-	public ExtIdentifierParams(final double minValue, final double maxValue, final double chargeTime)
-	{
-		this.minValue = minValue;
-		this.maxValue = maxValue;
-		this.chargeTime = chargeTime;
-	}
-	
-	
+	private double minValue;
+	private double maxValue;
+	private double chargeTime;
+
+
 	/**
 	 * @return
 	 */
@@ -46,13 +28,8 @@ public class ExtIdentifierParams
 	{
 		return new ExtIdentifierParams(0, 0, 0);
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
+
+
 	/**
 	 * @param str
 	 * @return
@@ -64,83 +41,27 @@ public class ExtIdentifierParams
 		{
 			throw new IllegalArgumentException("Invalid string: " + str);
 		}
-		return new ExtIdentifierParams(Double.valueOf(strParts[0]), Double.valueOf(strParts[1]),
-				Double.valueOf(strParts[2]));
+		return new ExtIdentifierParams(
+				Double.parseDouble(strParts[0]),
+				Double.parseDouble(strParts[1]),
+				Double.parseDouble(strParts[2]));
 	}
-	
-	
+
+
 	/**
 	 * Get a string that is parseable by {@link ExtIdentifierParams#valueOf(String)}
-	 * 
+	 *
 	 * @return
 	 */
 	public String getParseableString()
 	{
 		return String.format(Locale.ENGLISH, "%.4f,%.4f,%.4f", minValue, maxValue, chargeTime);
 	}
-	
-	
+
+
 	@Override
 	public String toString()
 	{
 		return String.format(Locale.ENGLISH, "[%.2f;%.2f;%.2f]", minValue, maxValue, chargeTime);
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	/**
-	 * @return the minValue
-	 */
-	public final double getMinValue()
-	{
-		return minValue;
-	}
-	
-	
-	/**
-	 * @return the maxValue
-	 */
-	public final double getMaxValue()
-	{
-		return maxValue;
-	}
-	
-	
-	/**
-	 * @return the chargeTime
-	 */
-	public final double getChargeTime()
-	{
-		return chargeTime;
-	}
-	
-	
-	/**
-	 * @param minValue the minValue to set
-	 */
-	public final void setMinValue(final double minValue)
-	{
-		this.minValue = minValue;
-	}
-	
-	
-	/**
-	 * @param maxValue the maxValue to set
-	 */
-	public final void setMaxValue(final double maxValue)
-	{
-		this.maxValue = maxValue;
-	}
-	
-	
-	/**
-	 * @param chargeTime the chargeTime to set
-	 */
-	public final void setChargeTime(final double chargeTime)
-	{
-		this.chargeTime = chargeTime;
 	}
 }

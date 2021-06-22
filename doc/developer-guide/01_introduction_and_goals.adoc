@@ -1,28 +1,30 @@
+:imagesdir: ../images
+
 [[section-introduction-and-goals]]
 == Introduction and Goals
-:imagesdir: ./images
 
+Sumatra is our main software framework that is running on the team laptop during a match.
 
+It receives data from https://github.com/RoboCup-SSL/ssl-vision[SSL-vision], filters the data in the World-Predictor, makes decisions in the AI and sends commands to the bots with the Bot-Manager.
 
-=== Requirements Overview
+=== Requirements
 
-
+* Sumatra is written in Java
+* Sumatra must be able to process all data in real time
 
 === Quality Goals
 
-
+* Keep modules separated and number of dependencies low
+* Do not introduce new SonarQube issues
 
 === Maintainers
 
-
-
 [options="header",cols="1,2"]
 |===
-|Module / Section|Person
-| Sumatra (General)|  Nicolai Ommer
-| Hardware / Firmware | Andre Ryll
+| Module / Section | Person
 | Keeper | Chris Carstensen
 | Defense | Sebastian Stein
 | Supporter | Chris Carstensen
 | Offense | Mark Geiger
+| Everything else |  Nicolai Ommer
 |===

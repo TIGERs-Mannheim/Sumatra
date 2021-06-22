@@ -1,17 +1,17 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.vector;
 
-import java.util.function.Function;
-
 import com.sleepycat.persist.model.Persistent;
+
+import java.util.function.Function;
 
 
 /**
  * Mutable 3-dimensional vector
- * 
+ *
  * @see Vector2
  * @see Vector2f
  * @see Vector3f
@@ -27,8 +27,8 @@ public class Vector3 extends AVector3
 	private double	x;
 	private double	y;
 	private double	z;
-	
-	
+
+
 	@SuppressWarnings("unused")
 	private Vector3()
 	{
@@ -36,22 +36,22 @@ public class Vector3 extends AVector3
 		y = 0;
 		z = 0;
 	}
-	
-	
+
+
 	private Vector3(final double x, final double y, final double z)
 	{
 		this.x = x;
 		this.y = y;
 		this.z = z;
 	}
-	
-	
+
+
 	private Vector3(final IVector3 original)
 	{
 		set(original);
 	}
-	
-	
+
+
 	/**
 	 * Parse a string to a vector. See {@link AVector#valueOf(String)} for more details.
 	 *
@@ -61,21 +61,37 @@ public class Vector3 extends AVector3
 	 */
 	public static IVector3 valueOf(final String value)
 	{
-		return AVector.valueOf(value).getXYZVector();
+		IVector original = AVector.valueOf(value);
+		if (original.getNumDimensions() >= 2)
+		{
+			return AVector.valueOf(value).getXYZVector();
+		}
+		return null;
 	}
-	
-	
+
+
 	/**
 	 * Return a new zero vector instance
-	 * 
+	 *
 	 * @return a new instance of a zero vector
 	 */
 	public static Vector3 zero()
 	{
 		return new Vector3();
 	}
-	
-	
+
+
+	/**
+	 * Create new NaN vector
+	 *
+	 * @return new instance
+	 */
+	public static Vector3 nan()
+	{
+		return new Vector3(Double.NaN, Double.NaN, Double.NaN);
+	}
+
+
 	/**
 	 * @param x value
 	 * @param y value
@@ -86,8 +102,8 @@ public class Vector3 extends AVector3
 	{
 		return new Vector3(x, y, z);
 	}
-	
-	
+
+
 	/**
 	 * @param x value
 	 * @param y value
@@ -97,8 +113,8 @@ public class Vector3 extends AVector3
 	{
 		return new Vector3(x, y, 0);
 	}
-	
-	
+
+
 	/**
 	 * @param xy value
 	 * @param z value
@@ -108,8 +124,8 @@ public class Vector3 extends AVector3
 	{
 		return new Vector3(xy.x(), xy.y(), z);
 	}
-	
-	
+
+
 	/**
 	 * Providing a <strong>hard, deep</strong> copy of original
 	 *
@@ -120,8 +136,8 @@ public class Vector3 extends AVector3
 	{
 		return new Vector3(original);
 	}
-	
-	
+
+
 	/**
 	 * @param arr an array with 3 elements
 	 * @return a new vector based on the values in the array
@@ -135,13 +151,13 @@ public class Vector3 extends AVector3
 		}
 		return new Vector3(arr[0], arr[1], arr[2]);
 	}
-	
-	
+
+
 	/**
 	 * Create a 3D pos from a projected ground pos.<br>
 	 * This method basically traces back the ray from <code>ground</code> to <code>origin</code> until it reaches
 	 * <code>height</code>.
-	 * 
+	 *
 	 * @param origin 3D origin of the projection.
 	 * @param ground 2D position on the ground.
 	 * @param height Desired height.
@@ -153,15 +169,15 @@ public class Vector3 extends AVector3
 		return new Vector3(((ground.x() - origin.x()) * scale) + origin.x(),
 				((ground.y() - origin.y()) * scale) + origin.y(), height);
 	}
-	
-	
+
+
 	@Override
 	public IVector3 copy()
 	{
 		return Vector3.copy(this);
 	}
-	
-	
+
+
 	/**
 	 * @param xy value
 	 * @param z value
@@ -172,8 +188,8 @@ public class Vector3 extends AVector3
 		y = xy.y();
 		this.z = z;
 	}
-	
-	
+
+
 	/**
 	 * @param xyz value
 	 */
@@ -183,8 +199,8 @@ public class Vector3 extends AVector3
 		y = xyz.y();
 		z = xyz.z();
 	}
-	
-	
+
+
 	/**
 	 * @param xy value
 	 */
@@ -193,8 +209,8 @@ public class Vector3 extends AVector3
 		x = xy.x();
 		y = xy.y();
 	}
-	
-	
+
+
 	/**
 	 * @param i index
 	 * @param value new value
@@ -216,11 +232,11 @@ public class Vector3 extends AVector3
 				throw new IllegalArgumentException("Invalid index: " + i);
 		}
 	}
-	
-	
+
+
 	/**
 	 * Adds the given 'vector' to 'this'
-	 * 
+	 *
 	 * @param vector other vector
 	 * @return Added vector.
 	 */
@@ -231,8 +247,8 @@ public class Vector3 extends AVector3
 		z += vector.z();
 		return this;
 	}
-	
-	
+
+
 	/**
 	 * Subtracts the given 'vector' from 'this'
 	 *
@@ -246,11 +262,11 @@ public class Vector3 extends AVector3
 		z -= vector.z();
 		return this;
 	}
-	
-	
+
+
 	/**
 	 * Multiply this vector with f
-	 * 
+	 *
 	 * @param f factor
 	 * @return this
 	 */
@@ -259,11 +275,11 @@ public class Vector3 extends AVector3
 		x *= f;
 		y *= f;
 		z *= f;
-		
+
 		return this;
 	}
-	
-	
+
+
 	/**
 	 * @param function a function to apply to each element of this vector
 	 * @return this
@@ -275,33 +291,33 @@ public class Vector3 extends AVector3
 		z = function.apply(z);
 		return this;
 	}
-	
-	
+
+
 	@Override
 	public Vector3 getXYZVector()
 	{
 		return this;
 	}
-	
-	
+
+
 	@Override
 	public double x()
 	{
 		return x;
 	}
-	
-	
+
+
 	@Override
 	public double y()
 	{
 		return y;
 	}
-	
-	
+
+
 	@Override
 	public double z()
 	{
 		return z;
 	}
-	
+
 }

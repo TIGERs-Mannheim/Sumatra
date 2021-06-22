@@ -1,14 +1,8 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.autoreferee.engine.detector;
-
-import java.awt.Color;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Optional;
-import java.util.Set;
 
 import edu.tigers.autoreferee.EAutoRefShapesLayer;
 import edu.tigers.autoreferee.generic.BotPosition;
@@ -22,6 +16,12 @@ import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.gameevent.AttackerDoubleTouchedBall;
 import edu.tigers.sumatra.referee.gameevent.IGameEvent;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+
+import java.awt.Color;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Optional;
+import java.util.Set;
 
 
 /**
@@ -45,11 +45,9 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class DoubleTouchDetector extends AGameEventDetector
 {
-	private static final double MIN_BALL_MOVE_DISTANCE = 50.0;
 	private static final Set<EGameState> ACTIVE_STATES = Collections.unmodifiableSet(EnumSet.of(
 			EGameState.KICKOFF, EGameState.DIRECT_FREE, EGameState.INDIRECT_FREE, EGameState.RUNNING));
 	
-	private boolean ballMoved;
 	private BotID kickerID = null;
 	private IVector2 initialBallPos;
 	
@@ -64,7 +62,6 @@ public class DoubleTouchDetector extends AGameEventDetector
 	@Override
 	protected void doPrepare()
 	{
-		ballMoved = false;
 		kickerID = null;
 		initialBallPos = getBall().getPos();
 		
@@ -79,12 +76,11 @@ public class DoubleTouchDetector extends AGameEventDetector
 	@Override
 	public Optional<IGameEvent> doUpdate()
 	{
-		if (!ballMoved)
+		if (!frame.getGameState().isRunning())
 		{
 			frame.getShapes().get(EAutoRefShapesLayer.ENGINE)
 					.add(new DrawableLine(Lines.segmentFromPoints(initialBallPos, getBall().getPos()), Color.RED));
 			kickerID = frame.getBotsTouchingBall().stream().findFirst().map(BotPosition::getBotID).orElse(kickerID);
-			ballMoved = initialBallPos.distanceTo(getBall().getPos()) > MIN_BALL_MOVE_DISTANCE;
 			return Optional.empty();
 		}
 		
@@ -102,7 +98,7 @@ public class DoubleTouchDetector extends AGameEventDetector
 		
 		if (frame.getBotsTouchingBall().stream().anyMatch(b -> b.getBotID().equals(kickerID)))
 		{
-			return Optional.of(new AttackerDoubleTouchedBall(kickerID, getBall().getPos()));
+			return Optional.of(new AttackerDoubleTouchedBall(kickerID, initialBallPos));
 		}
 		
 		// situation is not decided yet

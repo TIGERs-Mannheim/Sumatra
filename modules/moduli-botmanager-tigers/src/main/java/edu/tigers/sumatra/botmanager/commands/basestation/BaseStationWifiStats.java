@@ -18,7 +18,7 @@ import edu.tigers.sumatra.ids.BotID;
 public class BaseStationWifiStats extends ACommand
 {
 	/** */
-	public static final int NUM_BOTS = 24;
+	public static final int NUM_BOTS = 32;
 	
 	/**
 	 * Bot network statistics.

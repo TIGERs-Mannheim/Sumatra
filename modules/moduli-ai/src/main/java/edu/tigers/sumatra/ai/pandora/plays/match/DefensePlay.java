@@ -1,17 +1,9 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.plays.match;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
-import edu.tigers.sumatra.ai.metis.MetisAiFrame;
 import edu.tigers.sumatra.ai.metis.defense.DefenseConstants;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseThreatAssignment;
 import edu.tigers.sumatra.ai.metis.defense.data.EDefenseThreatType;
@@ -29,6 +21,12 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 
 /**
  * The defense play manages all defenders.
@@ -45,7 +43,7 @@ public class DefensePlay extends APlay
 
 
 	@Override
-	protected ARole onRemoveRole(final MetisAiFrame frame)
+	protected ARole onRemoveRole()
 	{
 		return getLastRole();
 	}
@@ -59,20 +57,20 @@ public class DefensePlay extends APlay
 
 
 	@Override
-	public void updateBeforeRoles(final AthenaAiFrame aiFrame)
+	protected void doUpdateBeforeRoles()
 	{
-		super.updateBeforeRoles(aiFrame);
-		GroupSet newGroupSet = createGroupSet(aiFrame);
+		super.doUpdateBeforeRoles();
+		GroupSet newGroupSet = createGroupSet();
 		updateRoleAssignment(newGroupSet.allGroups);
-		newGroupSet.allGroups.forEach(group -> group.updateRoles(aiFrame));
+		newGroupSet.allGroups.forEach(group -> group.updateRoles(getAiFrame()));
 	}
 
 
-	private GroupSet createGroupSet(final AthenaAiFrame currentFrame)
+	private GroupSet createGroupSet()
 	{
 		GroupSet newGroupSet = new GroupSet();
 		Map<BotID, ARole> roleMap = getRoles().stream().collect(Collectors.toMap(ARole::getBotID, Function.identity()));
-		List<DefenseThreatAssignment> threatAssignments = currentFrame.getTacticalField().getDefenseThreatAssignments();
+		List<DefenseThreatAssignment> threatAssignments = getAiFrame().getTacticalField().getDefenseThreatAssignments();
 		assignOuterGroups(threatAssignments, newGroupSet, roleMap);
 		for (ARole role : roleMap.values())
 		{
@@ -108,7 +106,7 @@ public class DefensePlay extends APlay
 
 	private boolean stayOnPenArea(final IDefenseThreat threat)
 	{
-		if (!threat.getProtectionLine().isPresent())
+		if (threat.getProtectionLine().isEmpty())
 		{
 			// protection not possible -> penalty area is only the fallback here
 			return true;
@@ -117,13 +115,13 @@ public class DefensePlay extends APlay
 		if (threat.getType() == EDefenseThreatType.BALL_TO_GOAL)
 		{
 			// only stay on penArea during ball placement
-			return getAiFrame().getGamestate().isBallPlacement();
+			return getAiFrame().getGameState().isBallPlacement();
 		}
 
 		if (threat.getType() == EDefenseThreatType.BOT_TO_GOAL)
 		{
-			return getAiFrame().getGamestate().isStoppedGame()
-					|| getAiFrame().getGamestate().isStandardSituationForThem();
+			return getAiFrame().getGameState().isStoppedGame()
+					|| getAiFrame().getGameState().isStandardSituationForThem();
 		}
 
 		if (threat.getType() == EDefenseThreatType.BALL_TO_BOT)

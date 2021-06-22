@@ -1,60 +1,25 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.rcm;
 
-import java.util.Locale;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
-import edu.tigers.sumatra.math.SumatraMath;
+import java.util.Locale;
 
 
 /**
  * Identifier for components for RCM module with extended information
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
+@RequiredArgsConstructor
+@Data
 public class ExtIdentifier
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	private static final ExtIdentifier UNDEFINED = new ExtIdentifier("", ExtIdentifierParams.createDefault());
-	private ExtIdentifierParams params;
-	private String identifier;
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	/**
-	 * @param identifier
-	 * @param params
-	 */
-	public ExtIdentifier(final String identifier, final ExtIdentifierParams params)
-	{
-		this.identifier = identifier;
-		this.params = params;
-	}
-	
-	
-	/**
-	 * Create undefined identifier
-	 *
-	 * @return
-	 */
-	public static ExtIdentifier undefinedIdentifier()
-	{
-		return UNDEFINED;
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
+	private final String identifier;
+	private final ExtIdentifierParams params;
+
+
 	/**
 	 * @param str
 	 * @return
@@ -70,8 +35,8 @@ public class ExtIdentifier
 		ExtIdentifierParams params = ExtIdentifierParams.valueOf(strParts[1]);
 		return new ExtIdentifier(identifier, params);
 	}
-	
-	
+
+
 	@Override
 	public String toString()
 	{
@@ -81,84 +46,8 @@ public class ExtIdentifier
 		}
 		return identifier;
 	}
-	
-	
-	@Override
-	public int hashCode()
-	{
-		final int prime = 31;
-		int result = 1;
-		result = (prime * result) + ((identifier == null) ? 0 : identifier.hashCode());
-		result = (prime * result) + ((params == null) ? 0 : (int) (params.getMinValue() * 100));
-		result = (prime * result) + ((params == null) ? 0 : (int) (params.getMaxValue() * 100));
-		return result;
-	}
-	
-	
-	@Override
-	public boolean equals(final Object obj)
-	{
-		if (this == obj)
-		{
-			return true;
-		}
-		if (obj == null)
-		{
-			return false;
-		}
-		if (getClass() != obj.getClass())
-		{
-			return false;
-		}
-		ExtIdentifier other = (ExtIdentifier) obj;
-		if (identifier == null)
-		{
-			if (other.identifier != null)
-			{
-				return false;
-			}
-		} else if (!identifier.equals(other.identifier))
-		{
-			return false;
-		}
-		if (params == null)
-		{
-			if (other.params != null)
-			{
-				return false;
-			}
-		} else if (!SumatraMath.isEqual(params.getMinValue(), other.getParams().getMinValue()) ||
-				!SumatraMath.isEqual(params.getMaxValue(), other.getParams().getMaxValue()))
-		{
-			return false;
-		}
-		return true;
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	/**
-	 * @return the params
-	 */
-	public ExtIdentifierParams getParams()
-	{
-		return params;
-	}
-	
-	
-	/**
-	 * @return the identifier
-	 */
-	public String getIdentifier()
-	{
-		return identifier;
-	}
-	
-	
+
+
 	/**
 	 * @return
 	 */

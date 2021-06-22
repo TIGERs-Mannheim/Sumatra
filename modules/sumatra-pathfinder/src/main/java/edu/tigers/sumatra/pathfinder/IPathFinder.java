@@ -1,12 +1,10 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jul 7, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.pathfinder;
+
+
+import java.util.concurrent.Future;
 
 
 /**
@@ -19,5 +17,5 @@ public interface IPathFinder
 	 * @param input all necessary inputs to find a path
 	 * @return a path finder result with the found path and additional information
 	 */
-	IPathFinderResult calcPath(final PathFinderInput input);
+	Future<IPathFinderResult> calcPath(final PathFinderInput input);
 }

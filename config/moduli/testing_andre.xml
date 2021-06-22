@@ -45,8 +45,8 @@
 
         <properties>
             <source>NETWORK</source>
-            <port>10003</port>
-            <gameController>false</gameController>
+            <port>11003</port>
+            <gameController>true</gameController>
         </properties>
     </module>
 

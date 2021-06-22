@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp;
@@ -7,7 +7,8 @@ package edu.tigers.sumatra.wp;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.referee.IRefereeObserver;
@@ -27,11 +28,11 @@ import edu.tigers.sumatra.wp.vis.VelocityVisCalc;
 public class WorldFrameVisualization implements IRefereeObserver
 {
 	@SuppressWarnings("unused")
-	private static final Logger log = Logger.getLogger(WorldFrameVisualization.class.getName());
-	
+	private static final Logger log = LogManager.getLogger(WorldFrameVisualization.class.getName());
+
 	private final List<IWpCalc> calcs = new ArrayList<>();
-	
-	
+
+
 	/**
 	 * Create new instance
 	 */
@@ -44,8 +45,8 @@ public class WorldFrameVisualization implements IRefereeObserver
 		calcs.add(new RefereeVisCalc());
 		calcs.add(new VelocityVisCalc());
 	}
-	
-	
+
+
 	/**
 	 * Reset any internal states
 	 */
@@ -56,8 +57,8 @@ public class WorldFrameVisualization implements IRefereeObserver
 			calc.reset();
 		}
 	}
-	
-	
+
+
 	/**
 	 * Add shapes to {@link WorldFrameWrapper}
 	 *

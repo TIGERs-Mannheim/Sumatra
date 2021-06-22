@@ -1,17 +1,21 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.defense;
 
 import com.github.g3force.configurable.Configurable;
-
-import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
-import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.metis.ballresponsibility.EBallResponsibility;
-import edu.tigers.sumatra.ai.metis.keeper.EKeeperState;
+import edu.tigers.sumatra.ai.metis.defense.data.DefenseBotThreat;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.vector.IVector2;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+import java.util.function.Supplier;
 
 
 /**
@@ -22,47 +26,45 @@ import edu.tigers.sumatra.geometry.Geometry;
  * "https://web.archive.org/web/20190513115938/https://ssl.robocup.org/wp-content/uploads/2019/01/2016_ETDP_CMDragons.pdf">
  * CMDragons' 2016 TDP</a>.
  */
+@RequiredArgsConstructor
 public class NumDefenderCalc extends ACalculator
 {
 	@Configurable(comment = "Amount of minimum defenders to keep at all times", defValue = "1")
 	private static int minDefendersAtAllTimes = 1;
 
-	@Configurable(comment = "Maximal velocity of the ball in the penalty area if the keeper will chip, to free defenders", defValue = "0.1")
-	private static double maxBallVelocityOfBallInPenaltyAreaToFreeDefenders = 0.1;
+	@Configurable(defValue = "1.5")
+	private static double threatsToNumDefenderDivider = 1.5;
+
+	private final Supplier<EBallResponsibility> ballResponsibility;
+	private final Supplier<Integer> numDefenderForBall;
+	private final Supplier<List<BotID>> botsToInterchange;
+	private final Supplier<List<DefenseBotThreat>> defenseBotThreats;
+
+	@Getter
+	private int availableAttackers;
+	@Getter
+	private int numDefender;
 
 
 	@Override
-	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+	public void doCalc()
 	{
-		final int nAvailableBots = availableBots();
-		int nDefender = defaultNumDefenders(nAvailableBots);
+		int nAvailableBots = availableBots();
+		numDefender = defaultNumDefenders(nAvailableBots);
 
-		// clamp nDefender between minDefendersAtAllTimes and nAvailableBots
-		nDefender = Math.max(minDefenders(), nDefender);
-		nDefender = Math.min(nAvailableBots, nDefender);
+		// clamp numDefender between minDefendersAtAllTimes and nAvailableBots
+		numDefender = Math.max(minDefendersAtAllTimes, numDefender);
+		numDefender = Math.min(nAvailableBots, numDefender);
 
 		// if offense has ball responsibility but we used all defenders we release one here
-		if (nDefender == nAvailableBots
+		if (numDefender == nAvailableBots
 				&& nAvailableBots > 0
-				&& getNewTacticalField().getBallResponsibility() == EBallResponsibility.OFFENSE)
+				&& ballResponsibility.get() == EBallResponsibility.OFFENSE)
 		{
-			nDefender = nAvailableBots - 1;
+			numDefender = nAvailableBots - 1;
 		}
 
-		newTacticalField.setAvailableAttackers(Math.max(0, nAvailableBots - nDefender));
-		newTacticalField.setNumDefender(nDefender);
-	}
-
-
-	private int minDefenders()
-	{
-		boolean insaneKeeper = getAiFrame().getPrevFrame().getTacticalField().getOffensiveStrategy().getAttackerBot()
-				.map(b -> getAiFrame().getKeeperId() == b).orElse(false);
-		if (insaneKeeper)
-		{
-			return 0;
-		}
-		return minDefendersAtAllTimes;
+		availableAttackers = Math.max(0, nAvailableBots - numDefender);
 	}
 
 
@@ -72,20 +74,20 @@ public class NumDefenderCalc extends ACalculator
 		int nKeeper = getWFrame().getTigerBotsAvailable().containsKey(getAiFrame().getKeeperId()) ? 1 : 0;
 		return getWFrame().getTigerBotsVisible().size()
 				- nKeeper
-				- getNewTacticalField().getBotInterchange().getNumInterchangeBots();
+				- botsToInterchange.get().size();
 	}
 
 
 	private int defaultNumDefenders(final int nAvailableBots)
 	{
-		if (getAiFrame().getGamestate().isStandardSituationForUs()
-				|| getAiFrame().getGamestate().isNextStandardSituationForUs())
+		if (getAiFrame().getGameState().isStandardSituationForUs()
+				|| getAiFrame().getGameState().isNextStandardSituationForUs())
 		{
 			return nDefenderStandardWe();
 		}
 
-		if (getAiFrame().getGamestate().isStoppedGame()
-				|| getAiFrame().getGamestate().isStandardSituationForThem())
+		if (getAiFrame().getGameState().isStoppedGame()
+				|| getAiFrame().getGameState().isStandardSituationForThem())
 		{
 			return nAvailableBots;
 		}
@@ -120,19 +122,19 @@ public class NumDefenderCalc extends ACalculator
 	{
 		if (isBallSafeAtOurKeeper())
 		{
-			return getNewTacticalField().getNumDefenderForBall();
+			return numDefenderForBall.get();
 		}
 
-		int nThreats = getNewTacticalField().getDefenseBotThreats().size();
-		return ((nThreats + 1) / 2)
-				+ getNewTacticalField().getNumDefenderForBall();
+		int nThreats = defenseBotThreats.get().size();
+		return ((int) Math.ceil(nThreats / threatsToNumDefenderDivider)
+				+ numDefenderForBall.get());
 	}
 
 
 	private boolean isBallSafeAtOurKeeper()
 	{
+		IVector2 ballStopPos = getBall().getTrajectory().getPosByVel(0.0).getXYVector();
 		return Geometry.getPenaltyAreaOur().isPointInShape(getBall().getPos(), -Geometry.getBotRadius())
-				&& (getBall().getVel().getLength() < maxBallVelocityOfBallInPenaltyAreaToFreeDefenders)
-				&& (getNewTacticalField().getKeeperState() == EKeeperState.CHIP_FAST);
+				&& Geometry.getPenaltyAreaOur().isPointInShape(ballStopPos, -Geometry.getBotRadius());
 	}
 }

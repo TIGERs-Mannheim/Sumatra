@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,26 +21,26 @@ import edu.tigers.sumatra.math.vector.ValuePoint;
 @Persistent
 public class DrawableValuePoints implements IDrawableShape
 {
-	private final List<ValuePoint>	points	= new ArrayList<>();
-	private static final int			RADIUS	= 15;
-	
-	
+	private final List<ValuePoint> points = new ArrayList<>();
+	private static final int RADIUS = 15;
+
+
 	@SuppressWarnings("unused")
 	private DrawableValuePoints()
 	{
 	}
-	
-	
+
+
 	/**
 	 * @param distancePoints
 	 */
 	public DrawableValuePoints(final List<ValuePoint> distancePoints)
 	{
 		points.addAll(distancePoints);
-		
+
 	}
-	
-	
+
+
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{

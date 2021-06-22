@@ -117,7 +117,7 @@ public class BaseStationACommand extends ACommand
 	
 	/**
 	 * Transform a botID in base station format to Sumatra BotID.
-	 * Base station used id 0-11 for yellow and 12-23 for blue.
+	 * Base station used id 0-15 for yellow and 16-31 for blue.
 	 * ID 255 is an unused slot in base station.
 	 * 
 	 * @param id

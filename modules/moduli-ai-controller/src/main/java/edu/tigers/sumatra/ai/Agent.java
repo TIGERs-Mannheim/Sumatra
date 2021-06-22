@@ -1,14 +1,8 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai;
-
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.Optional;
-
-import org.apache.log4j.Logger;
 
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.ai.athena.EAIControlState;
@@ -18,6 +12,12 @@ import edu.tigers.sumatra.skillsystem.ASkillSystem;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Optional;
 
 
 /**
@@ -29,7 +29,7 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
  */
 public class Agent extends AAgent
 {
-	private static final Logger log = Logger.getLogger(Agent.class.getName());
+	private static final Logger log = LogManager.getLogger(Agent.class.getName());
 
 	private WorldFrameObserver worldFrameObserver = new WorldFrameObserver();
 	private ASkillSystem skillSystem;
@@ -123,6 +123,7 @@ public class Agent extends AAgent
 	@Override
 	public void changeMode(final EAiTeam aiTeam, final EAIControlState mode)
 	{
+		log.debug("Changing AI mode for {} to {}", aiTeam, mode);
 		if (mode == EAIControlState.OFF)
 		{
 			AiManager aiManager = aiManagers.remove(aiTeam);
@@ -141,6 +142,7 @@ public class Agent extends AAgent
 		}
 
 		notifyAiModeChanged(aiTeam, mode);
+		log.debug("Changed AI mode for {} to {}", aiTeam, mode);
 	}
 
 

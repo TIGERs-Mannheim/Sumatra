@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.wp.data;
 
@@ -18,14 +18,14 @@ public interface ITrackedObject extends IMirrorable<ITrackedObject>, ITimestampB
 	 * @return the pos [mm,mm]
 	 */
 	IVector2 getPos();
-	
-	
+
+
 	/**
 	 * @return the vel [m/s, m/s]
 	 */
 	IVector2 getVel();
-	
-	
+
+
 	/**
 	 * @return the acc [m/s², m/s²]
 	 */
@@ -33,17 +33,23 @@ public interface ITrackedObject extends IMirrorable<ITrackedObject>, ITimestampB
 	{
 		return Vector2f.zero();
 	}
-	
-	
+
+
 	/**
 	 * @return id of the object
 	 */
 	AObjectID getId();
-	
-	
+
+
 	/**
 	 * @return timestamp in [ns]
 	 */
 	@Override
 	long getTimestamp();
+
+
+	/**
+	 * @return the quality of the detection (0-1), where 0 is worst.
+	 */
+	double getQuality();
 }

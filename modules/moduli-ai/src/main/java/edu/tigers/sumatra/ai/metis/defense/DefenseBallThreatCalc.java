@@ -1,13 +1,10 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.defense;
 
 import com.github.g3force.configurable.Configurable;
-
-import edu.tigers.sumatra.ai.BaseAiFrame;
-import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.metis.defense.data.DefenseBallThreat;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
@@ -15,11 +12,20 @@ import edu.tigers.sumatra.math.line.v2.IHalfLine;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.wp.data.ITrackedBot;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+import java.util.Optional;
+import java.util.function.Supplier;
 
 
 /**
  * Calculate the ball threat.
+ * The threat line starts either at the the opponent's ball receiver or at the ball position
+ * It ends in the center of the goal
  */
+@RequiredArgsConstructor
 public class DefenseBallThreatCalc extends ADefenseThreatCalc
 {
 	@Configurable(comment = "Lookahead for ball position", defValue = "0.1")
@@ -31,28 +37,32 @@ public class DefenseBallThreatCalc extends ADefenseThreatCalc
 	@Configurable(comment = "Left/Right extension of goal line to use for shot-at-goal intersection", defValue = "200")
 	private static double goalMargin = 200;
 
+	private final Supplier<ITrackedBot> opponentPassReceiver;
+
+	@Getter
+	private DefenseBallThreat defenseBallThreat;
+
 
 	@Override
-	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+	public void doCalc()
 	{
 		IVector2 threatSource = threatSource();
 		IVector2 threatTarget = threatTarget(threatSource);
 		ILineSegment threatLine = Lines.segmentFromPoints(threatSource, threatTarget);
 		ILineSegment protectionLine = centerBackProtectionLine(threatLine, minDistanceToThreat());
 
-		DefenseBallThreat ballThreat = new DefenseBallThreat(
+		defenseBallThreat = new DefenseBallThreat(
 				getBall().getVel(),
 				threatLine,
 				protectionLine,
-				getNewTacticalField().getOpponentPassReceiver().orElse(null));
-		newTacticalField.setDefenseBallThreat(ballThreat);
-		drawThreat(ballThreat);
+				opponentPassReceiver.get());
+		drawThreat(defenseBallThreat);
 	}
 
 
 	private IVector2 threatTarget(final IVector2 threatSource)
 	{
-		final IVector2 threatTarget = DefenseMath.getBisectionGoal(threatSource);
+		final IVector2 threatTarget = Geometry.getGoalOur().bisection(threatSource);
 		if (getBall().getVel().getLength2() > checkBallDirectionVelThreshold)
 		{
 			IHalfLine travelLine = getBall().getTrajectory().getTravelLine();
@@ -67,7 +77,7 @@ public class DefenseBallThreatCalc extends ADefenseThreatCalc
 	{
 		IVector2 predictedBallPos = getBall().getTrajectory().getPosByTime(ballLookahead).getXYVector();
 		IVector2 threatSource = Geometry.getField().nearestPointInside(predictedBallPos, getBall().getPos());
-		return getNewTacticalField().getOpponentPassReceiver()
+		return Optional.ofNullable(opponentPassReceiver.get())
 				.map(passReceiver -> Geometry.getField().nearestPointInside(
 						passReceiver.getBotKickerPosByTime(ballLookahead), passReceiver.getBotKickerPos()))
 				.orElse(threatSource);
@@ -76,7 +86,7 @@ public class DefenseBallThreatCalc extends ADefenseThreatCalc
 
 	private double minDistanceToThreat()
 	{
-		if (getAiFrame().getGamestate().isDistanceToBallRequired())
+		if (getAiFrame().getGameState().isDistanceToBallRequired())
 		{
 			return RuleConstraints.getStopRadius() + Geometry.getBotRadius() + Geometry.getBallRadius();
 		}

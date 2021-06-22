@@ -45,8 +45,8 @@
 
         <properties>
             <source>NETWORK</source>
-            <port>10003</port>
-            <gameController>false</gameController>
+            <port>11003</port>
+            <gameController>true</gameController>
         </properties>
     </module>
 
@@ -119,6 +119,13 @@
         <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
         <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
     </module>
+
+    <!--
+        <module id="edu.tigers.sumatra.calibration.CalibrationModule">
+            <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
+            <dependency>edu.tigers.sumatra.skillsystem.ASkillSystem</dependency>
+        </module>
+    -->
 
     <!-- If you want to export the robot and ball coordinates to another application, activate this -->
     <!--

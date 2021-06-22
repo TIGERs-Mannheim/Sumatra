@@ -1,43 +1,39 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.line.v2;
 
-import java.util.Optional;
-
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
+
+import java.util.Optional;
 
 
 /**
  * Implementation of the {@link IHalfLine} interface. It represents a half-line which extends indefinitely from its
  * starting point. The class provide a static factory method to create new instances.
- * 
+ *
  * @author Lukas Magel
  */
 final class HalfLine extends AUnboundedLine implements IHalfLine
 {
-	
+
 	private HalfLine(final IVector2 supportVector, final IVector2 directionVector)
 	{
 		super(supportVector, directionVector);
 	}
-	
-	
+
+
 	/**
 	 * Create a new {@link IHalfLine} instance which extends from the specified {@code supportVector} in the direction of
 	 * {@code directionVector} indefinitely.
-	 * 
-	 * @param supportVector
-	 *           The support vector which defines the starting point of the created half-line
-	 * @param directionVector
-	 *           The direction vector which defines the direction in which the half-line extends
-	 * @return
-	 * 			A new {@code IHalfLine} instance
-	 * @throws IllegalArgumentException
-	 *            If the {@code directionVector} has a length of zero. Please perform a check in your code before you
-	 *            call this method!
+	 *
+	 * @param supportVector   The support vector which defines the starting point of the created half-line
+	 * @param directionVector The direction vector which defines the direction in which the half-line extends
+	 * @return A new {@code IHalfLine} instance
+	 * @throws IllegalArgumentException If the {@code directionVector} has a length of zero. Please perform a check in your code before you
+	 *                                  call this method!
 	 */
 	public static IHalfLine fromDirection(final IVector2 supportVector, final IVector2 directionVector)
 	{
@@ -45,13 +41,13 @@ final class HalfLine extends AUnboundedLine implements IHalfLine
 		IVector2 dV = directionVector.normalizeNew();
 		return createNewWithoutCopy(sV, dV);
 	}
-	
-	
+
+
 	/**
 	 * Create a new instance without copying the vector parameters. Only use this method if you're sure
 	 * that the two vector parameters will not be modified through side-effects.
-	 * 
-	 * @param supportVector The support vector of the new half-line instance
+	 *
+	 * @param supportVector   The support vector of the new half-line instance
 	 * @param directionVector The direction vector of the new half-line instance
 	 * @return A new half-line instance which uses the two vector parameters
 	 */
@@ -59,23 +55,23 @@ final class HalfLine extends AUnboundedLine implements IHalfLine
 	{
 		return new HalfLine(supportVector, directionVector);
 	}
-	
-	
+
+
 	@Override
 	public boolean equals(final Object other)
 	{
 		if (this == other)
 			return true;
-		if (other == null || !(other instanceof IHalfLine))
+		if (!(other instanceof IHalfLine))
 			return false;
-		
+
 		final IHalfLine that = (IHalfLine) other;
-		
+
 		return this.supportVector().equals(that.supportVector())
 				&& this.directionVector().equals(that.directionVector());
 	}
-	
-	
+
+
 	@Override
 	public int hashCode()
 	{
@@ -83,8 +79,8 @@ final class HalfLine extends AUnboundedLine implements IHalfLine
 		result = 31 * result + directionVector().hashCode();
 		return result;
 	}
-	
-	
+
+
 	@Override
 	public IVector2 closestPointOnLine(final IVector2 point)
 	{
@@ -94,15 +90,15 @@ final class HalfLine extends AUnboundedLine implements IHalfLine
 		}
 		return LineMath.closestPointOnHalfLine(this, point);
 	}
-	
-	
+
+
 	@Override
 	public ILine toLine()
 	{
 		return Line.createNewWithoutCopy(supportVector(), directionVector());
 	}
-	
-	
+
+
 	@Override
 	public IHalfLine copy()
 	{
@@ -110,15 +106,15 @@ final class HalfLine extends AUnboundedLine implements IHalfLine
 		IVector2 directionVector = directionVector().copy();
 		return new HalfLine(supportVector, directionVector);
 	}
-	
-	
+
+
 	@Override
 	public Optional<IVector2> intersectLine(final ILine line)
 	{
 		return line.intersectHalfLine(this);
 	}
-	
-	
+
+
 	@Override
 	public Optional<IVector2> intersectHalfLine(final IHalfLine other)
 	{
@@ -128,8 +124,8 @@ final class HalfLine extends AUnboundedLine implements IHalfLine
 		}
 		return Optional.empty();
 	}
-	
-	
+
+
 	@Override
 	public Optional<IVector2> intersectSegment(final ILineSegment segment)
 	{
@@ -139,15 +135,22 @@ final class HalfLine extends AUnboundedLine implements IHalfLine
 		}
 		return Optional.empty();
 	}
-	
-	
+
+
 	@Override
 	public boolean isPointInFront(final IVector2 point)
 	{
 		return isValid() && LineMath.isPointInFront(this, point);
 	}
-	
-	
+
+
+	@Override
+	public ILineSegment toLineSegment(double length)
+	{
+		return LineSegment.fromOffset(supportVector(), directionVector().scaleToNew(length));
+	}
+
+
 	@Override
 	public String toString()
 	{

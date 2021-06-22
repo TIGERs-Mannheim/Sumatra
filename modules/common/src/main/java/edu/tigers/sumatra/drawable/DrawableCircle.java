@@ -1,32 +1,29 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-
 import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 
+import java.awt.Color;
+import java.awt.Graphics2D;
+
 
 /**
  * Drawable of a circle
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 @Persistent
 public class DrawableCircle extends ADrawableWithStroke
 {
 	private ICircle circle;
 	private boolean fill = false;
-	
-	
+
+
 	/**
 	 * For some reason, ObjectDB wants a no-arg constructor with this class...
 	 */
@@ -35,8 +32,8 @@ public class DrawableCircle extends ADrawableWithStroke
 	{
 		circle = Circle.createCircle(Vector2f.ZERO_VECTOR, 1);
 	}
-	
-	
+
+
 	/**
 	 * @param circle
 	 */
@@ -44,8 +41,8 @@ public class DrawableCircle extends ADrawableWithStroke
 	{
 		this.circle = circle;
 	}
-	
-	
+
+
 	/**
 	 * @param circle
 	 * @param color
@@ -55,8 +52,18 @@ public class DrawableCircle extends ADrawableWithStroke
 		this.circle = circle;
 		setColor(color);
 	}
-	
-	
+
+
+	/**
+	 * @param center
+	 * @param radius
+	 */
+	public DrawableCircle(final IVector2 center, final double radius)
+	{
+		circle = Circle.createCircle(center, radius);
+	}
+
+
 	/**
 	 * @param center
 	 * @param radius
@@ -67,17 +74,17 @@ public class DrawableCircle extends ADrawableWithStroke
 		circle = Circle.createCircle(center, radius);
 		setColor(color);
 	}
-	
-	
+
+
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
 		super.paintShape(g, tool, invert);
-		
+
 		// --- from SSLVision-mm to java2d-coordinates ---
 		final IVector2 center = tool.transformToGuiCoordinates(circle.center(), invert);
 		final double radius = tool.scaleXLength(circle.radius());
-		
+
 		if (fill)
 		{
 			g.fillOval((int) (center.x() - radius), (int) (center.y() - radius), (int) radius * 2, (int) radius * 2);
@@ -86,20 +93,10 @@ public class DrawableCircle extends ADrawableWithStroke
 			g.drawOval((int) (center.x() - radius), (int) (center.y() - radius), (int) radius * 2, (int) radius * 2);
 		}
 	}
-	
-	
+
+
 	@Override
-	public void setFill(final boolean fill)
-	{
-		this.fill = fill;
-	}
-	
-	
-	/**
-	 * @param fill
-	 * @return this
-	 */
-	public DrawableCircle withFill(final boolean fill)
+	public DrawableCircle setFill(final boolean fill)
 	{
 		this.fill = fill;
 		return this;

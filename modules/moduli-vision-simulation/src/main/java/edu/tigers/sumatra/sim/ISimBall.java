@@ -1,9 +1,13 @@
+/*
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.sim;
 
-import edu.tigers.sumatra.wp.data.BallTrajectoryState;
+import edu.tigers.sumatra.ball.BallState;
 
 
 public interface ISimBall
 {
-	BallTrajectoryState getState();
+	BallState getState();
 }

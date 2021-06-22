@@ -1,52 +1,32 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ids;
 
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * All AI teams.
  */
+@AllArgsConstructor
+@Getter
 public enum EAiTeam
 {
-	/** */
-	YELLOW(ETeamColor.YELLOW, true),
-	/** */
-	BLUE(ETeamColor.BLUE, true),
-	
+	YELLOW(ETeamColor.YELLOW),
+	BLUE(ETeamColor.BLUE),
+
 	;
-	
+
 	private ETeamColor teamColor;
-	private boolean activeByDefault;
-	
-	
-	/**
-	 * @param teamColor the associated team color
-	 * @param activeByDefault active by default
-	 */
-	EAiTeam(ETeamColor teamColor, boolean activeByDefault)
-	{
-		this.teamColor = teamColor;
-		this.activeByDefault = activeByDefault;
-	}
-	
-	
-	public ETeamColor getTeamColor()
-	{
-		return teamColor;
-	}
-	
-	
-	public boolean isActiveByDefault()
-	{
-		return activeByDefault;
-	}
-	
-	
+
+
 	/**
 	 * Get the primary team of the given team color
-	 * 
+	 *
 	 * @param teamColor
 	 * @return
 	 */
@@ -61,8 +41,8 @@ public enum EAiTeam
 		}
 		throw new IllegalArgumentException("Can not map team color: " + teamColor);
 	}
-	
-	
+
+
 	/**
 	 * Check if color of aiteam matches color
 	 *

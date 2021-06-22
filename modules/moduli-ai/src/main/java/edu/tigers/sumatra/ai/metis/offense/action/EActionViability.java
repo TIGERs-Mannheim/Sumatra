@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense.action;
@@ -9,16 +9,7 @@ package edu.tigers.sumatra.ai.metis.offense.action;
  */
 public enum EActionViability
 {
-	/**
-	 *
-	 */
 	TRUE,
-	/**
-	 *
-	 */
 	PARTIALLY,
-	/**
-	 *
-	 */
-	FALSE
+	FALSE,
 }

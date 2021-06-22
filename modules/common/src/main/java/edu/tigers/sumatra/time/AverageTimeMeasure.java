@@ -4,10 +4,10 @@
 
 package edu.tigers.sumatra.time;
 
+import org.apache.commons.lang.Validate;
+
 import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
-
-import org.apache.commons.lang.Validate;
 
 
 /**

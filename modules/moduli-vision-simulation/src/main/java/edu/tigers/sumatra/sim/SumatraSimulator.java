@@ -1,26 +1,14 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.sim;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.stream.Collectors;
-
-import org.apache.log4j.Logger;
-
-import edu.tigers.sumatra.Referee;
-import edu.tigers.sumatra.clock.ThreadUtil;
+import edu.tigers.sumatra.ball.BallState;
+import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
+import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.pose.Pose;
@@ -33,34 +21,54 @@ import edu.tigers.sumatra.math.vector.Vector3f;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.referee.AReferee;
 import edu.tigers.sumatra.referee.IRefereeObserver;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
+import edu.tigers.sumatra.sim.collision.ball.ICollision;
 import edu.tigers.sumatra.sim.collision.bot.BotCollisionHandler;
 import edu.tigers.sumatra.sim.dynamics.bot.SimBotAction;
 import edu.tigers.sumatra.sim.dynamics.bot.SimBotState;
 import edu.tigers.sumatra.sim.net.SimNetServer;
+import edu.tigers.sumatra.thread.NamedThreadFactory;
+import edu.tigers.sumatra.vision.IBallPlacer;
 import edu.tigers.sumatra.vision.data.FilteredVisionBall;
 import edu.tigers.sumatra.vision.data.FilteredVisionBot;
 import edu.tigers.sumatra.vision.data.FilteredVisionFrame;
-import edu.tigers.sumatra.wp.ball.trajectory.ABallTrajectory;
-import edu.tigers.sumatra.wp.ball.trajectory.BallFactory;
-import edu.tigers.sumatra.wp.data.BallTrajectoryState;
+import edu.tigers.sumatra.vision.data.FilteredVisionKick;
+import lombok.extern.log4j.Log4j2;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
+import java.util.stream.Collectors;
 
 
 /**
  * Simulate vision in Sumatra
  */
+@Log4j2
 public class SumatraSimulator extends ASumatraSimulator implements IRefereeObserver, SimNetServer.ISimNetObserver
 {
-	private static final Logger log = Logger.getLogger(SumatraSimulator.class.getName());
-
 	private static final long CAM_DT = 10_000_000;
 	private static final long SIM_DT = 1_000_000;
 	private static final double SIMULATION_BUFFER_TIME = 5;
 
 	private SimState simState = new SimState();
+	private ExecutorService service = null;
+	private Future<?> future = null;
 
 	private final BotCollisionHandler botCollisionHandler = new BotCollisionHandler();
-
-	private CountDownLatch steppingLatch;
 
 	private boolean running;
 	private double simSpeed;
@@ -73,9 +81,10 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 	private static boolean waitForRemoteAis = false;
 
 	private final Object simSync = new Object();
+	private final Object ctrlSync = new Object();
 
-	private long lastRefereeCommandId = -1;
 	private IVector3 ballTargetPos = null;
+	private long tHaltStart;
 
 
 	@Override
@@ -83,20 +92,23 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 	{
 		simState = new SimState();
 		running = false;
-		steppingLatch = new CountDownLatch(1);
 		simSpeed = 1;
-		manageBotCount = true;
 		stateBuffer.clear();
+		setBallPlacer(new BallPlacer());
+
+		AReferee referee = SumatraModel.getInstance().getModule(AReferee.class);
+		referee.addObserver(this);
+
+		String key = SumatraSimulator.class.getCanonicalName() + ".manageBotCount";
+		manageBotCount = Boolean.parseBoolean(SumatraModel.getInstance().getUserProperty(key, "true"));
 	}
 
 
 	@Override
 	public void startModule()
 	{
-		super.startModule();
-
-		AReferee referee = SumatraModel.getInstance().getModule(AReferee.class);
-		referee.addObserver(this);
+		reset();
+		service = Executors.newSingleThreadExecutor(new NamedThreadFactory("SumatraSimulator"));
 
 		if (getSubnodeConfiguration().getBoolean("start-sim-net-server", true))
 		{
@@ -105,26 +117,44 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 
 		final boolean startPaused = getSubnodeConfiguration().getBoolean("start-paused", false);
 
-		if (!waitForRemoteAis)
+		if (waitForRemoteAis)
 		{
-			if (!startPaused)
-			{
-				play();
-			}
-		} else
-		{
+			log.debug("Waiting for remote AIs");
 			simNetServer.addObserver(this);
+		} else if (!startPaused)
+		{
+			resume();
 		}
+	}
+
+
+	@Override
+	public void deinitModule()
+	{
+		super.deinitModule();
+
+		AReferee referee = SumatraModel.getInstance().getModule(AReferee.class);
+		referee.removeObserver(this);
 	}
 
 
 	@Override
 	public void stopModule()
 	{
-		super.stopModule();
-
-		AReferee referee = SumatraModel.getInstance().getModule(AReferee.class);
-		referee.removeObserver(this);
+		running = false;
+		service.shutdown();
+		try
+		{
+			boolean terminated = service.awaitTermination(1, TimeUnit.SECONDS);
+			if (!terminated)
+			{
+				log.error("Could not terminate simulator");
+			}
+		} catch (InterruptedException e)
+		{
+			log.error("Interrupted while awaiting termination", e);
+			Thread.currentThread().interrupt();
+		}
 
 		simState.getSimulatedBots().keySet().forEach(this::unregisterBot);
 
@@ -136,7 +166,7 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 	/**
 	 * @param botId
 	 * @param initialPose [mm, mm, rad]
-	 * @param vel [mm/s, mm/s, rad/s]
+	 * @param vel         [mm/s, mm/s, rad/s]
 	 */
 	public void registerBot(final BotID botId, final Pose initialPose, final IVector3 vel)
 	{
@@ -144,11 +174,11 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 		{
 			if (isBotRegistered(botId))
 			{
-				log.warn("Can not register a bot id twice: " + botId);
+				log.warn("Can not register a bot id twice: {}", botId);
 			} else
 			{
 				SimBotState state = new SimBotState(initialPose, vel);
-				simState.getSimulatedBots().put(botId, new SimulatedBot(botId, state, simState.getSimulatedBall()));
+				simState.getSimulatedBots().put(botId, new SimulatedBot(botId, state));
 				simulatorObservers.forEach(o -> o.onBotAdded(botId));
 			}
 		}
@@ -162,7 +192,7 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 			final SimulatedBot simulatedBot = simState.getSimulatedBots().remove(botId);
 			if (simulatedBot == null)
 			{
-				log.warn("No simulated bot registered with id " + botId);
+				log.warn("No simulated bot registered with id {}", botId);
 			} else
 			{
 				simulatorObservers.forEach(o -> o.onBotRemove(botId));
@@ -190,13 +220,7 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 		for (Map.Entry<BotID, SimulatedBot> bot : simState.getSimulatedBots().entrySet())
 		{
 			final SimBotAction simBotAction = actionMap.get(bot.getKey());
-			if (simBotAction != null)
-			{
-				bot.getValue().setAction(simBotAction);
-			} else
-			{
-				bot.getValue().setAction(SimBotAction.idle());
-			}
+			bot.getValue().setAction(Objects.requireNonNullElseGet(simBotAction, SimBotAction::idle));
 		}
 	}
 
@@ -210,7 +234,7 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 			botStates.put(entry.getKey(), simBotState);
 		}
 
-		simulatorActionCallbacks.forEach(cb -> cb.updateConnectedBotList(botStates));
+		simulatorActionCallbacks.forEach(cb -> cb.updateConnectedBotList(botStates.keySet()));
 		return simulatorActionCallbacks.stream()
 				.map(cb -> cb.nextSimBotActions(botStates, simState.getSimTime()))
 				.collect(Collectors.toList());
@@ -228,6 +252,8 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 			simState.incSimTime(SIM_DT);
 			simState.getSimulatedBall().collision(stepDt);
 			simState.getSimulatedBall().dynamics(stepDt);
+			simState.getSimulatedBots().values()
+					.forEach(b -> b.setBallPos(simState.getSimulatedBall().getState().getPos().getXYVector()));
 			simState.getSimulatedBots().values().forEach(b -> b.dynamics(stepDt));
 		}
 
@@ -244,8 +270,7 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 
 		moveBotsAwayFromBallTargetPos();
 
-		ABallTrajectory traj = BallFactory
-				.createTrajectoryFromKick(ballTargetPos.getXYVector(), Vector2.zero(), false);
+		IBallTrajectory traj = Geometry.getBallFactory().createTrajectoryFromBallAtRest(ballTargetPos.getXYVector());
 		simState.setLastKickEvent(null);
 		simState.getSimulatedBall().setState(traj.getMilliStateAtTime(0));
 		ballTargetPos = null;
@@ -273,13 +298,23 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 		{
 			stateBuffer.addLast(filteredFrame);
 
-			while ((stateBuffer.peekFirst() != null)
-					&& (((stateBuffer.peekLast().getTimestamp() - stateBuffer.peekFirst().getTimestamp())
-							/ 1e9) >= SIMULATION_BUFFER_TIME))
+			while (hasNext())
 			{
 				stateBuffer.removeFirst();
 			}
 		}
+	}
+
+
+	private boolean hasNext()
+	{
+		var first = stateBuffer.peekFirst();
+		if (first == null)
+		{
+			return false;
+		}
+		var diff = (stateBuffer.peekLast().getTimestamp() - first.getTimestamp()) / 1e9;
+		return diff >= SIMULATION_BUFFER_TIME;
 	}
 
 
@@ -299,34 +334,48 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 			SimBotState botState = bot.getState();
 			Pose pose = botState.getPose();
 			IVector3 vel = botState.getVel();
-			FilteredVisionBot fBot = FilteredVisionBot.Builder.create()
+			FilteredVisionBot fBot = FilteredVisionBot.builder()
 					.withPos(pose.getPos())
 					.withVel(vel.getXYVector().multiplyNew(1e-3))
 					.withOrientation(pose.getOrientation())
-					.withAVel(vel.z())
-					.withId(botID)
+					.withAngularVel(vel.z())
+					.withBotID(botID)
+					.withTimestamp(simState.getSimTime())
 					.withQuality(1.0)
 					.build();
 			filteredBots.add(fBot);
 		}
 
-		BallTrajectoryState ballState = simState.getSimulatedBall().getState();
-		FilteredVisionBall filteredBall = FilteredVisionBall.Builder.create()
-				.withPos(ballState.getPos().getXYZVector())
-				.withVel(ballState.getVel().getXYZVector())
-				.withAcc(ballState.getAcc().getXYZVector())
+		FilteredVisionBall filteredBall = FilteredVisionBall.builder()
+				.withTimestamp(simState.getSimTime())
+				.withBallState(simState.getSimulatedBall().getState())
 				.withLastVisibleTimestamp(simState.getSimTime())
-				.withIsChipped(ballState.isChipped())
-				.withvSwitch(ballState.getvSwitchToRoll())
 				.build();
 
-		return FilteredVisionFrame.Builder.create()
+		FilteredVisionKick filteredKick = null;
+
+		if (simState.getLastKickEvent() != null)
+		{
+			SimKickEvent kick = simState.getLastKickEvent();
+
+			filteredKick = FilteredVisionKick.builder()
+					.withKickTimestamp(kick.getTimestamp())
+					.withTrajectoryStartTime(kick.getTimestamp())
+					.withKickingBot(kick.getKickingBot())
+					.withKickingBotPosition(kick.getKickingBotPosition())
+					.withKickingBotOrientation(kick.getBotDirection())
+					.withNumBallDetectionsSinceKick(100)
+					.withBallTrajectory(Geometry.getBallFactory().createTrajectoryFromState(kick.getKickBallState()))
+					.build();
+		}
+
+		return FilteredVisionFrame.builder()
 				.withBots(filteredBots)
 				.withBall(filteredBall)
 				.withId(simState.getFrameId())
 				.withTimestamp(simState.getSimTime())
-				.withKickEvent(simState.getLastKickEvent())
-				.withKickFitState(filteredBall)
+				.withKick(filteredKick)
+				.withShapeMap(new ShapeMap())
 				.build();
 	}
 
@@ -338,37 +387,30 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 			simState.setLastKickEvent(null);
 		}
 
-		if (simState.getSimulatedBall().getLastCollision().isPresent())
+		Optional<ICollision> lastCollision = simState.getSimulatedBall().getLastCollision();
+		if (lastCollision.isPresent())
 		{
-			IVector2 pos = simState.getSimulatedBall().getLastCollision().get().getPos();
-			BotID botID = simState.getSimulatedBall().getLastCollision().get().getObject().getBotID();
+			IVector2 pos = lastCollision.get().getPos();
+			BotID botID = lastCollision.get().getObject().getBotID();
 			if (botID.isBot()
 					&& (simState.getLastKickEvent() == null || !pos.equals(simState.getLastKickEvent().getPosition())))
 			{
-				simState.setLastKickEvent(new SimKickEvent(pos, botID, simState.getSimTime()));
+				Pose botPose = simState.getSimulatedBots().get(botID).getState().getPose();
+				simState.setLastKickEvent(
+						new SimKickEvent(pos, botID, simState.getSimTime(), botPose.getPos(), botPose.getOrientation(),
+								simState.getSimulatedBall().getState()));
 			}
 		}
 	}
 
 
+	@SuppressWarnings("java:S1181") // Catching Throwable intentionally
 	@Override
 	public void run()
 	{
-		simState.incSimTime(SIM_DT);
-		publishFilteredVisionFrame(createFilteredFrame());
-		while (!Thread.interrupted())
+		long tLast = 0;
+		do
 		{
-			try
-			{
-				steppingLatch.await();
-			} catch (InterruptedException e1)
-			{
-				Thread.currentThread().interrupt();
-				return;
-			}
-
-			long t0 = System.nanoTime();
-
 			try
 			{
 				process();
@@ -380,22 +422,16 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 				log.error("Uncaught error in simulator", err);
 			}
 
-			long t1 = System.nanoTime();
-
-			if (!running)
+			long tNow = System.nanoTime();
+			long mDt = (long) (CAM_DT / simSpeed);
+			long sleep = mDt - (tNow - tLast);
+			if (sleep > 0)
 			{
-				steppingLatch = new CountDownLatch(1);
-			} else
-			{
-				long mDt = (long) (CAM_DT / simSpeed);
-				long sleep = mDt - (t1 - t0);
-				if (sleep > 0)
-				{
-					assert sleep < (long) 1e9;
-					ThreadUtil.parkNanosSafe(sleep);
-				}
+				assert sleep < (long) 1e9;
+				LockSupport.parkNanos(sleep);
 			}
-		}
+			tLast = System.nanoTime();
+		} while (running);
 	}
 
 
@@ -410,71 +446,128 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 			storeFrameInStateBuffer(filteredFrame);
 			publishFilteredVisionFrame(filteredFrame);
 		}
-		if (running)
-		{
-			moveBallToTargetPos();
-			handleBotCount();
-		}
+		moveBallToTargetPos();
+		handleBotCount();
 	}
 
 
 	/**
-	 * @param time
+	 * Reset the simulation to zero.
 	 */
-	public void reset(final long time)
+	public void reset()
 	{
 		log.debug("Resetting simulation");
-		boolean run = running;
-		if (run)
+		synchronized (ctrlSync)
 		{
-			pause();
-		}
-		simState.setSimTime(time);
-		stateBuffer.clear();
-		simState.getSimulatedBall().resetState();
-		simState.setLastKickEvent(null);
-		simState.getSimulatedBots().keySet().forEach(this::unregisterBot);
-		if (run)
-		{
-			play();
+			if (running)
+			{
+				throw new IllegalStateException("Simulation must not be running");
+			}
+			simState.setSimTime(SIM_DT);
+			stateBuffer.clear();
+			simState.getSimulatedBall().resetState();
+			simState.setLastKickEvent(null);
+			simState.getSimulatedBots().keySet().forEach(this::unregisterBot);
+			publishFilteredVisionFrame(createFilteredFrame());
 		}
 		log.debug("Reset simulation");
 	}
 
 
 	/**
-	 * Pause cam
+	 * Pause simulation. Blocks until simulation is paused.
 	 */
 	public void pause()
 	{
-		running = false;
-		log.debug("Paused simulation");
+		log.debug("Pause simulation");
+		synchronized (ctrlSync)
+		{
+			if (!running)
+			{
+				log.debug("Simulation is already paused");
+				return;
+			}
+			running = false;
+			try
+			{
+				future.get();
+			} catch (InterruptedException e)
+			{
+				log.warn("Interrupted while waiting for the simulation to pause");
+				Thread.currentThread().interrupt();
+			} catch (ExecutionException e)
+			{
+				log.warn("Sim future execution exception", e);
+			}
+		}
+		log.debug("Paused simulation at {}", simState.getSimTime());
 	}
 
 
 	/**
-	 * Start cam
+	 * Resume simulation. Does not block.
 	 */
-	public void play()
+	public void resume()
 	{
-		running = true;
-		steppingLatch.countDown();
-		log.debug("Started simulation");
+		log.debug("Resume simulation at {}", simState.getSimTime());
+		synchronized (ctrlSync)
+		{
+			if (running)
+			{
+				log.debug("Simulation is already running");
+				return;
+			}
+			running = true;
+			future = service.submit(this);
+		}
+		log.debug("Resumed simulation");
 	}
 
 
 	/**
 	 * Do one step
 	 */
-	public void step()
+	public Optional<Future<Void>> step()
 	{
-		steppingLatch.countDown();
+		synchronized (ctrlSync)
+		{
+			if (running)
+			{
+				return Optional.empty();
+			}
+			return Optional.of(service.submit(this, null));
+		}
+	}
+
+
+	public void stepBlocking()
+	{
+		log.debug("Start step");
+		try
+		{
+			var stepFuture = step();
+			if (stepFuture.isEmpty())
+			{
+				return;
+			}
+			stepFuture.get().get();
+		} catch (InterruptedException e)
+		{
+			Thread.currentThread().interrupt();
+		} catch (ExecutionException e)
+		{
+			log.warn("Step failed", e);
+		}
+		log.debug("Stop step");
 	}
 
 
 	public boolean isRunning()
 	{
-		return running;
+		synchronized (ctrlSync)
+		{
+			return running;
+		}
 	}
 
 
@@ -483,19 +576,24 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 	 */
 	public void stepBack()
 	{
-		if (running)
+		synchronized (ctrlSync)
 		{
-			// not useful, if not paused
-			return;
-		}
-		// remove latest state, then remove one more. Afterwards, one step will be simulated again
-		// this results in one step overall.
-		// the extra simulation step is required to update the state on remote simulator clients and to keep in sync
-		// with other threads
-		stateBuffer.pollLast();
-		FilteredVisionFrame frame = stateBuffer.pollLast();
-		if (frame != null)
-		{
+			log.debug("Step back");
+			if (running)
+			{
+				log.debug("Can not step back while simulation is running");
+				return;
+			}
+			// remove latest state, then remove one more. Afterwards, one step will be simulated again
+			// this results in one step overall.
+			// the extra simulation step is required to update the state on remote simulator clients and to keep in sync
+			// with other threads
+			stateBuffer.pollLast();
+			FilteredVisionFrame frame = stateBuffer.pollLast();
+			if (frame == null)
+			{
+				return;
+			}
 			for (Map.Entry<BotID, SimulatedBot> e : simState.getSimulatedBots().entrySet())
 			{
 				BotID botID = e.getKey();
@@ -504,7 +602,7 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 						.filter(b -> b.getBotID().equals(botID))
 						.findFirst();
 
-				if (!filtBot.isPresent())
+				if (filtBot.isEmpty())
 				{
 					continue;
 				}
@@ -515,33 +613,18 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 			}
 
 			FilteredVisionBall filteredState = frame.getBall();
-			BallTrajectoryState ballState = BallTrajectoryState.aBallState()
+			BallState ballState = BallState.builder()
 					.withPos(filteredState.getPos())
 					.withVel(filteredState.getVel())
 					.withAcc(filteredState.getAcc())
-					.withChipped(filteredState.isChipped())
-					.withVSwitchToRoll(filteredState.getVSwitch())
 					.withSpin(filteredState.getSpin())
 					.build();
 
 			simState.getSimulatedBall().setState(ballState);
 
 			simState.setSimTime(frame.getTimestamp());
-			steppingLatch.countDown();
 		}
-	}
-
-
-	@Override
-	public void placeBall(final IVector3 pos, final IVector3 vel)
-	{
-		ABallTrajectory traj = BallFactory
-				.createTrajectoryFromKick(pos.getXYVector(), vel, vel.z() > 0);
-
-		simState.setLastKickEvent(new SimKickEvent(pos.getXYVector(), BotID.noBot(), simState.getSimTime()));
-
-		simState.getSimulatedBall().setState(traj.getMilliStateAtTime(0));
-		ballTargetPos = null;
+		step();
 	}
 
 
@@ -555,27 +638,36 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 
 
 	@Override
-	public void onNewRefereeMsg(final Referee.SSL_Referee refMsg)
+	public void onNewRefereeMsg(final SslGcRefereeMessage.Referee refMsg)
 	{
 		simState.setLatestRefereeMessage(refMsg);
 
-		if (refMsg.getCommand() == Referee.SSL_Referee.Command.HALT
-				&& refMsg.getCommandCounter() != lastRefereeCommandId
-				&& refMsg.getDesignatedPosition() != null)
+		if (refMsg.getCommand() == SslGcRefereeMessage.Referee.Command.HALT
+				&& refMsg.hasDesignatedPosition())
 		{
-			ballTargetPos = Vector3.fromXYZ(
-					refMsg.getDesignatedPosition().getX(),
-					refMsg.getDesignatedPosition().getY(),
-					0.0);
+			if (tHaltStart == 0)
+			{
+				tHaltStart = simState.getSimTime();
+			}
+			if ((simState.getSimTime() - tHaltStart) / 1e9 > 0.5)
+			{
+				IVector2 designatedPos = Vector2.fromXY(refMsg.getDesignatedPosition().getX(),
+						refMsg.getDesignatedPosition().getY());
+				if (simState.getSimulatedBall().getState().getPos().getXYVector().distanceTo(designatedPos) > 1)
+				{
+					ballTargetPos = Vector3.from2d(designatedPos, 0.0);
+				}
+			}
+		} else
+		{
+			tHaltStart = 0;
 		}
-
-		lastRefereeCommandId = refMsg.getCommandCounter();
 	}
 
 
 	private void handleBotCount()
 	{
-		Referee.SSL_Referee refMsg = simState.getLatestRefereeMessage();
+		SslGcRefereeMessage.Referee refMsg = simState.getLatestRefereeMessage();
 		if (refMsg != null && manageBotCount)
 		{
 			handleTeam(refMsg.getBlue(), ETeamColor.BLUE);
@@ -584,7 +676,7 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 	}
 
 
-	private void handleTeam(Referee.SSL_Referee.TeamInfo teamInfo, ETeamColor team)
+	private void handleTeam(SslGcRefereeMessage.Referee.TeamInfo teamInfo, ETeamColor team)
 	{
 		long numOnField = simState.getSimulatedBots().keySet().stream().filter(b -> b.getTeamColor() == team).count();
 		long numToRemove = numOnField - teamInfo.getMaxAllowedBots();
@@ -620,10 +712,10 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 
 	private BotID nextUnassignedBotId(final ETeamColor team)
 	{
-		for (int i = 0; i < BotID.BOT_ID_MAX; i++)
+		for (int i = 0; i < AObjectID.BOT_ID_MAX; i++)
 		{
 			final BotID botId = BotID.createBotId(i, team);
-			if (!simState.getSimulatedBots().keySet().contains(botId))
+			if (!simState.getSimulatedBots().containsKey(botId))
 			{
 				return botId;
 			}
@@ -655,9 +747,11 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 	@Override
 	public void onNewClient()
 	{
+		log.debug("New client");
 		if (!running && simNetServer.getConnectedClientTeams().size() == 2)
 		{
-			play();
+			log.debug("Two clients connected. Resuming simulation.");
+			resume();
 		}
 	}
 
@@ -677,10 +771,32 @@ public class SumatraSimulator extends ASumatraSimulator implements IRefereeObser
 	{
 		this.manageBotCount = manageBotCount;
 	}
-	
-	
+
+
 	public boolean getManageBotCount()
 	{
 		return this.manageBotCount;
+	}
+
+
+	private class BallPlacer implements IBallPlacer
+	{
+		@Override
+		public void placeBall(final IVector3 pos, final IVector3 vel)
+		{
+			IBallTrajectory traj = Geometry.getBallFactory()
+					.createTrajectoryFromKickedBallWithoutSpin(pos.getXYVector(), vel);
+
+			var botId = simState.getSimulatedBots().values().stream()
+					.min(Comparator.comparing(bot -> bot.getState().getPose().getPos().distanceToSqr(pos.getXYVector())))
+					.map(SimulatedBot::getBotId)
+					.orElse(BotID.noBot());
+			simState.setLastKickEvent(
+					new SimKickEvent(pos.getXYVector(), botId, simState.getSimTime(), pos.getXYVector(), 0,
+							traj.getMilliStateAtTime(0)));
+
+			simState.getSimulatedBall().setState(traj.getMilliStateAtTime(0));
+			ballTargetPos = null;
+		}
 	}
 }

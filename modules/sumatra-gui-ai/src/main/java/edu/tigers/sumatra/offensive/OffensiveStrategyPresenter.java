@@ -1,10 +1,7 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.offensive;
-
-import java.awt.Component;
-import java.util.ArrayList;
 
 import edu.tigers.moduli.listenerVariables.ModulesState;
 import edu.tigers.sumatra.ai.AAgent;
@@ -19,23 +16,25 @@ import edu.tigers.sumatra.offensive.view.TeamOffensiveStrategyPanel;
 import edu.tigers.sumatra.views.ASumatraViewPresenter;
 import edu.tigers.sumatra.views.ISumatraView;
 
+import java.awt.Component;
+
 
 /**
  * OffensiveStrategy Presenter
- * 
+ *
  * @author Mark Geiger <Mark.Geiger@dlr.de>
  */
 public class OffensiveStrategyPresenter extends ASumatraViewPresenter implements IVisualizationFrameObserver
 {
 	private final OffensiveStrategyPanel offensiveStrategyPanel;
-	
-	
+
+
 	public OffensiveStrategyPresenter()
 	{
 		offensiveStrategyPanel = new OffensiveStrategyPanel();
 	}
-	
-	
+
+
 	@Override
 	public void onModuliStateChanged(final ModulesState state)
 	{
@@ -49,22 +48,22 @@ public class OffensiveStrategyPresenter extends ASumatraViewPresenter implements
 			agent.removeVisObserver(this);
 		}
 	}
-	
-	
+
+
 	@Override
 	public Component getComponent()
 	{
 		return offensiveStrategyPanel;
 	}
-	
-	
+
+
 	@Override
 	public ISumatraView getSumatraView()
 	{
 		return offensiveStrategyPanel;
 	}
-	
-	
+
+
 	@Override
 	public void onNewVisualizationFrame(final VisualizationFrame frame)
 	{
@@ -80,10 +79,8 @@ public class OffensiveStrategyPresenter extends ASumatraViewPresenter implements
 			{
 				strategyPanel = offensiveStrategyPanel.getYellowStrategyPanel();
 			}
-			
-			strategyPanel.setDesiredBots(new ArrayList<>(offensiveStrategy.getDesiredBots()));
+
 			strategyPanel.setPlayConfiguration(offensiveStrategy.getCurrentOffensivePlayConfiguration());
-			strategyPanel.setSpecialMoveCommands(offensiveStrategy.getActivePassTarget().orElse(null));
 			strategyPanel.setOffensiveActions(frame.getOffensiveActions());
 		}
 	}

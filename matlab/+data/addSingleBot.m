@@ -21,6 +21,18 @@ function D = addSingleBot(D, botId, botColor)
       for i= 1:numel(fields)
           D.rawBot.(fields{i}) = D.rawBots.(fields{i})(idx,:);
       end
+      D.rawBot.vel = util.convert.pose2vel(D.rawBot.pos, D.rawBot.timestamp);
+      D.rawBot.velAbs = sqrt( D.rawBot.vel(:,1) .* D.rawBot.vel(:,1) + D.rawBot.vel(:,2) .* D.rawBot.vel(:,2));
+      D.rawBot.acc = util.convert.vel2acc(D.rawBot.vel, D.rawBot.timestamp);
+      D.rawBot.accAbs = sqrt( D.rawBot.acc(:,1) .* D.rawBot.acc(:,1) + D.rawBot.acc(:,2) .* D.rawBot.acc(:,2));
+  end
+  
+  if isfield(D, 'filteredBots')
+      fields = fieldnames(D.filteredBots);
+      idx = D.filteredBots.id == botId & D.filteredBots.color == botColor;
+      for i= 1:numel(fields)
+          D.filteredBot.(fields{i}) = D.filteredBots.(fields{i})(idx,:);
+      end
   end
   
   if isfield(D, 'botInputs')

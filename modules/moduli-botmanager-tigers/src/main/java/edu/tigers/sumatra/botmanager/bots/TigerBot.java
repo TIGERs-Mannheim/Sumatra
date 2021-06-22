@@ -1,12 +1,11 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.bots;
 
-import java.util.Optional;
-
 import edu.tigers.sumatra.bot.BotState;
 import edu.tigers.sumatra.bot.EBotType;
+import edu.tigers.sumatra.bot.EDribblerState;
 import edu.tigers.sumatra.bot.EFeature;
 import edu.tigers.sumatra.bot.EFeatureState;
 import edu.tigers.sumatra.bot.ERobotMode;
@@ -14,6 +13,7 @@ import edu.tigers.sumatra.bot.State;
 import edu.tigers.sumatra.botmanager.basestation.IBaseStation;
 import edu.tigers.sumatra.botmanager.basestation.TigersBaseStation;
 import edu.tigers.sumatra.botmanager.commands.ACommand;
+import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStats;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemMatchFeedback;
 import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerSystemVersion;
 import edu.tigers.sumatra.botmanager.communication.ReliableCmdManager;
@@ -22,6 +22,8 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.Vector3;
 
+import java.util.Optional;
+
 
 /**
  * A TIGERs Bot implementation
@@ -29,31 +31,32 @@ import edu.tigers.sumatra.math.vector.Vector3;
 public class TigerBot extends ABot
 {
 	private final ReliableCmdManager reliableCmdManager = new ReliableCmdManager(this);
-	
+
 	private TigerSystemMatchFeedback latestFeedbackCmd = new TigerSystemMatchFeedback();
 	private String version = "not available";
-	
-	
+	private BaseStationWifiStats.BotStats botStats;
+
+
 	public TigerBot(final BotID botId, final IBaseStation baseStation)
 	{
 		super(EBotType.TIGERS, botId, baseStation);
 	}
-	
-	
+
+
 	@Override
 	public TigersBaseStation getBaseStation()
 	{
 		return (TigersBaseStation) super.getBaseStation();
 	}
-	
-	
+
+
 	public void execute(final ACommand cmd)
 	{
 		reliableCmdManager.outgoingCommand(cmd);
 		getBaseStation().enqueueCommand(getBotId(), cmd);
 	}
-	
-	
+
+
 	private void onNewFeedbackCmd(final TigerSystemMatchFeedback cmd)
 	{
 		for (EFeature f : EFeature.values())
@@ -61,17 +64,18 @@ public class TigerBot extends ABot
 			getBotFeatures().put(f, cmd.isFeatureWorking(f) ? EFeatureState.WORKING : EFeatureState.KAPUT);
 		}
 	}
-	
-	
+
+
 	public void onIncomingBotCommand(final ACommand cmd)
 	{
 		reliableCmdManager.incomingCommand(cmd);
-		
+
 		switch (cmd.getType())
 		{
 			case CMD_SYSTEM_MATCH_FEEDBACK:
 				onNewFeedbackCmd((TigerSystemMatchFeedback) cmd);
 				latestFeedbackCmd = (TigerSystemMatchFeedback) cmd;
+				lastFeedback = System.nanoTime();
 				break;
 			case CMD_SYSTEM_VERSION:
 				version = ((TigerSystemVersion) cmd).getFullVersionString();
@@ -80,8 +84,8 @@ public class TigerBot extends ABot
 				break;
 		}
 	}
-	
-	
+
+
 	@Override
 	public int getHardwareId()
 	{
@@ -91,17 +95,17 @@ public class TigerBot extends ABot
 		}
 		return 255;
 	}
-	
-	
+
+
 	@Override
 	public boolean isAvailableToAi()
 	{
 		return super.isAvailableToAi() &&
 				((latestFeedbackCmd == null) || latestFeedbackCmd.isFeatureWorking(EFeature.MOVE));
-		
+
 	}
-	
-	
+
+
 	@Override
 	public double getBatteryRelative()
 	{
@@ -109,11 +113,23 @@ public class TigerBot extends ABot
 		{
 			return latestFeedbackCmd.getBatteryPercentage();
 		}
-		
+
 		return 0;
 	}
-	
-	
+
+
+	@Override
+	public double getBatteryAbsolute()
+	{
+		if (latestFeedbackCmd != null)
+		{
+			return latestFeedbackCmd.getBatteryLevel();
+		}
+
+		return 0;
+	}
+
+
 	@Override
 	public double getKickerLevel()
 	{
@@ -121,11 +137,23 @@ public class TigerBot extends ABot
 		{
 			return latestFeedbackCmd.getKickerLevel();
 		}
-		
+
 		return 0;
 	}
-	
-	
+
+
+	@Override
+	public double getKickerLevelMax()
+	{
+		if (latestFeedbackCmd != null)
+		{
+			return latestFeedbackCmd.getKickerMax();
+		}
+
+		return super.getKickerLevelMax();
+	}
+
+
 	@Override
 	public ERobotMode getRobotMode()
 	{
@@ -135,8 +163,8 @@ public class TigerBot extends ABot
 		}
 		return ERobotMode.IDLE;
 	}
-	
-	
+
+
 	@Override
 	public boolean isOK()
 	{
@@ -144,13 +172,13 @@ public class TigerBot extends ABot
 		boolean straight = getBotFeatures().get(EFeature.STRAIGHT_KICKER) == EFeatureState.WORKING;
 		boolean chip = getBotFeatures().get(EFeature.CHIP_KICKER) == EFeatureState.WORKING;
 		boolean charge = getBotFeatures().get(EFeature.CHARGE_CAPS) == EFeatureState.WORKING;
-		
+
 		return energetic && straight && chip && charge;
 	}
-	
-	
+
+
 	@Override
-	public Optional<BotState> getSensoryState(final long timestamp)
+	public Optional<BotState> getSensoryState()
 	{
 		if (latestFeedbackCmd == null)
 		{
@@ -161,36 +189,37 @@ public class TigerBot extends ABot
 				Vector3.from2d(latestFeedbackCmd.getVelocity(), latestFeedbackCmd.getAngularVelocity()));
 		return Optional.of(BotState.of(getBotId(), state));
 	}
-	
-	
+
+
 	@Override
 	public boolean isBarrierInterrupted()
 	{
-		return latestFeedbackCmd.isBarrierInterrupted();
+		return getBotFeatures().get(EFeature.BARRIER) == EFeatureState.WORKING
+				&& latestFeedbackCmd.isBarrierInterrupted();
 	}
-	
-	
+
+
 	@Override
 	public double getCenter2DribblerDist()
 	{
 		return getBotParams().getDimensions().getCenter2DribblerDist();
 	}
-	
-	
+
+
 	@Override
 	public String getVersionString()
 	{
 		return version;
 	}
-	
-	
+
+
 	@Override
-	public double getDribblerTemp()
+	public EDribblerState getDribblerState()
 	{
-		return latestFeedbackCmd.getDribblerTemp();
+		return latestFeedbackCmd.getDribblerState();
 	}
-	
-	
+
+
 	@Override
 	public EBotParamLabel getBotParamLabel()
 	{
@@ -198,6 +227,22 @@ public class TigerBot extends ABot
 		{
 			return EBotParamLabel.TIGER_V2016;
 		}
-		return EBotParamLabel.TIGER_V2013;
+		return EBotParamLabel.TIGER_V2020;
+	}
+
+
+	public BaseStationWifiStats.BotStats.NRF24IOStats getNrfStats()
+	{
+		if (botStats != null)
+		{
+			return botStats.nrf;
+		}
+		return new BaseStationWifiStats.BotStats.NRF24IOStats();
+	}
+
+
+	public void setStats(final BaseStationWifiStats.BotStats botStats)
+	{
+		this.botStats = botStats;
 	}
 }

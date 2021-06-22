@@ -1,15 +1,10 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Jun 29, 2016
- * Author(s): "Lukas Magel"
- * *********************************************************
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine.log;
 
-import edu.tigers.sumatra.Referee.SSL_Referee.Stage;
 import edu.tigers.sumatra.referee.data.RefereeMsg;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee.Stage;
 
 
 /**

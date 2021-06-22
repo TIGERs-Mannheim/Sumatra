@@ -1,92 +1,78 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.targetrater;
 
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.Value;
+import org.apache.commons.lang.Validate;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
-
-import edu.tigers.sumatra.math.AngleMath;
-
 
 /**
- * A angle range is defined by a left and right angle. The right angle must be the smaller one.
+ * An angle range is defined by a left and right angle. The right angle must be the smaller one.
+ * Note: The angle range must be relative to some common direction. Absolute angles will wrap from positive to negative!
  */
+@Value
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class AngleRange
 {
-	private final double rightAngle;
-	private final double leftAngle;
-	
-	
-	/**
-	 * @param rightAngle smaller angle
-	 * @param leftAngle larger angle
-	 */
-	public AngleRange(final double rightAngle, final double leftAngle)
+	double offset;
+	double width;
+
+
+	public static AngleRange fromAngles(double angle1, double angle2)
 	{
-		assert rightAngle <= leftAngle;
-		this.leftAngle = leftAngle;
-		this.rightAngle = rightAngle;
+		double width = angle2 - angle1;
+		double offset = angle1 + width / 2;
+		return new AngleRange(offset, Math.abs(width));
 	}
-	
-	
-	public double getAngleWidth()
+
+
+	public static AngleRange width(double width)
 	{
-		return Math.abs(AngleMath.difference(leftAngle, rightAngle));
+		Validate.isTrue(width >= 0, "Width must be >0: ", width);
+		return new AngleRange(0.0, width);
 	}
-	
-	
-	public double getCenterAngle()
+
+
+	public double getLeft()
 	{
-		return rightAngle + getAngleWidth() / 2;
+		// no normalization here to allow comparisons!
+		return offset + width / 2;
 	}
-	
-	
+
+
+	public double getRight()
+	{
+		// no normalization here to allow comparisons!
+		return offset - width / 2;
+	}
+
+
 	public List<AngleRange> cutOutRange(AngleRange cut)
 	{
 		List<AngleRange> ranges = new ArrayList<>(2);
-		if (cut.leftAngle <= rightAngle // range is right of us
-				|| cut.rightAngle > leftAngle) // range is left of us
+		if (cut.getLeft() <= getRight() // range is right of us
+				|| cut.getRight() > getLeft()) // range is left of us
 		{
 			ranges.add(this);
 			return ranges;
 		}
-		if (cut.rightAngle > rightAngle)
+		if (cut.getRight() > getRight())
 		{
-			// remainings on the right side
-			ranges.add(new AngleRange(rightAngle, cut.rightAngle));
+			// leftover on the right side
+			ranges.add(AngleRange.fromAngles(getRight(), cut.getRight()));
 		}
-		if (cut.leftAngle <= leftAngle)
+		if (cut.getLeft() <= getLeft())
 		{
-			// remainings on the left side
-			ranges.add(new AngleRange(cut.leftAngle, leftAngle));
+			// leftover on the left side
+			ranges.add(AngleRange.fromAngles(cut.getLeft(), getLeft()));
 		}
 		return ranges;
-	}
-	
-	
-	public double getLeftAngle()
-	{
-		return leftAngle;
-	}
-	
-	
-	public double getRightAngle()
-	{
-		return rightAngle;
-	}
-	
-	
-	@Override
-	public String toString()
-	{
-		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-				.append("rightAngle", rightAngle)
-				.append("leftAngle", leftAngle)
-				.toString();
 	}
 }

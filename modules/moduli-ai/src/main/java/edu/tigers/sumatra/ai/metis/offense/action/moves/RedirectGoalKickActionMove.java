@@ -1,138 +1,93 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
-import java.util.Optional;
-
 import com.github.g3force.configurable.Configurable;
-
-import edu.tigers.sumatra.ai.BaseAiFrame;
-import edu.tigers.sumatra.ai.metis.TacticalField;
-import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
-import edu.tigers.sumatra.ai.metis.offense.OffensiveMath;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
 import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
-import edu.tigers.sumatra.ai.metis.offense.action.KickTarget;
-import edu.tigers.sumatra.ai.metis.targetrater.IRatedTarget;
-import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
+import edu.tigers.sumatra.ai.metis.targetrater.GoalKick;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.wp.data.DynamicPosition;
-import edu.tigers.sumatra.wp.data.WorldFrame;
+import lombok.RequiredArgsConstructor;
+
+import java.util.Map;
+import java.util.function.Supplier;
 
 
 /**
  * Try scoring a goal with a one touch (redirect) kick
  */
+@RequiredArgsConstructor
 public class RedirectGoalKickActionMove extends AOffensiveActionMove
 {
 	@Configurable(defValue = "0.2")
 	private static double minGoalShotChanceForTrueViability = 0.2;
-	
+
 	@Configurable(defValue = "0.05")
 	private static double minGoalShotChanceForPartiallyViability = 0.05;
-	
-	@Configurable(defValue = "1.05")
-	private static double bonusMultiplierForRedirectsOverDirectKicks = 1.05;
-	
-	
-	public RedirectGoalKickActionMove()
+
+	@Configurable(defValue = "1.25")
+	private static double bonusMultiplierForRedirectsOverDirectKicks = 1.25;
+
+	private final Supplier<Map<BotID, GoalKick>> bestGoalKickTargets;
+
+
+	private OffensiveActionViability calcViability(BotID botId, GoalKick goalKick)
 	{
-		super(EOffensiveActionMove.REDIRECT_GOAL_KICK);
+		if (goalKick == null)
+		{
+			return new OffensiveActionViability(EActionViability.FALSE, 0.0);
+		}
+
+		if (goalKick.canBeRedirected())
+		{
+			var ratedTarget = goalKick.getRatedTarget();
+			var score = ratedTarget.getScore();
+			var antiToggleScore = getAntiToggleScore(botId);
+			if (score + antiToggleScore > minGoalShotChanceForTrueViability)
+			{
+				return new OffensiveActionViability(EActionViability.TRUE, calcViabilityScoreWithBonus(score));
+			} else if (score + antiToggleScore > minGoalShotChanceForPartiallyViability)
+			{
+				return new OffensiveActionViability(EActionViability.PARTIALLY, calcViabilityScoreWithBonus(score));
+			}
+		}
+		return new OffensiveActionViability(EActionViability.FALSE, 0.0);
 	}
-	
-	
-	@Override
-	public EActionViability isActionViable(final BotID id, final TacticalField newTacticalField,
-			final BaseAiFrame baseAiFrame)
+
+
+	private double getAntiToggleScore(BotID botId)
 	{
-		if (!ActionMoveConstants.allowGoalKick() || attackerCanNotKickOrCatchTheBall(baseAiFrame, id))
+		var offensiveAction = getAiFrame().getPrevFrame().getTacticalField().getOffensiveActions().get(botId);
+		if (offensiveAction != null && offensiveAction.getMove() == EOffensiveActionMove.REDIRECT_GOAL_KICK)
 		{
-			return EActionViability.FALSE;
+			return 0.2;
 		}
-		
-		double antiToggleAngle = 0.2;
-		double antiToggleScore = 0.1;
-		if (baseAiFrame.getPrevFrame().getTacticalField().getOffensiveActions().containsKey(id)
-				&& baseAiFrame.getPrevFrame().getTacticalField().getOffensiveActions().get(id)
-						.getMove() != EOffensiveActionMove.REDIRECT_GOAL_KICK)
-		{
-			antiToggleAngle = 0;
-			antiToggleScore = 0;
-		}
-		
-		Optional<IRatedTarget> vp = newTacticalField.getBestGoalKickTargetForBot().get(id);
-		if (!vp.isPresent())
-		{
-			return EActionViability.FALSE;
-		}
-		
-		boolean isGoalRedirectPossible = isBallRedirectReasonable(baseAiFrame.getWorldFrame(),
-				baseAiFrame.getWorldFrame().getTiger(id).getBotKickerPos(),
-				vp.get().getTarget().getPos(), antiToggleAngle);
-		
-		double val = vp.map(IRatedTarget::getScore).orElse(0.0);
-		if (val + antiToggleScore > minGoalShotChanceForTrueViability && isGoalRedirectPossible)
-		{
-			return EActionViability.TRUE;
-		} else if (val + antiToggleScore > minGoalShotChanceForPartiallyViability && isGoalRedirectPossible)
-		{
-			return EActionViability.PARTIALLY;
-		}
-		return EActionViability.FALSE;
+		return 0;
 	}
-	
-	
+
+
 	@Override
-	public OffensiveAction activateAction(final BotID id, final TacticalField newTacticalField,
-			final BaseAiFrame baseAiFrame)
+	public OffensiveAction calcAction(BotID botId)
 	{
-		final DynamicPosition target = newTacticalField.getBestGoalKickTargetForBot().get(id)
-				.map(IRatedTarget::getTarget)
-				.orElse(new DynamicPosition(Geometry.getGoalTheir().getCenter()));
-		final KickTarget kickTarget = KickTarget.goalShot(target);
-		return createOffensiveAction(EOffensiveAction.REDIRECT, kickTarget)
-				.withAllowRedirect(true);
+		var goalKick = bestGoalKickTargets.get().get(botId);
+
+		return OffensiveAction.builder()
+				.move(EOffensiveActionMove.REDIRECT_GOAL_KICK)
+				.viability(calcViability(botId, goalKick))
+				.action(EOffensiveAction.REDIRECT)
+				.kick(goalKick == null ? null : goalKick.getKick())
+				.build();
 	}
-	
-	
-	@Override
-	public double calcViabilityScore(final BotID id, final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+
+
+	private double calcViabilityScoreWithBonus(double score)
 	{
 		// redirects are favored over directs, because they can be executed faster
 		// and redirects do not need to consider rotation times
-		return newTacticalField.getBestGoalKickTargetForBot().get(id).map(IRatedTarget::getScore).orElse(0.0)
-				* bonusMultiplierForRedirectsOverDirectKicks;
-	}
-	
-	
-	/**
-	 * @param wf
-	 * @param kickerPos
-	 * @param target
-	 * @param antiToggle
-	 * @return
-	 */
-	public boolean isBallRedirectReasonable(final WorldFrame wf, final IVector2 kickerPos, final IVector2 target,
-			final double antiToggle)
-	{
-		return isBallRedirectReasonable(wf.getBall().getPos(), kickerPos, target, antiToggle);
-	}
-	
-	
-	/**
-	 * @param source
-	 * @param kickerPos
-	 * @param target
-	 * @param antiToogle
-	 * @return
-	 */
-	private boolean isBallRedirectReasonable(final IVector2 source, final IVector2 kickerPos,
-			final IVector2 target, final double antiToogle)
-	{
-		double redirectAngle = OffensiveMath.getRedirectAngle(source, kickerPos, target);
-		return redirectAngle <= (OffensiveConstants.getMaximumReasonableRedirectAngle() + antiToogle);
+		return applyMultiplier(score * bonusMultiplierForRedirectsOverDirectKicks);
 	}
 }

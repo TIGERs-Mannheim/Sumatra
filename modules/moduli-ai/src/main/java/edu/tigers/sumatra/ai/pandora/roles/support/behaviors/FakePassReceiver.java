@@ -4,15 +4,8 @@
 
 package edu.tigers.sumatra.ai.pandora.roles.support.behaviors;
 
-import static java.lang.Math.min;
-
-import java.awt.Color;
-import java.util.List;
-import java.util.Optional;
-
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
@@ -25,8 +18,14 @@ import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
-import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
+import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.stream.StreamUtil;
+
+import java.awt.Color;
+import java.util.List;
+import java.util.Optional;
+
+import static java.lang.Math.min;
 
 
 /**
@@ -35,39 +34,41 @@ import edu.tigers.sumatra.stream.StreamUtil;
  */
 public class FakePassReceiver extends ASupportBehavior
 {
-	@Configurable(comment = "Defines whether this behavior is active of not", defValue = "true")
-	private static boolean isActive = true;
-	
+	@Configurable(comment = "Defines whether this behavior is active of not", defValue = "false")
+	private static boolean isActive = false;
+
 	@Configurable(comment = "Min distance to both passing bots[mm]", defValue = "1300")
 	private static int minDistanceToPassingBots = 1300;
-	
+
 	@Configurable(comment = "Distance between passline and FakePassReceiver[mm]", defValue = "50")
 	private static int distanceToPassLine = 50;
-	
+
 	@Configurable(comment = "Max time to fakePosition[sec]", defValue = "1.0")
 	private static double maxTimeToDestination = 1;
-	
+
 	static
 	{
 		ConfigRegistration.registerClass("roles", FakePassReceiver.class);
 	}
-	
+
 	private ILineSegment passLine;
-	
-	
+	private MoveToSkill skill;
+
+
 	public FakePassReceiver(final ARole role)
 	{
 		super(role);
 	}
-	
-	
+
+
 	@Override
 	public void doEntryActions()
 	{
-		getRole().setNewSkill(AMoveToSkill.createMoveToSkill());
+		skill = MoveToSkill.createMoveToSkill();
+		getRole().setNewSkill(skill);
 	}
-	
-	
+
+
 	@Override
 	public double calculateViability()
 	{
@@ -76,12 +77,12 @@ public class FakePassReceiver extends ASupportBehavior
 			return 0;
 		}
 		List<ARole> offensiveRoles = getRole().getAiFrame().getPlayStrategy().getActiveRoles(EPlay.OFFENSIVE);
-		
+
 		Optional<ILineSegment> passSegment = StreamUtil.nonRepeatingPermutation2Fold(offensiveRoles)
 				.map(a -> Lines.segmentFromPoints(a.get(0).getPos(), a.get(1).getPos()))
 				.filter(this::isFakePassReceiverReasonalbeOn)
 				.findFirst();
-		
+
 		if (passSegment.isPresent())
 		{
 			passLine = passSegment.get();
@@ -89,8 +90,8 @@ public class FakePassReceiver extends ASupportBehavior
 		}
 		return 0;
 	}
-	
-	
+
+
 	private boolean isFakePassReceiverReasonalbeOn(ILineSegment segment)
 	{
 		IVector2 referencePoint = segment.closestPointOnLine(getRole().getPos());
@@ -106,12 +107,12 @@ public class FakePassReceiver extends ASupportBehavior
 				&& !isInsidePenaltyArea
 				&& isReachableInTime;
 	}
-	
-	
+
+
 	@Override
 	public void doUpdate()
 	{
-		
+
 		IVector2 intersectionPoint = passLine.closestPointOnLine(getRole().getPos());
 		IVector2 direction = passLine.toLine().getOrthogonalLine().directionVector().normalizeNew();
 		if (direction.x() > 0)
@@ -120,19 +121,19 @@ public class FakePassReceiver extends ASupportBehavior
 		}
 		IVector2 destination = intersectionPoint
 				.addNew(direction.scaleToNew(Geometry.getBotRadius() + distanceToPassLine));
-		
-		getRole().getCurrentSkill().getMoveCon().updateDestination(destination);
-		getRole().getCurrentSkill().getMoveCon().updateLookAtTarget(Geometry.getGoalTheir().getCenter());
+
+		skill.updateDestination(destination);
+		skill.updateLookAtTarget(Geometry.getGoalTheir().getCenter());
 		draw();
 	}
-	
-	
+
+
 	private void draw()
 	{
-		List<IDrawableShape> shapes = getRole().getAiFrame().getTacticalField().getDrawableShapes()
+		List<IDrawableShape> shapes = getRole().getAiFrame().getShapeMap()
 				.get(EAiShapesLayer.SUPPORT_ACTIVE_ROLES);
 		DrawableLine line = new DrawableLine(passLine, Color.RED);
-		IVector2 destination = getRole().getCurrentSkill().getMoveCon().getDestination();
+		IVector2 destination = skill.getDestination();
 		AnimatedCrosshair dest = AnimatedCrosshair.aCrazyCrosshair(destination,
 				(float) Geometry.getBotRadius(),
 				(float) Geometry.getBotRadius() * 2, 500,

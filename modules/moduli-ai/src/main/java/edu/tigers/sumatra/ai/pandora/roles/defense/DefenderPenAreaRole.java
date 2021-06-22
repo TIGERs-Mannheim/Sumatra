@@ -1,36 +1,39 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.defense;
 
-import static edu.tigers.sumatra.ai.metis.EAiShapesLayer.DEFENSE_PENALTY_AREA_ROLE;
-
-import java.awt.Color;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import com.github.g3force.configurable.Configurable;
-
+import edu.tigers.sumatra.ai.common.KeepDistanceToBall;
+import edu.tigers.sumatra.ai.common.PointChecker;
 import edu.tigers.sumatra.ai.metis.ballresponsibility.EBallResponsibility;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.line.v2.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.pathfinder.TrajectoryGenerator;
-import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.MoveOnPenaltyAreaSkill;
+import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.skillsystem.skills.util.PenAreaBoundary;
 import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
 import edu.tigers.sumatra.statemachine.IState;
-import edu.tigers.sumatra.wp.data.DynamicPosition;
+import edu.tigers.sumatra.wp.data.ITrackedBot;
+
+import java.awt.Color;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static edu.tigers.sumatra.ai.metis.EAiShapesLayer.DEFENSE_PENALTY_AREA_ROLE;
 
 
 /**
@@ -54,7 +57,7 @@ public class DefenderPenAreaRole extends ADefenseRole
 	 * destination must be initialized, because the defense group will trigger an update through switchRoles before
 	 * the destination is initially set
 	 */
-	private IVector2 destination = Vector2.zero();
+	private IVector2 destination = Geometry.getPenaltyMarkOur();
 	private PenAreaBoundary penAreaBoundary = PenAreaBoundary
 			.ownWithMargin(Geometry.getBotRadius() + Geometry.getPenaltyAreaMargin());
 
@@ -124,44 +127,80 @@ public class DefenderPenAreaRole extends ADefenseRole
 	private boolean enoughTimeToKickSafely(double additionalRequiredTime)
 	{
 		IVector2 target = getWFrame().getBall().getPos();
-		double minFoeArrivalTime = getWFrame().getFoeBots().values().stream()
+		double minOpponentArrivalTime = getWFrame().getOpponentBots().values().stream()
 				.mapToDouble(bot -> TrajectoryGenerator.generatePositionTrajectory(bot, target).getTotalTime())
 				.min()
 				.orElse(1000000);
 		double myTime = TrajectoryGenerator.generatePositionTrajectory(getBot(), target).getTotalTime();
-		double slackTime = minFoeArrivalTime - myTime - requiredMinimumSlackTime - additionalRequiredTime;
+		double slackTime = minOpponentArrivalTime - myTime - requiredMinimumSlackTime - additionalRequiredTime;
 		return slackTime > 0;
 	}
 
-private IVector2 validFinalDestination(final IVector2 intermediatePos)
+
+	private IVector2 validFinalDestination(final IVector2 intermediatePos)
 	{
 		final double botBallRadius = Geometry.getBotRadius() + Geometry.getBallRadius();
 		final PenAreaBoundary adaptedPenArea = penAreaBoundary.withMargin(-botBallRadius);
-		if (!adaptedPenArea.isPointInShape(getBall().getPos()) && getBot().getVel().getLength2() > 0.5)
+		if (getBot().getVel().getLength2() > 0.5)
 		{
-			final IVector2 ballProjectedToPenArea = adaptedPenArea.projectPoint(getBall().getPos());
-			final double ballToPenAreaDist = ballProjectedToPenArea.distanceTo(getBall().getPos());
-
-			if (intermediatePos.distanceTo(getBall().getPos()) < botBallRadius)
+			for (ITrackedBot bot : getWFrame().getOpponentBots().values())
 			{
-				// ball is inside destination. Better not drive onto ball
-				return adaptedPenArea.withMargin(ballToPenAreaDist + botBallRadius).projectPoint(intermediatePos);
+				if (bot.getPos().distanceTo(intermediatePos) < Geometry.getBotRadius() * 1.5)
+				{
+					return penAreaBoundary
+							.projectPoint(LineMath.stepAlongLine(intermediatePos, getPos(), Geometry.getBotRadius() * 1.5));
+				}
+			}
+			if (!adaptedPenArea.isPointInShape(getBall().getPos()))
+			{
+				final IVector2 ballProjectedToPenArea = adaptedPenArea.projectPoint(getBall().getPos());
+				final double ballToPenAreaDist = ballProjectedToPenArea.distanceTo(getBall().getPos());
+
+				if (intermediatePos.distanceTo(getBall().getPos()) < botBallRadius)
+				{
+					// ball is inside destination. Better not drive onto ball
+					return adaptedPenArea.withMargin(ballToPenAreaDist + botBallRadius).projectPoint(intermediatePos);
+				}
 			}
 		}
 
 		return intermediatePos;
 	}
 
+
+	private boolean situationIsDangerous()
+	{
+		return ballInPenArea() || lostBallResponsibility();
+	}
+
+
+	private boolean ballInPenArea()
+	{
+		final double margin = Geometry.getBotRadius() * 2 + Geometry.getBallRadius();
+		return Geometry.getPenaltyAreaOur().isPointInShape(getWFrame().getBall().getPos(), margin);
+	}
+
+
+	private boolean lostBallResponsibility()
+	{
+		return getAiFrame().getTacticalField().getBallResponsibility() != EBallResponsibility.DEFENSE;
+	}
+
+
 	private class KeepDistanceToBallState extends AState
 	{
-		private AMoveToSkill skill;
-		private final KeepDistanceToBall keepDistanceToBall = new KeepDistanceToBall();
+		private MoveToSkill skill;
+		private final PointChecker pointChecker = new PointChecker()
+				.checkBallDistances()
+				.checkInsideField()
+				.checkCustom(this::canOpponentGetBallInPenArea);
+		private final KeepDistanceToBall keepDistanceToBall = new KeepDistanceToBall(pointChecker);
 
 
 		@Override
 		public void doEntryActions()
 		{
-			skill = AMoveToSkill.createMoveToSkill();
+			skill = MoveToSkill.createMoveToSkill();
 			setNewSkill(skill);
 		}
 
@@ -169,27 +208,50 @@ private IVector2 validFinalDestination(final IVector2 intermediatePos)
 		@Override
 		public void doUpdate()
 		{
-			keepDistanceToBall.update(getAiFrame(), getBotID(), destination);
-			skill.getMoveCon().setPenaltyAreaAllowedOur(true);
-			skill.getMoveCon().updateDestination(keepDistanceToBall.freeDestination());
-			skill.getMoveCon().updateLookAtTarget(getBall());
+			skill.getMoveCon().setPenaltyAreaOurObstacle(false);
 
-			if (!getAiFrame().getGamestate().isStoppedGame())
+			pointChecker.checkPointFreeOfBotsExceptFor(destination);
+			if (keepDistanceToBall.isOk(getAiFrame(), destination, getBotID()))
+			{
+				skill.updateDestination(destination);
+			} else
+			{
+				// Search for next free pos, starting at the current pos to avoid driving through the placement beam
+				skill.updateDestination(keepDistanceToBall.findNextFreeDest(getAiFrame(), getPos(), getBotID()));
+			}
+
+			skill.updateLookAtTarget(getBall());
+
+			if (!getAiFrame().getGameState().isStoppedGame())
 			{
 				triggerEvent(EEvent.LEFT_PEN_AREA);
 			}
+		}
+
+
+		private boolean canOpponentGetBallInPenArea(final IVector2 point)
+		{
+			// allow opponents to pass through the defense when the ball is inside the penArea
+			if (!Geometry.getPenaltyAreaOur().isPointInShapeOrBehind(getBall().getPos()))
+			{
+				return true;
+			}
+			double distance = RuleConstraints.getStopRadius();
+			return getWFrame().getBots().values().stream()
+					.filter(bot -> bot.getBotId().getTeamColor() != getBotID().getTeamColor())
+					.noneMatch(bot -> bot.getPos().distanceTo(point) < distance);
 		}
 	}
 
 	private class MoveToPenAreaState extends AState
 	{
-		private AMoveToSkill skill;
+		private MoveToSkill skill;
 
 
 		@Override
 		public void doEntryActions()
 		{
-			skill = AMoveToSkill.createMoveToSkill();
+			skill = MoveToSkill.createMoveToSkill();
 			setNewSkill(skill);
 		}
 
@@ -197,7 +259,7 @@ private IVector2 validFinalDestination(final IVector2 intermediatePos)
 		@Override
 		public void doUpdate()
 		{
-			if (getAiFrame().getGamestate().isStoppedGame())
+			if (getAiFrame().getGameState().isStoppedGame())
 			{
 				triggerEvent(EEvent.STOP_GAME);
 			} else if (Geometry.getPenaltyAreaOur().isPointInShape(getPos(),
@@ -207,9 +269,9 @@ private IVector2 validFinalDestination(final IVector2 intermediatePos)
 			}
 
 			double targetAngle = getPos().subtractNew(Geometry.getGoalOur().getCenter()).getAngle();
-			skill.getMoveCon().setPenaltyAreaAllowedOur(getAiFrame().getGamestate().isStoppedGame());
-			skill.getMoveCon().updateTargetAngle(targetAngle);
-			skill.getMoveCon().updateDestination(validFinalDestination(destination));
+			skill.getMoveCon().setPenaltyAreaOurObstacle(!getAiFrame().getGameState().isStoppedGame());
+			skill.updateTargetAngle(targetAngle);
+			skill.updateDestination(validFinalDestination(destination));
 			skill.getMoveCon().setIgnoredBots(nonCloseCompanions());
 		}
 
@@ -240,69 +302,58 @@ private IVector2 validFinalDestination(final IVector2 intermediatePos)
 		public void doUpdate()
 		{
 			final IVector2 finalDestination = validFinalDestination(destination);
-			moveOnPenAreaSkill.updateDestination(finalDestination);
+			moveOnPenAreaSkill.setDestination(finalDestination);
 			moveOnPenAreaSkill.setPenAreaBoundary(penAreaBoundary);
-			armDefenders(moveOnPenAreaSkill);
+			moveOnPenAreaSkill.setKickParams(calcKickParams());
 
 			getShapes(DEFENSE_PENALTY_AREA_ROLE)
 					.add(new DrawableLine(Line.fromPoints(finalDestination, getPos()), Color.GREEN));
-			if (getAiFrame().getGamestate().isStoppedGame())
+			if (getAiFrame().getGameState().isStoppedGame())
 			{
 				triggerEvent(EEvent.STOP_GAME);
-			} else if (allowedToKickBall && enoughTimeToKickSafely(slackTimeHyst))
+			} else if (allowedToKickBall && enoughTimeToKickSafely(slackTimeHyst) && !situationIsDangerous())
 			{
 				triggerEvent(EEvent.KICK_BALL);
 			}
 		}
 	}
 
-	private class KickBallState extends AState
+	private class KickBallState extends RoleState<TouchKickSkill>
 	{
-		@Override
-		public void doEntryActions()
+		KickBallState()
 		{
-			IVector2 targetDest = Vector2.fromXY(Geometry.getCenter().x(),
-					Math.signum(getPos().y()) * Geometry.getFieldWidth() / 2);
-			setNewSkill(
-					new TouchKickSkill(new DynamicPosition(targetDest, 0.6), KickParams.maxChip()));
+			super(TouchKickSkill::new);
 		}
 
 
 		@Override
-		public void doUpdate()
+		public void onInit()
 		{
-			if (getAiFrame().getGamestate().isStoppedGame())
+			var target = Vector2.fromXY(
+					Geometry.getCenter().x(),
+					Math.signum(getPos().y()) * Geometry.getFieldWidth() / 2);
+			skill.setTarget(target);
+			skill.setPassRange(0.6);
+			skill.setDesiredKickParams(KickParams.maxChip());
+		}
+
+
+		@Override
+		public void onUpdate()
+		{
+			if (getAiFrame().getGameState().isStoppedGame())
 			{
 				triggerEvent(EEvent.STOP_GAME);
-			} else if (situationIsDangerous())
+			} else if (situationIsDangerous() || timeRunOut())
 			{
 				triggerEvent(EEvent.SITUATION_IS_DANGEROUS);
 			}
 		}
 
 
-		private boolean situationIsDangerous()
-		{
-			return ballInPenArea() || timeRunOut() || lostBallResponsibility();
-		}
-
-
-		private boolean ballInPenArea()
-		{
-			final double margin = Geometry.getBotRadius() * 2 + Geometry.getBallRadius();
-			return Geometry.getPenaltyAreaOur().isPointInShape(getWFrame().getBall().getPos(), margin);
-		}
-
-
 		private boolean timeRunOut()
 		{
 			return !enoughTimeToKickSafely(0);
-		}
-
-
-		private boolean lostBallResponsibility()
-		{
-			return getAiFrame().getTacticalField().getBallResponsibility() != EBallResponsibility.DEFENSE;
 		}
 	}
 }

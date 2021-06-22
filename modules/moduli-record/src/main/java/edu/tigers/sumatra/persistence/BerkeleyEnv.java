@@ -1,15 +1,7 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.persistence;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
 
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Environment;
@@ -18,38 +10,44 @@ import com.sleepycat.persist.EntityStore;
 import com.sleepycat.persist.StoreConfig;
 import com.sleepycat.persist.model.AnnotationModel;
 import com.sleepycat.persist.model.EntityModel;
-
 import edu.tigers.sumatra.persistence.proxy.ColorProxy;
 import edu.tigers.sumatra.persistence.proxy.ConcurrentHashMapProxy;
 import edu.tigers.sumatra.persistence.proxy.EnumMapProxy;
+import edu.tigers.sumatra.persistence.proxy.IdentityHashMapProxy;
 import edu.tigers.sumatra.persistence.proxy.LinkedHashSetProxy;
 import edu.tigers.sumatra.persistence.proxy.TreeMapProxy;
-import net.lingala.zip4j.core.ZipFile;
+import lombok.extern.log4j.Log4j2;
+import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
 import net.lingala.zip4j.model.ZipParameters;
-import net.lingala.zip4j.util.Zip4jConstants;
+import net.lingala.zip4j.model.enums.CompressionLevel;
+import net.lingala.zip4j.model.enums.CompressionMethod;
+import org.apache.commons.io.FileUtils;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
  * This environment class manages a berkeley database.
  * It will be used to open und close a entity store
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
+@Log4j2
 public class BerkeleyEnv
 {
-	private static final Logger log = Logger.getLogger(BerkeleyEnv.class.getName());
 	private File envHome;
-	
+
 	private DatabaseSession session = new DatabaseSession();
-	
+
 	private EntityModel model = new AnnotationModel();
 	private EnvironmentConfig myEnvConfig = new EnvironmentConfig();
 	private StoreConfig storeConfig = new StoreConfig();
-	
+
 	private static final Map<File, DatabaseSession> SESSIONS = new HashMap<>();
-	
-	
+
+
 	public BerkeleyEnv()
 	{
 		model.registerClass(ColorProxy.class);
@@ -57,9 +55,10 @@ public class BerkeleyEnv
 		model.registerClass(ConcurrentHashMapProxy.class);
 		model.registerClass(LinkedHashSetProxy.class);
 		model.registerClass(TreeMapProxy.class);
+		model.registerClass(IdentityHashMapProxy.class);
 	}
-	
-	
+
+
 	/**
 	 * Open the database
 	 *
@@ -76,7 +75,7 @@ public class BerkeleyEnv
 		if (existingSession == null)
 		{
 			createFolders(envHome);
-			
+
 			// Open the environment and entity store
 			myEnvConfig.setAllowCreate(true);
 			storeConfig.setAllowCreate(true);
@@ -88,17 +87,17 @@ public class BerkeleyEnv
 			storeConfig = null;
 			model = null;
 			attachShutDownHook();
-			
+
 			SESSIONS.put(envHome, session);
 		} else
 		{
 			session = existingSession;
 		}
-		
+
 		session.numHandles++;
 	}
-	
-	
+
+
 	private void createFolders(final File envHome)
 	{
 		if (!envHome.exists())
@@ -110,11 +109,11 @@ public class BerkeleyEnv
 			}
 		}
 	}
-	
-	
+
+
 	/**
 	 * Close the store and environment
-	 * 
+	 *
 	 * @return true, if env was closed
 	 */
 	public void close()
@@ -124,7 +123,7 @@ public class BerkeleyEnv
 			log.warn("BerkeleyEnv already closed: " + envHome);
 			return;
 		}
-		
+
 		session.numHandles--;
 		if (session.numHandles > 0)
 		{
@@ -146,7 +145,7 @@ public class BerkeleyEnv
 		{
 			log.error("Error closing myEnv", dbe);
 		}
-		
+
 		if (session.compressOnClose)
 		{
 			try
@@ -157,11 +156,11 @@ public class BerkeleyEnv
 				log.error("Could not compress database.", e);
 			}
 		}
-		
+
 		SESSIONS.remove(envHome);
 	}
-	
-	
+
+
 	/**
 	 * Compress the database
 	 *
@@ -179,8 +178,8 @@ public class BerkeleyEnv
 			return;
 		}
 		ZipParameters zipParams = new ZipParameters();
-		zipParams.setCompressionMethod(Zip4jConstants.COMP_DEFLATE);
-		zipParams.setCompressionLevel(Zip4jConstants.DEFLATE_LEVEL_FAST);
+		zipParams.setCompressionMethod(CompressionMethod.DEFLATE);
+		zipParams.setCompressionLevel(CompressionLevel.FAST);
 		log.info("Compressing database...");
 		long tStart = System.nanoTime();
 		try
@@ -192,12 +191,12 @@ public class BerkeleyEnv
 			throw new IOException("Could not compress database.", e);
 		}
 		double duration = (System.nanoTime() - tStart) / 1e9;
-		
+
 		String fileSize = FileUtils.byteCountToDisplaySize(zipFileHandle.length());
 		log.info(String.format("Compressed database in %.2fs to %s", duration, fileSize));
 	}
-	
-	
+
+
 	private void attachShutDownHook()
 	{
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -208,31 +207,31 @@ public class BerkeleyEnv
 			}
 		}, "DB Shutdown"));
 	}
-	
-	
+
+
 	/**
 	 * Return a handle to the entity store
-	 * 
+	 *
 	 * @return
 	 */
 	public EntityStore getEntityStore()
 	{
 		return session.store;
 	}
-	
-	
+
+
 	public EntityModel getModel()
 	{
 		return model;
 	}
-	
-	
+
+
 	public StoreConfig getStoreConfig()
 	{
 		return storeConfig;
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -240,14 +239,14 @@ public class BerkeleyEnv
 	{
 		return session.numHandles > 0;
 	}
-	
-	
+
+
 	public void setCompressOnClose(final boolean compressOnClose)
 	{
 		session.compressOnClose = compressOnClose;
 	}
-	
-	
+
+
 	private static class DatabaseSession
 	{
 		Environment myEnv;

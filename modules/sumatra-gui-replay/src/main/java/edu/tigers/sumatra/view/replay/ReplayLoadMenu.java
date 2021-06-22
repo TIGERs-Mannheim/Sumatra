@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view.replay;
 
@@ -28,7 +28,8 @@ import javax.swing.event.MenuListener;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.persistence.BerkeleyDb;
@@ -37,20 +38,18 @@ import edu.tigers.sumatra.persistence.RecordManager;
 
 /**
  * This panel contains primary the record button for capturing
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 @SuppressWarnings("squid:S2250") // Collection methods with O(n) performance should be used carefully
 public class ReplayLoadMenu extends JMenu
 {
 	private static final long serialVersionUID = 1L;
-	private static final Logger log = Logger.getLogger(ReplayLoadMenu.class.getName());
-	
-	private transient FileFilter fileFilter;
-	
+	private static final Logger log = LogManager.getLogger(ReplayLoadMenu.class.getName());
+
+	private final transient FileFilter fileFilter;
+
 	private final transient List<IReplayLoadMenuObserver> observers = new CopyOnWriteArrayList<>();
-	
-	
+
+
 	/**
 	 * Create a replay load menu
 	 */
@@ -69,8 +68,8 @@ public class ReplayLoadMenu extends JMenu
 		fileFilter = new RecordDbFilter();
 		addMenuListener(new MyMenuListener());
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -79,8 +78,8 @@ public class ReplayLoadMenu extends JMenu
 		return SumatraModel.getInstance()
 				.getUserProperty("edu.tigers.sumatra.persistence.basePath", "data/record");
 	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -88,8 +87,8 @@ public class ReplayLoadMenu extends JMenu
 	{
 		observers.add(observer);
 	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -97,8 +96,8 @@ public class ReplayLoadMenu extends JMenu
 	{
 		observers.remove(observer);
 	}
-	
-	
+
+
 	private void addFileToMenu(final File file, final JMenu menu)
 	{
 		if (file.isDirectory())
@@ -116,12 +115,12 @@ public class ReplayLoadMenu extends JMenu
 			{
 				JMenu subMenu = new JMenu(file.getName());
 				menu.add(subMenu);
-				
+
 				subMenu.addMenuListener(new MenuListener()
 				{
 					private boolean itemsAdded = false;
-					
-					
+
+
 					@Override
 					public void menuSelected(final MenuEvent menuEvent)
 					{
@@ -131,15 +130,15 @@ public class ReplayLoadMenu extends JMenu
 							itemsAdded = true;
 						}
 					}
-					
-					
+
+
 					@Override
 					public void menuDeselected(final MenuEvent menuEvent)
 					{
 						// no action
 					}
-					
-					
+
+
 					@Override
 					public void menuCanceled(final MenuEvent menuEvent)
 					{
@@ -151,61 +150,73 @@ public class ReplayLoadMenu extends JMenu
 		}
 		JMenu subsubMenu = new JMenu(file.getName());
 		menu.add(subsubMenu);
-		
+
 		JMenuItem rename = new JMenuItem("rename");
 		JMenuItem run = new JMenuItem("run");
 		JMenuItem delete = new JMenuItem("delete");
 		JMenuItem zip = new JMenuItem("zip");
-		
+
 		subsubMenu.add(run);
 		subsubMenu.add(rename);
 		subsubMenu.add(zip);
 		subsubMenu.add(delete);
-		
+
 		if (file.getName().endsWith(".zip"))
 		{
 			zip.setEnabled(false);
 		}
-		
-		
+
+
 		run.addActionListener(new RunActionListener(file.getAbsolutePath()));
 		rename.addActionListener(new RenameActionListener(file.getAbsolutePath()));
 		delete.addActionListener(new DeleteActionListener(file.getAbsolutePath()));
 		zip.addActionListener(new ZipActionListener(file.getAbsolutePath()));
 	}
-	
-	
+
+
 	/**
 	 * Observer
 	 */
 	public interface IReplayLoadMenuObserver
 	{
 		void onOpenReplay(BerkeleyDb db);
-		
-		
+
+
 		void onCompressReplay(Path path);
 	}
-	
+
 	private static class RecordDbFilter implements FileFilter
 	{
 		@Override
 		public boolean accept(final File pathname)
 		{
-			return pathname.isDirectory() || pathname.getName().endsWith(".zip");
+			if (pathname.isDirectory())
+			{
+				return true;
+			}
+
+			String path = pathname.getAbsolutePath();
+			if (path.endsWith(".zip"))
+			{
+				// only show, if there is not the extracted folder already
+				String folderPath = path.substring(0, path.length() - 4);
+				return !new File(folderPath).isDirectory();
+			}
+			return false;
 		}
 	}
-	
+
 	private class MyMenuListener implements MenuListener
 	{
 		@Override
 		public void menuSelected(final MenuEvent e)
 		{
 			removeAll();
-			
+
 			JMenuItem mit = new JMenuItem("Set default path");
 			mit.addActionListener(new SetDefaultPathListener());
 			add(mit);
-			
+
 			File path = new File(getDefaultBasePath());
 			File[] files = path.listFiles(fileFilter);
 			final List<File> fileList;
@@ -222,34 +233,34 @@ public class ReplayLoadMenu extends JMenu
 				addFileToMenu(file, ReplayLoadMenu.this);
 			}
 		}
-		
-		
+
+
 		@Override
 		public void menuDeselected(final MenuEvent e)
 		{
 			// ignore
 		}
-		
-		
+
+
 		@Override
 		public void menuCanceled(final MenuEvent e)
 		{
 			// ignore
 		}
 	}
-	
+
 	private class RunActionListener implements ActionListener
 	{
-		
+
 		private final String filename;
-		
-		
+
+
 		public RunActionListener(String filename)
 		{
 			this.filename = filename;
 		}
-		
-		
+
+
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
@@ -257,19 +268,19 @@ public class ReplayLoadMenu extends JMenu
 			loadThread.start();
 		}
 	}
-	
-	private class RenameActionListener implements ActionListener
+
+	private static class RenameActionListener implements ActionListener
 	{
-		
+
 		private final String filename;
-		
-		
+
+
 		public RenameActionListener(String filename)
 		{
 			this.filename = filename;
 		}
-		
-		
+
+
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
@@ -284,23 +295,23 @@ public class ReplayLoadMenu extends JMenu
 			}
 		}
 	}
-	
-	private class DeleteActionListener implements ActionListener
+
+	private static class DeleteActionListener implements ActionListener
 	{
-		
+
 		final String filename;
-		
-		
+
+
 		public DeleteActionListener(final String absolutePath)
 		{
 			this.filename = absolutePath;
 		}
-		
-		
+
+
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
-			
+
 			if (JOptionPane.showConfirmDialog(null, "Do you want to delete '" + filename + "'?", "Confirm deletion",
 					JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION)
 			{
@@ -315,19 +326,19 @@ public class ReplayLoadMenu extends JMenu
 			}
 		}
 	}
-	
+
 	private class ZipActionListener implements ActionListener
 	{
-		
+
 		private final String filename;
-		
-		
+
+
 		public ZipActionListener(String filename)
 		{
 			this.filename = filename;
 		}
-		
-		
+
+
 		@Override
 		public void actionPerformed(final ActionEvent event)
 		{
@@ -337,7 +348,7 @@ public class ReplayLoadMenu extends JMenu
 			}
 		}
 	}
-	
+
 	private class SetDefaultPathListener implements ActionListener
 	{
 		@Override
@@ -352,25 +363,25 @@ public class ReplayLoadMenu extends JMenu
 						fc.getSelectedFile().getAbsolutePath());
 			}
 		}
-		
+
 	}
-	
+
 	private final class LoadDatabase implements Runnable
 	{
 		final String filename;
-		
-		
+
+
 		private LoadDatabase(final String filename)
 		{
 			this.filename = filename;
 		}
-		
-		
+
+
 		@Override
 		public void run()
 		{
 			setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-			
+
 			Optional<RecordManager> recordManager = SumatraModel.getInstance().getModuleOpt(RecordManager.class);
 			if (recordManager.isPresent())
 			{
@@ -398,7 +409,7 @@ public class ReplayLoadMenu extends JMenu
 						"Missing RecordManager module",
 						JOptionPane.ERROR_MESSAGE);
 			}
-			
+
 			setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 		}
 	}

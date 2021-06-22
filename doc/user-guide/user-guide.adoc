@@ -1,7 +1,30 @@
+:imagesdir: ../images
+
+:toc:
+
 = Sumatra User Guide
+
+image:TIGERs.png[TIGERs Mannheim,350,350]
+
+// horizontal line
+'''
+
+// numbering from here on
+:numbered:
 
 == Introduction
 
+This guide describes some not so obvious usages of Sumatra.
+
 == Getting Started
 
-== Common Scenarios
+See the Workshop document for a getting started guide.
+
+<<<
+include::rcm.adoc[]
+
+<<<
+include::calibration.adoc[]
+
+<<<
+include::precision-evaluation.adoc[]

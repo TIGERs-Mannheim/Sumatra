@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills.util;
@@ -13,21 +13,23 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
 public class BallStabilizer
 {
 	private static final double ON_CAM_HORIZON = 0.3;
-	
+
 	private ITrackedBall ball;
 	private ITrackedBot bot;
 	private double botBrakeAcc = 0;
-	
+
 	private IVector2 ballPos;
 	private IVector2 ballDir;
-	
-	
+
+
 	public void update(final ITrackedBall ball, final ITrackedBot bot)
 	{
 		this.ball = ball;
 		this.bot = bot;
-		
-		if (ballPos != null && bot.hadBallContact(1.0))
+
+		if (ballPos != null
+				&& bot.getBallContact().hadContact(0.3)
+				&& !ball.isOnCam(0.0))
 		{
 			ballPos = bot.getBotShape().withMargin(Geometry.getBallRadius()).getKickerLine()
 					.closestPointOnLine(ballPos);
@@ -39,35 +41,35 @@ public class BallStabilizer
 		{
 			ballPos = bot.getBotShape().withMargin(Geometry.getBallRadius()).nearestPointOutside(ballPos);
 		}
-		
+
 		if (botBrakeAcc <= 0)
 		{
-			botBrakeAcc = bot.getMoveConstraints().getAccMax();
+			botBrakeAcc = bot.getMoveConstraints().getAccMaxDerived();
 		}
 	}
-	
-	
+
+
 	public void setBotBrakeAcc(final double botBrakeAcc)
 	{
 		this.botBrakeAcc = botBrakeAcc;
 	}
-	
-	
+
+
 	public IVector2 getBallPos()
 	{
 		return ballPos;
 	}
-	
-	
+
+
 	public IVector2 getBallPos(final double lookahead)
 	{
-		if (ball.isOnCam(ON_CAM_HORIZON) && !bot.hasBallContact())
+		if (ball.isOnCam(ON_CAM_HORIZON) && bot.getBallContact().hasNoContact())
 		{
 			return ball.getTrajectory().getPosByTime(lookahead).getXYVector();
 		}
 		double botVel = bot.getVel().getLength2();
-		double brake = bot.getMoveConstraints().getAccMax() * lookahead;
-		double avgVel = Math.max(0, botVel - brake / 2);
+		double brake = botBrakeAcc * lookahead;
+		double avgVel = Math.max(0, (botVel - brake) / 2);
 		return ballPos.addNew(ballDir.multiplyNew(avgVel * lookahead * 1000));
 	}
 }

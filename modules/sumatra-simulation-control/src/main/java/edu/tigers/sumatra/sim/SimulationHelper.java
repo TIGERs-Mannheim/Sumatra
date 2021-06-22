@@ -1,51 +1,41 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.sim;
 
-import org.apache.log4j.Logger;
-
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
-import edu.tigers.sumatra.Referee.SSL_Referee.Command;
 import edu.tigers.sumatra.ai.AAgent;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.referee.AReferee;
-import edu.tigers.sumatra.referee.control.Event;
 import edu.tigers.sumatra.referee.control.GcEventFactory;
+import edu.tigers.sumatra.snapshot.Snapshot;
 import edu.tigers.sumatra.vision.AVisionFilter;
 import edu.tigers.sumatra.wp.AWorldPredictor;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Helper methods for controlling simulation.
  */
+@Log4j2
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class SimulationHelper
 {
-	@SuppressWarnings("unused")
-	private static final Logger log = Logger.getLogger(SimulationHelper.class.getName());
-
-
-	@SuppressWarnings("unused")
-	private SimulationHelper()
-	{
-	}
-
-
 	/**
 	 * Load a simulation with given parameters
 	 *
-	 * @param params
-	 * @throws ModuleNotFoundException
+	 * @param snapshot
 	 */
-	public static void loadSimulation(final SimulationParameters params)
+	public static void loadSimulation(final Snapshot snapshot)
 	{
-		log.debug("Loading simulation from " + params);
+		log.debug("Loading simulation from {}", snapshot);
 		SumatraSimulator sim = getSumatraSimulator();
 
 		boolean wasRunning = sim.isRunning();
@@ -53,15 +43,14 @@ public final class SimulationHelper
 
 		resetSimulation();
 
-		AReferee referee = getReferee();
-		referee.initGameController();
+		getReferee().initGameController();
 
-		initSimulation(params);
+		initSimulation(snapshot);
 
-		sim.step();
+		sim.stepBlocking();
 		if (wasRunning)
 		{
-			sim.play();
+			sim.resume();
 		}
 		log.debug("Loaded simulation");
 	}
@@ -70,26 +59,37 @@ public final class SimulationHelper
 	/**
 	 * Initializing the simulation, assuming that is was just started up and is in its initial state
 	 *
-	 * @param params
+	 * @param snapshot
 	 */
-	public static void initSimulation(final SimulationParameters params)
+	public static void initSimulation(final Snapshot snapshot)
 	{
 		SumatraSimulator sim = getSumatraSimulator();
 
 		// reset ball
-		sim.placeBall(params.getInitBall().getPos(), params.getInitBall().getVel().multiplyNew(1e3));
+		sim.placeBall(snapshot.getBall().getPos(), snapshot.getBall().getVel().multiplyNew(1e3));
 
 		// add new bots
-		params.getInitBots().keySet().forEach(b -> registerBot(sim, b, params));
+		snapshot.getBots().forEach((k, v) -> registerBot(sim, k, v.getPos(), v.getVel()));
 
-		getReferee().sendGameControllerEvent(constructRefereeMsg(params));
+		if (snapshot.getStage() != null)
+		{
+			getReferee().sendGameControllerEvent(GcEventFactory.stage(snapshot.getStage()));
+		}
+		if (snapshot.getPlacementPos() != null)
+		{
+			getReferee().sendGameControllerEvent(
+					GcEventFactory.ballPlacement(snapshot.getPlacementPos().multiplyNew(1e-3)));
+		}
+		if (snapshot.getCommand() != null)
+		{
+			getReferee().sendGameControllerEvent(GcEventFactory.command(snapshot.getCommand()));
+		}
 	}
 
 
-	private static void registerBot(SumatraSimulator sim, BotID botID, SimulationParameters params)
+	private static void registerBot(SumatraSimulator sim, BotID botID, IVector3 pos, IVector3 vel)
 	{
-		Pose pose = Pose.from(params.getInitBots().get(botID).getPos());
-		IVector3 vel = params.getInitBots().get(botID).getVel();
+		Pose pose = Pose.from(pos);
 		IVector3 velConverted = Vector3.from2d(vel.getXYVector().multiplyNew(1e3), vel.z());
 		sim.registerBot(botID, pose, velConverted);
 	}
@@ -102,7 +102,7 @@ public final class SimulationHelper
 	 */
 	public static void startSimulation()
 	{
-		getSumatraSimulator().play();
+		getSumatraSimulator().resume();
 	}
 
 
@@ -111,35 +111,17 @@ public final class SimulationHelper
 	 */
 	private static void resetSimulation()
 	{
-		SumatraModel.getInstance().getModule(SumatraSimulator.class).reset(1);
+		SumatraModel.getInstance().getModule(SumatraSimulator.class).reset();
 		SumatraModel.getInstance().getModule(AWorldPredictor.class).reset();
 		SumatraModel.getInstance().getModule(AAgent.class).reset();
-	}
-
-
-	private static Event constructRefereeMsg(final SimulationParameters params)
-	{
-		Command cmd = params.getRefereeCommand();
-
-		if ((cmd == Command.BALL_PLACEMENT_BLUE) || (cmd == Command.BALL_PLACEMENT_YELLOW))
-		{
-			if (cmd == Command.BALL_PLACEMENT_BLUE)
-			{
-				return GcEventFactory.ballPlacement(ETeamColor.BLUE, params.getBallPlacementPos());
-			}
-
-			return GcEventFactory.ballPlacement(ETeamColor.YELLOW, params.getBallPlacementPos());
-		}
-
-		return GcEventFactory.command(params.getRefereeCommand());
 	}
 
 
 	/**
 	 * Simulate with maximum speed by setting the sync flag and a high simulation speed
 	 *
-	 * @throws ModuleNotFoundException
 	 * @param state
+	 * @throws ModuleNotFoundException
 	 */
 	public static void setSimulateWithMaxSpeed(final boolean state)
 	{
@@ -189,14 +171,6 @@ public final class SimulationHelper
 
 	private static AReferee getReferee()
 	{
-		try
-		{
-			return SumatraModel.getInstance().getModule(AReferee.class);
-
-		} catch (ModuleNotFoundException e)
-		{
-			log.error("Could not find referee module.", e);
-		}
-		throw new IllegalStateException("No referee module");
+		return SumatraModel.getInstance().getModule(AReferee.class);
 	}
 }

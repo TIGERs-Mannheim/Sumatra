@@ -1,42 +1,52 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.general;
 
-import java.util.Collections;
-
-import org.apache.log4j.Logger;
-
-import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
-import edu.tigers.sumatra.ai.metis.TacticalField;
-import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.data.GameState;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.function.Supplier;
 
 
 /**
  * Calculates the number of bots per play
  */
+@Log4j2
+@RequiredArgsConstructor
 public class PlayNumberCalc extends ACalculator
 {
-	private static final Logger log = Logger.getLogger(PlayNumberCalc.class.getName());
+	private final Supplier<Integer> numBallPlacementBots;
+	private final Supplier<Integer> numDefender;
+	private final Supplier<Integer> numInterchangeBots;
+	private final Supplier<Integer> numOffenseBots;
+
+	@Getter
+	private Map<EPlay, Integer> playNumbers = Collections.emptyMap();
 
 
-	@SuppressWarnings("squid:MethodCyclomaticComplexity")
 	@Override
-	public void doCalc(final TacticalField tacticalField, final BaseAiFrame aiFrame)
+	public void doCalc()
 	{
-		GameState gameState = getNewTacticalField().getGameState();
+		GameState gameState = getAiFrame().getGameState();
 
 		if (gameState.getState() == EGameState.HALT)
 		{
 			// No plays
+			playNumbers = Collections.emptyMap();
 			return;
 		}
+		playNumbers = new EnumMap<>(EPlay.class);
 
 		interchange();
 
@@ -46,9 +56,6 @@ public class PlayNumberCalc extends ACalculator
 		} else if (gameState.isBallPlacementForUs())
 		{
 			ballPlacement();
-		} else if (gameState.isDirectFreeForUs() || gameState.isDirectFreeForThem())
-		{
-			directFreeKick();
 		} else if (gameState.isKickoffOrPrepareKickoff())
 		{
 			kickoff();
@@ -58,27 +65,24 @@ public class PlayNumberCalc extends ACalculator
 		} else if (gameState.getState() == EGameState.POST_GAME)
 		{
 			postGame();
-		} else if (getNewTacticalField().isInsaneKeeper())
-		{
-			insaneKeeper();
 		} else
 		{
 			normalMode();
 		}
-
+		playNumbers = Collections.unmodifiableMap(playNumbers);
 		sanityCheck();
 	}
 
 
 	private void sanityCheck()
 	{
-		if (SumatraModel.getInstance().isTestMode())
+		if (!SumatraModel.getInstance().isProductive())
 		{
 			int assignedBots = assignedBots();
 			if (assignedBots != availableBots())
 			{
 				log.warn(String.format("Assigned number of bots does not match number of available (%d): %s",
-						availableBots(), getNewTacticalField().getPlayNumbers()));
+						availableBots(), playNumbers));
 			}
 		}
 	}
@@ -88,55 +92,21 @@ public class PlayNumberCalc extends ACalculator
 	{
 		keeper();
 
-		int ballPlacementBots = getNewTacticalField().getDesiredBotMap()
-				.getOrDefault(EPlay.BALL_PLACEMENT, Collections.emptySet()).size();
-
-		getNewTacticalField().putPlayNumbers(EPlay.BALL_PLACEMENT, Math.min(unassignedBots(), ballPlacementBots));
+		playNumbers.put(EPlay.BALL_PLACEMENT, Math.min(unassignedBots(), numBallPlacementBots.get()));
 		defense();
-		getNewTacticalField().putPlayNumbers(EPlay.SUPPORT, unassignedBots());
+		playNumbers.put(EPlay.SUPPORT, unassignedBots());
 	}
 
 
 	private void interchange()
 	{
-		getNewTacticalField().putPlayNumbers(EPlay.INTERCHANGE,
-				getNewTacticalField().getBotInterchange().getNumInterchangeBots());
-	}
-
-
-	private void directFreeKick()
-	{
-		if (getNewTacticalField().getGameState().isGameStateForUs())
-		{
-			directFreeKickForUs();
-		} else
-		{
-			directFreeKickForThem();
-		}
-	}
-
-
-	private void directFreeKickForUs()
-	{
-		keeper();
-		defense();
-		attack();
-		support();
-	}
-
-
-	private void directFreeKickForThem()
-	{
-		keeper();
-		defense();
-		attack();
-		support();
+		playNumbers.put(EPlay.INTERCHANGE, numInterchangeBots.get());
 	}
 
 
 	private void kickoff()
 	{
-		if (getNewTacticalField().getGameState().isGameStateForUs())
+		if (getAiFrame().getGameState().isGameStateForUs())
 		{
 			kickoffForUs();
 		} else
@@ -149,23 +119,24 @@ public class PlayNumberCalc extends ACalculator
 	private void kickoffForUs()
 	{
 		keeper();
+		attack();
 
-		int numKickoffBots = 3;
-		getNewTacticalField().putPlayNumbers(EPlay.KICKOFF, Math.min(unassignedBots(), numKickoffBots));
-		getNewTacticalField().putPlayNumbers(EPlay.DEFENSIVE, unassignedBots());
+		int numKickoffBots = 2;
+		playNumbers.put(EPlay.KICKOFF, Math.min(unassignedBots(), numKickoffBots));
+		playNumbers.put(EPlay.DEFENSIVE, unassignedBots());
 	}
 
 
 	private void kickoffForThem()
 	{
 		keeper();
-		getNewTacticalField().putPlayNumbers(EPlay.DEFENSIVE, unassignedBots());
+		playNumbers.put(EPlay.DEFENSIVE, unassignedBots());
 	}
 
 
 	private void penalty()
 	{
-		if (getNewTacticalField().getGameState().isGameStateForUs())
+		if (getAiFrame().getGameState().isGameStateForUs())
 		{
 			penaltyForUs();
 		} else
@@ -177,58 +148,34 @@ public class PlayNumberCalc extends ACalculator
 
 	private void penaltyForUs()
 	{
-		if (!getNewTacticalField().getGameState().isPenaltyShootout()
-				&& availableBots() > 1)
+		if (availableBots() > 0)
+		{
+			playNumbers.put(EPlay.PENALTY_WE, 1);
+		}
+		if (availableBots() > 1)
 		{
 			keeper();
 		}
-
-
-		if (getAiFrame().getGamestate().isPenaltyShootout())
-		{
-			int botsAvailable = availableBots();
-			int numAttackers = 1;
-			getNewTacticalField().putPlayNumbers(EPlay.ATTACKER_SHOOTOUT, Math.min(numAttackers, botsAvailable));
-			getNewTacticalField().putPlayNumbers(EPlay.EXCHANGE_POSITIONING, unassignedBots());
-		} else
-		{
-			defense();
-			getNewTacticalField().putPlayNumbers(EPlay.PENALTY_WE, unassignedBots());
-		}
+		playNumbers.put(EPlay.DEFENSIVE, Math.max(0, unassignedBots()));
 	}
 
 
 	private void penaltyForThem()
 	{
 		keeper();
-
-		if (getNewTacticalField().getGameState().isPenaltyShootout())
-		{
-			getNewTacticalField().putPlayNumbers(EPlay.EXCHANGE_POSITIONING, unassignedBots());
-		} else
-		{
-			getNewTacticalField().putPlayNumbers(EPlay.PENALTY_THEM, Math.max(0, unassignedBots()));
-		}
+		playNumbers.put(EPlay.PENALTY_THEM, Math.max(0, unassignedBots()));
 	}
 
 
 	private void pausedGame()
 	{
-		getNewTacticalField().putPlayNumbers(EPlay.MAINTENANCE, availableBots());
+		playNumbers.put(EPlay.MAINTENANCE, unassignedBots());
 	}
 
 
 	private void postGame()
 	{
-		getNewTacticalField().putPlayNumbers(EPlay.CHEERING, availableBots());
-	}
-
-
-	private void insaneKeeper()
-	{
-		keeper();
-		attack();
-		support();
+		playNumbers.put(EPlay.CHEERING, unassignedBots());
 	}
 
 
@@ -243,31 +190,30 @@ public class PlayNumberCalc extends ACalculator
 
 	private void keeper()
 	{
-		if (!getNewTacticalField().isInsaneKeeper()
-				&& getWFrame().getTigerBotsAvailable().keySet().contains(getAiFrame().getKeeperId()))
+		if (getWFrame().getTigerBotsAvailable().containsKey(getAiFrame().getKeeperId()))
 		{
-			getNewTacticalField().putPlayNumbers(EPlay.KEEPER, 1);
+			playNumbers.put(EPlay.KEEPER, 1);
 		}
 	}
 
 
 	private void defense()
 	{
-		getNewTacticalField().putPlayNumbers(EPlay.DEFENSIVE, getNewTacticalField().getNumDefender());
+		int defenders = Math.min(unassignedBots(), numDefender.get());
+		playNumbers.put(EPlay.DEFENSIVE, defenders);
 	}
 
 
 	private void attack()
 	{
-		OffensiveStrategy offensiveStrategy = getNewTacticalField().getOffensiveStrategy();
-		int attackers = Math.min(unassignedBots(), offensiveStrategy.getDesiredBots().size());
-		getNewTacticalField().putPlayNumbers(EPlay.OFFENSIVE, attackers);
+		int attackers = Math.min(unassignedBots(), numOffenseBots.get());
+		playNumbers.put(EPlay.OFFENSIVE, attackers);
 	}
 
 
 	private void support()
 	{
-		getNewTacticalField().putPlayNumbers(EPlay.SUPPORT, unassignedBots());
+		playNumbers.put(EPlay.SUPPORT, unassignedBots());
 	}
 
 
@@ -279,7 +225,7 @@ public class PlayNumberCalc extends ACalculator
 
 	private int assignedBots()
 	{
-		return getNewTacticalField().getPlayNumbers().values().stream().mapToInt(i -> i).sum();
+		return playNumbers.values().stream().mapToInt(i -> i).sum();
 	}
 
 

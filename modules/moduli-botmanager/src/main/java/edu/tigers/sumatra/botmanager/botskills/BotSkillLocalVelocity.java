@@ -3,6 +3,7 @@
  */
 package edu.tigers.sumatra.botmanager.botskills;
 
+import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.bot.params.BotMovementLimits;
 import edu.tigers.sumatra.botmanager.botskills.data.DriveLimits;
@@ -22,7 +23,7 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 {
 	@SerialData(type = ESerialDataType.INT16)
 	private final int[] vel = new int[3];
-	
+
 	@SerialData(type = ESerialDataType.UINT8)
 	private int accMax = 0;
 	@SerialData(type = ESerialDataType.UINT8)
@@ -31,24 +32,24 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 	private int jerkMax = 0;
 	@SerialData(type = ESerialDataType.UINT8)
 	private int jerkMaxW = 0;
-	
+
 	@SerialData(type = ESerialDataType.EMBEDDED)
 	private KickerDribblerCommands kickerDribbler = new KickerDribblerCommands();
-	
-	
+
+
 	/**
-	 * 
+	 *
 	 */
 	private BotSkillLocalVelocity()
 	{
 		super(EBotSkill.LOCAL_VELOCITY);
 	}
-	
-	
+
+
 	/**
 	 * @param mc
 	 */
-	public BotSkillLocalVelocity(final MoveConstraints mc)
+	public BotSkillLocalVelocity(final IMoveConstraints mc)
 	{
 		this();
 		setAccMax(mc.getAccMax());
@@ -56,29 +57,29 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 		setJerkMaxW(mc.getJerkMaxW());
 		setJerkMax(mc.getJerkMax());
 	}
-	
-	
+
+
 	/**
 	 * Set velocity in bot local frame.
-	 * 
+	 *
 	 * @param xy
 	 * @param orientation
 	 * @param mc
 	 */
-	public BotSkillLocalVelocity(final IVector2 xy, final double orientation, final MoveConstraints mc)
+	public BotSkillLocalVelocity(final IVector2 xy, final double orientation, final IMoveConstraints mc)
 	{
 		this(mc);
-		
+
 		vel[0] = (int) (xy.x() * 1000.0);
 		vel[1] = (int) (xy.y() * 1000.0);
 		vel[2] = (int) (orientation * 1000.0);
 	}
-	
-	
+
+
 	/**
 	 * Set velocity in bot local frame.
 	 * Used by bot skills panel.
-	 * 
+	 *
 	 * @param xy
 	 * @param orientation
 	 * @param accMax
@@ -96,20 +97,20 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 			final double dribbleSpeed, final double kickSpeed, final EKickerDevice kickDevice, final EKickerMode kickMode)
 	{
 		this();
-		
+
 		setVelXy(xy);
 		setVelW(orientation);
-		
+
 		setAccMax(accMax);
 		setAccMaxW(accMaxW);
 		setJerkMaxW(jerkMaxW);
 		setJerkMax(jerkMax);
-		
+
 		kickerDribbler.setDribblerSpeed(dribbleSpeed);
 		kickerDribbler.setKick(kickSpeed, kickDevice, kickMode);
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -117,8 +118,8 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 	{
 		return vel[0] / 1000.0;
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -126,8 +127,8 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 	{
 		return vel[1] / 1000.0;
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -135,77 +136,77 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 	{
 		return vel[2] / 1000.0;
 	}
-	
-	
+
+
 	public void setVelXy(final IVector2 xy)
 	{
 		vel[0] = (int) (xy.x() * 1000.0);
 		vel[1] = (int) (xy.y() * 1000.0);
 	}
-	
-	
+
+
 	public void setVelW(final double w)
 	{
 		vel[2] = (int) (w * 1000.0);
 	}
-	
-	
+
+
 	/**
 	 * Max: 10m/s²
-	 * 
+	 *
 	 * @param val
 	 */
 	public final void setAccMax(final double val)
 	{
 		accMax = DriveLimits.toUInt8(val, DriveLimits.MAX_ACC);
 	}
-	
-	
+
+
 	/**
 	 * Max: 100rad/s²
-	 * 
+	 *
 	 * @param val
 	 */
 	public final void setAccMaxW(final double val)
 	{
 		accMaxW = DriveLimits.toUInt8(val, DriveLimits.MAX_ACC_W);
 	}
-	
-	
+
+
 	public double getAccMax()
 	{
 		return DriveLimits.toDouble(accMax, DriveLimits.MAX_ACC);
 	}
-	
-	
+
+
 	public double getAccMaxW()
 	{
 		return DriveLimits.toDouble(accMaxW, DriveLimits.MAX_ACC_W);
 	}
-	
-	
+
+
 	/**
 	 * Max: 10m/s²
-	 * 
+	 *
 	 * @param val
 	 */
 	public final void setJerkMax(final double val)
 	{
 		jerkMax = DriveLimits.toUInt8(val, DriveLimits.MAX_JERK);
 	}
-	
-	
+
+
 	/**
 	 * Max: 100rad/s²
-	 * 
+	 *
 	 * @param val
 	 */
 	public final void setJerkMaxW(final double val)
 	{
 		jerkMaxW = DriveLimits.toUInt8(val, DriveLimits.MAX_JERK_W);
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -213,8 +214,8 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 	{
 		return DriveLimits.toDouble(jerkMax, DriveLimits.MAX_JERK);
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -222,8 +223,8 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 	{
 		return DriveLimits.toDouble(jerkMaxW, DriveLimits.MAX_JERK_W);
 	}
-	
-	
+
+
 	@Override
 	public MoveConstraints getMoveConstraints()
 	{
@@ -232,11 +233,11 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 		moveCon.setAccMaxW(getAccMaxW());
 		moveCon.setJerkMax(getJerkMax());
 		moveCon.setJerkMaxW(getJerkMaxW());
-		
+
 		return moveCon;
 	}
-	
-	
+
+
 	/**
 	 * @return the kickerDribbler
 	 */
@@ -245,8 +246,8 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 	{
 		return kickerDribbler;
 	}
-	
-	
+
+
 	/**
 	 * @param kickerDribbler the kickerDribbler to set
 	 */
@@ -255,8 +256,8 @@ public class BotSkillLocalVelocity extends AMoveBotSkill
 	{
 		this.kickerDribbler = kickerDribbler;
 	}
-	
-	
+
+
 	public IVector2 getVelXy()
 	{
 		return Vector2.fromXY(getX(), getY());

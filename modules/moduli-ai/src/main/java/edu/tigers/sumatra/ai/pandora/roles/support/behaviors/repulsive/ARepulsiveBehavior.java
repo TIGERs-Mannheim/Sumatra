@@ -1,22 +1,11 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.support.behaviors.repulsive;
 
-import static edu.tigers.sumatra.geometry.RuleConstraints.getBotToPenaltyAreaMarginStandard;
-import static java.lang.Math.exp;
-
-import java.awt.Color;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
@@ -36,10 +25,20 @@ import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.tube.Tube;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
+import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.wp.data.DynamicPosition;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.TrackedBot;
+
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static edu.tigers.sumatra.geometry.RuleConstraints.getBotToPenaltyAreaMarginStandard;
+import static java.lang.Math.exp;
 
 
 /**
@@ -61,9 +60,9 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 
 	// Sigmas
 	@Configurable(comment = "[mm]", defValue = "1250.0")
-	private static double sigmaFoeBot = 1250;
-	@Configurable(comment = "[mm]", defValue = "2000.0")
-	private static double sigmaTeamBot = 2000;
+	private static double sigmaOpponentBot = 1250;
+	@Configurable(comment = "[mm]", defValue = "1800.0")
+	private static double sigmaTeamBot = 1800.0;
 	@Configurable(comment = "[mm]", defValue = "300.0")
 	private static double sigmaFieldBorderRepel = 300;
 	@Configurable(comment = "[mm]", defValue = "300.0")
@@ -74,10 +73,10 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 	private static double sigmaPassLine = 400;
 
 	// Magnitudes
-	@Configurable(comment = "[mm]", defValue = "-1000.0")
-	private static double magnitudeFoeBot = -1000;
-	@Configurable(comment = "[mm]", defValue = "-800.0")
-	private static double magnitudeTeamBot = -800;
+	@Configurable(comment = "[mm]", defValue = "-1500.0")
+	private static double magnitudeOpponentBot = -1500.0;
+	@Configurable(comment = "[mm]", defValue = "-1750.0")
+	private static double magnitudeTeamBot = -1750.0;
 	@Configurable(comment = "[mm]", defValue = "-3000.0")
 	private static double magnitudeFieldBorderRepel = -3000;
 	@Configurable(comment = "[mm]", defValue = "-2000.0")
@@ -89,6 +88,14 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 
 	@Configurable(defValue = "50.0", comment = "Extra margin [mm] to add to forbidden areas")
 	private static double extraMargin = 50.0;
+
+	@Configurable(defValue = "100", comment = "Number of arrows to draw for debugging (horizontal)")
+	private static int debugArrowsHorizontal = 100;
+
+	@Configurable(defValue = "50", comment = "Number of arrows to draw for debugging (vertical)")
+	private static int debugArrowsVertical = 50;
+
+	private MoveToSkill skill;
 
 	static
 	{
@@ -105,14 +112,15 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 	@Override
 	public void doEntryActions()
 	{
-		getRole().setNewSkill(AMoveToSkill.createMoveToSkill());
+		skill = MoveToSkill.createMoveToSkill();
+		getRole().setNewSkill(skill);
 	}
 
 
 	@Override
 	public void doUpdate()
 	{
-		List<ITrackedBot> opponents = new ArrayList<>(getRole().getWFrame().getFoeBots().values());
+		List<ITrackedBot> opponents = new ArrayList<>(getRole().getWFrame().getOpponentBots().values());
 		List<ITrackedBot> supporter = ((SupportRole) getRole()).getCurrentSupportBots().stream()
 				.filter(s -> s.getBotId() != getRole().getBotID())
 				.collect(Collectors.toList());
@@ -134,8 +142,8 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 
 		}
 		IVector2 destination = setPositionInsideAllowedArea(getRole().getPos(), resultingForce);
-		getRole().getCurrentSkill().getMoveCon().updateDestination(destination);
-		getRole().getCurrentSkill().getMoveCon().updateLookAtTarget(getLookAtTarget());
+		skill.updateDestination(destination);
+		skill.updateLookAtTarget(getLookAtTarget());
 
 		if (isDrawing())
 		{
@@ -160,8 +168,8 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 	protected List<Force> getForceRepelFromOpponentBot(List<ITrackedBot> opponents, ITrackedBot affectedBot)
 	{
 		return opponents.stream()
-				.filter(b -> b.getPos().distanceTo(affectedBot.getPos()) < sigmaFoeBot * 3)
-				.map(b -> new Force(b.getPos(), sigmaFoeBot, magnitudeFoeBot))
+				.filter(b -> b.getPos().distanceTo(affectedBot.getPos()) < sigmaOpponentBot * 3)
+				.map(b -> new Force(b.getPos(), sigmaOpponentBot, magnitudeOpponentBot))
 				.collect(Collectors.toList());
 	}
 
@@ -219,19 +227,16 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 
 	protected List<Force> getForceRepelFromOffensiveGoalSight(ITrackedBot affectedBot)
 	{
-		if (getRole().getAiFrame().getGamestate().isIndirectFreeForUs()) // only here, because we have to pass
+		if (getRole().getAiFrame().getGameState().isIndirectFreeForUs() // only here, because we have to pass
+				|| skill.getDestination() == null)
 		{
 			return Collections.emptyList();
 		}
 		int minDistanceOffensiveToDestination = 500;
 		List<IVector2> offensivePositions = getRole().getAiFrame().getPlayStrategy().getActiveRoles(EPlay.OFFENSIVE)
 				.stream()
-				.filter(r -> r.getCurrentSkill() != null && r.getCurrentSkill().getMoveCon() != null
-						&& r.getCurrentSkill().getMoveCon().getDestination() != null)
-				.filter(r -> r.getCurrentSkill().getMoveCon().getDestination()
-						.distanceTo(r.getPos()) < minDistanceOffensiveToDestination)
-				.filter(r -> r.getCurrentSkill().getMoveCon().getDestination()
-						.distanceTo(Geometry.getGoalTheir().getCenter()) < maxShootDistance)
+				.filter(r -> skill.getDestination().distanceTo(r.getPos()) < minDistanceOffensiveToDestination)
+				.filter(r -> skill.getDestination().distanceTo(Geometry.getGoalTheir().getCenter()) < maxShootDistance)
 				.map(ARole::getPos)
 				.collect(Collectors.toList());
 
@@ -314,7 +319,7 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 		// not too close to field borders
 		destination = Geometry.getField().nearestPointInside(destination, -(fieldMargin + Geometry.getBotRadius()));
 
-		if (!getRole().getAiFrame().getGamestate().isRunning())
+		if (!getRole().getAiFrame().getGameState().isRunning())
 		{
 			// not in forbidden area around their penalty area during stop and standards
 			double penAreaStandardSitMargin = getBotToPenaltyAreaMarginStandard() + Geometry.getBotRadius() + extraMargin;
@@ -326,10 +331,20 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 
 			// not inside ball placement tube
 			IVector2 ballPos = getRole().getBall().getPos();
-			IVector2 ballPlacementPositionForUs = getRole().getAiFrame().getGamestate().getBallPlacementPositionForUs();
+			IVector2 ballPlacementPositionForUs = getRole().getAiFrame().getGameState().getBallPlacementPositionForUs();
 			IVector2 targetBallPos = Optional.ofNullable(ballPlacementPositionForUs).orElse(ballPos);
 			double penAreaStopMargin = RuleConstraints.getStopRadius() + Geometry.getBotRadius() + extraMargin;
-			destination = Tube.create(ballPos, targetBallPos, penAreaStopMargin).nearestPointOutside(destination);
+			Tube tube = Tube.create(ballPos, targetBallPos, penAreaStopMargin);
+			ILineSegment placementLine = Lines.segmentFromPoints(ballPos, targetBallPos);
+			ILineSegment pos2Dest = Lines.segmentFromPoints(currentPos, destination);
+			if (placementLine.intersectSegment(pos2Dest).isPresent())
+			{
+				// avoid crossing the placement tube
+				destination = tube.nearestPointOutside(currentPos);
+			} else
+			{
+				destination = tube.nearestPointOutside(destination);
+			}
 		}
 
 		return destination;
@@ -338,24 +353,22 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 
 	private void drawGrid()
 	{
-		int numX = 100;
-		int numY = 50;
-		List<IDrawableShape> shapes = getRole().getAiFrame().getTacticalField().getDrawableShapes()
+		List<IDrawableShape> shapes = getRole().getAiFrame().getShapeMap()
 				.get(EAiShapesLayer.SUPPORT_FORCE_FIELD);
 		if (!shapes.isEmpty())
 		{
 			return;
 		}
-		List<ITrackedBot> opponents = new ArrayList<>(getRole().getWFrame().getFoeBots().values());
+		List<ITrackedBot> opponents = new ArrayList<>(getRole().getWFrame().getOpponentBots().values());
 		List<ITrackedBot> supportBots = ((SupportRole) getRole()).getCurrentSupportBots();
 
 
-		for (int x = -numX / 2; x < numX / 2; x++)
+		for (int x = -debugArrowsHorizontal / 2; x < debugArrowsHorizontal / 2; x++)
 		{
-			for (int y = -numY / 2; y < numY / 2; y++)
+			for (int y = -debugArrowsVertical / 2; y < debugArrowsVertical / 2; y++)
 			{
-				IVector2 fakeBotPos = Vector2.fromXY(x * Geometry.getFieldLength() / numX,
-						y * Geometry.getFieldWidth() / numY);
+				IVector2 fakeBotPos = Vector2.fromXY(x * Geometry.getFieldLength() / debugArrowsHorizontal,
+						y * Geometry.getFieldWidth() / debugArrowsVertical);
 				BotID fakeBotID = BotID.createBotId(10, getRole().getBotID().getTeamColor());
 				ITrackedBot fakeSupportBot = TrackedBot.stubBuilder(fakeBotID, getRole().getWFrame().getTimestamp())
 						.withPos(fakeBotPos).build();
@@ -365,7 +378,9 @@ public abstract class ARepulsiveBehavior extends ASupportBehavior
 				IVector2 direction = calcResultingDirection(forces, fakeSupportBot);
 				supportBots.remove(fakeSupportBot);
 
-				Color c = new Color(0, 0, 0, (int) (20 + 235 * SumatraMath.relative(direction.getLength(), 0, 2000)));
+				Color teamColor = getRole().getWFrame().getTeamColor().getColor();
+				Color c = new Color(teamColor.getRed(), teamColor.getGreen(), teamColor.getBlue(),
+						(int) (20 + 235 * SumatraMath.relative(direction.getLength(), 0, 2000)));
 				shapes.add(new DrawableArrow(fakeBotPos, direction.normalizeNew().multiply(100), c, 30));
 			}
 		}

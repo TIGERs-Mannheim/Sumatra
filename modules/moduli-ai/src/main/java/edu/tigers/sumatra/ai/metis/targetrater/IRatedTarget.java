@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.targetrater;
 
-import edu.tigers.sumatra.wp.data.DynamicPosition;
+import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**
@@ -15,15 +15,15 @@ public interface IRatedTarget
 	/**
 	 * @return the target point
 	 */
-	DynamicPosition getTarget();
-	
-	
+	IVector2 getTarget();
+
+
 	/**
 	 * @return the range within this target is valid
 	 */
 	double getRange();
-	
-	
+
+
 	/**
 	 * @return the score between 0 and 1 where 1 is best
 	 */

@@ -1,56 +1,43 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.math;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-
-import org.apache.log4j.Logger;
-
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.BotIDMap;
-import edu.tigers.sumatra.ids.IBotIDMap;
-import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.I2DShape;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.LineMath;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.VectorMath;
 import edu.tigers.sumatra.skillsystem.skills.util.SkillUtil;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrame;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**
  * Helper class for providing common math problems.
- * 
- * @author stei_ol
  */
+@Log4j2
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class AiMath
 {
-	@SuppressWarnings("unused")
-	private static final Logger log = Logger.getLogger(AiMath.class.getName());
-	
-	
-	private AiMath()
-	{
-		
-	}
-	
-	
 	/**
 	 * Adjusts destination when near friendly bot.
 	 *
-	 * @param dest the desired destinaton
-	 * @return a valid destinaton
+	 * @param dest the desired destination
+	 * @return a valid destination
 	 */
 	private static IVector2 adjustPositionWhenNearBot(final WorldFrame wFrame, final BotID botID, final IVector2 dest)
 	{
@@ -76,8 +63,8 @@ public final class AiMath
 		}
 		return tmpDest;
 	}
-	
-	
+
+
 	/**
 	 * This method adjusts a MoveDestination when its invalid:
 	 * - Position is to close to ball.
@@ -97,8 +84,8 @@ public final class AiMath
 				Geometry.getPenaltyAreaTheir().withMargin(Geometry.getBotRadius()),
 				Geometry.getPenaltyAreaOur().withMargin(Geometry.getBotRadius()));
 	}
-	
-	
+
+
 	/**
 	 * Check if there are bots in a given shape, ignoring one bot
 	 *
@@ -107,24 +94,24 @@ public final class AiMath
 	 * @param ignoredBot may be null
 	 * @return
 	 */
-	public static boolean isShapeFreeOfBots(final I2DShape shape, final IBotIDMap<ITrackedBot> bots,
-			final ITrackedBot ignoredBot)
+	public static boolean isShapeOccupiedByBots(final I2DShape shape, final Map<BotID, ITrackedBot> bots,
+			final BotID ignoredBot)
 	{
 		for (ITrackedBot bot : bots.values())
 		{
-			if (bot.equals(ignoredBot))
+			if (bot.getBotId().equals(ignoredBot))
 			{
 				continue;
 			}
 			if (shape.isPointInShape(bot.getPos()))
 			{
-				return false;
+				return true;
 			}
 		}
-		return true;
+		return false;
 	}
-	
-	
+
+
 	/**
 	 * Get all bots with a velocity <= velThreshold
 	 *
@@ -132,9 +119,9 @@ public final class AiMath
 	 * @param velThreshold
 	 * @return
 	 */
-	public static IBotIDMap<ITrackedBot> getNonMovingBots(final IBotIDMap<ITrackedBot> bots, final double velThreshold)
+	public static Map<BotID, ITrackedBot> getNonMovingBots(final Map<BotID, ITrackedBot> bots, final double velThreshold)
 	{
-		IBotIDMap<ITrackedBot> result = new BotIDMap<>();
+		Map<BotID, ITrackedBot> result = new IdentityHashMap<>();
 		for (ITrackedBot bot : bots.values())
 		{
 			if (bot.getVel().getLength2() <= velThreshold)
@@ -146,11 +133,9 @@ public final class AiMath
 	}
 
 
-	
 	/**
 	 * Checks if the beam between two points is blocked or not.
 	 * ray looks like this:
-	 *
 	 * <pre>
 	 * | * |
 	 * |   |
@@ -166,13 +151,13 @@ public final class AiMath
 	 * @return
 	 * @author GuntherB
 	 */
-	public static boolean p2pVisibility(final Collection<ITrackedBot> bots, final IVector2 start, final IVector2 end,
+	private static boolean p2pVisibility(final Collection<ITrackedBot> bots, final IVector2 start, final IVector2 end,
 			final double raySize,
 			final Collection<BotID> ignoreIds)
 	{
 		final double minDistance = Geometry.getBallRadius() + Geometry.getBotRadius()
 				+ raySize;
-		
+
 		// checking free line
 		final double distanceStartEndSquared = VectorMath.distancePPSqr(start, end);
 		final ILine startEndLine = Line.fromPoints(start, end);
@@ -194,11 +179,11 @@ public final class AiMath
 				}
 			}
 		}
-		
+
 		return true;
 	}
-	
-	
+
+
 	/**
 	 * {@link AiMath#p2pVisibility(Collection, IVector2, IVector2, List)}
 	 *
@@ -216,8 +201,8 @@ public final class AiMath
 	{
 		return AiMath.p2pVisibility(bots, start, end, Arrays.asList(ignoreBotId));
 	}
-	
-	
+
+
 	/**
 	 * {@link AiMath#p2pVisibility(Collection, IVector2, IVector2, List)}
 	 *
@@ -237,8 +222,8 @@ public final class AiMath
 	{
 		return p2pVisibility(bots, start, end, raySize, Arrays.asList(ignoreBotId));
 	}
-	
-	
+
+
 	/**
 	 * {@link AiMath#p2pVisibility(Collection, IVector2, IVector2, double, Collection)}
 	 *
@@ -255,23 +240,5 @@ public final class AiMath
 			final List<BotID> ignoreIds)
 	{
 		return p2pVisibility(bots, start, end, 0, ignoreIds);
-	}
-
-
-	
-	/**
-	 * @param pos some pos in field
-	 * @return farthest point on field border from pos
-	 */
-	public static IVector2 getFarthestPointOnFieldBorder(IVector2 pos)
-	{
-		List<IVector2> targets = new ArrayList<>();
-		for (double a = 0; a < AngleMath.PI_TWO; a += 0.1)
-		{
-			ILine line = Line.fromDirection(pos, Vector2.fromAngle(a));
-			targets.add(
-					pos.farthestToOpt(Geometry.getField().lineIntersections(line)).orElse(Vector2f.ZERO_VECTOR));
-		}
-		return pos.farthestTo(targets);
 	}
 }

@@ -1,19 +1,7 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.vision.kick.estimators.chip;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import org.apache.commons.math3.linear.Array2DRowRealMatrix;
-import org.apache.commons.math3.linear.ArrayRealVector;
-import org.apache.commons.math3.linear.DecompositionSolver;
-import org.apache.commons.math3.linear.QRDecomposition;
-import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.linear.RealVector;
-import org.apache.commons.math3.linear.SingularMatrixException;
 
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.cam.data.CamCalibration;
@@ -22,6 +10,17 @@ import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector3;
 import edu.tigers.sumatra.vision.data.KickSolverResult;
+import org.apache.commons.math3.linear.Array2DRowRealMatrix;
+import org.apache.commons.math3.linear.ArrayRealVector;
+import org.apache.commons.math3.linear.DecompositionSolver;
+import org.apache.commons.math3.linear.QRDecomposition;
+import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.linear.RealVector;
+import org.apache.commons.math3.linear.SingularMatrixException;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 
 /**
@@ -178,7 +177,7 @@ public class ChipKickSolverLin5Offset extends AChipKickSolver
 		}
 		
 		kickTimestamp = records.get(0).gettCapture() - (long) (bestResult.tOffset * 1e9);
-		
+
 		double l1Error = 0;
 		for (CamBall b : records)
 		{
@@ -187,10 +186,10 @@ public class ChipKickSolverLin5Offset extends AChipKickSolver
 			IVector2 ground = posNow.projectToGroundNew(getCameraPosition(b.getCameraId()));
 			l1Error += ground.subtractNew(b.getFlatPos()).getL1Norm();
 		}
-		
+
 		lastL1Error = l1Error;
-		
-		return Optional.of(new KickSolverResult(kickPosition, kickVelEst, kickTimestamp));
+
+		return Optional.of(new KickSolverResult(kickPosition, kickVelEst, kickTimestamp, getClass().getSimpleName()));
 	}
 	
 	

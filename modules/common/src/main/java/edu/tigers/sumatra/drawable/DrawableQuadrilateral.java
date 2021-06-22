@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
@@ -15,27 +15,27 @@ import edu.tigers.sumatra.math.vector.IVector2;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Drawable quadrilateral.
  */
 @Persistent
 public class DrawableQuadrilateral extends ADrawableWithStroke
 {
-	
-	private final IQuadrilateral	quadrilateral;
-	
-	private boolean					fill	= false;
-	
-	
+
+	private final IQuadrilateral quadrilateral;
+
+	private boolean fill = false;
+
+
 	@SuppressWarnings("unused")
 	private DrawableQuadrilateral()
 	{
 		quadrilateral = null;
 	}
-	
-	
+
+
 	/**
 	 * Create a drawable for a Quadrilateral.
-	 * 
+	 *
 	 * @param quadrilateral backed by this drawable
 	 * @param color
 	 */
@@ -44,8 +44,8 @@ public class DrawableQuadrilateral extends ADrawableWithStroke
 		this.quadrilateral = quadrilateral;
 		setColor(color);
 	}
-	
-	
+
+
 	/**
 	 * @param quadrilateral backed by this drawable
 	 */
@@ -53,13 +53,13 @@ public class DrawableQuadrilateral extends ADrawableWithStroke
 	{
 		this(quadrilateral, Color.BLACK);
 	}
-	
-	
+
+
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
 		super.paintShape(g, tool, invert);
-		
+
 		assert quadrilateral != null;
 		for (ILine line : quadrilateral.getEdges())
 		{
@@ -80,20 +80,12 @@ public class DrawableQuadrilateral extends ADrawableWithStroke
 			g.fillPolygon(x, y, x.length);
 		}
 	}
-	
-	
+
+
 	@Override
-	public void setFill(final boolean fill)
+	public DrawableQuadrilateral setFill(final boolean fill)
 	{
 		this.fill = fill;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public IQuadrilateral getQuadrilateral()
-	{
-		return quadrilateral;
+		return this;
 	}
 }

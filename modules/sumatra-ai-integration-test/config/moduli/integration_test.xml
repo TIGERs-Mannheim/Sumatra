@@ -37,6 +37,10 @@
     <module id="edu.tigers.sumatra.wp.AWorldPredictor">
         <implementation>edu.tigers.sumatra.wp.WorldInfoCollector</implementation>
 
+        <properties>
+            <ci-port>12009</ci-port>
+        </properties>
+
         <dependency>edu.tigers.sumatra.referee.AReferee</dependency>
         <dependency>edu.tigers.sumatra.vision.AVisionFilter</dependency>
         <dependency>edu.tigers.sumatra.persistence.RecordManager</dependency>
@@ -51,7 +55,6 @@
 
         <properties>
             <source>CI</source>
-            <port>12009</port>
             <gameController>true</gameController>
             <gc-ui-port>50544</gc-ui-port>
         </properties>
@@ -131,11 +134,11 @@
     -->
 
     <!-- If you want to export the robot and ball coordinates to another application, activate this -->
-    <module id="edu.tigers.sumatra.wp.exporter.SSLVisionSender">
-        <properties>
-            <port>10006</port>
-        </properties>
-        <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
-    </module>
+    <!--    <module id="edu.tigers.sumatra.wp.exporter.SSLVisionSender">-->
+    <!--        <properties>-->
+    <!--            <port>10006</port>-->
+    <!--        </properties>-->
+    <!--        <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>-->
+    <!--    </module>-->
 
 </centralSoftware>

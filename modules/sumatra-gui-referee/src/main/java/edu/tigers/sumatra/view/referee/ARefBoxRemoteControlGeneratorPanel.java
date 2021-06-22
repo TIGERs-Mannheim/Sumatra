@@ -1,14 +1,13 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view.referee;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import edu.tigers.sumatra.referee.proto.SslGcApi;
 
 import javax.swing.JPanel;
-
-import edu.tigers.sumatra.referee.control.Event;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 
 /**
@@ -17,10 +16,10 @@ import edu.tigers.sumatra.referee.control.Event;
 public abstract class ARefBoxRemoteControlGeneratorPanel extends JPanel
 {
 	private static final long serialVersionUID = 4824407573372334034L;
-	
+
 	private final transient List<IRefBoxRemoteControlRequestObserver> observers = new CopyOnWriteArrayList<>();
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -28,8 +27,8 @@ public abstract class ARefBoxRemoteControlGeneratorPanel extends JPanel
 	{
 		observers.add(observer);
 	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -37,9 +36,9 @@ public abstract class ARefBoxRemoteControlGeneratorPanel extends JPanel
 	{
 		observers.remove(observer);
 	}
-	
-	
-	protected void sendGameControllerEvent(final Event event)
+
+
+	protected void sendGameControllerEvent(final SslGcApi.Input event)
 	{
 		for (IRefBoxRemoteControlRequestObserver observer : observers)
 		{

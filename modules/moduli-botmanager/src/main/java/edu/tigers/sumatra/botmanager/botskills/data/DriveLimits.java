@@ -1,12 +1,10 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.botskills.data;
 
 /**
  * Velocity, acceleration, jerk drive limits for XY and W.
- * 
- * @author AndreR <andre@ryll.cc>
  */
 public class DriveLimits
 {
@@ -18,29 +16,29 @@ public class DriveLimits
 	public static final int MAX_ACC_W = 100;
 	public static final int MAX_JERK = 100;
 	public static final int MAX_JERK_W = 1000;
-	
-	
+
+
 	private DriveLimits()
 	{
 	}
-	
-	
+
+
 	/**
 	 * Convert double to int with scaling.
-	 * 
+	 *
 	 * @param value
 	 * @param max
 	 * @return
 	 */
 	public static int toUInt8(final double value, final double max)
 	{
-		return (int) ((value / max) * 255);
+		return (int) Math.round(((value / max) * 255));
 	}
-	
-	
+
+
 	/**
 	 * Convert int to double and unfold scaling.
-	 * 
+	 *
 	 * @param value
 	 * @param max
 	 * @return

@@ -1,4 +1,34 @@
-[[section-deployment-view]]
-:imagesdir: ./images
+:imagesdir: ../images
 
+[[section-deployment-view]]
 == Used Infrastructure
+
+=== GitLab
+
+We use https://gitlab.tigers-mannheim.de[GitLab] for managing code, issues, CI/CD and documentation.
+
+=== Nexus - Maven Repository
+
+We have a https://nexus.tigers-mannheim.de[Nexus Repository] that provides the dependencies that are not available in the official Repos.
+You can visit the web interface and login with your credentials.
+The Nexus also acts as a proxy and cache for other repositories, so even if libraries get remove externally, we still have them in our repository.
+
+Our Nexus should not be the single source for a dependency, as this would make building Sumatra impossible without Nexus.
+So, do not upload artifacts manually to the Nexus.
+Instead, use http://jitpack.io[jitpack.io].
+
+==== Independent libraries owned by TIGERs
+
+All libraries that are developed for our team, but could be useful in any other project, should be outsourced completely.
+
+Create a new project in the open-source group in GitLab: https://gitlab.tigers-mannheim.de/open-source
+
+Ask someone with sufficient permission to setup a mirror to GitHub, so that jitpack.io can be used: https://github.com/TIGERs-Mannheim
+
+[[section-sonar-qube]]
+=== SonarQube
+
+We use SonarQube to measure the code quality.
+SonarQube is automatically triggered in the CI-pipeline and reports issues in Merge Requests.
+You can also use the SonarLint plugin in your IDE to see issues during development already.
+SonarQube is reachable here: https://tigers-mannheim.de/sonar

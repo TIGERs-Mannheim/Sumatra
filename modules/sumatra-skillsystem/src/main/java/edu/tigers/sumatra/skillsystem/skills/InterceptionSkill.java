@@ -1,16 +1,10 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.skillsystem.skills;
 
 
-import java.awt.Color;
-import java.util.List;
-
-import org.apache.commons.lang.Validate;
-
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -24,64 +18,60 @@ import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
-import edu.tigers.sumatra.skillsystem.ESkill;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
+import lombok.NonNull;
+import lombok.Setter;
+
+import java.awt.Color;
+import java.util.List;
 
 
 /**
- * tries to intercept ball
- * 
- * @author MarkG <Mark.Geiger@dlr.de>
+ * Intercept the ball during opponent free kicks.
  */
 public class InterceptionSkill extends AMoveSkill
 {
-	private IVector2 nearestEnemyBotPos = Vector2.fromXY(0, 0);
-	private IVector2 lastValidDestination = null;
-	
 	@Configurable(defValue = "150.0")
 	private static double interceptionSkillSecurityDist = 150;
-	
+
+	@Setter
+	@NonNull
+	private IVector2 nearestOpponentBotPos = Vector2.fromXY(0, 0);
+	@Setter
 	private double distanceToBall = getStdDist();
-	
-	
-	/**
-	 * Interception skill, tries to intercept enemy standards.
-	 */
-	public InterceptionSkill()
-	{
-		super(ESkill.INTERCEPTION);
-	}
-	
-	
+
+	private IVector2 lastValidDestination = null;
+
+
 	@Override
-	protected void beforeStateUpdate()
+	protected void doUpdate()
 	{
 		IVector2 dest = calcDefendingDestination();
 		double targetAngle = getBall().getPos().subtractNew(getPos()).getAngle();
-		
-		setTargetPose(dest, targetAngle, getMoveCon().getMoveConstraints());
+
+		setTargetPose(dest, targetAngle, defaultMoveConstraints());
 		getShapes().get(ESkillShapesLayer.KEEPER).add(new DrawableCircle(dest, 25, Color.CYAN));
 	}
-	
-	
+
+
 	private IVector2 calcDefendingDestination()
 	{
 		IVector2 destination;
 		IVector2 intersectPoint;
-		
+
 		IVector2 ballPos = getWorldFrame().getBall().getPos();
-		IVector2 botToBall = ballPos.subtractNew(nearestEnemyBotPos).normalizeNew();
-		
+		IVector2 botToBall = ballPos.subtractNew(nearestOpponentBotPos).normalizeNew();
+
 		intersectPoint = ballPos.addNew(botToBall.multiplyNew(distanceToBall));
-		
+
 		destination = intersectPoint;
-		
+
 		// keep stop distance
 		ICircle forbiddenCircle = Circle.createCircle(ballPos, RuleConstraints.getStopRadius()
 				+ Geometry.getBotRadius());
 		ICircle driveCircle = Circle.createCircle(ballPos, RuleConstraints.getStopRadius()
 				+ Geometry.getBotRadius() + interceptionSkillSecurityDist);
-		
+
 		if (isMoveTargetValid(destination)
 				&& !forbiddenCircle.lineIntersections(Lines.segmentFromPoints(getPos(), destination)).isEmpty())
 		{
@@ -90,14 +80,14 @@ public class InterceptionSkill extends AMoveSkill
 			List<IVector2> circleIntersections = driveCircle
 					.lineIntersections(Line.fromDirection(getPos(), ballPos.subtractNew(getPos())));
 			IVector2 nextCirclePoint = getNextCirclePoint(circleIntersections);
-			
+
 			IVector2 wayLeftTarget = CircleMath.stepAlongCircle(nextCirclePoint, ballPos, -AngleMath.PI / 8);
 			IVector2 wayRightTarget = CircleMath.stepAlongCircle(nextCirclePoint, ballPos, AngleMath.PI / 8);
-			
+
 			boolean takeLeft = shouldTakeLeft(destination, ballPos, nextCirclePoint, wayLeftTarget, wayRightTarget);
 			destination = takeLeft ? wayLeftTarget : wayRightTarget;
 		}
-		
+
 		if (isMoveTargetValid(destination))
 		{
 			lastValidDestination = destination;
@@ -109,15 +99,15 @@ public class InterceptionSkill extends AMoveSkill
 		}
 		return lastValidDestination;
 	}
-	
-	
+
+
 	private boolean shouldTakeLeft(final IVector2 destination, final IVector2 ballPos, final IVector2 nextCirclePoint,
 			final IVector2 wayLeftTarget, final IVector2 wayRightTarget)
 	{
 		boolean takeLeft = destination.subtractNew(wayLeftTarget).getLength() < destination
 				.subtractNew(wayRightTarget)
 				.getLength();
-		
+
 		double angle = destination.subtractNew(ballPos).angleToAbs(getPos().subtractNew(ballPos)).orElse(0.0);
 		for (int i = 0; i < 16; i++)
 		{
@@ -130,8 +120,8 @@ public class InterceptionSkill extends AMoveSkill
 		}
 		return takeLeft;
 	}
-	
-	
+
+
 	private IVector2 getNextCirclePoint(final List<IVector2> circleIntersections)
 	{
 		IVector2 nextCirclePoint;
@@ -149,8 +139,8 @@ public class InterceptionSkill extends AMoveSkill
 		}
 		return nextCirclePoint;
 	}
-	
-	
+
+
 	private boolean isMoveTargetValid(final IVector2 destination)
 	{
 		double marginPenalty = 350;
@@ -158,30 +148,8 @@ public class InterceptionSkill extends AMoveSkill
 				&& !Geometry.getPenaltyAreaOur().isPointInShape(destination, marginPenalty)
 				&& !Geometry.getPenaltyAreaTheir().isPointInShape(destination, marginPenalty);
 	}
-	
-	
-	/**
-	 * @param nearestEnemyBot
-	 */
-	public void setNearestEnemyBotPos(final IVector2 nearestEnemyBot)
-	{
-		Validate.notNull(nearestEnemyBot);
-		nearestEnemyBotPos = nearestEnemyBot;
-	}
-	
-	
-	public IVector2 getLastValidDestination()
-	{
-		return lastValidDestination;
-	}
-	
-	
-	public void setDistanceToBall(final double distanceToBall)
-	{
-		this.distanceToBall = distanceToBall;
-	}
-	
-	
+
+
 	public static double getStdDist()
 	{
 		return RuleConstraints.getStopRadius()

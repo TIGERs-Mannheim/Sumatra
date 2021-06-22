@@ -1,17 +1,13 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2014, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 14.12.2014
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.commands.basestation;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.ECommand;
@@ -21,7 +17,7 @@ import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
 
 /**
  * Configure wifi module and other base station parameters.
- * 
+ *
  * @author AndreR
  */
 @SuppressWarnings("squid:S1192")
@@ -40,12 +36,12 @@ public class BaseStationConfigV3 extends ACommand
 	private int maxBots = 8;
 	@SerialData(type = ESerialDataType.UINT8)
 	private int fixedRuntime = 0;
-	
+
 	private static final int MAX_BOTS = 24;
-	
-	private static final Logger log = Logger.getLogger(BaseStationConfigV3.class.getName());
-	
-	
+
+	private static final Logger log = LogManager.getLogger(BaseStationConfigV3.class.getName());
+
+
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -56,13 +52,13 @@ public class BaseStationConfigV3 extends ACommand
 	{
 		super(ECommand.CMD_BASE_CONFIG_V3);
 	}
-	
-	
+
+
 	// --------------------------------------------------------------------------
 	// --- methods --------------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	
+
+
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -80,14 +76,14 @@ public class BaseStationConfigV3 extends ACommand
 			log.error("Unknown host: " + ip, err);
 			return;
 		}
-		
+
 		visionIp[0] = addr.getAddress()[0] & 0xFF;
 		visionIp[1] = addr.getAddress()[1] & 0xFF;
 		visionIp[2] = addr.getAddress()[2] & 0xFF;
 		visionIp[3] = addr.getAddress()[3] & 0xFF;
 	}
-	
-	
+
+
 	/**
 	 * @return IPv4 Address string
 	 */
@@ -95,8 +91,8 @@ public class BaseStationConfigV3 extends ACommand
 	{
 		return visionIp[0] + "." + visionIp[1] + "." + visionIp[2] + "." + visionIp[3];
 	}
-	
-	
+
+
 	/**
 	 * @return the visionPort
 	 */
@@ -104,8 +100,8 @@ public class BaseStationConfigV3 extends ACommand
 	{
 		return visionPort;
 	}
-	
-	
+
+
 	/**
 	 * @param visionPort the visionPort to set
 	 */
@@ -113,8 +109,8 @@ public class BaseStationConfigV3 extends ACommand
 	{
 		this.visionPort = visionPort;
 	}
-	
-	
+
+
 	/**
 	 * @return the channel
 	 */
@@ -122,8 +118,8 @@ public class BaseStationConfigV3 extends ACommand
 	{
 		return channel;
 	}
-	
-	
+
+
 	/**
 	 * @param channel the channel to set (0 - 255)
 	 */
@@ -131,8 +127,8 @@ public class BaseStationConfigV3 extends ACommand
 	{
 		this.channel = channel;
 	}
-	
-	
+
+
 	/**
 	 * @return the maxBots
 	 */
@@ -140,8 +136,8 @@ public class BaseStationConfigV3 extends ACommand
 	{
 		return maxBots;
 	}
-	
-	
+
+
 	/**
 	 * @param maxBots the maxBots to set
 	 */
@@ -152,11 +148,11 @@ public class BaseStationConfigV3 extends ACommand
 			log.error("Invalid max bots: " + maxBots + ". Max is: " + MAX_BOTS);
 			return;
 		}
-		
+
 		this.maxBots = maxBots;
 	}
-	
-	
+
+
 	/**
 	 * @return the fixedRuntime
 	 */
@@ -164,8 +160,8 @@ public class BaseStationConfigV3 extends ACommand
 	{
 		return fixedRuntime > 0;
 	}
-	
-	
+
+
 	/**
 	 * @param fixedRuntime the fixedRuntime to set
 	 */

@@ -1,58 +1,59 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.metis;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-
 import edu.tigers.sumatra.ai.BaseAiFrame;
+import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.drawable.IShapeLayer;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 import edu.tigers.sumatra.wp.data.WorldFrame;
+import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
+
+import java.util.List;
 
 
 /**
  * abstract superclass for every subordinal calculator of the Analyzer
  */
+@Log4j2
 public abstract class ACalculator
 {
-	private static final Logger log = LogManager.getLogger(ACalculator.class);
-	private boolean active = true;
+	@Getter
+	private boolean executionStatusLastFrame = false;
+	@Getter
+	private long lastProcessingTimeNs;
+
 	private boolean started = false;
 	private Exception lastException = null;
-	private BaseAiFrame curAiFrame = null;
-	private TacticalField newTacticalField = null;
-	private boolean executionStatusLastFrame = false;
-	
-	
+	private BaseAiFrame aiFrame = null;
+
+
 	/**
 	 * Calculation call from extern
-	 * 
-	 * @param newTacticalField
+	 *
 	 * @param baseAiFrame
 	 */
-	public final void calculate(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+	public final void calculate(BaseAiFrame baseAiFrame)
 	{
-		curAiFrame = baseAiFrame;
-		this.newTacticalField = newTacticalField;
+		long tStart = System.nanoTime();
+		aiFrame = baseAiFrame;
 		executionStatusLastFrame = false;
-		if (!active && started)
-		{
-			stop();
-			started = false;
-		}
-		
+
 		if (!started)
 		{
 			start();
+			reset();
 			started = true;
 		}
-		
-		if (!active || !isCalculationNecessary())
+
+		if (!isCalculationNecessary())
 		{
+			reset();
 			return;
 		}
-		
+
 		try
 		{
 			doCalc();
@@ -66,46 +67,13 @@ public abstract class ACalculator
 				log.error("Error in calculator " + getClass().getSimpleName(), err);
 			}
 			lastException = err;
+			reset();
 		}
+		long tEnd = System.nanoTime();
+		lastProcessingTimeNs = (tEnd - tStart);
 	}
-	
-	
-	/**
-	 * Do the calculations.
-	 * Please use {@link #doCalc()} instead of this method.
-	 * 
-	 * @param newTacticalField
-	 * @param baseAiFrame
-	 */
-	protected void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
-	{
-	}
-	
-	
-	/**
-	 * Do the calculations.
-	 */
-	protected void doCalc()
-	{
-		doCalc(getNewTacticalField(), getAiFrame());
-	}
-	
-	
-	/**
-	 * Specifies if the doCalc method has to be executed.
-	 * Please use {@link #isCalculationNecessary()} instead of this method.
-	 *
-	 * @param tacticalField
-	 * @param aiFrame
-	 * @return
-	 */
-	@SuppressWarnings("squid:S1172") // ignore unused parameters
-	protected boolean isCalculationNecessary(TacticalField tacticalField, BaseAiFrame aiFrame)
-	{
-		return true;
-	}
-	
-	
+
+
 	/**
 	 * Specifies if the doCalc method has to be executed
 	 *
@@ -113,10 +81,26 @@ public abstract class ACalculator
 	 */
 	protected boolean isCalculationNecessary()
 	{
-		return isCalculationNecessary(getNewTacticalField(), getAiFrame());
+		return true;
 	}
-	
-	
+
+
+	/**
+	 * Reset any state when no calculation is necessary
+	 */
+	protected void reset()
+	{
+	}
+
+
+	/**
+	 * Do the calculations.
+	 */
+	protected void doCalc()
+	{
+	}
+
+
 	/**
 	 * Called when calculator gets activated or AI gets started
 	 */
@@ -124,8 +108,8 @@ public abstract class ACalculator
 	{
 		// can be overwritten
 	}
-	
-	
+
+
 	/**
 	 * Called when calculator gets deactivated or AI gets stopped
 	 */
@@ -133,8 +117,8 @@ public abstract class ACalculator
 	{
 		// can be overwritten
 	}
-	
-	
+
+
 	/**
 	 * Tear down this calculator by calling stop() if required
 	 */
@@ -146,45 +130,28 @@ public abstract class ACalculator
 			started = false;
 		}
 	}
-	
-	
-	/**
-	 * Activates or deactivates this calculator
-	 * 
-	 * @param active
-	 */
-	public void setActive(final boolean active)
+
+
+	protected final BaseAiFrame getAiFrame()
 	{
-		this.active = active;
+		return aiFrame;
 	}
-	
-	
-	protected BaseAiFrame getAiFrame()
+
+
+	protected final WorldFrame getWFrame()
 	{
-		return curAiFrame;
+		return aiFrame.getWorldFrame();
 	}
-	
-	
-	protected WorldFrame getWFrame()
+
+
+	protected final ITrackedBall getBall()
 	{
-		return curAiFrame.getWorldFrame();
+		return aiFrame.getWorldFrame().getBall();
 	}
-	
-	
-	protected ITrackedBall getBall()
+
+
+	protected final List<IDrawableShape> getShapes(IShapeLayer shapeLayer)
 	{
-		return curAiFrame.getWorldFrame().getBall();
-	}
-	
-	
-	public boolean getExecutionStatusLastFrame()
-	{
-		return executionStatusLastFrame;
-	}
-	
-	
-	public TacticalField getNewTacticalField()
-	{
-		return newTacticalField;
+		return getAiFrame().getShapeMap().get(shapeLayer);
 	}
 }

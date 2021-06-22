@@ -4,11 +4,10 @@
 
 package edu.tigers.sumatra.math.vector;
 
-import java.util.function.Function;
-
+import com.sleepycat.persist.model.Persistent;
 import org.apache.commons.math3.linear.RealVector;
 
-import com.sleepycat.persist.model.Persistent;
+import java.util.function.Function;
 
 
 /**

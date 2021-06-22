@@ -11,25 +11,20 @@ package edu.tigers.sumatra.ids;
 
 /**
  * Enum which describes the team
- * 
- * @author FlorianS, Gero
  */
 public enum ETeam
 {
-	/** */
 	TIGERS,
-	/** */
 	OPPONENTS,
-	/** */
 	UNKNOWN,
-	/** */
-	BOTH;
-	
-	
+	BOTH,
+	;
+
+
 	/**
 	 * Asserts that the given team is one of {@link #TIGERS} or {@link #OPPONENTS}, throws an
 	 * {@link IllegalArgumentException} otherwise!
-	 * 
+	 *
 	 * @param team
 	 */
 	public static void assertOneTeam(final ETeam team)
@@ -41,5 +36,11 @@ public enum ETeam
 		}
 		final String teamStr = team == null ? "<null>" : team.name();
 		throw new IllegalArgumentException(teamStr + " is not valid team identifier!!!");
+	}
+
+
+	public static ETeam[] both()
+	{
+		return new ETeam[] { TIGERS, OPPONENTS };
 	}
 }

@@ -1,88 +1,30 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 03.05.2016
- * Author(s): lukas
- * *********************************************************
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.snapshot;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import edu.tigers.sumatra.math.vector.IVector3;
+import lombok.Value;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
-import edu.tigers.sumatra.math.vector.IVector3;
-import edu.tigers.sumatra.math.vector.Vector3;
-
 
 /**
- * @author Lukas Schmierer <lukas.schmierer@lschmierer.de>
+ * A snapshot object.
  */
+@Value
 public class SnapObject
 {
-	private final IVector3	pos;
-	private final IVector3	vel;
-	
-	
 	/**
-	 * @param pos
-	 * @param vel
+	 * [mm,mm,rad]
 	 */
-	public SnapObject(final IVector3 pos, final IVector3 vel)
-	{
-		this.pos = pos;
-		this.vel = vel;
-	}
-	
-	
+	IVector3 pos;
 	/**
-	 * @return the pos
+	 * [m/s,m/s,rad/s]
 	 */
-	public final IVector3 getPos()
-	{
-		return pos;
-	}
-	
-	
-	/**
-	 * @return the vel
-	 */
-	public final IVector3 getVel()
-	{
-		return vel;
-	}
-	
-	
-	@Override
-	public boolean equals(final Object o)
-	{
-		if (this == o)
-			return true;
-		
-		if (!(o instanceof SnapObject))
-			return false;
-		
-		final SnapObject that = (SnapObject) o;
-		
-		return new EqualsBuilder()
-				.append(getPos(), that.getPos())
-				.append(getVel(), that.getVel())
-				.isEquals();
-	}
-	
-	
-	@Override
-	public int hashCode()
-	{
-		return new HashCodeBuilder(17, 37)
-				.append(getPos())
-				.append(getVel())
-				.toHashCode();
-	}
-	
-	
+	IVector3 vel;
+
+
 	/**
 	 * @return
 	 */
@@ -90,45 +32,23 @@ public class SnapObject
 	public JSONObject toJSON()
 	{
 		JSONObject obj = new JSONObject();
-		obj.put("pos", vec3ToJSON(pos));
-		obj.put("vel", vec3ToJSON(vel));
+		obj.put("pos", JsonConverter.encode(pos));
+		obj.put("vel", JsonConverter.encode(vel));
 		return obj;
 	}
-	
-	
+
+
 	/**
 	 * @param obj to read from
 	 * @return snapObject from json
 	 */
 	public static SnapObject fromJSON(final JSONObject obj)
 	{
-		return new SnapObject(vec3FromJSON((JSONArray) obj.get("pos")), vec3FromJSON((JSONArray) obj.get("vel")));
-	}
-	
-	
-	@SuppressWarnings("unchecked")
-	private static JSONArray vec3ToJSON(final IVector3 vec)
-	{
-		JSONArray array = new JSONArray();
-		array.add(vec.x());
-		array.add(vec.y());
-		array.add(vec.z());
-		return array;
-	}
-	
-	
-	private static IVector3 vec3FromJSON(final JSONArray jsonArray)
-	{
-		return Vector3.fromXYZ((double) jsonArray.get(0), (double) jsonArray.get(1), (double) jsonArray.get(2));
-	}
-	
-	
-	@Override
-	public String toString()
-	{
-		return "SnapObject{" +
-				"pos=" + pos +
-				", vel=" + vel +
-				'}';
+		if (obj == null)
+		{
+			return null;
+		}
+		return new SnapObject(JsonConverter.decodeVector3((JSONArray) obj.get("pos")),
+				JsonConverter.decodeVector3((JSONArray) obj.get("vel")));
 	}
 }

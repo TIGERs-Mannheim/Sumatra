@@ -1,12 +1,15 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.vision.kick.estimators.chip;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
+import edu.tigers.sumatra.cam.data.CamBall;
+import edu.tigers.sumatra.cam.data.CamCalibration;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.vision.data.KickSolverResult;
 import org.apache.commons.math3.analysis.MultivariateFunction;
 import org.apache.commons.math3.optim.InitialGuess;
 import org.apache.commons.math3.optim.MaxEval;
@@ -16,13 +19,9 @@ import org.apache.commons.math3.optim.nonlinear.scalar.ObjectiveFunction;
 import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.NelderMeadSimplex;
 import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.SimplexOptimizer;
 
-import edu.tigers.sumatra.cam.data.CamBall;
-import edu.tigers.sumatra.cam.data.CamCalibration;
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.IVector3;
-import edu.tigers.sumatra.math.vector.Vector3;
-import edu.tigers.sumatra.vision.data.ChipBallTrajectory;
-import edu.tigers.sumatra.vision.data.KickSolverResult;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 
 /**
@@ -80,19 +79,19 @@ public class ChipKickSolverNonLin3Direct extends AChipKickSolver
 					sum[i] += pair.getPointRef()[i];
 				}
 			}
-			
+
 			for (int i = 0; i < 3; i++)
 			{
 				sum[i] /= points.length;
 			}
-			
+
 			kickVelArray = sum;
 		}
-		
+
 		// kick off speed, 3D!
 		IVector3 kickVelEst = Vector3.fromArray(kickVelArray);
-		
-		return Optional.of(new KickSolverResult(kickPosition, kickVelEst, kickTimestamp));
+
+		return Optional.of(new KickSolverResult(kickPosition, kickVelEst, kickTimestamp, getClass().getSimpleName()));
 	}
 	
 	private class ChipBallModel implements MultivariateFunction
@@ -110,16 +109,17 @@ public class ChipKickSolverNonLin3Direct extends AChipKickSolver
 		public double value(final double[] point)
 		{
 			IVector3 kickVel = Vector3.fromArray(point);
-			
-			ChipBallTrajectory traj = new ChipBallTrajectory(kickPosition, kickVel, kickTimestamp);
-			
+
+			var traj = Geometry.getBallFactory()
+					.createTrajectoryFromKickedBallWithoutSpin(kickPosition, kickVel);
+
 			double error = 0;
-			
+
 			for (CamBall ball : records)
 			{
-				IVector3 trajPos = traj.getStateAtTimestamp(ball.gettCapture()).getPos();
+				IVector3 trajPos = traj.getMilliStateAtTime((ball.gettCapture() - kickTimestamp) * 1e-9).getPos();
 				IVector2 ground = trajPos.projectToGroundNew(getCameraPosition(ball.getCameraId()));
-				
+
 				error += ball.getFlatPos().distanceTo(ground);
 			}
 			

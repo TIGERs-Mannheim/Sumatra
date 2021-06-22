@@ -1,22 +1,24 @@
+/*
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.referee.gameevent;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.referee.proto.SslGcGameEvent;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import org.junit.Test;
-
-import edu.tigers.sumatra.SslGameEvent;
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2;
+import static org.assertj.core.api.Assertions.assertThat;
 
 
-@SuppressWarnings("OptionalGetWithoutIsPresent") // false positives with assertJ
 public class GameEventFactoryTest
 {
 
@@ -27,57 +29,46 @@ public class GameEventFactoryTest
 		gameEvents.add(new AimlessKick(botId(), location(), location()));
 		gameEvents.add(new AttackerDoubleTouchedBall(botId(), location()));
 		gameEvents.add(new AttackerTouchedBallInDefenseArea(botId(), location(), number()));
-		gameEvents.add(new AttackerTooCloseToDefenseArea(botId(), location(), number()));
-		gameEvents.add(new AttackerTouchedOpponentInDefenseArea(botId(), botId(), location()));
-		gameEvents.add(
-				new AttackerTouchedOpponentInDefenseArea(EGameEvent.ATTACKER_TOUCHED_OPPONENT_IN_DEFENSE_AREA_SKIPPED,
-						botId(),
-						botId(), location()));
+		gameEvents.add(new AttackerTooCloseToDefenseArea(botId(), location(), number(), location()));
 		gameEvents.add(new BallLeftFieldGoalLine(botId(), location()));
 		gameEvents.add(new BallLeftFieldTouchLine(botId(), location()));
 		gameEvents.add(new BotCrashDrawn(yellowBot(), blueBot(), location(), number(), number(), number()));
 		gameEvents.add(new BotCrashUnique(botId(), botId(), location(), number(), number(), number()));
-		gameEvents.add(new BotCrashUnique(EGameEvent.BOT_CRASH_UNIQUE_SKIPPED, botId(), botId(), location(), number(),
-				number(), number()));
 		gameEvents.add(new BotDribbledBallTooFar(botId(), location(), location()));
 		gameEvents.add(new BotHeldBallDeliberately(botId(), location(), number()));
 		gameEvents.add(new BotInterferedPlacement(botId(), location()));
 		gameEvents.add(new BotKickedBallToFast(botId(), location(), number(), BotKickedBallToFast.EKickType.STRAIGHT));
 		gameEvents.add(new BotPushedBot(botId(), botId(), location(), number()));
-		gameEvents.add(new BotPushedBot(EGameEvent.BOT_PUSHED_BOT_SKIPPED, botId(), botId(), location(), number()));
 		gameEvents.add(new BotSubstitution(team()));
-		gameEvents.add(new BotTippedOver(botId(), location()));
+		gameEvents.add(new BotTippedOver(botId(), location(), location()));
 		gameEvents.add(new BotTooFastInStop(botId(), location(), number()));
-		gameEvents.add(new ChippedGoal(botId(), location(), location(), number()));
 		gameEvents.add(new DefenderInDefenseArea(botId(), location(), number()));
-		gameEvents.add(new DefenderInDefenseAreaPartially(botId(), location(), number()));
 		gameEvents.add(new DefenderTooCloseToKickPoint(botId(), location(), number()));
-		gameEvents.add(new Goal(team(), botId(), location(), location()));
-		gameEvents.add(new IndirectGoal(botId(), location(), location()));
+		gameEvents.add(new Goal(team(), botId(), location(), location(), number(), intNumber(), timestamp()));
+		gameEvents.add(new InvalidGoal(team(), botId(), location(), location(), number(), intNumber(), timestamp()));
 		gameEvents.add(new KeeperHeldBall(team(), location(), number()));
-		gameEvents.add(new KickTimeout(team(), location(), number()));
 		gameEvents.add(new MultipleCards(team()));
 		gameEvents.add(new MultipleFouls(team()));
-		gameEvents.add(new MultiplePlacementFailures(team()));
 		gameEvents.add(new NoProgressInGame(location(), number()));
 		gameEvents.add(new PlacementFailed(team(), number()));
 		gameEvents.add(new PlacementSucceeded(team(), number(), number(), number()));
-		gameEvents.add(new PossibleGoal(team(), botId(), location(), location()));
-		gameEvents.add(new Prepared(number()));
-		gameEvents.add(new TooManyRobots(team()));
+		gameEvents.add(new PossibleGoal(team(), botId(), location(), location(), number(), intNumber(), timestamp()));
+		gameEvents.add(new TooManyRobots(team(), intNumber(), intNumber(), location()));
 		gameEvents.add(new UnsportingBehaviorMajor(team(), "reason"));
 		gameEvents.add(new UnsportingBehaviorMinor(team(), "reason"));
+		gameEvents.add(new BoundaryCrossing(team(), location()));
+		gameEvents.add(new PenaltyKickFailed(team(), location()));
 
 		for (IGameEvent gameEvent : gameEvents)
 		{
-			final SslGameEvent.GameEvent protoGameEvent = gameEvent.toProtobuf();
+			final SslGcGameEvent.GameEvent protoGameEvent = gameEvent.toProtobuf();
 			final Optional<IGameEvent> convertedGameEvent = GameEventFactory.fromProtobuf(protoGameEvent);
 			assertThat(convertedGameEvent).isPresent();
 			assertThat(convertedGameEvent.get()).isEqualTo(gameEvent);
 		}
 
 		assertThat(gameEvents.stream().map(IGameEvent::getType))
-				.containsAll(Arrays.asList(EGameEvent.valuesNonDeprecated()));
+				.containsAll(Arrays.asList(EGameEvent.values()));
 	}
 
 
@@ -114,5 +105,16 @@ public class GameEventFactoryTest
 	private double number()
 	{
 		return 2000.0;
+	}
+
+
+	private long timestamp()
+	{
+		return 0L;
+	}
+
+	private int intNumber()
+	{
+		return 42;
 	}
 }

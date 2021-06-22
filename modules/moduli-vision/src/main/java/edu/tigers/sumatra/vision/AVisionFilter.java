@@ -1,15 +1,8 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.vision;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
-
-import org.apache.log4j.Logger;
 
 import edu.tigers.moduli.AModule;
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
@@ -21,34 +14,42 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.util.Safe;
 import edu.tigers.sumatra.vision.data.FilteredVisionFrame;
 import edu.tigers.sumatra.vision.kick.estimators.IBallModelIdentResult;
+import lombok.Setter;
+import lombok.extern.log4j.Log4j2;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 
 /**
  * Module for processing raw vision data.
  */
+@Log4j2
 public abstract class AVisionFilter extends AModule implements ICamFrameObserver
 {
-	@SuppressWarnings("unused")
-	private static final Logger log = Logger.getLogger(AVisionFilter.class.getName());
-	
 	private Map<BotID, RobotInfo> robotInfoMap = new HashMap<>();
 	private final Set<IVisionFilterObserver> observers = new CopyOnWriteArraySet<>();
-	
-	
+	@Setter
+	private IBallPlacer ballPlacer;
+
+
 	public Map<BotID, RobotInfo> getRobotInfoMap()
 	{
 		return robotInfoMap;
 	}
-	
-	
+
+
 	public void setRobotInfoMap(final Map<BotID, RobotInfo> robotInfoMap)
 	{
 		this.robotInfoMap = robotInfoMap;
 	}
-	
-	
+
+
 	/**
 	 * Update filter with a new camera detection frame from one camera
 	 *
@@ -57,8 +58,8 @@ public abstract class AVisionFilter extends AModule implements ICamFrameObserver
 	protected void updateCamDetectionFrame(CamDetectionFrame camDetectionFrame)
 	{
 	}
-	
-	
+
+
 	/**
 	 * Called once uppon moduli start
 	 */
@@ -66,8 +67,8 @@ public abstract class AVisionFilter extends AModule implements ICamFrameObserver
 	{
 		// nothing to do
 	}
-	
-	
+
+
 	/**
 	 * Called once uppon moduli stop
 	 */
@@ -75,8 +76,8 @@ public abstract class AVisionFilter extends AModule implements ICamFrameObserver
 	{
 		robotInfoMap = new HashMap<>();
 	}
-	
-	
+
+
 	/**
 	 * Send a complete and filtered vision frame to external modules
 	 *
@@ -84,66 +85,70 @@ public abstract class AVisionFilter extends AModule implements ICamFrameObserver
 	 */
 	protected final void publishFilteredVisionFrame(final FilteredVisionFrame filteredVisionFrame)
 	{
-		observers.forEach(o -> o.onNewFilteredVisionFrame(filteredVisionFrame));
+		Safe.forEach(observers, o -> o.onNewFilteredVisionFrame(filteredVisionFrame));
 	}
-	
-	
+
+
 	/**
 	 * Send an updated viewport to external modules.
-	 * 
+	 *
 	 * @param cameraId
 	 * @param viewport
 	 */
 	protected final void publishUpdatedViewport(final int cameraId, final IRectangle viewport)
 	{
-		observers.forEach(o -> o.onViewportUpdated(cameraId, viewport));
+		Safe.forEach(observers, o -> o.onViewportUpdated(cameraId, viewport));
 	}
-	
-	
+
+
 	/**
 	 * Send an identified ball model.
-	 * 
+	 *
 	 * @param ident
 	 */
 	protected final void publishBallModelIdentification(final IBallModelIdentResult ident)
 	{
 		observers.forEach(o -> o.onBallModelIdentificationResult(ident));
 	}
-	
-	
+
+
 	/**
 	 * Reset the ball to a new position. Can be used to
 	 * select another ball, if multiple balls are detected (real filter)
-	 * 
+	 *
 	 * @param pos where the ball should be reset to
 	 * @param vel
 	 */
 	public void resetBall(final IVector3 pos, final IVector3 vel)
 	{
 	}
-	
-	
+
+
 	/**
 	 * Place the ball to a new position. This should only be implemented by the simulator
-	 * 
-	 * @param pos
-	 * @param vel
+	 *
+	 * @param pos [mm]
+	 * @param vel [mm/s]
 	 */
-	public void placeBall(final IVector3 pos, final IVector3 vel)
+	public final void placeBall(final IVector3 pos, final IVector3 vel)
 	{
+		if (ballPlacer != null)
+		{
+			ballPlacer.placeBall(pos, vel);
+		}
 	}
-	
-	
+
+
 	/**
 	 * Enable model identification functions (not real-time capable).
-	 * 
+	 *
 	 * @param enable
 	 */
 	public void setModelIdentification(final boolean enable)
 	{
 	}
-	
-	
+
+
 	/**
 	 * Register for filtered vision frames
 	 *
@@ -153,8 +158,8 @@ public abstract class AVisionFilter extends AModule implements ICamFrameObserver
 	{
 		observers.add(observer);
 	}
-	
-	
+
+
 	/**
 	 * Unregister for filtered vision frames
 	 *
@@ -164,22 +169,22 @@ public abstract class AVisionFilter extends AModule implements ICamFrameObserver
 	{
 		observers.remove(observer);
 	}
-	
-	
+
+
 	@Override
 	public void initModule()
 	{
 		// nothing to do
 	}
-	
-	
+
+
 	@Override
 	public void deinitModule()
 	{
 		// nothing to do
 	}
-	
-	
+
+
 	@Override
 	public void startModule()
 	{
@@ -193,8 +198,8 @@ public abstract class AVisionFilter extends AModule implements ICamFrameObserver
 			log.error("Could not find cam module.", e);
 		}
 	}
-	
-	
+
+
 	@Override
 	public void stopModule()
 	{
@@ -208,8 +213,8 @@ public abstract class AVisionFilter extends AModule implements ICamFrameObserver
 		}
 		stop();
 	}
-	
-	
+
+
 	@Override
 	public final void onNewCamDetectionFrame(final CamDetectionFrame camDetectionFrame)
 	{
@@ -221,8 +226,8 @@ public abstract class AVisionFilter extends AModule implements ICamFrameObserver
 			log.error("Error during cam detection processing", e);
 		}
 	}
-	
-	
+
+
 	@Override
 	public void onClearCamFrame()
 	{

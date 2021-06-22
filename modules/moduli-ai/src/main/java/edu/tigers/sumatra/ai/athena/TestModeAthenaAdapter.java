@@ -1,74 +1,147 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.athena;
 
-import java.util.List;
-import java.util.Map;
-
-import edu.tigers.sumatra.ai.athena.PlayStrategy.Builder;
-import edu.tigers.sumatra.ai.athena.roleassigner.RoleMapping;
 import edu.tigers.sumatra.ai.metis.MetisAiFrame;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
-import edu.tigers.sumatra.ai.pandora.plays.others.GuiTestPlay;
+import edu.tigers.sumatra.ai.pandora.plays.test.GuiTestPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
+import edu.tigers.sumatra.ids.BotID;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
  * Test mode
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class TestModeAthenaAdapter extends AAthenaAdapter
+public class TestModeAthenaAdapter implements IAthenaAdapter
 {
+	private final RoleAssigner roleAssigner = new RoleAssigner();
+	private final Set<APlay> activePlays = new HashSet<>();
+	private final GuiTestPlay guiTestPlay = new GuiTestPlay();
+
+
 	@Override
-	public void doProcess(final MetisAiFrame metisAiFrame, final Builder playStrategyBuilder, final AIControl aiControl)
+	public PlayStrategy process(final MetisAiFrame metisAiFrame, final AthenaGuiInput athenaGuiInput)
 	{
-		Map<EPlay, RoleMapping> outputRoleMapping = playStrategyBuilder.getRoleMapping();
-		Map<EPlay, RoleMapping> inputGuiRoleMapping = getAiControl().getRoleMapping();
-		Map<EPlay, RoleMapping> inputAiRoleMapping = metisAiFrame.getTacticalField().getRoleMapping();
-		
-		outputRoleMapping.putAll(inputGuiRoleMapping);
-		for (EPlay ePlay : inputGuiRoleMapping.keySet())
+		processRoles(athenaGuiInput.getRoles());
+		processPlays(athenaGuiInput.getPlays());
+		processRoleMapping(metisAiFrame, athenaGuiInput.getRoleMapping());
+
+		Set<APlay> newActivePlays = new HashSet<>(activePlays);
+		if (!guiTestPlay.getRoles().isEmpty())
 		{
-			Boolean useAi = getAiControl().getUseAiFlags().get(ePlay);
-			if ((useAi != null) && useAi && inputAiRoleMapping.containsKey(ePlay))
+			newActivePlays.add(guiTestPlay);
+		}
+		return new PlayStrategy(Collections.unmodifiableSet(newActivePlays));
+	}
+
+
+	@Override
+	public void stop(final AthenaGuiInput athenaGuiInput)
+	{
+		athenaGuiInput.getRoleMapping().clear();
+		athenaGuiInput.getPlays().clear();
+		athenaGuiInput.getRoles().clear();
+		guiTestPlay.removeRoles(guiTestPlay.getRoles().size());
+		activePlays.forEach(play -> play.removeRoles(play.getRoles().size()));
+		activePlays.clear();
+	}
+
+
+	private void processRoles(final List<ARole> roles)
+	{
+		// remove vanished test roles
+		for (ARole role : guiTestPlay.getRoles())
+		{
+			if (!roles.contains(role) || role.isCompleted())
 			{
-				outputRoleMapping.put(ePlay, inputAiRoleMapping.get(ePlay));
+				roles.remove(role);
+				guiTestPlay.removeRole(role);
 			}
 		}
-		
-		outputRoleMapping.computeIfAbsent(EPlay.GUI_TEST, e -> new RoleMapping());
-		syncTargetPlaySet(outputRoleMapping.keySet(), playStrategyBuilder.getActivePlays());
-		
-		GuiTestPlay guiPlay = getGuiTestPlay(playStrategyBuilder.getActivePlays());
-		
-		for (ARole role : aiControl.getAddRoles())
+
+		// already assigned to a non-GUI play? -> remove
+		roles.removeIf(role -> botIdAssigned(role.getBotID()));
+
+		// add new test roles
+		for (ARole role : roles)
 		{
-			guiPlay.addRoleToBeAdded(role);
-		}
-		aiControl.getAddRoles().clear();
-		
-		for (ARole role : guiPlay.getRoles())
-		{
-			if (role.isCompleted())
+			// check if bot is assigned to a role already and unassign the role
+			guiTestPlay.getRoles().stream()
+					.filter(r -> r != role)
+					.filter(r -> r.getBotID() == role.getBotID())
+					.forEach(r -> {
+						guiTestPlay.removeRole(r);
+						roles.remove(r);
+					});
+			if (!guiTestPlay.getRoles().contains(role))
 			{
-				outputRoleMapping.get(EPlay.GUI_TEST).getDesiredBots().remove(role.getBotID());
+				guiTestPlay.addRole(role);
 			}
 		}
 	}
-	
-	
-	private GuiTestPlay getGuiTestPlay(final List<APlay> activePlays)
+
+
+	private void processPlays(final List<APlay> plays)
 	{
-		for (APlay aPlay : activePlays)
+		// remove duplicate plays
+		removeDuplicatePlays(plays);
+
+		// Synchronize plays from aiControl with activePlays
+		activePlays.removeIf(play -> !plays.contains(play));
+		activePlays.addAll(plays);
+	}
+
+
+	private void processRoleMapping(final MetisAiFrame metisAiFrame, final Map<EPlay, Set<BotID>> roleMapping)
+	{
+		// remove bot ids that are not visible and do not belong to the current team
+		for (Set<BotID> ids : roleMapping.values())
 		{
-			if (aPlay.getType() == EPlay.GUI_TEST)
+			ids.removeIf(id -> !metisAiFrame.getWorldFrame().getBots().containsKey(id));
+		}
+
+		// assign role mappings to active plays (excluding guiTestPlay)
+		roleAssigner.assignRoles(activePlays, roleMapping);
+	}
+
+
+	private void removeDuplicatePlays(final List<APlay> plays)
+	{
+		for (APlay play1 : plays)
+		{
+			for (APlay play2 : plays)
 			{
-				return (GuiTestPlay) aPlay;
+				if (play1 != play2 && play1.getClass() == play2.getClass())
+				{
+					play1.removeRoles(play1.getRoles().size());
+					plays.remove(play1);
+					break;
+				}
 			}
 		}
-		throw new IllegalStateException("Gui play must be present");
+	}
+
+
+	private boolean botIdAssigned(final BotID botID)
+	{
+		for (APlay play : activePlays)
+		{
+			for (ARole playRole : play.getRoles())
+			{
+				if (playRole.getBotID() == botID)
+				{
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 }

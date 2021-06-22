@@ -1,17 +1,16 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
 
+import com.sleepycat.persist.model.Persistent;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2f;
+
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
-
-import com.sleepycat.persist.model.Persistent;
-
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.math.vector.Vector2f;
 
 
 /**
@@ -20,31 +19,28 @@ import edu.tigers.sumatra.math.vector.Vector2f;
  * in graphics coordinates (X right, Y down).
  * The offset text will thus always appear at the same location regardless
  * of field orientation.
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
- * @author AndreR
  */
 @Persistent
 public class DrawableAnnotation implements IDrawableShape
 {
 	private final IVector2 center;
 	private final String text;
-	
+
 	private IVector2 offset = Vector2f.ZERO_VECTOR;
 	private boolean centerHorizontally = false;
 	private Color color = Color.BLACK;
 	private int fontHeight = 50;
 	private boolean bold = false;
-	
-	
+
+
 	@SuppressWarnings("unused")
 	private DrawableAnnotation()
 	{
 		center = Vector2f.ZERO_VECTOR;
 		text = "";
 	}
-	
-	
+
+
 	/**
 	 * @param center
 	 * @param text
@@ -55,8 +51,8 @@ public class DrawableAnnotation implements IDrawableShape
 		this.center = center;
 		this.text = text;
 	}
-	
-	
+
+
 	/**
 	 * @param center
 	 * @param text
@@ -69,8 +65,8 @@ public class DrawableAnnotation implements IDrawableShape
 		this.text = text;
 		centerHorizontally = centerHorizontal;
 	}
-	
-	
+
+
 	/**
 	 * @param center
 	 * @param text
@@ -83,8 +79,8 @@ public class DrawableAnnotation implements IDrawableShape
 		this.text = text;
 		this.offset = offset;
 	}
-	
-	
+
+
 	/**
 	 * @param center
 	 * @param text
@@ -97,18 +93,18 @@ public class DrawableAnnotation implements IDrawableShape
 		this.text = text;
 		this.color = color;
 	}
-	
-	
+
+
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
 		Font font = new Font("", bold ? Font.BOLD : Font.PLAIN, tool.scaleYLength(fontHeight));
-		
+
 		g.setFont(font);
 		g.setColor(color);
-		
+
 		final IVector2 transPoint = tool.transformToGuiCoordinates(center, invert);
-		
+
 		String[] lines = text.split("\n");
 		int numLines = lines.length;
 		double maxWidth = 0;
@@ -116,20 +112,20 @@ public class DrawableAnnotation implements IDrawableShape
 		{
 			maxWidth = Math.max(maxWidth, g.getFontMetrics(font).stringWidth(line));
 		}
-		
+
 		double lineHeight = g.getFontMetrics(font).getHeight();
 		double textHeight = lineHeight * numLines;
-		
+
 		double drawingX = transPoint.x() + tool.scaleXLength(offset.x());
 		double drawingY = transPoint.y() + tool.scaleYLength(offset.y());
-		
+
 		drawingY += (textHeight / 2) - g.getFontMetrics(font).getDescent();
-		
+
 		if (offset.x() < 0)
 		{
 			drawingX -= maxWidth;
 		}
-		
+
 		if (centerHorizontally)
 		{
 			if (offset.x() < 0)
@@ -140,27 +136,28 @@ public class DrawableAnnotation implements IDrawableShape
 				drawingX -= maxWidth / 2;
 			}
 		}
-		
+
 		drawingY -= (numLines - 1) * lineHeight;
-		
+
 		for (String txt : lines)
 		{
 			g.drawString(txt, (float) drawingX, (float) drawingY);
 			drawingY += lineHeight;
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param color the color to set
 	 */
 	@Override
-	public final void setColor(final Color color)
+	public final DrawableAnnotation setColor(final Color color)
 	{
 		this.color = color;
+		return this;
 	}
-	
-	
+
+
 	/**
 	 * @param fontHeight the fontHeight to set in [mm]
 	 * @return
@@ -170,8 +167,8 @@ public class DrawableAnnotation implements IDrawableShape
 		this.fontHeight = fontHeight;
 		return this;
 	}
-	
-	
+
+
 	/**
 	 * @param offset the offset to set
 	 * @return
@@ -181,8 +178,8 @@ public class DrawableAnnotation implements IDrawableShape
 		this.offset = offset;
 		return this;
 	}
-	
-	
+
+
 	/**
 	 * @param centerHorizontally the centerHorizontally to set
 	 * @return
@@ -192,8 +189,8 @@ public class DrawableAnnotation implements IDrawableShape
 		this.centerHorizontally = centerHorizontally;
 		return this;
 	}
-	
-	
+
+
 	public DrawableAnnotation withBold(final boolean bold)
 	{
 		this.bold = bold;

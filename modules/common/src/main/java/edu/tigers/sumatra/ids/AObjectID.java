@@ -24,9 +24,9 @@ public abstract class AObjectID implements Comparable<AObjectID>
 	public static final int BOT_ID_MIN = 0;
 	/** */
 	public static final int BOT_ID_MAX = 15;
-	public static final int BOT_ID_MIDDLE_BS = 11;
+	public static final int BOT_ID_MIDDLE_BS = 15;
 	/** */
-	public static final int BOT_ID_MAX_BS = 23;
+	public static final int BOT_ID_MAX_BS = 31;
 	
 	
 	private int number;

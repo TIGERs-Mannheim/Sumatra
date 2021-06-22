@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.trees;/**
@@ -11,7 +11,7 @@ public enum EOffensiveSituation
 	 */
 	DEFAULT_SITUATION,
 	/**
-	 * Standard Situation for us in enemy half
+	 * Standard Situation for us in opponent half
 	 */
 	STANDARD_AGGRESSIVE,
 	/**
@@ -19,7 +19,7 @@ public enum EOffensiveSituation
 	 */
 	STANDARD_DEFENSIVE,
 	/**
-	 * Special Case for close ranged combats near enemy goal
+	 * Special Case for close ranged combats near opponent goal
 	 */
 	CLOSE_COMBAT_AGGRESSIVE,
 	/**

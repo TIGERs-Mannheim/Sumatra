@@ -1,55 +1,28 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.metis.botdistance;
 
-import edu.tigers.sumatra.wp.data.ITrackedBot;
-import edu.tigers.sumatra.wp.data.TrackedBot;
+import edu.tigers.sumatra.ids.BotID;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.Value;
 
 
 /**
- * Simple data holder which associates a {@link TrackedBot} with a double-value
- * 
- * @author Gero
+ * Simple data holder which associates a {@link BotID} with a double-value
  */
+@RequiredArgsConstructor
+@Value
 public class BotDistance
 {
 	/**
-	 * Used to provide a not-null {@link BotDistance} even if no distances have been calculated! All its members are
-	 * <code>null</code>!
+	 * Used to provide a not-null {@link BotDistance} even if no distances have been calculated
 	 */
-	public static final BotDistance NULL_BOT_DISTANCE = new BotDistance(null, Double.MAX_VALUE);
-	
-	
-	private ITrackedBot bot;
-	private double dist;
-	
-	
-	/**
-	 * @param bot
-	 * @param dist
-	 */
-	public BotDistance(final ITrackedBot bot, final double dist)
-	{
-		this.bot = bot;
-		this.dist = dist;
-	}
-	
-	
-	/**
-	 * @return the bot
-	 */
-	public ITrackedBot getBot()
-	{
-		return bot;
-	}
-	
-	
-	/**
-	 * @return the dist
-	 */
-	public double getDist()
-	{
-		return dist;
-	}
+	public static final BotDistance NULL_BOT_DISTANCE = new BotDistance(BotID.noBot(), Double.MAX_VALUE);
+
+
+	@NonNull
+	BotID botId;
+	double dist;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.math.line.v2;
 
@@ -29,4 +29,12 @@ public interface IHalfLine extends ILineBase
 	 *         direction of this half-line.
 	 */
 	boolean isPointInFront(IVector2 point);
+
+	/**
+	 * Returns a new line segment using the same support vector of the half line with a specified length
+	 *
+	 * @param length of the new line segment
+	 * @return
+	 */
+	ILineSegment toLineSegment(double length);
 }

@@ -1,12 +1,8 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.sim.collision.ball;
-
-import static java.lang.Math.abs;
-
-import java.util.Optional;
 
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
@@ -22,11 +18,14 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector3;
-import edu.tigers.sumatra.wp.ball.trajectory.chipped.FixedLossPlusRollingBallTrajectory.FixedLossPlusRollingParameters;
-import edu.tigers.sumatra.wp.ball.trajectory.chipped.FixedLossPlusRollingConsultant;
+
+import java.util.Optional;
+
+import static java.lang.Math.abs;
 
 
 /**
+ *
  */
 public class BotCollisionObject implements ICollisionObject
 {
@@ -38,8 +37,8 @@ public class BotCollisionObject implements ICollisionObject
 	private final ILine frontLine;
 	private final ITriangle frontTriangle;
 	private final BotID botID;
-	
-	
+
+
 	/**
 	 * @param pose
 	 * @param vel
@@ -50,8 +49,8 @@ public class BotCollisionObject implements ICollisionObject
 	{
 		this(pose, vel, center2DribblerDist, botID, false, 0, false);
 	}
-	
-	
+
+
 	/**
 	 * @param pose
 	 * @param vel
@@ -69,10 +68,10 @@ public class BotCollisionObject implements ICollisionObject
 		this.vel = vel;
 		this.center2DribblerDist = center2DribblerDist;
 		this.botID = botID;
-		
+
 		circleCollisionObject = new CircleCollisionObject(Circle.createCircle(pose.getPos(), Geometry.getBotRadius()
 				+ Geometry.getBallRadius()), vel);
-		
+
 		double theta = SumatraMath.acos(center2DribblerDist / Geometry.getBotRadius());
 		double kickWidth = (center2DribblerDist + Geometry.getBallRadius()) * SumatraMath.tan(theta) * 2.0;
 		IVector2 kickCenter = pose.getPos()
@@ -81,44 +80,42 @@ public class BotCollisionObject implements ICollisionObject
 				.addNew(Vector2.fromAngleLength(pose.getOrientation() + AngleMath.DEG_090_IN_RAD, kickWidth));
 		IVector2 rightBotEdge = kickCenter
 				.addNew(Vector2.fromAngleLength(pose.getOrientation() - AngleMath.DEG_090_IN_RAD, kickWidth));
-		
+
 		frontLine = Line.fromPoints(leftBotEdge, rightBotEdge);
 		frontTriangle = Triangle.fromCorners(pose.getPos(), leftBotEdge, rightBotEdge);
-		
+
 		lineCollision = new KickerFrontLineCollisionObject(frontLine, vel, Vector2.fromAngle(pose.getOrientation()),
 				botID);
-		
+
 		IVector3 impulse;
 		if (chip)
 		{
-			IVector2 kickVector = new FixedLossPlusRollingConsultant(new FixedLossPlusRollingParameters())
-					.absoluteKickVelToVector(kickSpeed);
-			impulse = Vector3.from2d(Vector2.fromAngle(pose.getOrientation()).scaleTo(kickVector.x()), kickVector.y());
+			impulse = Geometry.getBallFactory().createChipConsultant().speedToVel(pose.getOrientation(), kickSpeed);
 		} else
 		{
 			impulse = Vector2.fromAngle(pose.getOrientation()).scaleTo(kickSpeed).getXYZVector();
 		}
-		
+
 		if (sticky)
 		{
 			lineCollision.setAcc(Vector3.from2d(
 					Vector2.fromAngle(pose.getOrientation()).scaleTo(-10),
 					0));
 		}
-		
+
 		lineCollision.setImpulse(impulse);
 		lineCollision.setSticky(sticky);
 		lineCollision.setDampFactor(1);
 	}
-	
-	
+
+
 	@Override
 	public IVector3 getVel()
 	{
 		return vel;
 	}
-	
-	
+
+
 	private boolean isInFront(final IVector3 prePos)
 	{
 		double bot2PrePosAngle = prePos.getXYVector().subtractNew(pose.getPos()).getAngle(0);
@@ -126,8 +123,8 @@ public class BotCollisionObject implements ICollisionObject
 		double angleDiff = abs(AngleMath.difference(pose.getOrientation(), bot2PrePosAngle));
 		return angleDiff < theta;
 	}
-	
-	
+
+
 	@Override
 	public Optional<ICollision> getCollision(final IVector3 prePos, final IVector3 postPos)
 	{
@@ -138,8 +135,8 @@ public class BotCollisionObject implements ICollisionObject
 		// ball is NOT in front of kicker -> collision is on circle
 		return circleCollisionObject.getCollision(prePos, postPos);
 	}
-	
-	
+
+
 	@Override
 	public Optional<ICollision> getInsideCollision(final IVector3 prePos)
 	{
@@ -158,15 +155,15 @@ public class BotCollisionObject implements ICollisionObject
 		}
 		return circleCollisionObject.getInsideCollision(prePos);
 	}
-	
-	
+
+
 	@Override
 	public IVector3 getImpulse(final IVector3 prePos)
 	{
 		return lineCollision.getImpulse(prePos);
 	}
-	
-	
+
+
 	@Override
 	public BotID getBotID()
 	{

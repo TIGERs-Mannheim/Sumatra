@@ -1,7 +1,10 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.rcm;
+
+import edu.tigers.sumatra.skillsystem.ESkill;
+import org.json.simple.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,20 +13,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.json.simple.JSONObject;
-
-import edu.tigers.sumatra.skillsystem.ESkill;
-
 
 /**
  * Flexible RCM action
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class RcmAction
 {
 	private static final List<RcmAction> ALL_ACTIONS;
-	
+
 	static
 	{
 		List<RcmAction> actions = new ArrayList<>();
@@ -37,11 +34,11 @@ public class RcmAction
 		}
 		ALL_ACTIONS = Collections.unmodifiableList(actions);
 	}
-	
+
 	private final Enum<? extends Enum<?>> actionEnum;
 	private final EActionType actionType;
-	
-	
+
+
 	/**
 	 * @param actionEnum
 	 * @param actionType
@@ -51,8 +48,8 @@ public class RcmAction
 		this.actionEnum = actionEnum;
 		this.actionType = actionType;
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -60,8 +57,8 @@ public class RcmAction
 	{
 		return ALL_ACTIONS;
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -72,10 +69,11 @@ public class RcmAction
 		actions.add(new RcmAction(EControllerAction.BACKWARD, EActionType.SIMPLE));
 		actions.add(new RcmAction(EControllerAction.LEFT, EActionType.SIMPLE));
 		actions.add(new RcmAction(EControllerAction.RIGHT, EActionType.SIMPLE));
+		actions.add(new RcmAction(EControllerAction.ACCELERATE, EActionType.SIMPLE));
+		actions.add(new RcmAction(EControllerAction.DECELERATE, EActionType.SIMPLE));
 		actions.add(new RcmAction(EControllerAction.ROTATE_LEFT, EActionType.SIMPLE));
 		actions.add(new RcmAction(EControllerAction.ROTATE_RIGHT, EActionType.SIMPLE));
 		actions.add(new RcmAction(EControllerAction.KICK_ARM, EActionType.SIMPLE));
-		actions.add(new RcmAction(EControllerAction.KICK_FORCE, EActionType.SIMPLE));
 		actions.add(new RcmAction(EControllerAction.CHIP_ARM, EActionType.SIMPLE));
 		actions.add(new RcmAction(EControllerAction.DISARM, EActionType.SIMPLE));
 		actions.add(new RcmAction(EControllerAction.DRIBBLE, EActionType.SIMPLE));
@@ -83,12 +81,10 @@ public class RcmAction
 		actions.add(new RcmAction(ERcmEvent.PREV_BOT, EActionType.EVENT));
 		actions.add(new RcmAction(ERcmEvent.UNASSIGN_BOT, EActionType.EVENT));
 		actions.add(new RcmAction(ERcmEvent.SPEED_MODE_TOGGLE, EActionType.EVENT));
-		actions.add(new RcmAction(ESkill.TOUCH_KICK, EActionType.SKILL));
-		actions.add(new RcmAction(ESkill.INTERCEPTION, EActionType.SKILL));
 		return actions;
 	}
-	
-	
+
+
 	/**
 	 * @param jsonAction
 	 * @return
@@ -116,8 +112,8 @@ public class RcmAction
 		}
 		return new RcmAction(actionEnum, actionType);
 	}
-	
-	
+
+
 	/**
 	 * @return the actionEnum
 	 */
@@ -125,8 +121,8 @@ public class RcmAction
 	{
 		return actionEnum;
 	}
-	
-	
+
+
 	/**
 	 * @return the actionType
 	 */
@@ -134,8 +130,8 @@ public class RcmAction
 	{
 		return actionType;
 	}
-	
-	
+
+
 	@Override
 	public int hashCode()
 	{
@@ -145,8 +141,8 @@ public class RcmAction
 		result = (prime * result) + ((actionType == null) ? 0 : actionType.hashCode());
 		return result;
 	}
-	
-	
+
+
 	@Override
 	public boolean equals(final Object obj)
 	{
@@ -175,15 +171,15 @@ public class RcmAction
 		}
 		return actionType == other.actionType;
 	}
-	
-	
+
+
 	@Override
 	public String toString()
 	{
 		return actionEnum.name();
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -194,8 +190,8 @@ public class RcmAction
 		jsonAction.put("actionEnum", getActionEnum().name());
 		return new JSONObject(jsonAction);
 	}
-	
-	
+
+
 	/**
 	 * Possible action types
 	 */
@@ -213,16 +209,16 @@ public class RcmAction
 		 * ERcmEvent
 		 */
 		EVENT(ERcmEvent.values());
-		
+
 		private final List<Enum<?>> enums;
-		
-		
+
+
 		EActionType(final Enum<?>... enums)
 		{
 			this.enums = Arrays.asList(enums);
 		}
-		
-		
+
+
 		/**
 		 * @return the enums
 		 */

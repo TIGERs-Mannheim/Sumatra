@@ -1,0 +1,32 @@
+/*
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ */
+
+plugins {
+    id 'sumatra.java-conventions'
+    id 'java-library'
+    id 'sumatra.protobuf-conventions'
+}
+
+dependencies {
+    implementation project(':common')
+    implementation project(':common-math')
+    implementation project(':common-bot')
+    implementation project(':sumatra-model')
+    implementation project(':moduli-referee')
+    api project(':moduli-vision')
+    implementation project(':moduli-geometry')
+
+    implementation 'com.github.g3force:configurable:3.0'
+
+    implementation 'commons-lang:commons-lang:2.6'
+    implementation 'commons-configuration:commons-configuration:1.10'
+
+    implementation 'org.apache.logging.log4j:log4j-api:2.14.1'
+
+    implementation 'com.sleepycat:je:18.3.12'
+    implementation 'com.google.protobuf:protobuf-java:3.17.0'
+
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.assertj:assertj-core:3.19.0'
+}

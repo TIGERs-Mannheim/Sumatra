@@ -1,7 +1,6 @@
 package edu.tigers.sumatra.ai.metis.statistics.timeseries;
 
 import edu.tigers.sumatra.ai.BaseAiFrame;
-import edu.tigers.sumatra.ai.metis.ITacticalField;
 import edu.tigers.sumatra.statistics.TimeSeriesStatsEntry;
 import edu.tigers.sumatra.wp.data.ITrackedBall;
 
@@ -12,8 +11,7 @@ import edu.tigers.sumatra.wp.data.ITrackedBall;
 public class BallPosTssCalc implements ITssCalc
 {
 	@Override
-	public TimeSeriesStatsEntry createTimeSeriesStatsEntry(final BaseAiFrame aiFrame, final ITacticalField tacticalField,
-			final long timestamp)
+	public TimeSeriesStatsEntry createTimeSeriesStatsEntry(final BaseAiFrame aiFrame, final long timestamp)
 	{
 		TimeSeriesStatsEntry entry = new TimeSeriesStatsEntry("ball.pos", timestamp);
 		ITrackedBall ball = aiFrame.getWorldFrame().getBall();

@@ -2,6 +2,7 @@ package edu.tigers.sumatra.sim.dynamics.bot;
 
 import org.apache.commons.lang.Validate;
 
+import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.bot.params.BotMovementLimits;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -19,19 +20,19 @@ public class SimBotAction
 	private final IVector3 targetVelLocal;
 	private final IVectorN targetWheelVel;
 	private final IVector2 primaryDirection;
-	
+
 	private final EDriveMode modeXY;
 	private final EDriveMode modeW;
-	
-	private final MoveConstraints driveLimits;
+
+	private final IMoveConstraints driveLimits;
 	private final boolean strictVelocityLimit;
-	
+
 	private final double kickSpeed;
 	private final boolean chip;
 	private final boolean disarm;
 	private final double dribbleRpm;
-	
-	
+
+
 	private SimBotAction(final Builder builder)
 	{
 		targetPos = builder.targetPos;
@@ -47,85 +48,85 @@ public class SimBotAction
 		disarm = builder.disarm;
 		dribbleRpm = builder.dribbleRpm;
 	}
-	
-	
+
+
 	public static SimBotAction idle()
 	{
 		return Builder.create().empty().build();
 	}
-	
-	
+
+
 	public IVector3 getTargetPos()
 	{
 		return targetPos;
 	}
-	
-	
+
+
 	public IVector3 getTargetVelLocal()
 	{
 		return targetVelLocal;
 	}
-	
-	
+
+
 	public IVectorN getTargetWheelVel()
 	{
 		return targetWheelVel;
 	}
-	
-	
+
+
 	public EDriveMode getModeXY()
 	{
 		return modeXY;
 	}
-	
-	
+
+
 	public EDriveMode getModeW()
 	{
 		return modeW;
 	}
-	
-	
+
+
 	public IVector2 getPrimaryDirection()
 	{
 		return primaryDirection;
 	}
-	
-	
-	public MoveConstraints getDriveLimits()
+
+
+	public IMoveConstraints getDriveLimits()
 	{
 		return driveLimits;
 	}
-	
-	
+
+
 	public boolean isStrictVelocityLimit()
 	{
 		return strictVelocityLimit;
 	}
-	
-	
+
+
 	public double getKickSpeed()
 	{
 		return kickSpeed;
 	}
-	
-	
+
+
 	public boolean isChip()
 	{
 		return chip;
 	}
-	
-	
+
+
 	public boolean isDisarm()
 	{
 		return disarm;
 	}
-	
-	
+
+
 	public double getDribbleRpm()
 	{
 		return dribbleRpm;
 	}
-	
+
 	/**
 	 * Builder
 	 */
@@ -137,19 +138,19 @@ public class SimBotAction
 		private IVector2 primaryDirection;
 		private EDriveMode modeXY = EDriveMode.OFF;
 		private EDriveMode modeW = EDriveMode.OFF;
-		private MoveConstraints driveLimits;
+		private IMoveConstraints driveLimits;
 		private boolean strictVelocityLimit;
 		private double kickSpeed = 0;
 		private boolean chip = false;
 		private boolean disarm = false;
 		private double dribbleRpm = 0;
-		
-		
+
+
 		private Builder()
 		{
 		}
-		
-		
+
+
 		/**
 		 * @return new builder
 		 */
@@ -157,8 +158,8 @@ public class SimBotAction
 		{
 			return new Builder();
 		}
-		
-		
+
+
 		/**
 		 * @return
 		 */
@@ -169,8 +170,8 @@ public class SimBotAction
 			driveLimits = new MoveConstraints(new BotMovementLimits());
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param targetPos
 		 * @return this builder
@@ -180,8 +181,8 @@ public class SimBotAction
 			this.targetPos = targetPos;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param targetVelLocal
 		 * @return this builder
@@ -191,8 +192,8 @@ public class SimBotAction
 			this.targetVelLocal = targetVelLocal;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param targetWheelVel
 		 * @return this builder
@@ -202,8 +203,8 @@ public class SimBotAction
 			this.targetWheelVel = targetWheelVel;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param primaryDirection
 		 * @return this builder
@@ -213,8 +214,8 @@ public class SimBotAction
 			this.primaryDirection = primaryDirection;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param modeXY
 		 * @return this builder
@@ -224,8 +225,8 @@ public class SimBotAction
 			this.modeXY = modeXY;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param modeW
 		 * @return this builder
@@ -235,19 +236,19 @@ public class SimBotAction
 			this.modeW = modeW;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param driveLimits
 		 * @return this builder
 		 */
-		public Builder driveLimits(final MoveConstraints driveLimits)
+		public Builder driveLimits(final IMoveConstraints driveLimits)
 		{
 			this.driveLimits = driveLimits;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param strictVelocityLimit
 		 * @return this builder
@@ -257,8 +258,8 @@ public class SimBotAction
 			this.strictVelocityLimit = strictVelocityLimit;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param kickSpeed
 		 * @return this builder
@@ -268,8 +269,8 @@ public class SimBotAction
 			this.kickSpeed = kickSpeed;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param chip
 		 * @return this builder
@@ -279,8 +280,8 @@ public class SimBotAction
 			this.chip = chip;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param disarm
 		 * @return this builder
@@ -290,8 +291,8 @@ public class SimBotAction
 			this.disarm = disarm;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @param dribbleRpm
 		 * @return this builder
@@ -301,8 +302,8 @@ public class SimBotAction
 			this.dribbleRpm = dribbleRpm;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * @return new instance
 		 */
@@ -315,7 +316,7 @@ public class SimBotAction
 			Validate.notNull(modeXY);
 			Validate.notNull(modeW);
 			Validate.notNull(driveLimits);
-			
+
 			return new SimBotAction(this);
 		}
 	}

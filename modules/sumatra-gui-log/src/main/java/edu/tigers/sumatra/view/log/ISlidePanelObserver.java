@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view.log;
 
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.Level;
 
 
 /**

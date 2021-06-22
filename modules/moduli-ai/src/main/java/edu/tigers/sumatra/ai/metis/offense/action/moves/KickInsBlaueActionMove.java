@@ -1,161 +1,169 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-import edu.tigers.sumatra.ai.BaseAiFrame;
+import com.sleepycat.persist.model.Persistent;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
-import edu.tigers.sumatra.ai.metis.ITacticalField;
-import edu.tigers.sumatra.ai.metis.TacticalField;
+import edu.tigers.sumatra.ai.metis.kicking.Pass;
+import edu.tigers.sumatra.ai.metis.kicking.PassFactory;
+import edu.tigers.sumatra.ai.metis.offense.OffensiveConstants;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
 import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
-import edu.tigers.sumatra.ai.metis.offense.action.KickTarget;
-import edu.tigers.sumatra.ai.metis.support.passtarget.EScoreMode;
-import edu.tigers.sumatra.ai.metis.support.passtarget.IPassTarget;
-import edu.tigers.sumatra.ai.metis.support.passtarget.IPassTargetRating;
-import edu.tigers.sumatra.ai.metis.support.passtarget.IRatedPassTarget;
-import edu.tigers.sumatra.ai.metis.support.passtarget.PassTarget;
-import edu.tigers.sumatra.ai.metis.support.passtarget.PassTargetRatingFactory;
-import edu.tigers.sumatra.ai.metis.support.passtarget.PassTargetRatingFactoryInput;
-import edu.tigers.sumatra.ai.metis.support.passtarget.RatedPassTarget;
-import edu.tigers.sumatra.ai.metis.targetrater.EPassInterceptionRaterMode;
-import edu.tigers.sumatra.ai.metis.targetrater.PassInterceptionRater;
-import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
+import edu.tigers.sumatra.ai.metis.pass.rating.EPassRating;
+import edu.tigers.sumatra.ai.metis.pass.rating.RatedPassFactory;
+import edu.tigers.sumatra.drawable.ColorPickerFactory;
+import edu.tigers.sumatra.drawable.DrawableCircle;
+import edu.tigers.sumatra.drawable.IColorPicker;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.circle.ICircle;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.wp.data.ITrackedBot;
+import edu.tigers.sumatra.wp.util.BotDistanceComparator;
+import lombok.RequiredArgsConstructor;
+import lombok.Value;
 
+import java.awt.Color;
 import java.util.List;
+import java.util.function.Supplier;
 
 
 /**
  * Pass to some free spot on the field, no robot as pass Target
  */
+@RequiredArgsConstructor
 public class KickInsBlaueActionMove extends AOffensiveActionMove
 {
-	@Configurable(comment = "Number of points of the grid in x-direction", defValue = "12")
-	protected static int pointNumberLength = 12;
-	@Configurable(comment = "Number of points of the grid in y-direction", defValue = "9")
-	protected static int pointNumberWidth = 9;
-	@Configurable(comment = "Minimum distance from grid points to penalty area for FAR_TO_GOAL modes [mm]", defValue = "1000.0")
-	protected static double marginAroundPenArea = 1000.0;
-	@Configurable(comment = "Maximum distance from gird points to enemy goal center for NEAR_TO_GOAL mode [mm]", defValue = "4000.0")
-	protected static double maxDistanceToGoalCenter = 4000.0;
-	@Configurable(comment = "Minimum kick distance [mm]", defValue = "1000.0")
-	protected static double minKickDistance = 1000.0;
-	@Configurable(comment = "Maximum kick distance [mm]", defValue = "4000.0")
-	protected static double maxKickDistance = 4000.0;
-	@Configurable(comment = "Minimum target PassScore [0;1]", defValue = "0.25")
-	protected static double minTgtPassScore = 0.25;
-	@Configurable(comment = "Time difference between Tiger and Foe at target grid point [s]", defValue = "0.5")
-	protected static double minTimeDifferenceAtTarget = 0.5;
-	@Configurable(comment = "Minimum time needed for backspin pass [s]", defValue = "9000.0")
-	// This high number is not a bug, it's a feature to deactivate the BackspinMode while it's developed
-	private static double minTimeForBackspin = 9000.0;
-	
-	private double score = 0.0;
-	private KickTarget kickTarget;
-	private AKickInsBlaueMode mode;
-	private final KickInsBlaueFilterParameters filterParameters = new KickInsBlaueFilterParameters();
-	private IRatedPassTarget ratedPassTarget;
-	private EScoreMode scoreMode;
-	
+	@Configurable(comment = "Activates this action move", defValue = "true")
+	private static boolean active = true;
+
 	static
 	{
 		ConfigRegistration.registerClass("metis", KickInsBlaueActionMove.class);
 	}
-	
-	
-	public KickInsBlaueActionMove()
-	{
-		super(EOffensiveActionMove.KICK_INS_BLAUE);
-	}
-	
-	
-	@Override
-	public EActionViability isActionViable(final BotID id, final TacticalField newTacticalField,
-			final BaseAiFrame baseAiFrame)
-	{
-		if (baseAiFrame.getGamestate().isStandardSituationForUs())
-		{
-			return EActionViability.FALSE;
-			
-		}
-		filterParameters.defaultCalc(id, baseAiFrame);
-		
-		mode = selectKickInsBlaueMode(baseAiFrame);
-		kickTarget = mode.create(id, newTacticalField, baseAiFrame, filterParameters).orElse(null);
-		drawShapes(id, newTacticalField, baseAiFrame, mode.getShapes());
-		
-		if (kickTarget != null)
-		{
-			
-			final IPassTarget passTarget = new PassTarget(kickTarget.getTarget(), id);
-			
-			final PassTargetRatingFactoryInput ratingFactoryInput = PassTargetRatingFactoryInput.fromAiFrame(baseAiFrame);
-			final PassTargetRatingFactory ratingFactory = new PassTargetRatingFactory();
-			final PassInterceptionRater rater = new PassInterceptionRater(
-					baseAiFrame.getWorldFrame().getFoeBots().values(), EPassInterceptionRaterMode.KICK_INS_BLAUE);
-			final IPassTargetRating rating = ratingFactory.ratingFromPassTargetAndInput(passTarget, rater,
-					ratingFactoryInput);
-			
-			ratedPassTarget = new RatedPassTarget(passTarget, rating, scoreMode);
-			score = ratedPassTarget.getScore();
-			return EActionViability.PARTIALLY;
-		}
-		score = 0.;
-		return EActionViability.FALSE;
-		
-	}
-	
-	
-	@Override
-	public OffensiveAction activateAction(final BotID id, final TacticalField newTacticalField,
-			final BaseAiFrame baseAiFrame)
-	{
-		assert kickTarget != null;
-		
 
-		return (id == mode.getClosestTigerBot())
-				? createOffensiveAction(EOffensiveAction.KICK_INS_BLAUE, kickTarget)
-				: createOffensiveAction(EOffensiveAction.KICK_INS_BLAUE, kickTarget).withPassTarget(ratedPassTarget);
-	}
-	
-	
+
+	private final PassFactory passFactory = new PassFactory();
+	private final RatedPassFactory ratedPassFactory = new RatedPassFactory();
+	private final Supplier<List<ICircle>> kickInsBlaueSpots;
+	private final IColorPicker colorPicker = ColorPickerFactory.greenRedGradient();
+
+
 	@Override
-	public double calcViabilityScore(final BotID id, final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+	public OffensiveAction calcAction(BotID botId) //Checking whether a KickInsBlaue might be appropriate
 	{
-		// Score calculation mainly in isActionViable method
-		return score * ActionMoveConstants.getViabilityMultiplierKickInsBlaue();
-	}
-	
-	
-	private void drawShapes(final BotID id, final ITacticalField newTacticalField, final BaseAiFrame baseAiFrame,
-			List<IDrawableShape> shapes)
-	{
-		// Draw Shapes only for current attacker bot
-		if (baseAiFrame.getPrevFrame().getTacticalField().getOffensiveStrategy().getAttackerBot().orElse(BotID.noBot())
-				.equals(id))
+		//Checking whether there is a set-play/whether there are no kickInsBlaueSpots/whether it's already activated
+		if (kickInsBlaueSpots.get().isEmpty() || !active || getAiFrame().getGameState().isStandardSituationForUs())
 		{
-			newTacticalField.getDrawableShapes().get(EAiShapesLayer.OFFENSIVE_KICK_INS_BLAUE).addAll(shapes);
+			return OffensiveAction.builder()
+					.move(EOffensiveActionMove.KICK_INS_BLAUE)
+					.action(EOffensiveAction.KICK_INS_BLAUE)
+					.viability(new OffensiveActionViability(EActionViability.FALSE, 0.0))
+					.build();
 		}
-	}
-	
-	
-	private AKickInsBlaueMode selectKickInsBlaueMode(final BaseAiFrame baseAiFrame)
-	{
-		if (baseAiFrame.getWorldFrame().getBall().getPos()
-				.distanceTo(Geometry.getGoalTheir().getCenter()) < maxDistanceToGoalCenter)
+
+
+		var bestKickInsBlaueSpot = kickInsBlaueSpots.get().stream()
+				.map(spot -> generateRatedPass(spot, botId))
+				.sorted().findFirst();
+
+		for (ICircle spot : kickInsBlaueSpots.get())
 		{
-			scoreMode = EScoreMode.SCORE_BY_GOAL_KICK;
-			return new KickInsBlaueModeNear();
+			getShapes(EAiShapesLayer.OFFENSIVE_KICK_INS_BLAUE)
+					.add(new DrawableCircle(Circle.createCircle(spot.center(), 1.2 * Geometry.getBotRadius()),
+							Color.GRAY));
 		}
-		scoreMode = EScoreMode.SCORE_BY_PASS;
-		return (filterParameters.getMaxAllowedTime() > minTimeForBackspin)
-				? new KickInsBlaueModeFarBackspin()
-				: new KickInsBlaueModeFar();
+
+
+		return bestKickInsBlaueSpot.map(this::createSuccessfulOffensiveAction).orElse(createDefaultOffensiveAction());
+	}
+
+
+	private OffensiveAction createSuccessfulOffensiveAction(RatedPassWithKickInsBlaueSpot spot)
+	{
+		getShapes(EAiShapesLayer.OFFENSIVE_KICK_INS_BLAUE)
+				.add(new DrawableCircle(spot.getSpot(), Color.GRAY));
+		getShapes(EAiShapesLayer.OFFENSIVE_KICK_INS_BLAUE).add(new DrawableCircle(
+				Circle.createCircle(spot.getSpot().center(), 1.2 * Geometry.getBotRadius()),
+				colorPicker.getColor(spot.getScore())));
+		return OffensiveAction.builder()
+				.move(EOffensiveActionMove.KICK_INS_BLAUE)
+				.action(EOffensiveAction.KICK_INS_BLAUE)
+				.viability(new OffensiveActionViability(EActionViability.PARTIALLY, spot.getScore()))
+				.pass(spot.getPass())
+				.build();
+	}
+
+
+	private OffensiveAction createDefaultOffensiveAction()
+	{
+
+		return OffensiveAction.builder()
+				.move(EOffensiveActionMove.KICK_INS_BLAUE)
+				.action(EOffensiveAction.KICK_INS_BLAUE)
+				.viability(new OffensiveActionViability(EActionViability.FALSE, 0.0))
+				.build();
+
+	}
+
+
+	private RatedPassWithKickInsBlaueSpot generateRatedPass(ICircle spot, BotID shooter)
+	{
+		passFactory.update(getWFrame());
+		passFactory.setAimingTolerance(0.4);
+		passFactory.setMaxReceivingBallSpeed(OffensiveConstants.getBallSpeedAtTargetKickInsBlaue() / 2);
+		var pass = passFactory
+				.straight(getBall().getPos(), spot.center(), shooter, getClosestTiger(spot.center()));
+
+
+		ratedPassFactory.update(getWFrame().getOpponentBots().values());
+		var score = ratedPassFactory.rateMaxCombined(pass, EPassRating.PASSABILITY, EPassRating.INTERCEPTION);
+		score = applyMultiplier(score);
+
+		return new RatedPassWithKickInsBlaueSpot(spot, pass, score);
+	}
+
+
+	private BotID getClosestTiger(IVector2 position)
+	{
+		return getWFrame().getTigerBotsAvailable().values().stream()
+				.min(new BotDistanceComparator(position))
+				.map(ITrackedBot::getBotId)
+				.orElse(BotID.noBot());
+	}
+
+
+	@Persistent
+	@Value
+	@RequiredArgsConstructor
+	static class RatedPassWithKickInsBlaueSpot implements Comparable<RatedPassWithKickInsBlaueSpot>
+	{
+		ICircle spot;
+		Pass pass;
+		double score;
+
+
+		@SuppressWarnings("unused") // used by berkeley
+		private RatedPassWithKickInsBlaueSpot()
+		{
+			this.spot = Circle.createCircle(Vector2.zero(), 0);
+			this.pass = Pass.builder().build();
+			this.score = 0;
+		}
+
+
+		@Override
+		public int compareTo(RatedPassWithKickInsBlaueSpot other)
+		{
+			return Double.compare(this.score, other.score);
+		}
 	}
 }
-

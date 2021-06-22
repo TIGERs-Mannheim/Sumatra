@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.statistics;
 
 import java.awt.Component;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.moduli.listenerVariables.ModulesState;
@@ -23,23 +24,23 @@ import edu.tigers.sumatra.views.ISumatraView;
 
 /**
  * Game Statistics Presenter
- * 
+ *
  * @author Daniel Andres <andreslopez.daniel@gmail.com>
  */
 public class StatisticsPresenter extends ASumatraViewPresenter implements IVisualizationFrameObserver, IAIObserver
 {
 	@SuppressWarnings("unused")
-	private static final Logger log = Logger.getLogger(StatisticsPresenter.class.getName());
-	
+	private static final Logger log = LogManager.getLogger(StatisticsPresenter.class.getName());
+
 	/** Each x-th frame will be passed to Panel, others will be ignored */
 	private static final int STAT_SHOW_THRESHOLD = 10;
-	
+
 	private final StatisticsPanel statisticsPanel;
-	
+
 	/** Used to limit updates */
 	private int statShowCounter = 0;
-	
-	
+
+
 	/**
 	 * Default
 	 */
@@ -47,8 +48,8 @@ public class StatisticsPresenter extends ASumatraViewPresenter implements IVisua
 	{
 		statisticsPanel = new StatisticsPanel();
 	}
-	
-	
+
+
 	@Override
 	public void onModuliStateChanged(final ModulesState state)
 	{
@@ -78,22 +79,22 @@ public class StatisticsPresenter extends ASumatraViewPresenter implements IVisua
 				break;
 		}
 	}
-	
-	
+
+
 	@Override
 	public Component getComponent()
 	{
 		return statisticsPanel;
 	}
-	
-	
+
+
 	@Override
 	public ISumatraView getSumatraView()
 	{
 		return statisticsPanel;
 	}
-	
-	
+
+
 	@Override
 	public void onNewVisualizationFrame(final VisualizationFrame frame)
 	{
@@ -108,8 +109,8 @@ public class StatisticsPresenter extends ASumatraViewPresenter implements IVisua
 			statShowCounter = 0;
 		}
 	}
-	
-	
+
+
 	@Override
 	public void onClearVisualizationFrame(final EAiTeam teamColor)
 	{

@@ -1,10 +1,12 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.referee.gameevent;
 
 
-import edu.tigers.sumatra.SslGameEvent;
+import edu.tigers.sumatra.referee.proto.SslGcGameEvent;
+
+import java.util.List;
 
 
 /**
@@ -18,19 +20,26 @@ public interface IGameEvent
 	 * @return The type of the stored game Event
 	 */
 	EGameEvent getType();
-	
-	
+
+
 	/**
 	 * Receive a message ready for transmitting
 	 *
 	 * @return The internal values of the gameEvent compiled to a Protobuf message
 	 */
-	SslGameEvent.GameEvent toProtobuf();
-	
-	
+	SslGcGameEvent.GameEvent toProtobuf();
+
+
 	/**
 	 * @return a formatted string describing the event in human language (used in the game log)
 	 */
-	@Override
 	String toString();
+
+
+	String getDescription();
+
+	/**
+	 * @return the list of origins of this game event
+	 */
+	List<String> getOrigins();
 }

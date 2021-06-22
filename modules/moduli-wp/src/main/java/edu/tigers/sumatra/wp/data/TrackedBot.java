@@ -1,18 +1,11 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.data;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-
-import org.apache.commons.lang.Validate;
-
 import com.sleepycat.persist.model.Persistent;
-
+import edu.tigers.sumatra.bot.BotState;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.bot.RobotInfo;
 import edu.tigers.sumatra.bot.State;
@@ -23,13 +16,19 @@ import edu.tigers.sumatra.math.botshape.BotShape;
 import edu.tigers.sumatra.math.botshape.IBotShape;
 import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
+import edu.tigers.sumatra.trajectory.ITrajectory;
+import org.apache.commons.lang.Validate;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 
 
 /**
- * Simple data holder describing tracked bots
- *
- * @author Gero
+ * A tracked (filtered, predicted) robot.
  */
 @Persistent(version = 2)
 public final class TrackedBot implements ITrackedBot
@@ -38,10 +37,11 @@ public final class TrackedBot implements ITrackedBot
 	private final long tAssembly;
 	private final BotID botId;
 	private final State botState;
+	private final DelayedBotState currentState;
 	private final transient State filteredState;
-	private final transient State bufferedTrajState;
-	private final long lastBallContact;
+	private final BallContact ballContact;
 	private final RobotInfo robotInfo;
+	private final double quality;
 
 
 	@SuppressWarnings("unused")
@@ -51,10 +51,11 @@ public final class TrackedBot implements ITrackedBot
 		botId = BotID.noBot();
 		botState = State.of(Pose.from(Vector3.zero()), Vector3.zero());
 		filteredState = null;
-		bufferedTrajState = null;
-		lastBallContact = 0;
+		currentState = null;
+		ballContact = BallContact.def(timestamp);
 		robotInfo = null;
 		tAssembly = 0;
+		quality = 0;
 	}
 
 
@@ -64,9 +65,10 @@ public final class TrackedBot implements ITrackedBot
 		botId = builder.botId;
 		botState = builder.state;
 		filteredState = builder.filteredState;
-		bufferedTrajState = builder.bufferedTrajState;
-		lastBallContact = builder.lastBallContact;
+		currentState = builder.currentState;
+		ballContact = builder.ballContact;
 		robotInfo = builder.robotInfo;
+		quality = builder.quality;
 		tAssembly = System.nanoTime();
 	}
 
@@ -90,9 +92,11 @@ public final class TrackedBot implements ITrackedBot
 		builder.botId = copy.getBotId();
 		builder.timestamp = copy.getTimestamp();
 		builder.state = copy.getBotState();
+		builder.currentState = copy.getCurrentState();
 		builder.filteredState = copy.getFilteredState().orElse(null);
 		builder.robotInfo = copy.getRobotInfo();
-		builder.lastBallContact = copy.getLastBallContact();
+		builder.ballContact = copy.getBallContact();
+		builder.quality = copy.getQuality();
 		return builder;
 	}
 
@@ -100,7 +104,7 @@ public final class TrackedBot implements ITrackedBot
 	/**
 	 * Create a stub instance with default values
 	 *
-	 * @param botID required
+	 * @param botID     required
 	 * @param timestamp required
 	 * @return new stub builder
 	 */
@@ -110,7 +114,8 @@ public final class TrackedBot implements ITrackedBot
 				.withBotId(botID)
 				.withTimestamp(timestamp)
 				.withState(State.zero())
-				.withLastBallContact(-10000000)
+				.withCurrentState(DelayedBotState.zero())
+				.withLastBallContact(BallContact.def(timestamp))
 				.withBotInfo(RobotInfo.stub(botID, timestamp));
 	}
 
@@ -118,7 +123,7 @@ public final class TrackedBot implements ITrackedBot
 	/**
 	 * Create a stub instance with default values
 	 *
-	 * @param botID required
+	 * @param botID     required
 	 * @param timestamp required
 	 * @return new stub
 	 */
@@ -133,6 +138,7 @@ public final class TrackedBot implements ITrackedBot
 	{
 		return newCopyBuilder(this)
 				.withState(botState.mirrored())
+				.withCurrentState(currentState.mirrored())
 				.withFilteredState(filteredState == null ? null : filteredState.mirrored())
 				.withBotInfo(robotInfo.mirrored())
 				.build();
@@ -158,7 +164,14 @@ public final class TrackedBot implements ITrackedBot
 	@Override
 	public IVector2 getBotKickerPos()
 	{
-		return BotShape.getKickerCenterPos(botState.getPose(), getCenter2DribblerDist());
+		return getBotKickerPos(0.0);
+	}
+
+
+	@Override
+	public IVector2 getBotKickerPos(double margin)
+	{
+		return BotShape.getKickerCenterPos(botState.getPose(), getCenter2DribblerDist() + margin);
 	}
 
 
@@ -178,11 +191,21 @@ public final class TrackedBot implements ITrackedBot
 
 
 	@Override
+	public Optional<Pose> getDestinationPose()
+	{
+		return robotInfo.getTrajectory()
+				.map(t -> t.getPositionMM(Double.MAX_VALUE))
+				.map(Pose::from);
+	}
+
+
+	@Override
 	public IVector2 getPosByTime(final double t)
 	{
-		if (robotInfo.getTrajectory().isPresent())
+		final Optional<ITrajectory<IVector3>> trajectory = robotInfo.getTrajectory();
+		if (trajectory.isPresent())
 		{
-			return robotInfo.getTrajectory().get().getPositionMM(t).getXYVector();
+			return trajectory.get().getPositionMM(t).getXYVector();
 		}
 		return getPos().addNew(getVel().multiplyNew(1000 * t));
 	}
@@ -191,9 +214,10 @@ public final class TrackedBot implements ITrackedBot
 	@Override
 	public IVector2 getVelByTime(final double t)
 	{
-		if (robotInfo.getTrajectory().isPresent())
+		final Optional<ITrajectory<IVector3>> trajectory = robotInfo.getTrajectory();
+		if (trajectory.isPresent())
 		{
-			return robotInfo.getTrajectory().get().getVelocity(t).getXYVector();
+			return trajectory.get().getVelocity(t).getXYVector();
 		}
 		return getVel();
 	}
@@ -202,11 +226,16 @@ public final class TrackedBot implements ITrackedBot
 	@Override
 	public double getAngleByTime(final double t)
 	{
-		if (robotInfo.getTrajectory().isPresent())
-		{
-			robotInfo.getTrajectory().get().getPosition(t).z();
-		}
-		return getOrientation();
+		final Optional<ITrajectory<IVector3>> trajectory = robotInfo.getTrajectory();
+		return trajectory.map(traj -> traj.getPosition(t).z())
+				.orElseGet(this::getOrientation);
+	}
+
+
+	@Override
+	public Optional<ITrajectory<IVector3>> getCurrentTrajectory()
+	{
+		return robotInfo.getTrajectory();
 	}
 
 
@@ -227,7 +256,7 @@ public final class TrackedBot implements ITrackedBot
 	@Override
 	public AObjectID getId()
 	{
-		return botId;
+		return getBotId();
 	}
 
 
@@ -269,14 +298,14 @@ public final class TrackedBot implements ITrackedBot
 	@Override
 	public boolean hadBallContact(double horizon)
 	{
-		return lastBallContact != 0 && (timestamp - lastBallContact) * 1e-9 < horizon;
+		return ballContact.hadContact(horizon);
 	}
 
 
 	@Override
-	public long getLastBallContact()
+	public BallContact getBallContact()
 	{
-		return lastBallContact;
+		return ballContact;
 	}
 
 
@@ -302,6 +331,13 @@ public final class TrackedBot implements ITrackedBot
 
 
 	@Override
+	public DelayedBotState getCurrentState()
+	{
+		return currentState;
+	}
+
+
+	@Override
 	public Optional<State> getFilteredState()
 	{
 		return Optional.ofNullable(filteredState);
@@ -309,9 +345,9 @@ public final class TrackedBot implements ITrackedBot
 
 
 	@Override
-	public Optional<State> getBufferedTrajState()
+	public double getQuality()
 	{
-		return Optional.ofNullable(bufferedTrajState);
+		return quality;
 	}
 
 
@@ -348,6 +384,10 @@ public final class TrackedBot implements ITrackedBot
 		numbers.add(robotInfo.getDribbleRpm());
 		numbers.add(robotInfo.isBarrierInterrupted() ? 1 : 0);
 		numbers.add(tAssembly);
+		numbers.addAll(Vector3.zero().getNumberList()); // buffered_pos
+		numbers.addAll(Vector3.zero().getNumberList()); // buffered_vel
+		numbers.add(0); // dist2Traj
+		numbers.addAll(robotInfo.getInternalState().orElse(BotState.nan()).getNumberList());
 		return numbers;
 	}
 
@@ -356,8 +396,15 @@ public final class TrackedBot implements ITrackedBot
 	public List<String> getHeaders()
 	{
 		return Arrays.asList("id", "color", "timestamp", "pos_x", "pos_y", "pos_z", "vel_x", "vel_y", "vel_z", "acc_x",
-				"acc_y", "acc_z", "visible", "kickSpeed", "isChip", "dribbleRpm", "barrierInterrupted", "tAssembly");
+				"acc_y", "acc_z", "visible", "kickSpeed", "isChip", "dribbleRpm", "barrierInterrupted", "tAssembly",
+				"buffered_pos_x", "buffered_pos_y", "buffered_pos_z",
+				"buffered_vel_x", "buffered_vel_y", "buffered_vel_z",
+				"dist2Traj",
+				"feedback_pos_x", "feedback_pos_y", "feedback_pos_z",
+				"feedback_vel_x", "feedback_vel_y", "feedback_vel_z"
+		);
 	}
+
 
 	/**
 	 * {@code TrackedBot} builder static inner class.
@@ -368,9 +415,10 @@ public final class TrackedBot implements ITrackedBot
 		private Long timestamp;
 		private State state;
 		private State filteredState;
-		private State bufferedTrajState;
-		private Long lastBallContact;
+		private DelayedBotState currentState;
+		private BallContact ballContact;
 		private RobotInfo robotInfo;
+		private double quality;
 
 
 		private Builder()
@@ -395,6 +443,7 @@ public final class TrackedBot implements ITrackedBot
 			if (state == null)
 			{
 				state = State.zero();
+				currentState = DelayedBotState.fromBotState(BotState.nan(), 0);
 			}
 		}
 
@@ -453,15 +502,15 @@ public final class TrackedBot implements ITrackedBot
 
 
 		/**
-		 * Sets the {@code bufferedTrajState} and returns a reference to this Builder so that the methods can be chained
+		 * Sets the {@code currentState} and returns a reference to this Builder so that the methods can be chained
 		 * together.
 		 *
-		 * @param bufferedTrajState the {@code bufferedTrajState} to set
+		 * @param currentState the {@code currentState} to set
 		 * @return a reference to this Builder
 		 */
-		public Builder withBufferedTrajState(final State bufferedTrajState)
+		public Builder withCurrentState(final DelayedBotState currentState)
 		{
-			this.bufferedTrajState = bufferedTrajState;
+			this.currentState = currentState;
 			return this;
 		}
 
@@ -525,15 +574,15 @@ public final class TrackedBot implements ITrackedBot
 
 
 		/**
-		 * Sets the {@code lastBallContact} and returns a reference to this Builder so that the methods can be chained
+		 * Sets the {@code ballContact} and returns a reference to this Builder so that the methods can be chained
 		 * together.
 		 *
-		 * @param lastBallContact the {@code lastBallContact} to set
+		 * @param ballContact the {@code ballContact} to set
 		 * @return a reference to this Builder
 		 */
-		public Builder withLastBallContact(final long lastBallContact)
+		public Builder withLastBallContact(final BallContact ballContact)
 		{
-			this.lastBallContact = lastBallContact;
+			this.ballContact = ballContact;
 			return this;
 		}
 
@@ -552,6 +601,19 @@ public final class TrackedBot implements ITrackedBot
 
 
 		/**
+		 * Sets the {@code quality} and returns a reference to this Builder so that the methods can be chained together.
+		 *
+		 * @param quality the {@code quality} to set
+		 * @return a reference to this Builder
+		 */
+		public Builder withQuality(final double quality)
+		{
+			this.quality = quality;
+			return this;
+		}
+
+
+		/**
 		 * Returns a {@code TrackedBot} built from the parameters previously set.
 		 *
 		 * @return a {@code TrackedBot} built with parameters of this {@code TrackedBot.Builder}
@@ -561,7 +623,8 @@ public final class TrackedBot implements ITrackedBot
 			Validate.notNull(botId);
 			Validate.notNull(timestamp);
 			Validate.notNull(state);
-			Validate.notNull(lastBallContact);
+			Validate.notNull(currentState);
+			Validate.notNull(ballContact);
 			Validate.notNull(robotInfo);
 
 			return new TrackedBot(this);

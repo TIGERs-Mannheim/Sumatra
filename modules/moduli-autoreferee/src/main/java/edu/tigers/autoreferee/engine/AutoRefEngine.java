@@ -1,15 +1,15 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine;
-
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import edu.tigers.autoreferee.IAutoRefFrame;
 import edu.tigers.autoreferee.engine.detector.EGameEventDetectorType;
 import edu.tigers.sumatra.referee.gameevent.IGameEvent;
+
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 
 public class AutoRefEngine
@@ -56,7 +56,7 @@ public class AutoRefEngine
 	
 	public void stop()
 	{
-		// empty
+		gameEventEngine.reset();
 	}
 	
 	

@@ -1,6 +1,8 @@
+:imagesdir: ../images
+
 [[section-solution-strategy]]
 == Solution Strategy
-:imagesdir: ./images
 
+TBD
 
-
+* add diagrams of overall high level architecture

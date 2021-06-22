@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
@@ -30,8 +30,8 @@ public class DrawableTube extends ADrawableWithStroke
 {
 	private ITube tube;
 	private boolean fill;
-	
-	
+
+
 	/**
 	 * for DB only
 	 */
@@ -40,8 +40,8 @@ public class DrawableTube extends ADrawableWithStroke
 	{
 		tube = Tube.create(Vector2f.ZERO_VECTOR, Vector2f.ZERO_VECTOR, 1);
 	}
-	
-	
+
+
 	/**
 	 * @param tube
 	 */
@@ -49,8 +49,8 @@ public class DrawableTube extends ADrawableWithStroke
 	{
 		this.tube = tube;
 	}
-	
-	
+
+
 	/**
 	 * @param tube
 	 * @param color
@@ -60,8 +60,8 @@ public class DrawableTube extends ADrawableWithStroke
 		this.tube = tube;
 		setColor(color);
 	}
-	
-	
+
+
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
@@ -84,7 +84,7 @@ public class DrawableTube extends ADrawableWithStroke
 			yVals[i] = (int) point.y();
 			i++;
 		}
-		
+
 		if (fill)
 		{
 			g.fillArc((int) (startCenter.x() - radius), (int) (startCenter.y() - radius),
@@ -102,7 +102,7 @@ public class DrawableTube extends ADrawableWithStroke
 			startAngle = (int) AngleMath.rad2deg(angle.get());
 			arcAngle = 180;
 		}
-		
+
 		g.drawArc((int) (startCenter.x() - radius), (int) (startCenter.y() - radius),
 				(int) radius * 2, (int) radius * 2, startAngle, arcAngle);
 		g.drawArc((int) (endCenter.x() - radius), (int) (endCenter.y() - radius), (int) radius * 2,
@@ -112,11 +112,12 @@ public class DrawableTube extends ADrawableWithStroke
 		g.drawLine((int) corners.get(2).x(), (int) corners.get(2).y(), (int) corners.get(3).x(),
 				(int) corners.get(3).y());
 	}
-	
-	
+
+
 	@Override
-	public void setFill(final boolean fill)
+	public DrawableTube setFill(final boolean fill)
 	{
 		this.fill = fill;
+		return this;
 	}
 }

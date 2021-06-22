@@ -1,94 +1,123 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.ai.pandora.plays.match;
 
-import com.github.g3force.instanceables.InstanceableClass;
-import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
-import edu.tigers.sumatra.ai.metis.MetisAiFrame;
-import edu.tigers.sumatra.ai.metis.offense.strategy.EOffensiveStrategy;
+import edu.tigers.sumatra.ai.metis.kicking.Pass;
+import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.redirector.ERecommendedReceiverAction;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
-import edu.tigers.sumatra.ai.pandora.roles.ERole;
-import edu.tigers.sumatra.ai.pandora.roles.offense.attacker.AttackerRole;
+import edu.tigers.sumatra.ai.pandora.roles.move.MoveRole;
+import edu.tigers.sumatra.ai.pandora.roles.offense.AttackerRole;
+import edu.tigers.sumatra.ai.pandora.roles.offense.DelayedAttackRole;
+import edu.tigers.sumatra.ai.pandora.roles.offense.DisruptOpponentRole;
+import edu.tigers.sumatra.ai.pandora.roles.offense.FreeSkirmishRole;
+import edu.tigers.sumatra.ai.pandora.roles.offense.KeepDistToBallRole;
+import edu.tigers.sumatra.ai.pandora.roles.offense.OpponentInterceptionRole;
+import edu.tigers.sumatra.ai.pandora.roles.offense.PassReceiverRole;
+import edu.tigers.sumatra.ai.pandora.roles.offense.SupportiveAttackerRole;
 import edu.tigers.sumatra.ids.BotID;
-import org.apache.log4j.Logger;
+import lombok.extern.log4j.Log4j2;
 
 import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 
 /**
  * The offensive play coordinates its roles
  */
+@Log4j2
 public class OffensivePlay extends APlay
 {
-	private static final Logger log = Logger.getLogger(OffensivePlay.class.getName());
-	
-	private final Map<EOffensiveStrategy, ERole> strategyToRoleMap = new EnumMap<>(EOffensiveStrategy.class);
-	
-	
-	/**
-	 * offensive Play
-	 */
 	public OffensivePlay()
 	{
 		super(EPlay.OFFENSIVE);
-		
-		strategyToRoleMap.put(EOffensiveStrategy.KICK, ERole.ATTACKER);
-		strategyToRoleMap.put(EOffensiveStrategy.SUPPORTIVE_ATTACKER, ERole.SUPPORTIVE_ATTACKER);
-		strategyToRoleMap.put(EOffensiveStrategy.STOP, ERole.KEEP_DIST_TO_BALL);
-		strategyToRoleMap.put(EOffensiveStrategy.DELAY, ERole.DELAYED_ATTACK);
-		strategyToRoleMap.put(EOffensiveStrategy.FREE_SKIRMISH, ERole.FREE_SKIRMISH);
-		strategyToRoleMap.put(EOffensiveStrategy.INTERCEPT, ERole.OPPONENT_INTERCEPTION);
-		strategyToRoleMap.put(EOffensiveStrategy.RECEIVE_PASS, ERole.PASS_RECEIVER);
 	}
-	
-	
+
+
 	@Override
-	protected ARole onRemoveRole(final MetisAiFrame frame)
+	protected void doUpdateBeforeRoles()
 	{
-		return getLastRole();
+		super.doUpdateBeforeRoles();
+		new ArrayList<>(getRoles()).forEach(this::assignRoleForStrategy);
 	}
-	
-	
-	@Override
-	protected ARole onAddRole()
+
+
+	private void assignRoleForStrategy(final ARole role)
 	{
-		return new AttackerRole();
-	}
-	
-	
-	@Override
-	public void updateBeforeRoles(final AthenaAiFrame frame)
-	{
-		super.updateBeforeRoles(frame);
-		final Map<BotID, EOffensiveStrategy> playConfiguration = getAiFrame().getTacticalField()
-				.getOffensiveStrategy().getCurrentOffensivePlayConfiguration();
-		
-		for (ARole role : new ArrayList<>(getRoles()))
+		var playConfig = getAiFrame().getTacticalField().getOffensiveStrategy().getCurrentOffensivePlayConfiguration();
+		var strategy = playConfig.get(role.getBotID());
+		switch (strategy)
 		{
-			final EOffensiveStrategy strategy = playConfiguration.get(role.getBotID());
-			ERole requiredRole = strategyToRoleMap.get(strategy);
-			if (requiredRole == null)
-			{
+			case KICK:
+				handleKickStrategy(role);
+				break;
+			case STOP:
+				reassignRole(role, KeepDistToBallRole.class, KeepDistToBallRole::new);
+				break;
+			case INTERCEPT:
+				reassignRole(role, OpponentInterceptionRole.class, OpponentInterceptionRole::new);
+				break;
+			case RECEIVE_PASS:
+				var passReceiverRole = reassignRole(role, PassReceiverRole.class, PassReceiverRole::new);
+				findPassForReceiver(role.getBotID()).ifPresent(passReceiverRole::setIncomingPass);
+				break;
+			case DELAY:
+				reassignRole(role, DelayedAttackRole.class, DelayedAttackRole::new);
+				break;
+			case SUPPORTIVE_ATTACKER:
+				reassignRole(role, SupportiveAttackerRole.class, SupportiveAttackerRole::new);
+				break;
+			case FREE_SKIRMISH:
+				reassignRole(role, FreeSkirmishRole.class, FreeSkirmishRole::new);
+				break;
+			default:
 				log.warn("No valid Offensive Role strategy found, this is some serious garbage, better call Mark");
-				requiredRole = ERole.ATTACKER;
-			}
-			
-			if (requiredRole != role.getType())
-			{
-				try
-				{
-					ARole newRole = (ARole) requiredRole.getInstanceableClass().newDefaultInstance();
-					switchRoles(role, newRole);
-				} catch (InstanceableClass.NotCreateableException e)
-				{
-					log.error("Could not create role " + requiredRole, e);
-				}
-			}
+				reassignRole(role, MoveRole.class, MoveRole::new);
+				break;
 		}
+	}
+
+
+	private Optional<Pass> findPassForReceiver(BotID botID)
+	{
+		return getAiFrame().getTacticalField().getOffensiveActions().values().stream()
+				.map(OffensiveAction::getPass)
+				.filter(Objects::nonNull)
+				.filter(pass -> pass.getReceiver() == botID)
+				.findAny();
+	}
+
+
+	private void handleKickStrategy(ARole role)
+	{
+		var recommendedAction = getTacticalField().getRedirectorDetectionInformation().getRecommendedAction();
+		if (recommendedAction == ERecommendedReceiverAction.DISRUPT_OPPONENT)
+		{
+			reassignRole(role, DisruptOpponentRole.class, DisruptOpponentRole::new);
+			return;
+		}
+
+		var action = getAiFrame().getTacticalField().getOffensiveActions().get(role.getBotID());
+		var attacker = reassignRole(role, AttackerRole.class, AttackerRole::new);
+		var pass = action.getPass();
+		var kick = action.getKick();
+		var ballContactPos = action.getBallContactPos();
+		attacker.setDribbleToPos(action.getDribbleToPos());
+		if (pass != null)
+		{
+			attacker.setPass(pass);
+		} else if (kick != null)
+		{
+			attacker.setKick(kick);
+		} else
+		{
+			attacker.setBallContactPos(ballContactPos);
+		}
+		attacker.setUseSingleTouch(getAiFrame().getGameState().isStandardSituation()
+				|| getAiFrame().getGameState().isKickoffOrPrepareKickoffForUs());
 	}
 }

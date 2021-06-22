@@ -1,8 +1,24 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view.toolbar;
 
+import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.util.GlobalShortcuts;
+import edu.tigers.sumatra.util.GlobalShortcuts.EShortcut;
+import edu.tigers.sumatra.util.ImageScaler;
+import edu.tigers.sumatra.view.FpsPanel;
+import lombok.extern.log4j.Log4j2;
+import net.miginfocom.swing.MigLayout;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.JToggleButton;
+import javax.swing.JToolBar;
+import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
@@ -10,88 +26,55 @@ import java.awt.event.ActionListener;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JProgressBar;
-import javax.swing.JToolBar;
-import javax.swing.SwingUtilities;
-
-import org.apache.log4j.Logger;
-
-import edu.tigers.sumatra.util.GlobalShortcuts;
-import edu.tigers.sumatra.util.GlobalShortcuts.EShortcut;
-import edu.tigers.sumatra.util.ImageScaler;
-import edu.tigers.sumatra.view.FpsPanel;
-import net.miginfocom.swing.MigLayout;
-
 
 /**
  * The frame tool bar.
- * 
- * @author Daniel Andres <andreslopez.daniel@gmail.com>
  */
+@Log4j2
 public class ToolBar
 {
-	private static final Logger log = Logger.getLogger(ToolBar.class.getName());
-	
 	private final List<IToolbarObserver> observers = new CopyOnWriteArrayList<>();
-	
-	// --- toolbar ---
+
 	private final JToolBar jToolBar;
-	
-	private final JButton btnStartStop;
-	private final JButton btnEmergency;
+
 	private final JButton btnRecSave;
-	private final JButton btnSwitchSides;
-	
-	
-	private JCheckBox telegramMode = new JCheckBox("Telegram");
+
+
 	private final FpsPanel fpsPanel = new FpsPanel();
 	private final JProgressBar heapBar = new JProgressBar();
 	private final JLabel heapLabel = new JLabel();
-	
-	
+
+
 	/**
 	 * The toolbar
 	 */
 	public ToolBar()
 	{
 		log.trace("Create toolbar");
-		// --- configure buttons ---
-		btnStartStop = new JButton();
-		btnStartStop.addActionListener(new StartStopModules());
-		btnStartStop.setBorder(BorderFactory.createEmptyBorder());
-		btnStartStop.setBackground(new Color(0, 0, 0, 1));
-		btnStartStop.setToolTipText("Start/Stop");
-		
-		btnEmergency = new JButton();
+
+		var btnEmergency = new JButton();
 		btnEmergency.setForeground(Color.red);
 		btnEmergency.addActionListener(new EmergencyStopListener());
 		btnEmergency.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/stop-emergency.png"));
 		btnEmergency.setToolTipText("Emergency stop [Esc]");
-		btnEmergency.setEnabled(false);
 		btnEmergency.setBorder(BorderFactory.createEmptyBorder());
 		btnEmergency.setBackground(new Color(0, 0, 0, 1));
-		
+
 		btnRecSave = new JButton();
 		btnRecSave.addActionListener(new RecordSaveButtonListener());
 		btnRecSave.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/record.png"));
 		btnRecSave.setToolTipText("Start/Stop recording");
-		btnRecSave.setEnabled(false);
 		btnRecSave.setBorder(BorderFactory.createEmptyBorder());
 		btnRecSave.setBackground(new Color(0, 0, 0, 1));
-		
-		btnSwitchSides = new JButton();
-		btnSwitchSides.addActionListener(new SwitchSidesButtonListener());
-		btnSwitchSides.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/switch.png"));
-		btnSwitchSides.setToolTipText("Switch sides");
-		btnSwitchSides.setEnabled(false);
-		btnSwitchSides.setBorder(BorderFactory.createEmptyBorder());
-		btnSwitchSides.setBackground(new Color(0, 0, 0, 1));
-		
+
+		var btnTournament = new JToggleButton();
+		btnTournament.addActionListener(new TournamentListener());
+		btnTournament.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/tournament_bw.png"));
+		btnTournament.setToolTipText("Tournament mode (off)");
+		btnTournament.setBorder(BorderFactory.createEmptyBorder());
+		btnTournament.setBackground(new Color(0, 0, 0, 1));
+		btnTournament.setContentAreaFilled(false);
+
 		JPanel heapPanel = new JPanel(new BorderLayout());
 		heapLabel.setToolTipText("Memory Usage (current/total/maximum)");
 		heapPanel.add(heapLabel, BorderLayout.NORTH);
@@ -99,50 +82,38 @@ public class ToolBar
 		heapBar.setStringPainted(true);
 		heapBar.setMinimum(0);
 		heapBar.setToolTipText("Memory Usage");
-		
+
 		// --- configure toolbar ---
 		jToolBar = new JToolBar();
 		jToolBar.setFloatable(false);
 		jToolBar.setRollover(true);
-		
+
 		JPanel toolBarPanel = new JPanel();
 		toolBarPanel.setLayout(new MigLayout("inset 1"));
-		
-		JPanel matchModePanel = new JPanel(new BorderLayout());
-		telegramMode.addActionListener(new ChangeMatchModeListener());
-		telegramMode.setToolTipText("Enable/Disable broadcasting via Telegram");
-		matchModePanel.add(telegramMode);
-		
+
 		// --- add buttons ---
-		toolBarPanel.add(btnStartStop, "left");
 		toolBarPanel.add(btnEmergency, "left");
 		toolBarPanel.add(btnRecSave, "left");
-		toolBarPanel.add(btnSwitchSides, "left");
+		toolBarPanel.add(btnTournament, "left");
 		toolBarPanel.add(fpsPanel, "left");
 		toolBarPanel.add(heapPanel, "left");
-		toolBarPanel.add(matchModePanel, "right");
 		jToolBar.add(toolBarPanel);
-		
+
 		// initialize icons
 		for (EStartStopButtonState icon : EStartStopButtonState.values())
 		{
 			log.trace("Load button icon " + icon.name());
 		}
-		
+
 		GlobalShortcuts.register(EShortcut.EMERGENCY_MODE, () -> {
 			for (final IToolbarObserver o : observers)
 			{
 				o.onEmergencyStop();
 			}
 		});
-		GlobalShortcuts.register(EShortcut.START_STOP, this::startStopModules);
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
+
+
 	/**
 	 * @param o
 	 */
@@ -150,8 +121,8 @@ public class ToolBar
 	{
 		observers.add(o);
 	}
-	
-	
+
+
 	/**
 	 * @param o
 	 */
@@ -159,12 +130,13 @@ public class ToolBar
 	{
 		observers.remove(o);
 	}
-	
-	
+
+
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
+
+
 	/**
 	 * @return
 	 */
@@ -172,8 +144,8 @@ public class ToolBar
 	{
 		return jToolBar;
 	}
-	
-	
+
+
 	/**
 	 * @return the fpsPanel
 	 */
@@ -181,67 +153,8 @@ public class ToolBar
 	{
 		return fpsPanel;
 	}
-	
-	
-	/**
-	 * @param enable
-	 * @param state
-	 */
-	public void setStartStopButtonState(final boolean enable, final EStartStopButtonState state)
-	{
-		SwingUtilities.invokeLater(() -> {
-			btnStartStop.setEnabled(enable);
-			btnStartStop.setIcon(state.getIcon());
-			switch (state)
-			{
-				case LOADING:
-					btnStartStop.setDisabledIcon(state.getIcon());
-					break;
-				case START:
-				case STOP:
-					btnStartStop.setDisabledIcon(null);
-					break;
-				default:
-					break;
-			}
-			jToolBar.repaint();
-		});
-	}
-	
-	
-	/**
-	 * Sets the current telegram mode
-	 * 
-	 * @param enabled
-	 */
-	public void setTelegramStatus(boolean enabled)
-	{
-		telegramMode.setSelected(enabled);
-	}
-	
-	
-	/**
-	 * @param enabled
-	 */
-	public void setActive(final boolean enabled)
-	{
-		SwingUtilities.invokeLater(() -> {
-			btnEmergency.setEnabled(enabled);
-			btnRecSave.setEnabled(enabled);
-			btnSwitchSides.setEnabled(enabled);
-		});
-	}
-	
-	
-	private void startStopModules()
-	{
-		for (final IToolbarObserver o : observers)
-		{
-			o.onStartStopModules();
-		}
-	}
-	
-	
+
+
 	/**
 	 * @param recording
 	 */
@@ -254,10 +167,11 @@ public class ToolBar
 		{
 			btnRecSave.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/record.png"));
 		}
-		
+
 		jToolBar.repaint();
 	}
-	
+
+
 	private class EmergencyStopListener implements ActionListener
 	{
 		@Override
@@ -267,19 +181,31 @@ public class ToolBar
 			{
 				o.onEmergencyStop();
 			}
+			SwingUtilities.invokeLater(jToolBar::repaint);
 		}
 	}
-	
-	private class StartStopModules implements ActionListener
+
+	private class TournamentListener implements ActionListener
 	{
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
-			startStopModules();
+			JToggleButton btn = (JToggleButton) e.getSource();
+			SumatraModel.getInstance().setProductive(btn.isSelected());
+			if (btn.isSelected())
+			{
+				btn.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/tournament_color.png"));
+				btn.setToolTipText("Tournament mode (on)");
+			} else
+			{
+				btn.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/tournament_bw.png"));
+				btn.setToolTipText("Tournament mode (off)");
+			}
+			SwingUtilities.invokeLater(jToolBar::repaint);
 		}
 	}
-	
-	
+
+
 	private class RecordSaveButtonListener implements ActionListener
 	{
 		@Override
@@ -292,38 +218,13 @@ public class ToolBar
 					observer.onToggleRecord();
 				}
 				btnRecSave.setEnabled(true);
-			});
-			
+			}, "RecordSaveButton");
+
 			t.start();
 		}
 	}
-	
-	
-	private class SwitchSidesButtonListener implements ActionListener
-	{
-		@Override
-		public void actionPerformed(final ActionEvent e)
-		{
-			for (IToolbarObserver observer : observers)
-			{
-				observer.onSwitchSides();
-			}
-		}
-	}
-	
-	private class ChangeMatchModeListener implements ActionListener
-	{
-		@Override
-		public void actionPerformed(final ActionEvent actionEvent)
-		{
-			for (IToolbarObserver observer : observers)
-			{
-				observer.onChangeTelegramMode(telegramMode.isSelected());
-			}
-		}
-	}
-	
-	
+
+
 	/**
 	 * @return the heapBar
 	 */
@@ -331,8 +232,8 @@ public class ToolBar
 	{
 		return heapBar;
 	}
-	
-	
+
+
 	/**
 	 * @return the heapLabel
 	 */

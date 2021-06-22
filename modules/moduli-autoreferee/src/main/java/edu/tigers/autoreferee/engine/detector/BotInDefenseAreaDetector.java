@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.autoreferee.engine.detector;
@@ -23,7 +23,6 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.gameevent.AttackerTouchedBallInDefenseArea;
 import edu.tigers.sumatra.referee.gameevent.DefenderInDefenseArea;
-import edu.tigers.sumatra.referee.gameevent.DefenderInDefenseAreaPartially;
 import edu.tigers.sumatra.referee.gameevent.IGameEvent;
 
 
@@ -33,8 +32,8 @@ import edu.tigers.sumatra.referee.gameevent.IGameEvent;
  */
 public class BotInDefenseAreaDetector extends AGameEventDetector
 {
-	@Configurable(comment = "[s] The cool down time before registering a ball touch with the same bot again in ms", defValue = "3.0")
-	private static double coolDownTime = 3.0;
+	@Configurable(comment = "[s] The cool down time before registering a ball touch with the same bot again in ms", defValue = "2.0")
+	private static double coolDownTime = 2.0;
 
 	@Configurable(comment = "[mm] Distance from the defense line that is considered a partial violation", defValue = "20.0")
 	private static double partialTouchMargin = 20;
@@ -167,18 +166,6 @@ public class BotInDefenseAreaDetector extends AGameEventDetector
 					.distanceToNearestPointOutside(curKicker.getPos());
 
 			return Optional.of(new DefenderInDefenseArea(curKickerId, curKicker.getPos(), distance));
-		} else if (ownPenArea.isPointInShape(curKicker.getPos(), getPartialTouchMargin()))
-		{
-			/*
-			 * Multiple Defender:
-			 * Defender touched the ball while being located partially inside his own defense area
-			 */
-			lastViolators.put(curKickerId, curKicker);
-
-			double distance = ownPenArea.withMargin(Geometry.getBotRadius())
-					.distanceToNearestPointOutside(curKicker.getPos());
-
-			return Optional.of(new DefenderInDefenseAreaPartially(curKickerId, curKicker.getPos(), distance));
 		}
 		return Optional.empty();
 	}

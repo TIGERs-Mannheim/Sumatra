@@ -1,17 +1,10 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.roles.defense;
 
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.ai.metis.defense.DefenseMath;
 import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
@@ -21,11 +14,17 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
+import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.statemachine.IEvent;
 import edu.tigers.sumatra.trajectory.ITrajectory;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 
 /**
@@ -33,8 +32,8 @@ import edu.tigers.sumatra.wp.data.ITrackedBot;
  */
 public class CenterBackRole extends AOuterDefenseRole
 {
-	@Configurable(comment = "The space between the bots (actual distance = configured distance + bot diameter)", defValue = "20.0")
-	private static double distanceBetweenBots = 20.0;
+	@Configurable(comment = "The space between the bots (actual distance = configured distance + bot diameter)", defValue = "15.0")
+	private static double distanceBetweenBots = 15;
 	@Configurable(comment = "Max distance that a robot may be away from protection line, before switching to intercept", defValue = "500.0")
 	private static double switchToInterceptStateDist = 500.0;
 	@Configurable(comment = "Min distance that a robot must be away from protection line, before switching to protection", defValue = "20.0")
@@ -173,15 +172,19 @@ public class CenterBackRole extends AOuterDefenseRole
 
 	private boolean singleProtector()
 	{
-		double timeToDest = getBot().getRobotInfo().getTrajectory().map(ITrajectory::getTotalTime).orElse(0.0);
+		double timeToDest = timeToDest(getBot());
 		double timeDiff = 1;
 		return companions.stream()
 				.filter(id -> id != getBotID())
-				.map(id -> getWFrame().getBot(id).getRobotInfo().getTrajectory())
-				.filter(Optional::isPresent)
-				.map(Optional::get)
-				.map(ITrajectory::getTotalTime)
-				.allMatch(t -> (t - timeToDest) > timeDiff); // true, if all need more than `timeDiff` longer
+				.map(id -> getWFrame().getBot(id))
+				.map(this::timeToDest)
+				.allMatch(t -> (t - timeToDest) > timeDiff); // true, if none need more than `timeDiff` longer
+	}
+
+
+	private double timeToDest(ITrackedBot bot)
+	{
+		return bot.getCurrentTrajectory().map(ITrajectory::getTotalTime).orElse(0.0);
 	}
 
 
@@ -201,9 +204,9 @@ public class CenterBackRole extends AOuterDefenseRole
 
 	private IVector2 adaptToThreat(IVector2 currentDest)
 	{
-		final Optional<ITrackedBot> opponentPassReceiver = getAiFrame().getTacticalField().getOpponentPassReceiver();
+		final ITrackedBot opponentPassReceiver = getAiFrame().getTacticalField().getOpponentPassReceiver();
 		final IVector2 predictedPos = mimicThreatVelocity(currentDest);
-		if (!threat.getObjectId().isBall() || !opponentPassReceiver.isPresent())
+		if (!threat.getObjectId().isBall() || opponentPassReceiver == null)
 		{
 			return predictedPos;
 		}
@@ -237,15 +240,15 @@ public class CenterBackRole extends AOuterDefenseRole
 	 */
 	private class RushBackState extends AState
 	{
-		private AMoveToSkill skill;
+		private MoveToSkill skill;
 		private double leftOrRight;
 
 
 		@Override
 		public void doEntryActions()
 		{
-			skill = AMoveToSkill.createMoveToSkill();
-			skill.getMoveCon().getMoveConstraints().setFastMove(true);
+			skill = MoveToSkill.createMoveToSkill();
+			skill.getMoveConstraints().setFastMove(true);
 			setNewSkill(skill);
 
 			ILineSegment protectionLine = protectionLine();
@@ -263,8 +266,8 @@ public class CenterBackRole extends AOuterDefenseRole
 
 			IVector2 finalDest = findRushBackDest();
 
-			skill.getMoveCon().updateDestination(moveToValidDest(finalDest));
-			skill.getMoveCon().updateTargetAngle(protectionTargetAngle());
+			skill.updateDestination(moveToValidDest(finalDest));
+			skill.updateTargetAngle(protectionTargetAngle());
 
 			if (finalDest.distanceTo(getPos()) < rushBackToDefendSwitchThreshold)
 			{
@@ -293,13 +296,13 @@ public class CenterBackRole extends AOuterDefenseRole
 	 */
 	private class ProtectionState extends AState
 	{
-		private AMoveToSkill skill;
+		private MoveToSkill skill;
 
 
 		@Override
 		public void doEntryActions()
 		{
-			skill = AMoveToSkill.createMoveToSkill();
+			skill = MoveToSkill.createMoveToSkill();
 			setNewSkill(skill);
 		}
 
@@ -308,14 +311,14 @@ public class CenterBackRole extends AOuterDefenseRole
 		public void doUpdate()
 		{
 			final IVector2 destination = moveToValidDest(adaptToThreat(findDest()));
-			skill.getMoveCon().updateDestination(destination);
-			skill.getMoveCon().updateTargetAngle(protectionTargetAngle());
+			skill.updateDestination(destination);
+			skill.updateTargetAngle(protectionTargetAngle());
 
 			skill.getMoveCon().setIgnoredBots(ignoredBots(destination));
 			skill.getMoveCon().setCustomObstacles(closeOpponentBotObstacles(destination));
 			skill.getMoveCon().setBallObstacle(isBehindBall());
-			skill.getMoveCon().getMoveConstraints().setPrimaryDirection(threat.getThreatLine().directionVector());
-			armDefenders(skill);
+			skill.getMoveConstraints().setPrimaryDirection(threat.getThreatLine().directionVector());
+			skill.setKickParams(calcKickParams());
 
 			if (protectionLine().distanceTo(getPos()) > switchToInterceptStateDist)
 			{
@@ -329,13 +332,13 @@ public class CenterBackRole extends AOuterDefenseRole
 	 */
 	private class CenterInterceptState extends AState
 	{
-		private AMoveToSkill skill;
+		private MoveToSkill skill;
 
 
 		@Override
 		public void doEntryActions()
 		{
-			skill = AMoveToSkill.createMoveToSkill();
+			skill = MoveToSkill.createMoveToSkill();
 			setNewSkill(skill);
 		}
 
@@ -344,13 +347,13 @@ public class CenterBackRole extends AOuterDefenseRole
 		public void doUpdate()
 		{
 			final IVector2 destination = moveToValidDest(adaptToThreat(calcDest()));
-			skill.getMoveCon().updateDestination(destination);
-			skill.getMoveCon().updateTargetAngle(protectionTargetAngle());
+			skill.updateDestination(destination);
+			skill.updateTargetAngle(protectionTargetAngle());
 
 			skill.getMoveCon().setIgnoredBots(ignoredBots(destination));
 			skill.getMoveCon().setCustomObstacles(closeOpponentBotObstacles(destination));
 			skill.getMoveCon().setBallObstacle(isBehindBall());
-			skill.getMoveCon().getMoveConstraints().setPrimaryDirection(protectionLine().directionVector());
+			skill.getMoveConstraints().setPrimaryDirection(protectionLine().directionVector());
 
 			if (protectionLine().distanceTo(getPos()) < switchToProtectStateDist)
 			{
@@ -392,15 +395,25 @@ public class CenterBackRole extends AOuterDefenseRole
 	 */
 	public enum CoverMode
 	{
-		/** On the line */
+		/**
+		 * On the line
+		 */
 		CENTER,
-		/** Left from CENTER */
+		/**
+		 * Left from CENTER
+		 */
 		LEFT,
-		/** Right from CENTER */
+		/**
+		 * Right from CENTER
+		 */
 		RIGHT,
-		/** Left position if two bots are assigned to center */
+		/**
+		 * Left position if two bots are assigned to center
+		 */
 		CENTER_LEFT,
-		/** Right position if two bots are assigned to center */
+		/**
+		 * Right position if two bots are assigned to center
+		 */
 		CENTER_RIGHT
 	}
 

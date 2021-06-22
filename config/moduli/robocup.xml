@@ -50,21 +50,13 @@
         </properties>
     </module>
 
-    <!--
-        <module id="edu.tigers.autoreferee.module.AutoRefModule">
-            <properties>
-                <gameControllerPort>10007</gameControllerPort>
-            </properties>
-
-            <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
-        </module>
-    -->
 
     <module id="edu.tigers.sumatra.teamclient.TeamClientModule">
         <properties>
             <gameControllerPort>10008</gameControllerPort>
         </properties>
     </module>
+
 
     <module id="edu.tigers.sumatra.botmanager.ABotManager">
         <implementation>edu.tigers.sumatra.botmanager.TigersBotManager</implementation>
@@ -123,21 +115,5 @@
 
 
     <module id="edu.tigers.sumatra.guinotifications.GuiNotificationsController"/>
-
-
-    <module id="edu.tigers.sumatra.movementlimits.MovementObserverModule">
-        <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
-        <dependency>edu.tigers.sumatra.botparams.BotParamsManager</dependency>
-    </module>
-
-    <!-- If you want to export the robot and ball coordinates to another application, activate this -->
-    <!--
-        <module id="edu.tigers.sumatra.wp.exporter.SSLVisionSender">
-            <properties>
-                <port>11006</port>
-            </properties>
-            <dependency>edu.tigers.sumatra.wp.AWorldPredictor</dependency>
-        </module>
-    -->
 
 </centralSoftware>

@@ -1,8 +1,5 @@
 package edu.tigers.sumatra.ai.metis.defense;
 
-import java.awt.Color;
-import java.util.List;
-
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
@@ -12,13 +9,15 @@ import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 
+import java.awt.Color;
+import java.util.List;
+
 
 public abstract class ADefenseThreatCalc extends ACalculator
 {
 	protected void drawThreat(IDefenseThreat threat)
 	{
-		final List<IDrawableShape> shapes = getNewTacticalField().getDrawableShapes()
-				.get(EAiShapesLayer.DEFENSE_THREATS);
+		final List<IDrawableShape> shapes = getShapes(EAiShapesLayer.DEFENSE_THREATS);
 		if (threat.getProtectionLine().isPresent())
 		{
 			DrawableLine dProtectionLine = new DrawableLine(threat.getProtectionLine().get(), Color.red);

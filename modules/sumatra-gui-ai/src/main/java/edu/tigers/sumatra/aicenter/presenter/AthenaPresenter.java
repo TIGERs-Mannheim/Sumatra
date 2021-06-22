@@ -1,47 +1,47 @@
+/*
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.aicenter.presenter;
 
-import static edu.tigers.sumatra.aicenter.view.AthenaControlPanel.NUM_ROWS;
+import com.github.g3force.instanceables.IInstanceableObserver;
+import edu.tigers.sumatra.ai.Agent;
+import edu.tigers.sumatra.ai.athena.AthenaGuiInput;
+import edu.tigers.sumatra.ai.pandora.plays.APlay;
+import edu.tigers.sumatra.ai.pandora.plays.EPlay;
+import edu.tigers.sumatra.ai.pandora.roles.ARole;
+import edu.tigers.sumatra.aicenter.view.AthenaControlPanel;
+import edu.tigers.sumatra.aicenter.view.RoleControlPanel;
+import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.EAiTeam;
+import edu.tigers.sumatra.model.SumatraModel;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang.StringUtils;
 
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
-
-import edu.tigers.sumatra.ai.AIInfoFrame;
-import edu.tigers.sumatra.ai.Agent;
-import edu.tigers.sumatra.ai.athena.AIControl;
-import edu.tigers.sumatra.ai.athena.roleassigner.RoleMapping;
-import edu.tigers.sumatra.ai.pandora.plays.APlay;
-import edu.tigers.sumatra.ai.pandora.plays.EPlay;
-import edu.tigers.sumatra.ai.pandora.roles.ARole;
-import edu.tigers.sumatra.aicenter.view.AthenaControlPanel;
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.ids.EAiTeam;
-import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.util.UiThrottler;
+import static edu.tigers.sumatra.aicenter.view.AthenaControlPanel.EColumn.BOTS;
+import static edu.tigers.sumatra.aicenter.view.AthenaControlPanel.EColumn.PLAY;
+import static edu.tigers.sumatra.aicenter.view.AthenaControlPanel.NUM_ROWS;
 
 
+@Log4j2
 public class AthenaPresenter
 {
-	private static final Logger log = Logger.getLogger(AthenaPresenter.class.getName());
-	private static final String REPLACE_PATTERN = "[,; ]";
-
 	private final EAiTeam team;
 	private final AthenaControlPanel athenaControlPanel;
-	private final UiThrottler aiFrameThrottler = new UiThrottler(500);
 
-	private boolean shown = false;
-	
-	private AIInfoFrame latestAIFrame = null;
+	private static final String BOT_IDS_KEY = RoleControlPanel.class.getName() + ".botids";
 
 
 	public AthenaPresenter(final EAiTeam team, final AthenaControlPanel athenaControlPanel)
@@ -49,200 +49,172 @@ public class AthenaPresenter
 		this.team = team;
 		this.athenaControlPanel = athenaControlPanel;
 
-		athenaControlPanel.getTable().addPropertyChangeListener(new ChangeListener());
-		athenaControlPanel.getBtnClearPlays().addActionListener(new ClearListener());
+		athenaControlPanel.getBtnAssign().addActionListener(new AssignListener());
+		athenaControlPanel.getBtnUnassign().addActionListener(new UnassignListener());
 		athenaControlPanel.getBtnClearRoles().addActionListener(new ClearRolesListener());
-		athenaControlPanel.getBtnAddAllToSelected().addActionListener(new AddAllToSelectedListener());
+		athenaControlPanel.getBtnRemovePlay().addActionListener(new RemovePlayListener());
+		athenaControlPanel.getBtnClearPlays().addActionListener(new ClearPlaysListener());
+		athenaControlPanel.getInstanceablePanel().addObserver(new CreatePlayListener());
+		athenaControlPanel.getBotIdList().addListSelectionListener(new BotIdListSelectionListener());
 
-		aiFrameThrottler.start();
-	}
-
-
-	public void setShown(final boolean shown)
-	{
-		this.shown = shown;
-	}
-
-
-	public void updateAIInfoFrame(final AIInfoFrame lastFrame)
-	{
-		latestAIFrame = lastFrame;
-		if (athenaControlPanel.getTable().isEnabled() || !shown)
+		String botIdsStr = SumatraModel.getInstance().getUserProperty(BOT_IDS_KEY);
+		if (botIdsStr != null)
 		{
-			// The table can be edited by the user -> do not override
-			// The table is not shown -> don't update it
-			return;
+			var botIds = Arrays.stream(botIdsStr.split(",")).map(Integer::parseInt).mapToInt(i -> i).toArray();
+			athenaControlPanel.getBotIdList().setSelectedIndices(botIds);
 		}
-
-		aiFrameThrottler.execute(() -> update(lastFrame));
 	}
 
 
-	private void update(final AIInfoFrame lastFrame)
+	public void update()
+	{
+		getAthenaGuiInput().map(AthenaGuiInput::getPlays).ifPresent(this::updateTable);
+	}
+
+
+	private void updateTable(final List<APlay> plays)
 	{
 		for (int row = 0; row < NUM_ROWS; row++)
 		{
-			if (row < lastFrame.getPlayStrategy().getActivePlays().size())
+			if (row > plays.size() - 1)
 			{
-				APlay play = lastFrame.getPlayStrategy().getActivePlays().get(row);
-				String desired = StringUtils.join(play.getRoles().stream()
-						.map(ARole::getBotID).map(BotID::getNumber).collect(Collectors.toList()), ",");
-
-				athenaControlPanel.getTable().getModel().setValueAt(play, row, AthenaControlPanel.EColumn.PLAY.getIdx());
-				athenaControlPanel.getTable().getModel().setValueAt(desired, row,
-						AthenaControlPanel.EColumn.DESIRED_BOTS.getIdx());
+				athenaControlPanel.getTable().getModel().setValueAt("", row, PLAY.ordinal());
+				athenaControlPanel.getTable().getModel().setValueAt("", row, BOTS.ordinal());
 			} else
 			{
-				athenaControlPanel.clearRow(row);
+				APlay play = plays.get(row);
+				String botIds = StringUtils
+						.join(play.getRoles().stream().map(ARole::getBotID).map(BotID::getNumber)
+								.collect(Collectors.toList()), ",");
+				athenaControlPanel.getTable().getModel().setValueAt(play.getType().name(), row, PLAY.ordinal());
+				athenaControlPanel.getTable().getModel().setValueAt(botIds, row, BOTS.ordinal());
 			}
 		}
 	}
 
 
-	private void sendRoleFinderInfos()
-	{
-		Map<EPlay, RoleMapping> infos = new EnumMap<>(EPlay.class);
-		Map<EPlay, Boolean> useAiPlays = new EnumMap<>(EPlay.class);
-		for (int row = 0; row < NUM_ROWS; row++)
-		{
-			String strPlay = athenaControlPanel.getTable().getModel()
-					.getValueAt(row, AthenaControlPanel.EColumn.PLAY.getIdx()).toString();
-			if (strPlay.isEmpty())
-			{
-				continue;
-			}
-			EPlay ePlay = EPlay.valueOf(strPlay);
-			RoleMapping info = new RoleMapping();
-			String desBots = athenaControlPanel.getTable().getModel()
-					.getValueAt(row, AthenaControlPanel.EColumn.DESIRED_BOTS.getIdx()).toString();
-			if (!desBots.isEmpty())
-			{
-				Set<String> desiredBots = Arrays.stream(desBots.split(REPLACE_PATTERN)).filter(e -> e.length() > 0)
-						.collect(Collectors.toSet());
-				
-				for (String desiredBot : desiredBots)
-				{
-					info.getDesiredBots().add(BotID.createBotId(valueOrZero(desiredBot), team.getTeamColor()));
-				}
-			}
-			Boolean override = Boolean
-					.valueOf(athenaControlPanel.getTable().getModel().getValueAt(row, AthenaControlPanel.EColumn.AI.getIdx())
-							.toString());
-			infos.put(ePlay, info);
-			useAiPlays.put(ePlay, override);
-		}
-
-		getAIControl().ifPresent(ai -> ai.getRoleMapping().clear());
-		getAIControl().ifPresent(ai -> ai.getRoleMapping().putAll(infos));
-		getAIControl().ifPresent(ai -> ai.getUseAiFlags().clear());
-		getAIControl().ifPresent(ai -> ai.getUseAiFlags().putAll(useAiPlays));
-	}
-
-
-	private Optional<AIControl> getAIControl()
+	private Optional<AthenaGuiInput> getAthenaGuiInput()
 	{
 		return SumatraModel.getInstance().getModuleOpt(Agent.class)
-				.map(agent -> agent.getAi(team).orElse(null))
-				.map(ai -> ai.getAthena().getAthenaAdapter().getAiControl());
+				.flatMap(agent -> agent.getAi(team))
+				.map(ai -> ai.getAthena().getAthenaGuiInput());
 	}
 
 
-	private int valueOrZero(final String strInt)
+	private List<EPlay> getSelectedPlays()
 	{
-		if (StringUtils.isBlank(strInt))
+		int[] selectedRows = athenaControlPanel.getTable().getSelectedRows();
+		List<EPlay> plays = new ArrayList<>();
+		for (int row : selectedRows)
 		{
-			return 0;
-		}
-		try
-		{
-			return Integer.valueOf(strInt);
-		} catch (NumberFormatException err)
-		{
-			log.debug("Could not parse string: " + strInt, err);
-		}
-		return 0;
-	}
-
-	private class ChangeListener implements PropertyChangeListener
-	{
-		@Override
-		public void propertyChange(final PropertyChangeEvent evt)
-		{
-			if (athenaControlPanel.getTable().isEnabled())
+			String playString = (String) athenaControlPanel.getTable().getValueAt(row, PLAY.ordinal());
+			if (StringUtils.isNotBlank(playString))
 			{
-				StringBuilder sb = new StringBuilder();
-				boolean first = true;
-				for (int i = 0; i < NUM_ROWS; i++)
-				{
-					String play = athenaControlPanel.getTable().getModel()
-							.getValueAt(i, AthenaControlPanel.EColumn.PLAY.getIdx()).toString();
-					if (play.isEmpty())
-					{
-						continue;
-					}
-					if (!first)
-					{
-						sb.append(",");
-					}
-					first = false;
-					sb.append(play);
-				}
-				SumatraModel.getInstance().setUserProperty(AthenaControlPanel.class + ".plays", sb.toString());
-				sendRoleFinderInfos();
+				plays.add(EPlay.valueOf(playString));
 			}
 		}
+		return plays;
 	}
 
-	private class ClearListener implements ActionListener
+
+	private Set<BotID> getSelectedBots()
+	{
+		return athenaControlPanel.getBotIdList().getSelectedValuesList().stream()
+				.map(i -> BotID.createBotId(i, team.getTeamColor()))
+				.collect(Collectors.toSet());
+	}
+
+
+	private class AssignListener implements ActionListener
 	{
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
-			athenaControlPanel.clear();
-			sendRoleFinderInfos();
+			var plays = getSelectedPlays();
+			if (plays.isEmpty())
+			{
+				return;
+			}
+			var firstPlay = plays.get(0);
+			var bots = getSelectedBots();
+
+			getAthenaGuiInput()
+					.ifPresent(in -> in.getRoleMapping().entrySet().stream()
+							.filter(entry -> entry.getKey() != firstPlay)
+							.map(Map.Entry::getValue)
+							.forEach(bots::removeAll));
+			getAthenaGuiInput()
+					.ifPresent(in -> plays.stream().findFirst().ifPresent(p -> in.getRoleMapping().put(p, bots)));
 		}
 	}
-	
-	private class AddAllToSelectedListener implements ActionListener
+
+
+	private class UnassignListener implements ActionListener
 	{
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
-			int row = athenaControlPanel.getTable().getSelectedRow();
-			for (int i = 0; i < athenaControlPanel.getTable().getRowCount(); i++)
-			{
-				athenaControlPanel.getTable().getModel().setValueAt("", i,
-						AthenaControlPanel.EColumn.DESIRED_BOTS.getIdx());
-			}
-			Set<Integer> bots = latestAIFrame.getWorldFrame().getTigerBotsAvailable().keySet().stream()
-					.map(BotID::getNumber).collect(Collectors.toSet());
-			String botString = StringUtils.join(bots, " ");
-			athenaControlPanel.getTable().getModel().setValueAt(botString, row,
-					AthenaControlPanel.EColumn.DESIRED_BOTS.getIdx());
-			sendRoleFinderInfos();
+			var plays = getSelectedPlays();
+			var bots = getSelectedBots();
+
+			getAthenaGuiInput().ifPresent(in ->
+					plays.forEach(p ->
+							Optional.ofNullable(in.getRoleMapping().get(p))
+									.ifPresent(ids -> ids.removeAll(bots))));
 		}
 	}
-	
 
 	private class ClearRolesListener implements ActionListener
 	{
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
-			clearRoles();
-			sendRoleFinderInfos();
+			var plays = getSelectedPlays();
+			getAthenaGuiInput().ifPresent(in -> plays.forEach(p -> in.getRoleMapping().remove(p)));
 		}
+	}
 
-
-		private void clearRoles()
+	private class RemovePlayListener implements ActionListener
+	{
+		@Override
+		public void actionPerformed(final ActionEvent e)
 		{
-			for (int j = 0; j < NUM_ROWS; j++)
-			{
-				athenaControlPanel.getTable().getModel().setValueAt(
-						AthenaControlPanel.EColumn.values()[AthenaControlPanel.EColumn.DESIRED_BOTS.getIdx()].getDefValue(),
-						j,
-						AthenaControlPanel.EColumn.DESIRED_BOTS.getIdx());
-			}
+			var plays = getSelectedPlays();
+			getAthenaGuiInput().ifPresent(in -> plays.forEach(p -> in.getRoleMapping().remove(p)));
+			getAthenaGuiInput().ifPresent(in -> plays.forEach(p -> in.getPlays().removeIf(pl -> pl.getType() == p)));
+		}
+	}
+
+	private class ClearPlaysListener implements ActionListener
+	{
+		@Override
+		public void actionPerformed(final ActionEvent e)
+		{
+			getAthenaGuiInput().ifPresent(in -> in.getPlays().clear());
+			getAthenaGuiInput().ifPresent(in -> in.getRoleMapping().clear());
+		}
+	}
+
+	private class CreatePlayListener implements IInstanceableObserver
+	{
+		@Override
+		public void onNewInstance(final Object object)
+		{
+			var play = (APlay) object;
+			getAthenaGuiInput().ifPresent(in -> in.getPlays().add(play));
+		}
+	}
+
+	private class BotIdListSelectionListener implements ListSelectionListener
+	{
+		@Override
+		public void valueChanged(final ListSelectionEvent e)
+		{
+			var selectedValues = athenaControlPanel.getBotIdList().getSelectedValuesList().stream()
+					.map(Object::toString)
+					.collect(Collectors.toList());
+			var valueString = StringUtils.join(selectedValues, ",");
+			SumatraModel.getInstance().setUserProperty(BOT_IDS_KEY, valueString);
 		}
 	}
 }

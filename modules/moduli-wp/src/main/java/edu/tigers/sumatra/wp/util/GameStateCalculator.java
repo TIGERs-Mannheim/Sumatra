@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.util;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-
-import edu.tigers.sumatra.Referee.SSL_Referee.Command;
-import edu.tigers.sumatra.Referee.SSL_Referee.Stage;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.referee.data.RefereeMsg;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee.Command;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee.Stage;
+import edu.tigers.sumatra.time.TimestampTimer;
+
+import java.util.Optional;
 
 
 /**
@@ -31,8 +33,9 @@ public class GameStateCalculator
 	}
 
 	private IVector2 ballPosOnPrepare = null;
+	private final TimestampTimer ballMovedTimer = new TimestampTimer(0.03);
 	private long lastRefMsgCounter = -1;
-	private GameState lastGameState = GameState.Builder.empty().build();
+	private GameState lastGameState = GameState.empty().build();
 	private Command lastRefCmd = Command.STOP;
 
 
@@ -41,32 +44,42 @@ public class GameStateCalculator
 	 */
 	public void reset()
 	{
-		lastGameState = GameState.Builder.empty().build();
+		reset(GameState.empty().build());
+	}
+
+
+	/**
+	 * reset state
+	 */
+	public void reset(GameState gameState)
+	{
+		lastGameState = gameState;
 		lastRefMsgCounter = -1;
 		ballPosOnPrepare = null;
+		ballMovedTimer.reset();
 	}
 
 
 	/**
 	 * @param refereeMsg latest referee message
-	 * @param ballPos current ball position
+	 * @param ballPos    current ball position
 	 * @return next game state
 	 */
-	public GameState getNextGameState(final RefereeMsg refereeMsg, final IVector2 ballPos)
+	public GameState getNextGameState(final RefereeMsg refereeMsg, final IVector2 ballPos, long timestamp)
 	{
-		GameState nextGameState = calcGameState(refereeMsg, ballPos);
+		GameState nextGameState = calcGameState(refereeMsg, ballPos, timestamp);
 		lastGameState = nextGameState;
 		return nextGameState;
 	}
 
 
-	private GameState calcGameState(final RefereeMsg refereeMsg, final IVector2 ballPos)
+	private GameState calcGameState(final RefereeMsg refereeMsg, final IVector2 ballPos, long timestamp)
 	{
-		GameState.Builder builder = GameState.Builder.create().withGameState(lastGameState);
+		GameState.GameStateBuilder builder = lastGameState.toBuilder();
 
-		if (refereeMsg.getCommandCounter() != lastRefMsgCounter)
+		if (refereeMsg.getCmdCounter() != lastRefMsgCounter)
 		{
-			lastRefMsgCounter = refereeMsg.getCommandCounter();
+			lastRefMsgCounter = refereeMsg.getCmdCounter();
 			processCommand(refereeMsg.getCommand(), lastRefCmd, builder);
 			storeBallPosition(refereeMsg.getCommand(), ballPos);
 			lastRefCmd = refereeMsg.getCommand();
@@ -75,11 +88,8 @@ public class GameStateCalculator
 		processNextCommand(refereeMsg.getNextCommand(), refereeMsg.getCommand(), builder);
 		builder.withBallPlacementPosition(refereeMsg.getBallPlacementPosNeutral());
 		processStage(refereeMsg.getStage(), builder);
+		processBallMovement(ballPos, builder, timestamp);
 
-		if (refereeMsg.getStage() != Stage.PENALTY_SHOOTOUT)
-		{
-			processBallMovement(ballPos, builder);
-		}
 		if ((refereeMsg.getCommand() == Command.BALL_PLACEMENT_BLUE
 				|| refereeMsg.getCommand() == Command.BALL_PLACEMENT_YELLOW)
 				&& refereeMsg.getBallPlacementPosNeutral() == null)
@@ -93,22 +103,22 @@ public class GameStateCalculator
 	}
 
 
-	private void processStage(final Stage stage, final GameState.Builder builder)
+	private void processStage(final Stage stage, final GameState.GameStateBuilder builder)
 	{
-		builder.withPenalyShootout(false);
+		builder.withPenaltyShootout(false);
 		switch (stage)
 		{
 			case NORMAL_HALF_TIME:
 			case EXTRA_TIME_BREAK:
 			case EXTRA_HALF_TIME:
 			case PENALTY_SHOOTOUT_BREAK:
-				builder.withState(EGameState.BREAK).forTeam(ETeamColor.NEUTRAL);
+				builder.withState(EGameState.BREAK).withForTeam(ETeamColor.NEUTRAL);
 				break;
 			case POST_GAME:
-				builder.withState(EGameState.POST_GAME).forTeam(ETeamColor.NEUTRAL);
+				builder.withState(EGameState.POST_GAME).withForTeam(ETeamColor.NEUTRAL);
 				break;
 			case PENALTY_SHOOTOUT:
-				builder.withPenalyShootout(true);
+				builder.withPenaltyShootout(true);
 				break;
 			default:
 				// ignore stage
@@ -117,31 +127,36 @@ public class GameStateCalculator
 	}
 
 
-	private void processCommand(final Command command, final Command lastCommand, final GameState.Builder builder)
+	private void processCommand(final Command command, final Command lastCommand,
+			final GameState.GameStateBuilder builder)
 	{
 		if (command == Command.NORMAL_START)
 		{
 			builder.withState(normalStartToState(lastCommand));
-			builder.forTeam(commandToTeam(lastCommand));
+			builder.withForTeam(Optional.ofNullable(commandToTeam(lastCommand)).orElse(ETeamColor.NEUTRAL));
 		} else if (command != null)
 		{
-			builder.withState(commandToState(command));
-			builder.forTeam(commandToTeam(command));
+			Optional.ofNullable(commandToState(command)).ifPresent(builder::withState);
+			Optional.ofNullable(commandToTeam(command)).ifPresent(builder::withForTeam);
 		}
 	}
 
 
 	private void processNextCommand(final Command nextCommand, final Command currentCommand,
-			final GameState.Builder builder)
+			final GameState.GameStateBuilder builder)
 	{
 		if (nextCommand == Command.NORMAL_START)
 		{
 			builder.withNextState(normalStartToState(currentCommand));
-			builder.nextForTeam(commandToTeam(currentCommand));
+			builder.withNextForTeam(commandToTeam(currentCommand));
 		} else if (nextCommand != null)
 		{
 			builder.withNextState(commandToState(nextCommand));
-			builder.nextForTeam(commandToTeam(nextCommand));
+			builder.withNextForTeam(commandToTeam(nextCommand));
+		} else
+		{
+			builder.withNextState(null);
+			builder.withNextForTeam(ETeamColor.NEUTRAL);
 		}
 	}
 
@@ -209,8 +224,9 @@ public class GameStateCalculator
 			case STOP:
 			case NORMAL_START:
 			case FORCE_START:
-			default:
 				return ETeamColor.NEUTRAL;
+			default:
+				return null;
 		}
 	}
 
@@ -249,17 +265,24 @@ public class GameStateCalculator
 	}
 
 
-	private void processBallMovement(final IVector2 ballPos, final GameState.Builder builder)
+	private void processBallMovement(IVector2 ballPos, GameState.GameStateBuilder builder, long timestamp)
 	{
-		if (ballPosOnPrepare == null)
+		if (ballPosOnPrepare == null || lastGameState.isPenaltyOrPreparePenalty())
 		{
 			return;
 		}
 
 		if (ballPos.distanceTo(ballPosOnPrepare) > ballMovedDistanceTol)
 		{
-			builder.withState(EGameState.RUNNING).forTeam(ETeamColor.NEUTRAL);
-			ballPosOnPrepare = null;
+			ballMovedTimer.update(timestamp);
+			if (ballMovedTimer.isTimeUp(timestamp))
+			{
+				builder.withState(EGameState.RUNNING).withForTeam(ETeamColor.NEUTRAL);
+				ballPosOnPrepare = null;
+			}
+		} else
+		{
+			ballMovedTimer.reset();
 		}
 	}
 }

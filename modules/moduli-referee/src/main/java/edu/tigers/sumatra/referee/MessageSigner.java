@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.referee;
@@ -16,7 +16,8 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /**
@@ -28,13 +29,13 @@ import org.apache.log4j.Logger;
  */
 public class MessageSigner
 {
-	private static final Logger log = Logger.getLogger(MessageSigner.class.getName());
+	private static final Logger log = LogManager.getLogger(MessageSigner.class.getName());
 	private static final String SIGNING_ALGORITHM = "SHA256WITHRSA";
-	
+
 	private PrivateKey privateKey;
 	private PublicKey publicKey;
-	
-	
+
+
 	/**
 	 * Default constructor without keys
 	 */
@@ -42,11 +43,11 @@ public class MessageSigner
 	{
 		// no key will be loaded by default
 	}
-	
-	
+
+
 	/**
 	 * Constructor, pass a path to a Private and Public Key
-	 * 
+	 *
 	 * @param privateKey Path to a private key in PKCS8 Format
 	 * @param publicKey Path to a public key for verification
 	 */
@@ -55,8 +56,8 @@ public class MessageSigner
 		this.privateKey = getPrivateKey(privateKey);
 		this.publicKey = getPublicKey(publicKey);
 	}
-	
-	
+
+
 	/**
 	 * read RSA PKCS8 Private key
 	 *
@@ -73,21 +74,21 @@ public class MessageSigner
 			// Remove Whitespace
 			rawKey = rawKey.replaceAll("\\s+", "");
 			byte[] dec = Base64.getDecoder().decode(rawKey);
-			
+
 			// Get Key
 			KeyFactory factory = KeyFactory.getInstance("RSA");
 			PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(dec);
 			return factory.generatePrivate(spec);
-			
+
 		} catch (NoSuchAlgorithmException | InvalidKeySpecException | NullPointerException e)
 		{
 			log.warn("Generating private key failed for " + rawKey, e);
 		}
-		
+
 		return null;
 	}
-	
-	
+
+
 	/**
 	 * load RSA Public Key from File
 	 *
@@ -104,21 +105,21 @@ public class MessageSigner
 			// Remove Whitespace
 			rawKey = rawKey.replaceAll("\\s+", "");
 			byte[] dec = Base64.getDecoder().decode(rawKey);
-			
+
 			// Get Key
 			KeyFactory factory = KeyFactory.getInstance("RSA");
 			X509EncodedKeySpec spec = new X509EncodedKeySpec(dec);
 			return factory.generatePublic(spec);
-			
+
 		} catch (NoSuchAlgorithmException | InvalidKeySpecException | NullPointerException e)
 		{
 			log.warn("Generating public key failed for " + rawKey, e);
 		}
-		
+
 		return null;
 	}
-	
-	
+
+
 	/**
 	 * Generate Signature
 	 *
@@ -132,7 +133,7 @@ public class MessageSigner
 			log.debug("Skipping message signing: no private key");
 			return new byte[0];
 		}
-		
+
 		try
 		{
 			Signature sig = Signature.getInstance(SIGNING_ALGORITHM);
@@ -143,11 +144,11 @@ public class MessageSigner
 		{
 			log.warn("Message signing failed", e);
 		}
-		
+
 		return new byte[0];
 	}
-	
-	
+
+
 	/**
 	 * Check if a signature is valid
 	 *

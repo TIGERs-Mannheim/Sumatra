@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view.log;
 
 import javax.swing.JPanel;
 
-import org.apache.log4j.Priority;
+import org.apache.logging.log4j.Level;
 
 import edu.tigers.sumatra.view.TextPane;
 import edu.tigers.sumatra.views.ISumatraView;
@@ -23,7 +23,7 @@ public class LogPanel extends JPanel implements ISumatraView
 	private final FilterPanel filterPanel;
 
 
-	public LogPanel(final int maxCapacity, final Priority initialLevel)
+	public LogPanel(final int maxCapacity, final Level initialLevel)
 	{
 		setLayout(new MigLayout("fill, inset 0", "", ""));
 

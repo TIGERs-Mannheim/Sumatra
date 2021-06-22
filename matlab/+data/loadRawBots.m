@@ -23,7 +23,5 @@ function [ rawBots ] = loadRawBots( file )
     % derived 
     rawBots.timestamp = rawBots.tCapture;
     rawBots.time = (rawBots.timestamp - rawBots.timestamp(1)) / 1e9;
-    rawBots.vel = util.convert.pose2vel(rawBots.pos, rawBots.timestamp);
-    rawBots.acc = util.convert.vel2acc(rawBots.vel, rawBots.timestamp);
 end
 

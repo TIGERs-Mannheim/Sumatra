@@ -1,7 +1,6 @@
 package edu.tigers.sumatra.ai.metis.statistics.timeseries;
 
 import edu.tigers.sumatra.ai.BaseAiFrame;
-import edu.tigers.sumatra.ai.metis.ITacticalField;
 import edu.tigers.sumatra.referee.gameevent.EGameEventType;
 import edu.tigers.sumatra.referee.gameevent.IGameEvent;
 import edu.tigers.sumatra.statistics.TimeSeriesStatsEntry;
@@ -13,11 +12,10 @@ import edu.tigers.sumatra.statistics.TimeSeriesStatsEntry;
 public class GameEventsTssCalc implements ITssCalc
 {
 	@Override
-	public TimeSeriesStatsEntry createTimeSeriesStatsEntry(final BaseAiFrame aiFrame, final ITacticalField tacticalField,
-			final long timestamp)
+	public TimeSeriesStatsEntry createTimeSeriesStatsEntry(final BaseAiFrame aiFrame, final long timestamp)
 	{
 		TimeSeriesStatsEntry entry = new TimeSeriesStatsEntry("game.events", timestamp);
-		
+
 		for (EGameEventType gameEventType : EGameEventType.values())
 		{
 			long count = aiFrame.getRefereeMsg().getGameEvents().stream()
@@ -25,7 +23,7 @@ public class GameEventsTssCalc implements ITssCalc
 					.count();
 			entry.addField(gameEventType.name().toLowerCase().replace('_', '.'), count);
 		}
-		
+
 		for (IGameEvent gameEvent : aiFrame.getRefereeMsg().getGameEvents())
 		{
 			entry.addTag(gameEvent.getType().name().toLowerCase().replace('_', '.'), "1");

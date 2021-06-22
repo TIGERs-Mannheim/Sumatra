@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.network;
 
@@ -13,12 +13,13 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /**
  * This class provides some helpful methods for choosing the right network-interface (nif) for a given IPv4-address
- * 
+ *
  * @author Gero
  */
 public final class NetworkUtility
@@ -26,14 +27,14 @@ public final class NetworkUtility
 	// --------------------------------------------------------------------------
 	// --- variables and constants ----------------------------------------------
 	// --------------------------------------------------------------------------
-	private static final Logger	log	= Logger.getLogger(NetworkUtility.class.getName());
-	
-	
+	private static final Logger log = LogManager.getLogger(NetworkUtility.class.getName());
+
+
 	private NetworkUtility()
 	{
 	}
-	
-	
+
+
 	/**
 	 * @param networkStr
 	 * @param compareBytes Number of bytes to check (from most to least significant byte)
@@ -47,8 +48,8 @@ public final class NetworkUtility
 		{
 			return null;
 		}
-		
-		InetAddress network = null;
+
+		InetAddress network;
 		try
 		{
 			network = InetAddress.getByName(networkStr);
@@ -57,8 +58,8 @@ public final class NetworkUtility
 			log.error("Unable to parse network address: " + networkStr, err1);
 			return null;
 		}
-		
-		
+
+
 		NetworkInterface result = null;
 		try
 		{
@@ -71,7 +72,7 @@ public final class NetworkUtility
 				{
 					continue;
 				}
-				
+
 				List<InetAddress> iAddrs = Collections.list(iface.getInetAddresses());
 				for (InetAddress addr : iAddrs)
 				{
@@ -79,7 +80,7 @@ public final class NetworkUtility
 					{
 						continue;
 					}
-					
+
 					if (cmpIP4Addrs(addr, network, compareBytes))
 					{
 						result = iface;
@@ -91,21 +92,21 @@ public final class NetworkUtility
 		{
 			log.error("Error retrieving network-interfaces!", err);
 		}
-		
+
 		return result;
 	}
-	
-	
+
+
 	private static boolean cmpIP4Addrs(final InetAddress addr1, final InetAddress addr2, final int bytesToCompare)
 	{
 		byte[] addr1b = addr1.getAddress();
 		byte[] addr2b = addr2.getAddress();
-		
+
 		if ((addr1b.length != 4) || (addr2b.length != 4))
 		{
 			return false;
 		}
-		
+
 		for (int i = 0; i < bytesToCompare; i++)
 		{
 			if (addr1b[i] != addr2b[i])
@@ -113,7 +114,7 @@ public final class NetworkUtility
 				return false;
 			}
 		}
-		
+
 		return true;
 	}
 }

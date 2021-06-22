@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.loganalysis.eventtypes.shot;
@@ -9,8 +9,10 @@ import edu.tigers.sumatra.math.line.v2.IHalfLine;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 
@@ -19,13 +21,13 @@ import static edu.tigers.sumatra.loganalysis.eventtypes.shot.ShotBuilder.EndOfPa
 
 public class ShotBuilder
 {
-	private static final Logger log = Logger.getLogger(ShotBuilder.class.getName());
+	private static final Logger log = LogManager.getLogger(ShotBuilder.class.getName());
 
 	/** When did the pass start */
-	private long startTimestamp;
+	private long startFrame;
 
 	/** When did the pass end */
-	private long endTimestamp;
+	private long endFrame;
 
 	/** Did the pass reach a receiver of the same team */
 	private boolean successful;
@@ -36,15 +38,15 @@ public class ShotBuilder
 	/** real receiver of the pass */
 	private ITrackedBot receiverBot;
 
-    /** stores why the pass ended */
-    public enum EndOfPassCause
+	/** stores why the pass ended */
+	public enum EndOfPassCause
 	{
-    	INTERCEPT_BY_BOT,
+		INTERCEPT_BY_BOT,
 		BALL_OUT_OF_FIELD,
 		BALL_TOO_SLOW,
 		GAME_STATE_STOP,
 		UNKNOWN
-    }
+	}
 
 	private enum ShotType
 	{
@@ -52,13 +54,13 @@ public class ShotBuilder
 		GOAL_SHOT
 	}
 
-    private EndOfPassCause endOfPassCause;
+	private EndOfPassCause endOfPassCause;
 
 	private boolean isChipKick; // chip kick
 	private ITrackedBot receiverBotAtKick; // fake receiver (receiver with is in pass line during the kick)
 	private IVector2 endOfPass; // the end of the pass line (is not always the receiverBot kicker pos)
-	
-	
+
+
 	private IVector2 ballVelBefore;
 	private IVector2 ballAcc;
 
@@ -73,36 +75,38 @@ public class ShotBuilder
 	 * 3 created Pass
 	 */
 	private int builderState = 0;
-	
-	
+
+
 	public void clear()
 	{
 		this.passerBot = null;
-		this.startTimestamp = 0;
+		this.startFrame = 0;
 		this.ballVelBefore = null;
 		this.ballAcc = null;
-        isChipKick = false;
-        endOfPassCause = EndOfPassCause.UNKNOWN;
-        builderState = 0;
+		isChipKick = false;
+		endOfPassCause = EndOfPassCause.UNKNOWN;
+		builderState = 0;
 	}
-	
-	
-	public void updateInit(ITrackedBot shooter, long startPassTimestamp,
+
+
+	public void updateInit(ITrackedBot shooter, long startFrame,
 			IVector2 ballVelBefore, IVector2 ballAcc, ITrackedBot receiverBotAtKick)
 	{
-		if(builderState < 0)
+		if (builderState < 0)
 		{
-			log.error("wrong shot builder state " + builderState + " (0 expected)\n methods of shot builder are not called in right order");
+			log.error("wrong shot builder state " + builderState
+					+ " (0 expected)\n methods of shot builder are not called in right order");
 			return;
 		}
 
 		this.passerBot = shooter;
-		this.startTimestamp = startPassTimestamp;
+		this.startFrame = startFrame;
 		this.ballVelBefore = ballVelBefore;
 		this.ballAcc = ballAcc;
 		this.receiverBotAtKick = receiverBotAtKick;
 		builderState = 1;
 	}
+
 
 	public void updateEndOfPassCause(EndOfPassCause endOfPassCause)
 	{
@@ -111,54 +115,61 @@ public class ShotBuilder
 
 		builderState = 2;
 	}
-	
-	
+
+
 	public void updateChipFlag(boolean isChipKick)
 	{
 		this.isChipKick = isChipKick;
 	}
-	
+
 
 	public boolean isChipKick()
 	{
 		return this.isChipKick;
 	}
 
+
 	private ShotType getShotType()
 	{
-		if(getEndOfPassCause() == INTERCEPT_BY_BOT &&
+		if (getEndOfPassCause() == INTERCEPT_BY_BOT &&
 				getReceiverBot() != null && getPasserBot().getTeamColor() == getReceiverBot().getTeamColor())
 		{
-			//passer bot has same color like receiver bot
+			// passer bot has same color like receiver bot
+			return ShotType.PASS;
+		}
+		if (getPasserBot() == null)
+		{
 			return ShotType.PASS;
 		}
 
-		//passer bot is of different than receiver bot
+		// passer bot is of different than receiver bot
 		IHalfLine passLine = Lines.halfLineFromPoints(getStartPassPos(), getEndOfPass());
 		ILineSegment goalLineMargin = NGeometry.getGoal(getPasserBot().getTeamColor().opposite())
 				.getLineSegment().withMargin(marginGoalForGoalShot);
 
 		Optional<IVector2> intersectionPassGoalLine = goalLineMargin.intersectHalfLine(passLine);
 
-		if(intersectionPassGoalLine.isPresent())
+		if (intersectionPassGoalLine.isPresent())
 		{
-			//shot in direction of the foe goal
+			// shot in direction of the opponent goal
 			return ShotType.GOAL_SHOT;
-		}
-		else
+		} else
 		{
 			return ShotType.PASS;
 		}
 	}
 
-	public IShotEventType createShotEventType(long endPassTimestamp, ITrackedBot receiverBot, IVector2 endOfPass) throws WrongBuilderStateException
+
+	public IShotEventType createShotEventType(long endFrame, ITrackedBot receiverBot, IVector2 endOfPass)
+			throws WrongBuilderStateException
 	{
-		if(builderState < 2)
+		if (builderState < 2)
 		{
-			throw new WrongBuilderStateException("wrong shot builder state " + builderState + " (2 expected)\n methods of shot builder are not called in right order");
+			throw new WrongBuilderStateException("wrong shot builder state " + builderState
+					+ " (2 expected)\n methods of shot builder are not called in right order");
 		}
 
-		this.endTimestamp = endPassTimestamp;
+		this.endFrame = endFrame;
 		this.receiverBot = receiverBot;
 		this.endOfPass = endOfPass;
 
@@ -180,68 +191,74 @@ public class ShotBuilder
 				return new GoalShot(this);
 		}
 	}
-	
-	
+
+
 	public IVector2 getStartPassPos()
 	{
+		if (passerBot == null)
+		{
+			return Vector2.zero();
+		}
 		return passerBot.getBotKickerPos();
 	}
-	
-	
+
+
 	public IVector2 getBallVelBefore()
 	{
 		return ballVelBefore;
 	}
-	
-	
+
+
 	public IVector2 getBallAcc()
 	{
 		return ballAcc;
 	}
-	
-	
-	public long getStartTimestamp()
+
+
+	public long getStartFrame()
 	{
-		return startTimestamp;
+		return startFrame;
 	}
-	
-	
-	public long getEndTimestamp()
+
+
+	public long getEndFrame()
 	{
-		return endTimestamp;
+		return endFrame;
 	}
-	
-	
+
+
 	public boolean isSuccessful()
 	{
 		return successful;
 	}
-	
-	
+
+
 	public ITrackedBot getPasserBot()
 	{
 		return passerBot;
 	}
-	
-	
+
+
 	public ITrackedBot getReceiverBot()
 	{
 		return receiverBot;
 	}
-	
-	
+
+
 	public ITrackedBot getReceiverBotAtKick()
 	{
 		return receiverBotAtKick;
 	}
-	
-	
+
+
 	public IVector2 getEndOfPass()
 	{
 		return endOfPass;
 	}
 
-	public EndOfPassCause getEndOfPassCause() {
+
+	public EndOfPassCause getEndOfPassCause()
+	{
 		return endOfPassCause;
 	}
 

@@ -4,17 +4,16 @@
 
 package edu.tigers.sumatra.ai.pandora.roles.support.behaviors.repulsive;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 /**
@@ -68,8 +67,8 @@ public class RepulsiveAttacker extends ARepulsiveBehavior
 	{
 		super(role);
 	}
-	
-	
+
+
 	@Override
 	public double calculateViability()
 	{

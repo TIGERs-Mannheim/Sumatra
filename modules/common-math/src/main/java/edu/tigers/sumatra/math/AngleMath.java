@@ -1,44 +1,38 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math;
 
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
+
 /**
  * Helper class for providing Angle math problems.
- * 
- * @author stei_ol
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class AngleMath
 {
-	/** */
 	public static final double PI = Math.PI;
-	/** */
 	public static final double PI_TWO = Math.PI * 2.0;
-	/** */
 	public static final double PI_HALF = Math.PI / 2.0;
-	/** */
 	public static final double PI_QUART = Math.PI / 4.0;
-	
+
 	public static final double DEG_180_IN_RAD = PI;
 	public static final double DEG_090_IN_RAD = PI_HALF;
 	public static final double DEG_045_IN_RAD = PI_QUART;
-	
+
 	private static final double DEG_RAD_FACTOR = 180;
 	private static final double DEG_TO_RAD = PI / DEG_RAD_FACTOR;
 	private static final double RAD_TO_DEG = DEG_RAD_FACTOR / PI;
-	
-	
-	private AngleMath()
-	{
-	}
-	
-	
+
+
 	/**
 	 * Normalize angle, to make sure angle is in (-pi/pi] interval.<br>
 	 * New angle is returned, parameter stay unaffected.
-	 * 
+	 *
 	 * @param angle some unnormalized angle
 	 * @return angle in [-pi..pi]
 	 */
@@ -47,12 +41,12 @@ public final class AngleMath
 		// Don't call this a hack! It's numeric!
 		return angle - (Math.round((angle / (PI_TWO)) - 1e-6) * PI_TWO);
 	}
-	
-	
+
+
 	/**
 	 * Get the smallest difference between angle1 and angle2.<br>
 	 * <code>norm( angle1 - angle2 )</code>
-	 * 
+	 *
 	 * @param angle1 first angle
 	 * @param angle2 second angle
 	 * @return difference in [-pi..pi]
@@ -61,8 +55,22 @@ public final class AngleMath
 	{
 		return normalizeAngle(angle1 - angle2);
 	}
-	
-	
+
+
+	/**
+	 * Get the absolute smallest difference between angle1 and angle2.<br>
+	 * <code>abs(norm(angle1-angle2))</code>
+	 *
+	 * @param angle1 first angle
+	 * @param angle2 second angle
+	 * @return absolute difference in [0..pi]
+	 */
+	public static double diffAbs(final double angle1, final double angle2)
+	{
+		return Math.abs(difference(angle1, angle2));
+	}
+
+
 	/**
 	 * @param number a value
 	 * @return cos of value
@@ -71,8 +79,8 @@ public final class AngleMath
 	{
 		return SumatraMath.cos(number);
 	}
-	
-	
+
+
 	/**
 	 * @param number a value
 	 * @return sin of value
@@ -81,8 +89,8 @@ public final class AngleMath
 	{
 		return SumatraMath.sin(number);
 	}
-	
-	
+
+
 	/**
 	 * @param number a value
 	 * @return tan of value
@@ -91,8 +99,8 @@ public final class AngleMath
 	{
 		return SumatraMath.tan(number);
 	}
-	
-	
+
+
 	/**
 	 * @param deg The angle in degree that should be converted to radiant
 	 * @return The given angle in radiant
@@ -101,8 +109,8 @@ public final class AngleMath
 	{
 		return DEG_TO_RAD * deg;
 	}
-	
-	
+
+
 	/**
 	 * @param rad The angle in radiant that should be converted to degree
 	 * @return The given angle in degree
@@ -111,8 +119,8 @@ public final class AngleMath
 	{
 		return RAD_TO_DEG * rad;
 	}
-	
-	
+
+
 	/**
 	 * @param angle input angle
 	 * @return a mirrored angle

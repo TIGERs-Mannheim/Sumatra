@@ -1,26 +1,13 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.view.replay;
 
-import static javax.swing.KeyStroke.getKeyStroke;
-
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.event.ActionEvent;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.text.DecimalFormat;
-import java.util.Arrays;
-import java.util.Dictionary;
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import edu.tigers.sumatra.referee.gameevent.EGameEvent;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
+import edu.tigers.sumatra.util.ImageScaler;
+import edu.tigers.sumatra.views.ISumatraView;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -38,57 +25,69 @@ import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.text.DecimalFormat;
+import java.util.Arrays;
+import java.util.Dictionary;
+import java.util.Enumeration;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-import edu.tigers.sumatra.Referee;
-import edu.tigers.sumatra.referee.gameevent.EGameEvent;
-import edu.tigers.sumatra.util.ImageScaler;
-import edu.tigers.sumatra.views.ISumatraView;
+import static javax.swing.KeyStroke.getKeyStroke;
 
 
 /**
  * This panel holds the control elements for the replay window
- * 
+ *
  * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class ReplayControlPanel extends JPanel implements IReplayPositionObserver, ISumatraView
 {
 	private static final long serialVersionUID = 1L;
-	
+
 	private static final long SKIP_TIME = 500;
 	private static final long FAST_TIME = 5_000L;
 	private static final int NUM_SPEED_FACTORS = 4;
 	private static final long SLIDER_SCALE = 100_000_000;
-	
-	
+
+
 	private final List<IReplayControlPanelObserver> observers = new CopyOnWriteArrayList<>();
 	private final JSlider slider;
-	
-	
+
+
 	private final JLabel timeStepLabel = new JLabel();
 	private boolean settingSliderByHand = false;
-	
+
 	private final JButton btnPlay = new JButton();
-	
+
 	private boolean playing = true;
-	
+
 	private final JMenu replayMenu = new JMenu("Replay");
-	
-	
+
+
 	/**
 	 * Default
 	 */
 	public ReplayControlPanel()
 	{
 		setLayout(new BorderLayout());
-		
+
 		slider = new JSlider(SwingConstants.HORIZONTAL, 0, 1, 0);
 		SliderListener sliderListener = new SliderListener();
 		slider.addChangeListener(sliderListener);
 		slider.addMouseListener(sliderListener);
 		slider.setPreferredSize(new Dimension(2000, slider.getPreferredSize().height));
-		
+
 		JSlider speedSlider = createSpeedSlider();
-		
+
 		Action playAction = new PlayAction();
 		btnPlay.addActionListener(playAction);
 		btnPlay.setIcon(ImageScaler.scaleDefaultButtonImageIcon("/pause.png"));
@@ -96,7 +95,7 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		btnPlay.setBorder(BorderFactory.createEmptyBorder());
 		btnPlay.setBackground(new Color(0, 0, 0, 1));
 		registerShortcut(btnPlay, getKeyStroke(KeyEvent.VK_P, KeyEvent.CTRL_DOWN_MASK), playAction);
-		
+
 		JButton btnSkipFrameFwd = new JButton();
 		Action skipOneFrameFwdAction = new SkipOneFrameFwdAction();
 		btnSkipFrameFwd.addActionListener(skipOneFrameFwdAction);
@@ -106,7 +105,7 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		btnSkipFrameFwd.setBackground(new Color(0, 0, 0, 1));
 		registerShortcut(btnSkipFrameFwd, getKeyStroke(KeyEvent.VK_RIGHT, KeyEvent.CTRL_DOWN_MASK),
 				skipOneFrameFwdAction);
-		
+
 		JButton btnSkipFrameBwd = new JButton();
 		final Action skipOneFrameBwdAction = new SkipOneFrameBwdAction();
 		btnSkipFrameBwd.addActionListener(skipOneFrameBwdAction);
@@ -115,7 +114,7 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		btnSkipFrameBwd.setBorder(BorderFactory.createEmptyBorder());
 		btnSkipFrameBwd.setBackground(new Color(0, 0, 0, 1));
 		registerShortcut(btnSkipFrameBwd, getKeyStroke(KeyEvent.VK_LEFT, KeyEvent.CTRL_DOWN_MASK), skipOneFrameBwdAction);
-		
+
 		JButton btnSkipFwd = new JButton();
 		final Action skipFwdAction = new SkipFwdAction();
 		btnSkipFwd.addActionListener(skipFwdAction);
@@ -124,7 +123,7 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		btnSkipFwd.setBorder(BorderFactory.createEmptyBorder());
 		btnSkipFwd.setBackground(new Color(0, 0, 0, 1));
 		registerShortcut(btnSkipFwd, getKeyStroke(KeyEvent.VK_RIGHT, KeyEvent.SHIFT_DOWN_MASK), skipFwdAction);
-		
+
 		JButton btnSkipBwd = new JButton();
 		final SkipBwdAction skipBwdAction = new SkipBwdAction();
 		btnSkipBwd.addActionListener(skipBwdAction);
@@ -133,7 +132,7 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		btnSkipBwd.setBorder(BorderFactory.createEmptyBorder());
 		btnSkipBwd.setBackground(new Color(0, 0, 0, 1));
 		registerShortcut(btnSkipBwd, getKeyStroke(KeyEvent.VK_LEFT, KeyEvent.SHIFT_DOWN_MASK), skipBwdAction);
-		
+
 		JButton btnFastFwd = new JButton();
 		final FastFwdAction fastFwdAction = new FastFwdAction();
 		btnFastFwd.addActionListener(fastFwdAction);
@@ -143,7 +142,7 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		btnFastFwd.setBackground(new Color(0, 0, 0, 1));
 		registerShortcut(btnFastFwd, getKeyStroke(KeyEvent.VK_RIGHT, KeyEvent.CTRL_DOWN_MASK | KeyEvent.SHIFT_DOWN_MASK),
 				fastFwdAction);
-		
+
 		JButton btnFastBwd = new JButton();
 		final Action fastBwdAction = new FastBwdAction();
 		btnFastBwd.addActionListener(fastBwdAction);
@@ -153,7 +152,7 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		btnFastBwd.setBackground(new Color(0, 0, 0, 1));
 		registerShortcut(btnFastBwd, getKeyStroke(KeyEvent.VK_LEFT, KeyEvent.CTRL_DOWN_MASK | KeyEvent.SHIFT_DOWN_MASK),
 				fastBwdAction);
-		
+
 		JButton btnSnap = new JButton();
 		final SnapshotAction snapshotAction = new SnapshotAction();
 		btnSnap.addActionListener(snapshotAction);
@@ -162,7 +161,7 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		btnSnap.setBorder(BorderFactory.createEmptyBorder());
 		btnSnap.setBackground(new Color(0, 0, 0, 1));
 		registerShortcut(btnSnap, getKeyStroke(KeyEvent.VK_S, KeyEvent.CTRL_DOWN_MASK), snapshotAction);
-		
+
 		JButton btnSnapCopy = new JButton();
 		final Action snapshotCopyAction = new SnapshotCopyAction();
 		btnSnapCopy.addActionListener(snapshotCopyAction);
@@ -171,14 +170,14 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		btnSnapCopy.setBorder(BorderFactory.createEmptyBorder());
 		btnSnapCopy.setBackground(new Color(0, 0, 0, 1));
 		registerShortcut(btnSnapCopy, getKeyStroke(KeyEvent.VK_C, KeyEvent.CTRL_DOWN_MASK), snapshotCopyAction);
-		
+
 		JMenuBar menuBar = new JMenuBar();
 		menuBar.add(replayMenu);
 		add(menuBar, BorderLayout.PAGE_START);
-		
+
 		JMenu jumpCommandMenu = new JMenu("Jump to Command");
 		menuBar.add(jumpCommandMenu);
-		Arrays.stream(Referee.SSL_Referee.Command.values())
+		Arrays.stream(SslGcRefereeMessage.Referee.Command.values())
 				.map(JumpCommandAction::new)
 				.forEach(jumpCommandMenu::add);
 		JMenu jumpGameEventMenu = new JMenu("Jump to Game Event");
@@ -186,17 +185,17 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		Arrays.stream(EGameEvent.values())
 				.map(JumpGameEventAction::new)
 				.forEach(jumpGameEventMenu::add);
-		
+
 		replayMenu.add(new SkipStopAction());
 		replayMenu.add(new SkipBallPlacementAction());
-		
+
 		JPanel topPanel = new JPanel();
 		topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.LINE_AXIS));
 		topPanel.add(slider);
 		final JPanel timeStepPanel = createTimeStepPanel();
 		topPanel.add(timeStepPanel);
 		add(topPanel, BorderLayout.CENTER);
-		
+
 		JPanel bottomPanel = new JPanel();
 		bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.LINE_AXIS));
 		bottomPanel.add(btnFastBwd);
@@ -209,11 +208,11 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		bottomPanel.add(btnSnap);
 		bottomPanel.add(btnSnapCopy);
 		bottomPanel.add(speedSlider);
-		
+
 		add(bottomPanel, BorderLayout.PAGE_END);
 	}
-	
-	
+
+
 	/**
 	 * @param action
 	 */
@@ -221,16 +220,16 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 	{
 		replayMenu.add(new JCheckBoxMenuItem(action));
 	}
-	
-	
+
+
 	private void registerShortcut(JComponent component, KeyStroke keyStroke, Action action)
 	{
 		String actionCommand = action.getClass().getCanonicalName();
 		component.getInputMap(WHEN_IN_FOCUSED_WINDOW).put(keyStroke, actionCommand);
 		component.getActionMap().put(actionCommand, action);
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -241,8 +240,8 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		panel.add(timeStepLabel);
 		return panel;
 	}
-	
-	
+
+
 	@SuppressWarnings("squid:S1149") // Hashtable -> dictated by swing
 	private JSlider createSpeedSlider()
 	{
@@ -271,8 +270,8 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 		speedSlider.setLabelTable(dict);
 		return speedSlider;
 	}
-	
-	
+
+
 	/**
 	 * @param timeMax
 	 */
@@ -280,8 +279,8 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 	{
 		slider.setMaximum((int) (timeMax / SLIDER_SCALE));
 	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -290,8 +289,8 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 	{
 		observers.add(observer);
 	}
-	
-	
+
+
 	private class PlayAction extends AbstractAction
 	{
 		@Override
@@ -312,11 +311,11 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 			repaint();
 		}
 	}
-	
-	
+
+
 	private class SpeedSliderListener implements ChangeListener
 	{
-		
+
 		@Override
 		public void stateChanged(final ChangeEvent e)
 		{
@@ -336,14 +335,14 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 				o.onSetSpeed(newSpeed);
 			}
 		}
-		
+
 	}
-	
+
 	private class SliderListener implements ChangeListener, MouseListener
 	{
 		private int value = 0;
-		
-		
+
+
 		@Override
 		public void stateChanged(final ChangeEvent e)
 		{
@@ -356,23 +355,23 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 				}
 			}
 		}
-		
-		
+
+
 		@Override
 		public void mouseClicked(final MouseEvent e)
 		{
 			// ignored
 		}
-		
-		
+
+
 		@Override
 		public void mousePressed(final MouseEvent e)
 		{
 			settingSliderByHand = true;
 			value = slider.getValue();
 		}
-		
-		
+
+
 		@Override
 		public void mouseReleased(final MouseEvent e)
 		{
@@ -382,23 +381,23 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 				o.onChangeAbsoluteTime(value * SLIDER_SCALE);
 			}
 		}
-		
-		
+
+
 		@Override
 		public void mouseEntered(final MouseEvent e)
 		{
 			// ignored
 		}
-		
-		
+
+
 		@Override
 		public void mouseExited(final MouseEvent e)
 		{
 			// ignored
 		}
 	}
-	
-	
+
+
 	private class SkipOneFrameFwdAction extends AbstractAction
 	{
 		@Override
@@ -410,7 +409,7 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 			}
 		}
 	}
-	
+
 	private class SkipOneFrameBwdAction extends AbstractAction
 	{
 		@Override
@@ -422,8 +421,8 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 			}
 		}
 	}
-	
-	
+
+
 	private class SkipFwdAction extends AbstractAction
 	{
 		@Override
@@ -435,7 +434,7 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 			}
 		}
 	}
-	
+
 	private class SkipBwdAction extends AbstractAction
 	{
 		@Override
@@ -447,7 +446,7 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 			}
 		}
 	}
-	
+
 	private class FastFwdAction extends AbstractAction
 	{
 		@Override
@@ -459,10 +458,10 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 			}
 		}
 	}
-	
+
 	private class FastBwdAction extends AbstractAction
 	{
-		
+
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
@@ -472,10 +471,10 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 			}
 		}
 	}
-	
+
 	private class SnapshotAction extends AbstractAction
 	{
-		
+
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
@@ -485,10 +484,10 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 			}
 		}
 	}
-	
+
 	private class SnapshotCopyAction extends AbstractAction
 	{
-		
+
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
@@ -498,16 +497,16 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 			}
 		}
 	}
-	
-	
+
+
 	private class SkipStopAction extends AbstractAction
 	{
 		public SkipStopAction()
 		{
 			super("Skip STOP state");
 		}
-		
-		
+
+
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
@@ -518,15 +517,15 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 			}
 		}
 	}
-	
+
 	private class SkipBallPlacementAction extends AbstractAction
 	{
 		public SkipBallPlacementAction()
 		{
 			super("Skip Ball Placement");
 		}
-		
-		
+
+
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
@@ -537,19 +536,19 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 			}
 		}
 	}
-	
+
 	private class JumpCommandAction extends AbstractAction
 	{
-		private final Referee.SSL_Referee.Command command;
-		
-		
-		public JumpCommandAction(Referee.SSL_Referee.Command command)
+		private final SslGcRefereeMessage.Referee.Command command;
+
+
+		public JumpCommandAction(SslGcRefereeMessage.Referee.Command command)
 		{
 			super(command.name());
 			this.command = command;
 		}
-		
-		
+
+
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
@@ -559,19 +558,19 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 			}
 		}
 	}
-	
+
 	private class JumpGameEventAction extends AbstractAction
 	{
 		private final EGameEvent gameEvent;
-		
-		
+
+
 		public JumpGameEventAction(EGameEvent gameEvent)
 		{
 			super(gameEvent.name());
 			this.gameEvent = gameEvent;
 		}
-		
-		
+
+
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
@@ -581,8 +580,8 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 			}
 		}
 	}
-	
-	
+
+
 	@Override
 	public void onPositionChanged(final long position)
 	{
@@ -591,8 +590,8 @@ public class ReplayControlPanel extends JPanel implements IReplayPositionObserve
 			slider.setValue((int) (position / SLIDER_SCALE));
 		}
 	}
-	
-	
+
+
 	/**
 	 * @return the timeStepLabel
 	 */

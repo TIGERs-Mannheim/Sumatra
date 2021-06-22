@@ -1,17 +1,15 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.data;
 
 /**
  * Bot information for bots table
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public enum EBotInformation
 {
-	BATTERY("Battery [%]"),
+	BATTERY("Battery [V]"),
 	KICKER_CHARGE("Kicker [V]"),
 	BROKEN_FEATURES("Broken Features"),
 	BALL_CONTACT("Ball Contact"),
@@ -28,22 +26,32 @@ public enum EBotInformation
 	SKILL("Skill"),
 	SKILL_STATE("Skill State"),
 	BOT_SKILL("Bot Skill"),
+	PRIMARY_DIR("Primary Dir"),
 	AVG_PROC_TIME("Avg Proc Time [ms]"),
 	MAX_PROC_TIME("Max Proc Time [ms]"),
 	VERSION("SW Version"),
-	
+	HW_ID("HW ID"),
+	LAST_FEEDBACK("Last feedback"),
+	NRF_TX_LOSS("Nrf tx loss"),
+	NRF_TX_PACKETS("Nrf tx packets"),
+	NRF_RX_LOSS("Nrf rx loss"),
+	NRF_RX_PACKETS("Nrf rx packets"),
+	NRF_LINK_QUALITY("Nrf link quality"),
+	NRF_PACKETS_MAX_RT("Nrf packets max rt"),
+	NRF_PACKETS_ACKED("Nrf packets acked"),
+
 	;
-	
-	
+
+
 	private final String label;
-	
-	
+
+
 	EBotInformation(final String label)
 	{
 		this.label = label;
 	}
-	
-	
+
+
 	public String getLabel()
 	{
 		return label;

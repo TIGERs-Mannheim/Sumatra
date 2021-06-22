@@ -1,11 +1,7 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoref.presenter;
-
-import java.awt.Component;
-import java.awt.EventQueue;
-import java.util.Optional;
 
 import edu.tigers.autoref.view.main.AutoRefMainPanel;
 import edu.tigers.autoref.view.main.StartStopPanel.IStartStopPanelObserver;
@@ -20,11 +16,16 @@ import edu.tigers.sumatra.referee.gameevent.IGameEvent;
 import edu.tigers.sumatra.views.ISumatraView;
 import edu.tigers.sumatra.views.ISumatraViewPresenter;
 
+import java.awt.Component;
+import java.awt.EventQueue;
+import java.util.Optional;
 
-public class AutoRefPresenter implements ISumatraViewPresenter, IStartStopPanelObserver, IAutoRefObserver,
-		IEnumPanelObserver<EGameEventDetectorType>
+
+public class AutoRefPresenter
+		implements ISumatraViewPresenter, IStartStopPanelObserver, IAutoRefObserver
 {
 	private AutoRefMainPanel mainPanel = new AutoRefMainPanel();
+	private final GameEventDetectorObserver gameEventDetectorObserver = new GameEventDetectorObserver();
 
 
 	@Override
@@ -45,7 +46,7 @@ public class AutoRefPresenter implements ISumatraViewPresenter, IStartStopPanelO
 	public void onModuliStateChanged(final ModulesState state)
 	{
 		Optional<AutoRefModule> optModule = SumatraModel.getInstance().getModuleOpt(AutoRefModule.class);
-		if (!optModule.isPresent())
+		if (optModule.isEmpty())
 		{
 			return;
 		}
@@ -56,7 +57,7 @@ public class AutoRefPresenter implements ISumatraViewPresenter, IStartStopPanelO
 				optModule.ifPresent(autoRef -> autoRef.addObserver(this));
 				EventQueue.invokeLater(() -> mainPanel.setEnabled(true));
 				mainPanel.getStartStopPanel().addObserver(this);
-				mainPanel.getGameEventDetectorPanel().addObserver(this);
+				mainPanel.getGameEventDetectorPanel().addObserver(gameEventDetectorObserver);
 				mainPanel.getGameEventDetectorPanel().setSelectedBoxes(EGameEventDetectorType.valuesEnabledByDefault());
 				optModule.ifPresent(autoRef -> mainPanel.getStartStopPanel().setAutoRefMode(autoRef.getMode()));
 				break;
@@ -64,7 +65,7 @@ public class AutoRefPresenter implements ISumatraViewPresenter, IStartStopPanelO
 			case RESOLVED:
 				optModule.ifPresent(autoRef -> autoRef.removeObserver(this));
 				mainPanel.getStartStopPanel().removeObserver(this);
-				mainPanel.getGameEventDetectorPanel().removeObserver(this);
+				mainPanel.getGameEventDetectorPanel().removeObserver(gameEventDetectorObserver);
 				EventQueue.invokeLater(() -> mainPanel.setEnabled(false));
 				break;
 		}
@@ -79,14 +80,6 @@ public class AutoRefPresenter implements ISumatraViewPresenter, IStartStopPanelO
 
 
 	@Override
-	public void onValueTicked(final EGameEventDetectorType type, final boolean value)
-	{
-		AutoRefModule autoRef = SumatraModel.getInstance().getModule(AutoRefModule.class);
-		autoRef.setGameEventDetectorActive(type, value);
-	}
-
-
-	@Override
 	public void changeMode(final EAutoRefMode mode)
 	{
 		EventQueue.invokeLater(() -> SumatraModel.getInstance().getModule(AutoRefModule.class).changeMode(mode));
@@ -97,5 +90,15 @@ public class AutoRefPresenter implements ISumatraViewPresenter, IStartStopPanelO
 	public void onNewGameEventDetected(final IGameEvent gameEvent)
 	{
 		// empty
+	}
+
+	private static class GameEventDetectorObserver implements IEnumPanelObserver<EGameEventDetectorType>
+	{
+		@Override
+		public void onValueTicked(final EGameEventDetectorType type, final boolean value)
+		{
+			AutoRefModule autoRef = SumatraModel.getInstance().getModule(AutoRefModule.class);
+			autoRef.setGameEventDetectorActive(type, value);
+		}
 	}
 }

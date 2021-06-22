@@ -1,6 +1,6 @@
+:imagesdir: ../images
+
 [[section-design-decisions]]
-:imagesdir: ./images
 == Design Decisions
 
-
-
+TBD

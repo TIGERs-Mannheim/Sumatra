@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
@@ -18,23 +18,21 @@ import edu.tigers.sumatra.math.vector.Vector2f;
 
 /**
  * This is the drawable ellipse that fits to the normal Ellipse
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 @Persistent(version = 1)
 public class DrawableEllipse extends ADrawableWithStroke
 {
-	private IEllipse	ellipse;
-	private boolean	fill	= false;
-	
-	
+	private IEllipse ellipse;
+	private boolean fill = false;
+
+
 	@SuppressWarnings("unused")
 	private DrawableEllipse()
 	{
 		ellipse = Ellipse.createEllipse(Vector2f.ZERO_VECTOR, 1, 1);
 	}
-	
-	
+
+
 	/**
 	 * @param ellipse
 	 * @param color
@@ -44,8 +42,8 @@ public class DrawableEllipse extends ADrawableWithStroke
 		this.ellipse = ellipse;
 		setColor(color);
 	}
-	
-	
+
+
 	/**
 	 * @param ellipse
 	 */
@@ -53,17 +51,17 @@ public class DrawableEllipse extends ADrawableWithStroke
 	{
 		this.ellipse = ellipse;
 	}
-	
-	
+
+
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
 		super.paintShape(g, tool, invert);
-		
+
 		Rectangle r = getBounds(tool, invert);
-		
+
 		double rot = tool.getFieldTurn().getAngle() + ellipse.getTurnAngle();
-		
+
 		g.rotate(-rot, r.x + (r.width / 2.0), r.y + (r.height / 2.0));
 		if (fill)
 		{
@@ -74,8 +72,8 @@ public class DrawableEllipse extends ADrawableWithStroke
 		}
 		g.rotate(rot, r.x + (r.width / 2.0), r.y + (r.height / 2.0));
 	}
-	
-	
+
+
 	private Rectangle getBounds(final IDrawableTool fieldPanel, final boolean invert)
 	{
 		IVector2 center = fieldPanel.transformToGuiCoordinates(ellipse.center(), invert);
@@ -85,12 +83,12 @@ public class DrawableEllipse extends ADrawableWithStroke
 		int height = fieldPanel.scaleYLength(ellipse.getRadiusX()) * 2;
 		return new Rectangle(x, y, width, height);
 	}
-	
-	
+
+
 	@Override
-	public void setFill(final boolean fill)
+	public DrawableEllipse setFill(final boolean fill)
 	{
 		this.fill = fill;
+		return this;
 	}
-	
 }

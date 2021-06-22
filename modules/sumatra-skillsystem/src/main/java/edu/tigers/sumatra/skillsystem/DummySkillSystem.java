@@ -1,13 +1,19 @@
-package edu.tigers.sumatra.skillsystem;
+/*
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ */
 
-import java.util.Collections;
-import java.util.List;
+package edu.tigers.sumatra.skillsystem;
 
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.skillsystem.skills.ISkill;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 public class DummySkillSystem extends ASkillSystem
@@ -17,45 +23,59 @@ public class DummySkillSystem extends ASkillSystem
 	{
 		// empty
 	}
-	
-	
+
+
 	@Override
 	public void reset(final BotID botId)
 	{
 		// empty
 	}
-	
-	
+
+
 	@Override
 	public void reset(final ETeamColor color)
 	{
 		// empty
 	}
-	
-	
+
+
 	@Override
 	public List<ISkill> getCurrentSkills(final ETeamColor teamColor)
 	{
 		return Collections.emptyList();
 	}
-	
-	
+
+
 	@Override
-	public ShapeMap process(final WorldFrameWrapper wfw, final ETeamColor teamColor)
+	public Map<BotID, ShapeMap> process(final WorldFrameWrapper wfw, final ETeamColor teamColor)
 	{
-		return new ShapeMap();
+		return new HashMap<>();
 	}
-	
-	
+
+
 	@Override
 	public void emergencyStop()
 	{
 		// empty
 	}
-	
-	
+
+
 	@Override
 	public void emergencyStop(final ETeamColor teamColor)
+	{
+		// empty
+	}
+
+
+	@Override
+	public void addSkillExecutorPostHook(ISkillExecutorPostHook hook)
+	{
+		// empty
+	}
+
+
+	@Override
+	public void removeSkillExecutorPostHook(ISkillExecutorPostHook hook)
 	{
 		// empty
 	}

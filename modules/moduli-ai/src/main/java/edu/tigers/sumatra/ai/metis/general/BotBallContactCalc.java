@@ -1,68 +1,69 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.general;
 
-import java.awt.Color;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
-import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.util.BotLastTouchedBallCalculator;
+import lombok.Getter;
+
+import java.awt.Color;
+import java.util.Collections;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 
 /**
  * This calculator determines the bot that last touched the ball.
  * Currently, there is only the vision data available, so the information may not be accurate
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class BotBallContactCalc extends ACalculator
 {
+	private final BotLastTouchedBallCalculator botLastTouchedBallCalculator = new BotLastTouchedBallCalculator();
+
+	@Getter
+	private Set<BotID> botsLastTouchedBall;
+
+	@Getter
+	private Set<BotID> currentlyTouchingBots;
+
+
 	@Override
-	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+	public void doCalc()
 	{
-		BotLastTouchedBallCalculator calculator = new BotLastTouchedBallCalculator(getWFrame(),
-				baseAiFrame.getPrevFrame().getWorldFrame());
-		
-		Set<BotID> currentlyTouchingBots = calculator.currentlyTouchingBots().stream()
+		currentlyTouchingBots = botLastTouchedBallCalculator.currentlyTouchingBots(getWFrame()).stream()
 				.map(b -> getWFrame().getBot(b))
 				.map(ITrackedBot::getBotId)
-				.collect(Collectors.toSet());
-		
-		newTacticalField.setBotsTouchingBall(currentlyTouchingBots);
-		
-		final Set<BotID> botsLastTouchedBall = new HashSet<>();
+				.collect(Collectors.toUnmodifiableSet());
+
 		if (!currentlyTouchingBots.isEmpty())
 		{
-			botsLastTouchedBall.addAll(currentlyTouchingBots);
-		} else
-		{
-			// note: creating a new hash set here to ensure that we do not wrap infinite number of
-			// unmodifiable collections in tactical field
-			botsLastTouchedBall.addAll(baseAiFrame.getPrevFrame().getTacticalField().getBotsLastTouchedBall());
+			botsLastTouchedBall = currentlyTouchingBots;
 		}
-		newTacticalField.setBotsLastTouchedBall(botsLastTouchedBall);
-		
-		newTacticalField.getBotsLastTouchedBall().stream()
+
+		botsLastTouchedBall.stream()
 				.filter(b -> !currentlyTouchingBots.contains(b))
 				.map(b -> getWFrame().getBot(b))
 				.filter(Objects::nonNull)
-				.forEach(b -> newTacticalField.getDrawableShapes().get(EAiShapesLayer.AI_BALL_CONTACT)
-						.add(new DrawableCircle(b.getPos(), 100, Color.BLUE)));
+				.forEach(b -> getShapes(EAiShapesLayer.AI_BALL_CONTACT)
+						.add(new DrawableCircle(b.getPos(), 120, Color.BLUE)));
 		currentlyTouchingBots.stream()
 				.map(b -> getWFrame().getBot(b))
 				.filter(Objects::nonNull)
-				.forEach(b -> newTacticalField.getDrawableShapes().get(EAiShapesLayer.AI_BALL_CONTACT)
+				.forEach(b -> getShapes(EAiShapesLayer.AI_BALL_CONTACT)
 						.add(new DrawableCircle(b.getPos(), 100, Color.RED)));
+	}
+
+
+	@Override
+	protected void reset()
+	{
+		botsLastTouchedBall = Collections.emptySet();
 	}
 }

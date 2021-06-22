@@ -1,14 +1,8 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills.util;
-
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.IPenaltyArea;
@@ -19,21 +13,30 @@ import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.line.v2.Lines;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.pathfinder.MovementCon;
+import edu.tigers.sumatra.pathfinder.IMovementCon;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrame;
+import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 
 public class PositionValidator
 {
-	private static final double INSIDE_FIELD_MARGIN = 20;
+	private static final double INSIDE_FIELD_MARGIN = -20;
 
 	private WorldFrame wFrame;
-	private MovementCon moveCon;
+	private IMovementCon moveCon;
 	private Map<ETeam, Double> marginToPenArea = new EnumMap<>(ETeam.class);
+	@Setter
+	private double marginToFieldBorder = INSIDE_FIELD_MARGIN;
 
 
-	public void update(final WorldFrame wFrame, final MovementCon moveCon)
+	public void update(final WorldFrame wFrame, final IMovementCon moveCon)
 	{
 		this.wFrame = wFrame;
 		this.moveCon = moveCon;
@@ -62,7 +65,7 @@ public class PositionValidator
 
 	public Optional<ITrackedBot> findCollidingOpponent(final IVector2 point)
 	{
-		return wFrame.getFoeBots().values().stream()
+		return wFrame.getOpponentBots().values().stream()
 				.filter(tBot -> tBot.getPos().distanceTo(point) < Geometry.getBotRadius() * 2)
 				.findFirst();
 	}
@@ -76,7 +79,7 @@ public class PositionValidator
 	 */
 	public IVector2 movePosInsideFieldWrtBallPos(final IVector2 pos)
 	{
-		IRectangle field = Geometry.getField().withMargin(-INSIDE_FIELD_MARGIN);
+		IRectangle field = Geometry.getField().withMargin(marginToFieldBorder);
 		if (!field.isPointInShape(pos))
 		{
 			List<IVector2> intersections = field
@@ -99,7 +102,7 @@ public class PositionValidator
 	 */
 	public IVector2 movePosInsideField(final IVector2 pos)
 	{
-		IRectangle field = Geometry.getField().withMargin(-INSIDE_FIELD_MARGIN);
+		IRectangle field = Geometry.getField().withMargin(marginToFieldBorder);
 		if (!field.isPointInShape(pos))
 		{
 			return field.nearestPointInside(pos);
@@ -168,18 +171,18 @@ public class PositionValidator
 	{
 		if (moveCon != null)
 		{
-			if (moveCon.isPenaltyAreaForbiddenOur() && moveCon.isPenaltyAreaForbiddenTheir())
+			if (moveCon.isPenaltyAreaOurObstacle() && moveCon.isPenaltyAreaTheirObstacle())
 			{
 				return movePosOutOfPenAreaWrtBall(pos, margin, ETeam.BOTH);
-			} else if (moveCon.isPenaltyAreaForbiddenTheir())
+			} else if (moveCon.isPenaltyAreaTheirObstacle())
 			{
 				return movePosOutOfPenAreaWrtBall(pos, margin, ETeam.OPPONENTS);
-			} else if (moveCon.isPenaltyAreaForbiddenOur())
+			} else if (moveCon.isPenaltyAreaOurObstacle())
 			{
 				return movePosOutOfPenAreaWrtBall(pos, margin, ETeam.TIGERS);
 			}
 		}
-		return movePosOutOfPenAreaWrtBall(pos, margin, ETeam.UNKNOWN);
+		return pos;
 	}
 
 

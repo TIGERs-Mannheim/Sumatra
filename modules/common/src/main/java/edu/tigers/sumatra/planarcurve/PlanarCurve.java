@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.planarcurve;
 
@@ -23,8 +23,7 @@ import java.util.List;
 public class PlanarCurve
 {
 	private final List<PlanarCurveSegment> segments;
-	
-	
+
 	/**
 	 * Constructor from list of segments.
 	 * 
@@ -40,22 +39,59 @@ public class PlanarCurve
 	{
 		return segments;
 	}
-	
-	
+
+
 	/**
 	 * Get end time of this curve.
-	 * 
+	 *
 	 * @return
 	 */
 	public double getTEnd()
 	{
 		return segments.get(segments.size() - 1).getEndTime();
 	}
-	
-	
+
+
+	/**
+	 * Get start time of this curve, usually zero.
+	 *
+	 * @return
+	 */
+	public double getTStart()
+	{
+		return segments.get(0).getStartTime();
+	}
+
+
+	/**
+	 * Get state (pos, vel, acc) of a curve at a certain time.
+	 *
+	 * @param t
+	 * @return
+	 */
+	public PlanarCurveState getState(double t)
+	{
+		for (var segment : segments)
+		{
+			if (t <= segment.getEndTime())
+			{
+				double tQuery = t - segment.getStartTime();
+				return new PlanarCurveState(segment.getPosition(tQuery), segment.getVelocity(tQuery), segment.getAcc());
+			}
+		}
+
+		// we came here because t is beyond tEnd, hence we use the last segment
+		var lastSegment = segments.get(segments.size() - 1);
+		double tQuery = lastSegment.getDuration();
+
+		return new PlanarCurveState(lastSegment.getPosition(tQuery), lastSegment.getVelocity(tQuery),
+				lastSegment.getAcc());
+	}
+
+
 	/**
 	 * Create a curve from a simple point.
-	 * 
+	 *
 	 * @param point
 	 * @return
 	 */

@@ -3,13 +3,13 @@
  */
 package edu.tigers.sumatra.ai.metis.general;
 
-import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
-import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.wp.data.BallLeftFieldPosition;
 import edu.tigers.sumatra.wp.util.BallLeftFieldCalculator;
+import lombok.Getter;
 
 
 /**
@@ -18,18 +18,21 @@ import edu.tigers.sumatra.wp.util.BallLeftFieldCalculator;
 public class BallLeftFieldCalc extends ACalculator
 {
 	private final BallLeftFieldCalculator ballLeftFieldCalculator = new BallLeftFieldCalculator();
-	
-	
+
+	@Getter
+	private BallLeftFieldPosition ballLeftFieldPosition;
+
+
 	@Override
-	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+	public void doCalc()
 	{
-		newTacticalField.setBallLeftFieldPos(ballLeftFieldCalculator.process(getWFrame()));
-		
-		if (newTacticalField.getBallLeftFieldPos() != null)
+		ballLeftFieldPosition = ballLeftFieldCalculator.process(getWFrame());
+
+		if (ballLeftFieldPosition != null)
 		{
-			newTacticalField.getDrawableShapes().get(EAiShapesLayer.AI_BALL_LEFT_FIELD).add(
+			getShapes(EAiShapesLayer.AI_BALL_LEFT_FIELD).add(
 					new DrawableCircle(
-							Circle.createCircle(newTacticalField.getBallLeftFieldPos().getPosition().getPos(), 100)));
+							Circle.createCircle(ballLeftFieldPosition.getPosition().getPos(), 100)));
 		}
 	}
 }

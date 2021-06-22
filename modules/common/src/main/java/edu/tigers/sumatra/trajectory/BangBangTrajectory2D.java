@@ -1,217 +1,153 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.trajectory;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import edu.tigers.sumatra.math.SumatraMath;
+import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.planarcurve.IPlanarCurveProvider;
-import edu.tigers.sumatra.planarcurve.PlanarCurve;
-import edu.tigers.sumatra.planarcurve.PlanarCurveSegment;
-import edu.tigers.sumatra.trajectory.BangBangTrajectory1D.PosVelAcc;
+import lombok.ToString;
+import net.jafama.DoubleWrapper;
+import net.jafama.FastMath;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 
 
 /**
  * Bang Bang Trajectory for two dimensions.
- * 
- * @author AndreR
  */
-public class BangBangTrajectory2D implements ITrajectory<IVector2>, IPlanarCurveProvider
+@ToString
+class BangBangTrajectory2D implements ITrajectory<IVector2>
 {
-	private static final double SYNC_ACCURACY = 0.001;
-	
-	private final BangBangTrajectory1D x;
-	private final BangBangTrajectory1D y;
-	private double alpha;
-	
-	
-	@SuppressWarnings("unused")
-	protected BangBangTrajectory2D()
-	{
-		x = new BangBangTrajectory1D();
-		y = new BangBangTrajectory1D();
-	}
-	
-	
-	/**
-	 * @param x
-	 * @param y
-	 */
-	protected BangBangTrajectory2D(final BangBangTrajectory1D x, final BangBangTrajectory1D y)
-	{
-		this.x = x;
-		this.y = y;
-	}
-	
-	
-	/**
-	 * @param initialPos [m]
-	 * @param finalPos [m]
-	 * @param initialVel [m/s]
-	 * @param maxVel [m/s]
-	 * @param maxAcc [m/s^2]
-	 * @param alpha
-	 */
-	BangBangTrajectory2D(final IVector2 initialPos,
-			final IVector2 finalPos,
-			final IVector2 initialVel,
-			final double maxVel,
-			final double maxAcc,
-			final double alpha)
-	{
-		this();
-		generateTrajectory(initialPos, finalPos, initialVel, maxVel, maxAcc, alpha);
-		this.alpha = alpha;
-	}
-	
-	
-	/**
-	 * @param initialPos [m]
-	 * @param finalPos [m]
-	 * @param initialVel [m/s]
-	 * @param maxVel [m/s]
-	 * @param maxAcc [m/s^2]
-	 */
-	public BangBangTrajectory2D(final IVector2 initialPos,
-			final IVector2 finalPos,
-			final IVector2 initialVel,
-			final double maxVel,
-			final double maxAcc)
-	{
-		this();
-		generateTrajectory(initialPos, finalPos, initialVel, maxVel, maxAcc, a -> a);
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public BangBangTrajectory1D getX()
-	{
-		return x;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public BangBangTrajectory1D getY()
-	{
-		return y;
-	}
-	
-	
+	final BangBangTrajectory1D x = new BangBangTrajectory1D();
+	final BangBangTrajectory1D y = new BangBangTrajectory1D();
+
+
 	@Override
 	public Vector2 getPositionMM(final double t)
 	{
 		return Vector2.fromXY(x.getPositionMM(t), y.getPositionMM(t));
 	}
-	
-	
+
+
 	@Override
 	public Vector2 getPosition(final double t)
 	{
 		return Vector2.fromXY(x.getPosition(t), y.getPosition(t));
 	}
-	
-	
+
+
 	@Override
 	public Vector2 getVelocity(final double t)
 	{
 		return Vector2.fromXY(x.getVelocity(t), y.getVelocity(t));
 	}
-	
-	
+
+
 	@Override
 	public Vector2 getAcceleration(final double t)
 	{
 		return Vector2.fromXY(x.getAcceleration(t), y.getAcceleration(t));
 	}
-	
-	
-	/**
-	 * returns time in seconds
-	 */
+
+
 	@Override
 	public double getTotalTime()
 	{
 		return Math.max(x.getTotalTime(), y.getTotalTime());
 	}
-	
-	
+
+
 	@Override
-	public PlanarCurve getPlanarCurve()
+	public BangBangTrajectory2D mirrored()
 	{
-		return getPlanarCurve(t -> {
-			PosVelAcc stateX = x.getValuesAtTime(t);
-			PosVelAcc stateY = y.getValuesAtTime(t);
-			PosVelAcc2D result = new PosVelAcc2D();
-			result.pos = Vector2.fromXY(stateX.pos, stateY.pos);
-			result.vel = Vector2.fromXY(stateX.vel, stateY.vel);
-			result.acc = Vector2.fromXY(stateX.acc, stateY.acc);
-			return result;
-		});
+		BangBangTrajectory2D mirrored = new BangBangTrajectory2D();
+		mirrored.x.numParts = x.numParts;
+		mirrored.y.numParts = y.numParts;
+		for (int i = 0; i < BangBangTrajectory1D.MAX_PARTS; i++)
+		{
+			mirrored.x.parts[i].tEnd = x.parts[i].tEnd;
+			mirrored.x.parts[i].acc = -x.parts[i].acc;
+			mirrored.x.parts[i].v0 = -x.parts[i].v0;
+			mirrored.x.parts[i].s0 = -x.parts[i].s0;
+			mirrored.y.parts[i].tEnd = y.parts[i].tEnd;
+			mirrored.y.parts[i].acc = -y.parts[i].acc;
+			mirrored.y.parts[i].v0 = -y.parts[i].v0;
+			mirrored.y.parts[i].s0 = -y.parts[i].s0;
+		}
+		return mirrored;
 	}
-	
-	
-	public double getAlpha()
+
+
+	@Override
+	public PosVelAcc<IVector2> getValuesAtTime(final double tt)
 	{
-		return alpha;
+		PosVelAcc<Double> xValues = x.getValuesAtTime(tt);
+		PosVelAcc<Double> yValues = y.getValuesAtTime(tt);
+		return new PosVelAcc<>(
+				Vector2.fromXY(xValues.getPos(), yValues.getPos()),
+				Vector2.fromXY(xValues.getVel(), yValues.getVel()),
+				Vector2.fromXY(xValues.getAcc(), yValues.getAcc())
+		);
 	}
-	
-	
+
+
+	@Override
+	public List<Double> getTimeSections()
+	{
+		List<Double> list = new ArrayList<>(x.getTimeSections());
+		list.addAll(y.getTimeSections());
+		return list;
+	}
+
+
 	/**
-	 * @param initialPos
-	 * @param finalPos
-	 * @param initialVel
-	 * @param maxVel
-	 * @param maxAcc
+	 * Generate the trajectory based on the input parameters and returns this instance for chaining.
+	 *
+	 * @param s0       initial position
+	 * @param s1       target position
+	 * @param v0       initial velocity
+	 * @param vmax     max velocity
+	 * @param acc      acceleration
+	 * @param accuracy synchronization accuracy
+	 * @param alphaFn  alpha function for synchronization
+	 * @return this for chaining
 	 */
-	public void updateTrajectory(final IVector2 initialPos,
-			final IVector2 finalPos,
-			final IVector2 initialVel,
-			final double maxVel,
-			final double maxAcc)
+	BangBangTrajectory2D generate(
+			final IVector2 s0,
+			final IVector2 s1,
+			final IVector2 v0,
+			final float vmax,
+			final float acc,
+			final float accuracy,
+			final Function<Float, Float> alphaFn
+	)
 	{
-		generateTrajectory(initialPos, finalPos, initialVel, maxVel, maxAcc, a -> a);
-	}
-	
-	
-	@Override
-	public String toString()
-	{
-		return "x:\n" +
-				x +
-				"y:\n" +
-				y;
-	}
-	
-	
-	@FunctionalInterface
-	protected interface AlphaProvider
-	{
-		double getAlpha(double alpha);
-	}
-	
-	
-	protected void generateTrajectory(final IVector2 s0, final IVector2 s1, final IVector2 v0, final double vmax,
-			final double acc, final AlphaProvider calc)
-	{
-		double inc = Math.PI / 8.0;
-		alpha = Math.PI / 4.0;
-		
+		final var s0x = (float) s0.x();
+		final var s0y = (float) s0.y();
+		final var s1x = (float) s1.x();
+		final var s1y = (float) s1.y();
+		final var v0x = (float) v0.x();
+		final var v0y = (float) v0.y();
+
+		float inc = (float) AngleMath.PI / 8.0f;
+		float alpha = (float) AngleMath.PI / 4.0f;
+
 		// binary search, some iterations (fixed)
 		while (inc > 1e-7)
 		{
-			generateTrajectory(s0, s1, v0, vmax, acc, calc.getAlpha(alpha));
-			
+			DoubleWrapper cos = new DoubleWrapper();
+			final float sA = (float) FastMath.sinAndCos(alphaFn.apply(alpha), cos);
+			final float cA = (float) cos.value;
+
+			x.generate(s0x, s1x, v0x, vmax * cA, acc * cA);
+			y.generate(s0y, s1y, v0y, vmax * sA, acc * sA);
+
 			double diff = Math.abs(x.getTotalTime() - y.getTotalTime());
-			if (diff < SYNC_ACCURACY)
+			if (diff < accuracy)
 			{
 				break;
 			}
@@ -222,92 +158,9 @@ public class BangBangTrajectory2D implements ITrajectory<IVector2>, IPlanarCurve
 			{
 				alpha += inc;
 			}
-			
+
 			inc *= 0.5f;
 		}
-	}
-	
-	
-	private void generateTrajectory(final IVector2 s0, final IVector2 s1, final IVector2 v0, final double vmax,
-			final double acc, final double alpha)
-	{
-		float cA = (float) SumatraMath.cos(alpha);
-		float sA = (float) SumatraMath.sin(alpha);
-		
-		x.initialPos = (float) s0.x();
-		x.finalPos = (float) s1.x();
-		x.initialVel = (float) v0.x();
-		x.maxVel = (float) vmax * cA;
-		x.maxAcc = (float) acc * cA;
-		x.generateTrajectory();
-		y.initialPos = (float) s0.y();
-		y.finalPos = (float) s1.y();
-		y.initialVel = (float) v0.y();
-		y.maxVel = (float) vmax * sA;
-		y.maxAcc = (float) acc * sA;
-		y.generateTrajectory();
-	}
-	
-	protected static class PosVelAcc2D
-	{
-		protected Vector2 pos; // [m]
-		protected Vector2 vel; // [m/s]
-		protected Vector2 acc; // [m/s^2]
-	}
-	
-	@FunctionalInterface
-	protected interface StateProvider
-	{
-		PosVelAcc2D getState(double t);
-	}
-	
-	
-	protected PlanarCurve getPlanarCurve(final StateProvider stateProvider)
-	{
-		List<PlanarCurveSegment> segments = new ArrayList<>();
-		
-		List<Double> tQuery = new ArrayList<>();
-		x.getParts().forEach(p -> tQuery.add((double) p.tEnd));
-		y.getParts().forEach(p -> tQuery.add((double) p.tEnd));
-		
-		tQuery.sort(Double::compare);
-		
-		PosVelAcc2D state = stateProvider.getState(0);
-		
-		double tLast = 0;
-		
-		for (Double t : tQuery)
-		{
-			IVector2 pos = state.pos.multiply(1e3);
-			IVector2 vel = state.vel.multiply(1e3);
-			IVector2 acc = state.acc.multiply(1e3);
-			if (!SumatraMath.isZero(t - tLast))
-			{
-				if (SumatraMath.isZero(acc.getLength2()))
-				{
-					segments.add(PlanarCurveSegment.fromFirstOrder(pos, vel, tLast, t));
-				} else
-				{
-					segments.add(PlanarCurveSegment.fromSecondOrder(pos, vel, acc, tLast, t));
-				}
-			}
-			
-			state = stateProvider.getState(t);
-			tLast = t;
-		}
-		
-		if (segments.isEmpty())
-		{
-			segments.add(PlanarCurveSegment.fromPoint(Vector2.fromXY(x.initialPos, y.initialPos).multiply(1e3), 0, 1.0));
-		}
-		
-		return new PlanarCurve(segments);
-	}
-	
-	
-	@Override
-	public BangBangTrajectory2D mirrored()
-	{
-		return new BangBangTrajectory2D(x.mirrored(), y.mirrored());
+		return this;
 	}
 }

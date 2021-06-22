@@ -1,8 +1,20 @@
+/*
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.referee.control;
 
-import edu.tigers.sumatra.Referee;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.referee.proto.SslGcApi;
+import edu.tigers.sumatra.referee.proto.SslGcChange;
+import edu.tigers.sumatra.referee.proto.SslGcCommon;
+import edu.tigers.sumatra.referee.proto.SslGcGeometry;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
+import edu.tigers.sumatra.referee.proto.SslGcState;
+
+import java.util.EnumMap;
+import java.util.Map;
 
 
 /**
@@ -10,184 +22,247 @@ import edu.tigers.sumatra.math.vector.IVector2;
  */
 public final class GcEventFactory
 {
+	private static final Map<SslGcRefereeMessage.Referee.Command, SslGcState.Command> commandMap = new EnumMap<>(
+			SslGcRefereeMessage.Referee.Command.class);
+
+	static
+	{
+		commandMap.put(SslGcRefereeMessage.Referee.Command.HALT,
+				SslGcState.Command.newBuilder().setType(SslGcState.Command.Type.HALT).build());
+		commandMap.put(SslGcRefereeMessage.Referee.Command.STOP,
+				SslGcState.Command.newBuilder().setType(SslGcState.Command.Type.STOP).build());
+		commandMap.put(SslGcRefereeMessage.Referee.Command.NORMAL_START,
+				SslGcState.Command.newBuilder().setType(SslGcState.Command.Type.NORMAL_START).build());
+		commandMap.put(SslGcRefereeMessage.Referee.Command.FORCE_START,
+				SslGcState.Command.newBuilder().setType(SslGcState.Command.Type.FORCE_START).build());
+		commandMap.put(SslGcRefereeMessage.Referee.Command.PREPARE_KICKOFF_YELLOW, SslGcState.Command.newBuilder()
+				.setType(SslGcState.Command.Type.KICKOFF).setForTeam(SslGcCommon.Team.YELLOW).build());
+		commandMap.put(SslGcRefereeMessage.Referee.Command.PREPARE_KICKOFF_BLUE, SslGcState.Command.newBuilder()
+				.setType(SslGcState.Command.Type.KICKOFF).setForTeam(SslGcCommon.Team.BLUE).build());
+		commandMap.put(SslGcRefereeMessage.Referee.Command.PREPARE_PENALTY_YELLOW, SslGcState.Command.newBuilder()
+				.setType(SslGcState.Command.Type.PENALTY).setForTeam(SslGcCommon.Team.YELLOW).build());
+		commandMap.put(SslGcRefereeMessage.Referee.Command.PREPARE_PENALTY_BLUE, SslGcState.Command.newBuilder()
+				.setType(SslGcState.Command.Type.PENALTY).setForTeam(SslGcCommon.Team.BLUE).build());
+		commandMap.put(SslGcRefereeMessage.Referee.Command.DIRECT_FREE_YELLOW, SslGcState.Command.newBuilder()
+				.setType(SslGcState.Command.Type.DIRECT).setForTeam(SslGcCommon.Team.YELLOW).build());
+		commandMap.put(SslGcRefereeMessage.Referee.Command.DIRECT_FREE_BLUE, SslGcState.Command.newBuilder()
+				.setType(SslGcState.Command.Type.DIRECT).setForTeam(SslGcCommon.Team.BLUE).build());
+		commandMap.put(SslGcRefereeMessage.Referee.Command.INDIRECT_FREE_YELLOW, SslGcState.Command.newBuilder()
+				.setType(SslGcState.Command.Type.INDIRECT).setForTeam(SslGcCommon.Team.YELLOW).build());
+		commandMap.put(SslGcRefereeMessage.Referee.Command.INDIRECT_FREE_BLUE, SslGcState.Command.newBuilder()
+				.setType(SslGcState.Command.Type.INDIRECT).setForTeam(SslGcCommon.Team.BLUE).build());
+		commandMap.put(SslGcRefereeMessage.Referee.Command.TIMEOUT_YELLOW, SslGcState.Command.newBuilder()
+				.setType(SslGcState.Command.Type.TIMEOUT).setForTeam(SslGcCommon.Team.YELLOW).build());
+		commandMap.put(SslGcRefereeMessage.Referee.Command.TIMEOUT_BLUE, SslGcState.Command.newBuilder()
+				.setType(SslGcState.Command.Type.TIMEOUT).setForTeam(SslGcCommon.Team.BLUE).build());
+		commandMap.put(SslGcRefereeMessage.Referee.Command.BALL_PLACEMENT_YELLOW, SslGcState.Command.newBuilder()
+				.setType(SslGcState.Command.Type.BALL_PLACEMENT).setForTeam(SslGcCommon.Team.YELLOW).build());
+		commandMap.put(SslGcRefereeMessage.Referee.Command.BALL_PLACEMENT_BLUE, SslGcState.Command.newBuilder()
+				.setType(SslGcState.Command.Type.BALL_PLACEMENT).setForTeam(SslGcCommon.Team.BLUE).build());
+	}
+
 	private GcEventFactory()
 	{
 	}
-	
-	
-	public static Event command(Referee.SSL_Referee.Command command)
+
+
+	private static SslGcState.Command map(SslGcRefereeMessage.Referee.Command command)
 	{
-		return new Event(map(command));
+		return commandMap.get(command);
 	}
-	
-	
-	public static Event commandDirect(ETeamColor teamColor)
+
+
+	public static SslGcCommon.Team map(ETeamColor teamColor)
 	{
-		return new Event(new EventCommand(
-				EventCommand.Command.DIRECT,
-				EventTeam.fromTeamColor(teamColor)));
-	}
-	
-	
-	public static Event commandIndirect(ETeamColor teamColor)
-	{
-		return new Event(new EventCommand(
-				EventCommand.Command.INDIRECT,
-				EventTeam.fromTeamColor(teamColor)));
-	}
-	
-	
-	public static Event commandKickoff(ETeamColor teamColor)
-	{
-		return new Event(new EventCommand(
-				EventCommand.Command.KICKOFF,
-				EventTeam.fromTeamColor(teamColor)));
-	}
-	
-	
-	public static Event commandPenalty(ETeamColor teamColor)
-	{
-		return new Event(new EventCommand(
-				EventCommand.Command.PENALTY,
-				EventTeam.fromTeamColor(teamColor)));
-	}
-	
-	
-	public static Event commandTimeout(ETeamColor teamColor)
-	{
-		return new Event(new EventCommand(
-				EventCommand.Command.TIMEOUT,
-				EventTeam.fromTeamColor(teamColor)));
-	}
-	
-	
-	public static Event goals(ETeamColor teamColor, int goals)
-	{
-		return new Event(EventModifyValue.goals(EventTeam.fromTeamColor(teamColor), goals));
-	}
-	
-	
-	public static Event goalkeeper(ETeamColor teamColor, int id)
-	{
-		return new Event(EventModifyValue.goalkeeper(EventTeam.fromTeamColor(teamColor), id));
-	}
-	
-	
-	public static Event teamName(ETeamColor teamColor, String name)
-	{
-		return new Event(EventModifyValue.teamName(EventTeam.fromTeamColor(teamColor), name));
-	}
-	
-	
-	public static Event ballPlacement(ETeamColor teamColor, IVector2 location)
-	{
-		return new Event(new EventCommand(
-				EventCommand.Command.BALL_PLACEMENT,
-				EventTeam.fromTeamColor(teamColor),
-				new EventLocation(location)));
-	}
-	
-	
-	public static Event nextStage()
-	{
-		return new Event(new EventStage(EventStage.Operation.NEXT));
-	}
-	
-	
-	public static Event previousStage()
-	{
-		return new Event(new EventStage(EventStage.Operation.PREVIOUS));
-	}
-	
-	
-	public static Event endGame()
-	{
-		return new Event(new EventStage(EventStage.Operation.END_GAME));
-	}
-	
-	
-	@SuppressWarnings("squid:MethodCyclomaticComplexity") // simple mapping only
-	public static EventCommand map(Referee.SSL_Referee.Command command)
-	{
-		switch (command)
+		switch (teamColor)
 		{
-			case HALT:
-				return new EventCommand(EventCommand.Command.HALT);
-			case STOP:
-				return new EventCommand(EventCommand.Command.STOP);
-			case NORMAL_START:
-				return new EventCommand(EventCommand.Command.NORMAL_START);
-			case FORCE_START:
-				return new EventCommand(EventCommand.Command.FORCE_START);
-			case PREPARE_KICKOFF_YELLOW:
-				return new EventCommand(EventCommand.Command.KICKOFF, EventTeam.YELLOW);
-			case PREPARE_KICKOFF_BLUE:
-				return new EventCommand(EventCommand.Command.KICKOFF, EventTeam.BLUE);
-			case PREPARE_PENALTY_YELLOW:
-				return new EventCommand(EventCommand.Command.PENALTY, EventTeam.YELLOW);
-			case PREPARE_PENALTY_BLUE:
-				return new EventCommand(EventCommand.Command.PENALTY, EventTeam.BLUE);
-			case DIRECT_FREE_YELLOW:
-				return new EventCommand(EventCommand.Command.DIRECT, EventTeam.YELLOW);
-			case DIRECT_FREE_BLUE:
-				return new EventCommand(EventCommand.Command.DIRECT, EventTeam.BLUE);
-			case INDIRECT_FREE_YELLOW:
-				return new EventCommand(EventCommand.Command.INDIRECT, EventTeam.YELLOW);
-			case INDIRECT_FREE_BLUE:
-				return new EventCommand(EventCommand.Command.INDIRECT, EventTeam.BLUE);
-			case TIMEOUT_YELLOW:
-				return new EventCommand(EventCommand.Command.TIMEOUT, EventTeam.YELLOW);
-			case TIMEOUT_BLUE:
-				return new EventCommand(EventCommand.Command.TIMEOUT, EventTeam.BLUE);
-			case BALL_PLACEMENT_YELLOW:
-			case BALL_PLACEMENT_BLUE:
-				throw new IllegalArgumentException("Can not map ball placement command to event. Location is missing!");
+			case YELLOW:
+				return SslGcCommon.Team.YELLOW;
+			case BLUE:
+				return SslGcCommon.Team.BLUE;
+			case NEUTRAL:
 			default:
-				throw new IllegalArgumentException("Unsupported referee command: " + command);
+				return SslGcCommon.Team.UNKNOWN;
 		}
 	}
-	
-	
-	public static Event yellowCard(ETeamColor teamColor)
+
+
+	public static SslGcApi.Input command(SslGcRefereeMessage.Referee.Command command)
 	{
-		return new Event(
-				new EventCard(EventCard.Type.YELLOW, EventTeam.fromTeamColor(teamColor), EventCard.Operation.ADD));
+		return SslGcApi.Input.newBuilder()
+				.setChange(SslGcChange.Change.newBuilder()
+						.setNewCommand(SslGcChange.NewCommand.newBuilder()
+								.setCommand(map(command))
+								.build())
+						.build())
+				.build();
 	}
-	
-	
-	public static Event redCard(ETeamColor teamColor)
+
+
+	public static SslGcApi.Input command(SslGcState.Command.Type type, ETeamColor teamColor)
 	{
-		return new Event(
-				new EventCard(EventCard.Type.RED, EventTeam.fromTeamColor(teamColor), EventCard.Operation.ADD));
+		return SslGcApi.Input.newBuilder()
+				.setChange(SslGcChange.Change.newBuilder()
+						.setNewCommand(SslGcChange.NewCommand.newBuilder()
+								.setCommand(SslGcState.Command.newBuilder()
+										.setType(type)
+										.setForTeam(map(teamColor))
+										.build())
+								.build())
+						.build())
+				.build();
 	}
-	
-	
-	public static Event triggerResetMatch()
+
+
+	public static SslGcApi.Input commandDirect(ETeamColor teamColor)
 	{
-		return new Event(new EventTrigger(EventTrigger.Type.RESET_MATCH));
+		return command(SslGcState.Command.Type.DIRECT, teamColor);
 	}
-	
-	
-	public static Event triggerSwitchColor()
+
+
+	public static SslGcApi.Input commandKickoff(ETeamColor teamColor)
 	{
-		return new Event(new EventTrigger(EventTrigger.Type.SWITCH_COLOR));
+		return command(SslGcState.Command.Type.KICKOFF, teamColor);
 	}
-	
-	
-	public static Event triggerSwitchSides()
+
+
+	public static SslGcApi.Input commandPenalty(ETeamColor teamColor)
 	{
-		return new Event(new EventTrigger(EventTrigger.Type.SWITCH_SIDES));
+		return command(SslGcState.Command.Type.PENALTY, teamColor);
 	}
-	
-	
-	public static Event triggerUndo()
+
+
+	public static SslGcApi.Input commandTimeout(ETeamColor teamColor)
 	{
-		return new Event(new EventTrigger(EventTrigger.Type.UNDO));
+		return command(SslGcState.Command.Type.TIMEOUT, teamColor);
 	}
-	
-	
-	public static Event triggerContinue()
+
+
+	public static SslGcApi.Input commandBallPlacement(ETeamColor teamColor)
 	{
-		return new Event(new EventTrigger(EventTrigger.Type.CONTINUE));
+		return command(SslGcState.Command.Type.BALL_PLACEMENT, teamColor);
+	}
+
+
+	public static SslGcApi.Input goals(ETeamColor teamColor, int goals)
+	{
+		return SslGcApi.Input.newBuilder()
+				.setChange(SslGcChange.Change.newBuilder()
+						.setUpdateTeamState(SslGcChange.UpdateTeamState.newBuilder()
+								.setForTeam(map(teamColor))
+								.setGoals(goals)
+								.build())
+						.build())
+				.build();
+	}
+
+
+	public static SslGcApi.Input goalkeeper(ETeamColor teamColor, int id)
+	{
+		return SslGcApi.Input.newBuilder()
+				.setChange(SslGcChange.Change.newBuilder()
+						.setUpdateTeamState(SslGcChange.UpdateTeamState.newBuilder()
+								.setForTeam(map(teamColor))
+								.setGoalkeeper(id)
+								.build())
+						.build())
+				.build();
+	}
+
+
+	public static SslGcApi.Input teamName(ETeamColor teamColor, String name)
+	{
+		return SslGcApi.Input.newBuilder()
+				.setChange(SslGcChange.Change.newBuilder()
+						.setUpdateTeamState(SslGcChange.UpdateTeamState.newBuilder()
+								.setForTeam(map(teamColor))
+								.setTeamName(name)
+								.build())
+						.build())
+				.build();
+	}
+
+
+	public static SslGcApi.Input ballPlacement(IVector2 location)
+	{
+		return SslGcApi.Input.newBuilder()
+				.setChange(SslGcChange.Change.newBuilder()
+						.setSetBallPlacementPos(SslGcChange.SetBallPlacementPos.newBuilder()
+								.setPos(map(location))
+								.build())
+						.build())
+				.build();
+	}
+
+
+	private static SslGcGeometry.Vector2 map(final IVector2 location)
+	{
+		return SslGcGeometry.Vector2.newBuilder().setX((float) location.x()).setY((float) location.y()).build();
+	}
+
+
+	public static SslGcApi.Input stage(SslGcRefereeMessage.Referee.Stage stage)
+	{
+		return SslGcApi.Input.newBuilder()
+				.setChange(SslGcChange.Change.newBuilder()
+						.setChangeStage(SslGcChange.ChangeStage.newBuilder()
+								.setNewStage(stage)
+								.build())
+						.build())
+				.build();
+	}
+
+
+	public static SslGcApi.Input endGame()
+	{
+		return SslGcApi.Input.newBuilder()
+				.setChange(SslGcChange.Change.newBuilder()
+						.setChangeStage(SslGcChange.ChangeStage.newBuilder()
+								.setNewStage(SslGcRefereeMessage.Referee.Stage.POST_GAME)
+								.build())
+						.build())
+				.build();
+	}
+
+
+	public static SslGcApi.Input yellowCard(ETeamColor teamColor)
+	{
+		return SslGcApi.Input.newBuilder()
+				.setChange(SslGcChange.Change.newBuilder()
+						.setAddYellowCard(SslGcChange.AddYellowCard.newBuilder()
+								.setForTeam(map(teamColor))
+								.build())
+						.build())
+				.build();
+	}
+
+
+	public static SslGcApi.Input redCard(ETeamColor teamColor)
+	{
+		return SslGcApi.Input.newBuilder()
+				.setChange(SslGcChange.Change.newBuilder()
+						.setAddRedCard(SslGcChange.AddRedCard.newBuilder()
+								.setForTeam(map(teamColor))
+								.build())
+						.build())
+				.build();
+	}
+
+
+	public static SslGcApi.Input triggerResetMatch()
+	{
+		return SslGcApi.Input.newBuilder()
+				.setResetMatch(true)
+				.build();
+	}
+
+
+	public static SslGcApi.Input triggerContinue()
+	{
+		return SslGcApi.Input.newBuilder()
+				.setChange(SslGcChange.Change.newBuilder()
+						.setContinue(SslGcChange.Continue.newBuilder().build())
+						.build())
+				.build();
 	}
 }

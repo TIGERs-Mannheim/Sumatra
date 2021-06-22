@@ -3,18 +3,17 @@
  */
 package edu.tigers.sumatra.offensive.view;
 
-import java.util.HashMap;
-import java.util.Map;
+import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveAnalysedBotFrame;
+import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveBotFrame;
+import edu.tigers.sumatra.ids.BotID;
+import net.miginfocom.swing.MigLayout;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
-
-import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveAnalysedBotFrame;
-import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveBotFrame;
-import edu.tigers.sumatra.ids.BotID;
-import net.miginfocom.swing.MigLayout;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -28,7 +27,6 @@ public class TeamOffensiveStatisticsPanel extends JPanel
 	private Map<BotID, OffensiveStatisticsBotPanel> botPanels = new HashMap<>();
 	private JPanel botPanel = new JPanel(new MigLayout());
 	private boolean currentFrameOnly = false;
-	
 	
 	/**
 	 * Team Panel

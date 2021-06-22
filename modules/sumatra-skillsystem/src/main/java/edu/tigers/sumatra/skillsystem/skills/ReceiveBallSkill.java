@@ -1,114 +1,67 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
 
 import com.github.g3force.configurable.Configurable;
-
-import edu.tigers.sumatra.botmanager.botskills.data.KickerDribblerCommands;
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.skillsystem.ESkill;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.AngleMath;
+import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.time.TimestampTimer;
-import edu.tigers.sumatra.wp.data.DynamicPosition;
+import lombok.NoArgsConstructor;
 
 
+@NoArgsConstructor
 public class ReceiveBallSkill extends ABallArrivalSkill
 {
-
-	@Configurable(defValue = "135.0", comment = "Margin between penaltyarea and bot destination [mm]")
-	private static double marginBetweenDestAndPenArea = 135.0;
-
-	@Configurable(comment = "Dribble speed during receive", defValue = "6000.0")
-	private static double dribbleSpeed = 6000;
+	@Configurable(comment = "Dribble speed during receive", defValue = "3000.0")
+	private static double dribbleSpeed = 3000;
 
 
-	private final TimestampTimer receiveDelayTimer = new TimestampTimer(0.2);
-
-
-	public ReceiveBallSkill(final IVector2 receivingPosition)
-	{
-		this(new DynamicPosition(receivingPosition));
-	}
-
-
-	public ReceiveBallSkill(final DynamicPosition receivingPosition)
-	{
-		super(ESkill.RECEIVE_BALL, receivingPosition);
-
-		setInitialState(new ReceiveState());
-	}
+	private final TimestampTimer receiveDelayTimer = new TimestampTimer(0.1);
 
 
 	@Override
-	protected void updateKickerDribbler(final KickerDribblerCommands kickerDribblerOutput)
+	public void doUpdate()
 	{
-		super.updateKickerDribbler(kickerDribblerOutput);
-
-		if (getTBot().hasBallContact())
-		{
-			kickerDribblerOutput.setDribblerSpeed(0);
-		} else
-		{
-			kickerDribblerOutput.setDribblerSpeed(dribbleSpeed);
-		}
+		setKickParams(KickParams.disarm()
+				.withDribbleSpeed(getTBot().getBallContact().getContactDuration() > 0.1 ? 0 : dribbleSpeed));
+		setDesiredTargetAngle(calcTargetAngle());
+		super.doUpdate();
+		setSkillState(calcSkillState());
 	}
 
 
-	/**
-	 * @return true, if the ball is moving towards the receiver and receiver can reach the receiving position
-	 */
-	public boolean ballCanBeReceivedAtReceivingPosition()
+	private ESkillState calcSkillState()
 	{
-		return !isInitialized()
-				|| (ballIsMovingTowardsMe() && receivingPositionIsReachableByBall(receivingPosition.getPos()));
-	}
-
-
-	/**
-	 * @return true, if the bot is still in the process of receiving the ball. The skill should not be stopped now.
-	 */
-	public boolean receivingBall()
-	{
-		return receiveDelayTimer.isRunning() && !receiveDelayTimer.isTimeUp(getWorldFrame().getTimestamp());
-	}
-
-
-	/**
-	 * @return true, if the ball is in front of the receiver and stopped
-	 */
-	public boolean ballHasBeenReceived()
-	{
-		boolean received = isInitialized() && !ballIsMoving() && ballNearKicker();
-		if (received)
+		if (getTBot().getBallContact().isBallContactFromVision()
+				|| getTBot().getBallContact().hadContact(0.1)
+				|| getBall().getPos().distanceTo(getPos()) < Geometry.getBotRadius())
 		{
 			receiveDelayTimer.update(getWorldFrame().getTimestamp());
-			return receiveDelayTimer.isTimeUp(getWorldFrame().getTimestamp());
+			if (receiveDelayTimer.isTimeUp(getWorldFrame().getTimestamp()))
+			{
+				return ESkillState.SUCCESS;
+			}
+		} else
+		{
+			receiveDelayTimer.reset();
+			if (!ballIsMoving() || !getBall().getTrajectory().getTravelLine().isPointInFront(getPos()))
+			{
+				return ESkillState.FAILURE;
+			}
 		}
-		receiveDelayTimer.reset();
-		return false;
+		return ESkillState.IN_PROGRESS;
 	}
 
 
-	private class ReceiveState extends ABallArrivalState
+	private double calcTargetAngle()
 	{
-		@Override
-		protected double calcMyTargetAngle(final IVector2 kickerPos)
+		if (getBall().getVel().getLength2() > 0.5)
 		{
-			IVector2 ballPos = ballStabilizer.getBallPos();
-			IVector2 kickerToBall = ballPos.subtractNew(kickerPos);
-			if (kickerToBall.getLength2() > 50)
-			{
-				return kickerToBall.getAngle();
-			}
-			return ballPos.subtractNew(getPos()).getAngle(0);
+			return getBall().getVel().getAngle() + AngleMath.DEG_180_IN_RAD;
 		}
-
-
-		@Override
-		protected double getMarginBetweenDestAndPenArea()
-		{
-			return marginBetweenDestAndPenArea;
-		}
+		return getAngle();
 	}
 }

@@ -6,58 +6,62 @@ package edu.tigers.sumatra.ai;
 import edu.tigers.sumatra.ai.ares.AresData;
 import edu.tigers.sumatra.ai.ares.IAresData;
 import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
+import edu.tigers.sumatra.ai.athena.IPlayStrategy;
 import edu.tigers.sumatra.ai.athena.PlayStrategy;
 import edu.tigers.sumatra.ai.metis.MetisAiFrame;
 import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.wp.data.WorldFrame;
+import lombok.Builder;
+import lombok.Value;
+import lombok.experimental.Delegate;
 
 
 /**
  * This class is a simple container for all information the AI gathers during its processes for one {@link WorldFrame}
- * 
- * @author Oliver Steinbrecher, Daniel Waigand, Nicolai Ommer <nicolai.ommer@gmail.com>
  */
-public class AIInfoFrame extends AthenaAiFrame
+@Value
+@Builder
+public class AIInfoFrame
 {
-	private final IAresData aresData;
-	private final long tAssembly = System.nanoTime();
-	
-	
-	/**
-	 * @param athenaAiFrame
-	 * @param aresData data from Ares
-	 */
-	public AIInfoFrame(final AthenaAiFrame athenaAiFrame, final IAresData aresData)
-	{
-		super(athenaAiFrame, athenaAiFrame.getPlayStrategy());
-		this.aresData = aresData;
-	}
-	
-	
+	@Delegate
+	BaseAiFrame baseAiFrame;
+	AthenaAiFrame athenaAiFrame;
+	IAresData aresData;
+
+
 	/**
 	 * Create a frame based on the given baseAiFrame, filling the rest with dummy data
-	 * 
+	 *
 	 * @param baseAiFrame
 	 * @return
 	 */
 	public static AIInfoFrame fromBaseAiFrame(BaseAiFrame baseAiFrame)
 	{
-		return new AIInfoFrame(new AthenaAiFrame(new MetisAiFrame(baseAiFrame, new TacticalField()), new PlayStrategy(
-				new PlayStrategy.Builder())), new AresData());
+		MetisAiFrame metisAiFrame = MetisAiFrame.builder()
+				.baseAiFrame(baseAiFrame)
+				.tacticalField(TacticalField.empty())
+				.build();
+		AthenaAiFrame athenaAiFrame = AthenaAiFrame.builder()
+				.baseAiFrame(baseAiFrame)
+				.metisAiFrame(metisAiFrame)
+				.playStrategy(PlayStrategy.builder().build())
+				.build();
+		return AIInfoFrame.builder()
+				.baseAiFrame(baseAiFrame)
+				.athenaAiFrame(athenaAiFrame)
+				.aresData(new AresData())
+				.build();
 	}
-	
-	
-	public IAresData getAresData()
+
+
+	public TacticalField getTacticalField()
 	{
-		return aresData;
+		return athenaAiFrame.getMetisAiFrame().getTacticalField();
 	}
-	
-	
-	/**
-	 * @return the assembly timestamp in [ns]
-	 */
-	public long gettAssembly()
+
+
+	public IPlayStrategy getPlayStrategy()
 	{
-		return tAssembly;
+		return athenaAiFrame.getPlayStrategy();
 	}
 }

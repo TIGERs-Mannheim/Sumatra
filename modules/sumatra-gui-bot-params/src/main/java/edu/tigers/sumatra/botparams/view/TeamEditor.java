@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botparams.view;
 
@@ -28,8 +28,8 @@ import javax.swing.ScrollPaneConstants;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 
-import edu.tigers.sumatra.components.DescLabel;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -39,6 +39,7 @@ import edu.tigers.sumatra.bot.params.BotParams;
 import edu.tigers.sumatra.botparams.BotParamsDatabase;
 import edu.tigers.sumatra.botparams.EBotParamLabel;
 import edu.tigers.sumatra.botparams.view.ConfigJSONTreeTableModel.TreeEntry;
+import edu.tigers.sumatra.components.DescLabel;
 import edu.tigers.sumatra.treetable.ITreeTableModel;
 import edu.tigers.sumatra.treetable.TreeTableModelAdapter;
 import net.miginfocom.swing.MigLayout;
@@ -51,16 +52,16 @@ public class TeamEditor extends JPanel
 {
 	/**  */
 	private static final long									serialVersionUID	= -6385185638076083401L;
-	private static final Logger								log					= Logger.getLogger(TeamEditor.class.getName());
-	
+	private static final Logger log = LogManager.getLogger(TeamEditor.class.getName());
+
 	private final ObjectMapper									mapper				= new ObjectMapper();
 	private final transient List<ITeamEditorObserver>	observers			= new CopyOnWriteArrayList<>();
 	private JScrollPane											scrollpane;
 	private JTreeTableJson										treetable;
-	
+
 	private EnumMap<EBotParamLabel, JComboBox<String>>	selectedLabels		= new EnumMap<>(EBotParamLabel.class);
-	
-	
+
+
 	/**
 	 * Constructor.
 	 */
@@ -76,7 +77,7 @@ public class TeamEditor extends JPanel
 		{
 			JLabel name = new JLabel(paramLabel.toString());
 			add(name);
-			
+
 			JComboBox<String> dropdown = new JComboBox<>();
 			dropdown.addActionListener(new SelectedLabelListener(paramLabel, dropdown));
 			dropdown.setToolTipText(paramLabel.getLabel());
@@ -84,29 +85,29 @@ public class TeamEditor extends JPanel
 			selectedLabels.put(paramLabel, dropdown);
 
 		}
-		
+
 		JButton addBtn = new JButton("Add Team");
 		addBtn.addActionListener(new AddButtonListener());
 		add(addBtn);
-		
+
 		JButton delBtn = new JButton("Delete Team");
 		delBtn.addActionListener(new DeleteButtonListener());
 		add(delBtn);
-		
+
 		// Setup lower part: The actual editor
 		scrollpane = new JScrollPane();
 		scrollpane.setPreferredSize(new Dimension(400, 1000));
 		scrollpane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		scrollpane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 		add(scrollpane, "span 2, pushy");
-		
+
 		add(Box.createGlue(), "push, span 2");
 	}
-	
-	
+
+
 	/**
 	 * Set a new database to display.
-	 * 
+	 *
 	 * @param database
 	 */
 	public void setDatabase(final BotParamsDatabase database)
@@ -119,28 +120,28 @@ public class TeamEditor extends JPanel
 						Map.Entry::getValue,
 						(e1, e2) -> e1,
 						LinkedHashMap::new));
-		
+
 		JsonNode entries = mapper.valueToTree(teams);
-		
+
 		ITreeTableModel model = new ConfigJSONTreeTableModel(entries);
 		model.setEditable(true);
 		treetable = new JTreeTableJson(model);
 		treetable.getModel().addTableModelListener(new TreeTableListener());
-		
+
 		EventQueue.invokeLater(() -> {
 			scrollpane.setViewportView(treetable);
-			
+
 			for (Entry<EBotParamLabel, JComboBox<String>> entry : selectedLabels.entrySet())
 			{
 				JComboBox<String> box = entry.getValue();
-				
+
 				box.removeAllItems();
 				String selection = database.getSelectedParams().get(entry.getKey());
-				
+
 				for (String teamName : teams.keySet())
 				{
 					box.addItem(teamName);
-					
+
 					if (teamName.equals(selection))
 					{
 						box.setSelectedIndex(box.getItemCount() - 1);
@@ -149,23 +150,23 @@ public class TeamEditor extends JPanel
 			}
 		});
 	}
-	
-	
+
+
 	/**
 	 * Select a new team for a specific label.
-	 * 
+	 *
 	 * @param label
 	 * @param newTeam
 	 */
 	public void setSelectedTeamForLabel(final EBotParamLabel label, final String newTeam)
 	{
 		JComboBox<String> box = selectedLabels.get(label);
-		
+
 		if (box.getSelectedItem().equals(newTeam))
 		{
 			return;
 		}
-		
+
 		for (int index = 0; index < box.getItemCount(); index++)
 		{
 			if (box.getItemAt(index).equals(newTeam))
@@ -175,8 +176,8 @@ public class TeamEditor extends JPanel
 			}
 		}
 	}
-	
-	
+
+
 	/**
 	 * Clear all information from this panel.
 	 */
@@ -184,15 +185,15 @@ public class TeamEditor extends JPanel
 	{
 		EventQueue.invokeLater(() -> {
 			scrollpane.setViewportView(new JPanel());
-			
+
 			for (JComboBox<String> box : selectedLabels.values())
 			{
 				box.removeAllItems();
 			}
 		});
 	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -200,8 +201,8 @@ public class TeamEditor extends JPanel
 	{
 		observers.add(observer);
 	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -209,50 +210,50 @@ public class TeamEditor extends JPanel
 	{
 		observers.remove(observer);
 	}
-	
+
 	/** Observer interface. */
 	public static interface ITeamEditorObserver
 	{
 		/**
 		 * Bot params for a team updated.
-		 * 
+		 *
 		 * @param teamName
 		 * @param newParams
 		 */
 		void onTeamUpdated(String teamName, BotParams newParams);
-		
-		
+
+
 		/**
 		 * Selected a new team for a specific label.
-		 * 
+		 *
 		 * @param label
 		 * @param teamName
 		 */
 		void onTeamSelectedForLabel(EBotParamLabel label, String teamName);
-		
-		
+
+
 		/**
 		 * New team added.
-		 * 
+		 *
 		 * @param teamName
 		 */
 		void onTeamAdded(String teamName);
-		
-		
+
+
 		/**
 		 * Team deleted.
-		 * 
+		 *
 		 * @param teamName
 		 */
 		void onTeamDeleted(String teamName);
 	}
-	
+
 	private class SelectedLabelListener implements ActionListener
 	{
 		private final EBotParamLabel		label;
 		private final JComboBox<String>	box;
-		
-		
+
+
 		/**
 		 * @param label
 		 * @param box
@@ -262,8 +263,8 @@ public class TeamEditor extends JPanel
 			this.label = label;
 			this.box = box;
 		}
-		
-		
+
+
 		@Override
 		public void actionPerformed(final ActionEvent event)
 		{
@@ -273,8 +274,8 @@ public class TeamEditor extends JPanel
 				notifyTeamSelectedForLabel(label, teamName);
 			}
 		}
-		
-		
+
+
 		private void notifyTeamSelectedForLabel(final EBotParamLabel label, final String teamName)
 		{
 			for (ITeamEditorObserver observer : observers)
@@ -283,7 +284,7 @@ public class TeamEditor extends JPanel
 			}
 		}
 	}
-	
+
 	private class TreeTableListener implements TableModelListener
 	{
 		@Override
@@ -293,13 +294,13 @@ public class TeamEditor extends JPanel
 			{
 				TreeTableModelAdapter adapter = (TreeTableModelAdapter) event.getSource();
 				TreeEntry entry = (TreeEntry) adapter.getNodeForRow(event.getFirstRow());
-				
+
 				// go up to the "team" node of the tree
 				while (entry.getParent().getParent() != null)
 				{
 					entry = entry.getParent();
 				}
-				
+
 				BotParams newParams = null;
 				try
 				{
@@ -308,12 +309,12 @@ public class TeamEditor extends JPanel
 				{
 					log.error("Could not convert team node to BotParams class", e);
 				}
-				
+
 				notifyTeamUpdated(entry.getName(), newParams);
 			}
 		}
-		
-		
+
+
 		private void notifyTeamUpdated(final String teamName, final BotParams newParams)
 		{
 			for (ITeamEditorObserver observer : observers)
@@ -322,7 +323,7 @@ public class TeamEditor extends JPanel
 			}
 		}
 	}
-	
+
 	private class AddButtonListener implements ActionListener
 	{
 		@Override
@@ -331,17 +332,17 @@ public class TeamEditor extends JPanel
 			String teamName = (String) JOptionPane.showInputDialog(null, "Team name: ", "Specify new team name",
 					JOptionPane.QUESTION_MESSAGE, null,
 					null, null);
-			
+
 			if (teamName == null)
 			{
 				// user cancelled dialog
 				return;
 			}
-			
+
 			notifyTeamAdded(teamName);
 		}
-		
-		
+
+
 		private void notifyTeamAdded(final String teamName)
 		{
 			for (ITeamEditorObserver observer : observers)
@@ -350,7 +351,7 @@ public class TeamEditor extends JPanel
 			}
 		}
 	}
-	
+
 	private class DeleteButtonListener implements ActionListener
 	{
 		@Override
@@ -360,7 +361,7 @@ public class TeamEditor extends JPanel
 			{
 				return;
 			}
-			
+
 			TreeTableModelAdapter model = (TreeTableModelAdapter) treetable.getModel();
 			int selectedRow = treetable.getSelectedRow();
 			if (selectedRow < 0)
@@ -369,27 +370,27 @@ public class TeamEditor extends JPanel
 				return;
 			}
 			TreeEntry entry = (TreeEntry) model.getNodeForRow(selectedRow);
-			
+
 			// go up to the "team" node of the tree
 			while (entry.getParent().getParent() != null)
 			{
 				entry = entry.getParent();
 			}
-			
+
 			String teamName = entry.getName();
 			List<EBotParamLabel> usedAtLabel = new LinkedList<>();
-			
+
 			// check if the team is used with a label
 			for (Entry<EBotParamLabel, JComboBox<String>> label : selectedLabels.entrySet())
 			{
 				String selection = (String) label.getValue().getSelectedItem();
-				
+
 				if (teamName.equals(selection))
 				{
 					usedAtLabel.add(label.getKey());
 				}
 			}
-			
+
 			if (!usedAtLabel.isEmpty())
 			{
 				StringBuilder builder = new StringBuilder(
@@ -398,11 +399,11 @@ public class TeamEditor extends JPanel
 				JOptionPane.showMessageDialog(null, builder.toString(), "Team in use", JOptionPane.WARNING_MESSAGE);
 				return;
 			}
-			
+
 			notifyTeamDeleted(teamName);
 		}
-		
-		
+
+
 		private void notifyTeamDeleted(final String teamName)
 		{
 			for (ITeamEditorObserver observer : observers)
@@ -411,26 +412,26 @@ public class TeamEditor extends JPanel
 			}
 		}
 	}
-	
+
 	/**
 	 * This comparator simply sorts strings but it puts preference to those containing a favor.
 	 */
 	private static class FavoredStringComparator implements Comparator<String>
 	{
 		private final String favored;
-		
-		
+
+
 		/**
 		 * Constructor
-		 * 
+		 *
 		 * @param favor
 		 */
 		public FavoredStringComparator(final String favor)
 		{
 			favored = favor;
 		}
-		
-		
+
+
 		@Override
 		public int compare(final String a, final String b)
 		{
@@ -438,12 +439,12 @@ public class TeamEditor extends JPanel
 			{
 				return -1;
 			}
-			
+
 			if (!a.toLowerCase().contains(favored) && b.toLowerCase().contains(favored))
 			{
 				return 1;
 			}
-			
+
 			return a.compareTo(b);
 		}
 	}

@@ -1,0 +1,22 @@
+/*
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ */
+
+plugins {
+    id 'sumatra.java-conventions'
+    id 'java-library'
+    id 'sumatra.protobuf-conventions'
+}
+
+dependencies {
+    implementation project(':moduli-cam')
+    implementation project(':moduli-referee')
+    implementation project(':sumatra-model')
+
+    implementation 'com.github.TIGERs-Mannheim:moduli:4.1'
+
+    implementation 'org.apache.logging.log4j:log4j-api:2.14.1'
+
+    api 'com.google.protobuf:protobuf-java:3.17.0'
+    implementation 'com.google.guava:guava:30.1.1-jre'
+}

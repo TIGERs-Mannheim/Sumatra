@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.botmanager.botskills;
 
+import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.bot.MoveConstraints;
-import edu.tigers.sumatra.bot.params.BotMovementLimits;
 import edu.tigers.sumatra.botmanager.botskills.data.DriveLimits;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
@@ -23,7 +23,7 @@ public class BotSkillFastGlobalPosition extends AMoveBotSkill
 {
 	@SerialData(type = ESerialDataType.INT16)
 	private final int[] pos = new int[3];
-	
+
 	@SerialData(type = ESerialDataType.UINT8)
 	private int velMax = 0;
 	@SerialData(type = ESerialDataType.UINT8)
@@ -34,48 +34,47 @@ public class BotSkillFastGlobalPosition extends AMoveBotSkill
 	private int accMaxW = 0;
 	@SerialData(type = ESerialDataType.UINT8)
 	private int accMaxFast = 0;
-	
+
 	@SerialData(type = ESerialDataType.EMBEDDED)
 	private KickerDribblerCommands kickerDribbler = new KickerDribblerCommands();
-	
-	
+
+
 	/**
-	 * 
+	 *
 	 */
 	private BotSkillFastGlobalPosition()
 	{
 		super(EBotSkill.FAST_GLOBAL_POSITION);
 	}
-	
-	
+
+
 	/**
 	 * Set velocity in bot local frame.
-	 * 
+	 *
 	 * @param xy [mm]
 	 * @param orientation
 	 * @param mc
 	 */
-	public BotSkillFastGlobalPosition(final IVector2 xy, final double orientation, final MoveConstraints mc)
+	public BotSkillFastGlobalPosition(final IVector2 xy, final double orientation, final IMoveConstraints mc)
 	{
 		this();
-		
+
 		pos[0] = (int) (xy.x());
 		pos[1] = (int) (xy.y());
 		pos[2] = (int) (orientation * 1000.0);
-		
-		
+
+
 		setVelMax(mc.getVelMax());
 		setVelMaxW(mc.getVelMaxW());
 		setAccMax(mc.getAccMax());
 		setAccMaxW(mc.getAccMaxW());
-		setAccMaxFast(mc.getAccMax());
-		
+		setAccMaxFast(mc.getAccMaxFast());
 	}
-	
-	
+
+
 	/**
 	 * Set velocity in bot local frame.
-	 * 
+	 *
 	 * @param xy [mm]
 	 * @param orientation
 	 * @param velMax
@@ -89,20 +88,20 @@ public class BotSkillFastGlobalPosition extends AMoveBotSkill
 			final double velMax, final double velMaxW, final double accMax, final double accMaxW, final double accMaxFast)
 	{
 		this();
-		
+
 		pos[0] = (int) (xy.x());
 		pos[1] = (int) (xy.y());
 		pos[2] = (int) (orientation * 1000.0);
-		
-		
+
+
 		setVelMax(velMax);
 		setVelMaxW(velMaxW);
 		setAccMax(accMax);
 		setAccMaxW(accMaxW);
 		setAccMaxFast(accMaxFast);
 	}
-	
-	
+
+
 	/**
 	 * @return the pos
 	 */
@@ -110,8 +109,8 @@ public class BotSkillFastGlobalPosition extends AMoveBotSkill
 	{
 		return Vector2.fromXY(pos[0], pos[1]);
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -119,108 +118,111 @@ public class BotSkillFastGlobalPosition extends AMoveBotSkill
 	{
 		return pos[2] / 1000.0;
 	}
-	
-	
+
+
 	/**
 	 * Max: 5m/s
-	 * 
+	 *
 	 * @param val [m/s]
 	 */
 	public final void setVelMax(final double val)
 	{
 		velMax = DriveLimits.toUInt8(val, DriveLimits.MAX_VEL);
 	}
-	
-	
+
+
 	/**
 	 * Max: 30rad/s
-	 * 
+	 *
 	 * @param val [rad/s]
 	 */
 	public final void setVelMaxW(final double val)
 	{
 		velMaxW = DriveLimits.toUInt8(val, DriveLimits.MAX_VEL_W);
 	}
-	
-	
+
+
 	/**
 	 * Max: 10m/s²
-	 * 
+	 *
 	 * @param val
 	 */
 	public final void setAccMax(final double val)
 	{
 		accMax = DriveLimits.toUInt8(val, DriveLimits.MAX_ACC);
 	}
-	
-	
+
+
 	/**
 	 * Max: 10m/s²
-	 * 
+	 *
 	 * @param val
 	 */
 	public final void setAccMaxFast(final double val)
 	{
 		accMaxFast = DriveLimits.toUInt8(val, DriveLimits.MAX_ACC);
 	}
-	
-	
+
+
 	/**
 	 * Max: 100rad/s²
-	 * 
+	 *
 	 * @param val
 	 */
 	public final void setAccMaxW(final double val)
 	{
 		accMaxW = DriveLimits.toUInt8(val, DriveLimits.MAX_ACC_W);
 	}
-	
-	
+
+
 	public double getVelMax()
 	{
 		return DriveLimits.toDouble(velMax, DriveLimits.MAX_VEL);
 	}
-	
-	
+
+
 	public double getVelMaxW()
 	{
 		return DriveLimits.toDouble(velMaxW, DriveLimits.MAX_VEL_W);
 	}
-	
-	
+
+
 	public double getAccMax()
 	{
 		return DriveLimits.toDouble(accMax, DriveLimits.MAX_ACC);
 	}
-	
-	
+
+
 	public double getAccMaxFast()
 	{
 		return DriveLimits.toDouble(accMaxFast, DriveLimits.MAX_ACC);
 	}
-	
-	
+
+
 	public double getAccMaxW()
 	{
 		return DriveLimits.toDouble(accMaxW, DriveLimits.MAX_ACC_W);
 	}
-	
-	
+
+
 	@Override
 	public MoveConstraints getMoveConstraints()
 	{
-		MoveConstraints moveCon = new MoveConstraints(new BotMovementLimits());
+		MoveConstraints moveCon = new MoveConstraints();
 		moveCon.setVelMax(getVelMax());
+		moveCon.setVelMaxFast(getVelMax());
 		moveCon.setVelMaxW(getVelMaxW());
 		moveCon.setAccMax(getAccMax());
+		moveCon.setAccMaxFast(getAccMaxFast());
 		moveCon.setAccMaxW(getAccMaxW());
 		moveCon.setJerkMax(DriveLimits.MAX_JERK);
 		moveCon.setJerkMaxW(DriveLimits.MAX_JERK_W);
-		
+		moveCon.setFastMove(true);
+
 		return moveCon;
 	}
-	
-	
+
+
 	/**
 	 * @return the kickerDribbler
 	 */
@@ -229,8 +231,8 @@ public class BotSkillFastGlobalPosition extends AMoveBotSkill
 	{
 		return kickerDribbler;
 	}
-	
-	
+
+
 	/**
 	 * @param kickerDribbler the kickerDribbler to set
 	 */
@@ -239,29 +241,29 @@ public class BotSkillFastGlobalPosition extends AMoveBotSkill
 	{
 		this.kickerDribbler = kickerDribbler;
 	}
-	
-	
+
+
 	@Override
 	public double getKickSpeed()
 	{
 		return kickerDribbler.getKickSpeed();
 	}
-	
-	
+
+
 	@Override
 	public EKickerMode getMode()
 	{
 		return kickerDribbler.getMode();
 	}
-	
-	
+
+
 	@Override
 	public EKickerDevice getDevice()
 	{
 		return kickerDribbler.getDevice();
 	}
-	
-	
+
+
 	@Override
 	public double getDribbleSpeed()
 	{

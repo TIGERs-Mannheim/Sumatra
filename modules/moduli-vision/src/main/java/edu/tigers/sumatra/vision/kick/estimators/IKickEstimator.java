@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.vision.kick.estimators;
-
-import java.util.List;
-import java.util.Optional;
 
 import edu.tigers.sumatra.cam.data.CamBall;
 import edu.tigers.sumatra.drawable.IDrawableShape;
 import edu.tigers.sumatra.vision.data.FilteredVisionBot;
+
+import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -56,12 +56,12 @@ public interface IKickEstimator
 	 * @return
 	 */
 	EKickEstimatorType getType();
-	
-	
+
+
 	/**
 	 * Do model identification.
-	 * 
+	 *
 	 * @return
 	 */
-	Optional<IBallModelIdentResult> getModelIdentResult();
+	List<IBallModelIdentResult> getModelIdentResult();
 }

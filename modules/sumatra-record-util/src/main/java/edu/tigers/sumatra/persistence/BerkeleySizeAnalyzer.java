@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.persistence;
@@ -16,7 +16,7 @@ import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.offense.action.situation.OffensiveActionTreePath;
 import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveAnalysedFrame;
 import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
-import edu.tigers.sumatra.ai.metis.statistics.MatchStats;
+import edu.tigers.sumatra.ai.metis.statistics.stats.MatchStats;
 import edu.tigers.sumatra.drawable.IShapeLayer;
 import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.export.CSVExporter;
@@ -32,7 +32,7 @@ import edu.tigers.sumatra.wp.BerkeleyShapeMapFrame;
 import edu.tigers.sumatra.wp.data.BerkeleyCamDetectionFrame;
 import edu.tigers.sumatra.wp.vis.EWpShapesLayer;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.Level;
 
 import java.io.PrintWriter;
 import java.nio.file.Paths;
@@ -53,16 +53,18 @@ import java.util.stream.Collectors;
 @SuppressWarnings("squid:S106")
 public class BerkeleySizeAnalyzer
 {
+	private static final String OUTPUT_FOLDER = System.getProperty("java.io.tmpdir");
+
 	static
 	{
 		// init logging
 		SumatraModel.changeLogLevel(Level.INFO);
 	}
-	
+
 	private Writer sizesWriter;
 	private final BerkeleyDb db;
-	
-	
+
+
 	private BerkeleySizeAnalyzer(String dbPath)
 	{
 		db = BerkeleyDb.withCustomLocation(Paths.get(dbPath));
@@ -72,8 +74,8 @@ public class BerkeleySizeAnalyzer
 		db.add(BerkeleyLogEvent.class, new BerkeleyAccessor<>(BerkeleyLogEvent.class, false));
 		db.open();
 	}
-	
-	
+
+
 	/**
 	 * @param args ...
 	 */
@@ -83,11 +85,11 @@ public class BerkeleySizeAnalyzer
 		{
 			System.exit(1);
 		}
-		
+
 		BerkeleySizeAnalyzer sa = new BerkeleySizeAnalyzer(args[0]);
-		
+
 		String type = args[1];
-		
+
 		if ("frameSizeByClass".equalsIgnoreCase(type))
 		{
 			sa.frameSizeByClass();
@@ -103,43 +105,43 @@ public class BerkeleySizeAnalyzer
 		}
 		sa.close();
 	}
-	
-	
+
+
 	private void close()
 	{
 		db.close();
 	}
-	
-	
+
+
 	private int getSizeInBytes(Object object)
 	{
 		return ObjectProfiler.profile(object).size();
 	}
-	
-	
+
+
 	private Map<String, Integer> calcSizeInBytes(Map<String, Object> input)
 	{
 		return input.entrySet().stream()
 				.collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue() == null ? 0 : getSizeInBytes(e.getValue())));
 	}
-	
-	
+
+
 	private void frameSizeShapeMap()
 	{
-		sizesWriter = new Writer("/tmp/shapeMap");
+		sizesWriter = new Writer("shapeMap");
 		processAllFrames(db, BerkeleyShapeMapFrame.class, BerkeleySizeAnalyzer.this::processShapeMapFrame, 100_000_000);
 		sizesWriter.exporter.close();
 	}
-	
-	
+
+
 	private void frameSizeAi()
 	{
-		sizesWriter = new Writer("/tmp/aiFrame");
+		sizesWriter = new Writer("aiFrame");
 		processAllFrames(db, BerkeleyAiFrame.class, BerkeleySizeAnalyzer.this::processRecordFrame);
 		sizesWriter.exporter.close();
 	}
-	
-	
+
+
 	private void frameSizeByClass()
 	{
 		Set<Class<?>> frameClasses = Sets.newHashSet(
@@ -158,12 +160,12 @@ public class BerkeleySizeAnalyzer
 		{
 			Summer summer = new Summer();
 			processAllFrames(db, clazz, f -> processObject(f, summer));
-			System.out.printf("\n%30s: %10d %10d %10d\n", clazz.getName(), summer.sum, summer.count,
+			System.out.printf("%n%30s: %10d %10d %10d%n", clazz.getName(), summer.sum, summer.count,
 					summer.count > 0 ? summer.sum / summer.count : 0);
 		}
 	}
-	
-	
+
+
 	private void frameSizeAnalysis()
 	{
 		Set<Class<?>> frameClasses = Sets.newHashSet(BerkeleyAiFrame.class, BerkeleyCamDetectionFrame.class,
@@ -174,23 +176,23 @@ public class BerkeleySizeAnalyzer
 			processObject(o);
 		}
 	}
-	
-	
+
+
 	private void processRecordFrame(BerkeleyAiFrame berkeleyAiFrame)
 	{
 		VisualizationFrame visFrameY = berkeleyAiFrame.getVisFrame(ETeamColor.YELLOW);
 		VisualizationFrame visFrameB = berkeleyAiFrame.getVisFrame(ETeamColor.BLUE);
-		
+
 		Map<String, Object> measures = new LinkedHashMap<>();
 		measures.put("berkeleyAiFrame", berkeleyAiFrame);
 		measures.put("visFrameY", visFrameY);
 		measures.put("visFrameB", visFrameB);
-		
+
 		Map<String, Integer> sizes = calcSizeInBytes(measures);
 		sizesWriter.write(sizes);
 	}
-	
-	
+
+
 	private void processShapeMapFrame(BerkeleyShapeMapFrame frame)
 	{
 		for (ShapeMap shapeMap : frame.getShapeMaps().values())
@@ -198,8 +200,8 @@ public class BerkeleySizeAnalyzer
 			processShapeMap(shapeMap);
 		}
 	}
-	
-	
+
+
 	private void processShapeMap(ShapeMap shapeMap)
 	{
 		Map<String, Integer> measures = new LinkedHashMap<>();
@@ -211,8 +213,8 @@ public class BerkeleySizeAnalyzer
 		}
 		sizesWriter.write(measures);
 	}
-	
-	
+
+
 	private Set<IShapeLayer> getAllShapeLayers()
 	{
 		Set<IShapeLayer> all = new LinkedHashSet<>();
@@ -224,8 +226,8 @@ public class BerkeleySizeAnalyzer
 		all.addAll(Arrays.asList(ELogAnalysisShapesLayer.values()));
 		return all;
 	}
-	
-	
+
+
 	private <T> void processAllFrames(BerkeleyDb db, Class<T> clazz, Consumer<T> processor, long increment)
 	{
 		long first = db.getFirstKey();
@@ -240,8 +242,8 @@ public class BerkeleySizeAnalyzer
 			processor.accept(frame);
 		}
 	}
-	
-	
+
+
 	private <T> void processAllFrames(BerkeleyDb db, Class<T> clazz, Consumer<T> processor)
 	{
 		Long first = db.getFirstKey();
@@ -266,18 +268,18 @@ public class BerkeleySizeAnalyzer
 			T frame = db.get(clazz, key);
 			processor.accept(frame);
 			key = nextKey;
-			
+
 			if ((key - first) > i * range / n)
 			{
 				System.out.print("-");
 				i++;
 			}
-			
+
 		}
 		System.out.println();
 	}
-	
-	
+
+
 	private void processObject(Object object, Summer summer)
 	{
 		if (object != null)
@@ -286,49 +288,49 @@ public class BerkeleySizeAnalyzer
 			summer.count++;
 		}
 	}
-	
-	
+
+
 	private static void processObject(final Object obj)
 	{
 		IObjectProfileNode profile = ObjectProfiler.profile(obj);
-		
+
 		System.out.println("obj size = " + profile.size() + " bytes");
 		System.out.println(profile.dump());
 		System.out.println();
-		
+
 		// dump the same profile, but now only show nodes that are at least
 		// 25% of 'obj' size:
-		
+
 		System.out.println("size fraction filter with threshold=0.25:");
 		final PrintWriter out = new PrintWriter(System.out);
-		
+
 		profile.traverse(ObjectProfileFilters.newSizeFractionFilter(0.05),
 				ObjectProfileVisitors.newDefaultNodePrinter(out, null, null, true));
 	}
-	
+
 	private static class Writer
 	{
 		CSVExporter exporter;
 		boolean first = true;
-		
-		
+
+
 		Writer(String filename)
 		{
-			exporter = new CSVExporter(filename, true, false);
+			exporter = new CSVExporter(OUTPUT_FOLDER, filename, CSVExporter.EMode.AUTO_INCREMENT_FILE_NAME);
 		}
-		
-		
+
+
 		void write(Map<String, ? extends Number> dataSet)
 		{
 			if (first)
 			{
-				exporter.setHeader(dataSet.keySet().toArray(new String[dataSet.size()]));
+				exporter.setHeader(dataSet.keySet());
 				first = false;
 			}
 			exporter.addValues(dataSet.values());
 		}
 	}
-	
+
 	private static class Summer
 	{
 		long sum = 0;

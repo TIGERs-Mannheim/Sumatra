@@ -1,0 +1,75 @@
+/*
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ */
+
+dependencies {
+    implementation project(':common')
+    implementation project(':common-gui')
+    implementation project(':common-gui-config')
+    implementation project(':sumatra-model')
+    implementation project(':sumatra-skillsystem')
+    implementation project(':sumatra-simulation-control')
+    implementation project(':sumatra-gui-skills')
+    implementation project(':sumatra-gui-ai')
+    implementation project(':sumatra-gui-bot')
+    implementation project(':sumatra-gui-bot-params')
+    implementation project(':sumatra-gui-log')
+    implementation project(':sumatra-gui-rcm')
+    implementation project(':sumatra-gui-referee')
+    implementation project(':sumatra-gui-replay')
+    implementation project(':sumatra-gui-sim')
+    implementation project(':sumatra-gui-testplays')
+    implementation project(':sumatra-gui-timer')
+    implementation project(':sumatra-gui-wp')
+    implementation project(':sumatra-gui-logfile')
+    implementation project(':sumatra-gui-kick')
+    implementation project(':autoreferee-gui')
+    runtimeOnly project(':moduli-movement-limit-observer')
+    runtimeOnly project(':moduli-botmanager')
+    runtimeOnly project(':moduli-botmanager-sim')
+    implementation project(':moduli-botmanager-tigers')
+    implementation project(':moduli-ai')
+    implementation project(':moduli-record')
+    implementation project(':moduli-referee')
+    implementation project(':moduli-wp')
+    runtimeOnly project(':moduli-vision')
+    runtimeOnly project(':moduli-cam')
+    implementation project(':moduli-ai-controller')
+    implementation project(':moduli-vision-simulation')
+    implementation project(':moduli-autoreferee')
+    runtimeOnly project(':moduli-team-client')
+    runtimeOnly project(':moduli-bot-params')
+    runtimeOnly project(':moduli-log-analysis')
+    runtimeOnly project(':moduli-calibration')
+
+    implementation 'com.github.TIGERs-Mannheim:moduli:4.1'
+
+    implementation 'org.apache.logging.log4j:log4j-api:2.14.1'
+    runtimeOnly 'org.apache.logging.log4j:log4j-jul:2.14.1'
+    runtimeOnly 'org.apache.logging.log4j:log4j-1.2-api:2.14.1'
+    runtimeOnly 'org.slf4j:slf4j-log4j12:1.7.30'
+    runtimeOnly 'org.apache.logging.log4j:log4j-core:2.14.1'
+
+    implementation 'commons-cli:commons-cli:1.4'
+}
+
+application {
+    mainClass.set('edu.tigers.sumatra.Sumatra')
+    applicationDefaultJvmArgs = [
+            '-server',
+            '-Xnoclassgc',
+            '-Dsun.java2d.d3d=false',
+            '-Djava.net.preferIPv4Stack=true',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005',
+            '-Xmx4G'
+    ]
+
+    if (project.hasProperty("development")) {
+        // enable assertions
+        applicationDefaultJvmArgs += "-ea"
+    }
+}
+
+tasks.named("run").configure {
+    workingDir = rootProject.projectDir
+}

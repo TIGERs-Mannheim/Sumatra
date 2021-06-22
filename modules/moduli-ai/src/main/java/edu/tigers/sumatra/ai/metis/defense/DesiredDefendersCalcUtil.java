@@ -1,4 +1,19 @@
+/*
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.ai.metis.defense;
+
+import com.github.g3force.configurable.ConfigRegistration;
+import com.github.g3force.configurable.Configurable;
+import edu.tigers.sumatra.ai.BaseAiFrame;
+import edu.tigers.sumatra.ai.metis.defense.data.DefenseThreatAssignment;
+import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.line.v2.ILineSegment;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -6,16 +21,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import com.github.g3force.configurable.ConfigRegistration;
-import com.github.g3force.configurable.Configurable;
-
-import edu.tigers.sumatra.ai.BaseAiFrame;
-import edu.tigers.sumatra.ai.metis.defense.data.DefenseThreatAssignment;
-import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.line.v2.ILineSegment;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
 /**
@@ -76,7 +81,7 @@ class DesiredDefendersCalcUtil
 			final List<BotID> remainingDefenders)
 	{
 		final ILineSegment protectionLine = threat.getProtectionLine()
-				.orElseGet(() -> DefenseMath.getThreatDefendingLineForCenterBack(threat.getThreatLine()));
+				.orElseGet(() -> getThreatDefendingLineForCenterBack(threat.getThreatLine()));
 
 		Map<BotID, Double> interceptionRating = new HashMap<>();
 		for (BotID botID : remainingDefenders)
@@ -89,13 +94,23 @@ class DesiredDefendersCalcUtil
 	}
 
 
-	private double dist2Threat(final IDefenseThreat threat, final ILineSegment threadLine, final ITrackedBot tBot)
+	private ILineSegment getThreatDefendingLineForCenterBack(final ILineSegment threatLine)
 	{
-		if (threadLine.getLength() > 1)
+		return DefenseMath.getThreatDefendingLine(threatLine,
+				Geometry.getBotRadius() * 2,
+				DefenseConstants.getMinGoOutDistance(),
+				DefenseConstants.getMaxGoOutDistance());
+	}
+
+
+	private double dist2Threat(final IDefenseThreat threat, final ILineSegment protectionLine, final ITrackedBot tBot)
+	{
+		IVector2 botPos = tBot.getPosByTime(DefenseConstants.getLookaheadBotThreats(tBot.getVel().getLength()));
+		if (protectionLine.getLength() > 1)
 		{
-			return threadLine.distanceTo(tBot.getPos());
+			return protectionLine.distanceTo(botPos);
 		}
-		return threat.getPos().distanceTo(tBot.getPos());
+		return threat.getPos().distanceTo(botPos);
 	}
 
 

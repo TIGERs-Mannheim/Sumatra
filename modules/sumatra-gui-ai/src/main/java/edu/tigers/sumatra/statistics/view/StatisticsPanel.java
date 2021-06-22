@@ -4,6 +4,22 @@
 
 package edu.tigers.sumatra.statistics.view;
 
+import edu.tigers.sumatra.ai.VisualizationFrame;
+import edu.tigers.sumatra.ai.metis.ballpossession.EBallPossession;
+import edu.tigers.sumatra.ai.metis.statistics.stats.EMatchStatistics;
+import edu.tigers.sumatra.ai.metis.statistics.stats.MatchStats;
+import edu.tigers.sumatra.ai.metis.statistics.stats.Percentage;
+import edu.tigers.sumatra.ai.metis.statistics.stats.StatisticData;
+import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.views.ISumatraView;
+import net.miginfocom.swing.MigLayout;
+
+import javax.swing.ButtonGroup;
+import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.SwingUtilities;
 import java.awt.Font;
 import java.awt.Panel;
 import java.awt.event.ActionEvent;
@@ -14,27 +30,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.swing.ButtonGroup;
-import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import javax.swing.SwingUtilities;
-
-import edu.tigers.sumatra.ai.VisualizationFrame;
-import edu.tigers.sumatra.ai.metis.ballpossession.EBallPossession;
-import edu.tigers.sumatra.ai.metis.statistics.EMatchStatistics;
-import edu.tigers.sumatra.ai.metis.statistics.MatchStats;
-import edu.tigers.sumatra.ai.metis.statistics.Percentage;
-import edu.tigers.sumatra.ai.metis.statistics.StatisticData;
-import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.views.ISumatraView;
-import net.miginfocom.swing.MigLayout;
-
 
 /**
  * Main Panel for Game statistics from tactical Field
- * 
+ *
  * @author Daniel Andres <andreslopez.daniel@gmail.com>
  */
 public class StatisticsPanel extends JPanel implements ISumatraView
@@ -43,7 +42,7 @@ public class StatisticsPanel extends JPanel implements ISumatraView
 	private StatisticsTable statTable;
 	private MatchStats stats = null;
 	private ETeamColor selectedTeamColor = ETeamColor.YELLOW;
-	
+
 	private PossessionBar ballPossessionBar;
 	/**
 	 * Default
@@ -51,7 +50,7 @@ public class StatisticsPanel extends JPanel implements ISumatraView
 	public StatisticsPanel()
 	{
 		setLayout(new MigLayout());
-		
+
 		JRadioButton rBtnYellow = new JRadioButton(ETeamColor.YELLOW.name());
 		rBtnYellow.setActionCommand(ETeamColor.YELLOW.name());
 		rBtnYellow.addActionListener(new TeamActionListener());
@@ -62,14 +61,14 @@ public class StatisticsPanel extends JPanel implements ISumatraView
 		teamButtonGroup.add(rBtnYellow);
 		teamButtonGroup.add(rBtnBlue);
 		rBtnYellow.setSelected(true);
-		
+
 		JPanel teamPanel = new JPanel();
 		teamPanel.add(rBtnYellow);
 		teamPanel.add(rBtnBlue);
 		add(teamPanel, "wrap, dock north");
-		
 
-		
+
+
 		statTable = new StatisticsTable();
 		Panel tPanel = new Panel();
 		tPanel.setLayout(new MigLayout());
@@ -86,8 +85,8 @@ public class StatisticsPanel extends JPanel implements ISumatraView
 		add(lblBallPossession, "dock south, wrap");
 
 	}
-	
-	
+
+
 	/**
 	 * Reset the panel
 	 */
@@ -95,8 +94,8 @@ public class StatisticsPanel extends JPanel implements ISumatraView
 	{
 		repaint();
 	}
-	
-	
+
+
 	/**
 	 * @param lastVisualizationFrame
 	 */
@@ -108,15 +107,15 @@ public class StatisticsPanel extends JPanel implements ISumatraView
 			SwingUtilities.invokeLater(this::update);
 		}
 	}
-	
-	
+
+
 	private void update()
 	{
 		updateBallPossession();
 		updateStatisticsTable();
 	}
-	
-	
+
+
 	private void updateBallPossession()
 	{
 		Map<EBallPossession, Percentage> bs = stats.getBallPossessionGeneral();
@@ -135,34 +134,35 @@ public class StatisticsPanel extends JPanel implements ISumatraView
 			ballPossessionBar.setTeamShareBoth(bs.get(EBallPossession.THEY).getPercent(), bs.get(EBallPossession.WE).getPercent());
 		}
 	}
-	
-	
+
+
 	private void updateStatisticsTable()
 	{
 		Map<String, StatisticData> statistics = new LinkedHashMap<>();
-		
+
 		for (EMatchStatistics statistic : stats.getStatistics().keySet())
 		{
 			statistics.put(statistic.getDescriptor(), stats.getStatistics().get(statistic));
 		}
-		
+
 		Set<Integer> allBots = stats.getAllBots();
 		statTable.setData(statistics, allBots);
 	}
-	
-	
+
+
 	@Override
 	public List<JMenu> getCustomMenus()
 	{
 		return Collections.emptyList();
 	}
-	
-	
+
+
 	public ETeamColor getSelectedTeamColor()
 	{
 		return selectedTeamColor;
 	}
-	
+
+
 	private class TeamActionListener implements ActionListener
 	{
 		@Override

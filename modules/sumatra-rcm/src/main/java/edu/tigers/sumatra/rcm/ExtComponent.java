@@ -1,48 +1,24 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.rcm;
 
 import edu.tigers.sumatra.rcm.RcmAction.EActionType;
+import lombok.RequiredArgsConstructor;
 import net.java.games.input.Component;
 
 
 /**
  * Wrapper class with extended information on Component
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
+@RequiredArgsConstructor
 public class ExtComponent implements Component
 {
-	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	private final Component	baseComponent;
-	private final RcmAction	mappedAction;
-	private ExtComponent		dependentComp;
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	/**
-	 * @param baseComponent
-	 * @param mappedAction
-	 */
-	public ExtComponent(final Component baseComponent, final RcmAction mappedAction)
-	{
-		this.baseComponent = baseComponent;
-		this.mappedAction = mappedAction;
-	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
+	private final Component baseComponent;
+	private final RcmAction mappedAction;
+	private ExtComponent dependentComp;
+
+
 	/**
 	 * @return
 	 */
@@ -53,50 +29,47 @@ public class ExtComponent implements Component
 		{
 			EControllerAction cAction = (EControllerAction) mappedAction.getActionEnum();
 			return cAction.isContinuous();
-			
+
 		}
 		return false;
 	}
-	
-	
+
+
 	@Override
 	public String toString()
 	{
 		return baseComponent.getIdentifier().getName() + " - " + mappedAction;
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
+
+
 	@Override
 	public Identifier getIdentifier()
 	{
 		return baseComponent.getIdentifier();
 	}
-	
-	
+
+
 	@Override
 	public boolean isRelative()
 	{
 		return baseComponent.isRelative();
 	}
-	
-	
+
+
 	@Override
 	public boolean isAnalog()
 	{
 		return baseComponent.isAnalog();
 	}
-	
-	
+
+
 	@Override
 	public float getDeadZone()
 	{
 		return baseComponent.getDeadZone();
 	}
-	
-	
+
+
 	@Override
 	public float getPollData()
 	{
@@ -106,15 +79,15 @@ public class ExtComponent implements Component
 		}
 		return baseComponent.getPollData();
 	}
-	
-	
+
+
 	@Override
 	public String getName()
 	{
 		return baseComponent.getName();
 	}
-	
-	
+
+
 	/**
 	 * @return the baseComponent
 	 */
@@ -122,8 +95,8 @@ public class ExtComponent implements Component
 	{
 		return baseComponent;
 	}
-	
-	
+
+
 	/**
 	 * @return the mappedAction
 	 */
@@ -131,8 +104,8 @@ public class ExtComponent implements Component
 	{
 		return mappedAction;
 	}
-	
-	
+
+
 	/**
 	 * @return the dependentComp
 	 */
@@ -140,8 +113,8 @@ public class ExtComponent implements Component
 	{
 		return dependentComp;
 	}
-	
-	
+
+
 	/**
 	 * @param dependentComp the dependentComp to set
 	 */

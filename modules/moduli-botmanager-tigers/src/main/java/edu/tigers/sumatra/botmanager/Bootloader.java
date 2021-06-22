@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager;
 
@@ -13,7 +13,8 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.zip.CRC32;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import edu.tigers.sumatra.botmanager.basestation.ITigersBaseStationObserver;
 import edu.tigers.sumatra.botmanager.basestation.TigersBaseStation;
@@ -29,13 +30,13 @@ import edu.tigers.sumatra.ids.BotID;
 
 /**
  * Bootloader logic.
- * 
+ *
  * @author AndreR
  */
 public class Bootloader implements ITigersBaseStationObserver
 {
-	private static final Logger log = Logger.getLogger(Bootloader.class);
-	
+	private static final Logger log = LogManager.getLogger(Bootloader.class);
+
 	/**
 	 * Booloader process observer.
 	 */
@@ -50,13 +51,13 @@ public class Bootloader implements ITigersBaseStationObserver
 		 */
 		void onBootloaderProgress(BotID botId, EProcessorID procId, long bytesRead, long totalSize);
 	}
-	
-	
+
+
 	private static String programFolder;
 	private final TigersBaseStation baseStation;
 	private final List<IBootloaderObserver> observers = new CopyOnWriteArrayList<>();
-	
-	
+
+
 	/**
 	 * @param bs
 	 */
@@ -64,12 +65,12 @@ public class Bootloader implements ITigersBaseStationObserver
 	{
 		baseStation = bs;
 	}
-	
-	
+
+
 	// --------------------------------------------------------------------------
 	// --- constructors ---------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
+
 	/**
 	 * Set the folder containing main.bin, media.bin, ...
 	 *
@@ -79,8 +80,8 @@ public class Bootloader implements ITigersBaseStationObserver
 	{
 		programFolder = folder;
 	}
-	
-	
+
+
 	@Override
 	public void onIncomingBotCommand(final BotID id, final ACommand command)
 	{
@@ -99,8 +100,8 @@ public class Bootloader implements ITigersBaseStationObserver
 				break;
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -108,8 +109,8 @@ public class Bootloader implements ITigersBaseStationObserver
 	{
 		observers.add(observer);
 	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -117,8 +118,8 @@ public class Bootloader implements ITigersBaseStationObserver
 	{
 		observers.remove(observer);
 	}
-	
-	
+
+
 	private void notifyBootloaderProgress(final BotID botId, final EProcessorID procId, final long bytesRead,
 			final long totalSize)
 	{
@@ -127,8 +128,8 @@ public class Bootloader implements ITigersBaseStationObserver
 			observer.onBootloaderProgress(botId, procId, bytesRead, totalSize);
 		}
 	}
-	
-	
+
+
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
@@ -137,7 +138,8 @@ public class Bootloader implements ITigersBaseStationObserver
 		Path path = Paths.get(programFolder, EProcessorID.getProcessorIDConstant(procId).getFilename());
 		return new RandomAccessFile(path.toFile(), "r");
 	}
-	
+
+
 	private void handleRequestData(final BotID id, final ACommand command)
 	{
 		long fileLength = 0;
@@ -173,7 +175,8 @@ public class Bootloader implements ITigersBaseStationObserver
 		notifyBootloaderProgress(id, EProcessorID.getProcessorIDConstant(reqData.getProcId()), reqData.getOffset()
 				+ reqData.getSize(), fileLength);
 	}
-	
+
+
 	private void handleRequestCrc(final BotID id, final ACommand command)
 	{
 		TigerBootloaderRequestCrc crcReq = (TigerBootloaderRequestCrc) command;
@@ -210,7 +213,8 @@ public class Bootloader implements ITigersBaseStationObserver
 
 		baseStation.enqueueCommand(id, crcAns);
 	}
-	
+
+
 	private void handleRequestSize(final BotID id, final ACommand command)
 	{
 		TigerBootloaderRequestSize reqSize = (TigerBootloaderRequestSize) command;
@@ -233,8 +237,8 @@ public class Bootloader implements ITigersBaseStationObserver
 
 		notifyBootloaderProgress(id, EProcessorID.getProcessorIDConstant(reqSize.getProcId()), 0, size.getSize());
 	}
-	
-	
+
+
 	/**
 	 * Bot processor ID.
 	 */

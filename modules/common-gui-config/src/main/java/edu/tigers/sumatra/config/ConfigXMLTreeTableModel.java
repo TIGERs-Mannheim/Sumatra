@@ -1,69 +1,47 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2011, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 23.11.2011
- * Author(s): Gero
- * *********************************************************
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.config;
 
-import java.awt.event.MouseEvent;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-
-import javax.swing.JLabel;
-import javax.swing.JTable;
-
+import com.github.g3force.s2vconverter.String2ValueConverter;
+import edu.tigers.sumatra.treetable.ATreeTableModel;
+import edu.tigers.sumatra.treetable.ITreeTableModel;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.HierarchicalConfiguration.Node;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.apache.commons.configuration.tree.ConfigurationNode;
 
-import com.github.g3force.s2vconverter.String2ValueConverter;
-
-import edu.tigers.sumatra.treetable.ATreeTableModel;
-import edu.tigers.sumatra.treetable.ITreeTableModel;
+import javax.swing.JLabel;
+import javax.swing.JTable;
+import java.awt.event.MouseEvent;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 
 /**
  * An {@link ATreeTableModel} implementation based on a {@link HierarchicalConfiguration}.
- * 
+ *
  * @author Gero
  */
 public class ConfigXMLTreeTableModel extends ATreeTableModel
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	private static final String[]					COLUMNS	= new String[] { "Node", "Value", "Comment" };
-	private static final Class<?>[]				CLASSES	= new Class<?>[] { ITreeTableModel.class, String.class,
-																				String.class };
-																				
-																				
-	private final String2ValueConverter			s2vConv	= String2ValueConverter.getDefault();
-																		
-	private final HierarchicalConfiguration	config;
-															
-															
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 * @param xml
-	 */
+	private static final String[] COLUMNS = new String[] { "Node", "Value", "Comment" };
+	private static final Class<?>[] CLASSES = new Class<?>[] { ITreeTableModel.class, String.class, String.class };
+
+
+	private final String2ValueConverter s2vConv = String2ValueConverter.getDefault();
+	private final HierarchicalConfiguration config;
+
+
 	public ConfigXMLTreeTableModel(final HierarchicalConfiguration xml)
 	{
 		// Hopefully there is no comment as first element... :-P
 		super(xml.getRoot());
 		config = xml;
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
+
+
 	@Override
 	public Object getValueAt(final Object obj, final int col)
 	{
@@ -72,7 +50,7 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 			// is handled by TreeCellRenderer!!!
 			return null;
 		}
-		
+
 		final Node node = (Node) obj;
 		Object result = "";
 		switch (col)
@@ -95,7 +73,7 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 					}
 				}
 				break;
-				
+
 			case 2:
 				for (ConfigurationNode attr : node.getAttributes("comment"))
 				{
@@ -113,16 +91,16 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 		}
 		return result;
 	}
-	
-	
+
+
 	@Override
 	public void renderTreeCellComponent(final JLabel label, final Object value)
 	{
 		final Node node = (Node) value;
 		label.setText(node.getName());
 	}
-	
-	
+
+
 	@Override
 	public Object getChild(final Object obj, final int index)
 	{
@@ -135,8 +113,8 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 		}
 		return list.get(index);
 	}
-	
-	
+
+
 	@Override
 	public int getIndexOfChild(final Object parentObj, final Object childObj)
 	{
@@ -152,16 +130,16 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 		// Not found!
 		return -1;
 	}
-	
-	
+
+
 	@Override
 	public int getChildCount(final Object obj)
 	{
 		final Node node = (Node) obj;
 		return node.getChildrenCount();
 	}
-	
-	
+
+
 	@Override
 	public boolean isCellEditable(final Object obj, final int col)
 	{
@@ -171,20 +149,20 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 			// For tree-expansion/collapse
 			return super.isCellEditable(obj, col);
 		}
-		
+
 		if (!isEditable())
 		{
 			// Editing disabled
 			return false;
 		}
-		
+
 		switch (col)
 		{
-			
+
 			// "Value"
 			case 1:
 				return isLeaf(obj);
-				
+
 			// "Comment"
 			case 2:
 				final org.w3c.dom.Node comment = getComment(obj);
@@ -193,8 +171,8 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 				throw new IllegalArgumentException();
 		}
 	}
-	
-	
+
+
 	@Override
 	public void setValueAt(final Object value, final Object obj, final int col)
 	{
@@ -205,7 +183,7 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 				node.setValue(value);
 				fireTreeNodesChanged(this, getPathTo(node), new int[0], new Object[0]);
 				break;
-				
+
 			case 2:
 				final org.w3c.dom.Node comment = getComment(obj);
 				if (comment != null)
@@ -218,42 +196,42 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 				throw new IllegalArgumentException();
 		}
 	}
-	
-	
+
+
 	@Override
 	public String getToolTipText(final MouseEvent event)
 	{
 		final JTable table = (JTable) event.getSource();
 		final int row = table.rowAtPoint(event.getPoint());
-		
+
 		// Always show the comment as tooltip
 		final Object obj = table.getValueAt(row, 2);
 		// This is the value which is actually displayed in the table: a String!
 		final String value = (String) obj;
-		
+
 		if (!value.isEmpty())
 		{
 			return value;
 		}
 		return null;
 	}
-	
-	
+
+
 	// --------------------------------------------------------------------------
 	// --- local helper functions -----------------------------------------------
 	// --------------------------------------------------------------------------
 	private Object[] getPathTo(final Node node)
 	{
 		// Gather path elements
-		final List<Node> list = new LinkedList<Node>();
-		
+		final List<Node> list = new LinkedList<>();
+
 		Node parent = node.getParent();
 		while (parent != null)
 		{
 			list.add(parent);
 			parent = parent.getParent();
 		}
-		
+
 		// Reverse order
 		final Iterator<Node> it = list.iterator();
 		final Object[] result = new Object[list.size()];
@@ -261,17 +239,17 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 		{
 			result[i] = it.next();
 		}
-		
+
 		return result;
 	}
-	
-	
+
+
 	/**
 	 * This function returns the comment which is associated (means: is the next before/above) with the given
 	 * {@link Node} (as Object, for easier usage). If there no parent or another ELEMENT_NODE is reached.<br/>
 	 * The general problem is that the {@link XMLConfiguration} this model is based on does not contain any comments, but
 	 * access to the underlying {@link org.w3c.dom.Document} which is used to load the configuration initially.
-	 * 
+	 *
 	 * @param obj
 	 * @return The associated comment-node (or <code>null</code>)
 	 */
@@ -294,43 +272,31 @@ public class ConfigXMLTreeTableModel extends ATreeTableModel
 			{
 				return null;
 			}
-			
+
 			prevSibl = prevSibl.getPreviousSibling();
 		}
-		
+
 		return null;
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
+
+
 	@Override
 	public int getColumnCount()
 	{
 		return COLUMNS.length;
 	}
-	
-	
+
+
 	@Override
 	public String getColumnName(final int col)
 	{
 		return COLUMNS[col];
 	}
-	
-	
+
+
 	@Override
 	public Class<?> getColumnClass(final int col)
 	{
 		return CLASSES[col];
-	}
-	
-	
-	/**
-	 * @return The {@link org.w3c.dom.Document} the model is based on
-	 */
-	public HierarchicalConfiguration getConfiguration()
-	{
-		return config;
 	}
 }

@@ -1,14 +1,13 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.sim.dynamics.ball;
 
-import edu.tigers.sumatra.math.vector.IVector;
+import edu.tigers.sumatra.ball.BallState;
+import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.Vector3f;
-import edu.tigers.sumatra.wp.ball.trajectory.ABallTrajectory;
-import edu.tigers.sumatra.wp.ball.trajectory.BallFactory;
-import edu.tigers.sumatra.wp.data.BallTrajectoryState;
 
 
 /**
@@ -19,37 +18,34 @@ public class BallDynamicsModelDynamicVelFixedLoss
 {
 	/**
 	 * @param state the current state
-	 * @param dt [s]
+	 * @param dt    [s]
 	 * @return the new state
 	 */
-	public BallTrajectoryState dynamics(final BallTrajectoryState state, final double dt)
+	public BallState dynamics(final BallState state, final double dt)
 	{
-		double vSwitch = state.getvSwitchToRoll();
-		boolean chipped = state.isChipped();
-		
-		IVector pos = state.getPos();
-		IVector vel = state.getVel();
-		IVector acc = state.getAcc();
-		
+		var pos = state.getPos();
+		var vel = state.getVel();
+		var acc = state.getAcc();
+		var spin = state.getSpin();
+
 		if (!Double.isFinite(state.getPos().x()) || !Double.isFinite(state.getPos().y())
 				|| !Double.isFinite(state.getPos().getXYZVector().z()))
 		{
 			pos = Vector3f.ZERO_VECTOR;
 			vel = Vector3f.ZERO_VECTOR;
 			acc = Vector3f.ZERO_VECTOR;
+			spin = Vector2f.ZERO_VECTOR;
 		}
-		
-		BallTrajectoryState bs = BallTrajectoryState.aBallState()
+
+		var safeState = BallState.builder()
 				.withPos(pos)
 				.withVel(vel)
 				.withAcc(acc)
-				.withChipped(chipped)
-				.withVSwitchToRoll(vSwitch)
-				.withSpin(state.getSpin())
+				.withSpin(spin)
 				.build();
-		
-		ABallTrajectory traj = BallFactory.createTrajectory(bs);
-		
-		return traj.getMilliStateAtTime(traj.gettKickToNow() + dt);
+
+		var traj = Geometry.getBallFactory().createTrajectoryFromState(safeState);
+
+		return traj.getMilliStateAtTime(dt);
 	}
 }

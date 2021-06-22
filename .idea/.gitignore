@@ -9,4 +9,12 @@
 /uiDesigner.xml
 /misc.xml
 /sonarlint.xml
+/sonarlint-state.xml
 /kotlinc.xml
+/deployment.xml
+/jarRepositories.xml
+/gradle.xml
+/.name
+/checkstyle-idea.xml
+/dataSources.local.xml
+/libraries-with-intellij-classes.xml

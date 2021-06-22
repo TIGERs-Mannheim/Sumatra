@@ -1,0 +1,17 @@
+syntax = "proto2";
+
+package edu.tigers.sumatra.autoreferee.proto;
+import "ssl_gc_game_event.proto";
+
+message DesiredEvent {
+    // optional since there are tests in which no events should occur
+    // if the event is present, the fields in the event are expected
+    // to be equal to the ones produced by the autoref to test.
+    // Since positions and similar scalar values will never exactly match,
+    // an error tolerance threshold of around 0.5 meters can be applied
+    optional edu.tigers.sumatra.referee.proto.GameEvent expected_event = 1;
+    // this stop_after_event is set to true, additional events may occur after
+    // the desired event. If it is not set, or set to false, any additional event
+    // should cause the testcase to fail
+    optional bool stop_after_event = 2;
+}

@@ -1,29 +1,29 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.referee.source;
+
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
 
 import java.net.InetAddress;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import edu.tigers.sumatra.Referee.SSL_Referee;
-
 
 public abstract class ARefereeMessageSource
 {
 	private final List<IRefereeSourceObserver> observers = new CopyOnWriteArrayList<>();
-	
+
 	private final ERefereeMessageSource type;
-	
-	
+
+
 	protected ARefereeMessageSource(final ERefereeMessageSource type)
 	{
 		this.type = type;
 	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -31,8 +31,8 @@ public abstract class ARefereeMessageSource
 	{
 		observers.add(observer);
 	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -40,33 +40,33 @@ public abstract class ARefereeMessageSource
 	{
 		observers.remove(observer);
 	}
-	
-	
-	protected void notifyNewRefereeMessage(final SSL_Referee msg)
+
+
+	protected void notifyNewRefereeMessage(final SslGcRefereeMessage.Referee msg)
 	{
 		for (IRefereeSourceObserver observer : observers)
 		{
 			observer.onNewRefereeMessage(msg);
 		}
 	}
-	
-	
+
+
 	/**
 	 * Start source
 	 */
 	public void start()
 	{
 	}
-	
-	
+
+
 	/**
 	 * Stop source
 	 */
 	public void stop()
 	{
 	}
-	
-	
+
+
 	/**
 	 * @return the type
 	 */
@@ -74,15 +74,10 @@ public abstract class ARefereeMessageSource
 	{
 		return type;
 	}
-	
-	
+
+
 	public Optional<InetAddress> getRefBoxAddress()
 	{
 		return Optional.empty();
-	}
-	
-	
-	public void setCurrentTime(long timestamp)
-	{
 	}
 }

@@ -1,0 +1,26 @@
+/*
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ */
+
+plugins {
+    id 'sumatra.java-conventions'
+    id 'java-library'
+}
+
+dependencies {
+    implementation project(':sumatra-model')
+    implementation project(':common')
+    implementation project(':moduli-referee')
+
+    implementation 'com.github.TIGERs-Mannheim:moduli:4.1'
+    implementation 'com.github.g3force:configurable:3.0'
+
+    implementation 'org.apache.logging.log4j:log4j-api:2.14.1'
+    implementation 'org.apache.logging.log4j:log4j-core:2.14.1'
+
+    implementation 'commons-io:commons-io:2.8.0'
+    implementation 'commons-lang:commons-lang:2.6'
+
+    implementation 'net.lingala.zip4j:zip4j:2.7.0'
+    implementation 'com.sleepycat:je:18.3.12'
+}

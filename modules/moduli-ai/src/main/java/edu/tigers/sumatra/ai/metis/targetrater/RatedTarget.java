@@ -1,31 +1,27 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.targetrater;
 
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.wp.data.DynamicPosition;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.Value;
 
 
 /**
  * A target for passes and goal kicks with a rated score and an optional angle range
  */
-public final class RatedTarget implements IRatedTarget
+@Value
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+public class RatedTarget implements IRatedTarget
 {
-	private final DynamicPosition target;
-	private final double range;
-	private final double score;
-	
-	
-	private RatedTarget(final IVector2 target, final double range, final double score)
-	{
-		this.target = new DynamicPosition(target, range);
-		this.range = range;
-		this.score = score;
-	}
-	
-	
+	IVector2 target;
+	double range;
+	double score;
+
+
 	/**
 	 * @param target
 	 * @param score
@@ -35,8 +31,8 @@ public final class RatedTarget implements IRatedTarget
 	{
 		return new RatedTarget(target, 0, score);
 	}
-	
-	
+
+
 	/**
 	 * @param range
 	 * @param score
@@ -45,26 +41,5 @@ public final class RatedTarget implements IRatedTarget
 	public static RatedTarget ratedRange(IVector2 target, double range, double score)
 	{
 		return new RatedTarget(target, range, score);
-	}
-	
-	
-	@Override
-	public DynamicPosition getTarget()
-	{
-		return target;
-	}
-	
-	
-	@Override
-	public double getRange()
-	{
-		return range;
-	}
-	
-	
-	@Override
-	public double getScore()
-	{
-		return score;
 	}
 }

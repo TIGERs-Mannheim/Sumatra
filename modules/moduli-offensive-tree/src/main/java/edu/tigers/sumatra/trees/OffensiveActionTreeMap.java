@@ -1,20 +1,21 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.trees;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.sleepycat.persist.model.Persistent;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.sleepycat.persist.model.Persistent;
 
 
 /**
@@ -25,10 +26,10 @@ import java.util.Optional;
 public class OffensiveActionTreeMap
 {
 	private static final Logger log = LogManager.getLogger(OffensiveActionTreeMap.class);
-	
+
 	private Map<EOffensiveSituation, OffensiveActionTree> actionTrees = new EnumMap<>(EOffensiveSituation.class);
-	
-	
+
+
 	public OffensiveActionTreeMap()
 	{
 		for (EOffensiveSituation situation : EOffensiveSituation.values())
@@ -36,26 +37,26 @@ public class OffensiveActionTreeMap
 			actionTrees.put(situation, new OffensiveActionTree());
 		}
 	}
-	
-	
+
+
 	public OffensiveActionTreeMap(final Map<EOffensiveSituation, OffensiveActionTree> actionTreesCopy)
 	{
 		this.actionTrees = actionTreesCopy;
 	}
-	
-	
+
+
 	public Map<EOffensiveSituation, OffensiveActionTree> getActionTrees()
 	{
 		return actionTrees;
 	}
-	
-	
+
+
 	public void setActionTrees(final Map<EOffensiveSituation, OffensiveActionTree> actionTrees)
 	{
 		this.actionTrees = actionTrees;
 	}
-	
-	
+
+
 	public static Optional<OffensiveActionTreeMap> loadTreeDataFromFile(String path)
 	{
 		ObjectMapper mapper = new ObjectMapper();
@@ -74,8 +75,8 @@ public class OffensiveActionTreeMap
 		}
 		return Optional.empty();
 	}
-	
-	
+
+
 	@JsonIgnore
 	public void saveTreeDataToFile(String path)
 	{
@@ -88,10 +89,10 @@ public class OffensiveActionTreeMap
 		{
 			log.warn("Could not write edu.tigers.sumatra.trees.OffensiveActionTree Data", e);
 		}
-		
+
 	}
-	
-	
+
+
 	private static void fillParentData(OffensiveActionTreeNode node)
 	{
 		for (OffensiveActionTreeNode child : node.getChildren().values())

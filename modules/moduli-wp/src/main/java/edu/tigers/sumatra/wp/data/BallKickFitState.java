@@ -1,89 +1,62 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.wp.data;
 
 import com.sleepycat.persist.model.Persistent;
-
+import edu.tigers.sumatra.math.IMirrorable;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
-import edu.tigers.sumatra.vision.data.ABallTrajectory;
-import edu.tigers.sumatra.vision.data.FilteredVisionBall;
+import edu.tigers.sumatra.math.vector.Vector2;
+import edu.tigers.sumatra.math.vector.Vector3;
+import lombok.AllArgsConstructor;
+import lombok.Value;
 
 
 /**
- * @author AndreR <andre@ryll.cc>
+ * State of a kicked ball after fitting.
  */
 @Persistent
-public class BallKickFitState
+@Value
+@AllArgsConstructor
+public class BallKickFitState implements IMirrorable<BallKickFitState>
 {
-	private final IVector2 kickPos;
-	private final IVector3 kickVel;
-	private final long kickTimestamp;
-	
-	
+	/**
+	 * Kick pos [mm]
+	 */
+	IVector2 kickPos;
+
+	/**
+	 * Kick velocity [m/s]
+	 */
+	IVector3 kickVel;
+
+	/**
+	 * Kick timestamp [ns]
+	 */
+	long kickTimestamp;
+
+
 	@SuppressWarnings("unused")
 	private BallKickFitState()
 	{
-		kickPos = null;
-		kickVel = null;
+		kickPos = Vector2.zero();
+		kickVel = Vector3.zero();
 		kickTimestamp = 0;
 	}
-	
-	
-	/**
-	 * @param kickPos
-	 * @param kickVel
-	 * @param kickTimestamp
-	 */
-	public BallKickFitState(final IVector2 kickPos, final IVector3 kickVel, final long kickTimestamp)
+
+
+	@Override
+	public BallKickFitState mirrored()
 	{
-		this.kickPos = kickPos;
-		this.kickVel = kickVel;
-		this.kickTimestamp = kickTimestamp;
+		return new BallKickFitState(
+				kickPos.multiplyNew(-1),
+				Vector3.from2d(kickVel.getXYVector().multiplyNew(-1), kickVel.z()),
+				kickTimestamp
+		);
 	}
-	
-	
-	/**
-	 * @param filteredBallState
-	 * @param timestampNow
-	 */
-	public BallKickFitState(final FilteredVisionBall filteredBallState, final long timestampNow)
-	{
-		ABallTrajectory trajectory = filteredBallState.getTrajectory(timestampNow);
-		kickPos = trajectory.getKickPos();
-		kickVel = trajectory.getKickVel();
-		kickTimestamp = trajectory.getKickTimestamp();
-	}
-	
-	
-	/**
-	 * @return the kickPos
-	 */
-	public IVector2 getKickPos()
-	{
-		return kickPos;
-	}
-	
-	
-	/**
-	 * @return the kickVel
-	 */
-	public IVector3 getKickVel()
-	{
-		return kickVel;
-	}
-	
-	
-	/**
-	 * @return the kickTimestamp
-	 */
-	public long getKickTimestamp()
-	{
-		return kickTimestamp;
-	}
-	
-	
+
+
 	/**
 	 * @return the absolute kick speed
 	 */

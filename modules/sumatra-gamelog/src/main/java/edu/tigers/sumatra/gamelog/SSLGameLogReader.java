@@ -1,7 +1,15 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.gamelog;
+
+import com.google.common.primitives.Bytes;
+import com.google.protobuf.AbstractMessage;
+import edu.tigers.sumatra.cam.proto.MessagesRobocupSslWrapper.SSL_WrapperPacket;
+import edu.tigers.sumatra.gamelog.proto.LogLabelerData;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.DataInputStream;
 import java.io.EOFException;
@@ -15,49 +23,39 @@ import java.util.List;
 import java.util.Optional;
 import java.util.zip.GZIPInputStream;
 
-import com.google.common.primitives.Bytes;
-import edu.tigers.sumatra.LogLabelerData;
-import edu.tigers.sumatra.Referee;
-import org.apache.log4j.Logger;
-
-import com.google.protobuf.AbstractMessage;
-
-import edu.tigers.sumatra.MessagesRobocupSslWrapper.SSL_WrapperPacket;
-import edu.tigers.sumatra.Referee.SSL_Referee;
-
 
 /**
  * Reads a logfile containing SSL-Vision and referee commands.
- * 
+ *
  * @author AndreR <andre@ryll.cc>
  */
 public class SSLGameLogReader
 {
-	private static final Logger log = Logger.getLogger(SSLGameLogReader.class.getName());
-	
+	private static final Logger log = LogManager.getLogger(SSLGameLogReader.class.getName());
+
 	private String headerString = "";
 	private int versionNumber = 0;
-	
+
 	private List<SSLGameLogfileEntry> packets = new ArrayList<>();
-	
+
 	private ISSLGameLogfileObserver loadCompleteObserver = null;
-	
+
 	private enum LogFileType
 	{
 		LOG_FILE("SSL_LOG_FILE"),
 		LABELER_FILE("SSL_LABELER_DATA"),
 		UNKNOWN("");
-		
+
 		private String header;
-		
-		
+
+
 		LogFileType(String header)
 		{
 			this.header = header;
 		}
 	}
-	
-	
+
+
 	/**
 	 * Load a logfile asynchronously.
 	 *
@@ -67,8 +65,8 @@ public class SSLGameLogReader
 	{
 		new Thread(() -> loadFileBlocking(path), "Loader").start();
 	}
-	
-	
+
+
 	/**
 	 * Load a logfile asynchronously and get notified when its done.
 	 *
@@ -78,14 +76,14 @@ public class SSLGameLogReader
 	public void loadFile(final String path, final ISSLGameLogfileObserver obs)
 	{
 		loadCompleteObserver = obs;
-		
+
 		loadFile(path);
 	}
-	
-	
+
+
 	/**
 	 * Load a logfile synchronously.
-	 * 
+	 *
 	 * @param path
 	 */
 	public void loadFileBlocking(final String path)
@@ -101,8 +99,8 @@ public class SSLGameLogReader
 			{
 				fileStream = new DataInputStream(fileInStream);
 			}
-			
-			
+
+
 			switch (getLogFileTypeFromHeader(fileStream))
 			{
 				case LOG_FILE:
@@ -113,10 +111,9 @@ public class SSLGameLogReader
 					break;
 				default:
 				case UNKNOWN:
-					log.error("Logfile Type Unknown");
-					break;
+					throw new IOException("Logfile Type Unknown");
 			}
-			
+
 			fileStream.close();
 			notifyLoadComplete(true);
 		} catch (EOFException e1)
@@ -129,19 +126,19 @@ public class SSLGameLogReader
 			log.error("Loading logfile failed", e1);
 		}
 	}
-	
-	
+
+
 	private LogFileType getLogFileTypeFromHeader(DataInputStream fileStream) throws IOException
 	{
 		byte[] nextBytes = new byte[4];
 		fileStream.readFully(nextBytes);
 		String startHeader = new String(nextBytes).toUpperCase();
-		
+
 		if (!"SSL_".equals(startHeader))
 		{
 			return LogFileType.UNKNOWN;
 		}
-		
+
 		List<Byte> middleHeaderBuilder = new ArrayList<>();
 		byte nextByte = fileStream.readByte();
 		while ((char) nextByte != '_')
@@ -149,25 +146,25 @@ public class SSLGameLogReader
 			middleHeaderBuilder.add(nextByte);
 			nextByte = fileStream.readByte();
 		}
-		
+
 		nextBytes = new byte[4];
 		fileStream.readFully(nextBytes);
 		String endHeader = new String(nextBytes).toUpperCase();
-		
+
 		headerString = startHeader + new String(Bytes.toArray(middleHeaderBuilder)).toUpperCase() + "_" + endHeader;
-		
+
 		Optional<LogFileType> optionalLogFileType = Arrays.stream(LogFileType.values())
 				.filter(logFileType -> logFileType.header.equals(headerString))
 				.findFirst();
-		
-		
+
+
 		versionNumber = fileStream.readInt();
 		log.info("Logfile header: " + headerString + ", Version: " + versionNumber);
-		
+
 		return optionalLogFileType.orElse(LogFileType.UNKNOWN);
 	}
-	
-	
+
+
 	private void readLogFile(DataInputStream fileStream) throws IOException
 	{
 		while (fileStream.available() > 0)
@@ -175,10 +172,10 @@ public class SSLGameLogReader
 			long timestamp = fileStream.readLong();
 			EMessageType msgType = EMessageType.getMessageTypeConstant(fileStream.readInt());
 			int msgSize = fileStream.readInt();
-			
+
 			byte[] data = new byte[msgSize];
 			fileStream.readFully(data);
-			
+
 			switch (msgType)
 			{
 				case SSL_REFBOX_2013:
@@ -192,8 +189,8 @@ public class SSLGameLogReader
 			}
 		}
 	}
-	
-	
+
+
 	private void readLogLabelerData(DataInputStream fileStream, String path) throws IOException
 	{
 		int sizeMetadata;
@@ -206,40 +203,52 @@ public class SSLGameLogReader
 		{
 			throw new IOException("Log Labeler Data: Error on reading length of metadata block", ex);
 		}
-		
+
 		long frameBlockSizeLeft = file.length() - sizeMetadata - 24; // 20 Bytes Header + 4 Bytes metadata size
+
+		int frameId = 0;
 		while (frameBlockSizeLeft > 0)
 		{
 			int msgSize = fileStream.readInt();
 			frameBlockSizeLeft -= 4 + msgSize;
-			
+
 			byte[] data = new byte[msgSize];
 			fileStream.readFully(data);
-			
+
 			LogLabelerData.LabelerFrameGroup frameGroup = LogLabelerData.LabelerFrameGroup.parseFrom(data);
-			
+
 			for (LogLabelerData.LabelerFrame labelerFrame : frameGroup.getFramesList())
 			{
 				long timestamp = labelerFrame.getTimestamp();
-				
+
 				switch (labelerFrame.getFrameCase())
 				{
 					case REFEREE_FRAME:
-						Referee.SSL_Referee sslRefereePacket = labelerFrame.getRefereeFrame();
-						packets.add(new SSLGameLogfileEntry(timestamp, sslRefereePacket));
+						Referee sslRefereePacket = labelerFrame.getRefereeFrame();
+						final SSLGameLogfileEntry e = new SSLGameLogfileEntry(timestamp, sslRefereePacket);
+						e.setFrameId(frameId);
+						packets.add(e);
 						break;
 					case VISION_FRAME:
 						SSL_WrapperPacket sslVisionPacket = labelerFrame.getVisionFrame();
-						packets.add(new SSLGameLogfileEntry(timestamp, sslVisionPacket));
+						final SSLGameLogfileEntry e1 = new SSLGameLogfileEntry(timestamp, sslVisionPacket);
+						e1.setFrameId(frameId);
+						packets.add(e1);
 						break;
 					default:
 						break;
 				}
 			}
+			frameId++;
 		}
+
+		byte[] data = new byte[sizeMetadata];
+		fileStream.readFully(data);
+		final LogLabelerData.LabelerMetadata labelerMetadata = LogLabelerData.LabelerMetadata.parseFrom(data);
+		log.info("Metadata: " + labelerMetadata);
 	}
-	
-	
+
+
 	/**
 	 * @return the packets
 	 */
@@ -247,8 +256,8 @@ public class SSLGameLogReader
 	{
 		return packets;
 	}
-	
-	
+
+
 	private void notifyLoadComplete(final boolean success)
 	{
 		if (loadCompleteObserver != null)
@@ -256,8 +265,8 @@ public class SSLGameLogReader
 			loadCompleteObserver.onLoadComplete(success);
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param data
 	 */
@@ -273,25 +282,25 @@ public class SSLGameLogReader
 			log.error("invalid ssl package", err);
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param data
 	 */
 	private void parseRefereeMsg(final long timestamp, final byte[] data)
 	{
-		final SSL_Referee sslReferee;
+		final Referee sslReferee;
 		try
 		{
-			sslReferee = SSL_Referee.parseFrom(data);
+			sslReferee = Referee.parseFrom(data);
 			packets.add(new SSLGameLogfileEntry(timestamp, sslReferee));
 		} catch (Exception err)
 		{
 			log.error("invalid ssl package", err);
 		}
 	}
-	
-	
+
+
 	/**
 	 * @return the headerString
 	 */
@@ -299,8 +308,8 @@ public class SSLGameLogReader
 	{
 		return headerString;
 	}
-	
-	
+
+
 	/**
 	 * @return the versionNumber
 	 */
@@ -308,7 +317,7 @@ public class SSLGameLogReader
 	{
 		return versionNumber;
 	}
-	
+
 	/**
 	 * Get notified when a file is loaded.
 	 */
@@ -320,8 +329,8 @@ public class SSLGameLogReader
 		 */
 		void onLoadComplete(boolean success);
 	}
-	
-	
+
+
 	/**
 	 * Represents a single packet capture.
 	 * Can either contain a SSL wrapper packet or a referee message.
@@ -329,10 +338,11 @@ public class SSLGameLogReader
 	public class SSLGameLogfileEntry
 	{
 		private long timestamp;
+		private long frameId;
 		private final SSL_WrapperPacket visionPacket;
-		private final SSL_Referee refereePacket;
-		
-		
+		private final Referee refereePacket;
+
+
 		/**
 		 * Create from wrapper packet.
 		 *
@@ -345,22 +355,34 @@ public class SSLGameLogReader
 			visionPacket = vision;
 			refereePacket = null;
 		}
-		
-		
+
+
 		/**
 		 * Create from referee packet.
 		 *
 		 * @param timestamp
 		 * @param ref
 		 */
-		public SSLGameLogfileEntry(final long timestamp, final SSL_Referee ref)
+		public SSLGameLogfileEntry(final long timestamp, final Referee ref)
 		{
 			this.timestamp = timestamp;
 			refereePacket = ref;
 			visionPacket = null;
 		}
-		
-		
+
+
+		public long getFrameId()
+		{
+			return frameId;
+		}
+
+
+		public void setFrameId(final long frameId)
+		{
+			this.frameId = frameId;
+		}
+
+
 		/**
 		 * @return the timestamp
 		 */
@@ -368,8 +390,8 @@ public class SSLGameLogReader
 		{
 			return timestamp;
 		}
-		
-		
+
+
 		/**
 		 * @return the visionPacket
 		 */
@@ -377,17 +399,17 @@ public class SSLGameLogReader
 		{
 			return Optional.ofNullable(visionPacket);
 		}
-		
-		
+
+
 		/**
 		 * @return the refereePacket
 		 */
-		public Optional<SSL_Referee> getRefereePacket()
+		public Optional<Referee> getRefereePacket()
 		{
 			return Optional.ofNullable(refereePacket);
 		}
-		
-		
+
+
 		/**
 		 * @param adj
 		 */
@@ -395,11 +417,11 @@ public class SSLGameLogReader
 		{
 			timestamp += adj;
 		}
-		
-		
+
+
 		/**
 		 * Get protobuf message.
-		 * 
+		 *
 		 * @return
 		 */
 		public AbstractMessage getProtobufMsg()
@@ -408,13 +430,8 @@ public class SSLGameLogReader
 			{
 				return visionPacket;
 			}
-			
-			if (refereePacket != null)
-			{
-				return refereePacket;
-			}
-			
-			return null;
+
+			return refereePacket;
 		}
 	}
 }

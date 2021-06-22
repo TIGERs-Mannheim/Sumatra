@@ -4,15 +4,14 @@
 
 package edu.tigers.sumatra.math.circle;
 
-import java.util.List;
-
 import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.math.ellipse.Ellipse;
 import edu.tigers.sumatra.math.ellipse.IEllipse;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector3;
+
+import java.util.List;
 
 
 /**

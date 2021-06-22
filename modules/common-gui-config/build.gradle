@@ -1,0 +1,18 @@
+/*
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ */
+
+plugins {
+    id 'sumatra.java-conventions'
+    id 'java-library'
+}
+
+dependencies {
+    implementation project(':common-gui')
+
+    implementation 'com.github.g3force:configurable:3.0'
+    implementation 'com.github.g3force:String2ValueConverter:2.2'
+
+    implementation 'commons-configuration:commons-configuration:1.10'
+    implementation 'com.miglayout:miglayout-swing:11.0'
+}

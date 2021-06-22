@@ -1,17 +1,7 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-
-import org.apache.log4j.Logger;
 
 import edu.tigers.moduli.AModule;
 import edu.tigers.sumatra.bot.params.IBotParams;
@@ -29,6 +19,17 @@ import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.util.DefaultRobotInfoProvider;
 import edu.tigers.sumatra.wp.util.IRobotInfoProvider;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 
 /**
@@ -39,7 +40,7 @@ import edu.tigers.sumatra.wp.util.IRobotInfoProvider;
 public abstract class ABotManager extends AModule
 		implements IBotProvider, IBaseStationObserver, BotParamsManager.IBotParamsManagerObserver
 {
-	private static final Logger log = Logger.getLogger(ABotManager.class.getName());
+	private static final Logger log = LogManager.getLogger(ABotManager.class.getName());
 
 	protected final List<IBotManagerObserver> observers = new CopyOnWriteArrayList<>();
 	private final Map<BotID, ABot> botTable = new ConcurrentSkipListMap<>(BotID.getComparator());
@@ -129,6 +130,7 @@ public abstract class ABotManager extends AModule
 			log.warn("Bot came online, but we already have it: " + bot, new Exception());
 		} else
 		{
+			bot.setBotParams(botParamsManager.get(bot.getBotParamLabel()));
 			botTable.put(bot.getBotId(), bot);
 			observers.forEach(o -> o.onBotAdded(bot));
 		}
@@ -166,17 +168,20 @@ public abstract class ABotManager extends AModule
 		try
 		{
 			Class<?> clazz = Class.forName(impl);
-			Object bsObj = clazz.newInstance();
+			Object bsObj = clazz.getDeclaredConstructor().newInstance();
 			return (ABaseStation) bsObj;
 		} catch (ClassNotFoundException e)
 		{
 			throw new IllegalStateException("Could not find base station class: " + impl, e);
-		} catch (InstantiationException | IllegalAccessException e)
+		} catch (InstantiationException | IllegalAccessException | InvocationTargetException e)
 		{
 			throw new IllegalStateException("Could not create base station: " + impl, e);
 		} catch (ClassCastException e)
 		{
 			throw new IllegalStateException("Invalid base station class: " + impl, e);
+		} catch (NoSuchMethodException e)
+		{
+			throw new IllegalStateException("No default constructor for base station class: " + impl, e);
 		}
 	}
 

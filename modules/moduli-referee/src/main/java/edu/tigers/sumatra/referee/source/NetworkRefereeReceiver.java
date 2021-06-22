@@ -1,7 +1,14 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.referee.source;
+
+import com.github.g3force.configurable.ConfigRegistration;
+import com.github.g3force.configurable.Configurable;
+import edu.tigers.sumatra.network.MulticastUDPReceiver;
+import edu.tigers.sumatra.network.NetworkUtility;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
+import lombok.extern.log4j.Log4j2;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -10,35 +17,24 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.Optional;
 
-import org.apache.log4j.Logger;
-
-import com.github.g3force.configurable.ConfigRegistration;
-import com.github.g3force.configurable.Configurable;
-
-import edu.tigers.sumatra.Referee.SSL_Referee;
-import edu.tigers.sumatra.network.IReceiver;
-import edu.tigers.sumatra.network.MulticastUDPReceiver;
-import edu.tigers.sumatra.network.NetworkUtility;
-
 
 /**
  * New implementation of the referee receiver with the new protobuf message format (2013)
  */
-public class NetworkRefereeReceiver extends ARefereeMessageSource implements Runnable, IReceiver
+@Log4j2
+public class NetworkRefereeReceiver extends ARefereeMessageSource implements Runnable
 {
-	private static final Logger log = Logger.getLogger(NetworkRefereeReceiver.class.getName());
-
 	private static final int BUFFER_SIZE = 10000;
 
 	@Configurable(defValue = "224.5.23.1")
 	private static String address;
 
-	@Configurable(defValue = "")
+	@Configurable
 	private static String network;
 
 	private int port;
 	private Thread referee;
-	private IReceiver receiver;
+	private MulticastUDPReceiver receiver;
 
 	private InetAddress refBoxAddress = null;
 
@@ -50,7 +46,9 @@ public class NetworkRefereeReceiver extends ARefereeMessageSource implements Run
 	}
 
 
-	/** Constructor */
+	/**
+	 * Constructor
+	 */
 	public NetworkRefereeReceiver()
 	{
 		super(ERefereeMessageSource.NETWORK);
@@ -66,11 +64,11 @@ public class NetworkRefereeReceiver extends ARefereeMessageSource implements Run
 		if (nif == null)
 		{
 			log.debug("No nif for referee specified, will try all.");
-			receiver = new MulticastUDPReceiver(port, address);
+			receiver = new MulticastUDPReceiver(address, port);
 		} else
 		{
-			log.info("Chose nif for referee: " + nif.getDisplayName() + ".");
-			receiver = new MulticastUDPReceiver(port, address, nif);
+			log.info("Chose nif for referee: {}", nif.getDisplayName());
+			receiver = new MulticastUDPReceiver(address, port, nif);
 		}
 
 		referee = new Thread(this, "External Referee");
@@ -87,7 +85,7 @@ public class NetworkRefereeReceiver extends ARefereeMessageSource implements Run
 		{
 			try
 			{
-				receive(packet);
+				receiver.receive(packet);
 			} catch (final IOException err)
 			{
 				if (!expectIOE)
@@ -98,18 +96,17 @@ public class NetworkRefereeReceiver extends ARefereeMessageSource implements Run
 			}
 
 			refBoxAddress = packet.getAddress();
-			final ByteArrayInputStream packetIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
 
-			SSL_Referee sslRefereeMsg;
 			try
 			{
-				sslRefereeMsg = SSL_Referee.parseFrom(packetIn);
+				var packetIn = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
+				var sslRefereeMsg = SslGcRefereeMessage.Referee.parseFrom(packetIn);
 
 				// Notify the receipt of a new RefereeMessage to any other observers
 				notifyNewRefereeMessage(sslRefereeMsg);
 			} catch (IOException err)
 			{
-				log.error("Could not read referee message ", err);
+				log.error("Could not read referee message", err);
 			}
 		}
 
@@ -119,14 +116,7 @@ public class NetworkRefereeReceiver extends ARefereeMessageSource implements Run
 
 
 	@Override
-	public DatagramPacket receive(final DatagramPacket store) throws IOException
-	{
-		return receiver.receive(store);
-	}
-
-
-	@Override
-	public void cleanup()
+	public void stop()
 	{
 		if (referee != null)
 		{
@@ -138,30 +128,10 @@ public class NetworkRefereeReceiver extends ARefereeMessageSource implements Run
 		{
 			expectIOE = true;
 
-			try
-			{
-				receiver.cleanup();
-			} catch (final IOException err)
-			{
-				log.debug("Socket closed...", err);
-			}
+			receiver.close();
 
 			receiver = null;
 		}
-	}
-
-
-	@Override
-	public void stop()
-	{
-		cleanup();
-	}
-
-
-	@Override
-	public boolean isReady()
-	{
-		return true;
 	}
 
 

@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills.util;
 
 import edu.tigers.sumatra.math.AngleMath;
+import lombok.Getter;
 
 
 /**
@@ -13,7 +14,10 @@ import edu.tigers.sumatra.math.AngleMath;
  */
 public class TargetAngleReachedChecker
 {
+	@Getter
 	private boolean reached = false;
+	@Getter
+	private boolean roughlyFocussed = false;
 
 	private double outerAngleDiffTolerance;
 	private final ChargingValue angleDiffChargingValue;
@@ -23,7 +27,7 @@ public class TargetAngleReachedChecker
 	 * Create a new checker.
 	 *
 	 * @param outerAngleDiffTolerance the min angle difference when target angle can be considered to be reached
-	 * @param maxTime the max time until angle is considered reached when continuously within tolerance
+	 * @param maxTime                 the max time until angle is considered reached when continuously within tolerance
 	 */
 	public TargetAngleReachedChecker(double outerAngleDiffTolerance, final double maxTime)
 	{
@@ -37,7 +41,7 @@ public class TargetAngleReachedChecker
 	/**
 	 * Update with latest data
 	 *
-	 * @param targetAngle the desired target angle
+	 * @param targetAngle  the desired target angle
 	 * @param currentAngle the current angle
 	 * @param curTimestamp the current timestamp of the frame
 	 * @return diff the current angle difference
@@ -46,14 +50,12 @@ public class TargetAngleReachedChecker
 	{
 		double diff = Math.abs(AngleMath.difference(targetAngle, currentAngle));
 		angleDiffChargingValue.update(curTimestamp);
-		if (diff > outerAngleDiffTolerance)
+		roughlyFocussed = diff <= outerAngleDiffTolerance;
+		if (!roughlyFocussed)
 		{
-			reached = false;
 			angleDiffChargingValue.reset();
-		} else if (diff < getCurrentTolerance())
-		{
-			reached = true;
 		}
+		reached = diff < getCurrentTolerance();
 		return diff;
 	}
 
@@ -61,12 +63,6 @@ public class TargetAngleReachedChecker
 	public double getCurrentTolerance()
 	{
 		return angleDiffChargingValue.getValue();
-	}
-
-
-	public boolean isReached()
-	{
-		return reached;
 	}
 
 

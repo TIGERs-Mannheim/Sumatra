@@ -1,65 +1,57 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.cam;
+
+import com.github.g3force.configurable.ConfigRegistration;
+import edu.tigers.moduli.exceptions.ModuleNotFoundException;
+import edu.tigers.sumatra.cam.data.CamGeometry;
+import edu.tigers.sumatra.cam.proto.MessagesRobocupSslWrapper.SSL_WrapperPacket;
+import edu.tigers.sumatra.gamelog.SSLGameLogReader;
+import edu.tigers.sumatra.gamelog.SSLGameLogReader.SSLGameLogfileEntry;
+import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.referee.AReferee;
+import edu.tigers.sumatra.referee.proto.SslGcGameEvent;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage.Referee;
+import edu.tigers.sumatra.referee.source.DirectRefereeMsgForwarder;
+import edu.tigers.sumatra.referee.source.ERefereeMessageSource;
+import lombok.extern.log4j.Log4j2;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 
-import org.apache.log4j.Logger;
-
-import com.github.g3force.configurable.ConfigRegistration;
-
-import edu.tigers.moduli.exceptions.ModuleNotFoundException;
-import edu.tigers.sumatra.MessagesRobocupSslWrapper.SSL_WrapperPacket;
-import edu.tigers.sumatra.Referee.SSL_Referee;
-import edu.tigers.sumatra.SslGameEvent;
-import edu.tigers.sumatra.cam.data.CamGeometry;
-import edu.tigers.sumatra.gamelog.SSLGameLogReader;
-import edu.tigers.sumatra.gamelog.SSLGameLogReader.SSLGameLogfileEntry;
-import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.referee.AReferee;
-import edu.tigers.sumatra.referee.source.DirectRefereeMsgForwarder;
-import edu.tigers.sumatra.referee.source.ERefereeMessageSource;
-
 
 /**
  * This camera replays an SSL game log.
- * 
- * @author AndreR
  */
+@Log4j2
 public class LogfileVisionCam extends ACam implements Runnable
 {
-	
-	private static final Logger log = Logger
-			.getLogger(LogfileVisionCam.class.getName());
-	
+	private static final double TOLERANCE_NEXT_FRAME_TIME_JUMP = 0.1;
+
 	// Connection
 	private Thread cam;
-	
+
 	private DirectRefereeMsgForwarder refForwarder;
-	
+
 	// Translation
 	private final SSLVisionCamGeometryTranslator geometryTranslator = new SSLVisionCamGeometryTranslator();
-	
-	private final TimeSync timeSync = new TimeSync();
-	
+
 	private SSLGameLogReader newLogfile;
-	
+
 	private boolean paused = false;
 	private int doSteps = 0;
 	private double speed = 1.0;
 	private int setPos = -1;
-	private List<SSL_Referee.Command> seekToRefCmdList;
-	private List<SslGameEvent.GameEventType> seekToGameEventList;
-	
+	private List<Referee.Command> seekToRefCmdList;
+	private List<SslGcGameEvent.GameEvent.Type> seekToGameEventList;
+
 	private int currentFrame = 0;
-	
+
 	private long lastFrameTimestamp = 0;
-	
+
 	private final List<ILogfileVisionCamObserver> observers = new CopyOnWriteArrayList<>();
-	private long toleranceNextFrameTimejump = 100; //ms
 
 
 	@Override
@@ -67,14 +59,14 @@ public class LogfileVisionCam extends ACam implements Runnable
 	{
 		// nothing to do here
 	}
-	
-	
+
+
 	@Override
 	public void startModule()
 	{
 		ConfigRegistration.applySpezis(this, "user",
 				SumatraModel.getInstance().getGlobalConfiguration().getString("environment"));
-		
+
 		try
 		{
 			AReferee ref = SumatraModel.getInstance().getModule(AReferee.class);
@@ -83,24 +75,24 @@ public class LogfileVisionCam extends ACam implements Runnable
 		{
 			log.error("Could not find cam module.", e);
 		}
-		
+
 		cam = new Thread(this, "LogfileVisionCam");
 		cam.start();
 	}
-	
-	
+
+
 	public void setLogfile(final SSLGameLogReader logfile)
 	{
 		newLogfile = logfile;
 	}
-	
-	
+
+
 	public void setPause(final boolean enable)
 	{
 		paused = enable;
 	}
-	
-	
+
+
 	/**
 	 * Steps some frames.
 	 *
@@ -110,37 +102,37 @@ public class LogfileVisionCam extends ACam implements Runnable
 	{
 		doSteps = numSteps;
 	}
-	
-	
+
+
 	public void setSpeed(final double speed)
 	{
 		this.speed = speed;
 	}
-	
-	
+
+
 	public void setPosition(final int pos)
 	{
 		setPos = pos;
 	}
-	
-	
+
+
 	/**
 	 * Seek forward to the next frame that contains the given referee command(s).
-	 * 
+	 *
 	 * @param commands
 	 */
-	public void seekForwardToRefCommand(final List<SSL_Referee.Command> commands)
+	public void seekForwardToRefCommand(final List<Referee.Command> commands)
 	{
 		if (commands.isEmpty())
 		{
 			return;
 		}
-		
+
 		seekToRefCmdList = commands;
 	}
-	
-	
-	public void seekForwardToGameEvent(final List<SslGameEvent.GameEventType> gameEventTypes)
+
+
+	public void seekForwardToGameEvent(final List<SslGcGameEvent.GameEvent.Type> gameEventTypes)
 	{
 		if (gameEventTypes.isEmpty())
 		{
@@ -148,46 +140,46 @@ public class LogfileVisionCam extends ACam implements Runnable
 		}
 		seekToGameEventList = gameEventTypes;
 	}
-	
-	
-	private void seekForwardTo(final SSLGameLogReader currentLog, Function<SSL_Referee, Boolean> condition)
+
+
+	private void seekForwardTo(final SSLGameLogReader currentLog, Function<Referee, Boolean> condition)
 	{
 		int start = findFrameWithCondition(currentLog, currentFrame, condition.andThen(b -> !b));
 		if (start < 0)
 		{
 			return;
 		}
-		
+
 		start = findFrameWithCondition(currentLog, start, condition);
 		if (start < 0)
 		{
 			return;
 		}
-		
+
 		setPosition(start);
 	}
-	
-	
+
+
 	private int findFrameWithCondition(final SSLGameLogReader currentLog, final int startFrame,
-			final Function<SSL_Referee, Boolean> condition)
+			final Function<Referee, Boolean> condition)
 	{
 		for (int frame = startFrame; frame < currentLog.getPackets().size(); frame++)
 		{
 			SSLGameLogfileEntry entry = currentLog.getPackets().get(frame);
 			if (entry.getRefereePacket().isPresent())
 			{
-				SSL_Referee ref = entry.getRefereePacket().get();
+				Referee ref = entry.getRefereePacket().get();
 				if (condition.apply(ref))
 				{
 					return frame;
 				}
 			}
 		}
-		
+
 		return -1;
 	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -195,8 +187,8 @@ public class LogfileVisionCam extends ACam implements Runnable
 	{
 		observers.add(observer);
 	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -204,8 +196,8 @@ public class LogfileVisionCam extends ACam implements Runnable
 	{
 		observers.remove(observer);
 	}
-	
-	
+
+
 	private void notifyNewLogfileEntry(final SSLGameLogfileEntry e, final int index)
 	{
 		for (ILogfileVisionCamObserver observer : observers)
@@ -213,13 +205,13 @@ public class LogfileVisionCam extends ACam implements Runnable
 			observer.onNewLogfileEntry(e, index);
 		}
 	}
-	
-	
+
+
 	@Override
 	public void run()
 	{
 		SSLGameLogReader currentLog = null;
-		
+
 		while (!Thread.interrupted())
 		{
 			// take new logfile if we have one
@@ -228,7 +220,7 @@ public class LogfileVisionCam extends ACam implements Runnable
 				currentLog = newLogfile;
 				newLogfile = null;
 			}
-			
+
 			// no log to play? nothing to do!
 			if (currentLog == null)
 			{
@@ -240,20 +232,20 @@ public class LogfileVisionCam extends ACam implements Runnable
 					Thread.currentThread().interrupt();
 					return;
 				}
-				
+
 				continue;
 			}
-			
+
 			// play the logfile
 			playLog(currentLog);
-			
+
 			log.info("Replay finished");
-			
+
 			notifyVisionLost();
 		}
 	}
-	
-	
+
+
 	private void playLog(final SSLGameLogReader currentLog)
 	{
 		for (currentFrame = 0; currentFrame < currentLog.getPackets().size(); currentFrame++)
@@ -273,12 +265,12 @@ public class LogfileVisionCam extends ACam implements Runnable
 			publishFrameAndSleep(currentLog.getPackets().get(currentFrame));
 		}
 	}
-	
-	
+
+
 	private void adjustCurrentFrame(final SSLGameLogReader currentLog)
 	{
 		final int numPackets = currentLog.getPackets().size();
-		
+
 		while (paused)
 		{
 			if ((doSteps != 0) || (newLogfile != null))
@@ -302,14 +294,14 @@ public class LogfileVisionCam extends ACam implements Runnable
 		{
 			currentFrame += doSteps - 1;
 
-			if(doSteps < 0)
+			if (doSteps < 0)
 			{
 				lastFrameTimestamp = 0;
 			}
 		}
-		
+
 		doSteps = 0;
-		
+
 		if (currentFrame < 0)
 		{
 			currentFrame = 0;
@@ -318,7 +310,7 @@ public class LogfileVisionCam extends ACam implements Runnable
 		{
 			currentFrame = numPackets - 1;
 		}
-		
+
 		if (setPos >= 0)
 		{
 			currentFrame = setPos;
@@ -332,16 +324,16 @@ public class LogfileVisionCam extends ACam implements Runnable
 	{
 		if (seekToRefCmdList != null)
 		{
-			Function<SSL_Referee, Boolean> condition = ref -> seekToRefCmdList.contains(ref.getCommand());
+			Function<Referee, Boolean> condition = ref -> seekToRefCmdList.contains(ref.getCommand());
 			seekForwardTo(currentLog, condition);
 			seekToRefCmdList = null;
 		}
 		if (seekToGameEventList != null)
 		{
-			Function<SSL_Referee, Boolean> condition = ref -> ref.getGameEventsCount() > 0
+			Function<Referee, Boolean> condition = ref -> ref.getGameEventsCount() > 0
 					&& ref.getGameEventsList().stream()
-							.map(SslGameEvent.GameEvent::getType)
-							.anyMatch(gameEventType -> seekToGameEventList.contains(gameEventType));
+					.map(SslGcGameEvent.GameEvent::getType)
+					.anyMatch(gameEventType -> seekToGameEventList.contains(gameEventType));
 			seekForwardTo(currentLog, condition);
 			seekToGameEventList = null;
 		}
@@ -353,56 +345,50 @@ public class LogfileVisionCam extends ACam implements Runnable
 		if (e.getVisionPacket().isPresent())
 		{
 			SSL_WrapperPacket sslPacket = e.getVisionPacket().get();
-			
+
 			notifyNewVisionPacket(sslPacket);
-			
+
 			if (sslPacket.hasGeometry())
 			{
 				final CamGeometry geometry = geometryTranslator.translate(sslPacket.getGeometry());
-				
+
 				notifyNewCameraCalibration(geometry);
 			}
-			
+
 			if (sslPacket.hasDetection())
 			{
-				notifyNewCameraFrame(sslPacket.getDetection(), timeSync);
+				notifyNewCameraFrame(sslPacket.getDetection());
 			}
 		}
-		
+
 		if (e.getRefereePacket().isPresent())
 		{
 			refForwarder.send(e.getRefereePacket().get());
 		}
-		
+
 		notifyNewLogfileEntry(e, currentFrame);
-		
-		int sleepMilli = 0;
-		if (lastFrameTimestamp != 0)
+
+		double dt = (e.getTimestamp() - lastFrameTimestamp) * 1e-9;
+		if (lastFrameTimestamp == 0 || dt < 0)
 		{
-			sleepMilli = (int) (((e.getTimestamp() - lastFrameTimestamp) * 1e-6) / speed);
+			dt = 0;
 		}
-		
-		if (sleepMilli < 0)
-		{
-			sleepMilli = 0;
-		}
-		
+
 		if (lastFrameTimestamp == 0)
 		{
 			notifyVisionLost();
 		}
-		
+
 		lastFrameTimestamp = e.getTimestamp();
-		
+
 		try
 		{
-			if(sleepMilli < toleranceNextFrameTimejump) //only if no time jump
+			if (dt < TOLERANCE_NEXT_FRAME_TIME_JUMP) // only if no time jump
 			{
-				Thread.sleep(sleepMilli);
-			}
-			else
+				Thread.sleep((long) ((dt * 1000) / speed));
+			} else
 			{
-				//time jump
+				// time jump
 				notifyVisionLost();
 			}
 		} catch (InterruptedException e1)
@@ -410,8 +396,8 @@ public class LogfileVisionCam extends ACam implements Runnable
 			Thread.currentThread().interrupt();
 		}
 	}
-	
-	
+
+
 	@Override
 	public void stopModule()
 	{
@@ -421,7 +407,8 @@ public class LogfileVisionCam extends ACam implements Runnable
 			cam = null;
 		}
 	}
-	
+
+
 	/**
 	 * LogfileVisionCam observer.
 	 */

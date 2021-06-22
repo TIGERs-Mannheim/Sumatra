@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import edu.tigers.sumatra.bot.IMoveConstraints;
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
@@ -31,14 +32,14 @@ public class ExportableBotInput implements IExportable
 	private IVector3 setVel = Vector3f.UNINITIALIZED;
 	private IVector3 setPos = Vector3f.UNINITIALIZED;
 	private IVector3 localVel = Vector3f.UNINITIALIZED;
-	
+
 	private double dribbleRpm = 0;
 	private double kickSpeed = 0;
 	private int kickDevice = EKickerDevice.STRAIGHT.getValue();
 	private int kickMode = EKickerMode.DISARM.getId();
 	private MoveConstraints moveConstraints = new MoveConstraints();
-	
-	
+
+
 	/**
 	 * @param id
 	 * @param color
@@ -51,8 +52,8 @@ public class ExportableBotInput implements IExportable
 		this.color = color;
 		this.timestamp = timestamp;
 	}
-	
-	
+
+
 	@Override
 	public List<Number> getNumberList()
 	{
@@ -66,7 +67,7 @@ public class ExportableBotInput implements IExportable
 		numbers.addAll(setVel.getNumberList());
 		numbers.addAll(setPos.getNumberList());
 		numbers.addAll(localVel.getNumberList());
-		
+
 		numbers.add(dribbleRpm);
 		numbers.add(kickSpeed);
 		numbers.add(kickDevice);
@@ -74,8 +75,8 @@ public class ExportableBotInput implements IExportable
 		numbers.addAll(moveConstraints.getNumberList());
 		return numbers;
 	}
-	
-	
+
+
 	@Override
 	public List<String> getHeaders()
 	{
@@ -90,8 +91,8 @@ public class ExportableBotInput implements IExportable
 		headers.addAll(moveConstraints.getHeaders());
 		return headers;
 	}
-	
-	
+
+
 	/**
 	 * @return the id
 	 */
@@ -99,8 +100,8 @@ public class ExportableBotInput implements IExportable
 	{
 		return id;
 	}
-	
-	
+
+
 	/**
 	 * @param id the id to set
 	 */
@@ -108,8 +109,8 @@ public class ExportableBotInput implements IExportable
 	{
 		this.id = id;
 	}
-	
-	
+
+
 	/**
 	 * @return the color
 	 */
@@ -117,8 +118,8 @@ public class ExportableBotInput implements IExportable
 	{
 		return color;
 	}
-	
-	
+
+
 	/**
 	 * @param color the color to set
 	 */
@@ -126,8 +127,8 @@ public class ExportableBotInput implements IExportable
 	{
 		this.color = color;
 	}
-	
-	
+
+
 	/**
 	 * @return the timestamp
 	 */
@@ -135,8 +136,8 @@ public class ExportableBotInput implements IExportable
 	{
 		return timestamp;
 	}
-	
-	
+
+
 	/**
 	 * @param timestamp the timestamp to set
 	 */
@@ -144,8 +145,8 @@ public class ExportableBotInput implements IExportable
 	{
 		this.timestamp = timestamp;
 	}
-	
-	
+
+
 	/**
 	 * @param tSent
 	 */
@@ -153,8 +154,8 @@ public class ExportableBotInput implements IExportable
 	{
 		this.tSent = tSent;
 	}
-	
-	
+
+
 	/**
 	 * @return the trajVel
 	 */
@@ -162,8 +163,8 @@ public class ExportableBotInput implements IExportable
 	{
 		return trajVel;
 	}
-	
-	
+
+
 	/**
 	 * @param trajVel the trajVel to set
 	 */
@@ -171,8 +172,8 @@ public class ExportableBotInput implements IExportable
 	{
 		this.trajVel = trajVel;
 	}
-	
-	
+
+
 	/**
 	 * @return the trajPos
 	 */
@@ -180,8 +181,8 @@ public class ExportableBotInput implements IExportable
 	{
 		return trajPos;
 	}
-	
-	
+
+
 	/**
 	 * @param trajPos the trajPos to set
 	 */
@@ -189,8 +190,8 @@ public class ExportableBotInput implements IExportable
 	{
 		this.trajPos = trajPos;
 	}
-	
-	
+
+
 	/**
 	 * @return the setVel
 	 */
@@ -198,8 +199,8 @@ public class ExportableBotInput implements IExportable
 	{
 		return setVel;
 	}
-	
-	
+
+
 	/**
 	 * @param setVel the setVel to set
 	 */
@@ -207,8 +208,8 @@ public class ExportableBotInput implements IExportable
 	{
 		this.setVel = setVel;
 	}
-	
-	
+
+
 	/**
 	 * @return the setPos
 	 */
@@ -216,8 +217,8 @@ public class ExportableBotInput implements IExportable
 	{
 		return setPos;
 	}
-	
-	
+
+
 	/**
 	 * @param setPos the setPos to set
 	 */
@@ -225,8 +226,8 @@ public class ExportableBotInput implements IExportable
 	{
 		this.setPos = setPos;
 	}
-	
-	
+
+
 	/**
 	 * @return the localVel
 	 */
@@ -234,8 +235,8 @@ public class ExportableBotInput implements IExportable
 	{
 		return localVel;
 	}
-	
-	
+
+
 	/**
 	 * @param localVel the localVel to set
 	 */
@@ -243,62 +244,62 @@ public class ExportableBotInput implements IExportable
 	{
 		this.localVel = localVel;
 	}
-	
-	
+
+
 	public double getDribbleRpm()
 	{
 		return dribbleRpm;
 	}
-	
-	
+
+
 	public void setDribbleRpm(final double dribbleRpm)
 	{
 		this.dribbleRpm = dribbleRpm;
 	}
-	
-	
+
+
 	public double getKickSpeed()
 	{
 		return kickSpeed;
 	}
-	
-	
+
+
 	public void setKickSpeed(final double kickSpeed)
 	{
 		this.kickSpeed = kickSpeed;
 	}
-	
-	
+
+
 	public int getKickDevice()
 	{
 		return kickDevice;
 	}
-	
-	
+
+
 	public void setKickDevice(final int kickDevice)
 	{
 		this.kickDevice = kickDevice;
 	}
-	
-	
+
+
 	public int getKickMode()
 	{
 		return kickMode;
 	}
-	
-	
+
+
 	public void setKickMode(final int kickMode)
 	{
 		this.kickMode = kickMode;
 	}
-	
-	
-	public MoveConstraints getMoveConstraints()
+
+
+	public IMoveConstraints getMoveConstraints()
 	{
 		return moveConstraints;
 	}
-	
-	
+
+
 	public void setMoveConstraints(final MoveConstraints moveConstraints)
 	{
 		this.moveConstraints = moveConstraints;

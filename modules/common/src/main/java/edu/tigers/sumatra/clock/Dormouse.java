@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.clock;
 
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /**
@@ -28,23 +29,23 @@ import org.apache.log4j.Logger;
  * I know, sounds a bit esoteric at first, but comes very handy while it's just working!!! Found <a
  * href="http://www.javamex.com/tutorials/threads/sleep_issues.shtml#bugs">here</a>
  * </p>
- * 
+ *
  * @author Gero
  */
 public final class Dormouse implements Runnable
 {
 	// Logger
-	private static final Logger		log		= Logger.getLogger(Dormouse.class.getName());
-	
+	private static final Logger log = LogManager.getLogger(Dormouse.class.getName());
+
 	private static volatile Dormouse	instance	= null;
-	
-	
+
+
 	private Dormouse()
 	{
-		
+
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -56,8 +57,8 @@ public final class Dormouse implements Runnable
 		}
 		return instance;
 	}
-	
-	
+
+
 	@Override
 	public void run()
 	{

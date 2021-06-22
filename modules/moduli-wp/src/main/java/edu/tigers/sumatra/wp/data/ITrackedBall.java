@@ -1,17 +1,19 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.data;
 
+import edu.tigers.sumatra.ball.BallState;
+import edu.tigers.sumatra.ball.trajectory.IBallTrajectory;
+import edu.tigers.sumatra.ball.trajectory.IChipBallConsultant;
+import edu.tigers.sumatra.ball.trajectory.IFlatBallConsultant;
 import edu.tigers.sumatra.data.collector.IExportable;
 import edu.tigers.sumatra.math.vector.IVector3;
-import edu.tigers.sumatra.wp.ball.prediction.IBallTrajectory;
-import edu.tigers.sumatra.wp.ball.prediction.IChipBallConsultant;
-import edu.tigers.sumatra.wp.ball.prediction.IStraightBallConsultant;
 
 
 /**
+ *
  */
 public interface ITrackedBall extends ITrackedObject, IExportable
 {
@@ -29,7 +31,7 @@ public interface ITrackedBall extends ITrackedObject, IExportable
 
 
 	/**
-	 * @return [mm,mm,mm]
+	 * @return [mm, mm, mm]
 	 */
 	IVector3 getPos3();
 
@@ -47,20 +49,18 @@ public interface ITrackedBall extends ITrackedObject, IExportable
 
 
 	/**
-	 * Check if the ball was visible within the last half second
-	 *
-	 * @return true, if the ball is detected by any camera
+	 * @return the time [s] that the ball is invisible (0 means it is visible)
 	 */
-	boolean isOnCam();
+	double invisibleFor();
 
 
 	/**
-	 * Check if the ball was visible within the given horizon
+	 * Check if the ball was visible within the given seconds
 	 *
-	 * @param horizon within this horizon
+	 * @param seconds within this time horizon
 	 * @return true, if the ball is detected by any camera
 	 */
-	boolean isOnCam(double horizon);
+	boolean isOnCam(double seconds);
 
 
 	/**
@@ -78,14 +78,6 @@ public interface ITrackedBall extends ITrackedObject, IExportable
 
 
 	/**
-	 * Get the velocity where the ball switches to rolling.
-	 *
-	 * @return
-	 */
-	double getvSwitchToRoll();
-
-
-	/**
 	 * Is this a chipped ball?<br/>
 	 * This does not necessarily mean it is currently in the air!
 	 *
@@ -97,7 +89,7 @@ public interface ITrackedBall extends ITrackedObject, IExportable
 	/**
 	 * @return the current ball state
 	 */
-	BallTrajectoryState getState();
+	BallState getState();
 
 
 	/**
@@ -109,7 +101,7 @@ public interface ITrackedBall extends ITrackedObject, IExportable
 	/**
 	 * @return the consultant for straight balls
 	 */
-	IStraightBallConsultant getStraightConsultant();
+	IFlatBallConsultant getStraightConsultant();
 
 
 	/**

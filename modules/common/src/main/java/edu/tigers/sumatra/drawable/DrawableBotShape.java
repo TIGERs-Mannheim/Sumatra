@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.drawable;
 
@@ -33,15 +33,15 @@ public class DrawableBotShape implements IDrawableShape
 	private Color fontColor = Color.black;
 	private String id = "";
 	private boolean drawDirection = true;
-	
-	
+
+
 	@SuppressWarnings("unused")
 	private DrawableBotShape()
 	{
 		this(Vector2f.ZERO_VECTOR, 0, 0, 0);
 	}
-	
-	
+
+
 	public DrawableBotShape(final IVector2 pos, final double angle, final double radius,
 			final double center2DribblerDist)
 	{
@@ -50,29 +50,29 @@ public class DrawableBotShape implements IDrawableShape
 		this.radius = radius;
 		this.center2DribblerDist = center2DribblerDist;
 	}
-	
-	
+
+
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
 		final int robotRadius = tool.scaleXLength(radius);
-		
+
 		// --- from SSLVision-mm to java2d-coordinates ---
 		final IVector2 transBotPos = tool.transformToGuiCoordinates(pos, invert);
 		int drawingX = (int) transBotPos.x() - robotRadius;
 		int drawingY = (int) transBotPos.y() - robotRadius;
-		
-		
+
+
 		double r = radius;
 		double alpha = SumatraMath.acos(center2DribblerDist / r);
 		double startAngleRad = (angle - AngleMath.PI_HALF) + tool.getFieldTurn().getAngle() + alpha
 				+ (invert ? AngleMath.PI : 0);
 		double startAngle = AngleMath.rad2deg(startAngleRad);
 		double endAngle = 360 - AngleMath.rad2deg(2 * alpha);
-		
-		Shape botShape = new Arc2D.Double(drawingX, drawingY, robotRadius * 2, robotRadius * 2, startAngle,
+
+		Shape botShape = new Arc2D.Double(drawingX, drawingY, robotRadius * 2.0, robotRadius * 2.0, startAngle,
 				endAngle, Arc2D.CHORD);
-		
+
 		if (fillColor != null)
 		{
 			g.setColor(fillColor);
@@ -83,7 +83,7 @@ public class DrawableBotShape implements IDrawableShape
 			g.setColor(borderColor);
 			g.draw(botShape);
 		}
-		
+
 		if (drawDirection)
 		{
 			g.setColor(Color.RED);
@@ -91,7 +91,7 @@ public class DrawableBotShape implements IDrawableShape
 					BotShape.getKickerCenterPos(pos, angle, center2DribblerDist - 20), invert);
 			g.drawLine(drawingX + robotRadius, drawingY + robotRadius, (int) kickerPos.x(), (int) kickerPos.y());
 		}
-		
+
 		// --- check and determinate id-length for margin ---
 		int idX;
 		int idY;
@@ -107,21 +107,22 @@ public class DrawableBotShape implements IDrawableShape
 		{
 			return;
 		}
-		
+
 		// --- draw id and direction-sign ---
 		g.setColor(fontColor);
 		g.setFont(new Font("Courier", Font.BOLD, (int) (robotRadius * 1.5)));
 		g.drawString(id, idX, idY);
 	}
-	
-	
+
+
 	@Override
-	public final void setColor(final Color color)
+	public final DrawableBotShape setColor(final Color color)
 	{
 		this.fillColor = color;
+		return this;
 	}
-	
-	
+
+
 	/**
 	 * @param fontColor the fontColor to set
 	 */
@@ -129,20 +130,20 @@ public class DrawableBotShape implements IDrawableShape
 	{
 		this.fontColor = fontColor;
 	}
-	
-	
+
+
 	public void setFillColor(final Color fillColor)
 	{
 		this.fillColor = fillColor;
 	}
-	
-	
+
+
 	public void setBorderColor(final Color borderColor)
 	{
 		this.borderColor = borderColor;
 	}
-	
-	
+
+
 	/**
 	 * @param id the id to set
 	 */
@@ -150,8 +151,8 @@ public class DrawableBotShape implements IDrawableShape
 	{
 		this.id = id;
 	}
-	
-	
+
+
 	/**
 	 * @param radius the radius to set
 	 */
@@ -159,8 +160,8 @@ public class DrawableBotShape implements IDrawableShape
 	{
 		this.radius = radius;
 	}
-	
-	
+
+
 	public void setDrawDirection(final boolean drawDirection)
 	{
 		this.drawDirection = drawDirection;

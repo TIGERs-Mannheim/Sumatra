@@ -1,21 +1,19 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botoverview.view;
-
-import java.awt.BorderLayout;
-import java.util.Map;
-
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-
-import org.jdesktop.swingx.JXTable;
 
 import edu.tigers.sumatra.ai.VisualizationFrame;
 import edu.tigers.sumatra.ai.data.BotAiInformation;
 import edu.tigers.sumatra.botoverview.BotOverviewTableModel;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.views.ISumatraView;
+import org.jdesktop.swingx.JXTable;
+
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import java.awt.BorderLayout;
+import java.util.Map;
 
 
 /**
@@ -35,6 +33,7 @@ public class BotOverviewPanel extends JPanel implements ISumatraView
 		table = new JXTable(model);
 		table.setColumnControlVisible(true);
 		table.setHorizontalScrollEnabled(true);
+		table.setSortable(false);
 		table.updateUI();
 		JScrollPane scrollPane = new JScrollPane(table);
 		add(scrollPane, BorderLayout.CENTER);

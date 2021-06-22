@@ -1,17 +1,8 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.offensive.view;
-
-import java.awt.Color;
-import java.util.EnumMap;
-import java.util.Map;
-
-import javax.swing.BorderFactory;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JProgressBar;
 
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
 import edu.tigers.sumatra.ai.metis.offense.action.moves.EOffensiveActionMove;
@@ -20,25 +11,32 @@ import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveBotFrame;
 import edu.tigers.sumatra.ids.BotID;
 import net.miginfocom.swing.MigLayout;
 
+import javax.swing.BorderFactory;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import java.awt.Color;
+import java.util.EnumMap;
+import java.util.Map;
+
 
 /**
  * Strategy panel for one team.
  */
 public class OffensiveStatisticsBotPanel extends JPanel
 {
-	/**  */
-	private static final long																serialVersionUID	= 5289153581163080231L;
-	private Map<EOffensiveActionMove, Map<EActionViability, JProgressBar>>	viaProgressBars	= new EnumMap<>(
+	private static final long serialVersionUID = 5289153581163080231L;
+	private Map<EOffensiveActionMove, Map<EActionViability, JProgressBar>> viaProgressBars = new EnumMap<>(
 			EOffensiveActionMove.class);
-	private Map<EOffensiveActionMove, JProgressBar>									scorePorgress		= new EnumMap<>(
+	private Map<EOffensiveActionMove, JProgressBar> scorePorgress = new EnumMap<>(
 			EOffensiveActionMove.class);
-	
-	private JProgressBar																		primaryBar			= new JProgressBar(0, 100);
-	
-	
+
+	private JProgressBar primaryBar = new JProgressBar(0, 100);
+
+
 	/**
 	 * Team Panel
-	 * 
+	 *
 	 * @param id
 	 */
 	public OffensiveStatisticsBotPanel(final BotID id)
@@ -52,8 +50,8 @@ public class OffensiveStatisticsBotPanel extends JPanel
 		JPanel vias = createViabilityPanel();
 		add(vias, "wrap");
 	}
-	
-	
+
+
 	private JPanel createViabilityPanel()
 	{
 		JPanel panel = new JPanel(new MigLayout());
@@ -97,8 +95,8 @@ public class OffensiveStatisticsBotPanel extends JPanel
 		}
 		return panel;
 	}
-	
-	
+
+
 	/**
 	 * @param val
 	 */
@@ -106,8 +104,8 @@ public class OffensiveStatisticsBotPanel extends JPanel
 	{
 		primaryBar.setValue((int) (val * 100));
 	}
-	
-	
+
+
 	/**
 	 * @param frame
 	 */
@@ -126,24 +124,27 @@ public class OffensiveStatisticsBotPanel extends JPanel
 		}
 	}
 
+
 	/**
 	 * @param frame
 	 */
 	public void updateBotFrame(final OffensiveBotFrame frame)
 	{
-		for (EOffensiveActionMove move : frame.getMoveViabilityScores().keySet())
+		for (var entry : frame.getMoveViabilityMap().entrySet())
 		{
-			EActionViability via = frame.getMoveViabilities().get(move);
+			var move = entry.getKey();
+			var viability = entry.getValue();
 			for (EActionViability key : EActionViability.values())
 			{
-				if (key.toString().equals(via.toString()))
+				if (key.name().equals(viability.getType().name()))
 				{
 					viaProgressBars.get(move).get(key).setValue(100);
-				} else {
+				} else
+				{
 					viaProgressBars.get(move).get(key).setValue(0);
 				}
 			}
-			scorePorgress.get(move).setValue((int)(frame.getMoveViabilityScores().get(move)*100));
+			scorePorgress.get(move).setValue((int) (viability.getScore() * 100));
 		}
 	}
 }

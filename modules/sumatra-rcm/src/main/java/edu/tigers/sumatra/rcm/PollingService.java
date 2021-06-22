@@ -1,22 +1,11 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.rcm;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.log4j.Logger;
-
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -31,66 +20,70 @@ import edu.tigers.sumatra.skillsystem.ESkill;
 import edu.tigers.sumatra.skillsystem.GenericSkillSystem;
 import edu.tigers.sumatra.skillsystem.skills.ISkill;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
+import edu.tigers.sumatra.skillsystem.skills.ManualControlSkill;
 import edu.tigers.sumatra.skillsystem.skills.TouchKickSkill;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
 import edu.tigers.sumatra.thread.NamedThreadFactory;
-import edu.tigers.sumatra.wp.data.DynamicPosition;
+import lombok.extern.log4j.Log4j2;
 import net.java.games.input.Controller;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 /**
  * Polling Controller and send commands through ActionSender to bot
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
+@Log4j2
 public class PollingService
 {
-	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	private static final Logger log = Logger.getLogger(PollingService.class.getName());
 	private final Controller controller;
 	private final List<ExtComponent> components;
 	private final ActionSender actionSender;
+	private final RcmActionMap config;
 	private ScheduledExecutorService execService;
-	
+
 	private static final int PERIOD = 20;
 	private static final BotColorId DUMMY_BOT_ID = BotColorId.newBuilder().setBotId(0)
 			.setColor(Color.UNINITIALIZED).build();
-	
+
 	private Map<ExtComponent, Double> lastPressedComponents = new HashMap<>();
-	
-	
+
+
 	private GenericSkillSystem skillSystem = null;
-	
-	
+
+
 	private long timeSkillStarted = System.nanoTime();
 	private long timeLastInput = System.nanoTime();
-	
-	@Configurable(comment = "Timeout [s] after controller times out (bot gets unassigned)")
+
+	@Configurable(comment = "Timeout [s] after controller times out (bot gets unassigned)", defValue = "180")
 	private static int controllerTimeout = 180;
-	
-	
+
+
 	static
 	{
 		ConfigRegistration.registerClass("rcm", PollingService.class);
 	}
-	
-	
+
+
 	/**
 	 * @param config
 	 * @param actionSender
 	 */
 	public PollingService(final RcmActionMap config, final ActionSender actionSender)
 	{
+		this.config = config;
 		controller = config.getController();
 		components = config.createComponents();
 		this.actionSender = actionSender;
 	}
-	
-	
+
+
 	/**
 	 * @param components
 	 */
@@ -99,8 +92,8 @@ public class PollingService
 		BotActionCommand cmd = translate(components);
 		actionSender.execute(cmd);
 	}
-	
-	
+
+
 	private boolean containsExtComponent(final ExtComponent extComp, final List<ExtComponent> dependentComponents)
 	{
 		boolean inDepComps = false;
@@ -115,8 +108,8 @@ public class PollingService
 		}
 		return inDepComps;
 	}
-	
-	
+
+
 	/**
 	 * @param components
 	 */
@@ -133,12 +126,11 @@ public class PollingService
 		double rotateRight = 0;
 		double accelerate = 0;
 		double decelerate = 0;
-		boolean stopbot;
-		
+
 		ICommandInterpreter interpreter = actionSender.getCmdInterpreter();
 		BotID botId = interpreter.getBot().getBotId();
 		double deadZone = interpreter.getCompassThreshold();
-		
+
 		Map<ExtComponent, Double> pressedComponents = new HashMap<>();
 		List<ExtComponent> dependentComponents = new ArrayList<>();
 		for (ExtComponent extComp : components)
@@ -163,11 +155,11 @@ public class PollingService
 				}
 			}
 		}
-		
+
 		Map<ExtComponent, Double> releasedComponents = new HashMap<>(lastPressedComponents);
 		pressedComponents.forEach((extComp, value) -> releasedComponents.remove(extComp));
 		lastPressedComponents = pressedComponents;
-		
+
 		for (Map.Entry<ExtComponent, Double> entry : releasedComponents.entrySet())
 		{
 			ExtComponent extComp = entry.getKey();
@@ -178,7 +170,7 @@ public class PollingService
 				extCompDep = extCompDep.getDependentComp();
 			}
 		}
-		
+
 		Map<ExtComponent, Double> components2BeProcessed = new HashMap<>();
 		for (Map.Entry<ExtComponent, Double> entry : releasedComponents.entrySet())
 		{
@@ -189,7 +181,7 @@ public class PollingService
 				components2BeProcessed.put(extComp, value);
 			}
 		}
-		
+
 		// process pressed components that are continues actions (forward,sideward,etc.)
 		for (Map.Entry<ExtComponent, Double> entry : pressedComponents.entrySet())
 		{
@@ -204,7 +196,7 @@ public class PollingService
 				components2BeProcessed.put(extComp, value);
 			}
 		}
-		
+
 		if (!components2BeProcessed.isEmpty())
 		{
 			timeLastInput = System.nanoTime();
@@ -212,7 +204,7 @@ public class PollingService
 		{
 			actionSender.notifyTimedOut();
 		}
-		
+
 		for (Map.Entry<ExtComponent, Double> entry : components2BeProcessed.entrySet())
 		{
 			ExtComponent extComp = entry.getKey();
@@ -223,34 +215,8 @@ public class PollingService
 			{
 				handleEvent(botId, (ERcmEvent) actionEnum);
 				ERcmEvent action = (ERcmEvent) extComp.getMappedAction().getActionEnum();
-				stopbot = false;
-				switch (action)
-				{
-					case NEXT_BOT:
-						stopbot = true;
-						break;
-
-					case PREV_BOT:
-						stopbot = true;
-						break;
-
-					case UNASSIGNED:
-						stopbot = true;
-						break;
-
-					case UNASSIGN_BOT:
-						break;
-					case SPEED_MODE_TOGGLE:
-						break;
-					case SPEED_MODE_ENABLE:
-						break;
-					case SPEED_MODE_DISABLE:
-						break;
-					case CHARGE_BOT:
-						break;
-					case DISCHARGE_BOT:
-						break;
-				}
+				boolean stopbot =
+						action == ERcmEvent.NEXT_BOT || action == ERcmEvent.PREV_BOT || action == ERcmEvent.UNASSIGNED;
 
 				if (stopbot)
 				{
@@ -270,11 +236,11 @@ public class PollingService
 			{
 				if (botId.isBot() && (timeSkillStarted != 0) && ((System.nanoTime() - timeSkillStarted) > 5e8))
 				{
-					skillSystem.reset(botId);
+					skillSystem.execute(botId, new ManualControlSkill());
 					timeSkillStarted = 0;
 				}
 				interpreter.setPaused(false);
-				
+
 				EControllerAction action = (EControllerAction) extComp.getMappedAction().getActionEnum();
 				switch (action)
 				{
@@ -325,26 +291,24 @@ public class PollingService
 				}
 			}
 		}
-		
+
 		// forward - positive, backward - negative
 		final double translateY = forward - backward;
 		// right - positive, left - negative
 		final double translateX = right - left;
 		// rotateRight - positive, rotateLeft - negative
 		final double rotate = rotateLeft - rotateRight;
-		
+
 		cmdBuilder.setTranslateX((float) translateX);
 		cmdBuilder.setTranslateY((float) translateY);
 		cmdBuilder.setRotate((float) rotate);
 		cmdBuilder.setAccelerate((float) accelerate);
 		cmdBuilder.setDecelerate((float) decelerate);
-		
+
 		return cmdBuilder.build();
-		
-		
 	}
-	
-	
+
+
 	private void handleEvent(final BotID botId, final ERcmEvent actionEnum)
 	{
 		ERcmEvent event = actionEnum;
@@ -379,63 +343,64 @@ public class PollingService
 				break;
 		}
 	}
-	
-	
+
+
 	private void chooseNextBot(final BotID botId)
 	{
 		if (botId.isBot())
 		{
 			skillSystem.execute(botId, new IdleSkill());
+			timeSkillStarted = System.nanoTime();
 		}
 		actionSender.notifyNextBot();
 	}
-	
-	
+
+
 	private void choosePrevBot(final BotID botId)
 	{
 		if (botId.isBot())
 		{
 			skillSystem.execute(botId, new IdleSkill());
+			timeSkillStarted = System.nanoTime();
 		}
 		actionSender.notifyPrevBot();
 	}
-	
-	
+
+
 	private void unassignBot(final BotID botId)
 	{
 		if (botId.isBot())
 		{
 			skillSystem.execute(botId, new IdleSkill());
+			timeSkillStarted = System.nanoTime();
 		}
 		actionSender.notifyBotUnassigned();
 	}
-	
-	
+
+
 	private void chargeBots(final boolean enable)
 	{
 		ABot bot = actionSender.getCmdInterpreter().getBot();
 		bot.getMatchCtrl().setKickerAutocharge(enable);
 	}
-	
-	
+
+
 	private void handleSkill(final ICommandInterpreter interpreter, final BotID botId, final ExtComponent extComp)
 	{
 		ESkill skill = (ESkill) extComp.getMappedAction().getActionEnum();
-		
+
 		try
 		{
 			if (botId.isBot())
 			{
-				DynamicPosition target = new DynamicPosition(Geometry.getGoalTheir().getCenter());
-				
-				switch (skill)
+				var target = Geometry.getGoalTheir().getCenter();
+
+				if (skill == ESkill.TOUCH_KICK)
 				{
-					case TOUCH_KICK:
-						skillSystem.execute(botId, new TouchKickSkill(target, KickParams.maxStraight()));
-						break;
-					default:
-						skillSystem.execute(botId, (ISkill) skill.getInstanceableClass().newDefaultInstance());
-						break;
+					skillSystem.execute(botId, new TouchKickSkill(target, KickParams.maxStraight()));
+				} else
+				{
+					skillSystem.execute(botId, (ISkill) skill.getInstanceableClass().newDefaultInstance());
 				}
 				interpreter.setPaused(true);
 				timeSkillStarted = System.nanoTime();
@@ -445,8 +410,8 @@ public class PollingService
 			log.error("Could not create skill " + skill, err);
 		}
 	}
-	
-	
+
+
 	/**
 	 * Start service
 	 */
@@ -461,7 +426,7 @@ public class PollingService
 			{
 				log.error("Could not get skillSystem.", err);
 			}
-			
+
 			execService = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("PollingService_"
 					+ controller.getName()));
 			execService.scheduleAtFixedRate(new PollingThread(), 0, PERIOD, TimeUnit.MILLISECONDS);
@@ -471,8 +436,8 @@ public class PollingService
 			log.warn("start called more than once.");
 		}
 	}
-	
-	
+
+
 	/**
 	 * Stop service
 	 */
@@ -484,10 +449,11 @@ public class PollingService
 			execService.shutdown();
 			execService = null;
 			lastPressedComponents.clear();
+			timeSkillStarted = System.nanoTime();
 		}
 	}
-	
-	
+
+
 	/**
 	 * @return
 	 */
@@ -495,12 +461,17 @@ public class PollingService
 	{
 		return actionSender;
 	}
-	
+
+
 	private class PollingThread implements Runnable
 	{
 		@Override
 		public void run()
 		{
+			if (!config.isEnabled())
+			{
+				return;
+			}
 			try
 			{
 				controller.poll();

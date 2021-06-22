@@ -1,18 +1,10 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
-
-import org.apache.log4j.Logger;
-
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.botmanager.botskills.BotSkillLocalVelocity;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
 import edu.tigers.sumatra.botmanager.botskills.data.EKickerMode;
@@ -21,10 +13,13 @@ import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
-import edu.tigers.sumatra.skillsystem.ESkill;
 import edu.tigers.sumatra.skillsystem.skills.util.SkillCommand;
-import edu.tigers.sumatra.statemachine.AState;
-import edu.tigers.sumatra.statemachine.IEvent;
+import lombok.extern.log4j.Log4j2;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
 
 
 /**
@@ -43,50 +38,41 @@ import edu.tigers.sumatra.statemachine.IEvent;
  * After the sequence is finished, the robot will turn off the motors
  * </p>
  */
+@Log4j2
 public class CommandListSkill extends AMoveSkill
 {
-	private static final Logger log = Logger.getLogger(CommandListSkill.class.getName());
-	private final List<SkillCommand> commands = new ArrayList<>();
-	private boolean finished = false;
-	
 	@Configurable(defValue = "false", comment = "Log all commands to info log when executed")
 	private static boolean logCommands = false;
-	
-	
-	private CommandListSkill()
-	{
-		super(ESkill.COMMAND_LIST);
-		
-		setInitialState(new ExecutionState());
-		addTransition(EEvent.DONE, new DoneState());
-	}
-	
-	
-	@SuppressWarnings("unused") // used by UI
-	public CommandListSkill(final String commandList)
-	{
-		this();
-		parseCommandSequence(commandList);
-		commands.sort(Comparator.comparingDouble(SkillCommand::getTime));
-	}
-	
-	
+
+	private final List<SkillCommand> commands = new ArrayList<>();
+
+	private long tStart;
+	private BotSkillLocalVelocity skill;
+
+
 	public CommandListSkill(final List<SkillCommand> commands)
 	{
-		this();
 		this.commands.addAll(commands);
 		this.commands.sort(Comparator.comparingDouble(SkillCommand::getTime));
 	}
-	
-	
+
+
+	public void setCommandList(String commandList)
+	{
+		this.commands.addAll(parseCommandSequence(commandList));
+		this.commands.sort(Comparator.comparingDouble(SkillCommand::getTime));
+	}
+
+
 	public boolean isFinished()
 	{
-		return finished;
+		return commands.isEmpty();
 	}
-	
-	
-	private void parseCommandSequence(final String commandList)
+
+
+	private static List<SkillCommand> parseCommandSequence(final String commandList)
 	{
+		List<SkillCommand> parsedCommands = new ArrayList<>();
 		String[] commandSequence = commandList.split("\\|");
 		for (String command : commandSequence)
 		{
@@ -100,13 +86,14 @@ public class CommandListSkill extends AMoveSkill
 			String type = split[1];
 			String value = split.length > 2 ? split[2] : "";
 			addCommand(skillCommand, value, type);
-			commands.add(skillCommand);
+			parsedCommands.add(skillCommand);
 		}
+		return parsedCommands;
 	}
-	
-	
+
+
 	@SuppressWarnings("squid:MethodCyclomaticComplexity") // accept this for the large switch case
-	private void addCommand(final SkillCommand skillCommand, final String value, final String type)
+	private static void addCommand(final SkillCommand skillCommand, final String value, final String type)
 	{
 		switch (type)
 		{
@@ -129,13 +116,25 @@ public class CommandListSkill extends AMoveSkill
 				break;
 			case "vxw":
 				IVector2 vxw = AVector2.valueOf(value);
-				skillCommand.setXyVel(Vector2.fromX(vxw.x()));
-				skillCommand.setaVel(vxw.y());
+				if (vxw != null)
+				{
+					skillCommand.setXyVel(Vector2.fromX(vxw.x()));
+					skillCommand.setaVel(vxw.y());
+				}
 				break;
 			case "vyw":
 				IVector2 vyw = AVector2.valueOf(value);
-				skillCommand.setXyVel(Vector2.fromY(vyw.x()));
-				skillCommand.setaVel(vyw.y());
+				if (vyw != null)
+				{
+					skillCommand.setXyVel(Vector2.fromY(vyw.x()));
+					skillCommand.setaVel(vyw.y());
+				}
+				break;
+			case "axy":
+				skillCommand.setAccMaxXY(Double.parseDouble(value));
+				break;
+			case "aw":
+				skillCommand.setAccMaxW(Double.parseDouble(value));
 				break;
 			case "k":
 				skillCommand.setKickSpeed(Double.parseDouble(value));
@@ -152,9 +151,9 @@ public class CommandListSkill extends AMoveSkill
 				throw new IllegalArgumentException("Unknown command: " + type);
 		}
 	}
-	
-	
-	private EKickerDevice parseKickerDevice(final String value)
+
+
+	private static EKickerDevice parseKickerDevice(final String value)
 	{
 		if (value.toLowerCase(Locale.GERMAN).startsWith("s"))
 		{
@@ -165,110 +164,87 @@ public class CommandListSkill extends AMoveSkill
 		}
 		throw new IllegalArgumentException("Unknown kicker device: " + value);
 	}
-	
-	
-	private enum EEvent implements IEvent
+
+
+	@Override
+	public void doEntryActions()
 	{
-		DONE
+		tStart = getWorldFrame().getTimestamp();
+		skill = new BotSkillLocalVelocity(defaultMoveConstraints());
+		setKickParams(null);
+		getMatchCtrl().setSkill(skill);
 	}
-	
-	private class ExecutionState extends AState
+
+
+	@Override
+	public void doUpdate()
 	{
-		private long tStart;
-		private BotSkillLocalVelocity skill;
-		
-		
-		@Override
-		public void doEntryActions()
+		double timeSinceLastVisible = (getWorldFrame().getTimestamp()
+				- getWorldFrame().getBall().getLastVisibleTimestamp()) * 1e-9;
+		if ((timeSinceLastVisible < 0.05) && (getTBot().getBotKickerPos().distanceTo(getBall().getPos()) > 100.0))
 		{
-			tStart = getWorldFrame().getTimestamp();
-			skill = new BotSkillLocalVelocity(getMoveCon().getMoveConstraints());
-			getMatchCtrl().setSkill(skill);
+			commands.clear();
 		}
-		
-		
-		@Override
-		public void doUpdate()
+
+		double timePassed = (getWorldFrame().getTimestamp() - tStart) / 1e9;
+		while (!commands.isEmpty()
+				&& (commands.get(0).getTime() <= timePassed))
 		{
-			double timeSinceLastVisible = (getWorldFrame().getTimestamp()
-					- getWorldFrame().getBall().getLastVisibleTimestamp()) * 1e-9;
-			if ((timeSinceLastVisible < 0.05) && (getTBot().getBotKickerPos().distanceTo(getBall().getPos()) > 50.0))
-			{
-				triggerEvent(EEvent.DONE);
-			}
-			
-			double timePassed = (getWorldFrame().getTimestamp() - tStart) / 1e9;
-			while (!commands.isEmpty()
-					&& (commands.get(0).getTime() <= timePassed))
-			{
-				executeCommand(commands.remove(0));
-			}
-			if (commands.isEmpty())
-			{
-				triggerEvent(EEvent.DONE);
-			}
+			executeCommand(commands.remove(0));
 		}
-		
-		
-		@Override
-		public void doExitActions()
+		if (commands.isEmpty())
 		{
-			finished = true;
 			setMotorsOff();
 		}
-		
-		
-		private void executeCommand(final SkillCommand command)
+	}
+
+
+	private void executeCommand(final SkillCommand command)
+	{
+		logCmd(command);
+		if (command.getXyVel() != null)
 		{
-			logCmd(command);
-			if (command.getXyVel() != null)
+			skill.setVelXy(command.getXyVel());
+		}
+		if (command.getaVel() != null)
+		{
+			skill.setVelW(command.getaVel());
+		}
+		if (command.getDribbleSpeed() != null)
+		{
+			skill.getKickerDribbler().setDribblerSpeed(command.getDribbleSpeed());
+		}
+		if (command.getKickerDevice() != null)
+		{
+			skill.getKickerDribbler().setDevice(command.getKickerDevice());
+		}
+		if (command.getKickSpeed() != null)
+		{
+			if (command.getKickSpeed() > 0)
 			{
-				skill.setVelXy(command.getXyVel());
-			}
-			if (command.getaVel() != null)
+				skill.getKickerDribbler().setMode(EKickerMode.ARM);
+				skill.getKickerDribbler().setKickSpeed(command.getKickSpeed());
+			} else
 			{
-				skill.setVelW(command.getaVel());
-			}
-			if (command.getDribbleSpeed() != null)
-			{
-				skill.getKickerDribbler().setDribblerSpeed(command.getDribbleSpeed());
-			}
-			if (command.getKickerDevice() != null)
-			{
-				skill.getKickerDribbler().setDevice(command.getKickerDevice());
-			}
-			if (command.getKickSpeed() != null)
-			{
-				if (command.getKickSpeed() > 0)
-				{
-					skill.getKickerDribbler().setMode(EKickerMode.ARM);
-					skill.getKickerDribbler().setKickSpeed(command.getKickSpeed());
-				} else
-				{
-					skill.getKickerDribbler().setMode(EKickerMode.DISARM);
-				}
-			}
-			if (command.getAccMaxXY() != null)
-			{
-				skill.setAccMax(command.getAccMaxXY());
-			}
-			if (command.getAccMaxW() != null)
-			{
-				skill.setAccMaxW(command.getAccMaxW());
+				skill.getKickerDribbler().setMode(EKickerMode.DISARM);
 			}
 		}
-		
-		
-		private void logCmd(final SkillCommand skillCommand)
+		if (command.getAccMaxXY() != null)
 		{
-			if (logCommands)
-			{
-				log.info(skillCommand);
-			}
+			skill.setAccMax(command.getAccMaxXY());
+		}
+		if (command.getAccMaxW() != null)
+		{
+			skill.setAccMaxW(command.getAccMaxW());
 		}
 	}
-	
-	private class DoneState extends AState
+
+
+	private void logCmd(final SkillCommand skillCommand)
 	{
+		if (logCommands)
+		{
+			log.info(skillCommand);
+		}
 	}
 }

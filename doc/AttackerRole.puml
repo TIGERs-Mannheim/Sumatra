@@ -1,0 +1,20 @@
+State machine of the current AttackerRole (as of 10.01.2021)
+
+@startuml
+[*] --> protect
+protect-->approachBallLine: ball moves
+protect-->kick
+approachBallLine-->receive: success
+approachBallLine-->approachAndStopBall: failure || close to ball
+approachAndStopBall-->protect: success || failure
+kick-->approachBallLine: success
+kick-->protect: failure || no kick
+kick-->freeKick: wait for kick || use single touch
+freeKick-->approachBallLine: success
+freeKick-->protect: failure
+receive-->protect: success || failure
+receive-->redirect: switch to redirect
+redirect-->approachBallLine: success
+redirect-->protect: failure
+redirect-->receive: switch to receive
+@enduml

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view.log;
 
@@ -17,8 +17,7 @@ import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Priority;
+import org.apache.logging.log4j.Level;
 
 import net.miginfocom.swing.MigLayout;
 
@@ -46,7 +45,7 @@ public class SlidePanel extends JPanel
 
 
 	@SuppressWarnings("squid:S1149") // Dictionary needed by JSlider
-	public SlidePanel(final Priority initialLevel)
+	public SlidePanel(final Level initialLevel)
 	{
 		final Dictionary<Integer, JLabel> levelTable = new Hashtable<>();
 

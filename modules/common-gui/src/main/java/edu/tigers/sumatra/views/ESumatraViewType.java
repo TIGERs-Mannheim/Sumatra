@@ -81,11 +81,13 @@ public enum ESumatraViewType
 	BALL_KICK_IDENT(51, "Ball & Kick Model"),
 	/** */
 	SUPPORT_BEHAVIORS(52, "Support Behaviors"),
-	
+	/** */
 	SKILLS(53, "Skills"),
+	/** */
+	OFFENSIVE_INTERCEPTIONS(54, "Offensive Interceptions"),
 	
 	;
-	
+
 	private final int id;
 	private final String title;
 	private final boolean forceLoad;

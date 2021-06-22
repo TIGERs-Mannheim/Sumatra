@@ -1,14 +1,13 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.pathfinder;
 
-import java.util.Optional;
-
-import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
-import edu.tigers.sumatra.trajectory.ITrajectory;
+import edu.tigers.sumatra.pathfinder.traj.TrajPath;
+
+import java.util.Optional;
 
 
 /**
@@ -24,14 +23,14 @@ public interface IPathFinderResult
 	{
 		return 0;
 	}
-	
-	
+
+
 	/**
 	 * @return the resulting trajectory
 	 */
-	ITrajectory<IVector2> getTrajectory();
-	
-	
+	TrajPath getTrajectory();
+
+
 	/**
 	 * @return collisionDurationFront
 	 */
@@ -39,8 +38,8 @@ public interface IPathFinderResult
 	{
 		return 0;
 	}
-	
-	
+
+
 	/**
 	 * @return collisionDurationBack
 	 */
@@ -48,8 +47,8 @@ public interface IPathFinderResult
 	{
 		return 0.0;
 	}
-	
-	
+
+
 	/**
 	 * @return get time until first collision accures (+INF, if no collision)
 	 */
@@ -57,8 +56,8 @@ public interface IPathFinderResult
 	{
 		return Double.POSITIVE_INFINITY;
 	}
-	
-	
+
+
 	/**
 	 * @return the last time on the trajectory without a collision - this is the total trajectory time if there is no
 	 *         collision
@@ -67,8 +66,8 @@ public interface IPathFinderResult
 	{
 		return getTrajectory().getTotalTime() - getCollisionDurationBack();
 	}
-	
-	
+
+
 	/**
 	 * @return true, if the full path is colliding with obstacles
 	 */
@@ -76,8 +75,8 @@ public interface IPathFinderResult
 	{
 		return getCollisionDurationFront() >= getLastNonCollisionTime();
 	}
-	
-	
+
+
 	/**
 	 * @return if there is a collision on the path that is not in front or back of path
 	 */
@@ -85,8 +84,8 @@ public interface IPathFinderResult
 	{
 		return Double.isFinite(getFirstCollisionTime());
 	}
-	
-	
+
+
 	/**
 	 * @return if there is a collision at the beginning of the path
 	 */
@@ -94,8 +93,8 @@ public interface IPathFinderResult
 	{
 		return getCollisionDurationFront() > 0;
 	}
-	
-	
+
+
 	/**
 	 * @return if there is a collision at the end of the path
 	 */
@@ -103,8 +102,8 @@ public interface IPathFinderResult
 	{
 		return getCollisionDurationBack() > 0;
 	}
-	
-	
+
+
 	/**
 	 * @return the max lookahead for checking collisions
 	 */
@@ -112,8 +111,8 @@ public interface IPathFinderResult
 	{
 		return 0;
 	}
-	
-	
+
+
 	/**
 	 * @return the obstacle that causes the collision, if present
 	 */
@@ -121,8 +120,26 @@ public interface IPathFinderResult
 	{
 		return Optional.empty();
 	}
-	
-	
+
+
+	/**
+	 * @return a penalty for colliding with obstacles
+	 */
+	default double getCollisionPenalty()
+	{
+		return 0;
+	}
+
+
+	/**
+	 * @return the first time where a collision could or will happen
+	 */
+	default double getFirstPossibleCollision()
+	{
+		return 0;
+	}
+
+
 	/**
 	 * @return true, if there is any collision on the path
 	 */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.botmanager.bots;
@@ -28,20 +28,21 @@ import edu.tigers.sumatra.trajectory.TrajectoryWithTime;
  */
 public abstract class ABot implements IBot
 {
-	private static final double KICKER_LEVEL_MAX = 200;
-	
+	private static final double KICKER_LEVEL_MAX = 220;
+
 	private final BotID botId;
 	private final EBotType type;
 	private final IBaseStation baseStation;
 	private final Map<EFeature, EFeatureState> botFeatures;
 	private final MatchCommand matchCtrl = new MatchCommand();
-	
+
 	private IBotParams botParams = new BotParams();
 	private TrajectoryWithTime<IVector3> curTrajectory = null;
 	private String controlledBy = "";
 	private boolean hideFromRcm = false;
-	
-	
+	protected long lastFeedback = 0;
+
+
 	public ABot(final EBotType type, final BotID id, final IBaseStation baseStation)
 	{
 		botId = id;
@@ -49,11 +50,11 @@ public abstract class ABot implements IBot
 		botFeatures = getDefaultFeatureStates();
 		this.baseStation = baseStation;
 	}
-	
-	
+
+
 	public abstract EBotParamLabel getBotParamLabel();
-	
-	
+
+
 	private Map<EFeature, EFeatureState> getDefaultFeatureStates()
 	{
 		Map<EFeature, EFeatureState> result = EFeature.createFeatureList();
@@ -65,8 +66,8 @@ public abstract class ABot implements IBot
 		result.put(EFeature.CHARGE_CAPS, EFeatureState.WORKING);
 		return result;
 	}
-	
-	
+
+
 	/**
 	 * This is called when the match command should be sent
 	 */
@@ -74,50 +75,50 @@ public abstract class ABot implements IBot
 	{
 		getBaseStation().acceptMatchCommand(getBotId(), getMatchCtrl());
 	}
-	
-	
+
+
 	@Override
 	public double getKickerLevelMax()
 	{
 		return KICKER_LEVEL_MAX;
 	}
-	
-	
+
+
 	@Override
 	public boolean isAvailableToAi()
 	{
 		return !isBlocked();
 	}
-	
-	
+
+
 	@Override
 	public final EBotType getType()
 	{
 		return type;
 	}
-	
-	
+
+
 	@Override
 	public String toString()
 	{
 		return "[Bot: " + type + "|" + getBotId() + "]";
 	}
-	
-	
+
+
 	@Override
 	public final Map<EFeature, EFeatureState> getBotFeatures()
 	{
 		return botFeatures;
 	}
-	
-	
+
+
 	@Override
 	public final String getControlledBy()
 	{
 		return controlledBy;
 	}
-	
-	
+
+
 	/**
 	 * @param controlledBy the controlledBy to set
 	 */
@@ -125,29 +126,29 @@ public abstract class ABot implements IBot
 	{
 		this.controlledBy = controlledBy;
 	}
-	
-	
+
+
 	@Override
 	public final ETeamColor getColor()
 	{
 		return getBotId().getTeamColor();
 	}
-	
-	
+
+
 	@Override
 	public final boolean isBlocked()
 	{
 		return !controlledBy.isEmpty();
 	}
-	
-	
+
+
 	@Override
 	public final boolean isHideFromRcm()
 	{
 		return hideFromRcm;
 	}
-	
-	
+
+
 	/**
 	 * @param hideFromRcm the hideFromRcm to set
 	 */
@@ -155,15 +156,15 @@ public abstract class ABot implements IBot
 	{
 		this.hideFromRcm = hideFromRcm;
 	}
-	
-	
+
+
 	@Override
 	public final BotID getBotId()
 	{
 		return botId;
 	}
-	
-	
+
+
 	/**
 	 * @return the matchCtrl
 	 */
@@ -171,8 +172,8 @@ public abstract class ABot implements IBot
 	{
 		return matchCtrl;
 	}
-	
-	
+
+
 	/**
 	 * @return the baseStation
 	 */
@@ -180,22 +181,22 @@ public abstract class ABot implements IBot
 	{
 		return baseStation;
 	}
-	
-	
+
+
 	@Override
-	public Optional<BotState> getSensoryState(long timestamp)
+	public Optional<BotState> getSensoryState()
 	{
 		return Optional.empty();
 	}
-	
-	
+
+
 	@Override
 	public Optional<TrajectoryWithTime<IVector3>> getCurrentTrajectory()
 	{
 		return Optional.ofNullable(curTrajectory);
 	}
-	
-	
+
+
 	/**
 	 * @param curTrajectory
 	 */
@@ -203,17 +204,23 @@ public abstract class ABot implements IBot
 	{
 		this.curTrajectory = curTrajectory;
 	}
-	
-	
+
+
 	@Override
 	public final IBotParams getBotParams()
 	{
 		return botParams;
 	}
-	
-	
+
+
 	public void setBotParams(final IBotParams botParams)
 	{
 		this.botParams = botParams;
+	}
+
+
+	public long getLastFeedback()
+	{
+		return lastFeedback;
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.presenter.ball;
@@ -22,7 +22,8 @@ import java.util.Map;
 
 import javax.swing.JOptionPane;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -46,12 +47,12 @@ import matlabcontrol.MatlabProxy;
 public class VisionAnalyserPresenter extends ASumatraViewPresenter
 {
 	@SuppressWarnings("unused")
-	private static final Logger log = Logger.getLogger(VisionAnalyserPresenter.class.getName());
-	
+	private static final Logger log = LogManager.getLogger(VisionAnalyserPresenter.class.getName());
+
 	private final VisionAnalyserPanel panel = new VisionAnalyserPanel();
 	private TimeSeriesDataCollector dataCollector = null;
-	
-	
+
+
 	/**
 	 * Default Constructor
 	 */
@@ -59,30 +60,30 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 	{
 		panel.addObserver(new PanelObserver());
 	}
-	
-	
+
+
 	@Override
 	public Component getComponent()
 	{
 		return panel;
 	}
-	
-	
+
+
 	@Override
 	public ISumatraView getSumatraView()
 	{
 		return panel;
 	}
-	
-	
+
+
 	private class PanelObserver implements IBallAnalyserPanelObserver, ClipboardOwner
 	{
 		private static final String ERROR_EVALUATING_MATLAB_FUNCTION = "Error evaluating matlab function: ";
-		
+
 		private static final String DESCRIPTION = "description";
 		private static final String LEARNING = "addpath('learning')";
-		
-		
+
+
 		@Override
 		public void onSave(final String filename)
 		{
@@ -107,8 +108,8 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 			}
 			panel.markDirty(false);
 		}
-		
-		
+
+
 		@Override
 		public void onRecord(final boolean record, final boolean stopAutomatically)
 		{
@@ -135,8 +136,8 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				dataCollector.stopExport();
 			}
 		}
-		
-		
+
+
 		@Override
 		public void onDelete(final List<String> filenames)
 		{
@@ -146,7 +147,7 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				sb.append(s);
 				sb.append('\n');
 			}
-			
+
 			int answer = JOptionPane.showConfirmDialog(panel,
 					"Do you really want to delete following files? \n" + sb.toString(), "Delete?",
 					JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
@@ -159,8 +160,8 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				panel.updateFiles();
 			}
 		}
-		
-		
+
+
 		private void processYesDeleteAnswerForFile(final String filename)
 		{
 			File file = new File(filename);
@@ -174,8 +175,8 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				log.error("Could not delete file: " + filename);
 			}
 		}
-		
-		
+
+
 		private void deleteFiles(final File originalFile, final File[] files)
 		{
 			if (files != null)
@@ -194,16 +195,16 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				}
 			}
 		}
-		
-		
+
+
 		@Override
 		public void onPlot(final List<String> filenames)
 		{
 			Thread t = new Thread(() -> plotBallData(filenames));
 			t.start();
 		}
-		
-		
+
+
 		private void plotBallData(final List<String> filenames)
 		{
 			for (String filename : filenames)
@@ -217,8 +218,8 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				callMatlab("plotVisionData", basePath);
 			}
 		}
-		
-		
+
+
 		private void callMatlab(final String function, final Object... params)
 		{
 			MatlabProxy mp;
@@ -234,8 +235,8 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				log.error(ERROR_EVALUATING_MATLAB_FUNCTION + err.getMessage(), err);
 			}
 		}
-		
-		
+
+
 		@Override
 		public void onNewSelectedFile(final List<String> filenames)
 		{
@@ -269,7 +270,7 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 					{
 						panel.setNumSamples(-1);
 					}
-					
+
 					processJsonbjects(jo);
 				} catch (IOException | ParseException err)
 				{
@@ -286,8 +287,8 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				panel.clearKeyValue();
 			}
 		}
-		
-		
+
+
 		void processJsonbjects(final Map<String, Object> jsonObjects)
 		{
 			for (Map.Entry<String, Object> entry : jsonObjects.entrySet())
@@ -299,8 +300,8 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 				panel.setKeyValue(entry.getKey(), String.valueOf(entry.getValue()));
 			}
 		}
-		
-		
+
+
 		private String getBaseDir(final String filename)
 		{
 			File f = new File(filename);
@@ -314,8 +315,8 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 			}
 			return basePath;
 		}
-		
-		
+
+
 		@Override
 		public void onCopy(final List<String> filenames)
 		{
@@ -333,15 +334,15 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 			Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
 			clipboard.setContents(stringSelection, this);
 		}
-		
-		
+
+
 		@Override
 		public void lostOwnership(final Clipboard clipboard, final Transferable contents)
 		{
 			// nothing to do here
 		}
-		
-		
+
+
 		@Override
 		public void onPlotCrookedKick(final List<String> filenames)
 		{
@@ -359,10 +360,10 @@ public class VisionAnalyserPresenter extends ASumatraViewPresenter
 			{
 				log.error(ERROR_EVALUATING_MATLAB_FUNCTION + err.getMessage(), err);
 			}
-			
+
 		}
 	}
-	
+
 	private class TimeSeriesDataCollectorObserver implements ITimeSeriesDataCollectorObserver
 	{
 		@Override

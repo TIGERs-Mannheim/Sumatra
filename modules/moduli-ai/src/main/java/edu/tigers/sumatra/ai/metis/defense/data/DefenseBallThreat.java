@@ -1,43 +1,31 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.defense.data;
-
-import java.util.Optional;
-
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
 
 import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BallID;
 import edu.tigers.sumatra.math.line.v2.ILineSegment;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+import lombok.Value;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
+
+import java.util.Optional;
 
 
 /**
  * The ball threat for the defenders.
  */
+@Value
 public class DefenseBallThreat implements IDefenseThreat
 {
-	private final IVector2 vel;
-	private final ILineSegment threatLine;
-	private final ILineSegment protectionLine;
-	private final ITrackedBot passReceiver;
-
-
-	public DefenseBallThreat(
-			final IVector2 vel,
-			final ILineSegment threatLine,
-			final ILineSegment protectionLine,
-			final ITrackedBot passReceiver)
-	{
-		this.threatLine = threatLine;
-		this.protectionLine = protectionLine;
-		this.vel = vel;
-		this.passReceiver = passReceiver;
-	}
+	IVector2 vel;
+	ILineSegment threatLine;
+	ILineSegment protectionLine;
+	ITrackedBot passReceiver;
 
 
 	@Override

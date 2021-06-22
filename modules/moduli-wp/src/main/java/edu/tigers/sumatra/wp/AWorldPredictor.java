@@ -12,6 +12,7 @@ import com.github.g3force.configurable.IConfigObserver;
 import edu.tigers.moduli.AModule;
 import edu.tigers.sumatra.cam.ICamFrameObserver;
 import edu.tigers.sumatra.drawable.ShapeMap;
+import edu.tigers.sumatra.drawable.ShapeMapSource;
 import edu.tigers.sumatra.wp.util.IRobotInfoProvider;
 
 
@@ -84,7 +85,7 @@ public abstract class AWorldPredictor extends AModule implements ICamFrameObserv
 	 * @param shapeMap the shape map
 	 * @param source an identifier for the source
 	 */
-	public final void notifyNewShapeMap(final long timestamp, ShapeMap shapeMap, String source)
+	public final void notifyNewShapeMap(final long timestamp, ShapeMap shapeMap, ShapeMapSource source)
 	{
 		ShapeMap unmodifiableShapeMap = ShapeMap.unmodifiableCopy(shapeMap);
 		for (IWorldFrameObserver o : observers)
@@ -94,11 +95,20 @@ public abstract class AWorldPredictor extends AModule implements ICamFrameObserv
 	}
 
 
-	public final void notifyClearShapeMap(String source)
+	public final void notifyRemoveSourceFromShapeMap(String sourceName)
 	{
 		for (IWorldFrameObserver o : observers)
 		{
-			o.onClearShapeMap(source);
+			o.onRemoveSourceFromShapeMap(sourceName);
+		}
+	}
+
+
+	public final void notifyRemoveCategoryFromShapeMap(String category)
+	{
+		for (IWorldFrameObserver o : observers)
+		{
+			o.onRemoveCategoryFromShapeMap(category);
 		}
 	}
 

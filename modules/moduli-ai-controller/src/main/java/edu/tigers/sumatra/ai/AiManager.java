@@ -1,8 +1,22 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai;
+
+import edu.tigers.sumatra.ai.athena.EAIControlState;
+import edu.tigers.sumatra.drawable.ShapeMapSource;
+import edu.tigers.sumatra.ids.EAiTeam;
+import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.model.SumatraModel;
+import edu.tigers.sumatra.skillsystem.ASkillSystem;
+import edu.tigers.sumatra.timer.ATimer;
+import edu.tigers.sumatra.timer.ITimer;
+import edu.tigers.sumatra.wp.AWorldPredictor;
+import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
+import org.apache.commons.lang.Validate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ExecutorService;
@@ -10,39 +24,25 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang.Validate;
-import org.apache.log4j.Logger;
-
-import edu.tigers.sumatra.ai.athena.EAIControlState;
-import edu.tigers.sumatra.ids.EAiTeam;
-import edu.tigers.sumatra.model.SumatraModel;
-import edu.tigers.sumatra.skillsystem.ASkillSystem;
-import edu.tigers.sumatra.timer.ATimer;
-import edu.tigers.sumatra.timer.ITimer;
-import edu.tigers.sumatra.wp.AWorldPredictor;
-import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
-
 
 /**
  * The AI manager is responsible for executing the AI in its own thread in the desired speed
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class AiManager
 {
-	private static final Logger log = Logger.getLogger(AiManager.class.getName());
-	
+	private static final Logger log = LogManager.getLogger(AiManager.class.getName());
+
 	private final BlockingDeque<WorldFrameWrapper> freshWorldFrames = new LinkedBlockingDeque<>(1);
 	private final AiProcessor aiProcessor = new AiProcessor();
 	private final AAgent agent;
 	private final Ai ai;
 	private final String aiName;
-	
+
 	private ExecutorService executor;
 	private AWorldPredictor wp;
 	private ITimer timer;
-	
-	
+
+
 	/**
 	 * @param agent
 	 * @param aiTeam
@@ -54,8 +54,8 @@ public class AiManager
 		ai = new Ai(aiTeam, skillSystem);
 		aiName = "AI_" + ai.getAiTeam();
 	}
-	
-	
+
+
 	/**
 	 * Start the AI
 	 */
@@ -63,13 +63,13 @@ public class AiManager
 	{
 		timer = SumatraModel.getInstance().getModuleOpt(ATimer.class).orElse(null);
 		wp = SumatraModel.getInstance().getModule(AWorldPredictor.class);
-		
+
 		assert executor == null;
 		executor = Executors.newSingleThreadExecutor();
 		executor.execute(aiProcessor);
 	}
-	
-	
+
+
 	/**
 	 * Stop the AI
 	 */
@@ -77,7 +77,7 @@ public class AiManager
 	{
 		aiProcessor.running = false;
 		executor.shutdown();
-		
+
 		try
 		{
 			Validate.isTrue(executor.awaitTermination(2, TimeUnit.SECONDS));
@@ -86,25 +86,25 @@ public class AiManager
 			log.error("Interrupted while awaiting termination", e);
 			Thread.currentThread().interrupt();
 		}
-		
+
 		freshWorldFrames.clear();
 		executor = null;
 		wp = null;
 		timer = null;
 	}
-	
-	
+
+
 	/**
 	 * True if this AI is running.
-	 * 
+	 *
 	 * @return
 	 */
 	public boolean isRunning()
 	{
 		return executor != null;
 	}
-	
-	
+
+
 	/**
 	 * @param mode
 	 */
@@ -112,31 +112,32 @@ public class AiManager
 	{
 		ai.changeMode(mode);
 	}
-	
-	
+
+
 	public BlockingDeque<WorldFrameWrapper> getFreshWorldFrames()
 	{
 		return freshWorldFrames;
 	}
-	
-	
+
+
 	public Ai getAi()
 	{
 		return ai;
 	}
-	
+
 	private class AiProcessor implements Runnable
 	{
 		private static final int RUN_EVERY_N_TH_FRAME = 1;
-		
+
 		boolean running = true;
 		private int skipCounter = 0;
-		
-		
+
+
 		@Override
 		public void run()
 		{
 			Thread.currentThread().setName(aiName);
+			ai.start();
 			while (running)
 			{
 				try
@@ -152,10 +153,10 @@ public class AiManager
 			}
 			ai.stop();
 			agent.notifyAIStopped(ai.getAiTeam());
-			wp.notifyClearShapeMap(ai.getAiTeam().getTeamColor().name());
+			wp.notifyRemoveSourceFromShapeMap(getShapeMapSource(ai.getAiTeam().getTeamColor()));
 		}
-		
-		
+
+
 		private void process() throws InterruptedException
 		{
 			WorldFrameWrapper wfw = freshWorldFrames.pollLast(15, TimeUnit.MILLISECONDS);
@@ -163,22 +164,22 @@ public class AiManager
 			{
 				return;
 			}
-			
+
 			long tNow = wfw.getSimpleWorldFrame().getTimestamp();
-			long id = wfw.getSimpleWorldFrame().getId();
-			
+			long id = wfw.getSimpleWorldFrame().getFrameNumber();
+
 			skipCounter++;
 			if (skipCounter < RUN_EVERY_N_TH_FRAME)
 			{
 				return;
 			}
 			skipCounter = 0;
-			
+
 			if (timer != null)
 			{
 				timer.start(aiName, id);
 			}
-			
+
 			AIInfoFrame frame = ai.processWorldFrame(wfw);
 			if (frame != null)
 			{
@@ -187,18 +188,25 @@ public class AiManager
 					agent.notifyNewAIInfoFrame(frame);
 					VisualizationFrame visFrame = new VisualizationFrame(frame);
 					agent.notifyNewAIInfoFrameVisualize(visFrame);
-					frame.getTacticalField().getDrawableShapes().setInverted(wfw.getWorldFrame(ai.getAiTeam()).isInverted());
-					wp.notifyNewShapeMap(tNow, frame.getTacticalField().getDrawableShapes(), frame.getTeamColor().name());
+					frame.getShapeMap().setInverted(wfw.getWorldFrame(ai.getAiTeam()).isInverted());
+					wp.notifyNewShapeMap(tNow, frame.getShapeMap(),
+							ShapeMapSource.of(getShapeMapSource(frame.getTeamColor())));
 				} catch (Throwable err)
 				{
 					log.error("Error during AI frame publishing", err);
 				}
 			}
-			
+
 			if (timer != null)
 			{
 				timer.stop(aiName, id);
 			}
 		}
+	}
+
+
+	public static String getShapeMapSource(ETeamColor teamColor)
+	{
+		return teamColor == ETeamColor.YELLOW ? "AI Yellow" : "AI Blue";
 	}
 }

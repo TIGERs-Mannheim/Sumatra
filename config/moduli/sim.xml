@@ -36,6 +36,10 @@
     <module id="edu.tigers.sumatra.wp.AWorldPredictor">
         <implementation>edu.tigers.sumatra.wp.WorldInfoCollector</implementation>
 
+        <properties>
+            <ci-port>11009</ci-port>
+        </properties>
+
         <dependency>edu.tigers.sumatra.referee.AReferee</dependency>
         <dependency>edu.tigers.sumatra.vision.AVisionFilter</dependency>
         <dependency>edu.tigers.sumatra.persistence.RecordManager</dependency>
@@ -50,7 +54,6 @@
 
         <properties>
             <source>CI</source>
-            <port>11009</port>
             <gameController>true</gameController>
         </properties>
     </module>

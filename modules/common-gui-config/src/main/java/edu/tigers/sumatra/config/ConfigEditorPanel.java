@@ -1,23 +1,17 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2015, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: Oct 26, 2015
- * Author(s): Nicolai Ommer <nicolai.ommer@gmail.com>
- * *********************************************************
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
+
 package edu.tigers.sumatra.config;
 
 import edu.tigers.sumatra.views.ISumatraView;
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 
-import javax.swing.JMenu;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
 import java.awt.Component;
-import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -27,28 +21,29 @@ import java.util.TreeMap;
  */
 public class ConfigEditorPanel extends JPanel implements ISumatraView
 {
-	private static final long							serialVersionUID	= -7007103316635397718L;
-																						
-	private final JTabbedPane							tabpane;
-	private final SortedMap<String, EditorView>	tabs					= new TreeMap<String, EditorView>();
-																						
-																						
+	private static final long serialVersionUID = -7007103316635397718L;
+
+	private final JTabbedPane tabpane;
+	private final SortedMap<String, EditorView> tabs = new TreeMap<>();
+
+
 	/**
+	 *
 	 */
 	public ConfigEditorPanel()
 	{
 		setLayout(new MigLayout("fill, wrap 1, inset 0"));
-		
+
 		tabpane = new JTabbedPane(SwingConstants.TOP, JTabbedPane.WRAP_TAB_LAYOUT);
-		tabpane.addChangeListener(e-> {
+		tabpane.addChangeListener(e -> {
 			Component c = tabpane.getComponentAt(tabpane.getSelectedIndex());
 			EditorView ev = (EditorView) c;
 			ev.initialReload();
 		});
 		add(tabpane, "grow");
 	}
-	
-	
+
+
 	/**
 	 * @param client
 	 * @param observer
@@ -62,10 +57,10 @@ public class ConfigEditorPanel extends JPanel implements ISumatraView
 		final EditorView newView = new EditorView(client, client, new HierarchicalConfiguration(),
 				true);
 		newView.addObserver(observer);
-		
+
 		String configKey = newView.getConfigKey();
 		tabs.put(configKey, newView);
-		
+
 		int index = 0;
 		for (String key : tabs.keySet())
 		{
@@ -76,12 +71,12 @@ public class ConfigEditorPanel extends JPanel implements ISumatraView
 			index++;
 		}
 		tabpane.insertTab(client, null, newView, null, index);
-		
+
 		revalidate();
 		this.repaint();
 	}
-	
-	
+
+
 	/**
 	 * @param name
 	 * @param config
@@ -90,40 +85,5 @@ public class ConfigEditorPanel extends JPanel implements ISumatraView
 	{
 		final EditorView view = tabs.get(name);
 		view.updateModel(config, true);
-	}
-	
-	
-	@Override
-	public void onShown()
-	{
-	
-	}
-	
-	
-	@Override
-	public void onHidden()
-	{
-	
-	}
-	
-	
-	@Override
-	public void onFocused()
-	{
-	
-	}
-	
-	
-	@Override
-	public void onFocusLost()
-	{
-	
-	}
-	
-	
-	@Override
-	public List<JMenu> getCustomMenus()
-	{
-		return null;
 	}
 }

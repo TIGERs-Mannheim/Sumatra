@@ -1,6 +1,14 @@
+/*
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.statistics;
 
-import static org.apache.commons.lang.builder.ToStringStyle.SHORT_PREFIX_STYLE;
+import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.influxdb.dto.Point;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -11,38 +19,35 @@ import java.util.Date;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang.RandomStringUtils;
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.log4j.Logger;
-import org.influxdb.dto.Point;
+import static org.apache.commons.lang.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 
 /**
  * Write time series data to a file in InfluxDB line protocol.
  * <p/>
  * The complete file can be uploaded to an InfluxDB with:
- * 
+ *
  * <pre>
- * curl -u tigers -i -XPOST 'https://influxdb.tigers-mannheim.de/write?db=matchStats' --data-binary @target/matchStats/2019-03-24_18-59-53_sreuO.matchStats
+ * curl -u tigers -i -XPOST 'https://influxdb.tigers-mannheim.de/write?db=matchStats' --data-binary @build/matchStats/2019-03-24_18-59-53_sreuO.matchStats
  * </pre>
  */
 public class TimeSeriesFileWriter implements ITimeSeriesWriter
 {
-	private static final Logger log = Logger.getLogger(TimeSeriesFileWriter.class.getName());
-	private static final String BASE_DIR = "target/matchStats/";
+	private static final Logger log = LogManager.getLogger(TimeSeriesFileWriter.class.getName());
+	private static final String BASE_DIR = "build/matchStats/";
 	private Path filePath;
 	private FileWriter fileWriter;
 	private boolean firstEntry;
-	
-	
+
+
 	@Override
 	public void start()
 	{
 		filePath = newStatsFile();
 		firstEntry = true;
 	}
-	
-	
+
+
 	@Override
 	public void stop()
 	{
@@ -59,8 +64,8 @@ public class TimeSeriesFileWriter implements ITimeSeriesWriter
 			fileWriter = null;
 		}
 	}
-	
-	
+
+
 	@Override
 	public void add(TimeSeriesStatsEntry entry)
 	{
@@ -69,18 +74,18 @@ public class TimeSeriesFileWriter implements ITimeSeriesWriter
 			firstEntry = false;
 			fileWriter = createFileWriter();
 		}
-		
+
 		if (fileWriter == null)
 		{
 			return;
 		}
-		
+
 		final Point point = Point.measurement(entry.getMeasurement())
 				.time(entry.getTimestamp(), TimeUnit.NANOSECONDS)
 				.tag(entry.getTagSet())
 				.fields(entry.getFieldSet())
 				.build();
-		
+
 		try
 		{
 			fileWriter.write(point.lineProtocol() + "\n");
@@ -89,8 +94,8 @@ public class TimeSeriesFileWriter implements ITimeSeriesWriter
 			log.warn("Could not write matchStats", e);
 		}
 	}
-	
-	
+
+
 	private FileWriter createFileWriter()
 	{
 		try
@@ -102,8 +107,8 @@ public class TimeSeriesFileWriter implements ITimeSeriesWriter
 		}
 		return null;
 	}
-	
-	
+
+
 	private void setupBaseDir()
 	{
 		boolean baseDirCreated = new File(BASE_DIR).mkdirs();
@@ -112,8 +117,8 @@ public class TimeSeriesFileWriter implements ITimeSeriesWriter
 			log.debug("Match stats base dir created");
 		}
 	}
-	
-	
+
+
 	private Path newStatsFile()
 	{
 		setupBaseDir();
@@ -123,8 +128,8 @@ public class TimeSeriesFileWriter implements ITimeSeriesWriter
 		String statsFileName = sdf.format(new Date()) + "_" + randomPart + ".matchStats";
 		return new File(BASE_DIR + statsFileName).toPath();
 	}
-	
-	
+
+
 	@Override
 	public String toString()
 	{

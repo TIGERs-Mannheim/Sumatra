@@ -1,57 +1,92 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
-import edu.tigers.sumatra.ai.BaseAiFrame;
-import edu.tigers.sumatra.ai.metis.TacticalField;
+import com.github.g3force.configurable.Configurable;
+import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
-import edu.tigers.sumatra.ai.metis.offense.action.KickTarget;
-import edu.tigers.sumatra.geometry.Geometry;
+import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
+import edu.tigers.sumatra.ai.metis.offense.dribble.BallDribbleToPosGenerator;
+import edu.tigers.sumatra.ai.metis.offense.dribble.DribblingInformation;
+import edu.tigers.sumatra.ai.metis.pass.KickOrigin;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.wp.data.DynamicPosition;
+import lombok.RequiredArgsConstructor;
+
+import java.util.Map;
+import java.util.function.Supplier;
 
 
 /**
  * Protect The ball
  */
+@RequiredArgsConstructor
 public class ProtectActionMove extends AOffensiveActionMove
 {
-	private static final double MIN_PROTECT_SCORE = 0.01;
+	@Configurable(defValue = "0.21")
+	private static double minProtectScore = 0.21;
 
-	public ProtectActionMove()
+	@Configurable(defValue = "0.05")
+	private static double antiToggleBonus = 0.05;
+
+	private BallDribbleToPosGenerator dribbleGenerator = new BallDribbleToPosGenerator();
+
+	private final Supplier<Map<BotID, KickOrigin>> kickOrigins;
+
+	private final Supplier<DribblingInformation> dribblingInformation;
+
+
+	private OffensiveActionViability calcViability(BotID botId)
 	{
-		super(EOffensiveActionMove.PROTECT_MOVE);
-	}
-	
-	
-	@Override
-	public EActionViability isActionViable(final BotID id, final TacticalField newTacticalField,
-			final BaseAiFrame baseAiFrame)
-	{
-		return EActionViability.PARTIALLY;
-	}
-	
-	
-	@Override
-	public OffensiveAction activateAction(final BotID id, final TacticalField newTacticalField,
-			final BaseAiFrame baseAiFrame)
-	{
-		IVector2 protectTarget = Geometry.getGoalTheir().getCenter();
-		if (newTacticalField.getEnemyClosestToBall().getBot() != null)
+		var kickOrigin = kickOrigins.get().get(botId);
+		if (!getAiFrame().getGameState().isRunning() || kickOrigin != null && Double.isFinite(kickOrigin.getImpactTime()))
 		{
-			protectTarget = newTacticalField.getEnemyClosestToBall().getBot().getPos();
+			return new OffensiveActionViability(EActionViability.FALSE, 0.0);
 		}
-		KickTarget target = KickTarget.pass(new DynamicPosition(protectTarget), 2.0, KickTarget.ChipPolicy.NO_CHIP);
-		return createProtectOffensiveAction(target);
+		// only if running
+		// only if the impact time is infinite (ball does not need to be received)
+		return new OffensiveActionViability(EActionViability.PARTIALLY, calcViabilityScore(botId));
 	}
-	
-	
+
+
 	@Override
-	public double calcViabilityScore(final BotID id, final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+	public OffensiveAction calcAction(BotID botId)
 	{
-		return MIN_PROTECT_SCORE;
+		var pos = dribbleGenerator
+				.getDribbleToPos(getWFrame(),
+						getAiFrame().getPrevFrame().getTacticalField().getOpponentClosestToBall().getBotId(),
+						getWFrame().getBot(botId), dribblingInformation.get(),
+						getAiFrame().getShapes(EAiShapesLayer.OFFENSIVE_DRIBBLE));
+		return OffensiveAction.builder()
+				.move(EOffensiveActionMove.PROTECT_MOVE)
+				.dribbleToPos(pos)
+				.action(EOffensiveAction.PROTECT)
+				.viability(calcViability(botId))
+				.build();
+	}
+
+
+	private double calcViabilityScore(BotID botId)
+	{
+		return applyMultiplier(minProtectScore + getAntiToggleValue(botId));
+	}
+
+
+	private double getAntiToggleValue(BotID botId)
+	{
+		double antiToggleValue = 0;
+		var offensiveActions = getAiFrame().getPrevFrame().getTacticalField().getOffensiveActions();
+		if (offensiveActions.containsKey(botId))
+		{
+			var action = offensiveActions.get(botId);
+			if (action.getAction() == EOffensiveAction.PROTECT)
+			{
+				antiToggleValue = antiToggleBonus;
+			}
+		}
+		return antiToggleValue;
 	}
 }

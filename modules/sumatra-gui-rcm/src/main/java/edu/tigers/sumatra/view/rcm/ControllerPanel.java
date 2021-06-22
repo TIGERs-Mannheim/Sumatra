@@ -1,8 +1,30 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view.rcm;
 
+import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.presenter.rcm.IRCMConfigChangedObserver;
+import edu.tigers.sumatra.rcm.ERcmEvent;
+import edu.tigers.sumatra.rcm.ExtIdentifier;
+import edu.tigers.sumatra.rcm.ExtIdentifierParams;
+import edu.tigers.sumatra.rcm.RcmAction;
+import edu.tigers.sumatra.rcm.RcmAction.EActionType;
+import edu.tigers.sumatra.rcm.RcmActionMap;
+import edu.tigers.sumatra.rcm.RcmActionMapping;
+import lombok.extern.log4j.Log4j2;
+
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingUtilities;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
@@ -14,61 +36,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JFileChooser;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingUtilities;
-
-import org.apache.log4j.Logger;
-
-import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.presenter.rcm.IRCMConfigChangedObserver;
-import edu.tigers.sumatra.rcm.ERcmEvent;
-import edu.tigers.sumatra.rcm.ExtIdentifier;
-import edu.tigers.sumatra.rcm.ExtIdentifierParams;
-import edu.tigers.sumatra.rcm.RcmAction;
-import edu.tigers.sumatra.rcm.RcmAction.EActionType;
-import edu.tigers.sumatra.rcm.RcmActionMap;
-import edu.tigers.sumatra.rcm.RcmActionMapping;
-
 
 /**
- * - Main panel of the module
- * 
- * @author Sven Frank
+ * Main panel of the module
  */
+@Log4j2
 public class ControllerPanel extends JPanel
 {
-	
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
 	private static final String NO_BOT_SELECTED = "no bot selected";
-	private static final long serialVersionUID = -4425620303404436160L;
-	private static final Logger log = Logger
-			.getLogger(ControllerPanel.class
-					.getName());
-	
-	/** */
+
 	private final JLabel lblSelectedBot = new JLabel(NO_BOT_SELECTED);
 	private final JLabel lblSelectedConfig = new JLabel();
 	private final JPanel mappingPanel = new JPanel();
 	private final ControllerConfigPanel configPanel = new ControllerConfigPanel();
-	
+	private final JCheckBox chkEnabled = new JCheckBox("enabled", true);
+
 	private final List<IRCMConfigChangedObserver> observers = new CopyOnWriteArrayList<>();
-	
-	
-	// --------------------------------------------------------------------------
-	// --- constructors ---------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 */
+
+
 	public ControllerPanel()
 	{
 		setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
@@ -92,38 +77,36 @@ public class ControllerPanel extends JPanel
 		JButton btnAssistant = new JButton("Assistant");
 		btnAssistant.addActionListener(new AssistantActionListener());
 		buttonPanel.add(btnAssistant);
-		
+
 		add(buttonPanel);
-		
+
+		chkEnabled.addActionListener(new EnableActionListener());
+
 		JPanel botIdPanel = new JPanel(new FlowLayout());
 		JLabel botNumberLabel = new JLabel("BotID: ");
 		botIdPanel.add(botNumberLabel);
 		botIdPanel.add(lblSelectedBot);
 		lblSelectedBot.addMouseListener(new BotSelectedListener());
-		
+
 		JLabel lblConfig = new JLabel("  Config: ");
 		botIdPanel.add(lblConfig);
 		botIdPanel.add(lblSelectedConfig);
-		
+
+		add(chkEnabled);
 		add(botIdPanel);
 		add(configPanel);
-		
+
 		mappingPanel.setLayout(new BoxLayout(mappingPanel, BoxLayout.PAGE_AXIS));
 		JScrollPane scrollPane = new JScrollPane(mappingPanel);
 		scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 		scrollPane.setPreferredSize(new Dimension(1000, 2000));
 		add(scrollPane);
-		
+
 		add(Box.createGlue());
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -131,40 +114,26 @@ public class ControllerPanel extends JPanel
 	{
 		observers.add(observer);
 	}
-	
-	
-	/**
-	 * @param observer
-	 */
-	public void removeObserver(final IRCMConfigChangedObserver observer)
-	{
-		observers.remove(observer);
-	}
-	
-	
+
+
 	/**
 	 * @param conf
 	 */
 	public void reloadConfig(final RcmActionMap conf)
 	{
-		SwingUtilities.invokeLater(new Runnable()
-		{
-			@Override
-			public void run()
+		SwingUtilities.invokeLater(() -> {
+			lblSelectedConfig.setText(conf.getConfigName());
+			mappingPanel.removeAll();
+			for (RcmActionMapping mapping : conf.getActionMappings())
 			{
-				lblSelectedConfig.setText(conf.getConfigName());
-				mappingPanel.removeAll();
-				for (RcmActionMapping mapping : conf.getActionMappings())
-				{
-					addMapping(mapping);
-				}
-				configPanel.updateConfig(conf);
-				revalidate();
+				addMapping(mapping);
 			}
+			configPanel.updateConfig(conf);
+			revalidate();
 		});
 	}
-	
-	
+
+
 	private void addMapping(final RcmActionMapping mapping)
 	{
 		JPanel wrapPanel = new JPanel();
@@ -176,8 +145,8 @@ public class ControllerPanel extends JPanel
 		wrapPanel.add(cmPanel);
 		mappingPanel.add(wrapPanel);
 	}
-	
-	
+
+
 	private String createBotString(final BotID botId)
 	{
 		if (!botId.isBot())
@@ -186,8 +155,8 @@ public class ControllerPanel extends JPanel
 		}
 		return botId.getNumber() + " - " + botId.getTeamColor();
 	}
-	
-	
+
+
 	/**
 	 * @param botId
 	 */
@@ -195,49 +164,49 @@ public class ControllerPanel extends JPanel
 	{
 		lblSelectedBot.setText(createBotString(botId));
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- getter/setter --------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
+
+
+	private class EnableActionListener implements ActionListener
+	{
+		@Override
+		public void actionPerformed(final ActionEvent e)
+		{
+			observers.forEach(o -> o.onEnabled(chkEnabled.isSelected()));
+		}
+	}
+
 	private class SaveConfigActionListener implements ActionListener
 	{
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
-				for (IRCMConfigChangedObserver observer : observers)
-				{
-					observer.onSaveConfig();
-				}
+			for (IRCMConfigChangedObserver observer : observers)
+			{
+				observer.onSaveConfig();
+			}
 		}
 	}
-	
+
 	private class SaveConfigAsActionListener implements ActionListener
 	{
 		private final JFileChooser fc = new JFileChooser();
 		private final ConfFileFilter confFilter = new ConfFileFilter();
-		private final File dir = new File("config/rcm");
-		
-		
-		/**
-		 */
+
+
 		private SaveConfigAsActionListener()
 		{
 			fc.setFileFilter(confFilter);
-			fc.setCurrentDirectory(dir);
+			fc.setCurrentDirectory(new File("config/rcm"));
 		}
-		
-		
+
+
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
-			File file;
 			final int returnVal = fc.showSaveDialog(ControllerPanel.this);
 			if (returnVal == JFileChooser.APPROVE_OPTION)
 			{
-				file = fc.getSelectedFile();
+				File file = fc.getSelectedFile();
 				if (!file.getName().endsWith(confFilter.getFileSuffix()))
 				{
 					file = new File(file.getAbsolutePath() + confFilter.getFileSuffix());
@@ -253,29 +222,26 @@ public class ControllerPanel extends JPanel
 					}
 				}
 				log.info("Saving config to \"" + file.getAbsolutePath() + "\"");
-					for (IRCMConfigChangedObserver observer : observers)
-					{
-						observer.onSaveConfigAs(file);
-					}
+				for (IRCMConfigChangedObserver observer : observers)
+				{
+					observer.onSaveConfigAs(file);
+				}
 			}
 		}
 	}
-	
+
 	private class LoadConfigActionListener implements ActionListener
 	{
 		private final JFileChooser fc = new JFileChooser();
-		private final File dir = new File("config/rcm");
-		
-		
-		/**
-		 */
+
+
 		public LoadConfigActionListener()
 		{
 			fc.setFileFilter(new ConfFileFilter());
-			fc.setCurrentDirectory(dir);
+			fc.setCurrentDirectory(new File("config/rcm"));
 		}
-		
-		
+
+
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
@@ -284,50 +250,50 @@ public class ControllerPanel extends JPanel
 			{
 				final File file = fc.getSelectedFile();
 				log.info("Opening: " + file.getName());
-					for (IRCMConfigChangedObserver observer : observers)
-					{
-						observer.onLoadConfig(file);
-					}
+				for (IRCMConfigChangedObserver observer : observers)
+				{
+					observer.onLoadConfig(file);
+				}
 			}
 		}
 	}
-	
+
 	private class LoadDefaultConfigActionListener implements ActionListener
 	{
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
-				for (IRCMConfigChangedObserver observer : observers)
-				{
-					observer.onLoadDefaultConfig();
-				}
+			for (IRCMConfigChangedObserver observer : observers)
+			{
+				observer.onLoadDefaultConfig();
+			}
 		}
 	}
-	
+
 	private class AddMappingActionListener implements ActionListener
 	{
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
-			RcmActionMapping mapping = new RcmActionMapping(new ArrayList<ExtIdentifier>(), new RcmAction(
+			RcmActionMapping mapping = new RcmActionMapping(new ArrayList<>(), new RcmAction(
 					ERcmEvent.UNASSIGNED, EActionType.EVENT));
 			mapping.getIdentifiers().add(new ExtIdentifier("", ExtIdentifierParams.createDefault()));
 			addMapping(mapping);
 			revalidate();
-			
-				for (IRCMConfigChangedObserver observer : observers)
-				{
-					observer.onActionMappingCreated(mapping);
-				}
+
+			for (IRCMConfigChangedObserver observer : observers)
+			{
+				observer.onActionMappingCreated(mapping);
+			}
 		}
 	}
-	
+
 	private class RemoveMappingActionListener implements ActionListener
 	{
 		private final JPanel panel;
 		private final RcmActionMapping mapping;
-		
-		
+
+
 		/**
 		 * @param mapping
 		 * @param panel
@@ -337,32 +303,32 @@ public class ControllerPanel extends JPanel
 			this.panel = panel;
 			this.mapping = mapping;
 		}
-		
-		
+
+
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
 			mappingPanel.remove(panel);
 			revalidate();
-				for (IRCMConfigChangedObserver observer : observers)
-				{
-					observer.onActionMappingRemoved(mapping);
-				}
+			for (IRCMConfigChangedObserver observer : observers)
+			{
+				observer.onActionMappingRemoved(mapping);
+			}
 		}
 	}
-	
+
 	private class AssistantActionListener implements ActionListener
 	{
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
-				for (IRCMConfigChangedObserver observer : observers)
-				{
-					observer.onSelectionAssistant();
-				}
+			for (IRCMConfigChangedObserver observer : observers)
+			{
+				observer.onSelectionAssistant();
+			}
 		}
 	}
-	
+
 	private class BotSelectedListener implements MouseListener
 	{
 		@Override
@@ -373,33 +339,37 @@ public class ControllerPanel extends JPanel
 				o.onUnassignBot();
 			}
 		}
-		
-		
+
+
 		@Override
 		public void mousePressed(final MouseEvent e)
 		{
+			// ignore
 		}
-		
-		
+
+
 		@Override
 		public void mouseReleased(final MouseEvent e)
 		{
+			// ignore
 		}
-		
-		
+
+
 		@Override
 		public void mouseEntered(final MouseEvent e)
 		{
+			// ignore
 		}
-		
-		
+
+
 		@Override
 		public void mouseExited(final MouseEvent e)
 		{
+			// ignore
 		}
 	}
-	
-	
+
+
 	/**
 	 * @return the configPanel
 	 */

@@ -1,8 +1,17 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.rcm;
+
+import net.java.games.input.Component;
+import net.java.games.input.Controller;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,75 +25,43 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
-import org.json.simple.JSONObject;
-import org.json.simple.JSONValue;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-
-import net.java.games.input.Component;
-import net.java.games.input.Controller;
-
 
 /**
  * Store action mapping for controller
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
 public class RcmActionMap
 {
-	// --------------------------------------------------------------------------
-	// --- variables and constants ----------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	private static final Logger log = Logger
-			.getLogger(RcmActionMap.class.getName());
+	private static final Logger log = LogManager.getLogger(RcmActionMap.class.getName());
 	private static final String CONFIG_DIR = "config/rcm/";
 	private static final String CONFIG_ENDING = ".rcc";
 	private static final String ENCODING = "UTF-8";
-	
+
 	private final List<RcmActionMapping> actionMappings = new ArrayList<>();
 	private final Controller controller;
 	private final Map<ERcmControllerConfig, Double> configValues = new EnumMap<>(ERcmControllerConfig.class);
 	private String configName = "default";
-	
-	
-	/**
-	 * @param controller
-	 */
+	private boolean enabled = true;
+
+
 	public RcmActionMap(final Controller controller)
 	{
 		this.controller = controller;
 		configValues.put(ERcmControllerConfig.DEADZONE, 0.0);
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	
-	/**
-	 * @param mapping
-	 */
+
+
 	public void addMapping(final RcmActionMapping mapping)
 	{
 		actionMappings.add(mapping);
 	}
-	
-	
-	/**
-	 * @param mapping
-	 */
+
+
 	public void removeMapping(final RcmActionMapping mapping)
 	{
 		actionMappings.remove(mapping);
 	}
-	
-	
-	/**
-	 * @param file
-	 */
+
+
 	public void save(final File file)
 	{
 		Map<String, Object> jsonMap = new LinkedHashMap<>();
@@ -98,7 +75,7 @@ public class RcmActionMap
 			jsonMap.put(entry.getKey().name(), entry.getValue());
 		}
 		jsonMap.put("mapping", jsonArray);
-		
+
 		String json = JSONValue.toJSONString(jsonMap);
 		try
 		{
@@ -108,12 +85,8 @@ public class RcmActionMap
 			log.error("Could not save config.", err);
 		}
 	}
-	
-	
-	/**
-	 * @param file
-	 * @return
-	 */
+
+
 	@SuppressWarnings("unchecked")
 	public void load(final File file)
 	{
@@ -124,7 +97,7 @@ public class RcmActionMap
 			json = new String(Files.readAllBytes(file.toPath()), ENCODING);
 			Object obj = parser.parse(json);
 			Map<String, Object> jsonMap = (Map<String, Object>) obj;
-			
+
 			List<JSONObject> jsonArray = (List<JSONObject>) jsonMap.get("mapping");
 			actionMappings.clear();
 			for (JSONObject jsonObj : jsonArray)
@@ -132,12 +105,9 @@ public class RcmActionMap
 				RcmActionMapping mapping = RcmActionMapping.fromJSON(jsonObj);
 				actionMappings.add(mapping);
 			}
-			for (Map.Entry<ERcmControllerConfig, Double> entry : configValues.entrySet())
-			{
-				configValues.put(entry.getKey(), (Double) jsonMap.get(entry.getKey().name()));
-			}
+			configValues.replaceAll((k, v) -> (Double) jsonMap.get(k.name()));
 			configName = file.getName();
-			log.info("Loaded " + file.getName());
+			log.info("Loaded {}", file.getName());
 		} catch (IOException err)
 		{
 			log.error("Could not load config from " + file, err);
@@ -149,15 +119,15 @@ public class RcmActionMap
 			log.error("Error loading config", err);
 		}
 	}
-	
-	
+
+
 	private File getDefaultFile(final Controller controller)
 	{
 		String ctrlName = controller.getName().replaceAll("[ /\\\\]", "_");
 		return Paths.get(CONFIG_DIR, ctrlName + CONFIG_ENDING).toFile();
 	}
-	
-	
+
+
 	/**
 	 * @param controller
 	 */
@@ -169,8 +139,8 @@ public class RcmActionMap
 			load(file);
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param controller
 	 */
@@ -179,8 +149,8 @@ public class RcmActionMap
 		File file = getDefaultFile(controller);
 		save(file);
 	}
-	
-	
+
+
 	/**
 	 * Create all used components and adapt them if necessary
 	 *
@@ -195,8 +165,8 @@ public class RcmActionMap
 		}
 		return comps;
 	}
-	
-	
+
+
 	private void populateComponent(final List<ExtComponent> comps, final RcmActionMapping mapping)
 	{
 		ExtComponent component = null;
@@ -205,7 +175,7 @@ public class RcmActionMap
 			for (Component comp : controller.getComponents())
 			{
 				ExtComponent newComp = getNewComponent(mapping, extId, comp);
-				
+
 				if (newComp != null)
 				{
 					processDependency(comps, component, newComp);
@@ -215,8 +185,8 @@ public class RcmActionMap
 			}
 		}
 	}
-	
-	
+
+
 	private void processDependency(final List<ExtComponent> comps, final ExtComponent component,
 			final ExtComponent newComp)
 	{
@@ -228,8 +198,8 @@ public class RcmActionMap
 			component.setDependentComp(newComp);
 		}
 	}
-	
-	
+
+
 	private ExtComponent getNewComponent(final RcmActionMapping mapping, final ExtIdentifier extId, final Component comp)
 	{
 		ExtComponent newComp = null;
@@ -251,8 +221,8 @@ public class RcmActionMap
 		}
 		return newComp;
 	}
-	
-	
+
+
 	/**
 	 * @return the configName
 	 */
@@ -260,13 +230,13 @@ public class RcmActionMap
 	{
 		return configName;
 	}
-	
-	
+
+
 	// --------------------------------------------------------------------------
 	// --- getter/setter --------------------------------------------------------
 	// --------------------------------------------------------------------------
-	
-	
+
+
 	/**
 	 * @return the controller
 	 */
@@ -274,8 +244,8 @@ public class RcmActionMap
 	{
 		return controller;
 	}
-	
-	
+
+
 	/**
 	 * @return the actionMappings
 	 */
@@ -283,8 +253,8 @@ public class RcmActionMap
 	{
 		return Collections.unmodifiableList(actionMappings);
 	}
-	
-	
+
+
 	/**
 	 * @return the configValues
 	 */
@@ -292,14 +262,25 @@ public class RcmActionMap
 	{
 		return configValues;
 	}
-	
-	
+
+
+	public void setEnabled(final boolean enabled)
+	{
+		this.enabled = enabled;
+	}
+
+
+	public boolean isEnabled()
+	{
+		return enabled;
+	}
+
+
 	/**
 	 * custom controller configs
 	 */
 	public enum ERcmControllerConfig
 	{
-		/**  */
-		DEADZONE,;
+		DEADZONE,
 	}
 }

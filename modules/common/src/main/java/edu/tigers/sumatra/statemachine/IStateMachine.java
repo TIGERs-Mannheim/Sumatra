@@ -9,78 +9,83 @@
 package edu.tigers.sumatra.statemachine;
 
 
+import java.util.Map;
+
+
 /**
- * Interface for updating a state machine
- * 
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Interface for a state machine
+ *
  * @param <T> like {@link IState}
  */
 public interface IStateMachine<T extends IState>
 {
 	/**
-	 * Perform an update step.
-	 * This processes all events that were enqueued.
+	 * Perform an update step. This will update the current state.
 	 */
 	void update();
-	
-	
+
+
 	/**
-	 * Enqueue an event and let the state machine
-	 * transit to the next state on next update
+	 * Trigger an event. If a state is found for the event, the state machine will change to the new state
+	 * immediately.
 	 *
 	 * @param event to be triggered
 	 */
 	void triggerEvent(IEvent event);
-	
-	
+
+
 	/**
+	 * Set the initial state (can not be called after the state machine has been started.
+	 *
 	 * @param currentState the currentState to set
 	 */
 	void setInitialState(T currentState);
-	
-	
+
+
 	/**
 	 * @return the current state
 	 */
 	T getCurrentState();
-	
-	
+
+
 	/**
 	 * @param currentState the state for which the transition should be triggered, can be null for wildcard
 	 * @param event the event that triggers the transition
 	 * @param state the resulting state
 	 */
 	void addTransition(final IState currentState, final IEvent event, final T state);
-	
-	
+
+
 	/**
-	 * Check the current state for completeness
-	 * 
-	 * @return true, if the state machine is valid
+	 * Immediately change to given state
+	 *
+	 * @param newState
 	 */
-	boolean valid();
-	
-	
-	/**
-	 * Restart the state machine with the initial state
-	 */
-	void restart();
-	
-	
+	void changeState(T newState);
+
+
 	/**
 	 * Stop the state machine. If there is an active state, it will be stopped.
 	 */
 	void stop();
-	
-	
+
+
 	/**
-	 * @param extendedLogging if true, log some more events as warning
+	 * @param extendedLogging if true, log a bit more, like events and state changes.
 	 */
 	void setExtendedLogging(boolean extendedLogging);
-	
-	
+
+
 	/**
-	 * @param queueSize number of events to queue and process after each other per update step
+	 * Set a name to be used in logging.
+	 *
+	 * @param name
 	 */
-	void setQueueSize(int queueSize);
+	void setName(String name);
+
+	/**
+	 *
+	 * @return statemachine graph
+	 */
+	Map<IEvent, Map<IState, T>> getTransitions();
 }

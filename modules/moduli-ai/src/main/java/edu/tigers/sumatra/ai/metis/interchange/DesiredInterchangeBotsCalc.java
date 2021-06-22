@@ -1,18 +1,19 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.interchange;
 
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import edu.tigers.sumatra.ai.BaseAiFrame;
-import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.metis.general.ADesiredBotCalc;
 import edu.tigers.sumatra.ai.metis.general.PlayNumberCalc;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ids.BotID;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 
 /**
@@ -20,18 +21,28 @@ import edu.tigers.sumatra.ids.BotID;
  */
 public class DesiredInterchangeBotsCalc extends ADesiredBotCalc
 {
-	public DesiredInterchangeBotsCalc()
+	private final Supplier<Map<EPlay, Integer>> playNumbers;
+	private final Supplier<List<BotID>> botsToInterchange;
+
+
+	public DesiredInterchangeBotsCalc(
+			Supplier<Map<EPlay, Set<BotID>>> desiredBotMap,
+			Supplier<Map<EPlay, Integer>> playNumbers,
+			Supplier<List<BotID>> botsToInterchange
+	)
 	{
-		super(EPlay.INTERCHANGE);
+		super(desiredBotMap);
+		this.playNumbers = playNumbers;
+		this.botsToInterchange = botsToInterchange;
 	}
-	
-	
+
+
 	@Override
-	public void doCalc(final TacticalField tacticalField, final BaseAiFrame aiFrame)
+	public void doCalc()
 	{
-		int numBotsToInterchange = tacticalField.getPlayNumbers().getOrDefault(EPlay.INTERCHANGE, 0);
-		final Set<BotID> interchangeBots = tacticalField.getBotInterchange().getDesiredInterchangeBots().stream()
+		int numBotsToInterchange = playNumbers.get().getOrDefault(EPlay.INTERCHANGE, 0);
+		final Set<BotID> interchangeBots = botsToInterchange.get().stream()
 				.limit(numBotsToInterchange).collect(Collectors.toSet());
-		addDesiredBots(interchangeBots);
+		addDesiredBots(EPlay.INTERCHANGE, interchangeBots);
 	}
 }

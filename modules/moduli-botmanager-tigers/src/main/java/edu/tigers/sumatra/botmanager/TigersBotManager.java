@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.botmanager;
@@ -9,8 +9,11 @@ import static edu.tigers.sumatra.botmanager.commands.ECommand.CMD_SYSTEM_MATCH_F
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import edu.tigers.sumatra.bot.IBot;
 import edu.tigers.sumatra.botmanager.basestation.ITigersBaseStationObserver;
@@ -21,6 +24,7 @@ import edu.tigers.sumatra.botmanager.bots.TigerBot;
 import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.CommandFactory;
 import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationCameraViewport;
+import edu.tigers.sumatra.botmanager.commands.basestation.BaseStationWifiStats;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand.ConsoleCommandTarget;
 import edu.tigers.sumatra.ids.BotID;
@@ -105,6 +109,12 @@ public class TigersBotManager extends ABotManager implements IVisionFilterObserv
 	}
 
 
+	public void broadcast(ACommand cmd)
+	{
+		getTigerBots().values().forEach(b -> b.execute(cmd));
+	}
+
+
 	private void setAutoCharge(final boolean autoCharge)
 	{
 		this.autoCharge = autoCharge;
@@ -123,6 +133,14 @@ public class TigersBotManager extends ABotManager implements IVisionFilterObserv
 	public Optional<TigerBot> getTigerBot(final BotID botID)
 	{
 		return getBot(botID).map(b -> (TigerBot) b);
+	}
+
+
+	public Map<BotID, TigerBot> getTigerBots()
+	{
+		return getBots().values().stream()
+				.map(b -> (TigerBot) b)
+				.collect(Collectors.toMap(TigerBot::getBotId, Function.identity()));
 	}
 
 
@@ -189,6 +207,16 @@ public class TigersBotManager extends ABotManager implements IVisionFilterObserv
 	{
 		BaseStationCameraViewport cmd = new BaseStationCameraViewport(cameraId, viewport);
 		getBaseStation().enqueueCommand(cmd);
+	}
+
+
+	@Override
+	public void onNewBaseStationWifiStats(final BaseStationWifiStats stats)
+	{
+		for (BaseStationWifiStats.BotStats botStats : stats.getBotStats())
+		{
+			getTigerBot(botStats.getBotId()).ifPresent(bot -> bot.setStats(botStats));
+		}
 	}
 
 

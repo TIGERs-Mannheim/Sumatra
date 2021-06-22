@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botcenter.view.bots;
 
@@ -30,7 +30,8 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -50,7 +51,7 @@ import net.miginfocom.swing.MigLayout;
 public class ConsolePanel extends JPanel
 {
 	private static final long serialVersionUID = 6126587090532483501L;
-	private static final Logger log = Logger.getLogger(ConsolePanel.class.getName());
+	private static final Logger log = LogManager.getLogger(ConsolePanel.class.getName());
 	private final TextPane textPane = new TextPane(1100);
 	private final JTextField cmdInput = new JTextField();
 	private final JRadioButton targetMedia = new JRadioButton("Media");

@@ -108,7 +108,7 @@ public class TigerBotSummaryPanel extends JPanel
 	public void setMatchFeedback(final TigerSystemMatchFeedback feedback)
 	{
 		battery.setValue((int) (feedback.getBatteryPercentage() * 1000));
-		battery.setString(String.format(Locale.ENGLISH, "%1.2f V", feedback.getBatteryLevel()));
+		battery.setString(String.format(Locale.ENGLISH, "%4.1f V", feedback.getBatteryLevel()));
 
 		if (robotMode != feedback.getRobotMode())
 		{
@@ -198,7 +198,7 @@ public class TigerBotSummaryPanel extends JPanel
 		final double g = green;
 		final double r = red;
 
-		cap.setText(String.format(Locale.ENGLISH, "%3.1fV", f));
+		cap.setText(String.format(Locale.ENGLISH, "%dV", (int)f));
 		cap.setBackground(new Color((float) r, (float) g, 0));
 	}
 

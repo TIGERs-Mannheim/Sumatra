@@ -1,10 +1,8 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.data;
-
-import java.util.Optional;
 
 import edu.tigers.sumatra.bot.MoveConstraints;
 import edu.tigers.sumatra.bot.RobotInfo;
@@ -13,7 +11,12 @@ import edu.tigers.sumatra.data.collector.IExportable;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.botshape.IBotShape;
+import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.IVector3;
+import edu.tigers.sumatra.trajectory.ITrajectory;
+
+import java.util.Optional;
 
 
 /**
@@ -60,9 +63,9 @@ public interface ITrackedBot extends ITrackedObject, IExportable
 
 
 	/**
-	 * @return the last time when ball contact was reported
+	 * @return the ball contact information
 	 */
-	long getLastBallContact();
+	BallContact getBallContact();
 
 
 	/**
@@ -84,6 +87,15 @@ public interface ITrackedBot extends ITrackedObject, IExportable
 	 * @return
 	 */
 	IVector2 getBotKickerPos();
+
+
+	/**
+	 * Calculates the position of the dribbler/kicker of the given bot plus some margin like the ball radius.
+	 *
+	 * @param margin added to the center2Dribbler distance
+	 * @return
+	 */
+	IVector2 getBotKickerPos(double margin);
 
 
 	/**
@@ -130,9 +142,21 @@ public interface ITrackedBot extends ITrackedObject, IExportable
 
 
 	/**
-	 * @return the current robot state
+	 * @return the pose of the destination based on the current trajectory, if available
+	 */
+	Optional<Pose> getDestinationPose();
+
+
+	/**
+	 * @return the current robot state (internal, filtered or buffered)
 	 */
 	State getBotState();
+
+
+	/**
+	 * @return the current robot state (internal or filtered)
+	 */
+	DelayedBotState getCurrentState();
 
 
 	/**
@@ -140,9 +164,8 @@ public interface ITrackedBot extends ITrackedObject, IExportable
 	 */
 	Optional<State> getFilteredState();
 
-
 	/**
-	 * @return the buffered state of the current trajectory, synchronized with the filtered state
+	 * @return the current trajectory, if present
 	 */
-	Optional<State> getBufferedTrajState();
+	Optional<ITrajectory<IVector3>> getCurrentTrajectory();
 }

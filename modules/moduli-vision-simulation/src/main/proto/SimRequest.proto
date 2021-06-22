@@ -16,6 +16,9 @@ message SimRequest {
 
 message SimKickEvent {
     Vector2 pos = 1;
-    BotId kickingbot = 2;
+    BotId kickingBot = 2;
     int64 timestamp = 3;
+    Vector2 kickingBotPosition = 4;
+    double botDirection = 5;
+    SimBallState kickBallState = 6;
 }

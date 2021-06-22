@@ -1,15 +1,29 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.statistics;
 
+import edu.tigers.sumatra.ai.metis.ACalculator;
+import edu.tigers.sumatra.ai.metis.ballpossession.BallPossession;
+import edu.tigers.sumatra.ai.metis.botdistance.BotDistance;
+import edu.tigers.sumatra.ai.metis.goal.EPossibleGoal;
+import edu.tigers.sumatra.ai.metis.statistics.stats.AStatsCalc;
+import edu.tigers.sumatra.ai.metis.statistics.stats.BallPossessionStatsCalc;
+import edu.tigers.sumatra.ai.metis.statistics.stats.DefenseCoverageStatsCalc;
+import edu.tigers.sumatra.ai.metis.statistics.stats.DirectShotsStatsCalc;
+import edu.tigers.sumatra.ai.metis.statistics.stats.DuelStatsCalc;
+import edu.tigers.sumatra.ai.metis.statistics.stats.GoalStatsCalc;
+import edu.tigers.sumatra.ai.metis.statistics.stats.MatchStats;
+import edu.tigers.sumatra.ai.metis.statistics.stats.RoleTimeStatsCalc;
+import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.vision.data.IKickEvent;
+import lombok.Getter;
+
 import java.util.ArrayList;
 import java.util.Collection;
-
-import edu.tigers.sumatra.ai.BaseAiFrame;
-import edu.tigers.sumatra.ai.metis.ACalculator;
-import edu.tigers.sumatra.ai.metis.TacticalField;
+import java.util.Set;
+import java.util.function.Supplier;
 
 
 /**
@@ -17,47 +31,67 @@ import edu.tigers.sumatra.ai.metis.TacticalField;
  */
 public class MatchStatisticsCalc extends ACalculator
 {
-	private Collection<AStatsCalc> statisticsSubscriber = new ArrayList<>();
-	
-	
-	public MatchStatisticsCalc()
+	@Getter
+	private MatchStats matchStatistics;
+
+
+	private final Collection<AStatsCalc> statisticsSubscriber = new ArrayList<>();
+
+
+	public MatchStatisticsCalc(
+			Supplier<BallPossession> ballPossession,
+			Supplier<Set<BotID>> botsLastTouchedBall,
+			Supplier<EPossibleGoal> possibleGoal,
+			Supplier<IKickEvent> detectedGoalKickTigers,
+			Supplier<BotDistance> opponentClosestToBall)
 	{
-		statisticsSubscriber.add(new BallPossessionStatsCalc());
-		statisticsSubscriber.add(new GoalStatsCalc());
-		statisticsSubscriber.add(new PassAccuracyStatsCalc());
+		statisticsSubscriber.add(new BallPossessionStatsCalc(
+				ballPossession
+		));
+		statisticsSubscriber.add(new GoalStatsCalc(
+				botsLastTouchedBall,
+				possibleGoal
+		));
 		statisticsSubscriber.add(new RoleTimeStatsCalc());
-		statisticsSubscriber.add(new DuelStatsCalc());
-		statisticsSubscriber.add(new DirectShotsStatsCalc());
-		statisticsSubscriber.add(new DefenseCoverageStatsCalc());
+		statisticsSubscriber.add(new DuelStatsCalc(
+				ballPossession
+		));
+		statisticsSubscriber.add(new DirectShotsStatsCalc(
+				detectedGoalKickTigers,
+				possibleGoal
+		));
+		statisticsSubscriber.add(new DefenseCoverageStatsCalc(
+				opponentClosestToBall
+		));
 	}
-	
-	
+
+
 	@Override
-	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+	public void doCalc()
 	{
-		if (baseAiFrame.getWorldFrame().getBots().isEmpty() || !baseAiFrame.getGamestate().isGameRunning())
+		if (getWFrame().getBots().isEmpty() || !getAiFrame().getGameState().isGameRunning())
 		{
 			createMatchStatistics();
 			return;
 		}
-		
+
 		updateStatistics();
 		createMatchStatistics();
 	}
-	
-	
+
+
 	private void updateStatistics()
 	{
 		for (AStatsCalc statisticToUpdate : statisticsSubscriber)
 		{
-			statisticToUpdate.onStatisticUpdate(getNewTacticalField(), getAiFrame());
+			statisticToUpdate.onStatisticUpdate(getAiFrame());
 		}
 	}
-	
-	
+
+
 	private void createMatchStatistics()
 	{
-		MatchStats matchStatistics = getNewTacticalField().getMatchStatistics();
+		matchStatistics = new MatchStats();
 		for (AStatsCalc statisticsToReceiveDataFrom : statisticsSubscriber)
 		{
 			statisticsToReceiveDataFrom.saveStatsToMatchStatistics(matchStatistics);

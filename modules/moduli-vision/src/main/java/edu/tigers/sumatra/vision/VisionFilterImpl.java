@@ -1,29 +1,18 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.vision;
 
-import java.awt.Color;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
-
-import org.apache.log4j.Logger;
-
+import com.github.g3force.configurable.ConfigRegistration;
+import com.github.g3force.configurable.Configurable;
 import edu.tigers.sumatra.cam.data.CamCalibration;
 import edu.tigers.sumatra.cam.data.CamDetectionFrame;
 import edu.tigers.sumatra.cam.data.CamGeometry;
-import edu.tigers.sumatra.clock.ThreadUtil;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.drawable.ShapeMap;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.rectangle.IRectangle;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -31,31 +20,51 @@ import edu.tigers.sumatra.math.vector.IVector3;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.thread.NamedThreadFactory;
+import edu.tigers.sumatra.util.Safe;
 import edu.tigers.sumatra.vision.BallFilter.BallFilterOutput;
 import edu.tigers.sumatra.vision.BallFilterPreprocessor.BallFilterPreprocessorOutput;
 import edu.tigers.sumatra.vision.ViewportArchitect.IViewportArchitect;
-import edu.tigers.sumatra.vision.data.EBallState;
 import edu.tigers.sumatra.vision.data.EVisionFilterShapesLayer;
 import edu.tigers.sumatra.vision.data.FilteredVisionBall;
 import edu.tigers.sumatra.vision.data.FilteredVisionBot;
 import edu.tigers.sumatra.vision.data.FilteredVisionFrame;
 import edu.tigers.sumatra.vision.data.IBallModelIdentificationObserver;
-import edu.tigers.sumatra.vision.data.KickEvent;
 import edu.tigers.sumatra.vision.kick.estimators.IBallModelIdentResult;
 import edu.tigers.sumatra.vision.tracker.BallTracker;
 import edu.tigers.sumatra.vision.tracker.RobotTracker;
+import lombok.extern.log4j.Log4j2;
+
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 
 /**
- * @author AndreR
+ * Vision filter implementation.
  */
+@Log4j2
 public class VisionFilterImpl extends AVisionFilter
-		implements Runnable, IViewportArchitect, IBallModelIdentificationObserver
+		implements IViewportArchitect, IBallModelIdentificationObserver
 {
-	@SuppressWarnings("unused")
-	private static final Logger log = Logger.getLogger(VisionFilterImpl.class.getName());
+	private static final int CAM_FRAME_BUFFER_SIZE = 10;
 
-	private static final long CLOCK_DT = 10_000_000;
+	@Configurable(defValue = "0.0125", comment = "Publish frequency (requires restart)")
+	private static double publishDt = 0.0125;
+
+	static
+	{
+		ConfigRegistration.registerClass("vision", VisionFilterImpl.class);
+	}
 
 	private final BallFilterPreprocessor ballFilterPreprocessor = new BallFilterPreprocessor();
 	private final BallFilter ballFilter = new BallFilter();
@@ -64,48 +73,32 @@ public class VisionFilterImpl extends AVisionFilter
 	private final RobotQualityInspector robotQualityInspector = new RobotQualityInspector();
 
 	private Map<Integer, CamFilter> cams = new ConcurrentHashMap<>();
-	private FilteredVisionFrame lastFilteredFrame;
-	private KickEvent lastKickEvent;
-	private BallFilterOutput lastBallFilterOutput;
+	private FilteredVisionFrame lastFrame = FilteredVisionFrame.createEmptyFrame();
+	private BallFilterOutput lastBallFilterOutput = new BallFilterOutput(
+			lastFrame.getBall(),
+			null,
+			lastFrame.getBall().getPos(),
+			new BallFilterPreprocessorOutput(null, null, null)
+	);
 
-	private ExecutorService filterExecutor = null;
-	private Thread publisherThread = null;
+	private ScheduledExecutorService scheduledExecutorService;
+	private final BlockingDeque<CamDetectionFrame> camDetectionFrameQueue = new LinkedBlockingDeque<>(
+			CAM_FRAME_BUFFER_SIZE);
 
 
-	/**
-	 * Create new instance
-	 */
-	public VisionFilterImpl()
+	private void publish()
 	{
-		lastFilteredFrame = FilteredVisionFrame.Builder.createEmptyFrame();
-		lastBallFilterOutput = new BallFilterOutput(lastFilteredFrame.getBall(), lastFilteredFrame.getBall().getPos(),
-				EBallState.ROLLING, new BallFilterPreprocessorOutput(null, null, null));
-	}
-
-
-	@Override
-	public void run()
-	{
-		long nextRuntime = System.nanoTime() + CLOCK_DT;
-
-		while (!Thread.interrupted())
+		try
 		{
-			try
-			{
-				publishFilteredVisionFrame(extrapolateFilteredFrame(lastFilteredFrame, nextRuntime));
-			} catch (Throwable e)
-			{
-				log.error("Exception in VisionFilter.", e);
-			}
-
-			long sleep = nextRuntime - System.nanoTime();
-			if (sleep > 0)
-			{
-				assert sleep < (long) 1e9;
-				ThreadUtil.parkNanosSafe(sleep);
-			}
-
-			nextRuntime += CLOCK_DT;
+			lastFrame = constructFilteredVisionFrame(lastFrame);
+			var extrapolatedFrame = extrapolateFilteredFrame(lastFrame, lastFrame.getTimestamp());
+			publishFilteredVisionFrame(extrapolatedFrame);
+		} catch (Exception e)
+		{
+			log.warn("Uncaught exception while publishing vision filter frames", e);
+		} catch (Throwable e)
+		{
+			log.error("Uncaught throwable while publishing vision filter frames", e);
 		}
 	}
 
@@ -124,13 +117,12 @@ public class VisionFilterImpl extends AVisionFilter
 				.collect(Collectors.toList());
 
 		// construct extrapolated vision frame
-		return FilteredVisionFrame.Builder.create()
+		return FilteredVisionFrame.builder()
 				.withId(frame.getId())
 				.withTimestamp(timestampFuture)
 				.withBall(frame.getBall().extrapolate(timestampNow, timestampFuture))
 				.withBots(extrapolatedBots)
-				.withKickEvent(frame.getKickEvent().orElse(null))
-				.withKickFitState(frame.getBall())
+				.withKick(frame.getKick().orElse(null))
 				.withShapeMap(frame.getShapeMap())
 				.build();
 	}
@@ -139,18 +131,47 @@ public class VisionFilterImpl extends AVisionFilter
 	@Override
 	protected void updateCamDetectionFrame(final CamDetectionFrame camDetectionFrame)
 	{
-		if (filterExecutor == null)
+		if (camDetectionFrame.gettCapture() <= 0)
 		{
-			processDetectionFrame(camDetectionFrame);
-			publishFilteredVisionFrame(lastFilteredFrame);
+			// skip negative timestamps. They can produce unexpected behavior
+			return;
+		}
+		if (scheduledExecutorService == null)
+		{
+			processCamDetectionFrame(camDetectionFrame);
+			publish();
 		} else
 		{
-			filterExecutor.submit(() -> processDetectionFrame(camDetectionFrame));
+			if (camDetectionFrameQueue.size() >= CAM_FRAME_BUFFER_SIZE)
+			{
+				camDetectionFrameQueue.pollLast();
+			}
+			camDetectionFrameQueue.addFirst(camDetectionFrame);
 		}
 	}
 
 
-	private void processDetectionFrame(final CamDetectionFrame camDetectionFrame)
+	private void processCamFrameQueue()
+	{
+		Thread.currentThread().setName("VisionFilter Processor");
+		while (!scheduledExecutorService.isShutdown())
+		{
+			try
+			{
+				var camFrame = camDetectionFrameQueue.pollLast(15, TimeUnit.MILLISECONDS);
+				if (camFrame != null)
+				{
+					processCamDetectionFrame(camFrame);
+				}
+			} catch (InterruptedException e)
+			{
+				Thread.currentThread().interrupt();
+			}
+		}
+	}
+
+
+	private void processCamDetectionFrame(CamDetectionFrame camDetectionFrame)
 	{
 		int camId = camDetectionFrame.getCameraId();
 
@@ -158,28 +179,43 @@ public class VisionFilterImpl extends AVisionFilter
 		viewportArchitect.newDetectionFrame(camDetectionFrame);
 
 		// add camera if it does not exist yet
-		cams.computeIfAbsent(camId, CamFilter::new);
+		var camFilter = cams.computeIfAbsent(camId, CamFilter::new);
 
 		// set viewport
-		cams.get(camId).updateViewport(viewportArchitect.getViewport(camId));
+		camFilter.updateViewport(viewportArchitect.getViewport(camId));
 
 		// update robot infos on all camera filters
-		cams.get(camId).setRobotInfoMap(getRobotInfoMap());
+		camFilter.setRobotInfoMap(getRobotInfoMap());
 
 		// set latest ball info on all camera filters (to generate virtual balls from barrier info)
-		cams.get(camId).setBallInfo(lastBallFilterOutput);
+		camFilter.setBallInfo(lastBallFilterOutput);
 
 		// update camera filter with new detection frame
-		long timestamp = cams.get(camId).update(camDetectionFrame, lastFilteredFrame);
+		camFilter.update(camDetectionFrame, lastFrame);
+
+		// update robot quality inspector
+		camDetectionFrame.getRobots().forEach(robotQualityInspector::addDetection);
+	}
+
+
+	private FilteredVisionFrame constructFilteredVisionFrame(FilteredVisionFrame lastFrame)
+	{
+		// remove old camera filters (taking care of overflow in average())
+		long avgTimestamp = (long) (cams.values().stream()
+				.mapToDouble(c -> c.getTimestamp() / 1e9)
+				.average()
+				.orElse(0) * 1e9);
+		cams.values().removeIf(f -> Math.abs(avgTimestamp - f.getTimestamp()) / 1e9 > 0.5);
+
+		long timestamp = cams.values().stream().mapToLong(CamFilter::getTimestamp).max().orElse(lastFrame.getTimestamp());
 
 		// use newest timestamp to prevent negative delta time in filtered frames
-		timestamp = Math.max(lastFilteredFrame.getTimestamp(), timestamp);
+		timestamp = Math.max(lastFrame.getTimestamp(), timestamp);
 
 		// merge all camera filters (robots on multiple cams)
 		List<FilteredVisionBot> mergedRobots = mergeRobots(cams.values(), timestamp);
 
 		// update robot quality inspector
-		camDetectionFrame.getRobots().forEach(robotQualityInspector::addDetection);
 		robotQualityInspector.prune(timestamp);
 		final double averageDt = cams.values().stream().mapToDouble(CamFilter::getAverageFrameDt).max().orElse(0.01);
 		robotQualityInspector.updateAverageDt(averageDt);
@@ -193,20 +229,23 @@ public class VisionFilterImpl extends AVisionFilter
 		qualityInspector.inspectRobots(cams.values(), timestamp);
 
 		// merge all balls and select primary one
-		FilteredVisionBall ball = selectAndMergeBall(cams.values(), timestamp, filteredRobots);
+		FilteredVisionBall ball = selectAndMergeBall(cams.values(), timestamp, filteredRobots, lastFrame.getBall());
 
 		// construct filtered vision frame
-		FilteredVisionFrame frame = FilteredVisionFrame.Builder.create()
-				.withId(lastFilteredFrame.getId() + 1)
+		FilteredVisionFrame frame = FilteredVisionFrame.builder()
+				.withId(lastFrame.getId() + 1)
 				.withTimestamp(timestamp)
 				.withBall(ball)
 				.withBots(filteredRobots)
-				.withKickEvent(lastKickEvent)
-				.withKickFitState(lastBallFilterOutput.getPreprocessorOutput().getKickFitState().orElse(null))
+				.withKick(lastBallFilterOutput.getFilteredKick())
+				.withShapeMap(new ShapeMap())
 				.build();
 
 		// forward frame for inspection
 		qualityInspector.inspectFilteredVisionFrame(frame);
+
+		// Update active cameras in viewport architect
+		viewportArchitect.updateCameras(cams.keySet());
 
 		// add debug and info shapes for visualizer
 		frame.getShapeMap().get(EVisionFilterShapesLayer.VIEWPORT_SHAPES).addAll(viewportArchitect.getInfoShapes());
@@ -221,8 +260,7 @@ public class VisionFilterImpl extends AVisionFilter
 		frame.getShapeMap().get(EVisionFilterShapesLayer.ROBOT_QUALITY_INSPECTOR)
 				.addAll(getRobotQualityInspectorShapes(mergedRobots));
 
-		// store this frame
-		lastFilteredFrame = frame;
+		return frame;
 	}
 
 
@@ -249,19 +287,20 @@ public class VisionFilterImpl extends AVisionFilter
 	}
 
 
-	private FilteredVisionBall selectAndMergeBall(final Collection<CamFilter> camFilters, final long timestamp,
-			final List<FilteredVisionBot> mergedRobots)
+	private FilteredVisionBall selectAndMergeBall(
+			Collection<CamFilter> camFilters,
+			long timestamp,
+			List<FilteredVisionBot> mergedRobots,
+			FilteredVisionBall lastBall)
 	{
 		List<BallTracker> allTrackers = camFilters.stream()
 				.flatMap(f -> f.getBalls().stream())
 				.collect(Collectors.toList());
 
-		BallFilterPreprocessorOutput preOutput = ballFilterPreprocessor.update(lastFilteredFrame.getBall(), allTrackers,
+		BallFilterPreprocessorOutput preOutput = ballFilterPreprocessor.update(lastBall, allTrackers,
 				mergedRobots, getRobotInfoMap(), timestamp);
 
-		lastKickEvent = preOutput.getKickEvent().orElse(null);
-
-		lastBallFilterOutput = ballFilter.update(preOutput, lastFilteredFrame.getBall(), timestamp);
+		lastBallFilterOutput = ballFilter.update(preOutput, lastBall, timestamp);
 
 		return lastBallFilterOutput.getFilteredBall();
 	}
@@ -270,13 +309,7 @@ public class VisionFilterImpl extends AVisionFilter
 	@Override
 	public void onNewCameraGeometry(final CamGeometry geometry)
 	{
-		if (filterExecutor == null)
-		{
-			processGeometryFrame(geometry);
-		} else
-		{
-			filterExecutor.submit(() -> processGeometryFrame(geometry));
-		}
+		processGeometryFrame(geometry);
 	}
 
 
@@ -285,9 +318,10 @@ public class VisionFilterImpl extends AVisionFilter
 		for (CamCalibration c : geometry.getCalibrations().values())
 		{
 			int camId = c.getCameraId();
-			if (cams.containsKey(camId))
+			CamFilter camFilter = cams.get(camId);
+			if (camFilter != null)
 			{
-				cams.get(camId).update(c);
+				camFilter.update(c);
 			}
 		}
 
@@ -316,10 +350,11 @@ public class VisionFilterImpl extends AVisionFilter
 
 		if (useThreads)
 		{
-			filterExecutor = Executors
-					.newSingleThreadScheduledExecutor(new NamedThreadFactory("VisionFilter Proccessor"));
-			publisherThread = new Thread(this, "VisionFilter Publisher");
-			publisherThread.start();
+			scheduledExecutorService = Executors
+					.newScheduledThreadPool(2, new NamedThreadFactory("VisionFilter Publisher"));
+			scheduledExecutorService.execute(this::processCamFrameQueue);
+			scheduledExecutorService
+					.scheduleAtFixedRate(() -> Safe.run(this::publish), 0, (long) (publishDt * 1e9), TimeUnit.NANOSECONDS);
 			log.info("Using threaded VisionFilter");
 		}
 	}
@@ -329,21 +364,18 @@ public class VisionFilterImpl extends AVisionFilter
 	protected void stop()
 	{
 		super.stop();
-		if (filterExecutor != null)
+		if (scheduledExecutorService != null)
 		{
-			filterExecutor.shutdown();
-			filterExecutor = null;
-		}
-		if (publisherThread != null)
-		{
-			publisherThread.interrupt();
-			publisherThread = null;
+			scheduledExecutorService.shutdown();
+			scheduledExecutorService = null;
+			camDetectionFrameQueue.clear();
 		}
 		cams.clear();
 		viewportArchitect.removeObserver(this);
 		ballFilterPreprocessor.removeObserver(this);
 		ballFilterPreprocessor.clear();
-		lastFilteredFrame = FilteredVisionFrame.Builder.createEmptyFrame();
+		robotQualityInspector.reset();
+		lastFrame = FilteredVisionFrame.createEmptyFrame();
 	}
 
 
@@ -368,7 +400,7 @@ public class VisionFilterImpl extends AVisionFilter
 		super.onClearCamFrame();
 		cams.clear();
 		ballFilterPreprocessor.clear();
-		lastFilteredFrame = FilteredVisionFrame.Builder.createEmptyFrame();
+		lastFrame = FilteredVisionFrame.createEmptyFrame();
 	}
 
 

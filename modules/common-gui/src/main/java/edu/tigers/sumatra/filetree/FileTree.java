@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.filetree;
 
@@ -19,12 +19,13 @@ import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreePath;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /**
  * Display a file system in a JTree view
- * 
+ *
  * @version $Id: FileTree.java,v 1.9 2004/02/23 03:39:22 ian Exp $
  * @author Ian Darwin
  */
@@ -33,25 +34,25 @@ public class FileTree extends JPanel
 	/**  */
 	private static final long serialVersionUID = 6901756711335047357L;
 	@SuppressWarnings("unused")
-	private static final Logger log = Logger.getLogger(FileTree.class.getName());
-	
+	private static final Logger log = LogManager.getLogger(FileTree.class.getName());
+
 	private final List<IFileTreeObserver> observers = new CopyOnWriteArrayList<>();
 	private final JTree tree;
-	
+
 	private final List<String> selectedPaths = new ArrayList<>();
-	
-	
+
+
 	/**
 	 * Construct a FileTree
-	 * 
+	 *
 	 * @param dir
 	 */
 	public FileTree(final File dir)
 	{
 		this(dir, null);
 	}
-	
-	
+
+
 	/**
 	 * Construct a FileTree
 	 *
@@ -61,27 +62,27 @@ public class FileTree extends JPanel
 	public FileTree(final File dir, final FileTree preFileTree)
 	{
 		setLayout(new BorderLayout());
-		
+
 		// Make a tree list with all the nodes, and make it a JTree
 		tree = new JTree(addNodes(null, dir));
 		tree.setRootVisible(false);
-		
+
 		if (preFileTree != null)
 		{
 			setupFromPreFileTree(preFileTree);
 		}
-		
+
 		// Add a listener
 		tree.addTreeSelectionListener(new FileTreeSelectionListener());
-		
+
 		// Lastly, put the JTree into a JScrollPane.
 		JScrollPane scrollPane = new JScrollPane();
 		scrollPane.getViewport().add(tree);
-		scrollPane.setPreferredSize(new Dimension(250, 0));
+		scrollPane.setPreferredSize(new Dimension(400, 0));
 		add(BorderLayout.CENTER, scrollPane);
 	}
-	
-	
+
+
 	private boolean equalTreePaths(final TreePath tp1, final TreePath tp2)
 	{
 		if (tp1.getPath().length != tp2.getPath().length)
@@ -99,8 +100,8 @@ public class FileTree extends JPanel
 		}
 		return true;
 	}
-	
-	
+
+
 	@SuppressWarnings("squid:S134")
 	private void setupFromPreFileTree(final FileTree preFileTree)
 	{
@@ -124,8 +125,8 @@ public class FileTree extends JPanel
 			}
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param numPaths
 	 */
@@ -140,8 +141,8 @@ public class FileTree extends JPanel
 			}
 		}
 	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -149,8 +150,8 @@ public class FileTree extends JPanel
 	{
 		observers.add(observer);
 	}
-	
-	
+
+
 	/**
 	 * @param observer
 	 */
@@ -158,11 +159,11 @@ public class FileTree extends JPanel
 	{
 		observers.remove(observer);
 	}
-	
-	
+
+
 	/**
 	 * Add nodes from under "dir" into curTop. Highly recursive.
-	 * 
+	 *
 	 * @param curTop
 	 * @param dir
 	 * @return
@@ -184,12 +185,12 @@ public class FileTree extends JPanel
 			dir.mkdirs();
 			return curDir;
 		}
-		
+
 		ol.addAll(Arrays.asList(tmp));
 		ol.sort(String.CASE_INSENSITIVE_ORDER);
 		File f;
 		List<File> files = new ArrayList<>();
-		
+
 		// Make two passes, one for Dirs and one for Files. This is #1.
 		for (String thisObject : ol)
 		{
@@ -201,7 +202,7 @@ public class FileTree extends JPanel
 			{
 				newPath = curPath.file.getPath() + File.separator + thisObject;
 			}
-			
+
 			f = new File(newPath);
 			if (f.isDirectory())
 			{
@@ -211,17 +212,17 @@ public class FileTree extends JPanel
 				files.add(f);
 			}
 		}
-		
+
 		// Pass two: for files.
 		for (File file : files)
 		{
 			curDir.add(new DefaultMutableTreeNode(new Element(file)));
 		}
-		
+
 		return curDir;
 	}
-	
-	
+
+
 	/**
 	 * @author Nicolai Ommer <nicolai.ommer@gmail.com>
 	 */
@@ -232,25 +233,25 @@ public class FileTree extends JPanel
 		 */
 		void onFileSelected(List<String> filenames);
 	}
-	
+
 	private static class Element
 	{
 		File file;
-		
-		
+
+
 		Element(final File file)
 		{
 			this.file = file;
 		}
-		
-		
+
+
 		@Override
 		public String toString()
 		{
 			return file.getName();
 		}
-		
-		
+
+
 		@Override
 		public int hashCode()
 		{
@@ -259,8 +260,8 @@ public class FileTree extends JPanel
 			result = (prime * result) + ((file == null) ? 0 : file.hashCode());
 			return result;
 		}
-		
-		
+
+
 		@Override
 		public boolean equals(final Object obj)
 		{
@@ -290,7 +291,7 @@ public class FileTree extends JPanel
 			return true;
 		}
 	}
-	
+
 	private class FileTreeSelectionListener implements TreeSelectionListener
 	{
 		@Override

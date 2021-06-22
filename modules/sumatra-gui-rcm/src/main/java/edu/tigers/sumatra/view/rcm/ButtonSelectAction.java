@@ -1,7 +1,17 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.view.rcm;
+
+import edu.tigers.sumatra.rcm.DynamicAxis;
+import edu.tigers.sumatra.rcm.ExtIdentifier;
+import edu.tigers.sumatra.rcm.ExtIdentifierParams;
+import edu.tigers.sumatra.rcm.POVToButton;
+import edu.tigers.sumatra.thread.NamedThreadFactory;
+import net.java.games.input.Component;
+import net.java.games.input.Controller;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,107 +22,76 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.log4j.Logger;
-
-import edu.tigers.sumatra.rcm.DynamicAxis;
-import edu.tigers.sumatra.rcm.ExtIdentifier;
-import edu.tigers.sumatra.rcm.ExtIdentifierParams;
-import edu.tigers.sumatra.rcm.POVToButton;
-import edu.tigers.sumatra.thread.NamedThreadFactory;
-import net.java.games.input.Component;
-import net.java.games.input.Controller;
-
 
 /**
  * @author Clemens
  */
 public class ButtonSelectAction
 {
-	// --------------------------------------------------------------------------
-	// --- instance variables ---------------------------------------------------
-	// --------------------------------------------------------------------------
-	// Logger
-	private static final Logger						log			= Logger.getLogger(ButtonSelectAction.class.getName());
-																				
-	private final Controller							controller;
-	private final List<Component>						comps;
-	private final List<Component>						unpressedComps;
-	private final Map<Component, Float>				compsValueMap;
-	private final IIdentifierSelectionObserver	observer;
-																
+	private static final Logger log = LogManager.getLogger(ButtonSelectAction.class.getName());
+
+	private final Controller controller;
+	private final List<Component> comps;
+	private final List<Component> unpressedComps;
+	private final Map<Component, Float> compsValueMap;
+	private final IIdentifierSelectionObserver observer;
+
 	/** 50ms delay */
-	private static final int							DELAY			= 50;
+	private static final int DELAY = 50;
 	/** Threshold */
-	private static final double						THRESHOLD	= 0.3;
-																				
-																				
+	private static final double THRESHOLD = 0.3;
+
+
 	// --- time for timeout ---
-	private final long									startSystemTime;
-	private final ScheduledExecutorService			service;
-																
-																
-	// --------------------------------------------------------------------------
-	// --- constructor(s) -------------------------------------------------------
-	// --------------------------------------------------------------------------
-	/**
-	 * @param observer
-	 * @param controller
-	 */
+	private final long startSystemTime;
+	private final ScheduledExecutorService service;
+
+
 	public ButtonSelectAction(final IIdentifierSelectionObserver observer, final Controller controller)
 	{
 		this.observer = observer;
 		this.controller = controller;
 		startSystemTime = System.nanoTime();
-		
+
 		// --- get all components of current controller ---
 		comps = Arrays.asList(controller.getComponents());
-		unpressedComps = new ArrayList<Component>(comps);
+		unpressedComps = new ArrayList<>(comps);
 		compsValueMap = new HashMap<>();
-		
+
 		// --- update the controllers components ---
 		controller.poll();
-		
+
 		for (Component comp : comps)
 		{
 			compsValueMap.put(comp, comp.getPollData());
 		}
-		
+
 		service = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("ButtonSelection"));
 		service.scheduleAtFixedRate(new Polling(), 0, DELAY, TimeUnit.MILLISECONDS);
 	}
-	
-	
-	// --------------------------------------------------------------------------
-	// --- methods --------------------------------------------------------------
-	// --------------------------------------------------------------------------
-	
-	private boolean withinTolerance(final double baseValue, final double value)
-	{
-		return (value < (baseValue + THRESHOLD)) && (value > (baseValue - THRESHOLD));
-	}
-	
-	
+
+
 	private static class ExtComponent
 	{
-		private Component			component;
-		private ExtIdentifier	extId;
+		private Component component;
+		private ExtIdentifier extId;
 	}
-	
-	
+
+
 	private class Polling implements Runnable
 	{
-		private final List<ExtComponent>	queuedComponents	= new ArrayList<ExtComponent>();
-		private final List<ExtComponent>	pressedComponents	= new ArrayList<ExtComponent>();
-																			
-																			
+		private final List<ExtComponent> queuedComponents = new ArrayList<>();
+		private final List<ExtComponent> pressedComponents = new ArrayList<>();
+
+
 		@Override
 		public void run()
 		{
 			// --- update the controllers components ---
 			controller.poll();
-			
+
 			// scan for initial press/move
-			List<Component> removeFromUnpressed = new ArrayList<Component>();
+			List<Component> removeFromUnpressed = new ArrayList<>();
 			for (Component comp : unpressedComps)
 			{
 				// POV axis needs special care
@@ -125,7 +104,7 @@ public class ButtonSelectAction
 							.createDefault());
 					pressedComponents.add(eComp);
 					removeFromUnpressed.add(comp);
-					log.info("pov pressed " + povDir);
+					log.info("pov pressed {}", povDir);
 				}
 				// deal with analog axis
 				else if (comp.isAnalog())
@@ -154,9 +133,9 @@ public class ButtonSelectAction
 					log.info("button pressed");
 				}
 			}
-			
+
 			unpressedComps.removeAll(removeFromUnpressed);
-			
+
 			for (ExtComponent eComp : queuedComponents)
 			{
 				Component pressedComponent = eComp.component;
@@ -175,9 +154,9 @@ public class ButtonSelectAction
 					pressedComponents.add(eComp);
 				}
 			}
-			
+
 			queuedComponents.removeAll(pressedComponents);
-			
+
 			boolean finished = false;
 			if (!pressedComponents.isEmpty())
 			{
@@ -192,10 +171,10 @@ public class ButtonSelectAction
 					}
 				}
 			}
-			
+
 			if (finished)
 			{
-				List<ExtIdentifier> extIds = new ArrayList<ExtIdentifier>(pressedComponents.size());
+				List<ExtIdentifier> extIds = new ArrayList<>(pressedComponents.size());
 				for (ExtComponent eComp : pressedComponents)
 				{
 					extIds.add(eComp.extId);
@@ -210,6 +189,12 @@ public class ButtonSelectAction
 				return;
 			}
 			service.shutdown();
+		}
+
+
+		private boolean withinTolerance(final double baseValue, final double value)
+		{
+			return (value < (baseValue + THRESHOLD)) && (value > (baseValue - THRESHOLD));
 		}
 	}
 }

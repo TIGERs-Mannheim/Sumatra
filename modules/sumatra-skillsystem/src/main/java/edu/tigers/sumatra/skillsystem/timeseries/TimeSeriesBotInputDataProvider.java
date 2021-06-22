@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.timeseries;
@@ -9,7 +9,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.sumatra.botmanager.bots.ABot;
@@ -31,12 +32,12 @@ import edu.tigers.sumatra.skillsystem.ISkillSystemObserver;
  */
 public class TimeSeriesBotInputDataProvider implements ITimeSeriesDataProvider, ISkillSystemObserver
 {
-	private static final Logger log = Logger.getLogger(TimeSeriesBotInputDataProvider.class.getName());
-	
+	private static final Logger log = LogManager.getLogger(TimeSeriesBotInputDataProvider.class.getName());
+
 	private final Map<String, Collection<IExportable>> dataBuffers = new HashMap<>();
 	private final Collection<IExportable> botInputs = new ConcurrentLinkedQueue<>();
-	
-	
+
+
 	/**
 	 * Default constructor
 	 */
@@ -44,8 +45,8 @@ public class TimeSeriesBotInputDataProvider implements ITimeSeriesDataProvider, 
 	{
 		dataBuffers.put("botInput", botInputs);
 	}
-	
-	
+
+
 	@Override
 	public void stop()
 	{
@@ -58,8 +59,8 @@ public class TimeSeriesBotInputDataProvider implements ITimeSeriesDataProvider, 
 			log.error("SkillSystem module not found.", err);
 		}
 	}
-	
-	
+
+
 	@Override
 	public void start()
 	{
@@ -72,22 +73,22 @@ public class TimeSeriesBotInputDataProvider implements ITimeSeriesDataProvider, 
 			log.error("SkillSystem module not found.", err);
 		}
 	}
-	
-	
+
+
 	@Override
 	public boolean isDone()
 	{
 		return true;
 	}
-	
-	
+
+
 	@Override
 	public Map<String, Collection<IExportable>> getExportableData()
 	{
 		return dataBuffers;
 	}
-	
-	
+
+
 	@Override
 	public void onCommandSent(final ABot bot, final long timestamp)
 	{
@@ -95,7 +96,7 @@ public class TimeSeriesBotInputDataProvider implements ITimeSeriesDataProvider, 
 		ExportableBotInput botInput = new ExportableBotInput(bot.getBotId().getNumber(), bot.getColor(), timestamp);
 		botInput.settSent(tSent);
 		saveTrajectory(bot, timestamp, botInput);
-		
+
 		switch (bot.getMatchCtrl().getSkill().getType())
 		{
 			case GLOBAL_POSITION:
@@ -124,24 +125,24 @@ public class TimeSeriesBotInputDataProvider implements ITimeSeriesDataProvider, 
 			default:
 				break;
 		}
-		
+
 		botInput.setKickSpeed(bot.getMatchCtrl().getSkill().getKickSpeed());
 		botInput.setKickDevice(bot.getMatchCtrl().getSkill().getDevice().getValue());
 		botInput.setDribbleRpm(bot.getMatchCtrl().getSkill().getDribbleSpeed());
 		botInput.setKickMode(bot.getMatchCtrl().getSkill().getMode().getId());
 		botInput.setMoveConstraints(bot.getMatchCtrl().getSkill().getMoveConstraints());
-		
+
 		botInputs.add(botInput);
 	}
-	
-	
+
+
 	private void saveTrajectory(final ABot bot, final long timestamp, final ExportableBotInput cd)
 	{
 		if (bot.getCurrentTrajectory().isPresent())
 		{
 			cd.setTrajPos(bot.getCurrentTrajectory().get().getPositionMM(timestamp));
 			cd.setTrajVel(bot.getCurrentTrajectory().get().getVelocity(timestamp));
-			
+
 			if (bot.getColor() != Geometry.getNegativeHalfTeam())
 			{
 				cd.setTrajPos(cd.getTrajPos().multiplyNew(-1));

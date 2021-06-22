@@ -4,14 +4,6 @@
 
 package edu.tigers.sumatra.aicenter.presenter;
 
-import java.awt.Component;
-import java.awt.EventQueue;
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.Optional;
-
-import javax.swing.SwingUtilities;
-
 import edu.tigers.sumatra.ai.AAgent;
 import edu.tigers.sumatra.ai.AIInfoFrame;
 import edu.tigers.sumatra.ai.Agent;
@@ -19,12 +11,9 @@ import edu.tigers.sumatra.ai.Ai;
 import edu.tigers.sumatra.ai.IAIObserver;
 import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
 import edu.tigers.sumatra.ai.athena.EAIControlState;
-import edu.tigers.sumatra.ai.metis.ECalculator;
-import edu.tigers.sumatra.ai.pandora.plays.APlay;
 import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.aicenter.view.AICenterPanel;
-import edu.tigers.sumatra.aicenter.view.ICalculatorObserver;
 import edu.tigers.sumatra.aicenter.view.IRoleControlPanelObserver;
 import edu.tigers.sumatra.aicenter.view.RoleControlPanel;
 import edu.tigers.sumatra.aicenter.view.TeamPanel;
@@ -35,6 +24,13 @@ import edu.tigers.sumatra.lookandfeel.LookAndFeelStateAdapter;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.views.ASumatraViewPresenter;
 import edu.tigers.sumatra.views.ISumatraView;
+
+import javax.swing.SwingUtilities;
+import java.awt.Component;
+import java.awt.EventQueue;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Optional;
 
 
 /**
@@ -112,13 +108,13 @@ public class AICenterPresenter extends ASumatraViewPresenter implements ILookAnd
 			agent.addObserver(aiObserver);
 		}
 
+		EventQueue.invokeLater(() -> aiCenterPanel.setActive(true));
+
 		for (EAiTeam team : EAiTeam.values())
 		{
 			aiCenterPanel.getTeamPanel(team).getMetisPanel().setActive(true);
 			updateAiControlStateForTeam(team);
 		}
-
-		EventQueue.invokeLater(() -> aiCenterPanel.setActive(true));
 	}
 
 
@@ -181,7 +177,8 @@ public class AICenterPresenter extends ASumatraViewPresenter implements ILookAnd
 		return this;
 	}
 
-	private class GuiFeedbackObserver implements IRoleControlPanelObserver, ICalculatorObserver
+
+	private class GuiFeedbackObserver implements IRoleControlPanelObserver
 	{
 		private final EAiTeam registeredTeam;
 
@@ -205,29 +202,24 @@ public class AICenterPresenter extends ASumatraViewPresenter implements ILookAnd
 		@Override
 		public void addRole(final ARole role, final int botId)
 		{
-			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().addRole(role,
-					BotID.createBotId(botId, ai.getAiTeam().getTeamColor())));
+			getAI().ifPresent(ai -> {
+				role.assignBotID(BotID.createBotId(botId, ai.getAiTeam().getTeamColor()));
+				ai.getAthena().getAthenaGuiInput().getRoles().add(role);
+			});
 		}
 
 
 		@Override
 		public void removeRole(final ARole role)
 		{
-			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().removeRole(role));
+			getAI().ifPresent(ai -> ai.getAthena().getAthenaGuiInput().getRoles().remove(role));
 		}
 
 
 		@Override
 		public void clearRoles()
 		{
-			getAI().ifPresent(ai -> ai.getAthena().getAthenaAdapter().getAiControl().clearRoles());
-		}
-
-
-		@Override
-		public void onCalculatorStateChanged(final ECalculator eCalc, final boolean active)
-		{
-			getAI().ifPresent(ai -> ai.getMetis().setCalculatorActive(eCalc, active));
+			getAI().ifPresent(ai -> ai.getAthena().getAthenaGuiInput().getRoles().clear());
 		}
 	}
 
@@ -250,18 +242,11 @@ public class AICenterPresenter extends ASumatraViewPresenter implements ILookAnd
 		private void updatePanels(final AIInfoFrame lastFrame)
 		{
 			final RoleControlPanel rolePanel = aiCenterPanel.getTeamPanel(lastFrame.getAiTeam()).getRolePanel();
+			rolePanel.setActiveRoles(lastFrame.getPlayStrategy().getActiveRoles(EPlay.GUI_TEST));
 
-			for (APlay play : lastFrame.getPlayStrategy().getActivePlays())
-			{
-				if (play.getType() == EPlay.GUI_TEST)
-				{
-					rolePanel.setActiveRoles(play.getRoles());
-					break;
-				}
-			}
-
+			teamPresenters.get(lastFrame.getAiTeam()).getTeamPanel().getStatemachinePanel().onUpdate(lastFrame);
 			teamPresenters.get(lastFrame.getAiTeam()).getMetisPresenter().updateAIInfoFrame(lastFrame);
-			teamPresenters.get(lastFrame.getAiTeam()).getAthenaPresenter().updateAIInfoFrame(lastFrame);
+			teamPresenters.get(lastFrame.getAiTeam()).getAthenaPresenter().update();
 		}
 	}
 }

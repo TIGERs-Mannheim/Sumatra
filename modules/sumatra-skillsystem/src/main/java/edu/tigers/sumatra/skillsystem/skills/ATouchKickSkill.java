@@ -1,27 +1,75 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills;
 
-import edu.tigers.sumatra.skillsystem.ESkill;
+import com.github.g3force.configurable.Configurable;
+import edu.tigers.sumatra.botmanager.botskills.data.EKickerDevice;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.skillsystem.skills.util.BallStabilizer;
 import edu.tigers.sumatra.skillsystem.skills.util.KickParams;
-import edu.tigers.sumatra.wp.data.DynamicPosition;
+import edu.tigers.sumatra.skillsystem.skills.util.PositionValidator;
+import lombok.Setter;
 
 
 /**
- * Base for touch kick skills
+ * Abstract base class for touch kick skills.
  */
-public abstract class ATouchKickSkill extends AMoveSkill
+public abstract class ATouchKickSkill extends AMoveToSkill
 {
-	protected final DynamicPosition target;
-	protected final KickParams kickParams;
-	
-	
-	protected ATouchKickSkill(final ESkill skill, final DynamicPosition target, final KickParams kickParams)
+	@Configurable(defValue = "0.5")
+	protected static double maxBallSpeed = 0.5;
+
+	protected final PositionValidator positionValidator = new PositionValidator();
+	protected final BallStabilizer ballStabilizer = new BallStabilizer();
+
+	@Setter
+	protected IVector2 target;
+	@Setter
+	protected double passRange;
+	@Setter
+	protected KickParams desiredKickParams = KickParams.disarm();
+	@Setter
+	protected boolean adaptKickSpeedToRobotSpeed = true;
+
+
+	protected IVector2 getBallPos()
 	{
-		super(skill);
-		this.target = target;
-		this.kickParams = kickParams;
+		return ballStabilizer.getBallPos();
+	}
+
+
+	/**
+	 * Setter for instanceables. Setting desiredKickParams directly should be preferred.
+	 *
+	 * @param kickerDevice
+	 */
+	public void setKickerDevice(EKickerDevice kickerDevice)
+	{
+		this.desiredKickParams = KickParams.of(kickerDevice, desiredKickParams.getKickSpeed())
+				.withDribbleSpeed(desiredKickParams.getDribbleSpeed());
+	}
+
+
+	/**
+	 * Setter for instanceables. Setting desiredKickParams directly should be preferred.
+	 *
+	 * @param kickSpeed
+	 */
+	public void setKickSpeed(double kickSpeed)
+	{
+		this.desiredKickParams = KickParams.of(desiredKickParams.getDevice(), kickSpeed)
+				.withDribbleSpeed(desiredKickParams.getDribbleSpeed());
+	}
+
+
+	protected double getKickSpeed()
+	{
+		if (adaptKickSpeedToRobotSpeed)
+		{
+			return adaptKickSpeedToBotVel(target, desiredKickParams.getKickSpeed());
+		}
+		return desiredKickParams.getKickSpeed();
 	}
 }

@@ -1,17 +1,7 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.module;
-
-import java.util.Set;
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.lang.Validate;
-import org.apache.log4j.Logger;
 
 import edu.tigers.autoreferee.AutoRefFrame;
 import edu.tigers.autoreferee.AutoRefFramePreprocessor;
@@ -21,11 +11,22 @@ import edu.tigers.autoreferee.engine.EAutoRefMode;
 import edu.tigers.autoreferee.engine.IAutoRefEngineObserver;
 import edu.tigers.autoreferee.engine.PassiveAutoRefEngine;
 import edu.tigers.autoreferee.engine.detector.EGameEventDetectorType;
+import edu.tigers.sumatra.drawable.ShapeMapSource;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.thread.NamedThreadFactory;
 import edu.tigers.sumatra.wp.AWorldPredictor;
 import edu.tigers.sumatra.wp.IWorldFrameObserver;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
+import org.apache.commons.lang.Validate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.Set;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -33,12 +34,14 @@ import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
  */
 public class AutoRefRunner implements Runnable, IWorldFrameObserver
 {
-	private static final Logger log = Logger.getLogger(AutoRefRunner.class);
+	private static final Logger log = LogManager.getLogger(AutoRefRunner.class);
+
+	private static final String AUTO_REF = "AutoRef";
 
 	private final BlockingDeque<WorldFrameWrapper> consumableFrames = new LinkedBlockingDeque<>(1);
-	private final AutoRefFramePreprocessor preprocessor = new AutoRefFramePreprocessor();
 	private final Set<EGameEventDetectorType> activeDetectors = EGameEventDetectorType.valuesEnabledByDefault();
 
+	private AutoRefFramePreprocessor preprocessor;
 	private ExecutorService executorService;
 	private AutoRefEngine engine = new AutoRefEngine(activeDetectors);
 	private final IAutoRefEngineObserver callback;
@@ -69,12 +72,13 @@ public class AutoRefRunner implements Runnable, IWorldFrameObserver
 	 */
 	public void start()
 	{
+		preprocessor = new AutoRefFramePreprocessor();
 		// make sure, the engine is initially in a clean off state
 		changeMode(EAutoRefMode.OFF);
 		// register to WP frames
 		SumatraModel.getInstance().getModule(AWorldPredictor.class).addObserver(this);
 		// start runner thread
-		executorService = Executors.newSingleThreadExecutor(new NamedThreadFactory("AutoRef"));
+		executorService = Executors.newSingleThreadExecutor(new NamedThreadFactory(AUTO_REF));
 		executorService.execute(this);
 	}
 
@@ -98,7 +102,7 @@ public class AutoRefRunner implements Runnable, IWorldFrameObserver
 		// deregister from WP frames
 		SumatraModel.getInstance().getModule(AWorldPredictor.class).removeObserver(this);
 		// clear auto ref shape map
-		SumatraModel.getInstance().getModule(AWorldPredictor.class).notifyClearShapeMap("AUTO_REF");
+		SumatraModel.getInstance().getModule(AWorldPredictor.class).notifyRemoveSourceFromShapeMap(AUTO_REF);
 	}
 
 
@@ -161,7 +165,7 @@ public class AutoRefRunner implements Runnable, IWorldFrameObserver
 			}
 		}
 		SumatraModel.getInstance().getModule(AWorldPredictor.class)
-				.notifyNewShapeMap(frame.getTimestamp(), currentFrame.getShapes(), "AUTO_REF");
+				.notifyNewShapeMap(frame.getTimestamp(), currentFrame.getShapes(), ShapeMapSource.of(AUTO_REF));
 	}
 
 

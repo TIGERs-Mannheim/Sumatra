@@ -1,9 +1,11 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills.util;
 
+
+import edu.tigers.sumatra.math.SumatraMath;
 
 import static java.lang.Double.POSITIVE_INFINITY;
 import static java.lang.Double.isFinite;
@@ -18,11 +20,11 @@ public class ChargingValue
 	private final double defaultValue;
 	private final double chargeRate;
 	private double limit;
-	
+
 	private double value;
 	private long tLastIncrease = 0;
-	
-	
+
+
 	private ChargingValue(final Builder builder)
 	{
 		defaultValue = builder.defaultValue;
@@ -30,8 +32,8 @@ public class ChargingValue
 		limit = builder.limit;
 		value = builder.initValue;
 	}
-	
-	
+
+
 	/**
 	 * @return a new builder
 	 */
@@ -39,8 +41,8 @@ public class ChargingValue
 	{
 		return new Builder();
 	}
-	
-	
+
+
 	/**
 	 * @return the current value
 	 */
@@ -48,8 +50,8 @@ public class ChargingValue
 	{
 		return value;
 	}
-	
-	
+
+
 	/**
 	 * @param value the current value
 	 */
@@ -57,8 +59,8 @@ public class ChargingValue
 	{
 		this.value = value;
 	}
-	
-	
+
+
 	public void setLimit(final double limit)
 	{
 		this.limit = limit;
@@ -67,12 +69,12 @@ public class ChargingValue
 			value = limit;
 		}
 	}
-	
-	
+
+
 	/**
 	 * Update state.<br>
 	 * Note: this is numerically not quite nice, but we do not need high precision anyway.
-	 * 
+	 *
 	 * @param timestamp the current timestamp (e.g. worldFrame timestamp)
 	 */
 	public void update(long timestamp)
@@ -93,21 +95,21 @@ public class ChargingValue
 		}
 		tLastIncrease = timestamp;
 	}
-	
-	
+
+
 	public void updateStall(long timestamp)
 	{
 		tLastIncrease = timestamp;
 	}
-	
-	
+
+
 	private boolean isInLimit(double newValue)
 	{
 		return (signum(chargeRate) < 0 && newValue >= limit)
 				|| (signum(chargeRate) > 0 && newValue <= limit);
 	}
-	
-	
+
+
 	/**
 	 * Reset to default value
 	 */
@@ -116,7 +118,17 @@ public class ChargingValue
 		value = defaultValue;
 		tLastIncrease = 0;
 	}
-	
+
+
+	/**
+	 * @return true, if the limit is reached.
+	 */
+	public boolean isFullyCharged()
+	{
+		return SumatraMath.isEqual(value, limit);
+	}
+
+
 	/**
 	 * {@code ChargingValue} builder static inner class.
 	 */
@@ -126,13 +138,13 @@ public class ChargingValue
 		private double chargeRate = 1;
 		private double limit = POSITIVE_INFINITY;
 		private Double initValue;
-		
-		
+
+
 		private Builder()
 		{
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code chargeRate} and returns a reference to this Builder so that the methods can be chained
 		 * together.
@@ -145,8 +157,8 @@ public class ChargingValue
 			this.chargeRate = chargeRate;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code limit} and returns a reference to this Builder so that the methods can be chained together.
 		 *
@@ -158,8 +170,8 @@ public class ChargingValue
 			this.limit = limit;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code defaultValue} and returns a reference to this Builder so that the methods can be chained
 		 * together.
@@ -172,8 +184,8 @@ public class ChargingValue
 			this.defaultValue = defaultValue;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code initValue} and returns a reference to this Builder so that the methods can be chained
 		 * together.
@@ -186,8 +198,8 @@ public class ChargingValue
 			this.initValue = initValue;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Returns a {@code ChargingValue} built from the parameters previously set.
 		 *

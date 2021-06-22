@@ -1,0 +1,51 @@
+== Calibration
+
+There are several parameters that have to be calibrated based on field on robot.
+
+The calibration should be performed in the order of the subsections.
+
+=== Ball Model
+
+The ball model is used by the vision filter to fit the detected ball onto a trajectory.
+Additionally, it is used to predict where the ball will be in the future.
+
+The parameters are stored under Cfg -> geom -> edu.tigers.sumatra.geometry.BallParameters.
+
+The parameters can be determined using the "Ball & Kick Model" view which shows further instructions.
+
+=== Robot Kick Model
+
+The robot kick model is used by the robots to determine the discharge time for a given kick speed in m/s.
+
+The parameters are stored on the robots and can be changed under Bot Center -> Bot Details -> Config.
+
+The parameters can be determined using the "Ball & Kick Model" view which shows further instructions.
+Determination of these parameters can be combined with the Ball Model.
+
+=== Trajectory synchronization
+
+Sumatra by default uses the current robot path trajectories as the current robot states.
+This way, to the AI, the robots move more predictable and less noisy.
+A synchronization mechanism makes sure the state is reset when the real state diverges too much.
+
+The parameters are stored under Cfg -> wp -> edu.tigers.sumatra.wp.util.BotStateTrajectorySync.
+
+The visualizer layer Field -> Bot Buffered Traj shows the divergence to the real state.
+It should not get red too often.
+The state is reset when the divergence holds for 0.5s.
+
+One factor can be state latency.
+The robots predict their state into the future so that there should be no latency.
+Else, the robot config can be tweaked.
+Additionally, Sumatra also has a parameter to configure additional latency.
+
+Use the MoveTestRole to capture some data and plot it using the Vision view (requires Matlab).
+
+=== Robot Redirect Model
+
+The redirect model can be estimated with the `moduli-calibration` module.
+Add it to the moduli config that you use, i.e. link:../../config/moduli/testing_lab.xml[] (uncomment it).
+The module automatically detects redirects and captures all data to link:../../data[].
+
+The captured data can then be used in the `RedirectModelEstimatorRunner` class to estimate the redirect model.
+The model is stored in `PolyCorrectionRedirectConsultant` and can be updated there.

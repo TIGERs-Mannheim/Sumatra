@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis;
@@ -30,8 +30,10 @@ public enum EAiShapesLayer implements IShapeLayer
 	SUPPORT_ANGLE_RANGE("Angle Range ", "Support", NEVER_PERSIST),
 	SUPPORT_BREAK_THROUGH_DEFENSE("Break Through Defense", "Support", NEVER_PERSIST),
 	SUPPORT_PENALTY_AREA_ATTACKER("Penalty Area Attacker", "Support", NEVER_PERSIST),
+	SUPPORT_MIDFIELD("Midfield", "Support", NEVER_PERSIST),
 
-	AI_BEST_DIRECT_SHOT("Best Direct Kick", "AI"),
+	AI_BEST_GOAL_KICK("Best Goal Kick", "AI"),
+	AI_BEST_GOAL_KICK_DEBUG("Best Goal Kick Debug", "AI"),
 	AI_BALL_POSSESSION("Ball Possession", "AI"),
 	AI_BALL_CONTACT("Ball Contact", "AI"),
 	AI_BALL_LEAVING_FIELD("Ball Leaving Field", "AI"),
@@ -45,13 +47,15 @@ public enum EAiShapesLayer implements IShapeLayer
 	AI_BALL_RESPONSIBILITY("Ball responsibility", "AI"),
 	AI_REDIRECTOR_DETECTION("Redirector detection", "AI"),
 	AI_ADVANTAGE_CHOICE("Advantage Choice", "AI"),
+	AI_MAINTENANCE("Maintenance", "AI"),
 
-	PASS_TARGET_GENERATION("Generated Pass Targets", "Support"),
-	PASS_TARGETS("Pass targets", "Support"),
-	PASS_TARGET_TIMING("Pass Targets timing", "Support"),
-	PASS_TARGET_RATINGS("Pass target ratings", "Support"),
-	PASS_TARGETS_GRID("Pass Target Grid", "Support", NEVER_PERSIST, 0),
-	MOVING_ROBOT_PASS_RATING("Moving Robot Pass Rating", "Support", NEVER_PERSIST, 1),
+	KICK_ORIGIN("Kick Origin", "Pass"),
+	PASS_GENERATION("Generation", "Pass"),
+	PASS_GENERATION_PASS_DIR("Generation (pass dir)", "Pass"),
+	PASS_GENERATION_FORBIDDEN("Generation (forbidden)", "Pass"),
+	PASS_GENERATION_REDIRECT("Generation (redirect)", "Pass"),
+	PASS_RATING("Rating", "Pass"),
+	PASS_SELECTION("Selection", "Pass"),
 
 	DEFENSE_CRUCIAL_DEFENDERS("Crucial Defenders", "Defense"),
 	DEFENSE_BOT_THREATS("Bot Threats", "Defense"),
@@ -70,7 +74,9 @@ public enum EAiShapesLayer implements IShapeLayer
 	DEFENSE_PENALTY_AREA("Defense Penalty Area", "Defense", DEBUG_PERSIST),
 	DEFENSE_PENALTY_AREA_ROLE("Penalty Area Role", "Defense"),
 
+	OFFENSIVE_ONGOING_PASS("Ongoing Passes", "Offensive"),
 	OFFENSIVE_ATTACKER("Attacker", "Offensive"),
+	OFFENSIVE_PRIMARY_FINDER("Primary Finder", "Offensive"),
 	OFFENSIVE_FINISHER("Finisher", "Offensive"),
 	OFFENSIVE_ACCESSIBILITY("Accessibility", "Offensive", NEVER_PERSIST),
 	OFFENSIVE("Main", "Offensive"),
@@ -80,30 +86,27 @@ public enum EAiShapesLayer implements IShapeLayer
 	OFFENSIVE_CLEARING_KICK("Clearing kick", "Offensive"),
 	OFFENSIVE_PASSING("Passing", "Offensive"),
 	OFFENSIVE_IS_CHIP_NEEDED("Chip kick needed", "Offensive"),
-	OFFENSIVE_KICK_INS_BLAUE("Kick ins Blaue", "Offensive"),
+	OFFENSIVE_KICK_INS_BLAUE("Kick ins Blaue", "Offensive", NEVER_PERSIST),
 	OFFENSIVE_BALL_INTERCEPTION("Ball Interception", "Offensive"),
+	OFFENSIVE_BALL_INTERCEPTION_DEBUG("Ball Interception Debug", "Offensive", DEBUG_PERSIST),
 	OFFENSIVE_ACTION("Action", "Offensive"),
 	OFFENSIVE_ACTION_DEBUG("Action Debug", "Offensive"),
 	OFFENSIVE_STRATEGY("Strategy", "Offensive"),
+	OFFENSIVE_DRIBBLE("Dribble", "Offensive"),
 	OFFENSIVE_STRATEGY_DEBUG("Strategy Debug", "Offensive"),
 	OFFENSIVE_OPPONENT_INTERCEPTION("Opponent Interception", "Offensive"),
 
-	PENALTY_PLACEMENT_GROUPS("Penalty Placement Groups", "Penalty"),
+	PENALTY_ONE_ON_ONE("One On One Shooter", "Penalty"),
 
 	TEST_MULTIMEDIA("Multimedia", "Test"),
-	TEST_REDIRECT("Redirect", "Test"),
-	TEST_REPRODUCIBLE("Reproducible", "Test"),
+	TEST_KICK("Kick", "Test"),
 	TEST_ANGLE_RANGE_RATER("Angle Range Rater", "Test"),
-	TEST_LEARNING("Learning", "Test"),
 	TEST_FINISHER_MOVE("Finisher Test Role", "Test"),
 	TEST_DEBUG_GRID("Debug Grid", "Test", NEVER_PERSIST, 0),
 	TEST_AUTO_SAMPLING("Auto Sampling", "Test"),
-
-	/**
-	 * deprecated layers - kept for compatibility with old berkeley DBs
-	 */
-	@Deprecated
-	DEFENSE_BOT_THREADS_GRIT("Bot Threats Grid", "Defense", NEVER_PERSIST, 0),
+	TEST_BALL_PLACEMENT("Ball Placement", "Test"),
+	TEST_DRIBBLE_CHALLENGE("Dribble Challenge", "Test"),
+	TEST_CONTESTED_POSSESSION_CHALLENGE("Contested Possession", "Test"),
 
 	;
 	private final String id;

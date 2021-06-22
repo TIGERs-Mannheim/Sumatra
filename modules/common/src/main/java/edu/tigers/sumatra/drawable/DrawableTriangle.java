@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
@@ -18,16 +18,14 @@ import edu.tigers.sumatra.math.vector.Vector2f;
 
 /**
  * A Rectangle with a color
- * 
- * @author MarkG
  */
 @Persistent
 public class DrawableTriangle extends ADrawableWithStroke
 {
-	private ITriangle	triangle;
-	private boolean	fill	= false;
-	
-	
+	private ITriangle triangle;
+	private boolean fill = false;
+
+
 	/**
 	 * For db only
 	 */
@@ -36,8 +34,8 @@ public class DrawableTriangle extends ADrawableWithStroke
 	{
 		triangle = Triangle.fromCorners(Vector2f.ZERO_VECTOR, Vector2.fromXY(1, 1), Vector2.fromAngle(0));
 	}
-	
-	
+
+
 	/**
 	 * @param a
 	 * @param b
@@ -47,8 +45,8 @@ public class DrawableTriangle extends ADrawableWithStroke
 	{
 		this(Triangle.fromCorners(a, b, c));
 	}
-	
-	
+
+
 	/**
 	 * @param a
 	 * @param b
@@ -59,8 +57,8 @@ public class DrawableTriangle extends ADrawableWithStroke
 	{
 		this(Triangle.fromCorners(a, b, c), color);
 	}
-	
-	
+
+
 	/**
 	 * @param triangle
 	 */
@@ -68,8 +66,8 @@ public class DrawableTriangle extends ADrawableWithStroke
 	{
 		this(triangle, Color.black);
 	}
-	
-	
+
+
 	/**
 	 * @param triangle
 	 * @param color
@@ -79,36 +77,37 @@ public class DrawableTriangle extends ADrawableWithStroke
 		this.triangle = triangle;
 		setColor(color);
 	}
-	
-	
+
+
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
 		super.paintShape(g, tool, invert);
-		
+
 		final IVector2 a = tool.transformToGuiCoordinates(triangle.getCorners().get(0), invert);
 		final IVector2 b = tool.transformToGuiCoordinates(triangle.getCorners().get(1), invert);
 		final IVector2 c = tool.transformToGuiCoordinates(triangle.getCorners().get(2), invert);
-		
+
 		int[] x = { (int) a.x(), (int) b.x(), (int) c.x() };
 		int[] y = { (int) a.y(), (int) b.y(), (int) c.y() };
 		int number = 3;
-		
+
 		g.drawPolygon(x, y, number);
 		if (fill)
 		{
 			g.fillPolygon(x, y, number);
 		}
 	}
-	
-	
+
+
 	@Override
-	public void setFill(final boolean fill)
+	public DrawableTriangle setFill(final boolean fill)
 	{
 		this.fill = fill;
+		return this;
 	}
-	
-	
+
+
 	public ITriangle getTriangle()
 	{
 		return triangle;

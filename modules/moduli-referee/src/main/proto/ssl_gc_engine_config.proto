@@ -1,0 +1,30 @@
+syntax = "proto2";
+
+package edu.tigers.sumatra.referee.proto;
+option go_package = "github.com/RoboCup-SSL/ssl-game-controller/internal/app/engine";
+
+message Config {
+    map<string, Behavior> game_event_behavior = 1;
+    map<string, AutoRefConfig> auto_ref_configs = 2;
+    optional string active_tracker_source = 3;
+
+    enum Behavior {
+        BEHAVIOR_UNKNOWN = 0;
+        BEHAVIOR_ACCEPT = 1;
+        BEHAVIOR_ACCEPT_MAJORITY = 2;
+        BEHAVIOR_PROPOSE_ONLY = 3;
+        BEHAVIOR_LOG = 4;
+        BEHAVIOR_IGNORE = 5;
+    }
+}
+
+message AutoRefConfig {
+    map<string, Behavior> game_event_behavior = 1;
+
+    enum Behavior {
+        BEHAVIOR_UNKNOWN = 0;
+        BEHAVIOR_ACCEPT = 1;
+        BEHAVIOR_LOG = 2;
+        BEHAVIOR_IGNORE = 3;
+    }
+}

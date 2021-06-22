@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.autoreferee.engine.log;
 
 import java.awt.Color;
@@ -16,6 +20,9 @@ public enum ELogEntryType
 
 	/** new game event received */
 	RECEIVED_GAME_EVENT(new Color(0, 180, 0)),
+	
+	/** new proposed game event received */
+	RECEIVED_PROPOSED_GAME_EVENT(new Color(205, 185, 10)),
 
 	;
 

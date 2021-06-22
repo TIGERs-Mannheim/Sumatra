@@ -1,7 +1,6 @@
 package edu.tigers.sumatra.ai.metis.statistics.timeseries;
 
 import edu.tigers.sumatra.ai.BaseAiFrame;
-import edu.tigers.sumatra.ai.metis.ITacticalField;
 import edu.tigers.sumatra.statistics.TimeSeriesStatsEntry;
 
 
@@ -12,6 +11,5 @@ public interface ITssCalc
 {
 	TimeSeriesStatsEntry createTimeSeriesStatsEntry(
 			final BaseAiFrame aiFrame,
-			final ITacticalField tacticalField,
 			final long timestamp);
 }

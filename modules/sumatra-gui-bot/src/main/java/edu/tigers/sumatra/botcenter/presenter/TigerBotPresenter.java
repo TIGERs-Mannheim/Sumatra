@@ -1,27 +1,17 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.botcenter.presenter;
 
-import java.util.Arrays;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
-import javax.swing.SwingUtilities;
-
-import org.apache.log4j.Logger;
-
-import edu.tigers.sumatra.bot.IBot;
+import edu.tigers.sumatra.botcenter.presenter.config.ConfigPresenter;
 import edu.tigers.sumatra.botcenter.view.BcBotPingPanel.IBcBotPingPanelObserver;
-import edu.tigers.sumatra.botcenter.view.BotConfigOverviewPanel;
 import edu.tigers.sumatra.botcenter.view.bots.ConsolePanel.IConsolePanelObserver;
 import edu.tigers.sumatra.botcenter.view.bots.SystemMatchFeedbackPanel.ISystemMatchFeedbackPanelObserver;
-import edu.tigers.sumatra.botmanager.ABotManager;
+import edu.tigers.sumatra.botcenter.view.config.BotConfigOverviewPanel;
 import edu.tigers.sumatra.botmanager.BotWatcher;
+import edu.tigers.sumatra.botmanager.TigersBotManager;
 import edu.tigers.sumatra.botmanager.basestation.ITigersBaseStationObserver;
-import edu.tigers.sumatra.botmanager.bots.ABot;
 import edu.tigers.sumatra.botmanager.bots.TigerBot;
 import edu.tigers.sumatra.botmanager.commands.ACommand;
 import edu.tigers.sumatra.botmanager.commands.tiger.TigerSystemPong;
@@ -29,12 +19,20 @@ import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsoleCommand.ConsoleCommandTarget;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemConsolePrint;
 import edu.tigers.sumatra.botmanager.commands.tigerv2.TigerSystemMatchFeedback;
-import edu.tigers.sumatra.botmanager.commands.tigerv3.TigerSystemPerformance;
 import edu.tigers.sumatra.botmanager.ping.PingStats;
 import edu.tigers.sumatra.botmanager.ping.PingThread;
 import edu.tigers.sumatra.botmanager.ping.PingThread.IPingThreadObserver;
 import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.thread.NamedThreadFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.swing.SwingUtilities;
+import java.util.Arrays;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -42,52 +40,44 @@ import edu.tigers.sumatra.thread.NamedThreadFactory;
  */
 public class TigerBotPresenter implements ITigersBaseStationObserver
 {
-	private static final Logger log = Logger.getLogger(TigerBotPresenter.class.getName());
-	private PingThread pingThread = null;
-	private TigerBot bot = null;
+	private static final Logger log = LogManager.getLogger(TigerBotPresenter.class.getName());
+
+	private TigerBot bot;
 	private final BotConfigOverviewPanel botConfigOverviewPanel;
-	private ABotManager botManager;
 	private final ConfigPresenter configPresenter;
 
+	private PingThread pingThread = null;
+
+	private final BcBotPingPanelObserver botPingPanelObserver = new BcBotPingPanelObserver();
+	private final ConsolePanelObserver consolePanelObserver = new ConsolePanelObserver();
+	private final SystemMatchFeedbackObserver systemMatchFeedbackObserver = new SystemMatchFeedbackObserver();
 
 	public TigerBotPresenter(final BotConfigOverviewPanel botConfigOverviewPanel)
 	{
 		this.botConfigOverviewPanel = botConfigOverviewPanel;
 
-		configPresenter = new ConfigPresenter(botConfigOverviewPanel.getConfigPanel(), null);
+		configPresenter = new ConfigPresenter(botConfigOverviewPanel.getConfigPanel());
 
-		botConfigOverviewPanel.getManualControlPanel().getPingPanel().addObserver(new BcBotPingPanelObserver());
-		botConfigOverviewPanel.getConsolePanel().addObserver(new ConsolePanelObserver());
-		botConfigOverviewPanel.getSystemStatusPanel().addObserver(new SystemMatchFeedbackObserver());
+		this.botConfigOverviewPanel.getManualControlPanel().getPingPanel().addObserver(botPingPanelObserver);
+		this.botConfigOverviewPanel.getConsolePanel().addObserver(consolePanelObserver);
+		this.botConfigOverviewPanel.getSystemStatusPanel().addObserver(systemMatchFeedbackObserver);
 	}
 
 
-	/**
-	 * @return the bot
-	 */
-	public IBot getBot()
+	public void dispose()
 	{
-		return bot;
+		configPresenter.dispose();
+
+		this.botConfigOverviewPanel.getManualControlPanel().getPingPanel().removeObserver(botPingPanelObserver);
+		this.botConfigOverviewPanel.getConsolePanel().removeObserver(consolePanelObserver);
+		this.botConfigOverviewPanel.getSystemStatusPanel().removeObserver(systemMatchFeedbackObserver);
 	}
 
 
-	/**
-	 * @param bot the selectedBotId to set
-	 */
-	public void updateSelectedBotId(final TigerBot bot)
+	public void setBot(final TigerBot bot)
 	{
 		this.bot = bot;
 		configPresenter.setBot(bot);
-	}
-
-
-	/**
-	 * @param botManager the botManager to set
-	 */
-	public void setBotManager(final ABotManager botManager)
-	{
-		this.botManager = botManager;
-		configPresenter.setBotManager(botManager);
 	}
 
 
@@ -98,7 +88,7 @@ public class TigerBotPresenter implements ITigersBaseStationObserver
 			pingThread.pongArrived(pong.getId());
 			if (!pong.payloadValid())
 			{
-				log.warn("Invalid payload received: " + Arrays.toString(pong.getPayload()));
+				log.warn("Invalid payload received: {}", () -> Arrays.toString(pong.getPayload()));
 			}
 		}
 	}
@@ -121,9 +111,6 @@ public class TigerBotPresenter implements ITigersBaseStationObserver
 			case CMD_SYSTEM_MATCH_FEEDBACK:
 				SwingUtilities.invokeLater(() -> procCmdSystemMatchFeedback(cmd));
 				break;
-			case CMD_SYSTEM_PERFORMANCE:
-				SwingUtilities.invokeLater(() -> procCmdSystemPerformance(cmd));
-				break;
 			case CMD_CONFIG_FILE_STRUCTURE:
 			case CMD_CONFIG_ITEM_DESC:
 			case CMD_CONFIG_READ:
@@ -132,13 +119,6 @@ public class TigerBotPresenter implements ITigersBaseStationObserver
 			default:
 				break;
 		}
-	}
-
-
-	private void procCmdSystemPerformance(final ACommand cmd)
-	{
-		final TigerSystemPerformance perf = (TigerSystemPerformance) cmd;
-		botConfigOverviewPanel.getSystemStatusPanel().addPerformance(perf);
 	}
 
 
@@ -158,10 +138,13 @@ public class TigerBotPresenter implements ITigersBaseStationObserver
 		{
 			onStopPing();
 
-			pingThread = new PingThread(payloadSize, bot);
-			pingThread.addObserver(new PingThreadObserver());
-			pingService = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("Ping Executor"));
-			pingService.scheduleAtFixedRate(pingThread, 0, 1000000000 / numPings, TimeUnit.NANOSECONDS);
+			if (bot != null)
+			{
+				pingThread = new PingThread(payloadSize, bot);
+				pingThread.addObserver(new PingThreadObserver());
+				pingService = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("Ping Executor"));
+				pingService.scheduleAtFixedRate(pingThread, 0, 1000000000 / numPings, TimeUnit.NANOSECONDS);
+			}
 		}
 
 
@@ -199,6 +182,10 @@ public class TigerBotPresenter implements ITigersBaseStationObserver
 		@Override
 		public void onConsoleCommand(final String cmd, final ConsoleCommandTarget target)
 		{
+			if (bot == null)
+			{
+				return;
+			}
 			TigerSystemConsoleCommand consoleCmd = new TigerSystemConsoleCommand();
 			consoleCmd.setTarget(target);
 			consoleCmd.setText(cmd);
@@ -212,11 +199,9 @@ public class TigerBotPresenter implements ITigersBaseStationObserver
 			TigerSystemConsoleCommand consoleCmd = new TigerSystemConsoleCommand();
 			consoleCmd.setTarget(target);
 			consoleCmd.setText(cmd);
-			for (ABot aBot : botManager.getBots().values())
-			{
-				TigerBot tigerBot = (TigerBot) aBot;
-				tigerBot.execute(consoleCmd);
-			}
+
+			SumatraModel.getInstance().getModuleOpt(TigersBotManager.class)
+					.ifPresent(b -> b.broadcast(consoleCmd));
 		}
 	}
 
@@ -228,13 +213,13 @@ public class TigerBotPresenter implements ITigersBaseStationObserver
 		@Override
 		public void onCapture(final boolean enable)
 		{
-			if (enable)
+			if (enable && bot != null)
 			{
 				if (botWatcher != null)
 				{
 					botWatcher.stop();
 				}
-				botWatcher = new BotWatcher(bot);
+				botWatcher = new BotWatcher(bot.getBotId(), "manual");
 				botWatcher.start();
 			} else
 			{

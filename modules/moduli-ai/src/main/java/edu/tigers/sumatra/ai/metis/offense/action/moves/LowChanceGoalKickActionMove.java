@@ -1,73 +1,64 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
-package edu.tigers.sumatra.ai.metis.offense.action.moves;import java.util.Optional;
+package edu.tigers.sumatra.ai.metis.offense.action.moves;
 
-import edu.tigers.sumatra.ai.BaseAiFrame;
-import edu.tigers.sumatra.ai.metis.TacticalField;
-import edu.tigers.sumatra.ai.metis.defense.DefenseMath;
 import edu.tigers.sumatra.ai.metis.offense.action.EActionViability;
 import edu.tigers.sumatra.ai.metis.offense.action.EOffensiveAction;
-import edu.tigers.sumatra.ai.metis.offense.action.KickTarget;
-import edu.tigers.sumatra.ai.metis.targetrater.IRatedTarget;
+import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.OffensiveActionViability;
+import edu.tigers.sumatra.ai.metis.targetrater.GoalKick;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.BotID;
-import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.wp.data.DynamicPosition;
+import lombok.RequiredArgsConstructor;
+
+import java.util.Map;
+import java.util.function.Supplier;
 
 
 /**
  * Directly kick on the opponent goal even when the chance is low
  */
+@RequiredArgsConstructor
 public class LowChanceGoalKickActionMove extends AOffensiveActionMove
 {
 	private static final double MIN_LOW_SCORE_CHANCE = 0.02;
 
-	public LowChanceGoalKickActionMove()
+	private final Supplier<Map<BotID, GoalKick>> bestGoalKickTargets;
+
+
+	private OffensiveActionViability calcViability(GoalKick goalKick)
 	{
-		super(EOffensiveActionMove.LOW_CHANCE_GOAL_KICK);
-	}
-	
-	
-	@Override
-	public EActionViability isActionViable(final BotID id, final TacticalField newTacticalField,
-			final BaseAiFrame baseAiFrame)
-	{
-		if (ActionMoveConstants.allowGoalKick()
-				&& isLowScoringChanceDirectGoalShootPossible(newTacticalField))
+		if (goalKick == null)
 		{
-			return EActionViability.PARTIALLY;
+			return new OffensiveActionViability(EActionViability.FALSE, 0.0);
 		}
-		return EActionViability.FALSE;
+		return new OffensiveActionViability(EActionViability.PARTIALLY, calcViabilityScore(goalKick));
 	}
-	
-	
+
+
 	@Override
-	public OffensiveAction activateAction(final BotID id, final TacticalField newTacticalField,
-			final BaseAiFrame baseAiFrame)
+	public OffensiveAction calcAction(BotID botId)
 	{
-		Optional<IRatedTarget> target = calcAndRateTarget(baseAiFrame, calcShotOrigin(id, baseAiFrame));
-		DynamicPosition dTarget = target.map(IRatedTarget::getTarget)
-				.orElse(new DynamicPosition(Geometry.getGoalTheir().getCenter()));
-		KickTarget kickTarget = KickTarget.goalShot(dTarget);
-		return createOffensiveAction(EOffensiveAction.GOAL_SHOT, kickTarget);
+		var goalKick = bestGoalKickTargets.get().get(botId);
+		return OffensiveAction.builder()
+				.move(EOffensiveActionMove.LOW_CHANCE_GOAL_KICK)
+				.action(EOffensiveAction.GOAL_SHOT)
+				.viability(calcViability(goalKick))
+				.kick(goalKick == null ? null : goalKick.getKick())
+				.build();
 	}
-	
-	
-	@Override
-	public double calcViabilityScore(final BotID id, final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+
+
+	private double calcViabilityScore(GoalKick goalKick)
 	{
-		IVector2 shootOrigin = calcShotOrigin(id, baseAiFrame);
-		double timeToKick = DefenseMath.calculateTDeflectEnemyGoal(baseAiFrame.getWorldFrame().getBot(id).getPos(),
-				shootOrigin);
-		Optional<IRatedTarget> target = calcAndRateTarget(baseAiFrame, shootOrigin, timeToKick);
-		double score = target.map(IRatedTarget::getScore).orElse(0.0) * ActionMoveConstants.getViabilityMultiplierDirectKick();
-		if (Geometry.getPenaltyAreaTheir().withMargin(Geometry.getBotRadius()*2 + Geometry.getBallRadius()*2)
-				.isPointInShape(baseAiFrame.getWorldFrame().getBall().getPos()))
+		double score = goalKick.getRatedTarget().getScore();
+		double margin = Geometry.getBotRadius() * 2 + Geometry.getBallRadius() * 2;
+		if (Geometry.getPenaltyAreaTheir().withMargin(margin).isPointInShape(getBall().getPos()))
 		{
 			score = Math.max(MIN_LOW_SCORE_CHANCE, score);
 		}
-		return score;
+		return applyMultiplier(score);
 	}
 }

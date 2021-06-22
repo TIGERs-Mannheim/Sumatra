@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.drawable;
@@ -12,15 +12,15 @@ import com.sleepycat.persist.model.Persistent;
 
 
 /**
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
+ * Abstract base drawable class with stroke width.
  */
 @Persistent
 public abstract class ADrawableWithStroke extends ADrawable
 {
-	private float					strokeWidth	= 10;
-	private transient Stroke	stroke;
-	
-	
+	private float strokeWidth = 10;
+	private transient Stroke stroke;
+
+
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
@@ -31,11 +31,12 @@ public abstract class ADrawableWithStroke extends ADrawable
 		}
 		g.setStroke(stroke);
 	}
-	
-	
+
+
 	@Override
-	public void setStrokeWidth(final double strokeWidth)
+	public ADrawableWithStroke setStrokeWidth(final double strokeWidth)
 	{
 		this.strokeWidth = (float) strokeWidth;
+		return this;
 	}
 }

@@ -1,24 +1,21 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.util;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.RuleConstraints;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.math.line.v2.Lines;
-import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
+
+import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 
 /**
@@ -26,92 +23,43 @@ import edu.tigers.sumatra.wp.data.SimpleWorldFrame;
  */
 public class BotLastTouchedBallCalculator
 {
-	@Configurable(comment = "Threshold [rad] to consider the ball heading to be changed", defValue = "0.1")
-	private static double ballHeadingDiffThreshold = 0.1;
-	
-	@Configurable(comment = "Min Gain [m/s] in velocity that counts as kick", defValue = "0.3")
-	private static double velGainThreshold = 0.3;
-	
-	@Configurable(comment = "Search radius [mm] around robots to look for ball to consider bots close", defValue = "300.0")
-	private static double searchRadius = 300;
-	
+	@Configurable(comment = "Distance factor on ball velocity ", defValue = "50.0")
+	private static double searchDistanceFactor = 50;
+
+	@Configurable(comment = "Max search distance in front of the ball [mm]", defValue = "100.0")
+	private static double searchDistanceMaxFwd = 100;
+
+	@Configurable(comment = "Max search distance behind the ball [mm]", defValue = "10.0")
+	private static double searchDistanceMaxBwd = 10;
+
 	static
 	{
 		ConfigRegistration.registerClass("wp", BotLastTouchedBallCalculator.class);
 	}
-	
-	private SimpleWorldFrame wFrame;
-	private SimpleWorldFrame prevWFrame;
-	
-	
-	public BotLastTouchedBallCalculator(final SimpleWorldFrame frame, final SimpleWorldFrame prevFrame)
-	{
-		wFrame = frame;
-		prevWFrame = prevFrame;
-	}
-	
-	
+
+
 	/**
 	 * @return botIDs of bots that last touched ball
 	 */
-	public Set<BotID> currentlyTouchingBots()
+	public Set<BotID> currentlyTouchingBots(final SimpleWorldFrame wFrame)
 	{
 		if (wFrame.getBall().getPos3().z() > RuleConstraints.getMaxRobotHeight())
 		{
 			return Collections.emptySet();
 		}
-		
-		final IVector2 prevHeading = prevWFrame.getBall().getVel();
-		final IVector2 curHeading = wFrame.getBall().getVel();
-		
-		final Set<BotID> botsTouchingBall = getBotsCloseToBall().stream()
-				.filter(b -> b.getBotShape().isPointInShape(wFrame.getBall().getPos(), Geometry.getBallRadius() + 10))
+
+		var pos = wFrame.getBall().getPos();
+		var speed = wFrame.getBall().getVel().getLength2();
+		var offsetFwd = wFrame.getBall().getVel()
+				.scaleToNew(Math.min(searchDistanceMaxFwd, speed * searchDistanceFactor));
+		var offsetBwd = wFrame.getBall().getVel()
+				.scaleToNew(Math.min(searchDistanceMaxBwd, speed * searchDistanceFactor));
+		var line = Lines.segmentFromPoints(pos.addNew(offsetFwd), pos.subtractNew(offsetBwd));
+
+		double minDistToBot = Geometry.getBotRadius() + Geometry.getBallRadius() + 10;
+		return wFrame.getBots().values().stream()
+				.filter(bot -> line.distanceTo(bot.getPos()) < minDistToBot)
 				.map(ITrackedBot::getBotId)
 				.collect(Collectors.toSet());
-		
-		if (prevHeading.getLength2() < 0.1 || curHeading.getLength2() < 0.1)
-		{
-			return botsTouchingBall;
-		}
-		
-		if (ballHeadingChanged(curHeading, prevHeading)
-				|| ballGainedVelocity(curHeading, prevHeading))
-		{
-			botsTouchingBall.addAll(getBotsCloseToBall().stream()
-					.filter(this::ballOriginatesFromBot)
-					.map(ITrackedBot::getBotId)
-					.collect(Collectors.toSet()));
-		}
-		return botsTouchingBall;
-	}
-	
-	
-	private boolean ballOriginatesFromBot(final ITrackedBot bot)
-	{
-		return Lines
-				.segmentFromOffset(wFrame.getBall().getPos(),
-						wFrame.getBall().getVel().scaleToNew(-Geometry.getBotRadius()))
-				.distanceTo(bot.getPos()) < Geometry.getBotRadius();
-	}
-	
-	
-	private List<ITrackedBot> getBotsCloseToBall()
-	{
-		return wFrame.getBots().values().stream()
-				.filter(bot -> bot.getPos().distanceTo(wFrame.getBall().getPos()) < searchRadius)
-				.collect(Collectors.toList());
-	}
-	
-	
-	private boolean ballHeadingChanged(final IVector2 curHeading, final IVector2 prevHeading)
-	{
-		double absHeadingDiff = curHeading.angleToAbs(prevHeading).orElseThrow(IllegalStateException::new);
-		return absHeadingDiff > ballHeadingDiffThreshold;
-	}
-	
-	
-	private boolean ballGainedVelocity(final IVector2 curHeading, final IVector2 prevHeading)
-	{
-		return (curHeading.getLength() - prevHeading.getLength()) > velGainThreshold;
 	}
 }

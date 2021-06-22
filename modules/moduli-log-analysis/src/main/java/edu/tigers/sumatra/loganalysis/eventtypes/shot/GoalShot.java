@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.loganalysis.eventtypes.shot;
@@ -8,13 +8,13 @@ import edu.tigers.sumatra.drawable.DrawableAnnotation;
 import edu.tigers.sumatra.drawable.DrawableCircle;
 import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.gamelog.proto.LogLabels;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.loganalysis.LogEventProtobufMapper;
 import edu.tigers.sumatra.math.circle.Circle;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.line.Line;
 import edu.tigers.sumatra.math.vector.IVector2;
-import edu.tigers.sumatra.labeler.LogLabels;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 import java.awt.Color;
@@ -41,33 +41,33 @@ public class GoalShot implements IShotEventType {
 
 	public GoalShot(ShotBuilder builder)
 	{
-		this.startTimestamp = builder.getStartTimestamp();
-		this.endTimestamp = builder.getEndTimestamp();
+		this.startTimestamp = builder.getStartFrame();
+		this.endTimestamp = builder.getEndFrame();
 		this.successful = builder.isSuccessful();
 		this.shooterBot = builder.getPasserBot();
 		this.endOfPass = builder.getEndOfPass();
 
 	}
-	
-	
+
+
 	public long getStartTimestamp()
 	{
 		return startTimestamp;
 	}
-	
-	
+
+
 	public long getEndTimestamp()
 	{
 		return endTimestamp;
 	}
-	
-	
+
+
 	public boolean isSuccessful()
 	{
 		return successful;
 	}
-	
-	
+
+
 	public ITrackedBot getShooterBot()
 	{
 		return shooterBot;
@@ -120,7 +120,7 @@ public class GoalShot implements IShotEventType {
 
 
 	@Override
-	public void addEventTypeTo(final LogLabels.Labels.Builder labelsBuilder)
+	public void addEventTypeTo(final LogLabels.Labels.Builder labelsBuilder, final int frameId)
 	{
 		LogEventProtobufMapper mapper = new LogEventProtobufMapper();
 		labelsBuilder.addGoalShotLabels(mapper.mapGoalShot(this));

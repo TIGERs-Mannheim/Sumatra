@@ -13,47 +13,17 @@ import java.util.Map;
 
 public class OffensiveTreeProvider extends AModule
 {
-	private Map<ETeamColor, OffensiveActionTreeMap> treeMaps = new EnumMap<>(ETeamColor.class);
-	
-	
-	@Override
-	public void initModule()
-	{
-		treeMaps.put(ETeamColor.YELLOW, new OffensiveActionTreeMap());
-		treeMaps.put(ETeamColor.BLUE, new OffensiveActionTreeMap());
-	}
-	
-	
-	@Override
-	public void startModule()
-	{
-		// nothing to do
-	}
-	
-	
-	@Override
-	public void stopModule()
-	{
-		// nothing to do
-	}
-	
-	
-	@Override
-	public void deinitModule()
-	{
-		// nothing to do
-	}
-	
-	
+	private final Map<ETeamColor, OffensiveActionTreeMap> treeMaps = new EnumMap<>(ETeamColor.class);
+
+
 	public void updateTree(OffensiveActionTreeMap map, final ETeamColor color)
 	{
 		treeMaps.put(color, map);
 	}
-	
-	
+
+
 	public OffensiveActionTreeMap getTreeMap(ETeamColor color)
 	{
-		return treeMaps.get(color);
+		return treeMaps.computeIfAbsent(color, c -> new OffensiveActionTreeMap());
 	}
-	
 }

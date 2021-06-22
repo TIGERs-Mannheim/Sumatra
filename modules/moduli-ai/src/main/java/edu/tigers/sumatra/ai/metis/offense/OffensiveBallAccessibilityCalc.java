@@ -1,14 +1,12 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.offense;
 
 import com.github.g3force.configurable.Configurable;
-import edu.tigers.sumatra.ai.BaseAiFrame;
 import edu.tigers.sumatra.ai.metis.ACalculator;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
-import edu.tigers.sumatra.ai.metis.TacticalField;
 import edu.tigers.sumatra.ai.metis.targetrater.AngleRange;
 import edu.tigers.sumatra.drawable.DrawableArc;
 import edu.tigers.sumatra.drawable.DrawableCircle;
@@ -18,16 +16,18 @@ import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.circle.Circle;
-import edu.tigers.sumatra.math.circle.ICircle;
 import edu.tigers.sumatra.math.line.ILine;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+import lombok.Getter;
 
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 /**
@@ -35,47 +35,53 @@ import java.util.Map;
  */
 public class OffensiveBallAccessibilityCalc extends ACalculator
 {
-
 	@Configurable(defValue = "1 Y")
-	private static BotID butToShowDebugShapesFor = BotID.createBotId(0, ETeamColor.YELLOW);
+	private static BotID botToShowDebugShapesFor = BotID.createBotId(0, ETeamColor.YELLOW);
+
+	@Getter
+	private Map<BotID, List<AngleRange>> inaccessibleBallAngles;
+
 
 	@Override
-	public void doCalc(final TacticalField newTacticalField, final BaseAiFrame baseAiFrame)
+	public void doCalc()
 	{
-		IVector2 ballPos = getWFrame().getBall().getPos();
-		
-		List<AngleRange> unaccessibleAngles = new ArrayList<>();
-		Map<BotID, List<AngleRange>> map = new HashMap<>();
+		List<AngleRange> inaccessibleAngles = new ArrayList<>();
+		inaccessibleAngles.addAll(
+				createInaccessibleRangeForOpponentBots(getBall().getPos()));
+		inaccessibleAngles.addAll(
+				createInaccessibleRangeForPenaltyArea(getBall().getPos(), Geometry.getPenaltyAreaTheir()));
+		IPenaltyArea penaltyAreaOur = Geometry.getPenaltyAreaOur().withMargin(Geometry.getBotRadius());
+		inaccessibleAngles.addAll(
+				createInaccessibleRangeForPenaltyArea(getBall().getPos(), penaltyAreaOur));
 
-		unaccessibleAngles.addAll(addOpponentBotAngles(ballPos));
-		unaccessibleAngles.addAll(addPenaltyAreaAngles(ballPos, Geometry.getPenaltyAreaTheir()));
-		unaccessibleAngles.addAll(addPenaltyAreaAngles(ballPos, Geometry.getPenaltyAreaOur().withMargin(Geometry.getBotRadius())));
-		
+		inaccessibleBallAngles = new HashMap<>();
 		for (ITrackedBot tigerBot : getWFrame().getTigerBotsVisible().values())
 		{
 			// add generally forbidden angles
-			map.put(tigerBot.getBotId(), new ArrayList<>(unaccessibleAngles));
-			
+			ArrayList<AngleRange> inaccessibleAnglesForBot = new ArrayList<>(inaccessibleAngles);
+
 			// now add bot specific forbidden angles
 			for (ITrackedBot bot : getWFrame().getTigerBotsVisible().values())
 			{
 				if (bot.getBotId() != tigerBot.getBotId())
 				{
-					map.get(tigerBot.getBotId()).addAll(addUnaccesibleRangeByBot(ballPos, bot));
+					createInaccessibleRangeForBot(getBall().getPos(), bot)
+							.ifPresent(inaccessibleAnglesForBot::add);
 				}
 			}
-			if (tigerBot.getBotId().equals(butToShowDebugShapesFor))
+			if (tigerBot.getBotId().equals(botToShowDebugShapesFor))
 			{
-				visualizeApproachAngles(map.get(tigerBot.getBotId()));
+				visualizeApproachAngles(inaccessibleAnglesForBot);
 			}
+
+			inaccessibleBallAngles.put(tigerBot.getBotId(), inaccessibleAnglesForBot);
 		}
-		newTacticalField.setUnaccessibleBallAngles(map);
 	}
-	
-	
-	private List<AngleRange> addPenaltyAreaAngles(final IVector2 ballPos, final IPenaltyArea area)
+
+
+	private List<AngleRange> createInaccessibleRangeForPenaltyArea(final IVector2 ballPos, final IPenaltyArea area)
 	{
-		final List<AngleRange> unaccessibleAngles = new ArrayList<>();
+		final List<AngleRange> inaccessibleAngles = new ArrayList<>();
 		if (area.distanceTo(ballPos) < Geometry.getBotRadius())
 		{
 			List<ILine> edges = area.getRectangle().getEdges();
@@ -91,48 +97,54 @@ public class OffensiveBallAccessibilityCalc extends ACalculator
 					list.add(line.getStart());
 					list.add(line.getEnd());
 				}
-				unaccessibleAngles.addAll(addForbiddenRegionByPositions(ballPos, list));
+				inaccessibleAngles.add(createForbiddenRangeByPositions(ballPos, list));
 			}
 		}
-		return unaccessibleAngles;
-	}
-	
-	
-	private List<AngleRange> addOpponentBotAngles(final IVector2 ballPos)
-	{
-		final List<AngleRange> unaccessibleAngles = new ArrayList<>();
-		for (ITrackedBot bot : getWFrame().getFoeBots().values())
-		{
-			unaccessibleAngles.addAll(addUnaccesibleRangeByBot(ballPos, bot));
-		}
-		return unaccessibleAngles;
-	}
-	
-	
-	private List<AngleRange> addUnaccesibleRangeByBot(final IVector2 ballPos, final ITrackedBot bot)
-	{
-		final List<AngleRange> unaccessibleAngles = new ArrayList<>();
-		if (bot.getPos().distanceTo(ballPos) < Geometry.getBotRadius() * 4.0 && bot.getPos().distanceTo(ballPos) > 5)
-		{
-			double dist = Math.min(Geometry.getBotRadius() * 2.0, Math.max(1, ballPos.distanceTo(bot.getPos()) - 5));
-			ICircle botCircle = Circle.createCircle(bot.getPos(), dist);
-			List<IVector2> intersections = botCircle.tangentialIntersections(ballPos);
-			unaccessibleAngles.addAll(addForbiddenRegionByPositions(ballPos, intersections));
-		}
-		return unaccessibleAngles;
+		return inaccessibleAngles;
 	}
 
 
-	private List<AngleRange> addForbiddenRegionByPositions(final IVector2 ballPos, final List<IVector2> intersections)
+	private List<AngleRange> createInaccessibleRangeForOpponentBots(final IVector2 ballPos)
 	{
-		List<AngleRange> unaccessibleAngles = new ArrayList<>();
-		getNewTacticalField().getDrawableShapes().get(EAiShapesLayer.OFFENSIVE_ACCESSIBILITY)
+		return getWFrame().getOpponentBots().values().stream()
+				.map(bot -> createInaccessibleRangeForBot(ballPos, bot))
+				.filter(Optional::isPresent)
+				.map(Optional::get)
+				.collect(Collectors.toList());
+	}
+
+
+	private Optional<AngleRange> createInaccessibleRangeForBot(final IVector2 ballPos, final ITrackedBot bot)
+	{
+		// minDistBotToBall should be smaller than the minimum possible distance between opponent robot and ball, 
+		// when our robot is in between. 
+		// Otherwise, an inaccessible angle may be generated although the robot is already within this angle range.
+		double minDistBotToBall = Geometry.getBotRadius() * 2 + Geometry.getOpponentCenter2DribblerDist() - 20;
+		double maxCircleRadius = Geometry.getBotRadius() + 50;
+		// The offset is required for the tangential intersection below, otherwise ballPos would be on the circle
+		double tangentialIntersectionOffset = 5;
+		double distBotToBall = bot.getPos().distanceTo(ballPos);
+		double radius = Math.min(maxCircleRadius, distBotToBall - tangentialIntersectionOffset);
+		if (distBotToBall < minDistBotToBall && radius > 0)
+		{
+			var botCircle = Circle.createCircle(bot.getPos(), radius);
+			var intersections = botCircle.tangentialIntersections(ballPos);
+			return Optional.of(createForbiddenRangeByPositions(ballPos, intersections));
+		}
+		return Optional.empty();
+	}
+
+
+	private AngleRange createForbiddenRangeByPositions(final IVector2 ballPos, final List<IVector2> intersections)
+	{
+		getShapes(EAiShapesLayer.OFFENSIVE_ACCESSIBILITY)
 				.add(new DrawableCircle(Circle.createCircle(intersections.get(0), 50), Color.BLACK));
-		getNewTacticalField().getDrawableShapes().get(EAiShapesLayer.OFFENSIVE_ACCESSIBILITY)
+		getShapes(EAiShapesLayer.OFFENSIVE_ACCESSIBILITY)
 				.add(new DrawableCircle(Circle.createCircle(intersections.get(1), 50), Color.BLACK));
+
 		IVector2 left = intersections.get(0).subtractNew(ballPos);
 		IVector2 right = intersections.get(1).subtractNew(ballPos);
-		
+
 		double rightAngle;
 		double leftAngle;
 		if (left.angleTo(right).orElse(0.0) > 0)
@@ -144,29 +156,28 @@ public class OffensiveBallAccessibilityCalc extends ACalculator
 			leftAngle = left.getAngle();
 			rightAngle = right.getAngle();
 		}
-		
+
 		if (rightAngle > leftAngle)
 		{
 			rightAngle -= AngleMath.PI_TWO;
 		}
-		unaccessibleAngles.add(new AngleRange(rightAngle, leftAngle));
-		return unaccessibleAngles;
+		return AngleRange.fromAngles(rightAngle, leftAngle);
 	}
-	
-	
-	private void visualizeApproachAngles(final List<AngleRange> unaccessibleAngles)
+
+
+	private void visualizeApproachAngles(final List<AngleRange> inaccessibleAngles)
 	{
 		IVector2 ballPos = getWFrame().getBall().getPos();
 		DrawableCircle dc = new DrawableCircle(Circle.createCircle(ballPos, 250), new Color(42, 255, 0, 138));
 		dc.setFill(true);
-		getNewTacticalField().getDrawableShapes().get(EAiShapesLayer.OFFENSIVE_ACCESSIBILITY).add(dc);
+		getShapes(EAiShapesLayer.OFFENSIVE_ACCESSIBILITY).add(dc);
 
-		for (AngleRange range : unaccessibleAngles)
+		for (AngleRange range : inaccessibleAngles)
 		{
-			DrawableArc da = new DrawableArc(DrawableArc.createArc(ballPos, 250, range.getRightAngle(),
-					range.getAngleWidth()), new Color(255, 0, 0, 100));
+			DrawableArc da = new DrawableArc(DrawableArc.createArc(ballPos, 250, range.getRight(),
+					range.getWidth()), new Color(255, 0, 0, 100));
 			da.setFill(true);
-			getNewTacticalField().getDrawableShapes().get(EAiShapesLayer.OFFENSIVE_ACCESSIBILITY).add(da);
+			getShapes(EAiShapesLayer.OFFENSIVE_ACCESSIBILITY).add(da);
 		}
 	}
 }

@@ -1,0 +1,632 @@
+:imagesdir: ../images
+
+:toc:
+
+= Sumatra Workshop
+
+== Introduction
+
+The aim of the workshop is to get acquainted with the architecture of the Sumatra KI by means of step-by-step instructions.
+The instructions should be so simple that they can be done stupidly by copy 'n paste.
+By the way, you're welcome to look around the code, compare other implementations, and question everything.
+
+The content of the workshop is of course somewhat artificial.
+The separation of duties between Metis, Play and Role is sometimes not kept correctly and serves only to have seen all levels.
+Orient yourself in doubt of existing code.
+
+The workshop assumes that you are working with IntelliJ. If you're using another IDE like Eclipse, you'll surely know what you're doing.
+Sumatra can be built with Gradle and is therefore not necessarily bound to a particular IDE.
+
+If you have any questions, you should contact someone who looks like he knows something.
+
+image:TIGERs.png[TIGERs Mannheim,350,350]
+
+// page break
+<<<
+
+== Task 1
+
+In the first task, you will first familiarize yourself with the operation of Sumatra.
+
+=== Build and Start
+
+* Sumatra should already be checked out and opened with IntelliJ
+* Select the Sumatra Dev run config top right and start Sumatra in debug mode (there is no reason not to start in debug mode)
+* Make sure that moduli -> sim.xml is selected
+
+=== Start a game using Referee Commands
+
+* Open `Ref` View
+* Press STOP (F3) -> The bots should all move and keep distance to the ball
+* Now sent a `FORCE_START` (F2) -> let's go!
+
+Here's a reference, which Referee Commands you can send when:
+
+image:referee-command-state-machine.png[Referee Command State Machine]
+
+=== Start a game using the AutoRef
+
+* Stop the game, if not already stopped or halted (see previous section)
+* Place the ball at the center
+* Open `AutoReferee` view
+* Select one of the following configurations:
+- Active -> Commands are sent
+- Passive -> Only rule violations are logged in the `Game Log` view
+* Go back to `Ref` View: Send a kickoff for Blue or Yellow -> The rest is up to the AutoRef
+* To see AutoRef decisions, open the `Game Log` View
+* The AutoRef also has its own shape layers -> find them in the `Visualizer` menu
+
+=== Halt a game
+
+* Stop all bots immediately:
+- Press the `Stop` button in the toolbar (stop sign with text), or Esc
+- Both AIs will switch to emergency mode
+- Switch both AIs back to match mode in the `AI` view or press F1
+* Sent a `HALT` command through the `Ref` view
+- This is how a human referee would halt a real game
+
+=== Pause simulation
+
+* In the `Sim` View: Press the pause button (Ctrl + p)
+* Navigate in the simulation forward or back via view (<<, >>) or shortcut (Ctrl + right / left)
+* You can also increase the speed of the simulation via the slider (if the laptop does not huff anyway ;-) Then rather slow it down)
+* The actual Simulation speed is displayed next to the target speed
+
+=== Point'n Click
+
+Info: All shortcuts are visible via the Visualizer menu
+
+* Stop the game, if you have not already done so
+* Select a robot in the bar on the left
+* Left click somewhere in the field -> The bot goes there
+* With Ctrl -> The bot looks to the ball at the target
+* With Shift -> The bot shoots to the point
+* With Ctrl + Shift -> The target sticks to the Mouse
+* Right click into the field -> The ball is moved there
+* With ctrl -> The ball is fired at max allowed speed
+* With shift -> The ball comes to a stop at the target
+* With shift + ctrl -> The ball has a target speed of 2m/s at the target
+* For all with Alt: Ball will be chipped
+
+=== Change Bot Params
+
+* Open `BotParams` view
+* Tigerbot v2016 -> movementLimits -> increase vel and acc
+* Send some bot around
+* Celebrate a faster robot (except when the game state is STOP)
+* Checkout the `Bots` view and see the current and maximum velocity of each bot
+* Reset all values ​​at the end or quit Sumatra and revert `config/botParamsDatabase.json`
+
+=== Change number of bots
+
+* Add up to 16 bots per team in the `Sim` view
+* They will spawn at the edge of the field if space is available
+* By default, the number of bots is automatically adjusted.
+This can be disabled via the hook 'Auto'.
+
+=== Recordings
+
+* Start a game
+* Record it with the Record button on the top left
+* Let the game run for a while
+* Then stop the recording by pressing the Record button again
+* Tip: First pause the simulation to save computing resources
+* Open the recording via the replay menu
+* A new window will open in which you can look at the game again and in detail
+* Both there and directly in Sumatra you can activate shape layers in the Visualizer menu
+* Navigate through the game
+* Change the playback speed
+* Use shortcuts (see tooltips on the buttons)
+
+=== Start individual skills
+
+* Open the `Skills` view, then select a bot
+* On the left is the Ultra panel for manual control (try it out)
+* Next to it, you can start Sumatra skills (e.g. the TouchKickSkill)
+* Next to it, you can start bot skills (e.g. BotSkillSine with `0,0 2 1`)
+
+=== Change configuration
+
+* Open the `Cfg` View
+* Select the "user" Tab
+* Go to Visualizer -> VisualizerAiPresenter -> moveToPenaltyAreaAllowed
+* Toggle the flag
+* Press `Apply`
+* Move a bot next to its own penalty area, then to the other side
+* Depending on the flag value, the bot should go through the penalty area or drive around it
+* The config is not persisted.
+To persist (write to file), press Apply, then Save.
+
+*Take your time and look around, next we are going to have hands on!*
+
+// page break
+<<<
+
+== Coding preparations
+
+Create your own branch for the workshop:
+
+In the bottom right corner, click on `Git: master` and in the upstairs window select `+ New Branch`, enter name (`checkout branch` should be selected) and click OK.
+
+Useful IntelliJ Shortcuts:
+
+|===
+|Shortcut | Description
+
+|Ctrl + N
+|Find class
+
+|Ctrl + Click on Object / Method / Class
+|Jump to ...
+
+|Alt + Enter (if code is highlighted in red)
+|Auto problem solution
+
+|Ctrl + Space
+|Auto Complete
+
+|Alt + Ins
+|Generate ... (getter, setter, ...)
+
+|Ctrl + O
+|Override Methods
+
+|Ctrl + Alt + O
+|Optimize Imports
+
+|Ctrl + Alt + L
+|Auto Code Formatter
+
+|Shift shift
+|search in project
+|===
+
+Names in Sumatra:
+
+|===
+| Prefix | Type | Example
+
+|A
+|Abstract Class
+|APlay
+
+|I
+|Interface
+|IState
+
+|E
+|Enum
+|ERole
+|===
+
+Note: This comes from a time when this was done that way.
+Today, thanks to better IDEs, it would not be necessary anymore, but we want to keep it consistent.
+
+Hint: The code snippets in this workshop will not contain any imports.
+IntelliJ will help you with that.
+It will mark the class in red and suggest importing the class.
+You can confirm new imports with Alt+Enter.
+
+== Task 2 - Introduction to Roles
+
+=== Background
+
+> Each bot plays its role.
+
+A role is used for high level control of single robots.
+
+=== Implementation
+
+Create a new class `edu.tigers.sumatra.ai.pandora.roles.workshop.WorkshopRole` in the `moduli-ai` module.
+You can either navigate there by hand, but the faster way is using the file search with Ctrl+Shift+N and 'roles'.
+Then right click on the `roles` package -> New -> Java Class -> `workshop.WorkshopRole`.
+This will create a new package `workshop` and a class `WorkshopRole`.
+
+Extend you new role from `ARole`:
+
+[source,java]
+----
+public class WorkshopRole extends ARole {
+}
+----
+
+IntelliJ will ask you to add a default constructor.
+Accept the hint and you will get a constructor.
+All roles should pass the required `type` parameter within the constructor, so let's write it like this:
+
+[source,java]
+----
+public class WorkshopRole extends ARole
+{
+	public WorkshopRole()
+	{
+		super(ERole.WORKSHOP);
+	}
+}
+----
+
+Now, we need to add the new Enum-value to the enum class `ERole`.
+Choose `Create Enum constant` from the hints and change it to:
+
+[source,java]
+----
+enum ERole {
+   // ...
+
+   WORKSHOP(new InstanceableClass<>(WorkshopRole.class)),
+
+   // ...
+}
+----
+
+Make sure to add the comma to the end and move the `;` to an empty line again.
+That way, GIT diffs will look nicer.
+
+We would like to have the role drive to a certain target.
+The target should be passed in from outside and should be updatable, so let's store the target and add a constructor and a setter:
+
+[source,java]
+----
+public class WorkshopRole extends ARole
+{
+    @Setter
+	private IVector2 target;
+
+
+	public WorkshopRole()
+	{
+		super(ERole.WORKSHOP);
+	}
+}
+----
+
+As we added a new parameter to the constructor, we also need to add the parameter to the `ERole` value:
+
+[source,java]
+----
+enum ERole {
+
+    // ...
+
+    WORKSHOP(ic(WorkshopRole.class)
+        .setterParam(IVector2.class, "target", "pi*100,500", WorkshopRole::setTarget)),
+
+    // ...
+
+}
+----
+
+The actual logic of a role is mostly implemented in states that allow to easily switch between different behaviors.
+We only need a single state:
+
+[source,java]
+----
+private class WorkshopState extends AState {
+
+}
+----
+
+Set this as the initial state for the role in the constructor, so that it is actually used:
+
+[source,java]
+----
+class WorkshopRole
+{
+    // ...
+    public WorkshopRole()
+    {
+        super(ERole.WORKSHOP);
+        setInitialState(new WorkshopState());
+    }
+    // ...
+}
+----
+
+We will use the standard `MoveToSkill` to send the robot to our target.
+We will create and activate the skill once when the state is initialized and then update the robot destination continuously based on our `target`:
+
+[source,java]
+----
+private class WorkshopState extends RoleState<MoveToSkill>
+{
+    WorkshopState()
+    {
+        super(MoveToSkill::new);
+    }
+
+
+    @Override
+    protected void onUpdate()
+    {
+        // Update the robot destination in the skill with our target (which may got updated by the Setter)
+        skill.updateDestination(target);
+        // Let the bot look at the opponents goal center
+        // The `Geometry` class is a singleton accessor to the currently active field dimensions.
+        // Avoid storing any values from it, as they can always change.
+        skill.updateLookAtTarget(Geometry.getGoalTheir().getCenter());
+    }
+}
+----
+
+That's it!
+Next, you will test your work.
+
+=== Test
+
+* Start Sumatra as described in the first chapter
+* Open the `AI` view
+* Choose the YELLOW or BLUE AI tab
+* Switch to `TEST_MODE`
+* Switch to the `Roles` tab
+* Choose the new `WORKSHOP` role
+* Choose an ID that is present on the field (0 by default)
+* Click `Create`
+* The role should move to the specified position
+* Change the target and bot id and create another role
+* That way, you could assign a role to each bot on the field
+
+== Task 3 - Introduction to Metis
+
+=== Background
+
+The Metis module is responsible for calculating all the information that we need and that are independent of roles.
+The output is stored in the class `TacticalField` which can be read, but not written to, from plays and roles.
+
+=== Implementation
+
+Create a new class `edu.tigers.sumatra.ai.metis.workshop.WorkshopResult` to store the target that we will calculate:
+
+[source,java]
+----
+@Data
+@Builder
+public class WorkshopResult
+{
+	private IVector2 targetPos = Vector2.zero();
+}
+----
+
+Add a new field to the `TacticalField`:
+
+[source,java]
+----
+class TacticalField {
+   // ...
+   WorkshopResult workshopResult;
+   // ...
+}
+----
+
+We will also need a new shape layer where we can draw our own shapes.
+Add
+
+[source,java]
+----
+enum EAIShapeLayer {
+   // ...
+   TEST_WORKSHOP("Workshop", "Test"),
+   // ...
+}
+----
+
+to `EAiShapesLayer`.
+This will add a new shape layer into the 'Test' menu called 'Workshop'.
+
+Now we are ready to implement our new calculator.
+Create a new class `edu.tigers.sumatra.ai.metis.workshop.WorkshopCalc` in `moduli-ai`, let it extend from `ACalculator` and implement `doCalc`:
+The following code snippet will already contain an implementation.
+Try to guess what it will do.
+You can play around with it later:
+
+[source,java]
+----
+package edu.tigers.sumatra.ai.metis.workshop;
+
+import edu.tigers.sumatra.drawable.DrawableCircle;
+import edu.tigers.sumatra.drawable.IDrawableShape;
+import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.line.ILine;
+import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.wp.data.ITrackedBot;
+import lombok.Getter;
+
+import java.awt.Color;
+import java.util.List;
+
+
+public class WorkshopCalc extends ACalculator
+{
+	@Getter
+	private WorkshopResult workShopResult;
+
+	@Override
+	protected void doCalc()
+	{
+		BotID firstBotId = BotID.createBotId(1, getAiFrame().getTeamColor().opposite());
+		BotID secondBotId = BotID.createBotId(2, getAiFrame().getTeamColor().opposite());
+
+		ITrackedBot firstBot = getWFrame().getOpponentBot(firstBotId);
+		ITrackedBot secondBot = getWFrame().getOpponentBot(secondBotId);
+
+		if (firstBot == null || secondBot == null)
+		{
+			// Robots are missing
+			return;
+		}
+
+		ILine line = Line.fromPoints(firstBot.getPos(), secondBot.getPos());
+		IVector2 target = line.getStart().addNew(line.directionVector().multiplyNew(0.5));
+		workShopResult = WorkshopResult.builder()
+				.targetPos(target)
+				.build();
+
+		List<IDrawableShape> shapes = getShapes(EAiShapesLayer.TEST_WORKSHOP);
+		DrawableCircle dCircle = new DrawableCircle(Circle.createCircle(target, 100), Color.RED);
+		dCircle.setStrokeWidth(30);
+		shapes.add(dCircle);
+	}
+}
+----
+
+The last thing that we have to do is to register the new calculator.
+Add the following lines to the `Metis` class constructor:
+
+[source,java]
+----
+class Metis {
+   public Metis()
+   {
+       // ...
+
+       var workshopCalc = register(new WorkshopCalc());
+       connect(TacticalFieldBuilder::workshopResult, workshopCalc::getWorkshopResult);
+
+       // ...
+   }
+}
+----
+
+All calculators are run in the order they are registered.
+
+=== Testing
+
+* Start Sumatra again
+* Move Yellow robots 1 und 2 somewhere on the field with a distance of 1-2m
+* Activate the new shape layer through the Visualizer menu (Test -> Workshop)
+* You should see a red circle between the two robots
+
+If you like, you can play around with the code in the calculator.
+Pro-tip: Edit some code without adding new fields or methods.
+Then rebuild with the hammer icon.
+IntelliJ will ask if it should reload the code.
+Confirm, and your changes will most likely be applied without restarting Sumatra.
+Saves a lot of time!
+
+== Task 4 - Introduction to Plays
+
+=== Background
+
+Plays are used to coordinate a set of roles.
+The input to a play is a set of bot ids that can be assigned to roles.
+
+=== Implementation
+
+Create a new play `edu.tigers.sumatra.ai.pandora.plays.workshop.WorkshopPlay`:
+
+[source,java]
+----
+package edu.tigers.sumatra.ai.pandora.plays.workshop;
+
+import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
+import edu.tigers.sumatra.ai.metis.MetisAiFrame;
+import edu.tigers.sumatra.ai.pandora.plays.APlay;
+import edu.tigers.sumatra.ai.pandora.plays.EPlay;
+import edu.tigers.sumatra.ai.pandora.roles.ARole;
+import edu.tigers.sumatra.ai.pandora.roles.workshop.WorkshopRole;
+import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.math.vector.Vector2;
+
+
+public class WorkshopPlay extends APlay
+{
+	public WorkshopPlay()
+	{
+		super(EPlay.WORKSHOP);
+	}
+
+
+	@Override
+	public void updateBeforeRoles(final AthenaAiFrame frame)
+	{
+		super.updateBeforeRoles(frame);
+
+		WorkshopResult result = frame.getTacticalField().getWorkshopResult();
+		if(!result)
+		{
+				// Calculator result is not available
+				return;
+		}
+		IVector2 target = result.getTargetPos();
+
+		int numRoles = getRoles().size();
+		if (numRoles == 0)
+		{
+			return;
+		}
+		IVector2 direction = Vector2.fromX(1);
+		IVector2 start = target.subtractNew(direction.multiplyNew(100.0 * (numRoles - 1)));
+		int i = 0;
+		for (ARole role : getRoles())
+		{
+			WorkshopRole wsRole = (WorkshopRole) role;
+			wsRole.setTarget(start.addNew(direction.multiplyNew(200.0 * i)));
+			i++;
+		}
+	}
+
+
+	@Override
+	protected ARole onRemoveRole()
+	{
+		return getLastRole();
+	}
+
+
+	@Override
+	protected ARole onAddRole()
+	{
+		return new WorkshopRole();
+	}
+}
+----
+
+And add it to the existing class `EPlay`:
+
+[source,java]
+----
+enum EPlay
+{
+   // ...
+   WORKSHOP(new InstanceableClass<>(WorkshopPlay.class)),
+   // ...
+}
+----
+
+=== Testing
+
+* Start Sumatra again
+* Prepare the robots like in the last task
+* Select the Yellow AI in the `Ai` view
+* Switch it to `OFF` (remember to switch it back on after the workshop)
+* Select the Blue AI
+* Switch it to `TEST_MODE`
+* Select the `WORKSHOP` play from the drop down menu and press create
+* Select the robots that you want to assign (using shift/ctrl) and press assign
+* Blue robots should align themselves between the yellow ones
+
+Done!
+Play around with the code to get more familiar with what is happening.
+
+== Task 5 - Get creative!
+
+You now have a basic knowledge of the AI structure.
+To become more familiar, become creative.
+Suggestions:
+
+* Changes the Metis calculation
+- Use different methods from common-math: vectors, lines, circles, etc ...
+- Add more data to the `WorkshopResult`, like a direction for aligning the robots
+* Arrange the roles such that they will use the shortest cumulative way (Tip: There is already an implementation in `APlay`)
+* Add a new state to the role
+- When goal is reached, then let the bot rotate in place (Tip: `TimestampTimer`)
+- You could create a new skill here!
+(See ASkill)
+
+== Test Workshop result on the field
+
+Does everything work in the simulation?
+Well, then nothing can go wrong in the field right?
+:) Well, let's see.
+Off to the field!

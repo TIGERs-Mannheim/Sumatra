@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.skillsystem.skills.util;
 
 
@@ -5,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.within;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,8 +24,8 @@ import edu.tigers.sumatra.math.vector.Vector2;
 public class PenAreaBoundaryTest
 {
 	private PenAreaBoundary penAreaBoundary = PenAreaBoundary.ownWithMargin(10);
-	
-	
+
+
 	@Test
 	public void closestPoint()
 	{
@@ -39,15 +44,15 @@ public class PenAreaBoundaryTest
 				.closestPoint(Vector2.fromXY(penAreaBoundary.getStart().x() - 100, penAreaBoundary.getWidth())))
 						.isEqualTo(Vector2.fromXY(penAreaBoundary.getStart().x(), penAreaBoundary.getEnd().y()));
 	}
-	
-	
+
+
 	@Test
 	public void projectPoint()
 	{
 		// from center point
 		assertThat(penAreaBoundary.projectPoint(Vector2.zero()))
 				.isEqualTo(Vector2.fromX(penAreaBoundary.getCorner1().x()));
-		
+
 		// front
 		assertThat(penAreaBoundary
 				.projectPoint(Vector2.fromXY(penAreaBoundary.getCorner1().x() + penAreaBoundary.getDepth(), -100)))
@@ -59,12 +64,12 @@ public class PenAreaBoundaryTest
 		assertThat(penAreaBoundary
 				.projectPoint(Vector2.fromXY(penAreaBoundary.getStart().x() + 100, penAreaBoundary.getWidth())))
 						.isEqualTo(Vector2.fromXY(penAreaBoundary.getStart().x() + 50, penAreaBoundary.getEnd().y()));
-		
+
 		// inside
 		assertThat(penAreaBoundary
 				.projectPoint(Vector2.fromXY(penAreaBoundary.getCorner1().x() - penAreaBoundary.getDepth() / 2, -100)))
 						.isEqualTo(Vector2.fromXY(penAreaBoundary.getCorner1().x(), -200));
-		
+
 		// outside field
 		assertThat(penAreaBoundary
 				.projectPoint(Vector2.fromXY(penAreaBoundary.getStart().x() - 100, -penAreaBoundary.getWidth())))
@@ -73,8 +78,8 @@ public class PenAreaBoundaryTest
 				.projectPoint(Vector2.fromXY(penAreaBoundary.getStart().x() - 100, penAreaBoundary.getWidth())))
 						.isEqualTo(Vector2.fromXY(penAreaBoundary.getStart().x(), penAreaBoundary.getEnd().y()));
 	}
-	
-	
+
+
 	@Test
 	public void nextToInPositiveDirection()
 	{
@@ -98,8 +103,8 @@ public class PenAreaBoundaryTest
 		}
 		fail("End of boundary not reached");
 	}
-	
-	
+
+
 	@Test
 	public void nextToInNegativeDirection()
 	{
@@ -123,50 +128,51 @@ public class PenAreaBoundaryTest
 		}
 		fail("End of boundary not reached");
 	}
-	
-	
+
+
 	@Test
-	@SuppressWarnings("OptionalGetWithoutIsPresent")
 	public void nextTo()
 	{
-		double stepSize = 3;
+		double stepSize = 10;
 		double margin = Geometry.getBotRadius() * 2;
 		for (ILineSegment edge : penAreaBoundary.getEdges())
 		{
-			int steps = (int) ((edge.getLength() - margin) / stepSize);
-			for (int i = 0; i < steps; i++)
+			List<IVector2> points = new ArrayList<>(3);
+			points.add(edge.getStart());
+			points.add(edge.stepAlongLine(stepSize));
+			points.add(edge.stepAlongLine(edge.getLength() - margin - stepSize));
+			for(IVector2 current : points)
 			{
-				final IVector2 current = edge.stepAlongLine((i + 1) * stepSize);
 				final Optional<IVector2> next = penAreaBoundary.nextTo(current, margin, 1);
 				assertThat(next)
-						.as("Point exists for i=%d", i)
+						.as("Point exists for %s", current)
 						.isPresent();
 				assertThat(current.distanceTo(next.get()))
-						.as("Distance between points is equal to margin for i=%d", i)
+						.as("Distance between points is equal to margin for %s", current)
 						.isCloseTo(margin, within(1e-10));
 			}
 		}
 	}
-	
-	
+
+
 	@Test
 	public void distanceBetween()
 	{
 		double x = penAreaBoundary.getCorner1().x();
 		double y = penAreaBoundary.getCorner2().y();
-		
+
 		// front
 		assertThat(penAreaBoundary.distanceBetween(Vector2.fromXY(x, 50), Vector2.fromXY(x, 0)))
 				.isCloseTo(50, within(1e-10));
 		assertThat(penAreaBoundary.distanceBetween(Vector2.fromXY(x, -50), Vector2.fromXY(x, -100)))
 				.isCloseTo(50, within(1e-10));
-		
+
 		// side
 		assertThat(penAreaBoundary.distanceBetween(Vector2.fromXY(x - 50, y), Vector2.fromXY(x - 100, y)))
 				.isCloseTo(50, within(1e-10));
 		assertThat(penAreaBoundary.distanceBetween(Vector2.fromXY(x - 50, -y), Vector2.fromXY(x - 100, -y)))
 				.isCloseTo(50, within(1e-10));
-		
+
 		// negative side -> front
 		assertThat(penAreaBoundary.distanceBetween(Vector2.fromXY(x - 50, -y), Vector2.fromXY(x, -y + 80)))
 				.isCloseTo(130, within(1e-10));
@@ -186,24 +192,24 @@ public class PenAreaBoundaryTest
 		assertThat(penAreaBoundary.distanceBetween(Vector2.fromXY(x, y - 80), Vector2.fromXY(x - 50, y)))
 				.isCloseTo(130, within(1e-10));
 	}
-	
-	
+
+
 	@Test
 	public void compare()
 	{
 		double x = penAreaBoundary.getCorner1().x();
 		double y = penAreaBoundary.getCorner2().y();
-		
+
 		// equal
 		assertThat(penAreaBoundary.compare(Vector2.fromXY(x, 0), Vector2.fromXY(x, 0))).isEqualTo(0);
 		assertThat(penAreaBoundary.compare(Vector2.fromXY(x, 50), Vector2.fromXY(x, 50))).isEqualTo(0);
 		assertThat(penAreaBoundary.compare(Vector2.fromXY(x - 50, y), Vector2.fromXY(x - 50, y))).isEqualTo(0);
 		assertThat(penAreaBoundary.compare(Vector2.fromXY(x - 50, -y), Vector2.fromXY(x - 50, -y))).isEqualTo(0);
-		
+
 		// negative side
 		assertThat(penAreaBoundary.compare(Vector2.fromXY(x - 100, -y), Vector2.fromXY(x - 99, -y))).isEqualTo(-1);
 		assertThat(penAreaBoundary.compare(Vector2.fromXY(x - 99, -y), Vector2.fromXY(x - 100, -y))).isEqualTo(1);
-		
+
 		// front
 		assertThat(penAreaBoundary.compare(Vector2.fromXY(x, 50), Vector2.fromXY(x, 51))).isEqualTo(-1);
 		assertThat(penAreaBoundary.compare(Vector2.fromXY(x, 51), Vector2.fromXY(x, 50))).isEqualTo(1);
@@ -211,21 +217,21 @@ public class PenAreaBoundaryTest
 		assertThat(penAreaBoundary.compare(Vector2.fromXY(x, -49), Vector2.fromXY(x, -50))).isEqualTo(1);
 		assertThat(penAreaBoundary.compare(Vector2.fromXY(x, -50), Vector2.fromXY(x, 50))).isEqualTo(-1);
 		assertThat(penAreaBoundary.compare(Vector2.fromXY(x, 50), Vector2.fromXY(x, -50))).isEqualTo(1);
-		
+
 		// positive side
 		assertThat(penAreaBoundary.compare(Vector2.fromXY(x - 100, y), Vector2.fromXY(x - 99, y))).isEqualTo(1);
 		assertThat(penAreaBoundary.compare(Vector2.fromXY(x - 99, y), Vector2.fromXY(x - 100, y))).isEqualTo(-1);
-		
+
 		// negative side -> front
 		assertThat(penAreaBoundary.compare(Vector2.fromXY(x - 50, -y), Vector2.fromXY(x, -y + 80))).isEqualTo(-1);
 		// front -> negative side
 		assertThat(penAreaBoundary.compare(Vector2.fromXY(x, -y + 80), Vector2.fromXY(x - 50, -y))).isEqualTo(1);
-		
+
 		// positive side -> front
 		assertThat(penAreaBoundary.compare(Vector2.fromXY(x - 50, y), Vector2.fromXY(x, y - 80))).isEqualTo(1);
 		// front -> positive side
 		assertThat(penAreaBoundary.compare(Vector2.fromXY(x, y - 80), Vector2.fromXY(x - 50, y))).isEqualTo(-1);
-		
+
 		// negative side -> positive side
 		assertThat(penAreaBoundary.compare(Vector2.fromXY(x - 50, -y), Vector2.fromXY(x - 50, y))).isEqualTo(-1);
 		// positive side -> negative side

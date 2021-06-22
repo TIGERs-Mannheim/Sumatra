@@ -1,22 +1,11 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.pandora.plays.match.defense;
 
-import java.awt.Color;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.metis.ballresponsibility.EBallResponsibility;
@@ -40,6 +29,16 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.skillsystem.skills.util.PenAreaBoundary;
 
+import java.awt.Color;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 
 /**
  * The group containing all penArea bots
@@ -52,11 +51,11 @@ public class PenAreaGroup extends ADefenseGroup
 	@Configurable(defValue = "350.0", comment = "Distance when a bot is considered close enough that other bots can leave the protected target")
 	private static double interchangeDist = 350.0;
 
-	@Configurable(comment = "Distance between the bots", defValue = "20.0")
-	private static double distBetweenBots = 20.0;
+	@Configurable(comment = "Distance between the bots", defValue = "10.0")
+	private static double distBetweenBots = 10.0;
 
-	@Configurable(defValue = "10.0", comment = "Extra margin to default penArea margin (must be >0 to avoid bad pathplanning)")
-	private static double penAreaExtraMargin = 10.0;
+	@Configurable(defValue = "70.0", comment = "Extra margin to default penArea margin (must be >0 to avoid bad pathplanning)")
+	private static double penAreaExtraMargin = 70.0;
 
 
 	static
@@ -85,7 +84,11 @@ public class PenAreaGroup extends ADefenseGroup
 		penAreaBoundary = PenAreaBoundary
 				.ownWithMargin(Geometry.getBotRadius() + Geometry.getPenaltyAreaMargin() + penAreaExtraMargin);
 
-		List<PenAreaThreatAssigment> threatAssignments = getDefenseThreatAssignments();
+		IVector2 ballPos = aiFrame.getWorldFrame().getBall().getPos();
+		boolean ballInPenArea = Geometry.getPenaltyAreaOur().withMargin(300).isPointInShapeOrBehind(ballPos);
+		List<PenAreaThreatAssigment> threatAssignments = ballInPenArea && aiFrame.getGameState().isBallPlacement() ?
+				Collections.emptyList() :
+				getDefenseThreatAssignments();
 
 		List<TargetGroup> reducedTargetGroups = reduceThreatAssignmentsToTargetGroups(threatAssignments);
 		drawReducedTargetGroups(reducedTargetGroups);
@@ -130,8 +133,8 @@ public class PenAreaGroup extends ADefenseGroup
 		spaces.forEach(s -> getShapes().add(
 				new DrawableAnnotation(Lines.segmentFromPoints(s.start, s.end).getCenter(), String.valueOf(s.numTargets),
 						Color.orange)
-								.withCenterHorizontally(true)
-								.withOffset(Vector2.fromY(-100))));
+						.withCenterHorizontally(true)
+						.withOffset(Vector2.fromY(-100))));
 	}
 
 
@@ -613,7 +616,7 @@ public class PenAreaGroup extends ADefenseGroup
 
 	private boolean defendersAreAllowedToKick()
 	{
-		return aiFrame.getGamestate().isRunning()
+		return aiFrame.getGameState().isRunning()
 				&& defenseResponsibleForBall()
 				&& notTooCloseToPenArea();
 	}
@@ -641,40 +644,22 @@ public class PenAreaGroup extends ADefenseGroup
 	private Stream<DefenderPenAreaRole> penAreaDefendersStream()
 	{
 		return getRoles().stream().map(SwitchableDefenderRole::getNewRole)
-				.map(role -> (DefenderPenAreaRole) role);
+				.map(DefenderPenAreaRole.class::cast);
 	}
 
 
 	private List<IDrawableShape> getShapes()
 	{
-		return aiFrame.getTacticalField().getDrawableShapes().get(EAiShapesLayer.DEFENSE_PENALTY_AREA_GROUP);
-	}
-
-	private class PenAreaSpaces
-	{
-		IVector2 start;
-		IVector2 end;
-		int numTargets = 0;
-
-
-		public PenAreaSpaces(final IVector2 start, final IVector2 end)
-		{
-			this.start = start;
-			this.end = end;
-		}
-
-
-		double distByNumTargets()
-		{
-			return penAreaBoundary.distanceBetween(start, end) / (numTargets + 1);
-		}
+		return aiFrame.getShapeMap().get(EAiShapesLayer.DEFENSE_PENALTY_AREA_GROUP);
 	}
 
 	private static class TargetGroup
 	{
 		final IVector2 centerDest;
 		final List<IVector2> moveDestinations;
-		/** smaller is more important */
+		/**
+		 * smaller is more important
+		 */
 		final int priority;
 
 
@@ -689,9 +674,7 @@ public class PenAreaGroup extends ADefenseGroup
 		TargetGroup(final IVector2 centerDest, final int priority)
 		{
 			this.centerDest = centerDest;
-			List<IVector2> moveDest = new ArrayList<>();
-			moveDest.add(centerDest);
-			moveDestinations = Collections.unmodifiableList(moveDest);
+			moveDestinations = List.of(centerDest);
 			this.priority = priority;
 		}
 
@@ -732,6 +715,26 @@ public class PenAreaGroup extends ADefenseGroup
 		{
 			this.threat = threat;
 			this.assignedBots = assignedBots;
+		}
+	}
+
+	private class PenAreaSpaces
+	{
+		IVector2 start;
+		IVector2 end;
+		int numTargets = 0;
+
+
+		public PenAreaSpaces(final IVector2 start, final IVector2 end)
+		{
+			this.start = start;
+			this.end = end;
+		}
+
+
+		double distByNumTargets()
+		{
+			return penAreaBoundary.distanceBetween(start, end) / (numTargets + 1);
 		}
 	}
 }

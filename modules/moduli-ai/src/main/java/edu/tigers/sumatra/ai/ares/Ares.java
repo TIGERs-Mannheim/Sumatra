@@ -1,24 +1,13 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.ares;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import org.apache.log4j.Logger;
 
 import edu.tigers.sumatra.ai.athena.AthenaAiFrame;
 import edu.tigers.sumatra.ai.data.BotAiInformation;
 import edu.tigers.sumatra.ai.metis.EAiShapesLayer;
 import edu.tigers.sumatra.ai.pandora.plays.APlay;
-import edu.tigers.sumatra.ai.pandora.plays.EPlay;
 import edu.tigers.sumatra.ai.pandora.roles.ARole;
 import edu.tigers.sumatra.botmanager.botskills.data.MultimediaControl;
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
@@ -34,17 +23,22 @@ import edu.tigers.sumatra.skillsystem.skills.ISkill;
 import edu.tigers.sumatra.skillsystem.skills.IdleSkill;
 import edu.tigers.sumatra.statemachine.IState;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+import lombok.extern.log4j.Log4j2;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
  * Ares is responsible for executing skills that were requested by AI.<br>
  * It is also responsible for any other AI -> skill communication.
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
+@Log4j2
 public class Ares
 {
-	private static final Logger log = Logger.getLogger(Ares.class.getName());
 	private final ASkillSystem skillSystem;
 	private final Map<BotID, Boolean> botIsStopped = new HashMap<>();
 	private final Map<BotID, Double> maxVels = new HashMap<>();
@@ -124,72 +118,6 @@ public class Ares
 	}
 
 
-	private PathFinderPrioMap updatePathFinderPrioMap(final AthenaAiFrame frame)
-	{
-		PathFinderPrioMap map = PathFinderPrioMap.byBotId(frame.getTeamColor());
-		int prio = 100;
-		Set<BotID> activeDefenders = frame.getPlayStrategy().getActiveRoles(EPlay.DEFENSIVE).stream()
-				.map(ARole::getBotID).collect(Collectors.toSet());
-		for (BotID botId : frame.getTacticalField().getCrucialDefender())
-		{
-			if (activeDefenders.contains(botId))
-			{
-				map.setPriority(botId, prio--);
-				activeDefenders.remove(botId);
-			}
-		}
-
-		Set<BotID> activeOffenders = frame.getPlayStrategy().getActiveRoles(EPlay.OFFENSIVE).stream()
-				.map(ARole::getBotID).collect(Collectors.toSet());
-		for (BotID botId : frame.getTacticalField().getCrucialOffender())
-		{
-			if (activeOffenders.contains(botId))
-			{
-				map.setPriority(botId, prio--);
-				activeOffenders.remove(botId);
-			}
-		}
-		prio = updatePrio(map, prio, activeOffenders);
-
-		for (BotID botId : frame.getTacticalField().getDesiredBotMap().getOrDefault(EPlay.DEFENSIVE,
-				Collections.emptySet()))
-		{
-			if (activeDefenders.contains(botId))
-			{
-				map.setPriority(botId, prio--);
-				activeDefenders.remove(botId);
-			}
-		}
-		prio = updatePrio(map, prio, activeDefenders);
-
-		for (ARole role : frame.getPlayStrategy().getActiveRoles(EPlay.KEEPER))
-		{
-			map.setPriority(role.getBotID(), prio--);
-		}
-
-		for (ARole role : frame.getPlayStrategy().getActiveRoles(EPlay.SUPPORT).stream()
-				.sorted((r1, r2) -> BotID.getComparator().compare(r1.getBotID(), r2.getBotID()))
-				.collect(Collectors.toList()))
-		{
-			map.setPriority(role.getBotID(), prio--);
-		}
-
-		return map;
-	}
-
-
-	private int updatePrio(final PathFinderPrioMap map, int prio, final Set<BotID> bots)
-	{
-		int nextPrio = prio;
-		for (BotID botId : bots.stream().sorted((r1, r2) -> BotID.getComparator().compare(r1, r2))
-				.collect(Collectors.toList()))
-		{
-			map.setPriority(botId, nextPrio--);
-		}
-		return nextPrio;
-	}
-
-
 	/**
 	 * @param frame
 	 * @param aresData
@@ -198,8 +126,7 @@ public class Ares
 	{
 		executeSkills(frame);
 
-		PathFinderPrioMap map = updatePathFinderPrioMap(frame);
-
+		PathFinderPrioMap map = frame.getTacticalField().getPathFinderPrioMap();
 
 		List<ISkill> skills = skillSystem.getCurrentSkills(frame.getTeamColor());
 		Map<BotID, BotAiInformation> aiInfos = new HashMap<>();
@@ -209,13 +136,13 @@ public class Ares
 			{
 				continue;
 			}
-			MultimediaControl control = frame.getTacticalField().getMultimediaControl().get(skill.getBotId());
+			MultimediaControl control = frame.getBaseAiFrame().getMultimediaControl().get(skill.getBotId());
 			if (control != null)
 			{
 				skill.setMultimediaControl(control);
 				drawMultimediaControl(frame, skill.getBotId(), control);
 			}
-			skill.getMoveCon().setPrioMap(map);
+			skill.setPrioMap(map);
 
 			updateBotAiInfo(frame, skill, aiInfos);
 		}
@@ -230,7 +157,7 @@ public class Ares
 		{
 			return;
 		}
-		final List<IDrawableShape> shapes = frame.getTacticalField().getDrawableShapes()
+		final List<IDrawableShape> shapes = frame.getShapeMap()
 				.get(EAiShapesLayer.TEST_MULTIMEDIA);
 		shapes.add(new DrawableCircle(
 				Circle.createCircle(bot.getPos(), Geometry.getBotRadius() + 10),
@@ -251,15 +178,11 @@ public class Ares
 			return;
 		}
 
-		aiInfo.setSkill(skill.getType());
-		aiInfo.setSkillState(skill.getCurrentState());
-		aiInfo.setMaxProcTime(skill.getAverageTimeMeasure().getMaxTime());
-		aiInfo.setAvgProcTime(skill.getAverageTimeMeasure().getAverageTime());
 		aiInfos.put(botId, aiInfo);
 
 		if (bot != null)
 		{
-			double curVel = bot.getFilteredState().orElse(bot.getBotState()).getVel2().getLength2() * 1e-3;
+			double curVel = bot.getFilteredState().orElse(bot.getBotState()).getVel2().getLength2();
 			double maxVel = maxVels.compute(botId,
 					(o, curMax) -> (curMax == null || curMax < curVel) ? curVel : curMax);
 			aiInfo.setVelocityMax(maxVel);

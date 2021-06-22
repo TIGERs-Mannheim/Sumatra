@@ -1,0 +1,44 @@
+== RCM - Remote Control Manager
+
+The RCM allows users to control the robots with game pads.
+
+* Go to the 'RCM' view
+* Attached controllers should be shown in this view (with Linux, make sure you set the game pad up correctly, including udev rules)
+
+=== Assignment
+
+The assignment, i.e. key mapping, can be set individually.
+It is always saved automatically and assigns itself individually to each controller.
+Normally you don't have to do anything.
+
+If there is no mapping yet, the lower part of the view is empty.
+Now you should choose the Assistant, which indicates in the 'Log' view which action you should assign next.
+This quickly covers all important bindings.
+
+As already mentioned, the data is saved automatically.
+If you want to load or save special mappings for whatever reason, you can use the corresponding buttons.
+By default, it uses the config that was automatically saved for the controller.
+
+If you want to add mappings, choose "Add Mapping".
+A new entry will appear at the bottom, which you can configure.
+
+Each mapping consists of an action, e.g. FORWARD, KICK_ARM or KICK (executes the KickSkill).
+The Assign button can be used to select the key combination.
+You can also press several keys.
+
+Finally, there is a small text box behind the Assignment.
+There you can enter a time in seconds.
+This is the so called "Charge" function, practical e.g. when shooting.
+The longer you hold down the key, the higher the firing power.
+If the set time is reached, the shooting power is maximum.
+
+Finally, there are 3 parameters for the controller itself: Deadzone, speed_damp and break_damp: you have to set the deadzone higher at the xbox controller, because the joysticks don't center perfectly and the bot drifts through the area.
+The Logitech controller is much better.
+The value must be between 0 and 1. You can set the two damping factors !=1 to smoothen the accelerations.
+The bot then starts less jerkily, or rolls out slowly.
+
+=== Start
+
+Once everything is set up, you only have to start the module via RCM->Start.
+Sometimes a refresh is necessary, if something behaves strange.
+This is nothing else than a stop-start.

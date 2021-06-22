@@ -1,9 +1,35 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra;
 
+import edu.tigers.sumatra.persistence.BerkeleyDb;
+import edu.tigers.sumatra.views.ASumatraView;
+import edu.tigers.sumatra.views.DummyView;
+import edu.tigers.sumatra.views.ESumatraViewType;
+import net.infonode.docking.DockingWindow;
+import net.infonode.docking.DockingWindowAdapter;
+import net.infonode.docking.RootWindow;
+import net.infonode.docking.View;
+import net.infonode.docking.ViewSerializer;
+import net.infonode.docking.properties.RootWindowProperties;
+import net.infonode.docking.theme.ShapedGradientDockingTheme;
+import net.infonode.docking.util.DockingUtil;
+import net.infonode.docking.util.MixedViewHandler;
+import net.infonode.docking.util.ViewMap;
+import net.infonode.util.Direction;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.swing.ButtonGroup;
+import javax.swing.ImageIcon;
+import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JRadioButtonMenuItem;
+import javax.swing.WindowConstants;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -28,43 +54,14 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.swing.ButtonGroup;
-import javax.swing.ImageIcon;
-import javax.swing.JFrame;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JRadioButtonMenuItem;
-import javax.swing.WindowConstants;
-
-import org.apache.log4j.Logger;
-
-import edu.tigers.sumatra.persistence.BerkeleyDb;
-import edu.tigers.sumatra.views.ASumatraView;
-import edu.tigers.sumatra.views.DummyView;
-import edu.tigers.sumatra.views.ESumatraViewType;
-import net.infonode.docking.DockingWindow;
-import net.infonode.docking.DockingWindowAdapter;
-import net.infonode.docking.RootWindow;
-import net.infonode.docking.View;
-import net.infonode.docking.ViewSerializer;
-import net.infonode.docking.properties.RootWindowProperties;
-import net.infonode.docking.theme.ShapedGradientDockingTheme;
-import net.infonode.docking.util.DockingUtil;
-import net.infonode.docking.util.MixedViewHandler;
-import net.infonode.docking.util.ViewMap;
-import net.infonode.util.Direction;
-
 
 /**
  * abstract base MainFrame
- *
- * @author Nicolai Ommer <nicolai.ommer@gmail.com>
  */
+@SuppressWarnings("squid:MaximumInheritanceDepth")
 public abstract class AMainFrame extends JFrame implements IMainFrame
 {
-	private static final Logger log = Logger
-			.getLogger(AMainFrame.class.getName());
+	private static final Logger log = LogManager.getLogger(AMainFrame.class.getName());
 	private static final long serialVersionUID = -6858464942004450029L;
 
 	private final RootWindow rootWindow;
@@ -183,7 +180,7 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 		views.add(view);
 	}
 
-	
+
 	private void compressReplay(Path path)
 	{
 		try
@@ -197,13 +194,14 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 			log.error("Could not create ZIP file: " + path, e);
 		}
 	}
-	
-	
+
+
 	protected void startReplayCompressionThread(Path path)
 	{
 		Thread compressThread = new Thread(() -> compressReplay(path), "DatabaseCompression");
 		compressThread.start();
 	}
+
 
 	protected void exit()
 	{
@@ -261,7 +259,7 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 	{
 		final File f = new File(path);
 		final String filename = f.getName();
-		log.trace("Loading layout file " + filename);
+		log.trace("Loading layout file {}", filename);
 
 		try (FileInputStream fileInputStream = new FileInputStream(f))
 		{
@@ -357,7 +355,7 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 
 	private void addToCustomMenu(final List<JMenu> menus, final ASumatraView view)
 	{
-		if (menus != null)
+		if (menus != null && !menus.isEmpty())
 		{
 			if (customMenuMap.containsKey(view))
 			{
@@ -648,7 +646,7 @@ public abstract class AMainFrame extends JFrame implements IMainFrame
 				}
 			}
 			ESumatraViewType type = ESumatraViewType.fromId(id);
-			log.warn("View " + type + " with id " + id + " has been removed.");
+			log.warn("View {} with id {} has been removed.", type, id);
 			if (type == null)
 			{
 				type = ESumatraViewType.DUMMY;

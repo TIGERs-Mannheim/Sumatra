@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills.util;
@@ -24,21 +24,21 @@ import static java.lang.Math.signum;
  */
 public class AroundBallCalc
 {
-	@Configurable(defValue = "0.5")
-	private static double shiftAngle = 0.5;
-	
+	@Configurable(defValue = "0.7")
+	private static double shiftAngle = 0.7;
+
 	static
 	{
 		ConfigRegistration.registerClass("skills", AroundBallCalc.class);
 	}
-	
+
 	private final IVector2 ballPos;
 	private final ITrackedBot tBot;
 	private final double maxMargin;
 	private final double minMargin;
 	private final IVector2 destination;
-	
-	
+
+
 	private AroundBallCalc(final Builder builder)
 	{
 		ballPos = builder.ballPos;
@@ -47,8 +47,8 @@ public class AroundBallCalc
 		minMargin = builder.minMargin;
 		destination = builder.destination;
 	}
-	
-	
+
+
 	/**
 	 * @return a new factory
 	 */
@@ -56,8 +56,8 @@ public class AroundBallCalc
 	{
 		return new Builder();
 	}
-	
-	
+
+
 	/**
 	 * @return a destination to safely move around the ball
 	 */
@@ -78,7 +78,7 @@ public class AroundBallCalc
 				return getBallPos().addNew(ball2Lp.scaleToNew(distance));
 			}
 		}
-		
+
 		double relMargin = getRelativeMarginToBall();
 		double distance = getRequiredDistanceToBall(relMargin);
 		IVector2 ball2Dest = destination.subtractNew(getBallPos());
@@ -88,8 +88,8 @@ public class AroundBallCalc
 				* min(abs(remainingDestRotation), AroundBallCalc.shiftAngle);
 		return getBallPos().addNew(ball2Bot.turnNew(relShiftAngle).scaleToNew(distance));
 	}
-	
-	
+
+
 	/**
 	 * @return relative margin [0..1]
 	 */
@@ -102,40 +102,40 @@ public class AroundBallCalc
 		}
 		return margin;
 	}
-	
-	
+
+
 	private double getAngleDiff()
 	{
 		IVector2 ball2Bot = getPos().subtractNew(getBallPos());
 		IVector2 ball2Dest = destination.subtractNew(getBallPos());
 		return ball2Bot.angleToAbs(ball2Dest).orElse(0.0);
 	}
-	
-	
+
+
 	private double getRequiredDistanceToBall(double margin)
 	{
 		return getTBot().getCenter2DribblerDist() + Geometry.getBallRadius() + minMargin + margin;
 	}
-	
-	
+
+
 	private IVector2 getBallPos()
 	{
 		return ballPos;
 	}
-	
-	
+
+
 	private ITrackedBot getTBot()
 	{
 		return tBot;
 	}
-	
-	
+
+
 	private IVector2 getPos()
 	{
 		return tBot.getPos();
 	}
-	
-	
+
+
 	/**
 	 * {@code AroundBallCalc} factory static inner class.
 	 */
@@ -146,13 +146,13 @@ public class AroundBallCalc
 		private Double maxMargin;
 		private Double minMargin;
 		private IVector2 destination;
-		
-		
+
+
 		private Builder()
 		{
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code ballPos} and returns a reference to this Builder so that the methods can be chained together.
 		 *
@@ -164,8 +164,8 @@ public class AroundBallCalc
 			this.ballPos = ballPos;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code tBot} and returns a reference to this Builder so that the methods can be chained together.
 		 *
@@ -177,8 +177,8 @@ public class AroundBallCalc
 			this.tBot = tBot;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code maxMargin} and returns a reference to this Builder so that the methods can be chained together.
 		 *
@@ -190,8 +190,8 @@ public class AroundBallCalc
 			this.maxMargin = maxMargin;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code minMargin} and returns a reference to this Builder so that the methods can be chained together.
 		 *
@@ -203,8 +203,8 @@ public class AroundBallCalc
 			this.minMargin = minMargin;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Sets the {@code destination} and returns a reference to this Builder so that the methods can be chained
 		 * together.
@@ -217,8 +217,8 @@ public class AroundBallCalc
 			this.destination = destination;
 			return this;
 		}
-		
-		
+
+
 		/**
 		 * Returns a {@code AroundBallCalc} built from the parameters previously set.
 		 *

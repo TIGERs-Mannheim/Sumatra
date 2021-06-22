@@ -1,12 +1,13 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - Tigers Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.sim;
 
 import java.util.EnumMap;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import edu.tigers.sumatra.botmanager.botskills.ABotSkill;
 import edu.tigers.sumatra.botmanager.botskills.EBotSkill;
@@ -31,13 +32,13 @@ import edu.tigers.sumatra.botmanager.sim.skills.IBotSkillSim;
  */
 public class BotSkillSimulator
 {
-	private static final Logger log = Logger.getLogger(BotSkillSimulator.class.getName());
-	
+	private static final Logger log = LogManager.getLogger(BotSkillSimulator.class.getName());
+
 	private final Map<EBotSkill, IBotSkillSim> botSkills = new EnumMap<>(EBotSkill.class);
 	private EBotSkill lastBotSkill = EBotSkill.MOTORS_OFF;
 	private BotSkillOutput lastBotSkillOutput = BotSkillOutput.Builder.create().empty().build();
-	
-	
+
+
 	/**
 	 * Create simulator.
 	 */
@@ -55,11 +56,11 @@ public class BotSkillSimulator
 		botSkills.put(EBotSkill.PENALTY_SHOOTER_SKILL, new BotSkillPenaltyShooterSim());
 		botSkills.put(EBotSkill.LOCAL_FORCE, new BotSkillLocalForceSim());
 	}
-	
-	
+
+
 	/**
 	 * Execute a bot skill.
-	 * 
+	 *
 	 * @param input bot skill input with pos/vel/acc and timestamp.
 	 * @return bot skill output with drive/kicker/dribbler infos
 	 */
@@ -71,20 +72,20 @@ public class BotSkillSimulator
 			log.error("Unsupported bot skill in simulator: " + botSkill.getType());
 			return lastBotSkillOutput;
 		}
-		
+
 		IBotSkillSim sim = botSkills.get(botSkill.getType());
-		
+
 		if (botSkill.getType() != lastBotSkill)
 		{
 			sim.init(input);
 			lastBotSkill = botSkill.getType();
 		}
-		
+
 		lastBotSkillOutput = botSkills.get(botSkill.getType()).execute(input);
 		return lastBotSkillOutput;
 	}
-	
-	
+
+
 	public BotSkillOutput getLastBotSkillOutput()
 	{
 		return lastBotSkillOutput;

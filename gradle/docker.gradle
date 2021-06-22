@@ -1,0 +1,34 @@
+/*
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ */
+
+jib {
+    to {
+        image = "sumatra"
+        auth {
+            username = "docker"
+            password = System.getenv("GITLAB_DOCKER_REGISTRY_TOKEN") ?: ""
+        }
+        tags = [rootProject.version]
+    }
+    from {
+        // gcr.io/distroless/java:11
+        image = "gcr.io/distroless/java@sha256:9d4092ba5e1c9dc4d1490fdead1dd7ea5c64e635b729fee11a6af55f51b337f8"
+    }
+    container {
+        workingDirectory = "/Sumatra"
+    }
+    extraDirectories {
+        paths {
+            path {
+                from = file('config')
+                into = '/Sumatra/config'
+            }
+            path {
+                from = file('src/main/jib')
+                into = '/Sumatra/'
+            }
+        }
+    }
+}
+

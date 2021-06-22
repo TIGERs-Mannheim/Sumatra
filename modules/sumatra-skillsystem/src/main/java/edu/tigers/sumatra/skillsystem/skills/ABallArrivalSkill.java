@@ -1,28 +1,40 @@
+/*
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.skillsystem.skills;
 
-import java.awt.Color;
-
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.drawable.DrawableAnnotation;
+import edu.tigers.sumatra.drawable.DrawableCircle;
+import edu.tigers.sumatra.drawable.DrawableLine;
 import edu.tigers.sumatra.drawable.DrawablePoint;
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.ETeam;
 import edu.tigers.sumatra.math.AngleMath;
 import edu.tigers.sumatra.math.Hysteresis;
 import edu.tigers.sumatra.math.botshape.BotShape;
+import edu.tigers.sumatra.math.circle.Circle;
+import edu.tigers.sumatra.math.line.Line;
+import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
-import edu.tigers.sumatra.skillsystem.ESkill;
 import edu.tigers.sumatra.skillsystem.ESkillShapesLayer;
 import edu.tigers.sumatra.skillsystem.skills.util.BallStabilizer;
-import edu.tigers.sumatra.skillsystem.skills.util.InterceptorUtil;
 import edu.tigers.sumatra.skillsystem.skills.util.PositionValidator;
-import edu.tigers.sumatra.wp.data.DynamicPosition;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.awt.Color;
+import java.util.Optional;
 
 
-public abstract class ABallArrivalSkill extends AMoveSkill
+/**
+ * Base class for skills waiting for an incoming ball.
+ */
+public abstract class ABallArrivalSkill extends AMoveToSkill
 {
 	@Configurable(defValue = "200.0", comment = "Distance bot pos to ball [mm] to fix the target orientation of the bot.")
 	private static double distThresholdToFixOrientation = 200.0;
@@ -30,44 +42,24 @@ public abstract class ABallArrivalSkill extends AMoveSkill
 	@Configurable(defValue = "1000.0", comment = "If the receiving pos is further than this away from the rolling travel line, the ball can not reach the receiving pos")
 	private static double maxDistanceToReceivingPosition = 1000.0;
 
-	protected final DynamicPosition receivingPosition;
+	@Configurable(defValue = "100.0", comment = "Margin between penaltyarea and bot destination [mm]")
+	private static double marginBetweenDestAndPenArea = 100.0;
 
 	private final Hysteresis ballSpeedHysteresis = new Hysteresis(0.3, 0.6).initiallyInUpperState();
 	private final PositionValidator positionValidator = new PositionValidator();
+	private final BallStabilizer ballStabilizer = new BallStabilizer();
+
+	@Setter
 	private ETeam consideredPenAreas = ETeam.BOTH;
-	protected final BallStabilizer ballStabilizer = new BallStabilizer();
+	@Setter
 	private double marginToTheirPenArea = 0;
+	@Setter
+	protected IVector2 ballReceivingPosition;
 
-
-	protected ABallArrivalSkill(final ESkill skillName, final DynamicPosition receivingPosition)
-	{
-		super(skillName);
-		this.receivingPosition = receivingPosition;
-	}
-
-
-	public void setMarginToTheirPenArea(final double marginToTheirPenArea)
-	{
-		this.marginToTheirPenArea = marginToTheirPenArea;
-	}
-
-
-	@Override
-	protected void beforeStateUpdate()
-	{
-		super.beforeStateUpdate();
-		receivingPosition.update(getWorldFrame());
-		ballSpeedHysteresis.update(getBall().getVel().getLength2());
-		ballStabilizer.update(getBall(), getTBot());
-		positionValidator.update(getWorldFrame(), getMoveCon());
-		positionValidator.getMarginToPenArea().put(ETeam.OPPONENTS, marginToTheirPenArea);
-	}
-
-
-	public final void setConsideredPenAreas(final ETeam consideredPenAreas)
-	{
-		this.consideredPenAreas = consideredPenAreas;
-	}
+	@Getter
+	private IVector2 currentBallReceivingPosition;
+	@Setter(AccessLevel.PROTECTED)
+	private double desiredTargetAngle;
 
 
 	protected final boolean receivingPositionIsReachableByBall(IVector2 pos)
@@ -78,13 +70,13 @@ public abstract class ABallArrivalSkill extends AMoveSkill
 
 	protected final boolean ballIsMoving()
 	{
-		return ballSpeedHysteresis.isUpper() && !getTBot().hasBallContact();
+		return ballSpeedHysteresis.isUpper() && !getTBot().getBallContact().hadContact(0.2);
 	}
 
 
-	protected final boolean ballNearKicker()
+	private boolean ballNearKicker(double dist)
 	{
-		return ballStabilizer.getBallPos().distanceTo(getTBot().getBotKickerPos()) < 100;
+		return ballStabilizer.getBallPos().distanceTo(getTBot().getBotKickerPos()) < dist;
 	}
 
 
@@ -92,145 +84,134 @@ public abstract class ABallArrivalSkill extends AMoveSkill
 	{
 		return ballIsMoving()
 				&& getPos().subtractNew(ballStabilizer.getBallPos())
-						.angleToAbs(getBall().getVel())
-						.map(a -> a < AngleMath.PI_HALF).orElse(false);
+				.angleToAbs(getBall().getVel())
+				.map(a -> a < AngleMath.PI_HALF).orElse(false);
 	}
 
-	protected abstract class ABallArrivalState extends MoveToState
+
+	@Override
+	public void doEntryActions()
 	{
-		protected IVector2 currentReceivingPosition;
-		protected double currentTargetAngle;
+		super.doEntryActions();
+		getMoveCon().setBallObstacle(false);
+		getMoveCon().setPenaltyAreaTheirObstacle(true);
+		getMoveCon().setGameStateObstacle(false);
+
+		// init target orientation
+		updateTargetAngle(getBall().getPos().subtractNew(getPos()).getAngle());
+		currentBallReceivingPosition = getTBot().getBotKickerPos();
+	}
 
 
-		protected ABallArrivalState()
+	@Override
+	public void doUpdate()
+	{
+		ballSpeedHysteresis.update(getBall().getVel().getLength2());
+		ballStabilizer.update(getBall(), getTBot());
+		positionValidator.update(getWorldFrame(), getMoveCon());
+		positionValidator.getMarginToPenArea().put(ETeam.OPPONENTS, marginToTheirPenArea);
+
+		setCurrentBallReceivingPosition(determineBallReceivingPosition());
+
+		getMoveCon().setBotsObstacle(!ballNearKicker(100));
+
+		updateTargetAngle(calcTargetAngle(currentBallReceivingPosition));
+		updateDestination(calcDest());
+		getMoveConstraints().setPrimaryDirection(calcPrimaryDirection());
+
+		drawShapes();
+
+		super.doUpdate();
+	}
+
+
+	private IVector2 determineBallReceivingPosition()
+	{
+		var center2Dribbler = getTBot().getCenter2DribblerDist() + Geometry.getBallRadius();
+		var kickPos = BotShape.getKickerCenterPos(
+				Pose.from(getPos(), getTargetAngle()), // using target angle from last frame intentionally here
+				center2Dribbler
+		);
+		var idealBallReceivingPosition = Optional.ofNullable(ballReceivingPosition).orElse(kickPos);
+		var closestPointToIdealPos = getBall().getTrajectory().getTravelLineSegment()
+				.closestPointOnLine(idealBallReceivingPosition);
+
+		if (ballIsMoving() &&
+				receivingPositionIsReachableByBall(closestPointToIdealPos) &&
+				ballIsMovingTowardsBot())
 		{
-			super(ABallArrivalSkill.this);
+			return closestPointToIdealPos;
+		} else if (!ballNearKicker(1500))
+		{
+			return idealBallReceivingPosition;
+		}
+		return currentBallReceivingPosition;
+	}
+
+
+	private void setCurrentBallReceivingPosition(final IVector2 receivingPosition)
+	{
+		IVector2 dest = receivingPosition;
+		dest = positionValidator.movePosInFrontOfOpponent(dest);
+		dest = positionValidator.movePosInsideFieldWrtBallPos(dest);
+		currentBallReceivingPosition = dest;
+	}
+
+
+	private boolean ballIsMovingTowardsBot()
+	{
+		return getBall().getTrajectory().getTravelLine().isPointInFront(getPos());
+	}
+
+
+	private IVector2 calcDest()
+	{
+		IVector2 dest = BotShape.getCenterFromKickerPos(currentBallReceivingPosition, getTargetAngle(),
+				getTBot().getCenter2DribblerDist() + Geometry.getBallRadius());
+
+		// the bot may drive through the penArea, but it should not have a destination inside,
+		// because touching the ball while being partially inside the penArea is a foul.
+		return positionValidator.movePosOutOfPenAreaWrtBall(dest, marginBetweenDestAndPenArea, consideredPenAreas);
+	}
+
+
+	private IVector2 calcPrimaryDirection()
+	{
+		if (getBall().getVel().getLength2() > 0.2)
+		{
+			return getBall().getVel();
+		}
+		return Vector2f.ZERO_VECTOR;
+	}
+
+
+	private double calcTargetAngle(final IVector2 kickerPos)
+	{
+		IVector2 ballPos = ballStabilizer.getBallPos();
+		double distBallBot = ballPos.distanceTo(kickerPos);
+		if (distBallBot < distThresholdToFixOrientation)
+		{
+			// just keep last position -> this is probably most safe to not push ball away again
+			return getTargetAngle();
 		}
 
-
-		@Override
-		public void doEntryActions()
-		{
-			super.doEntryActions();
-			getMoveCon().setBallObstacle(false);
-			getMoveCon().setPenaltyAreaAllowedTheir(true);
-
-			// init target orientation
-			currentTargetAngle = getBall().getPos().subtractNew(getPos()).getAngle();
-			setCurrentReceivingPosition(moveToReceivingPosition());
-		}
+		return desiredTargetAngle;
+	}
 
 
-		@Override
-		public void doUpdate()
-		{
-			setCurrentReceivingPosition(determineReceivingPosition());
+	private void drawShapes()
+	{
+		getShapes().get(ESkillShapesLayer.BALL_ARRIVAL_SKILL)
+				.add(new DrawablePoint(ballStabilizer.getBallPos(), Color.green));
+		Optional.ofNullable(ballReceivingPosition).ifPresent(pos ->
+				getShapes().get(ESkillShapesLayer.BALL_ARRIVAL_SKILL)
+						.add(new DrawableCircle(Circle.createCircle(pos, 30), Color.magenta)));
+		getShapes().get(ESkillShapesLayer.BALL_ARRIVAL_SKILL)
+				.add(new DrawableAnnotation(getPos(), ballIsMoving() ? "ballMoving" : "ballNotMoving",
+						Vector2.fromX(100)));
 
-			getMoveCon().setBotsObstacle(!ballNearKicker());
-
-			writeTargetPoseToMoveCon();
-
-			drawShapes();
-
-			super.doUpdate();
-		}
-
-
-		private IVector2 determineReceivingPosition()
-		{
-			IVector2 closestPointOnBallLine = moveToNearestPointOnBallLine();
-			if (ballIsMoving() &&
-					receivingPositionIsReachableByBall(closestPointOnBallLine) &&
-					ballIsMovingTowardsBot())
-			{
-				return closestPointOnBallLine;
-			} else if (!ballNearKicker())
-			{
-				return moveToReceivingPosition();
-			}
-			return currentReceivingPosition;
-		}
-
-
-		private void setCurrentReceivingPosition(final IVector2 receivingPosition)
-		{
-			IVector2 dest = receivingPosition;
-			dest = positionValidator.movePosInFrontOfOpponent(dest);
-			dest = positionValidator.movePosInsideFieldWrtBallPos(dest);
-			currentReceivingPosition = dest;
-		}
-
-
-		private boolean ballIsMovingTowardsBot()
-		{
-			return getBall().getTrajectory().getTravelLine().isPointInFront(getPos());
-		}
-
-
-		protected IVector2 moveToReceivingPosition()
-		{
-			return receivingPosition.getPos();
-		}
-
-
-		protected IVector2 moveToNearestPointOnBallLine()
-		{
-			return InterceptorUtil.closestInterceptionPos(getBall().getTrajectory().getTravelLineSegment(), getTBot());
-		}
-
-
-		private void writeTargetPoseToMoveCon()
-		{
-			currentTargetAngle = calcTargetAngle(currentReceivingPosition);
-			getMoveCon().updateTargetAngle(currentTargetAngle);
-
-			IVector2 dest = BotShape.getCenterFromKickerPos(currentReceivingPosition, currentTargetAngle,
-					getTBot().getCenter2DribblerDist() + Geometry.getBallRadius());
-
-			// the bot may drive through the penArea, but it should not have a destination inside,
-			// because touching the ball while being partially inside the penArea is a foul.
-			dest = positionValidator.movePosOutOfPenAreaWrtBall(dest, getMarginBetweenDestAndPenArea(),
-					consideredPenAreas);
-
-			getMoveCon().updateDestination(dest);
-
-			if (getBall().getVel().getLength2() > 0.2)
-			{
-				getMoveCon().getMoveConstraints().setPrimaryDirection(getBall().getVel());
-			} else
-			{
-				getMoveCon().getMoveConstraints().setPrimaryDirection(Vector2f.ZERO_VECTOR);
-			}
-		}
-
-
-		private double calcTargetAngle(final IVector2 kickerPos)
-		{
-			IVector2 ballPos = ballStabilizer.getBallPos();
-			double distBallBot = ballPos.distanceTo(kickerPos);
-			if (distBallBot < distThresholdToFixOrientation)
-			{
-				// just keep last position -> this is probably most safe to not push ball away again
-				return currentTargetAngle;
-			}
-
-			return calcMyTargetAngle(kickerPos);
-		}
-
-
-		protected void drawShapes()
-		{
-			getShapes().get(ESkillShapesLayer.BALL_ARRIVAL_SKILL)
-					.add(new DrawablePoint(ballStabilizer.getBallPos(), Color.green));
-			getShapes().get(ESkillShapesLayer.BALL_ARRIVAL_SKILL)
-					.add(new DrawableAnnotation(getPos(), ballIsMoving() ? "ballMoving" : "ballNotMoving",
-							Vector2.fromX(100)));
-		}
-
-
-		protected abstract double calcMyTargetAngle(final IVector2 kickerPos);
-
-
-		protected abstract double getMarginBetweenDestAndPenArea();
+		getShapes().get(ESkillShapesLayer.BALL_ARRIVAL_SKILL)
+				.add(new DrawableLine(Line.fromDirection(getPos(), Vector2.fromAngle(desiredTargetAngle).scaleTo(200)))
+						.setColor(Color.magenta));
 	}
 }

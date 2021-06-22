@@ -1,32 +1,46 @@
 /*
- * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.loganalysis;
 
 
+import edu.tigers.sumatra.gamelog.proto.LogLabels;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.loganalysis.eventtypes.ballpossession.BallPossessionEventType;
 import edu.tigers.sumatra.loganalysis.eventtypes.dribbling.Dribbling;
 import edu.tigers.sumatra.loganalysis.eventtypes.shot.GoalShot;
 import edu.tigers.sumatra.loganalysis.eventtypes.shot.Passing;
-import edu.tigers.sumatra.labeler.LogLabels;
+import edu.tigers.sumatra.wp.data.ITrackedBot;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.Optional;
 
 public class LogEventProtobufMapper
 {
+
+	private static final Logger log = LogManager.getLogger(LogEventProtobufMapper.class.getName());
 
     public LogLabels.DribblingLabel mapDribbling(Dribbling dribbling)
     {
         LogLabels.DribblingLabel.Builder dribblingLabelBuilder = LogLabels.DribblingLabel.newBuilder();
 
         dribblingLabelBuilder.setIsDribbling(dribbling.isDribbling());
-        dribblingLabelBuilder.setRobotId(dribbling.getRobot().getBotId().getNumber());
-        dribblingLabelBuilder.setTeam(mapTeamColor(dribbling.getRobotTeam()));
+
+        if(dribbling.getRobot().isPresent()) {
+            dribblingLabelBuilder.setRobotId(dribbling.getRobot().get().getBotId().getNumber());
+        }
+
+        LogLabels.Team dribblingTeam = mapTeamColor(dribbling.getRobotTeam());
+        if(dribblingTeam != LogLabels.Team.UNRECOGNIZED) {
+            dribblingLabelBuilder.setTeam(mapTeamColor(dribbling.getRobotTeam()));
+        }
 
         return dribblingLabelBuilder.build();
     }
 
-    public LogLabels.BallPossessionLabel mapBallPossession(BallPossessionEventType ballPossession) throws InconsistentProtobufMapperException
+    public LogLabels.BallPossessionLabel mapBallPossession(BallPossessionEventType ballPossession)
     {
         LogLabels.BallPossessionLabel.Builder ballPossessionLabelBuilder = LogLabels.BallPossessionLabel.newBuilder();
 
@@ -35,16 +49,14 @@ public class LogEventProtobufMapper
         boolean bluePosses = ballPossession.getPossessionState() == ETeamColor.BLUE;
         boolean yellowPosses = ballPossession.getPossessionState() == ETeamColor.YELLOW;
 
-        if(bluePosses || yellowPosses)
+        if((bluePosses || yellowPosses) && !ballPossession.getRobot().isPresent())
         {
-            if(ballPossession.getRobot().isPresent())
-            {
-                ballPossessionLabelBuilder.setRobotId(ballPossession.getRobot().get().getBotId().getNumber());
-            }
-            else
-            {
-                throw new InconsistentProtobufMapperException("mapBallPossession: blue or yellow team posses the ball, but robot is not given");
-            }
+            log.error("Inconsistent data: There is a ball possession but no bot given, which is in possession ");
+        }
+
+        if(ballPossession.getRobot().isPresent())
+        {
+            ballPossessionLabelBuilder.setRobotId(ballPossession.getRobot().get().getBotId().getNumber());
         }
 
         return ballPossessionLabelBuilder.build();
@@ -59,7 +71,11 @@ public class LogEventProtobufMapper
         passingLabelBuilder.setSuccessful(passing.isSuccessful());
         passingLabelBuilder.setPasserId(passing.getPasserBot().getBotId().getNumber());
         passingLabelBuilder.setPasserTeam(mapTeamColor(passing.getPasserBot().getTeamColor()));
-        passingLabelBuilder.setReceiverId(passing.getReceiverBot().getBotId().getNumber());
+
+        Optional<ITrackedBot> receiverBot = passing.getReceiverBot();
+        if(receiverBot.isPresent()) {
+            passingLabelBuilder.setReceiverId(receiverBot.get().getBotId().getNumber());
+        }
 
         return passingLabelBuilder.build();
     }
@@ -102,14 +118,6 @@ public class LogEventProtobufMapper
             default:
             case NEUTRAL:
                 return LogLabels.Team.UNRECOGNIZED;
-        }
-    }
-
-    public class InconsistentProtobufMapperException extends Exception
-    {
-        public InconsistentProtobufMapperException(String msg)
-        {
-            super(msg);
         }
     }
 }

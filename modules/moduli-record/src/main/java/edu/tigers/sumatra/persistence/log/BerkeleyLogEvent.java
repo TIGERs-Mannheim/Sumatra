@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.persistence.log;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.spi.LoggingEvent;
-
 import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.impl.Log4jLogEvent;
+import org.apache.logging.log4j.message.SimpleMessage;
 
 
 /**
@@ -17,20 +17,18 @@ import com.sleepycat.persist.model.PrimaryKey;
 @Entity
 public class BerkeleyLogEvent
 {
+	@SuppressWarnings("unused")
+	@PrimaryKey(sequence = "ID")
+	private long id;
+
 	private final Long timestamp;
 	private final String level;
 	private final String thread;
 	private final String clazz;
 	private final String message;
-	@SuppressWarnings("unused")
-	@PrimaryKey(sequence = "ID")
-	private long id;
-	
-	
-	/**
-	 * Used for BerkeleyDB
-	 */
-	@SuppressWarnings("unused")
+
+
+	@SuppressWarnings("unused") // used by BerkeleyDB
 	private BerkeleyLogEvent()
 	{
 		timestamp = 0L;
@@ -39,31 +37,30 @@ public class BerkeleyLogEvent
 		clazz = "";
 		message = "";
 	}
-	
-	
-	/**
-	 * @param event
-	 */
-	public BerkeleyLogEvent(final LoggingEvent event)
+
+
+	public BerkeleyLogEvent(final LogEvent event)
 	{
-		timestamp = event.getTimeStamp();
+		timestamp = event.getTimeMillis();
 		level = event.getLevel().toString();
 		thread = event.getThreadName();
-		clazz = event.getClass().getName();
-		message = event.getMessage().toString();
+		clazz = event.getLoggerName();
+		message = event.getMessage().getFormattedMessage();
 	}
-	
-	
-	/**
-	 * @return
-	 */
-	public final LoggingEvent getLoggingEvent()
+
+
+	public final LogEvent getLogEvent()
 	{
-		return new LoggingEvent(clazz, Logger.getRootLogger(), timestamp, Level.toLevel(level), message, thread,
-				null, null, null, null);
+		return Log4jLogEvent.newBuilder()
+				.setLoggerName(clazz == null ? "Unknown" : clazz)
+				.setLevel(Level.toLevel(level))
+				.setMessage(new SimpleMessage(message))
+				.setThreadName(thread)
+				.setTimeMillis(timestamp)
+				.build();
 	}
-	
-	
+
+
 	public long getTimestamp()
 	{
 		return timestamp;

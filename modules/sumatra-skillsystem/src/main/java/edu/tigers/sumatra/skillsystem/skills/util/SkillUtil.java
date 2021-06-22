@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills.util;
@@ -7,7 +7,8 @@ package edu.tigers.sumatra.skillsystem.skills.util;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.geometry.IPenaltyArea;
@@ -25,17 +26,17 @@ import edu.tigers.sumatra.wp.data.ITrackedBall;
  */
 public final class SkillUtil
 {
-	protected static final Logger log = Logger.getLogger(SkillUtil.class.getName());
-	
+	protected static final Logger log = LogManager.getLogger(SkillUtil.class.getName());
+
 	private static final double INSIDE_FIELD_MARGIN = 20;
-	
-	
+
+
 	@SuppressWarnings("unused")
 	private SkillUtil()
 	{
 	}
-	
-	
+
+
 	/**
 	 * Check if pos is inside field and adapt position if necessary with respect to the ball position
 	 *
@@ -60,8 +61,8 @@ public final class SkillUtil
 		}
 		return pos;
 	}
-	
-	
+
+
 	/**
 	 * Check if pos is outside the penalty areas and adapt position if necessary.<br>
 	 * The check considers the ball's position and velocity:
@@ -83,8 +84,8 @@ public final class SkillUtil
 	{
 		return movePosOutOfPenAreaWrtBall(pos, ball, Arrays.asList(penaltyAreas));
 	}
-	
-	
+
+
 	/**
 	 * Check if pos is outside the penalty areas and adapt position if necessary.<br>
 	 * The check considers the ball's position and velocity:
@@ -123,6 +124,6 @@ public final class SkillUtil
 		}
 		return pos;
 	}
-	
-	
+
+
 }

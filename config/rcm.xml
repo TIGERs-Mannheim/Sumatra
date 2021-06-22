@@ -1,25 +1,2 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<edu.tigers.sumatra.rcm base="edu.tigers.sumatra.rcm">
-    <CommandInterpreter>
-        <accDef>3</accDef>
-        <accMax>3</accMax>
-        <dccDef>3</dccDef>
-        <dccMax>5</dccMax>
-        <maxChipSpeed>10</maxChipSpeed>
-        <maxDribbleSpeed>10000</maxDribbleSpeed>
-        <maxKickSpeed>5</maxKickSpeed>
-        <motorModelType>MATRIX</motorModelType>
-        <moveType>LOCAL_VEL</moveType>
-        <rotateDef>4.0</rotateDef>
-        <rotateMax>4</rotateMax>
-        <rotateMin>1.0</rotateMin>
-        <smoothedVel>false</smoothedVel>
-        <speedDef>1</speedDef>
-        <speedMaxHigh>4</speedMaxHigh>
-        <speedMaxLow>2</speedMaxLow>
-        <speedMin>0.1</speedMin>
-    </CommandInterpreter>
-    <PollingService>
-        <controllerTimeout>180</controllerTimeout>
-    </PollingService>
-</edu.tigers.sumatra.rcm>
+<configuration/>

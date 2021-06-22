@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai.metis.redirector;
@@ -10,19 +10,15 @@ package edu.tigers.sumatra.ai.metis.redirector;
 public enum ERecommendedReceiverAction
 {
 	/**
-	 * Do nothing special, just catch the ball as usually
+	 * Do nothing special, just catch the ball as usual
 	 */
 	NONE,
 	/**
-	 * Disrupt enemy receiver to lesser his chance of a successful redirect
+	 * Disrupt opponent receiver to lesser his chance of a successful redirect
 	 */
-	DISRUPT_ENEMY,
+	DISRUPT_OPPONENT,
 	/**
-	 * Try to overtake the enemy
+	 * Use two attackers to receive the ball
 	 */
-	CATCH_BEFORE_ENEMY,
-	/**
-	 * Use to offensive to receive the ball
-	 */
-	DOUBLE_ATTACKER
+	DOUBLE_ATTACKER,
 }

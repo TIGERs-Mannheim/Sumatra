@@ -1,12 +1,13 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.math.line.v2;
 
 import java.util.Optional;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
@@ -18,23 +19,19 @@ import edu.tigers.sumatra.math.vector.VectorMath;
 /**
  * This class groups all Line related calculations.
  * Please consider using the methods from {@link ILine} instead of these static methods!
- *
- * @author nicolai.ommer
- * @author kai.ehrensperger
  */
 public final class LineMath
 {
-	private static final Logger log = Logger
-			.getLogger(LineMath.class.getName());
+	private static final Logger log = LogManager.getLogger(LineMath.class.getName());
 	private static final double ACCURACY = SumatraMath.getEqualTol();
-	
-	
+
+
 	@SuppressWarnings("unused")
 	private LineMath()
 	{
 	}
-	
-	
+
+
 	/**
 	 * calculates a point on a line between start and end, that is stepSize away from start
 	 * calculation is based on Intercept theorem (Strahlensatz)
@@ -51,28 +48,27 @@ public final class LineMath
 		{
 			return end;
 		}
-		
+
 		final double distance = SumatraMath.sqrt(distanceSqr);
 		final double coefficient = stepSize / distance;
-		
+
 		final double xDistance = end.x() - start.x();
 		final double yDistance = end.y() - start.y();
-		
+
 		final IVector2 result = Vector2f.fromXY(
 				(xDistance * coefficient) + start.x(),
 				(yDistance * coefficient) + start.y());
-		
+
 		if (Double.isNaN(result.x()) || Double.isNaN(result.y()))
 		{
-			log.warn(String.format("stepAlongLine(%s,%s,%s) = %s -> NaNs!", start, end, stepSize, result),
-					new Exception());
+			log.warn("stepAlongLine({},{},{}) = {} -> NaNs!", start, end, stepSize, result, new Exception());
 			return Vector2f.zero();
 		}
-		
+
 		return result;
 	}
-	
-	
+
+
 	/**
 	 * @param line a line
 	 * @return the slope of this line, if line is not parallel to y-axis
@@ -85,8 +81,8 @@ public final class LineMath
 		}
 		return Optional.of(line.directionVector().y() / line.directionVector().x());
 	}
-	
-	
+
+
 	/**
 	 * Returns the y-intercept of this Line.
 	 * This is the y value where x == 0
@@ -103,8 +99,8 @@ public final class LineMath
 		double factor = (-line.supportVector().x()) / line.directionVector().x();
 		return Optional.of((factor * line.directionVector().y()) + line.supportVector().y());
 	}
-	
-	
+
+
 	/**
 	 * Returns the y value to a given x input. <br>
 	 * y = m * x + n<br>
@@ -124,8 +120,8 @@ public final class LineMath
 		}
 		return Optional.empty();
 	}
-	
-	
+
+
 	/**
 	 * Returns the x value to a given y input. <br>
 	 * x = (y - n) / m <br>
@@ -154,8 +150,8 @@ public final class LineMath
 			return Optional.empty();
 		}
 	}
-	
-	
+
+
 	/**
 	 * Calculate the angle of the direction vector to the x-axis (just like IVector2#getAngle
 	 *
@@ -170,8 +166,8 @@ public final class LineMath
 		}
 		return Optional.of(line.directionVector().getAngle());
 	}
-	
-	
+
+
 	/**
 	 * Checks if a point lies in front of the line.<br>
 	 * The point is considered lying in front, if it is
@@ -188,8 +184,8 @@ public final class LineMath
 		// angle above 90deg
 		return line.directionVector().normalizeNew().scalarProduct(b.normalize()) >= 0;
 	}
-	
-	
+
+
 	/**
 	 * Create the lead point on a straight line (Lot faellen).
 	 *
@@ -202,8 +198,8 @@ public final class LineMath
 		double lambda = getLeadPointLambda(point, line);
 		return getPointOnLineForLambda(line, lambda);
 	}
-	
-	
+
+
 	/**
 	 * This Method returns the nearest point on the line-segment to a given point.<br>
 	 * If the lead point of the argument is not on the segment the
@@ -220,13 +216,13 @@ public final class LineMath
 		{
 			return getPointOnLineForLambda(line, lambda);
 		}
-		
+
 		final double dist1 = VectorMath.distancePPSqr(line.getStart(), point);
 		final double dist2 = VectorMath.distancePPSqr(line.getEnd(), point);
 		return Vector2.copy(dist1 < dist2 ? line.getStart() : line.getEnd());
 	}
-	
-	
+
+
 	/**
 	 * Returns a point on the {@code halfLine} which is located closest to the specified {@code point}. If it is located
 	 * behind the support vector, then the support vector itself is returned.
@@ -236,7 +232,7 @@ public final class LineMath
 	 * @param point
 	 *           The point for which to find the closest point on the line
 	 * @return
-	 * 			The closest point on the line
+	 *         The closest point on the line
 	 */
 	static Vector2 closestPointOnHalfLine(final IHalfLine halfLine, final IVector2 point)
 	{
@@ -247,8 +243,8 @@ public final class LineMath
 		}
 		return Vector2.copy(halfLine.supportVector());
 	}
-	
-	
+
+
 	/**
 	 * This methods calculate the point where two lines (line1, line2) intersect.
 	 * If lines are parallel, there is no unique intersection point.
@@ -266,8 +262,8 @@ public final class LineMath
 		final double lambda = getLineIntersectionLambda(line1, line2);
 		return Optional.of(getPointOnLineForLambda(line1, lambda));
 	}
-	
-	
+
+
 	/**
 	 * Calculates the intersection point of two line segments (bounded lines).<br>
 	 * Only returns intersection points that are on the line segments (direction vector)
@@ -284,15 +280,15 @@ public final class LineMath
 		}
 		final double lambda = getLineIntersectionLambda(segment1, segment2);
 		final double delta = getLineIntersectionLambda(segment2, segment1);
-		
+
 		if (isLambdaInRange(lambda, 0, 1) && isLambdaInRange(delta, 0, 1))
 		{
 			return Optional.of(getPointOnLineForLambda(segment1, lambda));
 		}
 		return Optional.empty();
 	}
-	
-	
+
+
 	/**
 	 * Calculates the intersection point of the specified {@code line} and the {@code lineSegment}
 	 *
@@ -301,7 +297,7 @@ public final class LineMath
 	 * @param lineSegment
 	 *           The line segment
 	 * @return
-	 * 			An {@code Optional} containing the intersection point if one exists
+	 *         An {@code Optional} containing the intersection point if one exists
 	 */
 	static Optional<IVector2> intersectionPointOfLineAndSegment(final ILine line, final ILineSegment lineSegment)
 	{
@@ -309,7 +305,7 @@ public final class LineMath
 		{
 			return Optional.empty();
 		}
-		
+
 		double lambda = getLineIntersectionLambda(lineSegment, line);
 		if (isLambdaInRange(lambda, 0, 1))
 		{
@@ -317,8 +313,8 @@ public final class LineMath
 		}
 		return Optional.empty();
 	}
-	
-	
+
+
 	/**
 	 * Calculates the intersection point of the specified {@code halfLine} and the {@code lineSegment}
 	 *
@@ -327,7 +323,7 @@ public final class LineMath
 	 * @param lineSegment
 	 *           The line segment
 	 * @return
-	 * 			An {@code Optional} containing the intersection point if any exists
+	 *         An {@code Optional} containing the intersection point if any exists
 	 */
 	static Optional<IVector2> intersectionPointOfHalfLineAndSegment(final IHalfLine halfLine,
 			final ILineSegment lineSegment)
@@ -336,18 +332,18 @@ public final class LineMath
 		{
 			return Optional.empty();
 		}
-		
+
 		double halfLineLambda = getLineIntersectionLambda(halfLine, lineSegment);
 		double segmentLambda = getLineIntersectionLambda(lineSegment, halfLine);
-		
+
 		if (isLambdaInRange(halfLineLambda, 0, Double.MAX_VALUE) && isLambdaInRange(segmentLambda, 0, 1))
 		{
 			return Optional.of(getPointOnLineForLambda(halfLine, halfLineLambda));
 		}
 		return Optional.empty();
 	}
-	
-	
+
+
 	/**
 	 * Calculate the intersection point of the specified {@code line} and the {@code halfLine}.
 	 *
@@ -365,15 +361,15 @@ public final class LineMath
 			return Optional.empty();
 		}
 		double lambda = getLineIntersectionLambda(halfLine, line);
-		
+
 		if (isLambdaInRange(lambda, 0, Double.MAX_VALUE))
 		{
 			return Optional.of(getPointOnLineForLambda(halfLine, lambda));
 		}
 		return Optional.empty();
 	}
-	
-	
+
+
 	/**
 	 * Calculate the intersection point of the two specified half-lines {@code halfLineA} and {@code halfLineB}.
 	 *
@@ -382,7 +378,7 @@ public final class LineMath
 	 * @param halfLineB
 	 *           A half-line
 	 * @return
-	 * 			An optional containing the intersection point if one exists
+	 *         An optional containing the intersection point if one exists
 	 */
 	static Optional<IVector2> intersectionPointOfHalfLines(final IHalfLine halfLineA,
 			final IHalfLine halfLineB)
@@ -393,15 +389,15 @@ public final class LineMath
 		}
 		double lambdaA = getLineIntersectionLambda(halfLineA, halfLineB);
 		double lambdaB = getLineIntersectionLambda(halfLineB, halfLineA);
-		
+
 		if (isLambdaInRange(lambdaA, 0, Double.MAX_VALUE) && isLambdaInRange(lambdaB, 0, Double.MAX_VALUE))
 		{
 			return Optional.of(getPointOnLineForLambda(halfLineA, lambdaA));
 		}
 		return Optional.empty();
 	}
-	
-	
+
+
 	/**
 	 * calculates the lambda for a point if on the line. Returns NaN when the point was not
 	 * part of the line
@@ -414,24 +410,24 @@ public final class LineMath
 	{
 		IVector2 supportVector = line.supportVector();
 		IVector2 directionVector = line.directionVector();
-		
+
 		final IVector2 ortho = Vector2f.fromXY(directionVector.y(), -directionVector.x());
 		if (directionVector.isParallelTo(ortho))
 		{
 			return 0;
 		}
-		
+
 		return getLineIntersectionLambda(supportVector, directionVector, point, ortho);
 	}
-	
-	
+
+
 	private static double getLineIntersectionLambda(final ILineBase lineA, final ILineBase lineB)
 	{
 		return getLineIntersectionLambda(lineA.supportVector(), lineA.directionVector(),
 				lineB.supportVector(), lineB.directionVector());
 	}
-	
-	
+
+
 	/**
 	 * calculates the intersection-coefficient of the first line given as supportVector1 and directionVector1 and the
 	 * second line build from supportVector2 and directionVector2.
@@ -497,17 +493,17 @@ public final class LineMath
 		final double s2 = supportVector1.y();
 		final double d1 = directionVector1.x();
 		final double d2 = directionVector1.y();
-		
+
 		final double x1 = supportVector2.x();
 		final double x2 = supportVector2.y();
 		final double r1 = directionVector2.x();
 		final double r2 = directionVector2.y();
-		
-		
+
+
 		final double detRS = (r1 * s2) - (r2 * s1);
 		final double detRX = (r1 * x2) - (r2 * x1);
 		final double detDR = (d1 * r2) - (d2 * r1);
-		
+
 		if (Math.abs(detDR) == 0.0)
 		{
 			throw new IllegalStateException(
@@ -515,8 +511,8 @@ public final class LineMath
 		}
 		return (detRS - detRX) / detDR;
 	}
-	
-	
+
+
 	/**
 	 * checks if the given lambda is within the interval [min,max] with the predefined epsilon.
 	 *
@@ -529,8 +525,8 @@ public final class LineMath
 	{
 		return ((min - (ACCURACY * ACCURACY)) < lambda) && (lambda < (max + (ACCURACY * ACCURACY)));
 	}
-	
-	
+
+
 	private static Vector2 getPointOnLineForLambda(final ILineBase line, final double lambda)
 	{
 		IVector2 s = line.supportVector();

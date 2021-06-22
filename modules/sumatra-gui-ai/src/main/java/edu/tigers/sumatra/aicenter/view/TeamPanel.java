@@ -1,7 +1,8 @@
 package edu.tigers.sumatra.aicenter.view;
 
-import java.util.EnumMap;
-import java.util.Map;
+import edu.tigers.sumatra.ai.athena.EAIControlState;
+import edu.tigers.sumatra.aicenter.view.statepanel.RoleStatemachinePanel;
+import net.miginfocom.swing.MigLayout;
 
 import javax.swing.ButtonGroup;
 import javax.swing.ButtonModel;
@@ -9,9 +10,8 @@ import javax.swing.DefaultButtonModel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JTabbedPane;
-
-import edu.tigers.sumatra.ai.athena.EAIControlState;
-import net.miginfocom.swing.MigLayout;
+import java.util.EnumMap;
+import java.util.Map;
 
 
 public class TeamPanel extends JPanel
@@ -21,6 +21,8 @@ public class TeamPanel extends JPanel
 	private final RoleControlPanel rolePanel = new RoleControlPanel();
 	private final MetisPanel metisPanel = new MetisPanel();
 	private final JTabbedPane tabbedPane = new JTabbedPane();
+
+	private final RoleStatemachinePanel statemachinePanel = new RoleStatemachinePanel();
 
 
 	public TeamPanel()
@@ -55,6 +57,7 @@ public class TeamPanel extends JPanel
 		tabbedPane.addTab("Athena", athenaPanel);
 		tabbedPane.addTab("Roles", rolePanel);
 		tabbedPane.addTab("Metis Calcs", metisPanel);
+		tabbedPane.addTab("State Info", statemachinePanel);
 
 		this.add(tabbedPane, "push, grow");
 	}
@@ -88,4 +91,11 @@ public class TeamPanel extends JPanel
 	{
 		return modeButtons;
 	}
+
+
+	public RoleStatemachinePanel getStatemachinePanel()
+	{
+		return statemachinePanel;
+	}
+
 }

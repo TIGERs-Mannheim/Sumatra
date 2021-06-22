@@ -1,122 +1,80 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.data;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-
-import org.apache.commons.lang.Validate;
-import org.apache.log4j.Logger;
-import org.json.simple.JSONObject;
-
 import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.AObjectID;
 import edu.tigers.sumatra.ids.BallID;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.ids.UninitializedID;
 import edu.tigers.sumatra.math.botshape.BotShape;
 import edu.tigers.sumatra.math.vector.AVector2;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
-import edu.tigers.sumatra.model.SumatraModel;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.Value;
+import org.apache.commons.lang.StringUtils;
+import org.json.simple.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
- * This {@link DynamicPosition} represents either a normal position vector
- * or an updateable position connected with an object id
+ * This {@link DynamicPosition} represents an updateable position.
+ * It is immutable, so to get the latest value, {@link #update(SimpleWorldFrame)} must be called.
+ * This returns an updated instance.
  */
-@Persistent(version = 2)
+@Persistent(version = 3)
+@Value
+@Builder(toBuilder = true)
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class DynamicPosition
 {
-	@SuppressWarnings("unused")
-	private static final Logger log = Logger.getLogger(DynamicPosition.class.getName());
+	public static final DynamicPosition ZERO = new DynamicPosition();
 
-	private IVector2 pos = Vector2f.ZERO_VECTOR;
-	private AObjectID trackedId;
-	private double lookahead = 0;
-	private boolean useKickerPos = true;
-	private double passRange = 0;
+	IVector2 pos;
+	AObjectID trackedId;
+	double lookahead;
+	boolean useKickerPos;
 
 
 	/**
-	 * @param objId
+	 * @param objId an object id. The position will be zero. The instance must be updated first!
 	 */
-	public DynamicPosition(final AObjectID objId)
+	public DynamicPosition(@NonNull final AObjectID objId)
 	{
-		Objects.requireNonNull(objId, "Object ID must not be null");
-		trackedId = objId;
+		this(Vector2f.ZERO_VECTOR, objId, 0, true);
 	}
 
 
 	/**
-	 * @param obj
+	 * @param obj a tracked object. The position will be initialized with the objects position
 	 */
-	public DynamicPosition(final ITrackedObject obj)
+	public DynamicPosition(@NonNull final ITrackedObject obj)
 	{
-		Objects.requireNonNull(obj, "Tracked object must not be null");
-		trackedId = obj.getId();
-		pos = obj.getPos();
+		this(obj.getPos(), obj.getId(), 0, true);
 	}
 
 
 	/**
-	 * @param obj
-	 * @param lookahead
-	 */
-	public DynamicPosition(final ITrackedObject obj, final double lookahead)
-	{
-		this(obj);
-		setLookahead(lookahead);
-	}
-
-
-	/**
-	 * @param pos
+	 * @param pos a fixed position
 	 */
 	public DynamicPosition(final IVector2 pos)
 	{
-		setPos(pos);
-		trackedId = new UninitializedID();
+		this(pos, null, 0, true);
 	}
 
 
-	/**
-	 * Copy constructor
-	 *
-	 * @param dynamicPosition
-	 */
-	public DynamicPosition(final DynamicPosition dynamicPosition)
-	{
-		this.pos = dynamicPosition.pos;
-		this.trackedId = dynamicPosition.trackedId;
-		this.lookahead = dynamicPosition.lookahead;
-		this.useKickerPos = dynamicPosition.useKickerPos;
-		this.passRange = dynamicPosition.passRange;
-	}
-
-
-	/**
-	 * @param pos
-	 * @param passRange the range [rad] in which the pass can be played
-	 */
-	public DynamicPosition(final IVector2 pos, final double passRange)
-	{
-		setPos(pos);
-		trackedId = new UninitializedID();
-		this.passRange = passRange;
-	}
-
-
-	@SuppressWarnings("unused")
 	private DynamicPosition()
 	{
-		trackedId = null;
+		this(Vector2f.ZERO_VECTOR, null, 0, true);
 	}
 
 
@@ -124,102 +82,75 @@ public class DynamicPosition
 	 * Update position by consulting {@link SimpleWorldFrame}
 	 *
 	 * @param swf
+	 * @return new updated instance
 	 */
-	public final void update(final SimpleWorldFrame swf)
+	public final DynamicPosition update(final SimpleWorldFrame swf)
 	{
+		return toBuilder()
+				.pos(getLatestPos(swf))
+				.build();
+	}
+
+
+	private IVector2 getLatestPos(final SimpleWorldFrame swf)
+	{
+		if (trackedId == null)
+		{
+			return pos;
+		}
 		if (trackedId.isBall())
 		{
 			if (lookahead > 1e-5)
 			{
-				pos = swf.getBall().getTrajectory().getPosByTime(lookahead).getXYVector();
+				return swf.getBall().getTrajectory().getPosByTime(lookahead).getXYVector();
 			} else
 			{
-				pos = swf.getBall().getPos();
-			}
-		} else if (trackedId.isBot())
-		{
-			ITrackedBot bot = swf.getBot((BotID) trackedId);
-			if (bot != null)
-			{
-				IVector2 botPos;
-				double botAngle;
-				if (lookahead > 1e-5f)
-				{
-					botPos = bot.getPosByTime(lookahead);
-					botAngle = bot.getAngleByTime(lookahead);
-				} else
-				{
-					botPos = bot.getPos();
-					botAngle = bot.getOrientation();
-				}
-				if (useKickerPos)
-				{
-					pos = BotShape.getKickerCenterPos(botPos, botAngle,
-							bot.getCenter2DribblerDist() + Geometry.getBallRadius());
-				} else
-				{
-					pos = botPos;
-				}
-			} else if (!SumatraModel.getInstance().isProductive())
-			{
-				log.warn("No tracked bot with id " + trackedId + " found.", new Exception());
+				return swf.getBall().getPos();
 			}
 		}
-	}
-
-
-	/**
-	 * @param dyn
-	 */
-	public final void update(final DynamicPosition dyn)
-	{
-		pos = dyn.pos;
-		trackedId = dyn.trackedId;
-		lookahead = dyn.lookahead;
-		passRange = dyn.passRange;
-	}
-
-
-	public final void update(final AObjectID trackedId)
-	{
-		this.trackedId = trackedId;
-	}
-
-
-	/**
-	 * @return the trackedId
-	 */
-	public final AObjectID getTrackedId()
-	{
-		return trackedId;
-	}
-
-
-	public IVector2 getPos()
-	{
+		if (trackedId.isBot())
+		{
+			ITrackedBot bot = swf.getBot((BotID) trackedId);
+			if (bot == null)
+			{
+				return pos;
+			}
+			IVector2 botPos;
+			double botAngle;
+			if (lookahead > 1e-5f)
+			{
+				botPos = bot.getPosByTime(lookahead);
+				botAngle = bot.getAngleByTime(lookahead);
+			} else
+			{
+				botPos = bot.getPos();
+				botAngle = bot.getOrientation();
+			}
+			if (useKickerPos)
+			{
+				return BotShape.getKickerCenterPos(botPos, botAngle,
+						bot.getCenter2DribblerDist() + Geometry.getBallRadius());
+			} else
+			{
+				return botPos;
+			}
+		}
 		return pos;
-	}
-
-
-	/**
-	 * @param pos the pos to set
-	 */
-	public final void setPos(final IVector2 pos)
-	{
-		Objects.requireNonNull(pos, "Position must not be null");
-		this.pos = pos;
 	}
 
 
 	public String getSaveableString()
 	{
-		if (trackedId.isBot())
+		if (trackedId != null)
 		{
-			BotID botId = (BotID) trackedId;
-			return trackedId.getNumber() + " " + botId.getTeamColor().name();
-		} else if (trackedId.isBall())
-		{
-			return "-1";
+			if (trackedId.isBot())
+			{
+				BotID botId = (BotID) trackedId;
+				return trackedId.getNumber() + " " + botId.getTeamColor().name();
+			} else if (trackedId.isBall())
+			{
+				return "-1";
+			}
 		}
 		return pos.getSaveableString();
 	}
@@ -240,6 +171,10 @@ public class DynamicPosition
 	 */
 	public static DynamicPosition valueOf(final String value)
 	{
+		if (StringUtils.isBlank(value))
+		{
+			return null;
+		}
 		if ("-1".equals(value) || "ball".equalsIgnoreCase(value))
 		{
 			return new DynamicPosition(BallID.instance());
@@ -295,30 +230,11 @@ public class DynamicPosition
 	}
 
 
-	/**
-	 * @return the lookahead
-	 */
-	public double getLookahead()
-	{
-		return lookahead;
-	}
-
-
-	/**
-	 * @param lookahead the lookahead to set
-	 */
-	public void setLookahead(final double lookahead)
-	{
-		Validate.isTrue(lookahead >= 0, "The lookahead must be greater than or equal to zero");
-		this.lookahead = lookahead;
-	}
-
-
 	@SuppressWarnings("unchecked")
 	public JSONObject toJSON()
 	{
 		JSONObject jsonMapping = pos.toJSON();
-		jsonMapping.put("trackedId", trackedId.getNumber());
+		jsonMapping.put("trackedId", trackedId == null ? "" : trackedId.getNumber());
 		jsonMapping.put("lookahead", lookahead);
 		return jsonMapping;
 	}
@@ -327,26 +243,8 @@ public class DynamicPosition
 	public List<Number> getNumberList()
 	{
 		List<Number> numbers = pos.getNumberList();
-		numbers.add(trackedId.getNumber());
+		numbers.add(trackedId == null ? -1 : trackedId.getNumber());
 		numbers.add(lookahead);
 		return numbers;
-	}
-
-
-	public void setUseKickerPos(final boolean useKickerPos)
-	{
-		this.useKickerPos = useKickerPos;
-	}
-
-
-	public double getPassRange()
-	{
-		return passRange;
-	}
-
-
-	public void setPassRange(final double passRange)
-	{
-		this.passRange = passRange;
 	}
 }

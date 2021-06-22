@@ -1,12 +1,8 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.wp.vis;
-
-import java.awt.Color;
-import java.util.List;
-import java.util.Objects;
 
 import edu.tigers.sumatra.drawable.DrawableBotPattern;
 import edu.tigers.sumatra.drawable.DrawableBotShape;
@@ -17,6 +13,10 @@ import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.pose.Pose;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
 import edu.tigers.sumatra.wp.data.WorldFrameWrapper;
+
+import java.awt.Color;
+import java.util.List;
+import java.util.Objects;
 
 
 /**
@@ -29,26 +29,21 @@ public class BotVisCalc implements IWpCalc
 	{
 		List<IDrawableShape> botsShapes = shapeMap.get(EWpShapesLayer.BOTS);
 		wfw.getSimpleWorldFrame().getBots().values().stream().map(this::createBotShape).forEach(botsShapes::add);
-		
+
 		List<IDrawableShape> feedbackShapes = shapeMap.get(EWpShapesLayer.BOT_FEEDBACK);
 		wfw.getSimpleWorldFrame().getBots().values().stream().map(this::createBotFeedbackShape).filter(Objects::nonNull)
 				.forEach(feedbackShapes::add);
-		
+
 		List<IDrawableShape> filterShapes = shapeMap.get(EWpShapesLayer.BOT_FILTER);
 		wfw.getSimpleWorldFrame().getBots().values().stream().map(this::createBotFilterShape).filter(Objects::nonNull)
 				.forEach(filterShapes::add);
-		
-		List<IDrawableShape> bufferedTrajShapes = shapeMap.get(EWpShapesLayer.BOT_BUFFERED_TRAJ);
-		wfw.getSimpleWorldFrame().getBots().values().stream().map(this::createBotBufferedTrajShape)
-				.filter(Objects::nonNull)
-				.forEach(bufferedTrajShapes::add);
-		
+
 		List<IDrawableShape> botPatternShapes = shapeMap.get(EWpShapesLayer.BOT_PATTERNS);
 		wfw.getSimpleWorldFrame().getBots().values().stream().map(this::createBotPattern)
 				.forEach(botPatternShapes::add);
 	}
-	
-	
+
+
 	private DrawableBotShape createBotFeedbackShape(final ITrackedBot bot)
 	{
 		if (bot.getRobotInfo().getInternalState().isPresent())
@@ -64,8 +59,8 @@ public class BotVisCalc implements IWpCalc
 		}
 		return null;
 	}
-	
-	
+
+
 	private DrawableBotShape createBotFilterShape(final ITrackedBot bot)
 	{
 		if (bot.getFilteredState().isPresent())
@@ -81,25 +76,8 @@ public class BotVisCalc implements IWpCalc
 		}
 		return null;
 	}
-	
-	
-	private DrawableBotShape createBotBufferedTrajShape(final ITrackedBot bot)
-	{
-		if (bot.getBufferedTrajState().isPresent())
-		{
-			Pose pose = bot.getBufferedTrajState().get().getPose();
-			DrawableBotShape botShape = new DrawableBotShape(pose.getPos(), pose.getOrientation(),
-					Geometry.getBotRadius(), bot.getRobotInfo().getCenter2DribblerDist());
-			botShape.setFillColor(null);
-			botShape.setBorderColor(Color.LIGHT_GRAY);
-			botShape.setFontColor(Color.LIGHT_GRAY);
-			botShape.setId(String.valueOf(bot.getBotId().getNumber()));
-			return botShape;
-		}
-		return null;
-	}
-	
-	
+
+
 	private DrawableBotShape createBotShape(final ITrackedBot bot)
 	{
 		DrawableBotShape shape = new DrawableBotShape(bot.getPos(), bot.getOrientation(), Geometry.getBotRadius(),
@@ -110,23 +88,23 @@ public class BotVisCalc implements IWpCalc
 		shape.setId(String.valueOf(bot.getBotId().getNumber()));
 		return shape;
 	}
-	
-	
+
+
 	private DrawableBotPattern createBotPattern(final ITrackedBot bot)
 	{
 		return new DrawableBotPattern(bot.getPos(), bot.getOrientation(), Geometry.getBotRadius(),
 				bot.getCenter2DribblerDist(), bot.getBotId());
 	}
-	
-	
+
+
 	private Color fillColor(final ITrackedBot bot)
 	{
 		Color color = bot.getTeamColor().getColor();
-		if (!bot.getFilteredState().isPresent())
+		if (bot.getFilteredState().isEmpty())
 		{
 			color = new Color(color.getRed(), color.getGreen(), color.getBlue(), 150);
 		}
 		return color;
 	}
-	
+
 }

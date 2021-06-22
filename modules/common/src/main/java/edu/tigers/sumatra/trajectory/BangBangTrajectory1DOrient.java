@@ -1,60 +1,87 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.trajectory;
 
-import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.math.AngleMath;
+import lombok.RequiredArgsConstructor;
+
+import java.util.List;
 
 
 /**
- * @author AndreR
+ * Bang Bang Trajectory for one dimension for orientation.
  */
-@Persistent
-public class BangBangTrajectory1DOrient extends BangBangTrajectory1D
+@RequiredArgsConstructor
+class BangBangTrajectory1DOrient implements ITrajectory<Double>
 {
-	
-	@SuppressWarnings("unused")
-	private BangBangTrajectory1DOrient()
-	{
-	}
-	
-	
-	/**
-	 * @param initialPos
-	 * @param finalPos
-	 * @param initialVel
-	 * @param maxVel
-	 * @param maxAcc
-	 */
-	public BangBangTrajectory1DOrient(final float initialPos, final float finalPos, final float initialVel,
-			final float maxVel, final float maxAcc)
-	{
-		float sDiffShort = (float) AngleMath.difference(finalPos, initialPos);
-		this.initialPos = initialPos;
-		this.finalPos = initialPos + sDiffShort;
-		this.initialVel = initialVel;
-		this.maxAcc = maxAcc;
-		this.maxVel = maxVel;
-		
-		init();
-		generateTrajectory();
-	}
-	
-	
+	final BangBangTrajectory1D child;
+
+
 	@Override
 	public Double getPositionMM(final double t)
 	{
-		return AngleMath.normalizeAngle(getValuesAtTime(t).pos);
+		return getPosition(t);
 	}
-	
-	
+
+
+	@Override
+	public Double getPosition(final double t)
+	{
+		return AngleMath.normalizeAngle(child.getPosition(t));
+	}
+
+
+	@Override
+	public Double getVelocity(final double t)
+	{
+		return child.getVelocity(t);
+	}
+
+
+	@Override
+	public Double getAcceleration(final double t)
+	{
+		return child.getAcceleration(t);
+	}
+
+
+	@Override
+	public double getTotalTime()
+	{
+		return child.getTotalTime();
+	}
+
+
 	@Override
 	public BangBangTrajectory1DOrient mirrored()
 	{
-		return new BangBangTrajectory1DOrient((float) AngleMath.mirror(initialPos), (float) AngleMath.mirror(finalPos),
-				-initialVel,
-				maxVel, maxAcc);
+		BangBangTrajectory1D mirrored = new BangBangTrajectory1D();
+		mirrored.numParts = child.numParts;
+		for (int i = 0; i < child.numParts; i++)
+		{
+			mirrored.parts[i].tEnd = child.parts[i].tEnd;
+			mirrored.parts[i].acc = child.parts[i].acc;
+			mirrored.parts[i].v0 = child.parts[i].v0;
+			mirrored.parts[i].s0 = (float) AngleMath.mirror(child.parts[i].s0);
+		}
+
+		return new BangBangTrajectory1DOrient(mirrored);
+	}
+
+
+	@Override
+	public PosVelAcc<Double> getValuesAtTime(final double tt)
+	{
+		PosVelAcc<Double> valuesAtTime = child.getValuesAtTime(tt);
+		return new PosVelAcc<>(AngleMath.normalizeAngle(valuesAtTime.getPos()), valuesAtTime.getVel(),
+				valuesAtTime.getAcc());
+	}
+
+
+	@Override
+	public List<Double> getTimeSections()
+	{
+		return child.getTimeSections();
 	}
 }

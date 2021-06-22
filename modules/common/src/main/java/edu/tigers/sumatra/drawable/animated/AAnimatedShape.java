@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.drawable.animated;
 
@@ -18,7 +18,7 @@ import edu.tigers.sumatra.math.vector.Vector2f;
 
 /**
  * All animated shapes have a center position, line color, fill color, and stroke width.
- * 
+ *
  * @author AndreR <andre@ryll.cc>
  */
 @Persistent
@@ -29,31 +29,31 @@ public class AAnimatedShape implements IDrawableShape
 	private IColorAnimator fillColor;
 	private float strokeWidth = 10;
 	private transient Stroke stroke;
-	
-	
+
+
 	@SuppressWarnings("unused")
 	protected AAnimatedShape()
 	{
 		center = Vector2f.ZERO_VECTOR;
 		lineColor = new ColorAnimatorFixed(Color.BLACK);
 	}
-	
-	
+
+
 	protected AAnimatedShape(final IVector2 center)
 	{
 		this.center = center;
 		lineColor = new ColorAnimatorFixed(Color.BLACK);
 	}
-	
-	
+
+
 	protected AAnimatedShape(final IVector2 center, final IColorAnimator lineColor, final IColorAnimator fillColor)
 	{
 		this.center = center;
 		this.lineColor = lineColor;
 		this.fillColor = fillColor;
 	}
-	
-	
+
+
 	@Override
 	public void paintShape(final Graphics2D g, final IDrawableTool tool, final boolean invert)
 	{
@@ -62,18 +62,19 @@ public class AAnimatedShape implements IDrawableShape
 			stroke = new BasicStroke(tool.scaleXLength(strokeWidth));
 		}
 		g.setStroke(stroke);
-		
+
 		g.setColor(lineColor.getColor());
 	}
-	
-	
+
+
 	@Override
-	public void setStrokeWidth(final double strokeWidth)
+	public AAnimatedShape setStrokeWidth(final double strokeWidth)
 	{
 		this.strokeWidth = (float) strokeWidth;
+		return this;
 	}
-	
-	
+
+
 	/**
 	 * @param strokeWidth
 	 * @return
@@ -83,15 +84,16 @@ public class AAnimatedShape implements IDrawableShape
 		this.strokeWidth = (float) strokeWidth;
 		return this;
 	}
-	
-	
+
+
 	@Override
-	public void setColor(final Color color)
+	public AAnimatedShape setColor(final Color color)
 	{
 		lineColor = new ColorAnimatorFixed(color);
+		return this;
 	}
-	
-	
+
+
 	/**
 	 * @param center the center to set
 	 * @return
@@ -101,8 +103,8 @@ public class AAnimatedShape implements IDrawableShape
 		this.center = center;
 		return this;
 	}
-	
-	
+
+
 	/**
 	 * @param lineColor the lineColor to set
 	 * @return
@@ -112,8 +114,8 @@ public class AAnimatedShape implements IDrawableShape
 		this.lineColor = lineColor;
 		return this;
 	}
-	
-	
+
+
 	/**
 	 * @param fillColor the fillColor to set
 	 * @return
@@ -123,8 +125,8 @@ public class AAnimatedShape implements IDrawableShape
 		this.fillColor = fillColor;
 		return this;
 	}
-	
-	
+
+
 	/**
 	 * @return the center
 	 */
@@ -132,8 +134,8 @@ public class AAnimatedShape implements IDrawableShape
 	{
 		return center;
 	}
-	
-	
+
+
 	/**
 	 * @return the lineColor
 	 */
@@ -141,8 +143,8 @@ public class AAnimatedShape implements IDrawableShape
 	{
 		return lineColor;
 	}
-	
-	
+
+
 	/**
 	 * @return the fillColor
 	 */
@@ -150,8 +152,8 @@ public class AAnimatedShape implements IDrawableShape
 	{
 		return fillColor;
 	}
-	
-	
+
+
 	/**
 	 * @return the strokeWidth
 	 */

@@ -1,29 +1,28 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.persistence;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-
-import org.apache.log4j.Logger;
 
 import com.github.g3force.configurable.ConfigRegistration;
 import com.github.g3force.configurable.Configurable;
 import com.sleepycat.persist.evolve.Mutations;
 import com.sleepycat.persist.evolve.Renamer;
-
 import edu.tigers.moduli.AModule;
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
-import edu.tigers.sumatra.Referee;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.persistence.log.BerkeleyLogEvent;
 import edu.tigers.sumatra.persistence.log.BerkeleyLogRecorder;
 import edu.tigers.sumatra.referee.AReferee;
 import edu.tigers.sumatra.referee.IRefereeObserver;
+import edu.tigers.sumatra.referee.proto.SslGcRefereeMessage;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 
 /**
@@ -33,7 +32,7 @@ import edu.tigers.sumatra.referee.IRefereeObserver;
  */
 public class RecordManager extends AModule implements IRefereeObserver
 {
-	private static final Logger log = Logger.getLogger(RecordManager.class.getName());
+	private static final Logger log = LogManager.getLogger(RecordManager.class.getName());
 	private final List<IRecordObserver> observers = new CopyOnWriteArrayList<>();
 	private final List<IBerkeleyRecorderHook> hooks = new CopyOnWriteArrayList<>();
 	private long lastCommandCounter = -1;
@@ -42,7 +41,7 @@ public class RecordManager extends AModule implements IRefereeObserver
 	@Configurable(defValue = "false", comment = "Automatically compress recordings after they were closed")
 	private static boolean compressOnClose = false;
 
-	@Configurable(defValue = "true", comment = "Automatically record game in productive/match mode (-Dproductive=true)")
+	@Configurable(defValue = "true", comment = "Automatically record game in productive mode")
 	private static boolean autoRecord = true;
 
 	static
@@ -56,7 +55,7 @@ public class RecordManager extends AModule implements IRefereeObserver
 		Mutations mutations = new Mutations();
 		mutations.addRenamer(new Renamer("edu.tigers.sumatra.referee.gameevent.AttackerInDefenseArea", 0,
 				"edu.tigers.sumatra.referee.gameevent.AttackerTouchedBallInDefenseArea"));
-		// add future mutations here
+		mutations.addRenamer(new Renamer("edu.tigers.sumatra.ai.metis.offense.action.moves.OffensiveAction", 3, "edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction"));
 
 		return mutations;
 	}
@@ -113,7 +112,7 @@ public class RecordManager extends AModule implements IRefereeObserver
 	}
 
 
-	private boolean isPreStage(final Referee.SSL_Referee refMsg)
+	private boolean isPreStage(final SslGcRefereeMessage.Referee refMsg)
 	{
 		switch (refMsg.getStage())
 		{
@@ -128,7 +127,7 @@ public class RecordManager extends AModule implements IRefereeObserver
 	}
 
 
-	private boolean isGameStage(final Referee.SSL_Referee refMsg)
+	private boolean isGameStage(final SslGcRefereeMessage.Referee refMsg)
 	{
 		switch (refMsg.getStage())
 		{
@@ -144,7 +143,7 @@ public class RecordManager extends AModule implements IRefereeObserver
 	}
 
 
-	private boolean isNoGameStage(final Referee.SSL_Referee refMsg)
+	private boolean isNoGameStage(final SslGcRefereeMessage.Referee refMsg)
 	{
 		switch (refMsg.getStage())
 		{
@@ -161,7 +160,7 @@ public class RecordManager extends AModule implements IRefereeObserver
 
 
 	@Override
-	public void onNewRefereeMsg(final Referee.SSL_Referee refMsg)
+	public void onNewRefereeMsg(final SslGcRefereeMessage.Referee refMsg)
 	{
 		if (autoRecord && SumatraModel.getInstance().isProductive() && (refMsg != null)
 				&& refMsg.getCommandCounter() != lastCommandCounter)
@@ -172,11 +171,11 @@ public class RecordManager extends AModule implements IRefereeObserver
 	}
 
 
-	private void startStopRecording(final Referee.SSL_Referee refMsg)
+	private void startStopRecording(final SslGcRefereeMessage.Referee refMsg)
 	{
 		if (!isRecording() &&
 				(isGameStage(refMsg)
-						|| (isPreStage(refMsg) && (refMsg.getCommand() != Referee.SSL_Referee.Command.HALT))))
+						|| (isPreStage(refMsg) && (refMsg.getCommand() != SslGcRefereeMessage.Referee.Command.HALT))))
 		{
 			startRecording();
 		} else if (isRecording() && isNoGameStage(refMsg))

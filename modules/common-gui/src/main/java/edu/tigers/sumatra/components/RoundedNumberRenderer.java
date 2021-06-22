@@ -1,13 +1,18 @@
 package edu.tigers.sumatra.components;
 
-import java.text.DecimalFormat;
-
 import javax.swing.table.DefaultTableCellRenderer;
+import java.text.DecimalFormat;
 
 
 public class RoundedNumberRenderer extends DefaultTableCellRenderer
 {
-	private DecimalFormat format = new DecimalFormat("#.###");
+	private final DecimalFormat format;
+
+
+	public RoundedNumberRenderer(String pattern)
+	{
+		format = new DecimalFormat(pattern);
+	}
 
 
 	@Override

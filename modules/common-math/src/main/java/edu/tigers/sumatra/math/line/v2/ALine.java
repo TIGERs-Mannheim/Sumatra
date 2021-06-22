@@ -81,4 +81,11 @@ abstract class ALine implements ILineBase
 		IVector2 closestPointOnLine = closestPointOnLine(point);
 		return point.distanceTo(closestPointOnLine);
 	}
+
+	@Override
+	public double distanceToSqr(final IVector2 point)
+	{
+		IVector2 closestPointOnLine = closestPointOnLine(point);
+		return point.distanceToSqr(closestPointOnLine);
+	}
 }

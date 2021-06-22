@@ -1,7 +1,11 @@
 /*
- * Copyright (c) 2009 - 2017, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee;
+
+import edu.tigers.sumatra.ids.BotID;
+import edu.tigers.sumatra.ids.ETeamColor;
+import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -11,10 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import edu.tigers.sumatra.ids.ETeamColor;
-import edu.tigers.sumatra.ids.IBotIDMap;
-import edu.tigers.sumatra.wp.data.ITrackedBot;
 
 
 /**
@@ -26,7 +26,7 @@ public final class AutoRefUtil
 	{
 		// Hide constructor
 	}
-	
+
 	/**
 	 * A Predicate implementation that filters ITrackedBot instances by their color
 	 */
@@ -34,15 +34,15 @@ public final class AutoRefUtil
 	{
 		private static Map<ETeamColor, ColorFilter> filters;
 		private final ETeamColor color;
-		
+
 		static
 		{
 			Map<ETeamColor, ColorFilter> tempFilters = new EnumMap<>(ETeamColor.class);
 			Arrays.stream(ETeamColor.values()).forEach(color -> tempFilters.put(color, new ColorFilter(color)));
 			filters = Collections.unmodifiableMap(tempFilters);
 		}
-		
-		
+
+
 		/**
 		 * @param color The color to filter for
 		 */
@@ -50,18 +50,18 @@ public final class AutoRefUtil
 		{
 			this.color = color;
 		}
-		
-		
+
+
 		@Override
 		public boolean test(final ITrackedBot bot)
 		{
 			return bot.getBotId().getTeamColor() == color;
 		}
-		
-		
+
+
 		/**
 		 * Returns a color filter instance matching the color
-		 * 
+		 *
 		 * @param color
 		 * @return
 		 */
@@ -70,11 +70,11 @@ public final class AutoRefUtil
 			return filters.get(color);
 		}
 	}
-	
-	
+
+
 	/**
 	 * Filter the supplied collection of bots by their team color
-	 * 
+	 *
 	 * @param bots
 	 * @param color
 	 * @return a list of all bots that match the color
@@ -85,16 +85,16 @@ public final class AutoRefUtil
 				.filter(ColorFilter.get(color))
 				.collect(Collectors.toList());
 	}
-	
-	
+
+
 	/**
 	 * Filter the supplied collection of bots by their team color
-	 * 
+	 *
 	 * @param bots
 	 * @param color
 	 * @return a list of all bots that match the color
 	 */
-	public static List<ITrackedBot> filterByColor(final IBotIDMap<ITrackedBot> bots, final ETeamColor color)
+	public static List<ITrackedBot> filterByColor(final Map<BotID, ITrackedBot> bots, final ETeamColor color)
 	{
 		return filterByColor(bots.values(), color);
 	}

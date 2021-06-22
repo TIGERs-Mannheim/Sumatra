@@ -1,14 +1,13 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.offensive;
 
 import java.awt.Component;
 import java.util.Map;
 
-import edu.tigers.sumatra.trees.EOffensiveSituation;
-import edu.tigers.sumatra.trees.OffensiveActionTree;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
 import edu.tigers.moduli.listenerVariables.ModulesState;
@@ -18,6 +17,8 @@ import edu.tigers.sumatra.ai.IVisualizationFrameObserver;
 import edu.tigers.sumatra.ai.VisualizationFrame;
 import edu.tigers.sumatra.model.SumatraModel;
 import edu.tigers.sumatra.offensive.view.OffensiveActionTreePanel;
+import edu.tigers.sumatra.trees.EOffensiveSituation;
+import edu.tigers.sumatra.trees.OffensiveActionTree;
 import edu.tigers.sumatra.views.ASumatraViewPresenter;
 import edu.tigers.sumatra.views.ISumatraView;
 
@@ -30,10 +31,10 @@ import edu.tigers.sumatra.views.ISumatraView;
 public class OffensiveActionTreePresenter extends ASumatraViewPresenter implements IVisualizationFrameObserver
 {
 	@SuppressWarnings("unused")
-	private static final Logger log = Logger.getLogger(OffensiveStrategyPresenter.class.getName());
+	private static final Logger log = LogManager.getLogger(OffensiveStrategyPresenter.class.getName());
 	private final OffensiveActionTreePanel offensiveActionTreePanel;
-	
-	
+
+
 	/**
 	 * Default
 	 */
@@ -41,8 +42,8 @@ public class OffensiveActionTreePresenter extends ASumatraViewPresenter implemen
 	{
 		offensiveActionTreePanel = new OffensiveActionTreePanel();
 	}
-	
-	
+
+
 	@Override
 	public void onModuliStateChanged(final ModulesState state)
 	{
@@ -87,15 +88,15 @@ public class OffensiveActionTreePresenter extends ASumatraViewPresenter implemen
 	{
 		return offensiveActionTreePanel;
 	}
-	
-	
+
+
 	@Override
 	public ISumatraView getSumatraView()
 	{
 		return offensiveActionTreePanel;
 	}
-	
-	
+
+
 	@Override
 	public void onNewVisualizationFrame(final VisualizationFrame frame)
 	{

@@ -1,12 +1,7 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.autoreferee.engine;
-
-import java.net.InetAddress;
-import java.util.Set;
-
-import org.apache.log4j.Logger;
 
 import edu.tigers.autoreferee.IAutoRefFrame;
 import edu.tigers.autoreferee.engine.detector.EGameEventDetectorType;
@@ -20,24 +15,29 @@ import edu.tigers.sumatra.referee.AReferee;
 import edu.tigers.sumatra.referee.control.GcEventFactory;
 import edu.tigers.sumatra.referee.data.EGameState;
 import edu.tigers.sumatra.referee.gameevent.IGameEvent;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.net.InetAddress;
+import java.util.Set;
 
 
 public class ActiveAutoRefEngine extends AutoRefEngine
 {
-	private final Logger log = Logger.getLogger(ActiveAutoRefEngine.class.getName());
+	private final Logger log = LogManager.getLogger(ActiveAutoRefEngine.class.getName());
 	private static final String DEFAULT_REFEREE_HOST = "localhost";
 	private static final int DEFAULT_GC_AUTO_REF_PORT = 11007;
-	
+
 	private AutoRefToGameControllerConnector remote;
 	private Long lastTimeSentContinue;
-	
-	
+
+
 	public ActiveAutoRefEngine(final Set<EGameEventDetectorType> activeDetectors)
 	{
 		super(activeDetectors);
 	}
-	
-	
+
+
 	@Override
 	public void start()
 	{
@@ -52,27 +52,33 @@ public class ActiveAutoRefEngine extends AutoRefEngine
 		remote.addGameEventResponseObserver(this::onGameControllerResponse);
 		remote.start();
 	}
-	
-	
+
+
 	@Override
 	public void stop()
 	{
 		remote.stop();
 	}
-	
-	
+
+
 	@Override
 	public void process(final IAutoRefFrame frame)
 	{
+		AReferee referee = SumatraModel.getInstance().getModule(AReferee.class);
+		String hostname = referee.getActiveSource().getRefBoxAddress()
+				.map(InetAddress::getHostAddress)
+				.orElse(DEFAULT_REFEREE_HOST);
+		remote.updateHostname(hostname);
+
 		processEngine(frame).forEach(this::processGameEvent);
-		
+
 		if (SumatraModel.getInstance().isSimulation())
 		{
 			handleContinue(frame);
 		}
 	}
-	
-	
+
+
 	private void handleContinue(final IAutoRefFrame frame)
 	{
 		if (frame.getGameState().getState() == EGameState.HALT
@@ -95,16 +101,16 @@ public class ActiveAutoRefEngine extends AutoRefEngine
 			lastTimeSentContinue = null;
 		}
 	}
-	
-	
+
+
 	private boolean canContinueGame(final IAutoRefFrame frame)
 	{
 		return ballPlaced(frame)
 				&& notTooManyBots(frame, ETeamColor.BLUE)
 				&& notTooManyBots(frame, ETeamColor.YELLOW);
 	}
-	
-	
+
+
 	private boolean ballPlaced(final IAutoRefFrame frame)
 	{
 		return frame.getGameState().getBallPlacementPositionNeutral() == null
@@ -112,24 +118,24 @@ public class ActiveAutoRefEngine extends AutoRefEngine
 						.distanceTo(frame.getGameState().getBallPlacementPositionNeutral()) < RuleConstraints
 								.getBallPlacementTolerance();
 	}
-	
-	
+
+
 	private boolean notTooManyBots(final IAutoRefFrame frame, ETeamColor teamColor)
 	{
 		return frame.getWorldFrame().getBots().keySet().stream()
 				.filter(id -> id.getTeamColor() == teamColor)
 				.count() <= frame.getRefereeMsg().getTeamInfo(teamColor).getMaxAllowedBots();
 	}
-	
-	
+
+
 	@Override
 	protected void processGameEvent(final IGameEvent gameEvent)
 	{
 		super.processGameEvent(gameEvent);
 		remote.sendEvent(gameEvent);
 	}
-	
-	
+
+
 	private void onGameControllerResponse(GameEventResponse response)
 	{
 		if (response.getResponse() != GameEventResponse.Response.OK)

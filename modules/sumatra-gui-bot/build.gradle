@@ -1,0 +1,26 @@
+/*
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
+ */
+
+plugins {
+    id 'sumatra.java-conventions'
+    id 'java-library'
+}
+
+dependencies {
+    implementation project(':common')
+    implementation project(':common-math')
+    implementation project(':common-bot')
+    implementation project(':common-gui')
+    implementation project(':sumatra-model')
+    implementation project(':moduli-botmanager')
+    implementation project(':moduli-botmanager-tigers')
+
+    implementation 'com.github.TIGERs-Mannheim:moduli:4.1'
+
+    implementation 'org.apache.logging.log4j:log4j-api:2.14.1'
+
+    implementation 'net.sf.jchart2d:jchart2d:3.3.2'
+    implementation 'com.googlecode.json-simple:json-simple:1.1.1'
+    implementation 'com.miglayout:miglayout-swing:11.0'
+}

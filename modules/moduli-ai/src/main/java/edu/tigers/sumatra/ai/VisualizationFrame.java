@@ -1,50 +1,64 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.ai;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.ai.athena.IPlayStrategy;
 import edu.tigers.sumatra.ai.data.BotAiInformation;
-import edu.tigers.sumatra.ai.metis.offense.action.moves.OffensiveAction;
+import edu.tigers.sumatra.ai.metis.offense.action.OffensiveAction;
 import edu.tigers.sumatra.ai.metis.offense.action.situation.OffensiveActionTreePath;
+import edu.tigers.sumatra.ai.metis.offense.ballinterception.BallInterceptionInformation;
 import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveAnalysedFrame;
 import edu.tigers.sumatra.ai.metis.offense.statistics.OffensiveStatisticsFrame;
 import edu.tigers.sumatra.ai.metis.offense.strategy.OffensiveStrategy;
-import edu.tigers.sumatra.ai.metis.statistics.MatchStats;
+import edu.tigers.sumatra.ai.metis.statistics.stats.MatchStats;
+import edu.tigers.sumatra.ai.pandora.plays.EPlay;
+import edu.tigers.sumatra.ai.pandora.plays.match.SupportPlay;
+import edu.tigers.sumatra.ai.pandora.roles.support.ESupportBehavior;
 import edu.tigers.sumatra.ids.BotID;
 import edu.tigers.sumatra.ids.EAiTeam;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.trees.EOffensiveSituation;
 import edu.tigers.sumatra.trees.OffensiveActionTree;
+import lombok.Value;
+
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 /**
  * Data container that is send to the UI and that is stored in the Berkeley DB.
  */
-@Persistent(version = 5)
+@Persistent(version = 6)
+@Value
 public class VisualizationFrame
 {
-	private final long timestamp;
-	
-	private EAiTeam aiTeam;
-	
-	private final MatchStats matchStats;
-	private final OffensiveStrategy offensiveStrategy;
-	private final Map<BotID, OffensiveAction> offensiveActions = new HashMap<>();
-	private final Map<BotID, BotAiInformation> aiInfos = new HashMap<>();
-	private final OffensiveAnalysedFrame offensiveStatisticsFrame;
-	private final OffensiveStatisticsFrame offensiveStatisticsFrameRaw;
-	private final Map<EOffensiveSituation, OffensiveActionTree> actionTrees;
-	private final OffensiveActionTreePath currentPath;
-	private final transient IPlayStrategy playStrategy;
+	long timestamp;
 
-	
+	EAiTeam aiTeam;
+
+	MatchStats matchStats;
+	OffensiveStrategy offensiveStrategy;
+	Map<BotID, OffensiveAction> offensiveActions = new HashMap<>();
+	Map<BotID, BotAiInformation> aiInfos = new HashMap<>();
+	OffensiveAnalysedFrame offensiveStatisticsFrame;
+	OffensiveStatisticsFrame offensiveStatisticsFrameRaw;
+	Map<EOffensiveSituation, OffensiveActionTree> actionTrees;
+	OffensiveActionTreePath currentPath;
+	transient IPlayStrategy playStrategy;
+	Map<BotID, EnumMap<ESupportBehavior, Double>> supportViabilityMap;
+	List<ESupportBehavior> inactiveSupportBehaviors;
+	Map<BotID, BallInterceptionInformation> ballInterceptionInformationMap;
+
+
 	@SuppressWarnings("unused")
 	private VisualizationFrame()
 	{
@@ -57,9 +71,12 @@ public class VisualizationFrame
 		actionTrees = null;
 		currentPath = null;
 		playStrategy = null;
+		supportViabilityMap = null;
+		inactiveSupportBehaviors = null;
+		ballInterceptionInformationMap = null;
 	}
-	
-	
+
+
 	/**
 	 * @param aiFrame
 	 */
@@ -67,18 +84,27 @@ public class VisualizationFrame
 	{
 		timestamp = aiFrame.getSimpleWorldFrame().getTimestamp();
 		aiTeam = aiFrame.getAiTeam();
-		matchStats = aiFrame.getTacticalField().getMatchStatistics();
-		offensiveStrategy = aiFrame.getTacticalField().getOffensiveStrategy();
+		matchStats = aiFrame.getTacticalField().getMatchStats();
+		offensiveStrategy = berkeleyFriendly(aiFrame.getTacticalField().getOffensiveStrategy());
 		offensiveActions.putAll(aiFrame.getTacticalField().getOffensiveActions());
 		aiInfos.putAll(aiFrame.getAresData().getBotAiInformation());
 		offensiveStatisticsFrame = aiFrame.getTacticalField().getAnalyzedOffensiveStatisticsFrame();
 		offensiveStatisticsFrameRaw = aiFrame.getTacticalField().getOffensiveStatistics();
 		actionTrees = aiFrame.getTacticalField().getActionTrees().getActionTrees();
 		currentPath = aiFrame.getTacticalField().getCurrentPath();
-		playStrategy = aiFrame.getPlayStrategy();
+		playStrategy = aiFrame.getAthenaAiFrame().getPlayStrategy();
+
+		Optional<SupportPlay> play = playStrategy.getActivePlays().stream()
+				.filter(p -> p.getType() == EPlay.SUPPORT)
+				.map(SupportPlay.class::cast)
+				.findAny();
+		supportViabilityMap = play.map(SupportPlay::getViabilityMap).orElse(null);
+		inactiveSupportBehaviors = play.map(SupportPlay::getInactiveBehaviors).orElse(null);
+		ballInterceptionInformationMap = aiFrame.getTacticalField().getBallInterceptionInformationMap().entrySet()
+				.stream().collect(Collectors.toMap(Map.Entry::getKey, e -> berkeleyFriendly(e.getValue())));
 	}
-	
-	
+
+
 	/**
 	 * @param aiFrame
 	 */
@@ -95,18 +121,12 @@ public class VisualizationFrame
 		actionTrees = aiFrame.getActionTrees();
 		currentPath = aiFrame.getCurrentPath();
 		playStrategy = aiFrame.getPlayStrategy();
+		supportViabilityMap = aiFrame.supportViabilityMap;
+		inactiveSupportBehaviors = aiFrame.inactiveSupportBehaviors;
+		ballInterceptionInformationMap = aiFrame.getBallInterceptionInformationMap();
 	}
-	
-	
-	/**
-	 * @return the timestamp
-	 */
-	public final long getTimestamp()
-	{
-		return timestamp;
-	}
-	
-	
+
+
 	/**
 	 * @return the teamColor
 	 */
@@ -114,81 +134,21 @@ public class VisualizationFrame
 	{
 		return getAiTeam().getTeamColor();
 	}
-	
-	
-	/**
-	 * @return
-	 */
-	public EAiTeam getAiTeam()
+
+
+	private OffensiveStrategy berkeleyFriendly(OffensiveStrategy offensiveStrategy)
 	{
-		return aiTeam;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public final MatchStats getMatchStats()
-	{
-		return matchStats;
-	}
-	
-	
-	/**
-	 * @return the offensiveStrategy
-	 */
-	public final OffensiveStrategy getOffensiveStrategy()
-	{
-		return offensiveStrategy;
-	}
-	
-	
-	/**
-	 * @return the offensiveActions
-	 */
-	public final Map<BotID, OffensiveAction> getOffensiveActions()
-	{
-		return offensiveActions;
-	}
-	
-	
-	/**
-	 * @return the aiInfos
-	 */
-	public final Map<BotID, BotAiInformation> getAiInfos()
-	{
-		return aiInfos;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public OffensiveAnalysedFrame getOffensiveStatisticsFrame()
-	{
-		return offensiveStatisticsFrame;
-	}
-	
-	
-	/**
-	 * @return
-	 */
-	public OffensiveStatisticsFrame getOffensiveStatisticsFrameRaw()
-	{
-		return offensiveStatisticsFrameRaw;
-	}
-	
-	
-	public Map<EOffensiveSituation, OffensiveActionTree> getActionTrees()
-	{
-		return actionTrees;
-	}
-	
-	
-	public OffensiveActionTreePath getCurrentPath()
-	{
-		return currentPath;
+		return new OffensiveStrategy(offensiveStrategy.getAttackerBot().orElse(null),
+				new IdentityHashMap<>(offensiveStrategy.getCurrentOffensivePlayConfiguration()));
 	}
 
-	public IPlayStrategy getPlayStrategy() { return playStrategy; }
+
+	private BallInterceptionInformation berkeleyFriendly(BallInterceptionInformation ballInterceptionInformation)
+	{
+		return ballInterceptionInformation.toBuilder()
+				.interceptionCorridors(new ArrayList<>(ballInterceptionInformation.getInterceptionCorridors()))
+				.zeroAxisChanges(new ArrayList<>(ballInterceptionInformation.getZeroAxisChanges()))
+				.initialIterations(new ArrayList<>(ballInterceptionInformation.getInitialIterations()))
+				.build();
+	}
 }

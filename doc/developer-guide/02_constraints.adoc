@@ -1,0 +1,15 @@
+:imagesdir: ../images
+
+[[section-constraints]]
+== Constraints
+
+=== Data types and time
+
+* Prefer double over float
+* Always save time duration in seconds and with double
+* Always save timestamps in nanoseconds and with long.
+Get the current timestamp from the current world frame, not from `System.nanoTime()` if possible
+* Measure time by remembering the start timestamp and calculating the difference to the current timestamp (or use `TimestampTimer`)
+* Never use `System.currentTimeMillis()` for time measurement. `System.nanoTime()` is much faster, because it does not depend on the system clock.
+* Calculate time difference by `(t1 - t2) / 1e9`, not with TimeUnit.
+TimeUnit only has integral numbers.

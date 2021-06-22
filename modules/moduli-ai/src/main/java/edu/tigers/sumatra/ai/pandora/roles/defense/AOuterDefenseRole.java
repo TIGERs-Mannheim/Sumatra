@@ -1,11 +1,10 @@
+/*
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.ai.pandora.roles.defense;
 
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import com.github.g3force.configurable.Configurable;
-
 import edu.tigers.sumatra.ai.metis.defense.data.IDefenseThreat;
 import edu.tigers.sumatra.ai.pandora.roles.ERole;
 import edu.tigers.sumatra.geometry.Geometry;
@@ -17,9 +16,13 @@ import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.pathfinder.obstacles.GenericCircleObstacle;
 import edu.tigers.sumatra.pathfinder.obstacles.IObstacle;
-import edu.tigers.sumatra.skillsystem.skills.AMoveToSkill;
+import edu.tigers.sumatra.skillsystem.skills.MoveToSkill;
 import edu.tigers.sumatra.statemachine.AState;
 import edu.tigers.sumatra.wp.data.ITrackedBot;
+
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 
 /**
@@ -64,7 +67,7 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 
 	protected Set<BotID> closeOpponentBots(IVector2 dest)
 	{
-		return getWFrame().getFoeBots().values().stream()
+		return getWFrame().getOpponentBots().values().stream()
 				.filter(bot -> bot.getPos().distanceTo(dest) < 500)
 				.map(ITrackedBot::getBotId)
 				.collect(Collectors.toSet());
@@ -121,13 +124,13 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 
 	protected class DefendState extends AState
 	{
-		private AMoveToSkill skill;
+		private MoveToSkill skill;
 
 
 		@Override
 		public void doEntryActions()
 		{
-			skill = AMoveToSkill.createMoveToSkill();
+			skill = MoveToSkill.createMoveToSkill();
 			setNewSkill(skill);
 		}
 
@@ -135,23 +138,23 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 		@Override
 		public void doUpdate()
 		{
-			armDefenders(skill);
+			skill.setKickParams(calcKickParams());
 
 			final IVector2 destination = moveToValidDest(findDest());
-			skill.getMoveCon().updateDestination(destination);
-			skill.getMoveCon().updateTargetAngle(protectionTargetAngle());
+			skill.updateDestination(destination);
+			skill.updateTargetAngle(protectionTargetAngle());
 
 			skill.getMoveCon().setBallObstacle(isBehindBall());
 			skill.getMoveCon().setIgnoredBots(ignoredBots(destination));
 			skill.getMoveCon().setCustomObstacles(closeOpponentBotObstacles(destination));
-			skill.getMoveCon().getMoveConstraints().setFastMove(useFastMove());
-			skill.getMoveCon().getMoveConstraints().setPrimaryDirection(primaryDirection());
+			skill.getMoveConstraints().setFastMove(useFastMove());
+			skill.getMoveConstraints().setPrimaryDirection(primaryDirection());
 		}
 
 
 		private IVector2 primaryDirection()
 		{
-			if (!skill.getMoveCon().isFastPosMode() && isBehindBall())
+			if (!skill.getMoveConstraints().isFastMove() && isBehindBall())
 			{
 				return threat.getThreatLine().directionVector();
 			}
@@ -161,7 +164,7 @@ public abstract class AOuterDefenseRole extends ADefenseRole
 
 		private boolean useFastMove()
 		{
-			return skill.getMoveCon().getDestination().distanceTo(getPos()) > 4000;
+			return skill.getDestination().distanceTo(getPos()) > 4000;
 		}
 	}
 }

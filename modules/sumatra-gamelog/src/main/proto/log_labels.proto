@@ -1,6 +1,6 @@
 syntax = "proto3";
-package edu.tigers.sumatra.labeler;
 
+package edu.tigers.sumatra.gamelog.proto;
 
 enum Team {
   YELLOW = 0;

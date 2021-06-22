@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botcenter.presenter;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import edu.tigers.moduli.IModuliStateObserver;
 import edu.tigers.moduli.exceptions.ModuleNotFoundException;
@@ -31,7 +32,7 @@ import edu.tigers.sumatra.model.SumatraModel;
  */
 public class FirmwareUpdatePresenter implements IFirmwareUpdatePanelObserver, IBootloaderObserver, IModuliStateObserver
 {
-	private static final Logger log = Logger.getLogger(FirmwareUpdatePresenter.class.getName());
+	private static final Logger log = LogManager.getLogger(FirmwareUpdatePresenter.class.getName());
 	private final Bootloader bootloader;
 	private final TigersBaseStation baseStation;
 	private final FirmwareUpdatePanel updatePanel;

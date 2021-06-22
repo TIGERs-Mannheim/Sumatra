@@ -4,13 +4,13 @@
 
 package edu.tigers.sumatra.math.line;
 
-import java.util.Optional;
-
 import edu.tigers.sumatra.math.SumatraMath;
 import edu.tigers.sumatra.math.vector.IVector2;
 import edu.tigers.sumatra.math.vector.Vector2;
 import edu.tigers.sumatra.math.vector.Vector2f;
 import edu.tigers.sumatra.math.vector.VectorMath;
+
+import java.util.Optional;
 
 
 /**

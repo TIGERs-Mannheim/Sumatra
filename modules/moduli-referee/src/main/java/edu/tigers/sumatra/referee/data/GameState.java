@@ -1,42 +1,54 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.referee.data;
 
-import org.apache.commons.lang.Validate;
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
-
 import com.sleepycat.persist.model.Persistent;
-
 import edu.tigers.sumatra.geometry.Geometry;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.math.vector.IVector2;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Value;
 
 
 /**
  * The current game state and useful helper methods to query the state.
  */
 @Persistent(version = 1)
+@Value
+@Builder(toBuilder = true, setterPrefix = "with")
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class GameState
 {
-	private final EGameState state;
-	private final EGameState nextState;
-	private final ETeamColor forTeam;
-	private final ETeamColor nextForTeam;
-	private final ETeamColor ourTeam;
-	private final boolean penaltyShootout;
-	private final IVector2 ballPlacementPosition;
+	@NonNull
+	EGameState state;
+	EGameState nextState;
+	@NonNull
+	ETeamColor forTeam;
+	ETeamColor nextForTeam;
+	@NonNull
+	ETeamColor ourTeam;
+	boolean penaltyShootout;
+	IVector2 ballPlacementPosition;
 
-	/** Neutral RUNNING state */
-	public static final GameState RUNNING = Builder.empty().withState(EGameState.RUNNING).build();
+	/**
+	 * Neutral RUNNING state
+	 */
+	public static final GameState RUNNING = empty().withState(EGameState.RUNNING).build();
 
-	/** Neutral STOP state */
-	public static final GameState STOP = Builder.empty().withState(EGameState.STOP).build();
+	/**
+	 * Neutral STOP state
+	 */
+	public static final GameState STOP = empty().withState(EGameState.STOP).build();
 
-	/** Neutral HALT state */
-	public static final GameState HALT = Builder.empty().withState(EGameState.HALT).build();
+	/**
+	 * Neutral HALT state
+	 */
+	public static final GameState HALT = empty().withState(EGameState.HALT).build();
 
 
 	@SuppressWarnings("unused") // Required for persistence
@@ -52,15 +64,17 @@ public class GameState
 	}
 
 
-	private GameState(final Builder builder)
+	/**
+	 * Create an empty build with default required values
+	 *
+	 * @return new builder
+	 */
+	public static GameState.GameStateBuilder empty()
 	{
-		state = builder.state;
-		nextState = builder.nextState;
-		forTeam = builder.forTeam;
-		nextForTeam = builder.nextForTeam;
-		ourTeam = builder.ourTeam;
-		penaltyShootout = builder.penaltyShootout;
-		ballPlacementPosition = builder.ballPlacementPosition;
+		return builder()
+				.withState(EGameState.HALT)
+				.withForTeam(ETeamColor.NEUTRAL)
+				.withOurTeam(ETeamColor.NEUTRAL);
 	}
 
 
@@ -350,7 +364,7 @@ public class GameState
 	 */
 	public boolean isNextStandardSituationForUs()
 	{
-		if (isNextGameStateForThem())
+		if (isNextGameStateForThem() || isGameRunning())
 		{
 			return false;
 		}
@@ -399,6 +413,15 @@ public class GameState
 	/**
 	 * @return true if the current state is KICKOFF or PREPARE_KICKOFF
 	 */
+	public boolean isKickoff()
+	{
+		return state == EGameState.KICKOFF;
+	}
+
+
+	/**
+	 * @return true if the current state is KICKOFF or PREPARE_KICKOFF
+	 */
 	public boolean isKickoffOrPrepareKickoff()
 	{
 		return (state == EGameState.KICKOFF) || (state == EGameState.PREPARE_KICKOFF);
@@ -441,6 +464,12 @@ public class GameState
 	public boolean isDirectFreeForThem()
 	{
 		return state == EGameState.DIRECT_FREE && isGameStateForThem();
+	}
+
+
+	public boolean isFreeKick()
+	{
+		return state == EGameState.DIRECT_FREE || state == EGameState.INDIRECT_FREE;
 	}
 
 
@@ -497,6 +526,15 @@ public class GameState
 		return isRunning()
 				|| isStandardSituation()
 				|| getState() == EGameState.KICKOFF;
+	}
+
+
+	/**
+	 * @return true if state is PENALTY
+	 */
+	public boolean isPenalty()
+	{
+		return state == EGameState.PENALTY;
 	}
 
 
@@ -599,186 +637,5 @@ public class GameState
 			result += " for " + forTeam;
 		}
 		return result;
-	}
-
-	/**
-	 * Builder
-	 */
-	public static class Builder
-	{
-		private EGameState state;
-		private EGameState nextState = EGameState.UNKNOWN;
-		private ETeamColor forTeam;
-		private ETeamColor nextForTeam = ETeamColor.NEUTRAL;
-		private ETeamColor ourTeam;
-		private boolean penaltyShootout;
-		private IVector2 ballPlacementPosition = null;
-
-
-		private Builder()
-		{
-		}
-
-
-		/**
-		 * @return new builder
-		 */
-		public static Builder create()
-		{
-			return new Builder();
-		}
-
-
-		/**
-		 * @return this builder
-		 */
-		public static Builder empty()
-		{
-			Builder builder = new Builder();
-			builder.state = EGameState.HALT;
-			builder.forTeam = ETeamColor.NEUTRAL;
-			builder.ourTeam = ETeamColor.NEUTRAL;
-			return builder;
-		}
-
-
-		/**
-		 * @param state
-		 * @return this builder
-		 */
-		public Builder withState(final EGameState state)
-		{
-			this.state = state;
-			return this;
-		}
-
-
-		/**
-		 * @param nextState
-		 * @return this builder
-		 */
-		public Builder withNextState(final EGameState nextState)
-		{
-			this.nextState = nextState;
-			return this;
-		}
-
-
-		/**
-		 * @param color
-		 * @return this builder
-		 */
-		public Builder nextForTeam(final ETeamColor color)
-		{
-			nextForTeam = color;
-			return this;
-		}
-
-
-		/**
-		 * @param color
-		 * @return this builder
-		 */
-		public Builder forTeam(final ETeamColor color)
-		{
-			forTeam = color;
-			return this;
-		}
-
-
-		/**
-		 * @param color
-		 * @return this builder
-		 */
-		public Builder withOurTeam(final ETeamColor color)
-		{
-			ourTeam = color;
-			return this;
-		}
-
-
-		/**
-		 * @param penaltyShootout
-		 * @return this builder
-		 */
-		public Builder withPenalyShootout(final boolean penaltyShootout)
-		{
-			this.penaltyShootout = penaltyShootout;
-			return this;
-		}
-
-
-		/**
-		 * @param ballPlacementPosition
-		 * @return this builder
-		 */
-		public Builder withBallPlacementPosition(final IVector2 ballPlacementPosition)
-		{
-			this.ballPlacementPosition = ballPlacementPosition;
-			return this;
-		}
-
-
-		/**
-		 * @param gameState
-		 * @return this builder
-		 */
-		public Builder withGameState(final GameState gameState)
-		{
-			state = gameState.state;
-			nextState = gameState.nextState;
-			forTeam = gameState.forTeam;
-			nextForTeam = gameState.nextForTeam;
-			ourTeam = gameState.ourTeam;
-			penaltyShootout = gameState.penaltyShootout;
-			ballPlacementPosition = gameState.ballPlacementPosition;
-			return this;
-		}
-
-
-		/**
-		 * @return new instance
-		 */
-		public GameState build()
-		{
-			Validate.notNull(state);
-			Validate.notNull(forTeam);
-			Validate.notNull(ourTeam);
-			return new GameState(this);
-		}
-	}
-
-
-	@Override
-	public boolean equals(final Object o)
-	{
-		if (this == o)
-			return true;
-
-		if (o == null || getClass() != o.getClass())
-			return false;
-
-		final GameState gameState = (GameState) o;
-
-		return new EqualsBuilder()
-				.append(penaltyShootout, gameState.penaltyShootout)
-				.append(state, gameState.state)
-				.append(forTeam, gameState.forTeam)
-				.append(ourTeam, gameState.ourTeam)
-				.append(ballPlacementPosition, gameState.ballPlacementPosition)
-				.isEquals();
-	}
-
-
-	@Override
-	public int hashCode()
-	{
-		return new HashCodeBuilder(17, 37)
-				.append(state)
-				.append(forTeam)
-				.append(ourTeam)
-				.append(penaltyShootout)
-				.append(ballPlacementPosition)
-				.toHashCode();
 	}
 }

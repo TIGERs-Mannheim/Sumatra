@@ -1,32 +1,28 @@
 /*
- * *********************************************************
- * Copyright (c) 2009 - 2013, DHBW Mannheim - Tigers Mannheim
- * Project: TIGERS - Sumatra
- * Date: 24.10.2013
- * Author(s): AndreR
- * *********************************************************
+ * Copyright (c) 2009 - 2019, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.botmanager.serial;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import edu.tigers.sumatra.botmanager.serial.SerialData.ESerialDataType;
 
 
 /**
  * Single value command data field.
- * 
+ *
  * @author AndreR
  */
 public class SerialFieldValue extends ASerialField
 {
-	private static final Logger log = Logger.getLogger(SerialFieldValue.class.getName());
+	private static final Logger log = LogManager.getLogger(SerialFieldValue.class.getName());
 	private final SerialDescription embedded;
-	
-	
+
+
 	/**
 	 * @param field Reflection Field.
 	 * @param type ESerialDataType
@@ -36,7 +32,7 @@ public class SerialFieldValue extends ASerialField
 	public SerialFieldValue(final Field field, final ESerialDataType type, final int offset) throws SerialException
 	{
 		super(field, type, offset);
-		
+
 		if (type == ESerialDataType.EMBEDDED)
 		{
 			embedded = new SerialDescription(field.getType());
@@ -45,13 +41,13 @@ public class SerialFieldValue extends ASerialField
 			embedded = null;
 		}
 	}
-	
-	
+
+
 	@Override
 	public void decode(final byte[] data, final Object obj) throws SerialException
 	{
 		Object value;
-		
+
 		switch (type)
 		{
 			case UINT8:
@@ -84,7 +80,7 @@ public class SerialFieldValue extends ASerialField
 			default:
 				throw new IllegalArgumentException("Invalid call to decode for type: " + type);
 		}
-		
+
 		try
 		{
 			field.set(obj, value);
@@ -93,8 +89,8 @@ public class SerialFieldValue extends ASerialField
 			throw new SerialException("Could not set field: " + field.getName(), err);
 		}
 	}
-	
-	
+
+
 	private void validateRange(final Object obj) throws IllegalAccessException
 	{
 		switch (type)
@@ -111,8 +107,8 @@ public class SerialFieldValue extends ASerialField
 				break;
 		}
 	}
-	
-	
+
+
 	private void validateInt(final Object obj) throws IllegalAccessException
 	{
 		long value = field.getLong(obj);
@@ -122,15 +118,15 @@ public class SerialFieldValue extends ASerialField
 					+ " value is out of bounds (" + value + ")");
 		}
 	}
-	
-	
+
+
 	@Override
 	public void encode(final byte[] data, final Object obj) throws SerialException
 	{
 		try
 		{
 			validateRange(obj);
-			
+
 			switch (type)
 			{
 				case INT8:
@@ -161,14 +157,14 @@ public class SerialFieldValue extends ASerialField
 					throw new IllegalArgumentException("Invalid call to encode for type: " + type);
 			}
 		}
-		
+
 		catch (Exception err)
 		{
 			throw new SerialException("Could not get field: " + field.getName(), err);
 		}
 	}
-	
-	
+
+
 	@Override
 	public int getLength(final Object obj) throws SerialException
 	{
@@ -176,7 +172,7 @@ public class SerialFieldValue extends ASerialField
 		{
 			return embedded.getLength(obj);
 		}
-		
+
 		return type.getLength();
 	}
 }

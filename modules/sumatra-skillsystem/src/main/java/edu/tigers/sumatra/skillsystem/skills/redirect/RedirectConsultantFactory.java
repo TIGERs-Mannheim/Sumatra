@@ -1,59 +1,26 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 
 package edu.tigers.sumatra.skillsystem.skills.redirect;
 
-import com.github.g3force.configurable.ConfigRegistration;
-import com.github.g3force.configurable.Configurable;
-
-import edu.tigers.sumatra.math.vector.IVector2;
+import edu.tigers.sumatra.model.SumatraModel;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 
 /**
  * Factory for creating redirect consultants
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class RedirectConsultantFactory
 {
-	@Configurable(spezis = { "", "SUMATRA" }, defValueSpezis = { "POLY_CORRECTION", "SIMPLE" })
-	private static ERedirectConsultant defaultRedirectConsultant = ERedirectConsultant.SIMPLE;
-	
-	static
+	public static IRedirectConsultant createDefault()
 	{
-		ConfigRegistration.registerClass("skills", RedirectConsultantFactory.class);
-	}
-	
-	
-	private RedirectConsultantFactory()
-	{
-	}
-	
-	private enum ERedirectConsultant
-	{
-		SIMPLE,
-		POLY_CORRECTION
-	}
-	
-	
-	public static void init()
-	{
-		// nothing to do, only for class loading
-	}
-	
-	
-	public static ARedirectConsultant createDefault(
-			final IVector2 incomingBallVel,
-			final IVector2 desiredOutgoingBallVel)
-	{
-		switch (defaultRedirectConsultant)
+		if (SumatraModel.getInstance().isSimulation())
 		{
-			case SIMPLE:
-				return new SimpleRedirectConsultant(incomingBallVel, desiredOutgoingBallVel);
-			case POLY_CORRECTION:
-				return new PolyCorrectionRedirectConsultant(incomingBallVel, desiredOutgoingBallVel);
-			default:
-				throw new IllegalStateException("unknown type: " + defaultRedirectConsultant);
+			return new SimpleRedirectConsultant();
 		}
+		return new ConstantLossRedirectConsultant();
 	}
-	
 }

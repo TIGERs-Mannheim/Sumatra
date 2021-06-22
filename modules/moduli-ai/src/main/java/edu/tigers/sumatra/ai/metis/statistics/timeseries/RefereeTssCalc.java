@@ -1,7 +1,10 @@
+/*
+ * Copyright (c) 2009 - 2020, DHBW Mannheim - TIGERs Mannheim
+ */
+
 package edu.tigers.sumatra.ai.metis.statistics.timeseries;
 
 import edu.tigers.sumatra.ai.BaseAiFrame;
-import edu.tigers.sumatra.ai.metis.ITacticalField;
 import edu.tigers.sumatra.ids.ETeamColor;
 import edu.tigers.sumatra.referee.data.GameState;
 import edu.tigers.sumatra.referee.data.RefereeMsg;
@@ -15,20 +18,19 @@ import edu.tigers.sumatra.statistics.TimeSeriesStatsEntry;
 public class RefereeTssCalc implements ITssCalc
 {
 	@Override
-	public TimeSeriesStatsEntry createTimeSeriesStatsEntry(final BaseAiFrame aiFrame, final ITacticalField tacticalField,
-			final long timestamp)
+	public TimeSeriesStatsEntry createTimeSeriesStatsEntry(final BaseAiFrame aiFrame, final long timestamp)
 	{
 		final TimeSeriesStatsEntry entry = new TimeSeriesStatsEntry("referee", timestamp);
-		final GameState gamestate = aiFrame.getGamestate();
+		final GameState gamestate = aiFrame.getGameState();
 		final RefereeMsg refereeMsg = aiFrame.getRefereeMsg();
 		final ETeamColor ourTeam = aiFrame.getTeamColor();
-		
+
 		entry.addField("state.type", gamestate.getState().name());
 		entry.addField("state.for", gamestate.getForTeam().name());
 		entry.addField("command", refereeMsg.getCommand().name());
 		entry.addField("goals.we", refereeMsg.getGoals().get(ourTeam));
 		entry.addField("goals.they", refereeMsg.getGoals().get(ourTeam.opposite()));
-		
+
 		for (ETeamColor teamColor : ETeamColor.yellowBlueValues())
 		{
 			final TeamInfo teamInfo = refereeMsg.getTeamInfo(teamColor);

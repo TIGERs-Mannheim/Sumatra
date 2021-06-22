@@ -1,101 +1,82 @@
 /*
- * Copyright (c) 2009 - 2018, DHBW Mannheim - TIGERs Mannheim
+ * Copyright (c) 2009 - 2021, DHBW Mannheim - TIGERs Mannheim
  */
 package edu.tigers.sumatra.presenter.log;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.LogEvent;
+
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
-
-import org.apache.log4j.Level;
-import org.apache.log4j.spi.LoggingEvent;
 
 
 /**
  * A buffer for log events.
  */
-public class LogEventBuffer implements Iterable<LoggingEvent>
+public class LogEventBuffer
 {
 	private static final int NUM_EVENTS = 6;
 	private static final int PER_LEVEL_CAPACITY = 300;
-	private final List<LoggingEvent> eventStorage = new ArrayList<>(NUM_EVENTS * PER_LEVEL_CAPACITY);
 
-	private final Map<Level, List<LoggingEvent>> eventsPerLevel = new HashMap<>();
+	private final List<LogEvent> eventStorage = new ArrayList<>(NUM_EVENTS * PER_LEVEL_CAPACITY);
+	private final Map<Level, List<LogEvent>> eventsPerLevel = new HashMap<>();
 
-	private boolean freeze = false;
-	private int freezeIdx = 0;
+	private long start = 0;
+	private long end = 0;
+	private long offset = 0;
 
 
-	public void append(final LoggingEvent ev)
+	public synchronized LogEventBuffer copy()
 	{
-		List<LoggingEvent> levelEventStorage = eventsPerLevel.computeIfAbsent(ev.getLevel(),
+		LogEventBuffer copy = new LogEventBuffer();
+		copy.eventStorage.addAll(eventStorage);
+		eventsPerLevel.forEach((level, events) -> copy.eventsPerLevel.put(level, new ArrayList<>(events)));
+		return copy;
+	}
+
+
+	public synchronized void append(final LogEvent ev)
+	{
+		List<LogEvent> levelEventStorage = eventsPerLevel.computeIfAbsent(ev.getLevel(),
 				k -> new ArrayList<>(PER_LEVEL_CAPACITY));
 		if (levelEventStorage.size() >= PER_LEVEL_CAPACITY)
 		{
-			LoggingEvent oldEv = levelEventStorage.remove(0);
+			LogEvent oldEv = levelEventStorage.remove(0);
 			boolean removed = eventStorage.remove(oldEv);
 			assert removed;
-			freezeIdx--;
+			offset++;
 		}
 		levelEventStorage.add(ev);
 		eventStorage.add(ev);
+		end++;
 	}
 
 
-	public void clear()
+	public synchronized void clear()
 	{
 		eventStorage.clear();
-		for (List<LoggingEvent> l : eventsPerLevel.values())
-		{
-			l.clear();
-		}
-		freezeIdx = 0;
+		eventsPerLevel.values().forEach(List::clear);
+		start = 0;
+		end = 0;
+		offset = 0;
 	}
 
 
-	public void setFreeze(final boolean freeze)
+	public synchronized List<LogEvent> getNewEvents()
 	{
-		this.freeze = freeze;
-		if (freeze)
-		{
-			freezeIdx = eventStorage.size();
-		}
+		List<LogEvent> subList = new ArrayList<>(
+				eventStorage.subList((int) Math.max(0, start - offset), (int) (end - offset)));
+		start = end;
+		return subList;
 	}
 
 
-	@Override
-	public Iterator<LoggingEvent> iterator()
+	public synchronized void reset()
 	{
-		return new LogIterator();
-	}
-
-	private class LogIterator implements Iterator<LoggingEvent>
-	{
-		private int i = 0;
-
-
-		@Override
-		public boolean hasNext()
-		{
-			if (freeze && (i >= freezeIdx))
-			{
-				return false;
-			}
-			return i < eventStorage.size();
-		}
-
-
-		@Override
-		public LoggingEvent next()
-		{
-			if (!hasNext())
-			{
-				throw new NoSuchElementException();
-			}
-			return eventStorage.get(i++);
-		}
+		start = 0;
+		end = eventStorage.size();
+		offset = 0;
 	}
 }

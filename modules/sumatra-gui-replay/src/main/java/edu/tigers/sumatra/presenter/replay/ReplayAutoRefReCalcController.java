@@ -16,6 +16,7 @@ import edu.tigers.autoreferee.AutoRefFramePreprocessor;
 import edu.tigers.autoreferee.IAutoRefFrame;
 import edu.tigers.autoreferee.engine.PassiveAutoRefEngine;
 import edu.tigers.autoreferee.engine.detector.EGameEventDetectorType;
+import edu.tigers.sumatra.drawable.ShapeMapSource;
 import edu.tigers.sumatra.persistence.BerkeleyDb;
 import edu.tigers.sumatra.views.ASumatraView;
 import edu.tigers.sumatra.views.ESumatraViewType;
@@ -28,20 +29,20 @@ public class ReplayAutoRefReCalcController implements IReplayController
 	private final AutoRefFramePreprocessor refPreprocessor = new AutoRefFramePreprocessor();
 	private final PassiveAutoRefEngine autoRefEngine = new PassiveAutoRefEngine(
 			EnumSet.allOf(EGameEventDetectorType.class));
-	
+
 	private final List<IWorldFrameObserver> wFrameObservers = new ArrayList<>();
 	private IAutoRefFrame lastAutoRefFrame = null;
-	
+
 	private boolean active = false;
-	
-	
+
+
 	/**
 	 * Default
 	 */
 	public ReplayAutoRefReCalcController(final List<ASumatraView> sumatraViews)
 	{
 		super();
-		
+
 		for (ASumatraView view : sumatraViews)
 		{
 			if (view.getType() == ESumatraViewType.REPLAY_CONTROL)
@@ -55,8 +56,8 @@ public class ReplayAutoRefReCalcController implements IReplayController
 			}
 		}
 	}
-	
-	
+
+
 	@Override
 	public void update(final BerkeleyDb db, final WorldFrameWrapper wfw)
 	{
@@ -64,7 +65,7 @@ public class ReplayAutoRefReCalcController implements IReplayController
 		{
 			return;
 		}
-		
+
 		IAutoRefFrame refFrame;
 		/*
 		 * We only run the ref engine if the current frame is not equal to the last frame. Otherwise we
@@ -77,40 +78,41 @@ public class ReplayAutoRefReCalcController implements IReplayController
 		{
 			boolean hasLastFrame = refPreprocessor.hasLastFrame();
 			refFrame = refPreprocessor.process(wfw);
-			
+
 			if (hasLastFrame)
 			{
 				autoRefEngine.process(refFrame);
 			}
 		}
-		
+
 		for (IWorldFrameObserver o : wFrameObservers)
 		{
-			o.onNewShapeMap(refFrame.getTimestamp(), refFrame.getShapes(), "AUTO_REF_UPDATED");
+			o.onNewShapeMap(refFrame.getTimestamp(), refFrame.getShapes(),
+					ShapeMapSource.of("Recalculated AutoRef", "Recalculated"));
 		}
 		lastAutoRefFrame = refFrame;
 	}
-	
-	
+
+
 	private class RunAutoRefAction extends AbstractAction
 	{
 		private RunAutoRefAction()
 		{
 			super("Run AutoRef");
 		}
-		
-		
+
+
 		@Override
 		public void actionPerformed(final ActionEvent e)
 		{
 			JCheckBoxMenuItem chk = (JCheckBoxMenuItem) e.getSource();
 			active = chk.isSelected();
-			
+
 			if (!active)
 			{
 				for (IWorldFrameObserver o : wFrameObservers)
 				{
-					o.onClearShapeMap("AUTO_REF_UPDATED");
+					o.onRemoveSourceFromShapeMap("Recalculated AutoRef");
 				}
 			}
 		}
